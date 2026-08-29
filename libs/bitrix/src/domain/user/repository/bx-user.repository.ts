@@ -83,6 +83,22 @@ export class BxUserRepository {
         );
     }
 
+    /**
+     * `user.admin` — администратор ли портала тот ключ, которым мы ходим.
+     *
+     * Нужен, чтобы отличить «нет прав» от «метод недоступен»: по одному
+     * отказу userfieldconfig этого не понять, а сообщение владельцу должно
+     * называть настоящую причину.
+     */
+    async isAdmin() {
+        return await this.bxApi.callType(
+            EBxNamespace.WITHOUT_NAMESPACE,
+            EBXEntity.USER,
+            EBxMethod.ADMIN,
+            {},
+        );
+    }
+
     getCurrentBtch(cmdCode: string) {
         return this.bxApi.addCmdBatchType(
             cmdCode,

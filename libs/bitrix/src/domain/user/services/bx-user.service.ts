@@ -37,6 +37,11 @@ export class BxUserService {
         return await this.repo.getCurrent();
     }
 
+    /** Администратор ли портала ключ, которым мы ходим (`user.admin`). */
+    async isAdmin() {
+        return await this.repo.isAdmin();
+    }
+
     async update(userId: number | string, data: UpdateRequestType<IBXUser>) {
         return await this.repo.update(userId, data);
     }

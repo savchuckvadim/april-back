@@ -64,12 +64,19 @@ export const PRESENTATION_CATEGORY_CODE = 'pres_main';
  * Цвета стадий — палитра воронки сделок «ОП Презентации»
  * (PbxDealSalesPresentationCategoryType): зеркало обязано узнаваться
  * визуально, иначе менеджер не поймёт, что смотрит на ту же презентацию.
+ *
+ * У стадий контура согласования аналога в воронке сделок нет, поэтому цвета
+ * подобраны по смыслу: ожидание решения — охра, возврат на доработку —
+ * серый (заявку вернули люди, это не провал клиента, и красный рядом с
+ * «Отказом после презентации» путал бы их).
  */
 const PRESENTATION_STAGE_COLORS: Record<string, string> = {
     pres_new: '#3bc8f5',
+    pres_approve: '#f5a623',
     pres_plan: '#0ec96f',
     pres_pending: '#ef3000',
     pres_success: '#00ff00',
+    pres_rejected: '#7d8087',
     pres_noresult: '#2d0b0d',
     pres_fail: '#e7354a',
 };

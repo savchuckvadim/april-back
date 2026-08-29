@@ -31,6 +31,7 @@ import { DepartamentDto } from './department.dto';
 import { FailDto } from './fail.dto';
 import { LeadDto } from './lead.dto';
 import { PresentationDto } from './presentation.dto';
+import { QuestionnaireAnswerDto } from './questionnaire-answer.dto';
 
 /**
  * TMC-сделка для возврата (legacy-тип фронта `TmcDealsForReturn`:
@@ -252,6 +253,22 @@ export class EventSalesFlowDto {
     @ValidateNested({ each: true })
     @Type(() => OpenEventTaskDto)
     openTasks?: OpenEventTaskDto[];
+
+    @ApiPropertyOptional({
+        description:
+            'Ответы анкет портального каталога, адресованные полям ЭЛЕМЕНТА ' +
+            'смарта (презентации, ЗПР). Значения — в каноне каталога: код ' +
+            'варианта, «YYYY-MM-DD», «Y»/«N». Бэк сам находит поле и тот ' +
+            'элемент, который создаёт или закрывает поток этого отчёта — ' +
+            'включая спонтанный для незапланированного события. Поле НЕ ' +
+            'прислано — прежнее поведение (анкеты в смарт не пишутся).',
+        type: [QuestionnaireAnswerDto],
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => QuestionnaireAnswerDto)
+    questionnaireAnswers?: QuestionnaireAnswerDto[];
 
     @ApiPropertyOptional({
         description:

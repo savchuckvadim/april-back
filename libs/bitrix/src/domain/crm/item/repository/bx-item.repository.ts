@@ -152,13 +152,24 @@ export class BxItemRepository {
         );
     }
 
-    /** crm.item.fields: ключи ответа — фактические camel-имена полей. */
-    async fields(entityTypeId: number | string) {
+    /**
+     * crm.item.fields: ключи ответа — фактические camel-имена полей.
+     *
+     * `useOriginalUfNames: 'Y'` возвращает оригинальные UF-имена — их ждут
+     * те, кто адресует поле именем (портальные анкеты), потому что
+     * camelCase-ключом в CRM не записать.
+     */
+    async fields(
+        entityTypeId: number | string,
+        useOriginalUfNames?: 'Y' | 'N',
+    ) {
         return this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.ITEM,
             EBxMethod.FIELDS,
-            { entityTypeId },
+            useOriginalUfNames
+                ? { entityTypeId, useOriginalUfNames }
+                : { entityTypeId },
         );
     }
 }

@@ -202,6 +202,49 @@ export type PortalAiSettings = $Result.DefaultSelection<Prisma.$PortalAiSettings
  */
 export type PortalAppSettings = $Result.DefaultSelection<Prisma.$PortalAppSettingsPayload>
 /**
+ * Model PortalQuestionnaire
+ * Портальный каталог АНКЕТ: сама анкета (чек-лист) placement-приложения —
+ * назначение, где и как показываем, условия показа. Состав вопросов живёт
+ * в PortalQuestionnaireItem. Заранее знать, какие поля заведёт клиент,
+ * нельзя, поэтому анкета собирается в админке из полей, созданных
+ * пользователем в Битриксе руками, и хранится здесь, а не в коде фронта.
+ * `code` — стабильный ключ анкеты внутри приложения (ключ «подтверждено»
+ * на фронте), `version` инкрементится на каждое сохранение — фрейм сверяет
+ * свою версию. `conditions` — JSON с И-семантикой: новый вид условия не
+ * должен требовать миграции; неизвестный kind = анкета НЕ показывается.
+ * Таблица добавлена ручной правкой (db pull запрещён) — миграция
+ * online/database/migrations/2026_08_28_100000_create_portal_questionnaire_tables.php
+ */
+export type PortalQuestionnaire = $Result.DefaultSelection<Prisma.$PortalQuestionnairePayload>
+/**
+ * Model PortalQuestionnaireItem
+ * Вопрос анкеты: что спрашиваем, обязательность, тип отображения и В КАКОЕ
+ * ПОЛЕ пишем ответ. Ответов здесь НЕТ — источник правды по ответам это поля
+ * CRM. `code` — код ВОПРОСА, не поля: два разных вопроса могут писать в одно
+ * поле и не делить между собой значение, статус сохранения и таймер
+ * автосохранения. Привязка к полю МЯГКАЯ, без FK на bitrixfields:
+ * переустановка смарта или компании сносит строки bitrixfields этой сущности
+ * (deleteFieldsByEntityId) — анкета молча опустела бы. Главный якорь —
+ * `field_name`: полное UF-имя РОВНО в том виде, в каком его вернул Битрикс
+ * (никогда не собирать конкатенацией); field_bitrix_id, field_xml_id и
+ * field_code — вторичные. Пункт ГАСИМ через is_active, не удаляем: иначе уже
+ * собранные ответы в CRM становятся необъяснимыми.
+ * Таблица добавлена ручной правкой (db pull запрещён) — миграция
+ * online/database/migrations/2026_08_28_100000_create_portal_questionnaire_tables.php
+ */
+export type PortalQuestionnaireItem = $Result.DefaultSelection<Prisma.$PortalQuestionnaireItemPayload>
+/**
+ * Model PortalQuestionnaireItemOption
+ * Варианты справочника для вопроса с control='enumeration'. `bitrix_id` —
+ * id элемента списка РОВНО как в bitrixfield_items: именно это значение
+ * уходит в crm.*.update, поэтому и тип тот же (Int). Связи с bitrixfield_items
+ * нет намеренно — привязка к полям мягкая (см. PortalQuestionnaireItem).
+ * Исчезнувший в Битриксе вариант гасим через is_active, а не удаляем.
+ * Таблица добавлена ручной правкой (db pull запрещён) — миграция
+ * online/database/migrations/2026_08_28_100000_create_portal_questionnaire_tables.php
+ */
+export type PortalQuestionnaireItemOption = $Result.DefaultSelection<Prisma.$PortalQuestionnaireItemOptionPayload>
+/**
  * Model SkapImportFile
  * СКАП: журнал файлов выгрузок с Диска Битрикс (модуль импорта СКАП).
  * Таблицы skap_* добавлены ручной правкой (db pull запрещён) — миграции
@@ -1118,6 +1161,36 @@ export class PrismaClient<
     * ```
     */
   get portalAppSettings(): Prisma.PortalAppSettingsDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.portalQuestionnaire`: Exposes CRUD operations for the **PortalQuestionnaire** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PortalQuestionnaires
+    * const portalQuestionnaires = await prisma.portalQuestionnaire.findMany()
+    * ```
+    */
+  get portalQuestionnaire(): Prisma.PortalQuestionnaireDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.portalQuestionnaireItem`: Exposes CRUD operations for the **PortalQuestionnaireItem** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PortalQuestionnaireItems
+    * const portalQuestionnaireItems = await prisma.portalQuestionnaireItem.findMany()
+    * ```
+    */
+  get portalQuestionnaireItem(): Prisma.PortalQuestionnaireItemDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.portalQuestionnaireItemOption`: Exposes CRUD operations for the **PortalQuestionnaireItemOption** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PortalQuestionnaireItemOptions
+    * const portalQuestionnaireItemOptions = await prisma.portalQuestionnaireItemOption.findMany()
+    * ```
+    */
+  get portalQuestionnaireItemOption(): Prisma.PortalQuestionnaireItemOptionDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.skapImportFile`: Exposes CRUD operations for the **SkapImportFile** model.
@@ -2184,6 +2257,9 @@ export namespace Prisma {
     Portal: 'Portal',
     PortalAiSettings: 'PortalAiSettings',
     PortalAppSettings: 'PortalAppSettings',
+    PortalQuestionnaire: 'PortalQuestionnaire',
+    PortalQuestionnaireItem: 'PortalQuestionnaireItem',
+    PortalQuestionnaireItemOption: 'PortalQuestionnaireItemOption',
     SkapImportFile: 'SkapImportFile',
     SkapImportItem: 'SkapImportItem',
     SkapSession: 'SkapSession',
@@ -2261,7 +2337,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalAiSettings" | "portalAppSettings" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink"
+      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalAiSettings" | "portalAppSettings" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -4638,6 +4714,204 @@ export namespace Prisma {
           count: {
             args: Prisma.PortalAppSettingsCountArgs<ExtArgs>
             result: $Utils.Optional<PortalAppSettingsCountAggregateOutputType> | number
+          }
+        }
+      }
+      PortalQuestionnaire: {
+        payload: Prisma.$PortalQuestionnairePayload<ExtArgs>
+        fields: Prisma.PortalQuestionnaireFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PortalQuestionnaireFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnairePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PortalQuestionnaireFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnairePayload>
+          }
+          findFirst: {
+            args: Prisma.PortalQuestionnaireFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnairePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PortalQuestionnaireFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnairePayload>
+          }
+          findMany: {
+            args: Prisma.PortalQuestionnaireFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnairePayload>[]
+          }
+          create: {
+            args: Prisma.PortalQuestionnaireCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnairePayload>
+          }
+          createMany: {
+            args: Prisma.PortalQuestionnaireCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.PortalQuestionnaireDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnairePayload>
+          }
+          update: {
+            args: Prisma.PortalQuestionnaireUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnairePayload>
+          }
+          deleteMany: {
+            args: Prisma.PortalQuestionnaireDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PortalQuestionnaireUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.PortalQuestionnaireUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnairePayload>
+          }
+          aggregate: {
+            args: Prisma.PortalQuestionnaireAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePortalQuestionnaire>
+          }
+          groupBy: {
+            args: Prisma.PortalQuestionnaireGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PortalQuestionnaireGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PortalQuestionnaireCountArgs<ExtArgs>
+            result: $Utils.Optional<PortalQuestionnaireCountAggregateOutputType> | number
+          }
+        }
+      }
+      PortalQuestionnaireItem: {
+        payload: Prisma.$PortalQuestionnaireItemPayload<ExtArgs>
+        fields: Prisma.PortalQuestionnaireItemFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PortalQuestionnaireItemFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PortalQuestionnaireItemFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemPayload>
+          }
+          findFirst: {
+            args: Prisma.PortalQuestionnaireItemFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PortalQuestionnaireItemFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemPayload>
+          }
+          findMany: {
+            args: Prisma.PortalQuestionnaireItemFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemPayload>[]
+          }
+          create: {
+            args: Prisma.PortalQuestionnaireItemCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemPayload>
+          }
+          createMany: {
+            args: Prisma.PortalQuestionnaireItemCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.PortalQuestionnaireItemDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemPayload>
+          }
+          update: {
+            args: Prisma.PortalQuestionnaireItemUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemPayload>
+          }
+          deleteMany: {
+            args: Prisma.PortalQuestionnaireItemDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PortalQuestionnaireItemUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.PortalQuestionnaireItemUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemPayload>
+          }
+          aggregate: {
+            args: Prisma.PortalQuestionnaireItemAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePortalQuestionnaireItem>
+          }
+          groupBy: {
+            args: Prisma.PortalQuestionnaireItemGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PortalQuestionnaireItemGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PortalQuestionnaireItemCountArgs<ExtArgs>
+            result: $Utils.Optional<PortalQuestionnaireItemCountAggregateOutputType> | number
+          }
+        }
+      }
+      PortalQuestionnaireItemOption: {
+        payload: Prisma.$PortalQuestionnaireItemOptionPayload<ExtArgs>
+        fields: Prisma.PortalQuestionnaireItemOptionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PortalQuestionnaireItemOptionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemOptionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PortalQuestionnaireItemOptionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemOptionPayload>
+          }
+          findFirst: {
+            args: Prisma.PortalQuestionnaireItemOptionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemOptionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PortalQuestionnaireItemOptionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemOptionPayload>
+          }
+          findMany: {
+            args: Prisma.PortalQuestionnaireItemOptionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemOptionPayload>[]
+          }
+          create: {
+            args: Prisma.PortalQuestionnaireItemOptionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemOptionPayload>
+          }
+          createMany: {
+            args: Prisma.PortalQuestionnaireItemOptionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.PortalQuestionnaireItemOptionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemOptionPayload>
+          }
+          update: {
+            args: Prisma.PortalQuestionnaireItemOptionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemOptionPayload>
+          }
+          deleteMany: {
+            args: Prisma.PortalQuestionnaireItemOptionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PortalQuestionnaireItemOptionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.PortalQuestionnaireItemOptionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalQuestionnaireItemOptionPayload>
+          }
+          aggregate: {
+            args: Prisma.PortalQuestionnaireItemOptionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePortalQuestionnaireItemOption>
+          }
+          groupBy: {
+            args: Prisma.PortalQuestionnaireItemOptionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PortalQuestionnaireItemOptionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PortalQuestionnaireItemOptionCountArgs<ExtArgs>
+            result: $Utils.Optional<PortalQuestionnaireItemOptionCountAggregateOutputType> | number
           }
         }
       }
@@ -8667,6 +8941,9 @@ export namespace Prisma {
     portal?: PortalOmit
     portalAiSettings?: PortalAiSettingsOmit
     portalAppSettings?: PortalAppSettingsOmit
+    portalQuestionnaire?: PortalQuestionnaireOmit
+    portalQuestionnaireItem?: PortalQuestionnaireItemOmit
+    portalQuestionnaireItemOption?: PortalQuestionnaireItemOptionOmit
     skapImportFile?: SkapImportFileOmit
     skapImportItem?: SkapImportItemOmit
     skapSession?: SkapSessionOmit
@@ -9348,6 +9625,8 @@ export namespace Prisma {
     skapSessions: number
     skapSubscriptions: number
     skapImportRuns: number
+    questionnaires: number
+    questionnaireItems: number
   }
 
   export type PortalCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -9386,6 +9665,8 @@ export namespace Prisma {
     skapSessions?: boolean | PortalCountOutputTypeCountSkapSessionsArgs
     skapSubscriptions?: boolean | PortalCountOutputTypeCountSkapSubscriptionsArgs
     skapImportRuns?: boolean | PortalCountOutputTypeCountSkapImportRunsArgs
+    questionnaires?: boolean | PortalCountOutputTypeCountQuestionnairesArgs
+    questionnaireItems?: boolean | PortalCountOutputTypeCountQuestionnaireItemsArgs
   }
 
   // Custom InputTypes
@@ -9642,6 +9923,82 @@ export namespace Prisma {
    */
   export type PortalCountOutputTypeCountSkapImportRunsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: SkapImportRunWhereInput
+  }
+
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountQuestionnairesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PortalQuestionnaireWhereInput
+  }
+
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountQuestionnaireItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PortalQuestionnaireItemWhereInput
+  }
+
+
+  /**
+   * Count Type PortalQuestionnaireCountOutputType
+   */
+
+  export type PortalQuestionnaireCountOutputType = {
+    items: number
+  }
+
+  export type PortalQuestionnaireCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    items?: boolean | PortalQuestionnaireCountOutputTypeCountItemsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * PortalQuestionnaireCountOutputType without action
+   */
+  export type PortalQuestionnaireCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireCountOutputType
+     */
+    select?: PortalQuestionnaireCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * PortalQuestionnaireCountOutputType without action
+   */
+  export type PortalQuestionnaireCountOutputTypeCountItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PortalQuestionnaireItemWhereInput
+  }
+
+
+  /**
+   * Count Type PortalQuestionnaireItemCountOutputType
+   */
+
+  export type PortalQuestionnaireItemCountOutputType = {
+    options: number
+  }
+
+  export type PortalQuestionnaireItemCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    options?: boolean | PortalQuestionnaireItemCountOutputTypeCountOptionsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * PortalQuestionnaireItemCountOutputType without action
+   */
+  export type PortalQuestionnaireItemCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItemCountOutputType
+     */
+    select?: PortalQuestionnaireItemCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * PortalQuestionnaireItemCountOutputType without action
+   */
+  export type PortalQuestionnaireItemCountOutputTypeCountOptionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PortalQuestionnaireItemOptionWhereInput
   }
 
 
@@ -45202,6 +45559,8 @@ export namespace Prisma {
     skapSessions?: boolean | Portal$skapSessionsArgs<ExtArgs>
     skapSubscriptions?: boolean | Portal$skapSubscriptionsArgs<ExtArgs>
     skapImportRuns?: boolean | Portal$skapImportRunsArgs<ExtArgs>
+    questionnaires?: boolean | Portal$questionnairesArgs<ExtArgs>
+    questionnaireItems?: boolean | Portal$questionnaireItemsArgs<ExtArgs>
     _count?: boolean | PortalCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["portal"]>
 
@@ -45275,6 +45634,8 @@ export namespace Prisma {
     skapSessions?: boolean | Portal$skapSessionsArgs<ExtArgs>
     skapSubscriptions?: boolean | Portal$skapSubscriptionsArgs<ExtArgs>
     skapImportRuns?: boolean | Portal$skapImportRunsArgs<ExtArgs>
+    questionnaires?: boolean | Portal$questionnairesArgs<ExtArgs>
+    questionnaireItems?: boolean | Portal$questionnaireItemsArgs<ExtArgs>
     _count?: boolean | PortalCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -45318,6 +45679,8 @@ export namespace Prisma {
       skapSessions: Prisma.$SkapSessionPayload<ExtArgs>[]
       skapSubscriptions: Prisma.$SkapSubscriptionPayload<ExtArgs>[]
       skapImportRuns: Prisma.$SkapImportRunPayload<ExtArgs>[]
+      questionnaires: Prisma.$PortalQuestionnairePayload<ExtArgs>[]
+      questionnaireItems: Prisma.$PortalQuestionnaireItemPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
@@ -45723,6 +46086,8 @@ export namespace Prisma {
     skapSessions<T extends Portal$skapSessionsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$skapSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     skapSubscriptions<T extends Portal$skapSubscriptionsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$skapSubscriptionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapSubscriptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     skapImportRuns<T extends Portal$skapImportRunsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$skapImportRunsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapImportRunPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    questionnaires<T extends Portal$questionnairesArgs<ExtArgs> = {}>(args?: Subset<T, Portal$questionnairesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalQuestionnairePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    questionnaireItems<T extends Portal$questionnaireItemsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$questionnaireItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalQuestionnaireItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -46996,6 +47361,54 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: SkapImportRunScalarFieldEnum | SkapImportRunScalarFieldEnum[]
+  }
+
+  /**
+   * Portal.questionnaires
+   */
+  export type Portal$questionnairesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaire
+     */
+    select?: PortalQuestionnaireSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaire
+     */
+    omit?: PortalQuestionnaireOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireInclude<ExtArgs> | null
+    where?: PortalQuestionnaireWhereInput
+    orderBy?: PortalQuestionnaireOrderByWithRelationInput | PortalQuestionnaireOrderByWithRelationInput[]
+    cursor?: PortalQuestionnaireWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PortalQuestionnaireScalarFieldEnum | PortalQuestionnaireScalarFieldEnum[]
+  }
+
+  /**
+   * Portal.questionnaireItems
+   */
+  export type Portal$questionnaireItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItem
+     */
+    select?: PortalQuestionnaireItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItem
+     */
+    omit?: PortalQuestionnaireItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemInclude<ExtArgs> | null
+    where?: PortalQuestionnaireItemWhereInput
+    orderBy?: PortalQuestionnaireItemOrderByWithRelationInput | PortalQuestionnaireItemOrderByWithRelationInput[]
+    cursor?: PortalQuestionnaireItemWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PortalQuestionnaireItemScalarFieldEnum | PortalQuestionnaireItemScalarFieldEnum[]
   }
 
   /**
@@ -49186,6 +49599,3600 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: PortalAppSettingsInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model PortalQuestionnaire
+   */
+
+  export type AggregatePortalQuestionnaire = {
+    _count: PortalQuestionnaireCountAggregateOutputType | null
+    _avg: PortalQuestionnaireAvgAggregateOutputType | null
+    _sum: PortalQuestionnaireSumAggregateOutputType | null
+    _min: PortalQuestionnaireMinAggregateOutputType | null
+    _max: PortalQuestionnaireMaxAggregateOutputType | null
+  }
+
+  export type PortalQuestionnaireAvgAggregateOutputType = {
+    portal_id: number | null
+    sort: number | null
+    version: number | null
+    updatedBy: number | null
+  }
+
+  export type PortalQuestionnaireSumAggregateOutputType = {
+    portal_id: bigint | null
+    sort: number | null
+    version: number | null
+    updatedBy: bigint | null
+  }
+
+  export type PortalQuestionnaireMinAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    appCode: string | null
+    code: string | null
+    title: string | null
+    hint: string | null
+    purpose: string | null
+    presentation: string | null
+    place: string | null
+    persist: string | null
+    configKey: string | null
+    legacyChecklistId: string | null
+    isActive: boolean | null
+    sort: number | null
+    version: number | null
+    updatedBy: bigint | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PortalQuestionnaireMaxAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    appCode: string | null
+    code: string | null
+    title: string | null
+    hint: string | null
+    purpose: string | null
+    presentation: string | null
+    place: string | null
+    persist: string | null
+    configKey: string | null
+    legacyChecklistId: string | null
+    isActive: boolean | null
+    sort: number | null
+    version: number | null
+    updatedBy: bigint | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PortalQuestionnaireCountAggregateOutputType = {
+    id: number
+    portal_id: number
+    domain: number
+    appCode: number
+    code: number
+    title: number
+    hint: number
+    purpose: number
+    presentation: number
+    place: number
+    persist: number
+    conditions: number
+    configKey: number
+    legacyChecklistId: number
+    isActive: number
+    sort: number
+    version: number
+    updatedBy: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type PortalQuestionnaireAvgAggregateInputType = {
+    portal_id?: true
+    sort?: true
+    version?: true
+    updatedBy?: true
+  }
+
+  export type PortalQuestionnaireSumAggregateInputType = {
+    portal_id?: true
+    sort?: true
+    version?: true
+    updatedBy?: true
+  }
+
+  export type PortalQuestionnaireMinAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    appCode?: true
+    code?: true
+    title?: true
+    hint?: true
+    purpose?: true
+    presentation?: true
+    place?: true
+    persist?: true
+    configKey?: true
+    legacyChecklistId?: true
+    isActive?: true
+    sort?: true
+    version?: true
+    updatedBy?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PortalQuestionnaireMaxAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    appCode?: true
+    code?: true
+    title?: true
+    hint?: true
+    purpose?: true
+    presentation?: true
+    place?: true
+    persist?: true
+    configKey?: true
+    legacyChecklistId?: true
+    isActive?: true
+    sort?: true
+    version?: true
+    updatedBy?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PortalQuestionnaireCountAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    appCode?: true
+    code?: true
+    title?: true
+    hint?: true
+    purpose?: true
+    presentation?: true
+    place?: true
+    persist?: true
+    conditions?: true
+    configKey?: true
+    legacyChecklistId?: true
+    isActive?: true
+    sort?: true
+    version?: true
+    updatedBy?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type PortalQuestionnaireAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PortalQuestionnaire to aggregate.
+     */
+    where?: PortalQuestionnaireWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalQuestionnaires to fetch.
+     */
+    orderBy?: PortalQuestionnaireOrderByWithRelationInput | PortalQuestionnaireOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PortalQuestionnaireWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalQuestionnaires from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalQuestionnaires.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PortalQuestionnaires
+    **/
+    _count?: true | PortalQuestionnaireCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PortalQuestionnaireAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PortalQuestionnaireSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PortalQuestionnaireMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PortalQuestionnaireMaxAggregateInputType
+  }
+
+  export type GetPortalQuestionnaireAggregateType<T extends PortalQuestionnaireAggregateArgs> = {
+        [P in keyof T & keyof AggregatePortalQuestionnaire]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePortalQuestionnaire[P]>
+      : GetScalarType<T[P], AggregatePortalQuestionnaire[P]>
+  }
+
+
+
+
+  export type PortalQuestionnaireGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PortalQuestionnaireWhereInput
+    orderBy?: PortalQuestionnaireOrderByWithAggregationInput | PortalQuestionnaireOrderByWithAggregationInput[]
+    by: PortalQuestionnaireScalarFieldEnum[] | PortalQuestionnaireScalarFieldEnum
+    having?: PortalQuestionnaireScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PortalQuestionnaireCountAggregateInputType | true
+    _avg?: PortalQuestionnaireAvgAggregateInputType
+    _sum?: PortalQuestionnaireSumAggregateInputType
+    _min?: PortalQuestionnaireMinAggregateInputType
+    _max?: PortalQuestionnaireMaxAggregateInputType
+  }
+
+  export type PortalQuestionnaireGroupByOutputType = {
+    id: string
+    portal_id: bigint
+    domain: string
+    appCode: string
+    code: string
+    title: string
+    hint: string | null
+    purpose: string
+    presentation: string
+    place: string | null
+    persist: string
+    conditions: JsonValue | null
+    configKey: string | null
+    legacyChecklistId: string | null
+    isActive: boolean
+    sort: number
+    version: number
+    updatedBy: bigint | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    _count: PortalQuestionnaireCountAggregateOutputType | null
+    _avg: PortalQuestionnaireAvgAggregateOutputType | null
+    _sum: PortalQuestionnaireSumAggregateOutputType | null
+    _min: PortalQuestionnaireMinAggregateOutputType | null
+    _max: PortalQuestionnaireMaxAggregateOutputType | null
+  }
+
+  type GetPortalQuestionnaireGroupByPayload<T extends PortalQuestionnaireGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PortalQuestionnaireGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PortalQuestionnaireGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PortalQuestionnaireGroupByOutputType[P]>
+            : GetScalarType<T[P], PortalQuestionnaireGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PortalQuestionnaireSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    appCode?: boolean
+    code?: boolean
+    title?: boolean
+    hint?: boolean
+    purpose?: boolean
+    presentation?: boolean
+    place?: boolean
+    persist?: boolean
+    conditions?: boolean
+    configKey?: boolean
+    legacyChecklistId?: boolean
+    isActive?: boolean
+    sort?: boolean
+    version?: boolean
+    updatedBy?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+    items?: boolean | PortalQuestionnaire$itemsArgs<ExtArgs>
+    _count?: boolean | PortalQuestionnaireCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["portalQuestionnaire"]>
+
+
+
+  export type PortalQuestionnaireSelectScalar = {
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    appCode?: boolean
+    code?: boolean
+    title?: boolean
+    hint?: boolean
+    purpose?: boolean
+    presentation?: boolean
+    place?: boolean
+    persist?: boolean
+    conditions?: boolean
+    configKey?: boolean
+    legacyChecklistId?: boolean
+    isActive?: boolean
+    sort?: boolean
+    version?: boolean
+    updatedBy?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type PortalQuestionnaireOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "portal_id" | "domain" | "appCode" | "code" | "title" | "hint" | "purpose" | "presentation" | "place" | "persist" | "conditions" | "configKey" | "legacyChecklistId" | "isActive" | "sort" | "version" | "updatedBy" | "createdAt" | "updatedAt", ExtArgs["result"]["portalQuestionnaire"]>
+  export type PortalQuestionnaireInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+    items?: boolean | PortalQuestionnaire$itemsArgs<ExtArgs>
+    _count?: boolean | PortalQuestionnaireCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $PortalQuestionnairePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PortalQuestionnaire"
+    objects: {
+      portal: Prisma.$PortalPayload<ExtArgs>
+      items: Prisma.$PortalQuestionnaireItemPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      portal_id: bigint
+      /**
+       * Дубль домена портала: выборки каталога по домену без join
+       */
+      domain: string
+      /**
+       * Код приложения: 'event-sales', 'sales', ... Реестр — в коде Nest
+       */
+      appCode: string
+      code: string
+      title: string
+      hint: string | null
+      /**
+       * 'plan' — анкета планирования, 'report' — анкета отчётности
+       */
+      purpose: string
+      /**
+       * Как показываем: 'inline' (карточкой в колонке) | 'modal'
+       */
+      presentation: string
+      /**
+       * Колонка для inline: 'plan' | 'report'
+       */
+      place: string | null
+      /**
+       * Когда пишем ответ: 'onChange' (сразу) | 'onConfirm' (по кнопке)
+       */
+      persist: string
+      /**
+       * Условия показа, И-семантика: [{"kind":"planType","values":[...]}, ...]
+       */
+      conditions: Prisma.JsonValue | null
+      /**
+       * Совместимость со встроенными наборами: config_key — старый фича-флаг
+       * настроек приложения (учитывается, только если заполнен);
+       * legacy_checklist_id ЗАМЕЩАЕТ одноимённый встроенный набор
+       */
+      configKey: string | null
+      legacyChecklistId: string | null
+      isActive: boolean
+      sort: number
+      version: number
+      updatedBy: bigint | null
+      createdAt: Date | null
+      updatedAt: Date | null
+    }, ExtArgs["result"]["portalQuestionnaire"]>
+    composites: {}
+  }
+
+  type PortalQuestionnaireGetPayload<S extends boolean | null | undefined | PortalQuestionnaireDefaultArgs> = $Result.GetResult<Prisma.$PortalQuestionnairePayload, S>
+
+  type PortalQuestionnaireCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<PortalQuestionnaireFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: PortalQuestionnaireCountAggregateInputType | true
+    }
+
+  export interface PortalQuestionnaireDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PortalQuestionnaire'], meta: { name: 'PortalQuestionnaire' } }
+    /**
+     * Find zero or one PortalQuestionnaire that matches the filter.
+     * @param {PortalQuestionnaireFindUniqueArgs} args - Arguments to find a PortalQuestionnaire
+     * @example
+     * // Get one PortalQuestionnaire
+     * const portalQuestionnaire = await prisma.portalQuestionnaire.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PortalQuestionnaireFindUniqueArgs>(args: SelectSubset<T, PortalQuestionnaireFindUniqueArgs<ExtArgs>>): Prisma__PortalQuestionnaireClient<$Result.GetResult<Prisma.$PortalQuestionnairePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one PortalQuestionnaire that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {PortalQuestionnaireFindUniqueOrThrowArgs} args - Arguments to find a PortalQuestionnaire
+     * @example
+     * // Get one PortalQuestionnaire
+     * const portalQuestionnaire = await prisma.portalQuestionnaire.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PortalQuestionnaireFindUniqueOrThrowArgs>(args: SelectSubset<T, PortalQuestionnaireFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PortalQuestionnaireClient<$Result.GetResult<Prisma.$PortalQuestionnairePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PortalQuestionnaire that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireFindFirstArgs} args - Arguments to find a PortalQuestionnaire
+     * @example
+     * // Get one PortalQuestionnaire
+     * const portalQuestionnaire = await prisma.portalQuestionnaire.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PortalQuestionnaireFindFirstArgs>(args?: SelectSubset<T, PortalQuestionnaireFindFirstArgs<ExtArgs>>): Prisma__PortalQuestionnaireClient<$Result.GetResult<Prisma.$PortalQuestionnairePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PortalQuestionnaire that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireFindFirstOrThrowArgs} args - Arguments to find a PortalQuestionnaire
+     * @example
+     * // Get one PortalQuestionnaire
+     * const portalQuestionnaire = await prisma.portalQuestionnaire.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PortalQuestionnaireFindFirstOrThrowArgs>(args?: SelectSubset<T, PortalQuestionnaireFindFirstOrThrowArgs<ExtArgs>>): Prisma__PortalQuestionnaireClient<$Result.GetResult<Prisma.$PortalQuestionnairePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more PortalQuestionnaires that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PortalQuestionnaires
+     * const portalQuestionnaires = await prisma.portalQuestionnaire.findMany()
+     * 
+     * // Get first 10 PortalQuestionnaires
+     * const portalQuestionnaires = await prisma.portalQuestionnaire.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const portalQuestionnaireWithIdOnly = await prisma.portalQuestionnaire.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PortalQuestionnaireFindManyArgs>(args?: SelectSubset<T, PortalQuestionnaireFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalQuestionnairePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a PortalQuestionnaire.
+     * @param {PortalQuestionnaireCreateArgs} args - Arguments to create a PortalQuestionnaire.
+     * @example
+     * // Create one PortalQuestionnaire
+     * const PortalQuestionnaire = await prisma.portalQuestionnaire.create({
+     *   data: {
+     *     // ... data to create a PortalQuestionnaire
+     *   }
+     * })
+     * 
+     */
+    create<T extends PortalQuestionnaireCreateArgs>(args: SelectSubset<T, PortalQuestionnaireCreateArgs<ExtArgs>>): Prisma__PortalQuestionnaireClient<$Result.GetResult<Prisma.$PortalQuestionnairePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many PortalQuestionnaires.
+     * @param {PortalQuestionnaireCreateManyArgs} args - Arguments to create many PortalQuestionnaires.
+     * @example
+     * // Create many PortalQuestionnaires
+     * const portalQuestionnaire = await prisma.portalQuestionnaire.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PortalQuestionnaireCreateManyArgs>(args?: SelectSubset<T, PortalQuestionnaireCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a PortalQuestionnaire.
+     * @param {PortalQuestionnaireDeleteArgs} args - Arguments to delete one PortalQuestionnaire.
+     * @example
+     * // Delete one PortalQuestionnaire
+     * const PortalQuestionnaire = await prisma.portalQuestionnaire.delete({
+     *   where: {
+     *     // ... filter to delete one PortalQuestionnaire
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PortalQuestionnaireDeleteArgs>(args: SelectSubset<T, PortalQuestionnaireDeleteArgs<ExtArgs>>): Prisma__PortalQuestionnaireClient<$Result.GetResult<Prisma.$PortalQuestionnairePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one PortalQuestionnaire.
+     * @param {PortalQuestionnaireUpdateArgs} args - Arguments to update one PortalQuestionnaire.
+     * @example
+     * // Update one PortalQuestionnaire
+     * const portalQuestionnaire = await prisma.portalQuestionnaire.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PortalQuestionnaireUpdateArgs>(args: SelectSubset<T, PortalQuestionnaireUpdateArgs<ExtArgs>>): Prisma__PortalQuestionnaireClient<$Result.GetResult<Prisma.$PortalQuestionnairePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more PortalQuestionnaires.
+     * @param {PortalQuestionnaireDeleteManyArgs} args - Arguments to filter PortalQuestionnaires to delete.
+     * @example
+     * // Delete a few PortalQuestionnaires
+     * const { count } = await prisma.portalQuestionnaire.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PortalQuestionnaireDeleteManyArgs>(args?: SelectSubset<T, PortalQuestionnaireDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PortalQuestionnaires.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PortalQuestionnaires
+     * const portalQuestionnaire = await prisma.portalQuestionnaire.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PortalQuestionnaireUpdateManyArgs>(args: SelectSubset<T, PortalQuestionnaireUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one PortalQuestionnaire.
+     * @param {PortalQuestionnaireUpsertArgs} args - Arguments to update or create a PortalQuestionnaire.
+     * @example
+     * // Update or create a PortalQuestionnaire
+     * const portalQuestionnaire = await prisma.portalQuestionnaire.upsert({
+     *   create: {
+     *     // ... data to create a PortalQuestionnaire
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PortalQuestionnaire we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PortalQuestionnaireUpsertArgs>(args: SelectSubset<T, PortalQuestionnaireUpsertArgs<ExtArgs>>): Prisma__PortalQuestionnaireClient<$Result.GetResult<Prisma.$PortalQuestionnairePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of PortalQuestionnaires.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireCountArgs} args - Arguments to filter PortalQuestionnaires to count.
+     * @example
+     * // Count the number of PortalQuestionnaires
+     * const count = await prisma.portalQuestionnaire.count({
+     *   where: {
+     *     // ... the filter for the PortalQuestionnaires we want to count
+     *   }
+     * })
+    **/
+    count<T extends PortalQuestionnaireCountArgs>(
+      args?: Subset<T, PortalQuestionnaireCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PortalQuestionnaireCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PortalQuestionnaire.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PortalQuestionnaireAggregateArgs>(args: Subset<T, PortalQuestionnaireAggregateArgs>): Prisma.PrismaPromise<GetPortalQuestionnaireAggregateType<T>>
+
+    /**
+     * Group by PortalQuestionnaire.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PortalQuestionnaireGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PortalQuestionnaireGroupByArgs['orderBy'] }
+        : { orderBy?: PortalQuestionnaireGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PortalQuestionnaireGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPortalQuestionnaireGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PortalQuestionnaire model
+   */
+  readonly fields: PortalQuestionnaireFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PortalQuestionnaire.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PortalQuestionnaireClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    portal<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    items<T extends PortalQuestionnaire$itemsArgs<ExtArgs> = {}>(args?: Subset<T, PortalQuestionnaire$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalQuestionnaireItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PortalQuestionnaire model
+   */
+  interface PortalQuestionnaireFieldRefs {
+    readonly id: FieldRef<"PortalQuestionnaire", 'String'>
+    readonly portal_id: FieldRef<"PortalQuestionnaire", 'BigInt'>
+    readonly domain: FieldRef<"PortalQuestionnaire", 'String'>
+    readonly appCode: FieldRef<"PortalQuestionnaire", 'String'>
+    readonly code: FieldRef<"PortalQuestionnaire", 'String'>
+    readonly title: FieldRef<"PortalQuestionnaire", 'String'>
+    readonly hint: FieldRef<"PortalQuestionnaire", 'String'>
+    readonly purpose: FieldRef<"PortalQuestionnaire", 'String'>
+    readonly presentation: FieldRef<"PortalQuestionnaire", 'String'>
+    readonly place: FieldRef<"PortalQuestionnaire", 'String'>
+    readonly persist: FieldRef<"PortalQuestionnaire", 'String'>
+    readonly conditions: FieldRef<"PortalQuestionnaire", 'Json'>
+    readonly configKey: FieldRef<"PortalQuestionnaire", 'String'>
+    readonly legacyChecklistId: FieldRef<"PortalQuestionnaire", 'String'>
+    readonly isActive: FieldRef<"PortalQuestionnaire", 'Boolean'>
+    readonly sort: FieldRef<"PortalQuestionnaire", 'Int'>
+    readonly version: FieldRef<"PortalQuestionnaire", 'Int'>
+    readonly updatedBy: FieldRef<"PortalQuestionnaire", 'BigInt'>
+    readonly createdAt: FieldRef<"PortalQuestionnaire", 'DateTime'>
+    readonly updatedAt: FieldRef<"PortalQuestionnaire", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PortalQuestionnaire findUnique
+   */
+  export type PortalQuestionnaireFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaire
+     */
+    select?: PortalQuestionnaireSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaire
+     */
+    omit?: PortalQuestionnaireOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalQuestionnaire to fetch.
+     */
+    where: PortalQuestionnaireWhereUniqueInput
+  }
+
+  /**
+   * PortalQuestionnaire findUniqueOrThrow
+   */
+  export type PortalQuestionnaireFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaire
+     */
+    select?: PortalQuestionnaireSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaire
+     */
+    omit?: PortalQuestionnaireOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalQuestionnaire to fetch.
+     */
+    where: PortalQuestionnaireWhereUniqueInput
+  }
+
+  /**
+   * PortalQuestionnaire findFirst
+   */
+  export type PortalQuestionnaireFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaire
+     */
+    select?: PortalQuestionnaireSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaire
+     */
+    omit?: PortalQuestionnaireOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalQuestionnaire to fetch.
+     */
+    where?: PortalQuestionnaireWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalQuestionnaires to fetch.
+     */
+    orderBy?: PortalQuestionnaireOrderByWithRelationInput | PortalQuestionnaireOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PortalQuestionnaires.
+     */
+    cursor?: PortalQuestionnaireWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalQuestionnaires from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalQuestionnaires.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PortalQuestionnaires.
+     */
+    distinct?: PortalQuestionnaireScalarFieldEnum | PortalQuestionnaireScalarFieldEnum[]
+  }
+
+  /**
+   * PortalQuestionnaire findFirstOrThrow
+   */
+  export type PortalQuestionnaireFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaire
+     */
+    select?: PortalQuestionnaireSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaire
+     */
+    omit?: PortalQuestionnaireOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalQuestionnaire to fetch.
+     */
+    where?: PortalQuestionnaireWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalQuestionnaires to fetch.
+     */
+    orderBy?: PortalQuestionnaireOrderByWithRelationInput | PortalQuestionnaireOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PortalQuestionnaires.
+     */
+    cursor?: PortalQuestionnaireWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalQuestionnaires from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalQuestionnaires.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PortalQuestionnaires.
+     */
+    distinct?: PortalQuestionnaireScalarFieldEnum | PortalQuestionnaireScalarFieldEnum[]
+  }
+
+  /**
+   * PortalQuestionnaire findMany
+   */
+  export type PortalQuestionnaireFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaire
+     */
+    select?: PortalQuestionnaireSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaire
+     */
+    omit?: PortalQuestionnaireOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalQuestionnaires to fetch.
+     */
+    where?: PortalQuestionnaireWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalQuestionnaires to fetch.
+     */
+    orderBy?: PortalQuestionnaireOrderByWithRelationInput | PortalQuestionnaireOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PortalQuestionnaires.
+     */
+    cursor?: PortalQuestionnaireWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalQuestionnaires from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalQuestionnaires.
+     */
+    skip?: number
+    distinct?: PortalQuestionnaireScalarFieldEnum | PortalQuestionnaireScalarFieldEnum[]
+  }
+
+  /**
+   * PortalQuestionnaire create
+   */
+  export type PortalQuestionnaireCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaire
+     */
+    select?: PortalQuestionnaireSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaire
+     */
+    omit?: PortalQuestionnaireOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PortalQuestionnaire.
+     */
+    data: XOR<PortalQuestionnaireCreateInput, PortalQuestionnaireUncheckedCreateInput>
+  }
+
+  /**
+   * PortalQuestionnaire createMany
+   */
+  export type PortalQuestionnaireCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PortalQuestionnaires.
+     */
+    data: PortalQuestionnaireCreateManyInput | PortalQuestionnaireCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PortalQuestionnaire update
+   */
+  export type PortalQuestionnaireUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaire
+     */
+    select?: PortalQuestionnaireSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaire
+     */
+    omit?: PortalQuestionnaireOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PortalQuestionnaire.
+     */
+    data: XOR<PortalQuestionnaireUpdateInput, PortalQuestionnaireUncheckedUpdateInput>
+    /**
+     * Choose, which PortalQuestionnaire to update.
+     */
+    where: PortalQuestionnaireWhereUniqueInput
+  }
+
+  /**
+   * PortalQuestionnaire updateMany
+   */
+  export type PortalQuestionnaireUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PortalQuestionnaires.
+     */
+    data: XOR<PortalQuestionnaireUpdateManyMutationInput, PortalQuestionnaireUncheckedUpdateManyInput>
+    /**
+     * Filter which PortalQuestionnaires to update
+     */
+    where?: PortalQuestionnaireWhereInput
+    /**
+     * Limit how many PortalQuestionnaires to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PortalQuestionnaire upsert
+   */
+  export type PortalQuestionnaireUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaire
+     */
+    select?: PortalQuestionnaireSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaire
+     */
+    omit?: PortalQuestionnaireOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PortalQuestionnaire to update in case it exists.
+     */
+    where: PortalQuestionnaireWhereUniqueInput
+    /**
+     * In case the PortalQuestionnaire found by the `where` argument doesn't exist, create a new PortalQuestionnaire with this data.
+     */
+    create: XOR<PortalQuestionnaireCreateInput, PortalQuestionnaireUncheckedCreateInput>
+    /**
+     * In case the PortalQuestionnaire was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PortalQuestionnaireUpdateInput, PortalQuestionnaireUncheckedUpdateInput>
+  }
+
+  /**
+   * PortalQuestionnaire delete
+   */
+  export type PortalQuestionnaireDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaire
+     */
+    select?: PortalQuestionnaireSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaire
+     */
+    omit?: PortalQuestionnaireOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireInclude<ExtArgs> | null
+    /**
+     * Filter which PortalQuestionnaire to delete.
+     */
+    where: PortalQuestionnaireWhereUniqueInput
+  }
+
+  /**
+   * PortalQuestionnaire deleteMany
+   */
+  export type PortalQuestionnaireDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PortalQuestionnaires to delete
+     */
+    where?: PortalQuestionnaireWhereInput
+    /**
+     * Limit how many PortalQuestionnaires to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * PortalQuestionnaire.items
+   */
+  export type PortalQuestionnaire$itemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItem
+     */
+    select?: PortalQuestionnaireItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItem
+     */
+    omit?: PortalQuestionnaireItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemInclude<ExtArgs> | null
+    where?: PortalQuestionnaireItemWhereInput
+    orderBy?: PortalQuestionnaireItemOrderByWithRelationInput | PortalQuestionnaireItemOrderByWithRelationInput[]
+    cursor?: PortalQuestionnaireItemWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PortalQuestionnaireItemScalarFieldEnum | PortalQuestionnaireItemScalarFieldEnum[]
+  }
+
+  /**
+   * PortalQuestionnaire without action
+   */
+  export type PortalQuestionnaireDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaire
+     */
+    select?: PortalQuestionnaireSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaire
+     */
+    omit?: PortalQuestionnaireOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model PortalQuestionnaireItem
+   */
+
+  export type AggregatePortalQuestionnaireItem = {
+    _count: PortalQuestionnaireItemCountAggregateOutputType | null
+    _avg: PortalQuestionnaireItemAvgAggregateOutputType | null
+    _sum: PortalQuestionnaireItemSumAggregateOutputType | null
+    _min: PortalQuestionnaireItemMinAggregateOutputType | null
+    _max: PortalQuestionnaireItemMaxAggregateOutputType | null
+  }
+
+  export type PortalQuestionnaireItemAvgAggregateOutputType = {
+    portal_id: number | null
+    sort: number | null
+    staleAfterDays: number | null
+    smartId: number | null
+    smartEntityTypeId: number | null
+    fieldBitrixId: number | null
+  }
+
+  export type PortalQuestionnaireItemSumAggregateOutputType = {
+    portal_id: bigint | null
+    sort: number | null
+    staleAfterDays: number | null
+    smartId: bigint | null
+    smartEntityTypeId: bigint | null
+    fieldBitrixId: bigint | null
+  }
+
+  export type PortalQuestionnaireItemMinAggregateOutputType = {
+    id: string | null
+    questionnaireId: string | null
+    portal_id: bigint | null
+    code: string | null
+    title: string | null
+    placeholder: string | null
+    hint: string | null
+    groupTitle: string | null
+    sort: number | null
+    control: string | null
+    isMultiple: boolean | null
+    isRequired: boolean | null
+    requireChange: boolean | null
+    staleAfterDays: number | null
+    channel: string | null
+    targetMode: string | null
+    targetEntity: string | null
+    dtoPath: string | null
+    smartId: bigint | null
+    smartEntityTypeId: bigint | null
+    isNative: boolean | null
+    fieldName: string | null
+    fieldBitrixId: bigint | null
+    fieldXmlId: string | null
+    fieldCode: string | null
+    fieldType: string | null
+    fieldStatus: string | null
+    fieldCheckedAt: Date | null
+    isActive: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PortalQuestionnaireItemMaxAggregateOutputType = {
+    id: string | null
+    questionnaireId: string | null
+    portal_id: bigint | null
+    code: string | null
+    title: string | null
+    placeholder: string | null
+    hint: string | null
+    groupTitle: string | null
+    sort: number | null
+    control: string | null
+    isMultiple: boolean | null
+    isRequired: boolean | null
+    requireChange: boolean | null
+    staleAfterDays: number | null
+    channel: string | null
+    targetMode: string | null
+    targetEntity: string | null
+    dtoPath: string | null
+    smartId: bigint | null
+    smartEntityTypeId: bigint | null
+    isNative: boolean | null
+    fieldName: string | null
+    fieldBitrixId: bigint | null
+    fieldXmlId: string | null
+    fieldCode: string | null
+    fieldType: string | null
+    fieldStatus: string | null
+    fieldCheckedAt: Date | null
+    isActive: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PortalQuestionnaireItemCountAggregateOutputType = {
+    id: number
+    questionnaireId: number
+    portal_id: number
+    code: number
+    title: number
+    placeholder: number
+    hint: number
+    groupTitle: number
+    sort: number
+    control: number
+    isMultiple: number
+    isRequired: number
+    requireChange: number
+    staleAfterDays: number
+    channel: number
+    targetMode: number
+    targetEntity: number
+    dtoPath: number
+    smartId: number
+    smartEntityTypeId: number
+    isNative: number
+    fieldName: number
+    fieldBitrixId: number
+    fieldXmlId: number
+    fieldCode: number
+    fieldType: number
+    fieldStatus: number
+    fieldCheckedAt: number
+    meta: number
+    isActive: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type PortalQuestionnaireItemAvgAggregateInputType = {
+    portal_id?: true
+    sort?: true
+    staleAfterDays?: true
+    smartId?: true
+    smartEntityTypeId?: true
+    fieldBitrixId?: true
+  }
+
+  export type PortalQuestionnaireItemSumAggregateInputType = {
+    portal_id?: true
+    sort?: true
+    staleAfterDays?: true
+    smartId?: true
+    smartEntityTypeId?: true
+    fieldBitrixId?: true
+  }
+
+  export type PortalQuestionnaireItemMinAggregateInputType = {
+    id?: true
+    questionnaireId?: true
+    portal_id?: true
+    code?: true
+    title?: true
+    placeholder?: true
+    hint?: true
+    groupTitle?: true
+    sort?: true
+    control?: true
+    isMultiple?: true
+    isRequired?: true
+    requireChange?: true
+    staleAfterDays?: true
+    channel?: true
+    targetMode?: true
+    targetEntity?: true
+    dtoPath?: true
+    smartId?: true
+    smartEntityTypeId?: true
+    isNative?: true
+    fieldName?: true
+    fieldBitrixId?: true
+    fieldXmlId?: true
+    fieldCode?: true
+    fieldType?: true
+    fieldStatus?: true
+    fieldCheckedAt?: true
+    isActive?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PortalQuestionnaireItemMaxAggregateInputType = {
+    id?: true
+    questionnaireId?: true
+    portal_id?: true
+    code?: true
+    title?: true
+    placeholder?: true
+    hint?: true
+    groupTitle?: true
+    sort?: true
+    control?: true
+    isMultiple?: true
+    isRequired?: true
+    requireChange?: true
+    staleAfterDays?: true
+    channel?: true
+    targetMode?: true
+    targetEntity?: true
+    dtoPath?: true
+    smartId?: true
+    smartEntityTypeId?: true
+    isNative?: true
+    fieldName?: true
+    fieldBitrixId?: true
+    fieldXmlId?: true
+    fieldCode?: true
+    fieldType?: true
+    fieldStatus?: true
+    fieldCheckedAt?: true
+    isActive?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PortalQuestionnaireItemCountAggregateInputType = {
+    id?: true
+    questionnaireId?: true
+    portal_id?: true
+    code?: true
+    title?: true
+    placeholder?: true
+    hint?: true
+    groupTitle?: true
+    sort?: true
+    control?: true
+    isMultiple?: true
+    isRequired?: true
+    requireChange?: true
+    staleAfterDays?: true
+    channel?: true
+    targetMode?: true
+    targetEntity?: true
+    dtoPath?: true
+    smartId?: true
+    smartEntityTypeId?: true
+    isNative?: true
+    fieldName?: true
+    fieldBitrixId?: true
+    fieldXmlId?: true
+    fieldCode?: true
+    fieldType?: true
+    fieldStatus?: true
+    fieldCheckedAt?: true
+    meta?: true
+    isActive?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type PortalQuestionnaireItemAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PortalQuestionnaireItem to aggregate.
+     */
+    where?: PortalQuestionnaireItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalQuestionnaireItems to fetch.
+     */
+    orderBy?: PortalQuestionnaireItemOrderByWithRelationInput | PortalQuestionnaireItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PortalQuestionnaireItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalQuestionnaireItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalQuestionnaireItems.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PortalQuestionnaireItems
+    **/
+    _count?: true | PortalQuestionnaireItemCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PortalQuestionnaireItemAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PortalQuestionnaireItemSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PortalQuestionnaireItemMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PortalQuestionnaireItemMaxAggregateInputType
+  }
+
+  export type GetPortalQuestionnaireItemAggregateType<T extends PortalQuestionnaireItemAggregateArgs> = {
+        [P in keyof T & keyof AggregatePortalQuestionnaireItem]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePortalQuestionnaireItem[P]>
+      : GetScalarType<T[P], AggregatePortalQuestionnaireItem[P]>
+  }
+
+
+
+
+  export type PortalQuestionnaireItemGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PortalQuestionnaireItemWhereInput
+    orderBy?: PortalQuestionnaireItemOrderByWithAggregationInput | PortalQuestionnaireItemOrderByWithAggregationInput[]
+    by: PortalQuestionnaireItemScalarFieldEnum[] | PortalQuestionnaireItemScalarFieldEnum
+    having?: PortalQuestionnaireItemScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PortalQuestionnaireItemCountAggregateInputType | true
+    _avg?: PortalQuestionnaireItemAvgAggregateInputType
+    _sum?: PortalQuestionnaireItemSumAggregateInputType
+    _min?: PortalQuestionnaireItemMinAggregateInputType
+    _max?: PortalQuestionnaireItemMaxAggregateInputType
+  }
+
+  export type PortalQuestionnaireItemGroupByOutputType = {
+    id: string
+    questionnaireId: string
+    portal_id: bigint
+    code: string
+    title: string
+    placeholder: string | null
+    hint: string | null
+    groupTitle: string | null
+    sort: number
+    control: string
+    isMultiple: boolean
+    isRequired: boolean
+    requireChange: boolean
+    staleAfterDays: number | null
+    channel: string
+    targetMode: string
+    targetEntity: string | null
+    dtoPath: string | null
+    smartId: bigint | null
+    smartEntityTypeId: bigint | null
+    isNative: boolean
+    fieldName: string | null
+    fieldBitrixId: bigint | null
+    fieldXmlId: string | null
+    fieldCode: string | null
+    fieldType: string | null
+    fieldStatus: string
+    fieldCheckedAt: Date | null
+    meta: JsonValue | null
+    isActive: boolean
+    createdAt: Date | null
+    updatedAt: Date | null
+    _count: PortalQuestionnaireItemCountAggregateOutputType | null
+    _avg: PortalQuestionnaireItemAvgAggregateOutputType | null
+    _sum: PortalQuestionnaireItemSumAggregateOutputType | null
+    _min: PortalQuestionnaireItemMinAggregateOutputType | null
+    _max: PortalQuestionnaireItemMaxAggregateOutputType | null
+  }
+
+  type GetPortalQuestionnaireItemGroupByPayload<T extends PortalQuestionnaireItemGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PortalQuestionnaireItemGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PortalQuestionnaireItemGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PortalQuestionnaireItemGroupByOutputType[P]>
+            : GetScalarType<T[P], PortalQuestionnaireItemGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PortalQuestionnaireItemSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    questionnaireId?: boolean
+    portal_id?: boolean
+    code?: boolean
+    title?: boolean
+    placeholder?: boolean
+    hint?: boolean
+    groupTitle?: boolean
+    sort?: boolean
+    control?: boolean
+    isMultiple?: boolean
+    isRequired?: boolean
+    requireChange?: boolean
+    staleAfterDays?: boolean
+    channel?: boolean
+    targetMode?: boolean
+    targetEntity?: boolean
+    dtoPath?: boolean
+    smartId?: boolean
+    smartEntityTypeId?: boolean
+    isNative?: boolean
+    fieldName?: boolean
+    fieldBitrixId?: boolean
+    fieldXmlId?: boolean
+    fieldCode?: boolean
+    fieldType?: boolean
+    fieldStatus?: boolean
+    fieldCheckedAt?: boolean
+    meta?: boolean
+    isActive?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    questionnaire?: boolean | PortalQuestionnaireDefaultArgs<ExtArgs>
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+    options?: boolean | PortalQuestionnaireItem$optionsArgs<ExtArgs>
+    _count?: boolean | PortalQuestionnaireItemCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["portalQuestionnaireItem"]>
+
+
+
+  export type PortalQuestionnaireItemSelectScalar = {
+    id?: boolean
+    questionnaireId?: boolean
+    portal_id?: boolean
+    code?: boolean
+    title?: boolean
+    placeholder?: boolean
+    hint?: boolean
+    groupTitle?: boolean
+    sort?: boolean
+    control?: boolean
+    isMultiple?: boolean
+    isRequired?: boolean
+    requireChange?: boolean
+    staleAfterDays?: boolean
+    channel?: boolean
+    targetMode?: boolean
+    targetEntity?: boolean
+    dtoPath?: boolean
+    smartId?: boolean
+    smartEntityTypeId?: boolean
+    isNative?: boolean
+    fieldName?: boolean
+    fieldBitrixId?: boolean
+    fieldXmlId?: boolean
+    fieldCode?: boolean
+    fieldType?: boolean
+    fieldStatus?: boolean
+    fieldCheckedAt?: boolean
+    meta?: boolean
+    isActive?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type PortalQuestionnaireItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "questionnaireId" | "portal_id" | "code" | "title" | "placeholder" | "hint" | "groupTitle" | "sort" | "control" | "isMultiple" | "isRequired" | "requireChange" | "staleAfterDays" | "channel" | "targetMode" | "targetEntity" | "dtoPath" | "smartId" | "smartEntityTypeId" | "isNative" | "fieldName" | "fieldBitrixId" | "fieldXmlId" | "fieldCode" | "fieldType" | "fieldStatus" | "fieldCheckedAt" | "meta" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["portalQuestionnaireItem"]>
+  export type PortalQuestionnaireItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    questionnaire?: boolean | PortalQuestionnaireDefaultArgs<ExtArgs>
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+    options?: boolean | PortalQuestionnaireItem$optionsArgs<ExtArgs>
+    _count?: boolean | PortalQuestionnaireItemCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $PortalQuestionnaireItemPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PortalQuestionnaireItem"
+    objects: {
+      questionnaire: Prisma.$PortalQuestionnairePayload<ExtArgs>
+      portal: Prisma.$PortalPayload<ExtArgs>
+      options: Prisma.$PortalQuestionnaireItemOptionPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      questionnaireId: string
+      /**
+       * Дубль портала: ответ на «где ещё используется это поле» без join
+       */
+      portal_id: bigint
+      code: string
+      title: string
+      placeholder: string | null
+      hint: string | null
+      /**
+       * Секция задаётся явно (в старом коде группа выводилась из префикса кода)
+       */
+      groupTitle: string | null
+      sort: number
+      /**
+       * Тип отображения: 'string' | 'text' | 'date' | 'datetime' | 'money' |
+       * 'enumeration' | 'boolean'. Реестр значений и матрица «контрол ↔ тип
+       * поля» проверяются на сохранении в Nest
+       */
+      control: string
+      /**
+       * В v1 запрещено валидатором: запись массивов ещё не реализована
+       */
+      isMultiple: boolean
+      isRequired: boolean
+      /**
+       * «Обязательность изменения»: пункт закрывается ТОЛЬКО ответом, данным в
+       * этой сессии; уже стоящее в CRM значение не считается
+       */
+      requireChange: boolean
+      /**
+       * Срок годности ответа (только date/datetime): значение старше N дней
+       * перестаёт закрывать обязательный пункт
+       */
+      staleAfterDays: number | null
+      /**
+       * Куда пишем: 'crm' — поле сущности, 'dto' — поле отчёта, 'text' — в комментарий
+       */
+      channel: string
+      /**
+       * 'auto' — компания → сделка → лид (текущее поведение), 'entity' — жёстко
+       * указанный носитель
+       */
+      targetMode: string
+      targetEntity: string | null
+      /**
+       * Для channel='dto': путь в отчёте ('sale.opportunity')
+       */
+      dtoPath: string | null
+      /**
+       * Для channel='smart': строка smarts НАШЕЙ БД — постоянный адрес
+       * смарта-носителя. Мягкая привязка без FK: переустановка смарта не
+       * должна ронять анкету, пункт с исчезнувшим смартом просто выпадает
+       * из каталога
+       */
+      smartId: bigint | null
+      /**
+       * Слепок smarts.entity_type_id на момент привязки: рантайм-сверка
+       */
+      smartEntityTypeId: bigint | null
+      /**
+       * Штатное поле Битрикса (OPPORTUNITY), а не пользовательское
+       */
+      isNative: boolean
+      fieldName: string | null
+      fieldBitrixId: bigint | null
+      fieldXmlId: string | null
+      /**
+       * Наш код из pbx-реестра — если поле ставили мы, иначе NULL
+       */
+      fieldCode: string | null
+      /**
+       * Слепок типа поля на момент привязки: ловим смену типа
+       */
+      fieldType: string | null
+      /**
+       * 'ok' | 'missing' | 'type_changed' — по кнопке «Проверить привязки»
+       */
+      fieldStatus: string
+      fieldCheckedAt: Date | null
+      /**
+       * Расширения без миграций: min/max, rows, маска ввода
+       */
+      meta: Prisma.JsonValue | null
+      isActive: boolean
+      createdAt: Date | null
+      updatedAt: Date | null
+    }, ExtArgs["result"]["portalQuestionnaireItem"]>
+    composites: {}
+  }
+
+  type PortalQuestionnaireItemGetPayload<S extends boolean | null | undefined | PortalQuestionnaireItemDefaultArgs> = $Result.GetResult<Prisma.$PortalQuestionnaireItemPayload, S>
+
+  type PortalQuestionnaireItemCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<PortalQuestionnaireItemFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: PortalQuestionnaireItemCountAggregateInputType | true
+    }
+
+  export interface PortalQuestionnaireItemDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PortalQuestionnaireItem'], meta: { name: 'PortalQuestionnaireItem' } }
+    /**
+     * Find zero or one PortalQuestionnaireItem that matches the filter.
+     * @param {PortalQuestionnaireItemFindUniqueArgs} args - Arguments to find a PortalQuestionnaireItem
+     * @example
+     * // Get one PortalQuestionnaireItem
+     * const portalQuestionnaireItem = await prisma.portalQuestionnaireItem.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PortalQuestionnaireItemFindUniqueArgs>(args: SelectSubset<T, PortalQuestionnaireItemFindUniqueArgs<ExtArgs>>): Prisma__PortalQuestionnaireItemClient<$Result.GetResult<Prisma.$PortalQuestionnaireItemPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one PortalQuestionnaireItem that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {PortalQuestionnaireItemFindUniqueOrThrowArgs} args - Arguments to find a PortalQuestionnaireItem
+     * @example
+     * // Get one PortalQuestionnaireItem
+     * const portalQuestionnaireItem = await prisma.portalQuestionnaireItem.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PortalQuestionnaireItemFindUniqueOrThrowArgs>(args: SelectSubset<T, PortalQuestionnaireItemFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PortalQuestionnaireItemClient<$Result.GetResult<Prisma.$PortalQuestionnaireItemPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PortalQuestionnaireItem that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireItemFindFirstArgs} args - Arguments to find a PortalQuestionnaireItem
+     * @example
+     * // Get one PortalQuestionnaireItem
+     * const portalQuestionnaireItem = await prisma.portalQuestionnaireItem.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PortalQuestionnaireItemFindFirstArgs>(args?: SelectSubset<T, PortalQuestionnaireItemFindFirstArgs<ExtArgs>>): Prisma__PortalQuestionnaireItemClient<$Result.GetResult<Prisma.$PortalQuestionnaireItemPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PortalQuestionnaireItem that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireItemFindFirstOrThrowArgs} args - Arguments to find a PortalQuestionnaireItem
+     * @example
+     * // Get one PortalQuestionnaireItem
+     * const portalQuestionnaireItem = await prisma.portalQuestionnaireItem.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PortalQuestionnaireItemFindFirstOrThrowArgs>(args?: SelectSubset<T, PortalQuestionnaireItemFindFirstOrThrowArgs<ExtArgs>>): Prisma__PortalQuestionnaireItemClient<$Result.GetResult<Prisma.$PortalQuestionnaireItemPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more PortalQuestionnaireItems that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireItemFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PortalQuestionnaireItems
+     * const portalQuestionnaireItems = await prisma.portalQuestionnaireItem.findMany()
+     * 
+     * // Get first 10 PortalQuestionnaireItems
+     * const portalQuestionnaireItems = await prisma.portalQuestionnaireItem.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const portalQuestionnaireItemWithIdOnly = await prisma.portalQuestionnaireItem.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PortalQuestionnaireItemFindManyArgs>(args?: SelectSubset<T, PortalQuestionnaireItemFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalQuestionnaireItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a PortalQuestionnaireItem.
+     * @param {PortalQuestionnaireItemCreateArgs} args - Arguments to create a PortalQuestionnaireItem.
+     * @example
+     * // Create one PortalQuestionnaireItem
+     * const PortalQuestionnaireItem = await prisma.portalQuestionnaireItem.create({
+     *   data: {
+     *     // ... data to create a PortalQuestionnaireItem
+     *   }
+     * })
+     * 
+     */
+    create<T extends PortalQuestionnaireItemCreateArgs>(args: SelectSubset<T, PortalQuestionnaireItemCreateArgs<ExtArgs>>): Prisma__PortalQuestionnaireItemClient<$Result.GetResult<Prisma.$PortalQuestionnaireItemPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many PortalQuestionnaireItems.
+     * @param {PortalQuestionnaireItemCreateManyArgs} args - Arguments to create many PortalQuestionnaireItems.
+     * @example
+     * // Create many PortalQuestionnaireItems
+     * const portalQuestionnaireItem = await prisma.portalQuestionnaireItem.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PortalQuestionnaireItemCreateManyArgs>(args?: SelectSubset<T, PortalQuestionnaireItemCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a PortalQuestionnaireItem.
+     * @param {PortalQuestionnaireItemDeleteArgs} args - Arguments to delete one PortalQuestionnaireItem.
+     * @example
+     * // Delete one PortalQuestionnaireItem
+     * const PortalQuestionnaireItem = await prisma.portalQuestionnaireItem.delete({
+     *   where: {
+     *     // ... filter to delete one PortalQuestionnaireItem
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PortalQuestionnaireItemDeleteArgs>(args: SelectSubset<T, PortalQuestionnaireItemDeleteArgs<ExtArgs>>): Prisma__PortalQuestionnaireItemClient<$Result.GetResult<Prisma.$PortalQuestionnaireItemPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one PortalQuestionnaireItem.
+     * @param {PortalQuestionnaireItemUpdateArgs} args - Arguments to update one PortalQuestionnaireItem.
+     * @example
+     * // Update one PortalQuestionnaireItem
+     * const portalQuestionnaireItem = await prisma.portalQuestionnaireItem.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PortalQuestionnaireItemUpdateArgs>(args: SelectSubset<T, PortalQuestionnaireItemUpdateArgs<ExtArgs>>): Prisma__PortalQuestionnaireItemClient<$Result.GetResult<Prisma.$PortalQuestionnaireItemPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more PortalQuestionnaireItems.
+     * @param {PortalQuestionnaireItemDeleteManyArgs} args - Arguments to filter PortalQuestionnaireItems to delete.
+     * @example
+     * // Delete a few PortalQuestionnaireItems
+     * const { count } = await prisma.portalQuestionnaireItem.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PortalQuestionnaireItemDeleteManyArgs>(args?: SelectSubset<T, PortalQuestionnaireItemDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PortalQuestionnaireItems.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireItemUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PortalQuestionnaireItems
+     * const portalQuestionnaireItem = await prisma.portalQuestionnaireItem.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PortalQuestionnaireItemUpdateManyArgs>(args: SelectSubset<T, PortalQuestionnaireItemUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one PortalQuestionnaireItem.
+     * @param {PortalQuestionnaireItemUpsertArgs} args - Arguments to update or create a PortalQuestionnaireItem.
+     * @example
+     * // Update or create a PortalQuestionnaireItem
+     * const portalQuestionnaireItem = await prisma.portalQuestionnaireItem.upsert({
+     *   create: {
+     *     // ... data to create a PortalQuestionnaireItem
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PortalQuestionnaireItem we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PortalQuestionnaireItemUpsertArgs>(args: SelectSubset<T, PortalQuestionnaireItemUpsertArgs<ExtArgs>>): Prisma__PortalQuestionnaireItemClient<$Result.GetResult<Prisma.$PortalQuestionnaireItemPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of PortalQuestionnaireItems.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireItemCountArgs} args - Arguments to filter PortalQuestionnaireItems to count.
+     * @example
+     * // Count the number of PortalQuestionnaireItems
+     * const count = await prisma.portalQuestionnaireItem.count({
+     *   where: {
+     *     // ... the filter for the PortalQuestionnaireItems we want to count
+     *   }
+     * })
+    **/
+    count<T extends PortalQuestionnaireItemCountArgs>(
+      args?: Subset<T, PortalQuestionnaireItemCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PortalQuestionnaireItemCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PortalQuestionnaireItem.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireItemAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PortalQuestionnaireItemAggregateArgs>(args: Subset<T, PortalQuestionnaireItemAggregateArgs>): Prisma.PrismaPromise<GetPortalQuestionnaireItemAggregateType<T>>
+
+    /**
+     * Group by PortalQuestionnaireItem.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireItemGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PortalQuestionnaireItemGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PortalQuestionnaireItemGroupByArgs['orderBy'] }
+        : { orderBy?: PortalQuestionnaireItemGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PortalQuestionnaireItemGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPortalQuestionnaireItemGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PortalQuestionnaireItem model
+   */
+  readonly fields: PortalQuestionnaireItemFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PortalQuestionnaireItem.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PortalQuestionnaireItemClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    questionnaire<T extends PortalQuestionnaireDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalQuestionnaireDefaultArgs<ExtArgs>>): Prisma__PortalQuestionnaireClient<$Result.GetResult<Prisma.$PortalQuestionnairePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    portal<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    options<T extends PortalQuestionnaireItem$optionsArgs<ExtArgs> = {}>(args?: Subset<T, PortalQuestionnaireItem$optionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalQuestionnaireItemOptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PortalQuestionnaireItem model
+   */
+  interface PortalQuestionnaireItemFieldRefs {
+    readonly id: FieldRef<"PortalQuestionnaireItem", 'String'>
+    readonly questionnaireId: FieldRef<"PortalQuestionnaireItem", 'String'>
+    readonly portal_id: FieldRef<"PortalQuestionnaireItem", 'BigInt'>
+    readonly code: FieldRef<"PortalQuestionnaireItem", 'String'>
+    readonly title: FieldRef<"PortalQuestionnaireItem", 'String'>
+    readonly placeholder: FieldRef<"PortalQuestionnaireItem", 'String'>
+    readonly hint: FieldRef<"PortalQuestionnaireItem", 'String'>
+    readonly groupTitle: FieldRef<"PortalQuestionnaireItem", 'String'>
+    readonly sort: FieldRef<"PortalQuestionnaireItem", 'Int'>
+    readonly control: FieldRef<"PortalQuestionnaireItem", 'String'>
+    readonly isMultiple: FieldRef<"PortalQuestionnaireItem", 'Boolean'>
+    readonly isRequired: FieldRef<"PortalQuestionnaireItem", 'Boolean'>
+    readonly requireChange: FieldRef<"PortalQuestionnaireItem", 'Boolean'>
+    readonly staleAfterDays: FieldRef<"PortalQuestionnaireItem", 'Int'>
+    readonly channel: FieldRef<"PortalQuestionnaireItem", 'String'>
+    readonly targetMode: FieldRef<"PortalQuestionnaireItem", 'String'>
+    readonly targetEntity: FieldRef<"PortalQuestionnaireItem", 'String'>
+    readonly dtoPath: FieldRef<"PortalQuestionnaireItem", 'String'>
+    readonly smartId: FieldRef<"PortalQuestionnaireItem", 'BigInt'>
+    readonly smartEntityTypeId: FieldRef<"PortalQuestionnaireItem", 'BigInt'>
+    readonly isNative: FieldRef<"PortalQuestionnaireItem", 'Boolean'>
+    readonly fieldName: FieldRef<"PortalQuestionnaireItem", 'String'>
+    readonly fieldBitrixId: FieldRef<"PortalQuestionnaireItem", 'BigInt'>
+    readonly fieldXmlId: FieldRef<"PortalQuestionnaireItem", 'String'>
+    readonly fieldCode: FieldRef<"PortalQuestionnaireItem", 'String'>
+    readonly fieldType: FieldRef<"PortalQuestionnaireItem", 'String'>
+    readonly fieldStatus: FieldRef<"PortalQuestionnaireItem", 'String'>
+    readonly fieldCheckedAt: FieldRef<"PortalQuestionnaireItem", 'DateTime'>
+    readonly meta: FieldRef<"PortalQuestionnaireItem", 'Json'>
+    readonly isActive: FieldRef<"PortalQuestionnaireItem", 'Boolean'>
+    readonly createdAt: FieldRef<"PortalQuestionnaireItem", 'DateTime'>
+    readonly updatedAt: FieldRef<"PortalQuestionnaireItem", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PortalQuestionnaireItem findUnique
+   */
+  export type PortalQuestionnaireItemFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItem
+     */
+    select?: PortalQuestionnaireItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItem
+     */
+    omit?: PortalQuestionnaireItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalQuestionnaireItem to fetch.
+     */
+    where: PortalQuestionnaireItemWhereUniqueInput
+  }
+
+  /**
+   * PortalQuestionnaireItem findUniqueOrThrow
+   */
+  export type PortalQuestionnaireItemFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItem
+     */
+    select?: PortalQuestionnaireItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItem
+     */
+    omit?: PortalQuestionnaireItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalQuestionnaireItem to fetch.
+     */
+    where: PortalQuestionnaireItemWhereUniqueInput
+  }
+
+  /**
+   * PortalQuestionnaireItem findFirst
+   */
+  export type PortalQuestionnaireItemFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItem
+     */
+    select?: PortalQuestionnaireItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItem
+     */
+    omit?: PortalQuestionnaireItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalQuestionnaireItem to fetch.
+     */
+    where?: PortalQuestionnaireItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalQuestionnaireItems to fetch.
+     */
+    orderBy?: PortalQuestionnaireItemOrderByWithRelationInput | PortalQuestionnaireItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PortalQuestionnaireItems.
+     */
+    cursor?: PortalQuestionnaireItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalQuestionnaireItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalQuestionnaireItems.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PortalQuestionnaireItems.
+     */
+    distinct?: PortalQuestionnaireItemScalarFieldEnum | PortalQuestionnaireItemScalarFieldEnum[]
+  }
+
+  /**
+   * PortalQuestionnaireItem findFirstOrThrow
+   */
+  export type PortalQuestionnaireItemFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItem
+     */
+    select?: PortalQuestionnaireItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItem
+     */
+    omit?: PortalQuestionnaireItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalQuestionnaireItem to fetch.
+     */
+    where?: PortalQuestionnaireItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalQuestionnaireItems to fetch.
+     */
+    orderBy?: PortalQuestionnaireItemOrderByWithRelationInput | PortalQuestionnaireItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PortalQuestionnaireItems.
+     */
+    cursor?: PortalQuestionnaireItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalQuestionnaireItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalQuestionnaireItems.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PortalQuestionnaireItems.
+     */
+    distinct?: PortalQuestionnaireItemScalarFieldEnum | PortalQuestionnaireItemScalarFieldEnum[]
+  }
+
+  /**
+   * PortalQuestionnaireItem findMany
+   */
+  export type PortalQuestionnaireItemFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItem
+     */
+    select?: PortalQuestionnaireItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItem
+     */
+    omit?: PortalQuestionnaireItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalQuestionnaireItems to fetch.
+     */
+    where?: PortalQuestionnaireItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalQuestionnaireItems to fetch.
+     */
+    orderBy?: PortalQuestionnaireItemOrderByWithRelationInput | PortalQuestionnaireItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PortalQuestionnaireItems.
+     */
+    cursor?: PortalQuestionnaireItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalQuestionnaireItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalQuestionnaireItems.
+     */
+    skip?: number
+    distinct?: PortalQuestionnaireItemScalarFieldEnum | PortalQuestionnaireItemScalarFieldEnum[]
+  }
+
+  /**
+   * PortalQuestionnaireItem create
+   */
+  export type PortalQuestionnaireItemCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItem
+     */
+    select?: PortalQuestionnaireItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItem
+     */
+    omit?: PortalQuestionnaireItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PortalQuestionnaireItem.
+     */
+    data: XOR<PortalQuestionnaireItemCreateInput, PortalQuestionnaireItemUncheckedCreateInput>
+  }
+
+  /**
+   * PortalQuestionnaireItem createMany
+   */
+  export type PortalQuestionnaireItemCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PortalQuestionnaireItems.
+     */
+    data: PortalQuestionnaireItemCreateManyInput | PortalQuestionnaireItemCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PortalQuestionnaireItem update
+   */
+  export type PortalQuestionnaireItemUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItem
+     */
+    select?: PortalQuestionnaireItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItem
+     */
+    omit?: PortalQuestionnaireItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PortalQuestionnaireItem.
+     */
+    data: XOR<PortalQuestionnaireItemUpdateInput, PortalQuestionnaireItemUncheckedUpdateInput>
+    /**
+     * Choose, which PortalQuestionnaireItem to update.
+     */
+    where: PortalQuestionnaireItemWhereUniqueInput
+  }
+
+  /**
+   * PortalQuestionnaireItem updateMany
+   */
+  export type PortalQuestionnaireItemUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PortalQuestionnaireItems.
+     */
+    data: XOR<PortalQuestionnaireItemUpdateManyMutationInput, PortalQuestionnaireItemUncheckedUpdateManyInput>
+    /**
+     * Filter which PortalQuestionnaireItems to update
+     */
+    where?: PortalQuestionnaireItemWhereInput
+    /**
+     * Limit how many PortalQuestionnaireItems to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PortalQuestionnaireItem upsert
+   */
+  export type PortalQuestionnaireItemUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItem
+     */
+    select?: PortalQuestionnaireItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItem
+     */
+    omit?: PortalQuestionnaireItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PortalQuestionnaireItem to update in case it exists.
+     */
+    where: PortalQuestionnaireItemWhereUniqueInput
+    /**
+     * In case the PortalQuestionnaireItem found by the `where` argument doesn't exist, create a new PortalQuestionnaireItem with this data.
+     */
+    create: XOR<PortalQuestionnaireItemCreateInput, PortalQuestionnaireItemUncheckedCreateInput>
+    /**
+     * In case the PortalQuestionnaireItem was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PortalQuestionnaireItemUpdateInput, PortalQuestionnaireItemUncheckedUpdateInput>
+  }
+
+  /**
+   * PortalQuestionnaireItem delete
+   */
+  export type PortalQuestionnaireItemDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItem
+     */
+    select?: PortalQuestionnaireItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItem
+     */
+    omit?: PortalQuestionnaireItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemInclude<ExtArgs> | null
+    /**
+     * Filter which PortalQuestionnaireItem to delete.
+     */
+    where: PortalQuestionnaireItemWhereUniqueInput
+  }
+
+  /**
+   * PortalQuestionnaireItem deleteMany
+   */
+  export type PortalQuestionnaireItemDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PortalQuestionnaireItems to delete
+     */
+    where?: PortalQuestionnaireItemWhereInput
+    /**
+     * Limit how many PortalQuestionnaireItems to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * PortalQuestionnaireItem.options
+   */
+  export type PortalQuestionnaireItem$optionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItemOption
+     */
+    select?: PortalQuestionnaireItemOptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItemOption
+     */
+    omit?: PortalQuestionnaireItemOptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemOptionInclude<ExtArgs> | null
+    where?: PortalQuestionnaireItemOptionWhereInput
+    orderBy?: PortalQuestionnaireItemOptionOrderByWithRelationInput | PortalQuestionnaireItemOptionOrderByWithRelationInput[]
+    cursor?: PortalQuestionnaireItemOptionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PortalQuestionnaireItemOptionScalarFieldEnum | PortalQuestionnaireItemOptionScalarFieldEnum[]
+  }
+
+  /**
+   * PortalQuestionnaireItem without action
+   */
+  export type PortalQuestionnaireItemDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItem
+     */
+    select?: PortalQuestionnaireItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItem
+     */
+    omit?: PortalQuestionnaireItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model PortalQuestionnaireItemOption
+   */
+
+  export type AggregatePortalQuestionnaireItemOption = {
+    _count: PortalQuestionnaireItemOptionCountAggregateOutputType | null
+    _avg: PortalQuestionnaireItemOptionAvgAggregateOutputType | null
+    _sum: PortalQuestionnaireItemOptionSumAggregateOutputType | null
+    _min: PortalQuestionnaireItemOptionMinAggregateOutputType | null
+    _max: PortalQuestionnaireItemOptionMaxAggregateOutputType | null
+  }
+
+  export type PortalQuestionnaireItemOptionAvgAggregateOutputType = {
+    bitrixId: number | null
+    sort: number | null
+  }
+
+  export type PortalQuestionnaireItemOptionSumAggregateOutputType = {
+    bitrixId: number | null
+    sort: number | null
+  }
+
+  export type PortalQuestionnaireItemOptionMinAggregateOutputType = {
+    id: string | null
+    itemId: string | null
+    code: string | null
+    title: string | null
+    bitrixId: number | null
+    xmlId: string | null
+    sort: number | null
+    isDefault: boolean | null
+    isActive: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PortalQuestionnaireItemOptionMaxAggregateOutputType = {
+    id: string | null
+    itemId: string | null
+    code: string | null
+    title: string | null
+    bitrixId: number | null
+    xmlId: string | null
+    sort: number | null
+    isDefault: boolean | null
+    isActive: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PortalQuestionnaireItemOptionCountAggregateOutputType = {
+    id: number
+    itemId: number
+    code: number
+    title: number
+    bitrixId: number
+    xmlId: number
+    sort: number
+    isDefault: number
+    isActive: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type PortalQuestionnaireItemOptionAvgAggregateInputType = {
+    bitrixId?: true
+    sort?: true
+  }
+
+  export type PortalQuestionnaireItemOptionSumAggregateInputType = {
+    bitrixId?: true
+    sort?: true
+  }
+
+  export type PortalQuestionnaireItemOptionMinAggregateInputType = {
+    id?: true
+    itemId?: true
+    code?: true
+    title?: true
+    bitrixId?: true
+    xmlId?: true
+    sort?: true
+    isDefault?: true
+    isActive?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PortalQuestionnaireItemOptionMaxAggregateInputType = {
+    id?: true
+    itemId?: true
+    code?: true
+    title?: true
+    bitrixId?: true
+    xmlId?: true
+    sort?: true
+    isDefault?: true
+    isActive?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PortalQuestionnaireItemOptionCountAggregateInputType = {
+    id?: true
+    itemId?: true
+    code?: true
+    title?: true
+    bitrixId?: true
+    xmlId?: true
+    sort?: true
+    isDefault?: true
+    isActive?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type PortalQuestionnaireItemOptionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PortalQuestionnaireItemOption to aggregate.
+     */
+    where?: PortalQuestionnaireItemOptionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalQuestionnaireItemOptions to fetch.
+     */
+    orderBy?: PortalQuestionnaireItemOptionOrderByWithRelationInput | PortalQuestionnaireItemOptionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PortalQuestionnaireItemOptionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalQuestionnaireItemOptions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalQuestionnaireItemOptions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PortalQuestionnaireItemOptions
+    **/
+    _count?: true | PortalQuestionnaireItemOptionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PortalQuestionnaireItemOptionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PortalQuestionnaireItemOptionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PortalQuestionnaireItemOptionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PortalQuestionnaireItemOptionMaxAggregateInputType
+  }
+
+  export type GetPortalQuestionnaireItemOptionAggregateType<T extends PortalQuestionnaireItemOptionAggregateArgs> = {
+        [P in keyof T & keyof AggregatePortalQuestionnaireItemOption]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePortalQuestionnaireItemOption[P]>
+      : GetScalarType<T[P], AggregatePortalQuestionnaireItemOption[P]>
+  }
+
+
+
+
+  export type PortalQuestionnaireItemOptionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PortalQuestionnaireItemOptionWhereInput
+    orderBy?: PortalQuestionnaireItemOptionOrderByWithAggregationInput | PortalQuestionnaireItemOptionOrderByWithAggregationInput[]
+    by: PortalQuestionnaireItemOptionScalarFieldEnum[] | PortalQuestionnaireItemOptionScalarFieldEnum
+    having?: PortalQuestionnaireItemOptionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PortalQuestionnaireItemOptionCountAggregateInputType | true
+    _avg?: PortalQuestionnaireItemOptionAvgAggregateInputType
+    _sum?: PortalQuestionnaireItemOptionSumAggregateInputType
+    _min?: PortalQuestionnaireItemOptionMinAggregateInputType
+    _max?: PortalQuestionnaireItemOptionMaxAggregateInputType
+  }
+
+  export type PortalQuestionnaireItemOptionGroupByOutputType = {
+    id: string
+    itemId: string
+    code: string
+    title: string
+    bitrixId: number | null
+    xmlId: string | null
+    sort: number
+    isDefault: boolean
+    isActive: boolean
+    createdAt: Date | null
+    updatedAt: Date | null
+    _count: PortalQuestionnaireItemOptionCountAggregateOutputType | null
+    _avg: PortalQuestionnaireItemOptionAvgAggregateOutputType | null
+    _sum: PortalQuestionnaireItemOptionSumAggregateOutputType | null
+    _min: PortalQuestionnaireItemOptionMinAggregateOutputType | null
+    _max: PortalQuestionnaireItemOptionMaxAggregateOutputType | null
+  }
+
+  type GetPortalQuestionnaireItemOptionGroupByPayload<T extends PortalQuestionnaireItemOptionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PortalQuestionnaireItemOptionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PortalQuestionnaireItemOptionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PortalQuestionnaireItemOptionGroupByOutputType[P]>
+            : GetScalarType<T[P], PortalQuestionnaireItemOptionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PortalQuestionnaireItemOptionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    itemId?: boolean
+    code?: boolean
+    title?: boolean
+    bitrixId?: boolean
+    xmlId?: boolean
+    sort?: boolean
+    isDefault?: boolean
+    isActive?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    item?: boolean | PortalQuestionnaireItemDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["portalQuestionnaireItemOption"]>
+
+
+
+  export type PortalQuestionnaireItemOptionSelectScalar = {
+    id?: boolean
+    itemId?: boolean
+    code?: boolean
+    title?: boolean
+    bitrixId?: boolean
+    xmlId?: boolean
+    sort?: boolean
+    isDefault?: boolean
+    isActive?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type PortalQuestionnaireItemOptionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "itemId" | "code" | "title" | "bitrixId" | "xmlId" | "sort" | "isDefault" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["portalQuestionnaireItemOption"]>
+  export type PortalQuestionnaireItemOptionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    item?: boolean | PortalQuestionnaireItemDefaultArgs<ExtArgs>
+  }
+
+  export type $PortalQuestionnaireItemOptionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PortalQuestionnaireItemOption"
+    objects: {
+      item: Prisma.$PortalQuestionnaireItemPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      itemId: string
+      /**
+       * Наш стабильный код варианта (xmlId элемента, если он осмысленный)
+       */
+      code: string
+      title: string
+      bitrixId: number | null
+      xmlId: string | null
+      sort: number
+      isDefault: boolean
+      isActive: boolean
+      createdAt: Date | null
+      updatedAt: Date | null
+    }, ExtArgs["result"]["portalQuestionnaireItemOption"]>
+    composites: {}
+  }
+
+  type PortalQuestionnaireItemOptionGetPayload<S extends boolean | null | undefined | PortalQuestionnaireItemOptionDefaultArgs> = $Result.GetResult<Prisma.$PortalQuestionnaireItemOptionPayload, S>
+
+  type PortalQuestionnaireItemOptionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<PortalQuestionnaireItemOptionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: PortalQuestionnaireItemOptionCountAggregateInputType | true
+    }
+
+  export interface PortalQuestionnaireItemOptionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PortalQuestionnaireItemOption'], meta: { name: 'PortalQuestionnaireItemOption' } }
+    /**
+     * Find zero or one PortalQuestionnaireItemOption that matches the filter.
+     * @param {PortalQuestionnaireItemOptionFindUniqueArgs} args - Arguments to find a PortalQuestionnaireItemOption
+     * @example
+     * // Get one PortalQuestionnaireItemOption
+     * const portalQuestionnaireItemOption = await prisma.portalQuestionnaireItemOption.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PortalQuestionnaireItemOptionFindUniqueArgs>(args: SelectSubset<T, PortalQuestionnaireItemOptionFindUniqueArgs<ExtArgs>>): Prisma__PortalQuestionnaireItemOptionClient<$Result.GetResult<Prisma.$PortalQuestionnaireItemOptionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one PortalQuestionnaireItemOption that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {PortalQuestionnaireItemOptionFindUniqueOrThrowArgs} args - Arguments to find a PortalQuestionnaireItemOption
+     * @example
+     * // Get one PortalQuestionnaireItemOption
+     * const portalQuestionnaireItemOption = await prisma.portalQuestionnaireItemOption.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PortalQuestionnaireItemOptionFindUniqueOrThrowArgs>(args: SelectSubset<T, PortalQuestionnaireItemOptionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PortalQuestionnaireItemOptionClient<$Result.GetResult<Prisma.$PortalQuestionnaireItemOptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PortalQuestionnaireItemOption that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireItemOptionFindFirstArgs} args - Arguments to find a PortalQuestionnaireItemOption
+     * @example
+     * // Get one PortalQuestionnaireItemOption
+     * const portalQuestionnaireItemOption = await prisma.portalQuestionnaireItemOption.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PortalQuestionnaireItemOptionFindFirstArgs>(args?: SelectSubset<T, PortalQuestionnaireItemOptionFindFirstArgs<ExtArgs>>): Prisma__PortalQuestionnaireItemOptionClient<$Result.GetResult<Prisma.$PortalQuestionnaireItemOptionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PortalQuestionnaireItemOption that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireItemOptionFindFirstOrThrowArgs} args - Arguments to find a PortalQuestionnaireItemOption
+     * @example
+     * // Get one PortalQuestionnaireItemOption
+     * const portalQuestionnaireItemOption = await prisma.portalQuestionnaireItemOption.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PortalQuestionnaireItemOptionFindFirstOrThrowArgs>(args?: SelectSubset<T, PortalQuestionnaireItemOptionFindFirstOrThrowArgs<ExtArgs>>): Prisma__PortalQuestionnaireItemOptionClient<$Result.GetResult<Prisma.$PortalQuestionnaireItemOptionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more PortalQuestionnaireItemOptions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireItemOptionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PortalQuestionnaireItemOptions
+     * const portalQuestionnaireItemOptions = await prisma.portalQuestionnaireItemOption.findMany()
+     * 
+     * // Get first 10 PortalQuestionnaireItemOptions
+     * const portalQuestionnaireItemOptions = await prisma.portalQuestionnaireItemOption.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const portalQuestionnaireItemOptionWithIdOnly = await prisma.portalQuestionnaireItemOption.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PortalQuestionnaireItemOptionFindManyArgs>(args?: SelectSubset<T, PortalQuestionnaireItemOptionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalQuestionnaireItemOptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a PortalQuestionnaireItemOption.
+     * @param {PortalQuestionnaireItemOptionCreateArgs} args - Arguments to create a PortalQuestionnaireItemOption.
+     * @example
+     * // Create one PortalQuestionnaireItemOption
+     * const PortalQuestionnaireItemOption = await prisma.portalQuestionnaireItemOption.create({
+     *   data: {
+     *     // ... data to create a PortalQuestionnaireItemOption
+     *   }
+     * })
+     * 
+     */
+    create<T extends PortalQuestionnaireItemOptionCreateArgs>(args: SelectSubset<T, PortalQuestionnaireItemOptionCreateArgs<ExtArgs>>): Prisma__PortalQuestionnaireItemOptionClient<$Result.GetResult<Prisma.$PortalQuestionnaireItemOptionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many PortalQuestionnaireItemOptions.
+     * @param {PortalQuestionnaireItemOptionCreateManyArgs} args - Arguments to create many PortalQuestionnaireItemOptions.
+     * @example
+     * // Create many PortalQuestionnaireItemOptions
+     * const portalQuestionnaireItemOption = await prisma.portalQuestionnaireItemOption.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PortalQuestionnaireItemOptionCreateManyArgs>(args?: SelectSubset<T, PortalQuestionnaireItemOptionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a PortalQuestionnaireItemOption.
+     * @param {PortalQuestionnaireItemOptionDeleteArgs} args - Arguments to delete one PortalQuestionnaireItemOption.
+     * @example
+     * // Delete one PortalQuestionnaireItemOption
+     * const PortalQuestionnaireItemOption = await prisma.portalQuestionnaireItemOption.delete({
+     *   where: {
+     *     // ... filter to delete one PortalQuestionnaireItemOption
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PortalQuestionnaireItemOptionDeleteArgs>(args: SelectSubset<T, PortalQuestionnaireItemOptionDeleteArgs<ExtArgs>>): Prisma__PortalQuestionnaireItemOptionClient<$Result.GetResult<Prisma.$PortalQuestionnaireItemOptionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one PortalQuestionnaireItemOption.
+     * @param {PortalQuestionnaireItemOptionUpdateArgs} args - Arguments to update one PortalQuestionnaireItemOption.
+     * @example
+     * // Update one PortalQuestionnaireItemOption
+     * const portalQuestionnaireItemOption = await prisma.portalQuestionnaireItemOption.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PortalQuestionnaireItemOptionUpdateArgs>(args: SelectSubset<T, PortalQuestionnaireItemOptionUpdateArgs<ExtArgs>>): Prisma__PortalQuestionnaireItemOptionClient<$Result.GetResult<Prisma.$PortalQuestionnaireItemOptionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more PortalQuestionnaireItemOptions.
+     * @param {PortalQuestionnaireItemOptionDeleteManyArgs} args - Arguments to filter PortalQuestionnaireItemOptions to delete.
+     * @example
+     * // Delete a few PortalQuestionnaireItemOptions
+     * const { count } = await prisma.portalQuestionnaireItemOption.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PortalQuestionnaireItemOptionDeleteManyArgs>(args?: SelectSubset<T, PortalQuestionnaireItemOptionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PortalQuestionnaireItemOptions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireItemOptionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PortalQuestionnaireItemOptions
+     * const portalQuestionnaireItemOption = await prisma.portalQuestionnaireItemOption.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PortalQuestionnaireItemOptionUpdateManyArgs>(args: SelectSubset<T, PortalQuestionnaireItemOptionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one PortalQuestionnaireItemOption.
+     * @param {PortalQuestionnaireItemOptionUpsertArgs} args - Arguments to update or create a PortalQuestionnaireItemOption.
+     * @example
+     * // Update or create a PortalQuestionnaireItemOption
+     * const portalQuestionnaireItemOption = await prisma.portalQuestionnaireItemOption.upsert({
+     *   create: {
+     *     // ... data to create a PortalQuestionnaireItemOption
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PortalQuestionnaireItemOption we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PortalQuestionnaireItemOptionUpsertArgs>(args: SelectSubset<T, PortalQuestionnaireItemOptionUpsertArgs<ExtArgs>>): Prisma__PortalQuestionnaireItemOptionClient<$Result.GetResult<Prisma.$PortalQuestionnaireItemOptionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of PortalQuestionnaireItemOptions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireItemOptionCountArgs} args - Arguments to filter PortalQuestionnaireItemOptions to count.
+     * @example
+     * // Count the number of PortalQuestionnaireItemOptions
+     * const count = await prisma.portalQuestionnaireItemOption.count({
+     *   where: {
+     *     // ... the filter for the PortalQuestionnaireItemOptions we want to count
+     *   }
+     * })
+    **/
+    count<T extends PortalQuestionnaireItemOptionCountArgs>(
+      args?: Subset<T, PortalQuestionnaireItemOptionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PortalQuestionnaireItemOptionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PortalQuestionnaireItemOption.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireItemOptionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PortalQuestionnaireItemOptionAggregateArgs>(args: Subset<T, PortalQuestionnaireItemOptionAggregateArgs>): Prisma.PrismaPromise<GetPortalQuestionnaireItemOptionAggregateType<T>>
+
+    /**
+     * Group by PortalQuestionnaireItemOption.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalQuestionnaireItemOptionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PortalQuestionnaireItemOptionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PortalQuestionnaireItemOptionGroupByArgs['orderBy'] }
+        : { orderBy?: PortalQuestionnaireItemOptionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PortalQuestionnaireItemOptionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPortalQuestionnaireItemOptionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PortalQuestionnaireItemOption model
+   */
+  readonly fields: PortalQuestionnaireItemOptionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PortalQuestionnaireItemOption.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PortalQuestionnaireItemOptionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    item<T extends PortalQuestionnaireItemDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalQuestionnaireItemDefaultArgs<ExtArgs>>): Prisma__PortalQuestionnaireItemClient<$Result.GetResult<Prisma.$PortalQuestionnaireItemPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PortalQuestionnaireItemOption model
+   */
+  interface PortalQuestionnaireItemOptionFieldRefs {
+    readonly id: FieldRef<"PortalQuestionnaireItemOption", 'String'>
+    readonly itemId: FieldRef<"PortalQuestionnaireItemOption", 'String'>
+    readonly code: FieldRef<"PortalQuestionnaireItemOption", 'String'>
+    readonly title: FieldRef<"PortalQuestionnaireItemOption", 'String'>
+    readonly bitrixId: FieldRef<"PortalQuestionnaireItemOption", 'Int'>
+    readonly xmlId: FieldRef<"PortalQuestionnaireItemOption", 'String'>
+    readonly sort: FieldRef<"PortalQuestionnaireItemOption", 'Int'>
+    readonly isDefault: FieldRef<"PortalQuestionnaireItemOption", 'Boolean'>
+    readonly isActive: FieldRef<"PortalQuestionnaireItemOption", 'Boolean'>
+    readonly createdAt: FieldRef<"PortalQuestionnaireItemOption", 'DateTime'>
+    readonly updatedAt: FieldRef<"PortalQuestionnaireItemOption", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PortalQuestionnaireItemOption findUnique
+   */
+  export type PortalQuestionnaireItemOptionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItemOption
+     */
+    select?: PortalQuestionnaireItemOptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItemOption
+     */
+    omit?: PortalQuestionnaireItemOptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemOptionInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalQuestionnaireItemOption to fetch.
+     */
+    where: PortalQuestionnaireItemOptionWhereUniqueInput
+  }
+
+  /**
+   * PortalQuestionnaireItemOption findUniqueOrThrow
+   */
+  export type PortalQuestionnaireItemOptionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItemOption
+     */
+    select?: PortalQuestionnaireItemOptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItemOption
+     */
+    omit?: PortalQuestionnaireItemOptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemOptionInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalQuestionnaireItemOption to fetch.
+     */
+    where: PortalQuestionnaireItemOptionWhereUniqueInput
+  }
+
+  /**
+   * PortalQuestionnaireItemOption findFirst
+   */
+  export type PortalQuestionnaireItemOptionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItemOption
+     */
+    select?: PortalQuestionnaireItemOptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItemOption
+     */
+    omit?: PortalQuestionnaireItemOptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemOptionInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalQuestionnaireItemOption to fetch.
+     */
+    where?: PortalQuestionnaireItemOptionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalQuestionnaireItemOptions to fetch.
+     */
+    orderBy?: PortalQuestionnaireItemOptionOrderByWithRelationInput | PortalQuestionnaireItemOptionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PortalQuestionnaireItemOptions.
+     */
+    cursor?: PortalQuestionnaireItemOptionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalQuestionnaireItemOptions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalQuestionnaireItemOptions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PortalQuestionnaireItemOptions.
+     */
+    distinct?: PortalQuestionnaireItemOptionScalarFieldEnum | PortalQuestionnaireItemOptionScalarFieldEnum[]
+  }
+
+  /**
+   * PortalQuestionnaireItemOption findFirstOrThrow
+   */
+  export type PortalQuestionnaireItemOptionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItemOption
+     */
+    select?: PortalQuestionnaireItemOptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItemOption
+     */
+    omit?: PortalQuestionnaireItemOptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemOptionInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalQuestionnaireItemOption to fetch.
+     */
+    where?: PortalQuestionnaireItemOptionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalQuestionnaireItemOptions to fetch.
+     */
+    orderBy?: PortalQuestionnaireItemOptionOrderByWithRelationInput | PortalQuestionnaireItemOptionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PortalQuestionnaireItemOptions.
+     */
+    cursor?: PortalQuestionnaireItemOptionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalQuestionnaireItemOptions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalQuestionnaireItemOptions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PortalQuestionnaireItemOptions.
+     */
+    distinct?: PortalQuestionnaireItemOptionScalarFieldEnum | PortalQuestionnaireItemOptionScalarFieldEnum[]
+  }
+
+  /**
+   * PortalQuestionnaireItemOption findMany
+   */
+  export type PortalQuestionnaireItemOptionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItemOption
+     */
+    select?: PortalQuestionnaireItemOptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItemOption
+     */
+    omit?: PortalQuestionnaireItemOptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemOptionInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalQuestionnaireItemOptions to fetch.
+     */
+    where?: PortalQuestionnaireItemOptionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalQuestionnaireItemOptions to fetch.
+     */
+    orderBy?: PortalQuestionnaireItemOptionOrderByWithRelationInput | PortalQuestionnaireItemOptionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PortalQuestionnaireItemOptions.
+     */
+    cursor?: PortalQuestionnaireItemOptionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalQuestionnaireItemOptions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalQuestionnaireItemOptions.
+     */
+    skip?: number
+    distinct?: PortalQuestionnaireItemOptionScalarFieldEnum | PortalQuestionnaireItemOptionScalarFieldEnum[]
+  }
+
+  /**
+   * PortalQuestionnaireItemOption create
+   */
+  export type PortalQuestionnaireItemOptionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItemOption
+     */
+    select?: PortalQuestionnaireItemOptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItemOption
+     */
+    omit?: PortalQuestionnaireItemOptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemOptionInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PortalQuestionnaireItemOption.
+     */
+    data: XOR<PortalQuestionnaireItemOptionCreateInput, PortalQuestionnaireItemOptionUncheckedCreateInput>
+  }
+
+  /**
+   * PortalQuestionnaireItemOption createMany
+   */
+  export type PortalQuestionnaireItemOptionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PortalQuestionnaireItemOptions.
+     */
+    data: PortalQuestionnaireItemOptionCreateManyInput | PortalQuestionnaireItemOptionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PortalQuestionnaireItemOption update
+   */
+  export type PortalQuestionnaireItemOptionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItemOption
+     */
+    select?: PortalQuestionnaireItemOptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItemOption
+     */
+    omit?: PortalQuestionnaireItemOptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemOptionInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PortalQuestionnaireItemOption.
+     */
+    data: XOR<PortalQuestionnaireItemOptionUpdateInput, PortalQuestionnaireItemOptionUncheckedUpdateInput>
+    /**
+     * Choose, which PortalQuestionnaireItemOption to update.
+     */
+    where: PortalQuestionnaireItemOptionWhereUniqueInput
+  }
+
+  /**
+   * PortalQuestionnaireItemOption updateMany
+   */
+  export type PortalQuestionnaireItemOptionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PortalQuestionnaireItemOptions.
+     */
+    data: XOR<PortalQuestionnaireItemOptionUpdateManyMutationInput, PortalQuestionnaireItemOptionUncheckedUpdateManyInput>
+    /**
+     * Filter which PortalQuestionnaireItemOptions to update
+     */
+    where?: PortalQuestionnaireItemOptionWhereInput
+    /**
+     * Limit how many PortalQuestionnaireItemOptions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PortalQuestionnaireItemOption upsert
+   */
+  export type PortalQuestionnaireItemOptionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItemOption
+     */
+    select?: PortalQuestionnaireItemOptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItemOption
+     */
+    omit?: PortalQuestionnaireItemOptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemOptionInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PortalQuestionnaireItemOption to update in case it exists.
+     */
+    where: PortalQuestionnaireItemOptionWhereUniqueInput
+    /**
+     * In case the PortalQuestionnaireItemOption found by the `where` argument doesn't exist, create a new PortalQuestionnaireItemOption with this data.
+     */
+    create: XOR<PortalQuestionnaireItemOptionCreateInput, PortalQuestionnaireItemOptionUncheckedCreateInput>
+    /**
+     * In case the PortalQuestionnaireItemOption was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PortalQuestionnaireItemOptionUpdateInput, PortalQuestionnaireItemOptionUncheckedUpdateInput>
+  }
+
+  /**
+   * PortalQuestionnaireItemOption delete
+   */
+  export type PortalQuestionnaireItemOptionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItemOption
+     */
+    select?: PortalQuestionnaireItemOptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItemOption
+     */
+    omit?: PortalQuestionnaireItemOptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemOptionInclude<ExtArgs> | null
+    /**
+     * Filter which PortalQuestionnaireItemOption to delete.
+     */
+    where: PortalQuestionnaireItemOptionWhereUniqueInput
+  }
+
+  /**
+   * PortalQuestionnaireItemOption deleteMany
+   */
+  export type PortalQuestionnaireItemOptionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PortalQuestionnaireItemOptions to delete
+     */
+    where?: PortalQuestionnaireItemOptionWhereInput
+    /**
+     * Limit how many PortalQuestionnaireItemOptions to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * PortalQuestionnaireItemOption without action
+   */
+  export type PortalQuestionnaireItemOptionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalQuestionnaireItemOption
+     */
+    select?: PortalQuestionnaireItemOptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalQuestionnaireItemOption
+     */
+    omit?: PortalQuestionnaireItemOptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalQuestionnaireItemOptionInclude<ExtArgs> | null
   }
 
 
@@ -113733,6 +117740,87 @@ export namespace Prisma {
   export type PortalAppSettingsScalarFieldEnum = (typeof PortalAppSettingsScalarFieldEnum)[keyof typeof PortalAppSettingsScalarFieldEnum]
 
 
+  export const PortalQuestionnaireScalarFieldEnum: {
+    id: 'id',
+    portal_id: 'portal_id',
+    domain: 'domain',
+    appCode: 'appCode',
+    code: 'code',
+    title: 'title',
+    hint: 'hint',
+    purpose: 'purpose',
+    presentation: 'presentation',
+    place: 'place',
+    persist: 'persist',
+    conditions: 'conditions',
+    configKey: 'configKey',
+    legacyChecklistId: 'legacyChecklistId',
+    isActive: 'isActive',
+    sort: 'sort',
+    version: 'version',
+    updatedBy: 'updatedBy',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type PortalQuestionnaireScalarFieldEnum = (typeof PortalQuestionnaireScalarFieldEnum)[keyof typeof PortalQuestionnaireScalarFieldEnum]
+
+
+  export const PortalQuestionnaireItemScalarFieldEnum: {
+    id: 'id',
+    questionnaireId: 'questionnaireId',
+    portal_id: 'portal_id',
+    code: 'code',
+    title: 'title',
+    placeholder: 'placeholder',
+    hint: 'hint',
+    groupTitle: 'groupTitle',
+    sort: 'sort',
+    control: 'control',
+    isMultiple: 'isMultiple',
+    isRequired: 'isRequired',
+    requireChange: 'requireChange',
+    staleAfterDays: 'staleAfterDays',
+    channel: 'channel',
+    targetMode: 'targetMode',
+    targetEntity: 'targetEntity',
+    dtoPath: 'dtoPath',
+    smartId: 'smartId',
+    smartEntityTypeId: 'smartEntityTypeId',
+    isNative: 'isNative',
+    fieldName: 'fieldName',
+    fieldBitrixId: 'fieldBitrixId',
+    fieldXmlId: 'fieldXmlId',
+    fieldCode: 'fieldCode',
+    fieldType: 'fieldType',
+    fieldStatus: 'fieldStatus',
+    fieldCheckedAt: 'fieldCheckedAt',
+    meta: 'meta',
+    isActive: 'isActive',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type PortalQuestionnaireItemScalarFieldEnum = (typeof PortalQuestionnaireItemScalarFieldEnum)[keyof typeof PortalQuestionnaireItemScalarFieldEnum]
+
+
+  export const PortalQuestionnaireItemOptionScalarFieldEnum: {
+    id: 'id',
+    itemId: 'itemId',
+    code: 'code',
+    title: 'title',
+    bitrixId: 'bitrixId',
+    xmlId: 'xmlId',
+    sort: 'sort',
+    isDefault: 'isDefault',
+    isActive: 'isActive',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type PortalQuestionnaireItemOptionScalarFieldEnum = (typeof PortalQuestionnaireItemOptionScalarFieldEnum)[keyof typeof PortalQuestionnaireItemOptionScalarFieldEnum]
+
+
   export const SkapImportFileScalarFieldEnum: {
     id: 'id',
     portal_id: 'portal_id',
@@ -115393,6 +119481,58 @@ export namespace Prisma {
   };
 
   export type PortalAppSettingsOrderByRelevanceFieldEnum = (typeof PortalAppSettingsOrderByRelevanceFieldEnum)[keyof typeof PortalAppSettingsOrderByRelevanceFieldEnum]
+
+
+  export const PortalQuestionnaireOrderByRelevanceFieldEnum: {
+    id: 'id',
+    domain: 'domain',
+    appCode: 'appCode',
+    code: 'code',
+    title: 'title',
+    hint: 'hint',
+    purpose: 'purpose',
+    presentation: 'presentation',
+    place: 'place',
+    persist: 'persist',
+    configKey: 'configKey',
+    legacyChecklistId: 'legacyChecklistId'
+  };
+
+  export type PortalQuestionnaireOrderByRelevanceFieldEnum = (typeof PortalQuestionnaireOrderByRelevanceFieldEnum)[keyof typeof PortalQuestionnaireOrderByRelevanceFieldEnum]
+
+
+  export const PortalQuestionnaireItemOrderByRelevanceFieldEnum: {
+    id: 'id',
+    questionnaireId: 'questionnaireId',
+    code: 'code',
+    title: 'title',
+    placeholder: 'placeholder',
+    hint: 'hint',
+    groupTitle: 'groupTitle',
+    control: 'control',
+    channel: 'channel',
+    targetMode: 'targetMode',
+    targetEntity: 'targetEntity',
+    dtoPath: 'dtoPath',
+    fieldName: 'fieldName',
+    fieldXmlId: 'fieldXmlId',
+    fieldCode: 'fieldCode',
+    fieldType: 'fieldType',
+    fieldStatus: 'fieldStatus'
+  };
+
+  export type PortalQuestionnaireItemOrderByRelevanceFieldEnum = (typeof PortalQuestionnaireItemOrderByRelevanceFieldEnum)[keyof typeof PortalQuestionnaireItemOrderByRelevanceFieldEnum]
+
+
+  export const PortalQuestionnaireItemOptionOrderByRelevanceFieldEnum: {
+    id: 'id',
+    itemId: 'itemId',
+    code: 'code',
+    title: 'title',
+    xmlId: 'xmlId'
+  };
+
+  export type PortalQuestionnaireItemOptionOrderByRelevanceFieldEnum = (typeof PortalQuestionnaireItemOptionOrderByRelevanceFieldEnum)[keyof typeof PortalQuestionnaireItemOptionOrderByRelevanceFieldEnum]
 
 
   export const SkapImportFileOrderByRelevanceFieldEnum: {
@@ -119319,6 +123459,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionListRelationFilter
     skapSubscriptions?: SkapSubscriptionListRelationFilter
     skapImportRuns?: SkapImportRunListRelationFilter
+    questionnaires?: PortalQuestionnaireListRelationFilter
+    questionnaireItems?: PortalQuestionnaireItemListRelationFilter
   }
 
   export type PortalOrderByWithRelationInput = {
@@ -119385,6 +123527,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionOrderByRelationAggregateInput
     skapSubscriptions?: SkapSubscriptionOrderByRelationAggregateInput
     skapImportRuns?: SkapImportRunOrderByRelationAggregateInput
+    questionnaires?: PortalQuestionnaireOrderByRelationAggregateInput
+    questionnaireItems?: PortalQuestionnaireItemOrderByRelationAggregateInput
     _relevance?: PortalOrderByRelevanceInput
   }
 
@@ -119455,6 +123599,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionListRelationFilter
     skapSubscriptions?: SkapSubscriptionListRelationFilter
     skapImportRuns?: SkapImportRunListRelationFilter
+    questionnaires?: PortalQuestionnaireListRelationFilter
+    questionnaireItems?: PortalQuestionnaireItemListRelationFilter
   }, "id" | "member_id">
 
   export type PortalOrderByWithAggregationInput = {
@@ -119738,6 +123884,432 @@ export namespace Prisma {
     settings?: JsonNullableWithAggregatesFilter<"PortalAppSettings">
     createdAt?: DateTimeNullableWithAggregatesFilter<"PortalAppSettings"> | Date | string | null
     updatedAt?: DateTimeNullableWithAggregatesFilter<"PortalAppSettings"> | Date | string | null
+  }
+
+  export type PortalQuestionnaireWhereInput = {
+    AND?: PortalQuestionnaireWhereInput | PortalQuestionnaireWhereInput[]
+    OR?: PortalQuestionnaireWhereInput[]
+    NOT?: PortalQuestionnaireWhereInput | PortalQuestionnaireWhereInput[]
+    id?: StringFilter<"PortalQuestionnaire"> | string
+    portal_id?: BigIntFilter<"PortalQuestionnaire"> | bigint | number
+    domain?: StringFilter<"PortalQuestionnaire"> | string
+    appCode?: StringFilter<"PortalQuestionnaire"> | string
+    code?: StringFilter<"PortalQuestionnaire"> | string
+    title?: StringFilter<"PortalQuestionnaire"> | string
+    hint?: StringNullableFilter<"PortalQuestionnaire"> | string | null
+    purpose?: StringFilter<"PortalQuestionnaire"> | string
+    presentation?: StringFilter<"PortalQuestionnaire"> | string
+    place?: StringNullableFilter<"PortalQuestionnaire"> | string | null
+    persist?: StringFilter<"PortalQuestionnaire"> | string
+    conditions?: JsonNullableFilter<"PortalQuestionnaire">
+    configKey?: StringNullableFilter<"PortalQuestionnaire"> | string | null
+    legacyChecklistId?: StringNullableFilter<"PortalQuestionnaire"> | string | null
+    isActive?: BoolFilter<"PortalQuestionnaire"> | boolean
+    sort?: IntFilter<"PortalQuestionnaire"> | number
+    version?: IntFilter<"PortalQuestionnaire"> | number
+    updatedBy?: BigIntNullableFilter<"PortalQuestionnaire"> | bigint | number | null
+    createdAt?: DateTimeNullableFilter<"PortalQuestionnaire"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"PortalQuestionnaire"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+    items?: PortalQuestionnaireItemListRelationFilter
+  }
+
+  export type PortalQuestionnaireOrderByWithRelationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    appCode?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    hint?: SortOrderInput | SortOrder
+    purpose?: SortOrder
+    presentation?: SortOrder
+    place?: SortOrderInput | SortOrder
+    persist?: SortOrder
+    conditions?: SortOrderInput | SortOrder
+    configKey?: SortOrderInput | SortOrder
+    legacyChecklistId?: SortOrderInput | SortOrder
+    isActive?: SortOrder
+    sort?: SortOrder
+    version?: SortOrder
+    updatedBy?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    portal?: PortalOrderByWithRelationInput
+    items?: PortalQuestionnaireItemOrderByRelationAggregateInput
+    _relevance?: PortalQuestionnaireOrderByRelevanceInput
+  }
+
+  export type PortalQuestionnaireWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    portal_id_appCode_code?: PortalQuestionnairePortal_idAppCodeCodeCompoundUniqueInput
+    AND?: PortalQuestionnaireWhereInput | PortalQuestionnaireWhereInput[]
+    OR?: PortalQuestionnaireWhereInput[]
+    NOT?: PortalQuestionnaireWhereInput | PortalQuestionnaireWhereInput[]
+    portal_id?: BigIntFilter<"PortalQuestionnaire"> | bigint | number
+    domain?: StringFilter<"PortalQuestionnaire"> | string
+    appCode?: StringFilter<"PortalQuestionnaire"> | string
+    code?: StringFilter<"PortalQuestionnaire"> | string
+    title?: StringFilter<"PortalQuestionnaire"> | string
+    hint?: StringNullableFilter<"PortalQuestionnaire"> | string | null
+    purpose?: StringFilter<"PortalQuestionnaire"> | string
+    presentation?: StringFilter<"PortalQuestionnaire"> | string
+    place?: StringNullableFilter<"PortalQuestionnaire"> | string | null
+    persist?: StringFilter<"PortalQuestionnaire"> | string
+    conditions?: JsonNullableFilter<"PortalQuestionnaire">
+    configKey?: StringNullableFilter<"PortalQuestionnaire"> | string | null
+    legacyChecklistId?: StringNullableFilter<"PortalQuestionnaire"> | string | null
+    isActive?: BoolFilter<"PortalQuestionnaire"> | boolean
+    sort?: IntFilter<"PortalQuestionnaire"> | number
+    version?: IntFilter<"PortalQuestionnaire"> | number
+    updatedBy?: BigIntNullableFilter<"PortalQuestionnaire"> | bigint | number | null
+    createdAt?: DateTimeNullableFilter<"PortalQuestionnaire"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"PortalQuestionnaire"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+    items?: PortalQuestionnaireItemListRelationFilter
+  }, "id" | "portal_id_appCode_code">
+
+  export type PortalQuestionnaireOrderByWithAggregationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    appCode?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    hint?: SortOrderInput | SortOrder
+    purpose?: SortOrder
+    presentation?: SortOrder
+    place?: SortOrderInput | SortOrder
+    persist?: SortOrder
+    conditions?: SortOrderInput | SortOrder
+    configKey?: SortOrderInput | SortOrder
+    legacyChecklistId?: SortOrderInput | SortOrder
+    isActive?: SortOrder
+    sort?: SortOrder
+    version?: SortOrder
+    updatedBy?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _count?: PortalQuestionnaireCountOrderByAggregateInput
+    _avg?: PortalQuestionnaireAvgOrderByAggregateInput
+    _max?: PortalQuestionnaireMaxOrderByAggregateInput
+    _min?: PortalQuestionnaireMinOrderByAggregateInput
+    _sum?: PortalQuestionnaireSumOrderByAggregateInput
+  }
+
+  export type PortalQuestionnaireScalarWhereWithAggregatesInput = {
+    AND?: PortalQuestionnaireScalarWhereWithAggregatesInput | PortalQuestionnaireScalarWhereWithAggregatesInput[]
+    OR?: PortalQuestionnaireScalarWhereWithAggregatesInput[]
+    NOT?: PortalQuestionnaireScalarWhereWithAggregatesInput | PortalQuestionnaireScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"PortalQuestionnaire"> | string
+    portal_id?: BigIntWithAggregatesFilter<"PortalQuestionnaire"> | bigint | number
+    domain?: StringWithAggregatesFilter<"PortalQuestionnaire"> | string
+    appCode?: StringWithAggregatesFilter<"PortalQuestionnaire"> | string
+    code?: StringWithAggregatesFilter<"PortalQuestionnaire"> | string
+    title?: StringWithAggregatesFilter<"PortalQuestionnaire"> | string
+    hint?: StringNullableWithAggregatesFilter<"PortalQuestionnaire"> | string | null
+    purpose?: StringWithAggregatesFilter<"PortalQuestionnaire"> | string
+    presentation?: StringWithAggregatesFilter<"PortalQuestionnaire"> | string
+    place?: StringNullableWithAggregatesFilter<"PortalQuestionnaire"> | string | null
+    persist?: StringWithAggregatesFilter<"PortalQuestionnaire"> | string
+    conditions?: JsonNullableWithAggregatesFilter<"PortalQuestionnaire">
+    configKey?: StringNullableWithAggregatesFilter<"PortalQuestionnaire"> | string | null
+    legacyChecklistId?: StringNullableWithAggregatesFilter<"PortalQuestionnaire"> | string | null
+    isActive?: BoolWithAggregatesFilter<"PortalQuestionnaire"> | boolean
+    sort?: IntWithAggregatesFilter<"PortalQuestionnaire"> | number
+    version?: IntWithAggregatesFilter<"PortalQuestionnaire"> | number
+    updatedBy?: BigIntNullableWithAggregatesFilter<"PortalQuestionnaire"> | bigint | number | null
+    createdAt?: DateTimeNullableWithAggregatesFilter<"PortalQuestionnaire"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"PortalQuestionnaire"> | Date | string | null
+  }
+
+  export type PortalQuestionnaireItemWhereInput = {
+    AND?: PortalQuestionnaireItemWhereInput | PortalQuestionnaireItemWhereInput[]
+    OR?: PortalQuestionnaireItemWhereInput[]
+    NOT?: PortalQuestionnaireItemWhereInput | PortalQuestionnaireItemWhereInput[]
+    id?: StringFilter<"PortalQuestionnaireItem"> | string
+    questionnaireId?: StringFilter<"PortalQuestionnaireItem"> | string
+    portal_id?: BigIntFilter<"PortalQuestionnaireItem"> | bigint | number
+    code?: StringFilter<"PortalQuestionnaireItem"> | string
+    title?: StringFilter<"PortalQuestionnaireItem"> | string
+    placeholder?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    hint?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    groupTitle?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    sort?: IntFilter<"PortalQuestionnaireItem"> | number
+    control?: StringFilter<"PortalQuestionnaireItem"> | string
+    isMultiple?: BoolFilter<"PortalQuestionnaireItem"> | boolean
+    isRequired?: BoolFilter<"PortalQuestionnaireItem"> | boolean
+    requireChange?: BoolFilter<"PortalQuestionnaireItem"> | boolean
+    staleAfterDays?: IntNullableFilter<"PortalQuestionnaireItem"> | number | null
+    channel?: StringFilter<"PortalQuestionnaireItem"> | string
+    targetMode?: StringFilter<"PortalQuestionnaireItem"> | string
+    targetEntity?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    dtoPath?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    smartId?: BigIntNullableFilter<"PortalQuestionnaireItem"> | bigint | number | null
+    smartEntityTypeId?: BigIntNullableFilter<"PortalQuestionnaireItem"> | bigint | number | null
+    isNative?: BoolFilter<"PortalQuestionnaireItem"> | boolean
+    fieldName?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    fieldBitrixId?: BigIntNullableFilter<"PortalQuestionnaireItem"> | bigint | number | null
+    fieldXmlId?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    fieldCode?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    fieldType?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    fieldStatus?: StringFilter<"PortalQuestionnaireItem"> | string
+    fieldCheckedAt?: DateTimeNullableFilter<"PortalQuestionnaireItem"> | Date | string | null
+    meta?: JsonNullableFilter<"PortalQuestionnaireItem">
+    isActive?: BoolFilter<"PortalQuestionnaireItem"> | boolean
+    createdAt?: DateTimeNullableFilter<"PortalQuestionnaireItem"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"PortalQuestionnaireItem"> | Date | string | null
+    questionnaire?: XOR<PortalQuestionnaireScalarRelationFilter, PortalQuestionnaireWhereInput>
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+    options?: PortalQuestionnaireItemOptionListRelationFilter
+  }
+
+  export type PortalQuestionnaireItemOrderByWithRelationInput = {
+    id?: SortOrder
+    questionnaireId?: SortOrder
+    portal_id?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    placeholder?: SortOrderInput | SortOrder
+    hint?: SortOrderInput | SortOrder
+    groupTitle?: SortOrderInput | SortOrder
+    sort?: SortOrder
+    control?: SortOrder
+    isMultiple?: SortOrder
+    isRequired?: SortOrder
+    requireChange?: SortOrder
+    staleAfterDays?: SortOrderInput | SortOrder
+    channel?: SortOrder
+    targetMode?: SortOrder
+    targetEntity?: SortOrderInput | SortOrder
+    dtoPath?: SortOrderInput | SortOrder
+    smartId?: SortOrderInput | SortOrder
+    smartEntityTypeId?: SortOrderInput | SortOrder
+    isNative?: SortOrder
+    fieldName?: SortOrderInput | SortOrder
+    fieldBitrixId?: SortOrderInput | SortOrder
+    fieldXmlId?: SortOrderInput | SortOrder
+    fieldCode?: SortOrderInput | SortOrder
+    fieldType?: SortOrderInput | SortOrder
+    fieldStatus?: SortOrder
+    fieldCheckedAt?: SortOrderInput | SortOrder
+    meta?: SortOrderInput | SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    questionnaire?: PortalQuestionnaireOrderByWithRelationInput
+    portal?: PortalOrderByWithRelationInput
+    options?: PortalQuestionnaireItemOptionOrderByRelationAggregateInput
+    _relevance?: PortalQuestionnaireItemOrderByRelevanceInput
+  }
+
+  export type PortalQuestionnaireItemWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    questionnaireId_code?: PortalQuestionnaireItemQuestionnaireIdCodeCompoundUniqueInput
+    AND?: PortalQuestionnaireItemWhereInput | PortalQuestionnaireItemWhereInput[]
+    OR?: PortalQuestionnaireItemWhereInput[]
+    NOT?: PortalQuestionnaireItemWhereInput | PortalQuestionnaireItemWhereInput[]
+    questionnaireId?: StringFilter<"PortalQuestionnaireItem"> | string
+    portal_id?: BigIntFilter<"PortalQuestionnaireItem"> | bigint | number
+    code?: StringFilter<"PortalQuestionnaireItem"> | string
+    title?: StringFilter<"PortalQuestionnaireItem"> | string
+    placeholder?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    hint?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    groupTitle?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    sort?: IntFilter<"PortalQuestionnaireItem"> | number
+    control?: StringFilter<"PortalQuestionnaireItem"> | string
+    isMultiple?: BoolFilter<"PortalQuestionnaireItem"> | boolean
+    isRequired?: BoolFilter<"PortalQuestionnaireItem"> | boolean
+    requireChange?: BoolFilter<"PortalQuestionnaireItem"> | boolean
+    staleAfterDays?: IntNullableFilter<"PortalQuestionnaireItem"> | number | null
+    channel?: StringFilter<"PortalQuestionnaireItem"> | string
+    targetMode?: StringFilter<"PortalQuestionnaireItem"> | string
+    targetEntity?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    dtoPath?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    smartId?: BigIntNullableFilter<"PortalQuestionnaireItem"> | bigint | number | null
+    smartEntityTypeId?: BigIntNullableFilter<"PortalQuestionnaireItem"> | bigint | number | null
+    isNative?: BoolFilter<"PortalQuestionnaireItem"> | boolean
+    fieldName?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    fieldBitrixId?: BigIntNullableFilter<"PortalQuestionnaireItem"> | bigint | number | null
+    fieldXmlId?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    fieldCode?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    fieldType?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    fieldStatus?: StringFilter<"PortalQuestionnaireItem"> | string
+    fieldCheckedAt?: DateTimeNullableFilter<"PortalQuestionnaireItem"> | Date | string | null
+    meta?: JsonNullableFilter<"PortalQuestionnaireItem">
+    isActive?: BoolFilter<"PortalQuestionnaireItem"> | boolean
+    createdAt?: DateTimeNullableFilter<"PortalQuestionnaireItem"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"PortalQuestionnaireItem"> | Date | string | null
+    questionnaire?: XOR<PortalQuestionnaireScalarRelationFilter, PortalQuestionnaireWhereInput>
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+    options?: PortalQuestionnaireItemOptionListRelationFilter
+  }, "id" | "questionnaireId_code">
+
+  export type PortalQuestionnaireItemOrderByWithAggregationInput = {
+    id?: SortOrder
+    questionnaireId?: SortOrder
+    portal_id?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    placeholder?: SortOrderInput | SortOrder
+    hint?: SortOrderInput | SortOrder
+    groupTitle?: SortOrderInput | SortOrder
+    sort?: SortOrder
+    control?: SortOrder
+    isMultiple?: SortOrder
+    isRequired?: SortOrder
+    requireChange?: SortOrder
+    staleAfterDays?: SortOrderInput | SortOrder
+    channel?: SortOrder
+    targetMode?: SortOrder
+    targetEntity?: SortOrderInput | SortOrder
+    dtoPath?: SortOrderInput | SortOrder
+    smartId?: SortOrderInput | SortOrder
+    smartEntityTypeId?: SortOrderInput | SortOrder
+    isNative?: SortOrder
+    fieldName?: SortOrderInput | SortOrder
+    fieldBitrixId?: SortOrderInput | SortOrder
+    fieldXmlId?: SortOrderInput | SortOrder
+    fieldCode?: SortOrderInput | SortOrder
+    fieldType?: SortOrderInput | SortOrder
+    fieldStatus?: SortOrder
+    fieldCheckedAt?: SortOrderInput | SortOrder
+    meta?: SortOrderInput | SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _count?: PortalQuestionnaireItemCountOrderByAggregateInput
+    _avg?: PortalQuestionnaireItemAvgOrderByAggregateInput
+    _max?: PortalQuestionnaireItemMaxOrderByAggregateInput
+    _min?: PortalQuestionnaireItemMinOrderByAggregateInput
+    _sum?: PortalQuestionnaireItemSumOrderByAggregateInput
+  }
+
+  export type PortalQuestionnaireItemScalarWhereWithAggregatesInput = {
+    AND?: PortalQuestionnaireItemScalarWhereWithAggregatesInput | PortalQuestionnaireItemScalarWhereWithAggregatesInput[]
+    OR?: PortalQuestionnaireItemScalarWhereWithAggregatesInput[]
+    NOT?: PortalQuestionnaireItemScalarWhereWithAggregatesInput | PortalQuestionnaireItemScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"PortalQuestionnaireItem"> | string
+    questionnaireId?: StringWithAggregatesFilter<"PortalQuestionnaireItem"> | string
+    portal_id?: BigIntWithAggregatesFilter<"PortalQuestionnaireItem"> | bigint | number
+    code?: StringWithAggregatesFilter<"PortalQuestionnaireItem"> | string
+    title?: StringWithAggregatesFilter<"PortalQuestionnaireItem"> | string
+    placeholder?: StringNullableWithAggregatesFilter<"PortalQuestionnaireItem"> | string | null
+    hint?: StringNullableWithAggregatesFilter<"PortalQuestionnaireItem"> | string | null
+    groupTitle?: StringNullableWithAggregatesFilter<"PortalQuestionnaireItem"> | string | null
+    sort?: IntWithAggregatesFilter<"PortalQuestionnaireItem"> | number
+    control?: StringWithAggregatesFilter<"PortalQuestionnaireItem"> | string
+    isMultiple?: BoolWithAggregatesFilter<"PortalQuestionnaireItem"> | boolean
+    isRequired?: BoolWithAggregatesFilter<"PortalQuestionnaireItem"> | boolean
+    requireChange?: BoolWithAggregatesFilter<"PortalQuestionnaireItem"> | boolean
+    staleAfterDays?: IntNullableWithAggregatesFilter<"PortalQuestionnaireItem"> | number | null
+    channel?: StringWithAggregatesFilter<"PortalQuestionnaireItem"> | string
+    targetMode?: StringWithAggregatesFilter<"PortalQuestionnaireItem"> | string
+    targetEntity?: StringNullableWithAggregatesFilter<"PortalQuestionnaireItem"> | string | null
+    dtoPath?: StringNullableWithAggregatesFilter<"PortalQuestionnaireItem"> | string | null
+    smartId?: BigIntNullableWithAggregatesFilter<"PortalQuestionnaireItem"> | bigint | number | null
+    smartEntityTypeId?: BigIntNullableWithAggregatesFilter<"PortalQuestionnaireItem"> | bigint | number | null
+    isNative?: BoolWithAggregatesFilter<"PortalQuestionnaireItem"> | boolean
+    fieldName?: StringNullableWithAggregatesFilter<"PortalQuestionnaireItem"> | string | null
+    fieldBitrixId?: BigIntNullableWithAggregatesFilter<"PortalQuestionnaireItem"> | bigint | number | null
+    fieldXmlId?: StringNullableWithAggregatesFilter<"PortalQuestionnaireItem"> | string | null
+    fieldCode?: StringNullableWithAggregatesFilter<"PortalQuestionnaireItem"> | string | null
+    fieldType?: StringNullableWithAggregatesFilter<"PortalQuestionnaireItem"> | string | null
+    fieldStatus?: StringWithAggregatesFilter<"PortalQuestionnaireItem"> | string
+    fieldCheckedAt?: DateTimeNullableWithAggregatesFilter<"PortalQuestionnaireItem"> | Date | string | null
+    meta?: JsonNullableWithAggregatesFilter<"PortalQuestionnaireItem">
+    isActive?: BoolWithAggregatesFilter<"PortalQuestionnaireItem"> | boolean
+    createdAt?: DateTimeNullableWithAggregatesFilter<"PortalQuestionnaireItem"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"PortalQuestionnaireItem"> | Date | string | null
+  }
+
+  export type PortalQuestionnaireItemOptionWhereInput = {
+    AND?: PortalQuestionnaireItemOptionWhereInput | PortalQuestionnaireItemOptionWhereInput[]
+    OR?: PortalQuestionnaireItemOptionWhereInput[]
+    NOT?: PortalQuestionnaireItemOptionWhereInput | PortalQuestionnaireItemOptionWhereInput[]
+    id?: StringFilter<"PortalQuestionnaireItemOption"> | string
+    itemId?: StringFilter<"PortalQuestionnaireItemOption"> | string
+    code?: StringFilter<"PortalQuestionnaireItemOption"> | string
+    title?: StringFilter<"PortalQuestionnaireItemOption"> | string
+    bitrixId?: IntNullableFilter<"PortalQuestionnaireItemOption"> | number | null
+    xmlId?: StringNullableFilter<"PortalQuestionnaireItemOption"> | string | null
+    sort?: IntFilter<"PortalQuestionnaireItemOption"> | number
+    isDefault?: BoolFilter<"PortalQuestionnaireItemOption"> | boolean
+    isActive?: BoolFilter<"PortalQuestionnaireItemOption"> | boolean
+    createdAt?: DateTimeNullableFilter<"PortalQuestionnaireItemOption"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"PortalQuestionnaireItemOption"> | Date | string | null
+    item?: XOR<PortalQuestionnaireItemScalarRelationFilter, PortalQuestionnaireItemWhereInput>
+  }
+
+  export type PortalQuestionnaireItemOptionOrderByWithRelationInput = {
+    id?: SortOrder
+    itemId?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    bitrixId?: SortOrderInput | SortOrder
+    xmlId?: SortOrderInput | SortOrder
+    sort?: SortOrder
+    isDefault?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    item?: PortalQuestionnaireItemOrderByWithRelationInput
+    _relevance?: PortalQuestionnaireItemOptionOrderByRelevanceInput
+  }
+
+  export type PortalQuestionnaireItemOptionWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    itemId_code?: PortalQuestionnaireItemOptionItemIdCodeCompoundUniqueInput
+    AND?: PortalQuestionnaireItemOptionWhereInput | PortalQuestionnaireItemOptionWhereInput[]
+    OR?: PortalQuestionnaireItemOptionWhereInput[]
+    NOT?: PortalQuestionnaireItemOptionWhereInput | PortalQuestionnaireItemOptionWhereInput[]
+    itemId?: StringFilter<"PortalQuestionnaireItemOption"> | string
+    code?: StringFilter<"PortalQuestionnaireItemOption"> | string
+    title?: StringFilter<"PortalQuestionnaireItemOption"> | string
+    bitrixId?: IntNullableFilter<"PortalQuestionnaireItemOption"> | number | null
+    xmlId?: StringNullableFilter<"PortalQuestionnaireItemOption"> | string | null
+    sort?: IntFilter<"PortalQuestionnaireItemOption"> | number
+    isDefault?: BoolFilter<"PortalQuestionnaireItemOption"> | boolean
+    isActive?: BoolFilter<"PortalQuestionnaireItemOption"> | boolean
+    createdAt?: DateTimeNullableFilter<"PortalQuestionnaireItemOption"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"PortalQuestionnaireItemOption"> | Date | string | null
+    item?: XOR<PortalQuestionnaireItemScalarRelationFilter, PortalQuestionnaireItemWhereInput>
+  }, "id" | "itemId_code">
+
+  export type PortalQuestionnaireItemOptionOrderByWithAggregationInput = {
+    id?: SortOrder
+    itemId?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    bitrixId?: SortOrderInput | SortOrder
+    xmlId?: SortOrderInput | SortOrder
+    sort?: SortOrder
+    isDefault?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _count?: PortalQuestionnaireItemOptionCountOrderByAggregateInput
+    _avg?: PortalQuestionnaireItemOptionAvgOrderByAggregateInput
+    _max?: PortalQuestionnaireItemOptionMaxOrderByAggregateInput
+    _min?: PortalQuestionnaireItemOptionMinOrderByAggregateInput
+    _sum?: PortalQuestionnaireItemOptionSumOrderByAggregateInput
+  }
+
+  export type PortalQuestionnaireItemOptionScalarWhereWithAggregatesInput = {
+    AND?: PortalQuestionnaireItemOptionScalarWhereWithAggregatesInput | PortalQuestionnaireItemOptionScalarWhereWithAggregatesInput[]
+    OR?: PortalQuestionnaireItemOptionScalarWhereWithAggregatesInput[]
+    NOT?: PortalQuestionnaireItemOptionScalarWhereWithAggregatesInput | PortalQuestionnaireItemOptionScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"PortalQuestionnaireItemOption"> | string
+    itemId?: StringWithAggregatesFilter<"PortalQuestionnaireItemOption"> | string
+    code?: StringWithAggregatesFilter<"PortalQuestionnaireItemOption"> | string
+    title?: StringWithAggregatesFilter<"PortalQuestionnaireItemOption"> | string
+    bitrixId?: IntNullableWithAggregatesFilter<"PortalQuestionnaireItemOption"> | number | null
+    xmlId?: StringNullableWithAggregatesFilter<"PortalQuestionnaireItemOption"> | string | null
+    sort?: IntWithAggregatesFilter<"PortalQuestionnaireItemOption"> | number
+    isDefault?: BoolWithAggregatesFilter<"PortalQuestionnaireItemOption"> | boolean
+    isActive?: BoolWithAggregatesFilter<"PortalQuestionnaireItemOption"> | boolean
+    createdAt?: DateTimeNullableWithAggregatesFilter<"PortalQuestionnaireItemOption"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"PortalQuestionnaireItemOption"> | Date | string | null
   }
 
   export type SkapImportFileWhereInput = {
@@ -129390,6 +133962,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateInput = {
@@ -129455,6 +134029,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUpdateInput = {
@@ -129520,6 +134096,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateInput = {
@@ -129585,6 +134163,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateManyInput = {
@@ -129919,6 +134499,514 @@ export namespace Prisma {
     domain?: StringFieldUpdateOperationsInput | string
     appCode?: StringFieldUpdateOperationsInput | string
     settings?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalQuestionnaireCreateInput = {
+    id: string
+    domain: string
+    appCode: string
+    code: string
+    title: string
+    hint?: string | null
+    purpose: string
+    presentation?: string
+    place?: string | null
+    persist?: string
+    conditions?: NullableJsonNullValueInput | InputJsonValue
+    configKey?: string | null
+    legacyChecklistId?: string | null
+    isActive?: boolean
+    sort?: number
+    version?: number
+    updatedBy?: bigint | number | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutQuestionnairesInput
+    items?: PortalQuestionnaireItemCreateNestedManyWithoutQuestionnaireInput
+  }
+
+  export type PortalQuestionnaireUncheckedCreateInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    appCode: string
+    code: string
+    title: string
+    hint?: string | null
+    purpose: string
+    presentation?: string
+    place?: string | null
+    persist?: string
+    conditions?: NullableJsonNullValueInput | InputJsonValue
+    configKey?: string | null
+    legacyChecklistId?: string | null
+    isActive?: boolean
+    sort?: number
+    version?: number
+    updatedBy?: bigint | number | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    items?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutQuestionnaireInput
+  }
+
+  export type PortalQuestionnaireUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    appCode?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    purpose?: StringFieldUpdateOperationsInput | string
+    presentation?: StringFieldUpdateOperationsInput | string
+    place?: NullableStringFieldUpdateOperationsInput | string | null
+    persist?: StringFieldUpdateOperationsInput | string
+    conditions?: NullableJsonNullValueInput | InputJsonValue
+    configKey?: NullableStringFieldUpdateOperationsInput | string | null
+    legacyChecklistId?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    sort?: IntFieldUpdateOperationsInput | number
+    version?: IntFieldUpdateOperationsInput | number
+    updatedBy?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutQuestionnairesNestedInput
+    items?: PortalQuestionnaireItemUpdateManyWithoutQuestionnaireNestedInput
+  }
+
+  export type PortalQuestionnaireUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    appCode?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    purpose?: StringFieldUpdateOperationsInput | string
+    presentation?: StringFieldUpdateOperationsInput | string
+    place?: NullableStringFieldUpdateOperationsInput | string | null
+    persist?: StringFieldUpdateOperationsInput | string
+    conditions?: NullableJsonNullValueInput | InputJsonValue
+    configKey?: NullableStringFieldUpdateOperationsInput | string | null
+    legacyChecklistId?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    sort?: IntFieldUpdateOperationsInput | number
+    version?: IntFieldUpdateOperationsInput | number
+    updatedBy?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    items?: PortalQuestionnaireItemUncheckedUpdateManyWithoutQuestionnaireNestedInput
+  }
+
+  export type PortalQuestionnaireCreateManyInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    appCode: string
+    code: string
+    title: string
+    hint?: string | null
+    purpose: string
+    presentation?: string
+    place?: string | null
+    persist?: string
+    conditions?: NullableJsonNullValueInput | InputJsonValue
+    configKey?: string | null
+    legacyChecklistId?: string | null
+    isActive?: boolean
+    sort?: number
+    version?: number
+    updatedBy?: bigint | number | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalQuestionnaireUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    appCode?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    purpose?: StringFieldUpdateOperationsInput | string
+    presentation?: StringFieldUpdateOperationsInput | string
+    place?: NullableStringFieldUpdateOperationsInput | string | null
+    persist?: StringFieldUpdateOperationsInput | string
+    conditions?: NullableJsonNullValueInput | InputJsonValue
+    configKey?: NullableStringFieldUpdateOperationsInput | string | null
+    legacyChecklistId?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    sort?: IntFieldUpdateOperationsInput | number
+    version?: IntFieldUpdateOperationsInput | number
+    updatedBy?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalQuestionnaireUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    appCode?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    purpose?: StringFieldUpdateOperationsInput | string
+    presentation?: StringFieldUpdateOperationsInput | string
+    place?: NullableStringFieldUpdateOperationsInput | string | null
+    persist?: StringFieldUpdateOperationsInput | string
+    conditions?: NullableJsonNullValueInput | InputJsonValue
+    configKey?: NullableStringFieldUpdateOperationsInput | string | null
+    legacyChecklistId?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    sort?: IntFieldUpdateOperationsInput | number
+    version?: IntFieldUpdateOperationsInput | number
+    updatedBy?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalQuestionnaireItemCreateInput = {
+    id: string
+    code: string
+    title: string
+    placeholder?: string | null
+    hint?: string | null
+    groupTitle?: string | null
+    sort?: number
+    control: string
+    isMultiple?: boolean
+    isRequired?: boolean
+    requireChange?: boolean
+    staleAfterDays?: number | null
+    channel?: string
+    targetMode?: string
+    targetEntity?: string | null
+    dtoPath?: string | null
+    smartId?: bigint | number | null
+    smartEntityTypeId?: bigint | number | null
+    isNative?: boolean
+    fieldName?: string | null
+    fieldBitrixId?: bigint | number | null
+    fieldXmlId?: string | null
+    fieldCode?: string | null
+    fieldType?: string | null
+    fieldStatus?: string
+    fieldCheckedAt?: Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    questionnaire: PortalQuestionnaireCreateNestedOneWithoutItemsInput
+    portal: PortalCreateNestedOneWithoutQuestionnaireItemsInput
+    options?: PortalQuestionnaireItemOptionCreateNestedManyWithoutItemInput
+  }
+
+  export type PortalQuestionnaireItemUncheckedCreateInput = {
+    id: string
+    questionnaireId: string
+    portal_id: bigint | number
+    code: string
+    title: string
+    placeholder?: string | null
+    hint?: string | null
+    groupTitle?: string | null
+    sort?: number
+    control: string
+    isMultiple?: boolean
+    isRequired?: boolean
+    requireChange?: boolean
+    staleAfterDays?: number | null
+    channel?: string
+    targetMode?: string
+    targetEntity?: string | null
+    dtoPath?: string | null
+    smartId?: bigint | number | null
+    smartEntityTypeId?: bigint | number | null
+    isNative?: boolean
+    fieldName?: string | null
+    fieldBitrixId?: bigint | number | null
+    fieldXmlId?: string | null
+    fieldCode?: string | null
+    fieldType?: string | null
+    fieldStatus?: string
+    fieldCheckedAt?: Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    options?: PortalQuestionnaireItemOptionUncheckedCreateNestedManyWithoutItemInput
+  }
+
+  export type PortalQuestionnaireItemUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    placeholder?: NullableStringFieldUpdateOperationsInput | string | null
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    groupTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    control?: StringFieldUpdateOperationsInput | string
+    isMultiple?: BoolFieldUpdateOperationsInput | boolean
+    isRequired?: BoolFieldUpdateOperationsInput | boolean
+    requireChange?: BoolFieldUpdateOperationsInput | boolean
+    staleAfterDays?: NullableIntFieldUpdateOperationsInput | number | null
+    channel?: StringFieldUpdateOperationsInput | string
+    targetMode?: StringFieldUpdateOperationsInput | string
+    targetEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    dtoPath?: NullableStringFieldUpdateOperationsInput | string | null
+    smartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    smartEntityTypeId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    isNative?: BoolFieldUpdateOperationsInput | boolean
+    fieldName?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldBitrixId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    fieldXmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldCode?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldType?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldStatus?: StringFieldUpdateOperationsInput | string
+    fieldCheckedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    questionnaire?: PortalQuestionnaireUpdateOneRequiredWithoutItemsNestedInput
+    portal?: PortalUpdateOneRequiredWithoutQuestionnaireItemsNestedInput
+    options?: PortalQuestionnaireItemOptionUpdateManyWithoutItemNestedInput
+  }
+
+  export type PortalQuestionnaireItemUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    questionnaireId?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    placeholder?: NullableStringFieldUpdateOperationsInput | string | null
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    groupTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    control?: StringFieldUpdateOperationsInput | string
+    isMultiple?: BoolFieldUpdateOperationsInput | boolean
+    isRequired?: BoolFieldUpdateOperationsInput | boolean
+    requireChange?: BoolFieldUpdateOperationsInput | boolean
+    staleAfterDays?: NullableIntFieldUpdateOperationsInput | number | null
+    channel?: StringFieldUpdateOperationsInput | string
+    targetMode?: StringFieldUpdateOperationsInput | string
+    targetEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    dtoPath?: NullableStringFieldUpdateOperationsInput | string | null
+    smartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    smartEntityTypeId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    isNative?: BoolFieldUpdateOperationsInput | boolean
+    fieldName?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldBitrixId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    fieldXmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldCode?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldType?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldStatus?: StringFieldUpdateOperationsInput | string
+    fieldCheckedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    options?: PortalQuestionnaireItemOptionUncheckedUpdateManyWithoutItemNestedInput
+  }
+
+  export type PortalQuestionnaireItemCreateManyInput = {
+    id: string
+    questionnaireId: string
+    portal_id: bigint | number
+    code: string
+    title: string
+    placeholder?: string | null
+    hint?: string | null
+    groupTitle?: string | null
+    sort?: number
+    control: string
+    isMultiple?: boolean
+    isRequired?: boolean
+    requireChange?: boolean
+    staleAfterDays?: number | null
+    channel?: string
+    targetMode?: string
+    targetEntity?: string | null
+    dtoPath?: string | null
+    smartId?: bigint | number | null
+    smartEntityTypeId?: bigint | number | null
+    isNative?: boolean
+    fieldName?: string | null
+    fieldBitrixId?: bigint | number | null
+    fieldXmlId?: string | null
+    fieldCode?: string | null
+    fieldType?: string | null
+    fieldStatus?: string
+    fieldCheckedAt?: Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalQuestionnaireItemUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    placeholder?: NullableStringFieldUpdateOperationsInput | string | null
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    groupTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    control?: StringFieldUpdateOperationsInput | string
+    isMultiple?: BoolFieldUpdateOperationsInput | boolean
+    isRequired?: BoolFieldUpdateOperationsInput | boolean
+    requireChange?: BoolFieldUpdateOperationsInput | boolean
+    staleAfterDays?: NullableIntFieldUpdateOperationsInput | number | null
+    channel?: StringFieldUpdateOperationsInput | string
+    targetMode?: StringFieldUpdateOperationsInput | string
+    targetEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    dtoPath?: NullableStringFieldUpdateOperationsInput | string | null
+    smartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    smartEntityTypeId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    isNative?: BoolFieldUpdateOperationsInput | boolean
+    fieldName?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldBitrixId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    fieldXmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldCode?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldType?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldStatus?: StringFieldUpdateOperationsInput | string
+    fieldCheckedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalQuestionnaireItemUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    questionnaireId?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    placeholder?: NullableStringFieldUpdateOperationsInput | string | null
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    groupTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    control?: StringFieldUpdateOperationsInput | string
+    isMultiple?: BoolFieldUpdateOperationsInput | boolean
+    isRequired?: BoolFieldUpdateOperationsInput | boolean
+    requireChange?: BoolFieldUpdateOperationsInput | boolean
+    staleAfterDays?: NullableIntFieldUpdateOperationsInput | number | null
+    channel?: StringFieldUpdateOperationsInput | string
+    targetMode?: StringFieldUpdateOperationsInput | string
+    targetEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    dtoPath?: NullableStringFieldUpdateOperationsInput | string | null
+    smartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    smartEntityTypeId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    isNative?: BoolFieldUpdateOperationsInput | boolean
+    fieldName?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldBitrixId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    fieldXmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldCode?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldType?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldStatus?: StringFieldUpdateOperationsInput | string
+    fieldCheckedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalQuestionnaireItemOptionCreateInput = {
+    id: string
+    code: string
+    title: string
+    bitrixId?: number | null
+    xmlId?: string | null
+    sort?: number
+    isDefault?: boolean
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    item: PortalQuestionnaireItemCreateNestedOneWithoutOptionsInput
+  }
+
+  export type PortalQuestionnaireItemOptionUncheckedCreateInput = {
+    id: string
+    itemId: string
+    code: string
+    title: string
+    bitrixId?: number | null
+    xmlId?: string | null
+    sort?: number
+    isDefault?: boolean
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalQuestionnaireItemOptionUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    bitrixId?: NullableIntFieldUpdateOperationsInput | number | null
+    xmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    item?: PortalQuestionnaireItemUpdateOneRequiredWithoutOptionsNestedInput
+  }
+
+  export type PortalQuestionnaireItemOptionUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    itemId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    bitrixId?: NullableIntFieldUpdateOperationsInput | number | null
+    xmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalQuestionnaireItemOptionCreateManyInput = {
+    id: string
+    itemId: string
+    code: string
+    title: string
+    bitrixId?: number | null
+    xmlId?: string | null
+    sort?: number
+    isDefault?: boolean
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalQuestionnaireItemOptionUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    bitrixId?: NullableIntFieldUpdateOperationsInput | number | null
+    xmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalQuestionnaireItemOptionUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    itemId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    bitrixId?: NullableIntFieldUpdateOperationsInput | number | null
+    xmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
@@ -139801,6 +144889,18 @@ export namespace Prisma {
     none?: SkapImportRunWhereInput
   }
 
+  export type PortalQuestionnaireListRelationFilter = {
+    every?: PortalQuestionnaireWhereInput
+    some?: PortalQuestionnaireWhereInput
+    none?: PortalQuestionnaireWhereInput
+  }
+
+  export type PortalQuestionnaireItemListRelationFilter = {
+    every?: PortalQuestionnaireItemWhereInput
+    some?: PortalQuestionnaireItemWhereInput
+    none?: PortalQuestionnaireItemWhereInput
+  }
+
   export type bitrix_appsOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -139922,6 +145022,14 @@ export namespace Prisma {
   }
 
   export type SkapImportRunOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type PortalQuestionnaireOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type PortalQuestionnaireItemOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -140228,6 +145336,314 @@ export namespace Prisma {
 
   export type PortalAppSettingsSumOrderByAggregateInput = {
     portal_id?: SortOrder
+  }
+
+  export type PortalQuestionnaireOrderByRelevanceInput = {
+    fields: PortalQuestionnaireOrderByRelevanceFieldEnum | PortalQuestionnaireOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type PortalQuestionnairePortal_idAppCodeCodeCompoundUniqueInput = {
+    portal_id: bigint | number
+    appCode: string
+    code: string
+  }
+
+  export type PortalQuestionnaireCountOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    appCode?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    hint?: SortOrder
+    purpose?: SortOrder
+    presentation?: SortOrder
+    place?: SortOrder
+    persist?: SortOrder
+    conditions?: SortOrder
+    configKey?: SortOrder
+    legacyChecklistId?: SortOrder
+    isActive?: SortOrder
+    sort?: SortOrder
+    version?: SortOrder
+    updatedBy?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PortalQuestionnaireAvgOrderByAggregateInput = {
+    portal_id?: SortOrder
+    sort?: SortOrder
+    version?: SortOrder
+    updatedBy?: SortOrder
+  }
+
+  export type PortalQuestionnaireMaxOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    appCode?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    hint?: SortOrder
+    purpose?: SortOrder
+    presentation?: SortOrder
+    place?: SortOrder
+    persist?: SortOrder
+    configKey?: SortOrder
+    legacyChecklistId?: SortOrder
+    isActive?: SortOrder
+    sort?: SortOrder
+    version?: SortOrder
+    updatedBy?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PortalQuestionnaireMinOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    appCode?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    hint?: SortOrder
+    purpose?: SortOrder
+    presentation?: SortOrder
+    place?: SortOrder
+    persist?: SortOrder
+    configKey?: SortOrder
+    legacyChecklistId?: SortOrder
+    isActive?: SortOrder
+    sort?: SortOrder
+    version?: SortOrder
+    updatedBy?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PortalQuestionnaireSumOrderByAggregateInput = {
+    portal_id?: SortOrder
+    sort?: SortOrder
+    version?: SortOrder
+    updatedBy?: SortOrder
+  }
+
+  export type PortalQuestionnaireScalarRelationFilter = {
+    is?: PortalQuestionnaireWhereInput
+    isNot?: PortalQuestionnaireWhereInput
+  }
+
+  export type PortalQuestionnaireItemOptionListRelationFilter = {
+    every?: PortalQuestionnaireItemOptionWhereInput
+    some?: PortalQuestionnaireItemOptionWhereInput
+    none?: PortalQuestionnaireItemOptionWhereInput
+  }
+
+  export type PortalQuestionnaireItemOptionOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type PortalQuestionnaireItemOrderByRelevanceInput = {
+    fields: PortalQuestionnaireItemOrderByRelevanceFieldEnum | PortalQuestionnaireItemOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type PortalQuestionnaireItemQuestionnaireIdCodeCompoundUniqueInput = {
+    questionnaireId: string
+    code: string
+  }
+
+  export type PortalQuestionnaireItemCountOrderByAggregateInput = {
+    id?: SortOrder
+    questionnaireId?: SortOrder
+    portal_id?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    placeholder?: SortOrder
+    hint?: SortOrder
+    groupTitle?: SortOrder
+    sort?: SortOrder
+    control?: SortOrder
+    isMultiple?: SortOrder
+    isRequired?: SortOrder
+    requireChange?: SortOrder
+    staleAfterDays?: SortOrder
+    channel?: SortOrder
+    targetMode?: SortOrder
+    targetEntity?: SortOrder
+    dtoPath?: SortOrder
+    smartId?: SortOrder
+    smartEntityTypeId?: SortOrder
+    isNative?: SortOrder
+    fieldName?: SortOrder
+    fieldBitrixId?: SortOrder
+    fieldXmlId?: SortOrder
+    fieldCode?: SortOrder
+    fieldType?: SortOrder
+    fieldStatus?: SortOrder
+    fieldCheckedAt?: SortOrder
+    meta?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PortalQuestionnaireItemAvgOrderByAggregateInput = {
+    portal_id?: SortOrder
+    sort?: SortOrder
+    staleAfterDays?: SortOrder
+    smartId?: SortOrder
+    smartEntityTypeId?: SortOrder
+    fieldBitrixId?: SortOrder
+  }
+
+  export type PortalQuestionnaireItemMaxOrderByAggregateInput = {
+    id?: SortOrder
+    questionnaireId?: SortOrder
+    portal_id?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    placeholder?: SortOrder
+    hint?: SortOrder
+    groupTitle?: SortOrder
+    sort?: SortOrder
+    control?: SortOrder
+    isMultiple?: SortOrder
+    isRequired?: SortOrder
+    requireChange?: SortOrder
+    staleAfterDays?: SortOrder
+    channel?: SortOrder
+    targetMode?: SortOrder
+    targetEntity?: SortOrder
+    dtoPath?: SortOrder
+    smartId?: SortOrder
+    smartEntityTypeId?: SortOrder
+    isNative?: SortOrder
+    fieldName?: SortOrder
+    fieldBitrixId?: SortOrder
+    fieldXmlId?: SortOrder
+    fieldCode?: SortOrder
+    fieldType?: SortOrder
+    fieldStatus?: SortOrder
+    fieldCheckedAt?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PortalQuestionnaireItemMinOrderByAggregateInput = {
+    id?: SortOrder
+    questionnaireId?: SortOrder
+    portal_id?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    placeholder?: SortOrder
+    hint?: SortOrder
+    groupTitle?: SortOrder
+    sort?: SortOrder
+    control?: SortOrder
+    isMultiple?: SortOrder
+    isRequired?: SortOrder
+    requireChange?: SortOrder
+    staleAfterDays?: SortOrder
+    channel?: SortOrder
+    targetMode?: SortOrder
+    targetEntity?: SortOrder
+    dtoPath?: SortOrder
+    smartId?: SortOrder
+    smartEntityTypeId?: SortOrder
+    isNative?: SortOrder
+    fieldName?: SortOrder
+    fieldBitrixId?: SortOrder
+    fieldXmlId?: SortOrder
+    fieldCode?: SortOrder
+    fieldType?: SortOrder
+    fieldStatus?: SortOrder
+    fieldCheckedAt?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PortalQuestionnaireItemSumOrderByAggregateInput = {
+    portal_id?: SortOrder
+    sort?: SortOrder
+    staleAfterDays?: SortOrder
+    smartId?: SortOrder
+    smartEntityTypeId?: SortOrder
+    fieldBitrixId?: SortOrder
+  }
+
+  export type PortalQuestionnaireItemScalarRelationFilter = {
+    is?: PortalQuestionnaireItemWhereInput
+    isNot?: PortalQuestionnaireItemWhereInput
+  }
+
+  export type PortalQuestionnaireItemOptionOrderByRelevanceInput = {
+    fields: PortalQuestionnaireItemOptionOrderByRelevanceFieldEnum | PortalQuestionnaireItemOptionOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type PortalQuestionnaireItemOptionItemIdCodeCompoundUniqueInput = {
+    itemId: string
+    code: string
+  }
+
+  export type PortalQuestionnaireItemOptionCountOrderByAggregateInput = {
+    id?: SortOrder
+    itemId?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    bitrixId?: SortOrder
+    xmlId?: SortOrder
+    sort?: SortOrder
+    isDefault?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PortalQuestionnaireItemOptionAvgOrderByAggregateInput = {
+    bitrixId?: SortOrder
+    sort?: SortOrder
+  }
+
+  export type PortalQuestionnaireItemOptionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    itemId?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    bitrixId?: SortOrder
+    xmlId?: SortOrder
+    sort?: SortOrder
+    isDefault?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PortalQuestionnaireItemOptionMinOrderByAggregateInput = {
+    id?: SortOrder
+    itemId?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    bitrixId?: SortOrder
+    xmlId?: SortOrder
+    sort?: SortOrder
+    isDefault?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PortalQuestionnaireItemOptionSumOrderByAggregateInput = {
+    bitrixId?: SortOrder
+    sort?: SortOrder
   }
 
   export type SkapImportFileOrderByRelevanceInput = {
@@ -146590,6 +152006,20 @@ export namespace Prisma {
     connect?: SkapImportRunWhereUniqueInput | SkapImportRunWhereUniqueInput[]
   }
 
+  export type PortalQuestionnaireCreateNestedManyWithoutPortalInput = {
+    create?: XOR<PortalQuestionnaireCreateWithoutPortalInput, PortalQuestionnaireUncheckedCreateWithoutPortalInput> | PortalQuestionnaireCreateWithoutPortalInput[] | PortalQuestionnaireUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: PortalQuestionnaireCreateOrConnectWithoutPortalInput | PortalQuestionnaireCreateOrConnectWithoutPortalInput[]
+    createMany?: PortalQuestionnaireCreateManyPortalInputEnvelope
+    connect?: PortalQuestionnaireWhereUniqueInput | PortalQuestionnaireWhereUniqueInput[]
+  }
+
+  export type PortalQuestionnaireItemCreateNestedManyWithoutPortalInput = {
+    create?: XOR<PortalQuestionnaireItemCreateWithoutPortalInput, PortalQuestionnaireItemUncheckedCreateWithoutPortalInput> | PortalQuestionnaireItemCreateWithoutPortalInput[] | PortalQuestionnaireItemUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: PortalQuestionnaireItemCreateOrConnectWithoutPortalInput | PortalQuestionnaireItemCreateOrConnectWithoutPortalInput[]
+    createMany?: PortalQuestionnaireItemCreateManyPortalInputEnvelope
+    connect?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+  }
+
   export type bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput = {
     create?: XOR<bitrix_appsCreateWithoutPortalsInput, bitrix_appsUncheckedCreateWithoutPortalsInput> | bitrix_appsCreateWithoutPortalsInput[] | bitrix_appsUncheckedCreateWithoutPortalsInput[]
     connectOrCreate?: bitrix_appsCreateOrConnectWithoutPortalsInput | bitrix_appsCreateOrConnectWithoutPortalsInput[]
@@ -146839,6 +152269,20 @@ export namespace Prisma {
     connectOrCreate?: SkapImportRunCreateOrConnectWithoutPortalInput | SkapImportRunCreateOrConnectWithoutPortalInput[]
     createMany?: SkapImportRunCreateManyPortalInputEnvelope
     connect?: SkapImportRunWhereUniqueInput | SkapImportRunWhereUniqueInput[]
+  }
+
+  export type PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput = {
+    create?: XOR<PortalQuestionnaireCreateWithoutPortalInput, PortalQuestionnaireUncheckedCreateWithoutPortalInput> | PortalQuestionnaireCreateWithoutPortalInput[] | PortalQuestionnaireUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: PortalQuestionnaireCreateOrConnectWithoutPortalInput | PortalQuestionnaireCreateOrConnectWithoutPortalInput[]
+    createMany?: PortalQuestionnaireCreateManyPortalInputEnvelope
+    connect?: PortalQuestionnaireWhereUniqueInput | PortalQuestionnaireWhereUniqueInput[]
+  }
+
+  export type PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput = {
+    create?: XOR<PortalQuestionnaireItemCreateWithoutPortalInput, PortalQuestionnaireItemUncheckedCreateWithoutPortalInput> | PortalQuestionnaireItemCreateWithoutPortalInput[] | PortalQuestionnaireItemUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: PortalQuestionnaireItemCreateOrConnectWithoutPortalInput | PortalQuestionnaireItemCreateOrConnectWithoutPortalInput[]
+    createMany?: PortalQuestionnaireItemCreateManyPortalInputEnvelope
+    connect?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
   }
 
   export type bitrix_appsUpdateManyWithoutPortalsNestedInput = {
@@ -147351,6 +152795,34 @@ export namespace Prisma {
     deleteMany?: SkapImportRunScalarWhereInput | SkapImportRunScalarWhereInput[]
   }
 
+  export type PortalQuestionnaireUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<PortalQuestionnaireCreateWithoutPortalInput, PortalQuestionnaireUncheckedCreateWithoutPortalInput> | PortalQuestionnaireCreateWithoutPortalInput[] | PortalQuestionnaireUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: PortalQuestionnaireCreateOrConnectWithoutPortalInput | PortalQuestionnaireCreateOrConnectWithoutPortalInput[]
+    upsert?: PortalQuestionnaireUpsertWithWhereUniqueWithoutPortalInput | PortalQuestionnaireUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: PortalQuestionnaireCreateManyPortalInputEnvelope
+    set?: PortalQuestionnaireWhereUniqueInput | PortalQuestionnaireWhereUniqueInput[]
+    disconnect?: PortalQuestionnaireWhereUniqueInput | PortalQuestionnaireWhereUniqueInput[]
+    delete?: PortalQuestionnaireWhereUniqueInput | PortalQuestionnaireWhereUniqueInput[]
+    connect?: PortalQuestionnaireWhereUniqueInput | PortalQuestionnaireWhereUniqueInput[]
+    update?: PortalQuestionnaireUpdateWithWhereUniqueWithoutPortalInput | PortalQuestionnaireUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: PortalQuestionnaireUpdateManyWithWhereWithoutPortalInput | PortalQuestionnaireUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: PortalQuestionnaireScalarWhereInput | PortalQuestionnaireScalarWhereInput[]
+  }
+
+  export type PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<PortalQuestionnaireItemCreateWithoutPortalInput, PortalQuestionnaireItemUncheckedCreateWithoutPortalInput> | PortalQuestionnaireItemCreateWithoutPortalInput[] | PortalQuestionnaireItemUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: PortalQuestionnaireItemCreateOrConnectWithoutPortalInput | PortalQuestionnaireItemCreateOrConnectWithoutPortalInput[]
+    upsert?: PortalQuestionnaireItemUpsertWithWhereUniqueWithoutPortalInput | PortalQuestionnaireItemUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: PortalQuestionnaireItemCreateManyPortalInputEnvelope
+    set?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+    disconnect?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+    delete?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+    connect?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+    update?: PortalQuestionnaireItemUpdateWithWhereUniqueWithoutPortalInput | PortalQuestionnaireItemUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: PortalQuestionnaireItemUpdateManyWithWhereWithoutPortalInput | PortalQuestionnaireItemUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: PortalQuestionnaireItemScalarWhereInput | PortalQuestionnaireItemScalarWhereInput[]
+  }
+
   export type bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput = {
     create?: XOR<bitrix_appsCreateWithoutPortalsInput, bitrix_appsUncheckedCreateWithoutPortalsInput> | bitrix_appsCreateWithoutPortalsInput[] | bitrix_appsUncheckedCreateWithoutPortalsInput[]
     connectOrCreate?: bitrix_appsCreateOrConnectWithoutPortalsInput | bitrix_appsCreateOrConnectWithoutPortalsInput[]
@@ -147851,6 +153323,34 @@ export namespace Prisma {
     deleteMany?: SkapImportRunScalarWhereInput | SkapImportRunScalarWhereInput[]
   }
 
+  export type PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<PortalQuestionnaireCreateWithoutPortalInput, PortalQuestionnaireUncheckedCreateWithoutPortalInput> | PortalQuestionnaireCreateWithoutPortalInput[] | PortalQuestionnaireUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: PortalQuestionnaireCreateOrConnectWithoutPortalInput | PortalQuestionnaireCreateOrConnectWithoutPortalInput[]
+    upsert?: PortalQuestionnaireUpsertWithWhereUniqueWithoutPortalInput | PortalQuestionnaireUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: PortalQuestionnaireCreateManyPortalInputEnvelope
+    set?: PortalQuestionnaireWhereUniqueInput | PortalQuestionnaireWhereUniqueInput[]
+    disconnect?: PortalQuestionnaireWhereUniqueInput | PortalQuestionnaireWhereUniqueInput[]
+    delete?: PortalQuestionnaireWhereUniqueInput | PortalQuestionnaireWhereUniqueInput[]
+    connect?: PortalQuestionnaireWhereUniqueInput | PortalQuestionnaireWhereUniqueInput[]
+    update?: PortalQuestionnaireUpdateWithWhereUniqueWithoutPortalInput | PortalQuestionnaireUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: PortalQuestionnaireUpdateManyWithWhereWithoutPortalInput | PortalQuestionnaireUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: PortalQuestionnaireScalarWhereInput | PortalQuestionnaireScalarWhereInput[]
+  }
+
+  export type PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<PortalQuestionnaireItemCreateWithoutPortalInput, PortalQuestionnaireItemUncheckedCreateWithoutPortalInput> | PortalQuestionnaireItemCreateWithoutPortalInput[] | PortalQuestionnaireItemUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: PortalQuestionnaireItemCreateOrConnectWithoutPortalInput | PortalQuestionnaireItemCreateOrConnectWithoutPortalInput[]
+    upsert?: PortalQuestionnaireItemUpsertWithWhereUniqueWithoutPortalInput | PortalQuestionnaireItemUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: PortalQuestionnaireItemCreateManyPortalInputEnvelope
+    set?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+    disconnect?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+    delete?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+    connect?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+    update?: PortalQuestionnaireItemUpdateWithWhereUniqueWithoutPortalInput | PortalQuestionnaireItemUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: PortalQuestionnaireItemUpdateManyWithWhereWithoutPortalInput | PortalQuestionnaireItemUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: PortalQuestionnaireItemScalarWhereInput | PortalQuestionnaireItemScalarWhereInput[]
+  }
+
   export type PortalCreateNestedOneWithoutAiSettingsInput = {
     create?: XOR<PortalCreateWithoutAiSettingsInput, PortalUncheckedCreateWithoutAiSettingsInput>
     connectOrCreate?: PortalCreateOrConnectWithoutAiSettingsInput
@@ -147877,6 +153377,146 @@ export namespace Prisma {
     upsert?: PortalUpsertWithoutAppSettingsInput
     connect?: PortalWhereUniqueInput
     update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutAppSettingsInput, PortalUpdateWithoutAppSettingsInput>, PortalUncheckedUpdateWithoutAppSettingsInput>
+  }
+
+  export type PortalCreateNestedOneWithoutQuestionnairesInput = {
+    create?: XOR<PortalCreateWithoutQuestionnairesInput, PortalUncheckedCreateWithoutQuestionnairesInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutQuestionnairesInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type PortalQuestionnaireItemCreateNestedManyWithoutQuestionnaireInput = {
+    create?: XOR<PortalQuestionnaireItemCreateWithoutQuestionnaireInput, PortalQuestionnaireItemUncheckedCreateWithoutQuestionnaireInput> | PortalQuestionnaireItemCreateWithoutQuestionnaireInput[] | PortalQuestionnaireItemUncheckedCreateWithoutQuestionnaireInput[]
+    connectOrCreate?: PortalQuestionnaireItemCreateOrConnectWithoutQuestionnaireInput | PortalQuestionnaireItemCreateOrConnectWithoutQuestionnaireInput[]
+    createMany?: PortalQuestionnaireItemCreateManyQuestionnaireInputEnvelope
+    connect?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+  }
+
+  export type PortalQuestionnaireItemUncheckedCreateNestedManyWithoutQuestionnaireInput = {
+    create?: XOR<PortalQuestionnaireItemCreateWithoutQuestionnaireInput, PortalQuestionnaireItemUncheckedCreateWithoutQuestionnaireInput> | PortalQuestionnaireItemCreateWithoutQuestionnaireInput[] | PortalQuestionnaireItemUncheckedCreateWithoutQuestionnaireInput[]
+    connectOrCreate?: PortalQuestionnaireItemCreateOrConnectWithoutQuestionnaireInput | PortalQuestionnaireItemCreateOrConnectWithoutQuestionnaireInput[]
+    createMany?: PortalQuestionnaireItemCreateManyQuestionnaireInputEnvelope
+    connect?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+  }
+
+  export type PortalUpdateOneRequiredWithoutQuestionnairesNestedInput = {
+    create?: XOR<PortalCreateWithoutQuestionnairesInput, PortalUncheckedCreateWithoutQuestionnairesInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutQuestionnairesInput
+    upsert?: PortalUpsertWithoutQuestionnairesInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutQuestionnairesInput, PortalUpdateWithoutQuestionnairesInput>, PortalUncheckedUpdateWithoutQuestionnairesInput>
+  }
+
+  export type PortalQuestionnaireItemUpdateManyWithoutQuestionnaireNestedInput = {
+    create?: XOR<PortalQuestionnaireItemCreateWithoutQuestionnaireInput, PortalQuestionnaireItemUncheckedCreateWithoutQuestionnaireInput> | PortalQuestionnaireItemCreateWithoutQuestionnaireInput[] | PortalQuestionnaireItemUncheckedCreateWithoutQuestionnaireInput[]
+    connectOrCreate?: PortalQuestionnaireItemCreateOrConnectWithoutQuestionnaireInput | PortalQuestionnaireItemCreateOrConnectWithoutQuestionnaireInput[]
+    upsert?: PortalQuestionnaireItemUpsertWithWhereUniqueWithoutQuestionnaireInput | PortalQuestionnaireItemUpsertWithWhereUniqueWithoutQuestionnaireInput[]
+    createMany?: PortalQuestionnaireItemCreateManyQuestionnaireInputEnvelope
+    set?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+    disconnect?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+    delete?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+    connect?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+    update?: PortalQuestionnaireItemUpdateWithWhereUniqueWithoutQuestionnaireInput | PortalQuestionnaireItemUpdateWithWhereUniqueWithoutQuestionnaireInput[]
+    updateMany?: PortalQuestionnaireItemUpdateManyWithWhereWithoutQuestionnaireInput | PortalQuestionnaireItemUpdateManyWithWhereWithoutQuestionnaireInput[]
+    deleteMany?: PortalQuestionnaireItemScalarWhereInput | PortalQuestionnaireItemScalarWhereInput[]
+  }
+
+  export type PortalQuestionnaireItemUncheckedUpdateManyWithoutQuestionnaireNestedInput = {
+    create?: XOR<PortalQuestionnaireItemCreateWithoutQuestionnaireInput, PortalQuestionnaireItemUncheckedCreateWithoutQuestionnaireInput> | PortalQuestionnaireItemCreateWithoutQuestionnaireInput[] | PortalQuestionnaireItemUncheckedCreateWithoutQuestionnaireInput[]
+    connectOrCreate?: PortalQuestionnaireItemCreateOrConnectWithoutQuestionnaireInput | PortalQuestionnaireItemCreateOrConnectWithoutQuestionnaireInput[]
+    upsert?: PortalQuestionnaireItemUpsertWithWhereUniqueWithoutQuestionnaireInput | PortalQuestionnaireItemUpsertWithWhereUniqueWithoutQuestionnaireInput[]
+    createMany?: PortalQuestionnaireItemCreateManyQuestionnaireInputEnvelope
+    set?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+    disconnect?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+    delete?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+    connect?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+    update?: PortalQuestionnaireItemUpdateWithWhereUniqueWithoutQuestionnaireInput | PortalQuestionnaireItemUpdateWithWhereUniqueWithoutQuestionnaireInput[]
+    updateMany?: PortalQuestionnaireItemUpdateManyWithWhereWithoutQuestionnaireInput | PortalQuestionnaireItemUpdateManyWithWhereWithoutQuestionnaireInput[]
+    deleteMany?: PortalQuestionnaireItemScalarWhereInput | PortalQuestionnaireItemScalarWhereInput[]
+  }
+
+  export type PortalQuestionnaireCreateNestedOneWithoutItemsInput = {
+    create?: XOR<PortalQuestionnaireCreateWithoutItemsInput, PortalQuestionnaireUncheckedCreateWithoutItemsInput>
+    connectOrCreate?: PortalQuestionnaireCreateOrConnectWithoutItemsInput
+    connect?: PortalQuestionnaireWhereUniqueInput
+  }
+
+  export type PortalCreateNestedOneWithoutQuestionnaireItemsInput = {
+    create?: XOR<PortalCreateWithoutQuestionnaireItemsInput, PortalUncheckedCreateWithoutQuestionnaireItemsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutQuestionnaireItemsInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type PortalQuestionnaireItemOptionCreateNestedManyWithoutItemInput = {
+    create?: XOR<PortalQuestionnaireItemOptionCreateWithoutItemInput, PortalQuestionnaireItemOptionUncheckedCreateWithoutItemInput> | PortalQuestionnaireItemOptionCreateWithoutItemInput[] | PortalQuestionnaireItemOptionUncheckedCreateWithoutItemInput[]
+    connectOrCreate?: PortalQuestionnaireItemOptionCreateOrConnectWithoutItemInput | PortalQuestionnaireItemOptionCreateOrConnectWithoutItemInput[]
+    createMany?: PortalQuestionnaireItemOptionCreateManyItemInputEnvelope
+    connect?: PortalQuestionnaireItemOptionWhereUniqueInput | PortalQuestionnaireItemOptionWhereUniqueInput[]
+  }
+
+  export type PortalQuestionnaireItemOptionUncheckedCreateNestedManyWithoutItemInput = {
+    create?: XOR<PortalQuestionnaireItemOptionCreateWithoutItemInput, PortalQuestionnaireItemOptionUncheckedCreateWithoutItemInput> | PortalQuestionnaireItemOptionCreateWithoutItemInput[] | PortalQuestionnaireItemOptionUncheckedCreateWithoutItemInput[]
+    connectOrCreate?: PortalQuestionnaireItemOptionCreateOrConnectWithoutItemInput | PortalQuestionnaireItemOptionCreateOrConnectWithoutItemInput[]
+    createMany?: PortalQuestionnaireItemOptionCreateManyItemInputEnvelope
+    connect?: PortalQuestionnaireItemOptionWhereUniqueInput | PortalQuestionnaireItemOptionWhereUniqueInput[]
+  }
+
+  export type PortalQuestionnaireUpdateOneRequiredWithoutItemsNestedInput = {
+    create?: XOR<PortalQuestionnaireCreateWithoutItemsInput, PortalQuestionnaireUncheckedCreateWithoutItemsInput>
+    connectOrCreate?: PortalQuestionnaireCreateOrConnectWithoutItemsInput
+    upsert?: PortalQuestionnaireUpsertWithoutItemsInput
+    connect?: PortalQuestionnaireWhereUniqueInput
+    update?: XOR<XOR<PortalQuestionnaireUpdateToOneWithWhereWithoutItemsInput, PortalQuestionnaireUpdateWithoutItemsInput>, PortalQuestionnaireUncheckedUpdateWithoutItemsInput>
+  }
+
+  export type PortalUpdateOneRequiredWithoutQuestionnaireItemsNestedInput = {
+    create?: XOR<PortalCreateWithoutQuestionnaireItemsInput, PortalUncheckedCreateWithoutQuestionnaireItemsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutQuestionnaireItemsInput
+    upsert?: PortalUpsertWithoutQuestionnaireItemsInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutQuestionnaireItemsInput, PortalUpdateWithoutQuestionnaireItemsInput>, PortalUncheckedUpdateWithoutQuestionnaireItemsInput>
+  }
+
+  export type PortalQuestionnaireItemOptionUpdateManyWithoutItemNestedInput = {
+    create?: XOR<PortalQuestionnaireItemOptionCreateWithoutItemInput, PortalQuestionnaireItemOptionUncheckedCreateWithoutItemInput> | PortalQuestionnaireItemOptionCreateWithoutItemInput[] | PortalQuestionnaireItemOptionUncheckedCreateWithoutItemInput[]
+    connectOrCreate?: PortalQuestionnaireItemOptionCreateOrConnectWithoutItemInput | PortalQuestionnaireItemOptionCreateOrConnectWithoutItemInput[]
+    upsert?: PortalQuestionnaireItemOptionUpsertWithWhereUniqueWithoutItemInput | PortalQuestionnaireItemOptionUpsertWithWhereUniqueWithoutItemInput[]
+    createMany?: PortalQuestionnaireItemOptionCreateManyItemInputEnvelope
+    set?: PortalQuestionnaireItemOptionWhereUniqueInput | PortalQuestionnaireItemOptionWhereUniqueInput[]
+    disconnect?: PortalQuestionnaireItemOptionWhereUniqueInput | PortalQuestionnaireItemOptionWhereUniqueInput[]
+    delete?: PortalQuestionnaireItemOptionWhereUniqueInput | PortalQuestionnaireItemOptionWhereUniqueInput[]
+    connect?: PortalQuestionnaireItemOptionWhereUniqueInput | PortalQuestionnaireItemOptionWhereUniqueInput[]
+    update?: PortalQuestionnaireItemOptionUpdateWithWhereUniqueWithoutItemInput | PortalQuestionnaireItemOptionUpdateWithWhereUniqueWithoutItemInput[]
+    updateMany?: PortalQuestionnaireItemOptionUpdateManyWithWhereWithoutItemInput | PortalQuestionnaireItemOptionUpdateManyWithWhereWithoutItemInput[]
+    deleteMany?: PortalQuestionnaireItemOptionScalarWhereInput | PortalQuestionnaireItemOptionScalarWhereInput[]
+  }
+
+  export type PortalQuestionnaireItemOptionUncheckedUpdateManyWithoutItemNestedInput = {
+    create?: XOR<PortalQuestionnaireItemOptionCreateWithoutItemInput, PortalQuestionnaireItemOptionUncheckedCreateWithoutItemInput> | PortalQuestionnaireItemOptionCreateWithoutItemInput[] | PortalQuestionnaireItemOptionUncheckedCreateWithoutItemInput[]
+    connectOrCreate?: PortalQuestionnaireItemOptionCreateOrConnectWithoutItemInput | PortalQuestionnaireItemOptionCreateOrConnectWithoutItemInput[]
+    upsert?: PortalQuestionnaireItemOptionUpsertWithWhereUniqueWithoutItemInput | PortalQuestionnaireItemOptionUpsertWithWhereUniqueWithoutItemInput[]
+    createMany?: PortalQuestionnaireItemOptionCreateManyItemInputEnvelope
+    set?: PortalQuestionnaireItemOptionWhereUniqueInput | PortalQuestionnaireItemOptionWhereUniqueInput[]
+    disconnect?: PortalQuestionnaireItemOptionWhereUniqueInput | PortalQuestionnaireItemOptionWhereUniqueInput[]
+    delete?: PortalQuestionnaireItemOptionWhereUniqueInput | PortalQuestionnaireItemOptionWhereUniqueInput[]
+    connect?: PortalQuestionnaireItemOptionWhereUniqueInput | PortalQuestionnaireItemOptionWhereUniqueInput[]
+    update?: PortalQuestionnaireItemOptionUpdateWithWhereUniqueWithoutItemInput | PortalQuestionnaireItemOptionUpdateWithWhereUniqueWithoutItemInput[]
+    updateMany?: PortalQuestionnaireItemOptionUpdateManyWithWhereWithoutItemInput | PortalQuestionnaireItemOptionUpdateManyWithWhereWithoutItemInput[]
+    deleteMany?: PortalQuestionnaireItemOptionScalarWhereInput | PortalQuestionnaireItemOptionScalarWhereInput[]
+  }
+
+  export type PortalQuestionnaireItemCreateNestedOneWithoutOptionsInput = {
+    create?: XOR<PortalQuestionnaireItemCreateWithoutOptionsInput, PortalQuestionnaireItemUncheckedCreateWithoutOptionsInput>
+    connectOrCreate?: PortalQuestionnaireItemCreateOrConnectWithoutOptionsInput
+    connect?: PortalQuestionnaireItemWhereUniqueInput
+  }
+
+  export type PortalQuestionnaireItemUpdateOneRequiredWithoutOptionsNestedInput = {
+    create?: XOR<PortalQuestionnaireItemCreateWithoutOptionsInput, PortalQuestionnaireItemUncheckedCreateWithoutOptionsInput>
+    connectOrCreate?: PortalQuestionnaireItemCreateOrConnectWithoutOptionsInput
+    upsert?: PortalQuestionnaireItemUpsertWithoutOptionsInput
+    connect?: PortalQuestionnaireItemWhereUniqueInput
+    update?: XOR<XOR<PortalQuestionnaireItemUpdateToOneWithWhereWithoutOptionsInput, PortalQuestionnaireItemUpdateWithoutOptionsInput>, PortalQuestionnaireItemUncheckedUpdateWithoutOptionsInput>
   }
 
   export type PortalCreateNestedOneWithoutSkapImportFilesInput = {
@@ -150460,6 +156100,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAgentsInput = {
@@ -150524,6 +156166,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAgentsInput = {
@@ -150749,6 +156393,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAgentsInput = {
@@ -150813,6 +156459,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type rqsUpsertWithoutAgentsInput = {
@@ -151228,6 +156876,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBitrixlistsInput = {
@@ -151292,6 +156942,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBitrixlistsInput = {
@@ -151372,6 +157024,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBitrixlistsInput = {
@@ -151436,6 +157090,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type btx_stagesCreateWithoutBtx_categoriesInput = {
@@ -151566,6 +157222,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_companiesInput = {
@@ -151630,6 +157288,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_companiesInput = {
@@ -151710,6 +157370,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_companiesInput = {
@@ -151774,6 +157436,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_dealsInput = {
@@ -151838,6 +157502,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_dealsInput = {
@@ -151902,6 +157568,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_dealsInput = {
@@ -151982,6 +157650,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_dealsInput = {
@@ -152046,6 +157716,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_leadsInput = {
@@ -152110,6 +157782,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_leadsInput = {
@@ -152174,6 +157848,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_leadsInput = {
@@ -152254,6 +157930,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_leadsInput = {
@@ -152318,6 +157996,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_rpasInput = {
@@ -152382,6 +158062,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_rpasInput = {
@@ -152446,6 +158128,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_rpasInput = {
@@ -152526,6 +158210,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_rpasInput = {
@@ -152590,6 +158276,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type btx_categoriesCreateWithoutBtx_stagesInput = {
@@ -152738,6 +158426,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutCallingsInput = {
@@ -152802,6 +158492,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutCallingsInput = {
@@ -152882,6 +158574,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutCallingsInput = {
@@ -152946,6 +158640,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutClientsInput = {
@@ -153010,6 +158706,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutClientsInput = {
@@ -153074,6 +158772,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutClientsInput = {
@@ -153556,6 +159256,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutDepartamentsInput = {
@@ -153620,6 +159322,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutDepartamentsInput = {
@@ -153700,6 +159404,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutDepartamentsInput = {
@@ -153764,6 +159470,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type TemplateFieldCreateWithoutFieldsInput = {
@@ -155913,6 +161621,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_contractsInput = {
@@ -155977,6 +161687,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_contractsInput = {
@@ -156178,6 +161890,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_contractsInput = {
@@ -156242,6 +161956,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type portal_measureUpsertWithoutPortal_contractsInput = {
@@ -156406,6 +162122,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_measureInput = {
@@ -156470,6 +162188,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_measureInput = {
@@ -156599,6 +162319,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_measureInput = {
@@ -156663,6 +162385,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type bitrix_appsCreateWithoutPortalsInput = {
@@ -158159,6 +163883,142 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type PortalQuestionnaireCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    appCode: string
+    code: string
+    title: string
+    hint?: string | null
+    purpose: string
+    presentation?: string
+    place?: string | null
+    persist?: string
+    conditions?: NullableJsonNullValueInput | InputJsonValue
+    configKey?: string | null
+    legacyChecklistId?: string | null
+    isActive?: boolean
+    sort?: number
+    version?: number
+    updatedBy?: bigint | number | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    items?: PortalQuestionnaireItemCreateNestedManyWithoutQuestionnaireInput
+  }
+
+  export type PortalQuestionnaireUncheckedCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    appCode: string
+    code: string
+    title: string
+    hint?: string | null
+    purpose: string
+    presentation?: string
+    place?: string | null
+    persist?: string
+    conditions?: NullableJsonNullValueInput | InputJsonValue
+    configKey?: string | null
+    legacyChecklistId?: string | null
+    isActive?: boolean
+    sort?: number
+    version?: number
+    updatedBy?: bigint | number | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    items?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutQuestionnaireInput
+  }
+
+  export type PortalQuestionnaireCreateOrConnectWithoutPortalInput = {
+    where: PortalQuestionnaireWhereUniqueInput
+    create: XOR<PortalQuestionnaireCreateWithoutPortalInput, PortalQuestionnaireUncheckedCreateWithoutPortalInput>
+  }
+
+  export type PortalQuestionnaireCreateManyPortalInputEnvelope = {
+    data: PortalQuestionnaireCreateManyPortalInput | PortalQuestionnaireCreateManyPortalInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PortalQuestionnaireItemCreateWithoutPortalInput = {
+    id: string
+    code: string
+    title: string
+    placeholder?: string | null
+    hint?: string | null
+    groupTitle?: string | null
+    sort?: number
+    control: string
+    isMultiple?: boolean
+    isRequired?: boolean
+    requireChange?: boolean
+    staleAfterDays?: number | null
+    channel?: string
+    targetMode?: string
+    targetEntity?: string | null
+    dtoPath?: string | null
+    smartId?: bigint | number | null
+    smartEntityTypeId?: bigint | number | null
+    isNative?: boolean
+    fieldName?: string | null
+    fieldBitrixId?: bigint | number | null
+    fieldXmlId?: string | null
+    fieldCode?: string | null
+    fieldType?: string | null
+    fieldStatus?: string
+    fieldCheckedAt?: Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    questionnaire: PortalQuestionnaireCreateNestedOneWithoutItemsInput
+    options?: PortalQuestionnaireItemOptionCreateNestedManyWithoutItemInput
+  }
+
+  export type PortalQuestionnaireItemUncheckedCreateWithoutPortalInput = {
+    id: string
+    questionnaireId: string
+    code: string
+    title: string
+    placeholder?: string | null
+    hint?: string | null
+    groupTitle?: string | null
+    sort?: number
+    control: string
+    isMultiple?: boolean
+    isRequired?: boolean
+    requireChange?: boolean
+    staleAfterDays?: number | null
+    channel?: string
+    targetMode?: string
+    targetEntity?: string | null
+    dtoPath?: string | null
+    smartId?: bigint | number | null
+    smartEntityTypeId?: bigint | number | null
+    isNative?: boolean
+    fieldName?: string | null
+    fieldBitrixId?: bigint | number | null
+    fieldXmlId?: string | null
+    fieldCode?: string | null
+    fieldType?: string | null
+    fieldStatus?: string
+    fieldCheckedAt?: Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    options?: PortalQuestionnaireItemOptionUncheckedCreateNestedManyWithoutItemInput
+  }
+
+  export type PortalQuestionnaireItemCreateOrConnectWithoutPortalInput = {
+    where: PortalQuestionnaireItemWhereUniqueInput
+    create: XOR<PortalQuestionnaireItemCreateWithoutPortalInput, PortalQuestionnaireItemUncheckedCreateWithoutPortalInput>
+  }
+
+  export type PortalQuestionnaireItemCreateManyPortalInputEnvelope = {
+    data: PortalQuestionnaireItemCreateManyPortalInput | PortalQuestionnaireItemCreateManyPortalInput[]
+    skipDuplicates?: boolean
+  }
+
   export type bitrix_appsUpsertWithWhereUniqueWithoutPortalsInput = {
     where: bitrix_appsWhereUniqueInput
     update: XOR<bitrix_appsUpdateWithoutPortalsInput, bitrix_appsUncheckedUpdateWithoutPortalsInput>
@@ -159390,6 +165250,102 @@ export namespace Prisma {
     updatedAt?: DateTimeNullableFilter<"SkapImportRun"> | Date | string | null
   }
 
+  export type PortalQuestionnaireUpsertWithWhereUniqueWithoutPortalInput = {
+    where: PortalQuestionnaireWhereUniqueInput
+    update: XOR<PortalQuestionnaireUpdateWithoutPortalInput, PortalQuestionnaireUncheckedUpdateWithoutPortalInput>
+    create: XOR<PortalQuestionnaireCreateWithoutPortalInput, PortalQuestionnaireUncheckedCreateWithoutPortalInput>
+  }
+
+  export type PortalQuestionnaireUpdateWithWhereUniqueWithoutPortalInput = {
+    where: PortalQuestionnaireWhereUniqueInput
+    data: XOR<PortalQuestionnaireUpdateWithoutPortalInput, PortalQuestionnaireUncheckedUpdateWithoutPortalInput>
+  }
+
+  export type PortalQuestionnaireUpdateManyWithWhereWithoutPortalInput = {
+    where: PortalQuestionnaireScalarWhereInput
+    data: XOR<PortalQuestionnaireUpdateManyMutationInput, PortalQuestionnaireUncheckedUpdateManyWithoutPortalInput>
+  }
+
+  export type PortalQuestionnaireScalarWhereInput = {
+    AND?: PortalQuestionnaireScalarWhereInput | PortalQuestionnaireScalarWhereInput[]
+    OR?: PortalQuestionnaireScalarWhereInput[]
+    NOT?: PortalQuestionnaireScalarWhereInput | PortalQuestionnaireScalarWhereInput[]
+    id?: StringFilter<"PortalQuestionnaire"> | string
+    portal_id?: BigIntFilter<"PortalQuestionnaire"> | bigint | number
+    domain?: StringFilter<"PortalQuestionnaire"> | string
+    appCode?: StringFilter<"PortalQuestionnaire"> | string
+    code?: StringFilter<"PortalQuestionnaire"> | string
+    title?: StringFilter<"PortalQuestionnaire"> | string
+    hint?: StringNullableFilter<"PortalQuestionnaire"> | string | null
+    purpose?: StringFilter<"PortalQuestionnaire"> | string
+    presentation?: StringFilter<"PortalQuestionnaire"> | string
+    place?: StringNullableFilter<"PortalQuestionnaire"> | string | null
+    persist?: StringFilter<"PortalQuestionnaire"> | string
+    conditions?: JsonNullableFilter<"PortalQuestionnaire">
+    configKey?: StringNullableFilter<"PortalQuestionnaire"> | string | null
+    legacyChecklistId?: StringNullableFilter<"PortalQuestionnaire"> | string | null
+    isActive?: BoolFilter<"PortalQuestionnaire"> | boolean
+    sort?: IntFilter<"PortalQuestionnaire"> | number
+    version?: IntFilter<"PortalQuestionnaire"> | number
+    updatedBy?: BigIntNullableFilter<"PortalQuestionnaire"> | bigint | number | null
+    createdAt?: DateTimeNullableFilter<"PortalQuestionnaire"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"PortalQuestionnaire"> | Date | string | null
+  }
+
+  export type PortalQuestionnaireItemUpsertWithWhereUniqueWithoutPortalInput = {
+    where: PortalQuestionnaireItemWhereUniqueInput
+    update: XOR<PortalQuestionnaireItemUpdateWithoutPortalInput, PortalQuestionnaireItemUncheckedUpdateWithoutPortalInput>
+    create: XOR<PortalQuestionnaireItemCreateWithoutPortalInput, PortalQuestionnaireItemUncheckedCreateWithoutPortalInput>
+  }
+
+  export type PortalQuestionnaireItemUpdateWithWhereUniqueWithoutPortalInput = {
+    where: PortalQuestionnaireItemWhereUniqueInput
+    data: XOR<PortalQuestionnaireItemUpdateWithoutPortalInput, PortalQuestionnaireItemUncheckedUpdateWithoutPortalInput>
+  }
+
+  export type PortalQuestionnaireItemUpdateManyWithWhereWithoutPortalInput = {
+    where: PortalQuestionnaireItemScalarWhereInput
+    data: XOR<PortalQuestionnaireItemUpdateManyMutationInput, PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalInput>
+  }
+
+  export type PortalQuestionnaireItemScalarWhereInput = {
+    AND?: PortalQuestionnaireItemScalarWhereInput | PortalQuestionnaireItemScalarWhereInput[]
+    OR?: PortalQuestionnaireItemScalarWhereInput[]
+    NOT?: PortalQuestionnaireItemScalarWhereInput | PortalQuestionnaireItemScalarWhereInput[]
+    id?: StringFilter<"PortalQuestionnaireItem"> | string
+    questionnaireId?: StringFilter<"PortalQuestionnaireItem"> | string
+    portal_id?: BigIntFilter<"PortalQuestionnaireItem"> | bigint | number
+    code?: StringFilter<"PortalQuestionnaireItem"> | string
+    title?: StringFilter<"PortalQuestionnaireItem"> | string
+    placeholder?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    hint?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    groupTitle?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    sort?: IntFilter<"PortalQuestionnaireItem"> | number
+    control?: StringFilter<"PortalQuestionnaireItem"> | string
+    isMultiple?: BoolFilter<"PortalQuestionnaireItem"> | boolean
+    isRequired?: BoolFilter<"PortalQuestionnaireItem"> | boolean
+    requireChange?: BoolFilter<"PortalQuestionnaireItem"> | boolean
+    staleAfterDays?: IntNullableFilter<"PortalQuestionnaireItem"> | number | null
+    channel?: StringFilter<"PortalQuestionnaireItem"> | string
+    targetMode?: StringFilter<"PortalQuestionnaireItem"> | string
+    targetEntity?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    dtoPath?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    smartId?: BigIntNullableFilter<"PortalQuestionnaireItem"> | bigint | number | null
+    smartEntityTypeId?: BigIntNullableFilter<"PortalQuestionnaireItem"> | bigint | number | null
+    isNative?: BoolFilter<"PortalQuestionnaireItem"> | boolean
+    fieldName?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    fieldBitrixId?: BigIntNullableFilter<"PortalQuestionnaireItem"> | bigint | number | null
+    fieldXmlId?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    fieldCode?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    fieldType?: StringNullableFilter<"PortalQuestionnaireItem"> | string | null
+    fieldStatus?: StringFilter<"PortalQuestionnaireItem"> | string
+    fieldCheckedAt?: DateTimeNullableFilter<"PortalQuestionnaireItem"> | Date | string | null
+    meta?: JsonNullableFilter<"PortalQuestionnaireItem">
+    isActive?: BoolFilter<"PortalQuestionnaireItem"> | boolean
+    createdAt?: DateTimeNullableFilter<"PortalQuestionnaireItem"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"PortalQuestionnaireItem"> | Date | string | null
+  }
+
   export type PortalCreateWithoutAiSettingsInput = {
     id?: bigint | number
     created_at?: Date | string | null
@@ -159452,6 +165408,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAiSettingsInput = {
@@ -159516,6 +165474,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAiSettingsInput = {
@@ -159596,6 +165556,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAiSettingsInput = {
@@ -159660,6 +165622,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutAppSettingsInput = {
@@ -159724,6 +165688,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAppSettingsInput = {
@@ -159788,6 +165754,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAppSettingsInput = {
@@ -159868,6 +165836,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAppSettingsInput = {
@@ -159932,6 +165902,997 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalCreateWithoutQuestionnairesInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalUncheckedCreateWithoutQuestionnairesInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalCreateOrConnectWithoutQuestionnairesInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutQuestionnairesInput, PortalUncheckedCreateWithoutQuestionnairesInput>
+  }
+
+  export type PortalQuestionnaireItemCreateWithoutQuestionnaireInput = {
+    id: string
+    code: string
+    title: string
+    placeholder?: string | null
+    hint?: string | null
+    groupTitle?: string | null
+    sort?: number
+    control: string
+    isMultiple?: boolean
+    isRequired?: boolean
+    requireChange?: boolean
+    staleAfterDays?: number | null
+    channel?: string
+    targetMode?: string
+    targetEntity?: string | null
+    dtoPath?: string | null
+    smartId?: bigint | number | null
+    smartEntityTypeId?: bigint | number | null
+    isNative?: boolean
+    fieldName?: string | null
+    fieldBitrixId?: bigint | number | null
+    fieldXmlId?: string | null
+    fieldCode?: string | null
+    fieldType?: string | null
+    fieldStatus?: string
+    fieldCheckedAt?: Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutQuestionnaireItemsInput
+    options?: PortalQuestionnaireItemOptionCreateNestedManyWithoutItemInput
+  }
+
+  export type PortalQuestionnaireItemUncheckedCreateWithoutQuestionnaireInput = {
+    id: string
+    portal_id: bigint | number
+    code: string
+    title: string
+    placeholder?: string | null
+    hint?: string | null
+    groupTitle?: string | null
+    sort?: number
+    control: string
+    isMultiple?: boolean
+    isRequired?: boolean
+    requireChange?: boolean
+    staleAfterDays?: number | null
+    channel?: string
+    targetMode?: string
+    targetEntity?: string | null
+    dtoPath?: string | null
+    smartId?: bigint | number | null
+    smartEntityTypeId?: bigint | number | null
+    isNative?: boolean
+    fieldName?: string | null
+    fieldBitrixId?: bigint | number | null
+    fieldXmlId?: string | null
+    fieldCode?: string | null
+    fieldType?: string | null
+    fieldStatus?: string
+    fieldCheckedAt?: Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    options?: PortalQuestionnaireItemOptionUncheckedCreateNestedManyWithoutItemInput
+  }
+
+  export type PortalQuestionnaireItemCreateOrConnectWithoutQuestionnaireInput = {
+    where: PortalQuestionnaireItemWhereUniqueInput
+    create: XOR<PortalQuestionnaireItemCreateWithoutQuestionnaireInput, PortalQuestionnaireItemUncheckedCreateWithoutQuestionnaireInput>
+  }
+
+  export type PortalQuestionnaireItemCreateManyQuestionnaireInputEnvelope = {
+    data: PortalQuestionnaireItemCreateManyQuestionnaireInput | PortalQuestionnaireItemCreateManyQuestionnaireInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PortalUpsertWithoutQuestionnairesInput = {
+    update: XOR<PortalUpdateWithoutQuestionnairesInput, PortalUncheckedUpdateWithoutQuestionnairesInput>
+    create: XOR<PortalCreateWithoutQuestionnairesInput, PortalUncheckedCreateWithoutQuestionnairesInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutQuestionnairesInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutQuestionnairesInput, PortalUncheckedUpdateWithoutQuestionnairesInput>
+  }
+
+  export type PortalUpdateWithoutQuestionnairesInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutQuestionnairesInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalQuestionnaireItemUpsertWithWhereUniqueWithoutQuestionnaireInput = {
+    where: PortalQuestionnaireItemWhereUniqueInput
+    update: XOR<PortalQuestionnaireItemUpdateWithoutQuestionnaireInput, PortalQuestionnaireItemUncheckedUpdateWithoutQuestionnaireInput>
+    create: XOR<PortalQuestionnaireItemCreateWithoutQuestionnaireInput, PortalQuestionnaireItemUncheckedCreateWithoutQuestionnaireInput>
+  }
+
+  export type PortalQuestionnaireItemUpdateWithWhereUniqueWithoutQuestionnaireInput = {
+    where: PortalQuestionnaireItemWhereUniqueInput
+    data: XOR<PortalQuestionnaireItemUpdateWithoutQuestionnaireInput, PortalQuestionnaireItemUncheckedUpdateWithoutQuestionnaireInput>
+  }
+
+  export type PortalQuestionnaireItemUpdateManyWithWhereWithoutQuestionnaireInput = {
+    where: PortalQuestionnaireItemScalarWhereInput
+    data: XOR<PortalQuestionnaireItemUpdateManyMutationInput, PortalQuestionnaireItemUncheckedUpdateManyWithoutQuestionnaireInput>
+  }
+
+  export type PortalQuestionnaireCreateWithoutItemsInput = {
+    id: string
+    domain: string
+    appCode: string
+    code: string
+    title: string
+    hint?: string | null
+    purpose: string
+    presentation?: string
+    place?: string | null
+    persist?: string
+    conditions?: NullableJsonNullValueInput | InputJsonValue
+    configKey?: string | null
+    legacyChecklistId?: string | null
+    isActive?: boolean
+    sort?: number
+    version?: number
+    updatedBy?: bigint | number | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutQuestionnairesInput
+  }
+
+  export type PortalQuestionnaireUncheckedCreateWithoutItemsInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    appCode: string
+    code: string
+    title: string
+    hint?: string | null
+    purpose: string
+    presentation?: string
+    place?: string | null
+    persist?: string
+    conditions?: NullableJsonNullValueInput | InputJsonValue
+    configKey?: string | null
+    legacyChecklistId?: string | null
+    isActive?: boolean
+    sort?: number
+    version?: number
+    updatedBy?: bigint | number | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalQuestionnaireCreateOrConnectWithoutItemsInput = {
+    where: PortalQuestionnaireWhereUniqueInput
+    create: XOR<PortalQuestionnaireCreateWithoutItemsInput, PortalQuestionnaireUncheckedCreateWithoutItemsInput>
+  }
+
+  export type PortalCreateWithoutQuestionnaireItemsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalUncheckedCreateWithoutQuestionnaireItemsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalCreateOrConnectWithoutQuestionnaireItemsInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutQuestionnaireItemsInput, PortalUncheckedCreateWithoutQuestionnaireItemsInput>
+  }
+
+  export type PortalQuestionnaireItemOptionCreateWithoutItemInput = {
+    id: string
+    code: string
+    title: string
+    bitrixId?: number | null
+    xmlId?: string | null
+    sort?: number
+    isDefault?: boolean
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalQuestionnaireItemOptionUncheckedCreateWithoutItemInput = {
+    id: string
+    code: string
+    title: string
+    bitrixId?: number | null
+    xmlId?: string | null
+    sort?: number
+    isDefault?: boolean
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalQuestionnaireItemOptionCreateOrConnectWithoutItemInput = {
+    where: PortalQuestionnaireItemOptionWhereUniqueInput
+    create: XOR<PortalQuestionnaireItemOptionCreateWithoutItemInput, PortalQuestionnaireItemOptionUncheckedCreateWithoutItemInput>
+  }
+
+  export type PortalQuestionnaireItemOptionCreateManyItemInputEnvelope = {
+    data: PortalQuestionnaireItemOptionCreateManyItemInput | PortalQuestionnaireItemOptionCreateManyItemInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PortalQuestionnaireUpsertWithoutItemsInput = {
+    update: XOR<PortalQuestionnaireUpdateWithoutItemsInput, PortalQuestionnaireUncheckedUpdateWithoutItemsInput>
+    create: XOR<PortalQuestionnaireCreateWithoutItemsInput, PortalQuestionnaireUncheckedCreateWithoutItemsInput>
+    where?: PortalQuestionnaireWhereInput
+  }
+
+  export type PortalQuestionnaireUpdateToOneWithWhereWithoutItemsInput = {
+    where?: PortalQuestionnaireWhereInput
+    data: XOR<PortalQuestionnaireUpdateWithoutItemsInput, PortalQuestionnaireUncheckedUpdateWithoutItemsInput>
+  }
+
+  export type PortalQuestionnaireUpdateWithoutItemsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    appCode?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    purpose?: StringFieldUpdateOperationsInput | string
+    presentation?: StringFieldUpdateOperationsInput | string
+    place?: NullableStringFieldUpdateOperationsInput | string | null
+    persist?: StringFieldUpdateOperationsInput | string
+    conditions?: NullableJsonNullValueInput | InputJsonValue
+    configKey?: NullableStringFieldUpdateOperationsInput | string | null
+    legacyChecklistId?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    sort?: IntFieldUpdateOperationsInput | number
+    version?: IntFieldUpdateOperationsInput | number
+    updatedBy?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutQuestionnairesNestedInput
+  }
+
+  export type PortalQuestionnaireUncheckedUpdateWithoutItemsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    appCode?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    purpose?: StringFieldUpdateOperationsInput | string
+    presentation?: StringFieldUpdateOperationsInput | string
+    place?: NullableStringFieldUpdateOperationsInput | string | null
+    persist?: StringFieldUpdateOperationsInput | string
+    conditions?: NullableJsonNullValueInput | InputJsonValue
+    configKey?: NullableStringFieldUpdateOperationsInput | string | null
+    legacyChecklistId?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    sort?: IntFieldUpdateOperationsInput | number
+    version?: IntFieldUpdateOperationsInput | number
+    updatedBy?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalUpsertWithoutQuestionnaireItemsInput = {
+    update: XOR<PortalUpdateWithoutQuestionnaireItemsInput, PortalUncheckedUpdateWithoutQuestionnaireItemsInput>
+    create: XOR<PortalCreateWithoutQuestionnaireItemsInput, PortalUncheckedCreateWithoutQuestionnaireItemsInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutQuestionnaireItemsInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutQuestionnaireItemsInput, PortalUncheckedUpdateWithoutQuestionnaireItemsInput>
+  }
+
+  export type PortalUpdateWithoutQuestionnaireItemsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutQuestionnaireItemsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalQuestionnaireItemOptionUpsertWithWhereUniqueWithoutItemInput = {
+    where: PortalQuestionnaireItemOptionWhereUniqueInput
+    update: XOR<PortalQuestionnaireItemOptionUpdateWithoutItemInput, PortalQuestionnaireItemOptionUncheckedUpdateWithoutItemInput>
+    create: XOR<PortalQuestionnaireItemOptionCreateWithoutItemInput, PortalQuestionnaireItemOptionUncheckedCreateWithoutItemInput>
+  }
+
+  export type PortalQuestionnaireItemOptionUpdateWithWhereUniqueWithoutItemInput = {
+    where: PortalQuestionnaireItemOptionWhereUniqueInput
+    data: XOR<PortalQuestionnaireItemOptionUpdateWithoutItemInput, PortalQuestionnaireItemOptionUncheckedUpdateWithoutItemInput>
+  }
+
+  export type PortalQuestionnaireItemOptionUpdateManyWithWhereWithoutItemInput = {
+    where: PortalQuestionnaireItemOptionScalarWhereInput
+    data: XOR<PortalQuestionnaireItemOptionUpdateManyMutationInput, PortalQuestionnaireItemOptionUncheckedUpdateManyWithoutItemInput>
+  }
+
+  export type PortalQuestionnaireItemOptionScalarWhereInput = {
+    AND?: PortalQuestionnaireItemOptionScalarWhereInput | PortalQuestionnaireItemOptionScalarWhereInput[]
+    OR?: PortalQuestionnaireItemOptionScalarWhereInput[]
+    NOT?: PortalQuestionnaireItemOptionScalarWhereInput | PortalQuestionnaireItemOptionScalarWhereInput[]
+    id?: StringFilter<"PortalQuestionnaireItemOption"> | string
+    itemId?: StringFilter<"PortalQuestionnaireItemOption"> | string
+    code?: StringFilter<"PortalQuestionnaireItemOption"> | string
+    title?: StringFilter<"PortalQuestionnaireItemOption"> | string
+    bitrixId?: IntNullableFilter<"PortalQuestionnaireItemOption"> | number | null
+    xmlId?: StringNullableFilter<"PortalQuestionnaireItemOption"> | string | null
+    sort?: IntFilter<"PortalQuestionnaireItemOption"> | number
+    isDefault?: BoolFilter<"PortalQuestionnaireItemOption"> | boolean
+    isActive?: BoolFilter<"PortalQuestionnaireItemOption"> | boolean
+    createdAt?: DateTimeNullableFilter<"PortalQuestionnaireItemOption"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"PortalQuestionnaireItemOption"> | Date | string | null
+  }
+
+  export type PortalQuestionnaireItemCreateWithoutOptionsInput = {
+    id: string
+    code: string
+    title: string
+    placeholder?: string | null
+    hint?: string | null
+    groupTitle?: string | null
+    sort?: number
+    control: string
+    isMultiple?: boolean
+    isRequired?: boolean
+    requireChange?: boolean
+    staleAfterDays?: number | null
+    channel?: string
+    targetMode?: string
+    targetEntity?: string | null
+    dtoPath?: string | null
+    smartId?: bigint | number | null
+    smartEntityTypeId?: bigint | number | null
+    isNative?: boolean
+    fieldName?: string | null
+    fieldBitrixId?: bigint | number | null
+    fieldXmlId?: string | null
+    fieldCode?: string | null
+    fieldType?: string | null
+    fieldStatus?: string
+    fieldCheckedAt?: Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    questionnaire: PortalQuestionnaireCreateNestedOneWithoutItemsInput
+    portal: PortalCreateNestedOneWithoutQuestionnaireItemsInput
+  }
+
+  export type PortalQuestionnaireItemUncheckedCreateWithoutOptionsInput = {
+    id: string
+    questionnaireId: string
+    portal_id: bigint | number
+    code: string
+    title: string
+    placeholder?: string | null
+    hint?: string | null
+    groupTitle?: string | null
+    sort?: number
+    control: string
+    isMultiple?: boolean
+    isRequired?: boolean
+    requireChange?: boolean
+    staleAfterDays?: number | null
+    channel?: string
+    targetMode?: string
+    targetEntity?: string | null
+    dtoPath?: string | null
+    smartId?: bigint | number | null
+    smartEntityTypeId?: bigint | number | null
+    isNative?: boolean
+    fieldName?: string | null
+    fieldBitrixId?: bigint | number | null
+    fieldXmlId?: string | null
+    fieldCode?: string | null
+    fieldType?: string | null
+    fieldStatus?: string
+    fieldCheckedAt?: Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalQuestionnaireItemCreateOrConnectWithoutOptionsInput = {
+    where: PortalQuestionnaireItemWhereUniqueInput
+    create: XOR<PortalQuestionnaireItemCreateWithoutOptionsInput, PortalQuestionnaireItemUncheckedCreateWithoutOptionsInput>
+  }
+
+  export type PortalQuestionnaireItemUpsertWithoutOptionsInput = {
+    update: XOR<PortalQuestionnaireItemUpdateWithoutOptionsInput, PortalQuestionnaireItemUncheckedUpdateWithoutOptionsInput>
+    create: XOR<PortalQuestionnaireItemCreateWithoutOptionsInput, PortalQuestionnaireItemUncheckedCreateWithoutOptionsInput>
+    where?: PortalQuestionnaireItemWhereInput
+  }
+
+  export type PortalQuestionnaireItemUpdateToOneWithWhereWithoutOptionsInput = {
+    where?: PortalQuestionnaireItemWhereInput
+    data: XOR<PortalQuestionnaireItemUpdateWithoutOptionsInput, PortalQuestionnaireItemUncheckedUpdateWithoutOptionsInput>
+  }
+
+  export type PortalQuestionnaireItemUpdateWithoutOptionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    placeholder?: NullableStringFieldUpdateOperationsInput | string | null
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    groupTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    control?: StringFieldUpdateOperationsInput | string
+    isMultiple?: BoolFieldUpdateOperationsInput | boolean
+    isRequired?: BoolFieldUpdateOperationsInput | boolean
+    requireChange?: BoolFieldUpdateOperationsInput | boolean
+    staleAfterDays?: NullableIntFieldUpdateOperationsInput | number | null
+    channel?: StringFieldUpdateOperationsInput | string
+    targetMode?: StringFieldUpdateOperationsInput | string
+    targetEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    dtoPath?: NullableStringFieldUpdateOperationsInput | string | null
+    smartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    smartEntityTypeId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    isNative?: BoolFieldUpdateOperationsInput | boolean
+    fieldName?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldBitrixId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    fieldXmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldCode?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldType?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldStatus?: StringFieldUpdateOperationsInput | string
+    fieldCheckedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    questionnaire?: PortalQuestionnaireUpdateOneRequiredWithoutItemsNestedInput
+    portal?: PortalUpdateOneRequiredWithoutQuestionnaireItemsNestedInput
+  }
+
+  export type PortalQuestionnaireItemUncheckedUpdateWithoutOptionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    questionnaireId?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    placeholder?: NullableStringFieldUpdateOperationsInput | string | null
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    groupTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    control?: StringFieldUpdateOperationsInput | string
+    isMultiple?: BoolFieldUpdateOperationsInput | boolean
+    isRequired?: BoolFieldUpdateOperationsInput | boolean
+    requireChange?: BoolFieldUpdateOperationsInput | boolean
+    staleAfterDays?: NullableIntFieldUpdateOperationsInput | number | null
+    channel?: StringFieldUpdateOperationsInput | string
+    targetMode?: StringFieldUpdateOperationsInput | string
+    targetEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    dtoPath?: NullableStringFieldUpdateOperationsInput | string | null
+    smartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    smartEntityTypeId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    isNative?: BoolFieldUpdateOperationsInput | boolean
+    fieldName?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldBitrixId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    fieldXmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldCode?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldType?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldStatus?: StringFieldUpdateOperationsInput | string
+    fieldCheckedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type PortalCreateWithoutSkapImportFilesInput = {
@@ -159996,6 +166957,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSkapImportFilesInput = {
@@ -160060,6 +167023,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSkapImportFilesInput = {
@@ -160198,6 +167163,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSkapImportFilesInput = {
@@ -160262,6 +167229,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type SkapImportItemUpsertWithWhereUniqueWithoutFileInput = {
@@ -160342,6 +167311,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSkapImportItemsInput = {
@@ -160406,6 +167377,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSkapImportItemsInput = {
@@ -160631,6 +167604,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSkapImportItemsInput = {
@@ -160695,6 +167670,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type SkapImportFileUpsertWithoutItemsInput = {
@@ -160838,6 +167815,8 @@ export namespace Prisma {
     skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSkapSessionsInput = {
@@ -160902,6 +167881,8 @@ export namespace Prisma {
     skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSkapSessionsInput = {
@@ -161035,6 +168016,8 @@ export namespace Prisma {
     skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSkapSessionsInput = {
@@ -161099,6 +168082,8 @@ export namespace Prisma {
     skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type SkapImportItemUpsertWithoutSessionsInput = {
@@ -161222,6 +168207,8 @@ export namespace Prisma {
     skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSkapSubscriptionsInput = {
@@ -161286,6 +168273,8 @@ export namespace Prisma {
     skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSkapSubscriptionsInput = {
@@ -161419,6 +168408,8 @@ export namespace Prisma {
     skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSkapSubscriptionsInput = {
@@ -161483,6 +168474,8 @@ export namespace Prisma {
     skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type SkapImportItemUpsertWithoutSubscriptionsInput = {
@@ -161606,6 +168599,8 @@ export namespace Prisma {
     skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSkapImportRunsInput = {
@@ -161670,6 +168665,8 @@ export namespace Prisma {
     skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSkapImportRunsInput = {
@@ -161750,6 +168747,8 @@ export namespace Prisma {
     skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSkapImportRunsInput = {
@@ -161814,6 +168813,8 @@ export namespace Prisma {
     skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type countersCreateWithoutRq_counterInput = {
@@ -162230,6 +169231,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSmartsInput = {
@@ -162294,6 +169297,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSmartsInput = {
@@ -162374,6 +169379,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSmartsInput = {
@@ -162438,6 +169445,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type telescope_entries_tagsCreateWithoutTelescope_entriesInput = {
@@ -162936,6 +169945,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutTemplatesInput = {
@@ -163000,6 +170011,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutTemplatesInput = {
@@ -163112,6 +170125,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutTemplatesInput = {
@@ -163176,6 +170191,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutTimezonesInput = {
@@ -163240,6 +170257,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutTimezonesInput = {
@@ -163304,6 +170323,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutTimezonesInput = {
@@ -163384,6 +170405,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutTimezonesInput = {
@@ -163448,6 +170471,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type ClientCreateWithoutUsersInput = {
@@ -163680,6 +170705,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBitrix_appsInput = {
@@ -163744,6 +170771,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBitrix_appsInput = {
@@ -163955,6 +170984,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBitrix_appsInput = {
@@ -164019,6 +171050,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type bitrix_tokensUpsertWithWhereUniqueWithoutBitrix_appsInput = {
@@ -164200,6 +171233,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_contactsInput = {
@@ -164264,6 +171299,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_contactsInput = {
@@ -164344,6 +171381,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_contactsInput = {
@@ -164408,6 +171447,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBxRqsInput = {
@@ -164472,6 +171513,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBxRqsInput = {
@@ -164536,6 +171579,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBxRqsInput = {
@@ -164616,6 +171661,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBxRqsInput = {
@@ -164680,6 +171727,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type complectsCreateWithoutComplect_infoblockInput = {
@@ -166455,6 +173504,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOfferTemplatePortalInput = {
@@ -166519,6 +173570,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOfferTemplatePortalInput = {
@@ -166678,6 +173731,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOfferTemplatePortalInput = {
@@ -166742,6 +173797,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type OfferTemplateFontCreateWithoutOffer_templatesInput = {
@@ -167062,6 +174119,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOffer_zakupki_settingsInput = {
@@ -167126,6 +174185,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOffer_zakupki_settingsInput = {
@@ -167206,6 +174267,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOffer_zakupki_settingsInput = {
@@ -167270,6 +174333,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type garant_prof_pricesCreateWithoutSuppliesInput = {
@@ -167469,6 +174534,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutUserSelectedTemplatesInput = {
@@ -167533,6 +174600,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutUserSelectedTemplatesInput = {
@@ -167692,6 +174761,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutUserSelectedTemplatesInput = {
@@ -167756,6 +174827,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutPortal_regionInput = {
@@ -167820,6 +174893,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_regionInput = {
@@ -167884,6 +174959,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_regionInput = {
@@ -167995,6 +175072,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_regionInput = {
@@ -168059,6 +175138,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type regionsUpsertWithoutPortal_regionInput = {
@@ -168352,6 +175433,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOfferTemplateImagesInput = {
@@ -168416,6 +175499,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOfferTemplateImagesInput = {
@@ -168584,6 +175669,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOfferTemplateImagesInput = {
@@ -168648,6 +175735,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type OfferTemplatePageBlockUpsertWithWhereUniqueWithoutOfferTemplateImageInput = {
@@ -169442,6 +176531,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_usersInput = {
@@ -169506,6 +176597,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_usersInput = {
@@ -169586,6 +176679,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_usersInput = {
@@ -169650,6 +176745,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type agentsCreateWithoutInvoiceTemplatesInput = {
@@ -169745,6 +176842,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutInvoiceTemplatesInput = {
@@ -169809,6 +176908,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutInvoiceTemplatesInput = {
@@ -169926,6 +177027,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutInvoiceTemplatesInput = {
@@ -169990,6 +177093,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type marketplace_install_componentsCreateWithoutMarketplace_installsInput = {
@@ -170125,6 +177230,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutMarketplace_installsInput = {
@@ -170189,6 +177296,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutMarketplace_installsInput = {
@@ -170322,6 +177431,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutMarketplace_installsInput = {
@@ -170386,6 +177497,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutPortal_productsInput = {
@@ -170450,6 +177563,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_productsInput = {
@@ -170514,6 +177629,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_productsInput = {
@@ -170594,6 +177711,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_productsInput = {
@@ -170658,6 +177777,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type marketplace_installsCreateWithoutMarketplace_install_componentsInput = {
@@ -170779,6 +177900,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutMarketplace_install_componentsInput = {
@@ -170843,6 +177966,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutMarketplace_install_componentsInput = {
@@ -170986,6 +178111,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutMarketplace_install_componentsInput = {
@@ -171050,6 +178177,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type ClientCreateWithoutPortal_invitesInput = {
@@ -171143,6 +178272,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_invitesInput = {
@@ -171207,6 +178338,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_invitesInput = {
@@ -171322,6 +178455,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_invitesInput = {
@@ -171386,6 +178521,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutAppCachesInput = {
@@ -171450,6 +178587,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAppCachesInput = {
@@ -171514,6 +178653,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAppCachesInput = {
@@ -171594,6 +178735,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAppCachesInput = {
@@ -171658,6 +178801,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutShareLinksInput = {
@@ -171722,6 +178867,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutShareLinksInput = {
@@ -171786,6 +178933,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutShareLinksInput = {
@@ -171866,6 +179015,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutShareLinksInput = {
@@ -171930,6 +179081,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type InvoiceTemplateCreateManyAgentInput = {
@@ -172286,6 +179439,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutClientsInput = {
@@ -172350,6 +179505,8 @@ export namespace Prisma {
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateManyWithoutClientsInput = {
@@ -174463,6 +181620,62 @@ export namespace Prisma {
     updatedAt?: Date | string | null
   }
 
+  export type PortalQuestionnaireCreateManyPortalInput = {
+    id: string
+    domain: string
+    appCode: string
+    code: string
+    title: string
+    hint?: string | null
+    purpose: string
+    presentation?: string
+    place?: string | null
+    persist?: string
+    conditions?: NullableJsonNullValueInput | InputJsonValue
+    configKey?: string | null
+    legacyChecklistId?: string | null
+    isActive?: boolean
+    sort?: number
+    version?: number
+    updatedBy?: bigint | number | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalQuestionnaireItemCreateManyPortalInput = {
+    id: string
+    questionnaireId: string
+    code: string
+    title: string
+    placeholder?: string | null
+    hint?: string | null
+    groupTitle?: string | null
+    sort?: number
+    control: string
+    isMultiple?: boolean
+    isRequired?: boolean
+    requireChange?: boolean
+    staleAfterDays?: number | null
+    channel?: string
+    targetMode?: string
+    targetEntity?: string | null
+    dtoPath?: string | null
+    smartId?: bigint | number | null
+    smartEntityTypeId?: bigint | number | null
+    isNative?: boolean
+    fieldName?: string | null
+    fieldBitrixId?: bigint | number | null
+    fieldXmlId?: string | null
+    fieldCode?: string | null
+    fieldType?: string | null
+    fieldStatus?: string
+    fieldCheckedAt?: Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
   export type bitrix_appsUpdateWithoutPortalsInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -176036,6 +183249,368 @@ export namespace Prisma {
     stats?: NullableJsonNullValueInput | InputJsonValue
     startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     finishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalQuestionnaireUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    appCode?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    purpose?: StringFieldUpdateOperationsInput | string
+    presentation?: StringFieldUpdateOperationsInput | string
+    place?: NullableStringFieldUpdateOperationsInput | string | null
+    persist?: StringFieldUpdateOperationsInput | string
+    conditions?: NullableJsonNullValueInput | InputJsonValue
+    configKey?: NullableStringFieldUpdateOperationsInput | string | null
+    legacyChecklistId?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    sort?: IntFieldUpdateOperationsInput | number
+    version?: IntFieldUpdateOperationsInput | number
+    updatedBy?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    items?: PortalQuestionnaireItemUpdateManyWithoutQuestionnaireNestedInput
+  }
+
+  export type PortalQuestionnaireUncheckedUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    appCode?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    purpose?: StringFieldUpdateOperationsInput | string
+    presentation?: StringFieldUpdateOperationsInput | string
+    place?: NullableStringFieldUpdateOperationsInput | string | null
+    persist?: StringFieldUpdateOperationsInput | string
+    conditions?: NullableJsonNullValueInput | InputJsonValue
+    configKey?: NullableStringFieldUpdateOperationsInput | string | null
+    legacyChecklistId?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    sort?: IntFieldUpdateOperationsInput | number
+    version?: IntFieldUpdateOperationsInput | number
+    updatedBy?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    items?: PortalQuestionnaireItemUncheckedUpdateManyWithoutQuestionnaireNestedInput
+  }
+
+  export type PortalQuestionnaireUncheckedUpdateManyWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    appCode?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    purpose?: StringFieldUpdateOperationsInput | string
+    presentation?: StringFieldUpdateOperationsInput | string
+    place?: NullableStringFieldUpdateOperationsInput | string | null
+    persist?: StringFieldUpdateOperationsInput | string
+    conditions?: NullableJsonNullValueInput | InputJsonValue
+    configKey?: NullableStringFieldUpdateOperationsInput | string | null
+    legacyChecklistId?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    sort?: IntFieldUpdateOperationsInput | number
+    version?: IntFieldUpdateOperationsInput | number
+    updatedBy?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalQuestionnaireItemUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    placeholder?: NullableStringFieldUpdateOperationsInput | string | null
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    groupTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    control?: StringFieldUpdateOperationsInput | string
+    isMultiple?: BoolFieldUpdateOperationsInput | boolean
+    isRequired?: BoolFieldUpdateOperationsInput | boolean
+    requireChange?: BoolFieldUpdateOperationsInput | boolean
+    staleAfterDays?: NullableIntFieldUpdateOperationsInput | number | null
+    channel?: StringFieldUpdateOperationsInput | string
+    targetMode?: StringFieldUpdateOperationsInput | string
+    targetEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    dtoPath?: NullableStringFieldUpdateOperationsInput | string | null
+    smartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    smartEntityTypeId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    isNative?: BoolFieldUpdateOperationsInput | boolean
+    fieldName?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldBitrixId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    fieldXmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldCode?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldType?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldStatus?: StringFieldUpdateOperationsInput | string
+    fieldCheckedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    questionnaire?: PortalQuestionnaireUpdateOneRequiredWithoutItemsNestedInput
+    options?: PortalQuestionnaireItemOptionUpdateManyWithoutItemNestedInput
+  }
+
+  export type PortalQuestionnaireItemUncheckedUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    questionnaireId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    placeholder?: NullableStringFieldUpdateOperationsInput | string | null
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    groupTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    control?: StringFieldUpdateOperationsInput | string
+    isMultiple?: BoolFieldUpdateOperationsInput | boolean
+    isRequired?: BoolFieldUpdateOperationsInput | boolean
+    requireChange?: BoolFieldUpdateOperationsInput | boolean
+    staleAfterDays?: NullableIntFieldUpdateOperationsInput | number | null
+    channel?: StringFieldUpdateOperationsInput | string
+    targetMode?: StringFieldUpdateOperationsInput | string
+    targetEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    dtoPath?: NullableStringFieldUpdateOperationsInput | string | null
+    smartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    smartEntityTypeId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    isNative?: BoolFieldUpdateOperationsInput | boolean
+    fieldName?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldBitrixId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    fieldXmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldCode?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldType?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldStatus?: StringFieldUpdateOperationsInput | string
+    fieldCheckedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    options?: PortalQuestionnaireItemOptionUncheckedUpdateManyWithoutItemNestedInput
+  }
+
+  export type PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    questionnaireId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    placeholder?: NullableStringFieldUpdateOperationsInput | string | null
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    groupTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    control?: StringFieldUpdateOperationsInput | string
+    isMultiple?: BoolFieldUpdateOperationsInput | boolean
+    isRequired?: BoolFieldUpdateOperationsInput | boolean
+    requireChange?: BoolFieldUpdateOperationsInput | boolean
+    staleAfterDays?: NullableIntFieldUpdateOperationsInput | number | null
+    channel?: StringFieldUpdateOperationsInput | string
+    targetMode?: StringFieldUpdateOperationsInput | string
+    targetEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    dtoPath?: NullableStringFieldUpdateOperationsInput | string | null
+    smartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    smartEntityTypeId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    isNative?: BoolFieldUpdateOperationsInput | boolean
+    fieldName?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldBitrixId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    fieldXmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldCode?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldType?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldStatus?: StringFieldUpdateOperationsInput | string
+    fieldCheckedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalQuestionnaireItemCreateManyQuestionnaireInput = {
+    id: string
+    portal_id: bigint | number
+    code: string
+    title: string
+    placeholder?: string | null
+    hint?: string | null
+    groupTitle?: string | null
+    sort?: number
+    control: string
+    isMultiple?: boolean
+    isRequired?: boolean
+    requireChange?: boolean
+    staleAfterDays?: number | null
+    channel?: string
+    targetMode?: string
+    targetEntity?: string | null
+    dtoPath?: string | null
+    smartId?: bigint | number | null
+    smartEntityTypeId?: bigint | number | null
+    isNative?: boolean
+    fieldName?: string | null
+    fieldBitrixId?: bigint | number | null
+    fieldXmlId?: string | null
+    fieldCode?: string | null
+    fieldType?: string | null
+    fieldStatus?: string
+    fieldCheckedAt?: Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalQuestionnaireItemUpdateWithoutQuestionnaireInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    placeholder?: NullableStringFieldUpdateOperationsInput | string | null
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    groupTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    control?: StringFieldUpdateOperationsInput | string
+    isMultiple?: BoolFieldUpdateOperationsInput | boolean
+    isRequired?: BoolFieldUpdateOperationsInput | boolean
+    requireChange?: BoolFieldUpdateOperationsInput | boolean
+    staleAfterDays?: NullableIntFieldUpdateOperationsInput | number | null
+    channel?: StringFieldUpdateOperationsInput | string
+    targetMode?: StringFieldUpdateOperationsInput | string
+    targetEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    dtoPath?: NullableStringFieldUpdateOperationsInput | string | null
+    smartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    smartEntityTypeId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    isNative?: BoolFieldUpdateOperationsInput | boolean
+    fieldName?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldBitrixId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    fieldXmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldCode?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldType?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldStatus?: StringFieldUpdateOperationsInput | string
+    fieldCheckedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutQuestionnaireItemsNestedInput
+    options?: PortalQuestionnaireItemOptionUpdateManyWithoutItemNestedInput
+  }
+
+  export type PortalQuestionnaireItemUncheckedUpdateWithoutQuestionnaireInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    placeholder?: NullableStringFieldUpdateOperationsInput | string | null
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    groupTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    control?: StringFieldUpdateOperationsInput | string
+    isMultiple?: BoolFieldUpdateOperationsInput | boolean
+    isRequired?: BoolFieldUpdateOperationsInput | boolean
+    requireChange?: BoolFieldUpdateOperationsInput | boolean
+    staleAfterDays?: NullableIntFieldUpdateOperationsInput | number | null
+    channel?: StringFieldUpdateOperationsInput | string
+    targetMode?: StringFieldUpdateOperationsInput | string
+    targetEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    dtoPath?: NullableStringFieldUpdateOperationsInput | string | null
+    smartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    smartEntityTypeId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    isNative?: BoolFieldUpdateOperationsInput | boolean
+    fieldName?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldBitrixId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    fieldXmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldCode?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldType?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldStatus?: StringFieldUpdateOperationsInput | string
+    fieldCheckedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    options?: PortalQuestionnaireItemOptionUncheckedUpdateManyWithoutItemNestedInput
+  }
+
+  export type PortalQuestionnaireItemUncheckedUpdateManyWithoutQuestionnaireInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    placeholder?: NullableStringFieldUpdateOperationsInput | string | null
+    hint?: NullableStringFieldUpdateOperationsInput | string | null
+    groupTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    control?: StringFieldUpdateOperationsInput | string
+    isMultiple?: BoolFieldUpdateOperationsInput | boolean
+    isRequired?: BoolFieldUpdateOperationsInput | boolean
+    requireChange?: BoolFieldUpdateOperationsInput | boolean
+    staleAfterDays?: NullableIntFieldUpdateOperationsInput | number | null
+    channel?: StringFieldUpdateOperationsInput | string
+    targetMode?: StringFieldUpdateOperationsInput | string
+    targetEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    dtoPath?: NullableStringFieldUpdateOperationsInput | string | null
+    smartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    smartEntityTypeId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    isNative?: BoolFieldUpdateOperationsInput | boolean
+    fieldName?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldBitrixId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    fieldXmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldCode?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldType?: NullableStringFieldUpdateOperationsInput | string | null
+    fieldStatus?: StringFieldUpdateOperationsInput | string
+    fieldCheckedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalQuestionnaireItemOptionCreateManyItemInput = {
+    id: string
+    code: string
+    title: string
+    bitrixId?: number | null
+    xmlId?: string | null
+    sort?: number
+    isDefault?: boolean
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalQuestionnaireItemOptionUpdateWithoutItemInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    bitrixId?: NullableIntFieldUpdateOperationsInput | number | null
+    xmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalQuestionnaireItemOptionUncheckedUpdateWithoutItemInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    bitrixId?: NullableIntFieldUpdateOperationsInput | number | null
+    xmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalQuestionnaireItemOptionUncheckedUpdateManyWithoutItemInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    bitrixId?: NullableIntFieldUpdateOperationsInput | number | null
+    xmlId?: NullableStringFieldUpdateOperationsInput | string | null
+    sort?: IntFieldUpdateOperationsInput | number
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }

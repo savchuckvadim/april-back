@@ -649,6 +649,78 @@ exports.Prisma.PortalAppSettingsScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.PortalQuestionnaireScalarFieldEnum = {
+  id: 'id',
+  portal_id: 'portal_id',
+  domain: 'domain',
+  appCode: 'appCode',
+  code: 'code',
+  title: 'title',
+  hint: 'hint',
+  purpose: 'purpose',
+  presentation: 'presentation',
+  place: 'place',
+  persist: 'persist',
+  conditions: 'conditions',
+  configKey: 'configKey',
+  legacyChecklistId: 'legacyChecklistId',
+  isActive: 'isActive',
+  sort: 'sort',
+  version: 'version',
+  updatedBy: 'updatedBy',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PortalQuestionnaireItemScalarFieldEnum = {
+  id: 'id',
+  questionnaireId: 'questionnaireId',
+  portal_id: 'portal_id',
+  code: 'code',
+  title: 'title',
+  placeholder: 'placeholder',
+  hint: 'hint',
+  groupTitle: 'groupTitle',
+  sort: 'sort',
+  control: 'control',
+  isMultiple: 'isMultiple',
+  isRequired: 'isRequired',
+  requireChange: 'requireChange',
+  staleAfterDays: 'staleAfterDays',
+  channel: 'channel',
+  targetMode: 'targetMode',
+  targetEntity: 'targetEntity',
+  dtoPath: 'dtoPath',
+  smartId: 'smartId',
+  smartEntityTypeId: 'smartEntityTypeId',
+  isNative: 'isNative',
+  fieldName: 'fieldName',
+  fieldBitrixId: 'fieldBitrixId',
+  fieldXmlId: 'fieldXmlId',
+  fieldCode: 'fieldCode',
+  fieldType: 'fieldType',
+  fieldStatus: 'fieldStatus',
+  fieldCheckedAt: 'fieldCheckedAt',
+  meta: 'meta',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PortalQuestionnaireItemOptionScalarFieldEnum = {
+  id: 'id',
+  itemId: 'itemId',
+  code: 'code',
+  title: 'title',
+  bitrixId: 'bitrixId',
+  xmlId: 'xmlId',
+  sort: 'sort',
+  isDefault: 'isDefault',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SkapImportFileScalarFieldEnum = {
   id: 'id',
   portal_id: 'portal_id',
@@ -2014,6 +2086,49 @@ exports.Prisma.PortalAppSettingsOrderByRelevanceFieldEnum = {
   appCode: 'appCode'
 };
 
+exports.Prisma.PortalQuestionnaireOrderByRelevanceFieldEnum = {
+  id: 'id',
+  domain: 'domain',
+  appCode: 'appCode',
+  code: 'code',
+  title: 'title',
+  hint: 'hint',
+  purpose: 'purpose',
+  presentation: 'presentation',
+  place: 'place',
+  persist: 'persist',
+  configKey: 'configKey',
+  legacyChecklistId: 'legacyChecklistId'
+};
+
+exports.Prisma.PortalQuestionnaireItemOrderByRelevanceFieldEnum = {
+  id: 'id',
+  questionnaireId: 'questionnaireId',
+  code: 'code',
+  title: 'title',
+  placeholder: 'placeholder',
+  hint: 'hint',
+  groupTitle: 'groupTitle',
+  control: 'control',
+  channel: 'channel',
+  targetMode: 'targetMode',
+  targetEntity: 'targetEntity',
+  dtoPath: 'dtoPath',
+  fieldName: 'fieldName',
+  fieldXmlId: 'fieldXmlId',
+  fieldCode: 'fieldCode',
+  fieldType: 'fieldType',
+  fieldStatus: 'fieldStatus'
+};
+
+exports.Prisma.PortalQuestionnaireItemOptionOrderByRelevanceFieldEnum = {
+  id: 'id',
+  itemId: 'itemId',
+  code: 'code',
+  title: 'title',
+  xmlId: 'xmlId'
+};
+
 exports.Prisma.SkapImportFileOrderByRelevanceFieldEnum = {
   id: 'id',
   domain: 'domain',
@@ -2736,6 +2851,9 @@ exports.Prisma.ModelName = {
   Portal: 'Portal',
   PortalAiSettings: 'PortalAiSettings',
   PortalAppSettings: 'PortalAppSettings',
+  PortalQuestionnaire: 'PortalQuestionnaire',
+  PortalQuestionnaireItem: 'PortalQuestionnaireItem',
+  PortalQuestionnaireItemOption: 'PortalQuestionnaireItemOption',
   SkapImportFile: 'SkapImportFile',
   SkapImportItem: 'SkapImportItem',
   SkapSession: 'SkapSession',

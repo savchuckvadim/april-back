@@ -18,12 +18,15 @@ export const PRESENTATION_FLOW_WS_EVENTS = {
  *  - `spontaneous` — плана не было, факт зафиксирован сразу закрытым;
  *  - `skipped` — смарт не установлен (self-gate).
  */
-export type PresentationFlowAction =
-    | 'created'
-    | 'closed'
-    | 'moved'
-    | 'spontaneous'
-    | 'skipped';
+export const PRESENTATION_FLOW_ACTIONS = [
+    'created',
+    'closed',
+    'moved',
+    'spontaneous',
+    'skipped',
+] as const;
+
+export type PresentationFlowAction = (typeof PRESENTATION_FLOW_ACTIONS)[number];
 
 export interface PresentationFlowResult {
     action: PresentationFlowAction;

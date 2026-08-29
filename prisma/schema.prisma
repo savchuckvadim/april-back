@@ -700,6 +700,8 @@ model Portal {
   skapSessions                   SkapSession[]
   skapSubscriptions              SkapSubscription[]
   skapImportRuns                 SkapImportRun[]
+  questionnaires                 PortalQuestionnaire[]
+  questionnaireItems             PortalQuestionnaireItem[]
 
   @@index([client_id], map: "portals_client_id_foreign")
   @@map("portals")
@@ -771,6 +773,180 @@ model PortalAppSettings {
   @@unique([portal_id, appCode], map: "portal_app_settings_portal_app_unique")
   @@index([domain, appCode], map: "portal_app_settings_domain_app_index")
   @@map("portal_app_settings")
+}
+
+/// Портальный каталог АНКЕТ: сама анкета (чек-лист) placement-приложения —
+/// назначение, где и как показываем, условия показа. Состав вопросов живёт
+/// в PortalQuestionnaireItem. Заранее знать, какие поля заведёт клиент,
+/// нельзя, поэтому анкета собирается в админке из полей, созданных
+/// пользователем в Битриксе руками, и хранится здесь, а не в коде фронта.
+/// `code` — стабильный ключ анкеты внутри приложения (ключ «подтверждено»
+/// на фронте), `version` инкрементится на каждое сохранение — фрейм сверяет
+/// свою версию. `conditions` — JSON с И-семантикой: новый вид условия не
+/// должен требовать миграции; неизвестный kind = анкета НЕ показывается.
+/// Таблица добавлена ручной правкой (db pull запрещён) — миграция
+/// online/database/migrations/2026_08_28_100000_create_portal_questionnaire_tables.php
+model PortalQuestionnaire {
+  id        String @id @db.Char(36)
+  portal_id BigInt @db.UnsignedBigInt
+  /// Дубль домена портала: выборки каталога по домену без join
+  domain    String @db.VarChar(255)
+
+  /// Код приложения: 'event-sales', 'sales', ... Реестр — в коде Nest
+  appCode String  @map("app_code") @db.VarChar(64)
+  code    String  @db.VarChar(64)
+  title   String  @db.VarChar(255)
+  hint    String? @db.Text
+
+  /// 'plan' — анкета планирования, 'report' — анкета отчётности
+  purpose      String  @db.VarChar(16)
+  /// Как показываем: 'inline' (карточкой в колонке) | 'modal'
+  presentation String  @default("inline") @db.VarChar(16)
+  /// Колонка для inline: 'plan' | 'report'
+  place        String? @db.VarChar(16)
+  /// Когда пишем ответ: 'onChange' (сразу) | 'onConfirm' (по кнопке)
+  persist      String  @default("onChange") @db.VarChar(16)
+
+  /// Условия показа, И-семантика: [{"kind":"planType","values":[...]}, ...]
+  conditions Json?
+
+  /// Совместимость со встроенными наборами: config_key — старый фича-флаг
+  /// настроек приложения (учитывается, только если заполнен);
+  /// legacy_checklist_id ЗАМЕЩАЕТ одноимённый встроенный набор
+  configKey         String? @map("config_key") @db.VarChar(64)
+  legacyChecklistId String? @map("legacy_checklist_id") @db.VarChar(64)
+
+  isActive  Boolean   @default(false) @map("is_active")
+  sort      Int       @default(500)
+  version   Int       @default(1) @db.UnsignedInt
+  updatedBy BigInt?   @map("updated_by") @db.UnsignedBigInt
+  createdAt DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime? @map("updated_at") @db.Timestamp(0)
+
+  portal Portal                    @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portal_questionnaires_portal_id_foreign")
+  items  PortalQuestionnaireItem[]
+
+  @@unique([portal_id, appCode, code], map: "portal_questionnaires_portal_app_code_unique")
+  @@index([domain, appCode, isActive], map: "portal_questionnaires_domain_app_index")
+  @@map("portal_questionnaires")
+}
+
+/// Вопрос анкеты: что спрашиваем, обязательность, тип отображения и В КАКОЕ
+/// ПОЛЕ пишем ответ. Ответов здесь НЕТ — источник правды по ответам это поля
+/// CRM. `code` — код ВОПРОСА, не поля: два разных вопроса могут писать в одно
+/// поле и не делить между собой значение, статус сохранения и таймер
+/// автосохранения. Привязка к полю МЯГКАЯ, без FK на bitrixfields:
+/// переустановка смарта или компании сносит строки bitrixfields этой сущности
+/// (deleteFieldsByEntityId) — анкета молча опустела бы. Главный якорь —
+/// `field_name`: полное UF-имя РОВНО в том виде, в каком его вернул Битрикс
+/// (никогда не собирать конкатенацией); field_bitrix_id, field_xml_id и
+/// field_code — вторичные. Пункт ГАСИМ через is_active, не удаляем: иначе уже
+/// собранные ответы в CRM становятся необъяснимыми.
+/// Таблица добавлена ручной правкой (db pull запрещён) — миграция
+/// online/database/migrations/2026_08_28_100000_create_portal_questionnaire_tables.php
+model PortalQuestionnaireItem {
+  id              String @id @db.Char(36)
+  questionnaireId String @map("questionnaire_id") @db.Char(36)
+  /// Дубль портала: ответ на «где ещё используется это поле» без join
+  portal_id       BigInt @db.UnsignedBigInt
+
+  code        String  @db.VarChar(64)
+  title       String  @db.VarChar(255)
+  placeholder String? @db.VarChar(255)
+  hint        String? @db.Text
+  /// Секция задаётся явно (в старом коде группа выводилась из префикса кода)
+  groupTitle  String? @map("group_title") @db.VarChar(255)
+  sort        Int     @default(500)
+
+  /// Тип отображения: 'string' | 'text' | 'date' | 'datetime' | 'money' |
+  /// 'enumeration' | 'boolean'. Реестр значений и матрица «контрол ↔ тип
+  /// поля» проверяются на сохранении в Nest
+  control    String  @db.VarChar(32)
+  /// В v1 запрещено валидатором: запись массивов ещё не реализована
+  isMultiple Boolean @default(false) @map("is_multiple")
+
+  isRequired     Boolean @default(false) @map("is_required")
+  /// «Обязательность изменения»: пункт закрывается ТОЛЬКО ответом, данным в
+  /// этой сессии; уже стоящее в CRM значение не считается
+  requireChange  Boolean @default(false) @map("require_change")
+  /// Срок годности ответа (только date/datetime): значение старше N дней
+  /// перестаёт закрывать обязательный пункт
+  staleAfterDays Int?    @map("stale_after_days")
+
+  /// Куда пишем: 'crm' — поле сущности, 'dto' — поле отчёта, 'text' — в комментарий
+  channel           String  @default("crm") @db.VarChar(16)
+  /// 'auto' — компания → сделка → лид (текущее поведение), 'entity' — жёстко
+  /// указанный носитель
+  targetMode        String  @default("auto") @map("target_mode") @db.VarChar(16)
+  targetEntity      String? @map("target_entity") @db.VarChar(16)
+  /// Для channel='dto': путь в отчёте ('sale.opportunity')
+  dtoPath           String? @map("dto_path") @db.VarChar(64)
+  /// Для channel='smart': строка smarts НАШЕЙ БД — постоянный адрес
+  /// смарта-носителя. Мягкая привязка без FK: переустановка смарта не
+  /// должна ронять анкету, пункт с исчезнувшим смартом просто выпадает
+  /// из каталога
+  smartId           BigInt? @map("smart_id") @db.UnsignedBigInt
+  /// Слепок smarts.entity_type_id на момент привязки: рантайм-сверка
+  smartEntityTypeId BigInt? @map("smart_entity_type_id") @db.UnsignedBigInt
+  /// Штатное поле Битрикса (OPPORTUNITY), а не пользовательское
+  isNative          Boolean @default(false) @map("is_native")
+
+  fieldName      String?   @map("field_name") @db.VarChar(255)
+  fieldBitrixId  BigInt?   @map("field_bitrix_id") @db.UnsignedBigInt
+  fieldXmlId     String?   @map("field_xml_id") @db.VarChar(255)
+  /// Наш код из pbx-реестра — если поле ставили мы, иначе NULL
+  fieldCode      String?   @map("field_code") @db.VarChar(64)
+  /// Слепок типа поля на момент привязки: ловим смену типа
+  fieldType      String?   @map("field_type") @db.VarChar(32)
+  /// 'ok' | 'missing' | 'type_changed' — по кнопке «Проверить привязки»
+  fieldStatus    String    @default("ok") @map("field_status") @db.VarChar(16)
+  fieldCheckedAt DateTime? @map("field_checked_at") @db.Timestamp(0)
+
+  /// Расширения без миграций: min/max, rows, маска ввода
+  meta Json?
+
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime? @map("updated_at") @db.Timestamp(0)
+
+  questionnaire PortalQuestionnaire             @relation(fields: [questionnaireId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portal_questionnaire_items_questionnaire_id_foreign")
+  portal        Portal                          @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portal_questionnaire_items_portal_id_foreign")
+  options       PortalQuestionnaireItemOption[]
+
+  @@unique([questionnaireId, code], map: "portal_questionnaire_items_code_unique")
+  @@index([questionnaireId, sort], map: "portal_questionnaire_items_sort_index")
+  @@index([portal_id, fieldName], map: "portal_questionnaire_items_portal_field_index")
+  @@index([portal_id, smartId], map: "portal_questionnaire_items_smart_index")
+  @@map("portal_questionnaire_items")
+}
+
+/// Варианты справочника для вопроса с control='enumeration'. `bitrix_id` —
+/// id элемента списка РОВНО как в bitrixfield_items: именно это значение
+/// уходит в crm.*.update, поэтому и тип тот же (Int). Связи с bitrixfield_items
+/// нет намеренно — привязка к полям мягкая (см. PortalQuestionnaireItem).
+/// Исчезнувший в Битриксе вариант гасим через is_active, а не удаляем.
+/// Таблица добавлена ручной правкой (db pull запрещён) — миграция
+/// online/database/migrations/2026_08_28_100000_create_portal_questionnaire_tables.php
+model PortalQuestionnaireItemOption {
+  id     String @id @db.Char(36)
+  itemId String @map("item_id") @db.Char(36)
+
+  /// Наш стабильный код варианта (xmlId элемента, если он осмысленный)
+  code      String    @db.VarChar(64)
+  title     String    @db.VarChar(255)
+  bitrixId  Int?      @map("bitrix_id")
+  xmlId     String?   @map("xml_id") @db.VarChar(255)
+  sort      Int       @default(500)
+  isDefault Boolean   @default(false) @map("is_default")
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime? @map("updated_at") @db.Timestamp(0)
+
+  item PortalQuestionnaireItem @relation(fields: [itemId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portal_questionnaire_item_options_item_id_foreign")
+
+  @@unique([itemId, code], map: "portal_questionnaire_item_options_code_unique")
+  @@index([itemId, bitrixId], map: "portal_questionnaire_item_options_bitrix_index")
+  @@map("portal_questionnaire_item_options")
 }
 
 /// СКАП: журнал файлов выгрузок с Диска Битрикс (модуль импорта СКАП).

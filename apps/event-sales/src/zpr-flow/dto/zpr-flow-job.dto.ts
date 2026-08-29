@@ -1,3 +1,6 @@
+import { ZprSurveySnapshot } from '../lib/zpr-survey-snapshot';
+import { QuestionnaireSmartAnswer } from '../../shared/questionnaire-answers';
+
 /**
  * Джоб сайд-очереди ЗПР (EVENT_SALES_ZPR_FLOW).
  *
@@ -60,4 +63,18 @@ export interface ZprFlowJobData {
      * «дозвонились и работаем» (правило владельца 26.08).
      */
     isFail?: boolean;
+    /**
+     * Снимок анкеты по коду поля смарта — зеркало презентационного
+     * `survey`. Состав переноса (какие поля клиента едут в элемент ЗПР)
+     * ещё не назван владельцем, поэтому сегодня поле не заполняется; сам
+     * поток его уже принимает и раскладывает.
+     */
+    survey?: ZprSurveySnapshot;
+    /**
+     * Ответы ПОРТАЛЬНОЙ анкеты, адресованные полям элемента. Рядом с
+     * `survey`, а не вместо (см. presentation-flow-job.dto): у ключей
+     * разное происхождение — код нашего реестра против UF-имени
+     * произвольного поля портала.
+     */
+    answers?: QuestionnaireSmartAnswer[];
 }

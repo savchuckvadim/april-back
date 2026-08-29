@@ -16,6 +16,13 @@ import { PbxSalesEventFieldCode } from '@lib/portal-lib/pbx-domain/field/type/sa
  * из родительских сущностей (вкладка в карточке сделки/компании/лида), и
  * отчёт по презентациям строится по одной сущности, а не по воронке сделок.
  *
+ * СОСТАВ ШИРЕ ЗЕРКАЛА: кроме сделки-презентации смарт покрывает ещё двух
+ * легаси-носителей — список «ОП Презентации» (iblock `sales_presentation`,
+ * в april-next он не пишется вовсе) и РПА-процесс «Заявка на презентацию»
+ * (`rpa.*` объявлены DEPRECATED целиком). Отсюда стадии согласования и
+ * блок полей заявки: цель — одна сущность вместо трёх, без дублей полей
+ * одного смысла (карта соответствия — docs/presentation-unification.md §3).
+ *
  * Тип НЕ 'presentation': это имя уже занято Excel-шаблоном смарта
  * (SmartNameEnum.PRESENTATION, install/sales/smart/presentation) — const-ветка
  * ParseSmartService матчит шаблоны по паре (type, group) и перехватила бы его.
@@ -63,13 +70,47 @@ export const PRESENTATION_SMART_TITLE = 'Презентации';
 // ---------------------------------------------------------------------------
 
 /**
- * Стадии зеркалят воронку сделок «ОП Презентации»
- * (PbxDealSalesPresentationCategoryType): заявка → план → перенос → исходы.
+ * Стадии: воронка сделок «ОП Презентации»
+ * (PbxDealSalesPresentationCategoryType) ПЛЮС контур согласования заявки,
+ * который в легаси жил отдельным РПА-процессом «Заявка на презентацию»
+ * (`rpa_pres_*`, 7 стадий). Полный жизненный цикл презентации:
+ *
+ *   заявка → согласование → (отклонена | запланирована) → перенос → исходы
+ *
+ * ПОЧЕМУ СОГЛАСОВАНИЕ ПЕРЕЕХАЛО СЮДА: методы `rpa.*` в Bitrix24 объявлены
+ * DEPRECATED целиком (официальная рекомендация — смарт-процессы), а связи,
+ * поля и права у элемента смарта те же. Держать заявку в умирающем РПА, а
+ * саму презентацию — в смарте значит вести одну сущность в двух системах.
+ *
+ * `pres_approve` — ОДНА стадия вместо четырёх РПА-стадий
+ * (OWNER/MANAGER/EDU/TECHNIC): ветки согласования на разных порталах разные,
+ * и четыре стадии расползлись бы в воронке. «Кто согласует прямо сейчас»
+ * несёт поле PRES_APPROVE_STAGE — фильтровать по нему дешевле, чем плодить
+ * стадии.
+ *
+ * `pres_rejected` — легаси-стадия РПА `FAIL` и значение списка
+ * `pres_result_init_fail`. Без неё «заявку вернули на доработку»
+ * неотличимо от «презентация не состоялась»: и то и другое падало бы в
+ * `pres_noresult`, а это разные события с разными виновниками.
+ *
+ * `pres_new` ОСТАВЛЕНА, хотя сегодня flow создаёт элемент сразу в
+ * `pres_plan` (менеджер ОП планирует презентацию сам, без заявки ТМЦ).
+ * Причины: (1) это стадия по умолчанию — элемент, заведённый руками из
+ * карточки, попадает именно в неё, и findOpenElement обязан его находить;
+ * (2) с приходом контура согласования у неё появился смысл входа «заявка
+ * подана» (ТМЦ → согласование → план), ради которого она и заводилась;
+ * (3) снос стадии на живом портале уносит элементы, которые в ней стоят.
  *
  * «Перенос» (pending) — ОТКРЫТАЯ стадия намеренно: перенесённая презентация
  * остаётся живой и закрывается следующим отчётом, ровно как pres-сделка.
  * Семантика S/F задаётся ЯВНО: эвристика установщика по суффиксу не знает
- * ни NORESULT, ни того, что NEW/PLAN/PENDING — промежуточные.
+ * ни NORESULT, ни REJECTED, ни того, что NEW/APPROVE/PLAN/PENDING —
+ * промежуточные.
+ *
+ * ПОРЯДОК: все промежуточные стадии идут ДО закрывающих. Bitrix не любит
+ * «промежуточную после успешной» по SORT (см. InstallStageSyncService), и
+ * `pres_rejected` при всей своей «ранности» в жизненном цикле стоит в
+ * группе исходов, а не между `pres_approve` и `pres_plan`.
  */
 export const PRESENTATION_SMART_STAGES = [
     {
@@ -78,35 +119,61 @@ export const PRESENTATION_SMART_STAGES = [
         semantics: null,
         sort: 10,
     },
-    { code: 'pres_plan', name: 'Запланирована', semantics: null, sort: 20 },
+    {
+        code: 'pres_approve',
+        name: 'На согласовании',
+        semantics: null,
+        sort: 20,
+    },
+    { code: 'pres_plan', name: 'Запланирована', semantics: null, sort: 30 },
     {
         code: 'pres_pending',
         name: 'Презентация: Перенос',
         semantics: null,
-        sort: 30,
+        sort: 40,
     },
     {
         code: 'pres_success',
         name: 'Презентация проведена',
         semantics: 'S',
-        sort: 40,
+        sort: 50,
+    },
+    {
+        code: 'pres_rejected',
+        name: 'Заявка отклонена / на доработку',
+        semantics: 'F',
+        sort: 60,
     },
     {
         code: 'pres_noresult',
         name: 'Презентация не состоялась',
         semantics: 'F',
-        sort: 50,
+        sort: 70,
     },
     {
         code: 'pres_fail',
         name: 'Отказ после презентации',
         semantics: 'F',
-        sort: 60,
+        sort: 80,
     },
 ] as const;
 
 export type PresentationSmartStageCode =
     (typeof PRESENTATION_SMART_STAGES)[number]['code'];
+
+/**
+ * ОТКРЫТЫЕ стадии — те, у которых нет закрывающей семантики: заявка,
+ * согласование, план, перенос. Среди них presentation-flow ищет «живую»
+ * презентацию клиента, чтобы отчёт закрыл её, а не завёл дубль.
+ *
+ * Выводится из PRESENTATION_SMART_STAGES, а не перечисляется руками:
+ * иначе добавленная стадия согласования не попала бы в поиск, и каждый
+ * отчёт по ждущей согласования заявке плодил бы спонтанный элемент.
+ */
+export const PRESENTATION_OPEN_STAGE_CODES: readonly PresentationSmartStageCode[] =
+    PRESENTATION_SMART_STAGES.filter(stage => stage.semantics === null).map(
+        stage => stage.code,
+    );
 
 // ---------------------------------------------------------------------------
 // Результат презентации — то, что спрашивает отчёт по презентациям
@@ -134,6 +201,91 @@ export const PRESENTATION_RESULT_CODE = {
 
 export type PresentationResultCode =
     (typeof PRESENTATION_RESULT_CODE)[keyof typeof PRESENTATION_RESULT_CODE];
+
+// ---------------------------------------------------------------------------
+// Согласование заявки — ветка, на которой заявка стоит сейчас
+// ---------------------------------------------------------------------------
+
+/**
+ * Четыре ветки согласования легаси-РПА (`rpa_pres_owner|manager|edu|technic`)
+ * — ЗНАЧЕНИЯМИ поля, а не стадиями воронки: на разных порталах согласуют
+ * по-разному, и четыре стадии превратили бы воронку в лестницу, по которой
+ * половина порталов не ходит. Стадия одна (`pres_approve`), ветка — здесь.
+ */
+export const PRESENTATION_APPROVE_STAGE_ITEMS: readonly PresentationSmartEnumItem[] =
+    [
+        { CODE: 'pres_appr_owner', VALUE: 'Руководитель', SORT: 10 },
+        { CODE: 'pres_appr_manager', VALUE: 'Менеджер ОП', SORT: 20 },
+        { CODE: 'pres_appr_edu', VALUE: 'Обучение', SORT: 30 },
+        { CODE: 'pres_appr_technic', VALUE: 'Тех. поддержка', SORT: 40 },
+    ] as const;
+
+// ---------------------------------------------------------------------------
+// Причина отказа ПОСЛЕ презентации (снимок на конкретную презентацию)
+// ---------------------------------------------------------------------------
+
+/**
+ * Зеркало справочника `op_efield_fail_reason` (он же список
+ * `sales_presentation_pres_fail_reason`) — те же 11 значений.
+ *
+ * Зачем копия, если справочник уже есть на клиенте: на лиде/компании/сделке
+ * лежит ПОСЛЕДНЯЯ причина отказа клиента, а отчёт «почему отказывают после
+ * презентаций» спрашивает причину КОНКРЕТНОЙ презентации. Следующий отказ
+ * перезатрёт клиентское поле — снимок в элементе останется.
+ *
+ * Коды — по конвенции смарта (`pres_fail_*`), а не побуквенное повторение
+ * легаси-кодов списка (`pres_c_habit`, `fail_off` — там префиксы разъехались
+ * ещё в сиде). Суффикс СОВПАДАЕТ с суффиксом `op_efield_fail_*`, поэтому
+ * перевод кода отчёта в код элемента — чистая подстановка префикса
+ * ({@link presentationFailReasonItemCode}), а не таблица соответствий.
+ */
+export const PRESENTATION_FAIL_REASON_ITEMS: readonly PresentationSmartEnumItem[] =
+    [
+        { CODE: 'pres_fail_notime', VALUE: 'Не было времени', SORT: 10 },
+        {
+            CODE: 'pres_fail_c_habit',
+            VALUE: 'Конкуренты - привыкли',
+            SORT: 20,
+        },
+        {
+            CODE: 'pres_fail_c_prepay',
+            VALUE: 'Конкуренты - оплачено',
+            SORT: 30,
+        },
+        { CODE: 'pres_fail_c_price', VALUE: 'Конкуренты - цена', SORT: 40 },
+        { CODE: 'pres_fail_to_expensive', VALUE: 'Слишком дорого', SORT: 50 },
+        { CODE: 'pres_fail_to_cheap', VALUE: 'Слишком дешево', SORT: 60 },
+        { CODE: 'pres_fail_nomoney', VALUE: 'Нет денег', SORT: 70 },
+        { CODE: 'pres_fail_noneed', VALUE: 'Не видят надобности', SORT: 80 },
+        { CODE: 'pres_fail_lpr', VALUE: 'ЛПР против', SORT: 90 },
+        {
+            CODE: 'pres_fail_employee',
+            VALUE: 'Ключевой сотрудник против',
+            SORT: 100,
+        },
+        { CODE: 'pres_fail_off', VALUE: 'Не хотят общаться', SORT: 110 },
+    ] as const;
+
+/** Префикс item-кодов {@link PRESENTATION_FAIL_REASON_ITEMS}. */
+export const PRESENTATION_FAIL_REASON_PREFIX = 'pres_fail_';
+
+/**
+ * Код причины отказа из отчёта (`EventReportContext.failReasonCode`, суффикс
+ * вида `notime` / `c_price`) → item-код поля PRES_FAIL_REASON.
+ *
+ * Незнакомый суффикс (справочник правили руками на портале) даёт `null`:
+ * элемент лучше оставить без причины, чем записать в enum значение, которого
+ * в поле нет — Битрикс молча проглотит его и отчёт по причинам будет врать.
+ */
+export function presentationFailReasonItemCode(
+    reasonCode: string | null | undefined,
+): string | null {
+    if (!reasonCode) return null;
+    const code = `${PRESENTATION_FAIL_REASON_PREFIX}${reasonCode}`;
+    return PRESENTATION_FAIL_REASON_ITEMS.some(item => item.CODE === code)
+        ? code
+        : null;
+}
 
 // ---------------------------------------------------------------------------
 // Поля элемента
@@ -178,6 +330,17 @@ export const PRESENTATION_SMART_FIELDS = [
         type: 'crm',
         crmEntities: ['CONTACT'],
     },
+    {
+        // Легаси: список `pres_crm_tmc_deal`, РПА `rpa_crm_tmc_deal`. Без
+        // этой связи ТМЦ-цепочку по элементу не восстановить: сегодня
+        // ТМЦ-сделка ищется обходом (привязки задачи + обратная ссылка
+        // UF_CRM_TO_PRESENTATION_SALES на pres-СДЕЛКЕ), а после отказа от
+        // pres-сделок этот путь исчезает вместе с ними.
+        code: 'PRES_TMC_DEAL',
+        name: 'ТМЦ сделка',
+        type: 'crm',
+        crmEntities: ['DEAL'],
+    },
     // «Полностью наш»: хоть одна ЗАЯВКА (лидоген) среди привязок.
     {
         code: 'PRES_IS_OUR_REQUEST',
@@ -214,6 +377,102 @@ export const PRESENTATION_SMART_FIELDS = [
         code: 'PRES_MOVE_COUNT',
         name: 'Переносов',
         type: 'integer',
+    },
+    {
+        // Легаси-список `pres_pound_date`. Счётчик переносов отвечает
+        // «сколько раз», а «когда переносили в последний раз» по нему не
+        // восстановить: PRES_NEXT_CALL_DATE хранит дату, НА которую
+        // перенесли, а не момент самого переноса.
+        code: 'PRES_MOVE_DATE',
+        name: 'Дата последнего переноса',
+        type: 'datetime',
+    },
+    {
+        // Снимок причины отказа ИМЕННО после этой презентации; на клиенте
+        // (op_efield_fail_reason) лежит только последняя по счёту.
+        code: 'PRES_FAIL_REASON',
+        name: 'Причина отказа после презентации',
+        type: 'enumeration',
+        items: PRESENTATION_FAIL_REASON_ITEMS,
+    },
+
+    // === Заявка и согласование (легаси-контур ТМЦ → РПА → ОП) ===
+    // Эти поля заполняет ЧЕЛОВЕК (или робот согласования на портале), а не
+    // presentation-flow: в april-next ТМЦ-отчёта и вебхука «заявка
+    // утверждена» пока нет (см. §1.7 docs/presentation-unification.md).
+    // Смысл — дать заявке дом в смарте, чтобы согласование перестало жить в
+    // deprecated-РПА; когда ТМЦ-ветка появится, писать будет куда.
+    {
+        code: 'PRES_TMC_RESPONSIBLE',
+        name: 'ТМЦ: кто подал заявку',
+        type: 'employee',
+    },
+    {
+        // РПА `owner_op`: руководитель, который заявку утверждает. Не
+        // дубль PRES_PLAN_RESPONSIBLE («назначил презентацию»): назначает
+        // ОП после утверждения, утверждает — руководитель до него.
+        code: 'PRES_OWNER',
+        name: 'Руководитель (утверждает заявку)',
+        type: 'employee',
+    },
+    {
+        // Ветка согласования вместо четырёх стадий РПА (см. items).
+        code: 'PRES_APPROVE_STAGE',
+        name: 'Согласование: чья очередь',
+        type: 'enumeration',
+        items: PRESENTATION_APPROVE_STAGE_ITEMS,
+    },
+    {
+        // Легаси-список `pres_init_status_date` — момент приёма ИЛИ
+        // отклонения заявки (какое из двух — говорит стадия).
+        code: 'PRES_APPROVE_DATE',
+        name: 'Дата решения по заявке',
+        type: 'datetime',
+    },
+    {
+        // Легаси-список `pres_init_comment` / `pres_init_fail_comment`,
+        // РПА `rpa_owner_comment`. Отдельным полем, а не строкой в ленте:
+        // «за что вернули на доработку» обязано быть фильтруемым.
+        code: 'PRES_APPROVE_COMMENT',
+        name: 'Комментарий к непринятой заявке',
+        type: 'string',
+    },
+    {
+        // Три ветки комментариев к заявке (РПА `rpa_tmc_comment` /
+        // `rpa_manager_comment` / `rpa_edu_comment`) сведены в ОДНУ ленту с
+        // префиксом ветки: три поля под один и тот же текст — ровно тот
+        // дубль, от которого уходим. Не дубль PRES_PLAN_COMMENT: тот —
+        // комментарий менеджера ОП при ПЛАНИРОВАНИИ, этот — переписка
+        // согласующих до плана.
+        code: 'PRES_REQUEST_COMMENT',
+        name: 'Комментарии к заявке',
+        type: 'string',
+        isMultiple: true,
+    },
+    {
+        code: 'PRES_IS_NEED_EDU',
+        name: 'Требуется обучение',
+        type: 'boolean',
+    },
+    {
+        code: 'PRES_NEED_EDU_DATE',
+        name: 'Дата обучения',
+        type: 'datetime',
+    },
+    {
+        code: 'PRES_IS_NEED_TECHNIC',
+        name: 'Требуется тех. поддержка',
+        type: 'boolean',
+    },
+    {
+        code: 'PRES_NEED_TECHNIC_DATE',
+        name: 'Дата тех. поддержки',
+        type: 'datetime',
+    },
+    {
+        code: 'PRES_NEED_TECHNIC_COMMENT',
+        name: 'Комментарий тех. поддержке',
+        type: 'string',
     },
 
     // === «5К»: сводка + девять детальных ответов анкеты ===
@@ -333,13 +592,25 @@ export const PRESENTATION_SMART_FIELDS = [
         isMultiple: true,
     },
 
-    // === Зеркала истории/дат из основной сделки (op_mhistory-контур) ===
-    {
-        code: 'PRES_MHISTORY',
-        name: 'История (зеркало сделки)',
-        type: 'string',
-        isMultiple: true,
-    },
+    // === Зеркала дат касания из основной сделки ===
+    /*
+     * PRES_MHISTORY («История (зеркало сделки)») УДАЛЕНО осознанно.
+     *
+     * Поле было объявлено, но не писалось НИ ОДНОЙ строкой кода — установщик
+     * заводил на портале UF, который в карточке всегда пуст: менеджер видит
+     * пустую «Историю» и делает вывод, что история потерялась.
+     *
+     * Возвращать его как зеркало `op_mhistory` нельзя по правилу «никаких
+     * дублей одного смысла»: `op_mhistory` — лента КЛИЕНТА (агрегат по всем
+     * событиям, живёт на лиде/компании/сделке), а у элемента уже есть своя
+     * лента PRES_COMMENTS — план, отчёт и согласование ИМЕННО этой
+     * презентации. Копия клиентской ленты в каждый элемент дала бы третью
+     * копию одного текста и заставляла бы читать сделку на каждый джоб.
+     *
+     * Установщик поля не удаляет: на уже установленных порталах
+     * UF_CRM_{typeId}_PRES_MHISTORY останется висеть пустым — снять его
+     * владельцу нужно руками (см. README, «Что владельцу нажать»).
+     */
     {
         code: 'PRES_LAST_CALL_DATE',
         name: 'Дата последнего касания',

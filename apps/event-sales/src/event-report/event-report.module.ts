@@ -7,6 +7,7 @@ import { EventFlowStatusService } from './services/status/event-flow-status.serv
 import { StagePredictService } from './services/stage-predict/stage-predict.service';
 import { EventFlowGuardService } from './services/flow-guard/event-flow-guard.service';
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.module';
+import { PortalQuestionnairesModule } from '@lib/portal-lib/store/questionnaires/portal-questionnaires.module';
 import { EventReportUseCase } from './use-cases/event-report.use-case';
 import { EventFlowProcessor } from './queue/event-flow.processor';
 import { EventSalesController } from './controllers/event-sales.controller';
@@ -33,6 +34,10 @@ import { PortalFieldsModule } from '../shared/portal-fields';
         PortalFieldsModule,
         // Настройки портала: гейт чек-листов в flow-guard (проверка продажи).
         PortalAppSettingsModule,
+        // Портальный каталог анкет: адреса полей смарта для ответов фрейма.
+        // Импортируется ЛЁГКИЙ lib-модуль глубоким путём — админ-роуты
+        // каталога не должны попасть в Swagger приложения.
+        PortalQuestionnairesModule,
     ],
     controllers: [EventSalesController],
     providers: [

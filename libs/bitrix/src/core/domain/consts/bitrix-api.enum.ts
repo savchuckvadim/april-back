@@ -102,6 +102,8 @@ export enum EBxMethod {
     UNMUTE = 'unmute',
     SEARCH = 'search',
     CURRENT = 'current',
+    /** user.admin — администратор ли портала ключ, которым мы ходим. */
+    ADMIN = 'admin',
     DIALOG_GET = 'dialog.get',
 
     // Disk

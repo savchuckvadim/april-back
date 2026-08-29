@@ -219,7 +219,8 @@ describe('InstallPresentationSmartUseCase', () => {
             1040,
         );
 
-        // Воронка/стадии — канонический смартовый flow, 6 стадий зеркала.
+        // Воронка/стадии — канонический смартовый flow: 6 стадий зеркала
+        // сделок + 2 стадии контура согласования заявки (легаси-РПА).
         const categoriesCall =
             installSmartCategoriesService.installTemplateCategories.mock
                 .calls[0][0];
@@ -227,7 +228,7 @@ describe('InstallPresentationSmartUseCase', () => {
         expect(categoriesCall.smartGroup).toBe('sales');
         expect(categoriesCall.entityTypeId).toBe(1040);
         expect(categoriesCall.templateCategories).toHaveLength(1);
-        expect(categoriesCall.templateCategories[0].stages).toHaveLength(6);
+        expect(categoriesCall.templateCategories[0].stages).toHaveLength(8);
 
         // Кэши: online-слепок и in-memory резолв смарта.
         expect(portalCache.invalidate).toHaveBeenCalledWith(DOMAIN);

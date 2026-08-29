@@ -1,6 +1,13 @@
 import { ZprFlowService } from '../zpr-flow.service';
 import { PBXService } from '@/modules/pbx';
 import { PbxZprSmartService } from '@lib/portal-lib/pbx/pbx-zpr-smart';
+import {
+    normalizeSmartFieldName,
+    PbxSmartItemFieldsService,
+    SmartItemField,
+    SmartItemFields,
+} from '@lib/portal-lib/pbx/smart-item-fields';
+import { QuestionnaireSmartAnswer } from '../../shared/questionnaire-answers';
 import { ZprFlowJobData } from '../dto/zpr-flow-job.dto';
 
 /**
@@ -40,12 +47,59 @@ const INFO = {
     },
 };
 
+/** ЖИВЫЕ поля элемента ЗПР — адреса портальной анкеты. */
+const LIVE_FIELDS: SmartItemField[] = [
+    {
+        key: 'ufCrm7QObjection',
+        upperName: 'UF_CRM_7_Q_OBJECTION',
+        type: 'string',
+        isMultiple: false,
+        title: 'Главное возражение',
+        items: [],
+    },
+    {
+        key: 'ufCrm7QDecisionAt',
+        upperName: 'UF_CRM_7_Q_DECISION_AT',
+        type: 'date',
+        isMultiple: false,
+        title: 'Дата решения',
+        items: [],
+    },
+];
+
+const ITEM_FIELDS: SmartItemFields = {
+    entityTypeId: 1038,
+    byNormalizedName: Object.fromEntries(
+        LIVE_FIELDS.map(field => [
+            normalizeSmartFieldName(field.upperName),
+            field,
+        ]),
+    ),
+};
+
+/** Ответ анкеты: по умолчанию отчётный строковый. */
+const answer = (
+    over?: Partial<QuestionnaireSmartAnswer>,
+): QuestionnaireSmartAnswer => ({
+    key: 'q_zpr:objection',
+    purpose: 'report',
+    fieldName: 'UF_CRM_7_Q_OBJECTION',
+    fieldType: 'string',
+    control: 'string' as QuestionnaireSmartAnswer['control'],
+    value: 'Дорого',
+    title: 'Главное возражение',
+    optionTitle: null,
+    ...over,
+});
+
 const makeHarness = (over?: {
     info?: typeof INFO | null;
     openItems?: Array<Record<string, unknown>>;
     zprsField?: boolean;
     /** Открытые сделки основной воронки компании (для дотяжки baseDealId). */
     companyDeals?: Array<{ ID: string; ASSIGNED_BY_ID?: string }>;
+    /** null — живые поля прочитать не удалось. */
+    itemFields?: SmartItemFields | null;
 }) => {
     const added: Array<Record<string, unknown>> = [];
     const updatedItems: Array<{ id: number; fields: Record<string, unknown> }> =
@@ -122,8 +176,19 @@ const makeHarness = (over?: {
             Promise.resolve(over?.info === undefined ? INFO : over.info),
     } as unknown as PbxZprSmartService;
 
+    const itemFieldsCalls: Array<{ domain: string; entityTypeId: number }> = [];
+    const smartItemFields = {
+        resolveFields: (domain: string, entityTypeId: number) => {
+            itemFieldsCalls.push({ domain, entityTypeId });
+            return Promise.resolve(
+                over?.itemFields === undefined ? ITEM_FIELDS : over.itemFields,
+            );
+        },
+    } as unknown as PbxSmartItemFieldsService;
+
     return {
-        service: new ZprFlowService(pbx, zprSmart),
+        service: new ZprFlowService(pbx, zprSmart, smartItemFields),
+        itemFieldsCalls,
         added,
         updatedItems,
         dealUpdates,
@@ -375,7 +440,9 @@ describe('ZprFlowService', () => {
                 },
             ],
         });
-        await service.handle(job({ kind: 'report', isResult: true, isFail: true }));
+        await service.handle(
+            job({ kind: 'report', isResult: true, isFail: true }),
+        );
 
         // Дозвон СОСТОЯЛСЯ — это не «не состоялся»; но и не успех работы.
         expect(updatedItems[0].fields.stageId).toBe('DT1038_9:RESULT_FAIL');
@@ -413,7 +480,9 @@ describe('ZprFlowService', () => {
                 },
             ],
         });
-        await service.handle(job({ kind: 'report', isResult: true, isFail: true }));
+        await service.handle(
+            job({ kind: 'report', isResult: true, isFail: true }),
+        );
 
         expect(updatedItems[0].fields.stageId).toBe('DT1038_9:SUCCESS');
     });
@@ -427,5 +496,247 @@ describe('ZprFlowService', () => {
         expect(added[0].parentId4).toBe(431);
         expect(added[0].parentId1).toBe(42);
         expect(added[0].parentId3).toBe(9);
+    });
+    // ─────────────────── ответы портальной анкеты ───────────────────
+
+    it('план: ответ анкеты плана ложится в СОЗДАВАЕМЫЙ элемент', async () => {
+        const { service, added, itemFieldsCalls } = makeHarness();
+        await service.handle(
+            job({
+                answers: [
+                    answer({ purpose: 'plan', value: 'Ждут КП' }),
+                    answer({
+                        key: 'q_zpr:date',
+                        purpose: 'plan',
+                        fieldName: 'UF_CRM_7_Q_DECISION_AT',
+                        fieldType: 'date',
+                        control: 'date' as QuestionnaireSmartAnswer['control'],
+                        value: '2026-09-20',
+                        title: 'Дата решения',
+                    }),
+                ],
+            }),
+        );
+
+        expect(added[0].ufCrm7QObjection).toBe('Ждут КП');
+        expect(added[0].ufCrm7QDecisionAt).toBe('20.09.2026');
+        expect(itemFieldsCalls).toEqual([
+            { domain: 'x.bitrix24.ru', entityTypeId: 1038 },
+        ]);
+    });
+
+    it('ответов нет — живые поля не читаются вовсе (горячий путь)', async () => {
+        const { service, itemFieldsCalls } = makeHarness();
+        await service.handle(job());
+        expect(itemFieldsCalls).toHaveLength(0);
+    });
+
+    it('закрытие: ответы отчёта ложатся в ЗАКРЫВАЕМЫЙ элемент', async () => {
+        const { service, updatedItems } = makeHarness({
+            openItems: [
+                {
+                    id: 601,
+                    stageId: 'DT1038_9:PLAN',
+                    ufCrm7BaseDeal: ['D_100'],
+                },
+            ],
+        });
+        await service.handle(job({ kind: 'report', answers: [answer()] }));
+
+        expect(updatedItems[0].fields.stageId).toBe('DT1038_9:SUCCESS');
+        expect(updatedItems[0].fields.ufCrm7QObjection).toBe('Дорого');
+    });
+
+    it('перенос: ответы отчёта пишутся, элемент остаётся в «Ожидании»', async () => {
+        const { service, updatedItems } = makeHarness({
+            openItems: [
+                {
+                    id: 601,
+                    stageId: 'DT1038_9:PLAN',
+                    ufCrm7BaseDeal: ['D_100'],
+                },
+            ],
+        });
+        const result = await service.handle(
+            job({ kind: 'report', isMove: true, answers: [answer()] }),
+        );
+
+        expect(result.action).toBe('moved');
+        expect(updatedItems[0].fields.stageId).toBe('DT1038_9:PENDING');
+        expect(updatedItems[0].fields.ufCrm7QObjection).toBe('Дорого');
+    });
+
+    it('перенос: анкета ПЛАНА едет в ТОТ ЖЕ элемент (план-джоба нет)', async () => {
+        const { service, updatedItems } = makeHarness({
+            openItems: [
+                {
+                    id: 601,
+                    stageId: 'DT1038_9:PLAN',
+                    ufCrm7BaseDeal: ['D_100'],
+                },
+            ],
+        });
+        await service.handle(
+            job({
+                kind: 'report',
+                isMove: true,
+                answers: [
+                    answer(),
+                    answer({
+                        key: 'q_zpr:date',
+                        purpose: 'plan',
+                        fieldName: 'UF_CRM_7_Q_DECISION_AT',
+                        fieldType: 'date',
+                        control: 'date' as QuestionnaireSmartAnswer['control'],
+                        value: '2026-09-20',
+                        title: 'Дата решения',
+                    }),
+                ],
+            }),
+        );
+
+        // Перенос план-джоб не ставит, а новым планом стал этот элемент:
+        // ответы плана раньше пропадали молча.
+        expect(updatedItems[0].fields.ufCrm7QObjection).toBe('Дорого');
+        expect(updatedItems[0].fields.ufCrm7QDecisionAt).toBe('20.09.2026');
+    });
+
+    it('перенос без открытого элемента: новый несёт и ОТЧЁТНЫЕ ответы', async () => {
+        const { service, added } = makeHarness({ openItems: [] });
+        const result = await service.handle(
+            job({
+                kind: 'report',
+                isMove: true,
+                answers: [
+                    answer(),
+                    answer({
+                        key: 'q_zpr:date',
+                        purpose: 'plan',
+                        fieldName: 'UF_CRM_7_Q_DECISION_AT',
+                        fieldType: 'date',
+                        control: 'date' as QuestionnaireSmartAnswer['control'],
+                        value: '2026-09-20',
+                        title: 'Дата решения',
+                    }),
+                ],
+            }),
+        );
+
+        // Элемент рождается ради ЭТОГО отчёта — отчётный ответ принадлежит
+        // ему же, другого элемента у него не будет.
+        expect(result.action).toBe('created');
+        expect(added[0].ufCrm7QObjection).toBe('Дорого');
+        expect(added[0].ufCrm7QDecisionAt).toBe('20.09.2026');
+    });
+
+    it('спонтанный ЗПР: элемент рождается сразу с ответами', async () => {
+        const { service, added } = makeHarness({ openItems: [] });
+        const result = await service.handle(
+            job({ kind: 'report', answers: [answer()] }),
+        );
+
+        expect(result.action).toBe('spontaneous');
+        expect(added[0].ufCrm7QObjection).toBe('Дорого');
+    });
+
+    it('ответ ПЛАНА в отчётный элемент не едет', async () => {
+        const { service, updatedItems } = makeHarness({
+            openItems: [
+                {
+                    id: 601,
+                    stageId: 'DT1038_9:PLAN',
+                    ufCrm7BaseDeal: ['D_100'],
+                },
+            ],
+        });
+        await service.handle(
+            job({ kind: 'report', answers: [answer({ purpose: 'plan' })] }),
+        );
+
+        expect(updatedItems[0].fields.ufCrm7QObjection).toBeUndefined();
+    });
+
+    it('живые поля не прочитаны — ответы не пишутся, элемент создаётся', async () => {
+        const { service, added } = makeHarness({ itemFields: null });
+        const result = await service.handle(
+            job({ answers: [answer({ purpose: 'plan' })] }),
+        );
+
+        expect(result.action).toBe('created');
+        expect(added[0].ufCrm7QObjection).toBeUndefined();
+        expect(added[0].stageId).toBe('DT1038_9:PLAN');
+    });
+
+    it('смарт не установлен — ответы никуда не пишутся, джоб пропущен', async () => {
+        const { service, added, updatedItems } = makeHarness({ info: null });
+        const warn = jest
+            .spyOn(service['logger'], 'warn')
+            .mockImplementation(() => undefined);
+        const result = await service.handle(
+            job({ answers: [answer({ purpose: 'plan' })] }),
+        );
+
+        expect(result.action).toBe('skipped');
+        expect(added).toHaveLength(0);
+        expect(updatedItems).toHaveLength(0);
+        /*
+         * Именно warning, а не debug: в проде debug выключен, и потеря
+         * ответов менеджера была бы беззвучной. В строке — сколько
+         * ответов потеряно.
+         */
+        expect(warn).toHaveBeenCalled();
+        const message = String(warn.mock.calls[0][0]);
+        expect(message).toContain('1 ответ(ов) портальной анкеты');
+        expect(message).toContain('записать некуда');
+    });
+
+    it('смарт не установлен и ответов нет — предупреждать не о чем', async () => {
+        const { service } = makeHarness({ info: null });
+        const warn = jest
+            .spyOn(service['logger'], 'warn')
+            .mockImplementation(() => undefined);
+
+        await service.handle(job());
+
+        // Портал без смарта даёт этот пропуск на каждом отчёте — шуметь
+        // в логе нечем, терять тоже нечего.
+        expect(warn).not.toHaveBeenCalled();
+    });
+
+    // ─────────────────────── снимок анкеты ЗПР ───────────────────────
+
+    it('снимок анкеты раскладывается по кодам полей смарта', async () => {
+        const { service, added } = makeHarness({ openItems: [] });
+        // Состав снимка ещё не собирается (см. ZprSurveySnapshot), но
+        // контракт обязан работать: поток — зеркало презентационного.
+        await service.handle(
+            job({
+                kind: 'report',
+                survey: { ZPR_REPORT_COMMENT: 'Итог разговора' },
+            }),
+        );
+
+        expect(added[0].ufCrm7ReportComment).toBe('Итог разговора');
+    });
+
+    it('на переносе снимок анкеты не пишется (звонок ещё не состоялся)', async () => {
+        const { service, updatedItems } = makeHarness({
+            openItems: [
+                {
+                    id: 601,
+                    stageId: 'DT1038_9:PLAN',
+                    ufCrm7BaseDeal: ['D_100'],
+                },
+            ],
+        });
+        await service.handle(
+            job({
+                kind: 'report',
+                isMove: true,
+                survey: { ZPR_REPORT_COMMENT: 'Итог разговора' },
+            }),
+        );
+
+        expect(updatedItems[0].fields.ufCrm7ReportComment).toBeUndefined();
     });
 });

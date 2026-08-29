@@ -9,6 +9,7 @@ import {
 import {
     EnumPortalAppCode,
     getPortalAppDefaults,
+    getStoredAppSettingKeys,
     PORTAL_APP_SETTINGS_SCHEMA,
     PortalAppSettingDescriptor,
     PortalAppSettingsPatch,
@@ -17,6 +18,30 @@ import {
 
 /** Готовые настройки кэшируются коротко: быстрый доступ из всех приложений. */
 const CACHE_TTL_SECONDS = 300;
+
+/**
+ * Версия ФОРМЫ кэшируемого значения — часть ключа Redis.
+ *
+ * Поднимать при смене формы payload'а, а не при добавлении ключа в реестр.
+ * v2 = `{ values, storedKeys }`: без версии записи прошлой формы (плоские
+ * значения без признака «задано на портале») доживали бы свой TTL и
+ * отдавали фрейму ответ без признака — ровно те 5 минут после деплоя,
+ * когда дефолт реестра снова гасил бы доменные флаги.
+ */
+const CACHE_VERSION = 'v2';
+
+/** Настройки приложения + признак «ключ задан на портале». */
+export interface PortalAppSettingsResolved<App extends EnumPortalAppCode> {
+    /** Полный набор: дефолты кода, перекрытые сохранённым на портале. */
+    values: PortalAppSettingsValues<App>;
+    /**
+     * Ключи схемы, которые РЕАЛЬНО лежат в JSON портала. Остальное в
+     * `values` — дефолты кода, и потребитель вправе их не применять:
+     * фрейму это единственный способ отличить «портал выключил» от
+     * «портал не трогал» (см. getStoredAppSettingKeys).
+     */
+    storedKeys: string[];
+}
 
 /**
  * Настройки placement-приложений на портал.
@@ -41,23 +66,43 @@ export class PortalAppSettingsService {
         this.redis = redisService.getClient();
     }
 
-    /** Действующие настройки приложения на домене: дефолты + БД, с кэшем. */
+    /**
+     * Действующие настройки приложения на домене: дефолты + БД, с кэшем.
+     *
+     * Тонкая обёртка над `resolveWithStored` — для бэковых потребителей,
+     * которым нужно только значение (`settings.withChecklistSale`).
+     */
     async resolve<App extends EnumPortalAppCode>(
         domain: string,
         app: App,
     ): Promise<PortalAppSettingsValues<App>> {
+        return (await this.resolveWithStored(domain, app)).values;
+    }
+
+    /**
+     * То же + признак «ключ задан на портале» — для фрейма.
+     *
+     * Фронт держит СВОИ дефолты (доменный хардкод) и без признака не может
+     * отличить «портал выключил флаг» от «портал его не трогал»: дефолт
+     * реестра `false` приезжает неотличимо от сохранённого и гасит рабочие
+     * фичи боевых порталов. Признак лежит В КЭШЕ вместе со значениями —
+     * иначе терялся бы на первом же попадании в Redis.
+     */
+    async resolveWithStored<App extends EnumPortalAppCode>(
+        domain: string,
+        app: App,
+    ): Promise<PortalAppSettingsResolved<App>> {
         const cacheKey = this.cacheKey(domain, app);
         const cached = await this.redis.get(cacheKey).catch(() => null);
-        if (cached) {
-            return JSON.parse(cached) as PortalAppSettingsValues<App>;
-        }
+        const parsed = cached ? this.parseCached<App>(cached) : null;
+        if (parsed) return parsed;
 
         const record = await this.repository.findByDomain(domain, app);
-        const values = this.merge(app, record);
+        const resolved = this.merge(app, record);
         await this.redis
-            .set(cacheKey, JSON.stringify(values), 'EX', CACHE_TTL_SECONDS)
+            .set(cacheKey, JSON.stringify(resolved), 'EX', CACHE_TTL_SECONDS)
             .catch(() => undefined);
-        return values;
+        return resolved;
     }
 
     /** Все строки настроек портала (админка: вкладка «Приложения»). */
@@ -75,6 +120,13 @@ export class PortalAppSettingsService {
     /**
      * Сохранение из админки: применяются только известные схеме ключи,
      * значения проверяются по типу дескриптора, кэш домена сбрасывается.
+     *
+     * Смысл сохранения не меняется от появления `storedKeys`: пишем то,
+     * что прислали. Значение, СОВПАДАЮЩЕЕ с дефолтом кода, тоже ложится в
+     * JSON и делает ключ «заданным на портале» — это верно: владелец
+     * выбрал его явно, и фрейм обязан его применить поверх своего
+     * доменного значения. Снять решение портала можно только явным
+     * `null` — тогда ключ удаляется из JSON и снова становится дефолтом.
      */
     async save<App extends EnumPortalAppCode>(
         portalId: number,
@@ -123,29 +175,66 @@ export class PortalAppSettingsService {
             `Настройки ${app} портала ${portalId} (${domain}) сохранены: ` +
                 `${Object.keys(stored).join(', ') || 'без изменений'}`,
         );
-        return this.merge(app, record);
+        return this.merge(app, record).values;
     }
 
-    /** Дефолты схемы + сохранённые в БД значения (по snake_case-кодам). */
+    /**
+     * Дефолты схемы + сохранённые в БД значения (по snake_case-кодам) и
+     * список ключей, которые пришли именно из БД.
+     *
+     * Записи в БД нет — отдаём чистые дефолты и ПУСТОЙ список: на портале
+     * не задано ничего, строка при чтении не создаётся.
+     */
     private merge<App extends EnumPortalAppCode>(
         app: App,
         record: PortalAppSettingsRecord | null,
-    ): PortalAppSettingsValues<App> {
+    ): PortalAppSettingsResolved<App> {
         const defaults = getPortalAppDefaults(app) as Record<string, unknown>;
-        if (!record) return defaults as PortalAppSettingsValues<App>;
+        if (!record) {
+            return {
+                values: defaults as PortalAppSettingsValues<App>,
+                storedKeys: [],
+            };
+        }
 
         const schema = PORTAL_APP_SETTINGS_SCHEMA[app] as Record<
             string,
             PortalAppSettingDescriptor
         >;
+        const storedKeys = getStoredAppSettingKeys(app, record.settings);
         const values: Record<string, unknown> = { ...defaults };
-        for (const [key, descriptor] of Object.entries(schema)) {
-            const raw = record.settings[descriptor.code];
-            if (raw !== undefined && typeof raw === descriptor.type) {
-                values[key] = raw;
-            }
+        for (const key of storedKeys) {
+            values[key] = record.settings[schema[key].code];
         }
-        return values as PortalAppSettingsValues<App>;
+        return {
+            values: values as PortalAppSettingsValues<App>,
+            storedKeys,
+        };
+    }
+
+    /**
+     * Значение из кэша. Осторожно: запись могла лечь другой версией кода
+     * (или испортиться) — форму проверяем, иначе идём в БД как при промахе.
+     */
+    private parseCached<App extends EnumPortalAppCode>(
+        raw: string,
+    ): PortalAppSettingsResolved<App> | null {
+        try {
+            const parsed = JSON.parse(raw) as Partial<
+                PortalAppSettingsResolved<App>
+            >;
+            const values = parsed?.values as
+                | Record<string, unknown>
+                | undefined;
+            if (!values || typeof values !== 'object') return null;
+            if (!Array.isArray(parsed.storedKeys)) return null;
+            return {
+                values: parsed.values as PortalAppSettingsValues<App>,
+                storedKeys: parsed.storedKeys,
+            };
+        } catch {
+            return null;
+        }
     }
 
     private async requireDomain(portalId: number): Promise<string> {
@@ -157,6 +246,6 @@ export class PortalAppSettingsService {
     }
 
     private cacheKey(domain: string, app: EnumPortalAppCode): string {
-        return `portal-app-settings:${domain}:${app}`;
+        return `portal-app-settings:${CACHE_VERSION}:${domain}:${app}`;
     }
 }

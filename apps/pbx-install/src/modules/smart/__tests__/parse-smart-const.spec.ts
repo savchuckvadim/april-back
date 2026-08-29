@@ -74,7 +74,7 @@ describe('ParseSmartService — const-ветка (реестр const-смарт�
         ]);
     });
 
-    it('pres/sales — воронка-зеркало «ОП Презентации» из 6 стадий', async () => {
+    it('pres/sales — «ОП Презентации» + согласование заявки, 8 стадий', async () => {
         const parsed = await service.getParsedData(
             SmartNameEnum.PRES,
             SmartGroupEnum.SALES,
@@ -84,11 +84,15 @@ describe('ParseSmartService — const-ветка (реестр const-смарт�
         const smart = parsed[0];
         expect(smart.code).toBe('pres_sales');
         expect(smart.categories).toHaveLength(1);
+        // Контур согласования (pres_approve / pres_rejected) заменяет
+        // легаси-РПА «Заявка на презентацию»: методы rpa.* deprecated.
         expect(smart.categories[0].stages.map(stage => stage.code)).toEqual([
             'pres_new',
+            'pres_approve',
             'pres_plan',
             'pres_pending',
             'pres_success',
+            'pres_rejected',
             'pres_noresult',
             'pres_fail',
         ]);

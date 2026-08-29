@@ -31,12 +31,14 @@ export const PRESENTATION_SMART_DESCRIPTOR = {
     code: PRESENTATION_SMART_CODE,
     title: PRESENTATION_SMART_TITLE,
     fieldsCount: PRESENTATION_SMART_FIELDS.length,
-    // Стадии зеркалят воронку sales_presentation — см. PRESENTATION_SMART_STAGES.
+    // Стадии = воронка sales_presentation + контур согласования заявки
+    // (легаси-РПА) — см. PRESENTATION_SMART_STAGES.
     hasCategories: true,
     description:
         'Презентации: элемент = одна презентация (плановая или спонтанная) ' +
-        'со стадиями воронки «ОП Презентации», связями с основной сделкой, ' +
-        'лидом, компанией и контактом, блоками «5К» и «Хвост» и историей ' +
+        'со стадиями воронки «ОП Презентации» и согласования заявки, ' +
+        'связями с основной, презентационной и ТМЦ-сделкой, лидом, ' +
+        'компанией и контактом, блоками «5К» и «Хвост» и историей ' +
         'комментариев. Зеркало сделок-презентаций, ничего не отключает.',
     buildInstallFields: buildPresentationInstallFields,
     buildInstallCategories: buildPresentationInstallCategories,

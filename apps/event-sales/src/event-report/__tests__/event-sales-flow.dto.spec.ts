@@ -4,7 +4,11 @@ import {
     ContactDto,
     ContactMultifieldDto,
 } from '../dto/event-sale-flow/contact.dto';
-import { ReturnToTmcDto } from '../dto/event-sale-flow/event-sales-flow.dto';
+import {
+    EventSalesFlowDto,
+    ReturnToTmcDto,
+} from '../dto/event-sale-flow/event-sales-flow.dto';
+import { QuestionnaireAnswerDto } from '../dto/event-sale-flow/questionnaire-answer.dto';
 import { PlanDto, PlanTypeDto } from '../dto/event-sale-flow/plan.dto';
 import { ReportDto } from '../dto/event-sale-flow/report.dto';
 import {
@@ -197,5 +201,79 @@ describe('ReportDto', () => {
         });
         const errors = await validate(dto);
         expect(errors.length).toBeGreaterThan(0);
+    });
+});
+
+/**
+ * Ответы портальных анкет, адресованные полям ЭЛЕМЕНТА смарта.
+ *
+ * Поле обязано быть НЕобязательным: бандл фрейма кэшируется встройкой
+ * Битрикса, и старый клиент шлёт payload без него — получить 400 он не
+ * должен (то же правило, что у `openTasks`).
+ */
+describe('EventSalesFlowDto.questionnaireAnswers', () => {
+    const flow = (over: Record<string, unknown> = {}) => ({
+        domain: 'x.bitrix24.ru',
+        ...over,
+    });
+
+    it('поле не прислано — прежнее поведение (валидно)', async () => {
+        const dto = plainToInstance(EventSalesFlowDto, flow());
+        const errors = await validate(dto, { skipMissingProperties: true });
+        expect(
+            errors.some(error => error.property === 'questionnaireAnswers'),
+        ).toBe(false);
+    });
+
+    it('валиден список пар «анкета, вопрос, ответ»', async () => {
+        const dto = plainToInstance(
+            EventSalesFlowDto,
+            flow({
+                questionnaireAnswers: [
+                    {
+                        questionnaire: 'q_pres',
+                        item: 'decision',
+                        value: 'Решает директор',
+                    },
+                    { questionnaire: 'q_pres', item: 'ready', value: 'Y' },
+                ],
+            }),
+        );
+        const errors = await validate(dto, { skipMissingProperties: true });
+
+        expect(
+            errors.some(error => error.property === 'questionnaireAnswers'),
+        ).toBe(false);
+        expect(dto.questionnaireAnswers?.[0]).toBeInstanceOf(
+            QuestionnaireAnswerDto,
+        );
+    });
+
+    it('невалиден ответ без кода вопроса', async () => {
+        // Проверяем сам пункт: у конверта верхнего уровня валидация идёт
+        // со skipMissingProperties (там пропущенные поля — норма).
+        const dto = plainToInstance(QuestionnaireAnswerDto, {
+            questionnaire: 'q_pres',
+            value: 'Решает директор',
+        });
+        const errors = await validate(dto);
+
+        expect(errors.some(error => error.property === 'item')).toBe(true);
+    });
+
+    it('невалидно нестроковое значение ответа', async () => {
+        const dto = plainToInstance(
+            EventSalesFlowDto,
+            flow({
+                questionnaireAnswers: [
+                    { questionnaire: 'q_pres', item: 'sum', value: 150000 },
+                ],
+            }),
+        );
+        const errors = await validate(dto, { skipMissingProperties: true });
+
+        expect(
+            errors.some(error => error.property === 'questionnaireAnswers'),
+        ).toBe(true);
     });
 });

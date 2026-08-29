@@ -1,5 +1,6 @@
 import { PresentationOutcome } from '../lib/presentation-outcome';
 import { PresentationSurveySnapshot } from '../lib/presentation-survey-snapshot';
+import { QuestionnaireSmartAnswer } from '../../shared/questionnaire-answers';
 
 /**
  * Джоб сайд-очереди презентаций (EVENT_SALES_PRESENTATION_FLOW).
@@ -48,6 +49,13 @@ export interface PresentationFlowJobData {
     baseDealId: number | null;
     /** Сделка воронки «ОП Презентации» — зеркальная ссылка на элемент. */
     presDealId: number | null;
+    /**
+     * ТМЦ-сделка (воронка `tmc_base`), из которой пришла заявка на
+     * презентацию. Резолвится контекстом отчёта (привязки задачи или
+     * обратная ссылка UF_CRM_TO_PRESENTATION_SALES) — элемент забирает её
+     * себе полем PRES_TMC_DEAL, чтобы связь пережила отказ от pres-сделок.
+     */
+    tmcDealId: number | null;
     companyId: number | null;
     leadId: number | null;
     contactId: number | null;
@@ -62,6 +70,25 @@ export interface PresentationFlowJobData {
     planComment: string | null;
     /** Комментарий отчёта (kind='report'). */
     reportComment: string | null;
+    /**
+     * Причина отказа, которую менеджер ДЕЙСТВИТЕЛЬНО выбрал (суффикс
+     * справочника: `notime`, `c_price`, …). Контекст отдаёт её только на
+     * финальном отказе типа «Отказ» — на остальных отчётах здесь null, и
+     * элемент остаётся без причины (см. EventReportContext.failReasonCode).
+     */
+    failReasonCode: string | null;
     /** Снимок анкеты «5К»/«Хвост» на момент отчёта (kind='report'). */
     survey: PresentationSurveySnapshot;
+    /**
+     * Ответы ПОРТАЛЬНОЙ анкеты (каталог админки), адресованные полям
+     * элемента. Рядом с `survey`, а не вместо: у них разные ключи и разное
+     * происхождение — `survey` адресуется кодом НАШЕГО реестра полей и
+     * снят с уже загруженных лида и сделки, `answers` адресуется UF-именем
+     * ПРОИЗВОЛЬНОГО поля портала и надиктован менеджером сейчас. Слияние
+     * заставило бы один из ключей врать.
+     *
+     * Поле опциональное: в очереди во время деплоя лежат джобы старой
+     * формы (ровно так же читается `job.survey ?? {}`).
+     */
+    answers?: QuestionnaireSmartAnswer[];
 }

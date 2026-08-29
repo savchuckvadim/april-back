@@ -20,6 +20,7 @@ import { MergeDealsModule } from './merge-deals/merge-deals.module';
 import { DuplicatesModule } from './duplicates/duplicates.module';
 import { AppCacheServiceModule } from '@lib/app-cache';
 import { EventSalesAppSettingsModule } from './app-settings/app-settings.module';
+import { EventSalesQuestionnairesModule } from './questionnaires/questionnaires.module';
 
 @Module({
     imports: [
@@ -58,6 +59,8 @@ import { EventSalesAppSettingsModule } from './app-settings/app-settings.module'
         DuplicatesModule,
         // Чтение настроек приложений фронтами (замена хардкода domain-config)
         EventSalesAppSettingsModule,
+        // Портальный каталог анкет плана/отчёта — читается фреймом на старте
+        EventSalesQuestionnairesModule,
     ],
     providers: [GlobalExceptionFilter],
     exports: [BxDepartmentModule, AiRagModule],

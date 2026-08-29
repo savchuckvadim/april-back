@@ -10,12 +10,15 @@ export const ZPR_FLOW_WS_EVENTS = {
     DONE: 'zpr-flow:done',
 } as const;
 
-export type ZprFlowAction =
-    | 'created'
-    | 'closed'
-    | 'moved'
-    | 'spontaneous'
-    | 'skipped';
+export const ZPR_FLOW_ACTIONS = [
+    'created',
+    'closed',
+    'moved',
+    'spontaneous',
+    'skipped',
+] as const;
+
+export type ZprFlowAction = (typeof ZPR_FLOW_ACTIONS)[number];
 
 export interface ZprFlowResult {
     action: ZprFlowAction;

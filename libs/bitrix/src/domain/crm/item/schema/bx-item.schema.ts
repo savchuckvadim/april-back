@@ -39,7 +39,15 @@ export type BxItemSchema = {
      * формула ufCrm{typeId}{Pascal} совпадает с реальностью не всегда).
      */
     [EBxMethod.FIELDS]: {
-        request: { entityTypeId: number | string };
+        request: {
+            entityTypeId: number | string;
+            /**
+             * `Y` — вернуть ОРИГИНАЛЬНЫЕ UF-имена полей вместо camelCase.
+             * Нужно там, где имя поля само по себе якорь (портальные анкеты
+             * адресуют поле именно им): camelCase-ключ в CRM не записать.
+             */
+            useOriginalUfNames?: 'Y' | 'N';
+        };
         response: { fields: Record<string, Record<string, unknown>> };
     };
 };

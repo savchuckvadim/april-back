@@ -15,8 +15,10 @@ export type InstallPresentationSmartResult = InstallConstSmartResult;
  * Установка смарт-процесса «Презентации» — зеркала сделок «ОП Презентации».
  *
  * Тонкая обёртка над общим движком {@link InstallConstSmartService}: тип со
- * стадиями, воронка `pres_main` (6 стадий формы sales_presentation), 36
- * полей, зеркала в PortalDB и сброс кэшей — всё там же, где у ЗПР.
+ * стадиями, воронка `pres_main` (стадии формы sales_presentation + контур
+ * согласования заявки), поля реестра PRESENTATION_SMART_FIELDS, зеркала в
+ * PortalDB и сброс кэшей — всё там же, где у ЗПР. Числа не дублируем: состав
+ * задаётся константами смарта, а `fieldsCount` дескриптора считается из них.
  *
  * Идемпотентна по PRESENTATION_SMART_CODE (`pres_sales`). Установка НИЧЕГО
  * не отключает: сделки-презентации продолжают работать, смарт живёт

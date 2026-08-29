@@ -6,10 +6,20 @@ import { PBXService } from '@/modules/pbx';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import {
     PbxZprSmartService,
+    ZprSmartFieldCode,
     ZprSmartInfo,
 } from '@lib/portal-lib/pbx/pbx-zpr-smart';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
+import {
+    PbxSmartItemFieldsService,
+    SmartItemFields,
+} from '@lib/portal-lib/pbx/smart-item-fields';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
+import {
+    applyQuestionnaireAnswers,
+    buildMirrorItemsByKey,
+    QuestionnaireAnswerPurpose,
+} from '../shared/questionnaire-answers';
 import { ZprFlowJobData } from './dto/zpr-flow-job.dto';
 import { ZprFlowResult } from './constants/zpr-flow.const';
 
@@ -21,6 +31,30 @@ const CRM_DATETIME_FORMAT = 'DD.MM.YYYY HH:mm:ss';
 const COMMENTS_LIMIT = 50;
 
 type BxRow = Record<string, unknown>;
+
+/** Клиент Битрикса портала, инициализированный на время джоба. */
+type FlowBitrix = Awaited<ReturnType<PBXService['init']>>['bitrix'];
+
+/**
+ * Всё, что нужно одному прогону джоба, одним объектом (зеркало
+ * PresentationFlowRun): с приходом живых полей элемента позиционных
+ * аргументов стало шесть, и порядок начал бы значить больше, чем смысл.
+ */
+interface ZprFlowRun {
+    bitrix: FlowBitrix;
+    portal: PortalModel;
+    info: ZprSmartInfo;
+    job: ZprFlowJobData;
+    /** Таймзона портала — в ней живут все даты элемента. */
+    tz: string;
+    /** Текущий момент в формате элемента. */
+    now: string;
+    /**
+     * ЖИВЫЕ поля элемента (`crm.item.fields`) — адреса портальной анкеты.
+     * null — читать не понадобилось (ответов нет) либо не удалось.
+     */
+    itemFields: SmartItemFields | null;
+}
 
 /**
  * Сайд-flow ЗПР: элементы смарта «Звонки По решению» создаются/закрываются
@@ -42,14 +76,33 @@ export class ZprFlowService {
     constructor(
         private readonly pbx: PBXService,
         private readonly zprSmart: PbxZprSmartService,
+        private readonly smartItemFields: PbxSmartItemFieldsService,
     ) {}
 
     async handle(job: ZprFlowJobData): Promise<ZprFlowResult> {
         const info = await this.zprSmart.resolveInfo(job.domain);
         if (!info) {
-            this.logger.debug(
-                `[zpr-flow] ${job.domain}: смарт zpr_sales не установлен — пропуск`,
-            );
+            /*
+             * Смарта нет — ответов портальной анкеты в этом джобе тоже не
+             * может быть: вопрос без установленного смарта компиляция
+             * каталога выбрасывает. Приехали вопреки — это ПОТЕРЯ ответов
+             * менеджера, а не рядовой пропуск: debug в проде выключен, и
+             * такая потеря была бы полностью беззвучной. Пустой джоб
+             * остаётся на debug — портал без смарта штатно даёт его на
+             * каждом отчёте.
+             */
+            const lost = job.answers?.length ?? 0;
+            if (lost) {
+                this.logger.warn(
+                    `[zpr-flow] ${job.domain}: смарт zpr_sales не установлен — ` +
+                        `${lost} ответ(ов) портальной анкеты записать некуда, ` +
+                        'джоб пропущен',
+                );
+            } else {
+                this.logger.debug(
+                    `[zpr-flow] ${job.domain}: смарт zpr_sales не установлен — пропуск`,
+                );
+            }
             return { action: 'skipped', elementId: null };
         }
 
@@ -68,10 +121,27 @@ export class ZprFlowService {
                 (await this.resolveBaseDealId(bitrix, portal, job)),
         };
 
+        const run: ZprFlowRun = {
+            bitrix,
+            portal,
+            info,
+            job: resolved,
+            tz,
+            now,
+            // Живые поля читаем ТОЛЬКО когда ответы есть: у подавляющего
+            // большинства отчётов портальных анкет нет.
+            itemFields: resolved.answers?.length
+                ? await this.smartItemFields.resolveFields(
+                      resolved.domain,
+                      info.entityTypeId,
+                  )
+                : null,
+        };
+
         const result =
             resolved.kind === 'plan'
-                ? await this.createPlanned(bitrix, portal, info, resolved, now)
-                : await this.closeReported(bitrix, portal, info, resolved, now);
+                ? await this.createPlanned(run, ['plan'])
+                : await this.closeReported(run);
 
         // Элемент ↔ задача (вопрос владельца 25.08): закрытая/перенесённая
         // задача получает привязку `T{hex}_{id}` в UF_CRM_TASK — сущности
@@ -89,7 +159,7 @@ export class ZprFlowService {
 
     /** Привязка элемента к задаче — украшение, ошибки не роняют джоб. */
     private async bindElementToTask(
-        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        bitrix: FlowBitrix,
         taskId: number,
         entityTypeId: number,
         elementId: number,
@@ -132,7 +202,7 @@ export class ZprFlowService {
      * пуст (легаси-джоб) — фильтр выключен: некого считать «своим».
      */
     private async resolveBaseDealId(
-        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        bitrix: FlowBitrix,
         portal: PortalModel,
         job: ZprFlowJobData,
     ): Promise<number | null> {
@@ -179,14 +249,19 @@ export class ZprFlowService {
         }
     }
 
-    /** План ЗПР → элемент в «Запланирован». */
+    /**
+     * План ЗПР → элемент в «Запланирован».
+     *
+     * `purposes` — чьи ответы анкеты кладём. Обычно только плановые, но
+     * на ПЕРЕНОСЕ без открытого элемента этот элемент рождается ради
+     * самого отчёта, и отчётные ответы едут в него же: другого
+     * элемента у них не будет, а молча терять их нельзя.
+     */
     private async createPlanned(
-        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
-        portal: PortalModel,
-        info: ZprSmartInfo,
-        job: ZprFlowJobData,
-        now: string,
+        run: ZprFlowRun,
+        purposes: readonly QuestionnaireAnswerPurpose[],
     ): Promise<ZprFlowResult> {
+        const { bitrix, portal, info, job, now } = run;
         const fields: BxRow = {
             title: `ЗПР: ${job.planName || job.planDeadline || now}`,
             stageId: info.stageIdByCode['zpr_plan'],
@@ -204,6 +279,9 @@ export class ZprFlowService {
         this.setUf(fields, info, 'ZPR_NEXT_CALL_DATE', job.planDeadline);
         this.applyLinks(fields, info, job);
         this.applyParents(fields, job);
+        // Ответы анкеты — последними: поля, которые заполняет сам поток,
+        // к этому моменту уже стоят, и их не перезаписать.
+        this.applyAnswers(fields, run, purposes);
 
         const response = await bitrix.item.add(
             String(info.entityTypeId),
@@ -224,13 +302,8 @@ export class ZprFlowService {
      * Отчёт по ЗПР-задаче → закрыть открытый элемент; не нашли — создать
      * спонтанный сразу с исходом (как спонтанные презентации).
      */
-    private async closeReported(
-        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
-        portal: PortalModel,
-        info: ZprSmartInfo,
-        job: ZprFlowJobData,
-        now: string,
-    ): Promise<ZprFlowResult> {
+    private async closeReported(run: ZprFlowRun): Promise<ZprFlowResult> {
+        const { bitrix, portal, info, job, now } = run;
         const open = await this.findOpenElement(bitrix, info, job);
 
         // Перенос: элемент живёт дальше в «Ожидании», задача та же —
@@ -238,7 +311,10 @@ export class ZprFlowService {
         // и дубль открытого. Открытого нет — честно создаём план заново.
         if (job.isMove) {
             if (!open) {
-                return this.createPlanned(bitrix, portal, info, job, now);
+                // Элемент заводится ради ЭТОГО отчёта и сразу становится
+                // новым планом — значит несёт обе анкеты: отчётные ответы
+                // иначе исчезли бы, другого элемента у них нет.
+                return this.createPlanned(run, ['plan', 'report']);
             }
             const fields: BxRow = {
                 stageId: info.stageIdByCode['zpr_pending'],
@@ -263,6 +339,11 @@ export class ZprFlowService {
                     ...previous,
                 ].slice(0, COMMENTS_LIMIT),
             );
+            // Перенос — тоже отчёт менеджера: он рассказал, что выяснил,
+            // а элемент остаётся открытым, и ответы в нём честны. Анкета
+            // ПЛАНА — сюда же: план-джоба у переноса нет вовсе, новым
+            // планом стал этот самый элемент.
+            this.applyAnswers(fields, run, ['report', 'plan']);
             await bitrix.item.update(
                 Number(open.id),
                 String(info.entityTypeId) as never,
@@ -294,6 +375,8 @@ export class ZprFlowService {
                 'ZPR_COMMENTS',
                 [reportEntry, ...previous].slice(0, COMMENTS_LIMIT),
             );
+            this.applySurvey(fields, info, job);
+            this.applyAnswers(fields, run, ['report']);
             await bitrix.item.update(
                 Number(open.id),
                 String(info.entityTypeId) as never,
@@ -320,6 +403,10 @@ export class ZprFlowService {
         this.setUf(fields, info, 'ZPR_COMMENTS', [reportEntry]);
         this.applyLinks(fields, info, job);
         this.applyParents(fields, job);
+        this.applySurvey(fields, info, job);
+        // Спонтанный ЗПР: элемента раньше не существовало, он рождается
+        // прямо здесь и сразу с ответами анкеты.
+        this.applyAnswers(fields, run, ['report']);
 
         const response = await bitrix.item.add(
             String(info.entityTypeId),
@@ -342,7 +429,7 @@ export class ZprFlowService {
      * crm-поля ненадёжна, а открытых ЗПР у клиента единицы.
      */
     private async findOpenElement(
-        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        bitrix: FlowBitrix,
         info: ZprSmartInfo,
         job: ZprFlowJobData,
     ): Promise<BxRow | null> {
@@ -384,7 +471,7 @@ export class ZprFlowService {
 
     /** Обратная ссылка на элемент в op_zprs сделки и компании (append). */
     private async appendOpZprs(
-        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        bitrix: FlowBitrix,
         portal: PortalModel,
         info: ZprSmartInfo,
         job: ZprFlowJobData,
@@ -510,11 +597,69 @@ export class ZprFlowService {
         }
     }
 
+    /**
+     * Снимок анкеты по кодам НАШЕГО реестра полей — зеркало
+     * PresentationFlowService.applySurvey.
+     *
+     * Пишется только в закрывающих ветках (закрытие и спонтанный), как у
+     * презентаций: на переносе звонок ещё не состоялся, снимка нет.
+     * Состав снимка сегодня никто не собирает (см. ZprSurveySnapshot) —
+     * поток готов принять его, как только владелец назовёт состав.
+     */
+    private applySurvey(
+        fields: BxRow,
+        info: ZprSmartInfo,
+        job: ZprFlowJobData,
+    ): void {
+        for (const [code, value] of Object.entries(job.survey ?? {})) {
+            this.setUf(fields, info, code as ZprSmartFieldCode, value);
+        }
+    }
+
+    /**
+     * Ответы ПОРТАЛЬНОЙ анкеты в элемент — зеркало
+     * PresentationFlowService.applyAnswers (см. комментарий там).
+     */
+    private applyAnswers(
+        fields: BxRow,
+        run: ZprFlowRun,
+        purposes: readonly QuestionnaireAnswerPurpose[],
+    ): void {
+        const answers = run.job.answers ?? [];
+        if (!answers.length) return;
+
+        if (!run.itemFields) {
+            this.logger.warn(
+                `[zpr-flow] ${run.job.domain}: поля элемента не прочитаны — ` +
+                    `${answers.length} ответ(ов) анкеты не записаны`,
+            );
+            return;
+        }
+
+        const { applied, warnings } = applyQuestionnaireAnswers({
+            fields,
+            itemFields: run.itemFields,
+            answers,
+            purposes,
+            timezone: run.tz,
+            mirrorItemsByKey: buildMirrorItemsByKey(run.info),
+        });
+        for (const warning of warnings) {
+            this.logger.warn(`[zpr-flow] ${run.job.domain}: ${warning}`);
+        }
+        if (applied) {
+            this.logger.log(
+                `[zpr-flow] ${run.job.domain}: ответов анкеты в элемент ` +
+                    `(${purposes.join('+')}) — ${applied}`,
+            );
+        }
+    }
+
     /** Значение по фактическому camel-ключу поля; пусто — пропуск. */
     private setUf(
         fields: BxRow,
         info: ZprSmartInfo,
-        code: string,
+        code: ZprSmartFieldCode,
         value: unknown,
     ): void {
         if (value === null || value === undefined || value === '') return;

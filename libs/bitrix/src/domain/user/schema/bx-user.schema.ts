@@ -24,6 +24,11 @@ export type UserSchema = {
         request: object;
         response: IBXUser;
     };
+    [EBxMethod.ADMIN]: {
+        // Администратор ли портала ключ, которым мы ходим.
+        request: object;
+        response: boolean;
+    };
     [EBxMethod.UPDATE]: {
         request: UpdateRequestType<IBXUser>;
         response: boolean;

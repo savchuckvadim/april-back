@@ -16,6 +16,7 @@ import {
 } from '@nestjs/swagger';
 import {
     EnumPortalAppCode,
+    getStoredAppSettingKeys,
     PORTAL_APP_SETTINGS_SCHEMA,
     PortalAppSettingDescriptor,
     PortalAppSettingsPatch,
@@ -43,8 +44,9 @@ export class PortalAppSettingsController {
         summary: 'Настройки всех приложений портала (схема + значения)',
         description:
             'Все приложения из реестра PORTAL_APP_SETTINGS_SCHEMA: каждый ' +
-            'ключ — с названием, описанием, типом, дефолтом и действующим ' +
-            'значением на портале.',
+            'ключ — с названием, описанием, типом, дефолтом, действующим ' +
+            'значением на портале и признаком stored («значение задано ' +
+            'на портале», а не приехало дефолтом кода).',
     })
     @ApiParam({
         name: 'portalId',
@@ -71,22 +73,31 @@ export class PortalAppSettingsController {
                 PortalAppSettingDescriptor
             >;
             const stored = storedByApp.get(appCode) ?? {};
+            // Признак «задано на портале» считается ОДНОЙ функцией реестра —
+            // той же, что отдаёт фрейму storedKeys: разойдись эти два места,
+            // и админка показывала бы «настроено» там, где фрейм настройку
+            // не применяет.
+            const storedKeys = new Set(
+                getStoredAppSettingKeys(appCode, stored),
+            );
             apps.push({
                 appCode,
-                settings: Object.values(schema).map(descriptor => ({
+                settings: Object.entries(schema).map(([key, descriptor]) => ({
                     code: descriptor.code,
                     name: descriptor.name,
                     description: descriptor.description,
                     type: descriptor.type,
                     default: descriptor.default as boolean | number | string,
-                    value:
-                        stored[descriptor.code] !== undefined &&
-                        typeof stored[descriptor.code] === descriptor.type
-                            ? (stored[descriptor.code] as
-                                  | boolean
-                                  | number
-                                  | string)
-                            : null,
+                    stored: storedKeys.has(key),
+                    value: storedKeys.has(key)
+                        ? (stored[descriptor.code] as boolean | number | string)
+                        : null,
+                    // Необязательные поля отдаём, только когда они есть:
+                    // остальные ключи реестра ничего в ответе не меняют.
+                    ...(descriptor.options
+                        ? { options: [...descriptor.options] }
+                        : {}),
+                    ...(descriptor.isList ? { isList: true } : {}),
                 })),
             });
         }
@@ -99,7 +110,11 @@ export class PortalAppSettingsController {
         summary: 'Сохранить настройки приложения портала',
         description:
             'Частичное сохранение: применяются только известные схеме ' +
-            'ключи с верным типом; кэш настроек домена сбрасывается.',
+            'ключи с верным типом; кэш настроек домена сбрасывается. ' +
+            'Сохранённый ключ становится «заданным на портале» (stored) ' +
+            'даже со значением, равным дефолту кода — снимается это ' +
+            'только явным null. Форма ответа прежняя (ключ → значение); ' +
+            'признак приезжает следующим GET.',
     })
     @ApiParam({
         name: 'portalId',

@@ -42,6 +42,8 @@ import { ProviderAdminModule } from '@lib/portal-lib/konstructor/provider';
 import { PortalKeysAdminModule } from '@lib/portal-lib/store/keys/portal-keys.admin.module';
 import { PortalAiSettingsAdminModule } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.admin.module';
 import { PortalAppSettingsAdminModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.admin.module';
+import { PortalQuestionnairesAdminModule } from '@lib/portal-lib/store/questionnaires/portal-questionnaires.admin.module';
+import { AdminQuestionnairesModule } from './portal/questionnaires/questionnaires.module';
 import { MarketplaceModerationModule } from './marketplace-moderation/marketplace-moderation.module';
 import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.module';
 
@@ -94,6 +96,12 @@ import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.
         // Незаданные значения падают в глобальные env приложения.
         PortalAiSettingsAdminModule,
         PortalAppSettingsAdminModule,
+        // Портальный каталог анкет: состав вопросов плана и отчёта
+        // задаётся из полей, которые владелец завёл в Битриксе руками.
+        // CRUD и реестр — в сторе портала, источник полей и сверка
+        // привязок — в AdminQuestionnairesModule (ему нужен PBXService).
+        PortalQuestionnairesAdminModule,
+        AdminQuestionnairesModule,
         // Маркетплейс «Менеджер Гарант»: модерация заявок на подключение
         // (approve/block, прогресс установки) — этап 3 онбординга.
         MarketplaceModerationModule,

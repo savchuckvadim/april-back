@@ -6,6 +6,7 @@ import {
 } from '../../const-smart-registry/type/const-smart-descriptor.type';
 import {
     ZPR_SMART_FIELDS,
+    ZprSmartFieldDef,
     ZPR_SMART_GROUP,
     ZPR_SMART_STAGES,
     ZPR_SMART_TITLE,
@@ -19,9 +20,17 @@ import {
  */
 export const ZPR_APP_TYPE = 'zpr';
 
-/** Const-конфиг → Field[] установочного контракта (адаптер вместо Excel). */
+/**
+ * Const-конфиг → Field[] установочного контракта (адаптер вместо Excel).
+ *
+ * Расширение до `ZprSmartFieldDef` намеренно (зеркало презентаций): сам
+ * массив объявлен `as const` ради литеральных кодов, и без расширения
+ * опциональные items/isMultiple/crmEntities пришлось бы доставать через
+ * `in`-нарроуинг.
+ */
 export function buildZprInstallFields(): ConstSmartInstallField[] {
-    return ZPR_SMART_FIELDS.map((def, index) => ({
+    const defs: readonly ZprSmartFieldDef[] = ZPR_SMART_FIELDS;
+    return defs.map((def, index) => ({
         name: def.name,
         appType: ZPR_APP_TYPE,
         type: def.type,

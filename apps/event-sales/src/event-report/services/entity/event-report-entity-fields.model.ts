@@ -875,8 +875,46 @@ export class EventReportEntityFieldsModel {
     private presentationPlanComment(): string {
         return `${this.nowCrmDate()} Запланирована презентация: ${this.ctx.planEventName}`;
     }
+    /**
+     * Запись «Презентация состоялась» в ленте `pres_comments`.
+     *
+     * К комментарию отчёта дописывается «Хвост» — договорённость о следующем
+     * шаге, которую менеджер оставляет в анкете. Раньше он жил ТОЛЬКО в поле
+     * `op_presentation_xvost` (одно на клиента, перезатирается следующей
+     * презентацией), и в ленте — единственном месте, где видно ИСТОРИЮ
+     * презентаций, — договорённости не было вовсе: читаешь «Презентация
+     * состоялась: ООО Ромашка» и не знаешь, о чём договорились.
+     *
+     * Хвост многострочный по построению, поэтому и разделитель, и сам текст
+     * идут через batch-экранирование: поля сущностей уезжают batch-командой,
+     * где сырой `\n` доезжает до карточки подчёркиванием.
+     *
+     * Лимит ленты (PRES_COMMENTS_LIMIT) не меняется: запись остаётся ОДНОЙ,
+     * просто перестала терять половину смысла.
+     */
     private presentationDoneComment(): string {
-        return `${this.nowCrmDate()} Презентация состоялась: ${this.ctx.reportEventName}`;
+        const head = `${this.nowCrmDate()} Презентация состоялась: ${this.ctx.reportEventName}`;
+        const xvost = this.presentationXvost();
+        if (!xvost) return head;
+        return `${head}${BATCH_LINE_BREAK_SYMBOL}Хвост: ${toBatchText(xvost)}`;
+    }
+
+    /**
+     * Текст анкеты «Хвост» с ЛИДА — там его пишет фрейм (на компании поля
+     * нет вовсе, на сделке лежит снимок ПРОШЛОЙ презентации, который этот же
+     * отчёт только собирается перезаписать). Поле не установлено, лида нет
+     * или ответ пустой — пусто, и запись остаётся прежней.
+     */
+    private presentationXvost(): string {
+        const lead = this.ctx.lead as unknown as Record<string, unknown> | null;
+        if (!lead) return '';
+        const field = this.portal.getEntityFieldByCode(
+            'lead',
+            'op_presentation_xvost',
+        );
+        if (!field) return '';
+        const raw = lead[this.bitrixKey(field)];
+        return typeof raw === 'string' ? raw.trim() : '';
     }
     private presentationExpiredComment(): string {
         return `${this.nowCrmDate()} Перенос презентации: ${this.ctx.planEventName}`;

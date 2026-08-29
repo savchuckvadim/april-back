@@ -1,3 +1,5 @@
+import { EVENT_TYPE_REGISTRY } from '@lib/portal-lib/pbx/event-type-registry';
+
 /**
  * РЕЕСТР настроек placement-приложений — единственный источник правды:
  * какие приложения бывают, какие ключи к какому принадлежат, что ключ
@@ -31,6 +33,12 @@ export const PORTAL_APP_CODES = Object.values(EnumPortalAppCode);
 /** Тип значения настройки. */
 export type PortalAppSettingType = 'boolean' | 'number' | 'string';
 
+/** Вариант значения-списка: код уезжает в CSV, название — подпись. */
+export interface PortalAppSettingOption {
+    code: string;
+    name: string;
+}
+
 /** Описатель одного ключа настроек (метаданные для админки + дефолт). */
 export interface PortalAppSettingDescriptor<
     TType extends PortalAppSettingType = PortalAppSettingType,
@@ -45,6 +53,19 @@ export interface PortalAppSettingDescriptor<
     type: TType;
     /** Дефолт кода: действует, пока на портале не задано своё значение. */
     default: TDefault;
+    /**
+     * Справочник значений: админка рисует выбор, а не свободный ввод.
+     * Необязательное поле — остальные ключи реестра его не имеют и не
+     * меняются от его появления.
+     */
+    options?: readonly PortalAppSettingOption[];
+    /**
+     * Значение — СПИСОК кодов через запятую (тип при этом `string`).
+     * Админка рисует чекбоксы, потребитель разбирает CSV. Тип значения в
+     * БД не меняется намеренно: реестр типов остаётся тремя скалярами, и
+     * `getStoredAppSettingKeys` продолжает работать как работал.
+     */
+    isList?: boolean;
 }
 
 const setting = <TType extends PortalAppSettingType, TDefault>(
@@ -67,6 +88,32 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
     [EnumPortalAppCode.sales]: {},
     [EnumPortalAppCode.kpiSales]: {},
     [EnumPortalAppCode.eventSales]: {
+        // --- Выключатель портального каталога анкет ПО ТИПУ СОБЫТИЯ.
+        // Живёт в настройках, а не в каталоге, по трём причинам: (1) это
+        // рубильник ПОДСИСТЕМЫ — он гасит и те анкеты, которые заведут
+        // завтра, а в каталоге его пришлось бы дублировать в каждую
+        // анкету; (2) настройки применяются за 5 минут кэша, каталог
+        // пришлось бы пересобирать и ждать сверки хэша; (3) каталог
+        // обязан оставаться описанием СОСТАВА — иначе на вопрос «почему
+        // анкета не видна» появится два ответа в двух местах.
+        questionnairesDisabledEventTypes: setting({
+            code: 'questionnaires_disabled_event_types',
+            name: 'Анкеты выключены для типов события',
+            description:
+                'Для выбранных типов события анкеты портального каталога ' +
+                'не показываются и ответы по ним не принимаются. Пусто — ' +
+                'анкеты работают везде.',
+            // Список кодов через запятую: типы значений реестра остаются
+            // тремя скалярами, а выбор рисуется по options.
+            type: 'string',
+            default: '',
+            options: EVENT_TYPE_REGISTRY.map(({ code, name }) => ({
+                code,
+                name,
+            })),
+            isList: true,
+        }),
+
         leadIntakeSlaEnabled: setting({
             code: 'lead_intake_sla_enabled',
             name: 'SLA принятия заявок',
@@ -189,8 +236,28 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             default: true,
         }),
 
-        // --- Фич-флаги фронта «Звонки» (переезд domain-config.ts из
-        // хардкода по доменам; фронт читает их через resolve по домену) ---
+        // === Фич-флаги фронта «Звонки» ===============================
+        // Переезд из хардкода по доменам (front:
+        // apps/event-sales/modules/app/consts/domain-config.ts).
+        //
+        // ПРАВИЛО ДЕФОЛТА: `default` обязан совпадать с ОБЩИМ дефолтом
+        // фронта (DEFAULT_CONFIG), а не со значением конкретного портала.
+        // Значения приезжают ПОЛНЫМ набором (дефолты кода слиты с
+        // сохранённым), поэтому разошедшийся дефолт молча меняет поведение
+        // всех порталов, где ключ не задан (так и было у
+        // with_presentation_animate: false здесь против true на фронте).
+        //
+        // «Портал не задавал» от «портал задал ровно столько же» фрейм
+        // теперь отличает: рядом со значениями едет storedKeys — ключи,
+        // реально лежащие в JSON портала (getStoredAppSettingKeys), и
+        // применяет фрейм только их. Ключи, доменные значения которых
+        // РАЗЛИЧАЮТСЯ по порталам (with_no_plan, with_no_reschedle,
+        // with_post_fail, with_color_required — april-dev/gsirk; with_tm,
+        // with_department_mode_toggle — gsr/april-dev;
+        // with_check_presentation — alfacentr), портал задаёт здесь ЯВНО:
+        // без строки в БД действует доменное значение фронта. Сверх того у
+        // идентификаторов (task_group_id, boss_id) есть свой сентинел
+        // 0 = «не задано» — он остаётся страховкой для старых фреймов.
         withNoPlan: setting({
             code: 'with_no_plan',
             name: 'Отправка без плана',
@@ -253,9 +320,17 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
         withPresentationAnimate: setting({
             code: 'with_presentation_animate',
             name: 'Анимация презентации',
-            description: 'Анимированная кнопка «Проведена презентация».',
+            description:
+                'Анимированная кнопка «Проведена презентация» (эхо-кольца ' +
+                'вокруг главного действия экрана). ВКЛЮЧЕНА по умолчанию — ' +
+                'как и на фронте; выключать имеет смысл там, где презентаций ' +
+                'не проводят.',
             type: 'boolean',
-            default: false,
+            // true, а не false: это общий дефолт фронта. С дефолтом false
+            // настройка гасила анимацию на КАЖДОМ портале — фрейм не
+            // отличает дефолт реестра от заданного значения и клал false
+            // поверх своего true на любом старте.
+            default: true,
         }),
         withColorRequired: setting({
             code: 'with_color_required',
@@ -622,4 +697,36 @@ export function getPortalAppDefaults<App extends EnumPortalAppCode>(
         ].default;
     }
     return values as PortalAppSettingsValues<App>;
+}
+
+/**
+ * Ключи, РЕАЛЬНО заданные на портале: те, что лежат в JSON-записи
+ * (`portal_app_settings.settings`, snake_case-коды) и совпали по типу с
+ * дескриптором. Единственное определение признака «задано на портале» —
+ * им пользуются и сервис (что отдать фрейму), и админка (бэйдж
+ * «настроено»), чтобы два места не разошлись.
+ *
+ * Совпадение типа входит в признак НАРОЧНО: значение чужого типа `merge`
+ * не применяет — действует дефолт кода, — и назвать такой ключ заданным
+ * значило бы соврать фрейму: он принял бы дефолт за решение владельца.
+ *
+ * Наружу уезжают camelCase-ключи схемы, а не snake_case-коды: значения в
+ * ответе тоже лежат под ключами схемы.
+ */
+export function getStoredAppSettingKeys(
+    app: EnumPortalAppCode,
+    settings: Record<string, unknown>,
+): string[] {
+    const schema = PORTAL_APP_SETTINGS_SCHEMA[app] as Record<
+        string,
+        PortalAppSettingDescriptor
+    >;
+    const keys: string[] = [];
+    for (const [key, descriptor] of Object.entries(schema)) {
+        const raw = settings[descriptor.code];
+        if (raw !== undefined && typeof raw === descriptor.type) {
+            keys.push(key);
+        }
+    }
+    return keys;
 }

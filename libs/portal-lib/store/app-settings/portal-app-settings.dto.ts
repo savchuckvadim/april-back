@@ -5,6 +5,23 @@ import {
     PORTAL_APP_CODES,
 } from './portal-app-settings.schema';
 
+/** Вариант значения-списка: код уезжает в CSV, название — подпись. */
+export class PortalAppSettingOptionDto {
+    @ApiProperty({
+        description: 'Код значения — ровно он попадает в CSV настройки.',
+        example: 'presentation',
+        type: String,
+    })
+    code: string;
+
+    @ApiProperty({
+        description: 'Название на русском — подпись чекбокса.',
+        example: 'Презентация',
+        type: String,
+    })
+    name: string;
+}
+
 /** Описатель ключа настройки для админки (из реестра-схемы). */
 export class PortalAppSettingDescriptorDto {
     @ApiProperty({
@@ -42,12 +59,42 @@ export class PortalAppSettingDescriptorDto {
     })
     default: boolean | number | string;
 
+    @ApiProperty({
+        description:
+            'Значение ЗАДАНО на портале: ключ реально лежит в JSON ' +
+            'портала (а не приехал дефолтом кода). Ровно этот признак ' +
+            'фрейм получает списком storedKeys — админка показывает его ' +
+            'бэйджем «настроено».',
+        example: true,
+        type: Boolean,
+    })
+    stored: boolean;
+
     @ApiPropertyOptional({
-        description: 'Текущее действующее значение на портале.',
+        description:
+            'Текущее действующее значение на портале; null — не задано ' +
+            '(действует дефолт кода), то же самое, что stored: false.',
         example: 90,
         nullable: true,
     })
     value: boolean | number | string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Справочник значений: админка рисует выбор, а не свободный ' +
+            'ввод. Пусто — обычное поле по типу.',
+        type: [PortalAppSettingOptionDto],
+    })
+    options?: PortalAppSettingOptionDto[];
+
+    @ApiPropertyOptional({
+        description:
+            'Значение — СПИСОК кодов через запятую (тип при этом string): ' +
+            'админка рисует чекбоксы по options.',
+        example: true,
+        type: Boolean,
+    })
+    isList?: boolean;
 }
 
 /** Настройки одного приложения портала: схема + действующие значения. */
