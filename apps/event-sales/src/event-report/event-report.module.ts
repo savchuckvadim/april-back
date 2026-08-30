@@ -9,6 +9,8 @@ import { EventFlowGuardService } from './services/flow-guard/event-flow-guard.se
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.module';
 import { PortalQuestionnairesModule } from '@lib/portal-lib/store/questionnaires/portal-questionnaires.module';
 import { EventReportUseCase } from './use-cases/event-report.use-case';
+import { EventReportPostFlowService } from './services/post-flow/event-report-post-flow.service';
+import { QuestionnaireSmartContextLoader } from './services/post-flow/questionnaire-smart-context.loader';
 import { EventFlowProcessor } from './queue/event-flow.processor';
 import { EventSalesController } from './controllers/event-sales.controller';
 import { PortalFieldsModule } from '../shared/portal-fields';
@@ -43,6 +45,12 @@ import { PortalFieldsModule } from '../shared/portal-fields';
     providers: [
         EventReportInitService,
         EventReportUseCase,
+        // Пост-обработка отчёта (сайд-очереди ЗПР/презентаций):
+        // bitrix-состояния не держит, инжектит только stateless-сервисы.
+        EventReportPostFlowService,
+        // Контекст портальных анкет для сайд-очередей: читает каталог и
+        // настройки портала — отдельная от раскладки джобов ответственность.
+        QuestionnaireSmartContextLoader,
         EventFlowStatusService,
         EventFlowProcessor,
         // Предикт стадии: PBXService.init(domain) внутри метода —

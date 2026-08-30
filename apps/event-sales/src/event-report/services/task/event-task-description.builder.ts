@@ -323,9 +323,7 @@ const buildPhoneBlock = (src: EventTaskDescriptionSource): string => {
     for (const group of groups) {
         lines.push(bb.bold(group.title));
         for (const phone of group.phones) {
-            const suffix = phone.typeLabel
-                ? ` (${phone.typeLabel})`
-                : '';
+            const suffix = phone.typeLabel ? ` (${phone.typeLabel})` : '';
             lines.push(`${bullet} ${phone.value}${suffix}`);
         }
     }

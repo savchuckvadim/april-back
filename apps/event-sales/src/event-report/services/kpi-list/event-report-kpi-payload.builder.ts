@@ -346,8 +346,7 @@ export class EventReportKpiPayloadBuilder {
             action,
             crm: this.crmLinks(),
             // История различает доработку своим item'ом; сводка KPI — нет.
-            historyItems:
-undefined,
+            historyItems: undefined,
         });
     }
 
@@ -417,8 +416,7 @@ undefined,
                 ? UNPLANNED_NEXT_PLAN_OFFSET_SEC
                 : PLAN_EVENT_DATE_OFFSET_SEC,
             // История различает доработку своим item'ом; сводка KPI — нет.
-            historyItems:
-undefined,
+            historyItems: undefined,
         });
     }
 

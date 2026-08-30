@@ -59,8 +59,55 @@ const COLD_TASK_TYPE_NAME = 'Холодный обзвон';
  * `{ result: { task: { id } } }`), поэтому ключ вынесен в константу: разъедься
  * он с ссылкой — чек-лист молча уехал бы в никуда.
  */
-const ADD_TASK_CMD = 'add_task';
+export const ADD_TASK_CMD = 'add_task';
 const NEW_TASK_ID_REF = `$result[${ADD_TASK_CMD}][task][id]`;
+
+/**
+ * Разбирает результат команды {@link ADD_TASK_CMD} (`tasks.task.add`) в
+ * числовой id созданной задачи.
+ *
+ * Форма ответа — `{ task: { id } }`: ссылка `$result[add_task][task][id]`
+ * индексирует `[task][id]` уже ПОСЛЕ ключа команды, то есть значением по ключу
+ * `add_task` лежит именно `{ task: { id } }`. Благодаря этому id план-задачи
+ * достаётся из ответа того же батча — без единого лишнего запроса в Битрикс.
+ *
+ * Битрикс отдаёт id то строкой, то числом, поэтому приводим к числу. Всё, что
+ * не разобралось (команда упала, ключа не было, форма другая), даёт `null`:
+ * вызывающий просто не делает привязку, вместо того чтобы уронить отчёт.
+ */
+export function parseAddedTaskId(raw: unknown): number | null {
+    if (!raw || typeof raw !== 'object') return null;
+
+    const task = (raw as { task?: unknown }).task;
+    if (!task || typeof task !== 'object') return null;
+
+    const id = (task as { id?: unknown }).id;
+    if (typeof id !== 'string' && typeof id !== 'number') return null;
+
+    const parsed = Number(id);
+    // 0 и NaN — не id: пустая строка тоже даёт 0, поэтому отсекаем оба.
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+/**
+ * Заголовок задачи из СЫРОГО ответа Битрикса (тип поля — `unknown`).
+ *
+ * Имя поля зависит от метода: `tasks.task.*` отдают camelCase `title`, старые
+ * `task.item.*` и выборки по фильтру — `TITLE`, поэтому смотрим оба.
+ *
+ * Почему не `String(...)`: у объекта приведение молча даёт `[object Object]`,
+ * и этот мусор уехал бы дальше по коду — в TITLE переносимой задачи и в текст
+ * уведомления ответственному. Сужаем по `typeof`: строку берём как есть
+ * (поведение прежнее), число печатаем штатно (Битрикс иногда отдаёт
+ * числоподобные значения строкой, иногда числом), всё остальное считаем
+ * отсутствующим заголовком — вызывающий на пустую строку уже рассчитывает.
+ */
+function readTaskTitle(task: Record<string, unknown> | null): string {
+    const raw = task?.title ?? task?.TITLE;
+    if (typeof raw === 'string') return raw.trim();
+    if (typeof raw === 'number' && Number.isFinite(raw)) return String(raw);
+    return '';
+}
 
 /**
  * Task flow event-report (legacy `BitrixTaskService::getCreateTaskBatchCommands`
@@ -344,7 +391,7 @@ export class EventReportTaskFlowService {
             string,
             unknown
         > | null;
-        const currentTitle = String(task?.title ?? task?.TITLE ?? '').trim();
+        const currentTitle = readTaskTitle(task);
         if (!currentTitle) return null;
 
         // 1. Наш формат — замена средней части, хвост (контакт) сохраняется.
@@ -432,7 +479,7 @@ export class EventReportTaskFlowService {
         const eventName =
             ctx.planEventName?.trim() ||
             ctx.reportEventName?.trim() ||
-            String(task?.title ?? task?.TITLE ?? '').trim() ||
+            readTaskTitle(task) ||
             `задача ${taskId}`;
         const taskUrl =
             `https://${ctx.domain}/company/personal/user/${responsibleId}` +

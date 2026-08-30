@@ -79,14 +79,34 @@ function normalize(
     if (raw === null || raw === undefined) return null;
     if (type === 'boolean') {
         if (typeof raw === 'boolean') return raw ? 'Y' : 'N';
-        const asText = String(raw).trim().toLowerCase();
-        if (!asText) return null;
-        return TRUTHY.has(asText) ? 'Y' : 'N';
+        const text = asText(raw).trim().toLowerCase();
+        if (!text) return null;
+        return TRUTHY.has(text) ? 'Y' : 'N';
     }
-    if (typeof raw !== 'string') {
-        const asText = String(raw).trim();
-        return asText ? asText : null;
-    }
-    const text = raw.trim();
+    const text = asText(raw).trim();
     return text ? text : null;
+}
+
+/**
+ * Сырое значение Bitrix → текст.
+ *
+ * Скаляры отдаются как есть, множественный UF приезжает МАССИВОМ и
+ * склеивается запятой (ровно так его и печатал прежний `String(raw)`).
+ * Всё остальное — объект, к тексту не сводимый: слепой `String()` записал
+ * бы в анкету `[object Object]`, поэтому такое значение честно считается
+ * пустым и поле просто не переносится.
+ */
+function asText(raw: unknown): string {
+    if (typeof raw === 'string') return raw;
+    if (
+        typeof raw === 'number' ||
+        typeof raw === 'boolean' ||
+        typeof raw === 'bigint'
+    ) {
+        return String(raw);
+    }
+    if (Array.isArray(raw)) {
+        return raw.map((item: unknown) => asText(item)).join(',');
+    }
+    return '';
 }

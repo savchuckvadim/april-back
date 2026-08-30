@@ -5,7 +5,7 @@ import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { WsService } from '@/core/ws';
 import { SideFlowGuardService } from '../shared/side-flow';
-import { ZprFlowService } from './zpr-flow.service';
+import { ZprFlowUseCase } from './use-cases/zpr-flow.use-case';
 import { ZprFlowJobData } from './dto/zpr-flow-job.dto';
 import {
     ZPR_FLOW_ACTIONS,
@@ -45,7 +45,7 @@ export class ZprFlowProcessor {
     private readonly logger = new Logger(ZprFlowProcessor.name);
 
     constructor(
-        private readonly service: ZprFlowService,
+        private readonly useCase: ZprFlowUseCase,
         private readonly ws: WsService,
         private readonly guard: SideFlowGuardService,
     ) {
@@ -106,7 +106,7 @@ export class ZprFlowProcessor {
              * гейт для этого джоба просто выключен.
              */
             await this.guard.begin(ref);
-            const result = await this.service.handle(job.data);
+            const result = await this.useCase.handle(job.data);
             // Подтверждение раньше события: окно между записью в Битрикс и
             // отметкой должно быть как можно короче, а фронту WS-событие
             // ничего не стоит подождать один вызов кэша.

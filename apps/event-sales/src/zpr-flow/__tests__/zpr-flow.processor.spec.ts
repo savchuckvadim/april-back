@@ -2,7 +2,7 @@ import { Job } from 'bull';
 import { WsService } from '@/core/ws';
 import { SideFlowGuardService } from '../../shared/side-flow';
 import { ZprFlowProcessor } from '../zpr-flow.processor';
-import { ZprFlowService } from '../zpr-flow.service';
+import { ZprFlowUseCase } from '../use-cases/zpr-flow.use-case';
 import { ZprFlowJobData } from '../dto/zpr-flow-job.dto';
 import { ZprFlowResult } from '../constants/zpr-flow.const';
 
@@ -50,7 +50,7 @@ const makeHarness = (over?: {
                 over?.result ?? { action: 'closed', elementId: 601 },
             );
         },
-    } as unknown as ZprFlowService;
+    } as unknown as ZprFlowUseCase;
 
     const ws = {
         sendToClient: (socketId: string, payload: unknown) => {

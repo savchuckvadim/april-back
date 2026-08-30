@@ -7,6 +7,11 @@ import {
     SmartItemFields,
 } from '@lib/portal-lib/pbx/smart-item-fields';
 import { QuestionnaireSmartAnswer } from '../../shared/questionnaire-answers';
+import {
+    SideFlowBaseDealResolver,
+    SideFlowName,
+    SideFlowTaskBinderService,
+} from '../../shared/side-flow';
 import { PresentationFlowService } from '../presentation-flow.service';
 import { PresentationFlowJobData } from '../dto/presentation-flow-job.dto';
 import { PRESENTATION_OUTCOME } from '../lib/presentation-outcome';
@@ -284,12 +289,42 @@ const makeHarness = (over?: {
         },
     } as unknown as PbxSmartItemFieldsService;
 
+    /*
+     * Биндер — фейк с журналом вызовов: правило «к какой задаче привязан
+     * элемент» живёт в ЭТОМ сервисе, а как именно пишется UF_CRM_TASK —
+     * в side-flow-task-binder.service.spec.ts. Дотяжка сделки, наоборот,
+     * берётся настоящая: её кейсы ниже проверяют результат целиком, через
+     * тот же мок bitrix.deal.getList.
+     */
+    const bindCalls: Array<{
+        taskId: number;
+        entityTypeId: number;
+        elementId: number;
+        /** Имя потока — им общий сервис подписывает свои строки лога. */
+        flow?: SideFlowName;
+    }> = [];
+    const taskBinder = {
+        bind: (
+            _bitrix: never,
+            taskId: number,
+            entityTypeId: number,
+            elementId: number,
+            flow?: SideFlowName,
+        ) => {
+            bindCalls.push({ taskId, entityTypeId, elementId, flow });
+            return Promise.resolve();
+        },
+    } as unknown as SideFlowTaskBinderService;
+
     return {
         service: new PresentationFlowService(
             pbx,
             presentationSmart,
             smartItemFields,
+            taskBinder,
+            new SideFlowBaseDealResolver(),
         ),
+        bindCalls,
         itemFieldsCalls,
         added,
         updatedItems,
@@ -698,6 +733,108 @@ describe('PresentationFlowService', () => {
 
         // Чужая 999 свежее, но элемент привязан к СВОЕЙ 321.
         expect(added[0].ufCrm8BaseDeal).toEqual(['D_321']);
+    });
+
+    // ─────────────────── элемент ↔ задача (UF_CRM_TASK) ───────────────────
+    //
+    // План привязывается к задаче, СОЗДАННОЙ этим же отчётом (её id приехал
+    // из `$result[add_task]` того же батча), отчёт — к задаче, ПО КОТОРОЙ
+    // отчитались. Раньше ветки плана не было вовсе.
+
+    it('план: элемент привязан к СОЗДАННОЙ этим отчётом задаче', async () => {
+        const { service, bindCalls } = makeHarness();
+        const result = await service.handle(
+            job({ kind: 'plan', planTaskId: 7001, taskId: 5001 }),
+        );
+
+        expect(result.elementId).toBe(901);
+        expect(bindCalls).toEqual([
+            {
+                taskId: 7001,
+                entityTypeId: 1040,
+                elementId: 901,
+                flow: 'pres-flow',
+            },
+        ]);
+    });
+
+    it('план без planTaskId: привязывать не к чему — джоб не падает', async () => {
+        const { service, bindCalls, added } = makeHarness();
+        const result = await service.handle(job({ kind: 'plan' }));
+
+        // Задачи в батче не было (отчёт без плана-задачи) — элемент создан,
+        // просто ни к чему не привязан.
+        expect(result.action).toBe('created');
+        expect(added).toHaveLength(1);
+        expect(bindCalls).toHaveLength(0);
+    });
+
+    it('отчёт: элемент привязан к задаче, ПО КОТОРОЙ отчитались', async () => {
+        const { service, bindCalls } = makeHarness({
+            openItems: [
+                {
+                    id: 601,
+                    stageId: 'DT1040_11:PLAN',
+                    ufCrm8BaseDeal: ['D_100'],
+                },
+            ],
+        });
+        await service.handle(
+            job({ kind: 'report', taskId: 5001, planTaskId: 7001 }),
+        );
+
+        // planTaskId в report-джобе относится к СЛЕДУЮЩЕЙ задаче — этот
+        // элемент закрывается по 5001 и привязан обязан быть к ней.
+        expect(bindCalls).toEqual([
+            {
+                taskId: 5001,
+                entityTypeId: 1040,
+                elementId: 601,
+                flow: 'pres-flow',
+            },
+        ]);
+    });
+
+    it('перенос: задача та же — привязка к ней же, а не к плановой', async () => {
+        const { service, bindCalls } = makeHarness({
+            openItems: [
+                {
+                    id: 601,
+                    stageId: 'DT1040_11:PLAN',
+                    ufCrm8BaseDeal: ['D_100'],
+                },
+            ],
+        });
+        const result = await service.handle(
+            job({
+                kind: 'report',
+                outcome: PRESENTATION_OUTCOME.expired,
+                isResult: false,
+                taskId: 5001,
+                planTaskId: 7001,
+            }),
+        );
+
+        expect(result.action).toBe('moved');
+        expect(bindCalls).toEqual([
+            {
+                taskId: 5001,
+                entityTypeId: 1040,
+                elementId: 601,
+                flow: 'pres-flow',
+            },
+        ]);
+    });
+
+    it('спонтанный отчёт без задачи: привязки нет, элемент создан', async () => {
+        const { service, bindCalls, added } = makeHarness();
+        const result = await service.handle(
+            job({ kind: 'report', isSpontaneous: true, taskId: null }),
+        );
+
+        expect(result.action).toBe('spontaneous');
+        expect(added).toHaveLength(1);
+        expect(bindCalls).toHaveLength(0);
     });
     // ─────────────────── ответы портальной анкеты ───────────────────
     //

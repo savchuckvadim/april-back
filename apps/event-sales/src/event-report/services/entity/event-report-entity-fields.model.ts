@@ -159,6 +159,40 @@ export interface DealFieldsOptions {
 }
 
 /**
+ * Сырое значение поля Битрикса → текст для записи в скалярное поле.
+ *
+ * Битрикс отдаёт значения нетипизированно (`unknown`), поэтому слепой
+ * `String(raw)` небезопасен: на объекте он молча запишет в карточку
+ * `[object Object]`. Здесь к тексту сводятся только те формы, которые
+ * реально приходят из REST и которые прежний `String(raw)` печатал
+ * ОДИНАКОВО: строки, числа/bigint, булевы и массивы (множественный UF —
+ * `String(['a','b'])` === `'a,b'`, то есть join запятой). Всё остальное —
+ * объект, к тексту не сводимый: он честно считается пустым, и поле просто
+ * не переносится.
+ *
+ * ВНИМАНИЕ (единственное отличие от прежнего поведения): если в поле вдруг
+ * приедет объект, раньше в карточку уходила строка `[object Object]`, а
+ * теперь поле будет пропущено. Для дат и булевых из XVOST_DEAL_FIELD_CODES
+ * такой формы не бывает; мусорная запись в CRM в любом случае хуже пропуска.
+ */
+function scalarToText(raw: unknown): string {
+    if (typeof raw === 'string') return raw;
+    if (
+        typeof raw === 'number' ||
+        typeof raw === 'boolean' ||
+        typeof raw === 'bigint'
+    ) {
+        return String(raw);
+    }
+    // Массив примитивов повторяет семантику String(array) — join(','),
+    // где null/undefined элементы дают пустую строку.
+    if (Array.isArray(raw)) {
+        return raw.map((item: unknown) => scalarToText(item)).join(',');
+    }
+    return '';
+}
+
+/**
  * Чистая модель: получает {@link EventReportContext} и собирает мапу
  * `UF_CRM_*` → значение для company / lead / deal. Никаких побочных
  * эффектов: модель не дёргает Bitrix.
@@ -826,8 +860,18 @@ export class EventReportEntityFieldsModel {
             const field = this.portal.getEntityFieldByCode('deal', code);
             if (!field) continue;
             const raw = base[this.bitrixKey(field)];
+            /*
+             * Проверка на falsy сохранена ровно как была: пустая строка, 0,
+             * false, null/undefined по-прежнему дают '' и поле пропускается
+             * (см. `if (!value) continue` ниже). Изменился только способ
+             * привести непустое значение к тексту — см. {@link scalarToText}.
+             */
             const value =
-                typeof raw === 'string' ? raw.trim() : raw ? String(raw) : '';
+                typeof raw === 'string'
+                    ? raw.trim()
+                    : raw
+                      ? scalarToText(raw)
+                      : '';
             if (!value) continue;
             this.setScalar(out, code, value);
         }

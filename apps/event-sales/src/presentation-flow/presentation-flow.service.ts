@@ -9,6 +9,7 @@ import {
     PRESENTATION_OPEN_STAGE_CODES,
     presentationFailReasonItemCode,
     PresentationSmartFieldCode,
+    PresentationSmartStageCode,
     PresentationSmartInfo,
 } from '@lib/portal-lib/pbx/pbx-presentation-smart';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
@@ -16,12 +17,17 @@ import {
     PbxSmartItemFieldsService,
     SmartItemFields,
 } from '@lib/portal-lib/pbx/smart-item-fields';
-import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import {
     applyQuestionnaireAnswers,
     buildMirrorItemsByKey,
     QuestionnaireAnswerPurpose,
 } from '../shared/questionnaire-answers';
+import {
+    FlowBitrix,
+    SideFlowBaseDealResolver,
+    SideFlowName,
+    SideFlowTaskBinderService,
+} from '../shared/side-flow';
 import { PresentationFlowJobData } from './dto/presentation-flow-job.dto';
 import { PresentationFlowResult } from './constants/presentation-flow.const';
 import {
@@ -37,11 +43,14 @@ dayjs.extend(timezone);
 const CRM_DATETIME_FORMAT = 'DD.MM.YYYY HH:mm:ss';
 /** Лента комментариев элемента не растёт бесконечно. */
 const COMMENTS_LIMIT = 50;
+/**
+ * Имя потока для общих сервисов раздела: они логируют под ним, и канал
+ * снова грепается по потоку. Имя то же, что у гейта повтора
+ * (`pres-flow`) — одно имя потока на все его следы в логах.
+ */
+const FLOW: SideFlowName = 'pres-flow';
 
 type BxRow = Record<string, unknown>;
-
-/** Клиент Битрикса портала, инициализированный на время джоба. */
-type FlowBitrix = Awaited<ReturnType<PBXService['init']>>['bitrix'];
 
 /**
  * Всё, что нужно одному прогону джоба, одним объектом.
@@ -70,7 +79,8 @@ interface PresentationFlowRun {
 /**
  * Сайд-flow презентаций: элементы смарта «Презентации» создаются/закрываются
  * ОТДЕЛЬНОЙ очередью после основного event-report (см.
- * PresentationFlowJobData). Полное зеркало ZprFlowService — сознательно.
+ * PresentationFlowJobData). Полное зеркало ЗПР-потока (ZprFlowUseCase
+ * и его подсервисы) — сознательно.
  *
  * Self-gated: смарт не установлен на портале (resolveInfo → null) — джоб
  * молча завершён, основной flow ничего не заметил, презентация продолжает
@@ -92,6 +102,12 @@ export class PresentationFlowService {
         private readonly pbx: PBXService,
         private readonly presentationSmart: PbxPresentationSmartService,
         private readonly smartItemFields: PbxSmartItemFieldsService,
+        // Привязка элемента к задаче и дотяжка базовой сделки — общие с
+        // очередью ЗПР: правило одно, и чиниться оно должно один раз.
+        // Инстанс Битрикса эти сервисы получают АРГУМЕНТОМ, своего не
+        // держат (правило CLAUDE.md про this.bitrix и race condition).
+        private readonly taskBinder: SideFlowTaskBinderService,
+        private readonly baseDealResolver: SideFlowBaseDealResolver,
     ) {}
 
     async handle(
@@ -135,7 +151,12 @@ export class PresentationFlowService {
             ...job,
             baseDealId:
                 job.baseDealId ??
-                (await this.resolveBaseDealId(bitrix, portal, job)),
+                (await this.baseDealResolver.resolve(bitrix, portal, {
+                    flow: FLOW,
+                    domain: job.domain,
+                    companyId: job.companyId,
+                    responsibleId: job.responsibleId,
+                })),
         };
 
         const run: PresentationFlowRun = {
@@ -161,106 +182,34 @@ export class PresentationFlowService {
                 ? await this.createPlanned(run)
                 : await this.closeReported(run);
 
-        // Элемент ↔ задача (зеркало zpr-flow): закрытая/перенесённая задача
-        // получает привязку `T{hex}_{id}` в UF_CRM_TASK.
-        if (resolved.kind === 'report' && resolved.taskId && result.elementId) {
-            await this.bindElementToTask(
+        /*
+         * Элемент ↔ задача (зеркало zpr-flow): задача получает привязку
+         * `T{hex}_{id}` в UF_CRM_TASK — тогда элемент виден из карточки
+         * задачи штатным полем.
+         *
+         * План привязывается к задаче, СОЗДАННОЙ этим же отчётом:
+         * `planTaskId` приезжает из `$result[add_task]` того же батча, и
+         * раньше этой ветки не было вовсе — запланированный элемент
+         * оставался без задачи до следующего отчёта. Отчёт (в том числе
+         * перенос — задача та же, она переносится) привязывается к
+         * задаче, ПО КОТОРОЙ отчитались.
+         *
+         * Нужного id нет (спонтанный отчёт без задачи; план, у которого
+         * задачи в батче не было) — привязки просто нет, как и раньше:
+         * это украшение, а не инвариант, и джоб из-за него не падает.
+         */
+        const linkedTaskId =
+            resolved.kind === 'plan' ? resolved.planTaskId : resolved.taskId;
+        if (linkedTaskId && result.elementId) {
+            await this.taskBinder.bind(
                 bitrix,
-                resolved.taskId,
+                linkedTaskId,
                 info.entityTypeId,
                 result.elementId,
+                FLOW,
             );
         }
         return result;
-    }
-
-    /** Привязка элемента к задаче — украшение, ошибки не роняют джоб. */
-    private async bindElementToTask(
-        bitrix: FlowBitrix,
-        taskId: number,
-        entityTypeId: number,
-        elementId: number,
-    ): Promise<void> {
-        const ref = `T${entityTypeId.toString(16)}_${elementId}`;
-        try {
-            const response = (await bitrix.task.get(taskId, [
-                'ID',
-                'UF_CRM_TASK',
-            ])) as {
-                result?: {
-                    task?: { ufCrmTask?: unknown; UF_CRM_TASK?: unknown };
-                };
-            } | null;
-            const task = response?.result?.task;
-            const raw = task?.ufCrmTask ?? task?.UF_CRM_TASK;
-            const current = Array.isArray(raw) ? raw.map(String) : [];
-            if (current.includes(ref)) return;
-            await bitrix.task.update(taskId, {
-                UF_CRM_TASK: [...current, ref],
-            });
-        } catch (error) {
-            this.logger.warn(
-                `[presentation-flow] привязка элемента ${ref} к задаче ${taskId} не записана: ${(error as Error).message}`,
-            );
-        }
-    }
-
-    /**
-     * Свежая открытая сделка основной воронки по компании. Не нашли — не
-     * страшно: элемент останется связан компанией/лидом, это честная
-     * деградация, а не ошибка.
-     *
-     * Правило владельца (25.08), зеркально zpr-flow: чужие открытые сделки
-     * дотяжка не подхватывает — только сделки ответственного этого отчёта;
-     * ASSIGNED_BY_ID сравнивается ЧИСЛОМ (REST отдаёт строки); пустой
-     * responsibleId (легаси-джоб) выключает фильтр.
-     */
-    private async resolveBaseDealId(
-        bitrix: FlowBitrix,
-        portal: PortalModel,
-        job: PresentationFlowJobData,
-    ): Promise<number | null> {
-        if (!job.companyId) return null;
-        const category = portal.getDealCategoryByCode(
-            PbxDealCategoryCodeEnum.sales_base,
-        );
-        if (!category) return null;
-        try {
-            const response = await bitrix.deal.getList(
-                {
-                    CATEGORY_ID: String(category.bitrixId),
-                    COMPANY_ID: String(job.companyId),
-                    CLOSED: 'N',
-                } as never,
-                ['ID', 'ASSIGNED_BY_ID'],
-            );
-            const rows = (response?.result ?? []) as Array<{
-                ID?: unknown;
-                ASSIGNED_BY_ID?: unknown;
-            }>;
-            const own = job.responsibleId
-                ? rows.filter(
-                      row =>
-                          Number(row?.ASSIGNED_BY_ID) ===
-                          Number(job.responsibleId),
-                  )
-                : rows;
-            const ids = own
-                .map(row => Number(row?.ID))
-                .filter(id => Number.isFinite(id) && id > 0);
-            if (!ids.length) return null;
-            const latest = Math.max(...ids);
-            this.logger.log(
-                `[presentation-flow] ${job.domain}: базовая сделка дотянута по ` +
-                    `компании ${job.companyId} → ${latest}`,
-            );
-            return latest;
-        } catch (error) {
-            this.logger.warn(
-                `[presentation-flow] дотяжка сделки по компании ${job.companyId} не удалась: ${(error as Error).message}`,
-            );
-            return null;
-        }
     }
 
     /** План презентации → элемент в «Запланирована». */
@@ -270,7 +219,7 @@ export class PresentationFlowService {
         const { bitrix, portal, info, job, now } = run;
         const fields: BxRow = {
             title: `Презентация: ${job.planName || job.planDeadline || now}`,
-            stageId: info.stageIdByCode['pres_plan'],
+            stageId: this.stageId(info, 'pres_plan'),
             assignedById: job.responsibleId,
         };
         this.setUf(fields, info, 'PRES_PLAN_DATE', job.planDeadline);
@@ -408,7 +357,8 @@ export class PresentationFlowService {
                 fields as never,
             );
             this.logger.log(
-                `[presentation-flow] ${job.domain}: отчёт → элемент ${open.id} ` +
+                `[presentation-flow] ${job.domain}: отчёт → элемент ` +
+                    `${String(open.id)} ` +
                     `${isMove ? 'перенесён' : 'закрыт'} (${outcome})`,
             );
             return {
@@ -502,16 +452,16 @@ export class PresentationFlowService {
         ).filter((stageId): stageId is string => !!stageId);
         if (!openStages.length) return null;
 
-        const baseKey = info.ufKeyByCode['PRES_BASE_DEAL'];
-        const companyKey = info.ufKeyByCode['PRES_COMPANY'];
-        const leadKey = info.ufKeyByCode['PRES_LEAD'];
+        const baseKey = this.ufKey(info, 'PRES_BASE_DEAL');
+        const companyKey = this.ufKey(info, 'PRES_COMPANY');
+        const leadKey = this.ufKey(info, 'PRES_LEAD');
         const select = [
             'id',
             baseKey,
             companyKey,
             leadKey,
-            info.ufKeyByCode['PRES_COMMENTS'],
-            info.ufKeyByCode['PRES_MOVE_COUNT'],
+            this.ufKey(info, 'PRES_COMMENTS'),
+            this.ufKey(info, 'PRES_MOVE_COUNT'),
         ].filter((key): key is string => !!key);
 
         const rows = (await bitrix.item.listAll(
@@ -737,7 +687,7 @@ export class PresentationFlowService {
         open: BxRow,
         info: PresentationSmartInfo,
     ): string[] {
-        const commentsKey = info.ufKeyByCode['PRES_COMMENTS'];
+        const commentsKey = this.ufKey(info, 'PRES_COMMENTS');
         return commentsKey && Array.isArray(open[commentsKey])
             ? (open[commentsKey] as unknown[]).map(String)
             : [];
@@ -745,9 +695,39 @@ export class PresentationFlowService {
 
     /** Текущее число переносов элемента (пусто/мусор → 0). */
     private moveCount(open: BxRow, info: PresentationSmartInfo): number {
-        const key = info.ufKeyByCode['PRES_MOVE_COUNT'];
+        const key = this.ufKey(info, 'PRES_MOVE_COUNT');
         const value = key ? Number(open[key]) : 0;
         return Number.isFinite(value) && value > 0 ? value : 0;
+    }
+
+    /**
+     * Фактический camel-ключ поля смарта на этом портале; пусто — поля нет
+     * (старая установка смарта), и писать/читать по нему нечего.
+     *
+     * ЗАЧЕМ МЕТОД, А НЕ ПРЯМАЯ ИНДЕКСАЦИЯ `this.ufKey(info, 'PRES_LEAD')`:
+     * в корневом tsconfig стоит `noImplicitAny: false`, и при нём индексация
+     * объекта неизвестным строковым ключом НЕ ошибка — TypeScript молча
+     * отдаёт `any`. То есть опечатка (`PRES_LED`) компилируется и доезжает
+     * до рантайма как `undefined`, а поле молча не пишется. Параметр
+     * функции проверяется всегда, независимо от флага, поэтому опечатка
+     * здесь — ошибка компиляции, а редактор подсказывает список кодов.
+     */
+    private ufKey(
+        info: PresentationSmartInfo,
+        code: PresentationSmartFieldCode,
+    ): string | undefined {
+        return info.ufKeyByCode[code];
+    }
+
+    /**
+     * Полный stageId стадии; пусто — стадии нет на портале.
+     * Та же защита от опечаток, что и у {@link ufKey}.
+     */
+    private stageId(
+        info: PresentationSmartInfo,
+        code: PresentationSmartStageCode,
+    ): string | undefined {
+        return info.stageIdByCode[code];
     }
 
     /** Значение по фактическому camel-ключу поля; пусто — пропуск. */
@@ -792,9 +772,20 @@ export class PresentationFlowService {
         return 'проведена';
     }
 
+    /**
+     * Несёт ли динамическая crm-привязка ссылку `ref`.
+     *
+     * Битрикс отдаёт такое поле либо массивом ссылок, либо одиночным
+     * скаляром (у пустого значения — null). Скаляр сравниваем ТОЛЬКО
+     * сузив по `typeof`: слепой `String(raw)` над `unknown` на объекте
+     * дал бы `[object Object]` и молча «не совпал» — теперь несравнимое
+     * значение честно даёт false, а не притворяется сравнением.
+     */
     private hasLink(raw: unknown, ref: string): boolean {
         if (Array.isArray(raw)) return raw.map(String).includes(ref);
-        return String(raw ?? '') === ref;
+        if (typeof raw === 'string') return raw === ref;
+        if (typeof raw === 'number') return String(raw) === ref;
+        return false;
     }
 
     private itemIdOf(response: unknown): number | null {

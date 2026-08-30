@@ -113,9 +113,21 @@ export class EventReportEntityFlowService {
         ).toFields();
         if (!Object.keys(fields).length) return;
 
+        /*
+         * `deal` типизирован как Record<string, unknown> (сырой ответ CRM),
+         * поэтому ID нельзя подставлять в шаблон напрямую. Сужаем по typeof:
+         * Битрикс отдаёт ID строкой, локально он иногда число — обе формы
+         * печатаются ровно как прежде. Иная форма (её здесь не бывает) даст
+         * пустое место в строке лога вместо `[object Object]` — на поведение
+         * бэкфилла это не влияет, строка только диагностическая.
+         */
+        const dealIdText =
+            typeof deal.ID === 'string' || typeof deal.ID === 'number'
+                ? String(deal.ID)
+                : '';
         this.logger.log(
             `entity-flow: бэкфилл компании ${companyId} со сделки ` +
-                `${deal.ID}: ${Object.keys(fields).join(', ')}`,
+                `${dealIdText}: ${Object.keys(fields).join(', ')}`,
         );
         this.bitrix.batch.company.update(
             `backfill_company_${companyId}`,

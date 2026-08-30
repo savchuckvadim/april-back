@@ -16,6 +16,7 @@ import {
     PRESENTATION_SMART_GROUP,
     PRESENTATION_SMART_TYPE,
     PresentationSmartFieldDef,
+    PresentationSmartFieldCode,
     PresentationSmartStageCode,
 } from './type/pbx-presentation-smart.type';
 
@@ -28,10 +29,22 @@ export interface PresentationSmartInfo {
      * (UF_CRM_{typeId}_..., по докам userfieldconfig; НЕ entityTypeId!).
      */
     typeId: number;
-    /** Код поля конфига → фактический camel-ключ crm.item (ufCrm8PresLead). */
-    ufKeyByCode: Record<string, string>;
+    /**
+     * Код поля конфига → фактический camel-ключ crm.item (ufCrm8PresLead).
+     *
+     * Почему `Partial`, а не голый Record: мапа строится В РАНТАЙМЕ из того,
+     * что реально стоит на портале. Поля может не быть (смарт установлен не
+     * полностью, поле добавили позже) — `Partial` заставляет вызывающего
+     * честно обработать `undefined` вместо вранья про гарантию.
+     */
+    ufKeyByCode: Partial<Record<PresentationSmartFieldCode, string>>;
     /** Код enumeration-поля → его значения (id — числовой Bitrix enum id). */
-    enumItems: Record<string, { id: number; code: string; value: string }[]>;
+    enumItems: Partial<
+        Record<
+            PresentationSmartFieldCode,
+            { id: number; code: string; value: string }[]
+        >
+    >;
     /** Код стадии ('pres_plan') → полный stageId ('DT1040_11:PLAN'). */
     stageIdByCode: Partial<Record<PresentationSmartStageCode, string>>;
 }

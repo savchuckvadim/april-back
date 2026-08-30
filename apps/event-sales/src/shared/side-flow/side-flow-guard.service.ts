@@ -1,9 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AppCacheService } from '@lib/app-cache';
 import { EVENT_FLOW_CACHE_APP } from '../../event-report/constants/event-flow.const';
-
-/** Какой сайд-поток спрашивает — он же префикс ключа. */
-export type SideFlowName = 'pres-flow' | 'zpr-flow';
+import { SideFlowName } from './side-flow.types';
 
 /** Адрес одного прогона сайд-джоба. */
 export interface SideFlowRunRef {

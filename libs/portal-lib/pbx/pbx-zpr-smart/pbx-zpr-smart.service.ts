@@ -15,6 +15,8 @@ import {
     ZPR_SMART_FIELDS,
     ZPR_SMART_GROUP,
     ZPR_SMART_TYPE,
+    ZprSmartFieldCode,
+    ZprSmartStageCode,
 } from './type/pbx-zpr-smart.type';
 
 /** Резолв смарта «Звонки По решению» для записи элементов crm.item. */
@@ -26,12 +28,25 @@ export interface ZprSmartInfo {
      * (UF_CRM_{typeId}_..., по докам userfieldconfig; НЕ entityTypeId!).
      */
     typeId: number;
-    /** Код поля конфига → фактический camel-ключ crm.item (ufCrm7BaseDeal). */
-    ufKeyByCode: Record<string, string>;
+    /**
+     * Код поля конфига → фактический camel-ключ crm.item (ufCrm7BaseDeal).
+     *
+     * Почему `Partial`, а не голый Record: мапа строится В РАНТАЙМЕ из того,
+     * что реально стоит на портале. Поля может не быть (смарт установлен не
+     * полностью, поле добавили позже) — `Partial` заставляет вызывающего
+     * честно обработать `undefined` вместо вранья про гарантию.
+     */
+    ufKeyByCode: Partial<Record<ZprSmartFieldCode, string>>;
     /** Код enumeration-поля → его значения (id — числовой Bitrix enum id). */
-    enumItems: Record<string, { id: number; code: string; value: string }[]>;
-    /** Код стадии ('zpr_plan') → полный stageId ('DT1038_9:PLAN'). */
-    stageIdByCode: Record<string, string>;
+    enumItems: Partial<
+        Record<ZprSmartFieldCode, { id: number; code: string; value: string }[]>
+    >;
+    /**
+     * Код стадии ('zpr_plan') → полный stageId ('DT1038_9:PLAN').
+     * Типизирован union'ом кодов: опечатка вроде `stageIdByCode['zpr_pendin']`
+     * теперь не компилируется, а редактор подсказывает список стадий.
+     */
+    stageIdByCode: Partial<Record<ZprSmartStageCode, string>>;
 }
 
 /** Запись кэша резолва: null тоже кэшируем (смарт не установлен). */

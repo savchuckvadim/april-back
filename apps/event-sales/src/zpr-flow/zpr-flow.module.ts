@@ -5,12 +5,12 @@ import { WsModule } from '@/core/ws/ws.module';
 import { PbxZprSmartModule } from '@lib/portal-lib/pbx/pbx-zpr-smart/pbx-zpr-smart.module';
 import { PbxSmartItemFieldsModule } from '@lib/portal-lib/pbx/smart-item-fields';
 import { SideFlowModule } from '../shared/side-flow';
-import { ZprFlowService } from './zpr-flow.service';
+import { ZprFlowUseCase } from './use-cases/zpr-flow.use-case';
 import { ZprFlowProcessor } from './zpr-flow.processor';
 
 /**
  * Сайд-flow ЗПР: отдельная очередь, свой воркер. Основной event-report
- * только ставит джобы (QueueDispatcherService) — см. zpr-flow.service.
+ * только ставит джобы (QueueDispatcherService) — см. zpr-flow.use-case.
  */
 @Module({
     imports: [
@@ -20,9 +20,10 @@ import { ZprFlowProcessor } from './zpr-flow.processor';
         PbxZprSmartModule,
         // Живые поля элемента: адреса портальной анкеты (UF-имя → camel-ключ).
         PbxSmartItemFieldsModule,
-        // Гейт повторной доставки джоба — общий с очередью презентаций.
+        // Общее с очередью презентаций: гейт повторной доставки джоба,
+        // привязка элемента к задаче (UF_CRM_TASK) и дотяжка базовой сделки.
         SideFlowModule,
     ],
-    providers: [ZprFlowService, ZprFlowProcessor],
+    providers: [ZprFlowUseCase, ZprFlowProcessor],
 })
 export class ZprFlowModule {}

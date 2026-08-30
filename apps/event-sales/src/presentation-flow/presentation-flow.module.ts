@@ -22,7 +22,8 @@ import { PresentationFlowProcessor } from './presentation-flow.processor';
         PbxPresentationSmartModule,
         // Живые поля элемента: адреса портальной анкеты (UF-имя → camel-ключ).
         PbxSmartItemFieldsModule,
-        // Гейт повторной доставки джоба — общий с очередью ЗПР.
+        // Общее с очередью ЗПР: гейт повторной доставки джоба, привязка
+        // элемента к задаче (UF_CRM_TASK) и дотяжка базовой сделки.
         SideFlowModule,
     ],
     providers: [PresentationFlowService, PresentationFlowProcessor],

@@ -72,6 +72,20 @@ export const ZPR_SMART_TITLE = 'Звонки По решению';
  * flow двигает сюда элемент при переносе задачи, а прежнее имя
  * «Ожидание» этого не показывало.
  */
+/**
+ * Форма записи стадии. Ровно как у {@link ZprSmartFieldDef}: объявление
+ * ниже идёт `as const satisfies`, поэтому коды остаются литералами (из них
+ * выводится {@link ZprSmartStageCode}), но кривая запись — опечатка в
+ * semantics, забытый sort — ловится на компиляции, а не на портале.
+ */
+export interface ZprSmartStageDef {
+    code: string;
+    name: string;
+    /** Закрывающая семантика Bitrix: 'S' — успех, 'F' — провал, null — рабочая. */
+    semantics: 'S' | 'F' | null;
+    sort: number;
+}
+
 export const ZPR_SMART_STAGES = [
     { code: 'zpr_plan', name: 'Запланирован', semantics: null, sort: 10 },
     { code: 'zpr_pending', name: 'ЗПР: Перенос', semantics: null, sort: 20 },
@@ -89,7 +103,19 @@ export const ZPR_SMART_STAGES = [
     },
     { code: 'zpr_noresult', name: 'Не состоялся', semantics: 'F', sort: 50 },
     { code: 'zpr_fail', name: 'Отменён', semantics: 'F', sort: 60 },
-] as const;
+] as const satisfies readonly ZprSmartStageDef[];
+
+/**
+ * Код стадии ЗПР — все обращения flow типизированы этим union (зеркало
+ * {@link ZprSmartFieldCode} и PresentationSmartStageCode).
+ *
+ * Выводится ИЗ самого списка стадий, второго перечня кодов не заводим:
+ * добавили стадию в ZPR_SMART_STAGES — union расширился сам. Без этого
+ * `stageIdByCode` был `Record<string, string>`: редактор не подсказывал
+ * коды, а опечатка (`zpr_pendin`) доезжала до рантайма как `undefined`
+ * и молча роняла запись стадии.
+ */
+export type ZprSmartStageCode = (typeof ZPR_SMART_STAGES)[number]['code'];
 
 // ---------------------------------------------------------------------------
 // Возражения.
