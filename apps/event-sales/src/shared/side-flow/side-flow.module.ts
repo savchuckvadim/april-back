@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SideFlowGuardService } from './side-flow-guard.service';
 import { SideFlowTaskBinderService } from './side-flow-task-binder.service';
+import { SideFlowKpiRowBinderService } from './side-flow-kpi-row-binder.service';
 import { SideFlowBaseDealResolver } from './side-flow-base-deal.resolver';
 
 /**
@@ -19,11 +20,13 @@ import { SideFlowBaseDealResolver } from './side-flow-base-deal.resolver';
     providers: [
         SideFlowGuardService,
         SideFlowTaskBinderService,
+        SideFlowKpiRowBinderService,
         SideFlowBaseDealResolver,
     ],
     exports: [
         SideFlowGuardService,
         SideFlowTaskBinderService,
+        SideFlowKpiRowBinderService,
         SideFlowBaseDealResolver,
     ],
 })

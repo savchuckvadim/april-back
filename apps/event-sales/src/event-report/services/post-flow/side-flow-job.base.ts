@@ -1,4 +1,6 @@
 import { Logger } from '@nestjs/common';
+import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
+import { findBatchResult } from '../../../shared/bitrix/prepare-batch-results.util';
 import { QuestionnaireCatalog } from '@lib/portal-lib/store/questionnaires';
 import {
     buildQuestionnaireSmartAnswers,
@@ -9,6 +11,9 @@ import {
 import { EventReportContext } from '../context/event-report.context';
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';
 import { EEventReportEntityType } from '../init/event-report-init.types';
+import { SmartKpiRowRef, SmartKpiRowRefs } from '../../../shared/side-flow';
+
+export { SmartKpiRowRef, SmartKpiRowRefs };
 
 /**
  * Общий слой сборки сайд-джобов: всё, что одинаково у ЗПР и презентаций.
@@ -44,6 +49,58 @@ export interface QuestionnaireSmartContext {
     disabledEventTypes: string[];
 }
 
+/** Сценарии строк, в которые дописывается ПЛАНОВЫЙ элемент смарта. */
+const KPI_PLAN_SCENARIOS = new Set(['plan', 'unplanned_presentation_plan']);
+/** Сценарии строк, в которые дописывается ОТЧЁТНЫЙ элемент смарта. */
+const KPI_REPORT_SCENARIOS = new Set(['report', 'presentation_done']);
+
+/**
+ * cmd созданных строк → реальные id из ответа батча, разложенные по
+ * назначению. Механика та же, что у planTaskId: `lists.element.add` уже
+ * выполнен, его результат (числовой id строки) лежит в ответе под ключом
+ * команды. Не нашли/чанк упал/поля crm на списке нет — строка молча
+ * выпадает: обратная ссылка — украшение, а не инвариант.
+ */
+export function resolveKpiRowRefs(
+    rows: ReadonlyArray<{
+        scenario: string | null;
+        iblockId: number;
+        crmFieldId: string | null;
+        cmd: string;
+    }>,
+    batchResults: IBitrixBatchResponseResult[],
+): SmartKpiRowRefs {
+    const refs: SmartKpiRowRefs = { plan: [], report: [] };
+    for (const row of rows) {
+        if (!row.crmFieldId) continue;
+        const scenario = row.scenario ?? '';
+        const bucket = KPI_PLAN_SCENARIOS.has(scenario)
+            ? refs.plan
+            : KPI_REPORT_SCENARIOS.has(scenario)
+              ? refs.report
+              : null;
+        if (!bucket) continue;
+        const elementId = Number(findBatchResult(batchResults, row.cmd));
+        if (!Number.isFinite(elementId) || elementId <= 0) continue;
+        bucket.push({
+            iblockId: row.iblockId,
+            elementId,
+            crmFieldId: row.crmFieldId,
+        });
+    }
+    return refs;
+}
+
+/**
+ * Реальный id сделки, созданной батч-командой `crm.deal.add`
+ * (set_pres_deal / set_unplanned_pres_deal): ответ — голое число либо
+ * строка с числом. Невалидное → null.
+ */
+export function parseCreatedDealId(raw: unknown): number | null {
+    const id = Number(raw);
+    return Number.isFinite(id) && id > 0 ? id : null;
+}
+
 /** Вход сборки: контекст отчёта плюс то, что дочитал координатор. */
 export interface SideFlowJobBuildInput {
     ctx: EventReportContext;
@@ -53,6 +110,14 @@ export interface SideFlowJobBuildInput {
      * null — плана не было либо команда создания не удалась.
      */
     planTaskId: number | null;
+    /**
+     * Реальный id pres-сделки, СОЗДАННОЙ этим отчётом (из ответа батча);
+     * фолбэк для `presDealId`, когда в контексте она была `$result[...]`.
+     * ЗПР, запланированный вместе с презентацией, получает связь сразу.
+     */
+    createdPresDealId?: number | null;
+    /** Строки KPI/History этого отчёта — адреса обратных ссылок смартов. */
+    kpiRowRefs?: SmartKpiRowRefs;
     questionnaire: QuestionnaireSmartContext | null;
     socketId?: string;
 }
@@ -194,7 +259,7 @@ export function buildSideFlowJobBase(
     input: SideFlowJobBuildInput,
     answers: QuestionnaireSmartAnswer[],
 ): SideFlowJobBase {
-    const { ctx, deals, planTaskId, socketId } = input;
+    const { ctx, deals, planTaskId, createdPresDealId, socketId } = input;
 
     // Ссылка `$result[...]` на создаваемую этим же отчётом сделку в джоб
     // не годится — batch уже отправлен, но числового id у нас нет.
@@ -211,7 +276,11 @@ export function buildSideFlowJobBase(
         operationId: ctx.dto.operationId,
         socketId,
         baseDealId,
-        presDealId: Number(ctx.currentPresDeal?.ID) || null,
+        // Существующая pres-сделка отчёта, а не нашлась — созданная ЭТИМ
+        // отчётом (реальный id из ответа батча): ЗПР «вместе с презентацией»
+        // и элемент unplanned-презентации получают связь сразу.
+        presDealId:
+            Number(ctx.currentPresDeal?.ID) || createdPresDealId || null,
         companyId:
             ctx.entityType === EEventReportEntityType.COMPANY
                 ? ctx.entityId

@@ -7,6 +7,7 @@ import { PbxPresentationSmartService } from '@lib/portal-lib/pbx/pbx-presentatio
 import { PbxSmartItemFieldsService } from '@lib/portal-lib/pbx/smart-item-fields';
 import {
     SideFlowBaseDealResolver,
+    SideFlowKpiRowBinderService,
     SideFlowTaskBinderService,
 } from '../../shared/side-flow';
 import { PresentationFlowJobData } from '../dto/presentation-flow-job.dto';
@@ -53,6 +54,7 @@ export class PresentationFlowUseCase {
         // держат (правило CLAUDE.md про this.bitrix и race condition).
         private readonly taskBinder: SideFlowTaskBinderService,
         private readonly baseDealResolver: SideFlowBaseDealResolver,
+        private readonly kpiRowBinder: SideFlowKpiRowBinderService,
     ) {}
 
     async handle(
@@ -144,6 +146,18 @@ export class PresentationFlowUseCase {
          * задачи в батче не было) — привязки просто нет, как и раньше:
          * это украшение, а не инвариант, и джоб из-за него не падает.
          */
+        // Обратная ссылка в строки KPI/History этого отчёта: плановый
+        // элемент — в план-строки, отчётный — в отчётные. Ошибки не роняют.
+        if (result.elementId && resolved.kpiRows?.length) {
+            await this.kpiRowBinder.append(
+                bitrix,
+                resolved.kpiRows,
+                info.entityTypeId,
+                result.elementId,
+                PRES_FLOW,
+            );
+        }
+
         const linkedTaskId =
             resolved.kind === 'plan' ? resolved.planTaskId : resolved.taskId;
         if (linkedTaskId && result.elementId) {

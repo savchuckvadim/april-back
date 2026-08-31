@@ -119,6 +119,11 @@ export function buildPresentationFlowJobs(
                  * поля портала. Слияние заставило бы один из ключей врать.
                  */
                 survey,
+                // Строки KPI/History своего назначения: элемент допишет в
+                // их crm-поле ссылку на себя (T{hex}_{id}).
+                kpiRows: input.kpiRowRefs?.[kind]?.length
+                    ? input.kpiRowRefs[kind]
+                    : undefined,
             }) satisfies PresentationFlowJobData,
     );
 }

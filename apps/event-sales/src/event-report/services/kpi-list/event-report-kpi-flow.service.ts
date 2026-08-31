@@ -1,7 +1,10 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
-import { KpiListFlowService } from '../../../shared/kpi-list-flow/services/kpi-list-flow.service';
+import {
+    KpiListFlowService,
+    KpiRowCmdRef,
+} from '../../../shared/kpi-list-flow/services/kpi-list-flow.service';
 import { EventReportContext } from '../context/event-report.context';
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';
 import { EventReportKpiPayloadBuilder } from './event-report-kpi-payload.builder';
@@ -37,7 +40,7 @@ export class EventReportKpiFlowService {
         ctx: EventReportContext,
         deals: DealFlowResult,
         buffer: ColdHookBatchGroupBuffer,
-    ): Promise<void> {
+    ): Promise<KpiRowCmd[]> {
         /*
          * Недозвон (isNoCall) КПИ НЕ пропускает — он обязан оставить след:
          * запись «Не состоялся» в sales_kpi и sales_history с привязками ко
@@ -57,14 +60,31 @@ export class EventReportKpiFlowService {
         );
         const payloads = builder.buildAll();
         if (payloads.length === 0) {
-            return;
+            return [];
         }
+        const rows: KpiRowCmd[] = [];
         for (const payload of payloads) {
             if (payload.dedup) {
+                // Финалы/уникальные: элемент может существовать заранее и
+                // командой не создаваться — стабильного cmd в ответе батча
+                // нет, ссылки сайд-очередей в них не дописываются.
                 await this.kpiFlow.flowDedup(payload, buffer);
             } else {
-                this.kpiFlow.flow(payload, ctx.entityId, buffer);
+                const refs = this.kpiFlow.flow(payload, ctx.entityId, buffer);
+                for (const ref of refs) {
+                    rows.push({ ...ref, scenario: payload.scenario ?? null });
+                }
             }
         }
+        return rows;
     }
+}
+
+/**
+ * Команда создания строки KPI/History + сценарий записи: по сценарию
+ * post-flow решает, какой элемент смарта (плановый или отчётный) должен
+ * дописаться в crm-поле этой строки.
+ */
+export interface KpiRowCmd extends KpiRowCmdRef {
+    scenario: string | null;
 }

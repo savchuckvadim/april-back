@@ -1,3 +1,4 @@
+import { SmartKpiRowRef } from '../../shared/side-flow';
 import { PresentationOutcome } from '../lib/presentation-outcome';
 import { PresentationSurveySnapshot } from '../lib/presentation-survey-snapshot';
 import { QuestionnaireSmartAnswer } from '../../shared/questionnaire-answers';
@@ -64,6 +65,14 @@ export interface PresentationFlowJobData {
      * именно его; поле пустое — честный фолбэк на эвристику.
      */
     taskCrmBindings?: string[];
+    /**
+     * Строки KPI/History-списков ЭТОГО отчёта (id из ответа батча) — джоб
+     * дописывает в их multiple-crm-поле ссылку на свой элемент
+     * (T{hex}_{id}): плановый элемент в план-строки, отчётный — в
+     * отчётные (решение владельца 31.08). Пусто — строки не создавались
+     * либо на списке нет crm-поля.
+     */
+    kpiRows?: SmartKpiRowRef[];
     /** id базовой сделки; null — сделка создаётся этим же отчётом/лид-only. */
     baseDealId: number | null;
     /** Сделка воронки «ОП Презентации» — зеркальная ссылка на элемент. */

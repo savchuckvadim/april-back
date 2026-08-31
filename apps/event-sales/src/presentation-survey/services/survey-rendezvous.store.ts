@@ -1,10 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RedisService } from '@lib/core/redis/redis.service';
 
-/** Сводные значения анкеты — только они едут на unplanned-сделку. */
+/**
+ * Кэшируемые значения анкеты для rendezvous с unplanned-сделкой.
+ *
+ * Исторически ехали только сводные; с 31.08 сделка получает и девять
+ * детальных «5К» (решение владельца — карточка pres-сделки показывала
+ * девять вечно пустых полей, а legacy PHP их заполнял). `fiveK` опционален
+ * и в кэше, и в чтении: записи старого формата в Redis читаются как
+ * «детальных не было» — деградация без миграции.
+ */
 export interface SurveySummaryValues {
     xvost?: string;
     fiveKSummary?: string;
+    /** Детальные «5К»: код поля → значение (только whitelist ручки). */
+    fiveK?: Record<string, string>;
 }
 
 /** Ссылка на сущность-цель rendezvous. */

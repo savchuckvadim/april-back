@@ -54,7 +54,7 @@ interface SurveyValues {
 }
 
 /**
- * Ручка легаси-опросника: старый React-фронт шлёт хвост и «5К» отдельным
+ * Ручка опросника 5К/Хвост: фронт шлёт ответы отдельным
  * запросом, вне event-report flow (hook не участвует).
  *
  * Семантика — ТОЛЬКО перезапись: append'а нет, поэтому повтор того же
@@ -120,14 +120,13 @@ export class PresentationSurveyEndpointService {
             }
         }
 
-        // === Сделки и компания: только сводные.
+        // === Сделки: девять детальных + сводные — зеркало лида (решение
+        // владельца 31.08: раньше детальные писались только лиду, и девять
+        // полей «5К» на pres-сделке стояли вечно пустыми, хотя legacy PHP
+        // их заполнял). Неустановленное на сделке поле setField молча
+        // пропустит — порталы без детальных полей сделки ничего не теряют.
         for (const dealId of dto.targets.dealIds ?? []) {
-            const fields = this.buildSummaryFields(
-                portal,
-                'deal',
-                values,
-                result,
-            );
+            const fields = this.buildDealFields(portal, values, result);
             if (Object.keys(fields).length) {
                 bitrix.batch.deal.update(
                     `survey_deal_${dealId}`,
@@ -249,11 +248,12 @@ export class PresentationSurveyEndpointService {
 
         try {
             const { bitrix, portal } = await this.initPortal(dto.domain);
-            const fields = this.buildSummaryFields(
+            const fields = this.buildDealFields(
                 portal,
-                'deal',
                 {
-                    fiveK: new Map(),
+                    // Кэш старого формата без fiveK читается как «детальных
+                    // не было» — записываются только сводные, как раньше.
+                    fiveK: new Map(Object.entries(values.fiveK ?? {})),
                     xvost: values.xvost ?? null,
                     fiveKSummary: values.fiveKSummary ?? null,
                 },
@@ -304,6 +304,12 @@ export class PresentationSurveyEndpointService {
             ...(values.fiveKSummary
                 ? { fiveKSummary: values.fiveKSummary }
                 : {}),
+            // Детальные — тоже в кэш: unplanned-сделка обязана получить
+            // тот же состав, что обычная (иначе девять полей пусты только
+            // у незапланированных — необъяснимая асимметрия для менеджера).
+            ...(values.fiveK.size
+                ? { fiveK: Object.fromEntries(values.fiveK) }
+                : {}),
         };
         await this.rendezvous.cacheValues(dto.domain, refs, summary);
 
@@ -314,12 +320,7 @@ export class PresentationSurveyEndpointService {
                 pending.unplannedDealId,
             );
             if (owned) {
-                const fields = this.buildSummaryFields(
-                    portal,
-                    'deal',
-                    values,
-                    result,
-                );
+                const fields = this.buildDealFields(portal, values, result);
                 if (Object.keys(fields).length) {
                     bitrix.batch.deal.update(
                         `survey_unplanned_${pending.unplannedDealId}`,
@@ -419,7 +420,24 @@ export class PresentationSurveyEndpointService {
         return fields;
     }
 
-    /** Сводные поля для сделки/компании. */
+    /**
+     * Поля СДЕЛКИ: девять детальных + сводные — тот же состав, что у лида
+     * (детальные коды резолвятся на СДЕЛКЕ; не установлены — тихий скип).
+     */
+    private buildDealFields(
+        portal: PortalModel,
+        values: SurveyValues,
+        result: { warnings: string[] },
+    ): BxRow {
+        const fields: BxRow = {};
+        for (const [code, value] of values.fiveK) {
+            this.setField(portal, 'deal', code, value, fields, result);
+        }
+        this.appendSummaryFields(portal, 'deal', values, fields, result);
+        return fields;
+    }
+
+    /** Сводные поля для компании (детальных «5К» на компании нет). */
     private buildSummaryFields(
         portal: PortalModel,
         entityType: 'deal' | 'company',

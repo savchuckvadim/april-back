@@ -10,6 +10,7 @@ import { QuestionnaireSmartAnswer } from '../../shared/questionnaire-answers';
 import {
     SideFlowBaseDealResolver,
     SideFlowName,
+    SideFlowKpiRowBinderService,
     SideFlowTaskBinderService,
 } from '../../shared/side-flow';
 import { PresentationFlowUseCase } from '../use-cases/presentation-flow.use-case';
@@ -325,6 +326,23 @@ const makeHarness = (over?: {
         },
     } as unknown as SideFlowTaskBinderService;
 
+    const kpiRowAppendCalls: Array<{
+        rows: unknown;
+        entityTypeId: number;
+        elementId: number;
+    }> = [];
+    const kpiRowBinder = {
+        append: (
+            _bitrix: unknown,
+            rows: unknown,
+            entityTypeId: number,
+            elementId: number,
+        ) => {
+            kpiRowAppendCalls.push({ rows, entityTypeId, elementId });
+            return Promise.resolve();
+        },
+    } as unknown as SideFlowKpiRowBinderService;
+
     return {
         service: new PresentationFlowUseCase(
             pbx,
@@ -332,8 +350,10 @@ const makeHarness = (over?: {
             smartItemFields,
             taskBinder,
             new SideFlowBaseDealResolver(),
+            kpiRowBinder,
         ),
         bindCalls,
+        kpiRowAppendCalls,
         itemFieldsCalls,
         added,
         updatedItems,
@@ -689,6 +709,31 @@ describe('PresentationFlowUseCase', () => {
 
     // ─────────── резолв от ПРИВЯЗКИ ЗАДАЧИ (инцидент 31.08) ───────────
     // Задача несёт `T{hex}_{id}` своего элемента; hex(1040) = '410'.
+
+    it('строки KPI из джоба уезжают биндеру строк вместе с id элемента', async () => {
+        const { service, kpiRowAppendCalls } = makeHarness({
+            openItems: [
+                { id: 601, stageId: 'DT1040_11:PLAN', ufCrm8BaseDeal: 100 },
+            ],
+        });
+        const rows = [
+            { iblockId: 21, elementId: 900, crmFieldId: 'PROPERTY_77' },
+        ];
+
+        await service.handle(job({ kind: 'report', kpiRows: rows }));
+
+        expect(kpiRowAppendCalls).toHaveLength(1);
+        expect(kpiRowAppendCalls[0].rows).toEqual(rows);
+        expect(kpiRowAppendCalls[0].elementId).toBe(601);
+    });
+
+    it('джоб без kpiRows биндер строк не зовёт', async () => {
+        const { service, kpiRowAppendCalls } = makeHarness({ openItems: [] });
+
+        await service.handle(job({ kind: 'plan' }));
+
+        expect(kpiRowAppendCalls).toHaveLength(0);
+    });
 
     it('привязка задачи побеждает более свежий открытый элемент клиента', async () => {
         // У клиента ДВЕ открытые презентации. Эвристика взяла бы самую

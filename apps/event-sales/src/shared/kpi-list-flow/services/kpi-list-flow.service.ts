@@ -8,6 +8,26 @@ import { KpiEventItemModel } from '../models/kpi-event-item.model';
 import { KpiEventPayload } from '../type/kpi-event-payload.type';
 
 /**
+ * Ссылка на batch-команду, создавшую строку KPI/History-списка.
+ *
+ * Зачем наружу: id созданной строки лежит в ОТВЕТЕ батча под этим cmd
+ * (та же механика, что `$result[add_task]` → planTaskId), и post-flow
+ * по нему достаёт реальный id — сайд-очереди (ЗПР/презентации) дописывают
+ * в crm-поле строки ссылку на СВОЙ элемент смарта (решение владельца
+ * 31.08: из строки отчёта/плана должен находиться элемент, и наоборот).
+ */
+export interface KpiRowCmdRef {
+    /** Тип списка: сводка KPI или лента истории. */
+    listType: string;
+    /** IBLOCK_ID списка на портале — нужен сайд-очереди для update. */
+    iblockId: number;
+    /** bitrixId crm-поля строки (sales_kpi_crm) — куда дописывать ссылку. */
+    crmFieldId: string | null;
+    /** Ключ batch-команды `lists.element.add`. */
+    cmd: string;
+}
+
+/**
  * Создаёт элементы в списках `sales_kpi` и `sales_history` для одного
  * KPI-события (план/отчёт/перенос/...).
  *
@@ -44,20 +64,22 @@ export class KpiListFlowService {
         payload: KpiEventPayload,
         entityId: string | number,
         buffer: IBatchGroupBuffer,
-    ): void {
+    ): KpiRowCmdRef[] {
         const lists = this.collectLists();
         if (lists.length === 0) {
             this.logger.warn('Списки sales_kpi/sales_history не настроены');
-            return;
+            return [];
         }
 
         const uniqueSuffix = this.generateUniqueSuffix();
+        const refs: KpiRowCmdRef[] = [];
 
         lists.forEach(list => {
-            const fields = new KpiEventItemModel(
+            const model = new KpiEventItemModel(
                 list,
                 this.payloadForList(payload, list),
-            ).toFields();
+            );
+            const fields = model.toFields();
             const cmdCode = `add_list_item_${list.type}_${entityId}_${uniqueSuffix}`;
             const elementCode = `${list.type}_${entityId}_${uniqueSuffix}`;
 
@@ -68,7 +90,28 @@ export class KpiListFlowService {
                     FIELDS: fields,
                 }),
             );
+            refs.push({
+                listType: String(list.type),
+                iblockId: Number(list.bitrixId),
+                crmFieldId: this.crmFieldId(list),
+                cmd: cmdCode,
+            });
         });
+        return refs;
+    }
+
+    /**
+     * Писабельный ключ crm-поля строки; нет на списке — null.
+     * Резолв зеркалит KpiEventItemModel.findListField: полный код поля —
+     * `{group}_{type}_crm` (sales_kpi_crm / sales_history_crm), ключ
+     * записи — `bitrixCamelId`.
+     */
+    private crmFieldId(list: IPBXList): string | null {
+        const fullCode = `${list.group}_${list.type}_crm`;
+        const field = list.bitrixfields?.find(
+            candidate => candidate.code === fullCode,
+        );
+        return field?.bitrixCamelId ? String(field.bitrixCamelId) : null;
     }
 
     /**

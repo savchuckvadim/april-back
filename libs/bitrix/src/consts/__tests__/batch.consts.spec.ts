@@ -2,6 +2,7 @@ import {
     BATCH_LINE_BREAK_SYMBOL,
     toBatchSafeText,
     toBatchText,
+    toMultiFieldEntryText,
 } from '../batch.consts';
 
 /**
@@ -44,5 +45,25 @@ describe('toBatchSafeText', () => {
         expect(toBatchSafeText('100% + бонус & тел. +7\nконец')).toBe(
             '100%25 %2B бонус %26 тел. %2B7%0Aконец',
         );
+    });
+});
+
+describe('toMultiFieldEntryText', () => {
+    it('схлопывает %0A и все виды переносов в « — »', () => {
+        expect(
+            toMultiFieldEntryText('шапка%0Aстрока 1\nстрока 2\r\nстрока 3'),
+        ).toBe('шапка — строка 1 — строка 2 — строка 3');
+    });
+
+    it('серии переносов не плодят пустых частей, пробелы схлопнуты', () => {
+        expect(toMultiFieldEntryText('a\n\n\n  b   c ')).toBe('a — b c');
+    });
+
+    it('кастомный разделитель', () => {
+        expect(toMultiFieldEntryText('a\nb', ' • ')).toBe('a • b');
+    });
+
+    it('однострочный текст проходит как есть', () => {
+        expect(toMultiFieldEntryText('обычная запись')).toBe('обычная запись');
     });
 });

@@ -1,3 +1,4 @@
+import { SmartKpiRowRef } from '../../shared/side-flow';
 import { ZprSurveySnapshot } from '../lib/zpr-survey-snapshot';
 import { QuestionnaireSmartAnswer } from '../../shared/questionnaire-answers';
 
@@ -57,6 +58,14 @@ export interface ZprFlowJobData {
      * именно его; поле пустое — честный фолбэк на эвристику.
      */
     taskCrmBindings?: string[];
+    /**
+     * Строки KPI/History-списков ЭТОГО отчёта (id из ответа батча) — джоб
+     * дописывает в их multiple-crm-поле ссылку на свой элемент
+     * (T{hex}_{id}): плановый элемент в план-строки, отчётный — в
+     * отчётные (решение владельца 31.08). Пусто — строки не создавались
+     * либо на списке нет crm-поля.
+     */
+    kpiRows?: SmartKpiRowRef[];
     /** id базовой сделки; null — сделка создаётся этим же отчётом/лид-only. */
     baseDealId: number | null;
     presDealId: number | null;

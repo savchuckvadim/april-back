@@ -31,3 +31,21 @@ export type SideFlowName = 'pres-flow' | 'zpr-flow';
  */
 export const sideFlowLogTag = (flow?: SideFlowName): string =>
     `[${flow ?? 'side-flow'}]`;
+
+/**
+ * Строка KPI/History-списка, созданная отчётом, — адрес обратной ссылки
+ * элемента смарта: сайд-очередь дописывает `T{hex}_{id}` в её
+ * multiple-crm-поле (`crmFieldId`). Плановый элемент едет в план-строки,
+ * отчётный — в отчётные (решение владельца 31.08).
+ */
+export interface SmartKpiRowRef {
+    iblockId: number;
+    elementId: number;
+    crmFieldId: string;
+}
+
+/** Строки, разложенные по назначению элемента смарта. */
+export interface SmartKpiRowRefs {
+    plan: SmartKpiRowRef[];
+    report: SmartKpiRowRef[];
+}

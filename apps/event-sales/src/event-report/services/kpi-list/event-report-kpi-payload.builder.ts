@@ -795,6 +795,7 @@ export class EventReportKpiPayloadBuilder {
             },
             historyItems: input.historyItems,
             dedup: input.dedup,
+            scenario: input.scenario,
         };
     }
 

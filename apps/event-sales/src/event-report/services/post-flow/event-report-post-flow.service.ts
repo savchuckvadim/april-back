@@ -14,7 +14,10 @@ import {
     SideFlowJobBuildInput,
     SideFlowJobKind,
     sideJobId,
+    parseCreatedDealId,
+    resolveKpiRowRefs,
 } from './side-flow-job.base';
+import { KpiRowCmd } from '../kpi-list/event-report-kpi-flow.service';
 import { buildZprFlowJobs } from './zpr-flow-job.builder';
 import { buildPresentationFlowJobs } from './presentation-flow-job.builder';
 import { QuestionnaireSmartContextLoader } from './questionnaire-smart-context.loader';
@@ -76,6 +79,8 @@ export class EventReportPostFlowService {
         deals: DealFlowResult;
         /** Ответ основного батча — источник id созданной план-задачи. */
         batchResults: IBitrixBatchResponseResult[];
+        /** Команды создания строк KPI/History — для обратных ссылок смартов. */
+        kpiRows?: KpiRowCmd[];
         socketId?: string;
     }): Promise<void> {
         const { ctx, deals, batchResults, socketId } = input;
@@ -91,6 +96,27 @@ export class EventReportPostFlowService {
             findBatchResult(batchResults, ADD_TASK_CMD),
         );
 
+        /*
+         * Той же механикой — реальный id pres-сделки, СОЗДАННОЙ этим
+         * отчётом: на постановке она была `$result[...]` и в контексте
+         * лежит null. Теперь ЗПР, запланированный вместе с отчётом по
+         * презентации (или после unplanned-презентации), получает связь
+         * ZPR_PRES_DEAL сразу, а элемент презентации — свою PRES_DEAL
+         * (решение владельца 31.08).
+         */
+        const presDealId =
+            parseCreatedDealId(
+                findBatchResult(batchResults, 'set_pres_deal'),
+            ) ??
+            parseCreatedDealId(
+                findBatchResult(batchResults, 'set_unplanned_pres_deal'),
+            );
+
+        // Строки KPI/History, созданные этим же батчем: cmd → реальный id.
+        // По сценарию строки решается, ПЛАНОВЫЙ или ОТЧЁТНЫЙ элемент смарта
+        // должен в неё дописаться.
+        const kpiRowRefs = resolveKpiRowRefs(input.kpiRows ?? [], batchResults);
+
         // Ответы портальных анкет, адресованные элементам смартов:
         // каталог и выключатель читаются один раз на оба потока.
         const questionnaire =
@@ -102,6 +128,8 @@ export class EventReportPostFlowService {
             ctx,
             deals,
             planTaskId,
+            createdPresDealId: presDealId,
+            kpiRowRefs,
             questionnaire,
             socketId,
         };

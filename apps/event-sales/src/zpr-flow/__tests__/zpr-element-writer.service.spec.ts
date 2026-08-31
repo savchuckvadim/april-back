@@ -49,6 +49,22 @@ const open = (over?: BxRow): BxRow => ({
 });
 
 describe('ZprElementWriterService', () => {
+    it('план несёт снимок клиента — плановую дату покупки', async () => {
+        const spy = makeBitrix();
+        const writer = new ZprElementWriterService(spy.bitrix, makePortal());
+
+        await writer.createPlanned(
+            makeRun({
+                job: {
+                    survey: { ZPR_SALE_DATE_PROGNOZ: '01.10.2026' },
+                },
+            }),
+            ['plan'],
+        );
+
+        expect(spy.added[0].ufCrm7SaleDatePrognoz).toBe('01.10.2026');
+    });
+
     it('план: элемент в «Запланирован» со связями и лентой комментариев', async () => {
         const { writer, run, added, dealUpdates } = makeHarness();
 

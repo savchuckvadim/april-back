@@ -1,5 +1,6 @@
 import {
     BATCH_LINE_BREAK_SYMBOL,
+    toMultiFieldEntryText,
     toBatchText,
 } from '@lib/bitrix/consts/batch.consts';
 import { buildEventHistoryParts } from '../history/event-history-comment.builder';
@@ -887,7 +888,14 @@ export class EventReportEntityFieldsModel {
         if (!field) return;
         const key = this.bitrixKey(field);
         const previous = this.readMultiple(this.entityRecord(), field);
-        const next = [line, ...previous].slice(0, limit);
+        /*
+         * Запись множественного поля — ВСЕГДА одна строка: батч уходит
+         * JSON-телом, %0A декодируется в настоящий 
+, а грид multiple-поля
+         * рисует внутренние переносы подчёркиванием (инцидент 31.08,
+         * «ОП История» в _). Разделитель частей — видимое « — ».
+         */
+        const next = [toMultiFieldEntryText(line), ...previous].slice(0, limit);
         out[key] = next;
     }
 
@@ -896,16 +904,19 @@ export class EventReportEntityFieldsModel {
             ? HISTORY_LIMIT_GSIRK
             : HISTORY_LIMIT_DEFAULT;
         /*
-         * Перенос строки — ТОЛЬКО через BATCH_LINE_BREAK_SYMBOL: поля
-         * заполняются batch-командой, а там сырой `\n` доезжает до карточки
-         * подчёркиванием. Формат записи (склонение типов, без слова
-         * «Отчёт») — см. buildEventHistoryParts; первой строкой — когда
-         * событие произошло.
+         * Запись — ОДНОЙ строкой с разделителем « — »: значения этих полей
+         * уезжают batch-командой JSON-телом, где и сырой `\n`, и `%0A`
+         * (декодируется сервером) доезжают до карточки настоящим переносом,
+         * а грид полей карточки рисует его ПОДЧЁРКИВАНИЕМ (инцидент 31.08:
+         * «ОП История» вся в `_`). См. toMultiFieldEntryText. Формат частей
+         * (склонение типов, без слова «Отчёт») — buildEventHistoryParts;
+         * первым — когда событие произошло.
          */
-        const line = [
-            this.nowCrmDate(),
-            ...buildEventHistoryParts(this.ctx),
-        ].join(BATCH_LINE_BREAK_SYMBOL);
+        const line = toMultiFieldEntryText(
+            [this.nowCrmDate(), ...buildEventHistoryParts(this.ctx)].join(
+                ' — ',
+            ),
+        );
         this.appendMultiple(out, 'op_mhistory', line, limit);
         this.setScalar(out, 'op_history', line);
     }
@@ -940,7 +951,7 @@ export class EventReportEntityFieldsModel {
         const head = `${this.nowCrmDate()} Презентация состоялась: ${this.ctx.reportEventName}`;
         const xvost = this.presentationXvost();
         if (!xvost) return head;
-        return `${head}${BATCH_LINE_BREAK_SYMBOL}Хвост: ${toBatchText(xvost)}`;
+        return `${head} — Хвост: ${toMultiFieldEntryText(xvost, ' — ')}`;
     }
 
     /**

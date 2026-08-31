@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { FlowBitrix } from '../../shared/side-flow';
+import { toMultiFieldEntryText } from '@lib/bitrix/consts/batch.consts';
 import { QuestionnaireAnswerPurpose } from '../../shared/questionnaire-answers';
 import { PresentationFlowResult } from '../constants/presentation-flow.const';
 import {
@@ -76,7 +77,11 @@ export class PresElementWriterService {
         fields_.setUf(
             fields,
             'PRES_COMMENTS',
-            job.planComment ? [`${now} План: ${job.planComment}`] : null,
+            // Запись ленты — одна строка (multiple-поле, см.
+            // toMultiFieldEntryText).
+            job.planComment
+                ? [toMultiFieldEntryText(`${now} План: ${job.planComment}`)]
+                : null,
         );
         fields_.setUf(fields, 'PRES_NEXT_CALL_DATE', job.planDeadline);
         links.applyLinks(fields);
@@ -128,9 +133,11 @@ export class PresElementWriterService {
                     'без смены стадии',
             );
         }
-        const reportEntry = job.reportComment
-            ? `${now} Отчёт: ${job.reportComment}`
-            : `${now} Отчёт: ${this.outcomeLabel(outcome, job.isResult)}`;
+        const reportEntry = toMultiFieldEntryText(
+            job.reportComment
+                ? `${now} Отчёт: ${job.reportComment}`
+                : `${now} Отчёт: ${this.outcomeLabel(outcome, job.isResult)}`,
+        );
 
         // Спонтанная презентация НЕ закрывает чужой открытый элемент: она
         // фиксирует новую презентацию (так же ведёт себя unplanned

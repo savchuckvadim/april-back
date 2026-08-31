@@ -1048,9 +1048,9 @@ describe('PortalQuestionnairesService', () => {
 
             const catalog = await service.resolve(DOMAIN, APP);
 
-            expect(
-                catalog.questionnaires[0].items[0].smart?.entityTypeId,
-            ).toBe(177);
+            expect(catalog.questionnaires[0].items[0].smart?.entityTypeId).toBe(
+                177,
+            );
         });
 
         it('смарты портала читаются, только когда смарт-вопросы есть', async () => {

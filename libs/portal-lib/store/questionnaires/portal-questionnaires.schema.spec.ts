@@ -83,9 +83,11 @@ describe('достижимость анкеты для смарта', () => {
     it('условие по типу события со смартом — достижима', () => {
         expect(
             isQuestionnaireReachableForSmartKind(
-                [cond(EnumQuestionnaireConditionKind.reportType, [
-                    'presentation',
-                ])],
+                [
+                    cond(EnumQuestionnaireConditionKind.reportType, [
+                        'presentation',
+                    ]),
+                ],
                 'presentation',
             ),
         ).toBe(true);
@@ -207,11 +209,7 @@ describe('выключатель анкет по типам события', () 
     it('анкету без условий по типу события выключатель не трогает', () => {
         expect(
             isQuestionnaireDisabledByEventTypes(
-                [
-                    cond(EnumQuestionnaireConditionKind.workStatus, [
-                        'success',
-                    ]),
-                ],
+                [cond(EnumQuestionnaireConditionKind.workStatus, ['success'])],
                 ['presentation', 'hot'],
             ),
         ).toBe(false);

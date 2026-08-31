@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { FlowBitrix } from '../../shared/side-flow';
+import { toMultiFieldEntryText } from '@lib/bitrix/consts/batch.consts';
 import { QuestionnaireAnswerPurpose } from '../../shared/questionnaire-answers';
 import { ZprFlowResult } from '../constants/zpr-flow.const';
 import { BxRow, ZprFlowRun } from '../types/zpr-flow-run.type';
@@ -78,12 +79,20 @@ export class ZprElementWriterService {
         fields_.setUf(
             fields,
             'ZPR_COMMENTS',
-            job.planComment ? [`${now} План: ${job.planComment}`] : null,
+            // Запись ленты — одна строка: multiple-поле рисует внутренние
+            // переносы подчёркиванием (см. toMultiFieldEntryText).
+            job.planComment
+                ? [toMultiFieldEntryText(`${now} План: ${job.planComment}`)]
+                : null,
         );
         fields_.setUf(fields, 'ZPR_NEXT_CALL_DATE', job.planDeadline);
         links.applyLinks(fields);
         links.applyParents(fields);
         links.applyClient(fields);
+        // Снимок клиента (плановая дата покупки) — и на ПЛАНЕ: звонок по
+        // решению и есть разговор о покупке, элемент обязан нести дату
+        // сразу (владелец 31.08). На закрытии снимок пишется своей веткой.
+        fields_.applySurvey(fields);
         // Ответы анкеты — последними: поля, которые заполняет сам поток,
         // к этому моменту уже стоят, и их не перезаписать.
         fields_.applyAnswers(fields, purposes);
@@ -129,9 +138,11 @@ export class ZprElementWriterService {
                     'портале — отчёт записан без смены стадии',
             );
         }
-        const reportEntry = job.reportComment
-            ? `${now} Отчёт: ${job.reportComment}`
-            : `${now} Отчёт: ${job.isResult ? 'состоялся' : 'не состоялся'}`;
+        const reportEntry = toMultiFieldEntryText(
+            job.reportComment
+                ? `${now} Отчёт: ${job.reportComment}`
+                : `${now} Отчёт: ${job.isResult ? 'состоялся' : 'не состоялся'}`,
+        );
 
         if (open) {
             const openId = Number(open.id);

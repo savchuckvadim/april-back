@@ -4,6 +4,8 @@ import timezone from 'dayjs/plugin/timezone';
 import { EventReportContext } from '../services/context/event-report.context';
 import { DealFlowResult } from '../services/deal/event-report-deal-flow.service';
 import {
+    parseCreatedDealId,
+    resolveKpiRowRefs,
     SideFlowJobBuildInput,
     sideJobId,
 } from '../services/post-flow/side-flow-job.base';
@@ -180,6 +182,48 @@ describe('buildZprFlowJobs', () => {
         expect(jobs[0].planTaskId).toBeNull();
     });
 
+    it('плановая дата покупки со сделки уезжает снимком в оба джоба', () => {
+        const ctx = makeCtx(
+            {
+                currentTask: { eventType: 'hot', name: 'ООО Ромашка' },
+                report: {
+                    resultStatus: 'result',
+                    workStatus: { current: { code: 'inJob' } },
+                },
+                plan: {
+                    isPlanned: true,
+                    isActive: true,
+                    type: { current: { code: 'hot' } },
+                    name: 'Решение',
+                    deadline: '02.09.2026 10:00:00',
+                    responsibility: { ID: 12 },
+                },
+            },
+            {
+                currentBaseDeal: {
+                    ID: '101',
+                    UF_DEAL_PROGNOZ: '01.10.2026',
+                },
+            },
+        );
+        // Портал этого кейса знает поле op_sale_date_prognoz на сделке —
+        // фикстурный makePortal его не знает, дополняем слепок точечно.
+        Object.assign(ctx.portal as unknown as Record<string, unknown>, {
+            getEntityFieldByCode: (entity: string, code: string) =>
+                entity === 'deal' && code === 'op_sale_date_prognoz'
+                    ? { bitrixId: 'UF_DEAL_PROGNOZ' }
+                    : undefined,
+            getFieldBitrixId: (field: { bitrixId: string }) => field.bitrixId,
+        });
+
+        const jobs = buildZprFlowJobs(makeInput(ctx));
+
+        expect(jobs.map(job => job.survey)).toEqual([
+            { ZPR_SALE_DATE_PROGNOZ: '01.10.2026' },
+            { ZPR_SALE_DATE_PROGNOZ: '01.10.2026' },
+        ]);
+    });
+
     it('отказ (в т.ч. «не ЦА») закрывает звонок своей стадией', () => {
         const ctx = makeCtx({
             currentTask: { eventType: 'hot' },
@@ -337,5 +381,85 @@ describe('sideJobId', () => {
 
     it('без operationId (легаси-клиент) id не выдаёт — поведение прежнее', () => {
         expect(sideJobId(undefined, 'pres', 'report')).toBeUndefined();
+    });
+});
+
+describe('resolveKpiRowRefs / parseCreatedDealId', () => {
+    const CHUNK = (result: Record<string, unknown>) => ({ result }) as never;
+
+    it('строки раскладываются по назначению, id берётся из ответа батча', () => {
+        const refs = resolveKpiRowRefs(
+            [
+                {
+                    scenario: 'report',
+                    iblockId: 21,
+                    crmFieldId: 'PROPERTY_77',
+                    cmd: 'add_list_item_kpi_1_a',
+                },
+                {
+                    scenario: 'plan',
+                    iblockId: 22,
+                    crmFieldId: 'PROPERTY_88',
+                    cmd: 'add_list_item_history_1_a',
+                },
+                // Пара unplanned-презентации: план-половина — в план-строки.
+                {
+                    scenario: 'unplanned_presentation_plan',
+                    iblockId: 21,
+                    crmFieldId: 'PROPERTY_77',
+                    cmd: 'add_list_item_kpi_1_b',
+                },
+                // «Состоялась» — отчётная строка.
+                {
+                    scenario: 'presentation_done',
+                    iblockId: 21,
+                    crmFieldId: 'PROPERTY_77',
+                    cmd: 'add_list_item_kpi_1_c',
+                },
+            ],
+            [
+                CHUNK({
+                    add_list_item_kpi_1_a: 900,
+                    add_list_item_history_1_a: '901',
+                    add_list_item_kpi_1_b: 902,
+                    add_list_item_kpi_1_c: 903,
+                }),
+            ],
+        );
+
+        expect(refs.report.map(row => row.elementId)).toEqual([900, 903]);
+        expect(refs.plan.map(row => row.elementId)).toEqual([901, 902]);
+    });
+
+    it('строки без crm-поля, с чужим сценарием и без ответа — выпадают молча', () => {
+        const refs = resolveKpiRowRefs(
+            [
+                {
+                    scenario: 'report',
+                    iblockId: 21,
+                    crmFieldId: null,
+                    cmd: 'a',
+                },
+                { scenario: 'final', iblockId: 21, crmFieldId: 'P', cmd: 'b' },
+                {
+                    scenario: 'report',
+                    iblockId: 21,
+                    crmFieldId: 'P',
+                    cmd: 'нет_в_ответе',
+                },
+            ],
+            [CHUNK({ a: 1, b: 2 })],
+        );
+
+        expect(refs.report).toEqual([]);
+        expect(refs.plan).toEqual([]);
+    });
+
+    it('parseCreatedDealId: crm.deal.add отдаёт голое число либо строку', () => {
+        expect(parseCreatedDealId(25400)).toBe(25400);
+        expect(parseCreatedDealId('25400')).toBe(25400);
+        expect(parseCreatedDealId(undefined)).toBeNull();
+        expect(parseCreatedDealId('мусор')).toBeNull();
+        expect(parseCreatedDealId(0)).toBeNull();
     });
 });

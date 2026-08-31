@@ -81,9 +81,7 @@ const readNumber = (value: unknown): number | null =>
  * Разбор одного элемента списка. Вариант без подписи бессмыслен: сравнивать
  * в нём нечего, и в слепок он не попадает.
  */
-const readOption = (
-    value: unknown,
-): QuestionnaireFieldMirrorOption | null => {
+const readOption = (value: unknown): QuestionnaireFieldMirrorOption | null => {
     if (!isRecord(value)) return null;
     const title = readText(value.title);
     if (title === null) return null;

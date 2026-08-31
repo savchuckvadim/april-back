@@ -113,7 +113,7 @@ export class EventReportUseCase {
         taskFlow.queue(ctx, deals);
         // await: дедуп финалов/уникальных читает существующие элементы
         // прямыми вызовами (batch-аккумулятор не трогается — см. flowDedup).
-        await kpiFlow.queue(ctx, deals, buffer);
+        const kpiRows = await kpiFlow.queue(ctx, deals, buffer);
         /*
          * Список «ОП Презентации» НЕ пишем: его ведёт легаси-хук
          * (Laravel), и там он работает — решение владельца 27.08.
@@ -196,6 +196,7 @@ export class EventReportUseCase {
                 ctx,
                 deals,
                 batchResults,
+                kpiRows,
                 socketId,
             })
             .catch(error =>

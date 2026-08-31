@@ -16,13 +16,19 @@ import {
  */
 const OPERATION_ID = 'e1c1a1f0-0000-4000-8000-000000000001';
 
-/** Портал: детальные «5К» — только на лиде, сводные — лид+сделка. */
-const makePortal = () => ({
+/**
+ * Портал: детальные «5К» — на лиде (и, по опции, на сделке — порталы,
+ * где админ установил девять полей и в сделку), сводные — лид+сделка.
+ */
+const makePortal = (over: { dealDetailed?: boolean } = {}) => ({
     getEntityFieldByCode: (entity: string, code: string) => {
         const detailed = code.startsWith('op_5k_');
         const summary =
             code === 'op_presentation_xvost' || code === 'op_presentation_5k';
-        if (detailed && entity === 'lead') {
+        if (
+            detailed &&
+            (entity === 'lead' || (over.dealDetailed && entity === 'deal'))
+        ) {
             return { bitrixId: code.toUpperCase(), items: [] };
         }
         if (summary && (entity === 'lead' || entity === 'deal')) {
@@ -60,7 +66,13 @@ const makeRedis = (input: { fails?: boolean } = {}) => {
     return { store, client };
 };
 
-const makeDeps = (input: { redisHit?: boolean; redisFails?: boolean } = {}) => {
+const makeDeps = (
+    input: {
+        redisHit?: boolean;
+        redisFails?: boolean;
+        dealDetailed?: boolean;
+    } = {},
+) => {
     const updates: {
         entity: string;
         id: number;
@@ -81,7 +93,7 @@ const makeDeps = (input: { redisHit?: boolean; redisFails?: boolean } = {}) => {
     };
     const pbxInit = jest.fn().mockResolvedValue({
         bitrix,
-        PortalModel: makePortal(),
+        PortalModel: makePortal({ dealDetailed: input.dealDetailed }),
     });
     const redis = makeRedis({ fails: input.redisFails });
     if (input.redisHit) {
@@ -151,6 +163,23 @@ describe('PresentationSurveyEndpointService', () => {
         expect(updates.some(u => u.entity === 'company')).toBe(false);
         expect(result.warnings.join(' ')).toContain('company');
         expect(sendBatch).toHaveBeenCalledTimes(1);
+    });
+
+    it('детальные «5К» установлены на сделке → сделка получает их зеркально лиду', async () => {
+        // Решение владельца 31.08: legacy PHP писал девять детальных и в
+        // сделку, новый бэк писал только сводные — карточка pres-сделки
+        // показывала девять вечно пустых полей.
+        const { service, updates } = makeDeps({ dealDetailed: true });
+
+        await service.submit(dto());
+
+        const deal = updates.find(u => u.entity === 'deal')!;
+        expect(deal.fields).toEqual({
+            UF_CRM_OP_5K_CLIENT_WHAT: 'Хочет замену Консультанта',
+            UF_CRM_OP_5K_CRITERI: 'Цена и обновления',
+            UF_CRM_OP_PRESENTATION_XVOST: 'Дожать по хвосту',
+            UF_CRM_OP_PRESENTATION_5K: 'Сводка 5К',
+        });
     });
 
     /*
@@ -353,9 +382,29 @@ describe('Rendezvous: unplanned-сигнал hook ↔ опросник', () => {
         expect(result.matched).toBe(true);
         expect(result.pending).toBe(false);
         expect(result.updated).toEqual(['deal_900']);
-        // ТОЛЬКО сводные — детальные «5К» на unplanned не едут.
+        // Портал без детальных «5К» на сделке → едут только сводные
+        // (setField молча пропускает неустановленные).
         const unplanned = deps.updates.find(u => u.id === 900)!;
         expect(unplanned.fields).toEqual({
+            UF_CRM_OP_PRESENTATION_XVOST: 'Дожать по хвосту',
+            UF_CRM_OP_PRESENTATION_5K: 'Сводка 5К',
+        });
+    });
+
+    it('unplanned-сделка получает детальные «5К», если они установлены на сделке', async () => {
+        // Асимметрия «обычная сделка с девятью полями, unplanned с двумя»
+        // была бы необъяснима для менеджера: rendezvous возит полный
+        // состав (кэш старого формата без fiveK читается как «не было»).
+        const deps = makeDeps({ dealDetailed: true });
+        await deps.service.submit(dto());
+        deps.updates.length = 0;
+
+        await deps.service.signal(signalDto());
+
+        const unplanned = deps.updates.find(u => u.id === 900)!;
+        expect(unplanned.fields).toEqual({
+            UF_CRM_OP_5K_CLIENT_WHAT: 'Хочет замену Консультанта',
+            UF_CRM_OP_5K_CRITERI: 'Цена и обновления',
             UF_CRM_OP_PRESENTATION_XVOST: 'Дожать по хвосту',
             UF_CRM_OP_PRESENTATION_5K: 'Сводка 5К',
         });

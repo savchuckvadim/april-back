@@ -242,6 +242,17 @@ export const ZPR_SMART_FIELDS = [
         isMultiple: true,
     },
 
+    // === Снимок клиента на момент звонка (карта ZPR_SMART_SURVEY_MIRROR) ===
+    {
+        // Плановая дата покупки — требование владельца 31.08: элемент ЗПР
+        // обязан нести её ВСЕГДА (звонок по решению и есть разговор о
+        // покупке). Значение-истина живёт на сделке/компании
+        // (op_sale_date_prognoz), сюда — снимок на момент звонка.
+        code: 'ZPR_SALE_DATE_PROGNOZ',
+        name: 'Плановая дата покупки',
+        type: 'date',
+    },
+
     // === Зеркала истории/дат из основной сделки (op_mhistory-контур) ===
     {
         code: 'ZPR_MHISTORY',
@@ -263,6 +274,32 @@ export const ZPR_SMART_FIELDS = [
 
 /** Код поля смарта ЗПР — все записи flow типизированы этим union. */
 export type ZprSmartFieldCode = (typeof ZPR_SMART_FIELDS)[number]['code'];
+
+/**
+ * Карта снимка клиента для элемента ЗПР: поле сущности → поле смарта
+ * (зеркало PRESENTATION_SMART_SURVEY_MIRROR, тот же формат записи).
+ *
+ * `from` — где живёт значение-истина; порядок записей на один target —
+ * порядок фолбэка (первое непустое побеждает): плановая дата покупки
+ * лежит на СДЕЛКЕ и на КОМПАНИИ (на лиде поля нет — см. реестр
+ * op_sale_date_prognoz), сделка точнее.
+ */
+export const ZPR_SMART_SURVEY_MIRROR = [
+    {
+        source: 'op_sale_date_prognoz',
+        target: 'ZPR_SALE_DATE_PROGNOZ',
+        from: 'deal',
+    },
+    {
+        source: 'op_sale_date_prognoz',
+        target: 'ZPR_SALE_DATE_PROGNOZ',
+        from: 'company',
+    },
+] as const satisfies ReadonlyArray<{
+    source: string;
+    target: ZprSmartFieldCode;
+    from: 'deal' | 'company' | 'lead';
+}>;
 
 /**
  * Определение поля по коду. Нужно потоку, чтобы знать НАСТРОЙКИ поля при

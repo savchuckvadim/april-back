@@ -1227,11 +1227,7 @@ export class PortalQuestionnairesService {
         }
 
         const smartId = draft.smartId ?? null;
-        if (
-            smartId === null ||
-            !Number.isInteger(smartId) ||
-            smartId <= 0
-        ) {
+        if (smartId === null || !Number.isInteger(smartId) || smartId <= 0) {
             throw new BadRequestException(
                 `${where}: не указан смарт, из которого выбрано поле ` +
                     '(smartId из GET /questionnaire-fields/sources) — без ' +

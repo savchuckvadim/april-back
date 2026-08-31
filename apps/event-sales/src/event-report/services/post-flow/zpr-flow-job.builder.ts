@@ -1,7 +1,12 @@
 import { EnumEventSmartFlow, findSmartKindByFlow } from '@lib/portal-lib/pbx';
 import { ZprFlowJobData } from '../../../zpr-flow/dto/zpr-flow-job.dto';
 import {
+    buildZprSurveySnapshot,
+    ZprSurveySnapshot,
+} from '../../../zpr-flow/lib/zpr-survey-snapshot';
+import {
     buildSideFlowJobBase,
+    logger,
     buildSmartAnswers,
     coveredAnswerPurposes,
     SideFlowJobBuildInput,
@@ -52,6 +57,27 @@ export function buildZprFlowJobs(
     );
     if (!kinds.length) return [];
 
+    // Снимок клиента (плановая дата покупки) — из УЖЕ загруженных
+    // сущностей контекста, без лишних вызовов Bitrix. Один на оба джоба:
+    // элемент ЗПР обязан нести дату и на плане, и на закрытии
+    // (требование владельца 31.08).
+    //
+    // Снимок — украшение, а не инвариант: сломанная модель полей портала
+    // не имеет права отменить сами джобы (батч уже ушёл, отчёт состоялся).
+    let survey: ZprSurveySnapshot = {};
+    try {
+        survey = buildZprSurveySnapshot({
+            portal: ctx.portal,
+            baseDeal: ctx.currentBaseDeal as Record<string, unknown> | null,
+            company: ctx.company as Record<string, unknown> | null,
+        });
+    } catch (error) {
+        logger.warn(
+            `[zpr-flow] ${ctx.domain}: снимок клиента не собран — ` +
+                `джобы едут без него: ${(error as Error).message}`,
+        );
+    }
+
     const base = buildSideFlowJobBase(input, answers);
     return kinds.map(
         kind =>
@@ -61,6 +87,12 @@ export function buildZprFlowJobs(
                 // Отказ (в т.ч. «не ЦА») закрывает звонок своей стадией.
                 isFail: ctx.isFail || ctx.isNotCa,
                 isMove: kind === 'report' && isMove ? true : undefined,
+                survey: Object.keys(survey).length ? survey : undefined,
+                // Строки KPI/History своего назначения: элемент допишет в
+                // их crm-поле ссылку на себя (T{hex}_{id}).
+                kpiRows: input.kpiRowRefs?.[kind]?.length
+                    ? input.kpiRowRefs[kind]
+                    : undefined,
             }) satisfies ZprFlowJobData,
     );
 }

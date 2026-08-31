@@ -7,6 +7,7 @@ import { PbxZprSmartService } from '@lib/portal-lib/pbx/pbx-zpr-smart';
 import { PbxSmartItemFieldsService } from '@lib/portal-lib/pbx/smart-item-fields';
 import {
     SideFlowBaseDealResolver,
+    SideFlowKpiRowBinderService,
     SideFlowName,
     SideFlowTaskBinderService,
 } from '../../shared/side-flow';
@@ -52,6 +53,7 @@ export class ZprFlowUseCase {
         // очередью презентаций: правило одно, чиниться должно один раз.
         private readonly taskBinder: SideFlowTaskBinderService,
         private readonly baseDeal: SideFlowBaseDealResolver,
+        private readonly kpiRowBinder: SideFlowKpiRowBinderService,
     ) {}
 
     async handle(job: ZprFlowJobData): Promise<ZprFlowResult> {
@@ -102,6 +104,20 @@ export class ZprFlowUseCase {
                 : await writer.closeReported(run);
 
         const taskId = await this.bindToTask(run, result);
+
+        // Обратная ссылка в строки KPI/History этого отчёта: плановый
+        // элемент — в план-строки, отчётный — в отчётные (координатор уже
+        // разложил их по назначению в job.kpiRows). Ошибки не роняют джоб.
+        if (result.elementId && resolved.kpiRows?.length) {
+            await this.kpiRowBinder.append(
+                bitrix,
+                resolved.kpiRows,
+                info.entityTypeId,
+                result.elementId,
+                FLOW,
+            );
+        }
+
         this.logger.log(
             `[zpr-flow] ${resolved.domain}: ${resolved.kind} → ${result.action}`,
             {

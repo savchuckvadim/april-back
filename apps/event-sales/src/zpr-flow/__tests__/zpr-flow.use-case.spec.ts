@@ -9,6 +9,7 @@ import {
 } from '@lib/portal-lib/pbx/smart-item-fields';
 import {
     SideFlowBaseDealResolver,
+    SideFlowKpiRowBinderService,
     SideFlowTaskBinderService,
 } from '../../shared/side-flow';
 import { ZprFlowUseCase } from '../use-cases/zpr-flow.use-case';
@@ -70,12 +71,17 @@ const makeHarness = (over?: {
     jest.spyOn(baseDeal['logger'], 'log').mockImplementation(() => undefined);
     const taskBinder = new SideFlowTaskBinderService();
     const bind = jest.spyOn(taskBinder, 'bind');
+    const kpiRowBinder = new SideFlowKpiRowBinderService();
+    const appendKpiRows = jest
+        .spyOn(kpiRowBinder, 'append')
+        .mockResolvedValue(undefined);
     const useCase = new ZprFlowUseCase(
         pbx,
         zprSmart,
         smartItemFields,
         taskBinder,
         baseDeal,
+        kpiRowBinder,
     );
 
     // Итоговый лог прогона перехватываем: по нему же проверяется, что
@@ -88,7 +94,7 @@ const makeHarness = (over?: {
     );
     jest.spyOn(useCase['logger'], 'debug').mockImplementation(() => undefined);
 
-    return { useCase, itemFieldsCalls, logs, bind, ...spy };
+    return { useCase, itemFieldsCalls, logs, bind, appendKpiRows, ...spy };
 };
 
 /** Открытый элемент клиента, найденный по базовой сделке. */
@@ -284,6 +290,31 @@ describe('ZprFlowUseCase', () => {
      * вернуть безликий `[side-flow]`, по которому уже не найти, чей отчёт
      * не привязал элемент.
      */
+    it('строки KPI из джоба уезжают биндеру строк вместе с id элемента', async () => {
+        const { useCase, appendKpiRows } = makeHarness();
+        const rows = [
+            { iblockId: 21, elementId: 900, crmFieldId: 'PROPERTY_77' },
+        ];
+
+        await useCase.handle(job({ kind: 'plan', kpiRows: rows }));
+
+        expect(appendKpiRows).toHaveBeenCalledTimes(1);
+        const [, passedRows, entityTypeId, elementId] =
+            appendKpiRows.mock.calls[0];
+        expect(passedRows).toEqual(rows);
+        expect(entityTypeId).toBe(1038);
+        // Созданный планом элемент — 501 (фикстура item.add).
+        expect(elementId).toBe(501);
+    });
+
+    it('джоб без kpiRows биндер строк не зовёт', async () => {
+        const { useCase, appendKpiRows } = makeHarness();
+
+        await useCase.handle(job({ kind: 'plan' }));
+
+        expect(appendKpiRows).not.toHaveBeenCalled();
+    });
+
     it('биндеру передаётся имя потока — им подписан лог привязки', async () => {
         const { useCase, bind } = makeHarness({ openItems: [openItem] });
 

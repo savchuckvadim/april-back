@@ -37,6 +37,7 @@ export const makeInfo = (over?: Partial<ZprSmartInfo>): ZprSmartInfo => ({
         ZPR_LAST_CALL_DATE: 'ufCrm7LastCall',
         ZPR_NEXT_CALL_DATE: 'ufCrm7NextCall',
         ZPR_MOVE_COUNT: 'ufCrm7MoveCount',
+        ZPR_SALE_DATE_PROGNOZ: 'ufCrm7SaleDatePrognoz',
     },
     enumItems: {},
     stageIdByCode: {
