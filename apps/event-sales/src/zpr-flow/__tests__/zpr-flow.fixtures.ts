@@ -142,6 +142,13 @@ export const makeBitrix = (over?: {
     openItems?: BxRow[];
     /** Открытые сделки основной воронки компании (для дотяжки baseDealId). */
     companyDeals?: Array<{ ID: string; ASSIGNED_BY_ID?: string }>;
+    /**
+     * Элементы по id для `item.get` — путь резолва от ПРИВЯЗКИ ЗАДАЧИ.
+     * Ключа нет — элемент «не найден» (result без item), как в живом API.
+     */
+    itemsById?: Record<number, BxRow>;
+    /** `item.get` падает — сетевая ошибка чтения указателя задачи. */
+    itemGetError?: Error;
 }): BitrixSpy => {
     const added: BxRow[] = [];
     const updatedItems: Array<{ id: number; fields: BxRow }> = [];
@@ -155,6 +162,13 @@ export const makeBitrix = (over?: {
                 return Promise.resolve({
                     result: { item: { id: 500 + added.length } },
                 });
+            },
+            get: (id: number | string) => {
+                if (over?.itemGetError) {
+                    return Promise.reject(over.itemGetError);
+                }
+                const item = over?.itemsById?.[Number(id)];
+                return Promise.resolve({ result: item ? { item } : {} });
             },
             listAll: () => Promise.resolve(over?.openItems ?? []),
             update: (id: number, _typeId: never, fields: BxRow) => {

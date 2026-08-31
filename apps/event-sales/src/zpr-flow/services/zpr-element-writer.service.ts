@@ -4,19 +4,31 @@ import { FlowBitrix } from '../../shared/side-flow';
 import { QuestionnaireAnswerPurpose } from '../../shared/questionnaire-answers';
 import { ZprFlowResult } from '../constants/zpr-flow.const';
 import { BxRow, ZprFlowRun } from '../types/zpr-flow-run.type';
-import {
-    itemIdOf,
-    ZprElementFieldsBuilder,
-} from './zpr-element-fields.builder';
+import { ZprElementFieldsBuilder } from './zpr-element-fields.builder';
+import { ZprElementLinksBuilder } from './zpr-element-links.builder';
+import { ZprStageResolver } from './zpr-stage.resolver';
 import { ZprElementLookupService } from './zpr-element-lookup.service';
 import { ZprBacklinkService } from './zpr-backlink.service';
 
 /** Лента комментариев элемента не растёт бесконечно. */
 const COMMENTS_LIMIT = 50;
 
+/** id созданного элемента из ответа `crm.item.add`; иначе null. */
+export function itemIdOf(response: unknown): number | null {
+    const item = (response as { result?: { item?: { id?: unknown } } })?.result
+        ?.item;
+    const id = Number(item?.id);
+    return Number.isFinite(id) && id > 0 ? id : null;
+}
+
 /**
- * Запись элемента ЗПР: план → создать, отчёт → закрыть открытый (или
+ * ЗАПИСЬ элемента ЗПР: план → создать, отчёт → закрыть открытый (или
  * создать спонтанный), перенос → сдвинуть открытый в «Ожидание».
+ *
+ * Ремонтируешь «создался/закрылся не так» — сцены здесь, а реквизит по
+ * специализированным модулям: поля — zpr-element-fields.builder, связи —
+ * zpr-element-links.builder, стадии — zpr-stage.resolver, выбор «какой
+ * элемент тот самый» — zpr-element-lookup.
  *
  * История комментариев — требование владельца: план-коммент при создании,
  * отчёт-коммент при закрытии, всё дублируется в накопительную ленту
@@ -52,26 +64,29 @@ export class ZprElementWriterService {
         purposes: readonly QuestionnaireAnswerPurpose[],
     ): Promise<ZprFlowResult> {
         const { job, now } = run;
-        const builder = new ZprElementFieldsBuilder(run);
+        const fields_ = new ZprElementFieldsBuilder(run);
+        const links = new ZprElementLinksBuilder(run);
+        const stages = new ZprStageResolver(run);
         const fields: BxRow = {
             title: `ЗПР: ${job.planName || job.planDeadline || now}`,
-            stageId: builder.stageId('zpr_plan'),
+            stageId: stages.stageId('zpr_plan'),
             assignedById: job.responsibleId,
         };
-        builder.setUf(fields, 'ZPR_PLAN_DATE', job.planDeadline);
-        builder.setUf(fields, 'ZPR_RESPONSIBLE', job.responsibleId);
-        builder.setUf(fields, 'ZPR_PLAN_COMMENT', job.planComment);
-        builder.setUf(
+        fields_.setUf(fields, 'ZPR_PLAN_DATE', job.planDeadline);
+        fields_.setUf(fields, 'ZPR_RESPONSIBLE', job.responsibleId);
+        fields_.setUf(fields, 'ZPR_PLAN_COMMENT', job.planComment);
+        fields_.setUf(
             fields,
             'ZPR_COMMENTS',
             job.planComment ? [`${now} План: ${job.planComment}`] : null,
         );
-        builder.setUf(fields, 'ZPR_NEXT_CALL_DATE', job.planDeadline);
-        builder.applyLinks(fields);
-        builder.applyParents(fields);
+        fields_.setUf(fields, 'ZPR_NEXT_CALL_DATE', job.planDeadline);
+        links.applyLinks(fields);
+        links.applyParents(fields);
+        links.applyClient(fields);
         // Ответы анкеты — последними: поля, которые заполняет сам поток,
         // к этому моменту уже стоят, и их не перезаписать.
-        builder.applyAnswers(fields, purposes);
+        fields_.applyAnswers(fields, purposes);
 
         const elementId = await this.add(run, fields);
         this.logger.log(
@@ -87,7 +102,9 @@ export class ZprElementWriterService {
      */
     async closeReported(run: ZprFlowRun): Promise<ZprFlowResult> {
         const { job, now } = run;
-        const builder = new ZprElementFieldsBuilder(run);
+        const fields_ = new ZprElementFieldsBuilder(run);
+        const links = new ZprElementLinksBuilder(run);
+        const stages = new ZprStageResolver(run);
         const open = await this.lookup.findOpenElement(run.info, job);
 
         // Перенос: элемент живёт дальше в «Ожидании», задача та же —
@@ -98,10 +115,10 @@ export class ZprElementWriterService {
             // новым планом — значит несёт обе анкеты: отчётные ответы
             // иначе исчезли бы, другого элемента у них нет.
             if (!open) return this.createPlanned(run, ['plan', 'report']);
-            return this.moveOpen(run, builder, open);
+            return this.moveOpen(run, fields_, stages, open);
         }
 
-        const targetStage = builder.resolveClosingStage();
+        const targetStage = stages.resolveClosingStage();
         // Закрывающей стадии нет на портале (смарт установлен не полностью).
         // Отчёт менеджера при этом терять нельзя: пишем всё остальное, а
         // стадию не трогаем — элемент останется открытым, и это видно в
@@ -119,19 +136,19 @@ export class ZprElementWriterService {
         if (open) {
             const openId = Number(open.id);
             const fields: BxRow = targetStage ? { stageId: targetStage } : {};
-            builder.setUf(fields, 'ZPR_DONE_DATE', now);
-            builder.setUf(fields, 'ZPR_LAST_CALL_DATE', now);
-            builder.setUf(fields, 'ZPR_REPORT_COMMENT', job.reportComment);
-            builder.setUf(
+            fields_.setUf(fields, 'ZPR_DONE_DATE', now);
+            fields_.setUf(fields, 'ZPR_LAST_CALL_DATE', now);
+            fields_.setUf(fields, 'ZPR_REPORT_COMMENT', job.reportComment);
+            fields_.setUf(
                 fields,
                 'ZPR_COMMENTS',
-                [reportEntry, ...this.previousComments(builder, open)].slice(
+                [reportEntry, ...this.previousComments(fields_, open)].slice(
                     0,
                     COMMENTS_LIMIT,
                 ),
             );
-            builder.applySurvey(fields);
-            builder.applyAnswers(fields, ['report']);
+            fields_.applySurvey(fields);
+            fields_.applyAnswers(fields, ['report']);
             await this.update(run, openId, fields);
             this.logger.log(
                 `[zpr-flow] ${job.domain}: отчёт → элемент ${openId} закрыт ` +
@@ -149,18 +166,19 @@ export class ZprElementWriterService {
             ...(targetStage ? { stageId: targetStage } : {}),
             assignedById: job.responsibleId,
         };
-        builder.setUf(fields, 'ZPR_IS_SPONTANEOUS', 'Y');
-        builder.setUf(fields, 'ZPR_DONE_DATE', now);
-        builder.setUf(fields, 'ZPR_LAST_CALL_DATE', now);
-        builder.setUf(fields, 'ZPR_RESPONSIBLE', job.responsibleId);
-        builder.setUf(fields, 'ZPR_REPORT_COMMENT', job.reportComment);
-        builder.setUf(fields, 'ZPR_COMMENTS', [reportEntry]);
-        builder.applyLinks(fields);
-        builder.applyParents(fields);
-        builder.applySurvey(fields);
+        fields_.setUf(fields, 'ZPR_IS_SPONTANEOUS', 'Y');
+        fields_.setUf(fields, 'ZPR_DONE_DATE', now);
+        fields_.setUf(fields, 'ZPR_LAST_CALL_DATE', now);
+        fields_.setUf(fields, 'ZPR_RESPONSIBLE', job.responsibleId);
+        fields_.setUf(fields, 'ZPR_REPORT_COMMENT', job.reportComment);
+        fields_.setUf(fields, 'ZPR_COMMENTS', [reportEntry]);
+        links.applyLinks(fields);
+        links.applyParents(fields);
+        links.applyClient(fields);
+        fields_.applySurvey(fields);
         // Спонтанный ЗПР: элемента раньше не существовало, он рождается
         // прямо здесь и сразу с ответами анкеты.
-        builder.applyAnswers(fields, ['report']);
+        fields_.applyAnswers(fields, ['report']);
 
         const elementId = await this.add(run, fields);
         this.logger.log(
@@ -172,27 +190,28 @@ export class ZprElementWriterService {
     /** Перенос: открытый элемент сдвигается в «Ожидание», не закрываясь. */
     private async moveOpen(
         run: ZprFlowRun,
-        builder: ZprElementFieldsBuilder,
+        fields_: ZprElementFieldsBuilder,
+        stages: ZprStageResolver,
         open: BxRow,
     ): Promise<ZprFlowResult> {
         const { job, now } = run;
         const openId = Number(open.id);
         const fields: BxRow = {
-            stageId: builder.stageId('zpr_pending'),
+            stageId: stages.stageId('zpr_pending'),
         };
-        builder.setUf(fields, 'ZPR_PLAN_DATE', job.planDeadline);
-        builder.setUf(fields, 'ZPR_NEXT_CALL_DATE', job.planDeadline);
-        const moveKey = builder.ufKey('ZPR_MOVE_COUNT');
+        fields_.setUf(fields, 'ZPR_PLAN_DATE', job.planDeadline);
+        fields_.setUf(fields, 'ZPR_NEXT_CALL_DATE', job.planDeadline);
+        const moveKey = fields_.ufKey('ZPR_MOVE_COUNT');
         if (moveKey) {
             fields[moveKey] = (Number(open[moveKey]) || 0) + 1;
         }
         const moveEntry =
             `${now} Перенос: ${job.planName || ''} → ` +
             `${job.planDeadline ?? '?'}`;
-        builder.setUf(
+        fields_.setUf(
             fields,
             'ZPR_COMMENTS',
-            [moveEntry.trim(), ...this.previousComments(builder, open)].slice(
+            [moveEntry.trim(), ...this.previousComments(fields_, open)].slice(
                 0,
                 COMMENTS_LIMIT,
             ),
@@ -201,7 +220,7 @@ export class ZprElementWriterService {
         // а элемент остаётся открытым, и ответы в нём честны. Анкета
         // ПЛАНА — сюда же: план-джоба у переноса нет вовсе, новым
         // планом стал этот самый элемент.
-        builder.applyAnswers(fields, ['report', 'plan']);
+        fields_.applyAnswers(fields, ['report', 'plan']);
         await this.update(run, openId, fields);
         this.logger.log(
             `[zpr-flow] ${job.domain}: перенос → элемент ${openId} в ожидании`,
@@ -211,10 +230,10 @@ export class ZprElementWriterService {
 
     /** Накопленная лента элемента; поля нет или пусто — пустой список. */
     private previousComments(
-        builder: ZprElementFieldsBuilder,
+        fields_: ZprElementFieldsBuilder,
         open: BxRow,
     ): string[] {
-        const key = builder.ufKey('ZPR_COMMENTS');
+        const key = fields_.ufKey('ZPR_COMMENTS');
         const raw = key ? open[key] : null;
         return Array.isArray(raw) ? raw.map(String) : [];
     }

@@ -5,13 +5,13 @@ import { WsModule } from '@/core/ws/ws.module';
 import { PbxPresentationSmartModule } from '@lib/portal-lib/pbx/pbx-presentation-smart/pbx-presentation-smart.module';
 import { PbxSmartItemFieldsModule } from '@lib/portal-lib/pbx/smart-item-fields';
 import { SideFlowModule } from '../shared/side-flow';
-import { PresentationFlowService } from './presentation-flow.service';
+import { PresentationFlowUseCase } from './use-cases/presentation-flow.use-case';
 import { PresentationFlowProcessor } from './presentation-flow.processor';
 
 /**
  * Сайд-flow презентаций: отдельная очередь, свой воркер. Основной
  * event-report только ставит джобы (QueueDispatcherService) — см.
- * presentation-flow.service. Сделки «ОП Презентации» продолжают работать
+ * use-cases/presentation-flow.use-case. Сделки «ОП Презентации» продолжают работать
  * как раньше, смарт живёт параллельно.
  */
 @Module({
@@ -26,6 +26,6 @@ import { PresentationFlowProcessor } from './presentation-flow.processor';
         // элемента к задаче (UF_CRM_TASK) и дотяжка базовой сделки.
         SideFlowModule,
     ],
-    providers: [PresentationFlowService, PresentationFlowProcessor],
+    providers: [PresentationFlowUseCase, PresentationFlowProcessor],
 })
 export class PresentationFlowModule {}

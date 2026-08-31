@@ -173,7 +173,7 @@ describe('ZprFlowUseCase', () => {
 
         expect(result.action).toBe('created');
         // Свежая (максимальный id) открытая сделка основной воронки.
-        expect(added[0].ufCrm7BaseDeal).toEqual(['D_555']);
+        expect(added[0].ufCrm7BaseDeal).toBe(555);
     });
 
     it('дотяжка: своя сделка предпочитается чужой даже с меньшим id', async () => {
@@ -187,7 +187,7 @@ describe('ZprFlowUseCase', () => {
 
         await useCase.handle(job({ baseDealId: null }));
 
-        expect(added[0].ufCrm7BaseDeal).toEqual(['D_321']);
+        expect(added[0].ufCrm7BaseDeal).toBe(321);
     });
 
     it('дотяжка: только чужие открытые — сделка не подхватывается вовсе', async () => {
@@ -203,7 +203,7 @@ describe('ZprFlowUseCase', () => {
         // Честная деградация: элемент живёт на компании/лиде, чужая сделка
         // не трогается (правило владельца 25.08).
         expect(added[0].ufCrm7BaseDeal).toBeUndefined();
-        expect(added[0].ufCrm7Company).toEqual(['CO_431']);
+        expect(added[0].ufCrm7Company).toBe(431);
     });
 
     it('дотяжка не нашла сделку — элемент честно живёт на компании/лиде', async () => {
@@ -212,7 +212,7 @@ describe('ZprFlowUseCase', () => {
         await useCase.handle(job({ baseDealId: null }));
 
         expect(added[0].ufCrm7BaseDeal).toBeUndefined();
-        expect(added[0].ufCrm7Company).toEqual(['CO_431']);
+        expect(added[0].ufCrm7Company).toBe(431);
     });
 
     // ───────────────────── привязка элемента к задаче ─────────────────

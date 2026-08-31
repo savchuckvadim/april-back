@@ -75,6 +75,7 @@ export interface SideFlowJobBase {
     responsibleId: number;
     taskId?: number | null;
     planTaskId?: number | null;
+    taskCrmBindings?: string[];
     planDeadline: string | null;
     planName: string | null;
     planComment: string | null;
@@ -172,6 +173,23 @@ export function sideJobId(
  * use-case, и любая правка (новое поле, новый источник id) требовала
  * помнить про вторую копию.
  */
+/**
+ * Сырые привязки UF_CRM_TASK текущей задачи — как их прислал фронт.
+ *
+ * tasks.* отдаёт camelCase (`ufCrmTask`), легаси-формы — UPPER; терпим оба.
+ * Нестроковые значения отбрасываем: дальше эти строки парсит
+ * `parseSmartElementIdsFromTaskBindings`, и мусор ему не нужен.
+ */
+function readTaskCrmBindings(currentTask: unknown): string[] | undefined {
+    const task = currentTask as Record<string, unknown> | null | undefined;
+    const raw = task?.ufCrmTask ?? task?.UF_CRM_TASK;
+    if (!Array.isArray(raw)) return undefined;
+    const bindings = raw.filter(
+        (value): value is string => typeof value === 'string',
+    );
+    return bindings.length ? bindings : undefined;
+}
+
 export function buildSideFlowJobBase(
     input: SideFlowJobBuildInput,
     answers: QuestionnaireSmartAnswer[],
@@ -206,6 +224,11 @@ export function buildSideFlowJobBase(
         // Задача, ПО КОТОРОЙ отчитываемся: элемент привяжется к ней в
         // UF_CRM_TASK (`T{hex}_{id}`) по завершении джоба.
         taskId: Number(ctx.currentTask?.id) || null,
+        // Её же привязки — точный указатель, КАКОЙ элемент смарта закрывать:
+        // у клиента может быть несколько запланированных звонков, и искать
+        // «свежий открытый по клиенту» — значит закрыть не тот (инцидент
+        // 31.08). Терпим оба регистра ключа: tasks.* отдаёт camelCase.
+        taskCrmBindings: readTaskCrmBindings(ctx.currentTask),
         // Задача, СОЗДАННАЯ этим отчётом: её id уже лежит в ответе батча,
         // поэтому плановый элемент получает привязку сразу, а не «когда-нибудь
         // при своём закрытии следующим отчётом».

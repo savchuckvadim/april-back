@@ -5,7 +5,7 @@ import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { WsService } from '@/core/ws';
 import { SideFlowGuardService } from '../shared/side-flow';
-import { PresentationFlowService } from './presentation-flow.service';
+import { PresentationFlowUseCase } from './use-cases/presentation-flow.use-case';
 import { PresentationFlowJobData } from './dto/presentation-flow-job.dto';
 import {
     PRESENTATION_FLOW_ACTIONS,
@@ -46,7 +46,7 @@ export class PresentationFlowProcessor {
     private readonly logger = new Logger(PresentationFlowProcessor.name);
 
     constructor(
-        private readonly service: PresentationFlowService,
+        private readonly service: PresentationFlowUseCase,
         private readonly ws: WsService,
         private readonly guard: SideFlowGuardService,
     ) {

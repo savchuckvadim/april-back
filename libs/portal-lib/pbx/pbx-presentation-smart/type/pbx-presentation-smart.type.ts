@@ -627,6 +627,16 @@ export const PRESENTATION_SMART_FIELDS = [
 export type PresentationSmartFieldCode =
     (typeof PRESENTATION_SMART_FIELDS)[number]['code'];
 
+/**
+ * Определение поля по коду. Нужно потоку, чтобы знать НАСТРОЙКИ поля при
+ * записи: формат значения crm-связи зависит от того, к скольким сущностям
+ * поле привязано и множественное ли оно (см. buildCrmLinkValue). Зеркало
+ * ZPR_FIELD_DEF_BY_CODE.
+ */
+export const PRESENTATION_FIELD_DEF_BY_CODE = Object.fromEntries(
+    PRESENTATION_SMART_FIELDS.map(field => [field.code, field]),
+) as Record<PresentationSmartFieldCode, PresentationSmartFieldDef>;
+
 // ---------------------------------------------------------------------------
 // Зеркало анкеты: поле реестра pbx → поле смарта
 // ---------------------------------------------------------------------------

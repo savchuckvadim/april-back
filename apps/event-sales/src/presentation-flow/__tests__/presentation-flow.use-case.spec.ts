@@ -12,7 +12,7 @@ import {
     SideFlowName,
     SideFlowTaskBinderService,
 } from '../../shared/side-flow';
-import { PresentationFlowService } from '../presentation-flow.service';
+import { PresentationFlowUseCase } from '../use-cases/presentation-flow.use-case';
 import { PresentationFlowJobData } from '../dto/presentation-flow-job.dto';
 import { PRESENTATION_OUTCOME } from '../lib/presentation-outcome';
 
@@ -198,6 +198,11 @@ const makeHarness = (over?: {
     companyDeals?: Array<{ ID: string; ASSIGNED_BY_ID?: string }>;
     /** null — живые поля прочитать не удалось. */
     itemFields?: SmartItemFields | null;
+    /**
+     * Элементы по id для `item.get` — путь резолва от ПРИВЯЗКИ ЗАДАЧИ.
+     * Ключа нет — элемент «не найден» (result без item), как в живом API.
+     */
+    itemsById?: Record<number, Record<string, unknown>>;
 }) => {
     const added: Array<Record<string, unknown>> = [];
     const updatedItems: Array<{ id: number; fields: Record<string, unknown> }> =
@@ -219,6 +224,10 @@ const makeHarness = (over?: {
                 return Promise.resolve({
                     result: { item: { id: 900 + added.length } },
                 });
+            },
+            get: (id: number | string) => {
+                const item = over?.itemsById?.[Number(id)];
+                return Promise.resolve({ result: item ? { item } : {} });
             },
             // listAll (не list!): сервис обязан листать ВСЕ открытые элементы
             // портала, а не первую страницу из 50 — контракт фиксируется
@@ -317,7 +326,7 @@ const makeHarness = (over?: {
     } as unknown as SideFlowTaskBinderService;
 
     return {
-        service: new PresentationFlowService(
+        service: new PresentationFlowUseCase(
             pbx,
             presentationSmart,
             smartItemFields,
@@ -359,7 +368,7 @@ const job = (
     ...over,
 });
 
-describe('PresentationFlowService', () => {
+describe('PresentationFlowUseCase', () => {
     it('план: элемент в «Запланирована» со связями, ролями и лентой', async () => {
         const { service, added, backRefUpdates } = makeHarness();
         const result = await service.handle(job());
@@ -368,15 +377,15 @@ describe('PresentationFlowService', () => {
         expect(added).toHaveLength(1);
         const fields = added[0];
         expect(fields.stageId).toBe('DT1040_11:PLAN');
-        expect(fields.ufCrm8BaseDeal).toEqual(['D_100']);
-        expect(fields.ufCrm8PresDeal).toEqual(['D_77']);
+        expect(fields.ufCrm8BaseDeal).toBe(100);
+        expect(fields.ufCrm8PresDeal).toBe(77);
         // Связь с ТМЦ-сделкой — в самом элементе: после отказа от
         // pres-сделок обходной путь через UF_CRM_TO_PRESENTATION_SALES
         // перестанет существовать.
-        expect(fields.ufCrm8TmcDeal).toEqual(['D_55']);
-        expect(fields.ufCrm8Company).toEqual(['CO_431']);
-        expect(fields.ufCrm8Lead).toEqual(['L_42']);
-        expect(fields.ufCrm8Contact).toEqual(['C_9']);
+        expect(fields.ufCrm8TmcDeal).toBe(55);
+        expect(fields.ufCrm8Company).toBe(431);
+        expect(fields.ufCrm8Lead).toBe(42);
+        expect(fields.ufCrm8Contact).toBe(9);
         // Лид среди привязок = клиент «полностью наш» (пришёл заявкой).
         expect(fields.ufCrm8OurRequest).toBe('Y');
         // Назначил и провёл — разные люди.
@@ -678,6 +687,79 @@ describe('PresentationFlowService', () => {
         );
     });
 
+    // ─────────── резолв от ПРИВЯЗКИ ЗАДАЧИ (инцидент 31.08) ───────────
+    // Задача несёт `T{hex}_{id}` своего элемента; hex(1040) = '410'.
+
+    it('привязка задачи побеждает более свежий открытый элемент клиента', async () => {
+        // У клиента ДВЕ открытые презентации. Эвристика взяла бы самую
+        // свежую (99), но отчитываются по задаче элемента 15.
+        const { service, added, updatedItems } = makeHarness({
+            itemsById: {
+                15: {
+                    id: 15,
+                    stageId: 'DT1040_11:PLAN',
+                    ufCrm8BaseDeal: 100,
+                },
+            },
+            openItems: [
+                { id: 15, stageId: 'DT1040_11:PLAN', ufCrm8BaseDeal: 100 },
+                { id: 99, stageId: 'DT1040_11:PLAN', ufCrm8BaseDeal: 100 },
+            ],
+        });
+
+        await service.handle(
+            job({
+                kind: 'report',
+                taskCrmBindings: ['L_42', 'D_100', 'CO_431', 'T410_15'],
+            }),
+        );
+
+        expect(added).toHaveLength(0);
+        expect(updatedItems.map(update => update.id)).toContain(15);
+        expect(updatedItems.map(update => update.id)).not.toContain(99);
+    });
+
+    it('элемент из привязки закрыт — спонтанный, БЕЗ закрытия чужого', async () => {
+        // Слово задачи финально: отката на клиентскую эвристику нет, иначе
+        // закрылся бы чужой открытый план (99).
+        const { service, added, updatedItems } = makeHarness({
+            itemsById: {
+                15: { id: 15, stageId: 'DT1040_11:SUCCESS' },
+            },
+            openItems: [
+                { id: 99, stageId: 'DT1040_11:PLAN', ufCrm8BaseDeal: 100 },
+            ],
+        });
+
+        await service.handle(
+            job({ kind: 'report', taskCrmBindings: ['T410_15'] }),
+        );
+
+        expect(updatedItems.map(update => update.id)).not.toContain(99);
+        expect(added).toHaveLength(1);
+        expect(added[0].ufCrm8Spont).toBe('Y');
+    });
+
+    it('элемент без привязки к сделке находится по компании при заданном baseDealId', async () => {
+        // Регрессия раннего выхода: элемент создан, когда сделка была
+        // `$result[...]` того же батча, — связи со сделкой нет, но
+        // компания совпадает, и элемент обязан закрыться, а не дублироваться.
+        const { service, added, updatedItems } = makeHarness({
+            openItems: [
+                {
+                    id: 630,
+                    stageId: 'DT1040_11:PLAN',
+                    ufCrm8Company: ['CO_431'],
+                },
+            ],
+        });
+
+        await service.handle(job({ kind: 'report' }));
+
+        expect(added).toHaveLength(0);
+        expect(updatedItems.map(update => update.id)).toContain(630);
+    });
+
     it('заявка на согласовании закрывается отчётом, а не дублируется', async () => {
         const { service, added, updatedItems } = makeHarness({
             openItems: [
@@ -718,7 +800,7 @@ describe('PresentationFlowService', () => {
 
         expect(result.action).toBe('created');
         // Свежая (максимальный id) открытая сделка основной воронки.
-        expect(added[0].ufCrm8BaseDeal).toEqual(['D_555']);
+        expect(added[0].ufCrm8BaseDeal).toBe(555);
     });
 
     it('дотяжка не подхватывает ЧУЖУЮ открытую сделку (правило 25.08)', async () => {
@@ -732,7 +814,7 @@ describe('PresentationFlowService', () => {
         await service.handle(job({ baseDealId: null }));
 
         // Чужая 999 свежее, но элемент привязан к СВОЕЙ 321.
-        expect(added[0].ufCrm8BaseDeal).toEqual(['D_321']);
+        expect(added[0].ufCrm8BaseDeal).toBe(321);
     });
 
     // ─────────────────── элемент ↔ задача (UF_CRM_TASK) ───────────────────

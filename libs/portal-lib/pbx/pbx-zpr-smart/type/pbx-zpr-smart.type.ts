@@ -264,6 +264,15 @@ export const ZPR_SMART_FIELDS = [
 /** Код поля смарта ЗПР — все записи flow типизированы этим union. */
 export type ZprSmartFieldCode = (typeof ZPR_SMART_FIELDS)[number]['code'];
 
+/**
+ * Определение поля по коду. Нужно потоку, чтобы знать НАСТРОЙКИ поля при
+ * записи: формат значения crm-связи зависит от того, к скольким сущностям
+ * поле привязано и множественное ли оно (см. buildCrmLinkValue).
+ */
+export const ZPR_FIELD_DEF_BY_CODE = Object.fromEntries(
+    ZPR_SMART_FIELDS.map(field => [field.code, field]),
+) as Record<ZprSmartFieldCode, ZprSmartFieldDef>;
+
 // ---------------------------------------------------------------------------
 // Имена полей (канон СКАП: buildSkapUfName / buildSkapItemFieldName)
 // ---------------------------------------------------------------------------

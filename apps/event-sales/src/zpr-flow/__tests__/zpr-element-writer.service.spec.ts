@@ -58,7 +58,7 @@ describe('ZprElementWriterService', () => {
         expect(added).toHaveLength(1);
         const fields = added[0];
         expect(fields.stageId).toBe('DT1038_9:PLAN');
-        expect(fields.ufCrm7BaseDeal).toEqual(['D_100']);
+        expect(fields.ufCrm7BaseDeal).toBe(100);
         expect(fields.ufCrm7PlanDate).toBe('01.09.2026 10:00:00');
         expect(String((fields.ufCrm7Comments as string[])[0])).toContain(
             'План: Договорились созвониться',
@@ -269,5 +269,19 @@ describe('ZprElementWriterService', () => {
         await writer.closeReported(run);
 
         expect(updatedItems[0].fields.ufCrm7ReportComment).toBeUndefined();
+    });
+});
+
+describe('itemIdOf', () => {
+    // Разбор ответа записи живёт рядом с writer'ом — его единственным
+    // потребителем в проде.
+    it('достаёт id созданного элемента, мусор читает как null', async () => {
+        const { itemIdOf } = await import(
+            '../services/zpr-element-writer.service'
+        );
+        expect(itemIdOf({ result: { item: { id: 601 } } })).toBe(601);
+        expect(itemIdOf({ result: { item: { id: '601' } } })).toBe(601);
+        expect(itemIdOf({ result: {} })).toBeNull();
+        expect(itemIdOf(null)).toBeNull();
     });
 });

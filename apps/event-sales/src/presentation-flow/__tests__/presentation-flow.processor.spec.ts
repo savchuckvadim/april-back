@@ -2,7 +2,7 @@ import { Job } from 'bull';
 import { WsService } from '@/core/ws';
 import { SideFlowGuardService } from '../../shared/side-flow';
 import { PresentationFlowProcessor } from '../presentation-flow.processor';
-import { PresentationFlowService } from '../presentation-flow.service';
+import { PresentationFlowUseCase } from '../use-cases/presentation-flow.use-case';
 import { PresentationFlowJobData } from '../dto/presentation-flow-job.dto';
 import { PresentationFlowResult } from '../constants/presentation-flow.const';
 
@@ -66,7 +66,7 @@ const makeHarness = (over?: {
                 },
             );
         },
-    } as unknown as PresentationFlowService;
+    } as unknown as PresentationFlowUseCase;
 
     const ws = {
         sendToClient: (socketId: string, payload: unknown) => {
