@@ -2,7 +2,6 @@ import { Logger } from '@nestjs/common';
 import {
     toMultiFieldEntryText,
     toBatchSafeText,
-    toBatchText,
 } from '@lib/bitrix/consts/batch.consts';
 import {
     isPresentationSurveyEmpty,
@@ -80,8 +79,8 @@ const PRES_COMMENTS_LIMIT = 15;
 const FAIL_COMMENTS_LIMIT = 18;
 
 /**
- * Анкета после презентации: сводные («Хвост», «Пять К») + девять детальных
- * ответов «5К» + шесть обязательных вопросов «Разговора» (op_talk_*).
+ * Анкета после презентации: сводные («Хвост», «Пять К») + пять блоков «5К»
+ * + пять блоков «Хвоста».
  *
  * СОСТАВ КОДОВ — общий (`shared/presentation-survey`): и легаси-ручка
  * `/event-sales/presentation-survey`, и запись ответов из payload отчёта
@@ -101,34 +100,33 @@ const FAIL_COMMENTS_LIMIT = 18;
  *
  * Скаляры, не multiple: перенос перезаписывает прошлые значения.
  *
- * ЧТО РЕАЛЬНО ЗАВЕДЕНО В РЕЕСТРЕ (`pbx-sales-event-field.type.ts`), чтобы
- * не гадать по этому комментарию:
- *  - `op_presentation_xvost` / `op_presentation_5k` — lead + deal + company;
- *  - девять `op_5k_*` — lead + deal (`company: ''`);
- *  - шесть `op_talk_*` — lead + deal + COMPANY. Компанейские `op_talk_*`
- *    установщик заводит, а не пишет никто (см. гейт компании в
- *    {@link EventReportEntityFieldsModel.applyPresentationSurveyAnswers}) —
- *    открытый вопрос владельцу.
+ * ЧТО РЕАЛЬНО ЗАВЕДЕНО В РЕЕСТРЕ (`pbx-sales-event-field.type.ts`) после
+ * переделки состава 01.09.2026:
+ *  - `op_presentation_xvost` / `op_presentation_5k` — сводные;
+ *  - пять `op_5k_*` (client/company/colleagues/competitor/criteria) —
+ *    lead + deal;
+ *  - пять `op_xvost_*` (desire/offered/price_reaction/decision_process/
+ *    decision_way) — lead + deal. Компании у них нет намеренно: у прежних
+ *    `op_talk_*` она была, но не писал в неё никто.
  * Неустановленное на конкретном портале поле разрезолвится в пустоту и
  * молча пропустится — реестр расширять безопасно, код правки не требует.
  */
 export const PRESENTATION_SURVEY_FIELD_CODES = PRESENTATION_SURVEY_CODES;
 
 /**
- * Deal-only поля хвоста (владельческая таблица todo2508): фрейм пишет их
- * в БАЗОВУЮ сделку, на лиде их нет вовсе — поэтому общий перенос анкеты
- * (источник — лид) их не видит. Пресс-сделка, по которой отчитались,
- * увозит СВОЙ снимок этих значений с базовой: следующая презентация
- * перезатрёт базовую, а история по каждой презентации сохранится.
+ * Deal-only поля «Хвоста»: фрейм пишет их в БАЗОВУЮ сделку, на лиде их нет
+ * вовсе — поэтому общий перенос анкеты (источник — лид) их не видит.
+ * Pres-сделка, по которой отчитались, увозит СВОЙ снимок этих значений с
+ * базовой: следующая презентация перезатрёт базовую, а история по каждой
+ * презентации сохранится.
+ *
+ * После переделки состава 01.09.2026 здесь осталось ОДНО поле. Ушли пять:
+ * op_xvost_decision_date_agreement, op_manager_approach_date и три галочки
+ * op_xvost_is_* — их больше нет в реестре. Список был голыми строками, не
+ * типом, поэтому удаление кодов его не сломало: он молча продолжал
+ * запрашивать несуществующие поля в select init-батча.
  */
-export const XVOST_DEAL_FIELD_CODES = [
-    'op_xvost_decision_call_date',
-    'op_xvost_decision_date_agreement',
-    'op_manager_approach_date',
-    'op_xvost_is_offer',
-    'op_xvost_is_complect',
-    'op_xvost_is_price',
-] as const;
+export const XVOST_DEAL_FIELD_CODES = ['op_xvost_decision_call_date'] as const;
 
 /**
  * Опции для построения полей сделки (entityType='deal').
@@ -473,6 +471,26 @@ export class EventReportEntityFieldsModel {
         } else {
             this.setScalar(out, 'next_pres_plan_date', null);
         }
+        /*
+         * ОТКРЫТЫЙ ВОПРОС ВЛАДЕЛЬЦУ — ветки else выше оставлены КАК БЫЛИ,
+         * с `null`, и это осознанно.
+         *
+         * `null` из сборщика batch-команды бэка выпадает целиком, поэтому на
+         * СЕРВЕРНОМ пути эти две ветки не пишут ничего и никогда не писали.
+         * На браузерном (прямой путь) того же гейта нет, и SDK превращает
+         * null в `ключ=` — там дата ОЧИЩАЕТСЯ. То есть одно и то же место
+         * ведёт себя по-разному, и какое поведение верное — решение не
+         * инженерное: комментарий у isNextCallAxisCalculated предостерегает
+         * «расчёт стёр бы дату, которую отчёт просто не видит», а спека
+         * рядом закрепляет обратное («прежняя ветка обнуляла дату
+         * презентации при любом отчёте»).
+         *
+         * Менять поведение молча нельзя: включённая очистка начнёт стирать
+         * менеджерам даты, которых отчёт не видит. Поэтому здесь всё как
+         * было; исправлено только однозначное — обнуление ПО ПОЛИТИКЕ
+         * (applyPolicy), где null означает «обнулить» по прямому тексту
+         * resolveFieldValue и настройке портала «Финал обнуляет даты».
+         */
     }
 
     /**
@@ -548,7 +566,24 @@ export class EventReportEntityFieldsModel {
             current: input.current,
         });
         if (value === POLICY_KEEP) return;
-        this.setScalar(out, policy.code, value);
+        /*
+         * ОБНУЛЕНИЕ ПУСТОЙ СТРОКОЙ, А НЕ null.
+         *
+         * `resolveFieldValue` возвращает null со смыслом «обнулить» (правила
+         * final / noOpenEvent). Но сборщик batch-команды бэка выбрасывает
+         * null целиком (`if (value === undefined || value === null) return`
+         * в libs/bitrix/.../batch-api.service.ts), поэтому поле просто не
+         * уезжало — и настройка «Финал обнуляет даты следующего события»
+         * (включена по умолчанию) на серверном пути НЕ РАБОТАЛА вовсе.
+         *
+         * Хуже того, пути расходились: в браузере во фрейме тот же null
+         * превращался SDK в `ключ=` и поле ОЧИЩАЛ, а вне фрейма уезжала
+         * литеральная строка «null». Одно действие — три разных исхода.
+         *
+         * Пустая строка — канон очистки в этом коде (прецеденты:
+         * `set('op_xo_revive_queued_at', '')`, `clearDealAssignedAt`).
+         */
+        this.setScalar(out, policy.code, value === null ? '' : value);
     }
 
     // ---------- private ----------
@@ -1068,7 +1103,27 @@ export class EventReportEntityFieldsModel {
          * рисует внутренние переносы подчёркиванием (инцидент 31.08,
          * «ОП История» в _). Разделитель частей — видимое « — ».
          */
-        const next = [toMultiFieldEntryText(line), ...previous].slice(0, limit);
+        /*
+         * ЭКРАНИРУЕТ ЗДЕСЬ, И ТОЛЬКО ЗДЕСЬ.
+         *
+         * Значения уезжают внутри query-строки `cmd`, где `&`, `+` и `%`
+         * рвут разбор: всё после `&` уедет отдельным мусорным полем, и
+         * вместе с комментарием потеряется ВЕСЬ остаток команды — история,
+         * статусы и счётчики ТОГО ЖЕ отчёта. Свободный текст менеджера
+         * («Иванов & Партнёры», «скидка 50%», «+7 900…») попадает сюда
+         * напрямую, поэтому строители выше отдают ПЛОСКИЙ текст, а
+         * экранирование живёт в одном месте — правило «экранирование есть
+         * свойство транспорта, а не текста».
+         *
+         * previous тоже экранируется: он прочитан из карточки уже
+         * ДЕКОДИРОВАННЫМ, и на запись обязан ехать той же функцией, что и
+         * новая строка. Без этого чужая старая запись с `&` ломала команду
+         * при каждом следующем отчёте.
+         */
+        const next = [
+            toBatchSafeText(toMultiFieldEntryText(line)),
+            ...previous.map(entry => toBatchSafeText(entry)),
+        ].slice(0, limit);
         out[key] = next;
     }
 
@@ -1091,7 +1146,8 @@ export class EventReportEntityFieldsModel {
             ),
         );
         this.appendMultiple(out, 'op_mhistory', line, limit);
-        this.setScalar(out, 'op_history', line);
+        // op_history — скаляр, мимо appendMultiple: экранируем явно тем же.
+        this.setScalar(out, 'op_history', toBatchSafeText(line));
     }
 
     private statusText(prefix: string): string {
@@ -1154,10 +1210,15 @@ export class EventReportEntityFieldsModel {
         return `${this.nowCrmDate()} Перенос презентации: ${this.ctx.planEventName}`;
     }
     private failComment(): string {
-        // Комментарий менеджера бывает многострочным — экранируем переносы
-        // для batch, иначе в карточке они превратятся в подчёркивания.
+        /*
+         * ПЛОСКИЙ текст: переносы схлопнёт, а спецсимволы экранирует
+         * единственный писатель — appendMultiple. Раньше здесь стоял
+         * toBatchText, который знает только про переносы: комментарий
+         * «Ушли к Иванов & Партнёры» рвал команду, и вместе с ним пропадали
+         * история и статусы того же отчёта.
+         */
         const label = this.ctx.isNotCa ? 'Не ЦА' : 'Отказ';
-        return `${this.nowCrmDate()} ${label}: ${toBatchText(this.ctx.reportComment)}`;
+        return `${this.nowCrmDate()} ${label}: ${this.ctx.reportComment}`;
     }
 
     /**

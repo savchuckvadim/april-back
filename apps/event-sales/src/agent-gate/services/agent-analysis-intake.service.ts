@@ -67,6 +67,7 @@ export class AgentAnalysisIntakeService {
         // Гигиена входа от LLM-агента: LaTeX-артефакты (\rightarrow → «→»)
         // и литеральные "null"-строки (боевые кейсы 2026-07-30).
         dto = this.sanitizeAgentStrings(dto);
+        this.warnStaleChecklistShape(transcriptionId, agentName, dto);
         dto = this.applySpeechMetrics(transcriptionId, dto);
         dto = this.enforceConsistency(transcriptionId, dto);
         dto = this.fillMethodologyAnalysis(dto);
@@ -216,6 +217,65 @@ export class AgentAnalysisIntakeService {
      * - hvostDone/fiveKDone=true, а в их же разборе есть пункты «✗»
      *   (правило «частично = НЕ пройден») → false.
      */
+    /**
+     * Агент прислал разбор, но чек-лист приехал ПУСТЫМ — предупредить.
+     *
+     * ПОЧЕМУ ЭТО НЕ ПАРАНОЙЯ. Валидация приложения настроена как
+     * `whitelist: true, forbidNonWhitelisted: false` (libs/core,
+     * bootstrap-app): неизвестные ключи тела ВЫРЕЗАЮТСЯ МОЛЧА, без ошибки и
+     * без 400. После переделки состава анкеты 01.09.2026 ключи
+     * `hvostSteps` и `fiveKItems` сменились целиком (было offer/complect/
+     * price/decisionDate/dateAgreed и clientWhat/clientReady/…, стало
+     * desire/offered/priceReaction/decisionProcess/decisionWay и
+     * client/company/colleagues/competitor/criteria).
+     *
+     * Внешний агент выкатывается ОТДЕЛЬНО от нас. Пока он на старом наборе,
+     * его ответ приходит, проходит валидацию, теряет весь чек-лист по
+     * дороге — и в карточке выглядит как «AI не смог разобрать звонок».
+     * Отличить это от настоящего «модель не ответила» без этой строки
+     * нечем.
+     *
+     * Симптом ловим по расхождению: итог (`hvostDone`/`fiveKDone`) или
+     * текст разбора есть, а гранулярной структуры нет ни одной.
+     */
+    private warnStaleChecklistShape(
+        transcriptionId: string,
+        agentName: string,
+        dto: AgentCallAnalysisDto,
+    ): void {
+        const answered = (
+            items: Record<string, unknown> | null | undefined,
+        ): boolean =>
+            Boolean(items) &&
+            Object.values(items as object).some(
+                value => typeof value === 'boolean',
+            );
+
+        const check = (
+            block: 'hvostSteps' | 'fiveKItems',
+            done: boolean | null | undefined,
+            analysis: string | null | undefined,
+        ): void => {
+            const claimed =
+                (done !== undefined && done !== null) ||
+                Boolean(analysis?.trim());
+            if (!claimed) return;
+            if (answered(dto[block] as Record<string, unknown> | undefined)) {
+                return;
+            }
+            this.logger.warn(
+                `Агент «${agentName}» прислал разбор, но ${block} пуст ` +
+                    `(transcription ${transcriptionId}). Вероятная причина — ` +
+                    `СТАРЫЙ набор ключей: с 01.09.2026 состав анкеты сменился, ` +
+                    `а неизвестные ключи вырезаются валидацией молча. ` +
+                    `Актуальные ключи — в CALL_DEEP_ANALYSIS_SCHEMA.`,
+            );
+        };
+
+        check('hvostSteps', dto.hvostDone, dto.hvostAnalysis);
+        check('fiveKItems', dto.fiveKDone, dto.fiveKAnalysis);
+    }
+
     private enforceConsistency(
         transcriptionId: string,
         dto: AgentCallAnalysisDto,

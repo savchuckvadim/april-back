@@ -170,11 +170,20 @@ describe('Ось следующего события — обнуление', ()
             plan: { isActive: false, responsibility: { ID: 447 } },
         });
 
+    /*
+     * ОБНУЛЕНИЕ — ПУСТОЙ СТРОКОЙ, А НЕ null (правка 01.09.2026).
+     *
+     * Раньше здесь ожидался null, и это закрепляло НЕРАБОТАЮЩЕЕ поведение:
+     * сборщик batch-команды бэка выбрасывает null целиком, поэтому поле не
+     * уезжало вовсе и настройка «Финал обнуляет даты следующего события»
+     * (включена по умолчанию) на серверном пути не делала ничего. Пустая
+     * строка — канон очистки в этом коде.
+     */
     it('финал обнуляет всю ось, даже когда открытые дела остались', () => {
         const out = fieldsOf(failCtx());
-        expect(out[NEXT_DATE]).toBeNull();
-        expect(out[NEXT_NAME]).toBeNull();
-        expect(out[PRES_DATE]).toBeNull();
+        expect(out[NEXT_DATE]).toBe('');
+        expect(out[NEXT_NAME]).toBe('');
+        expect(out[PRES_DATE]).toBe('');
     });
 
     it('настройка «финал обнуляет» выключена — ось считается как обычно', () => {
@@ -198,7 +207,7 @@ describe('Ось следующего события — обнуление', ()
                 openTasks: [OPEN_TASKS[0]],
             }),
         );
-        expect(out[PRES_DATE]).toBeNull();
+        expect(out[PRES_DATE]).toBe('');
         // При этом звонок 7-го на оси есть — обнуляется только презентация.
         expect(out[NEXT_DATE]).toBe('07.09.2026 11:00:00');
     });
@@ -210,9 +219,9 @@ describe('Ось следующего события — обнуление', ()
                 plan: { isActive: false, responsibility: { ID: 447 } },
             }),
         );
-        expect(out[NEXT_DATE]).toBeNull();
-        expect(out[NEXT_NAME]).toBeNull();
-        expect(out[PRES_DATE]).toBeNull();
+        expect(out[NEXT_DATE]).toBe('');
+        expect(out[NEXT_NAME]).toBe('');
+        expect(out[PRES_DATE]).toBe('');
     });
 });
 
