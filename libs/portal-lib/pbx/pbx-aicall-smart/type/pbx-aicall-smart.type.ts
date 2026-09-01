@@ -639,70 +639,65 @@ export const CALL_REPORT_SMART_FIELDS: CallReportSmartFieldDef[] = [
         name: '5К: отчёт менеджера (из сделки)',
         type: 'string',
     },
-    // Гранулярный хвост/5К — зеркало чеклиста менеджера в сделке
+    // Гранулярный хвост/5К — зеркало чек-листа менеджера в сделке
     // (op_xvost_* / op_5k_* из pbx-sales-event-field): AI отвечает на ТЕ ЖЕ
     // вопросы по транскрипту, итоги HVOST_DONE/FIVE_K_DONE пересчитываются
     // кодом из этих пунктов. Заполняются только для presentation/decision.
-    { code: 'HVOST_OFFER', name: 'Хвост AI: КП предложено', type: 'boolean' },
+    //
+    // Состав переписан 01.09.2026 вслед за анкетой менеджера: пять блоков
+    // «Хвоста» вместо трёх галочек и двух дат, пять блоков «5К» вместо
+    // девяти вопросов. Пункты ОБЯЗАНЫ совпадать с анкетой — иначе сверка
+    // «что сказал менеджер против того, что услышал AI» считается по разным
+    // шкалам, а еженедельный отчёт показывает проценты по вопросам, которых
+    // в анкете больше нет.
     {
-        code: 'HVOST_COMPLECT',
-        name: 'Хвост AI: наполнение озвучено',
-        type: 'boolean',
-    },
-    { code: 'HVOST_PRICE', name: 'Хвост AI: цена озвучена', type: 'boolean' },
-    {
-        code: 'HVOST_DECISION_DATE',
-        name: 'Хвост AI: дата решения назначена',
-        type: 'boolean',
-    },
-    {
-        code: 'HVOST_DATE_AGREED',
-        name: 'Хвост AI: дата согласована с клиентом',
+        code: 'HVOST_DESIRE',
+        name: 'Хвост AI: желание работать с Гарантом',
         type: 'boolean',
     },
     {
-        code: 'FIVE_K_CLIENT_WHAT',
-        name: '5К AI: клиент — что хочет',
+        code: 'HVOST_OFFERED',
+        name: 'Хвост AI: что предложили',
         type: 'boolean',
     },
     {
-        code: 'FIVE_K_CLIENT_READY',
-        name: '5К AI: клиент — готов работать',
+        code: 'HVOST_PRICE_REACTION',
+        name: 'Хвост AI: реакция на цену',
         type: 'boolean',
     },
     {
-        code: 'FIVE_K_CLIENT_PRICE',
-        name: '5К AI: клиент — укладываемся в цену',
+        code: 'HVOST_DECISION_PROCESS',
+        name: 'Хвост AI: процесс принятия решения',
         type: 'boolean',
     },
     {
-        code: 'FIVE_K_COMPANY_WHO',
-        name: '5К AI: компания — кто принимает решение',
+        code: 'HVOST_DECISION_WAY',
+        name: 'Хвост AI: выход на решение',
         type: 'boolean',
     },
     {
-        code: 'FIVE_K_COMPANY_HOW',
-        name: '5К AI: компания — как принимается решение',
+        code: 'FIVE_K_CLIENT',
+        name: '5К AI: клиент',
         type: 'boolean',
     },
     {
-        code: 'FIVE_K_COMPANY_RIGHT',
-        name: '5К AI: цена и комплект подобраны верно',
+        code: 'FIVE_K_COMPANY',
+        name: '5К AI: компания',
         type: 'boolean',
     },
     {
-        code: 'FIVE_K_COMMAND',
-        name: '5К AI: коллеги — кто будет работать',
+        code: 'FIVE_K_COLLEAGUES',
+        name: '5К AI: коллеги',
         type: 'boolean',
     },
     {
-        code: 'FIVE_K_CONCURENT',
-        name: '5К AI: конкурент — критерии сравнения',
+        code: 'FIVE_K_COMPETITOR',
+        name: '5К AI: конкурент',
         type: 'boolean',
     },
     {
-        code: 'FIVE_K_CRITERI',
-        name: '5К AI: критерии выбора СПС',
+        code: 'FIVE_K_CRITERIA',
+        name: '5К AI: критерии выбора',
         type: 'boolean',
     },
     {
@@ -1005,23 +1000,19 @@ export const CALL_REPORT_CARD_SECTIONS: readonly CallReportCardSection[] = [
         codes: [
             'PRESENTATION_DONE',
             'HVOST_DONE',
-            'HVOST_OFFER',
-            'HVOST_COMPLECT',
-            'HVOST_PRICE',
-            'HVOST_DECISION_DATE',
-            'HVOST_DATE_AGREED',
+            'HVOST_DESIRE',
+            'HVOST_OFFERED',
+            'HVOST_PRICE_REACTION',
+            'HVOST_DECISION_PROCESS',
+            'HVOST_DECISION_WAY',
             'HVOST_ANALYSIS',
             'HVOST_MANAGER',
             'FIVE_K_DONE',
-            'FIVE_K_CLIENT_WHAT',
-            'FIVE_K_CLIENT_READY',
-            'FIVE_K_CLIENT_PRICE',
-            'FIVE_K_COMPANY_WHO',
-            'FIVE_K_COMPANY_HOW',
-            'FIVE_K_COMPANY_RIGHT',
-            'FIVE_K_COMMAND',
-            'FIVE_K_CONCURENT',
-            'FIVE_K_CRITERI',
+            'FIVE_K_CLIENT',
+            'FIVE_K_COMPANY',
+            'FIVE_K_COLLEAGUES',
+            'FIVE_K_COMPETITOR',
+            'FIVE_K_CRITERIA',
             'FIVE_K_ANALYSIS',
             'FIVE_K_MANAGER',
         ],

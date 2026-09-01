@@ -79,6 +79,22 @@ export class PresentationSurveyEndpointService {
 
         // Пустые значения — no-op ДО любых походов в Битрикс/портал.
         const values = this.normalizeValues(dto);
+
+        // Отброшенное whitelist'ом — В ЛОГ, а не в тишину.
+        //
+        // Ручку зовёт ЛЕГАСИ-фронт, и выкатывается он отдельно от нас. Пока
+        // он не обновлён, он шлёт коды прошлого состава анкеты («5К» из
+        // девяти полей, «Разговор» из шести), а новый whitelist их не знает.
+        // Молча отброшенный ответ выглядит как «менеджер не заполнял» —
+        // отличить одно от другого можно только по этой строке.
+        if (values.droppedCodes.length) {
+            this.logger.warn(
+                `[survey][${dto.operationId}] ${dto.domain}: коды вне ` +
+                    `whitelist отброшены (${values.droppedCodes.length}): ` +
+                    values.droppedCodes.join(', '),
+            );
+        }
+
         if (isPresentationSurveyEmpty(values)) {
             result.noop = true;
             this.logger.log(
@@ -249,6 +265,9 @@ export class PresentationSurveyEndpointService {
                     talk: new Map(Object.entries(values.talk ?? {})),
                     xvost: values.xvost ?? null,
                     fiveKSummary: values.fiveKSummary ?? null,
+                    // В кэш кладут УЖЕ нормализованное: отбрасывать было
+                    // нечего, и заново whitelist здесь не применяется.
+                    droppedCodes: [],
                 },
                 result,
             );

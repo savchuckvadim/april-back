@@ -230,10 +230,10 @@ describe('константы смарта «Презентации»', () => {
         const smartCodes = new Set(
             PRESENTATION_SMART_FIELDS.map(field => field.code),
         );
-        // 40 записей: 17 ответов анкеты (2 сводных + 9 детальных «5К» +
-        // 6 «Разговора») парами «лид → сделка-фолбэк» + 6 полей «Хвоста»
-        // (deal-only op_xvost_*).
-        expect(PRESENTATION_SMART_SURVEY_MIRROR).toHaveLength(40);
+        // 25 записей: 12 ответов анкеты (2 сводных + 5 блоков «5К» +
+        // 5 блоков «Хвоста») парами «лид → сделка-фолбэк» + дата звонка по
+        // решению (deal-only).
+        expect(PRESENTATION_SMART_SURVEY_MIRROR).toHaveLength(25);
         for (const entry of PRESENTATION_SMART_SURVEY_MIRROR) {
             expect(registryCodes.has(entry.source)).toBe(true);
             expect(smartCodes.has(entry.target)).toBe(true);
@@ -245,7 +245,7 @@ describe('константы смарта «Презентации»', () => {
         const leadSources = PRESENTATION_SMART_SURVEY_MIRROR.filter(
             entry => entry.from === 'lead',
         );
-        expect(leadSources).toHaveLength(17);
+        expect(leadSources).toHaveLength(12);
         for (const lead of leadSources) {
             const index = PRESENTATION_SMART_SURVEY_MIRROR.indexOf(lead);
             expect(PRESENTATION_SMART_SURVEY_MIRROR[index + 1]).toEqual({

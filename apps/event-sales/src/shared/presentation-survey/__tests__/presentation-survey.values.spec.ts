@@ -6,7 +6,7 @@ import {
     PRESENTATION_SURVEY_CODES,
     PRESENTATION_SURVEY_FIVE_K_CODES,
     PRESENTATION_SURVEY_SUMMARY_CODES,
-    PRESENTATION_SURVEY_TALK_CODES,
+    PRESENTATION_SURVEY_XVOST_CODES,
     PRESENTATION_SURVEY_VALUE_MAX_LENGTH,
 } from '..';
 
@@ -19,22 +19,22 @@ import {
  * были тем классом ошибок, ради которого анкету увели в payload.
  */
 describe('Общий whitelist кодов анкеты', () => {
-    it('состав: девять «5К», шесть «Разговора», два сводных', () => {
-        expect(PRESENTATION_SURVEY_FIVE_K_CODES).toHaveLength(9);
-        expect(PRESENTATION_SURVEY_TALK_CODES).toHaveLength(6);
+    it('состав: пять «5К», пять «Хвоста», два сводных', () => {
+        expect(PRESENTATION_SURVEY_FIVE_K_CODES).toHaveLength(5);
+        expect(PRESENTATION_SURVEY_XVOST_CODES).toHaveLength(5);
         expect(Object.values(PRESENTATION_SURVEY_SUMMARY_CODES)).toEqual([
             'op_presentation_xvost',
             'op_presentation_5k',
         ]);
-        expect(PRESENTATION_SURVEY_CODES).toHaveLength(17);
-        expect(new Set(PRESENTATION_SURVEY_CODES).size).toBe(17);
+        expect(PRESENTATION_SURVEY_CODES).toHaveLength(12);
+        expect(new Set(PRESENTATION_SURVEY_CODES).size).toBe(12);
     });
 
     it('весь список — объединение сводных, «Разговора» и «5К»', () => {
         expect([...PRESENTATION_SURVEY_CODES]).toEqual([
             PRESENTATION_SURVEY_SUMMARY_CODES.xvost,
             PRESENTATION_SURVEY_SUMMARY_CODES.fiveKSummary,
-            ...PRESENTATION_SURVEY_TALK_CODES,
+            ...PRESENTATION_SURVEY_XVOST_CODES,
             ...PRESENTATION_SURVEY_FIVE_K_CODES,
         ]);
     });
@@ -53,33 +53,33 @@ describe('Нормализация ответов анкеты', () => {
     it('оставляет только whitelisted коды, левые отбрасывает молча', () => {
         const values = normalizePresentationSurvey({
             fiveK: {
-                op_5k_client_what: 'Хочет замену Консультанта',
-                op_talk_impression: 'не тот блок — не пишем',
+                op_5k_client: 'Хочет замену Консультанта',
+                op_xvost_desire: 'не тот блок — не пишем',
                 UF_CRM_HACK: 'чужое поле',
             },
             talk: {
-                op_talk_impression: 'Встретили хорошо',
-                op_5k_criteri: 'не тот блок — не пишем',
+                op_xvost_desire: 'Встретили хорошо',
+                op_5k_criteria: 'не тот блок — не пишем',
             },
         });
 
-        expect([...values.fiveK.keys()]).toEqual(['op_5k_client_what']);
-        expect([...values.talk.keys()]).toEqual(['op_talk_impression']);
+        expect([...values.fiveK.keys()]).toEqual(['op_5k_client']);
+        expect([...values.talk.keys()]).toEqual(['op_xvost_desire']);
     });
 
     it('пустые и нестроковые ответы не едут вовсе', () => {
         const values = normalizePresentationSurvey({
             fiveK: {
-                op_5k_client_what: '   ',
-                op_5k_criteri: undefined as unknown as string,
-                op_5k_command: 42 as unknown as string,
-                op_5k_concurent: 'Консультант',
+                op_5k_client: '   ',
+                op_5k_criteria: undefined as unknown as string,
+                op_5k_colleagues: 42 as unknown as string,
+                op_5k_competitor: 'Консультант',
             },
             xvost: '\n \t ',
             fiveKSummary: '',
         });
 
-        expect([...values.fiveK.keys()]).toEqual(['op_5k_concurent']);
+        expect([...values.fiveK.keys()]).toEqual(['op_5k_competitor']);
         expect(values.xvost).toBeNull();
         expect(values.fiveKSummary).toBeNull();
     });
@@ -129,16 +129,16 @@ describe('Ответы анкеты одной картой', () => {
             normalizePresentationSurvey({
                 xvost: 'Дожать через неделю',
                 fiveKSummary: 'Решает директор',
-                fiveK: { op_5k_client_what: 'Хочет замену' },
-                talk: { op_talk_impression: 'Слушали внимательно' },
+                fiveK: { op_5k_client: 'Хочет замену' },
+                talk: { op_xvost_desire: 'Слушали внимательно' },
             }),
         );
 
         expect(Object.fromEntries(answers)).toEqual({
             op_presentation_xvost: 'Дожать через неделю',
             op_presentation_5k: 'Решает директор',
-            op_5k_client_what: 'Хочет замену',
-            op_talk_impression: 'Слушали внимательно',
+            op_5k_client: 'Хочет замену',
+            op_xvost_desire: 'Слушали внимательно',
         });
     });
 

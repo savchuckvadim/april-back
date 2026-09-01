@@ -232,12 +232,8 @@ describe('AgentAnalysisIntakeService', () => {
             fiveKDone: false,
             fiveKAnalysis: null,
             fiveKItems: {
-                clientWhat: true,
-                clientReady: false,
-                clientPrice: null,
-                companyWho: false,
-                companyHow: null,
-                companyRight: null,
+                client: true,
+                company: false,
                 colleagues: false,
                 competitor: null,
                 criteria: null,
@@ -249,9 +245,9 @@ describe('AgentAnalysisIntakeService', () => {
                 { fiveKAnalysis?: string; hvostAnalysis?: string },
             ]
         )[0];
-        expect(written.fiveKAnalysis).toContain('✓ КЛИЕНТ: что хочет');
-        expect(written.fiveKAnalysis).toContain('✗ КЛИЕНТ: готов работать');
-        expect(written.fiveKAnalysis).toContain('— КРИТЕРИИ выбора СПС');
+        expect(written.fiveKAnalysis).toContain('✓ КЛИЕНТ');
+        expect(written.fiveKAnalysis).toContain('✗ КОМПАНИЯ');
+        expect(written.fiveKAnalysis).toContain('— КРИТЕРИИ ВЫБОРА');
         // Текст модели не перезаписывается, когда он есть.
         expect(written.hvostAnalysis).toBe(
             '1. Вопросы ценности — ✗ не выявлены задачи',

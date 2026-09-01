@@ -1,23 +1,26 @@
 /** Тип ais-записи глубокого разбора (совпадает с agent-gate). */
 export const AGENT_ANALYSIS_TYPE = 'agent-analysis';
 
-/** Гранулярный чеклист хвоста (зеркало полей менеджера). */
+/**
+ * Гранулярный чек-лист «Хвоста» — зеркало анкеты менеджера.
+ *
+ * Состав переписан 01.09.2026 вслед за анкетой: пять смысловых блоков вместо
+ * трёх галочек и двух дат. Отчёт обязан считать по тем же пунктам, что
+ * заполняет менеджер, иначе проценты в выгрузке относятся к вопросам,
+ * которых в анкете больше нет.
+ */
 export interface WeeklyHvostSteps {
-    offer?: boolean | null;
-    complect?: boolean | null;
-    price?: boolean | null;
-    decisionDate?: boolean | null;
-    dateAgreed?: boolean | null;
+    desire?: boolean | null;
+    offered?: boolean | null;
+    priceReaction?: boolean | null;
+    decisionProcess?: boolean | null;
+    decisionWay?: boolean | null;
 }
 
-/** Гранулярный чеклист 5К (зеркало полей менеджера). */
+/** Гранулярный чек-лист «5К» — пять блоков вместо прежних девяти вопросов. */
 export interface WeeklyFiveKItems {
-    clientWhat?: boolean | null;
-    clientReady?: boolean | null;
-    clientPrice?: boolean | null;
-    companyWho?: boolean | null;
-    companyHow?: boolean | null;
-    companyRight?: boolean | null;
+    client?: boolean | null;
+    company?: boolean | null;
     colleagues?: boolean | null;
     competitor?: boolean | null;
     criteria?: boolean | null;

@@ -475,108 +475,51 @@ export const PRESENTATION_SMART_FIELDS = [
         type: 'string',
     },
 
-    // === «5К»: сводка + девять детальных ответов анкеты ===
+    // === «5К»: сводка + пять блоков по теме ===
+    // Переделка 01.09.2026: девять полей по одному вопросу заменены пятью
+    // по теме — подвопросы живут внутри значения текстом.
     { code: 'PRES_5K_SUMMARY', name: 'Пять К (сводно)', type: 'string' },
-    { code: 'PRES_5K_CLIENT_WHAT', name: 'КЛИЕНТ: Что хочет?', type: 'string' },
+    { code: 'PRES_5K_CLIENT', name: '5К КЛИЕНТ', type: 'string' },
+    { code: 'PRES_5K_COMPANY', name: '5К КОМПАНИЯ', type: 'string' },
+    { code: 'PRES_5K_COLLEAGUES', name: '5К КОЛЛЕГИ', type: 'string' },
+    { code: 'PRES_5K_COMPETITOR', name: '5К КОНКУРЕНТ', type: 'string' },
     {
-        code: 'PRES_5K_CLIENT_READY',
-        name: 'КЛИЕНТ: Готов работать?',
-        type: 'string',
-    },
-    {
-        code: 'PRES_5K_CLIENT_PRICE',
-        name: 'КЛИЕНТ: Укладываемся в цену?',
-        type: 'string',
-    },
-    {
-        code: 'PRES_5K_COMPANY_WHO',
-        name: 'КОМПАНИЯ: Кто принимает решение?',
-        type: 'string',
-    },
-    {
-        code: 'PRES_5K_COMPANY_HOW',
-        name: 'КОМПАНИЯ: Как принимается решение?',
-        type: 'string',
-    },
-    {
-        code: 'PRES_5K_COMPANY_RIGHT',
-        name: 'КОМПАНИЯ: Правильно ли подобрали цену и комплект?',
-        type: 'string',
-    },
-    {
-        code: 'PRES_5K_COMMAND',
-        name: 'КОЛЛЕГИ: Кто будет работать с системой, будут ли обсуждать?',
-        type: 'string',
-    },
-    {
-        code: 'PRES_5K_CONCURENT',
-        name: 'КОНКУРЕНТ: По каким критериям нас сравнивают?',
-        type: 'string',
-    },
-    {
-        code: 'PRES_5K_CRITERI',
-        name: 'КРИТЕРИЙ ВЫБОРА: Что важно при выборе СПС?',
+        code: 'PRES_5K_CRITERIA',
+        name: '5К КРИТЕРИИ ВЫБОРА',
         type: 'string',
     },
 
-    // === «Разговор»: шесть обязательных вопросов опросника ===
-    // До появления полей op_talk_* эти ответы жили только в тексте
-    // комментария: у элемента презентации не было своего снимка разговора.
-    {
-        code: 'PRES_TALK_IMPRESSION',
-        name: 'РАЗГОВОР: Первое впечатление',
-        type: 'string',
-    },
-    {
-        code: 'PRES_TALK_REMEMBERED',
-        name: 'РАЗГОВОР: Что запомнили',
-        type: 'string',
-    },
-    {
-        code: 'PRES_TALK_DESIRE',
-        name: 'РАЗГОВОР: Желание работать',
-        type: 'string',
-    },
-    {
-        code: 'PRES_TALK_DECISION_PROCESS',
-        name: 'РАЗГОВОР: Как принимается решение',
-        type: 'string',
-    },
-    {
-        code: 'PRES_TALK_PRICE_OPINION',
-        name: 'РАЗГОВОР: Мнение о цене',
-        type: 'string',
-    },
-    {
-        code: 'PRES_TALK_BOSS_READINESS',
-        name: 'РАЗГОВОР: Готовность подойти к руководителю',
-        type: 'string',
-    },
-
-    // === «Хвост»: сводка + вопросы «Разговора», выдернутые в фича-поля ===
+    // === «Хвост»: сводка + пять блоков по теме + дата ===
+    // Заменили шесть полей PRES_TALK_* и три галочки (КП / наполнение /
+    // цена): галочки стали частью связного текста «ЧТО ПРЕДЛОЖИЛИ», то есть
+    // сменился и смысл, и тип. Из двух дат осталась одна.
     { code: 'PRES_XVOST', name: 'Хвост (сводно)', type: 'string' },
+    {
+        code: 'PRES_XVOST_DESIRE',
+        name: 'ХВОСТ ЖЕЛАНИЕ РАБОТАТЬ С ГАРАНТОМ',
+        type: 'string',
+    },
+    { code: 'PRES_XVOST_OFFERED', name: 'ХВОСТ ЧТО ПРЕДЛОЖИЛИ', type: 'string' },
+    {
+        code: 'PRES_XVOST_PRICE_REACTION',
+        name: 'ХВОСТ РЕАКЦИЯ НА ЦЕНУ',
+        type: 'string',
+    },
+    {
+        code: 'PRES_XVOST_DECISION_PROCESS',
+        name: 'ХВОСТ ПРОЦЕСС ПРИНЯТИЯ РЕШЕНИЯ',
+        type: 'string',
+    },
+    {
+        code: 'PRES_XVOST_DECISION_WAY',
+        name: 'ХВОСТ ВЫХОД НА РЕШЕНИЕ',
+        type: 'string',
+    },
     {
         code: 'PRES_DECISION_CALL_DATE',
         name: 'Дата звонка по решению',
         type: 'date',
     },
-    {
-        code: 'PRES_DECISION_AGREEMENT',
-        name: 'Согласование даты по решению',
-        type: 'date',
-    },
-    {
-        code: 'PRES_MANAGER_APPROACH_DATE',
-        name: 'Дата похода к руководителю',
-        type: 'date',
-    },
-    { code: 'PRES_IS_OFFER', name: 'Предложено КП ?', type: 'boolean' },
-    {
-        code: 'PRES_IS_COMPLECT',
-        name: 'Озвучено наполнение ?',
-        type: 'boolean',
-    },
-    { code: 'PRES_IS_PRICE', name: 'Озвучена цена ?', type: 'boolean' },
 
     // === История комментариев (план / отчёт / накопительная лента) ===
     {
@@ -672,43 +615,30 @@ export interface PresentationSurveyMirrorEntry {
 const SURVEY_ANSWER_MIRROR = [
     { source: 'op_presentation_5k', target: 'PRES_5K_SUMMARY' },
     { source: 'op_presentation_xvost', target: 'PRES_XVOST' },
-    { source: 'op_5k_client_what', target: 'PRES_5K_CLIENT_WHAT' },
-    { source: 'op_5k_client_ready', target: 'PRES_5K_CLIENT_READY' },
-    { source: 'op_5k_client_price', target: 'PRES_5K_CLIENT_PRICE' },
-    { source: 'op_5k_company_who', target: 'PRES_5K_COMPANY_WHO' },
-    { source: 'op_5k_company_how', target: 'PRES_5K_COMPANY_HOW' },
-    { source: 'op_5k_company_right', target: 'PRES_5K_COMPANY_RIGHT' },
-    { source: 'op_5k_command', target: 'PRES_5K_COMMAND' },
-    { source: 'op_5k_concurent', target: 'PRES_5K_CONCURENT' },
-    { source: 'op_5k_criteri', target: 'PRES_5K_CRITERI' },
-    { source: 'op_talk_impression', target: 'PRES_TALK_IMPRESSION' },
-    { source: 'op_talk_remembered', target: 'PRES_TALK_REMEMBERED' },
-    { source: 'op_talk_desire', target: 'PRES_TALK_DESIRE' },
+    { source: 'op_5k_client', target: 'PRES_5K_CLIENT' },
+    { source: 'op_5k_company', target: 'PRES_5K_COMPANY' },
+    { source: 'op_5k_colleagues', target: 'PRES_5K_COLLEAGUES' },
+    { source: 'op_5k_competitor', target: 'PRES_5K_COMPETITOR' },
+    { source: 'op_5k_criteria', target: 'PRES_5K_CRITERIA' },
+    { source: 'op_xvost_desire', target: 'PRES_XVOST_DESIRE' },
+    { source: 'op_xvost_offered', target: 'PRES_XVOST_OFFERED' },
     {
-        source: 'op_talk_decision_process',
-        target: 'PRES_TALK_DECISION_PROCESS',
+        source: 'op_xvost_price_reaction',
+        target: 'PRES_XVOST_PRICE_REACTION',
     },
-    { source: 'op_talk_price_opinion', target: 'PRES_TALK_PRICE_OPINION' },
-    { source: 'op_talk_boss_readiness', target: 'PRES_TALK_BOSS_READINESS' },
+    {
+        source: 'op_xvost_decision_process',
+        target: 'PRES_XVOST_DECISION_PROCESS',
+    },
+    { source: 'op_xvost_decision_way', target: 'PRES_XVOST_DECISION_WAY' },
 ] as const satisfies readonly Omit<PresentationSurveyMirrorEntry, 'from'>[];
 
-/** Булевы вопросы и даты «Хвоста» — только сделка (на лиде их нет). */
+/** Дата звонка по решению — только сделка (на лиде её нет). */
 const XVOST_DEAL_MIRROR = [
     {
         source: 'op_xvost_decision_call_date',
         target: 'PRES_DECISION_CALL_DATE',
     },
-    {
-        source: 'op_xvost_decision_date_agreement',
-        target: 'PRES_DECISION_AGREEMENT',
-    },
-    {
-        source: 'op_manager_approach_date',
-        target: 'PRES_MANAGER_APPROACH_DATE',
-    },
-    { source: 'op_xvost_is_offer', target: 'PRES_IS_OFFER' },
-    { source: 'op_xvost_is_complect', target: 'PRES_IS_COMPLECT' },
-    { source: 'op_xvost_is_price', target: 'PRES_IS_PRICE' },
 ] as const satisfies readonly Omit<PresentationSurveyMirrorEntry, 'from'>[];
 
 /**

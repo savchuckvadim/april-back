@@ -313,8 +313,8 @@ describe('buildPresentationFlowJobs', () => {
                 isPresentationDone: true,
                 survey: {
                     xvost: 'Дожать через неделю',
-                    fiveK: { op_5k_client_what: 'Хочет замену' },
-                    talk: { op_talk_impression: 'Слушали внимательно' },
+                    fiveK: { op_5k_client: 'Хочет замену' },
+                    talk: { op_xvost_desire: 'Слушали внимательно' },
                 },
             },
             report: {
@@ -328,8 +328,8 @@ describe('buildPresentationFlowJobs', () => {
         expect(jobs.map(job => job.kind)).toEqual(['report']);
         expect(jobs[0].survey).toEqual({
             PRES_XVOST: 'Дожать через неделю',
-            PRES_5K_CLIENT_WHAT: 'Хочет замену',
-            PRES_TALK_IMPRESSION: 'Слушали внимательно',
+            PRES_5K_CLIENT: 'Хочет замену',
+            PRES_XVOST_DESIRE: 'Слушали внимательно',
         });
     });
 

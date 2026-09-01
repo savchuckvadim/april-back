@@ -17,14 +17,14 @@ import {
 const OPERATION_ID = 'e1c1a1f0-0000-4000-8000-000000000001';
 
 /**
- * Портал: детальные «5К» и «Разговор» (op_talk_*) — на лиде (и, по опции,
+ * Портал: детальные «5К» и «Хвост» (op_xvost_*) — на лиде (и, по опции,
  * на сделке — порталы, где админ установил их и в сделку), сводные —
  * лид+сделка.
  */
 const makePortal = (over: { dealDetailed?: boolean } = {}) => ({
     getEntityFieldByCode: (entity: string, code: string) => {
         const detailed = code.startsWith('op_5k_');
-        const talk = code.startsWith('op_talk_');
+        const talk = code.startsWith('op_xvost_');
         const summary =
             code === 'op_presentation_xvost' || code === 'op_presentation_5k';
         if (
@@ -130,8 +130,8 @@ const dto = (
             xvost: 'Дожать по хвосту',
             fiveKSummary: 'Сводка 5К',
             fiveK: {
-                op_5k_client_what: 'Хочет замену Консультанта',
-                op_5k_criteri: 'Цена и обновления',
+                op_5k_client: 'Хочет замену Консультанта',
+                op_5k_criteria: 'Цена и обновления',
             },
         },
         ...over,
@@ -149,8 +149,8 @@ describe('PresentationSurveyEndpointService', () => {
 
         const lead = updates.find(u => u.entity === 'lead')!;
         expect(lead.fields).toEqual({
-            UF_CRM_OP_5K_CLIENT_WHAT: 'Хочет замену Консультанта',
-            UF_CRM_OP_5K_CRITERI: 'Цена и обновления',
+            UF_CRM_OP_5K_CLIENT: 'Хочет замену Консультанта',
+            UF_CRM_OP_5K_CRITERIA: 'Цена и обновления',
             UF_CRM_OP_PRESENTATION_XVOST: 'Дожать по хвосту',
             UF_CRM_OP_PRESENTATION_5K: 'Сводка 5К',
         });
@@ -177,14 +177,14 @@ describe('PresentationSurveyEndpointService', () => {
 
         const deal = updates.find(u => u.entity === 'deal')!;
         expect(deal.fields).toEqual({
-            UF_CRM_OP_5K_CLIENT_WHAT: 'Хочет замену Консультанта',
-            UF_CRM_OP_5K_CRITERI: 'Цена и обновления',
+            UF_CRM_OP_5K_CLIENT: 'Хочет замену Консультанта',
+            UF_CRM_OP_5K_CRITERIA: 'Цена и обновления',
             UF_CRM_OP_PRESENTATION_XVOST: 'Дожать по хвосту',
             UF_CRM_OP_PRESENTATION_5K: 'Сводка 5К',
         });
     });
 
-    it('«Разговор» едет в лид и сделку тем же зеркалом, левые ключи — мимо', async () => {
+    it('«Хвост» едет в лид и сделку тем же зеркалом, левые ключи — мимо', async () => {
         // До блока talk ответы «Разговора» жили только строкой в
         // комментарии (фрейм слал их кодами xo_*, которых нет в реестре) —
         // и снимку смарта (PRES_TALK_*) было нечего читать (todo3108 №1).
@@ -194,8 +194,8 @@ describe('PresentationSurveyEndpointService', () => {
             dto({
                 values: {
                     talk: {
-                        op_talk_impression: 'Слушали внимательно',
-                        op_talk_price_opinion: 'Дорого, но обсуждаемо',
+                        op_xvost_desire: 'Слушали внимательно',
+                        op_xvost_price_reaction: 'Дорого, но обсуждаемо',
                         xo_impression: 'код опросника, не поля', // мимо
                         op_inn: '7701234567', // чужое поле — мимо
                     },
@@ -207,26 +207,26 @@ describe('PresentationSurveyEndpointService', () => {
         const deal = updates.find(u => u.entity === 'deal')!;
         for (const fields of [lead.fields, deal.fields]) {
             expect(fields).toEqual({
-                UF_CRM_OP_TALK_IMPRESSION: 'Слушали внимательно',
-                UF_CRM_OP_TALK_PRICE_OPINION: 'Дорого, но обсуждаемо',
+                UF_CRM_OP_XVOST_DESIRE: 'Слушали внимательно',
+                UF_CRM_OP_XVOST_PRICE_REACTION: 'Дорого, но обсуждаемо',
             });
         }
     });
 
-    it('только «Разговор» без «5К» и сводных — не no-op', async () => {
+    it('только «Хвост» без «5К» и сводных — не no-op', async () => {
         const { service, updates } = makeDeps();
 
         const result = await service.submit(
             dto({
                 targets: { leadId: 42 },
-                values: { talk: { op_talk_desire: 'Хотят работать' } },
+                values: { talk: { op_xvost_desire: 'Хотят работать' } },
             }),
         );
 
         expect(result.noop).toBe(false);
         expect(result.updated).toEqual(['lead_42']);
         expect(updates[0].fields).toEqual({
-            UF_CRM_OP_TALK_DESIRE: 'Хотят работать',
+            UF_CRM_OP_XVOST_DESIRE: 'Хотят работать',
         });
     });
 
@@ -242,7 +242,7 @@ describe('PresentationSurveyEndpointService', () => {
                 targets: { leadId: 42 },
                 values: {
                     fiveK: {
-                        op_5k_client_what: 'Валидный ответ',
+                        op_5k_client: 'Валидный ответ',
                         op_inn: '7701234567', // чужое поле
                         ASSIGNED_BY_ID: '1', // попытка сменить ответственного
                         op_lead_status: 'x', // наше, но не анкетное
@@ -252,7 +252,7 @@ describe('PresentationSurveyEndpointService', () => {
         );
 
         const lead = updates.find(u => u.entity === 'lead')!;
-        expect(Object.keys(lead.fields)).toEqual(['UF_CRM_OP_5K_CLIENT_WHAT']);
+        expect(Object.keys(lead.fields)).toEqual(['UF_CRM_OP_5K_CLIENT']);
     });
 
     it('перезапись, не append: значение уходит как есть', async () => {
@@ -356,7 +356,7 @@ describe('PresentationSurveyEndpointService', () => {
                     xvost: 'строка 1\nстрока 2\r\nстрока 3',
                     fiveKSummary: 'Клиент: готов\nКомпания: решает директор',
                     fiveK: {
-                        op_5k_client_what: 'хочет:\n- замену\n- обновления',
+                        op_5k_client: 'хочет:\n- замену\n- обновления',
                     },
                 },
             } as never),
@@ -370,7 +370,7 @@ describe('PresentationSurveyEndpointService', () => {
         expect(lead.fields.UF_CRM_OP_PRESENTATION_5K).toBe(
             'Клиент: готов%0AКомпания: решает директор',
         );
-        expect(lead.fields.UF_CRM_OP_5K_CLIENT_WHAT).toBe(
+        expect(lead.fields.UF_CRM_OP_5K_CLIENT).toBe(
             'хочет:%0A- замену%0A- обновления',
         );
         // Ни одного сырого переноса ни в одном batch-поле.
@@ -398,7 +398,7 @@ describe('PresentationSurveyEndpointService', () => {
                     xvost: 'Гарант & КонсультантПлюс',
                     fiveKSummary: 'Скидка 50% при оплате до 1 числа',
                     fiveK: {
-                        op_5k_client_what: 'звонить на +7 900 123-45-67',
+                        op_5k_client: 'звонить на +7 900 123-45-67',
                     },
                 },
             } as never),
@@ -411,7 +411,7 @@ describe('PresentationSurveyEndpointService', () => {
         expect(lead.fields.UF_CRM_OP_PRESENTATION_5K).toBe(
             'Скидка 50%25 при оплате до 1 числа',
         );
-        expect(lead.fields.UF_CRM_OP_5K_CLIENT_WHAT).toBe(
+        expect(lead.fields.UF_CRM_OP_5K_CLIENT).toBe(
             'звонить на %2B7 900 123-45-67',
         );
         // Ни одна команда не увозит символ, рвущий её собственную
@@ -495,8 +495,8 @@ describe('Rendezvous: unplanned-сигнал hook ↔ опросник', () => {
 
         const unplanned = deps.updates.find(u => u.id === 900)!;
         expect(unplanned.fields).toEqual({
-            UF_CRM_OP_5K_CLIENT_WHAT: 'Хочет замену Консультанта',
-            UF_CRM_OP_5K_CRITERI: 'Цена и обновления',
+            UF_CRM_OP_5K_CLIENT: 'Хочет замену Консультанта',
+            UF_CRM_OP_5K_CRITERIA: 'Цена и обновления',
             UF_CRM_OP_PRESENTATION_XVOST: 'Дожать по хвосту',
             UF_CRM_OP_PRESENTATION_5K: 'Сводка 5К',
         });

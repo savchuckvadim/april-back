@@ -99,27 +99,25 @@ export interface CallReportSmartItemInput {
     /** Отчёт менеджера по 5К из сделки-презентации (пишет сверка). */
     fiveKManager?: string;
     /**
-     * Гранулярный хвост — зеркало чеклиста менеджера (op_xvost_*):
-     * КП / наполнение / цена / дата решения / дата согласована.
+     * Гранулярный «Хвост» — зеркало анкеты менеджера (op_xvost_*): пять
+     * блоков по теме. Состав переписан 01.09.2026: было три галочки и две
+     * даты, стало пять смысловых блоков, и пункты обязаны совпадать с
+     * анкетой — иначе сверка «менеджер против AI» идёт по разным шкалам.
      */
     hvostSteps?: {
-        offer?: boolean | null;
-        complect?: boolean | null;
-        price?: boolean | null;
-        decisionDate?: boolean | null;
-        dateAgreed?: boolean | null;
+        desire?: boolean | null;
+        offered?: boolean | null;
+        priceReaction?: boolean | null;
+        decisionProcess?: boolean | null;
+        decisionWay?: boolean | null;
     };
     /**
-     * Гранулярные 5К — зеркало чеклиста менеджера (op_5k_*):
-     * клиент ×3, компания ×3, коллеги, конкурент, критерии выбора.
+     * Гранулярные «5К» — зеркало анкеты менеджера (op_5k_*): пять блоков по
+     * теме вместо прежних девяти вопросов.
      */
     fiveKItems?: {
-        clientWhat?: boolean | null;
-        clientReady?: boolean | null;
-        clientPrice?: boolean | null;
-        companyWho?: boolean | null;
-        companyHow?: boolean | null;
-        companyRight?: boolean | null;
+        client?: boolean | null;
+        company?: boolean | null;
         colleagues?: boolean | null;
         competitor?: boolean | null;
         criteria?: boolean | null;
@@ -904,61 +902,37 @@ export class CallReportSmartWriterService {
         this.setBoolUf(fields, 'FIVE_K_DONE', input.fiveKDone);
         // Гранулярные пункты хвоста/5К (null «не применимо» поле не трогает).
         const steps = input.hvostSteps;
-        this.setBoolUf(fields, 'HVOST_OFFER', steps?.offer ?? undefined);
-        this.setBoolUf(fields, 'HVOST_COMPLECT', steps?.complect ?? undefined);
-        this.setBoolUf(fields, 'HVOST_PRICE', steps?.price ?? undefined);
+        this.setBoolUf(fields, 'HVOST_DESIRE', steps?.desire ?? undefined);
+        this.setBoolUf(fields, 'HVOST_OFFERED', steps?.offered ?? undefined);
         this.setBoolUf(
             fields,
-            'HVOST_DECISION_DATE',
-            steps?.decisionDate ?? undefined,
+            'HVOST_PRICE_REACTION',
+            steps?.priceReaction ?? undefined,
         );
         this.setBoolUf(
             fields,
-            'HVOST_DATE_AGREED',
-            steps?.dateAgreed ?? undefined,
+            'HVOST_DECISION_PROCESS',
+            steps?.decisionProcess ?? undefined,
+        );
+        this.setBoolUf(
+            fields,
+            'HVOST_DECISION_WAY',
+            steps?.decisionWay ?? undefined,
         );
         const fiveK = input.fiveKItems;
+        this.setBoolUf(fields, 'FIVE_K_CLIENT', fiveK?.client ?? undefined);
+        this.setBoolUf(fields, 'FIVE_K_COMPANY', fiveK?.company ?? undefined);
         this.setBoolUf(
             fields,
-            'FIVE_K_CLIENT_WHAT',
-            fiveK?.clientWhat ?? undefined,
-        );
-        this.setBoolUf(
-            fields,
-            'FIVE_K_CLIENT_READY',
-            fiveK?.clientReady ?? undefined,
-        );
-        this.setBoolUf(
-            fields,
-            'FIVE_K_CLIENT_PRICE',
-            fiveK?.clientPrice ?? undefined,
-        );
-        this.setBoolUf(
-            fields,
-            'FIVE_K_COMPANY_WHO',
-            fiveK?.companyWho ?? undefined,
-        );
-        this.setBoolUf(
-            fields,
-            'FIVE_K_COMPANY_HOW',
-            fiveK?.companyHow ?? undefined,
-        );
-        this.setBoolUf(
-            fields,
-            'FIVE_K_COMPANY_RIGHT',
-            fiveK?.companyRight ?? undefined,
-        );
-        this.setBoolUf(
-            fields,
-            'FIVE_K_COMMAND',
+            'FIVE_K_COLLEAGUES',
             fiveK?.colleagues ?? undefined,
         );
         this.setBoolUf(
             fields,
-            'FIVE_K_CONCURENT',
+            'FIVE_K_COMPETITOR',
             fiveK?.competitor ?? undefined,
         );
-        this.setBoolUf(fields, 'FIVE_K_CRITERI', fiveK?.criteria ?? undefined);
+        this.setBoolUf(fields, 'FIVE_K_CRITERIA', fiveK?.criteria ?? undefined);
         // Краткие версии в полях (ужаты до <700 байт — row size), полные
         // тексты AI-разбора живут в таймлайне элемента.
         this.setShortTextUf(fields, 'HVOST_ANALYSIS', input.hvostAnalysis);

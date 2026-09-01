@@ -46,7 +46,7 @@ const INFO = {
         PRES_FAIL_REASON: 'ufCrm8FailReason',
         PRES_5K_SUMMARY: 'ufCrm85kSummary',
         PRES_XVOST: 'ufCrm8Xvost',
-        PRES_IS_OFFER: 'ufCrm8IsOffer',
+        PRES_XVOST_DESIRE: 'ufCrm8XvostDesire',
         PRES_PLAN_COMMENT: 'ufCrm8PlanComment',
         PRES_REPORT_COMMENT: 'ufCrm8ReportComment',
         PRES_COMMENTS: 'ufCrm8Comments',
@@ -440,7 +440,7 @@ describe('PresentationFlowUseCase', () => {
                 survey: {
                     PRES_5K_SUMMARY: 'Решает директор',
                     PRES_XVOST: 'Дожать через неделю',
-                    PRES_IS_OFFER: 'Y',
+                    PRES_XVOST_DESIRE: 'Слушали внимательно',
                 },
             }),
         );
@@ -456,7 +456,7 @@ describe('PresentationFlowUseCase', () => {
         // Снимок анкеты уехал в СВОЙ элемент.
         expect(fields['ufCrm85kSummary']).toBe('Решает директор');
         expect(fields.ufCrm8Xvost).toBe('Дожать через неделю');
-        expect(fields.ufCrm8IsOffer).toBe('Y');
+        expect(fields.ufCrm8XvostDesire).toBe('Слушали внимательно');
         const comments = fields.ufCrm8Comments as string[];
         expect(comments[0]).toContain('Отчёт: Показали демо');
         expect(comments[1]).toContain('План: старое');

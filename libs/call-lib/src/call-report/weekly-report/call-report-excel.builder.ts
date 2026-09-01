@@ -102,29 +102,25 @@ function renderHvostChecklist(steps: WeeklyHvostSteps | null): string {
     const mark = (value: boolean | null | undefined): string =>
         value === true ? '✓' : value === false ? '✗' : '—';
     return [
-        `${mark(steps.offer)} КП предложено`,
-        `${mark(steps.complect)} наполнение`,
-        `${mark(steps.price)} цена`,
-        `${mark(steps.decisionDate)} дата решения`,
-        `${mark(steps.dateAgreed)} дата согласована`,
+        `${mark(steps.desire)} ЖЕЛАНИЕ РАБОТАТЬ`,
+        `${mark(steps.offered)} ЧТО ПРЕДЛОЖИЛИ`,
+        `${mark(steps.priceReaction)} РЕАКЦИЯ НА ЦЕНУ`,
+        `${mark(steps.decisionProcess)} ПРОЦЕСС РЕШЕНИЯ`,
+        `${mark(steps.decisionWay)} ВЫХОД НА РЕШЕНИЕ`,
     ].join('\n');
 }
 
-/** Чеклист 5К одной строкой (9 пунктов, как в отчёте менеджера). */
+/** Чек-лист 5К одной строкой (пять блоков, как в анкете менеджера). */
 function renderFiveKChecklist(items: WeeklyFiveKItems | null): string {
     if (!items) return '';
     const mark = (value: boolean | null | undefined): string =>
         value === true ? '✓' : value === false ? '✗' : '—';
     return [
-        `${mark(items.clientWhat)} КЛИЕНТ: что хочет`,
-        `${mark(items.clientReady)} КЛИЕНТ: готов`,
-        `${mark(items.clientPrice)} КЛИЕНТ: цена`,
-        `${mark(items.companyWho)} КОМПАНИЯ: кто решает`,
-        `${mark(items.companyHow)} КОМПАНИЯ: как решает`,
-        `${mark(items.companyRight)} подбор верен`,
+        `${mark(items.client)} КЛИЕНТ`,
+        `${mark(items.company)} КОМПАНИЯ`,
         `${mark(items.colleagues)} КОЛЛЕГИ`,
         `${mark(items.competitor)} КОНКУРЕНТ`,
-        `${mark(items.criteria)} КРИТЕРИИ`,
+        `${mark(items.criteria)} КРИТЕРИИ ВЫБОРА`,
     ].join('\n');
 }
 
@@ -570,29 +566,29 @@ export class CallReportExcelBuilder {
                 value: row => mark(row.hvostDone),
             },
             {
-                header: 'КП предложено',
-                width: 14,
-                value: row => mark(row.hvostSteps?.offer),
+                header: 'ХВОСТ: желание работать',
+                width: 22,
+                value: row => mark(row.hvostSteps?.desire),
             },
             {
-                header: 'Наполнение озвучено',
-                width: 18,
-                value: row => mark(row.hvostSteps?.complect),
+                header: 'ХВОСТ: что предложили',
+                width: 21,
+                value: row => mark(row.hvostSteps?.offered),
             },
             {
-                header: 'Цена озвучена',
-                width: 14,
-                value: row => mark(row.hvostSteps?.price),
+                header: 'ХВОСТ: реакция на цену',
+                width: 21,
+                value: row => mark(row.hvostSteps?.priceReaction),
             },
             {
-                header: 'Дата решения назначена',
-                width: 20,
-                value: row => mark(row.hvostSteps?.decisionDate),
+                header: 'ХВОСТ: процесс решения',
+                width: 21,
+                value: row => mark(row.hvostSteps?.decisionProcess),
             },
             {
-                header: 'Дата согласована',
-                width: 17,
-                value: row => mark(row.hvostSteps?.dateAgreed),
+                header: 'ХВОСТ: выход на решение',
+                width: 22,
+                value: row => mark(row.hvostSteps?.decisionWay),
             },
             {
                 header: '5К закрыто',
@@ -600,34 +596,14 @@ export class CallReportExcelBuilder {
                 value: row => mark(row.fiveKDone),
             },
             {
-                header: 'КЛИЕНТ: что хочет',
-                width: 17,
-                value: row => mark(row.fiveKItems?.clientWhat),
+                header: 'КЛИЕНТ',
+                width: 12,
+                value: row => mark(row.fiveKItems?.client),
             },
             {
-                header: 'КЛИЕНТ: готов работать',
-                width: 20,
-                value: row => mark(row.fiveKItems?.clientReady),
-            },
-            {
-                header: 'КЛИЕНТ: цена подходит',
-                width: 20,
-                value: row => mark(row.fiveKItems?.clientPrice),
-            },
-            {
-                header: 'КОМПАНИЯ: кто решает',
-                width: 20,
-                value: row => mark(row.fiveKItems?.companyWho),
-            },
-            {
-                header: 'КОМПАНИЯ: как решает',
-                width: 20,
-                value: row => mark(row.fiveKItems?.companyHow),
-            },
-            {
-                header: 'Подбор верен',
-                width: 14,
-                value: row => mark(row.fiveKItems?.companyRight),
+                header: 'КОМПАНИЯ',
+                width: 13,
+                value: row => mark(row.fiveKItems?.company),
             },
             {
                 header: 'КОЛЛЕГИ',
@@ -640,8 +616,8 @@ export class CallReportExcelBuilder {
                 value: row => mark(row.fiveKItems?.competitor),
             },
             {
-                header: 'КРИТЕРИИ выбора',
-                width: 16,
+                header: 'КРИТЕРИИ ВЫБОРА',
+                width: 17,
                 value: row => mark(row.fiveKItems?.criteria),
             },
             {

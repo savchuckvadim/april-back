@@ -326,11 +326,11 @@ export class AgentAnalysisIntakeService {
         if (!fixed.hvostAnalysis?.trim() && hasAnswer(fixed.hvostSteps)) {
             const steps = fixed.hvostSteps;
             fixed.hvostAnalysis = [
-                `${mark(steps?.offer)} КП предложено`,
-                `${mark(steps?.complect)} Наполнение комплекта озвучено`,
-                `${mark(steps?.price)} Цена озвучена`,
-                `${mark(steps?.decisionDate)} Дата звонка по решению назначена`,
-                `${mark(steps?.dateAgreed)} Дата согласована с клиентом`,
+                `${mark(steps?.desire)} ЖЕЛАНИЕ РАБОТАТЬ С ГАРАНТОМ`,
+                `${mark(steps?.offered)} ЧТО ПРЕДЛОЖИЛИ`,
+                `${mark(steps?.priceReaction)} РЕАКЦИЯ НА ЦЕНУ`,
+                `${mark(steps?.decisionProcess)} ПРОЦЕСС ПРИНЯТИЯ РЕШЕНИЯ`,
+                `${mark(steps?.decisionWay)} ВЫХОД НА РЕШЕНИЕ`,
             ].join('\n');
             this.logger.log(
                 'Разбор хвоста собран кодом из чеклиста (модель текст не прислала)',
@@ -339,15 +339,11 @@ export class AgentAnalysisIntakeService {
         if (!fixed.fiveKAnalysis?.trim() && hasAnswer(fixed.fiveKItems)) {
             const items = fixed.fiveKItems;
             fixed.fiveKAnalysis = [
-                `${mark(items?.clientWhat)} КЛИЕНТ: что хочет`,
-                `${mark(items?.clientReady)} КЛИЕНТ: готов работать`,
-                `${mark(items?.clientPrice)} КЛИЕНТ: укладываемся в цену`,
-                `${mark(items?.companyWho)} КОМПАНИЯ: кто принимает решение`,
-                `${mark(items?.companyHow)} КОМПАНИЯ: как принимается решение`,
-                `${mark(items?.companyRight)} Цена и комплект подобраны верно`,
-                `${mark(items?.colleagues)} КОЛЛЕГИ: кто будет работать`,
-                `${mark(items?.competitor)} КОНКУРЕНТ: критерии сравнения`,
-                `${mark(items?.criteria)} КРИТЕРИИ выбора СПС`,
+                `${mark(items?.client)} КЛИЕНТ`,
+                `${mark(items?.company)} КОМПАНИЯ`,
+                `${mark(items?.colleagues)} КОЛЛЕГИ`,
+                `${mark(items?.competitor)} КОНКУРЕНТ`,
+                `${mark(items?.criteria)} КРИТЕРИИ ВЫБОРА`,
             ].join('\n');
             this.logger.log(
                 'Разбор 5К собран кодом из чеклиста (модель текст не прислала)',
@@ -995,11 +991,11 @@ export class AgentAnalysisIntakeService {
             const steps = dto.hvostSteps
                 ? '\n\nЧеклист (как в отчёте менеджера):\n' +
                   [
-                      `${mark(dto.hvostSteps.offer)} Предложено КП`,
-                      `${mark(dto.hvostSteps.complect)} Озвучено наполнение`,
-                      `${mark(dto.hvostSteps.price)} Озвучена цена`,
-                      `${mark(dto.hvostSteps.decisionDate)} Назначена дата решения`,
-                      `${mark(dto.hvostSteps.dateAgreed)} Дата согласована с клиентом`,
+                      `${mark(dto.hvostSteps.desire)} ЖЕЛАНИЕ РАБОТАТЬ С ГАРАНТОМ`,
+                      `${mark(dto.hvostSteps.offered)} ЧТО ПРЕДЛОЖИЛИ`,
+                      `${mark(dto.hvostSteps.priceReaction)} РЕАКЦИЯ НА ЦЕНУ`,
+                      `${mark(dto.hvostSteps.decisionProcess)} ПРОЦЕСС ПРИНЯТИЯ РЕШЕНИЯ`,
+                      `${mark(dto.hvostSteps.decisionWay)} ВЫХОД НА РЕШЕНИЕ`,
                   ].join('\n')
                 : '';
             comments.push(
@@ -1013,15 +1009,11 @@ export class AgentAnalysisIntakeService {
             const items = dto.fiveKItems
                 ? '\n\nЧеклист (как в отчёте менеджера):\n' +
                   [
-                      `${mark(dto.fiveKItems.clientWhat)} КЛИЕНТ: что хочет`,
-                      `${mark(dto.fiveKItems.clientReady)} КЛИЕНТ: готов работать`,
-                      `${mark(dto.fiveKItems.clientPrice)} КЛИЕНТ: укладываемся в цену`,
-                      `${mark(dto.fiveKItems.companyWho)} КОМПАНИЯ: кто решает`,
-                      `${mark(dto.fiveKItems.companyHow)} КОМПАНИЯ: как решает`,
-                      `${mark(dto.fiveKItems.companyRight)} КОМПАНИЯ: подбор верен`,
-                      `${mark(dto.fiveKItems.colleagues)} КОЛЛЕГИ: кто будет работать`,
-                      `${mark(dto.fiveKItems.competitor)} КОНКУРЕНТ: критерии сравнения`,
-                      `${mark(dto.fiveKItems.criteria)} КРИТЕРИИ выбора СПС`,
+                      `${mark(dto.fiveKItems.client)} КЛИЕНТ`,
+                      `${mark(dto.fiveKItems.company)} КОМПАНИЯ`,
+                      `${mark(dto.fiveKItems.colleagues)} КОЛЛЕГИ`,
+                      `${mark(dto.fiveKItems.competitor)} КОНКУРЕНТ`,
+                      `${mark(dto.fiveKItems.criteria)} КРИТЕРИИ ВЫБОРА`,
                   ].join('\n')
                 : '';
             comments.push(

@@ -239,23 +239,30 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     /*
-     * Детальные ответы «Пять К» — Клиент, Компания, Коллеги, Конкурент,
-     * Критерий выбора. Девять string-полей, установлены ТОЛЬКО НА ЛИДЕ:
-     * анкету заполняет фрейм в карточке клиента, а сводные ответы
-     * (op_presentation_xvost / op_presentation_5k выше) живут ещё и на
-     * сделке. Если владелец заведёт детальные поля на сделках, перенос
-     * «последней проведённой» подхватит их автоматически (см.
-     * PRESENTATION_SURVEY_FIELD_CODES в event-report).
+     * «Пять К» — ПЯТЬ текстовых полей (переделка 01.09.2026).
+     *
+     * Было девять полей по одному вопросу в каждом; стало пять по теме, а
+     * подвопросы живут ВНУТРИ значения текстом (шаблон собирает
+     * SURVEY_TEMPLATES в shared/presentation-survey) и в подсказке поля.
+     *
+     * Коды НОВЫЕ целиком, включая те две темы, что и раньше жили одним
+     * полем (конкурент, критерии): решение владельца — «поля новые, запись
+     * новая». Переиспользуй мы старый код, ответы на СТАРЫЙ вопрос
+     * смешались бы с ответами на новый в одном поле, и разделить их было бы
+     * уже нечем.
+     *
+     * Установлены на лиде и сделке; сводные op_presentation_5k /
+     * op_presentation_xvost выше не тронуты.
      */
     {
-        name: 'КЛИЕНТ: Что хочет?',
+        name: "5К КЛИЕНТ",
         appType: 'pres',
         type: 'string',
         items: [],
-        code: 'op_5k_client_what',
-        lead: 'OP_5K_CLIENT_WHAT',
+        code: 'op_5k_client',
+        lead: 'OP_5K_CLIENT',
         company: '',
-        deal: 'OP_5K_CLIENT_WHAT',
+        deal: 'OP_5K_CLIENT',
         smart: '',
         task: '',
         app: 'calling',
@@ -265,14 +272,14 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
-        name: 'КЛИЕНТ: Готов работать?',
+        name: "5К КОМПАНИЯ",
         appType: 'pres',
         type: 'string',
         items: [],
-        code: 'op_5k_client_ready',
-        lead: 'OP_5K_CLIENT_READY',
+        code: 'op_5k_company',
+        lead: 'OP_5K_COMPANY',
         company: '',
-        deal: 'OP_5K_CLIENT_READY',
+        deal: 'OP_5K_COMPANY',
         smart: '',
         task: '',
         app: 'calling',
@@ -282,14 +289,14 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
-        name: 'КЛИЕНТ: Укладываемся в цену?',
+        name: "5К КОЛЛЕГИ",
         appType: 'pres',
         type: 'string',
         items: [],
-        code: 'op_5k_client_price',
-        lead: 'OP_5K_CLIENT_PRICE',
+        code: 'op_5k_colleagues',
+        lead: 'OP_5K_COLLEAGUES',
         company: '',
-        deal: 'OP_5K_CLIENT_PRICE',
+        deal: 'OP_5K_COLLEAGUES',
         smart: '',
         task: '',
         app: 'calling',
@@ -299,14 +306,14 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
-        name: 'КОМПАНИЯ: Кто принимает решение?',
+        name: "5К КОНКУРЕНТ",
         appType: 'pres',
         type: 'string',
         items: [],
-        code: 'op_5k_company_who',
-        lead: 'OP_5K_COMPANY_WHO',
+        code: 'op_5k_competitor',
+        lead: 'OP_5K_COMPETITOR',
         company: '',
-        deal: 'OP_5K_COMPANY_WHO',
+        deal: 'OP_5K_COMPETITOR',
         smart: '',
         task: '',
         app: 'calling',
@@ -316,82 +323,14 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
-        name: 'КОМПАНИЯ: Как принимается решение?',
+        name: "5К КРИТЕРИИ ВЫБОРА",
         appType: 'pres',
         type: 'string',
         items: [],
-        code: 'op_5k_company_how',
-        lead: 'OP_5K_COMPANY_HOW',
+        code: 'op_5k_criteria',
+        lead: 'OP_5K_CRITERIA',
         company: '',
-        deal: 'OP_5K_COMPANY_HOW',
-        smart: '',
-        task: '',
-        app: 'calling',
-        order: 220,
-        is_rewrite: '',
-        isNeedUpdate: true,
-        isMultiple: false,
-    },
-    {
-        name: 'КОМПАНИЯ: Правильно ли подобрали цену и комплект?',
-        appType: 'pres',
-        type: 'string',
-        items: [],
-        code: 'op_5k_company_right',
-        lead: 'OP_5K_COMPANY_RIGHT',
-        company: '',
-        deal: 'OP_5K_COMPANY_RIGHT',
-        smart: '',
-        task: '',
-        app: 'calling',
-        order: 220,
-        is_rewrite: '',
-        isNeedUpdate: true,
-        isMultiple: false,
-    },
-    {
-        name: 'КОЛЛЕГИ: Кто будет работать с системой, будут ли обсуждать?',
-        appType: 'pres',
-        type: 'string',
-        items: [],
-        code: 'op_5k_command',
-        lead: 'OP_5K_COMMAND',
-        company: '',
-        deal: 'OP_5K_COMMAND',
-        smart: '',
-        task: '',
-        app: 'calling',
-        order: 220,
-        is_rewrite: '',
-        isNeedUpdate: true,
-        isMultiple: false,
-    },
-    {
-        name: 'КОНКУРЕНТ: По каким критериям нас сравнивают?',
-        appType: 'pres',
-        type: 'string',
-        items: [],
-        code: 'op_5k_concurent',
-        lead: 'OP_5K_CONCURENT',
-        company: '',
-        deal: 'OP_5K_CONCURENT',
-        smart: '',
-        task: '',
-        app: 'calling',
-        order: 220,
-        is_rewrite: '',
-        isNeedUpdate: true,
-        isMultiple: false,
-    },
-    {
-        name: 'КРИТЕРИЙ ВЫБОРА: Что важно при выборе СПС?',
-        appType: 'pres',
-        type: 'string',
-        items: [],
-        code: 'op_5k_criteri',
-        lead: 'OP_5K_CRITERI',
-        company: '',
-        deal: 'OP_5K_CRITERI',
+        deal: 'OP_5K_CRITERIA',
         smart: '',
         task: '',
         app: 'calling',
@@ -1509,98 +1448,15 @@ export const PBX_SALES_EVENT_FIELDS = [
         isNeedUpdate: true,
         isMultiple: false,
     },
-    {
-        // Вопрос «выдернут из Хвоста» в фича-поле: код вопроса опросника
-        // на фронте совпадает с кодом поля — персист CheckPresentation
-        // резолвит его сам.
-        name: 'ОП Согласование даты по решению',
-        appType: 'pres',
-        type: 'date',
-        items: [],
-        code: 'op_xvost_decision_date_agreement',
-        lead: '',
-        company: '',
-        deal: 'OP_XVOST_DECISION_DATE_AGREEMENT',
-        smart: '',
-        task: '',
-        app: 'calling',
-        order: 705,
-        is_rewrite: '',
-        isNeedUpdate: true,
-        isMultiple: false,
-    },
-    {
-        // Вопрос «выдернут из Хвоста» — см. выше. Код БЕЗ префикса xvost —
-        // так поле установлено владельцем (таблица todo2508, строка 416).
-        name: 'ОП Дата похода к руководителю',
-        appType: 'pres',
-        type: 'date',
-        items: [],
-        code: 'op_manager_approach_date',
-        lead: '',
-        company: '',
-        deal: 'OP_MANAGER_APPROACH_DATE',
-        smart: '',
-        task: '',
-        app: 'calling',
-        order: 706,
-        is_rewrite: '',
-        isNeedUpdate: true,
-        isMultiple: false,
-    },
-    {
-        // Булевы вопросы «Разговора» опросника хвоста — настоящие pbx-поля
-        // сделки (владельческая таблица todo2508, строки 413-415).
-        name: 'Предложено КП ?',
-        appType: 'pres',
-        type: 'boolean',
-        items: [],
-        code: 'op_xvost_is_offer',
-        lead: '',
-        company: '',
-        deal: 'OP_XVOST_IS_OFFER',
-        smart: '',
-        task: '',
-        app: 'calling',
-        order: 707,
-        is_rewrite: '',
-        isNeedUpdate: true,
-        isMultiple: false,
-    },
-    {
-        name: 'Озвучить наполнение ?',
-        appType: 'pres',
-        type: 'boolean',
-        items: [],
-        code: 'op_xvost_is_complect',
-        lead: '',
-        company: '',
-        deal: 'OP_XVOST_IS_COMPLECT',
-        smart: '',
-        task: '',
-        app: 'calling',
-        order: 708,
-        is_rewrite: '',
-        isNeedUpdate: true,
-        isMultiple: false,
-    },
-    {
-        name: 'Озвучить цену ?',
-        appType: 'pres',
-        type: 'boolean',
-        items: [],
-        code: 'op_xvost_is_price',
-        lead: '',
-        company: '',
-        deal: 'OP_XVOST_IS_PRICE',
-        smart: '',
-        task: '',
-        app: 'calling',
-        order: 709,
-        is_rewrite: '',
-        isNeedUpdate: true,
-        isMultiple: false,
-    },
+    /*
+     * ЗДЕСЬ БЫЛИ пять полей «Хвоста», ушедших из состава 01.09.2026:
+     * согласование даты по решению, дата похода к руководителю и три
+     * галочки (КП предложено / наполнение озвучено / цена озвучена).
+     *
+     * Галочки растворились в связном тексте «ЧТО ПРЕДЛОЖИЛИ»
+     * (op_xvost_offered ниже) — сменился и смысл, и ТИП поля. Из дат
+     * осталась одна: op_xvost_decision_call_date выше.
+     */
     {
         // Связи «Звонки По решению» — элементы будущего ЗПР-смарта
         // (концепция front/docs/zpr-smart-concept.md). Пока только реестр.
@@ -2281,7 +2137,18 @@ export const PBX_SALES_EVENT_FIELDS = [
         order: 720,
         is_rewrite: '',
         isNeedUpdate: true,
-        isMultiple: false,
+        // МНОЖЕСТВЕННОЕ (решение 01.09.2026). На звонке возражений обычно
+        // несколько — «дорого» и «нет времени» разом, — и одиночное поле
+        // заставляло менеджера выбрать одно, потеряв остальные.
+        //
+        // Запись — ЗАМЕНОЙ всего набора за звонок, не добавлением: поле
+        // отвечает на «что мешает СЕЙЧАС», а накопление за полгода
+        // превратило бы его в свалку, где текущего возражения не видно.
+        // История «что мешало раньше» и так лежит в оси событий клиента.
+        //
+        // Парное op_objection_comment остаётся ОДИНОЧНЫМ: это дословная
+        // фраза клиента, она одна.
+        isMultiple: true,
     },
     {
         // Формулировка клиента СВОИМИ СЛОВАМИ: справочник огрубляет
@@ -2352,26 +2219,33 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     /*
-     * Вопросы опросника «Разговор» (обязательные шесть) — в свои поля.
+     * «Хвост» — ПЯТЬ текстовых полей плюс дата (переделка 01.09.2026).
      *
-     * До этого ответы жили ТОЛЬКО в тексте комментария к презентации:
-     * прочитать их мог человек, а отфильтровать «кому цена дорога» — никто.
-     * Префикс op_talk_* намеренный: xo_* занят холодным обзвоном, и эти
-     * ответы к нему отношения не имеют.
+     * Что заменено: шесть полей op_talk_* (по одному вопросу в каждом), три
+     * галочки op_xvost_is_* и две даты. Галочки стали частью связного
+     * текста «ЧТО ПРЕДЛОЖИЛИ», то есть сменился и смысл, и ТИП — переносить
+     * старые значения некуда и незачем.
      *
-     * Сущности lead+company+deal: анкету пишет ФРЕЙМ в лид, а event-report
-     * разносит «последнюю проведённую» по сделкам тем же каркасом, что и
-     * «5К» (PRESENTATION_SURVEY_FIELD_CODES).
+     * Датой осталась одна — op_xvost_decision_call_date (выше): «дата звонка
+     * по решению». «Дата подхода к руководителю» и «согласование даты» из
+     * состава ушли.
+     *
+     * Сущности lead+deal, БЕЗ компании — намеренно. У op_talk_* компания
+     * была, но не писал в неё никто: шесть вечно пустых полей в карточке.
+     * Повторять это в новом составе нет причины.
+     *
+     * Подвопросы живут ВНУТРИ значения текстом (шаблон — SURVEY_TEMPLATES
+     * в shared/presentation-survey) и в подсказке поля.
      */
     {
-        name: 'РАЗГОВОР: Первое впечатление',
+        name: "ХВОСТ ЖЕЛАНИЕ РАБОТАТЬ С ГАРАНТОМ",
         appType: 'pres',
         type: 'string',
         items: [],
-        code: 'op_talk_impression',
-        lead: 'OP_TALK_IMPRESSION',
-        company: 'OP_TALK_IMPRESSION',
-        deal: 'OP_TALK_IMPRESSION',
+        code: 'op_xvost_desire',
+        lead: 'OP_XVOST_DESIRE',
+        company: '',
+        deal: 'OP_XVOST_DESIRE',
         smart: '',
         task: '',
         app: 'calling',
@@ -2381,14 +2255,14 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
-        name: 'РАЗГОВОР: Что запомнили',
+        name: "ХВОСТ ЧТО ПРЕДЛОЖИЛИ",
         appType: 'pres',
         type: 'string',
         items: [],
-        code: 'op_talk_remembered',
-        lead: 'OP_TALK_REMEMBERED',
-        company: 'OP_TALK_REMEMBERED',
-        deal: 'OP_TALK_REMEMBERED',
+        code: 'op_xvost_offered',
+        lead: 'OP_XVOST_OFFERED',
+        company: '',
+        deal: 'OP_XVOST_OFFERED',
         smart: '',
         task: '',
         app: 'calling',
@@ -2398,14 +2272,14 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
-        name: 'РАЗГОВОР: Желание работать',
+        name: "ХВОСТ РЕАКЦИЯ НА ЦЕНУ",
         appType: 'pres',
         type: 'string',
         items: [],
-        code: 'op_talk_desire',
-        lead: 'OP_TALK_DESIRE',
-        company: 'OP_TALK_DESIRE',
-        deal: 'OP_TALK_DESIRE',
+        code: 'op_xvost_price_reaction',
+        lead: 'OP_XVOST_PRICE_REACTION',
+        company: '',
+        deal: 'OP_XVOST_PRICE_REACTION',
         smart: '',
         task: '',
         app: 'calling',
@@ -2415,14 +2289,14 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
-        name: 'РАЗГОВОР: Как принимается решение',
+        name: "ХВОСТ ПРОЦЕСС ПРИНЯТИЯ РЕШЕНИЯ",
         appType: 'pres',
         type: 'string',
         items: [],
-        code: 'op_talk_decision_process',
-        lead: 'OP_TALK_DECISION_PROCESS',
-        company: 'OP_TALK_DECISION_PROCESS',
-        deal: 'OP_TALK_DECISION_PROCESS',
+        code: 'op_xvost_decision_process',
+        lead: 'OP_XVOST_DECISION_PROCESS',
+        company: '',
+        deal: 'OP_XVOST_DECISION_PROCESS',
         smart: '',
         task: '',
         app: 'calling',
@@ -2432,35 +2306,18 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
-        name: 'РАЗГОВОР: Мнение о цене',
+        name: "ХВОСТ ВЫХОД НА РЕШЕНИЕ",
         appType: 'pres',
         type: 'string',
         items: [],
-        code: 'op_talk_price_opinion',
-        lead: 'OP_TALK_PRICE_OPINION',
-        company: 'OP_TALK_PRICE_OPINION',
-        deal: 'OP_TALK_PRICE_OPINION',
+        code: 'op_xvost_decision_way',
+        lead: 'OP_XVOST_DECISION_WAY',
+        company: '',
+        deal: 'OP_XVOST_DECISION_WAY',
         smart: '',
         task: '',
         app: 'calling',
         order: 728,
-        is_rewrite: '',
-        isNeedUpdate: true,
-        isMultiple: false,
-    },
-    {
-        name: 'РАЗГОВОР: Готовность подойти к руководителю',
-        appType: 'pres',
-        type: 'string',
-        items: [],
-        code: 'op_talk_boss_readiness',
-        lead: 'OP_TALK_BOSS_READINESS',
-        company: 'OP_TALK_BOSS_READINESS',
-        deal: 'OP_TALK_BOSS_READINESS',
-        smart: '',
-        task: '',
-        app: 'calling',
-        order: 729,
         is_rewrite: '',
         isNeedUpdate: true,
         isMultiple: false,

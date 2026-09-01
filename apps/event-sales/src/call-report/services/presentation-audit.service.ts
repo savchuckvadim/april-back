@@ -3,6 +3,10 @@ import { PBXService } from '@lib/pbx/pbx.service';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import {
+    FIVE_K_TEMPLATES,
+    XVOST_TEMPLATES,
+} from '../../shared/presentation-survey';
+import {
     renderSalesListRecordLine,
     SalesListReaderService,
 } from '@lib/portal-lib/pbx/pbx-sales-list-reader';
@@ -340,11 +344,11 @@ export class PresentationAuditService {
             dto.hvostSteps
                 ? 'Чеклист хвоста (AI по звонку): ' +
                   [
-                      `КП: ${this.boolLabel(dto.hvostSteps.offer)}`,
-                      `наполнение: ${this.boolLabel(dto.hvostSteps.complect)}`,
-                      `цена: ${this.boolLabel(dto.hvostSteps.price)}`,
-                      `дата решения: ${this.boolLabel(dto.hvostSteps.decisionDate)}`,
-                      `дата согласована: ${this.boolLabel(dto.hvostSteps.dateAgreed)}`,
+                      `желание: ${this.boolLabel(dto.hvostSteps.desire)}`,
+                      `что предложили: ${this.boolLabel(dto.hvostSteps.offered)}`,
+                      `реакция на цену: ${this.boolLabel(dto.hvostSteps.priceReaction)}`,
+                      `процесс решения: ${this.boolLabel(dto.hvostSteps.decisionProcess)}`,
+                      `выход на решение: ${this.boolLabel(dto.hvostSteps.decisionWay)}`,
                   ].join(', ')
                 : null,
             dto.hvostAnalysis ? `Разбор хвоста:\n${dto.hvostAnalysis}` : null,
@@ -352,12 +356,8 @@ export class PresentationAuditService {
             dto.fiveKItems
                 ? 'Чеклист 5К (AI по звонку): ' +
                   [
-                      `клиент-что: ${this.boolLabel(dto.fiveKItems.clientWhat)}`,
-                      `клиент-готов: ${this.boolLabel(dto.fiveKItems.clientReady)}`,
-                      `клиент-цена: ${this.boolLabel(dto.fiveKItems.clientPrice)}`,
-                      `компания-кто: ${this.boolLabel(dto.fiveKItems.companyWho)}`,
-                      `компания-как: ${this.boolLabel(dto.fiveKItems.companyHow)}`,
-                      `подбор верен: ${this.boolLabel(dto.fiveKItems.companyRight)}`,
+                      `клиент: ${this.boolLabel(dto.fiveKItems.client)}`,
+                      `компания: ${this.boolLabel(dto.fiveKItems.company)}`,
                       `коллеги: ${this.boolLabel(dto.fiveKItems.colleagues)}`,
                       `конкурент: ${this.boolLabel(dto.fiveKItems.competitor)}`,
                       `критерии: ${this.boolLabel(dto.fiveKItems.criteria)}`,
@@ -454,19 +454,24 @@ export class PresentationAuditService {
         const fiveK = readField(PBX_SALES_EVENT_FIELD_CODES.op_presentation_5k);
         const comments = readField(PBX_SALES_EVENT_FIELD_CODES.pres_comments);
 
-        // Гранулярный чеклист хвоста — прямо на сделке (op_xvost_*).
+        // Гранулярный «Хвост» — пять текстовых блоков на сделке плюс дата.
+        //
+        // Подписи и коды берутся из XVOST_TEMPLATES, а не переписываются
+        // здесь руками: это единственный источник текста вопросов, и сверка
+        // AI обязана спрашивать ровно то же, что анкета менеджера. Своя
+        // копия списка разъехалась бы с анкетой на первой же правке
+        // формулировки — а заметил бы это только тот, кто читает отчёт.
         const codes = PBX_SALES_EVENT_FIELD_CODES;
         const xvostChecklist: Array<[string, string | null]> = [
-            ['Предложено КП', readField(codes.op_xvost_is_offer)],
-            ['Озвучено наполнение', readField(codes.op_xvost_is_complect)],
-            ['Озвучена цена', readField(codes.op_xvost_is_price)],
+            ...XVOST_TEMPLATES.map(
+                (template): [string, string | null] => [
+                    template.title,
+                    readField(template.code),
+                ],
+            ),
             [
                 'Дата звонка по решению',
                 readField(codes.op_xvost_decision_call_date),
-            ],
-            [
-                'Согласование даты',
-                readField(codes.op_xvost_decision_date_agreement),
             ],
         ];
         const xvostGranular = xvostChecklist.some(([, value]) => value !== null)
@@ -475,7 +480,7 @@ export class PresentationAuditService {
                   .join('\n')
             : null;
 
-        // Гранулярные 9 вопросов 5К менеджер заполняет на ЛИДЕ (op_5k_*).
+        // Гранулярные пять блоков 5К менеджер заполняет на ЛИДЕ (op_5k_*).
         const fiveKGranular = await this.readLeadFiveK(
             bitrix,
             portal,
@@ -514,7 +519,7 @@ export class PresentationAuditService {
     }
 
     /**
-     * Гранулярные ответы 5К (9 вопросов op_5k_*) менеджер даёт в ЛИДЕ —
+     * Гранулярные ответы 5К (пять блоков op_5k_*) менеджер даёт в ЛИДЕ —
      * реестр pbx-sales-event-field держит их только на лиде, в смарт
      * презентации они зеркалятся оттуда же. Лид берём из LEAD_ID сделки;
      * нет лида или полей — честный null (сверка не падает).
@@ -537,18 +542,9 @@ export class PresentationAuditService {
             })) as { result?: Record<string, unknown> };
             const lead = response?.result;
             if (!lead) return null;
-            const codes = PBX_SALES_EVENT_FIELD_CODES;
-            const questions: Array<[string, string]> = [
-                ['КЛИЕНТ: Что хочет?', codes.op_5k_client_what],
-                ['КЛИЕНТ: Готов работать?', codes.op_5k_client_ready],
-                ['КЛИЕНТ: Укладываемся в цену?', codes.op_5k_client_price],
-                ['КОМПАНИЯ: Кто решает?', codes.op_5k_company_who],
-                ['КОМПАНИЯ: Как решает?', codes.op_5k_company_how],
-                ['КОМПАНИЯ: Верно подобрали?', codes.op_5k_company_right],
-                ['КОЛЛЕГИ: Кто будет работать?', codes.op_5k_command],
-                ['КОНКУРЕНТ: Критерии сравнения?', codes.op_5k_concurent],
-                ['КРИТЕРИЙ ВЫБОРА СПС?', codes.op_5k_criteri],
-            ];
+            const questions: Array<[string, string]> = FIVE_K_TEMPLATES.map(
+                (template): [string, string] => [template.title, template.code],
+            );
             const answered = questions
                 .map(([label, code]): [string, string | null] => [
                     label,

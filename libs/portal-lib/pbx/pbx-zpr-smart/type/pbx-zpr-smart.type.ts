@@ -244,6 +244,25 @@ export const ZPR_SMART_FIELDS = [
 
     // === Снимок клиента на момент звонка (карта ZPR_SMART_SURVEY_MIRROR) ===
     {
+        /*
+         * Сводный «Хвост» и сводные «Пять К» — требование владельца
+         * 01.09.2026: запланировали ЗПР и в том же отчёте отчитались по
+         * презентации — собранный отчёт обязан приехать в элемент ЗПР.
+         *
+         * Только СВОДКИ, без разбивки по блокам: детализация по полям живёт
+         * в элементе презентации, а звонку по решению нужен итог одной
+         * строкой — что осталось «хвостом» и что выяснили по пяти «К».
+         */
+        code: 'ZPR_XVOST',
+        name: 'Хвост (сводно)',
+        type: 'string',
+    },
+    {
+        code: 'ZPR_5K_SUMMARY',
+        name: 'Пять К (сводно)',
+        type: 'string',
+    },
+    {
         // Плановая дата покупки — требование владельца 31.08: элемент ЗПР
         // обязан нести её ВСЕГДА (звонок по решению и есть разговор о
         // покупке). Значение-истина живёт на сделке/компании
@@ -282,7 +301,8 @@ export type ZprSmartFieldCode = (typeof ZPR_SMART_FIELDS)[number]['code'];
  * `from` — где живёт значение-истина; порядок записей на один target —
  * порядок фолбэка (первое непустое побеждает): плановая дата покупки
  * лежит на СДЕЛКЕ и на КОМПАНИИ (на лиде поля нет — см. реестр
- * op_sale_date_prognoz), сделка точнее.
+ * op_sale_date_prognoz), сделка точнее. Сводки анкеты лежат на сделке и
+ * лиде; компании у них нет.
  */
 export const ZPR_SMART_SURVEY_MIRROR = [
     {
@@ -294,6 +314,30 @@ export const ZPR_SMART_SURVEY_MIRROR = [
         source: 'op_sale_date_prognoz',
         target: 'ZPR_SALE_DATE_PROGNOZ',
         from: 'company',
+    },
+    // Сводки анкеты: значение-истина на сделке, фолбэк — лид (компании у
+    // этих полей нет, см. реестр op_presentation_*). Приоритетнее обоих —
+    // payload ЭТОГО отчёта: анкету могли заполнить прямо сейчас, и в
+    // прочитанной строке сделки лежит ещё прошлая сводка.
+    {
+        source: 'op_presentation_xvost',
+        target: 'ZPR_XVOST',
+        from: 'deal',
+    },
+    {
+        source: 'op_presentation_xvost',
+        target: 'ZPR_XVOST',
+        from: 'lead',
+    },
+    {
+        source: 'op_presentation_5k',
+        target: 'ZPR_5K_SUMMARY',
+        from: 'deal',
+    },
+    {
+        source: 'op_presentation_5k',
+        target: 'ZPR_5K_SUMMARY',
+        from: 'lead',
     },
 ] as const satisfies ReadonlyArray<{
     source: string;

@@ -70,6 +70,10 @@ export function buildZprFlowJobs(
             portal: ctx.portal,
             baseDeal: ctx.currentBaseDeal as Record<string, unknown> | null,
             company: ctx.company as Record<string, unknown> | null,
+            lead: ctx.lead as unknown as Record<string, unknown> | null,
+            // Сводки анкеты ЭТОГО отчёта: строки сущностей прочитаны ДО
+            // записи батча, поэтому payload точнее их.
+            survey: ctx.presentationSurvey,
         });
     } catch (error) {
         logger.warn(

@@ -13,3 +13,4 @@
  */
 export * from './presentation-survey.codes';
 export * from './presentation-survey.values';
+export * from './presentation-survey.templates';

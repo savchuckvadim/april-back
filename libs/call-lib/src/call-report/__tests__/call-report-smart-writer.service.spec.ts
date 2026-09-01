@@ -82,15 +82,15 @@ describe('CallReportSmartWriterService', () => {
             transcriptionId: '42',
             hvostDone: false,
             hvostSteps: {
-                offer: true,
-                complect: false,
-                price: null,
-                decisionDate: false,
-                dateAgreed: false,
+                desire: true,
+                offered: false,
+                priceReaction: null,
+                decisionProcess: false,
+                decisionWay: false,
             },
             fiveKItems: {
-                clientWhat: true,
-                clientReady: false,
+                client: true,
+                company: false,
                 colleagues: true,
                 criteria: null,
             },
@@ -99,15 +99,15 @@ describe('CallReportSmartWriterService', () => {
         const fields = (
             bitrix.item.add.mock.calls[0] as unknown[]
         )[1] as Record<string, unknown>;
-        expect(fields.ufCrm128HvostOffer).toBe(1);
-        expect(fields.ufCrm128HvostComplect).toBe(0);
+        expect(fields.ufCrm128HvostDesire).toBe(1);
+        expect(fields.ufCrm128HvostOffered).toBe(0);
         // null «не применимо/не определено» — поле не пишется вовсе.
-        expect(fields).not.toHaveProperty('ufCrm128HvostPrice');
-        expect(fields.ufCrm128HvostDecisionDate).toBe(0);
-        expect(fields.ufCrm128FiveKClientWhat).toBe(1);
-        expect(fields.ufCrm128FiveKClientReady).toBe(0);
-        expect(fields.ufCrm128FiveKCommand).toBe(1);
-        expect(fields).not.toHaveProperty('ufCrm128FiveKCriteri');
+        expect(fields).not.toHaveProperty('ufCrm128HvostPriceReaction');
+        expect(fields.ufCrm128HvostDecisionProcess).toBe(0);
+        expect(fields.ufCrm128FiveKClient).toBe(1);
+        expect(fields.ufCrm128FiveKCompany).toBe(0);
+        expect(fields.ufCrm128FiveKColleagues).toBe(1);
+        expect(fields).not.toHaveProperty('ufCrm128FiveKCriteria');
     });
 
     it('пишет связи воронок в формате поля, привязки списков и разделы анализа', async () => {

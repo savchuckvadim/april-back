@@ -160,7 +160,7 @@ describe('CallReportWeeklyDataService', () => {
                     // Классификатор ошибся с типом — разбор при этом есть.
                     callType: 'other',
                     hvostDone: false,
-                    hvostSteps: { offer: true, price: false },
+                    hvostSteps: { desire: true, priceReaction: false },
                     fiveKAnalysis: 'Коллеги — не выяснено',
                 },
             },
@@ -174,7 +174,7 @@ describe('CallReportWeeklyDataService', () => {
 
         expect(dataset.presentations).toHaveLength(1);
         expect(dataset.presentations[0].callType).toBe('other');
-        expect(dataset.presentations[0].hvostSteps?.offer).toBe(true);
+        expect(dataset.presentations[0].hvostSteps?.desire).toBe(true);
     });
 
     it('звонок без методологического разбора на лист презентаций не попадает', async () => {
@@ -213,8 +213,8 @@ describe('CallReportExcelBuilder', () => {
                 smartItemId: 206,
                 companyId: 33,
                 contactId: 44,
-                hvostSteps: { offer: true, complect: false, price: null },
-                fiveKItems: { clientWhat: true, colleagues: false },
+                hvostSteps: { desire: true, offered: false, priceReaction: null },
+                fiveKItems: { client: true, colleagues: false },
                 entityType: 'deal',
                 entityId: 555,
                 activityId: '101',

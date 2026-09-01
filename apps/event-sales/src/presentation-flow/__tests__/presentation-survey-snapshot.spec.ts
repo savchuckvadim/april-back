@@ -13,9 +13,13 @@ import {
  * Снимок анкеты и вывод исхода — чистые функции сайд-flow презентаций.
  *
  * Порядок источников снимка: PAYLOAD отчёта → ЛИД → БАЗОВАЯ СДЕЛКА. Первые
- * пять кейсов — легаси-путь (payload не прислан, всё как раньше: «5К» с
- * лида, «Разговор» с фолбэком на сделку, булевы в 'Y'/'N', пустые ответы
- * не переносятся); дальше — новый путь с ответами в payload.
+ * кейсы — легаси-путь (payload не прислан: «5К» и «Хвост» с лида с фолбэком
+ * на сделку, пустые ответы не переносятся); дальше — новый путь с ответами
+ * в payload.
+ *
+ * После переделки 01.09.2026 булевых вопросов в анкете нет вовсе: три
+ * галочки стали частью связного текста «ЧТО ПРЕДЛОЖИЛИ». Со сделки читается
+ * ровно одно поле — дата звонка по решению.
  */
 const portal = (over?: {
     /** Коды полей, которых на портале НЕТ (у всех сущностей). */
@@ -38,29 +42,24 @@ const payload = (raw: RawPresentationSurveyValues) =>
     normalizePresentationSurvey(raw);
 
 describe('buildPresentationSurveySnapshot', () => {
-    it('«5К» с лида, «Хвост» со сделки, булевы → Y/N', () => {
+    it('«5К» и «Хвост» с лида, дата решения со сделки', () => {
         const snapshot = buildPresentationSurveySnapshot({
             portal: portal(),
             lead: {
                 UF_CRM_OP_PRESENTATION_5K: 'Решает директор',
-                UF_CRM_OP_5K_CLIENT_WHAT: '  Хочет замену  ',
+                UF_CRM_OP_5K_CLIENT: '  Хочет замену  ',
                 UF_CRM_OP_PRESENTATION_XVOST: 'Дожать через неделю',
             },
             baseDeal: {
                 UF_CRM_OP_XVOST_DECISION_CALL_DATE: '05.09.2026',
-                UF_CRM_OP_XVOST_IS_OFFER: '1',
-                UF_CRM_OP_XVOST_IS_PRICE: '0',
             },
         });
 
         expect(snapshot.PRES_5K_SUMMARY).toBe('Решает директор');
         // Строки обрезаются по краям — как и при переносе в pres-сделку.
-        expect(snapshot.PRES_5K_CLIENT_WHAT).toBe('Хочет замену');
+        expect(snapshot.PRES_5K_CLIENT).toBe('Хочет замену');
         expect(snapshot.PRES_XVOST).toBe('Дожать через неделю');
         expect(snapshot.PRES_DECISION_CALL_DATE).toBe('05.09.2026');
-        // '1' → 'Y', а '0' обязано стать 'N', а не непустой строкой «0».
-        expect(snapshot.PRES_IS_OFFER).toBe('Y');
-        expect(snapshot.PRES_IS_PRICE).toBe('N');
     });
 
     it('пустые ответы и неустановленные поля не переносятся', () => {
@@ -75,8 +74,8 @@ describe('buildPresentationSurveySnapshot', () => {
 
         expect(snapshot.PRES_5K_SUMMARY).toBeUndefined();
         expect(snapshot.PRES_XVOST).toBeUndefined();
-        // Сделки нет — вопросы «Разговора» просто отсутствуют.
-        expect(snapshot.PRES_IS_OFFER).toBeUndefined();
+        // Сделки нет — дате звонка по решению взяться неоткуда.
+        expect(snapshot.PRES_DECISION_CALL_DATE).toBeUndefined();
     });
 
     it('без лида ответы анкеты читаются с базовой сделки (deal-placement)', () => {
@@ -88,35 +87,33 @@ describe('buildPresentationSurveySnapshot', () => {
             lead: null,
             baseDeal: {
                 UF_CRM_OP_PRESENTATION_5K: 'Решает директор',
-                UF_CRM_OP_5K_CLIENT_WHAT: 'Хочет замену',
-                UF_CRM_OP_TALK_IMPRESSION: 'Слушали внимательно',
-                UF_CRM_OP_XVOST_IS_OFFER: '1',
+                UF_CRM_OP_5K_CLIENT: 'Хочет замену',
+                UF_CRM_OP_XVOST_DESIRE: 'Слушали внимательно',
             },
         });
 
         expect(snapshot.PRES_5K_SUMMARY).toBe('Решает директор');
-        expect(snapshot.PRES_5K_CLIENT_WHAT).toBe('Хочет замену');
-        expect(snapshot.PRES_TALK_IMPRESSION).toBe('Слушали внимательно');
-        expect(snapshot.PRES_IS_OFFER).toBe('Y');
+        expect(snapshot.PRES_5K_CLIENT).toBe('Хочет замену');
+        expect(snapshot.PRES_XVOST_DESIRE).toBe('Слушали внимательно');
     });
 
     it('лид точнее сделки, а пустой лид фолбэк не блокирует', () => {
         const snapshot = buildPresentationSurveySnapshot({
             portal: portal(),
             lead: {
-                UF_CRM_OP_5K_CLIENT_WHAT: 'из лида',
-                UF_CRM_OP_TALK_IMPRESSION: '   ',
+                UF_CRM_OP_5K_CLIENT: 'из лида',
+                UF_CRM_OP_XVOST_DESIRE: '   ',
             },
             baseDeal: {
-                UF_CRM_OP_5K_CLIENT_WHAT: 'из сделки',
-                UF_CRM_OP_TALK_IMPRESSION: 'из сделки',
+                UF_CRM_OP_5K_CLIENT: 'из сделки',
+                UF_CRM_OP_XVOST_DESIRE: 'из сделки',
             },
         });
 
         // Первое непустое побеждает: заполненный лид главнее…
-        expect(snapshot.PRES_5K_CLIENT_WHAT).toBe('из лида');
+        expect(snapshot.PRES_5K_CLIENT).toBe('из лида');
         // …а пробельный ответ лида «непустым» не считается.
-        expect(snapshot.PRES_TALK_IMPRESSION).toBe('из сделки');
+        expect(snapshot.PRES_XVOST_DESIRE).toBe('из сделки');
     });
 
     /*
@@ -131,8 +128,8 @@ describe('buildPresentationSurveySnapshot', () => {
             survey: payload({
                 xvost: 'Дожать через неделю',
                 fiveKSummary: 'Решает директор',
-                fiveK: { op_5k_client_what: 'Хочет замену' },
-                talk: { op_talk_impression: 'Слушали внимательно' },
+                fiveK: { op_5k_client: 'Хочет замену' },
+                talk: { op_xvost_desire: 'Слушали внимательно' },
             }),
             lead: null,
             baseDeal: null,
@@ -140,32 +137,32 @@ describe('buildPresentationSurveySnapshot', () => {
 
         expect(snapshot.PRES_XVOST).toBe('Дожать через неделю');
         expect(snapshot.PRES_5K_SUMMARY).toBe('Решает директор');
-        expect(snapshot.PRES_5K_CLIENT_WHAT).toBe('Хочет замену');
-        expect(snapshot.PRES_TALK_IMPRESSION).toBe('Слушали внимательно');
+        expect(snapshot.PRES_5K_CLIENT).toBe('Хочет замену');
+        expect(snapshot.PRES_XVOST_DESIRE).toBe('Слушали внимательно');
     });
 
     it('PAYLOAD перекрывает значения лида и сделки', () => {
         const snapshot = buildPresentationSurveySnapshot({
             portal: portal(),
-            survey: payload({ fiveK: { op_5k_client_what: 'из payload' } }),
-            lead: { UF_CRM_OP_5K_CLIENT_WHAT: 'из лида' },
-            baseDeal: { UF_CRM_OP_5K_CLIENT_WHAT: 'из сделки' },
+            survey: payload({ fiveK: { op_5k_client: 'из payload' } }),
+            lead: { UF_CRM_OP_5K_CLIENT: 'из лида' },
+            baseDeal: { UF_CRM_OP_5K_CLIENT: 'из сделки' },
         });
 
-        expect(snapshot.PRES_5K_CLIENT_WHAT).toBe('из payload');
+        expect(snapshot.PRES_5K_CLIENT).toBe('из payload');
     });
 
     it('ответа нет в PAYLOAD — работает прежний фолбэк по сущностям', () => {
         const snapshot = buildPresentationSurveySnapshot({
             portal: portal(),
             survey: payload({ xvost: 'из payload' }),
-            lead: { UF_CRM_OP_5K_CLIENT_WHAT: 'из лида' },
-            baseDeal: { UF_CRM_OP_TALK_IMPRESSION: 'из сделки' },
+            lead: { UF_CRM_OP_5K_CLIENT: 'из лида' },
+            baseDeal: { UF_CRM_OP_XVOST_DESIRE: 'из сделки' },
         });
 
         expect(snapshot.PRES_XVOST).toBe('из payload');
-        expect(snapshot.PRES_5K_CLIENT_WHAT).toBe('из лида');
-        expect(snapshot.PRES_TALK_IMPRESSION).toBe('из сделки');
+        expect(snapshot.PRES_5K_CLIENT).toBe('из лида');
+        expect(snapshot.PRES_XVOST_DESIRE).toBe('из сделки');
     });
 
     /*
@@ -176,51 +173,54 @@ describe('buildPresentationSurveySnapshot', () => {
     it('PAYLOAD не зависит от того, заведены ли поля на лиде и сделке', () => {
         const snapshot = buildPresentationSurveySnapshot({
             portal: portal({
-                missing: ['op_presentation_xvost', 'op_5k_client_what'],
+                missing: ['op_presentation_xvost', 'op_5k_client'],
             }),
             survey: payload({
                 xvost: 'Дожать через неделю',
-                fiveK: { op_5k_client_what: 'Хочет замену' },
+                fiveK: { op_5k_client: 'Хочет замену' },
             }),
             lead: null,
             baseDeal: null,
         });
 
         expect(snapshot.PRES_XVOST).toBe('Дожать через неделю');
-        expect(snapshot.PRES_5K_CLIENT_WHAT).toBe('Хочет замену');
+        expect(snapshot.PRES_5K_CLIENT).toBe('Хочет замену');
     });
 
     /*
-     * Поля «Хвоста» (op_xvost_*) в анкету payload не входят: их пишет
-     * фрейм прямо в сделку. Единственный их источник — базовая сделка, и
-     * приход payload этого не меняет.
+     * Дата звонка по решению в анкету payload не входит: это отдельное поле
+     * сделки, а не текстовый блок с вопросами. Её единственный источник —
+     * базовая сделка, и приход payload этого не меняет.
+     *
+     * Заодно проверяется whitelist: код не из состава анкеты не доезжает,
+     * что бы клиент ни прислал.
      */
-    it('«Хвост» берётся со сделки даже при непустом PAYLOAD', () => {
+    it('дата решения берётся со сделки даже при непустом PAYLOAD', () => {
         const snapshot = buildPresentationSurveySnapshot({
             portal: portal(),
             survey: payload({
                 xvost: 'Дожать через неделю',
                 fiveK: {
                     // Левый код: whitelist анкеты его не пропустит.
-                    op_xvost_is_offer: '1',
+                    op_xvost_decision_call_date: '01.01.2020',
                 },
             }),
             lead: null,
-            baseDeal: { UF_CRM_OP_XVOST_IS_OFFER: '1' },
+            baseDeal: { UF_CRM_OP_XVOST_DECISION_CALL_DATE: '05.09.2026' },
         });
 
         expect(snapshot.PRES_XVOST).toBe('Дожать через неделю');
-        expect(snapshot.PRES_IS_OFFER).toBe('Y');
+        expect(snapshot.PRES_DECISION_CALL_DATE).toBe('05.09.2026');
     });
 
     it('фолбэк молчит, если поле не установлено на сделке', () => {
         const snapshot = buildPresentationSurveySnapshot({
-            portal: portal({ missingOn: { deal: ['op_talk_impression'] } }),
+            portal: portal({ missingOn: { deal: ['op_xvost_desire'] } }),
             lead: null,
-            baseDeal: { UF_CRM_OP_TALK_IMPRESSION: 'есть, но поля нет' },
+            baseDeal: { UF_CRM_OP_XVOST_DESIRE: 'есть, но поля нет' },
         });
 
-        expect(snapshot.PRES_TALK_IMPRESSION).toBeUndefined();
+        expect(snapshot.PRES_XVOST_DESIRE).toBeUndefined();
     });
 });
 

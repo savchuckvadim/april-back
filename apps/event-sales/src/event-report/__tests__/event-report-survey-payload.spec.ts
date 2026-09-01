@@ -30,17 +30,17 @@ dayjs.extend(timezone);
  */
 const XVOST = 'UF_CRM_OP_PRESENTATION_XVOST';
 const FIVE_K_SUMMARY = 'UF_CRM_OP_PRESENTATION_5K';
-const CLIENT_WHAT = 'UF_CRM_OP_5K_CLIENT_WHAT';
-const TALK_IMPRESSION = 'UF_CRM_OP_TALK_IMPRESSION';
+const CLIENT_BLOCK = 'UF_CRM_OP_5K_CLIENT';
+const XVOST_DESIRE = 'UF_CRM_OP_XVOST_DESIRE';
 
 const SURVEY = {
     xvost: '  Дожать по хвосту через неделю  ',
     fiveKSummary: 'Сводка 5К по последней презентации',
     fiveK: {
-        op_5k_client_what: 'Хочет замену Консультанта',
+        op_5k_client: 'Хочет замену Консультанта',
         op_left_code: 'левый код — молча отбрасывается',
     },
-    talk: { op_talk_impression: 'Встретили хорошо' },
+    talk: { op_xvost_desire: 'Встретили хорошо' },
 };
 
 /**
@@ -57,7 +57,7 @@ const makePortal = (
             code === 'op_presentation_xvost' ||
             code === 'op_presentation_5k' ||
             code.startsWith('op_5k_') ||
-            code.startsWith('op_talk_');
+            code.startsWith('op_xvost_');
         if (!isSurvey || !installedOn.includes(entity)) return undefined;
         return { bitrixId: code.toUpperCase(), items: [] };
     },
@@ -112,8 +112,8 @@ describe('Анкета 5К/Хвост из payload отчёта', () => {
             null,
         );
 
-        expect(out[CLIENT_WHAT]).toBe('Хочет замену Консультанта');
-        expect(out[TALK_IMPRESSION]).toBe('Встретили хорошо');
+        expect(out[CLIENT_BLOCK]).toBe('Хочет замену Консультанта');
+        expect(out[XVOST_DESIRE]).toBe('Встретили хорошо');
         expect(out[XVOST]).toBe('Дожать по хвосту через неделю');
         expect(out[FIVE_K_SUMMARY]).toBe('Сводка 5К по последней презентации');
     });
@@ -127,8 +127,8 @@ describe('Анкета 5К/Хвост из payload отчёта', () => {
                 presentationHappenedHere: true,
             });
 
-            expect(out[CLIENT_WHAT]).toBe('Хочет замену Консультанта');
-            expect(out[TALK_IMPRESSION]).toBe('Встретили хорошо');
+            expect(out[CLIENT_BLOCK]).toBe('Хочет замену Консультанта');
+            expect(out[XVOST_DESIRE]).toBe('Встретили хорошо');
             expect(out[XVOST]).toBe('Дожать по хвосту через неделю');
             expect(out[FIVE_K_SUMMARY]).toBe(
                 'Сводка 5К по последней презентации',
@@ -150,8 +150,8 @@ describe('Анкета 5К/Хвост из payload отчёта', () => {
 
         expect(out[XVOST]).toBe('Дожать по хвосту через неделю');
         expect(out[FIVE_K_SUMMARY]).toBe('Сводка 5К по последней презентации');
-        expect(out[CLIENT_WHAT]).toBeUndefined();
-        expect(out[TALK_IMPRESSION]).toBeUndefined();
+        expect(out[CLIENT_BLOCK]).toBeUndefined();
+        expect(out[XVOST_DESIRE]).toBeUndefined();
     });
 
     /*
@@ -177,7 +177,7 @@ describe('Анкета 5К/Хвост из payload отчёта', () => {
         });
 
         expect(out[XVOST]).toBeUndefined();
-        expect(out[CLIENT_WHAT]).toBeUndefined();
+        expect(out[CLIENT_BLOCK]).toBeUndefined();
     });
 
     it.each([EDealRole.XO, EDealRole.TMC] as const)(
@@ -190,7 +190,7 @@ describe('Анкета 5К/Хвост из payload отчёта', () => {
             });
 
             expect(out[XVOST]).toBeUndefined();
-            expect(out[CLIENT_WHAT]).toBeUndefined();
+            expect(out[CLIENT_BLOCK]).toBeUndefined();
         },
     );
 
@@ -235,8 +235,8 @@ describe('Анкета 5К/Хвост из payload отчёта', () => {
             makeCtx({
                 xvost: 'Сравнивают с Гарантом & КонсультантПлюс',
                 fiveKSummary: 'Скидка 50% при оплате до 1 числа',
-                fiveK: { op_5k_client_what: 'Звонить на +7 900 123-45-67' },
-                talk: { op_talk_impression: '100% + бонус & тел. +7\nконец' },
+                fiveK: { op_5k_client: 'Звонить на +7 900 123-45-67' },
+                talk: { op_xvost_desire: '100% + бонус & тел. +7\nконец' },
             }),
             EEventReportEntityType.LEAD,
             null,
@@ -244,8 +244,8 @@ describe('Анкета 5К/Хвост из payload отчёта', () => {
 
         expect(out[XVOST]).toBe('Сравнивают с Гарантом %26 КонсультантПлюс');
         expect(out[FIVE_K_SUMMARY]).toBe('Скидка 50%25 при оплате до 1 числа');
-        expect(out[CLIENT_WHAT]).toBe('Звонить на %2B7 900 123-45-67');
-        expect(out[TALK_IMPRESSION]).toBe(
+        expect(out[CLIENT_BLOCK]).toBe('Звонить на %2B7 900 123-45-67');
+        expect(out[XVOST_DESIRE]).toBe(
             '100%25 %2B бонус %26 тел. %2B7%0Aконец',
         );
     });
@@ -290,8 +290,8 @@ describe('Анкета 5К/Хвост из payload отчёта', () => {
         const surveyKeys = [
             XVOST,
             FIVE_K_SUMMARY,
-            CLIENT_WHAT,
-            TALK_IMPRESSION,
+            CLIENT_BLOCK,
+            XVOST_DESIRE,
         ];
         const without = fieldsOf(
             makeCtx(undefined),
@@ -314,13 +314,13 @@ describe('Анкета 5К/Хвост из payload отчёта', () => {
 
     it('пустые значения в блоке анкеты полей не добавляют', () => {
         const out = fieldsOf(
-            makeCtx({ xvost: '   ', fiveK: { op_5k_client_what: '' } }),
+            makeCtx({ xvost: '   ', fiveK: { op_5k_client: '' } }),
             EEventReportEntityType.LEAD,
             null,
         );
 
         expect(out[XVOST]).toBeUndefined();
-        expect(out[CLIENT_WHAT]).toBeUndefined();
+        expect(out[CLIENT_BLOCK]).toBeUndefined();
     });
 });
 
@@ -337,8 +337,8 @@ describe('Анкета: payload — источник, лид — фолбэк', 
     const LEAD_WITH_SURVEY = {
         ID: '42',
         [XVOST]: 'старый хвост с лида',
-        [CLIENT_WHAT]: 'старый ответ с лида',
-        [TALK_IMPRESSION]: 'старое впечатление с лида',
+        [CLIENT_BLOCK]: 'старый ответ с лида',
+        [XVOST_DESIRE]: 'старое впечатление с лида',
     };
 
     const dealFields = (
@@ -359,8 +359,8 @@ describe('Анкета: payload — источник, лид — фолбэк', 
         const out = dealFields(SURVEY);
 
         expect(out[XVOST]).toBe('Дожать по хвосту через неделю');
-        expect(out[CLIENT_WHAT]).toBe('Хочет замену Консультанта');
-        expect(out[TALK_IMPRESSION]).toBe('Встретили хорошо');
+        expect(out[CLIENT_BLOCK]).toBe('Хочет замену Консультанта');
+        expect(out[XVOST_DESIRE]).toBe('Встретили хорошо');
     });
 
     it('ответа нет в payload — он по-прежнему переносится с лида', () => {
@@ -368,16 +368,16 @@ describe('Анкета: payload — источник, лид — фолбэк', 
 
         expect(out[XVOST]).toBe('Дожать по хвосту через неделю');
         // В payload этих двух нет — работает прежний перенос с лида.
-        expect(out[CLIENT_WHAT]).toBe('старый ответ с лида');
-        expect(out[TALK_IMPRESSION]).toBe('старое впечатление с лида');
+        expect(out[CLIENT_BLOCK]).toBe('старый ответ с лида');
+        expect(out[XVOST_DESIRE]).toBe('старое впечатление с лида');
     });
 
     it('payload без анкеты — перенос с лида работает как раньше', () => {
         const out = dealFields(undefined);
 
         expect(out[XVOST]).toBe('старый хвост с лида');
-        expect(out[CLIENT_WHAT]).toBe('старый ответ с лида');
-        expect(out[TALK_IMPRESSION]).toBe('старое впечатление с лида');
+        expect(out[CLIENT_BLOCK]).toBe('старый ответ с лида');
+        expect(out[XVOST_DESIRE]).toBe('старое впечатление с лида');
     });
 
     /*
@@ -395,12 +395,12 @@ describe('Анкета: payload — источник, лид — фолбэк', 
     it('ответ, скопированный с лида, экранируется так же, как ответ из payload', () => {
         const out = dealFields({ xvost: 'из payload: 100% + бонус & итог' }, {
             ID: '42',
-            [CLIENT_WHAT]: 'с лида: 100% + бонус & итог',
+            [CLIENT_BLOCK]: 'с лида: 100% + бонус & итог',
         } as Record<string, unknown>);
 
         // Одна и та же строка — одни и те же байты у обоих источников.
         expect(out[XVOST]).toBe('из payload: 100%25 %2B бонус %26 итог');
-        expect(out[CLIENT_WHAT]).toBe('с лида: 100%25 %2B бонус %26 итог');
+        expect(out[CLIENT_BLOCK]).toBe('с лида: 100%25 %2B бонус %26 итог');
         for (const value of Object.values(out)) {
             expect(String(value)).not.toContain('&');
         }
@@ -451,8 +451,8 @@ describe('Анкета пишется только при проведённой
 
         expect(out[XVOST]).toBeUndefined();
         expect(out[FIVE_K_SUMMARY]).toBeUndefined();
-        expect(out[CLIENT_WHAT]).toBeUndefined();
-        expect(out[TALK_IMPRESSION]).toBeUndefined();
+        expect(out[CLIENT_BLOCK]).toBeUndefined();
+        expect(out[XVOST_DESIRE]).toBeUndefined();
     });
 
     it('презентация не проведена → зеркало лида не ставит ни одной команды', () => {
@@ -514,8 +514,8 @@ describe('Спонтанная pres-сделка: ответы уезжают в
         expect(fields[FIVE_K_SUMMARY]).toBe(
             'Сводка 5К по последней презентации',
         );
-        expect(fields[CLIENT_WHAT]).toBe('Хочет замену Консультанта');
-        expect(fields[TALK_IMPRESSION]).toBe('Встретили хорошо');
+        expect(fields[CLIENT_BLOCK]).toBe('Хочет замену Консультанта');
+        expect(fields[XVOST_DESIRE]).toBe('Встретили хорошо');
     });
 
     it('payload без анкеты — сделка создаётся без её полей', () => {
@@ -523,7 +523,7 @@ describe('Спонтанная pres-сделка: ответы уезжают в
 
         expect(fields.TITLE).toBe('Презентация (незапланированная)');
         expect(fields[XVOST]).toBeUndefined();
-        expect(fields[CLIENT_WHAT]).toBeUndefined();
+        expect(fields[CLIENT_BLOCK]).toBeUndefined();
     });
 });
 
@@ -583,8 +583,8 @@ describe('Маршрутизация: владелец — компания, л�
         );
         expect(lead).toBeDefined();
         expect(lead?.id).toBe(42);
-        expect(lead?.fields[CLIENT_WHAT]).toBe('Хочет замену Консультанта');
-        expect(lead?.fields[TALK_IMPRESSION]).toBe('Встретили хорошо');
+        expect(lead?.fields[CLIENT_BLOCK]).toBe('Хочет замену Консультанта');
+        expect(lead?.fields[XVOST_DESIRE]).toBe('Встретили хорошо');
         expect(lead?.fields[XVOST]).toBe('Дожать по хвосту через неделю');
         expect(lead?.fields[FIVE_K_SUMMARY]).toBe(
             'Сводка 5К по последней презентации',
@@ -599,7 +599,7 @@ describe('Маршрутизация: владелец — компания, л�
         const lead = leadCommandOf(queueEntityFlow(SURVEY));
 
         expect(new Set(Object.keys(lead?.fields ?? {}))).toEqual(
-            new Set([CLIENT_WHAT, TALK_IMPRESSION, XVOST, FIVE_K_SUMMARY]),
+            new Set([CLIENT_BLOCK, XVOST_DESIRE, XVOST, FIVE_K_SUMMARY]),
         );
     });
 

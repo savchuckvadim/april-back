@@ -23,7 +23,7 @@ dayjs.extend(timezone);
  */
 const XVOST = 'UF_CRM_OP_PRESENTATION_XVOST';
 const FIVE_K = 'UF_CRM_OP_PRESENTATION_5K';
-const CLIENT_WHAT = 'UF_CRM_OP_5K_CLIENT_WHAT';
+const CLIENT_BLOCK = 'UF_CRM_OP_5K_CLIENT';
 
 /**
  * Портал: сводные установлены на лиде и сделке, детальные «5К» — только на
@@ -57,7 +57,7 @@ const SURVEY_LEAD = {
     ID: '42',
     [XVOST]: 'Дожать по хвосту через неделю',
     [FIVE_K]: 'Сводка 5К по последней презентации',
-    [CLIENT_WHAT]: 'Хочет замену Консультанта',
+    [CLIENT_BLOCK]: 'Хочет замену Консультанта',
 };
 
 const makeCtx = (over: Record<string, unknown> = {}) =>
@@ -168,7 +168,7 @@ describe('Перенос анкеты после презентации (лид 
 
     it('детальные «5К» на сделке не установлены → молча пропущены', () => {
         const out = fieldsOf(makeCtx(), EDealRole.PRESENTATION);
-        expect(out[CLIENT_WHAT]).toBeUndefined();
+        expect(out[CLIENT_BLOCK]).toBeUndefined();
     });
 
     it('владелец завёл детальные на сделке → перенос подхватывает без правки кода', () => {
@@ -178,7 +178,7 @@ describe('Перенос анкеты после презентации (лид 
             null,
             makePortal(true),
         );
-        expect(out[CLIENT_WHAT]).toBe('Хочет замену Консультанта');
+        expect(out[CLIENT_BLOCK]).toBe('Хочет замену Консультанта');
     });
 
     it('без проведённой презентации перенос не выполняется', () => {
