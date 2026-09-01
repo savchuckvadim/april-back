@@ -230,19 +230,29 @@ describe('константы смарта «Презентации»', () => {
         const smartCodes = new Set(
             PRESENTATION_SMART_FIELDS.map(field => field.code),
         );
-        // 23 ответа: 2 сводных («5К»/«Хвост») + 9 детальных «5К» +
-        // 6 вопросов «Разговора» (op_talk_*, с лида) + 6 полей «Хвоста»
+        // 40 записей: 17 ответов анкеты (2 сводных + 9 детальных «5К» +
+        // 6 «Разговора») парами «лид → сделка-фолбэк» + 6 полей «Хвоста»
         // (deal-only op_xvost_*).
-        expect(PRESENTATION_SMART_SURVEY_MIRROR).toHaveLength(23);
+        expect(PRESENTATION_SMART_SURVEY_MIRROR).toHaveLength(40);
         for (const entry of PRESENTATION_SMART_SURVEY_MIRROR) {
             expect(registryCodes.has(entry.source)).toBe(true);
             expect(smartCodes.has(entry.target)).toBe(true);
         }
-        // Анкету («5К» + «Разговор») фрейм пишет на ЛИД, поля «Хвоста»
-        // (op_xvost_*) установлены только на сделке.
+        // Каждый ответ анкеты читается с лида, а СРАЗУ ЗА ним стоит
+        // deal-фолбэк с теми же source/target: ручка /presentation-survey
+        // пишет одинаково в лид и сделки, порядок записей на target —
+        // порядок фолбэка снимка (в deal-placement лида нет вовсе).
         const leadSources = PRESENTATION_SMART_SURVEY_MIRROR.filter(
             entry => entry.from === 'lead',
         );
         expect(leadSources).toHaveLength(17);
+        for (const lead of leadSources) {
+            const index = PRESENTATION_SMART_SURVEY_MIRROR.indexOf(lead);
+            expect(PRESENTATION_SMART_SURVEY_MIRROR[index + 1]).toEqual({
+                source: lead.source,
+                target: lead.target,
+                from: 'deal',
+            });
+        }
     });
 });

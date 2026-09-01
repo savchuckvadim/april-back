@@ -1,11 +1,15 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
-import { toBatchText } from '@lib/bitrix/consts/batch.consts';
+import { toBatchSafeText } from '@lib/bitrix/consts/batch.consts';
 import { RedisService } from '@lib/core/redis/redis.service';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
-import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import {
-    PRESENTATION_SURVEY_VALUE_MAX_LENGTH,
+    isPresentationSurveyEmpty,
+    normalizePresentationSurvey,
+    PRESENTATION_SURVEY_SUMMARY_CODES,
+    PresentationSurveyValues,
+} from '../../shared/presentation-survey';
+import {
     PresentationSurveyDto,
     PresentationSurveyResultDto,
     UnplannedPresentationSignalDto,
@@ -19,43 +23,31 @@ import {
 
 type BxRow = Record<string, unknown>;
 
-/**
- * ЖЁСТКИЙ серверный whitelist девяти детальных полей «5К»: ключи `fiveK`
- * вне этого списка молча отбрасываются — ручка ФИЗИЧЕСКИ не может писать
- * другие поля лида, что бы ни прислал клиент.
- */
-export const FIVE_K_FIELD_CODES = [
-    PBX_SALES_EVENT_FIELD_CODES.op_5k_client_what,
-    PBX_SALES_EVENT_FIELD_CODES.op_5k_client_ready,
-    PBX_SALES_EVENT_FIELD_CODES.op_5k_client_price,
-    PBX_SALES_EVENT_FIELD_CODES.op_5k_company_who,
-    PBX_SALES_EVENT_FIELD_CODES.op_5k_company_how,
-    PBX_SALES_EVENT_FIELD_CODES.op_5k_company_right,
-    PBX_SALES_EVENT_FIELD_CODES.op_5k_command,
-    PBX_SALES_EVENT_FIELD_CODES.op_5k_concurent,
-    PBX_SALES_EVENT_FIELD_CODES.op_5k_criteri,
-] as const;
-
-/** Сводные поля анкеты — пишутся на лид, сделки и компанию. */
-export const SURVEY_SUMMARY_CODES = {
-    xvost: PBX_SALES_EVENT_FIELD_CODES.op_presentation_xvost,
-    fiveKSummary: PBX_SALES_EVENT_FIELD_CODES.op_presentation_5k,
-} as const;
-
 /** Дедуп операции: повтор в течение суток не пишется второй раз. */
 const DEDUP_TTL_SECONDS = 24 * 3600;
 
-/** Нормализованные значения анкеты после whitelist/trim/обрезки. */
-interface SurveyValues {
-    /** Детальные «5К» (только whitelisted коды, непустые). */
-    fiveK: Map<string, string>;
-    xvost: string | null;
-    fiveKSummary: string | null;
-}
+/**
+ * Нормализованные значения анкеты после whitelist/trim/обрезки.
+ *
+ * И whitelist кодов, и нормализация живут в общем модуле
+ * `shared/presentation-survey`: у ручки и у основного потока отчёта ОДИН
+ * список полей анкеты и один формат ответа. Разъехавшиеся копии списка —
+ * ровно тот класс ошибок, из-за которого анкету увели в payload отчёта.
+ */
+type SurveyValues = PresentationSurveyValues;
 
 /**
- * Ручка опросника 5К/Хвост: фронт шлёт ответы отдельным
- * запросом, вне event-report flow (hook не участвует).
+ * ЛЕГАСИ-МОСТ для старого React-фронта: ручка опросника 5К/Хвост, куда
+ * ответы приезжают ОТДЕЛЬНЫМ запросом, вне event-report flow (hook не
+ * участвует).
+ *
+ * НОВЫЙ фронт сюда не ходит: он кладёт те же ответы в payload отчёта
+ * (`presentation.survey` в `EventSalesFlowDto`), и их пишет основной поток
+ * своим батчем — вместе с отчётом, в те же лид/сделки/компанию
+ * (`event-report/services/entity/event-report-entity-fields.model`).
+ * Оттуда же их берут смарты — поэтому новому пути не нужен ни
+ * Redis-rendezvous, ни фолбэк «лид → сделка». Удалить эту ручку вместе со
+ * старым фронтом.
  *
  * Семантика — ТОЛЬКО перезапись: append'а нет, поэтому повтор того же
  * payload даёт тот же результат (идемпотентность заложена в саму запись).
@@ -87,7 +79,7 @@ export class PresentationSurveyEndpointService {
 
         // Пустые значения — no-op ДО любых походов в Битрикс/портал.
         const values = this.normalizeValues(dto);
-        if (!values.fiveK.size && !values.xvost && !values.fiveKSummary) {
+        if (isPresentationSurveyEmpty(values)) {
             result.noop = true;
             this.logger.log(
                 `[survey][${dto.operationId}] пустые значения — no-op`,
@@ -251,9 +243,10 @@ export class PresentationSurveyEndpointService {
             const fields = this.buildDealFields(
                 portal,
                 {
-                    // Кэш старого формата без fiveK читается как «детальных
-                    // не было» — записываются только сводные, как раньше.
+                    // Кэш старого формата без fiveK/talk читается как
+                    // «детальных не было» — записываются только сводные.
                     fiveK: new Map(Object.entries(values.fiveK ?? {})),
+                    talk: new Map(Object.entries(values.talk ?? {})),
                     xvost: values.xvost ?? null,
                     fiveKSummary: values.fiveKSummary ?? null,
                 },
@@ -309,6 +302,9 @@ export class PresentationSurveyEndpointService {
             // у незапланированных — необъяснимая асимметрия для менеджера).
             ...(values.fiveK.size
                 ? { fiveK: Object.fromEntries(values.fiveK) }
+                : {}),
+            ...(values.talk.size
+                ? { talk: Object.fromEntries(values.talk) }
                 : {}),
         };
         await this.rendezvous.cacheValues(dto.domain, refs, summary);
@@ -382,31 +378,18 @@ export class PresentationSurveyEndpointService {
     }
 
     /**
-     * Whitelist + trim + обрезка до лимита. Ключи `fiveK` вне списка
-     * ОТБРАСЫВАЮТСЯ МОЛЧА — ручка не умеет писать чужие поля.
+     * Whitelist + trim + обрезка до лимита — ОБЩЕЙ нормализацией
+     * (`shared/presentation-survey`). Ключи вне списка ОТБРАСЫВАЮТСЯ МОЛЧА:
+     * ручка не умеет писать чужие поля.
      */
     private normalizeValues(dto: PresentationSurveyDto): SurveyValues {
-        const fiveK = new Map<string, string>();
-        const raw = dto.values?.fiveK ?? {};
-        for (const code of FIVE_K_FIELD_CODES) {
-            const value = this.cleanValue(raw[code]);
-            if (value) fiveK.set(code, value);
-        }
-        return {
-            fiveK,
-            xvost: this.cleanValue(dto.values?.xvost),
-            fiveKSummary: this.cleanValue(dto.values?.fiveKSummary),
-        };
+        return normalizePresentationSurvey(dto.values);
     }
 
-    private cleanValue(raw: unknown): string | null {
-        if (typeof raw !== 'string') return null;
-        const value = raw.trim();
-        if (!value) return null;
-        return value.slice(0, PRESENTATION_SURVEY_VALUE_MAX_LENGTH);
-    }
-
-    /** Поля ЛИДА: девять детальных + сводные. Перезапись, не append. */
+    /**
+     * Поля ЛИДА: девять детальных «5К» + шесть «Разговора» + сводные.
+     * Перезапись, не append.
+     */
     private buildLeadFields(
         portal: PortalModel,
         values: SurveyValues,
@@ -416,13 +399,18 @@ export class PresentationSurveyEndpointService {
         for (const [code, value] of values.fiveK) {
             this.setField(portal, 'lead', code, value, fields, result);
         }
+        for (const [code, value] of values.talk) {
+            this.setField(portal, 'lead', code, value, fields, result);
+        }
         this.appendSummaryFields(portal, 'lead', values, fields, result);
         return fields;
     }
 
     /**
-     * Поля СДЕЛКИ: девять детальных + сводные — тот же состав, что у лида
-     * (детальные коды резолвятся на СДЕЛКЕ; не установлены — тихий скип).
+     * Поля СДЕЛКИ: детальные «5К» + «Разговор» + сводные — тот же состав,
+     * что у лида (коды резолвятся на СДЕЛКЕ; не установлены — тихий скип).
+     * Без сделочной записи снимок смарта в deal-placement оставался бы
+     * пустым: лида там нет, а зеркало читает лид → базовую сделку.
      */
     private buildDealFields(
         portal: PortalModel,
@@ -431,6 +419,9 @@ export class PresentationSurveyEndpointService {
     ): BxRow {
         const fields: BxRow = {};
         for (const [code, value] of values.fiveK) {
+            this.setField(portal, 'deal', code, value, fields, result);
+        }
+        for (const [code, value] of values.talk) {
             this.setField(portal, 'deal', code, value, fields, result);
         }
         this.appendSummaryFields(portal, 'deal', values, fields, result);
@@ -460,7 +451,7 @@ export class PresentationSurveyEndpointService {
             this.setField(
                 portal,
                 entityType,
-                SURVEY_SUMMARY_CODES.xvost,
+                PRESENTATION_SURVEY_SUMMARY_CODES.xvost,
                 values.xvost,
                 fields,
                 result,
@@ -470,7 +461,7 @@ export class PresentationSurveyEndpointService {
             this.setField(
                 portal,
                 entityType,
-                SURVEY_SUMMARY_CODES.fiveKSummary,
+                PRESENTATION_SURVEY_SUMMARY_CODES.fiveKSummary,
                 values.fiveKSummary,
                 fields,
                 result,
@@ -483,13 +474,20 @@ export class PresentationSurveyEndpointService {
      * event-report-entity-fields.model): поле не установлено → тихий скип
      * с warning в ответе.
      *
-     * Значение проходит {@link toBatchText}: ответы анкеты многострочны ПО
-     * ПОСТРОЕНИЮ (хвост — построчная склейка, сводка 5К — построчная
-     * сводка), а все записи ручки уходят batch-командами, где сырой `\n`
-     * доезжает до карточки подчёркиванием. Это ЕДИНСТВЕННАЯ точка попадания
-     * значений в batch-поля — экранируются разом прямая запись, запись из
-     * сигнала и rendezvous-дозапись; Redis-кэш при этом хранит СЫРЫЕ
-     * значения (человекочитаем и независим от транспорта).
+     * Значение проходит {@link toBatchSafeText} — ТОТ ЖЕ строгий вариант,
+     * что у потока (`EventReportEntityFieldsModel.setSurveyField`): ответ
+     * анкеты это СВОБОДНЫЙ текст менеджера, целиком уезжающий одним
+     * значением batch-команды. Многострочность обязательна к экранированию
+     * (хвост — построчная склейка, сводка 5К — построчная сводка; сырой
+     * `\n` доезжает до карточки подчёркиванием), но строку рвут ещё три
+     * символа — `&`, `+`, `%` (см. докблок toBatchSafeText). Слабый вариант
+     * здесь резал бы КОМАНДУ ЦЕЛИКОМ: остальные поля той же сущности
+     * уезжали бы мусорными параметрами.
+     *
+     * Это ЕДИНСТВЕННАЯ точка попадания значений в batch-поля —
+     * экранируются разом прямая запись, запись из сигнала и
+     * rendezvous-дозапись; Redis-кэш при этом хранит СЫРЫЕ значения
+     * (человекочитаем и независим от транспорта).
      */
     private setField(
         portal: PortalModel,
@@ -507,7 +505,7 @@ export class PresentationSurveyEndpointService {
             }
             return;
         }
-        fields[`UF_CRM_${field.bitrixId}`] = toBatchText(value);
+        fields[`UF_CRM_${field.bitrixId}`] = toBatchSafeText(value);
     }
 
     /**

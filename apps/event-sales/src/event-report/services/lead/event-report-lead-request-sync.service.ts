@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
-import { toBatchText } from '@lib/bitrix/consts/batch.consts';
+import { toBatchSafeText } from '@lib/bitrix/consts/batch.consts';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import {
@@ -17,6 +17,7 @@ import {
     LeadUfDefinitions,
     parseCrmRefId,
 } from '../../../shared/portal-fields';
+import { presentationSurveyAnswersByCode } from '../../../shared/presentation-survey';
 import { EventReportContext } from '../context/event-report.context';
 import { PRESENTATION_SURVEY_FIELD_CODES } from '../entity/event-report-entity-fields.model';
 
@@ -143,36 +144,65 @@ export class EventReportLeadRequestSyncService {
      * Анкета проведённой презентации («Хвост», «Пять К», детальные «5К») —
      * связанному лиду.
      *
-     * Источник — ЛИД КОНТЕКСТА (`ctx.lead`): именно в него фрейм пишет
-     * ответы из анкеты, и он же — «один открытый лид, прокинутый через
-     * задачу» из правила владельца. Если менеджер связал презентацию с
-     * ДРУГОЙ заявкой (модалка presentationLink), ответы переносятся на
-     * неё, чтобы карточка заявки показывала итог презентации.
+     * Источник №1 — PAYLOAD ЭТОГО отчёта (`ctx.presentationSurvey`): ответы
+     * приезжают вместе с отчётом, и заявка получает ровно ту анкету,
+     * которую поток этим же прогоном пишет в лид/сделки/компанию
+     * ({@link applyPresentationSurveyAnswers}). Без этого один отчёт мог бы
+     * записать в сделки ответы ЭТОГО отчёта, а в заявку — ПРОШЛЫЕ, снятые
+     * с перечитанного лида (фрейм-запись не прошла — на лиде старое).
      *
-     * Себе самому не пишем: когда связанный лид и есть лид контекста,
-     * ответы на нём уже стоят, а перезапись снапшотом init-фазы могла бы
-     * их откатить. Пустые значения не переносятся, неустановленное поле
-     * молча пропускается (graceful, как во всём event-report).
+     * ЛИД КОНТЕКСТА (`ctx.lead`) остаётся источником только для
+     * ЛЕГАСИ-ПУТИ: старый React-фронт шлёт анкету отдельным запросом в
+     * ручку /presentation-survey, та пишет ответы в лид и в payload
+     * положить ничего не может. Для кода, пришедшего в payload,
+     * перечитанный лид не спрашивается вовсе.
+     *
+     * ЛИД КОНТЕКСТА СЕБЯ САМОГО НЕ ПИШЕТ — ни снапшотом, ни payload'ом.
+     * Весь состав анкеты до него уже доехал ОСНОВНЫМ батчем: владелец-лид
+     * получает его своим update'ом, а при владельце-компании/сделке —
+     * отдельной командой зеркала (`queueLeadSurveyMirror` поверх
+     * `toPresentationSurveyFields`). Волна 2 идёт ПОСЛЕ основного батча,
+     * поэтому вторая команда на тот же лид не «дублировала» бы, а
+     * ПЕРЕЗАПИСЫВАЛА бы уже записанное — и любое расхождение писателей
+     * (экранирование, состав, источник) выигрывал бы тот, кто слабее и
+     * позже. Один лид, один отчёт — один писатель.
+     *
+     * Экранирование — {@link toBatchSafeText}, ровно как у зеркала
+     * (`setSurveyField`): ответ анкеты это свободный текст менеджера, а
+     * запись уходит batch-командой `lead.update` волны 2. Слабый вариант
+     * здесь означал бы, что «Гарант & КонсультантПлюс» доедет до заявки
+     * обрубком «Гарант », а хвост — мусорным параметром команды.
+     *
+     * Пустые значения не переносятся, неустановленное поле молча
+     * пропускается (graceful, как во всём event-report).
      */
     private appendPresentationSurvey(
         ctx: EventReportContext,
         targetLeadId: number,
         fields: BxRow,
     ): void {
-        const source = ctx.lead as unknown as BxRow | null;
-        if (!source) return;
-        if (Number(source.ID) === targetLeadId) return;
+        const contextLead = ctx.lead as unknown as BxRow | null;
+        if (contextLead && Number(contextLead.ID) === targetLeadId) return;
+
+        const fromPayload = presentationSurveyAnswersByCode(
+            ctx.presentationSurvey,
+        );
+        // Лид контекста отсеян гейтом выше — сюда он доходит только чужим
+        // (легаси-донором) либо отсутствующим вовсе.
+        const legacySource = contextLead;
+        if (!legacySource && fromPayload.size === 0) return;
 
         for (const code of PRESENTATION_SURVEY_FIELD_CODES) {
             const field = this.portal.getEntityFieldByCode('lead', code);
             if (!field) continue;
             const key = this.portal.getFieldBitrixId(field);
-            const raw = source[key];
+            const raw = fromPayload.get(code) ?? legacySource?.[key];
             const value = typeof raw === 'string' ? raw.trim() : '';
             if (!value) continue;
-            // Запись уходит batch-командой (lead.update волны 2): сырой
-            // `\n` многострочных ответов доехал бы подчёркиванием.
-            fields[key] = toBatchText(value);
+            // Тем же способом, что и зеркало (setSurveyField): один ответ —
+            // один вид экранирования у всех писателей (правило в шапке
+            // @lib/bitrix/consts/batch.consts).
+            fields[key] = toBatchSafeText(value);
         }
     }
 

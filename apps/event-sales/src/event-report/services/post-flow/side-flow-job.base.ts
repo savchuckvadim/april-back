@@ -13,7 +13,7 @@ import { DealFlowResult } from '../deal/event-report-deal-flow.service';
 import { EEventReportEntityType } from '../init/event-report-init.types';
 import { SmartKpiRowRef, SmartKpiRowRefs } from '../../../shared/side-flow';
 
-export { SmartKpiRowRef, SmartKpiRowRefs };
+export type { SmartKpiRowRef, SmartKpiRowRefs };
 
 /**
  * Общий слой сборки сайд-джобов: всё, что одинаково у ЗПР и презентаций.

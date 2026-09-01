@@ -642,12 +642,16 @@ export const PRESENTATION_FIELD_DEF_BY_CODE = Object.fromEntries(
 // ---------------------------------------------------------------------------
 
 /**
- * Откуда flow берёт снимок анкеты для элемента.
+ * Откуда flow ЧИТАЕТ значение, когда его нет в payload отчёта.
  *
- * `lead` — анкету «5К»/«Хвост» заполняет фрейм В КАРТОЧКЕ КЛИЕНТА, и девять
- * детальных ответов установлены ТОЛЬКО на лиде (см. комментарий к
- * op_5k_* в реестре полей). `deal` — вопросы «Разговора» (op_xvost_*),
- * которые фрейм пишет в БАЗОВУЮ сделку, на лиде их нет вовсе.
+ * Источник №1 у ответов анкеты — сам отчёт (`presentation.survey`), и до
+ * сущностей дело доходит только на ЛЕГАСИ-пути: старый React-фронт шлёт
+ * анкету отдельным запросом в ручку /presentation-survey. Тогда `lead` —
+ * первый источник (ручка пишет «5К», «Разговор» и сводные в лид), а
+ * `deal` — базовая сделка — ФОЛБЭК: с 31.08 ручка зеркалит туда тот же
+ * состав, и без фолбэка снимок в deal-placement, где лида нет вовсе,
+ * оставался пустым (todo3108 №1). Поля «Хвоста» (op_xvost_*) в анкету
+ * отчёта не входят и живут ТОЛЬКО на сделке — на любом пути.
  */
 export type PresentationSurveySource = 'lead' | 'deal';
 
@@ -661,117 +665,82 @@ export interface PresentationSurveyMirrorEntry {
 }
 
 /**
+ * Ответы анкеты: один список на оба источника — пара «лид → сделка»
+ * строится из каждой записи, поэтому состав чтения НЕ МОЖЕТ разъехаться
+ * с составом записи ручки (она пишет одинаково в лид и сделки).
+ */
+const SURVEY_ANSWER_MIRROR = [
+    { source: 'op_presentation_5k', target: 'PRES_5K_SUMMARY' },
+    { source: 'op_presentation_xvost', target: 'PRES_XVOST' },
+    { source: 'op_5k_client_what', target: 'PRES_5K_CLIENT_WHAT' },
+    { source: 'op_5k_client_ready', target: 'PRES_5K_CLIENT_READY' },
+    { source: 'op_5k_client_price', target: 'PRES_5K_CLIENT_PRICE' },
+    { source: 'op_5k_company_who', target: 'PRES_5K_COMPANY_WHO' },
+    { source: 'op_5k_company_how', target: 'PRES_5K_COMPANY_HOW' },
+    { source: 'op_5k_company_right', target: 'PRES_5K_COMPANY_RIGHT' },
+    { source: 'op_5k_command', target: 'PRES_5K_COMMAND' },
+    { source: 'op_5k_concurent', target: 'PRES_5K_CONCURENT' },
+    { source: 'op_5k_criteri', target: 'PRES_5K_CRITERI' },
+    { source: 'op_talk_impression', target: 'PRES_TALK_IMPRESSION' },
+    { source: 'op_talk_remembered', target: 'PRES_TALK_REMEMBERED' },
+    { source: 'op_talk_desire', target: 'PRES_TALK_DESIRE' },
+    {
+        source: 'op_talk_decision_process',
+        target: 'PRES_TALK_DECISION_PROCESS',
+    },
+    { source: 'op_talk_price_opinion', target: 'PRES_TALK_PRICE_OPINION' },
+    { source: 'op_talk_boss_readiness', target: 'PRES_TALK_BOSS_READINESS' },
+] as const satisfies readonly Omit<PresentationSurveyMirrorEntry, 'from'>[];
+
+/** Булевы вопросы и даты «Хвоста» — только сделка (на лиде их нет). */
+const XVOST_DEAL_MIRROR = [
+    {
+        source: 'op_xvost_decision_call_date',
+        target: 'PRES_DECISION_CALL_DATE',
+    },
+    {
+        source: 'op_xvost_decision_date_agreement',
+        target: 'PRES_DECISION_AGREEMENT',
+    },
+    {
+        source: 'op_manager_approach_date',
+        target: 'PRES_MANAGER_APPROACH_DATE',
+    },
+    { source: 'op_xvost_is_offer', target: 'PRES_IS_OFFER' },
+    { source: 'op_xvost_is_complect', target: 'PRES_IS_COMPLECT' },
+    { source: 'op_xvost_is_price', target: 'PRES_IS_PRICE' },
+] as const satisfies readonly Omit<PresentationSurveyMirrorEntry, 'from'>[];
+
+/**
  * Карта переноса анкеты в элемент смарта — тот же набор, что копирует
  * event-report в pres-сделку (PRESENTATION_SURVEY_FIELD_CODES +
  * XVOST_DEAL_FIELD_CODES). Смарт получает СВОЙ снимок на каждую
  * презентацию: следующая презентация перезатрёт значения на лиде и сделке,
  * а история по каждой останется в своём элементе.
  *
- * Состав: 2 сводных («5К»/«Хвост») + 9 детальных «5К» + 6 вопросов
- * «Разговора» (op_talk_*, с лида) + 6 полей «Хвоста» (op_xvost_*, только
- * со сделки) = 23 записи; длину фиксирует спека.
+ * Состав: 17 ответов анкеты (2 сводных + 9 детальных «5К» + 6
+ * «Разговора»), каждый парой «лид → сделка-фолбэк», + 6 полей «Хвоста»
+ * (op_xvost_*, только со сделки) = 40 записей; длину и парность фиксирует
+ * спека. Порядок записей на один target — порядок фолбэка: первое
+ * непустое значение побеждает (см. buildPresentationSurveySnapshot).
+ *
+ * Карта нужна ОБОИМ путям, и состав её от прихода payload не меняется:
+ * ответ из payload адресован кодом реестра (`source`), а элементу смарта
+ * нужен его собственный код поля (`target`) — перевод одного в другой и
+ * есть эта карта. Пара «лид → сделка» обслуживает ЛЕГАСИ-путь и остаётся
+ * ради него.
  */
 export const PRESENTATION_SMART_SURVEY_MIRROR: readonly PresentationSurveyMirrorEntry[] =
     [
-        {
-            source: 'op_presentation_5k',
-            target: 'PRES_5K_SUMMARY',
-            from: 'lead',
-        },
-        { source: 'op_presentation_xvost', target: 'PRES_XVOST', from: 'lead' },
-        {
-            source: 'op_5k_client_what',
-            target: 'PRES_5K_CLIENT_WHAT',
-            from: 'lead',
-        },
-        {
-            source: 'op_5k_client_ready',
-            target: 'PRES_5K_CLIENT_READY',
-            from: 'lead',
-        },
-        {
-            source: 'op_5k_client_price',
-            target: 'PRES_5K_CLIENT_PRICE',
-            from: 'lead',
-        },
-        {
-            source: 'op_5k_company_who',
-            target: 'PRES_5K_COMPANY_WHO',
-            from: 'lead',
-        },
-        {
-            source: 'op_5k_company_how',
-            target: 'PRES_5K_COMPANY_HOW',
-            from: 'lead',
-        },
-        {
-            source: 'op_5k_company_right',
-            target: 'PRES_5K_COMPANY_RIGHT',
-            from: 'lead',
-        },
-        { source: 'op_5k_command', target: 'PRES_5K_COMMAND', from: 'lead' },
-        {
-            source: 'op_5k_concurent',
-            target: 'PRES_5K_CONCURENT',
-            from: 'lead',
-        },
-        { source: 'op_5k_criteri', target: 'PRES_5K_CRITERI', from: 'lead' },
-        // Шесть обязательных вопросов «Разговора»: анкету пишет фрейм в ЛИД
-        // (как и «5К»), элемент получает СВОЙ снимок на каждую презентацию.
-        {
-            source: 'op_talk_impression',
-            target: 'PRES_TALK_IMPRESSION',
-            from: 'lead',
-        },
-        {
-            source: 'op_talk_remembered',
-            target: 'PRES_TALK_REMEMBERED',
-            from: 'lead',
-        },
-        {
-            source: 'op_talk_desire',
-            target: 'PRES_TALK_DESIRE',
-            from: 'lead',
-        },
-        {
-            source: 'op_talk_decision_process',
-            target: 'PRES_TALK_DECISION_PROCESS',
-            from: 'lead',
-        },
-        {
-            source: 'op_talk_price_opinion',
-            target: 'PRES_TALK_PRICE_OPINION',
-            from: 'lead',
-        },
-        {
-            source: 'op_talk_boss_readiness',
-            target: 'PRES_TALK_BOSS_READINESS',
-            from: 'lead',
-        },
-        // Булевы вопросы и даты «Хвоста» — только сделка (на лиде их нет).
-        {
-            source: 'op_xvost_decision_call_date',
-            target: 'PRES_DECISION_CALL_DATE',
-            from: 'deal',
-        },
-        {
-            source: 'op_xvost_decision_date_agreement',
-            target: 'PRES_DECISION_AGREEMENT',
-            from: 'deal',
-        },
-        {
-            source: 'op_manager_approach_date',
-            target: 'PRES_MANAGER_APPROACH_DATE',
-            from: 'deal',
-        },
-        { source: 'op_xvost_is_offer', target: 'PRES_IS_OFFER', from: 'deal' },
-        {
-            source: 'op_xvost_is_complect',
-            target: 'PRES_IS_COMPLECT',
-            from: 'deal',
-        },
-        { source: 'op_xvost_is_price', target: 'PRES_IS_PRICE', from: 'deal' },
-    ] as const;
+        ...SURVEY_ANSWER_MIRROR.flatMap(entry => [
+            { ...entry, from: 'lead' as const },
+            { ...entry, from: 'deal' as const },
+        ]),
+        ...XVOST_DEAL_MIRROR.map(entry => ({
+            ...entry,
+            from: 'deal' as const,
+        })),
+    ];
 
 // ---------------------------------------------------------------------------
 // Имена полей (канон СКАП: buildSkapUfName / buildSkapItemFieldName)

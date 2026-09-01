@@ -300,6 +300,39 @@ describe('buildPresentationFlowJobs', () => {
         expect(buildPresentationFlowJobs(makeInput(ctx))).toEqual([]);
     });
 
+    /*
+     * Снимок анкеты для элемента смарта: ответы приезжают В PAYLOAD отчёта
+     * и попадают в джоб даже тогда, когда сущностей читать нечего (лида в
+     * этом контексте нет вовсе, а поля портала фейк не отдаёт). Ровно этим
+     * новый путь закрывает ловушку «анкету отправили после отчёта».
+     */
+    it('анкета из payload доезжает до снимка смарта', () => {
+        const ctx = makeCtx({
+            currentTask: { eventType: 'presentation' },
+            presentation: {
+                isPresentationDone: true,
+                survey: {
+                    xvost: 'Дожать через неделю',
+                    fiveK: { op_5k_client_what: 'Хочет замену' },
+                    talk: { op_talk_impression: 'Слушали внимательно' },
+                },
+            },
+            report: {
+                resultStatus: 'result',
+                workStatus: { current: { code: 'inJob' } },
+            },
+        });
+
+        const jobs = buildPresentationFlowJobs(makeInput(ctx));
+
+        expect(jobs.map(job => job.kind)).toEqual(['report']);
+        expect(jobs[0].survey).toEqual({
+            PRES_XVOST: 'Дожать через неделю',
+            PRES_5K_CLIENT_WHAT: 'Хочет замену',
+            PRES_TALK_IMPRESSION: 'Слушали внимательно',
+        });
+    });
+
     it('план-задача уезжает и в презентационный джоб', () => {
         const ctx = makeCtx({
             currentTask: { eventType: 'warm' },

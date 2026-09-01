@@ -127,6 +127,19 @@ export class EventTaskDto {
     @IsString()
     name: string;
 
+    @ApiPropertyOptional({
+        description:
+            'СЫРОЙ заголовок задачи Bitrix («<Тип>  <Имя события>  ' +
+            '<Контакт?>»). Страховка имени: фрейм присылает `name` уже ' +
+            'разобранным, и у старых сборок разбор мог его обнулить — ' +
+            'тогда имя события достаётся отсюда (см. reportEventName).',
+        type: String,
+        example: 'Звонок по решению  Обсудить смету  Иван',
+    })
+    @IsOptional()
+    @IsString()
+    title?: string;
+
     @ApiProperty({
         description: 'Внутренний тип задачи (`EV_TYPE`).',
         type: String,
@@ -323,7 +336,9 @@ export class EventTaskDto {
     taskControl: 'N';
     timeEstimate: '0';
     timeSpentInLogs: null;
-    title: string;
+    // title объявлен ВЫШЕ с декораторами: без них whitelist глобального
+    // пайпа срезал сырой заголовок, и бэку было нечем восстановить имя
+    // события (todo3108 №3).
     viewedDate: '2017-12-29T19:44:28+03:00';
     xmlId: null;
 }

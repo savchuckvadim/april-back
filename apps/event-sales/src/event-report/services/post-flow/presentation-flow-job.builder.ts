@@ -75,11 +75,17 @@ export function buildPresentationFlowJobs(
     );
     if (!kinds.length) return [];
 
-    // Снимок анкеты — из УЖЕ загруженных сущностей контекста, без
-    // единого лишнего вызова Bitrix (фрейм пишет анкету до отчёта).
-    // Считается один раз на оба джоба: он одинаков и для отчёта, и для плана.
+    /*
+     * Снимок анкеты. Приоритетный источник — ОТВЕТЫ ИЗ PAYLOAD этого
+     * отчёта; лид и базовая сделка остаются фолбэком легаси-пути (старый
+     * фронт шлёт анкету отдельным запросом и в payload положить ничего не
+     * может). Ни одного лишнего вызова Bitrix ни на одном из путей:
+     * payload уже в контексте, сущности уже загружены. Считается один раз
+     * на оба джоба: он одинаков и для отчёта, и для плана.
+     */
     const survey = buildPresentationSurveySnapshot({
         portal: ctx.portal,
+        survey: ctx.presentationSurvey,
         lead: ctx.lead as Record<string, unknown> | null,
         baseDeal: ctx.currentBaseDeal as Record<string, unknown> | null,
     });

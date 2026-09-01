@@ -5,6 +5,10 @@ import {
     PresentationSmartFieldCode,
     PresentationSmartFieldDef,
 } from '@lib/portal-lib/pbx/pbx-presentation-smart';
+import {
+    presentationSurveyAnswersByCode,
+    PresentationSurveyValues,
+} from '../../shared/presentation-survey';
 
 /** Снимок анкеты: код поля смарта → готовое к записи значение. */
 export type PresentationSurveySnapshot = Partial<
@@ -23,6 +27,14 @@ const TRUTHY = new Set(['1', 'y', 'yes', 'true']);
 
 export interface PresentationSurveyInput {
     portal: PortalModel;
+    /**
+     * ПРИОРИТЕТНЫЙ источник — ответы анкеты из PAYLOAD отчёта
+     * (`presentation.survey`, нормализованные контекстом). Их прислал тот
+     * самый отчёт, который сейчас исполняется: свежее них по определению
+     * ничего нет. Нет блока в payload (старые сборки фрейма) — снимок
+     * собирается по сущностям, как раньше.
+     */
+    survey?: PresentationSurveyValues | null;
     /** Сырая строка лида: там живут «5К» (в т.ч. девять детальных ответов). */
     lead: Record<string, unknown> | null;
     /** Сырая строка БАЗОВОЙ сделки: там живут вопросы «Разговора» (op_xvost_*). */
@@ -32,11 +44,23 @@ export interface PresentationSurveyInput {
 /**
  * Снимок анкеты презентации («5К» + «Хвост») для элемента смарта.
  *
- * Тот же перенос, что делает event-report в pres-сделку
- * (`copyPresentationSurvey` + `copyXvostSnapshot`), только целью выступает
- * элемент смарта. Читаем УЖЕ ЗАГРУЖЕННЫЕ сущности контекста — ни одного
- * лишнего вызова Bitrix; фрейм пишет анкету в карточке клиента до отчёта,
- * поэтому значения на момент отчёта актуальны.
+ * ПОРЯДОК ИСТОЧНИКОВ — явный, первое непустое значение побеждает:
+ *  1. PAYLOAD отчёта — новый путь. Анкета едет вместе с отчётом (как и
+ *     ответы портальных анкет), поэтому здесь НЕТ ловушки «анкету
+ *     отправили после отчёта — снимок пуст» и не нужен фолбэк на сущности:
+ *     значения приходят даже когда лид и базовая сделка пусты (встройка в
+ *     сделку, где лида нет вовсе, — todo3108 №1).
+ *  2. ЛИД — легаси-путь: старый React-фронт шлёт анкету отдельным запросом
+ *     в ручку /presentation-survey, и та пишет ответы в лид.
+ *  3. БАЗОВАЯ СДЕЛКА — фолбэк того же легаси-пути: с 31.08 ручка зеркалит
+ *     тот же состав и в сделки, а поля «Хвоста» (op_xvost_*) живут ТОЛЬКО
+ *     там (на лиде их нет вовсе) — эти шесть приходят только отсюда, на
+ *     любом пути.
+ *
+ * Сущности читаются УЖЕ ЗАГРУЖЕННЫЕ контекстом — ни одного лишнего вызова
+ * Bitrix; карта {@link PRESENTATION_SMART_SURVEY_MIRROR} нужна ОБОИМ путям:
+ * payload адресует ответ кодом реестра (`op_5k_*`), а элементу смарта нужен
+ * его собственный код поля — перевод одного в другой и есть карта.
  *
  * Пустые ответы не переносятся: снимок фиксирует то, что заполнили, и не
  * затирает элемент пустотой. Поле не установлено на портале — молча
@@ -46,8 +70,27 @@ export function buildPresentationSurveySnapshot(
     input: PresentationSurveyInput,
 ): PresentationSurveySnapshot {
     const snapshot: PresentationSurveySnapshot = {};
+    const payload = payloadAnswersByCode(input.survey);
 
+    // ===== Источник 1: PAYLOAD отчёта (новый путь) =====
     for (const entry of PRESENTATION_SMART_SURVEY_MIRROR) {
+        if (snapshot[entry.target]) continue;
+        const raw = payload.get(entry.source);
+        if (raw === undefined) continue;
+        const value = normalize(raw, FIELD_TYPE_BY_CODE.get(entry.target));
+        if (!value) continue;
+        snapshot[entry.target] = value;
+    }
+
+    /*
+     * ===== Источники 2 и 3: ЛИД, затем БАЗОВАЯ СДЕЛКА (легаси-путь) =====
+     * Порядок записей карты на один target — порядок фолбэка «лид →
+     * сделка»; уже занятый payload'ом target пропускается первым же
+     * условием, так что перечитанная сущность НИКОГДА не перебивает ответ
+     * этого отчёта.
+     */
+    for (const entry of PRESENTATION_SMART_SURVEY_MIRROR) {
+        if (snapshot[entry.target]) continue;
         const row = entry.from === 'lead' ? input.lead : input.baseDeal;
         if (!row) continue;
         const field = input.portal.getEntityFieldByCode(
@@ -62,6 +105,22 @@ export function buildPresentationSurveySnapshot(
     }
 
     return snapshot;
+}
+
+/**
+ * Ответы payload одной картой «код поля реестра → ответ».
+ *
+ * У записи зеркала источник назван тем же кодом реестра (`entry.source`),
+ * поэтому payload ложится на карту без единого разветвления по видам
+ * вопросов. Саму раскладку делает общий модуль анкеты — тот же, которым
+ * поток пишет ответы в сущности: состав снимка не может разъехаться с
+ * составом записи.
+ */
+function payloadAnswersByCode(
+    survey: PresentationSurveyValues | null | undefined,
+): ReadonlyMap<string, string> {
+    if (!survey) return new Map<string, string>();
+    return presentationSurveyAnswersByCode(survey);
 }
 
 /**

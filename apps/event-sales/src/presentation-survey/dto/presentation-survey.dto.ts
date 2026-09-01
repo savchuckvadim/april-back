@@ -17,8 +17,11 @@ import {
  * Максимальная длина одного строкового значения анкеты. Значения ДЛИННЕЕ
  * не отклоняются, а обрезаются на сервере (легаси-фронт не должен получать
  * 400 из-за длинного ответа менеджера).
+ *
+ * Живёт в общем модуле `shared/presentation-survey` — одна анкета, один
+ * лимит и для этой ручки, и для ответов в payload отчёта.
  */
-export const PRESENTATION_SURVEY_VALUE_MAX_LENGTH = 5000;
+export { PRESENTATION_SURVEY_VALUE_MAX_LENGTH } from '../../shared/presentation-survey';
 
 /** Кому записать ответы анкеты. Все цели опциональны. */
 export class PresentationSurveyTargetsDto {
@@ -35,8 +38,8 @@ export class PresentationSurveyTargetsDto {
 
     @ApiPropertyOptional({
         description:
-            'Лид (заявка) — единственная цель, куда пишутся ДЕВЯТЬ ' +
-            'детальных полей «5К» вместе со сводными.',
+            'Лид (заявка): девять детальных «5К», шесть «Разговора» ' +
+            'и сводные.',
         type: Number,
         example: 42,
         minimum: 1,
@@ -47,7 +50,10 @@ export class PresentationSurveyTargetsDto {
     leadId?: number;
 
     @ApiPropertyOptional({
-        description: 'Сделки (пишутся только сводные поля).',
+        description:
+            'Сделки — тот же состав, что у лида: детальные «5К», ' +
+            '«Разговор» и сводные (решение 31.08; неустановленное на ' +
+            'сделке поле молча пропускается).',
         type: [Number],
         example: [1024, 2048],
     })
@@ -78,7 +84,7 @@ export class PresentationSurveyValuesDto {
             'op_5k_company_how, op_5k_company_right, op_5k_command, ' +
             'op_5k_concurent, op_5k_criteri), значение — ответ менеджера. ' +
             'Ключи вне этого списка молча отбрасываются (жёсткий ' +
-            'серверный whitelist). Пишутся ТОЛЬКО в лид.',
+            'серверный whitelist). Пишутся в лид и сделки.',
         type: Object,
         example: {
             op_5k_client_what: 'Хочет замену Консультанта',
@@ -88,6 +94,25 @@ export class PresentationSurveyValuesDto {
     @IsOptional()
     @IsObject()
     fiveK?: Record<string, string>;
+
+    @ApiPropertyOptional({
+        description:
+            'Шесть вопросов «Разговора»: ключ — код поля ' +
+            '(op_talk_impression, op_talk_remembered, op_talk_desire, ' +
+            'op_talk_decision_process, op_talk_price_opinion, ' +
+            'op_talk_boss_readiness), значение — ответ менеджера. ' +
+            'Тот же жёсткий whitelist, что у «5К»; пишутся в лид и ' +
+            'сделки. Без этого блока ответы «Разговора» жили только ' +
+            'строкой в комментарии — и снимку смарта было нечего читать.',
+        type: Object,
+        example: {
+            op_talk_impression: 'Встретили хорошо, слушали внимательно',
+            op_talk_price_opinion: 'Дорого, но готовы обсуждать',
+        },
+    })
+    @IsOptional()
+    @IsObject()
+    talk?: Record<string, string>;
 
     @ApiPropertyOptional({
         description:
@@ -104,6 +129,12 @@ export class PresentationSurveyValuesDto {
 /**
  * Анкета после презентации от ЛЕГАСИ-фронта (старый React event-sales):
  * хвост и «5К» отдельным запросом, вне event-report flow.
+ *
+ * Новый фронт этот контракт не использует — он кладёт ТЕ ЖЕ значения в
+ * payload отчёта (`presentation.survey`, класс
+ * `PresentationSurveyAnswersDto`): формы и семантика совпадают намеренно,
+ * whitelist кодов и нормализация у них общие
+ * (`shared/presentation-survey`). Удалить вместе со старым фронтом.
  *
  * Семантика записи — ТОЛЬКО перезапись (append нет): повтор того же
  * payload даёт тот же результат, это и есть ключ идемпотентности.

@@ -202,6 +202,52 @@ describe('Доработка — KPI-записи', () => {
         expect(report!.items.op_work_status).toBe('op_status_in_work');
     });
 
+    it('имя события берётся из сырого заголовка, когда фрейм его потерял', () => {
+        // Разбор заголовка в старых сборках фрейма обнулял имя (заголовок
+        // «Доработка» целиком стрипался как типовое слово), и KPI-запись
+        // уезжала безымянной — todo3108 №3. Сырой TITLE теперь доезжает до
+        // бэка, и имя достаётся из него: секции разделены двойным пробелом.
+        const ctx = makeCtx({
+            dto: {
+                currentTask: {
+                    eventType: 'refine',
+                    name: '',
+                    title: '🔧 Доработка  ООО Ромашка  Иван',
+                },
+                report: {
+                    resultStatus: 'result',
+                    workStatus: { current: { code: 'inJob' } },
+                },
+            },
+        });
+        const report = build(ctx).find(p => !p.dedup);
+
+        expect(report!.name).toBe('Доработка: ООО Ромашка');
+        expect(report!.values.event_title).toBe('Доработка: ООО Ромашка');
+    });
+
+    it('заголовок без имени события: «Доработка» без висячего двоеточия', () => {
+        // Заголовок из одного типового слова имени не несёт. Прежнее
+        // «Доработка: » выглядело в списке обрывом записи.
+        const ctx = makeCtx({
+            dto: {
+                currentTask: {
+                    eventType: 'refine',
+                    name: '',
+                    title: 'Доработка',
+                },
+                report: {
+                    resultStatus: 'result',
+                    workStatus: { current: { code: 'inJob' } },
+                },
+            },
+        });
+        const report = build(ctx).find(p => !p.dedup);
+
+        expect(report!.name).toBe('Доработка');
+        expect(report!.values.event_title).toBe('Доработка');
+    });
+
     it('план доработки: call + префикс, без history-override', () => {
         const ctx = makeCtx({
             dto: {

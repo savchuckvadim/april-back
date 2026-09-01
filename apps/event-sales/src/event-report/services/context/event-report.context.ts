@@ -3,6 +3,10 @@ import { IBXTask } from '@/modules/bitrix/domain/tasks/task/interface/task.inter
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { BitrixDateTime } from '@/shared/lib/date';
 import { PBXDateTime } from '@lib/portal-lib/pbx-domain/date/pbx-datetime';
+import {
+    normalizePresentationSurvey,
+    PresentationSurveyValues,
+} from '../../../shared/presentation-survey';
 import { EventSalesFlowDto } from '../../dto/event-sale-flow/event-sales-flow.dto';
 import { EnumEventItemResultType } from '../../types/report-types';
 import { EnumWorkStatusCode } from '../../types/report-types';
@@ -40,6 +44,22 @@ export const EEventReportFlowStrategy = {
 
 export type EventReportFlowStrategy =
     (typeof EEventReportFlowStrategy)[keyof typeof EEventReportFlowStrategy];
+
+/**
+ * Имя события из СЫРОГО заголовка задачи.
+ *
+ * Заголовок собираем сами (`buildTitle` в task-flow): «<Тип>  <Имя
+ * события>  <Контакт?>», разделитель — двойной пробел. Вторая секция и
+ * есть имя, которое ввёл менеджер; секций нет (робот, ручная задача) —
+ * имени в заголовке нет вовсе, и выдумывать его нечем.
+ */
+export function eventNameFromTaskTitle(title: string): string {
+    const sections = title
+        .split(/\s{2,}/)
+        .map(section => section.trim())
+        .filter(Boolean);
+    return sections.length >= 2 ? sections[1] : '';
+}
 
 /**
  * Состояние event-report flow: входной DTO + загруженные сущности + все
@@ -382,8 +402,20 @@ export class EventReportContext {
         const code = this.dto.currentTask?.eventType;
         return code ? this.normalizeEventType(code) : null;
     }
+    /**
+     * Имя события отчёта.
+     *
+     * Фрейм присылает `name` уже разобранным из заголовка задачи. Разбор
+     * старых сборок терял имя (глобальный стрип типовых слов обнулял
+     * заголовок вида «Доработка» и откусывал кусок от «Звонок по
+     * решению»), и KPI-запись уезжала безымянной — «Доработка: » без
+     * названия, todo3108 №3. Поэтому пустое имя достаётся из СЫРОГО
+     * заголовка: секции разделены двойным пробелом, вторая — имя события.
+     */
     get reportEventName(): string {
-        return this.dto.currentTask?.name ?? '';
+        const name = this.dto.currentTask?.name?.trim() ?? '';
+        if (name) return name;
+        return eventNameFromTaskTitle(this.dto.currentTask?.title ?? '');
     }
     get isNoCall(): boolean {
         return Boolean(this.dto.report?.isNoCall);
@@ -411,6 +443,24 @@ export class EventReportContext {
     get isPresentationCanceled(): boolean {
         return Boolean(this.dto.currentTask?.isPresentationCanceled);
     }
+
+    /**
+     * Ответы анкеты «5К/Хвост» ИЗ PAYLOAD отчёта — нормализованные:
+     * whitelist кодов, trim, обрезка по общему лимиту (те же правила, что у
+     * легаси-ручки: один смысл — один формат). Блока в payload нет — пустая
+     * структура, и поток ведёт себя ровно как раньше.
+     *
+     * Чистое чтение dto без единого обращения к Битриксу: анкета — такой же
+     * ответ при отчёте, как и портальные анкеты смартов, и приезжает вместе
+     * с ним. Именно поэтому у нового пути нет ловушки «анкету отправили
+     * после отчёта — писать было нечего».
+     */
+    get presentationSurvey(): PresentationSurveyValues {
+        return (this.presentationSurveyVo ??= normalizePresentationSurvey(
+            this.dto.presentation?.survey,
+        ));
+    }
+    private presentationSurveyVo?: PresentationSurveyValues;
 
     // === Misc ===
     get isPostSale(): boolean {

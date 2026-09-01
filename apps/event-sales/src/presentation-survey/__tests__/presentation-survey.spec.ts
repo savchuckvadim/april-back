@@ -17,16 +17,18 @@ import {
 const OPERATION_ID = 'e1c1a1f0-0000-4000-8000-000000000001';
 
 /**
- * Портал: детальные «5К» — на лиде (и, по опции, на сделке — порталы,
- * где админ установил девять полей и в сделку), сводные — лид+сделка.
+ * Портал: детальные «5К» и «Разговор» (op_talk_*) — на лиде (и, по опции,
+ * на сделке — порталы, где админ установил их и в сделку), сводные —
+ * лид+сделка.
  */
 const makePortal = (over: { dealDetailed?: boolean } = {}) => ({
     getEntityFieldByCode: (entity: string, code: string) => {
         const detailed = code.startsWith('op_5k_');
+        const talk = code.startsWith('op_talk_');
         const summary =
             code === 'op_presentation_xvost' || code === 'op_presentation_5k';
         if (
-            detailed &&
+            (detailed || talk) &&
             (entity === 'lead' || (over.dealDetailed && entity === 'deal'))
         ) {
             return { bitrixId: code.toUpperCase(), items: [] };
@@ -182,6 +184,52 @@ describe('PresentationSurveyEndpointService', () => {
         });
     });
 
+    it('«Разговор» едет в лид и сделку тем же зеркалом, левые ключи — мимо', async () => {
+        // До блока talk ответы «Разговора» жили только строкой в
+        // комментарии (фрейм слал их кодами xo_*, которых нет в реестре) —
+        // и снимку смарта (PRES_TALK_*) было нечего читать (todo3108 №1).
+        const { service, updates } = makeDeps({ dealDetailed: true });
+
+        await service.submit(
+            dto({
+                values: {
+                    talk: {
+                        op_talk_impression: 'Слушали внимательно',
+                        op_talk_price_opinion: 'Дорого, но обсуждаемо',
+                        xo_impression: 'код опросника, не поля', // мимо
+                        op_inn: '7701234567', // чужое поле — мимо
+                    },
+                },
+            }),
+        );
+
+        const lead = updates.find(u => u.entity === 'lead')!;
+        const deal = updates.find(u => u.entity === 'deal')!;
+        for (const fields of [lead.fields, deal.fields]) {
+            expect(fields).toEqual({
+                UF_CRM_OP_TALK_IMPRESSION: 'Слушали внимательно',
+                UF_CRM_OP_TALK_PRICE_OPINION: 'Дорого, но обсуждаемо',
+            });
+        }
+    });
+
+    it('только «Разговор» без «5К» и сводных — не no-op', async () => {
+        const { service, updates } = makeDeps();
+
+        const result = await service.submit(
+            dto({
+                targets: { leadId: 42 },
+                values: { talk: { op_talk_desire: 'Хотят работать' } },
+            }),
+        );
+
+        expect(result.noop).toBe(false);
+        expect(result.updated).toEqual(['lead_42']);
+        expect(updates[0].fields).toEqual({
+            UF_CRM_OP_TALK_DESIRE: 'Хотят работать',
+        });
+    });
+
     /*
      * ЖЁСТКИЙ whitelist: левые ключи fiveK отбрасываются молча — ручка
      * физически не может писать другие поля лида.
@@ -329,6 +377,50 @@ describe('PresentationSurveyEndpointService', () => {
         for (const update of updates) {
             for (const value of Object.values(update.fields)) {
                 expect(String(value)).not.toMatch(/[\r\n]/);
+            }
+        }
+    });
+
+    /*
+     * Ответ анкеты — СВОБОДНЫЙ текст менеджера, а значения batch-команд
+     * вклеиваются в query-строку `cmd` сырыми. Переносов мало: `&` делит
+     * query-строку на параметры (и обрывает НЕ ТОЛЬКО себя — всё, что в
+     * команде после него), `+` декодируется пробелом, `%` съедает начало
+     * следующей escape-последовательности. Ручка обязана экранировать так
+     * же строго, как поток (toBatchSafeText) — одно значение, один способ.
+     */
+    it('спецсимволы свободного текста экранируются строго: & + %', async () => {
+        const { service, updates } = makeDeps();
+
+        await service.submit(
+            dto({
+                values: {
+                    xvost: 'Гарант & КонсультантПлюс',
+                    fiveKSummary: 'Скидка 50% при оплате до 1 числа',
+                    fiveK: {
+                        op_5k_client_what: 'звонить на +7 900 123-45-67',
+                    },
+                },
+            } as never),
+        );
+
+        const lead = updates.find(u => u.entity === 'lead')!;
+        expect(lead.fields.UF_CRM_OP_PRESENTATION_XVOST).toBe(
+            'Гарант %26 КонсультантПлюс',
+        );
+        expect(lead.fields.UF_CRM_OP_PRESENTATION_5K).toBe(
+            'Скидка 50%25 при оплате до 1 числа',
+        );
+        expect(lead.fields.UF_CRM_OP_5K_CLIENT_WHAT).toBe(
+            'звонить на %2B7 900 123-45-67',
+        );
+        // Ни одна команда не увозит символ, рвущий её собственную
+        // query-строку: иначе вместе с ответом уехали бы мусором и соседние
+        // поля той же сущности.
+        for (const update of updates) {
+            for (const value of Object.values(update.fields)) {
+                expect(String(value)).not.toContain('&');
+                expect(String(value)).not.toContain('+');
             }
         }
     });

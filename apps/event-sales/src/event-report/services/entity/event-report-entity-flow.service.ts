@@ -10,9 +10,14 @@ import { EventReportCompanyBackfillModel } from './event-report-company-backfill
 import { EEventReportEntityType } from '../init/event-report-init.types';
 
 /**
- * Ставит в batch одну команду `update` сущности-владельца (company / lead /
- * сделка без компании) с уже собранными UF_CRM_*-полями из
+ * Ставит в batch `update` сущности-ВЛАДЕЛЬЦА (company / lead / сделка без
+ * компании) с уже собранными UF_CRM_*-полями из
  * {@link EventReportEntityFieldsModel}.
+ *
+ * Плюс две команды, которые от владельца НЕ зависят и потому живут
+ * отдельно: бэкфилл ручных полей компании с базовой сделки и зеркало
+ * анкеты «5К/Хвост» в лид (владельцем лид при живой компании не бывает
+ * никогда, а анкету обязан получать — как у легаси-ручки).
  *
  * Не @Injectable — создаётся через `new` рядом с конкретным {@link BitrixService}
  * (см. CLAUDE.md, race condition).
@@ -27,6 +32,7 @@ export class EventReportEntityFlowService {
 
     queue(ctx: EventReportContext): void {
         this.queueCompanyBackfill(ctx);
+        this.queueLeadSurveyMirror(ctx);
         if (!ctx.entityId) {
             this.logger.warn('entity-flow: skipped — no entityId');
             return;
@@ -90,6 +96,42 @@ export class EventReportEntityFlowService {
                 >[2],
             );
         }
+    }
+
+    /**
+     * Анкета «5К/Хвост» из payload — В ЛИД, когда владелец отчёта не он.
+     *
+     * Основной update выше строится РОВНО ОДИН, для `ctx.entityType`, а
+     * владельцем при живой компании всегда становится компания
+     * (`resolveEntity`). Без этой команды у обычного клиента «компания +
+     * заявка» ответы не попадали в лид ни разу — состав нового пути был уже,
+     * чем у легаси-ручки /presentation-survey, которая писала весь состав в
+     * `targets.leadId` независимо от владельца.
+     *
+     * Отдельной batch-командой и только анкета
+     * (`toPresentationSurveyFields`): лид здесь не «вторая сущность-владелец»
+     * — счётчики, штампы и история отчёта остаются делом владельца.
+     * Владелец-лид зеркала не получает: его анкету уже несёт основной update.
+     */
+    private queueLeadSurveyMirror(ctx: EventReportContext): void {
+        if (ctx.entityType === EEventReportEntityType.LEAD) return;
+        const leadId = Number(ctx.lead?.ID ?? 0);
+        if (!Number.isFinite(leadId) || leadId <= 0) return;
+
+        const fields = new EventReportEntityFieldsModel(
+            this.portal,
+            ctx,
+            EEventReportEntityType.LEAD,
+        ).toPresentationSurveyFields();
+        if (!Object.keys(fields).length) return;
+
+        this.bitrix.batch.lead.update(
+            `survey_lead_${leadId}`,
+            leadId,
+            fields as unknown as Parameters<
+                typeof this.bitrix.batch.lead.update
+            >[2],
+        );
     }
 
     /**

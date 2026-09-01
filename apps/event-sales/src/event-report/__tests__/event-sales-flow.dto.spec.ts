@@ -8,6 +8,10 @@ import {
     EventSalesFlowDto,
     ReturnToTmcDto,
 } from '../dto/event-sale-flow/event-sales-flow.dto';
+import {
+    PresentationDto,
+    PresentationSurveyAnswersDto,
+} from '../dto/event-sale-flow/presentation.dto';
 import { QuestionnaireAnswerDto } from '../dto/event-sale-flow/questionnaire-answer.dto';
 import { PlanDto, PlanTypeDto } from '../dto/event-sale-flow/plan.dto';
 import { ReportDto } from '../dto/event-sale-flow/report.dto';
@@ -275,5 +279,56 @@ describe('EventSalesFlowDto.questionnaireAnswers', () => {
         expect(
             errors.some(error => error.property === 'questionnaireAnswers'),
         ).toBe(true);
+    });
+});
+
+/**
+ * Анкета «5К/Хвост» — опциональный блок ВНУТРИ `presentation`.
+ *
+ * Опциональность обязательна по той же причине, что у
+ * `questionnaireAnswers`: бандл фрейма кэшируется встройкой Битрикса, и
+ * старая сборка шлёт `presentation` без `survey` — 400 она получить не
+ * должна, а поток обязан отработать ровно как раньше.
+ */
+describe('PresentationDto.survey', () => {
+    const presentation = (over: Record<string, unknown> = {}) => ({
+        count: { company: 0, smart: 0, deal: 0 },
+        isPresentationDone: true,
+        isUnplannedPresentation: false,
+        ...over,
+    });
+
+    it('блок не прислан — валидно (старые сборки фрейма)', async () => {
+        const dto = plainToInstance(PresentationDto, presentation());
+        const errors = await validate(dto);
+        expect(errors).toHaveLength(0);
+    });
+
+    it('валиден блок ответов: сводные + «5К» + «Разговор»', async () => {
+        const dto = plainToInstance(
+            PresentationDto,
+            presentation({
+                survey: {
+                    xvost: 'Дожать через неделю',
+                    fiveKSummary: 'Клиент готов, решает директор',
+                    fiveK: { op_5k_client_what: 'Хочет замену' },
+                    talk: { op_talk_impression: 'Встретили хорошо' },
+                },
+            }),
+        );
+        const errors = await validate(dto);
+
+        expect(errors).toHaveLength(0);
+        expect(dto.survey).toBeInstanceOf(PresentationSurveyAnswersDto);
+    });
+
+    it('невалиден нестроковый сводный ответ', async () => {
+        const dto = plainToInstance(
+            PresentationDto,
+            presentation({ survey: { xvost: { text: 'нет' } } }),
+        );
+        const errors = await validate(dto);
+
+        expect(errors.some(error => error.property === 'survey')).toBe(true);
     });
 });

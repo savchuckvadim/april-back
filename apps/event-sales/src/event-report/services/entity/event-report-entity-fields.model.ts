@@ -1,8 +1,16 @@
+import { Logger } from '@nestjs/common';
 import {
-    BATCH_LINE_BREAK_SYMBOL,
     toMultiFieldEntryText,
+    toBatchSafeText,
     toBatchText,
 } from '@lib/bitrix/consts/batch.consts';
+import {
+    isPresentationSurveyEmpty,
+    PRESENTATION_SURVEY_CODES,
+    PRESENTATION_SURVEY_SUMMARY_CODES,
+    presentationSurveyAnswersByCode,
+    PresentationSurveyValues,
+} from '../../../shared/presentation-survey';
 import { buildEventHistoryParts } from '../history/event-history-comment.builder';
 import {
     EVENT_TASK_CHECKLIST_ITEM,
@@ -74,45 +82,37 @@ const FAIL_COMMENTS_LIMIT = 18;
 /**
  * Анкета после презентации: сводные («Хвост», «Пять К») + девять детальных
  * ответов «5К» + шесть обязательных вопросов «Разговора» (op_talk_*).
- * Значения пишет ФРЕЙМ прямо в ЛИД; event-report при
- * проведённой презентации разносит их тем же каркасом, что
- * `pres_comments`/`pres_count`, по правилам владельца:
+ *
+ * СОСТАВ КОДОВ — общий (`shared/presentation-survey`): и легаси-ручка
+ * `/event-sales/presentation-survey`, и запись ответов из payload отчёта
+ * ({@link EventReportEntityFieldsModel.applyPresentationSurveyAnswers}), и
+ * этот перенос «лид → сделки» обязаны понимать анкету одним списком.
+ *
+ * Здесь список работает на ЛЕГАСИ-ПУТИ: значения пишет ФРЕЙМ старой сборки
+ * прямо в ЛИД, а event-report при проведённой презентации разносит их тем
+ * же каркасом, что `pres_comments`/`pres_count`, по правилам владельца:
  *  - основная (sales_base) сделка — всегда, ПЕРЕЗАТИРАЯ: смысл —
  *    «последняя проведённая презентация»;
  *  - pres-сделки — только та, ПО КОТОРОЙ отчитываются, и спонтанная
  *    (у каждой презентации своя запись); плановой — нет;
  *  - связанный с презентацией ЛИД — через EventReportLeadRequestSyncService
- *    (связь — presentationLink из модалки; лид контекста и есть «один
- *    открытый, прокинутый через задачу», ответы на нём уже стоят).
+ *    (связь — presentationLink из модалки; лид контекста туда не попадает:
+ *    состав до него доезжает основным батчем, второй писатель запрещён).
  *
- * Скаляры, не multiple: перенос перезаписывает прошлые значения. Сейчас на
- * сделках заведены только сводные; детальные разрезолвятся в пустоту и
- * молча пропустятся — а если владелец заведёт их и на сделках, перенос
- * подхватит их без правки кода.
+ * Скаляры, не multiple: перенос перезаписывает прошлые значения.
+ *
+ * ЧТО РЕАЛЬНО ЗАВЕДЕНО В РЕЕСТРЕ (`pbx-sales-event-field.type.ts`), чтобы
+ * не гадать по этому комментарию:
+ *  - `op_presentation_xvost` / `op_presentation_5k` — lead + deal + company;
+ *  - девять `op_5k_*` — lead + deal (`company: ''`);
+ *  - шесть `op_talk_*` — lead + deal + COMPANY. Компанейские `op_talk_*`
+ *    установщик заводит, а не пишет никто (см. гейт компании в
+ *    {@link EventReportEntityFieldsModel.applyPresentationSurveyAnswers}) —
+ *    открытый вопрос владельцу.
+ * Неустановленное на конкретном портале поле разрезолвится в пустоту и
+ * молча пропустится — реестр расширять безопасно, код правки не требует.
  */
-export const PRESENTATION_SURVEY_FIELD_CODES = [
-    'op_presentation_xvost',
-    'op_presentation_5k',
-    // Шесть обязательных вопросов «Разговора»: до появления op_talk_* они
-    // жили только в тексте комментария к презентации — прочитать их мог
-    // человек, отфильтровать не мог никто. Переносятся тем же каркасом,
-    // что и «5К»: источник — лид, приёмник — сделки.
-    'op_talk_impression',
-    'op_talk_remembered',
-    'op_talk_desire',
-    'op_talk_decision_process',
-    'op_talk_price_opinion',
-    'op_talk_boss_readiness',
-    'op_5k_client_what',
-    'op_5k_client_ready',
-    'op_5k_client_price',
-    'op_5k_company_who',
-    'op_5k_company_how',
-    'op_5k_company_right',
-    'op_5k_command',
-    'op_5k_concurent',
-    'op_5k_criteri',
-] as const;
+export const PRESENTATION_SURVEY_FIELD_CODES = PRESENTATION_SURVEY_CODES;
 
 /**
  * Deal-only поля хвоста (владельческая таблица todo2508): фрейм пишет их
@@ -233,6 +233,8 @@ function scalarToText(raw: unknown): string {
  *    он пишется вне стадийных update'ов и модели полей не касается.
  */
 export class EventReportEntityFieldsModel {
+    private readonly logger = new Logger(EventReportEntityFieldsModel.name);
+
     constructor(
         private readonly portal: PortalModel,
         private readonly ctx: EventReportContext,
@@ -266,6 +268,19 @@ export class EventReportEntityFieldsModel {
             );
             this.copyPresentationSurvey(out);
         }
+
+        /*
+         * ===== Анкета 5К/Хвост ИЗ PAYLOAD отчёта =====
+         * Строго ПОСЛЕ переноса «лид → сделки»: payload — свежая правда
+         * этого отчёта и обязан побеждать снимок лида, прочитанный
+         * init-фазой. Блока в payload нет — ни одной команды не появится.
+         *
+         * Вне блока `isPresentationDone` НАМЕРЕННО: гейт живёт внутри
+         * метода — его зовёт ещё и зеркало лида
+         * (`toPresentationSurveyFields`), и условие обязано действовать на
+         * оба входа, а не только на этот.
+         */
+        this.applyPresentationSurveyAnswers(out);
 
         // ===== Чек-лист закрытой задачи (фолбэк по презентации) =====
         this.applyChecklistFacts(out);
@@ -391,6 +406,28 @@ export class EventReportEntityFieldsModel {
             this.setScalar(out, 'to_base_sales', this.dealOptions.baseDealId);
         }
 
+        return out;
+    }
+
+    /**
+     * ТОЛЬКО ответы анкеты «5К/Хвост» из payload — без единого другого поля
+     * отчёта.
+     *
+     * Нужен там, где сущность НЕ владелец отчёта, а анкету получить обязана.
+     * Практически это ЛИД при живой компании: владельцем отчёта
+     * (`resolveEntity`) компания становится всегда, когда `companyId` есть в
+     * контексте, и полный `toFields()` для лида поток в этом случае не
+     * строит вовсе. Легаси-ручка /presentation-survey писала анкету в лид
+     * независимо от того, кто «владелец», — состав нового пути обязан
+     * совпадать (см. {@link applyPresentationSurveyAnswers}).
+     *
+     * Именно ТОЛЬКО анкета: полный `toFields()` увёз бы на лид ещё и
+     * счётчики, штампы, историю и `ASSIGNED_BY_ID` — то есть второй,
+     * никем не заказанный update лида.
+     */
+    toPresentationSurveyFields(): EntityFieldsMap {
+        const out: EntityFieldsMap = {};
+        this.applyPresentationSurveyAnswers(out);
         return out;
     }
 
@@ -786,12 +823,17 @@ export class EventReportEntityFieldsModel {
     }
 
     /**
-     * Перенос анкеты после презентации: ответы «последней проведённой»
-     * с ЛИДА → на pres-сделку и основную сделку.
+     * ФОЛБЭК-перенос анкеты после презентации: ответы «последней
+     * проведённой» с ЛИДА → на pres-сделку и основную сделку.
      *
-     * Почему источник — лид, а не DTO отчёта: анкету фрейм пишет в лид
-     * напрямую, и лид уже прочитан init-фазой; расширять контракт отчёта
-     * ради дублирования этих значений не нужно.
+     * Источник анкеты №1 — PAYLOAD отчёта ({@link
+     * applyPresentationSurveyAnswers}). Лид остаётся источником только для
+     * ЛЕГАСИ-ПУТИ: старый React-фронт шлёт анкету отдельным запросом в
+     * ручку /presentation-survey, та пишет ответы в лид, и в payload
+     * положить ничего не может. Ответ, пришедший в payload, отсюда НЕ
+     * копируется вовсе (см. гейт в цикле): свежая правда этого отчёта не
+     * нуждается в перечитанной сущности, а копия ниже её только
+     * дублировала бы.
      *
      * Пишем ТОЛЬКО на сделки (роли base/pres):
      *  - на лиде значения и так живут, а перезапись снапшотом init-фазы
@@ -824,7 +866,14 @@ export class EventReportEntityFieldsModel {
         const lead = this.ctx.lead as unknown as Record<string, unknown> | null;
         if (!lead) return;
 
+        // Ответы ЭТОГО отчёта: их пишет applyPresentationSurveyAnswers,
+        // и перенос с лида для них не нужен (см. докблок).
+        const fromPayload = presentationSurveyAnswersByCode(
+            this.ctx.presentationSurvey,
+        );
+
         for (const code of PRESENTATION_SURVEY_FIELD_CODES) {
+            if (fromPayload.has(code)) continue;
             const leadField = this.portal.getEntityFieldByCode('lead', code);
             if (!leadField) continue;
             const raw = lead[this.bitrixKey(leadField)];
@@ -833,14 +882,138 @@ export class EventReportEntityFieldsModel {
             /*
              * setScalar сам резолвит поле на ЦЕЛЕВОЙ сущности и молча
              * пропускает неустановленное (детальные «5К» на сделке).
-             * toBatchText обязателен: ответы анкеты многострочны по
-             * построению, а поля сделок уезжают batch-командой, где сырой
-             * `\n` доезжает подчёркиванием. На лиде значение хранится с
-             * настоящими переносами (Битрикс декодирует %0A при записи),
-             * поэтому повторный перенос не двоит экранирование.
+             *
+             * Экранирование — toBatchSafeText, ТО ЖЕ, что у setSurveyField:
+             * значение уезжает в ТОТ ЖЕ объект `out`, то есть ОДНОЙ
+             * командой `deal.update` рядом с ответами из payload. Слабый
+             * вариант рвал бы не только себя: один скопированный с лида
+             * ответ с `&` («Гарант & КонсультантПлюс») обрезал бы всю
+             * остальную часть команды — историю, статусы и счётчики того же
+             * отчёта. На лиде значение хранится с настоящими переносами и
+             * сырыми `&`/`+`/`%` (Битрикс декодировал их при записи),
+             * поэтому экранирование здесь первое, а не повторное.
              */
-            this.setScalar(out, code, toBatchText(value));
+            this.setScalar(out, code, toBatchSafeText(value));
         }
+    }
+
+    /**
+     * ЗАПИСЬ анкеты «5К/Хвост» ИЗ PAYLOAD отчёта — основным потоком, тем же
+     * батчем, что и сам отчёт.
+     *
+     * Состав по целям — ровно как у легаси-ручки (общий whitelist кодов из
+     * `shared/presentation-survey`):
+     *  - ЛИД и СДЕЛКИ (контекстная/базовая и презентационные) — весь
+     *    состав: девять детальных «5К», шесть «Разговора» и оба сводных;
+     *    лид получает его и тогда, когда владелец отчёта — компания или
+     *    сделка: отдельной командой зеркала
+     *    (`EventReportEntityFlowService.queueLeadSurveyMirror` поверх
+     *    {@link toPresentationSurveyFields}), иначе состав был бы уже
+     *    легаси-ручки;
+     *  - КОМПАНИЯ — только сводные («Хвост», «Пять К»). Детальные «5К» на
+     *    компании реестром не заведены (`company: ''` у всех `op_5k_*`) —
+     *    там они означали бы «последний ответ по любой из сделок». Шесть
+     *    `op_talk_*` на компании реестром, наоборот, ЗАВЕДЕНЫ, и установщик
+     *    их создаёт — но писателя у них нет ни здесь, ни в легаси-ручке:
+     *    открытый вопрос владельцу «писать или снять из реестра»
+     *    (`front/docs/event-sales-0109.md`, раздел 9.5).
+     * ХО/ТМЦ-сделки к презентации отношения не имеют и остаются вне записи.
+     *
+     * ГЕЙТ — проведённая презентация (`ctx.isPresentationDone`), как у
+     * соседей `copyPresentationSurvey`/`bumpPresCount`/штампа проведения.
+     * Он стоит ЗДЕСЬ, а не на месте вызова: метод зовут два входа —
+     * `toFields()` и `toPresentationSurveyFields()` (зеркало лида), и
+     * условие «анкета есть только у состоявшейся презентации» обязано
+     * действовать на оба. DTO блок при непроведённой презентации слать не
+     * обязан, но и не запрещает — контракт держит поток, а не фрейм.
+     *
+     * Плановая pres-сделка, создаваемая ЭТИМ ЖЕ отчётом, ответов не
+     * получает: у каждой презентации своя анкета, а у будущей её ещё нет
+     * (тот же гейт, что у `pres_count` и штампа проведения). Спонтанная
+     * pres-сделка — получает: её создаёт сам поток, уже держа ответы в
+     * руках, и никакого rendezvous с hook'ом для этого не нужно.
+     *
+     * Ответов в payload нет — метод не добавляет НИ ОДНОГО поля: старые
+     * сборки фрейма блок не шлют, и поток обязан вести себя как раньше.
+     */
+    private applyPresentationSurveyAnswers(out: EntityFieldsMap): void {
+        if (!this.ctx.isPresentationDone) return;
+        const survey = this.ctx.presentationSurvey;
+        if (isPresentationSurveyEmpty(survey)) return;
+
+        if (this.entityType === EEventReportEntityType.COMPANY) {
+            this.appendSurveySummary(out, survey);
+            return;
+        }
+        if (this.entityType === EEventReportEntityType.DEAL) {
+            const role = this.dealOptions?.role;
+            if (role !== EDealRole.BASE && role !== EDealRole.PRESENTATION) {
+                return;
+            }
+            if (this.isPresentationDealWithoutPresentation()) return;
+        }
+
+        for (const [code, value] of survey.fiveK) {
+            this.setSurveyField(out, code, value);
+        }
+        for (const [code, value] of survey.talk) {
+            this.setSurveyField(out, code, value);
+        }
+        this.appendSurveySummary(out, survey);
+    }
+
+    /** Сводные ответы анкеты — единственное, что едет ещё и в компанию. */
+    private appendSurveySummary(
+        out: EntityFieldsMap,
+        survey: PresentationSurveyValues,
+    ): void {
+        this.setSurveyField(
+            out,
+            PRESENTATION_SURVEY_SUMMARY_CODES.xvost,
+            survey.xvost,
+        );
+        this.setSurveyField(
+            out,
+            PRESENTATION_SURVEY_SUMMARY_CODES.fiveKSummary,
+            survey.fiveKSummary,
+        );
+    }
+
+    /**
+     * Один ответ анкеты в поле ЦЕЛЕВОЙ сущности.
+     *
+     * Резолв — существующей механикой по слепку портала; поле не
+     * установлено (детальные «5К» на компании, реестр без op_talk_*) —
+     * warning и пропуск: мягкая деградация, как везде в event-report,
+     * остальные ответы при этом пишутся.
+     *
+     * Экранирование — `toBatchSafeText`, строгий вариант: ответ анкеты
+     * это СВОБОДНЫЙ текст менеджера, целиком уезжающий ОДНИМ значением
+     * batch-команды, а значения вклеиваются в query-строку `cmd` сырыми.
+     * Переносов мало (ответы многострочны ПО ПОСТРОЕНИЮ, и сырой перенос
+     * доехал бы до карточки подчёркиванием) — строку рвут ещё три
+     * символа: `&` («Гарант & КонсультантПлюс» оборвался бы на
+     * амперсанде, а хвост уехал бы мусорным параметром команды), `+`
+     * («тел. +7 900…» доезжает пробелом вместо плюса) и `%` («скидка
+     * 50%» съедает начало следующей escape-последовательности). Поток
+     * пишет ПОСЛЕ фрейма, поэтому испорченное значение ПЕРЕЗАТЁРЛО БЫ
+     * чистое, записанное фреймом напрямую (не батчем).
+     */
+    private setSurveyField(
+        out: EntityFieldsMap,
+        code: string,
+        value: string | null,
+    ): void {
+        if (!value) return;
+        const field = this.portal.getEntityFieldByCode(this.entityType, code);
+        if (!field) {
+            this.logger.warn(
+                `анкета презентации: поле ${code} не установлено на ` +
+                    `${this.entityType} — ответ пропущен`,
+            );
+            return;
+        }
+        out[this.bitrixKey(field)] = toBatchSafeText(value);
     }
 
     /**
@@ -955,12 +1128,18 @@ export class EventReportEntityFieldsModel {
     }
 
     /**
-     * Текст анкеты «Хвост» с ЛИДА — там его пишет фрейм (на компании поля
-     * нет вовсе, на сделке лежит снимок ПРОШЛОЙ презентации, который этот же
-     * отчёт только собирается перезаписать). Поле не установлено, лида нет
-     * или ответ пустой — пусто, и запись остаётся прежней.
+     * Текст анкеты «Хвост» для ленты презентаций.
+     *
+     * Источник №1 — PAYLOAD отчёта: ответ этой самой презентации приехал
+     * вместе с ней, и он свежее любого снимка сущности. Фолбэк — ЛИД, где
+     * его оставляет фрейм СТАРОЙ сборки (на компании поля нет вовсе, а на
+     * сделке лежит снимок ПРОШЛОЙ презентации, который этот же отчёт
+     * только собирается перезаписать). Ни там, ни там нет — пусто, и
+     * запись ленты остаётся прежней.
      */
     private presentationXvost(): string {
+        const fromPayload = this.ctx.presentationSurvey.xvost;
+        if (fromPayload) return fromPayload;
         const lead = this.ctx.lead as unknown as Record<string, unknown> | null;
         if (!lead) return '';
         const field = this.portal.getEntityFieldByCode(

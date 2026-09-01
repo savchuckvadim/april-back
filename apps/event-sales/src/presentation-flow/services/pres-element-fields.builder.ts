@@ -90,11 +90,29 @@ export class PresElementFieldsBuilder {
         this.setUf(fields, code, item.id);
     }
 
-    /** Анкета «5К»/«Хвост» — снимок на момент отчёта (см. джоб). */
+    /**
+     * Анкета «5К»/«Хвост» — снимок на момент отчёта (см. джоб).
+     *
+     * Ответы приезжают готовыми к записи, адрес каждого — код поля НАШЕГО
+     * реестра. Поля нет на портале (старая установка смарта) — писать
+     * некуда, и раньше ответ пропадал молча: тихая потеря анкеты и есть
+     * тот класс ошибок, ради которого её увели в payload отчёта. Теперь
+     * пропуск виден в логах одной строкой со списком кодов, а остальные
+     * ответы пишутся как прежде (мягкая деградация, а не падение).
+     */
     applySurvey(fields: BxRow): void {
+        const skipped: string[] = [];
         for (const [code, value] of Object.entries(this.run.job.survey ?? {})) {
-            this.setUf(fields, code as PresentationSmartFieldCode, value);
+            const smartCode = code as PresentationSmartFieldCode;
+            if (value && !this.ufKey(smartCode)) skipped.push(code);
+            this.setUf(fields, smartCode, value);
         }
+        if (!skipped.length) return;
+        this.logger.warn(
+            `[presentation-flow] ${this.run.job.domain}: поля смарта ` +
+                `${skipped.join(', ')} не установлены — ` +
+                'ответы анкеты не записаны',
+        );
     }
 
     /**

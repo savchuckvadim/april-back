@@ -1,4 +1,10 @@
 import { EventReportLeadRequestSyncService } from '../services/lead/event-report-lead-request-sync.service';
+import { EventReportEntityFieldsModel } from '../services/entity/event-report-entity-fields.model';
+import { EEventReportEntityType } from '../services/init/event-report-init.types';
+import {
+    normalizePresentationSurvey,
+    type RawPresentationSurveyValues,
+} from '../../shared/presentation-survey';
 
 /**
  * Синк заявки на финалах: продажа/отказ двигают op_lead_* связанных лидов
@@ -118,10 +124,18 @@ const makeBitrix = (leadRows: Record<number, Record<string, unknown>>) => {
     };
 };
 
+/**
+ * Анкета из payload отчёта — ровно как её отдаёт геттер контекста
+ * (`ctx.presentationSurvey`): нормализованная, пустая по умолчанию.
+ */
+const surveyOf = (raw?: RawPresentationSurveyValues) =>
+    normalizePresentationSurvey(raw);
+
 const makeCtx = (over: Record<string, unknown>) =>
     ({
         lead: null,
         ownerDeal: null,
+        presentationSurvey: surveyOf(),
         dto: {},
         ...over,
     }) as never;
@@ -542,6 +556,115 @@ describe('EventReportLeadRequestSyncService', () => {
         expect(fields.UF_CRM_OP_LEAD_SITE_STATUS).toBe(38);
     });
 
+    /* ------------------------------------------------------------------ *
+     * Анкета ИЗ PAYLOAD отчёта: ответы этого прогона главнее перечитанного
+     * лида. Иначе один отчёт писал бы в сделки свежие ответы, а в
+     * связанную заявку — прошлые (или ничего, когда лид пуст).
+     * ------------------------------------------------------------------ */
+
+    it('payload побеждает прошлые ответы лида контекста; коды вне payload берутся с лида', async () => {
+        const { bitrix, updates } = makeBitrix({ 77: { ID: '77' } });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        await service.run(
+            surveyCtx({
+                // Лид контекста хранит анкету ПРОШЛОЙ презентации.
+                lead: {
+                    ID: '42',
+                    UF_CRM_OP_PRESENTATION_XVOST: 'прошлый хвост',
+                    UF_CRM_OP_5K_CLIENT_WHAT: 'прошлый ответ 5К',
+                    UF_CRM_OP_PRESENTATION_5K: 'прошлая сводка',
+                },
+                presentationSurvey: surveyOf({
+                    xvost: 'хвост ЭТОГО отчёта',
+                    fiveK: { op_5k_client_what: 'ответ ЭТОГО отчёта' },
+                }),
+            }),
+        );
+
+        const fields = updates[0].fields;
+        expect(fields.UF_CRM_OP_PRESENTATION_XVOST).toBe('хвост ЭТОГО отчёта');
+        expect(fields.UF_CRM_OP_5K_CLIENT_WHAT).toBe('ответ ЭТОГО отчёта');
+        // Кода нет в payload — легаси-путь (перенос с лида) сохранён.
+        expect(fields.UF_CRM_OP_PRESENTATION_5K).toBe('прошлая сводка');
+    });
+
+    it('лида контекста нет, ответы в payload → связанная заявка их получает', async () => {
+        const { bitrix, updates } = makeBitrix({ 77: { ID: '77' } });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        await service.run(
+            surveyCtx({
+                lead: null, // встройка в сделку: лида в контексте нет
+                presentationSurvey: surveyOf({
+                    xvost: 'хвост из payload',
+                    fiveKSummary: 'сводка из payload',
+                }),
+            }),
+        );
+
+        const fields = updates[0].fields;
+        expect(fields.UF_CRM_OP_PRESENTATION_XVOST).toBe('хвост из payload');
+        expect(fields.UF_CRM_OP_PRESENTATION_5K).toBe('сводка из payload');
+    });
+
+    /*
+     * ОДИН ЛИД — ОДИН ПИСАТЕЛЬ. Состав анкеты до лида контекста уже доехал
+     * ОСНОВНЫМ батчем (свой update у владельца-лида, команда зеркала
+     * `survey_lead_*` у владельца-компании/сделки). Волна 2 идёт ПОСЛЕ него,
+     * поэтому вторая команда на тот же лид не «дублировала» бы, а
+     * ПЕРЕЗАПИСЫВАЛА бы уже записанное — и выиграл бы тот писатель, что
+     * позже, независимо от того, чей состав и чьё экранирование сильнее.
+     */
+    it('связанный лид и есть лид контекста → волна 2 анкету НЕ переписывает', async () => {
+        const { bitrix, updates } = makeBitrix({ 42: { ID: '42' } });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        await service.run(
+            surveyCtx({
+                presentationSurvey: surveyOf({ xvost: 'хвост из payload' }),
+                dto: {
+                    leadSync: {
+                        leadId: 42, // тот же лид
+                        presentationLink: true,
+                    },
+                },
+            }),
+        );
+
+        const fields = updates[0].fields;
+        expect(fields.UF_CRM_OP_PRESENTATION_XVOST).toBeUndefined();
+        // Себя самого лид донором не служит: снапшот init-фазы не едет.
+        expect(fields.UF_CRM_OP_5K_CLIENT_WHAT).toBeUndefined();
+        // Остальная работа волны 2 на месте: автостатус единой оси.
+        expect(fields.UF_CRM_OP_LEAD_SITE_STATUS).toBe(38);
+    });
+
+    it('многострочный ответ из payload доезжает с %0A', async () => {
+        const { bitrix, updates } = makeBitrix({ 77: { ID: '77' } });
+        const service = new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        await service.run(
+            surveyCtx({
+                lead: null,
+                presentationSurvey: surveyOf({
+                    xvost: 'строка 1\nстрока 2',
+                }),
+            }),
+        );
+
+        const fields = updates[0].fields;
+        expect(fields.UF_CRM_OP_PRESENTATION_XVOST).toBe('строка 1%0Aстрока 2');
+    });
+
     it('презентация не проведена → анкета связанному лиду не переносится', async () => {
         const { bitrix, updates } = makeBitrix({ 77: { ID: '77' } });
         const service = new EventReportLeadRequestSyncService(
@@ -576,5 +699,87 @@ describe('EventReportLeadRequestSyncService', () => {
         const fields = updates[0].fields;
         expect(fields.UF_CRM_OP_PRESENTATION_XVOST).toBeUndefined();
         expect(fields.UF_CRM_OP_LEAD_SITE_STATUS).toBe(39); // финал отработал
+    });
+});
+
+/**
+ * ОДИН ОТВЕТ — ОДНО ЭКРАНИРОВАНИЕ У ВСЕХ ПИСАТЕЛЕЙ.
+ *
+ * Ответ анкеты это СВОБОДНЫЙ текст менеджера, а значения batch-команд
+ * вклеиваются в query-строку `cmd` сырыми (экранируется только `=` в ключе,
+ * см. `BatchApiService.dictToQueryString`). У одного и того же ответа в
+ * одном отчёте два писателя: основной батч (модель полей → зеркало лида) и
+ * волна 2 лид-синка. Разойдись они в способе экранирования — выиграл бы
+ * тот, кто ПОЗЖЕ, то есть волна 2, и в заявку легло бы «Гарант » вместо
+ * «Гарант & КонсультантПлюс», а хвост уехал бы мусорным параметром команды.
+ *
+ * Поэтому сверка идёт БАЙТ В БАЙТ, а не «оба непустые».
+ */
+describe('Анкета: два писателя одного ответа сходятся байт в байт', () => {
+    /** Все четыре опасных символа разом: `&`, `%`, `+`, перенос строки. */
+    const DIRTY =
+        'Гарант & КонсультантПлюс: скидка 50% + НДС\nзвонить на +7 900 123-45-67';
+    const ESCAPED =
+        'Гарант %26 КонсультантПлюс: скидка 50%25 %2B НДС%0Aзвонить на ' +
+        '%2B7 900 123-45-67';
+
+    /** Контекст одного отчёта: лид 42, презентация связана с заявкой 77. */
+    const dirtyCtx = () =>
+        makeCtx({
+            isSuccessSale: false,
+            isFail: false,
+            isPresentationDone: true,
+            lead: { ID: '42' },
+            presentationSurvey: surveyOf({ xvost: DIRTY }),
+            dto: { leadSync: { leadId: 77, presentationLink: true } },
+        });
+
+    /** Писатель №1: основной батч — зеркало анкеты на лид. */
+    const mirrorFields = (ctx: unknown) =>
+        new EventReportEntityFieldsModel(
+            makePortal() as never,
+            ctx as never,
+            EEventReportEntityType.LEAD,
+        ).toPresentationSurveyFields();
+
+    /** Писатель №2: волна 2 лид-синка — команда lead.update заявке. */
+    const wave2Fields = async (ctx: unknown) => {
+        const { bitrix, updates } = makeBitrix({ 77: { ID: '77' } });
+        await new EventReportLeadRequestSyncService(
+            bitrix as never,
+            makePortal() as never,
+        ).run(ctx as never);
+        return updates[0].fields;
+    };
+
+    it('связанная заявка получает ТЕ ЖЕ БАЙТЫ, что и лид основного батча', async () => {
+        const ctx = dirtyCtx();
+
+        const mirror = mirrorFields(ctx);
+        const wave2 = await wave2Fields(ctx);
+
+        expect(mirror.UF_CRM_OP_PRESENTATION_XVOST).toBe(ESCAPED);
+        expect(wave2.UF_CRM_OP_PRESENTATION_XVOST).toBe(
+            mirror.UF_CRM_OP_PRESENTATION_XVOST,
+        );
+    });
+
+    it('ни один писатель не отдаёт символы, рвущие query-строку команды', async () => {
+        const ctx = dirtyCtx();
+
+        const values = [
+            String(mirrorFields(ctx).UF_CRM_OP_PRESENTATION_XVOST),
+            String((await wave2Fields(ctx)).UF_CRM_OP_PRESENTATION_XVOST),
+        ];
+
+        for (const value of values) {
+            // `&` разрезал бы команду, `+` доехал бы пробелом, сырой перенос
+            // — подчёркиванием в карточке.
+            expect(value).not.toContain('&');
+            expect(value).not.toContain('+');
+            expect(value).not.toMatch(/[\r\n]/);
+            // `%` остался только в собственных escape-последовательностях.
+            expect(value.replace(/%(25|2B|26|0A)/g, '')).not.toContain('%');
+        }
     });
 });
