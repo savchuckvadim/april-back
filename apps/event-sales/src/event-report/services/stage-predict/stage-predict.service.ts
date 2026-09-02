@@ -4,6 +4,10 @@ import { IBXDeal } from '@/modules/bitrix';
 import { IPCategory } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import {
+    EnumPortalAppCode,
+    PortalAppSettingsService,
+} from '@lib/portal-lib/store/app-settings';
+import {
     EnumEventItemResultType,
     EnumWorkStatusCode,
 } from '../../types/report-types';
@@ -34,7 +38,15 @@ import {
 export class StagePredictService {
     private readonly logger = new Logger(StagePredictService.name);
 
-    constructor(private readonly pbx: PBXService) {}
+    constructor(
+        private readonly pbx: PBXService,
+        // Правило «Доработка всегда» живёт в настройках портала: предикт
+        // обязан читать ту же настройку, что и прогон, иначе модалки и
+        // `willChange` врали бы ровно на этом исключении. Redis-кэш сервиса
+        // настроек держит чтение дешёвым — предикт зовётся на каждую смену
+        // плана.
+        private readonly appSettings: PortalAppSettingsService,
+    ) {}
 
     async predict(
         dto: StagePredictRequestDto,
@@ -56,11 +68,10 @@ export class StagePredictService {
         );
         if (!category) return empty;
 
-        const baseDeal = await this.findCurrentBaseDeal(
-            bitrix,
-            category,
-            dto.context,
-        );
+        const [baseDeal, refineStageOnPlan] = await Promise.all([
+            this.findCurrentBaseDeal(bitrix, category, dto.context),
+            this.resolveRefineStageOnPlan(dto.domain),
+        ]);
 
         const currentStage = this.stageByStageId(category, baseDeal?.STAGE_ID);
         const targetStageBitrixId = getSalesBaseTargetStageCode({
@@ -81,6 +92,7 @@ export class StagePredictService {
             isFail: dto.workStatusCode === EnumWorkStatusCode.fail,
             isNoResult: dto.resultStatus === EnumEventItemResultType.NORESULT,
             isNotCa: Boolean(dto.isNotCa),
+            refineStageOnPlan,
         });
 
         const targetStage = targetStageBitrixId
@@ -106,6 +118,26 @@ export class StagePredictService {
                 `${response.currentStageCode ?? '∅'} → ${response.targetStageCode ?? '∅'}`,
         );
         return response;
+    }
+
+    /**
+     * `refine_stage_on_plan_enabled` портала; настройки недоступны — false,
+     * то есть дефолт схемы: лестница как всегда, без исключения.
+     */
+    private async resolveRefineStageOnPlan(domain: string): Promise<boolean> {
+        try {
+            const settings = await this.appSettings.resolve(
+                domain,
+                EnumPortalAppCode.eventSales,
+            );
+            return Boolean(settings.withRefineStageOnPlan);
+        } catch (error) {
+            this.logger.warn(
+                `stage-predict: настройки ${domain} недоступны — правило ` +
+                    `«Доработка всегда» выключено (${(error as Error).message})`,
+            );
+            return false;
+        }
     }
 
     /**

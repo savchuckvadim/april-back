@@ -1,5 +1,6 @@
 import { StagePredictService } from '../services/stage-predict/stage-predict.service';
 import { PBXService } from '@/modules/pbx';
+import { PortalAppSettingsService } from '@lib/portal-lib/store/app-settings';
 import { StagePredictRequestDto } from '../dto/stage-predict/stage-predict.dto';
 import {
     EnumEventItemResultType,
@@ -17,6 +18,7 @@ const CATEGORY = {
         { code: 'sales_cold', bitrixId: 'NEW' },
         { code: 'sales_warm', bitrixId: 'WARM' },
         { code: 'sales_pres', bitrixId: 'PRES' },
+        { code: 'sales_refine', bitrixId: 'REFINE' },
         { code: 'sales_in_progress', bitrixId: 'IN_PROGRESS' },
         { code: 'sales_success', bitrixId: 'WON' },
         { code: 'sales_fail', bitrixId: 'LOSE' },
@@ -27,7 +29,19 @@ const CATEGORY = {
 const makeService = (over?: {
     deals?: Array<Record<string, unknown>>;
     dealById?: Record<string, Record<string, unknown>>;
+    /** Настройка портала «Доработка всегда при плане». */
+    refineStageOnPlan?: boolean;
+    /** Сервис настроек лёг — предикт обязан работать на дефолтах. */
+    settingsDown?: boolean;
 }): StagePredictService => {
+    const appSettings = {
+        resolve: () =>
+            over?.settingsDown
+                ? Promise.reject(new Error('redis down'))
+                : Promise.resolve({
+                      withRefineStageOnPlan: over?.refineStageOnPlan ?? false,
+                  }),
+    } as unknown as PortalAppSettingsService;
     const pbx = {
         init: () =>
             Promise.resolve({
@@ -47,7 +61,7 @@ const makeService = (over?: {
                 },
             }),
     } as unknown as PBXService;
-    return new StagePredictService(pbx);
+    return new StagePredictService(pbx, appSettings);
 };
 
 const request = (
@@ -135,6 +149,54 @@ describe('StagePredictService', () => {
         const result = await service.predict(
             request({
                 planEventType: 'hot',
+                resultStatus: EnumEventItemResultType.RESULT,
+            }),
+        );
+        expect(result.targetStageCode).toBe('sales_in_progress');
+        expect(result.willChange).toBe(false);
+    });
+
+    /*
+     * Настройка «Доработка всегда при плане» (02.09): предикт читает ту же
+     * настройку, что и прогон, — иначе модалки и willChange врали бы ровно
+     * на этом исключении.
+     */
+    it('план «Доработка» с решения: без настройки сделка стоит, с настройкой — откат на sales_refine', async () => {
+        const deals = [
+            { ID: '100', STAGE_ID: 'C1:IN_PROGRESS', CATEGORY_ID: '1' },
+        ];
+        const ladder = await makeService({ deals }).predict(
+            request({
+                planEventType: 'refine',
+                resultStatus: EnumEventItemResultType.RESULT,
+            }),
+        );
+        expect(ladder.targetStageCode).toBe('sales_in_progress');
+        expect(ladder.willChange).toBe(false);
+
+        const exception = await makeService({
+            deals,
+            refineStageOnPlan: true,
+        }).predict(
+            request({
+                planEventType: 'refine',
+                resultStatus: EnumEventItemResultType.RESULT,
+            }),
+        );
+        expect(exception.targetStageCode).toBe('sales_refine');
+        expect(exception.targetStageBitrixId).toBe('C1:REFINE');
+        expect(exception.willChange).toBe(true);
+    });
+
+    it('сервис настроек лёг — исключение выключено, предикт живой', async () => {
+        const result = await makeService({
+            deals: [
+                { ID: '100', STAGE_ID: 'C1:IN_PROGRESS', CATEGORY_ID: '1' },
+            ],
+            settingsDown: true,
+        }).predict(
+            request({
+                planEventType: 'refine',
                 resultStatus: EnumEventItemResultType.RESULT,
             }),
         );

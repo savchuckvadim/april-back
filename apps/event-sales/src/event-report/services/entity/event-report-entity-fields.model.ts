@@ -41,6 +41,7 @@ import {
     PRES_COUNT_POLICY,
     resolveFieldValue,
 } from './field-policy';
+import { fitMultipleEntries, joinScalarHistory } from './history-text';
 
 type EntityFieldValue = string | number | string[] | null;
 type EntityFieldsMap = Record<string, EntityFieldValue>;
@@ -1120,10 +1121,19 @@ export class EventReportEntityFieldsModel {
          * новая строка. Без этого чужая старая запись с `&` ломала команду
          * при каждом следующем отчёте.
          */
-        const next = [
-            toBatchSafeText(toMultiFieldEntryText(line)),
-            ...previous.map(entry => toBatchSafeText(entry)),
-        ].slice(0, limit);
+        /*
+         * Лимит и по числу, и по суммарной длине (todo0209 №1): колонка
+         * UTS — 64 КБ, и тридцать записей по 4000 символов кириллицы в неё
+         * не входят — update падал целиком. Считаем по экранированным
+         * записям: они длиннее сырых, оценка консервативна.
+         */
+        const next = fitMultipleEntries(
+            [
+                toBatchSafeText(toMultiFieldEntryText(line)),
+                ...previous.map(entry => toBatchSafeText(entry)),
+            ],
+            limit,
+        );
         out[key] = next;
     }
 
@@ -1146,8 +1156,27 @@ export class EventReportEntityFieldsModel {
             ),
         );
         this.appendMultiple(out, 'op_mhistory', line, limit);
-        // op_history — скаляр, мимо appendMultiple: экранируем явно тем же.
-        this.setScalar(out, 'op_history', toBatchSafeText(line));
+        this.appendScalarHistory(out, line);
+    }
+
+    /**
+     * `op_history` — скаляр: новая запись ВПЕРЁД прошлого значения через
+     * « | », в лимит на всё поле (todo0209 №1; раньше поле перезаписывалось,
+     * и «история» показывала одну последнюю запись). Прошлое значение
+     * читается из карточки уже декодированным и экранируется вместе с новой
+     * строкой — тем же toBatchSafeText, что и записи multiple-лент.
+     */
+    private appendScalarHistory(out: EntityFieldsMap, line: string): void {
+        const field = this.portal.getEntityFieldByCode(
+            this.entityType,
+            'op_history',
+        );
+        if (!field) return;
+        const raw = this.entityRecord()?.[this.bitrixKey(field)];
+        const previous = typeof raw === 'string' ? raw : '';
+        out[this.bitrixKey(field)] = toBatchSafeText(
+            joinScalarHistory(line, previous),
+        );
     }
 
     private statusText(prefix: string): string {

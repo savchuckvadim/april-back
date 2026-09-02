@@ -25,7 +25,9 @@ import {
     buildClientEventAxis,
     ClientEvent,
     DEFAULT_FIELD_POLICY_SETTINGS,
+    DEFAULT_STAGE_RULE_SETTINGS,
     EventFieldPolicySettings,
+    EventStageRuleSettings,
     PlannedEventInput,
 } from '../entity/field-policy';
 
@@ -183,6 +185,21 @@ export class EventReportContext {
     }
     private fieldPolicySettingsVo: EventFieldPolicySettings =
         DEFAULT_FIELD_POLICY_SETTINGS;
+
+    /**
+     * Правила стадий основной воронки из настроек портала — тем же путём,
+     * что и политики полей: один резолв в use-case, читатель — сервис
+     * базовой сделки. Без явной установки — дефолт схемы (исключение
+     * выключено).
+     */
+    get stageRuleSettings(): EventStageRuleSettings {
+        return this.stageRuleSettingsVo;
+    }
+    setStageRuleSettings(settings: EventStageRuleSettings): void {
+        this.stageRuleSettingsVo = settings;
+    }
+    private stageRuleSettingsVo: EventStageRuleSettings =
+        DEFAULT_STAGE_RULE_SETTINGS;
 
     /**
      * Ось событий клиента ПОСЛЕ этого отчёта: открытые дела без закрываемой

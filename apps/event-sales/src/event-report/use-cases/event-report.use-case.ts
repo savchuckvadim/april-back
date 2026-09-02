@@ -20,7 +20,9 @@ import {
 import { EventReportEntityFlowService } from '../services/entity/event-report-entity-flow.service';
 import {
     DEFAULT_FIELD_POLICY_SETTINGS,
+    DEFAULT_STAGE_RULE_SETTINGS,
     EventFieldPolicySettings,
+    EventStageRuleSettings,
 } from '../services/entity/field-policy';
 import { EventReportDealFlowService } from '../services/deal/event-report-deal-flow.service';
 import { EventReportTaskFlowService } from '../services/task/event-report-task-flow.service';
@@ -82,6 +84,9 @@ export class EventReportUseCase {
         // модель полей собирается шесть раз (компания, лид, 4 роли сделок).
         ctx.setFieldPolicySettings(
             await this.resolveFieldPolicySettings(dto.domain),
+        );
+        ctx.setStageRuleSettings(
+            await this.resolveStageRuleSettings(dto.domain),
         );
 
         const entityFlow = new EventReportEntityFlowService(bitrix, portal);
@@ -266,6 +271,32 @@ export class EventReportUseCase {
                     `схемы (${(error as Error).message})`,
             );
             return DEFAULT_FIELD_POLICY_SETTINGS;
+        }
+    }
+
+    /**
+     * Правила стадий основной воронки (`refine_stage_on_plan_enabled`).
+     *
+     * Настройки недоступны — дефолт СХЕМЫ (исключение выключено): лестница
+     * ведёт себя как всегда, а не выбирает стадию по недочитанной настройке.
+     */
+    private async resolveStageRuleSettings(
+        domain: string,
+    ): Promise<EventStageRuleSettings> {
+        try {
+            const settings = await this.appSettings.resolve(
+                domain,
+                EnumPortalAppCode.eventSales,
+            );
+            return {
+                refineStageOnPlan: Boolean(settings.withRefineStageOnPlan),
+            };
+        } catch (error) {
+            this.logger.warn(
+                `настройки ${domain} недоступны — правила стадий на дефолтах ` +
+                    `схемы (${(error as Error).message})`,
+            );
+            return DEFAULT_STAGE_RULE_SETTINGS;
         }
     }
 

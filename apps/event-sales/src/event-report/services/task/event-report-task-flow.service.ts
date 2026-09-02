@@ -5,8 +5,13 @@ import { IBXChecklistItem } from '@/modules/bitrix/domain/tasks/checklist-item';
 import { mergeTaskCrmBindings } from '@/modules/bitrix/domain/tasks/task/lib/task-crm-binding.util';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
-import { toBatchSafeText, toBatchText } from '@lib/bitrix/consts/batch.consts';
+import { toBatchSafeText } from '@lib/bitrix/consts/batch.consts';
 import { EventReportContext } from '../context/event-report.context';
+import {
+    clipTaskTitle,
+    clipText,
+    TASK_COMMENT_MAX_LENGTH,
+} from './event-task-title';
 import {
     buildEventTaskChecklist,
     formatChecklistOutcomeLine,
@@ -257,8 +262,13 @@ export class EventReportTaskFlowService {
                     : ETaskPriority.MEDIUM,
                 GROUP_ID: this.portal.getSalesTaskGroupId(),
                 UF_CRM_TASK: this.buildCrmTaskLinks(ctx, deals),
-                // batch-команда: сырые \n в значении теряются, только %0A
-                UF_TASK_EVENT_COMMENT: toBatchText(ctx.reportComment),
+                // Свободный текст менеджера одним значением batch-команды:
+                // строгое экранирование (`&`/`+`/`%` рвут разбор cmd) и
+                // лимит фрейма — payload мимо фрейма не должен ронять
+                // создание задачи (todo0209 №2).
+                UF_TASK_EVENT_COMMENT: toBatchSafeText(
+                    clipText(ctx.reportComment, TASK_COMMENT_MAX_LENGTH),
+                ),
                 // Пустое описание не шлём вовсе: перезаписывать нечем, а
                 // пустая строка стёрла бы дефолтное оформление задачи.
                 ...(description
@@ -506,13 +516,13 @@ export class EventReportTaskFlowService {
      * TITLE = `<typeName>  <eventName>  <contactName?>` (двойной пробел между).
      */
     private buildTitle(ctx: EventReportContext): string {
-        const typeName = this.resolveTypeName(ctx);
-        const eventName = ctx.planEventName?.trim() ?? '';
-        const contactName = ctx.dto.plan?.contact?.NAME?.trim() ?? '';
-
-        let title = `${typeName}  ${eventName}`.trim();
-        if (contactName) title += `  ${contactName}`;
-        return title;
+        // В `varchar(250)`: длиннее — tasks.task.add отказывает целиком, и
+        // задача не создаётся при «проведённом» отчёте (todo0209 №2).
+        return clipTaskTitle({
+            typeName: this.resolveTypeName(ctx),
+            eventName: ctx.planEventName?.trim() ?? '',
+            contactName: ctx.dto.plan?.contact?.NAME?.trim() ?? '',
+        });
     }
 
     /**

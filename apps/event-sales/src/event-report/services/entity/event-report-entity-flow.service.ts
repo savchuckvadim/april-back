@@ -7,7 +7,10 @@ import {
     EventReportEntityFieldsModel,
 } from './event-report-entity-fields.model';
 import { EventReportCompanyBackfillModel } from './event-report-company-backfill.model';
-import { EventReportContactMirrorModel } from './event-report-contact-mirror.model';
+import {
+    EventReportContactFieldsModel,
+    resolveEventContacts,
+} from './event-report-contact-fields.model';
 import { EEventReportEntityType } from '../init/event-report-init.types';
 
 /**
@@ -33,7 +36,7 @@ export class EventReportEntityFlowService {
 
     queue(ctx: EventReportContext): void {
         this.queueCompanyBackfill(ctx);
-        this.queueContactMirror(ctx);
+        this.queueContacts(ctx);
         this.queueLeadSurveyMirror(ctx);
         if (!ctx.entityId) {
             this.logger.warn('entity-flow: skipped — no entityId');
@@ -183,52 +186,40 @@ export class EventReportEntityFlowService {
     }
 
     /**
-     * Возражение и плановая дата покупки — В КОНТАКТ события.
+     * Поля КОНТАКТОВ события — по команде на человека.
      *
-     * Эти поля живут на сделке, а спрашивают их у КОНКРЕТНОГО человека.
-     * Пока они лежали только на сделке, вопрос «кто именно в компании и
-     * когда собирается покупать» оставался без ответа: у компании из десяти
-     * контактов была одна дата на всех.
-     *
-     * Контакт берётся тот, ПО КОТОРОМУ отчитываются (`reportContact`), а не
-     * первый попавшийся из карточки: ответ принадлежит собеседнику ЭТОГО
-     * разговора. Отчётного контакта нет — берём плановый (`planContact`):
-     * событие могли запланировать на конкретного человека, и адресат ответа
-     * тогда он. Нет ни того, ни другого — команды нет.
+     * Разговор идёт с человеком, а отчёт писался только в компанию, лид и
+     * сделки. Контакт отчёта получает факты разговора (история, ответы
+     * презентации, возражение, дата покупки, отказ), контакт плана — историю
+     * и ось следующего звонка; один человек в обеих ролях — одна команда.
+     * Состав и источники — в {@link EventReportContactFieldsModel}.
      *
      * Сделка при этом пишется В ЛЮБОМ СЛУЧАЕ основным update: контакт —
-     * дополнительная копия, а не замена. Порядок обратный сломал бы главное
-     * свойство сделки — показывать, как обстоит дело сейчас.
-     *
-     * Отдельная batch-команда: она не зависит от того, кто владелец отчёта,
-     * и не смешивается с основным update сущности.
+     * дополнительная копия, а не замена. Отдельные batch-команды: они не
+     * зависят от того, кто владелец отчёта, и не смешиваются с его update.
      */
-    private queueContactMirror(ctx: EventReportContext): void {
-        const contact = (ctx.reportContact ?? ctx.planContact) as unknown as
-            | Record<string, unknown>
-            | null;
-        const deal = ctx.currentBaseDeal as Record<string, unknown> | null;
-        if (!contact || !deal) return;
-        const contactId = Number(contact.ID);
-        if (!Number.isFinite(contactId) || contactId <= 0) return;
+    private queueContacts(ctx: EventReportContext): void {
+        for (const { contact, roles } of resolveEventContacts(ctx)) {
+            const contactId = Number(contact.ID);
+            const fields = new EventReportContactFieldsModel(
+                this.portal,
+                ctx,
+                contact,
+                roles,
+            ).toFields();
+            if (!Object.keys(fields).length) continue;
 
-        const fields = new EventReportContactMirrorModel(
-            this.portal,
-            contact,
-            deal,
-        ).toFields();
-        if (!Object.keys(fields).length) return;
-
-        this.logger.log(
-            `entity-flow: зеркало в контакт ${contactId}: ` +
-                Object.keys(fields).join(', '),
-        );
-        this.bitrix.batch.contact.update(
-            `mirror_contact_${contactId}`,
-            contactId,
-            fields as unknown as Parameters<
-                typeof this.bitrix.batch.contact.update
-            >[2],
-        );
+            this.logger.log(
+                `entity-flow: контакт ${contactId} (${[...roles].join('+')}): ` +
+                    Object.keys(fields).join(', '),
+            );
+            this.bitrix.batch.contact.update(
+                `update_contact_${contactId}`,
+                contactId,
+                fields as unknown as Parameters<
+                    typeof this.bitrix.batch.contact.update
+                >[2],
+            );
+        }
     }
 }

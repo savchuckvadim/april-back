@@ -73,6 +73,7 @@ const baseInput = (patch: Partial<BaseStageInput> = {}): BaseStageInput => ({
     isFail: false,
     isNoResult: false,
     isNotCa: false,
+    refineStageOnPlan: false,
     ...patch,
 });
 
@@ -166,6 +167,73 @@ describe('getSalesBaseTargetStageCode', () => {
                     }),
                 ),
             ).toBe('OFFER_CREATE');
+        });
+    });
+
+    /*
+     * Настройка портала `refine_stage_on_plan_enabled` (02.09.2026):
+     * единственное исключение из «нельзя понизить».
+     */
+    describe('настройка «Доработка всегда при плане»', () => {
+        it('с решения план «Доработка» откатывает сделку на «Доработку»', () => {
+            expect(
+                getSalesBaseTargetStageCode(
+                    baseInput({
+                        currentStageEvent: 'hot',
+                        planEventType: 'refine',
+                        refineStageOnPlan: true,
+                    }),
+                ),
+            ).toBe('REFINE');
+        });
+
+        it('отчёт по решению + план «Доработка» — план побеждает', () => {
+            expect(
+                getSalesBaseTargetStageCode(
+                    baseInput({
+                        currentStageEvent: 'hot',
+                        reportEventType: 'hot',
+                        planEventType: 'refine',
+                        refineStageOnPlan: true,
+                    }),
+                ),
+            ).toBe('REFINE');
+        });
+
+        it('финалы перебивают исключение: отказ с планом доработки — отказ', () => {
+            expect(
+                getSalesBaseTargetStageCode(
+                    baseInput({
+                        currentStageEvent: 'hot',
+                        planEventType: 'refine',
+                        isFail: true,
+                        refineStageOnPlan: true,
+                    }),
+                ),
+            ).toBe('LOSE');
+        });
+
+        it('другой план исключения не касается — лестница как всегда', () => {
+            expect(
+                getSalesBaseTargetStageCode(
+                    baseInput({
+                        currentStageEvent: 'hot',
+                        planEventType: 'warm',
+                        refineStageOnPlan: true,
+                    }),
+                ),
+            ).toBe('HOT');
+        });
+
+        it('без настройки — прежнее поведение, сделка остаётся на решении', () => {
+            expect(
+                getSalesBaseTargetStageCode(
+                    baseInput({
+                        currentStageEvent: 'hot',
+                        planEventType: 'refine',
+                    }),
+                ),
+            ).toBe('HOT');
         });
     });
 

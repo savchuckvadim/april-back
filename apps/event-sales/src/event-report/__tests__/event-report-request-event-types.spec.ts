@@ -198,6 +198,7 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
                     isFail: false,
                     isNoResult: false,
                     isNotCa: false,
+                    refineStageOnPlan: false,
                 }),
             ).toBe('COLD');
         },

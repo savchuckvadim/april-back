@@ -16,7 +16,9 @@ import { EventReportInitService } from '../../event-report/services/init/event-r
 import { EventReportContext } from '../../event-report/services/context/event-report.context';
 import {
     DEFAULT_FIELD_POLICY_SETTINGS,
+    DEFAULT_STAGE_RULE_SETTINGS,
     EventFieldPolicySettings,
+    EventStageRuleSettings,
 } from '../../event-report/services/entity/field-policy';
 
 /** Всё, что нужно шагам досылки: инстанс портала и контекст отчёта. */
@@ -72,8 +74,33 @@ export class DeferredFlowContextFactory {
         ctx.setFieldPolicySettings(
             await this.resolveFieldPolicySettings(domain),
         );
+        ctx.setStageRuleSettings(await this.resolveStageRuleSettings(domain));
 
         return { bitrix, portal, ctx };
+    }
+
+    /**
+     * Правила стадий основной воронки — тем же чтением, что и у основного
+     * use-case; недоступны — дефолт схемы (исключение выключено).
+     */
+    private async resolveStageRuleSettings(
+        domain: string,
+    ): Promise<EventStageRuleSettings> {
+        try {
+            const settings = await this.appSettings.resolve(
+                domain,
+                EnumPortalAppCode.eventSales,
+            );
+            return {
+                refineStageOnPlan: Boolean(settings.withRefineStageOnPlan),
+            };
+        } catch (error) {
+            this.logger.warn(
+                `[deferred] настройки ${domain} недоступны — правила стадий ` +
+                    `на дефолтах схемы (${(error as Error).message})`,
+            );
+            return DEFAULT_STAGE_RULE_SETTINGS;
+        }
     }
 
     /**

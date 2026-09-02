@@ -93,6 +93,7 @@ const STAGE_FLAGS = {
     isFail: false,
     isNoResult: false,
     isNotCa: false,
+    refineStageOnPlan: false,
 } as const;
 
 describe('Доработка — лестница стадий', () => {
@@ -157,6 +158,19 @@ describe('Доработка — лестница стадий', () => {
                 ...STAGE_FLAGS,
             }),
         ).toBe('OFFER_CREATE');
+    });
+
+    it('настройка «Доработка всегда»: с документов план refine откатывает на REFINE', () => {
+        expect(
+            getSalesBaseTargetStageCode({
+                category: CATEGORY,
+                currentStageEvent: 'document',
+                planEventType: 'refine',
+                reportEventType: null,
+                ...STAGE_FLAGS,
+                refineStageOnPlan: true,
+            }),
+        ).toBe('REFINE');
     });
 
     it('стадия sales_refine не сконфигурирована на портале → null (graceful)', () => {

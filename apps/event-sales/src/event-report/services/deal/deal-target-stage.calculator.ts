@@ -110,6 +110,13 @@ export interface BaseStageInput {
     isNoResult: boolean;
     /** Клиент нецелевой — отказ уводит сделку в отдельный финал «Не ЦА». */
     isNotCa: boolean;
+    /**
+     * Настройка портала `refine_stage_on_plan_enabled`: план «Доработка»
+     * ведёт на «Доработку» всегда, даже назад — единственное исключение из
+     * «нельзя понизить». Обязательное поле: каждый вызывающий решает явно,
+     * читал ли он настройку.
+     */
+    refineStageOnPlan: boolean;
 }
 
 interface EventOrderEntry<TSuffix extends string> {
@@ -119,7 +126,9 @@ interface EventOrderEntry<TSuffix extends string> {
 }
 
 /**
- * Порядок событий по «лестнице» sales_base — нельзя понизить.
+ * Порядок событий по «лестнице» sales_base — нельзя понизить. Единственное
+ * исключение — план «Доработка» при настройке портала
+ * `refine_stage_on_plan_enabled` (см. getSalesBaseTargetStageCode).
  *
  * Три холодных типа (`xo`/`xoRequest`/`xoLead`) стоят на одной ступени: по
  * разговору они разные, по воронке — одна и та же «Холодная» стадия.
@@ -240,6 +249,19 @@ export function getSalesBaseTargetStageCode(
         );
 
     let suffix: PbxDealSalesBaseStageSuffix | null = top?.stageSuffix ?? null;
+    /*
+     * ЕДИНСТВЕННОЕ исключение из «нельзя понизить» (настройка портала
+     * `refine_stage_on_plan_enabled`, 02.09.2026): план «Доработка» ведёт на
+     * «Доработку» ВСЕГДА, даже назад с документов или решения. Финалы ниже
+     * по-прежнему перебивают: отказ с планом доработки — противоречие, и
+     * исход решает статус, а не план.
+     */
+    if (
+        input.refineStageOnPlan &&
+        input.planEventType === EVENT_REPORT_EVENT_TYPE.refine
+    ) {
+        suffix = SALES_BASE_STAGE_SUFFIX.refine;
+    }
     if (isSuccess) {
         suffix = SALES_BASE_STAGE_SUFFIX.success;
     } else if (isFail) {

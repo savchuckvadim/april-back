@@ -146,3 +146,25 @@ export const DEFAULT_FIELD_POLICY_SETTINGS: EventFieldPolicySettings = {
     calculatedNextEvent: true,
     resetOnFinal: true,
 };
+
+/**
+ * Настройки портала, управляющие ПРАВИЛАМИ СТАДИЙ основной воронки.
+ *
+ * Отдельно от политик полей: там — как считаются даты карточки, здесь —
+ * куда едет сделка. Смешать их в один объект значило бы, что правка
+ * лестницы стадий трогает читателей дат.
+ */
+export interface EventStageRuleSettings {
+    /**
+     * План «Доработка» ВСЕГДА ведёт сделку на стадию «Доработка» — даже
+     * назад с более поздней стадии. Единственное исключение из правила
+     * лестницы «нельзя понизить» (решение владельца 02.09.2026). Выключено
+     * — прежнее поведение: лестница берёт максимум.
+     */
+    readonly refineStageOnPlan: boolean;
+}
+
+/** Дефолт — как в схеме портала: исключение выключено. */
+export const DEFAULT_STAGE_RULE_SETTINGS: EventStageRuleSettings = {
+    refineStageOnPlan: false,
+};
