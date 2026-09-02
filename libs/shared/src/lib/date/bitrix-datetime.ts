@@ -8,6 +8,8 @@ const logger = new Logger('BitrixDateTime');
 const TASK_SERVER_TIMEZONE: ETimeZone = ETimeZone.EUROPE_MOSCOW;
 const TASK_DEADLINE_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 const CRM_DATETIME_FORMAT = 'DD.MM.YYYY HH:mm:ss';
+/** Формат date-полей CRM (без времени): «На доработке с», плановые даты. */
+const CRM_DATE_FORMAT = 'DD.MM.YYYY';
 
 /**
  * Объект-значение момента времени для полей Bitrix (дедлайны событий,
@@ -127,6 +129,16 @@ export class BitrixDateTime {
                 `(формат для CRM UF-полей)`,
         );
         return crmDateTime;
+    }
+
+    /**
+     * Значение для CRM date-полей (тип `date`, без времени) — календарный
+     * день В TZ ПОРТАЛА: вечер по UTC на восточном портале — уже завтра.
+     * Формат `DD.MM.YYYY`; фронт пишет date-поля тем же каноном
+     * (`modules/shared/lib/crm-date.ts`).
+     */
+    toCrmDate(): string {
+        return this.instant.tz(this.portalTz).format(CRM_DATE_FORMAT);
     }
 
     /**

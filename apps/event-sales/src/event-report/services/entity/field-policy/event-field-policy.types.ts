@@ -70,7 +70,34 @@ export type FieldValueSource =
      */
     | { readonly kind: 'overwrite' }
     /** Текущее значение + шаг (счётчики: презентации, переносы). */
-    | { readonly kind: 'increment'; readonly step: number };
+    | { readonly kind: 'increment'; readonly step: number }
+    /**
+     * Флаг «вошли в состояние» по плану одного из `planTypes`: 1, если
+     * флаг ещё не стоял; уже стоит — не трогаем (запись в ленту карточки
+     * не плодится). Планы других типов поле НЕ трогают: выход из
+     * состояния описывают правила обнуления, а не источник.
+     */
+    | {
+          readonly kind: 'planFlag';
+          readonly planTypes: readonly EventReportEventType[];
+      }
+    /**
+     * Момент входа в состояние: «сегодня» при входе, дальше — не трогаем,
+     * пока состояние не снято. Повторный план того же типа дату не двигает;
+     * снятие обнуляет её вместе с флагом, повторный вход ставит новую.
+     */
+    | {
+          readonly kind: 'planEnteredAt';
+          readonly planTypes: readonly EventReportEventType[];
+      }
+    /**
+     * Причина входа в состояние — ТОЛЬКО как фолбэк: непустое текущее
+     * значение (набрал менеджер в чек-листе) не перекрывается никогда.
+     */
+    | {
+          readonly kind: 'planReason';
+          readonly planTypes: readonly EventReportEventType[];
+      };
 
 /** Правила обнуления поля. Проверяются ДО вычисления значения. */
 export const EFieldResetRule = {
@@ -85,6 +112,17 @@ export const EFieldResetRule = {
      * когда у него не осталось ни одной открытой презентации.
      */
     noOpenEvent: 'noOpenEvent',
+    /**
+     * Холодный ПЛАН (xo / xoRequest / xoLead): работа ушла в холодную часть
+     * воронки, состояние «в работе» на ней снято. Холодный ОТЧЁТ без плана
+     * правило не включает — вызывающий считает `isCold` по типу входа.
+     */
+    cold: 'cold',
+    /**
+     * План ДАЛЬШЕ по лестнице, чем состояние поля (какие типы считаются
+     * «дальше» — знает вызывающий, см. REFINE_BEYOND_PLAN_TYPES).
+     */
+    planBeyond: 'planBeyond',
 } as const;
 
 export type FieldResetRule =
@@ -101,6 +139,13 @@ export interface FieldPolicy {
     readonly why: string;
     readonly source: FieldValueSource;
     readonly resetOn: readonly FieldResetRule[];
+    /**
+     * Чем поле ОБНУЛЯЕТСЯ на проводе. По умолчанию — пустая строка (канон
+     * очистки: сборщик batch выбрасывает null, см. applyPolicy модели);
+     * булево UF Bitrix пустой строкой не снимается — ему нужен 0
+     * (прецедент: setBool в lead-request-sync).
+     */
+    readonly emptyValue?: '' | 0;
 }
 
 /** Состояние прогона, на котором резолвятся политики. */
@@ -116,6 +161,26 @@ export interface FieldPolicyInput {
     readonly value?: PolicyFieldValue;
     /** Текущее значение поля — для `increment`. */
     readonly current?: number;
+    /**
+     * Тип события-ВХОДА (план либо переносимая задача) — для `plan*`-
+     * источников; null — отчёт ничего не планирует.
+     */
+    readonly plannedEventType?: EventReportEventType | null;
+    /** Вход холодный — включает правило `cold`. */
+    readonly isCold?: boolean;
+    /** Вход дальше по лестнице, чем состояние поля — правило `planBeyond`. */
+    readonly isPlanBeyond?: boolean;
+    /** Текущее текстовое значение поля (trim) — для `planEnteredAt`/`planReason`. */
+    readonly currentText?: string;
+    /**
+     * Текущее значение флага состояния; undefined — флаг на портале не
+     * установлен, и «в состоянии ли» судим по самому полю.
+     */
+    readonly currentFlag?: boolean;
+    /** Готовая причина для `planReason`; null — собрать не из чего. */
+    readonly reason?: string | null;
+    /** «Сегодня» в формате поля — для `planEnteredAt`. */
+    readonly now?: string;
 }
 
 /**

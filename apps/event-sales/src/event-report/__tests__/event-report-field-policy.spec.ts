@@ -9,11 +9,15 @@ import {
     CALL_NEXT_NAME_POLICY,
     ClientEvent,
     increment,
+    IS_IN_REFINE_POLICY,
     nearestEvent,
     NEXT_PRES_PLAN_DATE_POLICY,
     parseEventDeadline,
     POLICY_KEEP,
     PRES_COUNT_POLICY,
+    REFINE_BEYOND_PLAN_TYPES,
+    REFINED_AT_POLICY,
+    REFINED_REASON_POLICY,
     resolveFieldValue,
 } from '../services/entity/field-policy';
 
@@ -302,5 +306,138 @@ describe('Ось событий клиента', () => {
         });
         expect(axis).toHaveLength(1);
         expect(axis?.[0].crmDateTime).toBe('10.09.2026 12:00:00');
+    });
+});
+
+describe('Политики состояния «на доработке»', () => {
+    const entry = (over: Record<string, unknown> = {}) => ({
+        events: [],
+        isFinal: false,
+        plannedEventType: 'refine' as const,
+        now: '02.09.2026',
+        ...over,
+    });
+
+    it('план «Доработка» ставит флаг, если он не стоял', () => {
+        expect(resolveFieldValue(IS_IN_REFINE_POLICY, entry())).toBe(1);
+        expect(
+            resolveFieldValue(IS_IN_REFINE_POLICY, entry({ currentFlag: false })),
+        ).toBe(1);
+    });
+
+    it('флаг уже стоит — не трогаем (запись в ленту не плодится)', () => {
+        expect(
+            resolveFieldValue(IS_IN_REFINE_POLICY, entry({ currentFlag: true })),
+        ).toBe(POLICY_KEEP);
+    });
+
+    it('другой план и отчёт без плана поле не трогают', () => {
+        expect(
+            resolveFieldValue(
+                IS_IN_REFINE_POLICY,
+                entry({ plannedEventType: 'warm' }),
+            ),
+        ).toBe(POLICY_KEEP);
+        expect(
+            resolveFieldValue(
+                IS_IN_REFINE_POLICY,
+                entry({ plannedEventType: null }),
+            ),
+        ).toBe(POLICY_KEEP);
+    });
+
+    it('дата входа — «сегодня» при входе, KEEP, пока состояние держится', () => {
+        expect(resolveFieldValue(REFINED_AT_POLICY, entry())).toBe('02.09.2026');
+        expect(
+            resolveFieldValue(
+                REFINED_AT_POLICY,
+                entry({ currentFlag: false, currentText: '20.08.2026' }),
+            ),
+        ).toBe('02.09.2026');
+        expect(
+            resolveFieldValue(
+                REFINED_AT_POLICY,
+                entry({ currentFlag: true, currentText: '20.08.2026' }),
+            ),
+        ).toBe(POLICY_KEEP);
+        expect(
+            resolveFieldValue(
+                REFINED_AT_POLICY,
+                entry({ currentFlag: true, currentText: '' }),
+            ),
+        ).toBe('02.09.2026');
+    });
+
+    it('причина — только в пустое поле; набранное менеджером не перекрывается', () => {
+        expect(
+            resolveFieldValue(REFINED_REASON_POLICY, entry({ reason: 'Нет денег' })),
+        ).toBe('Нет денег');
+        expect(
+            resolveFieldValue(
+                REFINED_REASON_POLICY,
+                entry({ reason: 'Нет денег', currentText: 'моя причина' }),
+            ),
+        ).toBe(POLICY_KEEP);
+        expect(
+            resolveFieldValue(REFINED_REASON_POLICY, entry({ reason: null })),
+        ).toBe(POLICY_KEEP);
+        expect(
+            resolveFieldValue(REFINED_REASON_POLICY, entry({ reason: '  ' })),
+        ).toBe(POLICY_KEEP);
+    });
+
+    it('финал, холодный план и план дальше лестницы обнуляют', () => {
+        for (const policy of [
+            IS_IN_REFINE_POLICY,
+            REFINED_AT_POLICY,
+            REFINED_REASON_POLICY,
+        ]) {
+            expect(
+                resolveFieldValue(policy, entry({ isFinal: true })),
+            ).toBeNull();
+            expect(
+                resolveFieldValue(
+                    policy,
+                    entry({ plannedEventType: 'xo', isCold: true }),
+                ),
+            ).toBeNull();
+            expect(
+                resolveFieldValue(
+                    policy,
+                    entry({ plannedEventType: 'hot', isPlanBeyond: true }),
+                ),
+            ).toBeNull();
+        }
+    });
+
+    it('финал сильнее входа', () => {
+        expect(
+            resolveFieldValue(
+                IS_IN_REFINE_POLICY,
+                entry({ isFinal: true, currentFlag: false }),
+            ),
+        ).toBeNull();
+    });
+
+    it('флаг обнуляется нулём, остальные — пустой строкой (emptyValue)', () => {
+        expect(IS_IN_REFINE_POLICY.emptyValue).toBe(0);
+        expect(REFINED_AT_POLICY.emptyValue).toBeUndefined();
+        expect(REFINED_REASON_POLICY.emptyValue).toBeUndefined();
+    });
+
+    it('«дальше доработки» — решение, оплата, поставка; документы — нет', () => {
+        expect(REFINE_BEYOND_PLAN_TYPES).toEqual(['hot', 'moneyAwait', 'supply']);
+    });
+
+    it('холодный вход ось следующего события не трогает', () => {
+        expect(
+            resolveFieldValue(CALL_NEXT_DATE_POLICY, {
+                events: [
+                    event({ at: 100, crmDateTime: '03.09.2026 10:00:00' }),
+                ],
+                isFinal: false,
+                isCold: true,
+            }),
+        ).toBe('03.09.2026 10:00:00');
     });
 });

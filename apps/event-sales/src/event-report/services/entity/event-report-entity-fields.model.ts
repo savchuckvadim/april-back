@@ -20,10 +20,12 @@ import {
     IFieldItem,
 } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { EventReportContext } from '../context/event-report.context';
 import {
     eventTypeName,
     GSIRK_DOMAIN,
+    isColdEventType,
 } from '../../types/event-report.event-codes';
 import { EnumWorkStatusCode } from '../../types/report-types';
 import {
@@ -36,12 +38,21 @@ import {
     CALL_NEXT_NAME_POLICY,
     FieldPolicy,
     FieldPolicyInput,
+    IS_IN_REFINE_POLICY,
     NEXT_PRES_PLAN_DATE_POLICY,
     POLICY_KEEP,
     PRES_COUNT_POLICY,
+    REFINE_BEYOND_PLAN_TYPES,
+    REFINED_AT_POLICY,
+    REFINED_REASON_POLICY,
     resolveFieldValue,
 } from './field-policy';
 import { fitMultipleEntries, joinScalarHistory } from './history-text';
+import {
+    composeRefineReason,
+    RefineObjection,
+    RefineReasonSource,
+} from './refine-reason';
 
 type EntityFieldValue = string | number | string[] | null;
 type EntityFieldsMap = Record<string, EntityFieldValue>;
@@ -128,6 +139,37 @@ export const PRESENTATION_SURVEY_FIELD_CODES = PRESENTATION_SURVEY_CODES;
  * запрашивать несуществующие поля в select init-батча.
  */
 export const XVOST_DEAL_FIELD_CODES = ['op_xvost_decision_call_date'] as const;
+
+/**
+ * Состояние «на доработке» (три deal-only поля, 02.09.2026) + носители
+ * причины — в select init-батча. Состояние — read-modify-write: без чтения
+ * дата входа перештамповывалась бы каждым планом, а «уже на доработке» не
+ * отличалось бы от входа. Возражения — источник причины-фолбэка
+ * ({@link composeRefineReason}).
+ */
+export const DEAL_REFINE_FIELD_CODES = [
+    'op_is_in_refine',
+    'op_refined_at',
+    'op_refined_reason',
+    'op_objection_reason',
+    'op_objection_comment',
+] as const;
+
+const REFINE_STATE_CODES = {
+    flag: 'op_is_in_refine',
+    at: 'op_refined_at',
+    reason: 'op_refined_reason',
+} as const;
+
+/** Истина булева UF Bitrix во всех формах, в которых REST её отдаёт. */
+const isTruthyFlag = (raw: unknown): boolean =>
+    raw === true || raw === 1 || raw === '1' || raw === 'Y';
+
+/** Пустое значение поля состояния: нет, ноль, «N», пустая строка. */
+const isEmptyStateValue = (raw: unknown): boolean =>
+    raw == null ||
+    raw === false ||
+    ['', '0', 'N'].includes(scalarToText(raw).trim());
 
 /**
  * Опции для построения полей сделки (entityType='deal').
@@ -230,6 +272,11 @@ function scalarToText(raw: unknown): string {
  *    отдельные методы и в политику не укладывается;
  *  - `op_move_count` живёт в отдельном сервисе (`DealMoveCountService`):
  *    он пишется вне стадийных update'ов и модели полей не касается.
+ *
+ * СОСТОЯНИЕ «НА ДОРАБОТКЕ» ({@link applyRefineState}) — три deal-only поля
+ * через политики `planFlag` / `planEnteredAt` / `planReason`: вход по
+ * плану или переносу «Доработка», выход по плану дальше лестницы, холодному
+ * плану и финалу. Носитель — только основная сделка sales_base.
  */
 export class EventReportEntityFieldsModel {
     private readonly logger = new Logger(EventReportEntityFieldsModel.name);
@@ -380,6 +427,9 @@ export class EventReportEntityFieldsModel {
                 `op_efield_fail_${failReasonCode}`,
             );
         }
+
+        // ===== Состояние «на доработке» (только основная сделка) =====
+        this.applyRefineState(out);
 
         // ===== История op_history / op_mhistory =====
         this.appendHistory(out);
@@ -561,10 +611,9 @@ export class EventReportEntityFieldsModel {
         input: Partial<FieldPolicyInput>,
     ): void {
         const value = resolveFieldValue(policy, {
+            ...input,
             events: input.events ?? [],
             isFinal: input.isFinal ?? false,
-            value: input.value,
-            current: input.current,
         });
         if (value === POLICY_KEEP) return;
         /*
@@ -582,9 +631,215 @@ export class EventReportEntityFieldsModel {
          * литеральная строка «null». Одно действие — три разных исхода.
          *
          * Пустая строка — канон очистки в этом коде (прецеденты:
-         * `set('op_xo_revive_queued_at', '')`, `clearDealAssignedAt`).
+         * `set('op_xo_revive_queued_at', '')`, `clearDealAssignedAt`);
+         * булево поле просит 0 через `emptyValue` политики.
          */
-        this.setScalar(out, policy.code, value === null ? '' : value);
+        this.setScalar(
+            out,
+            policy.code,
+            value === null ? (policy.emptyValue ?? '') : value,
+        );
+    }
+
+    // ---------- private: состояние «на доработке» ----------
+
+    /**
+     * Три deal-only поля «На доработке» (02.09.2026): флаг, дата входа,
+     * причина. Состояние живёт ВНЕ стадий воронки — у части порталов стадии
+     * «Доработка» нет, а признак показывать и снимать нужно.
+     *
+     * Таблица переходов построчно закреплена спекой
+     * event-report-refine-state.spec.ts. Коротко (решения владельца 02.09):
+     *  - ВХОД — план «Доработка» либо перенос задачи «Доработка»: флаг 1
+     *    (если не стоял), дата входа (повторный план без выхода дату не
+     *    двигает), причина — только в пустое поле: набранное менеджером в
+     *    чек-листе не перекрывается; на переносе причина собирается только
+     *    из возражений, комментарий отчёта («недозвон») в неё не идёт;
+     *  - ВЫХОД — план «Решение» / «Оплата» / «Поставка», холодный план и
+     *    любой финал (продажа, отказ, «не ЦА»): все три поля пусты;
+     *  - НЕ ТРОГАЮТ — планы «Документы», «Звонок», «Презентация», отчёт
+     *    без плана; обнуляющее событие на сделке без состояния команд не
+     *    шлёт (финал не рассылает три пустых поля).
+     *
+     * Носитель — только основная сделка (роль base, воронка sales_base):
+     * у pres/xo/tmc-сделок, компании и лида этих полей нет. Самогейт по
+     * слепку — первым, до обращения к категориям: поля не установлены →
+     * ни одного вызова портала.
+     */
+    private applyRefineState(out: EntityFieldsMap): void {
+        if (this.entityType !== EEventReportEntityType.DEAL) return;
+        if (this.dealOptions?.role !== EDealRole.BASE) return;
+
+        const flagField = this.portal.getEntityFieldByCode(
+            this.entityType,
+            REFINE_STATE_CODES.flag,
+        );
+        const atField = this.portal.getEntityFieldByCode(
+            this.entityType,
+            REFINE_STATE_CODES.at,
+        );
+        const reasonField = this.portal.getEntityFieldByCode(
+            this.entityType,
+            REFINE_STATE_CODES.reason,
+        );
+        const installed = [flagField, atField, reasonField].filter(
+            (field): field is IField => !!field,
+        );
+        if (!installed.length) return;
+        if (!this.isSalesBaseDeal()) return;
+
+        const row = this.dealOptions.deal;
+        // Тип входа — тот же, что у лестницы стадий: план, а на переносе
+        // задачи — тип самой задачи. Иначе флаг и стадия разошлись бы.
+        const entering =
+            this.ctx.planEventType ??
+            (this.ctx.isExpired ? this.ctx.reportEventType : null);
+        const isTransfer = this.ctx.planEventType === null && this.ctx.isExpired;
+        const isFinal = this.ctx.isFinalOutcome;
+        const isCold = isColdEventType(entering);
+        const isPlanBeyond =
+            !!entering && REFINE_BEYOND_PLAN_TYPES.includes(entering);
+
+        // Обнулять нечего — ни одной команды.
+        if (
+            (isFinal || isCold || isPlanBeyond) &&
+            !this.hasRefineState(row, installed)
+        ) {
+            return;
+        }
+
+        const base: Partial<FieldPolicyInput> = {
+            plannedEventType: entering,
+            isFinal,
+            isCold,
+            isPlanBeyond,
+            currentFlag: flagField
+                ? isTruthyFlag(row?.[this.bitrixKey(flagField)])
+                : undefined,
+            now: this.ctx.dateTime.crmDate(this.ctx.nowDate),
+        };
+        if (flagField) {
+            this.applyPolicy(out, IS_IN_REFINE_POLICY, base);
+        }
+        if (atField) {
+            this.applyPolicy(out, REFINED_AT_POLICY, {
+                ...base,
+                currentText: this.readText(row, atField),
+            });
+        }
+        if (reasonField) {
+            const reason = composeRefineReason(
+                this.refineReasonSource(isTransfer),
+            );
+            this.applyPolicy(out, REFINED_REASON_POLICY, {
+                ...base,
+                currentText: this.readText(row, reasonField),
+                // Экранирование — свойство транспорта: сборщик причины
+                // отдаёт плоский текст, batch-провод получает безопасный.
+                reason: reason ? toBatchSafeText(reason) : null,
+            });
+        }
+    }
+
+    /**
+     * Сделка — основная воронки ОП? Строки нет — новая sales_base по
+     * построению (`set_base_deal`). Роль base с чужой CATEGORY_ID —
+     * owner-сделка плейсмента (pres/xo): основную обновляет
+     * SalesBaseDealService отдельной командой.
+     */
+    private isSalesBaseDeal(): boolean {
+        const row = this.dealOptions?.deal;
+        if (!row) return true;
+        const category = this.portal.getDealCategoryByCode(
+            PbxDealCategoryCodeEnum.sales_base,
+        );
+        if (!category) return false;
+        return String(row['CATEGORY_ID'] ?? '') === String(category.bitrixId);
+    }
+
+    /** Хоть одно из установленных полей состояния непусто. */
+    private hasRefineState(
+        row: Record<string, unknown> | null,
+        fields: readonly IField[],
+    ): boolean {
+        if (!row) return false;
+        return fields.some(
+            field => !isEmptyStateValue(row[this.bitrixKey(field)]),
+        );
+    }
+
+    /**
+     * Возражения и формулировка — с первого носителя, где они есть:
+     * сделка → компания → лид. Имена item'ов — из справочника ТОГО носителя,
+     * где значение найдено: справочники у сущностей свои.
+     */
+    private refineReasonSource(isTransfer: boolean): RefineReasonSource {
+        const carriers: Array<
+            [EventReportEntityType, Record<string, unknown> | null]
+        > = [
+            [EEventReportEntityType.DEAL, this.dealOptions?.deal ?? null],
+            [
+                EEventReportEntityType.COMPANY,
+                this.ctx.company as unknown as Record<string, unknown> | null,
+            ],
+            [
+                EEventReportEntityType.LEAD,
+                this.ctx.lead as unknown as Record<string, unknown> | null,
+            ],
+        ];
+        let objections: RefineObjection[] = [];
+        let objectionComment = '';
+        for (const [carrierType, carrier] of carriers) {
+            if (!carrier) continue;
+            if (!objections.length) {
+                const field = this.portal.getEntityFieldByCode(
+                    carrierType,
+                    'op_objection_reason',
+                );
+                if (field) objections = this.readEnumItems(carrier, field);
+            }
+            if (!objectionComment) {
+                const field = this.portal.getEntityFieldByCode(
+                    carrierType,
+                    'op_objection_comment',
+                );
+                if (field) objectionComment = this.readText(carrier, field);
+            }
+        }
+        return {
+            objections,
+            objectionComment,
+            reportComment: this.ctx.reportComment,
+            isTransfer,
+        };
+    }
+
+    /** Значения enumeration-поля (ids, массив или csv) → item'ы справочника. */
+    private readEnumItems(
+        entity: Record<string, unknown>,
+        field: IField,
+    ): RefineObjection[] {
+        const raw = entity[this.bitrixKey(field)];
+        const ids = (Array.isArray(raw) ? raw : scalarToText(raw).split(','))
+            .map(value => scalarToText(value).trim())
+            .filter(Boolean);
+        return ids.flatMap(id => {
+            const item = (field.items ?? []).find(
+                candidate => String(candidate.bitrixId) === id,
+            );
+            return item
+                ? [{ code: item.code, name: item.title || item.name || item.code }]
+                : [];
+        });
+    }
+
+    /** Текст скалярного поля сущности (trim); нет строки/поля — пусто. */
+    private readText(
+        entity: Record<string, unknown> | null,
+        field: IField,
+    ): string {
+        if (!entity) return '';
+        return scalarToText(entity[this.bitrixKey(field)]).trim();
     }
 
     // ---------- private ----------

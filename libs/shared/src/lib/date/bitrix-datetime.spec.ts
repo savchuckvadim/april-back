@@ -48,6 +48,24 @@ describe('BitrixDateTime', () => {
         });
     });
 
+    describe('toCrmDate (date-поле, день в TZ портала)', () => {
+        it('вечер по UTC на восточном портале — уже следующий день', () => {
+            const d = BitrixDateTime.fromInstant(
+                new Date('2026-09-02T22:30:00.000Z'),
+                ETimeZone.EUROPE_MOSCOW,
+            );
+            expect(d.toCrmDate()).toBe('03.09.2026');
+        });
+
+        it('без времени и в формате DD.MM.YYYY', () => {
+            const d = BitrixDateTime.fromPortalInput(
+                '26.05.2026 10:00:00',
+                ETimeZone.ASIA_IRKUTSK,
+            );
+            expect(d.toCrmDate()).toBe('26.05.2026');
+        });
+    });
+
     describe('toRuHuman', () => {
         it('форматирует «26 мая 2026» без «г.»', () => {
             const d = BitrixDateTime.fromPortalInput(

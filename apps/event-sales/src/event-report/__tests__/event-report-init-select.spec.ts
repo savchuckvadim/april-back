@@ -1,6 +1,9 @@
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { buildDealListSelect } from '../services/init/event-report-init.service';
-import { XVOST_DEAL_FIELD_CODES } from '../services/entity/event-report-entity-fields.model';
+import {
+    DEAL_REFINE_FIELD_CODES,
+    XVOST_DEAL_FIELD_CODES,
+} from '../services/entity/event-report-entity-fields.model';
 import { COMPANY_BACKFILL_CODES } from '../services/entity/event-report-company-backfill.model';
 
 /**
@@ -31,6 +34,7 @@ const fullPortal = () =>
                 'op_move_count',
                 ...XVOST_DEAL_FIELD_CODES,
                 ...COMPANY_BACKFILL_CODES,
+                ...DEAL_REFINE_FIELD_CODES,
             ].map(code => [code, code.toUpperCase()]),
         ),
     );
@@ -75,6 +79,20 @@ describe('buildDealListSelect', () => {
             'op_concurents_multiple',
         ]);
         for (const code of COMPANY_BACKFILL_CODES) {
+            expect(select).toContain(`UF_CRM_${code.toUpperCase()}`);
+        }
+    });
+
+    it('резолвит поля состояния доработки и возражений (read-modify-write + причина)', () => {
+        const select = buildDealListSelect(fullPortal());
+        expect(DEAL_REFINE_FIELD_CODES).toEqual([
+            'op_is_in_refine',
+            'op_refined_at',
+            'op_refined_reason',
+            'op_objection_reason',
+            'op_objection_comment',
+        ]);
+        for (const code of DEAL_REFINE_FIELD_CODES) {
             expect(select).toContain(`UF_CRM_${code.toUpperCase()}`);
         }
     });

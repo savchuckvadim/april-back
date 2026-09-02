@@ -1,0 +1,106 @@
+import { BitrixService, IBXCompany, IBXDeal, IBXLead } from '@/modules/bitrix';
+import { IColdCallData } from '../type/cold-hook-silence.interface';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import {
+    ColdCallBxEntityFlowService,
+    IColdCallBxEntityData,
+} from '../services/enities/entity/cold-call-bx-entity.flow.service';
+// import { Logger } from '@nestjs/common';
+import { ColdDealFlowService } from '../services/enities/deal/cold-deal.flow.service';
+// Буфер — ОДИН на все хуки (правило SALES_HOOKS_GUIDE): своей копии у v2 нет.
+import { SalesBatchGroupBuffer as ColdHookBatchGroupBuffer } from '../../shared/batch';
+import {
+    ColdTaskFlowService,
+    IColdTaskFlow,
+} from '../services/enities/task/cold-tasks.flow.service';
+import { ColdListFlowService } from '../services/enities/kpi-list/cold-list.flow.service';
+import { BitrixDateTime } from '@lib/shared/lib/date';
+
+export class ColdCallV2UseCase {
+    // private readonly logger = new Logger(ColdCallV2UseCase.name);
+    constructor(
+        private readonly portal: PortalModel,
+        private readonly bitrix: BitrixService,
+    ) {}
+
+    /**
+     * Одна компания = одна группа в буфере. Все команды этой компании
+     * (company update, base/cold deal upsert, task add, list.element add)
+     * гарантированно уходят в один HTTP-batch — $result[cmdKey] валиден
+     * между сделкой → задачей → элементом списка.
+     */
+    async flow(
+        data: IColdCallData,
+        company: IBXCompany,
+        baseDeal: IBXDeal | null,
+        lead: IBXLead | null,
+        buffer: ColdHookBatchGroupBuffer,
+    ) {
+        const deadline = BitrixDateTime.fromPortalInput(
+            data.deadline,
+            this.portal.getTimezone(),
+        );
+
+        const dealsFlowService = new ColdDealFlowService(
+            this.bitrix,
+            this.portal,
+        );
+        const entityFlowService = new ColdCallBxEntityFlowService(
+            this.bitrix,
+            this.portal,
+        );
+        const taskFlowService = new ColdTaskFlowService(
+            this.bitrix,
+            this.portal,
+        );
+        const listFlowService = new ColdListFlowService(
+            this.bitrix,
+            this.portal,
+        );
+        const entityFlowData: IColdCallBxEntityData = {
+            name: data.name,
+            deadline,
+            responsibleId: data.responsible,
+            xoCreated: data.created,
+            entity: company,
+            entityType: data.entityType,
+        };
+        entityFlowService.flow(entityFlowData, buffer);
+        const { baseDealId, xoDealId } = dealsFlowService.flow(
+            entityFlowData,
+            Number(company.ID),
+            baseDeal,
+            buffer,
+        );
+
+        const taskFlowData: IColdTaskFlow = {
+            deadline,
+            responsibleId: Number(data.responsible),
+            companyId: Number(company.ID),
+            baseDealId,
+            xoDealId,
+            name: data.name,
+        };
+        taskFlowService.createNextTask(taskFlowData, buffer);
+
+        /**
+         * KPI + History элементы.
+         * Создаются в этом же HTTP-batch, что и сделки/задача —
+         * crm-поле элемента ссылается на $result[...] сделок.
+         */
+        listFlowService.flow(
+            {
+                name: data.name,
+                deadline,
+                createdId: data.created,
+                responsibleId: data.responsible,
+                companyId: company.ID,
+                baseDealId,
+                xoDealId,
+            },
+            buffer,
+        );
+
+        await buffer.endGroup();
+    }
+}

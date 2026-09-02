@@ -447,3 +447,79 @@ describe('composeStageId', () => {
         expect(composeStageId(17, 'WARM')).toBe('C17:WARM');
     });
 });
+
+describe('getSalesBaseTargetStageCode — воронка без ступени «Доработка»', () => {
+    /** Воронка ОП, где стадии sales_refine нет (состояние живёт полями). */
+    const noRefineCategory = {
+        ...baseCategory,
+        stages: baseCategory.stages.filter(s => s.code !== 'sales_refine'),
+    } as IPCategory;
+    const input = (patch: Partial<BaseStageInput> = {}) =>
+        baseInput({ category: noRefineCategory, ...patch });
+
+    it('план refine с презентации — сделка остаётся на презентации', () => {
+        expect(
+            getSalesBaseTargetStageCode(
+                input({ currentStageEvent: 'presentation', planEventType: 'refine' }),
+            ),
+        ).toBe('PRES');
+    });
+
+    it('план refine с холодной — на холодной', () => {
+        expect(
+            getSalesBaseTargetStageCode(
+                input({ currentStageEvent: 'xo', planEventType: 'refine' }),
+            ),
+        ).toBe('PREPARATION');
+    });
+
+    it('отчёт refine + план warm — максимум без ступени refine', () => {
+        expect(
+            getSalesBaseTargetStageCode(
+                input({
+                    currentStageEvent: 'presentation',
+                    reportEventType: 'refine',
+                    planEventType: 'warm',
+                }),
+            ),
+        ).toBe('PRES');
+    });
+
+    it('настройка «Доработка всегда» без ступени — лестница как без настройки', () => {
+        expect(
+            getSalesBaseTargetStageCode(
+                input({
+                    currentStageEvent: 'document',
+                    planEventType: 'refine',
+                    refineStageOnPlan: true,
+                }),
+            ),
+        ).toBe('OFFER_CREATE');
+    });
+
+    it('только план refine и ничего больше — null (двигать некуда)', () => {
+        expect(
+            getSalesBaseTargetStageCode(input({ planEventType: 'refine' })),
+        ).toBeNull();
+    });
+
+    it('финал с планом refine без ступени — финал', () => {
+        expect(
+            getSalesBaseTargetStageCode(
+                input({ planEventType: 'refine', isFail: true }),
+            ),
+        ).toBe('LOSE');
+    });
+
+    it('другая отсутствующая стадия по-прежнему даёт null', () => {
+        const noHot = {
+            ...baseCategory,
+            stages: baseCategory.stages.filter(s => s.code !== 'sales_in_progress'),
+        } as IPCategory;
+        expect(
+            getSalesBaseTargetStageCode(
+                baseInput({ category: noHot, planEventType: 'hot' }),
+            ),
+        ).toBeNull();
+    });
+});

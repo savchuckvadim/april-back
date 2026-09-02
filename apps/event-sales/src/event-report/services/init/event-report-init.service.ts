@@ -11,7 +11,10 @@ import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { EventSalesFlowDto } from '../../dto/event-sale-flow/event-sales-flow.dto';
-import { XVOST_DEAL_FIELD_CODES } from '../entity/event-report-entity-fields.model';
+import {
+    DEAL_REFINE_FIELD_CODES,
+    XVOST_DEAL_FIELD_CODES,
+} from '../entity/event-report-entity-fields.model';
 import { COMPANY_BACKFILL_CODES } from '../entity/event-report-company-backfill.model';
 import {
     EEventReportEntityType,
@@ -90,7 +93,12 @@ const OWNER_DEAL_LINK_KEYS = [
  *    базовой не приезжали, и снимок был вечно пуст;
  *  - {@link COMPANY_BACKFILL_CODES} — бэкфилл пустых полей компании со
  *    сделки (`EventReportCompanyBackfillModel`): без select сделка выглядела
- *    пустой, и бэкфилл никогда не срабатывал.
+ *    пустой, и бэкфилл никогда не срабатывал;
+ *  - {@link DEAL_REFINE_FIELD_CODES} — состояние «на доработке» (read-
+ *    modify-write: без чтения дата входа перештамповывалась бы каждым
+ *    планом, а «уже на доработке» не отличалось бы от входа) и возражения
+ *    как источник причины. Побочно возражение со сделки из списка начинает
+ *    видеть и зеркало контакта — `sameValue` защищает от спама.
  *
  * Компании select не нужен: она читается `crm.company.get`, который отдаёт
  * ВСЕ поля (включая UF_*) — параметра select у метода нет вовсе.
@@ -105,6 +113,7 @@ export const buildDealListSelect = (portal: PortalModel): string[] => {
         ...DEAL_ACCUMULATED_FIELD_CODES,
         ...XVOST_DEAL_FIELD_CODES,
         ...COMPANY_BACKFILL_CODES,
+        ...DEAL_REFINE_FIELD_CODES,
     ]
         .map(code => {
             const field = portal.getEntityFieldByCode('deal', code);

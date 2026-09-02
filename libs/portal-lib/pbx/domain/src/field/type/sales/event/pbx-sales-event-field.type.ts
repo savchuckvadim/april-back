@@ -1449,6 +1449,71 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     /*
+     * «На доработке» — состояние сделки ВНЕ стадий (02.09.2026). У части
+     * порталов стадии «Доработка» в воронке нет, а признак показывать и
+     * обслуживать нужно. Только сделка — как в Excel calling_fields
+     * (order 701). Пишет event-report (applyRefineState модели полей,
+     * политики planFlag/planEnteredAt/planReason):
+     *  - вход — план «Доработка» или перенос задачи «Доработка»: флаг 1,
+     *    дата входа (повторный план без выхода её не двигает), причина —
+     *    только в пустое поле (набранное менеджером не перекрывается;
+     *    фолбэк — возражения, иначе комментарий отчёта);
+     *  - выход — планы «Решение»/«Оплата»/«Поставка», холодный план,
+     *    финал (продажа/отказ/не ЦА): все три поля пусты;
+     *  - «Документы», «Звонок», «Презентация», отчёт без плана — не трогают.
+     */
+    {
+        name: 'На доработке ?',
+        appType: 'refine',
+        type: 'boolean',
+        items: [],
+        code: 'op_is_in_refine',
+        lead: '',
+        company: '',
+        deal: 'OP_IS_IN_REFINE',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 701,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        name: 'На доработке с',
+        appType: 'refine',
+        type: 'date',
+        items: [],
+        code: 'op_refined_at',
+        lead: '',
+        company: '',
+        deal: 'OP_REFINED_AT',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 701,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        name: 'Почему на доработке - причина',
+        appType: 'refine',
+        type: 'string',
+        items: [],
+        code: 'op_refined_reason',
+        lead: '',
+        company: '',
+        deal: 'OP_REFINED_REASON',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 701,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    /*
      * ЗДЕСЬ БЫЛИ пять полей «Хвоста», ушедших из состава 01.09.2026:
      * согласование даты по решению, дата похода к руководителю и три
      * галочки (КП предложено / наполнение озвучено / цена озвучена).
@@ -2126,6 +2191,9 @@ export const PBX_SALES_EVENT_FIELDS = [
                 name: 'Ключевой сотрудник против',
             },
             { code: 'op_objection_off', name: 'Не хотят общаться' },
+            // «Отжать» возражение: явный ответ «их нет» — отличим от
+            // «не спрашивали» и закрывает обязательность (02.09).
+            { code: 'op_objection_none', name: 'Нет возражений' },
         ],
         code: 'op_objection_reason',
         lead: 'OP_OBJECTION_REASON',

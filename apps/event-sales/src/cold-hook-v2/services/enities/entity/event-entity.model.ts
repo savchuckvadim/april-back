@@ -1,0 +1,188 @@
+import { IBXCompany, IBXDeal, IBXLead } from '@/modules/bitrix';
+import { EnumColdCallEntityType } from '../../../dto/cold.dto';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { ColdEntityCodesEnum } from './cold-entity.type';
+import { findPbxSalesEventField } from '@lib/portal-lib/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
+import { IField } from '@lib/portal-lib/portal/interfaces/portal.interface';
+import { Logger } from '@nestjs/common';
+import { BitrixDateTime } from '@lib/shared/lib/date';
+
+export class EventEntityModel {
+    private readonly logger = new Logger(EventEntityModel.name);
+    private readonly eventTypeName = 'Холодный обзвон';
+    private readonly eventComment: string;
+    /**
+     * Дедлайн в CRM datetime-формате (локаль портала) — единое значение
+     * для всех UF-полей, истории и комментария. Конвертация TZ инкапсулирована
+     * в {@link BitrixDateTime}, сырую строку сюда уже не пишем.
+     */
+    private readonly eventDeadline: string;
+    constructor(
+        private readonly portal: PortalModel,
+        private readonly entity: IBXCompany | IBXLead | IBXDeal | null, //null - когда создается новый элемент
+        private readonly entityType: EnumColdCallEntityType,
+
+        private readonly eventName: string,
+        private readonly deadline: BitrixDateTime,
+        private readonly eventResponsible: string,
+        private readonly eventXoCreated: string,
+    ) {
+        if (!entity) {
+            this.logger.log('создаем новую сущность' + entityType);
+        }
+        this.eventDeadline = this.deadline.toCrmDateTime();
+        this.eventComment = this.getComment();
+        this.logger.log(
+            `[deadline][entity] type=${entityType} entityId=${entity?.ID ?? 'new'} ` +
+                `eventDeadline(CRM)="${this.eventDeadline}" ` +
+                `debug=${JSON.stringify(this.deadline.debug())}`,
+        );
+    }
+
+    public getNextValues(): Record<string, number | string | string[]> {
+        const result = {} as Record<string, number | string | string[]>; //'UF_CRM_999999' : 'value'
+
+        Object.values(ColdEntityCodesEnum).forEach(
+            (code: ColdEntityCodesEnum) => {
+                const value = this.getCurrentValueByCode(code);
+                const field = this.getPortalFieldByCode(code);
+                if (!field) return;
+                const bitrixId = this.getBitrixIdByPortalField(field);
+                if (!this.hasField(bitrixId)) return;
+                result[bitrixId] = value ?? '';
+                switch (code) {
+                    case ColdEntityCodesEnum.xo_name:
+                        result[bitrixId] = this.eventName;
+                        break;
+                    case ColdEntityCodesEnum.xo_date:
+                        result[bitrixId] = this.eventDeadline;
+                        break;
+                    case ColdEntityCodesEnum.call_next_date:
+                        result[bitrixId] = this.eventDeadline;
+                        break;
+                    case ColdEntityCodesEnum.call_last_date:
+                        result[bitrixId] = this.eventDeadline;
+                        break;
+                    case ColdEntityCodesEnum.xo_responsible:
+                        result[bitrixId] = this.eventResponsible;
+                        break;
+                    case ColdEntityCodesEnum.manager_op:
+                        result[bitrixId] = this.eventResponsible;
+                        break;
+                    case ColdEntityCodesEnum.xo_created:
+                        result[bitrixId] = this.eventXoCreated;
+                        break;
+                    case ColdEntityCodesEnum.op_history:
+                        result[bitrixId] = this.getNextStringHistory();
+                        break;
+                    case ColdEntityCodesEnum.op_mhistory:
+                        result[bitrixId] = this.getNextMHistory();
+                        break;
+                    case ColdEntityCodesEnum.op_current_status:
+                        result[bitrixId] = this.getEventName();
+                        break;
+                    case ColdEntityCodesEnum.op_work_status:
+                        result[bitrixId] = this.getNextOpWorkStatus();
+                        break;
+                    case ColdEntityCodesEnum.op_prospects_type:
+                        result[bitrixId] = this.getNextOpProspectsType();
+                        break;
+                }
+            },
+        );
+        return result;
+    }
+    public getEventName() {
+        const eventName = this.eventTypeName + ' ' + this.eventName;
+        return eventName;
+    }
+
+    private getCurrentValueByCode(code: ColdEntityCodesEnum) {
+        if (!this.entity) {
+            return '';
+        }
+        const pField = this.getPortalFieldByCode(code);
+        if (!pField) return undefined;
+        const bitrixId = this.getBitrixIdByPortalField(pField);
+        if (this.hasField(bitrixId)) {
+            return (this.entity[bitrixId] || '') as string | string[];
+        }
+        return undefined;
+    }
+    private hasField(bitrixId: string) {
+        if (!bitrixId || !this.entity) {
+            return false;
+        }
+        return Object.hasOwn(this.entity, bitrixId) !== undefined;
+    }
+    private getPortalFieldByCode(code: ColdEntityCodesEnum) {
+        return this.portal.getEntityFieldByCode(this.entityType, code);
+    }
+    //next values
+    private getNextStringHistory() {
+        const currentValue: string = (this.getCurrentValueByCode(
+            ColdEntityCodesEnum.op_history,
+        ) ?? '') as string;
+        return `${currentValue} ${this.eventComment}`;
+    }
+    private getNextMHistory(): string[] {
+        const currentValue: string[] = (this.getCurrentValueByCode(
+            ColdEntityCodesEnum.op_mhistory,
+        ) ?? []) as string[];
+        const nextValue = this.eventComment;
+        currentValue.unshift(nextValue);
+        return currentValue;
+    }
+
+    private getNextOpWorkStatus() {
+        const field = findPbxSalesEventField('op_work_status');
+        const targetItem = field?.items.find(
+            item => item.code === 'op_status_in_work',
+        );
+
+        const currentPortalField = this.getPortalFieldByCode(
+            ColdEntityCodesEnum.op_work_status,
+        );
+        const portalItem = currentPortalField?.items.find(
+            item => item.code === targetItem?.code,
+        );
+        return portalItem?.bitrixId ?? '';
+    }
+
+    private getNextOpProspectsType() {
+        const field = findPbxSalesEventField('op_prospects_type');
+        const targetItem = field?.items.find(
+            item => item.name === 'Перспективная',
+        );
+
+        const currentPortalField = this.getPortalFieldByCode(
+            ColdEntityCodesEnum.op_work_status,
+        );
+        const portalItem = currentPortalField?.items.find(
+            item => item.code === targetItem?.code,
+        );
+        return portalItem?.bitrixId ?? '';
+    }
+
+    private getBitrixIdByPortalField(field: IField) {
+        return field?.bitrixId ? `UF_CRM_${field.bitrixId}` : '';
+    }
+
+    private getComment(): string {
+        const commentNow = new Date().toLocaleString('ru-RU', {
+            day: '2-digit',
+            month: 'long',
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric',
+            timeZone: this.portal.getTimezone(),
+        });
+        const comment =
+            commentNow +
+            ' ХО: ' +
+            this.eventName +
+            ' Запланирован на ' +
+            this.eventDeadline;
+        return comment;
+    }
+}

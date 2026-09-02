@@ -60,6 +60,11 @@ export class PBXDateTime {
         return this.valueOf(value).toCrmDateTime();
     }
 
+    /** Момент → строка CRM date-поля (`DD.MM.YYYY`, календарный день в TZ портала). */
+    crmDate(value: Date | Dayjs | string): string {
+        return this.valueOf(value).toCrmDate();
+    }
+
     /** «Сейчас» в формате CRM datetime-поля. */
     nowCrmDateTime(): string {
         return nowCrmDateTime(this.timezone);

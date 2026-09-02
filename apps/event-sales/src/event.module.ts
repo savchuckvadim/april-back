@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ColdHookModule } from './cold-hook/hook.module';
+import { ColdHookV2Module } from './cold-hook-v2/hook.module';
 import { LeadHookModule } from './lead-hook/lead-hook.module';
 import { EventReportModule } from './event-report/event-report.module';
 import { EventReportDeferredModule } from './event-report-deferred/event-report-deferred.module';
@@ -14,6 +15,7 @@ import { PresentationFlowModule } from './presentation-flow/presentation-flow.mo
 @Module({
     imports: [
         ColdHookModule,
+        ColdHookV2Module,
         LeadHookModule,
         EventReportModule,
         // Досылка хвоста прямого исполнения отчёта (POST /flow/deferred):

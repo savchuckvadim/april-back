@@ -1,0 +1,126 @@
+import { PBXService } from '@/modules/pbx/pbx.service';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { IColdHookSilenceHandlerData } from '../../type/cold-hook-silence.interface';
+import { ColdCallV2UseCase } from '../../use-cases/cold-call.use-case';
+import { IBXCompany } from '@/modules/bitrix';
+import { getErrorDetails } from '@/shared';
+
+import { PreColdDealFlowService } from '../enities/deal/pre-cold-deals-flow.service';
+import { PreColdEntitiesFlowService } from '../enities/entity/pre-cold-entities.flow.service';
+import { PreColdTasksFlowService } from '../enities/task/pre-cold-tasks.flow.service';
+import { SalesBatchGroupBuffer as ColdHookBatchGroupBuffer } from '../../../shared/batch';
+
+/**
+ * Обрабатывает множество хуков
+ *
+ */
+@Injectable()
+export class ColdHooksHandlerV2Service {
+    private readonly logger = new Logger(ColdHooksHandlerV2Service.name);
+
+    constructor(private readonly pbx: PBXService) {
+        this.logger.log('Cold Hooks Silence Handler initialized');
+    }
+
+    async handleHooks(
+        domain: string,
+        hooks: IColdHookSilenceHandlerData['collected'],
+    ): Promise<void> {
+        const startedAt = Date.now();
+        const hooksCount = hooks ? Object.keys(hooks).length : 0;
+        try {
+            this.logger.log('Cold hooks handling started', {
+                domain,
+                hooksCount,
+            });
+            if (!hooks || hooksCount === 0) {
+                this.logger.log('No Cold Hooks to create', { domain });
+                return;
+            }
+            const { bitrix, portal, PortalModel } = await this.pbx.init(domain);
+            const entitiesService = new PreColdEntitiesFlowService(bitrix);
+            const preColdDealFlowService = new PreColdDealFlowService(
+                PortalModel,
+                bitrix,
+            );
+            const tasksService = new PreColdTasksFlowService(
+                PortalModel,
+                bitrix,
+            );
+            const useCase = new ColdCallV2UseCase(PortalModel, bitrix);
+
+            /**
+             * Берем все компании для хуков
+             *
+             */
+            const { companies, companiesIds } =
+                await entitiesService.getPreColdEntities(hooks);
+
+            /**
+             * Закрываем все сделки перед созданием новых
+             *
+             */
+            const closedDealsResult =
+                await preColdDealFlowService.execute(companies);
+            /**
+             * закрыть задачи
+
+             */
+
+            await tasksService.closeTasks(companiesIds);
+
+            if (portal) {
+                /**
+                 * Каждая компания = одна атомарная группа batch-команд.
+                 * Буфер гарантирует, что все команды одной компании уходят
+                 * в один HTTP-batch (≤50) — $result[cmdKey] работает между
+                 * сделкой → задачей → элементом списка.
+                 */
+                const buffer = new ColdHookBatchGroupBuffer(bitrix);
+
+                for (const raw of Object.values(hooks)) {
+                    const currentEntityData = closedDealsResult?.find(
+                        c => Number(c.company.ID) === Number(raw.entityId),
+                    );
+                    const currentCompany =
+                        currentEntityData?.company as IBXCompany;
+                    const baseDeal = currentEntityData?.baseDeal ?? null;
+
+                    await useCase.flow(
+                        raw,
+                        currentCompany,
+                        baseDeal,
+                        null,
+                        buffer,
+                    );
+                }
+
+                await buffer.flush();
+                this.logger.log(
+                    `Batch result: ${JSON.stringify(buffer.getResults())}`,
+                );
+                this.logger.log('Cold hooks handling finished', {
+                    telegram: true,
+                    domain,
+                    hooksCount,
+                    companiesCount: companies.length,
+                    durationMs: Date.now() - startedAt,
+                });
+                return;
+            } else {
+                throw new HttpException(
+                    'Cold hook portal notfound for domain: ' + domain,
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
+        } catch (err) {
+            const { message, stack } = getErrorDetails(err);
+            this.logger.error(
+                'Error in Cold Hooks Silence Handler Service',
+                { domain, hooksCount, durationMs: Date.now() - startedAt },
+                message,
+            );
+            this.logger.error(stack);
+        }
+    }
+}

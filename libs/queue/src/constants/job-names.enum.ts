@@ -1,6 +1,12 @@
 export enum JobNames {
     //event sales
     EVENT_COLD_CALL = 'cold-call',
+    /**
+     * Холодный старт v2 (cold-hook-v2, 02.09.2026): своё имя джоба, иначе
+     * оба модуля подписались бы на одно silence-событие и обработали бы
+     * каждое окно тишины дважды.
+     */
+    EVENT_COLD_CALL_V2 = 'cold-call-v2',
     EVENT_SALES_FLOW = 'event-sales-flow',
     /** Сайд-flow ЗПР: создание/закрытие элементов смарта «Звонки По решению». */
     EVENT_SALES_ZPR_FLOW = 'event-sales-zpr-flow',

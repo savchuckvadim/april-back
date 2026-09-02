@@ -241,12 +241,7 @@ export function getSalesBaseTargetStageCode(
     if (isUnplanned) codes.push(EVENT_REPORT_EVENT_TYPE.presentation);
 
     const matching = SALES_BASE_EVENT_ORDER.filter(e => codes.includes(e.code));
-    const top =
-        matching.reduce<EventOrderEntry<PbxDealSalesBaseStageSuffix> | null>(
-            (carry, item) =>
-                carry === null || item.order > carry.order ? item : carry,
-            null,
-        );
+    const top = topOfLadder(matching);
 
     let suffix: PbxDealSalesBaseStageSuffix | null = top?.stageSuffix ?? null;
     /*
@@ -271,9 +266,42 @@ export function getSalesBaseTargetStageCode(
     // Ни лестница, ни финальный статус стадию не дали — двигать сделку некуда.
     if (!suffix) return null;
 
-    return resolveStageBitrixId(
+    const resolved = resolveStageBitrixId(
         category,
         `${PBX_DEAL_SALES_BASE_STAGE_PREFIX}${suffix}`,
+    );
+    /*
+     * Ступени «Доработка» в воронке портала может не быть: состояние «на
+     * доработке» живёт ПОЛЯМИ сделки (02.09.2026), а стадия — по желанию
+     * владельца. Раньше отчёт с планом refine на таком портале давал null,
+     * и update основной сделки пропускался ЦЕЛИКОМ — вместе с историей,
+     * датами и полями состояния. Теперь лестница пересчитывается без
+     * ступени refine: сделка остаётся на максимуме из остальных кандидатов
+     * (обычно — где стояла). Сужено ровно до refine: другие отсутствующие
+     * стадии ведут себя как раньше.
+     */
+    if (resolved === null && suffix === SALES_BASE_STAGE_SUFFIX.refine) {
+        const fallback = topOfLadder(
+            matching.filter(e => e.code !== EVENT_REPORT_EVENT_TYPE.refine),
+        );
+        return fallback
+            ? resolveStageBitrixId(
+                  category,
+                  `${PBX_DEAL_SALES_BASE_STAGE_PREFIX}${fallback.stageSuffix}`,
+              )
+            : null;
+    }
+    return resolved;
+}
+
+/** Верхняя ступень лестницы среди кандидатов; пусто — null. */
+function topOfLadder<S extends string>(
+    entries: readonly EventOrderEntry<S>[],
+): EventOrderEntry<S> | null {
+    return entries.reduce<EventOrderEntry<S> | null>(
+        (carry, item) =>
+            carry === null || item.order > carry.order ? item : carry,
+        null,
     );
 }
 
