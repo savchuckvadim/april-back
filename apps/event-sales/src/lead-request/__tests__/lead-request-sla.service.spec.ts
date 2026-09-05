@@ -70,7 +70,13 @@ const makeDeps = (input: {
         getStructure: jest.fn().mockResolvedValue({
             salesDepartments: [
                 {
-                    department: { ID: 15, NAME: 'ОП 1', UF_HEAD: 900 },
+                    // HEADS: руководитель + заместитель — уведомляются оба
+                    department: {
+                        ID: 15,
+                        NAME: 'ОП 1',
+                        UF_HEAD: 900,
+                        HEADS: [900, 901],
+                    },
                     groups: [],
                     allUsers: [{ ID: 5 }, { ID: 3 }],
                 },
@@ -249,6 +255,8 @@ describe('LeadRequestSlaService', () => {
         expect(message.USER_ID).toBe(900);
         expect(message.MESSAGE).toContain('не принята');
         expect(message.MESSAGE).toContain('/crm/lead/details/42/');
+        // Заместитель из HEADS получает то же уведомление.
+        expect(notifyCalls.map(call => call[0].USER_ID)).toEqual([900, 901]);
     });
 
     /* ------------------------------------------------------------------ *

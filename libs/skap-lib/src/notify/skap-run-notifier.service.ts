@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BitrixService } from '@lib/bitrix';
 import { SkapRunStats } from '../store/skap-store.types';
+import { parseUserIds } from '@lib/portal-lib/store/app-settings/lib/parse-user-ids';
 
 /** Итог прогона для дайджеста (структурно совместим с use-case результата). */
 export interface SkapRunDigestInput {
@@ -76,12 +77,9 @@ export class SkapRunNotifierService {
         }
     }
 
-    /** «1, 42;107» → [1, 42, 107] (мусор и нули отбрасываются). */
+    /** «1, 42;107» → [1, 42, 107] — общий парсер реестра настроек. */
     parseUserIds(raw: string): number[] {
-        return raw
-            .split(/[,;\s]+/)
-            .map(part => Number(part))
-            .filter(id => Number.isInteger(id) && id > 0);
+        return parseUserIds(raw);
     }
 
     private buildDigest(input: SkapRunDigestInput): string {

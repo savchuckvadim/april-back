@@ -23,14 +23,14 @@ describe('BxDepartmentCacheService', () => {
         const result = await service.reset(DOMAIN);
 
         expect(result.patterns).toEqual([
-            `department_structure_v2_${DOMAIN}_*`,
+            `department_structure_v3_${DOMAIN}_*`,
             `department_${DOMAIN}_*`,
             `bx_team_${DOMAIN}_*`,
         ]);
         expect(scan).toHaveBeenCalledWith(
             '0',
             'MATCH',
-            `department_structure_v2_${DOMAIN}_*`,
+            `department_structure_v3_${DOMAIN}_*`,
             'COUNT',
             expect.any(Number),
         );
@@ -40,7 +40,7 @@ describe('BxDepartmentCacheService', () => {
         const result = await service.reset();
 
         expect(result.patterns).toEqual([
-            'department_structure_v2_*_*',
+            'department_structure_v3_*_*',
             'department_*_*',
             'bx_team_*_*',
         ]);
@@ -51,10 +51,10 @@ describe('BxDepartmentCacheService', () => {
             if (pattern.startsWith('bx_team_')) {
                 return Promise.resolve(['0', [`bx_team_${DOMAIN}_0724_sales`]]);
             }
-            if (pattern.startsWith('department_structure_v2_')) {
+            if (pattern.startsWith('department_structure_v3_')) {
                 return Promise.resolve([
                     '0',
-                    [`department_structure_v2_${DOMAIN}_0724_sales_single`],
+                    [`department_structure_v3_${DOMAIN}_0724_sales_single`],
                 ]);
             }
             return Promise.resolve(['0', [`department_${DOMAIN}_0724_sales`]]);
@@ -64,19 +64,19 @@ describe('BxDepartmentCacheService', () => {
 
         expect(result.deletedCount).toBe(3);
         expect(del).toHaveBeenCalledWith(
-            `department_structure_v2_${DOMAIN}_0724_sales_single`,
+            `department_structure_v3_${DOMAIN}_0724_sales_single`,
             `department_${DOMAIN}_0724_sales`,
             `bx_team_${DOMAIN}_0724_sales`,
         );
     });
 
     it('дедуплицирует ключи с пересекающихся паттернов (department_* накрывает structure)', async () => {
-        const structureKey = 'department_structure_v2_a_0724_sales_single';
+        const structureKey = 'department_structure_v3_a_0724_sales_single';
         scan.mockImplementation((_c: string, _m: string, pattern: string) => {
             if (pattern.startsWith('bx_team_')) {
                 return Promise.resolve(['0', []]);
             }
-            // и department_*_*, и department_structure_v2_*_* находят один ключ
+            // и department_*_*, и department_structure_v3_*_* находят один ключ
             return Promise.resolve(['0', [structureKey]]);
         });
 

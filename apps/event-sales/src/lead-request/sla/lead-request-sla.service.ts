@@ -558,16 +558,16 @@ export class LeadRequestSlaService {
             leadId,
             minutes,
             prevResponsible,
-            departmentHint?.headUserId ?? null,
+            departmentHint?.headUserIds ?? [],
             result,
         );
     }
 
-    /** ОП сотрудника: id отдела + руководитель (UF_HEAD). */
+    /** ОП сотрудника: id отдела + руководители (HEADS: руководитель и заместители). */
     private async findUserDepartment(
         domain: string,
         userId: number,
-    ): Promise<{ departmentId: number | null; headUserId: number | null }> {
+    ): Promise<{ departmentId: number | null; headUserIds: number[] }> {
         try {
             const data = await this.structure.getStructure(
                 domain,
@@ -581,7 +581,7 @@ export class LeadRequestSlaService {
                 if (!hasUser) continue;
                 return {
                     departmentId: Number(sales.department?.ID) || null,
-                    headUserId: Number(sales.department?.UF_HEAD) || null,
+                    headUserIds: this.headsOf(sales.department),
                 };
             }
         } catch (error) {
@@ -589,7 +589,20 @@ export class LeadRequestSlaService {
                 `Структура отделов ${domain} не прочитана: ${(error as Error).message}`,
             );
         }
-        return { departmentId: null, headUserId: null };
+        return { departmentId: null, headUserIds: [] };
+    }
+
+    /** Руководители отдела из HEADS; ответ без списка — легаси UF_HEAD. */
+    private headsOf(department?: {
+        HEADS?: number[];
+        UF_HEAD?: number | null;
+    }): number[] {
+        const heads = (department?.HEADS ?? [])
+            .map(Number)
+            .filter(id => Number.isInteger(id) && id > 0);
+        if (heads.length > 0) return heads;
+        const legacy = Number(department?.UF_HEAD);
+        return Number.isInteger(legacy) && legacy > 0 ? [legacy] : [];
     }
 
     private async notifyHead(
@@ -599,10 +612,10 @@ export class LeadRequestSlaService {
         leadId: number,
         minutes: number,
         prevResponsible: number | null,
-        headUserId: number | null,
+        headUserIds: number[],
         result: LeadRequestSlaRunResult,
     ): Promise<void> {
-        if (!headUserId) {
+        if (headUserIds.length === 0) {
             result.warnings.push(
                 `Лид ${leadId}: руководитель отдела не найден — уведомление не отправлено`,
             );
@@ -614,15 +627,19 @@ export class LeadRequestSlaService {
             `Заявка «${title}» не принята сотрудником за ${minutes} мин` +
             (prevResponsible ? ` (ответственный: ${prevResponsible})` : '') +
             ` — передана другому. [URL=https://${domain}/crm/lead/details/${leadId}/]Открыть лид[/URL]`;
-        try {
-            await bitrix.imNotify.systemAdd({
-                USER_ID: headUserId,
-                MESSAGE: message,
-            });
-        } catch (error) {
-            result.warnings.push(
-                `Лид ${leadId}: уведомление руководителю не отправлено — ${(error as Error).message}`,
-            );
+        // Все руководители отдела (руководитель + заместители): сбой
+        // одного адресата не отменяет остальных.
+        for (const headUserId of headUserIds) {
+            try {
+                await bitrix.imNotify.systemAdd({
+                    USER_ID: headUserId,
+                    MESSAGE: message,
+                });
+            } catch (error) {
+                result.warnings.push(
+                    `Лид ${leadId}: уведомление руководителю ${headUserId} не отправлено — ${(error as Error).message}`,
+                );
+            }
         }
     }
 

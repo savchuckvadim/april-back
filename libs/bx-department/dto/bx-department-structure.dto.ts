@@ -29,6 +29,30 @@ export enum EBxDepartmentHeadType {
     group = 'group',
 }
 
+/**
+ * Уровень видимости текущего пользователя в отчётах продаж — единый
+ * словарь для фронтов. Соответствие headOf: null → own, group → group,
+ * op → department, cup → all.
+ */
+export enum EBxVisibilityLevel {
+    /** Только себя. */
+    own = 'own',
+    /** Себя и свою группу («Группа …» внутри ОП). */
+    group = 'group',
+    /** Свой отдел продаж целиком, все группы. */
+    department = 'department',
+    /** Вся структура; в мультирежиме — все ОП. */
+    all = 'all',
+}
+
+/** Откуда взялась роль текущего пользователя. */
+export enum EBxHeadOfSource {
+    /** По структуре Битрикса: пользователь в HEADS отдела. */
+    structure = 'structure',
+    /** Уровень поднят настройкой портала «Отдел продаж» (visibility_*_user_ids). */
+    settings = 'settings',
+}
+
 export class BxDepartmentStructureRequestDto {
     @ApiProperty({
         enum: EClients,
@@ -163,6 +187,28 @@ export class BxCurrentUserDto {
     @IsArray()
     @IsInt({ each: true })
     headOfDepartmentIds: number[];
+
+    @ApiProperty({
+        enum: EBxVisibilityLevel,
+        description:
+            'Уровень видимости: own — только себя; group — своя группа; ' +
+            'department — свой ОП со всеми группами; all — вся структура. ' +
+            'Соответствует headOf: null / group / op / cup.',
+        example: EBxVisibilityLevel.department,
+    })
+    @IsEnum(EBxVisibilityLevel)
+    visibility: EBxVisibilityLevel;
+
+    @ApiProperty({
+        enum: EBxHeadOfSource,
+        description:
+            'Источник роли: structure — руководитель по структуре Битрикса ' +
+            '(HEADS отдела); settings — уровень поднят настройкой портала ' +
+            '«Отдел продаж» (visibility_*_user_ids).',
+        example: EBxHeadOfSource.structure,
+    })
+    @IsEnum(EBxHeadOfSource)
+    headOfSource: EBxHeadOfSource;
 
     @ApiProperty({
         description: 'Коллеги текущего пользователя.',

@@ -5,6 +5,11 @@ export interface IBXDepartment {
     SORT: number;
     /** Битрикс отдаёт строкой ("1"); bx-department нормализует к number|null. */
     UF_HEAD?: number | null;
+    /**
+     * Руководители и заместители (bx-department: структура v3 ∪ UF_HEAD),
+     * руководитель первым. Нет на сырых ответах department.get.
+     */
+    HEADS?: number[];
     USERS?: IBXUser[] | null;
 }
 

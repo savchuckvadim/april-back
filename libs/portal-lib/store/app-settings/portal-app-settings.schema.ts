@@ -85,7 +85,49 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             default: '',
         }),
     },
-    [EnumPortalAppCode.sales]: {},
+    [EnumPortalAppCode.sales]: {
+        // --- Принудительная видимость в отчётах продаж (kpi-sales и др.).
+        // Читает BxDepartmentStructureService (libs/bx-department) при
+        // расчёте роли текущего пользователя: уровень из списка поднимает
+        // структурный и никогда не понижает. Сотрудник вне структуры
+        // продаж из списков group/department получает all (решение
+        // владельца 05.09.2026). CSV Bitrix ID, парсер — parseUserIds.
+        visibilityGroupUserIds: setting({
+            code: 'visibility_group_user_ids',
+            name: 'Видят свою группу (принудительно)',
+            description:
+                'Bitrix ID сотрудников через запятую: «32, 40, 1». ' +
+                'Получают уровень «группа»: себя и свою группу, как ' +
+                'руководитель группы, независимо от структуры. Без своей ' +
+                'группы — уровень «отдел»; вне отдела продаж — «все». ' +
+                'Пусто — только по структуре.',
+            type: 'string',
+            default: '',
+        }),
+        visibilityDepartmentUserIds: setting({
+            code: 'visibility_department_user_ids',
+            name: 'Видят свой отдел (принудительно)',
+            description:
+                'Bitrix ID сотрудников через запятую: «32, 40, 1». ' +
+                'Получают уровень «отдел»: свой отдел продаж со всеми ' +
+                'группами, как руководитель отдела, независимо от ' +
+                'структуры. Вне отдела продаж — «все». Пусто — только по ' +
+                'структуре.',
+            type: 'string',
+            default: '',
+        }),
+        visibilityAllUserIds: setting({
+            code: 'visibility_all_user_ids',
+            name: 'Видят всю структуру (принудительно)',
+            description:
+                'Bitrix ID сотрудников через запятую: «32, 40, 1». ' +
+                'Получают уровень «все»: вся структура продаж (все отделы ' +
+                'в мультирежиме), как руководитель направления. Пусто — ' +
+                'только по структуре.',
+            type: 'string',
+            default: '',
+        }),
+    },
     [EnumPortalAppCode.kpiSales]: {},
     [EnumPortalAppCode.eventSales]: {
         // --- Выключатель портального каталога анкет ПО ТИПУ СОБЫТИЯ.

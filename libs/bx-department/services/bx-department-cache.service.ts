@@ -6,11 +6,11 @@ import { BxDepartmentCacheResetResponseDto } from '../dto/bx-department-cache.dt
 /**
  * Префиксы ключей кэша либы bx-department.
  * Должны соответствовать ключам в BxDepartmentService (`department_*`),
- * BxDepartmentStructureService (`department_structure_v2_*`)
+ * BxDepartmentStructureService (`department_structure_v3_*`)
  * и BxTeamService (`bx_team_*`).
  */
 const CACHE_KEY_PREFIXES = [
-    'department_structure_v2',
+    'department_structure_v3',
     'department',
     'bx_team',
 ] as const;

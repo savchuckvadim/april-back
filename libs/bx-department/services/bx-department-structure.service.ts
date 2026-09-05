@@ -1,15 +1,32 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import dayjs from 'dayjs';
 import Redis from 'ioredis';
 import { RedisService } from 'src/core/redis/redis.service';
 import { PBXService } from '@/modules/pbx';
 import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import {
+    EnumPortalAppCode,
+    parseUserIds,
+    PortalAppSettingsService,
+} from '@lib/portal-lib/store/app-settings';
+import {
     IBXDepartment,
     IBXUser,
 } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 import { DepartmentBitrixService } from '@/modules/bitrix/domain/department/services/department-bitrxi.service';
 import { BxDepartmentService } from './bx-department.service';
+import { BxDepartmentHeadsService } from './bx-department-heads.service';
+import {
+    legacyHeadsOf,
+    toPositiveInt,
+    withHeads,
+} from '../lib/department-heads.util';
+import {
+    applyForcedVisibility,
+    EMPTY_FORCED_VISIBILITY,
+    forcedLevelFor,
+    ForcedVisibilityLists,
+} from '../lib/forced-visibility.util';
 import {
     BxCurrentUserDto,
     BxDepartmentStructureResponseDto,
@@ -69,12 +86,15 @@ type BitrixInstance = PbxInitResult['bitrix'];
  */
 @Injectable()
 export class BxDepartmentStructureService {
+    private readonly logger = new Logger(BxDepartmentStructureService.name);
     private readonly redis: Redis;
 
     constructor(
         private readonly redisService: RedisService,
         private readonly pbx: PBXService,
         private readonly departmentService: BxDepartmentService,
+        private readonly heads: BxDepartmentHeadsService,
+        private readonly appSettings: PortalAppSettingsService,
     ) {
         this.redis = this.redisService.getClient();
     }
@@ -104,7 +124,8 @@ export class BxDepartmentStructureService {
             multipleTag,
             resetCache,
         );
-        const currentUser = this.buildCurrentUser(structure, userId);
+        const forced = await this.resolveForcedVisibility(domain, group);
+        const currentUser = this.buildCurrentUser(structure, userId, forced);
         return {
             isMultiple,
             multipleTag,
@@ -127,8 +148,9 @@ export class BxDepartmentStructureService {
         const mode = isMultiple
             ? `multi_${this.tagCacheKey(multipleTag)}`
             : 'single';
-        // v2: группы фильтруются по названию «Группа…»
-        const cacheKey = `department_structure_v2_${domain}_${day}_${group}_${mode}`;
+        // v2: группы фильтруются по названию «Группа…»; v3: список HEADS
+        // (структура v3 + UF_HEAD). Менять синхронно с BxDepartmentCacheService.
+        const cacheKey = `department_structure_v3_${domain}_${day}_${group}_${mode}`;
 
         if (!resetCache) {
             const cached = await this.redis.get(cacheKey);
@@ -206,12 +228,24 @@ export class BxDepartmentStructureService {
         const childrenRaw = all.filter(d =>
             opsRaw.some(op => Number(d.PARENT) === Number(op.ID)),
         );
-        const cupDepartments = all.filter(d =>
+        const cupRaw = all.filter(d =>
             opsRaw.some(op => Number(op.PARENT) === Number(d.ID)),
         );
 
-        const ops = await bxDepartments.enrichWithUsers(opsRaw);
-        const children = await bxDepartments.enrichWithUsers(childrenRaw);
+        const opsWithUsers = await bxDepartments.enrichWithUsers(opsRaw);
+        const childrenWithUsers =
+            await bxDepartments.enrichWithUsers(childrenRaw);
+
+        // Руководители: структура v3 (руководитель + заместители) ∪ легаси
+        // UF_HEAD — одним проходом по ОП, их подотделам и родителям.
+        const v3Heads = await this.heads.resolve(domain, [
+            ...opsWithUsers,
+            ...childrenWithUsers,
+            ...cupRaw,
+        ]);
+        const ops = withHeads(opsWithUsers, v3Heads);
+        const children = withHeads(childrenWithUsers, v3Heads);
+        const cupDepartments = withHeads(cupRaw, v3Heads);
 
         const salesDepartments: ISalesDepartment[] = ops.map(op => {
             const opChildren = children.filter(
@@ -299,13 +333,48 @@ export class BxDepartmentStructureService {
         return [...byId.values()];
     }
 
-    /** Роль текущего пользователя и его коллеги. */
+    /**
+     * Списки принудительной видимости из настроек портала, блок «Отдел
+     * продаж» (visibility_*_user_ids). Только для группы sales; недоступные
+     * настройки — пустые списки с warn, роли считаются по структуре.
+     */
+    private async resolveForcedVisibility(
+        domain: string,
+        group: EDepartamentGroup,
+    ): Promise<ForcedVisibilityLists> {
+        if (group !== EDepartamentGroup.sales) return EMPTY_FORCED_VISIBILITY;
+        try {
+            const settings = await this.appSettings.resolve(
+                domain,
+                EnumPortalAppCode.sales,
+            );
+            return {
+                group: parseUserIds(settings.visibilityGroupUserIds),
+                department: parseUserIds(settings.visibilityDepartmentUserIds),
+                all: parseUserIds(settings.visibilityAllUserIds),
+            };
+        } catch (error) {
+            this.logger.warn(
+                `[${domain}] настройки видимости («Отдел продаж») недоступны, роли по структуре: ${
+                    error instanceof Error ? error.message : String(error)
+                }`,
+            );
+            return EMPTY_FORCED_VISIBILITY;
+        }
+    }
+
+    /** Роль текущего пользователя (структура + настройки) и его коллеги. */
     private buildCurrentUser(
         structure: IStructureData,
         userId: number,
+        forced: ForcedVisibilityLists = EMPTY_FORCED_VISIBILITY,
     ): BxCurrentUserDto {
         const uid = Number(userId);
-        const isHeadOf = (d: IBXDepartment) => Number(d.UF_HEAD) === uid;
+        // Руководитель — по списку HEADS (структура v3 + UF_HEAD): второй
+        // руководитель и заместители тоже. Сырой UF_HEAD — страховка для
+        // отдела без списка.
+        const isHeadOf = (d: IBXDepartment) =>
+            (d.HEADS ?? legacyHeadsOf(d)).includes(uid);
         const hasUser = (d: IBXDepartment) =>
             (d.USERS ?? []).some(u => Number(u?.ID) === uid);
         const withoutUser = (users: IBXUser[]) =>
@@ -337,19 +406,33 @@ export class BxDepartmentStructureService {
             structure.salesDepartments.flatMap(s => s.groups).find(hasUser) ??
             groupHeaded[0];
 
-        // ОП пользователя: где числится напрямую, через свою группу, либо которым руководит
-        const myOp =
-            structure.salesDepartments.find(
-                s =>
-                    hasUser(s.department) ||
-                    (myGroup !== undefined && s.groups.includes(myGroup)),
-            ) ?? opHeaded[0];
+        // ОП пользователя: где числится напрямую, через свою группу или
+        // негрупповой подотдел (allUsers), либо которым руководит
+        const inOp = (s: ISalesDepartment) =>
+            hasUser(s.department) ||
+            (myGroup !== undefined && s.groups.includes(myGroup)) ||
+            (s.allUsers ?? []).some(u => Number(u?.ID) === uid);
+        const myOp = structure.salesDepartments.find(inOp) ?? opHeaded[0];
+
+        const role = applyForcedVisibility(
+            { headOf, headOfDepartmentIds },
+            forcedLevelFor(uid, forced),
+            {
+                myGroupId: toPositiveInt(myGroup?.ID),
+                myOpId: toPositiveInt(myOp?.department.ID),
+                allOpIds: structure.salesDepartments.map(s =>
+                    Number(s.department.ID),
+                ),
+            },
+        );
 
         return {
             userId: uid,
-            isHead: headOf !== null,
-            headOf,
-            headOfDepartmentIds,
+            isHead: role.headOf !== null,
+            headOf: role.headOf,
+            headOfDepartmentIds: role.headOfDepartmentIds,
+            visibility: role.visibility,
+            headOfSource: role.headOfSource,
             colleagues: {
                 group: withoutUser(myGroup?.USERS ?? []),
                 department: withoutUser(myOp?.allUsers ?? []),

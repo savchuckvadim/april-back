@@ -103,6 +103,17 @@ export class BxDepartmentDto implements IBXDepartment {
         example: 447,
     })
     UF_HEAD?: number | null;
+
+    @ApiProperty({
+        description:
+            'Руководители отдела (user id): руководитель первым, потом ' +
+            'заместители. Собирается из новой структуры компании ' +
+            '(REST 3.0, роли участников узла) и легаси UF_HEAD; пустой ' +
+            'список — руководителя нет. UF_HEAD = первый элемент.',
+        type: [Number],
+        example: [447, 448],
+    })
+    HEADS: number[];
 }
 export class BxDepartmentDataDto {
     @ApiProperty({

@@ -5,7 +5,13 @@ import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.inte
 import { IBXUser } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 import { BxDepartmentStructureService } from '../services/bx-department-structure.service';
 import { BxDepartmentService } from '../services/bx-department.service';
-import { EBxDepartmentHeadType } from '../dto/bx-department-structure.dto';
+import { BxDepartmentHeadsService } from '../services/bx-department-heads.service';
+import { PortalAppSettingsService } from '@lib/portal-lib/store/app-settings';
+import {
+    EBxDepartmentHeadType,
+    EBxHeadOfSource,
+    EBxVisibilityLevel,
+} from '../dto/bx-department-structure.dto';
 
 const DOMAIN = 'example.bitrix24.ru';
 
@@ -51,6 +57,8 @@ describe('BxDepartmentStructureService', () => {
     let apiCall: jest.Mock;
     let getFullDepartment: jest.Mock;
     let pbxInit: jest.Mock;
+    let headsResolve: jest.Mock;
+    let settingsResolve: jest.Mock;
     let service: BxDepartmentStructureService;
 
     /** init отдаёт bitrix и локальный портал с флагами мультирежима по группам. */
@@ -109,11 +117,23 @@ describe('BxDepartmentStructureService', () => {
         const departmentService = {
             getFullDepartment,
         } as unknown as BxDepartmentService;
+        // По умолчанию структура v3 недоступна — руководители из UF_HEAD.
+        headsResolve = jest.fn().mockResolvedValue(new Map());
+        const headsService = {
+            resolve: headsResolve,
+        } as unknown as BxDepartmentHeadsService;
+        // По умолчанию списки принудительной видимости не заданы.
+        settingsResolve = jest.fn().mockResolvedValue({});
+        const appSettings = {
+            resolve: settingsResolve,
+        } as unknown as PortalAppSettingsService;
 
         service = new BxDepartmentStructureService(
             redisService,
             pbx,
             departmentService,
+            headsService,
+            appSettings,
         );
     });
 
@@ -315,7 +335,7 @@ describe('BxDepartmentStructureService', () => {
                 expect.arrayContaining([37, 41, 49]),
             );
             expect(redisSet).toHaveBeenCalledWith(
-                expect.stringContaining(`department_structure_v2_${DOMAIN}_`),
+                expect.stringContaining(`department_structure_v3_${DOMAIN}_`),
                 expect.any(String),
                 'EX',
                 86400,
@@ -371,6 +391,217 @@ describe('BxDepartmentStructureService', () => {
             expect(
                 currentUser.colleagues.department.map(u => Number(u.ID)).sort(),
             ).toEqual([202, 203, 205]);
+        });
+
+        it('структура v3 недоступна: HEADS собирается из UF_HEAD', async () => {
+            const { salesDepartments } = await get(202);
+
+            const voronezh = salesDepartments.find(s => s.department.ID === 41);
+            expect(voronezh?.department.HEADS).toEqual([202]);
+            expect(voronezh?.department.UF_HEAD).toBe(202);
+            expect(voronezh?.groups[0].HEADS).toEqual([203]);
+            expect(headsResolve).toHaveBeenCalledWith(
+                DOMAIN,
+                expect.arrayContaining([
+                    expect.objectContaining({ ID: 41 }),
+                    expect.objectContaining({ ID: 45 }),
+                    // родитель ОП (cup) тоже получает руководителей
+                    expect.objectContaining({ ID: 53 }),
+                ]),
+            );
+        });
+
+        it('два руководителя ОП из структуры v3 при пустом UF_HEAD: оба headOf=op', async () => {
+            // Новая структура при двух руководителях пишет в UF_HEAD null
+            // (инцидент gsirk 05.09.2026); руководители приходят из v3.
+            apiCall.mockImplementation(
+                (
+                    method: string,
+                    params: { FILTER?: { UF_DEPARTMENT?: number } },
+                ): Promise<unknown> => {
+                    if (method === 'department.get') {
+                        return Promise.resolve({
+                            result: ALL_DEPARTMENTS.map(d =>
+                                d.ID === 41 ? { ...d, UF_HEAD: null } : d,
+                            ),
+                        });
+                    }
+                    if (method === 'user.get') {
+                        const depId = params.FILTER?.UF_DEPARTMENT ?? 0;
+                        return Promise.resolve({
+                            result: USERS_BY_DEPARTMENT[depId] ?? [],
+                        });
+                    }
+                    return Promise.resolve({ result: [] });
+                },
+            );
+            // 202 — руководитель, 777 — заместитель (в USERS отдела не числится)
+            headsResolve.mockResolvedValue(new Map([[41, [202, 777]]]));
+
+            const first = await get(202);
+
+            const voronezh = first.salesDepartments.find(
+                s => s.department.ID === 41,
+            );
+            expect(voronezh?.department.HEADS).toEqual([202, 777]);
+            // UF_HEAD наружу = первый из HEADS — контракт для старых фронтов;
+            // в UF_HEAD от Битрикса был null, руководитель восстановлен из v3.
+            expect(voronezh?.department.UF_HEAD).toBe(202);
+            expect(first.currentUser.headOf).toBe(EBxDepartmentHeadType.op);
+            expect(first.currentUser.headOfDepartmentIds).toEqual([41]);
+
+            // Второй руководитель — тоже op, хотя в UF_HEAD его нет.
+            const second = await get(777);
+            expect(second.currentUser.isHead).toBe(true);
+            expect(second.currentUser.headOf).toBe(EBxDepartmentHeadType.op);
+            expect(second.currentUser.headOfDepartmentIds).toEqual([41]);
+            expect(second.currentUser.visibility).toBe(
+                EBxVisibilityLevel.department,
+            );
+            expect(second.currentUser.headOfSource).toBe(
+                EBxHeadOfSource.structure,
+            );
+            expect(
+                second.currentUser.colleagues.department
+                    .map(u => Number(u.ID))
+                    .sort(),
+            ).toEqual([202, 203, 204, 205]);
+        });
+
+        it('заместитель из v3 сверх UF_HEAD: headOf=group, без дублей, руководитель первым', async () => {
+            headsResolve.mockResolvedValue(new Map([[45, [203, 204]]]));
+
+            const { currentUser, salesDepartments } = await get(204);
+
+            const group = salesDepartments
+                .flatMap(s => s.groups)
+                .find(g => g.ID === 45);
+            expect(group?.HEADS).toEqual([203, 204]);
+            expect(group?.UF_HEAD).toBe(203);
+            expect(currentUser.isHead).toBe(true);
+            expect(currentUser.headOf).toBe(EBxDepartmentHeadType.group);
+            expect(currentUser.headOfDepartmentIds).toEqual([45]);
+            expect(currentUser.visibility).toBe(EBxVisibilityLevel.group);
+        });
+
+        it('visibility по headOf: cup→all, op→department, group→group, null→own', async () => {
+            expect((await get(309)).currentUser.visibility).toBe(
+                EBxVisibilityLevel.all,
+            );
+            expect((await get(202)).currentUser.visibility).toBe(
+                EBxVisibilityLevel.department,
+            );
+            expect((await get(203)).currentUser.visibility).toBe(
+                EBxVisibilityLevel.group,
+            );
+            const employee = (await get(204)).currentUser;
+            expect(employee.visibility).toBe(EBxVisibilityLevel.own);
+            expect(employee.headOfSource).toBe(EBxHeadOfSource.structure);
+        });
+    });
+
+    describe('принудительная видимость из настроек «Отдел продаж»', () => {
+        const get = (userId: number) =>
+            service.getStructure(DOMAIN, EDepartamentGroup.sales, userId);
+
+        it('сотрудник в списке department: свой ОП, headOf=op, source=settings', async () => {
+            settingsResolve.mockResolvedValue({
+                visibilityDepartmentUserIds: '204, 999',
+            });
+
+            const { currentUser } = await get(204);
+
+            expect(settingsResolve).toHaveBeenCalledWith(DOMAIN, 'sales');
+            expect(currentUser.isHead).toBe(true);
+            expect(currentUser.headOf).toBe(EBxDepartmentHeadType.op);
+            expect(currentUser.headOfDepartmentIds).toEqual([41]);
+            expect(currentUser.visibility).toBe(EBxVisibilityLevel.department);
+            expect(currentUser.headOfSource).toBe(EBxHeadOfSource.settings);
+            // коллеги — по фактическому месту в структуре
+            expect(currentUser.colleagues.group.map(u => Number(u.ID))).toEqual(
+                [203],
+            );
+        });
+
+        it('сотрудник в списке group: своя группа', async () => {
+            settingsResolve.mockResolvedValue({
+                visibilityGroupUserIds: '204',
+            });
+
+            const { currentUser } = await get(204);
+
+            expect(currentUser.headOf).toBe(EBxDepartmentHeadType.group);
+            expect(currentUser.headOfDepartmentIds).toEqual([45]);
+            expect(currentUser.visibility).toBe(EBxVisibilityLevel.group);
+            expect(currentUser.headOfSource).toBe(EBxHeadOfSource.settings);
+        });
+
+        it('group без своей группы (подотдел «Стажеры») → department по своему ОП', async () => {
+            settingsResolve.mockResolvedValue({
+                visibilityGroupUserIds: '205',
+            });
+
+            const { currentUser } = await get(205);
+
+            expect(currentUser.headOf).toBe(EBxDepartmentHeadType.op);
+            expect(currentUser.headOfDepartmentIds).toEqual([41]);
+            expect(currentUser.visibility).toBe(EBxVisibilityLevel.department);
+        });
+
+        it('вне структуры продаж → all: headOf=cup, периметр — все ОП', async () => {
+            settingsResolve.mockResolvedValue({
+                visibilityGroupUserIds: '999',
+            });
+
+            const { currentUser } = await get(999);
+
+            expect(currentUser.headOf).toBe(EBxDepartmentHeadType.cup);
+            expect([...currentUser.headOfDepartmentIds].sort()).toEqual([
+                37, 41, 49,
+            ]);
+            expect(currentUser.visibility).toBe(EBxVisibilityLevel.all);
+            expect(currentUser.headOfSource).toBe(EBxHeadOfSource.settings);
+            expect(currentUser.colleagues.group).toEqual([]);
+            expect(currentUser.colleagues.department).toEqual([]);
+        });
+
+        it('настройка не понижает: руководитель ОП в списке group остаётся op по структуре', async () => {
+            settingsResolve.mockResolvedValue({
+                visibilityGroupUserIds: '202',
+            });
+
+            const { currentUser } = await get(202);
+
+            expect(currentUser.headOf).toBe(EBxDepartmentHeadType.op);
+            expect(currentUser.visibility).toBe(EBxVisibilityLevel.department);
+            expect(currentUser.headOfSource).toBe(EBxHeadOfSource.structure);
+        });
+
+        it('человек в нескольких списках: берётся высший', async () => {
+            settingsResolve.mockResolvedValue({
+                visibilityGroupUserIds: '204',
+                visibilityAllUserIds: '204',
+            });
+
+            const { currentUser } = await get(204);
+
+            expect(currentUser.headOf).toBe(EBxDepartmentHeadType.cup);
+            expect(currentUser.visibility).toBe(EBxVisibilityLevel.all);
+        });
+
+        it('настройки недоступны: роли по структуре, без исключения', async () => {
+            settingsResolve.mockRejectedValue(new Error('db down'));
+
+            const { currentUser } = await get(202);
+
+            expect(currentUser.headOf).toBe(EBxDepartmentHeadType.op);
+            expect(currentUser.headOfSource).toBe(EBxHeadOfSource.structure);
+        });
+
+        it('группа service: настройки «Отдел продаж» не читаются', async () => {
+            await service.getStructure(DOMAIN, EDepartamentGroup.service, 204);
+
+            expect(settingsResolve).not.toHaveBeenCalled();
         });
     });
 
