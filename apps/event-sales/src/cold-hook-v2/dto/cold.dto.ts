@@ -1,6 +1,6 @@
 import { IsBxHookUserId } from '@/core/decorators/dto/bx-hook-user-id.decorator';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 export enum EnumColdCallEntityType {
     COMPANY = 'company',
@@ -12,6 +12,28 @@ export enum EnumColdCallIsTmc {
     Y = 'Y',
     N = 'N',
 }
+
+/**
+ * Режим холодного старта по занятому клиенту (v2, 02.09.2026).
+ *
+ * У клиента может быть открытая основная сделка ОП другого сотрудника —
+ * «клиент уже в работе». Флаг решает, отбираем ли мы его:
+ *  - `Y` — забрать: закрыть всю открытую работу клиента (сделки ОП, задачи,
+ *    презентации, ЗПР, даты планов) и завести новую холодную на
+ *    `responsible`; так ведёт себя v1 всегда;
+ *  - `N` — не отбирать: если у клиента есть открытая основная сделка
+ *    ДРУГОГО сотрудника, новая работа не создаётся, чужая не трогается,
+ *    закрываются только входная сделка и её связи; иначе — полный старт.
+ * Дефолт — `N`: чужую работу молча не отбираем (решение владельца).
+ */
+export enum EnumColdCallForce {
+    Y = 'Y',
+    N = 'N',
+}
+
+/** Дефолт режима: не отбирать чужую работу. */
+export const COLD_CALL_FORCE_DEFAULT = EnumColdCallForce.N;
+
 export class ColdCallQueryDto {
     @ApiProperty({
         description:
@@ -83,4 +105,24 @@ export class ColdCallQueryDto {
     })
     @IsEnum(EnumColdCallIsTmc)
     isTmc: EnumColdCallIsTmc;
+
+    @ApiProperty({
+        description:
+            'Режим старта по занятому клиенту. ' +
+            'Y — забрать клиента: закрыть всю его открытую работу (сделки ОП, ' +
+            'задачи, презентации, ЗПР, даты планов) и завести новую холодную ' +
+            'на responsible. ' +
+            'N — не отбирать: если у клиента есть открытая основная сделка ОП ' +
+            'другого сотрудника, новая работа не создаётся, чужая не трогается, ' +
+            'закрываются только входная сделка и её связи; иначе — полный старт. ' +
+            'По умолчанию N.',
+        example: EnumColdCallForce.N,
+        enum: EnumColdCallForce,
+        type: String,
+        required: false,
+        default: EnumColdCallForce.N,
+    })
+    @IsOptional()
+    @IsEnum(EnumColdCallForce)
+    force?: EnumColdCallForce;
 }

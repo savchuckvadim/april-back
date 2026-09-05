@@ -3,6 +3,7 @@ import { ColdCallQueryDto } from '../dto/cold.dto';
 import { ColdCallHookResponseDto } from '../dto/cold-call-response.dto';
 import { BxWebHookDto } from '@lib/bitrix/dto/bx-webhook.dto';
 import { ColdHookSilinceEndpointV2Service } from '../services/silence/cold-hook-silince-endpoint.service';
+import { toColdCallData } from '../lib/cold-call-data';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Event Sales Cold Hook')
@@ -55,9 +56,13 @@ export class EventSalesHookV2Controller {
             `[DEADLINE][controller] POST cold-call domain=${domain} ` +
                 `entityType=${dto.entityType} entityId=${dto.entityId} ` +
                 `responsible=${dto.responsible} created=${dto.created} ` +
-                `isTmc=${dto.isTmc} rawDeadline="${dto.deadline}" ` +
+                `isTmc=${dto.isTmc} force=${dto.force ?? 'N(default)'} ` +
+                `rawDeadline="${dto.deadline}" ` +
                 `(сырой ввод, локальное время портала, БЕЗ таймзоны)`,
         );
-        return this.hookEdpointService.createColdCallHook(domain, dto);
+        return this.hookEdpointService.createColdCallHook(
+            domain,
+            toColdCallData(dto),
+        );
     }
 }
