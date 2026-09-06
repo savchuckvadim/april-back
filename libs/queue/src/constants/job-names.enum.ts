@@ -49,6 +49,17 @@ export enum JobNames {
     SALES_FINANCE_CLOSED_SALES = 'sales-finance-closed-sales',
     SALES_FINANCE_HOT_CLIENTS = 'sales-finance-hot-clients',
 
+    //AI-аналитика ОП (kpi-report-sales/ai-analytics, очередь
+    //QueueNames.SALES_KPI_REPORT): overview/brief/snapshot/dossier —
+    //тяжёлые отчёты по паттерну очередь + WS + Redis-кэш; push — утренние
+    //рассылки (повестка РОПам пн 08:30, дайджест менеджерам 08:00),
+    //jobId = 'ai-analytics:push:{kind}:{domain}:{date}' — дедуп по дате
+    SALES_AI_ANALYTICS_OVERVIEW = 'sales-ai-analytics-overview',
+    SALES_AI_ANALYTICS_BRIEF = 'sales-ai-analytics-brief',
+    SALES_AI_ANALYTICS_SNAPSHOT = 'sales-ai-analytics-snapshot',
+    SALES_AI_ANALYTICS_DOSSIER = 'sales-ai-analytics-dossier',
+    SALES_AI_ANALYTICS_PUSH = 'sales-ai-analytics-push',
+
     //публичные ссылки на KPI-отчёт: фоновая регенерация снимка
     SHARE_LINK_REFRESH = 'share-link-refresh',
 

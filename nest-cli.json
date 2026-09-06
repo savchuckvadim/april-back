@@ -199,6 +199,15 @@
         "tsConfigPath": "libs/skap-lib/tsconfig.lib.json"
       }
     },
+    "sales-ai-analytics": {
+      "type": "library",
+      "root": "libs/sales-ai-analytics",
+      "entryFile": "index",
+      "sourceRoot": "libs/sales-ai-analytics/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/sales-ai-analytics/tsconfig.lib.json"
+      }
+    },
     "bitrix-auth": {
       "type": "library",
       "root": "libs/bitrix-auth",

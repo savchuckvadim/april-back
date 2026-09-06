@@ -61,7 +61,8 @@
         "test:di": "jest apps/event-sales/src/call-report/__tests__/call-report-module-di.spec.ts libs/call-lib/src/call-report/__tests__/call-report-modules-di.spec.ts --silent",
         "check:preflight": "npm run typecheck && npm run test:di",
         "hooks:install": "git config core.hooksPath .githooks",
-        "typecheck:build": "tsc --noEmit -p tsconfig.build.json"
+        "typecheck:build": "tsc --noEmit -p tsconfig.build.json",
+        "audit:ai-analytics": "ts-node -T -r tsconfig-paths/register apps/kpi-report-sales/src/ai-analytics/audit/run-ai-analytics-audit.ts"
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.810.0",
@@ -202,6 +203,7 @@
             "^@lib/skap-lib(|/.*)$": "<rootDir>/libs/skap-lib/src/$1",
             "^@lib/vibecode(|/.*)$": "<rootDir>/libs/vibecode/src/$1",
             "^@lib/pbx-user-fields(|/.*)$": "<rootDir>/libs/pbx-user-fields/src/$1",
+            "^@lib/sales-ai-analytics(|/.*)$": "<rootDir>/libs/sales-ai-analytics/src/$1",
             "^@lib/pbx(|/.*)$": "<rootDir>/libs/pbx/src/$1",
             "^@lib/ai-rag(|/.*)$": "<rootDir>/libs/ai-rag/src/$1",
             "^@lib/portal-lib/portal(|/.*)$": "<rootDir>/libs/portal-lib/portal/src/$1",

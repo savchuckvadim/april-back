@@ -128,7 +128,81 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             default: '',
         }),
     },
-    [EnumPortalAppCode.kpiSales]: {},
+    [EnumPortalAppCode.kpiSales]: {
+        // --- AI-аналитика ОП (apps/kpi-report-sales/ai-analytics, план
+        // ai/tasks/ai-sales-analytics-plan.md). Флаги живут здесь, а не в
+        // portal_ai_settings: тот рубильник включает КОНВЕЙЕР разбора
+        // звонков (event-sales), а эти — ВИТРИНУ и рассылки поверх уже
+        // накопленных разборов; их сочетание даёт режим kpi-only.
+        aiAnalyticsEnabled: setting({
+            code: 'ai_analytics_enabled',
+            name: 'AI-аналитика ОП включена',
+            description:
+                'Вкладка AI-аналитики в KPI-отчёте и её ручки ' +
+                '(settings/get, pulse, agenda, overview). Выключено — ' +
+                'вкладка скрыта, фоновые джобы не ставятся.',
+            type: 'boolean',
+            default: false,
+        }),
+        aiAnalyticsAuditEnabled: setting({
+            code: 'ai_analytics_audit_enabled',
+            name: 'Аудит и калибровка данных AI-аналитики разрешены',
+            description:
+                'Разрешает считать аудит данных по этому порталу (Фаза 0 ' +
+                'плана): админ-ручка POST admin/ai-analytics/audit и ' +
+                'месячный снапшот 1-го числа читают transcriptions/ais ' +
+                'портала и пишут отчёт в ais. Выключено — ручка отвечает ' +
+                '403, крон портал пропускает. Не зависит от ' +
+                'ai_analytics_enabled: аудит делается ДО включения витрины.',
+            type: 'boolean',
+            default: false,
+        }),
+        aiAnalyticsAlertsEnabled: setting({
+            code: 'ai_analytics_alerts_enabled',
+            name: 'Алерты РОПу в день звонка',
+            description:
+                'После разбора звонка с риск-флагом (обещание, конфликт, ' +
+                'комплаенс, негатив клиента) или срочным приоритетом ' +
+                'коучинга РОПу уходит уведомление с цитатой и ссылкой — ' +
+                'один раз на звонок.',
+            type: 'boolean',
+            default: false,
+        }),
+        aiAnalyticsDigestEnabled: setting({
+            code: 'ai_analytics_digest_enabled',
+            name: 'Утренний разбор менеджерам',
+            description:
+                'В 08:00 по TZ портала каждому менеджеру — 1–3 его ' +
+                'вчерашних звонка с худшими разделами и фразами «как ' +
+                'лучше» (alternatives).',
+            type: 'boolean',
+            default: false,
+        }),
+        aiAnalyticsRopUserIds: setting({
+            code: 'ai_analytics_rop_user_ids',
+            name: 'Bitrix-id РОПов через запятую',
+            description:
+                'Получатели алертов и повестки недели (пн 08:30): ' +
+                '«1, 42, 107». Пусто — алерты и повестка не отправляются. ' +
+                'Разбор строки — parseUserIds.',
+            type: 'string',
+            default: '',
+        }),
+        aiAnalyticsCalendar: setting({
+            code: 'ai_analytics_calendar',
+            name:
+                'JSON календаря: {"timeZone":"Europe/Moscow",' +
+                '"holidays":["YYYY-MM-DD"],"workweek":[1,2,3,4,5]}',
+            description:
+                'Рабочий календарь для окон «5 рабочих дней», «вчера» и ' +
+                'утренних рассылок: TZ портала, праздники датами ' +
+                'YYYY-MM-DD, рабочие дни недели (1 — понедельник). Пусто ' +
+                'или битый JSON — дефолт кода (Europe/Moscow, пн–пт, без ' +
+                'праздников).',
+            type: 'string',
+            default: '',
+        }),
+    },
     [EnumPortalAppCode.eventSales]: {
         // --- Выключатель портального каталога анкет ПО ТИПУ СОБЫТИЯ.
         // Живёт в настройках, а не в каталоге, по трём причинам: (1) это

@@ -36,6 +36,7 @@ import { PortalSmartAdminModule } from '@lib/portal-lib/pbx-domain/portal-smart'
 import { PortalStoreAdminModule } from '@lib/portal-lib/store/portal-store.admin.module';
 import { AiAdminModule, TranscriptionAdminModule } from '@lib/call-lib';
 import { AiRagAdminModule } from '@lib/ai-rag';
+import { SalesAiAnalyticsAdminModule } from '@lib/sales-ai-analytics';
 import { AdminGarantPackageModule } from '@lib/garant/package';
 import { AdminGarantProfPriceModule } from '@lib/garant/price';
 import { ProviderAdminModule } from '@lib/portal-lib/konstructor/provider';
@@ -86,6 +87,9 @@ import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.
         // База знаний RAG: документы общие и по порталам (скрипты типов
         // звонков) — управление из админки, чтение агентами через event-sales.
         AiRagAdminModule,
+        // AI-аналитика ОП: аудит данных по живой БД (Фаза 0) — запуск и
+        // последний снапшот из ais; только SUPER_USER.
+        SalesAiAnalyticsAdminModule,
         // Гарант/портал: админ-контроллеры, вынесенные из сервисных модулей
         // (чтобы не протекали в Swagger konstructor).
         AdminGarantPackageModule,
