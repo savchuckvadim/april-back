@@ -19,6 +19,39 @@ interface VibecodeTranscriptionResponse {
 
 interface VibecodeChatCompletionsResponse {
     choices?: { message?: { content?: string } }[];
+    /**
+     * OpenAI-совместимый учёт токенов. В документации VibeCode поле не
+     * описано — читаем защитно: нет поля или не число, значит null.
+     */
+    usage?: {
+        prompt_tokens?: number;
+        completion_tokens?: number;
+        total_tokens?: number;
+    };
+    /** Фактическая модель из ответа (может отличаться от запрошенной). */
+    model?: string;
+}
+
+/** Расход токенов одного вызова chat/completions; null — API поле не вернул. */
+export interface VibecodeCompletionUsage {
+    promptTokens: number | null;
+    completionTokens: number | null;
+    totalTokens: number | null;
+}
+
+/** Результат strict-JSON вызова вместе с учётом токенов и фактической моделью. */
+export interface VibecodeStructuredCompletionWithUsage {
+    /** Разобранный JSON по схеме вызывающего (тот же, что отдаёт structuredCompletion). */
+    result: unknown;
+    usage: VibecodeCompletionUsage;
+    /** Модель из ответа API; null — не вернул. */
+    model: string | null;
+}
+
+/** Опции strict-JSON вызова. */
+export interface VibecodeStructuredCompletionOptions {
+    /** Модель VibeCode вместо дефолтной (например, из настроек портала). */
+    model?: string;
 }
 
 const VIBECODE_BASE_URL = 'https://vibecode.bitrix24.tech/v1';
@@ -175,10 +208,7 @@ export class VibeCodeClient {
         schemaName: string,
         schema: Record<string, unknown>,
         apiKey: string,
-        options?: {
-            /** Модель VibeCode вместо дефолтной (например, из настроек портала). */
-            model?: string;
-        },
+        options?: VibecodeStructuredCompletionOptions,
     ): Promise<unknown> {
         return this.chatCompletionJson(
             systemPrompt,
@@ -190,7 +220,31 @@ export class VibeCodeClient {
         );
     }
 
-    /** Общий вызов chat/completions со strict JSON-схемой ответа. */
+    /**
+     * То же, что structuredCompletion, но вместе с учётом токенов (usage)
+     * и моделью из ответа — для записи ais.tokens_count / price
+     * (AI-резюме отчёта ОП, план ai-sales-analytics §8). Если VibeCode
+     * usage не вернул — null-поля; оценку по длине делает вызывающий.
+     */
+    async structuredCompletionWithUsage(
+        systemPrompt: string,
+        userContent: string,
+        schemaName: string,
+        schema: Record<string, unknown>,
+        apiKey: string,
+        options?: VibecodeStructuredCompletionOptions,
+    ): Promise<VibecodeStructuredCompletionWithUsage> {
+        return this.chatCompletionWithUsage(
+            systemPrompt,
+            userContent,
+            schemaName,
+            schema,
+            apiKey,
+            options?.model,
+        );
+    }
+
+    /** Общий вызов chat/completions со strict JSON-схемой: только разобранный результат. */
     private async chatCompletionJson(
         systemPrompt: string,
         userContent: string,
@@ -199,6 +253,26 @@ export class VibeCodeClient {
         apiKey: string,
         model?: string,
     ): Promise<unknown> {
+        const { result } = await this.chatCompletionWithUsage(
+            systemPrompt,
+            userContent,
+            schemaName,
+            schema,
+            apiKey,
+            model,
+        );
+        return result;
+    }
+
+    /** Общий вызов chat/completions со strict JSON-схемой ответа + usage/model. */
+    private async chatCompletionWithUsage(
+        systemPrompt: string,
+        userContent: string,
+        schemaName: string,
+        schema: Record<string, unknown>,
+        apiKey: string,
+        model?: string,
+    ): Promise<VibecodeStructuredCompletionWithUsage> {
         const body = {
             model: model?.trim() || ANALYSIS_MODEL,
             messages: [
@@ -237,8 +311,27 @@ export class VibeCodeClient {
         if (!content) {
             throw new Error(`Empty ${schemaName} result from Vibecode`);
         }
-        return JSON.parse(content) as unknown;
+        return {
+            result: JSON.parse(content) as unknown,
+            usage: parseCompletionUsage(data.usage),
+            model: typeof data.model === 'string' ? data.model : null,
+        };
     }
+}
+
+/** Число токенов из ответа: только конечное число, иначе null. */
+function toTokenCount(value: unknown): number | null {
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function parseCompletionUsage(
+    usage: VibecodeChatCompletionsResponse['usage'],
+): VibecodeCompletionUsage {
+    return {
+        promptTokens: toTokenCount(usage?.prompt_tokens),
+        completionTokens: toTokenCount(usage?.completion_tokens),
+        totalTokens: toTokenCount(usage?.total_tokens),
+    };
 }
 
 /**

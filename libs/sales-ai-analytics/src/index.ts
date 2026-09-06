@@ -10,6 +10,21 @@ export * from './model/pulse';
 export * from './model/agenda';
 export * from './model/morning-digest';
 
+// Фаза 1b «модель и матрица»: усадка, корзины, матрица менеджер × тип,
+// срез возражений, шаблон объяснения, «Внимание».
+export * from './model/gamma';
+export * from './model/shrink';
+export * from './model/metric-pct.util';
+export * from './model/buckets';
+export * from './model/matrix.types';
+export * from './model/matrix-cell';
+export * from './model/manager-type-matrix';
+export * from './model/objections';
+export * from './model/explanation-template';
+export * from './model/attention.types';
+export * from './model/attention.rules';
+export * from './model/attention';
+
 export * from './contracts/versions.types';
 export * from './contracts/feedback.types';
 export * from './contracts/snapshot.types';

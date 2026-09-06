@@ -152,6 +152,16 @@ export class SomeRepository {
 - Привязки задач `UF_CRM_TASK` — util `taskCrmBinding/parseTaskCrmBinding/mergeTaskCrmBindings`
   (`domain/tasks/task/lib/task-crm-binding.util.ts`) вместо magic strings `'CO_' + id`.
 
+Домены AI-аналитики ОП (2026-09):
+
+- `crm.stagehistory.list` — `BxStageHistoryService` / `BxStageHistoryBatchService`
+  (`bitrix.stageHistory.list/listAll`, `bitrix.batch.stageHistory.list`). Параметры
+  (`entityTypeId`, `filter`, `order`, `select`, `start`) и поля ответа (`ID`, `TYPE_ID`,
+  `OWNER_ID`, `CREATED_TIME`, `CATEGORY_ID`, `STAGE_ID`, `STAGE_SEMANTIC_ID`) — строго по
+  официальной документации (MCP b24-dev-mcp); `listAll` — курсор `>ID` + `order ID ASC`
+  + `start: -1`, как `BxItemRepository.listAll`. Фильтр типизирован `CrmFilterType<T>`
+  (`domain/crm/type/crm-request.type.ts`) — ключи с модификаторами без magic strings.
+
 ## 6) Как использовать в командах
 
 ### Bridge (IM)

@@ -4,6 +4,19 @@ import { Prisma } from 'generated/prisma';
 import { AiRepository } from './ai.repository';
 import { AiEntity } from '../entity/ai.entity';
 import { createAiEntityFromPrisma } from '../lib/ai-entity.util';
+import {
+    AI_RECORD_KEYS_CHUNK_SIZE,
+    AiRecordKeySelector,
+    buildAiRecordKeySelectors,
+    chunkArray,
+    pickLatestAiEntityPerKey,
+    sortAiEntitiesById,
+} from '../lib/ai-record-keys.util';
+import {
+    AiFindByKeysOptions,
+    AiRecordKeyColumn,
+    AiRecordKeys,
+} from '../type/ai-record-keys.type';
 
 @Injectable()
 export class AiPrismaRepository implements AiRepository {
@@ -175,6 +188,78 @@ export class AiPrismaRepository implements AiRepository {
         } catch (error) {
             console.error('Error finding AI by transcription ids:', error);
             return [];
+        }
+    }
+
+    /**
+     * Наборы ключей объединяются по ИЛИ, каждый — порциями по 500 значений
+     * (один IN-список на запрос), без окна created_at. latestOnly оставляет
+     * на каждый ключ запись с максимальным id. Результат — без дублей, по id.
+     */
+    async findByDomainTypeKeys(
+        domain: string,
+        type: string,
+        keys: AiRecordKeys,
+        options?: AiFindByKeysOptions,
+    ): Promise<AiEntity[]> {
+        const selectors = buildAiRecordKeySelectors(keys);
+        if (!selectors.length) return [];
+        try {
+            const byId = new Map<string, AiEntity>();
+            for (const selector of selectors) {
+                const found = await this.findBySelector(domain, type, selector);
+                const picked = options?.latestOnly
+                    ? pickLatestAiEntityPerKey(found, selector.column)
+                    : found;
+                for (const entity of picked) byId.set(entity.id, entity);
+            }
+            return sortAiEntitiesById([...byId.values()]);
+        } catch (error) {
+            console.error('Error finding AI by domain/type/keys:', error);
+            return [];
+        }
+    }
+
+    /** Один набор ключей порциями по AI_RECORD_KEYS_CHUNK_SIZE значений. */
+    private async findBySelector(
+        domain: string,
+        type: string,
+        selector: AiRecordKeySelector,
+    ): Promise<AiEntity[]> {
+        const entities: AiEntity[] = [];
+        for (const chunk of chunkArray(
+            selector.values,
+            AI_RECORD_KEYS_CHUNK_SIZE,
+        )) {
+            const rows = await this.prisma.ai.findMany({
+                where: {
+                    domain,
+                    type,
+                    ...this.keyWhere(selector.column, chunk),
+                },
+                orderBy: { id: 'asc' },
+            });
+            entities.push(...rows.map(row => createAiEntityFromPrisma(row)));
+        }
+        return entities;
+    }
+
+    /** Условие IN по колонке ключа с приведением к типу колонки (BigInt / Int). */
+    private keyWhere(
+        column: AiRecordKeyColumn,
+        values: (string | number)[],
+    ): Prisma.AiWhereInput {
+        switch (column) {
+            case 'activity_id':
+                return { activity_id: { in: values.map(String) } };
+            case 'transcription_id':
+                return {
+                    transcription_id: {
+                        in: values.map(value => BigInt(value)),
+                    },
+                };
+            case 'entity_id':
+                return { entity_id: { in: values.map(Number) } };
         }
     }
 }

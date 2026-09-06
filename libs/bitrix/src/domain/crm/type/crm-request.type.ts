@@ -45,6 +45,36 @@ export type CrmItemListRequestType<T extends BitrixOwnerTypeId | string> = {
     start?: number;
 };
 
+/**
+ * Префиксы-модификаторы фильтра списочных методов CRM (полный список —
+ * в комментарии bx-deal.repository.ts): сравнения, IN / NOT IN, LIKE, отрицание.
+ */
+export type CrmFilterModifier =
+    | ''
+    | '>='
+    | '>'
+    | '<='
+    | '<'
+    | '@'
+    | '!@'
+    | '%'
+    | '=%'
+    | '%='
+    | '='
+    | '!='
+    | '!';
+
+/**
+ * Строго типизированный фильтр списочного метода: поле сущности с
+ * необязательным префиксом-модификатором ('>ID', '>=CREATED_TIME', '@STAGE_ID'),
+ * значение — скаляр поля или массив (для IN / NOT IN).
+ */
+export type CrmFilterType<T> = {
+    [K in Extract<keyof T, string> as `${CrmFilterModifier}${K}`]?:
+        | T[K]
+        | T[K][];
+};
+
 export type CrmItemGetRequestType<T extends BitrixOwnerTypeId | string> = {
     id: number | string;
     entityTypeId: T;

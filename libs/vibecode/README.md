@@ -20,7 +20,7 @@ export class SomeModule {}
 
 | Сервис | Что делает |
 |---|---|
-| `VibeCodeClient` | HTTP-клиент: `transcribeAudio` (Whisper), `analyzeTranscript` (структурированный анализ звонка со strict JSON-схемой, flow-коды event-sales), `classifyCall` (тип звонка + роль собеседника + confidence; инструкция подменяема параметром) |
+| `VibeCodeClient` | HTTP-клиент: `transcribeAudio` (Whisper), `analyzeTranscript` (структурированный анализ звонка со strict JSON-схемой, flow-коды event-sales), `classifyCall` (тип звонка + роль собеседника + confidence; инструкция подменяема параметром), `structuredCompletion` / `structuredCompletionWithUsage` (произвольная strict JSON-схема вызывающего; вариант WithUsage возвращает ещё `usage` и `model` из ответа) |
 | `VibeKeyResolverService` | Резолюция API-ключа по домену портала |
 
 ## Ключи — только из БД портала
@@ -38,6 +38,16 @@ export class SomeModule {}
 const apiKey = await this.vibeKeyResolver.resolve(domain);
 const text = await this.vibecode.transcribeAudio(buffer, fileName, apiKey);
 ```
+
+## Учёт токенов (usage)
+
+`structuredCompletionWithUsage(...)` — те же аргументы, что у `structuredCompletion`,
+но результат `{ result, usage: { promptTokens, completionTokens, totalTokens }, model }`.
+`usage` читается из OpenAI-совместимого ответа chat/completions (`usage.prompt_tokens`,
+`usage.completion_tokens`, `usage.total_tokens`); в документации VibeCode поле не описано,
+поэтому при его отсутствии (или нечисловых значениях) поля равны `null`, а `model` — `null`,
+если API модель не вернул. Оценку стоимости по длине текста в этом случае делает вызывающий
+(AI-резюме отчёта ОП пишет `ais.tokens_count / price`).
 
 ## Конфигурация (env потребителя)
 

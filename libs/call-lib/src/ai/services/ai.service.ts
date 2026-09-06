@@ -4,6 +4,7 @@ import { AiRepository } from '../repository/ai.repository';
 import { AiCreateDto } from '../dto/ai-create.dto';
 import { AiEntityDto } from '../dto/ai-entity.dto';
 import { AiUpdateDto } from '../dto/ai-update.dto';
+import { AiFindByKeysOptions, AiRecordKeys } from '../type/ai-record-keys.type';
 
 @Injectable()
 export class AiService {
@@ -79,6 +80,25 @@ export class AiService {
         const aiRecords = await this.aiRepository.findByTranscriptionIds(
             transcriptionIds,
             provider,
+        );
+        return aiRecords.map(ai => new AiEntityDto(ai));
+    }
+
+    /**
+     * AI-записи домена и типа по наборам ключей (ИЛИ между наборами, порции
+     * по 500, без окна created_at); latestOnly — последняя запись на ключ.
+     */
+    async findByDomainTypeKeys(
+        domain: string,
+        type: string,
+        keys: AiRecordKeys,
+        options?: AiFindByKeysOptions,
+    ): Promise<AiEntityDto[]> {
+        const aiRecords = await this.aiRepository.findByDomainTypeKeys(
+            domain,
+            type,
+            keys,
+            options,
         );
         return aiRecords.map(ai => new AiEntityDto(ai));
     }

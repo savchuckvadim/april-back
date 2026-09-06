@@ -31,6 +31,10 @@ import {
 } from './domain/crm/';
 
 import { BxDealBatchService, BxCompanyBatchService } from './domain/crm/';
+import {
+    BxStageHistoryBatchService,
+    BxStageHistoryService,
+} from './domain/crm/stage-history';
 import { BxImNotifyService } from './domain/im/notify/services/bx-im-notify.service';
 import { ServiceClonerFactory } from './domain/service-clone.factory';
 import { BxProductBatchService, BxProductService } from './domain/catalog';
@@ -117,6 +121,8 @@ export class BitrixService {
     public measure: BxMeasureService;
     public item: BxItemService;
     public timeline: BxTimelineService;
+    /** crm.stagehistory.list — история стадий лидов/сделок/смарт-процессов (эпизоды AI-аналитики ОП). */
+    public stageHistory: BxStageHistoryService;
     public requisite: BxRequisiteService;
     public requisitePreset: BxRequisitePresetService;
     public requisiteLink: BxRequisiteLinkService;
@@ -182,6 +188,7 @@ export class BitrixService {
         duplicate: null as unknown as BxDuplicateBatchService,
         item: null as unknown as BxItemBatchService,
         timeline: null as unknown as BxTimelineBatchService,
+        stageHistory: null as unknown as BxStageHistoryBatchService,
         list: null as unknown as BxListBatchService,
         listItem: null as unknown as BxListItemBatchService,
         product: null as unknown as BxProductBatchService,
@@ -233,6 +240,7 @@ export class BitrixService {
         this.initMeasure();
         this.initItem();
         this.initTimeline();
+        this.initStageHistory();
         this.initRequisite();
         this.initRequisitePreset();
         this.initRequisiteLink();
@@ -325,6 +333,13 @@ export class BitrixService {
         this.timeline = this.cloner.clone(BxTimelineService, this.api);
         this.batch.timeline = this.cloner.clone(
             BxTimelineBatchService,
+            this.api,
+        );
+    }
+    private initStageHistory() {
+        this.stageHistory = this.cloner.clone(BxStageHistoryService, this.api);
+        this.batch.stageHistory = this.cloner.clone(
+            BxStageHistoryBatchService,
             this.api,
         );
     }

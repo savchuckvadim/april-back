@@ -8,6 +8,8 @@ export enum EBXEntity {
     ELEMENT = 'element',
     TYPE = 'type',
     TIMELINE_COMMENT = 'timeline.comment',
+    /** crm.stagehistory.list — история движения по стадиям (лиды, сделки, счета, смарт-процессы). */
+    STAGE_HISTORY = 'stagehistory',
     PRODUCT_ROW = 'productrow',
     USER_FIELD = 'userfield',
     USER_FIELD_CONFIG = 'userfieldconfig',

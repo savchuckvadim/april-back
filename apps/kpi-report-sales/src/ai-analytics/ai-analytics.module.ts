@@ -13,7 +13,12 @@ import { AiAnalyticsAuditScheduler } from './cron/ai-analytics-audit.scheduler';
 import { AiAnalyticsPushScheduler } from './cron/ai-analytics-push.scheduler';
 import { RequesterAccessService } from './domain/access/requester-access.service';
 import { CallsLoader } from './domain/loaders/calls.loader';
+import { FinanceLoader } from './domain/loaders/finance.loader';
+import { KpiLoader } from './domain/loaders/kpi.loader';
+import { ManagersLoader } from './domain/loaders/managers.loader';
+import { PlansLoader } from './domain/loaders/plans.loader';
 import { AiAnalyticsPortalsLoader } from './domain/loaders/portals.loader';
+import { SalesFinanceUseCaseFactory } from './domain/loaders/sales-finance-use-case.factory';
 import { SettingsLoader } from './domain/loaders/settings.loader';
 import { SmartLinkLoader } from './domain/loaders/smart-link.loader';
 import { AgendaUseCase } from './domain/use-cases/agenda.use-case';
@@ -54,6 +59,13 @@ import { AiAnalyticsPushLogStore } from './store/ai-analytics-push-log.store';
  * AuditSnapshotUseCase → AiAnalyticsAuditService из сервисного
  * SalesAiAnalyticsAuditModule (lib; без контроллеров — ручки живут в
  * SalesAiAnalyticsAdminModule и подключаются только в apps/admin).
+ *
+ * KPI-слой (Фаза 1b, шаг 1): ManagersLoader (ростер ОП по BxDepartment),
+ * KpiLoader (kpi-report + per-type батч, помесячный кэш), FinanceLoader
+ * (закрытые продажи и пайплайн через use-case'ы sales-finance, созданные
+ * SalesFinanceUseCaseFactory поверх глобального AppCache — SalesFinanceModule
+ * с контроллером не импортируется), PlansLoader (планы руководителя).
+ * Новых imports не нужно: PBXModule и BxDepartmentModule уже подключены.
  */
 @Module({
     imports: [
@@ -75,6 +87,11 @@ import { AiAnalyticsPushLogStore } from './store/ai-analytics-push-log.store';
         AiAnalyticsPortalsLoader,
         SettingsLoader,
         SmartLinkLoader,
+        ManagersLoader,
+        KpiLoader,
+        SalesFinanceUseCaseFactory,
+        FinanceLoader,
+        PlansLoader,
         AiAnalyticsFeedbackStore,
         SettingsUseCase,
         PulseUseCase,

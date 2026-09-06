@@ -1,4 +1,5 @@
 import { AiEntity } from '../entity/ai.entity';
+import { AiFindByKeysOptions, AiRecordKeys } from '../type/ai-record-keys.type';
 
 export abstract class AiRepository {
     abstract create(aiEntity: Partial<AiEntity>): Promise<AiEntity | null>;
@@ -24,5 +25,17 @@ export abstract class AiRepository {
     abstract findByTranscriptionIds(
         transcriptionIds: string[],
         provider?: string,
+    ): Promise<AiEntity[]>;
+    /**
+     * AI-записи домена и типа по наборам ключей (activity_id / transcription_id /
+     * entity_id, объединение по ИЛИ) — без окна created_at: для backfill
+     * снапшотов и сцепки звонок-сделка. Каждый набор — порциями по 500;
+     * latestOnly — на каждый ключ запись с максимальным id.
+     */
+    abstract findByDomainTypeKeys(
+        domain: string,
+        type: string,
+        keys: AiRecordKeys,
+        options?: AiFindByKeysOptions,
     ): Promise<AiEntity[]>;
 }

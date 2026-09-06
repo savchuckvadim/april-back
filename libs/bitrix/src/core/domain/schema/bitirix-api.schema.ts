@@ -29,6 +29,7 @@ import {
 import { RequisiteLinkSchema } from '../../../domain/crm/requisite-link/schema/bx-requisite-link.schema';
 import { BxCrmEntitySchema } from '../../../domain/crm/entity/schema/bx-crm-entity.schema';
 import { BxDuplicateSchema } from '../../../domain/crm/duplicate/schema/bx-duplicate.schema';
+import { BxStageHistorySchema } from '../../../domain/crm/stage-history/schema/bx-stage-history.schema';
 import { BxImNotifySchema } from '../../../domain/im/notify/schema/bx-im-notify.schema';
 
 import { TaskSchema } from 'src/modules/bitrix/domain/tasks/task/schema/task.schema';
@@ -79,6 +80,7 @@ export type BXApiSchema = {
         [EBXEntity.MEASURE]: BxMeasureSchema;
         [EBXEntity.ITEM]: BxItemSchema;
         [EBXEntity.TIMELINE_COMMENT]: TimelineCommentSchema;
+        [EBXEntity.STAGE_HISTORY]: BxStageHistorySchema;
         [EBXEntity.TYPE]: BxSmartTypeSchema;
         [EBXEntity.REQUISITE]: RequisiteSchema;
         [EBXEntity.REQUISITE_PRESET]: RequisitePresetSchema;

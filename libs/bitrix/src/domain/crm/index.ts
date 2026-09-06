@@ -84,6 +84,9 @@ export * from './timeline/schema/bx-timeline.schema';
 export * from './timeline/services/bx-timeline.batch.service';
 export * from './timeline/services/bx-timeline.service';
 
+//crm.stagehistory
+export * from './stage-history';
+
 //crm.activity.todo
 export * from './activity-todo/interface/bx-activity-todo.interface';
 export * from './activity-todo/schema/bx-activity-todo.schema';
