@@ -30,6 +30,16 @@ export class AiAnalyticsEnvelopeDto {
     requestKey: string;
 
     @ApiPropertyOptional({
+        description:
+            'Id Bull-джобы при queued/processing (равен requestKey — ' +
+            'повторный запрос подписывается на идущий расчёт).',
+        type: String,
+        example:
+            'sales-ai-analytics:v1:april.bitrix24.ru:overview:2026-08-10_2026-09-06:447_512:0',
+    })
+    jobId?: string;
+
+    @ApiPropertyOptional({
         description: 'Текст ошибки при status = error.',
         type: String,
         example: 'Портал не найден',

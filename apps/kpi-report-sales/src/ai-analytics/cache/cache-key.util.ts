@@ -6,6 +6,9 @@
  *   sales-ai-analytics:v1:{domain}:pulse:{endDate}       — пульс до даты
  *   sales-ai-analytics:v1:{domain}:agenda:{weekKey}      — повестка недели
  *   sales-ai-analytics:v1:{domain}:access:{userId}       — периметр requester'а
+ *   sales-ai-analytics:v1:{domain}:overview:{from}_{to}:{usersKey}:{confirmedOnly}
+ *                                                        — обзор менеджер × тип (Фаза 1b)
+ *   sales-ai-analytics:v1:{domain}:managers:org          — раскладка ростера по отделам/группам
  *
  * Кэшируется полный результат по домену, периметр requester'а применяется
  * после чтения (иначе ключ пришлось бы плодить на каждого пользователя).
@@ -17,9 +20,14 @@ import {
     AI_ANALYTICS_CACHE_SECTIONS,
     AiAnalyticsCacheScope,
 } from '../constants/ai-analytics.const';
+import {
+    AI_ANALYTICS_OVERVIEW_DEFAULT_DAYS,
+    AI_ANALYTICS_OVERVIEW_TTL_SECONDS,
+} from '../constants/ai-overview.const';
 import { dayStartUtc } from '../domain/loaders/period.util';
 
-const { SETTINGS, PULSE, AGENDA, ACCESS } = AI_ANALYTICS_CACHE_SECTIONS;
+const { SETTINGS, PULSE, AGENDA, ACCESS, OVERVIEW, MANAGERS } =
+    AI_ANALYTICS_CACHE_SECTIONS;
 
 export function buildSettingsKey(domain: string): string {
     return `${AI_ANALYTICS_CACHE_PREFIX}:${domain}:${SETTINGS}`;
@@ -56,4 +64,63 @@ export function agendaTtlSeconds(now: Date, timeZone: string): number {
     const nextMonday = dayStartUtc(shiftDate(today, daysToMonday), timeZone);
     const seconds = Math.floor((nextMonday.getTime() - now.getTime()) / 1000);
     return Math.max(seconds, AI_ANALYTICS_AGENDA_MIN_TTL_SECONDS);
+}
+
+/**
+ * Ключ обзора (план 6.4): период, нормализованный список менеджеров
+ * (buildReportUsersKey — дедуп, сортировка) и флаг confirmedOnly. Он же —
+ * jobId джобы SALES_AI_ANALYTICS_OVERVIEW: повторный клик подписывается на
+ * идущий расчёт, а не плодит второй.
+ */
+export function buildOverviewKey(
+    domain: string,
+    from: string,
+    to: string,
+    usersKey: string,
+    confirmedOnly: boolean,
+): string {
+    return `${AI_ANALYTICS_CACHE_PREFIX}:${domain}:${OVERVIEW}:${from}_${to}:${usersKey}:${confirmedOnly ? 1 : 0}`;
+}
+
+/** Раскладка ростера ОП по отделам и группам (ManagerOrgLoader). */
+export function buildManagersOrgKey(domain: string): string {
+    return `${AI_ANALYTICS_CACHE_PREFIX}:${domain}:${MANAGERS}:org`;
+}
+
+/** Первый день месяца даты YYYY-MM-DD. */
+function monthStartOf(day: string): string {
+    return `${day.slice(0, 7)}-01`;
+}
+
+/**
+ * TTL обзора по положению периода относительно «сегодня» в TZ портала:
+ * период включает сегодня — live (180 с); закончился до сегодня — past
+ * (1 ч, разборы ещё доезжают); целиком в закрытых месяцах — closed (30 дней).
+ */
+export function overviewTtlSeconds(
+    to: string,
+    now: Date,
+    timeZone: string,
+): number {
+    const today = toPortalDate(now, timeZone);
+    if (to >= today) return AI_ANALYTICS_OVERVIEW_TTL_SECONDS.live;
+    if (to < monthStartOf(today)) {
+        return AI_ANALYTICS_OVERVIEW_TTL_SECONDS.closed;
+    }
+    return AI_ANALYTICS_OVERVIEW_TTL_SECONDS.past;
+}
+
+/**
+ * Период обзора по умолчанию и окно прогрева: скользящие 4 недели,
+ * заканчивающиеся вчерашним днём портала (сегодняшние звонки ещё идут).
+ */
+export function defaultOverviewPeriod(today: string): {
+    from: string;
+    to: string;
+} {
+    const to = shiftDate(today, -1);
+    return {
+        from: shiftDate(to, -(AI_ANALYTICS_OVERVIEW_DEFAULT_DAYS - 1)),
+        to,
+    };
 }

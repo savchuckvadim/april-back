@@ -27,6 +27,12 @@ export const AI_ANALYTICS_CACHE_SECTIONS = {
     PULSE: 'pulse',
     AGENDA: 'agenda',
     ACCESS: 'access',
+    /** Обзор менеджер × тип за период (Фаза 1b, очередь + WS). */
+    OVERVIEW: 'overview',
+    /** Резерв под кэш «Внимания» (сейчас считается синхронно над overview). */
+    ATTENTION: 'attention',
+    /** Ростер ОП и его раскладка по отделам/группам (managers:org). */
+    MANAGERS: 'managers',
 } as const;
 
 export const AI_ANALYTICS_WS_EVENTS = {
@@ -53,6 +59,10 @@ export const AI_ANALYTICS_CACHE_SCOPES = [
     'pulse',
     'agenda',
     'settings',
+    'overview',
+    'attention',
+    'kpi-month',
+    'plans',
 ] as const;
 export type AiAnalyticsCacheScope = (typeof AI_ANALYTICS_CACHE_SCOPES)[number];
 
