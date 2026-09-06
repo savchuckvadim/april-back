@@ -76,6 +76,8 @@ export interface CallReportPipelineResult {
     recomendationSaved: boolean;
     /** Тип звонка от дешёвого классификатора (null — классификация не удалась/выключена). */
     callType: string | null;
+    /** Уверенность классификатора 0..1 (null — классификации не было). */
+    classifyConfidence?: number | null;
     /**
      * Гейт нерелевантности сработал: разговор не про работу менеджера
      * (звонок в стороннюю организацию и т.п.) — анализ остановлен после
@@ -280,6 +282,8 @@ export class CallReportPipelineUseCase {
             payload.transcriptionId,
             settings.classifyEnabled,
             classifyExtra,
+            // Приор по CRM: подстраховка при «другое»/неуверенности.
+            passport?.callTypePrior ?? null,
         );
 
         // ГЕЙТ НЕРЕЛЕВАНТНОСТИ: сотрудник сам звонил в стороннюю
@@ -349,6 +353,7 @@ export class CallReportPipelineUseCase {
             resumeSaved,
             recomendationSaved,
             callType: classification?.callType ?? null,
+            classifyConfidence: classification?.confidence ?? null,
         };
     }
 

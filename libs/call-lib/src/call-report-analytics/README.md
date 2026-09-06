@@ -5,10 +5,21 @@ call-report (транскрипции + анализы агента + класс
 **Единая точка входа** во всю отчётную часть концепции AI-аналитики
 звонков (см. карту модулей внизу).
 
-## Подключение (одним импортом, в любой app)
+## Подключение
+
+Модуль расколот на ядро и HTTP-обёртку (правило `ai/rules/app-api-surface.md`:
+приложение публикует в Swagger только свои endpoints):
+
+| Модуль | Что внутри | Кому |
+|---|---|---|
+| `CallReportAnalyticsCoreModule` | только сервисы: `CallReportAnalyticsService` (фасад отчётов), `CallReportAnalyticsDataService` (`load` / `loadLite`), агрегатор, кэш, история. Imports: `ConfigModule`, `RedisModule`, `AiModule`, `TranscriptionStoreModule` | программное использование БЕЗ HTTP — другие приложения (kpi-report-sales: пульс / повестка / дайджест поверх `loadLite`) |
+| `CallReportAnalyticsModule` | `imports: [Core, PortalStoreModule]` + контроллер `/call-report/analytics/*` + weekly-крон снапшотов; ядро реэкспортируется целиком | приложение, публикующее отчётные endpoints (event-sales) |
 
 ```ts
-import { CallReportAnalyticsModule } from '@lib/call-lib';
+import {
+    CallReportAnalyticsModule, // HTTP + крон + сервисы
+    CallReportAnalyticsCoreModule, // только сервисы
+} from '@lib/call-lib';
 
 @Module({
     imports: [CallReportAnalyticsModule],
@@ -16,16 +27,30 @@ import { CallReportAnalyticsModule } from '@lib/call-lib';
 export class SomeAppModule {}
 ```
 
-С импортом приезжают:
+С импортом `CallReportAnalyticsModule` приезжают:
 
 - HTTP-endpoints `/call-report/analytics/*` (контроллер регистрируется
   автоматически);
-- программный фасад `CallReportAnalyticsService` (экспортируется) — для
-  использования из других модулей без HTTP (например, weekly-cron профилей).
+- программный фасад `CallReportAnalyticsService` и остальные сервисы ядра —
+  для использования из других модулей без HTTP (например, weekly-cron профилей).
 
 Зависимости: только БД (Prisma: `transcriptions`, `ais`) и Redis.
 Bitrix и LLM модулю НЕ нужны — отчёты строятся из уже накопленных данных,
 ни одного вызова внешних API при построении отчёта нет.
+
+### Лёгкая выборка `loadLite` (AI-аналитика ОП)
+
+`CallReportAnalyticsDataService.loadLite(query)` →
+`AnalyticsLiteDataset { rows: AnalyticsCallLiteRow[], totalCalls, skippedNoManager }`
+(типы экспортируются из `@lib/call-lib`): транскрипции за период **без
+текста** (Prisma `select` только нужных колонок —
+`TranscriptionStoreService.findDoneInPeriodLite`) + ais-записи
+`agent-analysis` / `call-classify` с проекцией разбора: `score`
+(weightedScore 0–100; у старых разборов score 1–10 × 10), `nextStep {set, date}`,
+`riskFlags`, `coachingPriority`, `sections[] {section, relevance, score,
+asWas, alternatives}`, `objections[] {category, quote, handled, outcome}`,
+`versions`. Отсутствующее в разборе → `null` / `[]`. Фильтры запроса — те же,
+что у `load` (менеджеры, длительность, тип звонка).
 
 ## Endpoints
 
@@ -37,6 +62,7 @@ Bitrix и LLM модулю НЕ нужны — отчёты строятся и�
 | `domain` | ✅ | домен портала |
 | `from`, `to` | ✅ | период (ISO 8601) по времени звонка (`call_started_at`) |
 | `managerId` | — | Bitrix-id менеджера (ответственный сделки) |
+| `managerIds` | — | список Bitrix-id менеджеров; объединяется с `managerId` (строка проходит, если менеджер в любом из них); пустой список — фильтр «никто» (права доступа) |
 | `minDurationSec`, `maxDurationSec` | — | границы длительности звонка |
 | `callType` | — | тип звонка (коды CALL_TYPE смарта: cold/call/presentation/decision/payment/other) |
 | `saveToHistory` | — | сохранить снапшот отчёта в историю (`ais`, type=`report-<вид>`), default false |
@@ -95,7 +121,7 @@ filteredCalls / analyzedCalls / skippedNoManager, `fromCache`,
 | Транскрибация (Yandex/VibeCode + лимитеры) | `TranscriptionProviderModule` | `libs/call-lib/src/transcription` |
 | Классификация + LLM-анализ (RAG, объединённый вызов) | `AiRagModule` | `libs/ai-rag` |
 | Хранилище транскрипций/анализов | `TranscriptionStoreModule`, `AiModule` | `libs/call-lib` |
-| **Отчёты (этот модуль)** | `CallReportAnalyticsModule` | `libs/call-lib/src/call-report-analytics` |
+| **Отчёты (этот модуль)** | `CallReportAnalyticsCoreModule` (сервисы) / `CallReportAnalyticsModule` (+HTTP, крон) | `libs/call-lib/src/call-report-analytics` |
 | Конвейер (cron/queue/pipeline) | `CallReportModule` | `apps/event-sales/src/call-report` |
 | Agent API (внешний агент) | `AgentGateModule` | `apps/event-sales/src/agent-gate` |
 

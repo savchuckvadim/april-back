@@ -13,6 +13,11 @@ import {
 } from '@lib/call-lib';
 import { LeadRequestDetectorService } from '../../sales-hooks/lead-to-work/services/lead-request-detector.service';
 import { LeadWorkKind } from '../../shared/event-title';
+import {
+    CallTypePrior,
+    renderCallTypePrior,
+    resolveCallTypePrior,
+} from './call-type-prior.util';
 
 /** Кандидат identity, найденный по номеру телефона. НИКОГДА не факт. */
 export interface CallPassportIdentity {
@@ -55,6 +60,20 @@ export interface CallPassport {
     stageId: string | null;
     /** Воронка сделки (CATEGORY_ID); null вне rich. */
     categoryId: string | null;
+    /**
+     * pbx-код воронки сделки (sales_base / sales_presentation / …) —
+     * обратный резолв CATEGORY_ID через PortalModel; null — воронка не
+     * заведена в pbx (чужая) или звонок не по сделке.
+     */
+    dealCategoryCode: string | null;
+    /** pbx-код стадии сделки (sales_pres, sales_refine, …); null — не в pbx. */
+    dealStageCode: string | null;
+    /**
+     * Ожидаемый тип звонка по CRM (стадия сделки, вид лида) — приор для
+     * классификатора и подстраховка при «другое»/неуверенности
+     * (ai/tasks/call-type-accuracy-plan.md). null — CRM ничего не говорит.
+     */
+    callTypePrior: CallTypePrior | null;
     /** Статус лида (STATUS_ID); null вне lead. */
     leadStatusId: string | null;
     /**
@@ -148,6 +167,9 @@ export class CallContextBuilderService {
             entityId: null,
             stageId: null,
             categoryId: null,
+            dealCategoryCode: null,
+            dealStageCode: null,
+            callTypePrior: null,
             leadStatusId: null,
             leadWorkKind: null,
             contactPosition: null,
@@ -345,8 +367,42 @@ export class CallContextBuilderService {
                     'холодный контакт маловероятен',
             );
         }
-        if (!facts.length) return null;
-        return `\n\nКОНТЕКСТ ИЗ CRM (подсказка, не приговор — решает содержание разговора):\n- ${facts.join('\n- ')}`;
+        // Приор по стадии/лиду — отдельным блоком: он называет ожидаемый
+        // тип прямо, тогда как факты выше лишь сужают выбор.
+        const prior = renderCallTypePrior(passport.callTypePrior);
+        if (!facts.length) return prior || null;
+        return (
+            `\n\nКОНТЕКСТ ИЗ CRM (подсказка, не приговор — решает содержание разговора):\n- ${facts.join('\n- ')}` +
+            prior
+        );
+    }
+
+    /**
+     * pbx-коды воронки и стадии сделки по bitrix-id из CRM (обратный резолв
+     * через PortalModel). Воронка не заведена в pbx — коды остаются null и
+     * приор не строится. Fail-open: ошибка портала паспорт не ломает.
+     */
+    private fillDealCodes(portal: PortalModel, passport: CallPassport): void {
+        try {
+            const categoryId = passport.categoryId ?? '0';
+            const category = portal
+                .getDealCategories()
+                .find(item => String(item.bitrixId) === categoryId);
+            if (!category) return;
+            passport.dealCategoryCode = category.code;
+            const stageId = passport.stageId;
+            if (!stageId) return;
+            // В pbx STAGE_ID хранится полностью (C5:PREPARATION); на случай
+            // хранения без префикса воронки сверяем и по суффиксу.
+            const suffix = stageId.split(':').pop();
+            passport.dealStageCode =
+                category.stages.find(
+                    stage =>
+                        stage.bitrixId === stageId || stage.bitrixId === suffix,
+                )?.code ?? null;
+        } catch {
+            // портал без воронок/стадий — приор не строится
+        }
     }
 
     /** Сделка/лид: стадия или статус. */
@@ -378,6 +434,13 @@ export class CallContextBuilderService {
                     response.result.CATEGORY_ID != null
                         ? String(response.result.CATEGORY_ID)
                         : null;
+                this.fillDealCodes(portal, passport);
+                passport.callTypePrior = resolveCallTypePrior({
+                    entityType: 'deal',
+                    dealCategoryCode: passport.dealCategoryCode,
+                    dealStageCode: passport.dealStageCode,
+                    leadWorkKind: null,
+                });
                 passport.crmCompanyId = this.toId(response.result.COMPANY_ID);
                 passport.crmContactId = this.toId(response.result.CONTACT_ID);
                 this.appendOpHistory(portal, 'deal', response.result, passport);
@@ -415,6 +478,12 @@ export class CallContextBuilderService {
                     portal,
                     response.result,
                 );
+                passport.callTypePrior = resolveCallTypePrior({
+                    entityType: 'lead',
+                    dealCategoryCode: null,
+                    dealStageCode: null,
+                    leadWorkKind: passport.leadWorkKind,
+                });
                 passport.crmCompanyId = this.toId(response.result.COMPANY_ID);
                 passport.crmContactId = this.toId(response.result.CONTACT_ID);
                 passport.companyTitle = this.cleanText(

@@ -13,6 +13,8 @@ const row = (overrides?: Record<string, unknown>) => ({
 
 const makeDeps = (options?: {
     dealStage?: string | null;
+    /** CATEGORY_ID сделки; по умолчанию 5 (воронка презентаций в pbx). */
+    dealCategory?: number;
     leadStatus?: string;
     /** Дополнительные поля лида (для детекта «лид — заявка»). */
     leadFields?: Record<string, unknown>;
@@ -41,7 +43,7 @@ const makeDeps = (options?: {
                         : {
                               result: {
                                   STAGE_ID: options?.dealStage ?? 'C5:PREP',
-                                  CATEGORY_ID: 5,
+                                  CATEGORY_ID: options?.dealCategory ?? 5,
                                   CONTACT_ID: options?.dealContactId,
                                   COMPANY_ID: options?.dealCompanyId,
                                   UF_CRM_OP_MHISTORY: options?.dealOpHistory,
@@ -103,6 +105,25 @@ const makeDeps = (options?: {
             code === 'op_mhistory' ? { code } : null,
         ),
         getFieldBitrixId: jest.fn().mockReturnValue('UF_CRM_OP_MHISTORY'),
+        // Воронки pbx: основная (0) и презентаций (5) — для обратного
+        // резолва CATEGORY_ID/STAGE_ID в коды и приора типа звонка.
+        getDealCategories: jest.fn().mockReturnValue([
+            {
+                bitrixId: '0',
+                code: 'sales_base',
+                stages: [{ code: 'sales_pres', bitrixId: 'PREPARATION' }],
+            },
+            {
+                bitrixId: '5',
+                code: 'sales_presentation',
+                stages: [
+                    {
+                        code: 'sales_presentation_presentation',
+                        bitrixId: 'C5:EXECUTING',
+                    },
+                ],
+            },
+        ]),
     };
     const pbxService = {
         init: jest.fn().mockResolvedValue({ bitrix, PortalModel: portalModel }),
@@ -164,6 +185,31 @@ describe('CallContextBuilderService', () => {
         expect(passport.stageId).toBe('C5:EXECUTING');
         expect(passport.categoryId).toBe('5');
         expect(passport.direction).toBe('outgoing');
+        // Обратный резолв в pbx-коды + сильный приор «презентация».
+        expect(passport.dealCategoryCode).toBe('sales_presentation');
+        expect(passport.dealStageCode).toBe('sales_presentation_presentation');
+        expect(passport.callTypePrior).toEqual(
+            expect.objectContaining({
+                callType: 'presentation',
+                strength: 'strong',
+            }),
+        );
+        expect(service.renderClassifyHint(passport)).toContain(
+            "'presentation'",
+        );
+    });
+
+    it('сделка в воронке, которой нет в pbx — коды и приор пусты, подсказка только «сделка»', async () => {
+        const { service } = makeDeps({ dealStage: 'C9:NEW', dealCategory: 9 });
+        const passport = await service.build(row() as never);
+        expect(passport.dealCategoryCode).toBeNull();
+        expect(passport.callTypePrior).toBeNull();
+        expect(service.renderClassifyHint(passport)).toContain(
+            'привязан к сделке',
+        );
+        expect(service.renderClassifyHint(passport)).not.toContain(
+            'ОЖИДАЕМЫЙ ТИП',
+        );
     });
 
     it('лид → certainty=lead со статусом; identity не ищется', async () => {
@@ -177,9 +223,12 @@ describe('CallContextBuilderService', () => {
             'crm.duplicate.findbycomm',
             expect.anything(),
         );
-        // Признаков заявки нет → вид работы «холодный», подсказки нет.
+        // Признаков заявки нет → «холодный» и слабый приор cold в подсказке.
         expect(passport.leadWorkKind).toBe('cold');
-        expect(service.renderClassifyHint(passport)).toBeNull();
+        expect(passport.callTypePrior).toEqual(
+            expect.objectContaining({ callType: 'cold', strength: 'weak' }),
+        );
+        expect(service.renderClassifyHint(passport)).toContain("'cold'");
     });
 
     it('персона контакта сделки (имя, должность, заметки) попадает в паспорт', async () => {

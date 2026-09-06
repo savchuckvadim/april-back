@@ -1,9 +1,30 @@
-import { Transcription } from 'generated/prisma';
+import { Prisma, Transcription } from 'generated/prisma';
 import { TranscriptionBaseDto } from '../dto/transcription.store.dto';
 import {
     TranscriptionPipelineUpdateInput,
     TranscriptionPipelineUpsertInput,
 } from '../types/transcription-pipeline.types';
+
+/**
+ * Колонки лёгкой выборки done-строк (без text и прочих LongText) — для
+ * отчётов и AI-аналитики, где текст транскрипта не нужен.
+ */
+export const TRANSCRIPTION_PIPELINE_LITE_SELECT = {
+    id: true,
+    domain: true,
+    call_started_at: true,
+    duration: true,
+    entity_type: true,
+    entity_id: true,
+    user_id: true,
+    created_at: true,
+} as const satisfies Prisma.TranscriptionSelect;
+
+/** Строка лёгкой выборки — только колонки TRANSCRIPTION_PIPELINE_LITE_SELECT. */
+export type TranscriptionPipelineLiteRow = Pick<
+    Transcription,
+    keyof typeof TRANSCRIPTION_PIPELINE_LITE_SELECT
+>;
 
 export abstract class TranscriptionRepository {
     abstract create(
@@ -102,4 +123,15 @@ export abstract class TranscriptionRepository {
         excludeId: string | null,
         take: number,
     ): Promise<Transcription[]>;
+
+    /**
+     * То же, что findDonePipelineInPeriod, но select только колонок
+     * TRANSCRIPTION_PIPELINE_LITE_SELECT (без текста транскрипта) — для
+     * лёгкой выборки AI-аналитики.
+     */
+    abstract findDonePipelineInPeriodLite(
+        domain: string,
+        from: Date,
+        to: Date,
+    ): Promise<TranscriptionPipelineLiteRow[]>;
 }

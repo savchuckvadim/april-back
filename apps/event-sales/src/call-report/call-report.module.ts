@@ -29,6 +29,9 @@ import { CallRevisionService } from './services/call-revision.service';
 import { CallComplianceReviewService } from './services/call-compliance-review.service';
 import { PresentationAuditService } from './services/presentation-audit.service';
 import { PresentationPlanFactService } from './services/presentation-plan-fact.service';
+import { CallTypeStatsService } from './services/call-type-stats.service';
+import { CallReportListLinkService } from './services/call-report-list-link.service';
+import { CallReportAlertService } from './services/call-report-alert.service';
 import { CallReportAnalyzeUseCase } from './use-cases/call-report-analyze.use-case';
 import { CallReportPipelineUseCase } from './use-cases/call-report-pipeline.use-case';
 import { CallReportScanUseCase } from './use-cases/call-report-scan.use-case';
@@ -112,6 +115,13 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         PresentationAuditScheduler,
         // План-факт: запланированные презентации КПИ vs звонки-презентации
         PresentationPlanFactService,
+        // Статистика типов звонков — калибровка классификатора по ais
+        CallTypeStatsService,
+        // Привязка звонка к записям ОП KPI / ОП История — кодом, без LLM
+        CallReportListLinkService,
+        // Алерт РОПу в день звонка (риск-флаг / срочный коучинг) — Фаза 1a
+        // плана AI-аналитики ОП; настройки kpiSales через PortalAppSettingsModule
+        CallReportAlertService,
     ],
 })
 export class CallReportModule {}

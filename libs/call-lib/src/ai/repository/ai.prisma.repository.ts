@@ -134,6 +134,29 @@ export class AiPrismaRepository implements AiRepository {
         }
     }
 
+    async findByDomainTypesInPeriod(
+        domain: string,
+        types: string[],
+        from: Date,
+        to: Date,
+    ): Promise<AiEntity[]> {
+        if (!types.length) return [];
+        try {
+            const result = await this.prisma.ai.findMany({
+                where: {
+                    domain,
+                    type: { in: types },
+                    created_at: { gte: from, lte: to },
+                },
+                orderBy: { created_at: 'asc' },
+            });
+            return result.map(ai => createAiEntityFromPrisma(ai));
+        } catch (error) {
+            console.error('Error finding AI by domain/types/period:', error);
+            return [];
+        }
+    }
+
     async findByTranscriptionIds(
         transcriptionIds: string[],
         provider?: string,

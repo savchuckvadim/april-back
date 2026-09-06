@@ -46,6 +46,17 @@ interface AuditVerdict {
 /** ais-тип записи сверки (и маркер идемпотентности). */
 export const PRESENTATION_AUDIT_TYPE = 'presentation-audit';
 
+/**
+ * Явные тексты в полях «отчёт менеджера», когда отчёта нет: РОП в карточке
+ * должен видеть «менеджер не отчитался», а не пустое поле.
+ */
+export const MANAGER_HVOST_REPORT_MISSING =
+    'Менеджер не отчитался: поля «Хвост» в сделке-презентации пусты.';
+export const MANAGER_FIVE_K_REPORT_MISSING =
+    'Менеджер не отчитался: поле «5К» в сделке-презентации пусто.';
+export const MANAGER_REPORT_NO_DEAL =
+    'Отчёт менеджера недоступен: сделка-презентация не связана со звонком.';
+
 /** Коды типов события «презентация» в списках отчётности. */
 const PRESENTATION_EVENT_TYPE_CODES = [
     'presentation',
@@ -226,19 +237,30 @@ export class PresentationAuditService {
             verdict.comparison.slice(0, 8000);
 
         const smartInfo = await this.smartResolver.resolve(domain);
-        // Отчёт менеджера — в поля элемента «Хвост/5К: отчёт менеджера»:
-        // сравнение с разбором AI видно прямо в карточке. Fail-open.
-        if (
-            smartInfo &&
-            candidate.activityId &&
-            (managerReport.xvost || managerReport.fiveK)
-        ) {
+        // Сверка — в поля элемента ВСЕГДА, а не только при заполненном
+        // отчёте: пустое поле «отчёт менеджера» нельзя отличить от «ещё не
+        // сверяли», поэтому отсутствие отчёта пишется явным текстом.
+        // Вместе с разбором AI (HVOST_*/FIVE_K_* от intake) карточка
+        // показывает все четыре слоя: программный, менеджерский, флаг
+        // расхождения с пунктами и объяснение сверки. Fail-open.
+        if (smartInfo && candidate.activityId) {
             const writer = new CallReportSmartWriterService(bitrix, smartInfo);
             await writer
                 .updateExisting({
                     activityId: candidate.activityId,
-                    hvostManager: managerReport.xvost ?? undefined,
-                    fiveKManager: managerReport.fiveK ?? undefined,
+                    hvostManager:
+                        managerReport.xvost ??
+                        (dealId
+                            ? MANAGER_HVOST_REPORT_MISSING
+                            : MANAGER_REPORT_NO_DEAL),
+                    fiveKManager:
+                        managerReport.fiveK ??
+                        (dealId
+                            ? MANAGER_FIVE_K_REPORT_MISSING
+                            : MANAGER_REPORT_NO_DEAL),
+                    auditMismatch: verdict.mismatch,
+                    auditPoints: verdict.mismatchPoints.join('\n') || undefined,
+                    auditSummary: verdict.comparison,
                 })
                 .catch((error: Error) =>
                     this.logger.warn(
@@ -463,12 +485,10 @@ export class PresentationAuditService {
         // формулировки — а заметил бы это только тот, кто читает отчёт.
         const codes = PBX_SALES_EVENT_FIELD_CODES;
         const xvostChecklist: Array<[string, string | null]> = [
-            ...XVOST_TEMPLATES.map(
-                (template): [string, string | null] => [
-                    template.title,
-                    readField(template.code),
-                ],
-            ),
+            ...XVOST_TEMPLATES.map((template): [string, string | null] => [
+                template.title,
+                readField(template.code),
+            ]),
             [
                 'Дата звонка по решению',
                 readField(codes.op_xvost_decision_call_date),

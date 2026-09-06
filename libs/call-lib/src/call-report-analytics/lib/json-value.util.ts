@@ -31,3 +31,27 @@ export function asRecord(value: unknown): Record<string, unknown> | null {
         ? (value as Record<string, unknown>)
         : null;
 }
+
+/** Массив объектов (элементы не-объекты отбрасываются); не массив → []. */
+export function asRecordArray(value: unknown): Record<string, unknown>[] {
+    return Array.isArray(value)
+        ? value
+              .map(asRecord)
+              .filter((item): item is Record<string, unknown> => item !== null)
+        : [];
+}
+
+/**
+ * Объект «ключ → непустая строка» (значения других типов отбрасываются);
+ * не объект → null. Для versions разбора.
+ */
+export function asStringRecord(value: unknown): Record<string, string> | null {
+    const record = asRecord(value);
+    if (!record) return null;
+    const result: Record<string, string> = {};
+    for (const [key, item] of Object.entries(record)) {
+        const text = asString(item);
+        if (text !== null) result[key] = text;
+    }
+    return result;
+}

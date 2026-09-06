@@ -93,3 +93,19 @@ export interface TranscriptionPipelineView {
     createdAt: Date | null;
     updatedAt: Date | null;
 }
+
+/**
+ * Лёгкое представление done-строки для отчётов и AI-аналитики: без текста
+ * транскрипта (LongText) и служебных полей — выборка за большой период не
+ * тянет мегабайты текста в память. Колонки — TRANSCRIPTION_PIPELINE_LITE_SELECT.
+ */
+export interface TranscriptionPipelineLiteView {
+    id: string;
+    domain: string | null;
+    callStartedAt: Date | null;
+    durationSec: string | null;
+    entityType: string | null;
+    entityId: string | null;
+    userId: string | null;
+    createdAt: Date | null;
+}

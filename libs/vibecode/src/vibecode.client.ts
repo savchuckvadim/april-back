@@ -131,10 +131,13 @@ export class VibeCodeClient {
         this.logger.log(
             `Classifying call with Vibecode LLM (${allowedCallTypes?.length ?? 'builtin'} types)`,
         );
-        const trimmed =
-            transcript.length > CLASSIFICATION_TRANSCRIPT_LIMIT
-                ? transcript.slice(0, CLASSIFICATION_TRANSCRIPT_LIMIT)
-                : transcript;
+        // Длинный разговор: берём НАЧАЛО и КОНЕЦ, а не только начало —
+        // презентация, решение и закрытие на дату проявляются ближе к
+        // концу, и обрезка по началу превращала их в «другое».
+        const trimmed = sampleTranscriptForClassification(
+            transcript,
+            CLASSIFICATION_TRANSCRIPT_LIMIT,
+        );
         const parsed = await this.chatCompletionJson(
             systemPrompt ?? DEFAULT_CLASSIFICATION_SYSTEM_PROMPT,
             `Классифицируй звонок по расшифровке:\n\n${trimmed}`,
@@ -146,6 +149,7 @@ export class VibeCodeClient {
     }
 
     /** Схема классификации с динамическим enum типов из реестра. */
+    // (сэмплирование транскрипта — sampleTranscriptForClassification ниже)
     private buildClassificationSchema(
         allowedCallTypes?: string[],
     ): Record<string, unknown> {
@@ -235,4 +239,23 @@ export class VibeCodeClient {
         }
         return JSON.parse(content) as unknown;
     }
+}
+
+/**
+ * Выжимка длинного транскрипта под лимит классификатора: две трети —
+ * начало разговора (кто, зачем, контекст), треть — конец (чем закончили:
+ * показ, решение, дата). Середина помечается пропуском.
+ */
+export function sampleTranscriptForClassification(
+    transcript: string,
+    limit: number,
+): string {
+    if (transcript.length <= limit) return transcript;
+    const headChars = Math.floor(limit * 0.66);
+    const tailChars = limit - headChars;
+    return (
+        transcript.slice(0, headChars) +
+        '\n\n[… середина разговора пропущена …]\n\n' +
+        transcript.slice(-tailChars)
+    );
 }

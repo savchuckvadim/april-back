@@ -139,6 +139,10 @@ const makeDeps = (options?: {
         () => ({ addItem, updateExisting }) as never,
     );
 
+    // Раскладка сделок: владелец 555 — корневая сделка продажи.
+    const dealFamily = {
+        resolve: jest.fn().mockResolvedValue({ mainDealId: 555 }),
+    };
     const service = new CallRevisionService(
         pbxService as never,
         transcriptionStore as never,
@@ -147,6 +151,7 @@ const makeDeps = (options?: {
         smartResolver as never,
         vibeCodeClient as never,
         vibeKeyResolver as never,
+        dealFamily as never,
     );
     return {
         service,

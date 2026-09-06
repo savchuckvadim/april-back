@@ -13,10 +13,32 @@ import {
     VibeKeyResolverService,
 } from '@lib/vibecode';
 import { CallClassifyInstructionService } from './call-classify-instruction.service';
+import { CallTypePrior } from './call-type-prior.util';
 import { CallReportJobPayload } from '../use-cases/call-report-pipeline.use-case';
 
 /** app-метка ais-записей конвейера. */
 const APP_NAME = 'call-report';
+
+/**
+ * Порог уверенности классификатора: ниже — ответ считается неуверенным,
+ * его вправе перекрыть приор из CRM и синтез глубокого разбора.
+ */
+export const CLASSIFY_ESCALATION_CONFIDENCE = 0.6;
+/** Тип-«свалка»: для состоявшегося разговора о продаже почти всегда ошибка. */
+const OTHER_CALL_TYPE = 'other';
+/** Уверенность после применения приора — не ниже порога, но без фанатизма. */
+const PRIOR_CONFIDENCE = { strong: 0.7, weak: 0.6 } as const;
+
+/** Ответ классификатора с отметкой о приоре (для калибровки по ais). */
+export interface ClassificationWithPrior extends CallClassificationResultDto {
+    /** Что подсказывала CRM (даже если не применили). */
+    priorCallType?: string;
+    /** Приор перекрыл ответ модели. */
+    priorApplied?: boolean;
+    /** Исходный ответ модели до приора. */
+    originalCallType?: string;
+    originalConfidence?: number;
+}
 
 /**
  * Шаг дешёвой классификации звонка (tier-1) — вынесен из pipeline
@@ -25,8 +47,9 @@ const APP_NAME = 'call-report';
  * 1) инструкция — подменяемая (база знаний kind='call-classify',
  *    иначе дефолт из контракта @lib/vibecode);
  * 2) ключ VibeCode — пер-портальный (vibeKey из БД);
- * 3) confidence ниже порога → needsEscalation: тип обязан перепроверить
- *    tier-3 (ночной агент видит флаг в пакете звонка);
+ * 3) приор из CRM (стадия сделки / вид лида) подстраховывает «другое» и
+ *    неуверенный ответ; confidence ниже порога → needsEscalation: тип
+ *    перепроверит синтез глубокого разбора по всему тексту;
  * 4) результат — ais-запись type=call-classify (тип в result,
  *    полный JSON в user_result).
  *
@@ -38,8 +61,8 @@ const APP_NAME = 'call-report';
 @Injectable()
 export class CallClassifyStepService {
     private readonly logger = new Logger(CallClassifyStepService.name);
-    /** Порог эскалации: ниже — тип обязан перепроверить ночной агент. */
-    private readonly escalationConfidence = 0.6;
+    /** Порог эскалации: ниже — тип перепроверяет синтез глубокого разбора. */
+    private readonly escalationConfidence = CLASSIFY_ESCALATION_CONFIDENCE;
 
     constructor(
         private readonly vibeCodeClient: VibeCodeClient,
@@ -53,6 +76,8 @@ export class CallClassifyStepService {
      * enabledOverride — включённость из настроек портала (дефолт: включено).
      * crmHint — CRM-подсказка из паспорта звонка (лид-заявка, сделка):
      * дописывается к инструкции, тип всё равно решается по содержанию.
+     * prior — ожидаемый тип по CRM: применяется кодом, когда модель ответила
+     * «другое» или не уверена (см. applyPrior).
      */
     async run(
         text: string,
@@ -60,7 +85,8 @@ export class CallClassifyStepService {
         transcriptionId: string,
         enabledOverride?: boolean,
         crmHint?: string | null,
-    ): Promise<CallClassificationResultDto | null> {
+        prior?: CallTypePrior | null,
+    ): Promise<ClassificationWithPrior | null> {
         if (!(enabledOverride ?? true)) return null;
         try {
             // Реестр типов (встроенные + общие/клиентские из базы знаний):
@@ -73,11 +99,16 @@ export class CallClassifyStepService {
                 this.renderTypeCatalog(registry) +
                 (crmHint ?? '');
             const apiKey = await this.vibeKeyResolver.resolve(payload.domain);
-            const classification = await this.vibeCodeClient.classifyCall(
+            const modelAnswer = await this.vibeCodeClient.classifyCall(
                 text,
                 instruction,
                 apiKey,
                 registry.codes,
+            );
+            const classification = this.applyPrior(
+                modelAnswer,
+                prior ?? null,
+                payload.activityId,
             );
 
             const needsEscalation =
@@ -86,7 +117,7 @@ export class CallClassifyStepService {
                 this.logger.warn(
                     `Классификация неуверенная (activity ${payload.activityId}): ` +
                         `${classification.callType} с confidence ${classification.confidence} < ` +
-                        `${this.escalationConfidence} — эскалация на агента`,
+                        `${this.escalationConfidence} — тип перепроверит синтез разбора`,
                 );
             }
 
@@ -117,6 +148,49 @@ export class CallClassifyStepService {
             );
             return null;
         }
+    }
+
+    /**
+     * Подстраховка приором из CRM. Модель видит выжимку разговора, CRM —
+     * стадию сделки; когда модель ответила «другое» или не уверена, стадия
+     * надёжнее. Сильный приор (стадия «Презентация», «Доработка», лид из
+     * заявки) перекрывает «другое» с любой уверенностью и любой
+     * неуверенный ответ; слабый (новая/тёплая сделка) — только неуверенное
+     * «другое». Уверенный ответ модели приор не трогает. Исходный ответ
+     * сохраняется рядом — по нему калибруется точность (type-stats).
+     */
+    private applyPrior(
+        answer: CallClassificationResultDto,
+        prior: CallTypePrior | null,
+        activityId: number | string,
+    ): ClassificationWithPrior {
+        if (!prior) return answer;
+        const unsure = answer.confidence < this.escalationConfidence;
+        const isOther = answer.callType === OTHER_CALL_TYPE;
+        const applicable =
+            prior.callType !== answer.callType &&
+            (prior.strength === 'strong'
+                ? isOther || unsure
+                : isOther && unsure);
+        if (!applicable) return { ...answer, priorCallType: prior.callType };
+        const confidence = Math.max(
+            answer.confidence,
+            PRIOR_CONFIDENCE[prior.strength],
+        );
+        this.logger.log(
+            `Приор CRM применён (activity ${activityId}): ` +
+                `${answer.callType} (${answer.confidence}) → ${prior.callType} — ${prior.reason}`,
+        );
+        return {
+            ...answer,
+            callType: prior.callType,
+            confidence,
+            reason: `${answer.reason} | по CRM: ${prior.reason}`,
+            priorCallType: prior.callType,
+            priorApplied: true,
+            originalCallType: answer.callType,
+            originalConfidence: answer.confidence,
+        };
     }
 
     /**

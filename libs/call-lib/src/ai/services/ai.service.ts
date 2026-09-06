@@ -55,6 +55,22 @@ export class AiService {
         return aiRecords.map(ai => new AiEntityDto(ai));
     }
 
+    /** AI-записи портала заданных типов за период (статистика типов звонков). */
+    async findByDomainTypesInPeriod(
+        domain: string,
+        types: string[],
+        from: Date,
+        to: Date,
+    ): Promise<AiEntityDto[]> {
+        const aiRecords = await this.aiRepository.findByDomainTypesInPeriod(
+            domain,
+            types,
+            from,
+            to,
+        );
+        return aiRecords.map(ai => new AiEntityDto(ai));
+    }
+
     /** AI-записи по транскрипциям (опционально — только один провайдер). */
     async findByTranscriptionIds(
         transcriptionIds: string[],

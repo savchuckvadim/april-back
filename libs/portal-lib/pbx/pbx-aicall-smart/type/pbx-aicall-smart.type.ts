@@ -639,6 +639,24 @@ export const CALL_REPORT_SMART_FIELDS: CallReportSmartFieldDef[] = [
         name: '5К: отчёт менеджера (из сделки)',
         type: 'string',
     },
+    // Сверка «AI ↔ отчёт менеджера» по хвосту и 5К — итоги в полях, а не
+    // только в таймлайне (требование владельца 28.08.2026: обязательное
+    // полное заполнение блока хвост/5К в карточке).
+    {
+        code: 'AUDIT_MISMATCH',
+        name: 'Сверка: расхождение с отчётом менеджера',
+        type: 'boolean',
+    },
+    {
+        code: 'AUDIT_POINTS',
+        name: 'Сверка: расхождения (кратко)',
+        type: 'string',
+    },
+    {
+        code: 'AUDIT_SUMMARY',
+        name: 'Сверка: объяснение (кратко)',
+        type: 'string',
+    },
     // Гранулярный хвост/5К — зеркало чек-листа менеджера в сделке
     // (op_xvost_* / op_5k_* из pbx-sales-event-field): AI отвечает на ТЕ ЖЕ
     // вопросы по транскрипту, итоги HVOST_DONE/FIVE_K_DONE пересчитываются
@@ -1015,6 +1033,9 @@ export const CALL_REPORT_CARD_SECTIONS: readonly CallReportCardSection[] = [
             'FIVE_K_CRITERIA',
             'FIVE_K_ANALYSIS',
             'FIVE_K_MANAGER',
+            'AUDIT_MISMATCH',
+            'AUDIT_POINTS',
+            'AUDIT_SUMMARY',
         ],
     },
     {

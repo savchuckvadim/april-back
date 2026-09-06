@@ -69,6 +69,22 @@ const makeDeps = () => {
             complianceReviewEnabled: false,
         }),
     };
+    // Привязка к записям отчётности: по умолчанию ничего не найдено.
+    const listLinker = {
+        find: jest.fn().mockResolvedValue({ relatedReportIds: [] }),
+    };
+    // Реестр типов — для хэша в versions.registry (см. versions.spec).
+    const callTypeRegistry = {
+        resolve: jest.fn().mockResolvedValue({ codes: ['cold', 'call'] }),
+    };
+    // Алерт РОПу: по умолчанию нечего слать.
+    const alerts = {
+        notifyIfNeeded: jest.fn().mockResolvedValue({
+            status: 'skipped',
+            kind: null,
+            delivered: [],
+        }),
+    };
     const processor = new CallReportProcessor(
         pipeline as never,
         dispatcher as never,
@@ -80,9 +96,15 @@ const makeDeps = () => {
         complianceReview as never,
         transcriptionStore as never,
         settingsService as never,
+        listLinker as never,
+        callTypeRegistry as never,
+        alerts as never,
     );
     return {
         processor,
+        listLinker,
+        callTypeRegistry,
+        alerts,
         pipeline,
         dispatcher,
         baseItem,
@@ -303,5 +325,119 @@ describe('CallReportProcessor (стадии)', () => {
                 }),
             ),
         ).resolves.toBeUndefined();
+    });
+
+    it('записи отчётности (ОП KPI / ОП История), найденные кодом, уходят в intake', async () => {
+        const { processor, listLinker, analysisIntake } = makeDeps();
+        listLinker.find.mockResolvedValue({
+            kpiItem: { itemId: '9001', status: 'confirmed' },
+            historyItem: { itemId: '777', status: 'suspected' },
+            relatedReportIds: ['778'],
+        });
+        await processor.handleAnalyze(
+            makeJob({ ...PAYLOAD, transcriptionId: '42' }),
+        );
+        expect(listLinker.find).toHaveBeenCalledWith(
+            'test.bitrix24.ru',
+            expect.objectContaining({ certainty: 'rich' }),
+            expect.objectContaining({ id: '42' }),
+            'cold',
+        );
+        expect(analysisIntake.intake).toHaveBeenCalledWith(
+            '42',
+            'call-report-analyzer',
+            expect.objectContaining({
+                kpiItem: { itemId: '9001', status: 'confirmed' },
+                historyItem: { itemId: '777', status: 'suspected' },
+                relatedReportIds: ['778'],
+            }),
+        );
+    });
+
+    it('ошибка линкера записей отчётности не мешает записи разбора', async () => {
+        const { processor, listLinker, analysisIntake } = makeDeps();
+        listLinker.find.mockRejectedValue(new Error('lists down'));
+        await processor.handleAnalyze(
+            makeJob({ ...PAYLOAD, transcriptionId: '42' }),
+        );
+        expect(analysisIntake.intake).toHaveBeenCalled();
+    });
+
+    describe('уточнение типа синтезом разбора', () => {
+        const analyzeResult = (
+            callType: string,
+            classifyConfidence: number,
+        ) => ({
+            transcriptionId: '42',
+            provider: 'yandex',
+            resumeSaved: true,
+            recomendationSaved: true,
+            callType,
+            classifyConfidence,
+        });
+
+        it('классификатор сказал «другое» — тип из синтеза уходит в intake', async () => {
+            const { processor, pipeline, focusAnalysis, analysisIntake } =
+                makeDeps();
+            pipeline.executeAnalyze.mockResolvedValue(
+                analyzeResult('other', 0.8),
+            );
+            focusAnalysis.run.mockResolvedValue({
+                callType: 'other',
+                callTypeRefined: 'presentation',
+                callTypeReason: 'показали систему и назначили дату',
+                score: 7,
+            });
+            await processor.handleAnalyze(
+                makeJob({ ...PAYLOAD, transcriptionId: '42' }),
+            );
+            expect(analysisIntake.intake).toHaveBeenCalledWith(
+                '42',
+                'call-report-analyzer',
+                expect.objectContaining({ callType: 'presentation' }),
+            );
+        });
+
+        it('неуверенный классификатор (<0.6) перекрывается синтезом', async () => {
+            const { processor, pipeline, focusAnalysis, analysisIntake } =
+                makeDeps();
+            pipeline.executeAnalyze.mockResolvedValue(
+                analyzeResult('call', 0.4),
+            );
+            focusAnalysis.run.mockResolvedValue({
+                callType: 'call',
+                callTypeRefined: 'refine',
+                score: 6,
+            });
+            await processor.handleAnalyze(
+                makeJob({ ...PAYLOAD, transcriptionId: '42' }),
+            );
+            expect(analysisIntake.intake).toHaveBeenCalledWith(
+                '42',
+                'call-report-analyzer',
+                expect.objectContaining({ callType: 'refine' }),
+            );
+        });
+
+        it('уверенный классификатор остаётся, несогласие синтеза только логируется', async () => {
+            const { processor, pipeline, focusAnalysis, analysisIntake } =
+                makeDeps();
+            pipeline.executeAnalyze.mockResolvedValue(
+                analyzeResult('cold', 0.9),
+            );
+            focusAnalysis.run.mockResolvedValue({
+                callType: 'cold',
+                callTypeRefined: 'call',
+                score: 6,
+            });
+            await processor.handleAnalyze(
+                makeJob({ ...PAYLOAD, transcriptionId: '42' }),
+            );
+            expect(analysisIntake.intake).toHaveBeenCalledWith(
+                '42',
+                'call-report-analyzer',
+                expect.objectContaining({ callType: 'cold' }),
+            );
+        });
     });
 });

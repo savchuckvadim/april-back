@@ -106,6 +106,8 @@ describe('CallFocusAnalysisService', () => {
                     summary: 'Итог звонка',
                     score: 7,
                     recommendations: ['приём → «фраза» → зачем'],
+                    callTypeRefined: 'presentation',
+                    callTypeReason: 'показали систему',
                 },
             },
         });
@@ -125,6 +127,9 @@ describe('CallFocusAnalysisService', () => {
         expect(dto?.summary).toBe('Итог звонка');
         expect(dto?.score).toBe(7);
         expect(dto?.callType).toBe('call');
+        // Уточнение типа синтезом едет рядом; применяет его процессор.
+        expect(dto?.callTypeRefined).toBe('presentation');
+        expect(dto?.callTypeReason).toBe('показали систему');
         expect(dto?.priceDiscussed).toBe(false);
         // Все четыре вызова получили паспорт в user-контенте.
         for (const call of vibeCodeClient.structuredCompletion.mock.calls) {

@@ -78,14 +78,19 @@ const makeDeps = (options?: { smartInstalled?: boolean }) => {
     };
     const addItem = jest.fn().mockResolvedValue(7);
     MockedWriter.mockImplementation(() => ({ addItem }) as never);
+    // Раскладка сделок по воронкам: владелец звонка — основная сделка.
+    const dealFamily = {
+        resolve: jest.fn().mockResolvedValue({ mainDealId: 555 }),
+    };
 
     const service = new AgentAnalysisIntakeService(
         store as never,
         aiService as never,
         pbxService as never,
         resolver as never,
+        dealFamily as never,
     );
-    return { service, aiService, addItem, timeline };
+    return { service, aiService, addItem, timeline, dealFamily };
 };
 
 describe('AgentAnalysisIntakeService', () => {
@@ -266,6 +271,44 @@ describe('AgentAnalysisIntakeService', () => {
             addItem.mock.calls[0] as [{ fiveKAnalysis?: string }]
         )[0];
         expect(written.fiveKAnalysis).toBeUndefined();
+    });
+
+    it('звонок из сделки-презентации: «основная» — корневая из CRM, а не владелец звонка', async () => {
+        const { service, addItem, dealFamily } = makeDeps();
+        // Владелец звонка 601 — презентация; корневая продажа 555.
+        dealFamily.resolve.mockResolvedValue({
+            mainDealId: 555,
+            presentationDealId: 601,
+        });
+        await service.intake('42', 'claw-main', {
+            ...DTO,
+            // Модель «угадала» другую основную — CRM главнее догадок.
+            relatedDeals: { mainDealId: 999 },
+        } as never);
+
+        expect(addItem).toHaveBeenCalledWith(
+            expect.objectContaining({
+                mainDealId: 555,
+                presentationDealId: 601,
+            }),
+        );
+    });
+
+    it('раскладка ничего не знает — берётся подсказка модели, владелец в «основную» не подставляется', async () => {
+        const { service, addItem, dealFamily } = makeDeps();
+        dealFamily.resolve.mockResolvedValue({ presentationDealId: 555 });
+
+        await service.intake('42', 'claw-main', {
+            ...DTO,
+            relatedDeals: { mainDealId: 777 },
+        } as never);
+
+        expect(addItem).toHaveBeenCalledWith(
+            expect.objectContaining({
+                mainDealId: 777,
+                presentationDealId: 555,
+            }),
+        );
     });
 
     it('черновик flow (plan+report) сохраняется в ais.report_result', async () => {

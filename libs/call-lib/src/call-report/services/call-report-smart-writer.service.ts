@@ -98,6 +98,10 @@ export interface CallReportSmartItemInput {
     hvostManager?: string;
     /** Отчёт менеджера по 5К из сделки-презентации (пишет сверка). */
     fiveKManager?: string;
+    /** Сверка AI ↔ менеджер: есть ли расхождение, пункты, объяснение. */
+    auditMismatch?: boolean;
+    auditPoints?: string;
+    auditSummary?: string;
     /**
      * Гранулярный «Хвост» — зеркало анкеты менеджера (op_xvost_*): пять
      * блоков по теме. Состав переписан 01.09.2026: было три галочки и две
@@ -939,6 +943,9 @@ export class CallReportSmartWriterService {
         this.setShortTextUf(fields, 'FIVE_K_ANALYSIS', input.fiveKAnalysis);
         this.setShortTextUf(fields, 'HVOST_MANAGER', input.hvostManager);
         this.setShortTextUf(fields, 'FIVE_K_MANAGER', input.fiveKManager);
+        this.setBoolUf(fields, 'AUDIT_MISMATCH', input.auditMismatch);
+        this.setShortTextUf(fields, 'AUDIT_POINTS', input.auditPoints);
+        this.setShortTextUf(fields, 'AUDIT_SUMMARY', input.auditSummary);
         this.setUf(fields, 'PRODUCTS_OFFERED', input.productsOffered);
         this.setUf(fields, 'OBJECTIONS', input.objections);
         this.setUf(fields, 'OBJECTIONS_HANDLING', input.objectionsHandling);

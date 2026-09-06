@@ -15,6 +15,10 @@ import { CallAnalysisBitrixService } from '@lib/call-lib/call-analysis/services/
 import { CallReportSmartResolverService } from '@lib/call-lib/call-report/services/call-report-smart-resolver.service';
 import { CallReportSmartWriterService } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
 import {
+    CallReportDealFamily,
+    CallReportDealFamilyService,
+} from '@lib/call-lib/call-report/services/call-report-deal-family.service';
+import {
     AgentCallAnalysisDto,
     AgentDialogTurnDto,
     AgentSectionAnalysisDto,
@@ -56,6 +60,7 @@ export class AgentAnalysisIntakeService {
         private readonly aiService: AiService,
         private readonly pbxService: PBXService,
         private readonly smartResolver: CallReportSmartResolverService,
+        private readonly dealFamily: CallReportDealFamilyService,
     ) {}
 
     async intake(
@@ -490,6 +495,13 @@ export class AgentAnalysisIntakeService {
             ? await this.loadLeadContext(bitrix.api, row.entityId)
             : await this.loadDealContext(bitrix.api, row.entityId);
         const activity = await this.loadActivity(bitrix, row);
+        // Корневая сделка — из CRM-поля «Корневая сделка Продажи», а не
+        // владелец звонка: звонят из презентации, и без раскладки в поле
+        // «ОП: основная сделка» уезжала сделка-презентация (alfacentr,
+        // 28.08.2026). Каркас это уже умеет — разбор не должен затирать.
+        const family = isLead
+            ? {}
+            : await this.dealFamily.resolve(domain, rowDealId);
 
         try {
             const itemId = await this.writeItem(
@@ -497,6 +509,7 @@ export class AgentAnalysisIntakeService {
                 row,
                 rowDealId,
                 rowLeadId,
+                family,
                 context,
                 this.resolveCallDirection(activity),
                 gigachat,
@@ -519,6 +532,7 @@ export class AgentAnalysisIntakeService {
         row: TranscriptionPipelineView,
         rowDealId: number | undefined,
         rowLeadId: number | undefined,
+        family: CallReportDealFamily,
         dealContext: {
             companyId?: number;
             contactId?: number;
@@ -600,9 +614,13 @@ export class AgentAnalysisIntakeService {
             speechAnalysis: dto.speechAnalysis,
             employeeRecommendations: dto.employeeRecommendations,
             sections: dto.sections,
-            mainDealId: dto.relatedDeals?.mainDealId ?? rowDealId,
-            presentationDealId: dto.relatedDeals?.presentationDealId,
-            xoDealId: dto.relatedDeals?.xoDealId,
+            // Раскладка по CRM главнее догадок модели; сделка-владелец в
+            // «основную» не подставляется — она может быть презентацией.
+            mainDealId: family.mainDealId ?? dto.relatedDeals?.mainDealId,
+            presentationDealId:
+                family.presentationDealId ??
+                dto.relatedDeals?.presentationDealId,
+            xoDealId: family.xoDealId ?? dto.relatedDeals?.xoDealId,
             kpiItem: dto.kpiItem,
             historyItem: dto.historyItem,
             relatedReports: dto.relatedReportIds?.join(', '),

@@ -462,3 +462,29 @@ export class CallReportWeeklyRequestDto {
     @IsIn(WEEKLY_REPORT_DELIVERY_MODES as unknown as string[])
     delivery?: WeeklyReportDeliveryMode;
 }
+
+/** Статистика типов звонков за период — цифры для калибровки классификатора. */
+export class CallTypeStatsRequestDto {
+    @ApiProperty({
+        description: 'Домен портала Bitrix24.',
+        example: 'alfacentr.bitrix24.ru',
+        type: String,
+    })
+    @IsString()
+    @IsNotEmpty()
+    domain: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Глубина выборки в днях от текущего момента. По умолчанию 30.',
+        example: 30,
+        type: Number,
+        minimum: 1,
+        maximum: 366,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    @Max(366)
+    days?: number;
+}

@@ -18,6 +18,18 @@ const prismaRow = {
     updated_at: new Date('2026-07-21T10:40:00Z'),
 };
 
+/** Строка лёгкой выборки: только колонки select, без text. */
+const liteRow = {
+    id: BigInt(42),
+    domain: 'test.bitrix24.ru',
+    call_started_at: new Date('2026-07-21T10:00:00Z'),
+    duration: '700',
+    entity_type: 'deal',
+    entity_id: '123',
+    user_id: '7',
+    created_at: new Date('2026-07-21T10:30:00Z'),
+};
+
 const makeRepo = () => ({
     upsertPipeline: jest.fn().mockResolvedValue(prismaRow),
     updatePipeline: jest.fn().mockResolvedValue(prismaRow),
@@ -25,6 +37,7 @@ const makeRepo = () => ({
     reanimateStaleProcessing: jest.fn().mockResolvedValue(3),
     findDonePipeline: jest.fn().mockResolvedValue([prismaRow]),
     findById: jest.fn().mockResolvedValue(prismaRow),
+    findDonePipelineInPeriodLite: jest.fn().mockResolvedValue([liteRow]),
 });
 
 describe('TranscriptionStoreService (pipeline)', () => {
@@ -75,5 +88,35 @@ describe('TranscriptionStoreService (pipeline)', () => {
         await expect(service.findPipelineById('99')).rejects.toThrow(
             'Transcription not found',
         );
+    });
+
+    it('findDoneInPeriodLite маппит лёгкую строку без текста транскрипта', async () => {
+        const repo = makeRepo();
+        const service = new TranscriptionStoreService(repo as never);
+        const from = new Date('2026-07-01T00:00:00Z');
+        const to = new Date('2026-07-31T23:59:59Z');
+        const rows = await service.findDoneInPeriodLite(
+            'test.bitrix24.ru',
+            from,
+            to,
+        );
+        expect(repo.findDonePipelineInPeriodLite).toHaveBeenCalledWith(
+            'test.bitrix24.ru',
+            from,
+            to,
+        );
+        expect(rows).toEqual([
+            {
+                id: '42',
+                domain: 'test.bitrix24.ru',
+                callStartedAt: liteRow.call_started_at,
+                durationSec: '700',
+                entityType: 'deal',
+                entityId: '123',
+                userId: '7',
+                createdAt: liteRow.created_at,
+            },
+        ]);
+        expect(rows[0]).not.toHaveProperty('text');
     });
 });

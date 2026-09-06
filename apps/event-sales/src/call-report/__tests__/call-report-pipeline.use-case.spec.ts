@@ -168,6 +168,7 @@ describe('CallReportPipelineUseCase', () => {
             '42',
             true,
             null,
+            null,
         );
         // Резюме+рекомендации — ОДНИМ объединённым вызовом.
         expect(llm.analyzeCall).toHaveBeenCalledTimes(1);
@@ -186,6 +187,7 @@ describe('CallReportPipelineUseCase', () => {
             resumeSaved: true,
             recomendationSaved: true,
             callType: 'cold',
+            classifyConfidence: 0.9,
         });
     });
 
@@ -292,6 +294,7 @@ describe('CallReportPipelineUseCase', () => {
             '42',
             true,
             'КОНТЕКСТ ИЗ CRM: лид создан заявкой',
+            null,
         );
     });
 

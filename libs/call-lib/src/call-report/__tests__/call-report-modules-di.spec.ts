@@ -2,6 +2,9 @@ import 'reflect-metadata';
 import { CallReportWeeklyModule } from '../weekly-report/call-report-weekly.module';
 import { KnowledgeMaterialsModule } from '../knowledge-materials.module';
 import { CallReportSmartModule } from '../call-report-smart.module';
+import { CallReportAnalyticsCoreModule } from '../../call-report-analytics/call-report-analytics-core.module';
+import { CallReportAnalyticsModule } from '../../call-report-analytics/call-report-analytics.module';
+import { CallReportAnalyticsService } from '../../call-report-analytics/call-report-analytics.service';
 
 /**
  * Статическая проверка DI-графа модулей: у каждого провайдера все
@@ -110,5 +113,21 @@ describe('DI-граф модулей call-report', () => {
 
     it('CallReportSmartModule: все зависимости провайдеров доступны', () => {
         expect(missingDependencies(CallReportSmartModule)).toEqual([]);
+    });
+
+    it('CallReportAnalyticsCoreModule: все зависимости провайдеров доступны', () => {
+        expect(missingDependencies(CallReportAnalyticsCoreModule)).toEqual([]);
+    });
+
+    it('CallReportAnalyticsModule: крон видит фасад ядра и настройки порталов', () => {
+        expect(missingDependencies(CallReportAnalyticsModule)).toEqual([]);
+    });
+
+    it('CallReportAnalyticsModule реэкспортирует фасад CallReportAnalyticsService (как раньше)', () => {
+        expect(
+            exportsOf(CallReportAnalyticsModule).has(
+                CallReportAnalyticsService,
+            ),
+        ).toBe(true);
     });
 });

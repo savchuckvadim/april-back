@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Transcription } from 'generated/prisma';
-import { TranscriptionRepository } from '../repository/transcription.repository';
+import {
+    TranscriptionPipelineLiteRow,
+    TranscriptionRepository,
+} from '../repository/transcription.repository';
 import {
     createTranscriptionEntityFromDto,
     createTranscriptionResponseDtoFromPrisma,
@@ -11,6 +14,7 @@ import {
 } from '../dto/transcription.store.dto';
 import {
     TRANSCRIPTION_BUSY_STATUSES,
+    TranscriptionPipelineLiteView,
     TranscriptionPipelineUpdateInput,
     TranscriptionPipelineUpsertInput,
     TranscriptionPipelineView,
@@ -215,6 +219,24 @@ export class TranscriptionStoreService {
         return rows.map(row => this.toPipelineView(row));
     }
 
+    /**
+     * Лёгкая версия findDoneInPeriod для AI-аналитики: те же строки, но
+     * без текста транскрипта (select только нужных колонок).
+     */
+    async findDoneInPeriodLite(
+        domain: string,
+        from: Date,
+        to: Date,
+    ): Promise<TranscriptionPipelineLiteView[]> {
+        const rows =
+            await this.transcriptionRepository.findDonePipelineInPeriodLite(
+                domain,
+                from,
+                to,
+            );
+        return rows.map(row => this.toPipelineLiteView(row));
+    }
+
     /** Строка по id в pipeline-представлении (с dedup/call-полями). */
     async findPipelineById(id: string): Promise<TranscriptionPipelineView> {
         const row = await this.transcriptionRepository.findById(id);
@@ -222,6 +244,21 @@ export class TranscriptionStoreService {
             throw new NotFoundException('Transcription not found');
         }
         return this.toPipelineView(row);
+    }
+
+    private toPipelineLiteView(
+        row: TranscriptionPipelineLiteRow,
+    ): TranscriptionPipelineLiteView {
+        return {
+            id: row.id.toString(),
+            domain: row.domain,
+            callStartedAt: row.call_started_at,
+            durationSec: row.duration,
+            entityType: row.entity_type,
+            entityId: row.entity_id,
+            userId: row.user_id,
+            createdAt: row.created_at,
+        };
     }
 
     private toPipelineView(row: Transcription): TranscriptionPipelineView {

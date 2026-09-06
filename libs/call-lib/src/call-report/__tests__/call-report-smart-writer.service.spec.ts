@@ -110,6 +110,32 @@ describe('CallReportSmartWriterService', () => {
         expect(fields).not.toHaveProperty('ufCrm128FiveKCriteria');
     });
 
+    it('сверка с отчётом менеджера: отчёт, флаг расхождения, пункты и объяснение — в поля AUDIT_*', async () => {
+        const bitrix = makeBitrix();
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        await writer.addItem({
+            activityId: '101',
+            callType: 'presentation',
+            transcriptionId: '42',
+            hvostManager: 'КП предложено: да',
+            fiveKManager: 'Менеджер не отчитался',
+            auditMismatch: true,
+            auditPoints: 'цена не озвучена\nдата не назначена',
+            auditSummary: 'Менеджер отметил КП, в разговоре КП не звучало',
+        });
+        const fields = (
+            bitrix.item.add.mock.calls[0] as unknown[]
+        )[1] as Record<string, unknown>;
+        expect(fields.ufCrm128HvostManager).toBe('КП предложено: да');
+        expect(fields.ufCrm128FiveKManager).toBe('Менеджер не отчитался');
+        expect(fields.ufCrm128AuditMismatch).toBe(1);
+        expect(fields.ufCrm128AuditPoints).toContain('цена не озвучена');
+        expect(fields.ufCrm128AuditSummary).toContain('КП не звучало');
+    });
+
     it('пишет связи воронок в формате поля, привязки списков и разделы анализа', async () => {
         const bitrix = makeBitrix();
         const writer = new CallReportSmartWriterService(
@@ -155,7 +181,6 @@ describe('CallReportSmartWriterService', () => {
         expect(fields.ufCrm128PriceRelevance).toBe(0);
         expect(fields.ufCrm128PriceScore).toBeUndefined();
     });
-
 
     it('одиночное crm-поле получает СКАЛЯР: массив Битрикс сохранил бы литералом «Array»', async () => {
         const bitrix = makeBitrix();

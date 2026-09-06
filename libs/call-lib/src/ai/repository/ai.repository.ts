@@ -10,6 +10,16 @@ export abstract class AiRepository {
         domain: string,
         userId: string,
     ): Promise<AiEntity[] | null>;
+    /**
+     * AI-записи портала заданных типов за период (по created_at) — для
+     * статистики типов звонков и калибровки классификатора.
+     */
+    abstract findByDomainTypesInPeriod(
+        domain: string,
+        types: string[],
+        from: Date,
+        to: Date,
+    ): Promise<AiEntity[]>;
     /** AI-записи по списку транскрипций (опционально — только один провайдер). */
     abstract findByTranscriptionIds(
         transcriptionIds: string[],

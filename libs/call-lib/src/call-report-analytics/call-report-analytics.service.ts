@@ -115,6 +115,7 @@ export class CallReportAnalyticsService {
             to: query.to,
             filters: {
                 managerId: query.managerId ?? null,
+                managerIds: query.managerIds ?? null,
                 minDurationSec: query.minDurationSec ?? null,
                 maxDurationSec: query.maxDurationSec ?? null,
                 callType: query.callType ?? null,

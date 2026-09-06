@@ -1,5 +1,6 @@
 import {
     CALL_REPORT_SECTIONS,
+    CALL_REPORT_CALL_TYPE_CODES,
     CALL_REPORT_COACHING_CODES,
     CALL_REPORT_COMPETITOR_CODES,
     CALL_REPORT_INTERLOCUTOR_CODES,
@@ -312,6 +313,13 @@ export const FOCUS_SYNTHESIS_SCHEMA: Record<string, unknown> = {
             minimum: 0,
             maximum: 100,
         },
+        // Уточнение типа звонка ПОСЛЕ полного разбора: дешёвый классификатор
+        // видел выжимку, синтез — весь разговор, паспорт и материалы.
+        callTypeRefined: {
+            type: ['string', 'null'],
+            enum: [...CALL_REPORT_CALL_TYPE_CODES, null],
+        },
+        callTypeReason: { type: ['string', 'null'] },
     },
     required: [
         'summary',
@@ -321,6 +329,8 @@ export const FOCUS_SYNTHESIS_SCHEMA: Record<string, unknown> = {
         'employeeRecommendations',
         'coachingPriority',
         'scriptCompliance',
+        'callTypeRefined',
+        'callTypeReason',
     ],
     additionalProperties: false,
 };
@@ -344,7 +354,17 @@ export const FOCUS_SYNTHESIS_PROMPT = `${DEEP_ANALYSIS_CORE_RULES}
 - employeeRecommendations — что сотруднику развивать на дистанции.
 - coachingPriority — срочность разбора с руководителем.
 - scriptCompliance (0-100) — соответствие скрипту из материалов; null, если
-  скрипта нет.`;
+  скрипта нет.
+- callTypeRefined — ТИП ЗВОНКА ПО ФАКТУ РАЗГОВОРА. Тип от классификатора дан
+  в сообщении пользователя как подсказка; ты видел весь разговор целиком —
+  если он явно другой (в «звонке» на самом деле показали систему и прошли
+  хвост — это 'presentation'; клиент «подумает» после показа — 'refine';
+  обсуждали условия и сроки покупки — 'decision'), верни верный код.
+  Совпадает с подсказкой — верни тот же код. 'other' — только если разговор
+  про продукт, но ни к одному этапу не относится (сопровождение,
+  техподдержка, организационное); для состоявшегося разговора о продаже
+  'other' почти всегда ошибка.
+- callTypeReason — одна фраза: по каким признакам разговора определён тип.`;
 
 /** Компактная выжимка результата фокуса для синтеза. */
 export function renderFocusDigest(

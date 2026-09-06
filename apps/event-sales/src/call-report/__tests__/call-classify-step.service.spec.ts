@@ -16,12 +16,14 @@ const CLASSIFICATION = {
 const makeDeps = (overrides?: {
     vibecodeError?: boolean;
     confidence?: number;
+    callType?: string;
 }) => {
     const vibecode = {
         classifyCall: overrides?.vibecodeError
             ? jest.fn().mockRejectedValue(new Error('vibecode down'))
             : jest.fn().mockResolvedValue({
                   ...CLASSIFICATION,
+                  callType: overrides?.callType ?? CLASSIFICATION.callType,
                   confidence: overrides?.confidence ?? 0.9,
               }),
     };
@@ -136,5 +138,120 @@ describe('CallClassifyStepService', () => {
         const result = await service.run('текст', PAYLOAD as never, '42');
         expect(result).toBeNull();
         expect(aiService.create).not.toHaveBeenCalled();
+    });
+
+    describe('приор из CRM', () => {
+        const strong = {
+            callType: 'presentation' as const,
+            strength: 'strong' as const,
+            reason: 'сделка на стадии sales_pres',
+        };
+        const weak = {
+            callType: 'call' as const,
+            strength: 'weak' as const,
+            reason: 'сделка на стадии sales_new',
+        };
+
+        it('сильный приор перекрывает «другое» модели; исходный ответ сохраняется в ais', async () => {
+            const { service, aiService } = makeDeps({
+                callType: 'other',
+                confidence: 0.8,
+            });
+            const result = await service.run(
+                'текст',
+                PAYLOAD as never,
+                '42',
+                true,
+                null,
+                strong,
+            );
+            expect(result?.callType).toBe('presentation');
+            expect(result?.confidence).toBeGreaterThanOrEqual(0.7);
+            expect(aiService.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    result: 'presentation',
+                    user_result: expect.objectContaining({
+                        priorApplied: true,
+                        originalCallType: 'other',
+                        originalConfidence: 0.8,
+                        needsEscalation: false,
+                    }) as object,
+                }),
+            );
+        });
+
+        it('сильный приор перекрывает и неуверенный НЕ-«другое» ответ', async () => {
+            const { service } = makeDeps({ callType: 'call', confidence: 0.4 });
+            const result = await service.run(
+                'текст',
+                PAYLOAD as never,
+                '42',
+                true,
+                null,
+                strong,
+            );
+            expect(result?.callType).toBe('presentation');
+        });
+
+        it('уверенный ответ модели приор не трогает, но CRM-подсказка сохраняется', async () => {
+            const { service } = makeDeps({ callType: 'call', confidence: 0.9 });
+            const result = await service.run(
+                'текст',
+                PAYLOAD as never,
+                '42',
+                true,
+                null,
+                strong,
+            );
+            expect(result?.callType).toBe('call');
+            expect(result?.priorApplied).toBeUndefined();
+            expect(result?.priorCallType).toBe('presentation');
+        });
+
+        it('слабый приор перекрывает только НЕУВЕРЕННОЕ «другое»', async () => {
+            const sure = makeDeps({ callType: 'other', confidence: 0.85 });
+            expect(
+                (
+                    await sure.service.run(
+                        'текст',
+                        PAYLOAD as never,
+                        '42',
+                        true,
+                        null,
+                        weak,
+                    )
+                )?.callType,
+            ).toBe('other');
+            const unsure = makeDeps({ callType: 'other', confidence: 0.4 });
+            expect(
+                (
+                    await unsure.service.run(
+                        'текст',
+                        PAYLOAD as never,
+                        '42',
+                        true,
+                        null,
+                        weak,
+                    )
+                )?.callType,
+            ).toBe('call');
+        });
+
+        it('без приора ответ модели уходит как есть', async () => {
+            const { service } = makeDeps({
+                callType: 'other',
+                confidence: 0.3,
+            });
+            const result = await service.run(
+                'текст',
+                PAYLOAD as never,
+                '42',
+                true,
+                null,
+                null,
+            );
+            expect(result?.callType).toBe('other');
+            expect(result?.priorCallType).toBeUndefined();
+        });
     });
 });

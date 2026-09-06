@@ -7,9 +7,11 @@ import { CallReportAnalyzeUseCase } from '../use-cases/call-report-analyze.use-c
 import { CallRevisionService } from '../services/call-revision.service';
 import { PresentationAuditService } from '../services/presentation-audit.service';
 import { PresentationPlanFactService } from '../services/presentation-plan-fact.service';
+import { CallTypeStatsService } from '../services/call-type-stats.service';
 import {
     AnalyzeCallDto,
     CallReportWeeklyRequestDto,
+    CallTypeStatsRequestDto,
     InstallCallReportSmartDto,
     PresentationAuditRequestDto,
     PresentationPlanFactRequestDto,
@@ -20,6 +22,7 @@ import {
     AnalyzeCallsResponseDto,
     CallReportScanResponseDto,
     CallReportWeeklyResponseDto,
+    CallTypeStatsResponseDto,
     InstallCallReportSmartResponseDto,
     PresentationAuditResponseDto,
     PresentationPlanFactResponseDto,
@@ -44,6 +47,7 @@ export class CallReportController {
         private readonly presentationAudit: PresentationAuditService,
         private readonly planFact: PresentationPlanFactService,
         private readonly sendWeekly: SendCallReportWeeklyUseCase,
+        private readonly typeStats: CallTypeStatsService,
     ) {}
 
     @Post('install-smart')
@@ -263,5 +267,34 @@ export class CallReportController {
             recipients: dto.recipients,
             delivery: dto.delivery,
         });
+    }
+
+    @Post('type-stats')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Статистика типов звонков (калибровка классификатора)',
+        description:
+            'По ais-записям портала за период: распределение типов «как ' +
+            'сказал классификатор» и итоговое (после приора CRM и уточнения ' +
+            'синтезом разбора), доля «другое», средняя и низкая уверенность, ' +
+            'сколько раз сработали приор и синтез, примеры «другое» с ' +
+            'обоснованием. Ничего не меняет — только читает БД.',
+    })
+    @ApiBody({
+        type: CallTypeStatsRequestDto,
+        description: 'Домен и глубина выборки в днях.',
+    })
+    @ApiOkResponse({
+        type: CallTypeStatsResponseDto,
+        description: 'Распределения, уверенность и примеры «другое».',
+    })
+    async typeStatsRun(
+        @Body() dto: CallTypeStatsRequestDto,
+    ): Promise<CallTypeStatsResponseDto> {
+        const to = new Date();
+        const from = new Date(
+            to.getTime() - (dto.days ?? 30) * 24 * 60 * 60 * 1000,
+        );
+        return this.typeStats.collect(dto.domain, from, to);
     }
 }

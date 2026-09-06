@@ -570,3 +570,139 @@ export class CallReportWeeklyResponseDto {
     })
     delivery: string | null;
 }
+
+/** Пример звонка с итоговым типом «другое» — для ручной калибровки. */
+export class CallTypeStatsSampleDto {
+    @ApiProperty({
+        description: 'ID транскрипции звонка.',
+        example: '4812',
+        type: String,
+    })
+    transcriptionId: string;
+
+    @ApiProperty({
+        description: 'Тип от классификатора; null — классификации не было.',
+        example: 'other',
+        type: String,
+        nullable: true,
+    })
+    classifierType: string | null;
+
+    @ApiProperty({
+        description: 'Уверенность классификатора 0..1; null — неизвестна.',
+        example: 0.45,
+        type: Number,
+        nullable: true,
+    })
+    confidence: number | null;
+
+    @ApiProperty({
+        description: 'Итоговый тип (после приора CRM и уточнения синтезом).',
+        example: 'other',
+        type: String,
+    })
+    finalType: string;
+
+    @ApiProperty({
+        description: 'Обоснование классификатора; null — не сохранено.',
+        example: 'разговор о сроках доставки документов',
+        type: String,
+        nullable: true,
+    })
+    reason: string | null;
+}
+
+/** Статистика типов звонков портала за период. */
+export class CallTypeStatsResponseDto {
+    @ApiProperty({
+        description: 'Домен портала.',
+        example: 'alfacentr.bitrix24.ru',
+        type: String,
+    })
+    domain: string;
+
+    @ApiProperty({
+        description: 'Начало периода (ISO).',
+        example: '2026-08-06T10:00:00.000Z',
+        type: String,
+    })
+    from: string;
+
+    @ApiProperty({
+        description: 'Конец периода (ISO).',
+        example: '2026-09-05T10:00:00.000Z',
+        type: String,
+    })
+    to: string;
+
+    @ApiProperty({
+        description: 'Сколько звонков (транскрипций) в выборке.',
+        example: 412,
+        type: Number,
+    })
+    total: number;
+
+    @ApiProperty({
+        description:
+            'Распределение по типам КАК СКАЗАЛ КЛАССИФИКАТОР (с учётом ' +
+            'приора CRM): код типа → число звонков.',
+        example: { call: 210, presentation: 48, other: 90 },
+        type: 'object',
+        additionalProperties: { type: 'number' },
+    })
+    classifierByType: Record<string, number>;
+
+    @ApiProperty({
+        description:
+            'ИТОГОВОЕ распределение — тип из глубокого разбора (после ' +
+            'уточнения синтезом), иначе тип классификатора.',
+        example: { call: 230, presentation: 61, other: 40 },
+        type: 'object',
+        additionalProperties: { type: 'number' },
+    })
+    finalByType: Record<string, number>;
+
+    @ApiProperty({
+        description: 'Доля итогового «другое», % (целое).',
+        example: 10,
+        type: Number,
+    })
+    otherSharePct: number;
+
+    @ApiProperty({
+        description:
+            'Средняя уверенность классификатора 0..1; null — нет данных.',
+        example: 0.74,
+        type: Number,
+        nullable: true,
+    })
+    avgConfidence: number | null;
+
+    @ApiProperty({
+        description: 'Сколько классификаций с уверенностью ниже порога (0.6).',
+        example: 57,
+        type: Number,
+    })
+    lowConfidence: number;
+
+    @ApiProperty({
+        description: 'Сколько раз приор CRM перекрыл ответ модели.',
+        example: 23,
+        type: Number,
+    })
+    priorApplied: number;
+
+    @ApiProperty({
+        description:
+            'Сколько раз синтез разбора изменил тип относительно классификатора.',
+        example: 31,
+        type: Number,
+    })
+    refinedBySynthesis: number;
+
+    @ApiProperty({
+        description: 'До 20 примеров итогового «другое» для ручной калибровки.',
+        type: [CallTypeStatsSampleDto],
+    })
+    samples: CallTypeStatsSampleDto[];
+}

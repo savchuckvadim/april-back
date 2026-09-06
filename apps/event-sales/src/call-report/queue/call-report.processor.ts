@@ -7,14 +7,28 @@ import { QueueDispatcherService } from '@lib/queue/dispatch/queue-dispatcher.ser
 import {
     buildDedupKey,
     CallReportBaseItemService,
+    CallTypeRegistryService,
     TranscriptionStoreService,
+    TranscriptionPipelineView,
 } from '@lib/call-lib';
 import { AgentAnalysisIntakeService } from '../../agent-gate/services/agent-analysis-intake.service';
+import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
+import {
+    buildAnalysisVersions,
+    buildRegistryHash,
+    CALL_REPORT_REGISTRY_BUILTIN,
+} from '../contracts/call-report-versions.const';
+import { CLASSIFY_ESCALATION_CONFIDENCE } from '../services/call-classify-step.service';
+import { CallReportAlertService } from '../services/call-report-alert.service';
 import { CallComplianceReviewService } from '../services/call-compliance-review.service';
-import { CallContextBuilderService } from '../services/call-context-builder.service';
+import {
+    CallContextBuilderService,
+    CallPassport,
+} from '../services/call-context-builder.service';
 import { CallDeepAnalysisService } from '../services/call-deep-analysis.service';
 import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
 import { CallReportSettingsService } from '../services/call-report-settings.service';
+import { CallReportListLinkService } from '../services/call-report-list-link.service';
 import {
     CallReportAnalyzeStagePayload,
     CallReportJobPayload,
@@ -72,6 +86,9 @@ export class CallReportProcessor {
         private readonly complianceReview: CallComplianceReviewService,
         private readonly transcriptionStore: TranscriptionStoreService,
         private readonly settingsService: CallReportSettingsService,
+        private readonly listLinker: CallReportListLinkService,
+        private readonly callTypeRegistry: CallTypeRegistryService,
+        private readonly alerts: CallReportAlertService,
     ) {}
 
     /** Имя аналитика в ais-записях и в поле смарта «Имя агента-аналитика». */
@@ -136,16 +153,19 @@ export class CallReportProcessor {
             // Глубокий разбор идёт ПОСЛЕ базового элемента: каркас со
             // связями и транскриптом уже стоит, разбор дополняет его по
             // xmlId. Если разбор не удался — остаётся базовый элемент.
-            await this.runDeepAnalysis(
+            // Разбор может УТОЧНИТЬ тип (синтез видел весь разговор) —
+            // дальше идёт итоговый тип.
+            const callType = await this.runDeepAnalysis(
                 result.transcriptionId,
                 result.callType,
                 job.data,
+                result.classifyConfidence ?? null,
             );
             // Проверка по документам компании — ПОСЛЕ разбора: ей нужны
             // установленные факты звонка (продукты, возражения, хвост/5К).
             await this.runComplianceReview(
                 result.transcriptionId,
-                result.callType,
+                callType,
                 job.data,
             );
         } catch (error) {
@@ -167,7 +187,8 @@ export class CallReportProcessor {
         transcriptionId: string,
         callType: string | null,
         payload: CallReportJobPayload,
-    ): Promise<void> {
+        classifyConfidence: number | null = null,
+    ): Promise<string | null> {
         try {
             // Включение и модель шага — из настроек портала (склейка
             // портал → env CALL_REPORT_DEEP_ANALYSIS_ENABLED → дефолт).
@@ -176,7 +197,7 @@ export class CallReportProcessor {
                 this.logger.log(
                     `Глубокий разбор выключен для ${payload.domain} (настройки/env) — пропуск`,
                 );
-                return;
+                return callType;
             }
             const row =
                 await this.transcriptionStore.findPipelineById(transcriptionId);
@@ -184,7 +205,7 @@ export class CallReportProcessor {
                 this.logger.warn(
                     `Транскрипт ${transcriptionId} пуст — глубокий разбор пропущен`,
                 );
-                return;
+                return callType;
             }
             // Слой 0: «паспорт звонка» (CRM-контекст, направление, история) —
             // fail-open, пустой паспорт не мешает разбору.
@@ -216,12 +237,34 @@ export class CallReportProcessor {
                     passportBlock,
                     { model },
                 ));
-            if (!analysis) return;
+            if (!analysis) return callType;
 
             // Версия аналитика в поле смарта «Версия скилла агента»: раньше
             // заполнялась только внешним агентом и у внутреннего пути была
             // вечно пустой.
             analysis.agentVersion ??= 'internal-focus-v2';
+            // Версии разбора (план AI-аналитики §5.4): ряд оценок сравним
+            // только внутри одной версии промпта/рубрики/реестра/атрибуции/
+            // классификатора — без них витрина не построит тренды.
+            analysis.versions ??= buildAnalysisVersions(
+                await this.resolveRegistryHash(payload.domain),
+            );
+            const finalCallType = this.refineCallType(
+                analysis,
+                callType,
+                classifyConfidence,
+                transcriptionId,
+            );
+            // Записи отчётности менеджера (ОП KPI / ОП История) — кодом по
+            // CRM-ссылкам клиента и дате; раньше эти поля заполнял только
+            // внешний агент и пустовали всегда.
+            await this.attachListLinks(
+                analysis,
+                payload.domain,
+                passport,
+                row,
+                finalCallType,
+            );
 
             const written = await this.analysisIntake.intake(
                 transcriptionId,
@@ -232,12 +275,105 @@ export class CallReportProcessor {
                 `Глубокий разбор записан: ais ${written.aiId}, ` +
                     `смарт-элемент ${written.smartItemId ?? '—'}`,
             );
+            // Алерт РОПу в день звонка (риск-флаг / срочный коучинг) —
+            // после успешной записи разбора; fail-open внутри сервиса.
+            await this.alerts.notifyIfNeeded(
+                payload.domain,
+                analysis,
+                row,
+                written.smartItemId ?? null,
+            );
+            return finalCallType;
         } catch (error) {
             this.logger.warn(
                 `Глубокий разбор не записан (${payload.domain}, activity ` +
                     `${payload.activityId}): ${(error as Error).message}`,
             );
+            return callType;
         }
+    }
+
+    /** Хэш реестра типов домена — часть версий разбора; недоступен → builtin. */
+    private async resolveRegistryHash(domain: string): Promise<string> {
+        try {
+            const registry = await this.callTypeRegistry.resolve(domain);
+            return buildRegistryHash(registry.codes);
+        } catch (error) {
+            this.logger.warn(
+                `Реестр типов недоступен (${domain}): ${(error as Error).message} — ` +
+                    `versions.registry=${CALL_REPORT_REGISTRY_BUILTIN}`,
+            );
+            return CALL_REPORT_REGISTRY_BUILTIN;
+        }
+    }
+
+    /**
+     * Привязка к записям отчётности: только если модель их не установила
+     * (внутренний разбор кандидатов не видит). Fail-open.
+     */
+    private async attachListLinks(
+        analysis: AgentCallAnalysisDto,
+        domain: string,
+        passport: CallPassport,
+        row: TranscriptionPipelineView,
+        callType: string | null,
+    ): Promise<void> {
+        if (analysis.kpiItem || analysis.historyItem) return;
+        try {
+            const links = await this.listLinker.find(
+                domain,
+                passport,
+                row,
+                callType,
+            );
+            if (links.kpiItem) analysis.kpiItem = links.kpiItem;
+            if (links.historyItem) analysis.historyItem = links.historyItem;
+            if (
+                links.relatedReportIds.length &&
+                !analysis.relatedReportIds?.length
+            ) {
+                analysis.relatedReportIds = links.relatedReportIds;
+            }
+        } catch (error) {
+            this.logger.warn(
+                `Привязка записей отчётности не удалась (${domain}, transcription ${row.id}): ${(error as Error).message}`,
+            );
+        }
+    }
+
+    /**
+     * Синтез разбора видел ВЕСЬ разговор, паспорт и материалы, классификатор —
+     * выжимку, и вернул callTypeRefined. Перекрываем тип, когда классификатор
+     * молчал, ответил «другое» или был не уверен; уверенный ответ
+     * классификатора остаётся, расхождение только логируется (калибровка
+     * по ais: обе версии сохраняются в agent-analysis).
+     */
+    private refineCallType(
+        analysis: AgentCallAnalysisDto,
+        callType: string | null,
+        classifyConfidence: number | null,
+        transcriptionId: string,
+    ): string | null {
+        const refined = analysis.callTypeRefined ?? null;
+        if (!refined || refined === callType) return callType;
+        const classifierWeak =
+            callType === null ||
+            callType === 'other' ||
+            (classifyConfidence ?? 1) < CLASSIFY_ESCALATION_CONFIDENCE;
+        if (!classifierWeak) {
+            this.logger.log(
+                `Синтез не согласен с классификатором (transcription ${transcriptionId}): ` +
+                    `${callType} vs ${refined} — оставлен уверенный ответ классификатора`,
+            );
+            return callType;
+        }
+        this.logger.log(
+            `Тип звонка уточнён синтезом (transcription ${transcriptionId}): ` +
+                `${callType ?? '—'} (confidence ${classifyConfidence ?? '—'}) → ${refined}` +
+                (analysis.callTypeReason ? `: ${analysis.callTypeReason}` : ''),
+        );
+        analysis.callType = refined;
+        return refined;
     }
 
     /**

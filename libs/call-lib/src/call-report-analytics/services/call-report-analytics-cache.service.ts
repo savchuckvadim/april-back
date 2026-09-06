@@ -54,6 +54,10 @@ export class CallReportAnalyticsCacheService {
                     from: query.from,
                     to: query.to,
                     managerId: query.managerId ?? null,
+                    // Порядок id не меняет отчёт — сортируем для стабильного ключа.
+                    managerIds: query.managerIds
+                        ? [...query.managerIds].sort()
+                        : null,
                     minDurationSec: query.minDurationSec ?? null,
                     maxDurationSec: query.maxDurationSec ?? null,
                     callType: query.callType ?? null,

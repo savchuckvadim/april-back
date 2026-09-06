@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+    IsArray,
     IsBoolean,
     IsIn,
     IsISO8601,
@@ -69,6 +70,23 @@ export class CallReportAnalyticsQueryDto {
     @IsOptional()
     @IsString()
     managerId?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Список Bitrix-id менеджеров ЭТОГО портала (семантика id — как у ' +
+            'managerId). Строка проходит, если её менеджер входит хотя бы в ' +
+            'один из фильтров managerId / managerIds (объединение). Пустой ' +
+            'список — валидный фильтр «никто» (права доступа: у запросившего ' +
+            'нет подчинённых → отчёт пуст, а не по всему отделу). Звонки без ' +
+            'сохранённого менеджера при фильтре отбрасываются — их число в ' +
+            'meta.skippedNoManager.',
+        example: ['7', '12'],
+        type: [String],
+    })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    managerIds?: string[];
 
     @ApiPropertyOptional({
         description: 'Минимальная длительность звонка, сек (включительно).',

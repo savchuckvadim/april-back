@@ -1,4 +1,20 @@
-import { PresentationAuditService } from '../services/presentation-audit.service';
+import {
+    MANAGER_HVOST_REPORT_MISSING,
+    PresentationAuditService,
+} from '../services/presentation-audit.service';
+
+// Writer смарта — реальный класс ходит в crm.item по xmlId; здесь важен
+// только вызов updateExisting с полями сверки.
+const mockUpdateExisting = jest.fn().mockResolvedValue(undefined);
+jest.mock(
+    '@lib/call-lib/call-report/services/call-report-smart-writer.service',
+    () => ({
+        CallReportSmartWriterService: jest.fn().mockImplementation(() => ({
+            updateExisting: (...args: unknown[]): Promise<void> =>
+                mockUpdateExisting(...args) as Promise<void>,
+        })),
+    }),
+);
 
 const DOMAIN = 'gsr.bitrix24.ru';
 
@@ -86,6 +102,7 @@ const makeDeps = (options?: {
                 domain: DOMAIN,
                 callStartedAt: new Date('2026-08-14T10:00:00Z'),
                 userId: '187',
+                activityId: '901',
             },
         ]),
     };
@@ -156,6 +173,25 @@ describe('PresentationAuditService (сверка отчёта менеджера
         );
         expect(timeline.addTimelineComment).toHaveBeenCalledWith(
             expect.objectContaining({ ENTITY_ID: 601, ENTITY_TYPE: 'deal' }),
+        );
+    });
+
+    it('сверка пишется в поля элемента: отчёт менеджера (или «не отчитался»), флаг, пункты, объяснение', async () => {
+        mockUpdateExisting.mockClear();
+        const { service } = makeDeps({
+            dealFields: { UF_OP_PRESENTATION_5K: 'клиент хочет практику' },
+        });
+        await service.runForDomain(DOMAIN, new Date(0), new Date());
+        expect(mockUpdateExisting).toHaveBeenCalledWith(
+            expect.objectContaining({
+                activityId: '901',
+                // Хвост менеджер не заполнил — явный текст вместо пустоты.
+                hvostManager: MANAGER_HVOST_REPORT_MISSING,
+                fiveKManager: expect.stringContaining('практику') as string,
+                auditMismatch: true,
+                auditPoints: 'отчёт пуст',
+                auditSummary: expect.stringContaining('не заполнен') as string,
+            }),
         );
     });
 

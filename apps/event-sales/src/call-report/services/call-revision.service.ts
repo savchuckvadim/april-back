@@ -8,6 +8,7 @@ import {
 } from '@lib/call-lib';
 import { CallReportSmartResolverService } from '@lib/call-lib/call-report/services/call-report-smart-resolver.service';
 import { CallReportSmartWriterService } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
+import { CallReportDealFamilyService } from '@lib/call-lib/call-report/services/call-report-deal-family.service';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 import { AGENT_ANALYSIS_TYPE } from '../../agent-gate/services/agent-call-package.service';
 import {
@@ -68,6 +69,7 @@ export class CallRevisionService {
         private readonly smartResolver: CallReportSmartResolverService,
         private readonly vibeCodeClient: VibeCodeClient,
         private readonly vibeKeyResolver: VibeKeyResolverService,
+        private readonly dealFamily: CallReportDealFamilyService,
     ) {}
 
     /** Ревизия домена за окно [from, to]; maxEntities — бюджет прохода. */
@@ -298,6 +300,18 @@ export class CallRevisionService {
         const smartInfo = await this.smartResolver.resolve(domain);
         if (smartInfo) {
             const writer = new CallReportSmartWriterService(bitrix, smartInfo);
+            // Раскладка сделок по воронкам (корневая — через «Корневая
+            // сделка Продажи»): владелец звонка часто дочерняя
+            // сделка-презентация, и класть её в «ОП: основная сделка» —
+            // ошибка (alfacentr, 05.09.2026); ночной долив связей раньше
+            // перетирал этим правильное значение intake.
+            const family =
+                passport.entityType === 'deal'
+                    ? await this.dealFamily.resolve(
+                          domain,
+                          passport.entityId ?? undefined,
+                      )
+                    : {};
             const input = {
                 // Связи владельца звонка из CRM (источник истины) — update
                 // дополняет существующий элемент, пустые значения не шлются.
@@ -313,10 +327,9 @@ export class CallRevisionService {
                     passport.entityType === 'lead'
                         ? (passport.entityId ?? undefined)
                         : undefined,
-                mainDealId:
-                    passport.entityType === 'deal'
-                        ? (passport.entityId ?? undefined)
-                        : undefined,
+                mainDealId: family.mainDealId,
+                presentationDealId: family.presentationDealId,
+                xoDealId: family.xoDealId,
                 companyId: passport.crmCompanyId ?? undefined,
                 contactId: passport.crmContactId ?? undefined,
                 // Привязка записей отчётности (после sanitizeListLinks id

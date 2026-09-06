@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { TranscriptionRepository } from './transcription.repository';
+import {
+    TRANSCRIPTION_PIPELINE_LITE_SELECT,
+    TranscriptionPipelineLiteRow,
+    TranscriptionRepository,
+} from './transcription.repository';
 import { PrismaService } from '@lib/core';
 import { Prisma, Transcription } from 'generated/prisma';
 import { TranscriptionBaseDto } from '../dto/transcription.store.dto';
@@ -327,23 +331,44 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
         to: Date,
     ): Promise<Transcription[]> {
         return this.prisma.transcription.findMany({
-            where: {
-                status: 'done',
-                dedup_key: { not: null },
-                domain,
-                // Период — по фактическому времени звонка; у части строк
-                // call_started_at пуст (ручные POST /call-report/analyze без
-                // callStartedAtIso) — для них fallback на created_at, иначе
-                // такие звонки навсегда выпадали бы из отчётов.
-                OR: [
-                    { call_started_at: { gte: from, lte: to } },
-                    {
-                        call_started_at: null,
-                        created_at: { gte: from, lte: to },
-                    },
-                ],
-            },
+            where: this.donePipelineInPeriodWhere(domain, from, to),
             orderBy: { call_started_at: 'asc' },
         });
+    }
+
+    async findDonePipelineInPeriodLite(
+        domain: string,
+        from: Date,
+        to: Date,
+    ): Promise<TranscriptionPipelineLiteRow[]> {
+        return this.prisma.transcription.findMany({
+            where: this.donePipelineInPeriodWhere(domain, from, to),
+            select: TRANSCRIPTION_PIPELINE_LITE_SELECT,
+            orderBy: { call_started_at: 'asc' },
+        });
+    }
+
+    /** Done-строки автоконвейера домена за период — общий where выборок. */
+    private donePipelineInPeriodWhere(
+        domain: string,
+        from: Date,
+        to: Date,
+    ): Prisma.TranscriptionWhereInput {
+        return {
+            status: 'done',
+            dedup_key: { not: null },
+            domain,
+            // Период — по фактическому времени звонка; у части строк
+            // call_started_at пуст (ручные POST /call-report/analyze без
+            // callStartedAtIso) — для них fallback на created_at, иначе
+            // такие звонки навсегда выпадали бы из отчётов.
+            OR: [
+                { call_started_at: { gte: from, lte: to } },
+                {
+                    call_started_at: null,
+                    created_at: { gte: from, lte: to },
+                },
+            ],
+        };
     }
 }

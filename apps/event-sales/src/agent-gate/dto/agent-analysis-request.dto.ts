@@ -271,7 +271,8 @@ export class AgentNextStepDto {
  */
 export class AgentHvostStepsDto {
     @ApiPropertyOptional({
-        description: "ЖЕЛАНИЕ РАБОТАТЬ С ГАРАНТОМ: впечатление, что запомнилось, с чем хотел бы работать",
+        description:
+            'ЖЕЛАНИЕ РАБОТАТЬ С ГАРАНТОМ: впечатление, что запомнилось, с чем хотел бы работать',
         example: true,
         type: Boolean,
         nullable: true,
@@ -281,7 +282,8 @@ export class AgentHvostStepsDto {
     desire?: boolean | null;
 
     @ApiPropertyOptional({
-        description: "ЧТО ПРЕДЛОЖИЛИ: кому нужна СПС, какое наполнение и цену озвучили",
+        description:
+            'ЧТО ПРЕДЛОЖИЛИ: кому нужна СПС, какое наполнение и цену озвучили',
         example: true,
         type: Boolean,
         nullable: true,
@@ -291,7 +293,7 @@ export class AgentHvostStepsDto {
     offered?: boolean | null;
 
     @ApiPropertyOptional({
-        description: "РЕАКЦИЯ НА ЦЕНУ: как клиент отреагировал",
+        description: 'РЕАКЦИЯ НА ЦЕНУ: как клиент отреагировал',
         example: false,
         type: Boolean,
         nullable: true,
@@ -301,7 +303,8 @@ export class AgentHvostStepsDto {
     priceReaction?: boolean | null;
 
     @ApiPropertyOptional({
-        description: "ПРОЦЕСС ПРИНЯТИЯ РЕШЕНИЯ: кто и как решает, контакты коллег",
+        description:
+            'ПРОЦЕСС ПРИНЯТИЯ РЕШЕНИЯ: кто и как решает, контакты коллег',
         example: true,
         type: Boolean,
         nullable: true,
@@ -311,7 +314,8 @@ export class AgentHvostStepsDto {
     decisionProcess?: boolean | null;
 
     @ApiPropertyOptional({
-        description: "ВЫХОД НА РЕШЕНИЕ: готовность продвигать, направленные документы, о чём договорились",
+        description:
+            'ВЫХОД НА РЕШЕНИЕ: готовность продвигать, направленные документы, о чём договорились',
         example: true,
         type: Boolean,
         nullable: true,
@@ -319,7 +323,6 @@ export class AgentHvostStepsDto {
     @IsOptional()
     @IsBoolean()
     decisionWay?: boolean | null;
-
 }
 
 /**
@@ -328,7 +331,8 @@ export class AgentHvostStepsDto {
  */
 export class AgentFiveKItemsDto {
     @ApiPropertyOptional({
-        description: "КЛИЕНТ: задачи, что важно отслеживать, какой функционал важен",
+        description:
+            'КЛИЕНТ: задачи, что важно отслеживать, какой функционал важен',
         example: true,
         type: Boolean,
         nullable: true,
@@ -338,7 +342,8 @@ export class AgentFiveKItemsDto {
     client?: boolean | null;
 
     @ApiPropertyOptional({
-        description: "КОМПАНИЯ: сфера, структура, как принимается решение, кто влияет",
+        description:
+            'КОМПАНИЯ: сфера, структура, как принимается решение, кто влияет',
         example: true,
         type: Boolean,
         nullable: true,
@@ -348,7 +353,8 @@ export class AgentFiveKItemsDto {
     company?: boolean | null;
 
     @ApiPropertyOptional({
-        description: "КОЛЛЕГИ: бухгалтерия, кадры, охрана труда, правовые вопросы",
+        description:
+            'КОЛЛЕГИ: бухгалтерия, кадры, охрана труда, правовые вопросы',
         example: false,
         type: Boolean,
         nullable: true,
@@ -358,7 +364,7 @@ export class AgentFiveKItemsDto {
     colleagues?: boolean | null;
 
     @ApiPropertyOptional({
-        description: "КОНКУРЕНТ: чья СПС, срок договора, цена, чего не хватает",
+        description: 'КОНКУРЕНТ: чья СПС, срок договора, цена, чего не хватает',
         example: true,
         type: Boolean,
         nullable: true,
@@ -368,7 +374,8 @@ export class AgentFiveKItemsDto {
     competitor?: boolean | null;
 
     @ApiPropertyOptional({
-        description: "КРИТЕРИИ ВЫБОРА: что ещё предлагают, на что смотрит при выборе",
+        description:
+            'КРИТЕРИИ ВЫБОРА: что ещё предлагают, на что смотрит при выборе',
         example: true,
         type: Boolean,
         nullable: true,
@@ -376,7 +383,6 @@ export class AgentFiveKItemsDto {
     @IsOptional()
     @IsBoolean()
     criteria?: boolean | null;
-
 }
 
 export class AgentListItemLinkDto {
@@ -593,6 +599,56 @@ export class AgentObjectionDto {
 }
 
 /**
+ * Версии разбора (план AI-аналитики ОП, §5.4): по ним витрина решает,
+ * какие разборы сравнимы между собой (comparableFrom). Внутренний конвейер
+ * заполняет их сам (call-report-versions.const.ts), внешний агент может
+ * прислать свои.
+ */
+export class AgentAnalysisVersionsDto {
+    @ApiProperty({
+        description: 'Версия промпта разбора (фокус-вызовы + синтез).',
+        example: 'focus-v2.1-2026-09-05',
+        type: String,
+    })
+    @IsString()
+    prompt: string;
+
+    @ApiProperty({
+        description: 'Версия рубрики: состав разделов и шкала оценок.',
+        example: 'sections-7-v1',
+        type: String,
+    })
+    @IsString()
+    rubric: string;
+
+    @ApiProperty({
+        description:
+            'Хэш реестра типов звонков домена (короткий sha1 отсортированных ' +
+            'кодов) либо builtin, если реестр был недоступен.',
+        example: '3f2a9c1b0d7e',
+        type: String,
+    })
+    @IsString()
+    registry: string;
+
+    @ApiProperty({
+        description: 'Дата правила атрибуции менеджера звонка (YYYY-MM-DD).',
+        example: '2026-08-24',
+        type: String,
+    })
+    @IsString()
+    attribution: string;
+
+    @ApiProperty({
+        description: 'Дата версии классификатора типов звонков (YYYY-MM-DD).',
+        example: '2026-09-05',
+        type: String,
+    })
+    @IsString()
+    classifier: string;
+}
+
+/**
  * Результат глубокого анализа звонка внешним агентом (OpenClaw/claude-code).
  * Принимается в POST /agent/calls/:transcriptionId/analysis; на его основе
  * создаётся элемент смарт-процесса «AI-анализ звонков».
@@ -613,6 +669,29 @@ export class AgentCallAnalysisDto {
         message: 'callType: слаг вида cold / renewal-call',
     })
     callType: AgentCallType;
+
+    @ApiPropertyOptional({
+        description:
+            'Тип звонка, уточнённый синтезом разбора по всему разговору ' +
+            '(классификатор видел выжимку). Применяется кодом, если ' +
+            'классификатор был неуверен или поставил «другое».',
+        example: 'presentation',
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    callTypeRefined?: string | null;
+
+    @ApiPropertyOptional({
+        description: 'По каким признакам разговора синтез определил тип.',
+        example: 'менеджер показал систему и назначил дату решения',
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    callTypeReason?: string | null;
 
     @ApiPropertyOptional({
         description:
@@ -1084,6 +1163,17 @@ export class AgentCallAnalysisDto {
     @IsOptional()
     @IsString()
     agentVersion?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Версии разбора (промпт, рубрика, реестр типов, атрибуция, ' +
+            'классификатор) — сравнимость истории оценок между разборами.',
+        type: AgentAnalysisVersionsDto,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => AgentAnalysisVersionsDto)
+    versions?: AgentAnalysisVersionsDto;
 
     @ApiPropertyOptional({
         description:
