@@ -1,6 +1,9 @@
 import { AnalyticsCallLiteRow, AnalyticsLiteDataset } from '@lib/call-lib';
 import { CallsLoader } from '../../domain/loaders/calls.loader';
-import { SettingsLoader } from '../../domain/loaders/settings.loader';
+import {
+    AiAnalyticsPortalSettings,
+    SettingsLoader,
+} from '../../domain/loaders/settings.loader';
 import { DEFAULT_WORK_CALENDAR } from '@lib/sales-ai-analytics';
 
 /** Lite-строка звонка с разбором; переопределяй нужные поля. */
@@ -38,27 +41,43 @@ export function callsLoaderWith(rows: AnalyticsCallLiteRow[]): {
     return { loader: new CallsLoader({ loadLite } as never), loadLite };
 }
 
+/** Настройки портала целиком, всё выключено; переопределяй нужные поля. */
+export function portalSettings(
+    overrides: Partial<AiAnalyticsPortalSettings> = {},
+): AiAnalyticsPortalSettings {
+    return {
+        enabled: true,
+        auditEnabled: false,
+        alertsEnabled: false,
+        digestEnabled: false,
+        ropUserIds: [],
+        calendar: { ...DEFAULT_WORK_CALENDAR, holidays: [] },
+        selfViewEnabled: false,
+        dailyPlanEnabled: false,
+        digestAllUserIds: [],
+        poolOptIn: false,
+        poolConsentAt: null,
+        experimentsEnabled: false,
+        ...overrides,
+    };
+}
+
 /** Мок SettingsLoader с дефолтным календарём (Europe/Moscow, пн–пт). */
 export function settingsLoaderWith(
-    overrides: Partial<{
-        enabled: boolean;
-        auditEnabled: boolean;
-        alertsEnabled: boolean;
-        digestEnabled: boolean;
-        ropUserIds: number[];
-        holidays: string[];
-    }> = {},
+    overrides: Partial<AiAnalyticsPortalSettings> & {
+        holidays?: string[];
+    } = {},
 ): SettingsLoader {
-    const load = jest.fn().mockResolvedValue({
-        enabled: overrides.enabled ?? true,
-        auditEnabled: overrides.auditEnabled ?? false,
-        alertsEnabled: overrides.alertsEnabled ?? false,
-        digestEnabled: overrides.digestEnabled ?? false,
-        ropUserIds: overrides.ropUserIds ?? [],
-        calendar: {
-            ...DEFAULT_WORK_CALENDAR,
-            holidays: overrides.holidays ?? [],
-        },
-    });
+    const { holidays, ...settings } = overrides;
+    const load = jest.fn().mockResolvedValue(
+        portalSettings({
+            ...settings,
+            calendar: {
+                ...DEFAULT_WORK_CALENDAR,
+                ...settings.calendar,
+                holidays: holidays ?? settings.calendar?.holidays ?? [],
+            },
+        }),
+    );
     return { load } as never;
 }

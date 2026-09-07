@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsOptional } from 'class-validator';
+import { IsIn, IsOptional, IsString } from 'class-validator';
 import {
     AI_ANALYTICS_BY_TYPE_CODES,
     AI_ANALYTICS_BY_TYPE_INDICATOR_KINDS,
@@ -18,38 +18,48 @@ import { AiOverviewPeriodDto, AiTypeTotalsDto } from './ai-overview.dto';
 import { AiAnalyticsEnvelopeDto } from './ai-response-envelope.dto';
 import { MetricDto } from './metric.dto';
 
-/** Срез обзора по типу звонка или возражениям (ТЗ FR-21). */
+/** Срез обзора по типу звонка, всем типам или возражениям (ТЗ FR-21). */
 export class AiByTypeRequestDto extends AiOverviewFiltersDto {
     @ApiProperty({
         description:
-            'AI-тип звонка (подвкладка) либо objections — сквозной срез возражений.',
+            'AI-тип звонка (подвкладка); all — все типы вместе (строки на ' +
+            'каждую пару менеджер × тип); objections — сквозной срез возражений.',
         enum: AI_ANALYTICS_BY_TYPE_CODES,
         example: 'presentation',
     })
+    @IsString()
     @IsIn(AI_ANALYTICS_BY_TYPE_CODES)
     callType: AiAnalyticsByTypeCode;
 
     @ApiPropertyOptional({
         description:
-            'Раскладка: wide — строка на менеджера (n, оценка, KPI, финансы, ' +
-            'объяснение); long — строка на «сотрудник | показатель | оценка | ' +
-            'объяснение» по разделам, чек-листам и KPI.',
+            'Раскладка: wide — строка на менеджера (при all — на пару ' +
+            'менеджер × тип): n, оценка, KPI, финансы, объяснение; long — ' +
+            'строка на «сотрудник | показатель | оценка | объяснение» по ' +
+            'разделам, чек-листам и KPI.',
         enum: AI_ANALYTICS_BY_TYPE_LAYOUTS,
         default: 'wide',
         example: 'long',
     })
     @IsOptional()
+    @IsString()
     @IsIn(AI_ANALYTICS_BY_TYPE_LAYOUTS)
     layout?: AiAnalyticsByTypeLayout;
 }
 
-/** «Широкая» строка: менеджер × выбранный тип. */
+/** «Широкая» строка: менеджер × тип (тип строки — в cell.callType). */
 export class AiByTypeWideRowDto {
-    @ApiProperty({ description: 'Bitrix-id менеджера.', type: String })
+    @ApiProperty({
+        description: 'Bitrix-id менеджера строки.',
+        type: String,
+        example: '447',
+    })
     managerId: string;
 
     @ApiProperty({
-        description: 'Уровень менеджера.',
+        description:
+            'Уровень менеджера: назначен РОПом (settings/save) либо по стажу ' +
+            'по умолчанию.',
         enum: AI_ANALYTICS_MANAGER_LEVELS,
         example: 'middle',
     })
@@ -63,7 +73,11 @@ export class AiByTypeWideRowDto {
     })
     departmentId: number | null;
 
-    @ApiProperty({ description: 'Ячейка типа.', type: AiManagerTypeCellDto })
+    @ApiProperty({
+        description:
+            'Ячейка типа; при callType = all тип строки — cell.callType.',
+        type: AiManagerTypeCellDto,
+    })
     cell: AiManagerTypeCellDto;
 
     @ApiProperty({
@@ -73,17 +87,33 @@ export class AiByTypeWideRowDto {
     })
     primaryKpi: AiCellKpiDto | null;
 
-    @ApiProperty({ description: 'Финансовый хвост.', type: AiFinanceTailDto })
+    @ApiProperty({
+        description:
+            'Финансовый хвост менеджера за период (из строки обзора); при ' +
+            'callType = all одинаков для всех строк одного менеджера.',
+        type: AiFinanceTailDto,
+    })
     finance: AiFinanceTailDto;
 }
 
 /** «Длинная» строка: сотрудник | показатель | оценка | объяснение. */
 export class AiByTypeLongRowDto {
     @ApiProperty({
-        description: 'Bitrix-id менеджера (сотрудник).',
+        description: 'Bitrix-id менеджера (колонка «сотрудник»).',
         type: String,
+        example: '447',
     })
     managerId: string;
+
+    @ApiProperty({
+        description:
+            'AI-тип звонка строки (для строк возражений — objections). При ' +
+            'запросе callType = all различает строки разных типов; значение ' +
+            'all в строке не встречается.',
+        enum: AI_ANALYTICS_BY_TYPE_CODES,
+        example: 'presentation',
+    })
+    callType: AiAnalyticsByTypeCode;
 
     @ApiProperty({
         description:
@@ -102,7 +132,9 @@ export class AiByTypeLongRowDto {
     indicator: string;
 
     @ApiProperty({
-        description: 'Подпись показателя.',
+        description:
+            'Подпись показателя для колонки «показатель»: название раздела, ' +
+            'чек-листа, KPI-кода или категории возражения.',
         type: String,
         example: 'Работа по цене',
     })
@@ -124,24 +156,28 @@ export class AiByTypeLongRowDto {
     explanation: string;
 }
 
-/** Срез по типу. */
+/** Срез по типу, по всем типам или по возражениям. */
 export class AiByTypeDto {
     @ApiProperty({
-        description: 'Выбранный тип или objections.',
+        description:
+            'Выбранный тип; all — все типы вместе; objections — возражения.',
         enum: AI_ANALYTICS_BY_TYPE_CODES,
         example: 'presentation',
     })
     callType: AiAnalyticsByTypeCode;
 
     @ApiProperty({
-        description: 'Подпись типа.',
+        description: 'Подпись типа («Все типы» при all).',
         type: String,
         example: 'Презентация',
     })
     title: string;
 
     @ApiProperty({
-        description: 'Раскладка ответа.',
+        description:
+            'Применённая раскладка (из запроса, по умолчанию wide): ' +
+            'определяет, какое из полей wide/long заполнено; для objections ' +
+            'данные — в поле objections.',
         enum: AI_ANALYTICS_BY_TYPE_LAYOUTS,
         example: 'wide',
     })
@@ -152,25 +188,40 @@ export class AiByTypeDto {
 
     @ApiProperty({
         description:
-            'Строки «широкой» раскладки; null при layout = long или objections.',
+            'Строки «широкой» раскладки: строка на менеджера, при all — на ' +
+            'каждую пару менеджер × тип (менеджеры в порядке обзора, типы в ' +
+            'порядке справочника); null при layout = long или objections.',
         type: [AiByTypeWideRowDto],
         nullable: true,
     })
     wide: AiByTypeWideRowDto[] | null;
 
     @ApiProperty({
-        description: 'Строки «длинной» раскладки; null при layout = wide.',
+        description:
+            'Строки «длинной» раскладки (каждая несёт callType); null при ' +
+            'layout = wide.',
         type: [AiByTypeLongRowDto],
         nullable: true,
     })
     long: AiByTypeLongRowDto[] | null;
 
     @ApiProperty({
-        description: 'Итог по типу по домену; null для objections.',
+        description:
+            'Итог по выбранному типу по домену; null при callType = all ' +
+            '(см. totalsByType) и objections.',
         type: AiTypeTotalsDto,
         nullable: true,
     })
     totals: AiTypeTotalsDto | null;
+
+    @ApiProperty({
+        description:
+            'Итоги по каждому типу по домену (порядок справочника); ' +
+            'заполнено только при callType = all, иначе null.',
+        type: [AiTypeTotalsDto],
+        nullable: true,
+    })
+    totalsByType: AiTypeTotalsDto[] | null;
 
     @ApiProperty({
         description: 'Срез возражений (только для callType = objections).',

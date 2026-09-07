@@ -4,15 +4,26 @@ import { ColdPortalDealModel } from './cold-portal-deal.model';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { SalesBatchGroupBuffer as ColdHookBatchGroupBuffer } from '../../../../shared/batch';
-import { IColdCallBxEntityData } from '../entity/cold-call-bx-entity.flow.service';
+import { IColdCallEventData } from '../entity/cold-call-bx-entity.flow.service';
 import { EventEntityModel } from '../entity/event-entity.model';
 import { EnumColdCallEntityType } from '../../../dto/cold.dto';
+import { dealLinkKey } from '../../../lib/deal-link-fields';
+import { ColdOwner, ownerKey } from '../cold-owner.type';
 
 interface IColdDealFlowResult {
     baseDealId: string;
     xoDealId: string;
 }
 
+/**
+ * Основная и ХО-сделки холодного старта.
+ *
+ * Владелец — компания (как v1) либо клиент без компании (v2, шаг 6): тогда
+ * `COMPANY_ID` не пишется, а НОВЫЕ сделки получают контакт и лид входной
+ * сделки. ХО-сделка в обоих случаях ссылается на основную через
+ * `to_base_sales` — по этой ссылке сборщик связей находит её у клиента без
+ * компании (у v1 ссылки нет, связь только через компанию).
+ */
 export class ColdDealFlowService {
     private readonly logger = new Logger(ColdDealFlowService.name);
     private portlDealModel: ColdPortalDealModel;
@@ -25,30 +36,25 @@ export class ColdDealFlowService {
     }
 
     public flow(
-        data: IColdCallBxEntityData,
-        companyId: number,
+        data: IColdCallEventData,
+        owner: ColdOwner,
         baseDeal: IBXDeal | null,
         buffer: ColdHookBatchGroupBuffer,
     ): IColdDealFlowResult {
-        const baseDealId = this.prepareBaseDeal(
-            data,
-            companyId,
-            baseDeal,
-            buffer,
-        );
-        const xoDealId = this.createXoDeal(data, companyId, buffer);
+        const baseDealId = this.prepareBaseDeal(data, owner, baseDeal, buffer);
+        const xoDealId = this.createXoDeal(data, owner, baseDealId, buffer);
 
         return { baseDealId, xoDealId };
     }
 
     private prepareBaseDeal(
-        data: IColdCallBxEntityData,
-
-        companyId: number,
+        data: IColdCallEventData,
+        owner: ColdOwner,
         baseDeal: IBXDeal | null,
         buffer: ColdHookBatchGroupBuffer,
     ) {
-        const setBaseDealKey = `new_base_deal_${companyId}`;
+        const key = ownerKey(owner);
+        const setBaseDealKey = `new_base_deal_${key}`;
         const updateBaseDealKey = `update_base_deal_${baseDeal?.ID}`;
         const { name, deadline, responsibleId, xoCreated } = data;
         const targetBase = this.portlDealModel.getTargetStageBitrixId(
@@ -71,13 +77,13 @@ export class ColdDealFlowService {
                 CATEGORY_ID: targetBase.categoryId,
                 STAGE_ID: targetBase.stageId,
                 ASSIGNED_BY_ID: responsibleId.toString(),
-                COMPANY_ID: companyId.toString(),
+                ...this.ownerFields(owner, baseDeal === null),
                 ...baseDealEntityieldValues,
             };
 
             if (baseDeal) {
                 this.logger.log(
-                    `[DEADLINE][deal][SEND] base deal.update company=${companyId} ` +
+                    `[DEADLINE][deal][SEND] base deal.update owner=${key} ` +
                         `cmdKey=${updateBaseDealKey} dealId=${baseDeal.ID} ` +
                         `deadlineCrm="${deadline.toCrmDateTime()}" (локаль портала) ` +
                         `payload=${JSON.stringify(baseUpdateDealData)}`,
@@ -94,7 +100,7 @@ export class ColdDealFlowService {
                 );
             } else {
                 this.logger.log(
-                    `[DEADLINE][deal][SEND] base deal.set company=${companyId} ` +
+                    `[DEADLINE][deal][SEND] base deal.set owner=${key} ` +
                         `cmdKey=${setBaseDealKey} ` +
                         `deadlineCrm="${deadline.toCrmDateTime()}" (локаль портала) ` +
                         `payload=${JSON.stringify(baseUpdateDealData)}`,
@@ -114,11 +120,13 @@ export class ColdDealFlowService {
     }
 
     private createXoDeal(
-        data: IColdCallBxEntityData,
-        companyId: number,
+        data: IColdCallEventData,
+        owner: ColdOwner,
+        baseDealId: string,
         buffer: ColdHookBatchGroupBuffer,
     ) {
-        const createColdKey = `new_cold_deal_${companyId}`;
+        const key = ownerKey(owner);
+        const createColdKey = `new_cold_deal_${key}`;
         const { name, deadline, responsibleId, xoCreated } = data;
 
         const targetCold = this.portlDealModel.getTargetStageBitrixId(
@@ -141,11 +149,14 @@ export class ColdDealFlowService {
                 CATEGORY_ID: targetCold.categoryId,
                 STAGE_ID: targetCold.stageId,
                 ASSIGNED_BY_ID: responsibleId.toString(),
-                COMPANY_ID: companyId.toString(),
+                ...this.ownerFields(owner, true),
+                // Ссылка на основную: реальный id либо $result[new_base_deal_…]
+                // того же батча — Bitrix подставляет токен и в UF-поле.
+                [dealLinkKey(this.portal, 'to_base_sales')]: baseDealId,
                 ...coldDealEntityFieldValues,
             };
             this.logger.log(
-                `[DEADLINE][deal][SEND] cold deal.set company=${companyId} ` +
+                `[DEADLINE][deal][SEND] cold deal.set owner=${key} ` +
                     `cmdKey=${createColdKey} ` +
                     `deadlineCrm="${deadline.toCrmDateTime()}" (локаль портала) ` +
                     `payload=${JSON.stringify(coldAddDealData)}`,
@@ -156,6 +167,22 @@ export class ColdDealFlowService {
         }
 
         return this.getDealIdByBatchCommandKey(createColdKey);
+    }
+
+    /**
+     * Привязка сделки к клиенту. Компания пишется всегда (v1 ставит её и на
+     * update основной); контакт и лид входной сделки — только на НОВЫЕ
+     * сделки клиента без компании: у существующей основной свои связи.
+     */
+    private ownerFields(owner: ColdOwner, isNew: boolean): Partial<IBXDeal> {
+        if (owner.kind === 'company') {
+            return { COMPANY_ID: owner.companyId.toString() };
+        }
+        if (!isNew) return {};
+        const fields: Record<string, string> = {};
+        if (owner.contactId) fields['CONTACT_ID'] = String(owner.contactId);
+        if (owner.leadId) fields['LEAD_ID'] = String(owner.leadId);
+        return fields as Partial<IBXDeal>;
     }
 
     /**

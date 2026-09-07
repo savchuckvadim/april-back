@@ -57,8 +57,10 @@ import {
  * AI-аналитика отдела продаж, Фаза 1a (план ai/tasks/ai-sales-analytics-plan.md,
  * 6.2–6.5): синхронные ручки с кэшем на домен и серверной проверкой прав по
  * структуре отделов (requesterUserId): руководитель видит периметр,
- * менеджер — только свои строки; сброс кэша — только cup|op; ручной
- * push (повестка/дайджест) — руководители.
+ * менеджер без headOf — 403 на читающих ручках, пока не включена
+ * ai_analytics_self_view_enabled (тогда — только свои строки); settings/get
+ * доступна всем; сброс кэша — только cup|op; ручной push (повестка /
+ * дайджест / сводный дайджест) — руководители.
  */
 @ApiTags(AI_ANALYTICS_SWAGGER_TAG)
 @Controller(AI_ANALYTICS_ROUTE_PREFIX)
@@ -105,14 +107,15 @@ export class AiAnalyticsController {
             'Окно 5 рабочих дней до вчерашнего рабочего дня (TZ портала): доля ' +
             'разобранных звонков с назначенным шагом и датой, XmR по дневным долям ' +
             '25 рабочих дней, строки менеджеров с n ≥ 20 и сигналы руководителю — ' +
-            "в периметре requester'а. Кэш 1 ч.",
+            "в периметре requester'а. Менеджер без роли руководителя — 403, " +
+            'если не включена ai_analytics_self_view_enabled. Кэш 1 ч.',
     })
     @ApiBody({ type: AiPulseRequestDto })
     @ApiOkResponse({ type: AiPulseResponseDto })
     async getPulse(
         @Body() dto: AiPulseRequestDto,
     ): Promise<AiPulseResponseDto> {
-        const access = await this.access.resolve(
+        const access = await this.access.resolveViewer(
             dto.domain,
             dto.requesterUserId,
         );
@@ -137,14 +140,16 @@ export class AiAnalyticsController {
         description:
             '3 звонка текущей ISO-недели по приоритету риск-флаг → спорное ' +
             'возражение → слабый раздел, с цитатой и ссылкой на карточку разбора; ' +
-            "несогласия недели. В периметре requester'а. Кэш до следующего понедельника.",
+            "несогласия недели. В периметре requester'а; менеджер без роли " +
+            'руководителя — 403, если не включена ai_analytics_self_view_enabled. ' +
+            'Кэш до следующего понедельника.',
     })
     @ApiBody({ type: AiAgendaRequestDto })
     @ApiOkResponse({ type: AiAgendaResponseDto })
     async getAgenda(
         @Body() dto: AiAgendaRequestDto,
     ): Promise<AiAgendaResponseDto> {
-        const access = await this.access.resolve(
+        const access = await this.access.resolveViewer(
             dto.domain,
             dto.requesterUserId,
         );
@@ -199,14 +204,15 @@ export class AiAnalyticsController {
         description:
             'Записи ais типа ai-analytics-feedback по домену и периоду (даты в TZ ' +
             'портала), опционально по менеджеру, плюс доля несогласий. Список по ' +
-            'всем менеджерам — только руководителям; менеджер видит только свои строки.',
+            'всем менеджерам — только руководителям; менеджер видит только свои ' +
+            'строки и лишь при ai_analytics_self_view_enabled (иначе 403).',
     })
     @ApiBody({ type: AiFeedbackListRequestDto })
     @ApiOkResponse({ type: AiFeedbackListResponseDto })
     async listFeedback(
         @Body() dto: AiFeedbackListRequestDto,
     ): Promise<AiFeedbackListResponseDto> {
-        const access = await this.access.resolve(
+        const access = await this.access.resolveViewer(
             dto.domain,
             dto.requesterUserId,
         );
@@ -224,9 +230,10 @@ export class AiAnalyticsController {
     @ApiOperation({
         summary: 'Сброс кэша AI-аналитики по домену',
         description:
-            'Удаляет ключи кэша модуля: scope=pulse|agenda|settings — соответствующий ' +
-            'раздел, all (по умолчанию) — всё, включая периметры доступа. ' +
-            'Только руководители уровня cup|op.',
+            'Удаляет ключи кэша модуля: scope=pulse|agenda|settings|overview|' +
+            'attention|kpi-month|plans — соответствующий раздел, all (по ' +
+            'умолчанию) — всё, включая периметры доступа. Только руководители ' +
+            'уровня cup|op.',
     })
     @ApiBody({ type: AiCacheResetRequestDto })
     @ApiOkResponse({ type: AiCacheResetResponseDto })
@@ -246,10 +253,13 @@ export class AiAnalyticsController {
     @Post('push')
     @HttpCode(200)
     @ApiOperation({
-        summary: 'Ручной запуск push-рассылки (повестка / утренний разбор)',
+        summary:
+            'Ручной запуск push-рассылки (повестка / утренний разбор / сводный дайджест)',
         description:
             'Синхронно выполняет тот же код, что и крон (пн 08:30 МСК повестка ' +
-            'РОПам, ежедневно 08:00 МСК дайджест менеджерам): kind=agenda|digest, ' +
+            'РОПам, ежедневно 08:00 МСК дайджест каждому менеджеру и сводный ' +
+            'дайджест по всем менеджерам адресатам из ' +
+            'ai_analytics_digest_all_user_ids): kind=agenda|digest|digest_all, ' +
             'date — день запуска в TZ портала (по умолчанию сегодня), recipients — ' +
             'кому отправить вместо получателей по настройкам (тест «отправить ' +
             'себе»; отметки доставки при этом не пишутся). Только руководители.',

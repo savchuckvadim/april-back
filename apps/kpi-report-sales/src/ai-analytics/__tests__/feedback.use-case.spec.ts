@@ -14,7 +14,11 @@ function makeUseCase(records: object[] = []) {
         listInPeriod: jest.fn().mockResolvedValue(records),
     };
     // Реальный сервис доступа ради assertVisible; структура и кэш не нужны.
-    const access = new RequesterAccessService({} as never, {} as never);
+    const access = new RequesterAccessService(
+        {} as never,
+        {} as never,
+        {} as never,
+    );
     return {
         useCase: new FeedbackUseCase(
             store as never,

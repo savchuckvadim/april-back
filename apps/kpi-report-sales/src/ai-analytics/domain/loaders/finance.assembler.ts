@@ -1,19 +1,13 @@
 /**
  * Чистая сборка финансового слоя из отчётов sales-finance: закрытые продажи
- * месяца по менеджерам (ClosedSalesReportDto.employees) и пайплайн из
- * списка горячих сделок (HotClientsReportDto.deals). «Горячие» выделяются
- * из того же списка по порядку стадии лестницы sales_base — один запрос
- * к Bitrix на оба порога.
+ * месяца по менеджерам (ClosedSalesReportDto.employees) и сводка за период
+ * (месяцы + пайплайн). Пайплайн из списка открытых сделок собирает
+ * finance-pipeline.assembler — один запрос к Bitrix на пайплайн и «горячих».
  */
-import { PBX_DEAL_SALES_BASE_STAGES } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
 import { roundMoney } from '@lib/shared/lib/deal-finance';
-import {
-    ClosedSalesReportDto,
-    HotClientDealDto,
-    SALES_HOT_THRESHOLD_STAGE_CODE,
-    SalesHotThreshold,
-} from '../../../sales-finance';
+import { ClosedSalesReportDto } from '../../../sales-finance';
 import type { MonthSegment } from '../../../shared/lib/month-segments.util';
+import { emptyManagerPipeline } from './finance-pipeline.assembler';
 import type {
     AiFinanceClosedTotals,
     AiFinanceManagerMonth,
@@ -86,43 +80,6 @@ export function toFinanceMonth(
     };
 }
 
-/** Порядок стадии лестницы sales_base по коду стадии портала; неизвестная → 0. */
-export function stageOrderOf(stageCode: string): number {
-    return (
-        PBX_DEAL_SALES_BASE_STAGES.find(stage => stage.code === stageCode)
-            ?.order ?? 0
-    );
-}
-
-/** Пайплайн от стадии + «горячие» (стадия ≥ hotThreshold) по менеджерам ростера. */
-export function toPipelineByManager(
-    deals: readonly HotClientDealDto[],
-    managerIds: readonly number[],
-    hotThreshold: SalesHotThreshold,
-): AiFinanceManagerPipeline[] {
-    const hotOrder = stageOrderOf(SALES_HOT_THRESHOLD_STAGE_CODE[hotThreshold]);
-    const byManager = new Map<number, AiFinanceManagerPipeline>(
-        managerIds.map(managerId => [
-            managerId,
-            {
-                managerId,
-                pipelineFromStage: { count: 0, monthlyAmount: 0 },
-                hotEvents: 0,
-            },
-        ]),
-    );
-    for (const deal of deals) {
-        const row = byManager.get(deal.assignedId);
-        if (!row) continue;
-        row.pipelineFromStage.count += 1;
-        row.pipelineFromStage.monthlyAmount = roundMoney(
-            row.pipelineFromStage.monthlyAmount + deal.monthlyAmount,
-        );
-        if (stageOrderOf(deal.stageCode) >= hotOrder) row.hotEvents += 1;
-    }
-    return [...byManager.values()];
-}
-
 /** Сводка за период: сумма месяцев + пайплайн по каждому менеджеру ростера. */
 export function summarizeManagers(
     months: readonly AiFinanceMonth[],
@@ -138,15 +95,8 @@ export function summarizeManagers(
             );
             if (row) addClosedTotals(totals, row);
         }
-        const live = pipelineById.get(managerId);
-        return {
-            managerId,
-            ...totals,
-            pipelineFromStage: live?.pipelineFromStage ?? {
-                count: 0,
-                monthlyAmount: 0,
-            },
-            hotEvents: live?.hotEvents ?? 0,
-        };
+        const live =
+            pipelineById.get(managerId) ?? emptyManagerPipeline(managerId);
+        return { ...totals, ...live, managerId };
     });
 }

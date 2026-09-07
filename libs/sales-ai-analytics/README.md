@@ -19,7 +19,11 @@
 | `model/morning-digest.ts` | `buildMorningDigest(rows, managerId)` — фразы `alternatives` менеджеру |
 | `contracts/versions.types.ts` | `AnalysisVersions`, `comparableFrom` |
 | `contracts/feedback.types.ts` | `AI_ANALYTICS_FEEDBACK_TYPE`, `AI_ANALYTICS_FEEDBACK_KINDS`, payload записи `ais` |
-| `contracts/snapshot.types.ts` | `SkillSnapshot` (Фаза 2) |
+| `contracts/snapshot.types.ts` | `SnapshotEnvelope<T>`, нагрузки снапшотов Фазы 2, `SkillSnapshot` |
+| `contracts/snapshot-kinds.const.ts` | реестр 10 типов ais-снапшотов: зерно, ключ, ретенция, статусы (Фаза 2) |
+| `params/` | реестр 60 параметров модели, послойный `resolveParam`, `paramsVersion` (Фаза 2) |
+| `model/norms.index.ts` | экспозиция, κ, leave-one-out нормы, апостериоры рёбер (Фаза 2) |
+| `model/quality.index.ts` | качество за период, усадка разделов, форма/содержание, надёжность (Фаза 2) |
 
 `SalesAiAnalyticsModule` — пустая обёртка под будущие провайдеры.
 
@@ -43,6 +47,73 @@
 | `model/metric-pct.util.ts` | `toPercentMetric`, `ratePctMetric` — доля → проценты для полей `*Pct` |
 
 Доли в `AttentionManagerInput.nextStepRate` — 0..1 (как в `computePulse`); в чек-листах матрицы и возражениях — проценты. Пороги n — только `AI_ANALYTICS_THRESHOLDS` (при n < 8 ни одного числа).
+
+## Фаза 2, волна 1: параметры, снапшоты, нормы, качество
+
+Фундамент модели Фазы 2. Всё ниже — чистая математика и контракты: **ни к одной
+ручке пока не подключено**, ETL-конвейер и витрина Фазы 2 подключат это позже.
+Наружу торчит через корневой `src/index.ts` (барьеры `params/index.ts`,
+`model/norms.index.ts`, `model/quality.index.ts`).
+
+### Реестр параметров (`src/params`, план §4.1)
+
+60 дескрипторов `ParamDescriptor` (код, заголовок, слой `scope`, источник,
+единица, дефолт, диапазон, фаза, `breaksSeries`, описание по-русски) собраны
+`as const satisfies` из шести тематических файлов `registry.*.const.ts` —
+нормы и усадка, стаж и capacity, воронка/бета/цикл/план, пороги, определения
+владельца, стиль. `AiAnalyticsParamCode` — литеральный union кодов.
+
+- `resolveParam(code, ctx?, evidence?)` — послойный resolve менеджер → полоса
+  стажа → портал → глобальный дефолт; значение вне диапазона или неверного типа
+  не проваливается на слой ниже, а откатывается к дефолту с `reason`
+  (`out-of-range` | `type-mismatch` | `unknown-code`). Гибрид считает
+  `w·data + (1 − w)·prior` по `evidence`.
+- `paramsVersion(payload)` / `REGISTRY_VERSION` — sha256 по каноническому JSON
+  (`canonicalJson`: рекурсивная сортировка ключей, нормализация `-0` и
+  не-конечных чисел). Кладётся в снапшоты рядом с `inputsHash` и `calcVersion`.
+
+Решения владельца зашиты дефолтами реестра, а не ветвлениями кода:
+`min_duration_sec_by_type` = 300 (А.1), `hot_client_definition` =
+`stage_from:sales_in_progress` из `PBX_DEAL_SALES_BASE_STAGE_CODE` (А.2, без
+magic string), `kappa_portal_to_global` = 0 (А.3, пула нет).
+
+### Реестр снапшотов (`contracts/snapshot-kinds.const.ts`, план §5.1–5.2)
+
+10 типов ais-записей (7 новых Фазы 2 плюс переиспользованные `feedback`,
+`audit` и канонический `AI_ANALYTICS_SETTINGS_TYPE`), у каждого — зерно
+(`manager-week` … `portal-hash`), форма ключа, ретенция и описание по-русски:
+`AI_ANALYTICS_SNAPSHOT_DESCRIPTORS`, хелперы `snapshotDescriptor` /
+`snapshotGrain` / `snapshotRetention(+Records|Days)`, статусы `done` |
+`superseded`. Конверт `SnapshotEnvelope<T>` и нагрузки (`ManagerWeekSnapshot`,
+`ManagerMonthSnapshot`, `PortalModelSnapshot`, `EtlRunSnapshot`,
+`SkillSnapshotPayload`) — в `contracts/snapshot.types.ts`. Запись/чтение ais —
+на стороне приложения (`AiAnalyticsSnapshotStore` в kpi-report-sales).
+
+### Нормы (`model/norms.index.ts`, план §4.2)
+
+- `exposure.ts` — экспозиция менеджер-месяца: календарь, `D_mt`, `D_active`,
+  простой против прокси-отсутствия по серии нулевых рабочих дней,
+  `excludeFromNorms` по `min_workdays_month`.
+- `kappa.ts` — сила усадки: `kleinmanRho`, `kappaFromRho`, регуляризация к пулу
+  по log, `layerKappa`; до гейта κ переключается early(100)/late(30) по истории
+  портала (порог `lateFromMonths` — параметр, не константа в коде).
+- `norms-hierarchy.ts` — leave-one-out норма полоса стажа → портал → глобаль
+  (`NormResult` с `layer`, `n`, `w`), `toShrinkPrior` для усадки.
+- `edge-rate.ts` — апостериоры рёбер (`edgePosterior`) и интенсивностей
+  (`activityPosterior`, забывание λ), разрыв по Ньюкомбу / отношению гамм
+  (`edgeGap` → `significant`, `direction`) вместо одновыборочного Уилсона.
+
+### Качество за период (`model/quality.index.ts`, план §4.3)
+
+- `quality-period.ts` — S = `weightedScore` / 10, агрегат по корзинам и разделам
+  рубрики (в раздел идут только звонки с `relevance > 0`, у каждого своё `n`).
+- `section-shrink.ts` — Normal-Normal усадка к норме, `estimateMS` (однофакторная
+  ANOVA; `τ̂² ≤ 0` → `m_S = 50`, `source = managers-indistinguishable`).
+- `form-content.const.ts` — деление разделов на форму и содержание;
+  `PRESENTATION` размечен `mixed` и в `S^form` не входит.
+- `reliability.ts` — `sigmaFromRetest`, `icc21`, `spearmanBrown`, `seOfMean`,
+  `groupManagers` (группы above/level/below/unknown по 90 %-интервалам, **не**
+  рейтинг) и `canOrderPair` (порядок пары только при n ≥ 50 и |Δ| > 2·SE).
 
 ## Тесты
 

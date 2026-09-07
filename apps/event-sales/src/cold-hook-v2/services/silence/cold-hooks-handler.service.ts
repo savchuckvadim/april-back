@@ -1,24 +1,70 @@
 import { PBXService } from '@/modules/pbx/pbx.service';
+import { PbxPresentationSmartService } from '@lib/portal-lib/pbx/pbx-presentation-smart';
+import { PbxZprSmartService } from '@lib/portal-lib/pbx/pbx-zpr-smart';
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { IColdHookSilenceHandlerData } from '../../type/cold-hook-silence.interface';
 import { ColdCallV2UseCase } from '../../use-cases/cold-call.use-case';
-import { IBXCompany } from '@/modules/bitrix';
 import { getErrorDetails } from '@/shared';
 
-import { PreColdDealFlowService } from '../enities/deal/pre-cold-deals-flow.service';
-import { PreColdEntitiesFlowService } from '../enities/entity/pre-cold-entities.flow.service';
-import { PreColdTasksFlowService } from '../enities/task/pre-cold-tasks.flow.service';
+import { ColdStartDecision, decideColdStart } from '../../lib/cold-force.decision';
+import { ColdRelationsCollectorV2Service } from '../relations/cold-relations-collector.service';
+import {
+    ColdCloseResult,
+    ColdRelationsCloserV2Service,
+} from '../relations/cold-relations-closer.service';
+import { ColdSmartInfos } from '../relations/cold-relations.types';
+import { ColdTargetResolverV2Service } from '../target/cold-target-resolver.service';
+import { ColdTarget } from '../target/cold-target.types';
+import {
+    buildColdStartPushes,
+    buildColdStartTimeline,
+    ColdStartTimelineInput,
+} from '../timeline/cold-start-timeline.formatter';
+import { ColdStartNotifyV2Service } from '../timeline/cold-start-notify.service';
+import { ColdStartTimelineV2Service } from '../timeline/cold-start-timeline.service';
+import { UserNameResolver } from '../../../shared/lead-request/user-name.resolver';
 import { SalesBatchGroupBuffer as ColdHookBatchGroupBuffer } from '../../../shared/batch';
 
+/** Что решено по хуку в фазе чтения — вход фазы записи. */
+interface PreparedTarget {
+    target: ColdTarget;
+    decision: ColdStartDecision;
+    closed: ColdCloseResult;
+    noteInput: ColdStartTimelineInput;
+}
+
 /**
- * Обрабатывает множество хуков
+ * Обрабатывает множество хуков одного окна тишины.
  *
+ * v2 (шаги 2–7 плана): на каждый хук — цель ({@link ColdTargetResolverV2Service})
+ * → связи клиента ({@link ColdRelationsCollectorV2Service}) → решение по
+ * `force` ({@link decideColdStart}) → закрытие ({@link ColdRelationsCloserV2Service})
+ * → записи таймлайна и создание холодной работы (use-case, только `proceed`)
+ * → push тем, у кого забрали / попытались забрать. v1 матчил хук по
+ * `company.ID === entityId` и закрывал только сделки и задачи компании;
+ * здесь закрываются ещё элементы смартов и даты планов, а чужая работа при
+ * `force=N` уступается.
+ *
+ * ДВЕ ФАЗЫ, как в v1 (ревью 02.09): сначала ВСЁ чтение и закрытие по всем
+ * хукам, потом ВСЯ запись группами в общий буфер и один flush. Иначе группа
+ * создания хука N, уже закоммиченная `endGroup`, уезжала бы ЧУЖИМ батчем —
+ * следующим же чтением хука N+1: `bitrix.api` держит одну карту команд на
+ * все `batch.*`-сервисы, и любой `callBatchWithConcurrency` отправляет и
+ * очищает её целиком, ломая учёт буфера и атомарность `$result[...]`.
+ *
+ * Корень-сделка без компании (шаг 6) идёт той же цепочкой: связи от
+ * входной сделки, новые сделки без COMPANY_ID с контактом/лидом входной.
  */
 @Injectable()
 export class ColdHooksHandlerV2Service {
     private readonly logger = new Logger(ColdHooksHandlerV2Service.name);
 
-    constructor(private readonly pbx: PBXService) {
+    constructor(
+        private readonly pbx: PBXService,
+        private readonly presSmart: PbxPresentationSmartService,
+        private readonly zprSmart: PbxZprSmartService,
+        private readonly userNames: UserNameResolver,
+    ) {
         this.logger.log('Cold Hooks Silence Handler initialized');
     }
 
@@ -38,81 +84,126 @@ export class ColdHooksHandlerV2Service {
                 return;
             }
             const { bitrix, portal, PortalModel } = await this.pbx.init(domain);
-            const entitiesService = new PreColdEntitiesFlowService(bitrix);
-            const preColdDealFlowService = new PreColdDealFlowService(
-                PortalModel,
-                bitrix,
-            );
-            const tasksService = new PreColdTasksFlowService(
-                PortalModel,
-                bitrix,
-            );
-            const useCase = new ColdCallV2UseCase(PortalModel, bitrix);
-
-            /**
-             * Берем все компании для хуков
-             *
-             */
-            const { companies, companiesIds } =
-                await entitiesService.getPreColdEntities(hooks);
-
-            /**
-             * Закрываем все сделки перед созданием новых
-             *
-             */
-            const closedDealsResult =
-                await preColdDealFlowService.execute(companies);
-            /**
-             * закрыть задачи
-
-             */
-
-            await tasksService.closeTasks(companiesIds);
-
-            if (portal) {
-                /**
-                 * Каждая компания = одна атомарная группа batch-команд.
-                 * Буфер гарантирует, что все команды одной компании уходят
-                 * в один HTTP-batch (≤50) — $result[cmdKey] работает между
-                 * сделкой → задачей → элементом списка.
-                 */
-                const buffer = new ColdHookBatchGroupBuffer(bitrix);
-
-                for (const raw of Object.values(hooks)) {
-                    const currentEntityData = closedDealsResult?.find(
-                        c => Number(c.company.ID) === Number(raw.entityId),
-                    );
-                    const currentCompany =
-                        currentEntityData?.company as IBXCompany;
-                    const baseDeal = currentEntityData?.baseDeal ?? null;
-
-                    await useCase.flow(
-                        raw,
-                        currentCompany,
-                        baseDeal,
-                        null,
-                        buffer,
-                    );
-                }
-
-                await buffer.flush();
-                this.logger.log(
-                    `Batch result: ${JSON.stringify(buffer.getResults())}`,
-                );
-                this.logger.log('Cold hooks handling finished', {
-                    telegram: true,
-                    domain,
-                    hooksCount,
-                    companiesCount: companies.length,
-                    durationMs: Date.now() - startedAt,
-                });
-                return;
-            } else {
+            if (!portal) {
                 throw new HttpException(
                     'Cold hook portal notfound for domain: ' + domain,
                     HttpStatus.BAD_REQUEST,
                 );
             }
+            const targetResolver = new ColdTargetResolverV2Service(
+                PortalModel,
+                bitrix,
+            );
+            const collector = new ColdRelationsCollectorV2Service(
+                PortalModel,
+                bitrix,
+            );
+            const closer = new ColdRelationsCloserV2Service(PortalModel, bitrix);
+            const timeline = new ColdStartTimelineV2Service(bitrix);
+            const notify = new ColdStartNotifyV2Service(bitrix);
+            const useCase = new ColdCallV2UseCase(PortalModel, bitrix);
+            // Резолв смартов — один на окно тишины, null = не установлен.
+            const smarts: ColdSmartInfos = {
+                pres: await this.presSmart.resolveInfo(domain),
+                zpr: await this.zprSmart.resolveInfo(domain),
+            };
+
+            // ===== Фаза 1: чтение, решение, закрытие — по всем хукам =====
+            const targets = await targetResolver.resolve(hooks);
+            const prepared: PreparedTarget[] = [];
+            for (const target of targets) {
+                const relations = await collector.collect(target, smarts);
+                const responsibleId = Number(target.hook.responsible);
+                const decision = decideColdStart({
+                    force: target.hook.force,
+                    responsibleId,
+                    entryDealId: target.entryDeal
+                        ? Number(target.entryDeal.ID)
+                        : null,
+                    openBaseDeals: relations.openBaseDeals,
+                });
+                this.logger.log(
+                    `[v2] hook=${target.hookKey} ${this.describe(target)}: ${decision.reason}`,
+                );
+                const closed = await closer.close(target, relations, decision);
+                const names = await this.userNames.resolve(domain, bitrix, [
+                    responsibleId,
+                    ...decision.foreign.map(item => item.responsibleId),
+                    ...(decision.takenEntry
+                        ? [decision.takenEntry.responsibleId]
+                        : []),
+                ]);
+                prepared.push({
+                    target,
+                    decision,
+                    closed,
+                    noteInput: {
+                        domain,
+                        target,
+                        decision,
+                        closed,
+                        responsibleId,
+                        names,
+                    },
+                });
+            }
+
+            // ===== Фаза 2: запись — группа на хук, один flush =====
+            /**
+             * Каждый хук = одна атомарная группа batch-команд. Буфер
+             * гарантирует, что группа уходит в один HTTP-batch (≤50) —
+             * $result[cmdKey] работает между сделкой → задачей → элементом
+             * списка. Записи таймлайна — первыми в группу; в yield группа
+             * состоит только из них.
+             */
+            const buffer = new ColdHookBatchGroupBuffer(bitrix);
+            let created = 0;
+            let yielded = 0;
+            for (const item of prepared) {
+                timeline.queue(
+                    item.target.hookKey,
+                    buildColdStartTimeline(item.noteInput),
+                    buffer,
+                );
+                if (item.decision.mode !== 'proceed') {
+                    yielded += 1;
+                    this.logger.log('Cold hook yielded to foreign work', {
+                        telegram: true,
+                        domain,
+                        hookKey: item.target.hookKey,
+                        foreign: item.decision.foreign,
+                        closed: item.closed.closedDealIds,
+                    });
+                    await buffer.endGroup();
+                    continue;
+                }
+                await useCase.flow(
+                    item.target,
+                    item.closed.preservedBaseDeal,
+                    null,
+                    buffer,
+                );
+                created += 1;
+            }
+            await buffer.flush();
+            this.logger.log(
+                `Batch result: ${JSON.stringify(buffer.getResults())}`,
+            );
+
+            // ===== Фаза 3: push — напрямую, когда всё уже записано =====
+            for (const item of prepared) {
+                await notify.send(buildColdStartPushes(item.noteInput));
+            }
+
+            this.logger.log('Cold hooks handling finished', {
+                telegram: true,
+                domain,
+                hooksCount,
+                targetsCount: targets.length,
+                created,
+                yielded,
+                durationMs: Date.now() - startedAt,
+            });
         } catch (err) {
             const { message, stack } = getErrorDetails(err);
             this.logger.error(
@@ -122,5 +213,11 @@ export class ColdHooksHandlerV2Service {
             );
             this.logger.error(stack);
         }
+    }
+
+    private describe(target: ColdTarget): string {
+        return target.kind === 'company'
+            ? `company=${target.companyId}${target.entryDeal ? ` entryDeal=${target.entryDeal.ID}` : ''}`
+            : `deal=${target.entryDeal?.ID} root=${target.rootDealId ?? '-'}`;
     }
 }

@@ -38,12 +38,16 @@ export { FinanceLoader } from './finance.loader';
 export { SalesFinanceUseCaseFactory } from './sales-finance-use-case.factory';
 export type {
     AiFinanceClosedTotals,
+    AiFinanceHotByColor,
     AiFinanceLoadOptions,
     AiFinanceManagerMonth,
     AiFinanceManagerPipeline,
     AiFinanceManagerSummary,
     AiFinanceMonth,
     AiFinancePipeline,
+    AiFinancePipelineByContractType,
+    AiFinancePipelineByTerm,
+    AiFinancePipelineFacts,
     AiFinancePipelineResult,
     AiFinanceResult,
 } from './finance.types';

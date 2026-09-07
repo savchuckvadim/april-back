@@ -10,6 +10,8 @@ import { normalizeManagerIds } from './managers.loader';
 /** Отдел продаж и группа менеджера по структуре. */
 export interface ManagerOrg {
     departmentId: number | null;
+    /** Название отдела продаж (для сводного дайджеста); null — не известно. */
+    departmentName: string | null;
     groupId: number | null;
 }
 
@@ -27,12 +29,14 @@ export function toManagerOrgRows(
     const byManager = new Map<number, ManagerOrgRow>();
     for (const sales of salesDepartments) {
         const departmentId = Number(sales.department?.ID) || null;
+        const departmentName = sales.department?.NAME?.trim() || null;
         for (const managerId of normalizeManagerIds(
             (sales.allUsers ?? []).map(user => user.ID),
         )) {
             byManager.set(managerId, {
                 managerId,
                 departmentId,
+                departmentName,
                 groupId: null,
             });
         }
@@ -41,7 +45,12 @@ export function toManagerOrgRows(
             for (const managerId of normalizeManagerIds(
                 (group.USERS ?? []).map(user => user.ID),
             )) {
-                byManager.set(managerId, { managerId, departmentId, groupId });
+                byManager.set(managerId, {
+                    managerId,
+                    departmentId,
+                    departmentName,
+                    groupId,
+                });
             }
         }
     }
@@ -72,7 +81,12 @@ export class ManagerOrgLoader {
         return new Map(
             value.map(row => [
                 row.managerId,
-                { departmentId: row.departmentId, groupId: row.groupId },
+                {
+                    departmentId: row.departmentId,
+                    // Записи кэша до появления поля — без названия.
+                    departmentName: row.departmentName ?? null,
+                    groupId: row.groupId,
+                },
             ]),
         );
     }

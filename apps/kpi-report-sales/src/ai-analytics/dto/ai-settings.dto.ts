@@ -123,6 +123,65 @@ export class AiAnalyticsSettingsDto {
         example: [447, 512],
     })
     ropUserIds: number[];
+
+    @ApiProperty({
+        description:
+            'Менеджер без роли руководителя видит витрину по себе ' +
+            '(ai_analytics_self_view_enabled). false — читающие ручки ' +
+            '(pulse, agenda, overview, attention, by-type, feedback/list) ' +
+            'отвечают ему 403, фронт скрывает вкладку; settings/get доступна ' +
+            'всем. На push-рассылки менеджеру не влияет.',
+        type: Boolean,
+        example: false,
+    })
+    selfViewEnabled: boolean;
+
+    @ApiProperty({
+        description:
+            'План дня в утреннем дайджесте менеджера и ручка plan/daily ' +
+            '(ai_analytics_daily_plan_enabled).',
+        type: Boolean,
+        example: false,
+    })
+    dailyPlanEnabled: boolean;
+
+    @ApiProperty({
+        description:
+            'Bitrix-id адресатов сводного утреннего дайджеста по всем ' +
+            'менеджерам портала (ai_analytics_digest_all_user_ids); пусто — ' +
+            'сводный дайджест не отправляется.',
+        type: [String],
+        example: ['447'],
+    })
+    digestAllUserIds: string[];
+
+    @ApiProperty({
+        description:
+            'Согласие портала на обезличенный пул порталов ' +
+            '(ai_analytics_pool_opt_in).',
+        type: Boolean,
+        example: false,
+    })
+    poolOptIn: boolean;
+
+    @ApiProperty({
+        description:
+            'Дата согласия на пул в ISO 8601 (ai_analytics_pool_consent_at); ' +
+            'null — не задана.',
+        type: String,
+        nullable: true,
+        example: null,
+    })
+    poolConsentAt: string | null;
+
+    @ApiProperty({
+        description:
+            'Эксперименты на портале включены ' +
+            '(ai_analytics_experiments_enabled): «фокус недели» и далее.',
+        type: Boolean,
+        example: false,
+    })
+    experimentsEnabled: boolean;
 }
 
 export class AiSettingsResponseDto extends AiAnalyticsEnvelopeDto {

@@ -202,6 +202,78 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             type: 'string',
             default: '',
         }),
+        // --- Решения владельца 07.09.2026 (план §14.5, анкета «А-ответы»
+        // и «Дополнения»): видимость витрины, план дня, сводный дайджест,
+        // пул порталов, эксперименты. Все дефолты выключают поведение.
+        aiAnalyticsSelfViewEnabled: setting({
+            code: 'ai_analytics_self_view_enabled',
+            name: 'Менеджер видит витрину по себе',
+            description:
+                'Выключено (по умолчанию) — витрина AI-аналитики доступна ' +
+                'только руководителям (headOf) и суперпользователю: менеджер ' +
+                'без роли руководителя получает 403 на читающих ручках ' +
+                '(pulse, agenda, overview, attention, by-type, feedback/list), ' +
+                'фронт скрывает вкладку. Включено — менеджер видит только ' +
+                'свои строки. На push-рассылки менеджеру не влияет.',
+            type: 'boolean',
+            default: false,
+        }),
+        aiAnalyticsDailyPlanEnabled: setting({
+            code: 'ai_analytics_daily_plan_enabled',
+            name: 'План дня менеджеру',
+            description:
+                'Блок «план дня» в утреннем дайджесте менеджера и ручка ' +
+                'plan/daily (Фаза 2). Выключено — дайджест без плана дня, ' +
+                'ручка отвечает 403.',
+            type: 'boolean',
+            default: false,
+        }),
+        aiAnalyticsDigestAllUserIds: setting({
+            code: 'ai_analytics_digest_all_user_ids',
+            name: 'Bitrix-id получателей сводного дайджеста через запятую',
+            description:
+                'Адресаты сводного утреннего дайджеста по ВСЕМ менеджерам ' +
+                'портала (по отделам, до 3 звонков на менеджера, итог «кому ' +
+                'что»): «1, 42, 107». Отправляется в 08:00 по TZ портала тем же ' +
+                'кроном, что и личный дайджест, и НЕ зависит от ' +
+                'ai_analytics_digest_enabled. Пусто — никому. Разбор строки — ' +
+                'parseUserIds.',
+            type: 'string',
+            default: '',
+        }),
+        aiAnalyticsPoolOptIn: setting({
+            code: 'ai_analytics_pool_opt_in',
+            name: 'Согласие на обезличенный пул порталов',
+            description:
+                'Портал согласен передавать обезличенные агрегаты (нормы, ' +
+                'сезонность, лаги; без транскриптов и имён) в общий пул ' +
+                'порталов линейки. Выключено — одно-портальный режим. ' +
+                'Включая, заполните дату согласия ai_analytics_pool_consent_at.',
+            type: 'boolean',
+            default: false,
+        }),
+        aiAnalyticsPoolConsentAt: setting({
+            code: 'ai_analytics_pool_consent_at',
+            name: 'Дата согласия на пул (ISO)',
+            description:
+                'Дата и время согласия клиента на участие в пуле в формате ' +
+                'ISO 8601 («2026-09-07» или «2026-09-07T10:00:00+03:00»). ' +
+                'Пусто — согласие не датировано (при включённом пуле — ' +
+                'ошибка конфигурации).',
+            type: 'string',
+            default: '',
+        }),
+        aiAnalyticsExperimentsEnabled: setting({
+            code: 'ai_analytics_experiments_enabled',
+            name: 'Эксперименты на портале',
+            description:
+                'Вмешательства с измерением эффекта: «фокус недели» (Фаза 3), ' +
+                'кроссовер коучинга и A/B скрипта (отдельный опт-ин Фазы 4). ' +
+                'Выключено (по умолчанию) — система только наблюдает и ' +
+                'советует.',
+            type: 'boolean',
+            default: false,
+        }),
     },
     [EnumPortalAppCode.eventSales]: {
         // --- Выключатель портального каталога анкет ПО ТИПУ СОБЫТИЯ.

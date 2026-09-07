@@ -3,6 +3,12 @@ export enum ColdEntityCodesEnum {
     call_next_name = 'call_next_name',
     xo_date = 'xo_date',
     call_next_date = 'call_next_date',
+    /**
+     * Дата назначенной презентации: холодный старт закрывает элементы
+     * презентаций, и дата у владельца/основной обязана обнулиться — иначе
+     * карточка сообщала бы о презентации, которой нет (ревью 02.09).
+     */
+    next_pres_plan_date = 'next_pres_plan_date',
     call_last_date = 'call_last_date',
     xo_responsible = 'xo_responsible',
     manager_op = 'manager_op',

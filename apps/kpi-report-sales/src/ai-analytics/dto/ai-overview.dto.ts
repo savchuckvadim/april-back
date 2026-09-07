@@ -258,3 +258,19 @@ export class AiOverviewResponseDto extends AiAnalyticsEnvelopeDto {
 export type AiOverviewCacheEntry =
     | { status: 'ready'; data: AiOverviewDto }
     | { status: 'error'; message: string };
+
+/**
+ * Payload WS-события ai-analytics:overview:done. Сам обзор по WS не
+ * уходит: кэшированный результат общий на домен, а периметр requester'а
+ * применяется только при отдаче ручкой — фронт повторяет POST по requestKey.
+ */
+export interface AiOverviewWsDonePayload {
+    requestKey: string;
+    generatedAt: string;
+}
+
+/** Payload WS-события ai-analytics:overview:error. */
+export interface AiOverviewWsErrorPayload {
+    requestKey: string;
+    message: string;
+}

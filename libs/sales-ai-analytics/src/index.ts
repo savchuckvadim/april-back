@@ -70,3 +70,12 @@ export type {
     AiAnalyticsAuditSnapshotInput,
     AiAnalyticsAuditSnapshotRecord,
 } from './admin/ai-analytics-audit-snapshot.store';
+
+// Фаза 2 «модель»: реестр параметров и послойный resolve (params/),
+// типы и реестр снапшотов ais, нормы (экспозиция, κ, leave-one-out,
+// апостериоры рёбер) и качество за период (усадка разделов, надёжность).
+// Пока к ручкам не подключено — чистая математика и контракты.
+export * from './params';
+export * from './contracts/snapshot-kinds.const';
+export * from './model/norms.index';
+export * from './model/quality.index';

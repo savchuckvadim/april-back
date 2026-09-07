@@ -1,12 +1,19 @@
 /**
- * Срез обзора по типу звонка или возражениям (ТЗ FR-21): «широкая»
- * раскладка — строка на менеджера; «длинная» — строка на (сотрудник ×
- * показатель): оценка типа, разделы, чек-листы, KPI-факты, категории
- * возражений — каждая с оценкой (MetricDto) и объяснением. Чистые функции
- * над уже отфильтрованным по периметру AiOverviewDto.
+ * Срез обзора по типу звонка, по всем типам вместе (all) или по возражениям
+ * (ТЗ FR-21): «широкая» раскладка — строка на пару (менеджер × тип);
+ * «длинная» — строка на (сотрудник × показатель): оценка типа, разделы,
+ * чек-листы, KPI-факты, категории возражений — каждая с оценкой (MetricDto)
+ * и объяснением. Чистые функции над уже отфильтрованным по периметру
+ * AiOverviewDto.
  */
-import { confidenceFor, MetricValue } from '@lib/sales-ai-analytics';
+import { CallReportCallTypeCode } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import {
+    confidenceFor,
+    isCallTypeCode,
+    MetricValue,
+} from '@lib/sales-ai-analytics';
+import {
+    AI_ANALYTICS_BY_TYPE_ALL,
     AI_ANALYTICS_BY_TYPE_OBJECTIONS,
     AiAnalyticsByTypeCode,
     AiAnalyticsByTypeLayout,
@@ -26,6 +33,7 @@ import { AiOverviewDto } from '../../dto/ai-overview.dto';
 import { ru1, typeTitle } from './type-cell.presenter';
 
 const OBJECTIONS_TITLE = 'Возражения';
+const ALL_TITLE = 'Все типы';
 
 /** Ключи чек-листов ячейки в порядке показа. */
 const CHECKLIST_CODES = [
@@ -41,6 +49,13 @@ const CHECKLIST_TITLES: Record<(typeof CHECKLIST_CODES)[number], string> = {
     fiveKDonePct: '«5К»',
     handledRatePct: 'Отработано возражений',
 };
+
+/** Пара «строка менеджера × ячейка типа» — единица обеих раскладок. */
+interface ByTypePair {
+    row: AiManagerRowDto;
+    cell: AiManagerTypeCellDto;
+    callType: CallReportCallTypeCode;
+}
 
 /** Метрика-факт без доверительной оценки (KPI-счётчик). */
 const factMetric = (fact: number | null): MetricValue => ({
@@ -64,11 +79,29 @@ const pctText = (metric: MetricValue): string =>
         ? `мало данных (n = ${metric.n})`
         : `${Math.round(metric.value)} % (n = ${metric.n})`;
 
-function cellOf(
-    row: AiManagerRowDto,
-    callType: string,
-): AiManagerTypeCellDto | undefined {
-    return row.byType.find(cell => cell.callType === callType);
+/**
+ * Пары в порядке менеджеров обзора, внутри менеджера — в порядке типов
+ * справочника: row.byType уже упорядочен compareCallTypes, то есть как
+ * ключи AI_ANALYTICS_EVENT_KINDS и подвкладки settings.callTypes. При all
+ * берутся все ячейки строки, включая other и irrelevant — buildManagerCells
+ * строит ячейку на каждый код справочника, так что в обзоре они есть
+ * (bucket = null, но n и чек-листы свои). Коды вне справочника
+ * (orderedCallTypes допускает их) в срез не попадают: callType строк
+ * типизирован кодом справочника.
+ */
+function pairsOf(
+    overview: AiOverviewDto,
+    callType: CallReportCallTypeCode | typeof AI_ANALYTICS_BY_TYPE_ALL,
+): ByTypePair[] {
+    const wanted = (code: CallReportCallTypeCode): boolean =>
+        callType === AI_ANALYTICS_BY_TYPE_ALL || code === callType;
+    return overview.managers.flatMap(row =>
+        row.byType.flatMap(cell =>
+            isCallTypeCode(cell.callType) && wanted(cell.callType)
+                ? [{ row, cell, callType: cell.callType }]
+                : [],
+        ),
+    );
 }
 
 export function toWideRow(
@@ -89,24 +122,28 @@ export function toWideRow(
 export function toLongRows(
     managerId: string,
     cell: AiManagerTypeCellDto,
+    callType: AiAnalyticsByTypeCode,
 ): AiByTypeLongRowDto[] {
+    const base = { managerId, callType };
     const rows: AiByTypeLongRowDto[] = [
         {
-            managerId,
+            ...base,
             kind: 'score',
             indicator: 'score',
             title: `Оценка: ${cell.title}`,
             metric: cell.score,
             explanation: cell.explanation.text,
         },
-        ...cell.sections.map(section => ({
-            managerId,
-            kind: 'section' as const,
-            indicator: section.section,
-            title: section.title,
-            metric: sectionMetric(section.avgScore, section.n),
-            explanation: section.explanation.text,
-        })),
+        ...cell.sections.map(
+            (section): AiByTypeLongRowDto => ({
+                ...base,
+                kind: 'section',
+                indicator: section.section,
+                title: section.title,
+                metric: sectionMetric(section.avgScore, section.n),
+                explanation: section.explanation.text,
+            }),
+        ),
     ];
     // Object.entries по DTO-классу выводит значение как any — идём по
     // известным ключам чек-листов.
@@ -114,7 +151,7 @@ export function toLongRows(
         const metric = cell.checklists[code];
         if (!metric) continue;
         rows.push({
-            managerId,
+            ...base,
             kind: 'checklist',
             indicator: code,
             title: CHECKLIST_TITLES[code] ?? code,
@@ -126,7 +163,7 @@ export function toLongRows(
         const plan =
             kpi.planCrm !== undefined ? `, план CRM ${kpi.planCrm}` : '';
         rows.push({
-            managerId,
+            ...base,
             kind: 'kpi',
             indicator: kpi.code,
             title: `KPI ${kpi.code}`,
@@ -152,6 +189,7 @@ export function toObjectionLongRows(
                 : `отработано ${ru1(category.handledRatePct.value)} %`;
         return {
             managerId: manager.managerId,
+            callType: AI_ANALYTICS_BY_TYPE_OBJECTIONS,
             kind: 'objection',
             indicator: category.category,
             title: category.category,
@@ -164,33 +202,43 @@ export function toObjectionLongRows(
     });
 }
 
+function buildObjectionsSlice(
+    overview: AiOverviewDto,
+    layout: AiAnalyticsByTypeLayout,
+): AiByTypeDto {
+    return {
+        callType: AI_ANALYTICS_BY_TYPE_OBJECTIONS,
+        title: OBJECTIONS_TITLE,
+        layout,
+        period: overview.period,
+        wide: null,
+        long:
+            layout === 'long'
+                ? overview.objections.byManager.flatMap(toObjectionLongRows)
+                : null,
+        totals: null,
+        totalsByType: null,
+        objections: overview.objections,
+    };
+}
+
+/**
+ * Срез по типу: один тип — totals по нему; all — строки на каждую пару
+ * менеджер × тип, totals = null, totalsByType = итоги обзора по всем типам.
+ */
 export function buildByType(
     overview: AiOverviewDto,
     callType: AiAnalyticsByTypeCode,
     layout: AiAnalyticsByTypeLayout,
 ): AiByTypeDto {
     if (callType === AI_ANALYTICS_BY_TYPE_OBJECTIONS) {
-        return {
-            callType,
-            title: OBJECTIONS_TITLE,
-            layout,
-            period: overview.period,
-            wide: null,
-            long:
-                layout === 'long'
-                    ? overview.objections.byManager.flatMap(toObjectionLongRows)
-                    : null,
-            totals: null,
-            objections: overview.objections,
-        };
+        return buildObjectionsSlice(overview, layout);
     }
-    const pairs = overview.managers.flatMap(row => {
-        const cell = cellOf(row, callType);
-        return cell ? [{ row, cell }] : [];
-    });
+    const isAll = callType === AI_ANALYTICS_BY_TYPE_ALL;
+    const pairs = pairsOf(overview, callType);
     return {
         callType,
-        title: typeTitle(callType),
+        title: isAll ? ALL_TITLE : typeTitle(callType),
         layout,
         period: overview.period,
         wide:
@@ -200,11 +248,14 @@ export function buildByType(
         long:
             layout === 'long'
                 ? pairs.flatMap(pair =>
-                      toLongRows(pair.row.managerId, pair.cell),
+                      toLongRows(pair.row.managerId, pair.cell, pair.callType),
                   )
                 : null,
-        totals:
-            overview.totals.find(item => item.callType === callType) ?? null,
+        totals: isAll
+            ? null
+            : (overview.totals.find(item => item.callType === callType) ??
+              null),
+        totalsByType: isAll ? overview.totals : null,
         objections: null,
     };
 }

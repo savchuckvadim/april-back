@@ -1,16 +1,13 @@
+import { PBX_DEAL_SALES_BASE_STAGE_CODE } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
+import { AI_ANALYTICS_HOT_STAGE_CODE } from '../constants/ai-overview.const';
 import { FinanceLoader } from '../domain/loaders/finance.loader';
 import type { AiFinanceMonth } from '../domain/loaders/finance.types';
 import { buildFinanceMonthKey } from '../domain/loaders/loader-cache-key.util';
-import {
-    stageOrderOf,
-    toPipelineByManager,
-} from '../domain/loaders/finance.assembler';
 import type {
     ClosedSalesEmployeeDto,
     ClosedSalesReportDto,
-    HotClientDealDto,
-    HotClientsReportDto,
 } from '../../sales-finance';
+import { hotDeal, hotReport } from './fixtures/hot-clients.fixture';
 import { cacheMock, managersMock } from './fixtures/kpi-loader.fixture';
 
 const NOW = new Date(2026, 8, 6, 12, 0, 0);
@@ -52,45 +49,6 @@ function closedReport(
     };
 }
 
-function hotDeal(
-    assignedId: number,
-    stageCode: string,
-    monthlyAmount: number,
-): HotClientDealDto {
-    return {
-        id: 1,
-        title: 't',
-        assignedId,
-        stageCode,
-        stageName: '',
-        opportunity: 0,
-        productRowsAmount: 0,
-        monthlyAmount,
-        paidMonths: 0,
-        quantity: 0,
-        contractStart: null,
-        contractEnd: null,
-        contractTypeCode: null,
-        contractTypeName: null,
-        opHistory: [],
-        opMHistory: [],
-        comments: [],
-        companyId: null,
-        companyName: null,
-        companyColor: null,
-        companyClientType: null,
-    };
-}
-
-function hotReport(deals: HotClientDealDto[]): HotClientsReportDto {
-    return {
-        deals,
-        totals: {} as never,
-        threshold: 'presentation',
-        generatedAt: '',
-    };
-}
-
 function makeLoader(preset: Record<string, unknown> = {}) {
     const closedExecute = jest.fn(
         (job: {
@@ -114,9 +72,9 @@ function makeLoader(preset: Record<string, unknown> = {}) {
         Promise.resolve(
             hotReport([
                 hotDeal(1, 'sales_pres', 50),
-                hotDeal(1, 'sales_document_send', 70),
-                hotDeal(2, 'sales_offer_create', 30),
-                hotDeal(9, 'sales_offer_create', 999), // вне ростера
+                hotDeal(1, 'sales_in_progress', 70, { companyColor: 'green' }),
+                hotDeal(2, 'sales_offer_create', 30), // ниже «В решении» — не горячая
+                hotDeal(9, 'sales_in_progress', 999), // вне ростера
             ]),
         ),
     );
@@ -137,7 +95,7 @@ function makeLoader(preset: Record<string, unknown> = {}) {
 }
 
 describe('FinanceLoader', () => {
-    it('месяцы через ClosedSalesUseCase по сегментам, сводка суммирует месяцы и пайплайн', async () => {
+    it('месяцы через ClosedSalesUseCase по сегментам, сводка суммирует месяцы и пайплайн v2', async () => {
         const { loader, closedExecute, hotExecute } = makeLoader();
 
         const result = await loader.loadFinance(
@@ -150,7 +108,7 @@ describe('FinanceLoader', () => {
 
         expect(result.managerIds).toEqual([1, 2]);
         expect(result.pipelineThreshold).toBe('presentation');
-        expect(result.hotThreshold).toBe('document');
+        expect(result.hotStageCode).toBe(AI_ANALYTICS_HOT_STAGE_CODE);
         expect(closedExecute).toHaveBeenCalledTimes(3);
         expect(closedExecute).toHaveBeenNthCalledWith(1, {
             domain: DOMAIN,
@@ -194,13 +152,32 @@ describe('FinanceLoader', () => {
             expectedContractAmount: 3600,
             pipelineFromStage: { count: 2, monthlyAmount: 120 },
             hotEvents: 1,
+            hotByColor: { green: 1, yellow: 0, red: 0, none: 0 },
+            withOfferCount: 0,
+            pipelineByContractType: [
+                {
+                    code: null,
+                    name: null,
+                    count: 2,
+                    monthlyAmount: 120,
+                    advanceAmount: 0,
+                },
+            ],
+            pipelineByTerm: [
+                {
+                    bucket: 'none',
+                    count: 2,
+                    monthlyAmount: 120,
+                    expectedContractAmount: null,
+                },
+            ],
         });
         expect(summary2.salesCount).toBe(1);
         expect(summary2.pipelineFromStage).toEqual({
             count: 1,
             monthlyAmount: 30,
         });
-        expect(summary2.hotEvents).toBe(1);
+        expect(summary2.hotEvents).toBe(0);
     });
 
     it('закрытый месяц из кэша: use-case не вызывается для него, TTL 30 дней при записи', async () => {
@@ -262,22 +239,29 @@ describe('FinanceLoader', () => {
                 ),
             ),
         ).toBe(30 * 24 * 3600);
+        // ключ пайплайна включает стадию «горячих» — старые записи с другим порогом не читаются
         expect(
             ttlByKey.get(
-                `sales-ai-analytics:v1:${DOMAIN}:finance-pipeline:presentation-document:1_2`,
+                `sales-ai-analytics:v1:${DOMAIN}:finance-pipeline:presentation-sales_in_progress:1_2`,
             ),
         ).toBe(180);
     });
 
-    it('forceRefresh обходит чтение кэша и прокидывается в use-case’ы', async () => {
+    it('forceRefresh обходит чтение кэша и прокидывается в use-case’ы; hotStageCode переопределяется', async () => {
         const { loader, closedExecute, hotExecute, cache } = makeLoader();
 
-        await loader.loadFinance(DOMAIN, '2026-08-01', '2026-08-31', [1], {
-            now: NOW,
-            forceRefresh: true,
-            pipelineThreshold: 'document',
-            hotThreshold: 'document',
-        });
+        const result = await loader.loadFinance(
+            DOMAIN,
+            '2026-08-01',
+            '2026-08-31',
+            [1, 2],
+            {
+                now: NOW,
+                forceRefresh: true,
+                pipelineThreshold: 'document',
+                hotStageCode: PBX_DEAL_SALES_BASE_STAGE_CODE.offerCreate,
+            },
+        );
 
         expect(cache.getJson).not.toHaveBeenCalled();
         expect(closedExecute.mock.calls[0][0].forceRefresh).toBe(true);
@@ -286,6 +270,15 @@ describe('FinanceLoader', () => {
                 threshold: 'document',
                 forceRefresh: true,
             }),
+        );
+        expect(result.hotStageCode).toBe(
+            PBX_DEAL_SALES_BASE_STAGE_CODE.offerCreate,
+        );
+        // при пороге «Документы» сделка менеджера 2 на sales_offer_create — горячая
+        expect(result.managers[1].hotEvents).toBe(1);
+        const keys = cache.setJson.mock.calls.map(call => String(call[0]));
+        expect(keys).toContainEqual(
+            expect.stringContaining('document-sales_offer_create:1_2'),
         );
     });
 
@@ -303,30 +296,5 @@ describe('FinanceLoader', () => {
         expect(hotExecute).not.toHaveBeenCalled();
         expect(result.managers).toEqual([]);
         expect(result.months[0].managers).toEqual([]);
-    });
-
-    it('toPipelineByManager: «горячие» — стадия не ниже порога по лестнице sales_base', () => {
-        expect(stageOrderOf('sales_pres')).toBeLessThan(
-            stageOrderOf('sales_offer_create'),
-        );
-        expect(stageOrderOf('C7:UNKNOWN')).toBe(0);
-
-        const rows = toPipelineByManager(
-            [
-                hotDeal(1, 'sales_pres', 10),
-                hotDeal(1, 'sales_refine', 10),
-                hotDeal(1, 'sales_offer_create', 10),
-                hotDeal(1, 'sales_money_await', 10.005),
-            ],
-            [1],
-            'document',
-        );
-        expect(rows).toEqual([
-            {
-                managerId: 1,
-                pipelineFromStage: { count: 4, monthlyAmount: 40.01 },
-                hotEvents: 2,
-            },
-        ]);
     });
 });

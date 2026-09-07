@@ -27,7 +27,11 @@ import {
     AiFunnelEdgeDto,
 } from '../../dto/ai-manager-row.dto';
 import { AiCellKpiDto } from '../../dto/ai-manager-type-cell.dto';
-import type { AiFinanceManagerSummary } from '../loaders/finance.types';
+import { emptyPipelineFacts } from '../loaders/finance-pipeline.assembler';
+import type {
+    AiFinanceManagerSummary,
+    AiFinancePipelineFacts,
+} from '../loaders/finance.types';
 import type {
     AiKpiManagerMonth,
     AiKpiMonthsResult,
@@ -358,18 +362,27 @@ export function sumCellKpi(cells: readonly AiCellKpiDto[][]): AiCellKpiDto[] {
     return [...byCode.values()];
 }
 
-/** Финансовый хвост менеджера; без строки — нули. */
+/**
+ * Финансовый хвост менеджера: закрытые продажи периода + пайплайн v2
+ * («горячие» ≥ «В решении», разрезы по цвету, предложению, типу и сроку
+ * договора); без строки — нули и пустые разрезы. Разрезы копируются,
+ * чтобы DTO не делил массивы с доменной сводкой.
+ */
 export function toFinanceTail(
     summary: AiFinanceManagerSummary | undefined,
 ): AiFinanceTailDto {
+    const live: AiFinancePipelineFacts = summary ?? emptyPipelineFacts();
     return {
         salesCount: summary?.salesCount ?? 0,
         advanceAmount: summary?.advanceAmount ?? 0,
         monthlyAmount: summary?.monthlyAmount ?? 0,
-        pipelineFromStage: {
-            count: summary?.pipelineFromStage.count ?? 0,
-            monthlyAmount: summary?.pipelineFromStage.monthlyAmount ?? 0,
-        },
-        hotEvents: summary?.hotEvents ?? 0,
+        pipelineFromStage: { ...live.pipelineFromStage },
+        hotEvents: live.hotEvents,
+        hotByColor: { ...live.hotByColor },
+        withOfferCount: live.withOfferCount,
+        pipelineByContractType: live.pipelineByContractType.map(group => ({
+            ...group,
+        })),
+        pipelineByTerm: live.pipelineByTerm.map(group => ({ ...group })),
     };
 }

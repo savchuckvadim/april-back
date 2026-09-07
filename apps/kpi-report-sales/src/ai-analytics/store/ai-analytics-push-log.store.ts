@@ -12,9 +12,9 @@ export type AiAnalyticsPushSentKind = Extract<
 export interface AiAnalyticsPushSentKey {
     domain: string;
     kind: AiAnalyticsPushSentKind;
-    /** 'agenda:{weekKey}' | 'digest:{day}' — см. agendaObject/digestObject. */
+    /** 'agenda:{weekKey}' | 'digest:{day}' | 'digest_all:{day}' — см. *Object(). */
     object: string;
-    /** Менеджер (дайджест); у повестки null. */
+    /** Менеджер (личный дайджест); у повестки и сводного дайджеста null. */
     managerId: string | null;
 }
 
@@ -30,10 +30,17 @@ export function digestObject(day: string): string {
     return `${AI_ANALYTICS_PUSH_OBJECTS.DIGEST_PREFIX}${day}`;
 }
 
+/** Сводный дайджест: тот же kind digest_sent, object 'digest_all:{day}', managerId = null. */
+export function digestAllObject(day: string): string {
+    return `${AI_ANALYTICS_PUSH_OBJECTS.DIGEST_ALL_PREFIX}${day}`;
+}
+
 /**
  * Журнал доставки push-контура поверх ais-записей контракта 4
  * (AiAnalyticsFeedbackStore): идемпотентность рассылок — одна запись
- * agenda_sent на домен+неделю, одна digest_sent на домен+менеджер+день.
+ * agenda_sent на домен+неделю, одна digest_sent на домен+менеджер+день
+ * (личный дайджест) и одна digest_sent с object digest_all:{day} без
+ * менеджера на домен+день (сводный дайджест).
  * Перед отправкой — wasSent, после успешной доставки — markSent.
  */
 @Injectable()

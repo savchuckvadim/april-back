@@ -84,6 +84,12 @@ export class SettingsUseCase {
             callTypes: buildCallTypes(),
             comparableFrom: resolveComparableFrom(rows),
             ropUserIds: settings.ropUserIds,
+            selfViewEnabled: settings.selfViewEnabled,
+            dailyPlanEnabled: settings.dailyPlanEnabled,
+            digestAllUserIds: settings.digestAllUserIds.map(String),
+            poolOptIn: settings.poolOptIn,
+            poolConsentAt: settings.poolConsentAt,
+            experimentsEnabled: settings.experimentsEnabled,
         };
     }
 }

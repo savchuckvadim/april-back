@@ -10,6 +10,7 @@ interface PortalFlags {
     enabled?: boolean;
     digestEnabled?: boolean;
     ropUserIds?: number[];
+    digestAllUserIds?: number[];
     timeZone?: string;
 }
 
@@ -30,6 +31,7 @@ function makeScheduler(portals: Record<string, PortalFlags>) {
                 alertsEnabled: false,
                 digestEnabled: flags.digestEnabled ?? false,
                 ropUserIds: flags.ropUserIds ?? [447],
+                digestAllUserIds: flags.digestAllUserIds ?? [],
                 calendar: {
                     ...DEFAULT_WORK_CALENDAR,
                     timeZone: flags.timeZone ?? DEFAULT_WORK_CALENDAR.timeZone,
@@ -99,6 +101,47 @@ describe('AiAnalyticsPushScheduler', () => {
             'ai-analytics:push:digest:digest.bitrix24.ru:2026-09-07',
         ]);
         expect(dispatcher.dispatch).toHaveBeenCalledTimes(1);
+    });
+
+    it('сводный дайджест: только при непустом ai_analytics_digest_all_user_ids, digest_enabled не нужен', async () => {
+        const { scheduler, dispatcher } = makeScheduler({
+            'all.bitrix24.ru': {
+                enabled: true,
+                digestEnabled: false,
+                digestAllUserIds: [447],
+            },
+            'noone.bitrix24.ru': { enabled: true, digestEnabled: true },
+            'off.bitrix24.ru': { enabled: false, digestAllUserIds: [447] },
+        });
+        expect(await scheduler.dispatchAll('digest_all', NOW)).toEqual([
+            'ai-analytics:push:digest_all:all.bitrix24.ru:2026-09-07',
+        ]);
+        expect(dispatcher.dispatch).toHaveBeenCalledWith(
+            'sales-kpi-report',
+            'sales-ai-analytics-push',
+            {
+                domain: 'all.bitrix24.ru',
+                kind: 'digest_all',
+                date: '2026-09-07',
+            },
+            'ai-analytics:push:digest_all:all.bitrix24.ru:2026-09-07',
+            expect.objectContaining({ attempts: 1 }),
+        );
+    });
+
+    it('утренний тик ставит и личный, и сводный дайджест', async () => {
+        const { scheduler, dispatcher } = makeScheduler({
+            'both.bitrix24.ru': {
+                enabled: true,
+                digestEnabled: true,
+                digestAllUserIds: [447],
+            },
+        });
+        await scheduler.tickDigest();
+        const kinds = dispatcher.dispatch.mock.calls.map(
+            ([, , data]: [string, string, { kind: string }]) => data.kind,
+        );
+        expect(kinds).toEqual(['digest', 'digest_all']);
     });
 
     it('один и тот же день → один и тот же jobId (дедуп повторного тика)', async () => {

@@ -1,6 +1,7 @@
 import {
     agendaObject,
     AiAnalyticsPushLogStore,
+    digestAllObject,
     digestObject,
 } from '../store/ai-analytics-push-log.store';
 
@@ -16,9 +17,39 @@ const since = new Date('2026-08-31T00:00:00Z');
 const until = new Date('2026-09-07T05:30:00Z');
 
 describe('AiAnalyticsPushLogStore (журнал доставки в ais)', () => {
-    it('object: agenda:{weekKey} и digest:{day}', () => {
+    it('object: agenda:{weekKey}, digest:{day} и digest_all:{day}', () => {
         expect(agendaObject('2026-W36')).toBe('agenda:2026-W36');
         expect(digestObject('2026-09-04')).toBe('digest:2026-09-04');
+        expect(digestAllObject('2026-09-04')).toBe('digest_all:2026-09-04');
+    });
+
+    it('wasSent: сводный дайджест (digest_all:{day}, без менеджера) не путается с личным', async () => {
+        const { store } = makeStore([
+            {
+                kind: 'digest_sent',
+                object: 'digest:2026-09-04',
+                managerId: '10',
+            },
+            {
+                kind: 'digest_sent',
+                object: 'digest_all:2026-09-04',
+                managerId: null,
+            },
+        ]);
+        const key = {
+            domain: 'd',
+            kind: 'digest_sent' as const,
+            object: digestAllObject('2026-09-04'),
+            managerId: null,
+        };
+        await expect(store.wasSent(key, since, until)).resolves.toBe(true);
+        await expect(
+            store.wasSent(
+                { ...key, object: digestAllObject('2026-09-03') },
+                since,
+                until,
+            ),
+        ).resolves.toBe(false);
     });
 
     it('wasSent: совпадение по kind + object + managerId в периоде', async () => {

@@ -6,6 +6,7 @@ import { AiPushRunContext } from '../domain/use-cases/push.types';
 import { AiAgendaDto } from '../dto/ai-agenda.dto';
 import { AiAnalyticsQueueProcessor } from '../queue/ai-analytics.processor';
 import { AiAnalyticsPushLogStore } from '../store/ai-analytics-push-log.store';
+import { portalSettings } from './fixtures/lite-row.fixture';
 
 const agenda: AiAgendaDto = {
     weekKey: '2026-W37',
@@ -68,14 +69,10 @@ function context(overrides: Partial<AiPushRunContext> = {}): AiPushRunContext {
         domain: 'd',
         date: '2026-09-07',
         now: new Date('2026-09-07T09:00:00Z'),
-        settings: {
-            enabled: true,
-            auditEnabled: false,
-            alertsEnabled: false,
+        settings: portalSettings({
             digestEnabled: true,
             ropUserIds: [447, 448],
-            calendar: { ...DEFAULT_WORK_CALENDAR },
-        },
+        }),
         recipients: null,
         ...overrides,
     };
@@ -335,14 +332,19 @@ describe('AiAnalyticsPushUseCase (фасад) и AiAnalyticsQueueProcessor', () 
         };
         const agenda = { run: jest.fn().mockResolvedValue({ status: 'sent' }) };
         const digest = { run: jest.fn().mockResolvedValue({ status: 'sent' }) };
+        const digestAll = {
+            run: jest.fn().mockResolvedValue({ status: 'sent' }),
+        };
         return {
             facade: new AiAnalyticsPushUseCase(
                 settings as never,
                 agenda as never,
                 digest as never,
+                digestAll as never,
             ),
             agenda,
             digest,
+            digestAll,
         };
     }
 
@@ -390,6 +392,19 @@ describe('AiAnalyticsPushUseCase (фасад) и AiAnalyticsQueueProcessor', () 
         );
     });
 
+    it('kind digest_all → PushDigestAllUseCase с тем же контекстом', async () => {
+        const { facade, digestAll, digest } = makeFacade();
+        await facade.execute({
+            domain: 'd',
+            kind: 'digest_all',
+            date: '2026-09-07',
+        });
+        expect(digestAll.run).toHaveBeenCalledWith(
+            expect.objectContaining({ domain: 'd', date: '2026-09-07' }),
+        );
+        expect(digest.run).not.toHaveBeenCalled();
+    });
+
     it('процессор: результат возвращается, ошибка — rethrow', async () => {
         const push = {
             execute: jest.fn().mockResolvedValue({
@@ -400,6 +415,7 @@ describe('AiAnalyticsPushUseCase (фасад) и AiAnalyticsQueueProcessor', () 
         };
         const processor = new AiAnalyticsQueueProcessor(
             push as never,
+            { execute: jest.fn() } as never,
             { execute: jest.fn() } as never,
         );
         const job = {

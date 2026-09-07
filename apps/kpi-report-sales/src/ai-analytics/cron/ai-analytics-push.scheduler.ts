@@ -5,6 +5,7 @@ import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { toPortalDate } from '@lib/sales-ai-analytics';
 import {
+    AI_ANALYTICS_MORNING_PUSH_KINDS,
     AI_ANALYTICS_PUSH_CRON,
     AI_ANALYTICS_PUSH_JOB_ID_PREFIX,
     AiAnalyticsPushKind,
@@ -24,9 +25,12 @@ export function buildPushJobId(
 
 /**
  * Планировщик push-контура AI-аналитики: пн 08:30 МСК — повестка РОПам,
- * ежедневно 08:00 МСК — утренний разбор менеджерам. Обходит порталы со
- * строкой настроек kpiSales (AiAnalyticsPortalsLoader) и ставит джобу SALES_AI_ANALYTICS_PUSH на каждый портал с
- * ai_analytics_enabled (для дайджеста — и ai_analytics_digest_enabled).
+ * ежедневно 08:00 МСК — утренний разбор менеджерам (digest) и сводный
+ * дайджест адресатам из ai_analytics_digest_all_user_ids (digest_all).
+ * Обходит порталы со строкой настроек kpiSales (AiAnalyticsPortalsLoader)
+ * и ставит джобу SALES_AI_ANALYTICS_PUSH на каждый портал с
+ * ai_analytics_enabled: для digest — и ai_analytics_digest_enabled, для
+ * digest_all — непустой список адресатов (от digest_enabled не зависит).
  *
  * Сам расчёт и доставка — в процессоре (AiAnalyticsQueueProcessor), чтобы
  * Bitrix-вызовы не жили в cron-тике. jobId = ai-analytics:push:{kind}:
@@ -48,9 +52,12 @@ export class AiAnalyticsPushScheduler {
         await this.dispatchAll('agenda');
     }
 
+    /** Утренний тик: личный дайджест и сводный — одним расписанием. */
     @Cron(AI_ANALYTICS_PUSH_CRON.DIGEST)
     async tickDigest(): Promise<void> {
-        await this.dispatchAll('digest');
+        for (const kind of AI_ANALYTICS_MORNING_PUSH_KINDS) {
+            await this.dispatchAll(kind);
+        }
     }
 
     /** Ставит джобы по всем подходящим порталам; возвращает jobId'ы. */
@@ -82,6 +89,9 @@ export class AiAnalyticsPushScheduler {
             const settings = await this.settings.load(domain);
             if (!settings.enabled) return null;
             if (kind === 'digest' && !settings.digestEnabled) return null;
+            if (kind === 'digest_all' && !settings.digestAllUserIds.length) {
+                return null;
+            }
             if (kind === 'agenda' && !settings.ropUserIds.length) {
                 this.logger.warn(
                     `Повестка ${domain}: AI-аналитика включена, но РОПы не заданы — джоба не ставится`,

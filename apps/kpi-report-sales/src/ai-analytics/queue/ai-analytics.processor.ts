@@ -5,7 +5,9 @@ import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { AI_ANALYTICS_SNAPSHOT_KINDS } from '../constants/ai-analytics.const';
 import { AuditSnapshotUseCase } from '../domain/use-cases/audit-snapshot.use-case';
+import { OverviewJobUseCase } from '../domain/use-cases/overview-job.use-case';
 import { AiAnalyticsPushUseCase } from '../domain/use-cases/push.use-case';
+import { AiOverviewJobData } from '../dto/ai-overview-request.dto';
 import { AiPushJobData } from '../dto/ai-push.dto';
 import {
     AiAuditSnapshotResult,
@@ -18,9 +20,10 @@ import { AiPushResult } from '../domain/use-cases/push.types';
  * SalesFinanceQueueProcessor и остальными процессорами приложения).
  * Только dispatch по job name: расчёт и доставка push — в
  * AiAnalyticsPushUseCase (тот же код зовёт ручная ручка POST
- * ai-analytics/push), месячный снапшот аудита — в AuditSnapshotUseCase.
- * Ошибка — warn + rethrow: джоба помечается failed, ретраев нет
- * (attempts: 1), повтор — следующим тиком или вручную.
+ * ai-analytics/push), месячный снапшот аудита — в AuditSnapshotUseCase,
+ * обзор (Фаза 1b) — в OverviewJobUseCase (расчёт, write-through в кэш,
+ * WS done/error). Ошибка — warn + rethrow: джоба помечается failed,
+ * ретраев нет (attempts: 1), повтор — следующим тиком или вручную.
  */
 @Processor(QueueNames.SALES_KPI_REPORT)
 export class AiAnalyticsQueueProcessor {
@@ -29,7 +32,30 @@ export class AiAnalyticsQueueProcessor {
     constructor(
         private readonly push: AiAnalyticsPushUseCase,
         private readonly auditSnapshot: AuditSnapshotUseCase,
+        private readonly overviewJob: OverviewJobUseCase,
     ) {}
+
+    /**
+     * Обзор менеджер × тип: результат в кэш под requestKey (= jobId),
+     * клиенту — только сигнал по WS (данные он заберёт повторным POST в
+     * своём периметре). Ошибка уже записана error-конвертом и отправлена
+     * :error внутри use-case — здесь warn + rethrow.
+     */
+    @Process(JobNames.SALES_AI_ANALYTICS_OVERVIEW)
+    async handleOverview(job: Job<AiOverviewJobData>): Promise<void> {
+        const { domain, from, to, requestKey } = job.data;
+        this.logger.log(
+            `SALES_AI_ANALYTICS_OVERVIEW: ${domain} ${from}..${to}`,
+        );
+        try {
+            await this.overviewJob.execute(job.data);
+        } catch (error) {
+            this.logger.warn(
+                `Обзор ${requestKey} упал: ${(error as Error).message}`,
+            );
+            throw error;
+        }
+    }
 
     @Process(JobNames.SALES_AI_ANALYTICS_PUSH)
     async handlePush(job: Job<AiPushJobData>): Promise<AiPushResult> {

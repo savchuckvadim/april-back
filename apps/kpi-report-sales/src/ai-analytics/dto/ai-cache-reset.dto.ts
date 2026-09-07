@@ -11,7 +11,10 @@ export class AiCacheResetRequestDto extends AiRequestBaseDto {
     @ApiPropertyOptional({
         description:
             'Область сброса: pulse — пульс, agenda — повестка, settings — ' +
-            'настройки/готовность, all (по умолчанию) — весь кэш модуля по домену ' +
+            'настройки/готовность, overview — обзоры менеджер × тип (все ' +
+            'периоды), attention — «Внимание», kpi-month — помесячный KPI-слой ' +
+            '(закрытые месяцы пересчитаются из Bitrix), plans — планы ' +
+            'руководителя, all (по умолчанию) — весь кэш модуля по домену ' +
             '(включая периметры доступа).',
         enum: AI_ANALYTICS_CACHE_SCOPES,
         default: 'all',

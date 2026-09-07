@@ -6,11 +6,16 @@ import { Logger } from '@nestjs/common';
 import { SalesBatchGroupBuffer as ColdHookBatchGroupBuffer } from '../../../../shared/batch';
 import { BitrixDateTime } from '@lib/shared/lib/date';
 
-export interface IColdCallBxEntityData {
+/** Данные события холодного старта, общие для всех писателей. */
+export interface IColdCallEventData {
     name: string;
     deadline: BitrixDateTime;
     responsibleId: string;
     xoCreated: string;
+}
+
+/** + сущность-владелец, в которую пишутся поля ХО (компания у v1/v2). */
+export interface IColdCallBxEntityData extends IColdCallEventData {
     entity: IBXCompany | IBXLead | IBXDeal;
     entityType: EnumColdCallEntityType;
 }

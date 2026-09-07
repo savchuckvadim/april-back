@@ -72,7 +72,7 @@ const baseData: IColdListFlowData = {
     ),
     createdId: '1',
     responsibleId: '2',
-    companyId: '111',
+    owner: { kind: 'company', companyId: 111 },
     baseDealId: '500',
     xoDealId: '$result[new_cold_deal_111]',
 };
@@ -122,6 +122,41 @@ describe('ColdListFlowService', () => {
             n1: 'D_500',
             n2: 'D_$result[new_cold_deal_111]',
         });
+    });
+
+    it('клиент без компании: crm — сделки и лид, crm_company нет, контакт отдельно', () => {
+        const add = jest.fn() as unknown as AddMock;
+        const bitrix = {
+            batch: { listItem: { add } },
+        } as unknown as BitrixService;
+        const portal = {
+            getListByCode: jest.fn(() => buildList('sales', 'kpi')),
+            getTimezone: jest.fn(() => 'Europe/Moscow' as ETimeZone),
+        } as unknown as PortalModel;
+        const buffer = createBuffer();
+
+        new ColdListFlowService(bitrix, portal).flow(
+            {
+                ...baseData,
+                owner: {
+                    kind: 'deal',
+                    entryDealId: 600,
+                    contactId: 9,
+                    leadId: 12,
+                },
+                xoDealId: '$result[new_cold_deal_deal_600]',
+            },
+            buffer as unknown as ColdHookBatchGroupBuffer,
+        );
+        buffer.queued.forEach(fn => fn());
+
+        const [, dto] = add.mock.calls[0];
+        expect(dto.FIELDS.PROPERTY_CRM).toEqual({
+            n0: 'D_500',
+            n1: 'D_$result[new_cold_deal_deal_600]',
+            n2: 'L_12',
+        });
+        expect(dto.ELEMENT_CODE.startsWith('kpi_deal_600_')).toBe(true);
     });
 
     it('передаёт companyId в код элемента списка', () => {

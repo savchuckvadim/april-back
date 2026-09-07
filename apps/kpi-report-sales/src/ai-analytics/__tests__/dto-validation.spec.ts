@@ -1,4 +1,5 @@
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { AiByTypeRequestDto } from '../dto/ai-by-type.dto';
 import { AiCacheResetRequestDto } from '../dto/ai-cache-reset.dto';
 import { AiFeedbackListRequestDto } from '../dto/ai-feedback-list.dto';
 import { AiFeedbackRequestDto } from '../dto/ai-feedback.dto';
@@ -105,6 +106,9 @@ describe('DTO валидация ai-analytics (ValidationPipe, whitelist)', () =
             date: '2026-09-07',
             recipients: [447, 448],
         });
+        expect(
+            (await run(AiPushRequestDto, { ...base, kind: 'digest_all' })).kind,
+        ).toBe('digest_all');
         expect(await failsOn(AiPushRequestDto, base)).toContain('kind');
         expect(
             await failsOn(AiPushRequestDto, { ...base, kind: 'alerts' }),
@@ -130,5 +134,46 @@ describe('DTO валидация ai-analytics (ValidationPipe, whitelist)', () =
                 recipients: [0],
             }),
         ).toContain('recipients');
+    });
+
+    it('by-type: callType — all, тип справочника или objections; layout — wide|long', async () => {
+        const period = { ...base, from: '2026-08-10', to: '2026-09-06' };
+        const all = await run(AiByTypeRequestDto, {
+            ...period,
+            callType: 'all',
+        });
+        expect(all.callType).toBe('all');
+        expect(all.layout).toBeUndefined();
+        expect(
+            (
+                await run(AiByTypeRequestDto, {
+                    ...period,
+                    callType: 'presentation',
+                    layout: 'long',
+                })
+            ).layout,
+        ).toBe('long');
+        expect(
+            (
+                await run(AiByTypeRequestDto, {
+                    ...period,
+                    callType: 'objections',
+                })
+            ).callType,
+        ).toBe('objections');
+        expect(await failsOn(AiByTypeRequestDto, period)).toContain('callType');
+        expect(
+            await failsOn(AiByTypeRequestDto, { ...period, callType: 'every' }),
+        ).toContain('callType');
+        expect(
+            await failsOn(AiByTypeRequestDto, { ...period, callType: 'ALL' }),
+        ).toContain('callType');
+        expect(
+            await failsOn(AiByTypeRequestDto, {
+                ...period,
+                callType: 'all',
+                layout: 'grid',
+            }),
+        ).toContain('layout');
     });
 });

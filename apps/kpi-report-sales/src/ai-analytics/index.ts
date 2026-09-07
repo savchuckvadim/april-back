@@ -15,3 +15,16 @@ export type {
     AiSnapshotJobData,
     AiAuditSnapshotResult,
 } from './dto/ai-snapshot.dto';
+export { OverviewUseCase } from './domain/use-cases/overview.use-case';
+export type { OverviewInput } from './domain/use-cases/overview.use-case';
+export { OverviewLookupUseCase } from './domain/use-cases/overview-lookup.use-case';
+export type {
+    OverviewLookup,
+    OverviewKeyRef,
+} from './domain/use-cases/overview-lookup.use-case';
+export type { AiOverviewJobData } from './dto/ai-overview-request.dto';
+export type {
+    AiOverviewCacheEntry,
+    AiOverviewWsDonePayload,
+    AiOverviewWsErrorPayload,
+} from './dto/ai-overview.dto';

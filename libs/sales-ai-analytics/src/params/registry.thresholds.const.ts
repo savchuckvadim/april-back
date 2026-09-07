@@ -1,0 +1,177 @@
+import type { ParamDescriptor } from './registry.types';
+
+/**
+ * Часть реестра: пороги «честного мало данных», сравнения, рычаги и
+ * детекторы (план 4.7, 4.10, 4.11). Собирается в `registry.const.ts`.
+ */
+export const AI_ANALYTICS_THRESHOLD_PARAMS = [
+    {
+        code: 'n_min_none',
+        title: 'Порог «ни одного числа»',
+        scope: 'global',
+        source: 'configured',
+        unit: 'наблюдений',
+        defaultValue: 8,
+        range: [5, 15],
+        phase: 1,
+        breaksSeries: false,
+        description:
+            'Ниже этого n метрика показывается как null с confidence: none — ни значения, ни интервала, ни места в списке: одна презентация из двух это не «50 %».',
+    },
+    {
+        code: 'n_min_ok_score',
+        title: 'Порог достоверности для оценок качества',
+        scope: 'global',
+        source: 'configured',
+        unit: 'разборов',
+        defaultValue: 20,
+        range: [15, 40],
+        phase: 1,
+        breaksSeries: false,
+        description:
+            'С этого n средняя оценка звонков получает confidence: ok; между n_min_none и порогом — low, значение с широким интервалом и подписью «мало данных».',
+    },
+    {
+        code: 'n_min_ok_rate',
+        title: 'Порог достоверности для долей и конверсий',
+        scope: 'global',
+        source: 'configured',
+        unit: 'входов ребра',
+        defaultValue: 30,
+        range: [20, 60],
+        phase: 1,
+        breaksSeries: false,
+        description:
+            'Доли требуют больше наблюдений, чем оценки: до 30 входов ребра конверсия остаётся описательной и в разложение разрыва не идёт.',
+    },
+    {
+        code: 'n_min_rating',
+        title: 'Порог порядкового сравнения менеджеров',
+        scope: 'global',
+        source: 'configured',
+        unit: 'наблюдений',
+        defaultValue: 50,
+        range: [30, 100],
+        phase: 1,
+        breaksSeries: false,
+        description:
+            'Рейтинга людей нет: группы «выше / на уровне / ниже» строятся по интервалам, а порядок внутри группы показывается только при n не ниже порога и разности больше 2·SE.',
+    },
+    {
+        code: 'delta_prac_pct',
+        title: 'Практический порог разрыва для долей',
+        scope: 'global',
+        source: 'configured',
+        unit: 'процентных пунктов',
+        defaultValue: 5,
+        range: [2, 15],
+        phase: 1,
+        breaksSeries: false,
+        description:
+            'Разрыв к норме показывается, только если двухвыборочный интервал разности не накрывает ноль и сама разность не меньше этого значения: статистика без практического смысла в советы не идёт.',
+    },
+    {
+        code: 'delta_prac_score',
+        title: 'Практический порог разрыва для оценок',
+        scope: 'global',
+        source: 'configured',
+        unit: 'баллов шкалы 1–10',
+        defaultValue: 1,
+        range: [0.5, 2],
+        phase: 1,
+        breaksSeries: false,
+        description:
+            'Тот же критерий для качества: разница средних баллов меньше одного балла считается неотличимой от шума оценщика и не выносится в карточку.',
+    },
+    {
+        code: 'z_compare',
+        title: 'Квантиль интервалов сравнения с нормой',
+        scope: 'global',
+        source: 'configured',
+        unit: 'z-квантиль',
+        defaultValue: 1.645,
+        range: [1.282, 1.96],
+        phase: 1,
+        breaksSeries: false,
+        description:
+            'z для 90 %-интервалов Уилсона и Ньюкомба при сравнении менеджера с нормой; прогнозные полосы считаются на 80 % (квантили 0,1 и 0,9) и берут другой квантиль.',
+    },
+    {
+        code: 'lever_lb_level',
+        title: 'Уровень нижней границы интервала эффекта рычага',
+        scope: 'global',
+        source: 'configured',
+        unit: 'доля',
+        defaultValue: 0.8,
+        range: [0.6, 0.95],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Рекомендация показывается, если нижняя граница интервала ожидаемого прироста продаж на этом уровне больше нуля: советуем то, что с запасом лучше бездействия.',
+    },
+    {
+        code: 'lever_max',
+        title: 'Максимум рекомендаций на карточку',
+        scope: 'global',
+        source: 'configured',
+        unit: 'рекомендаций',
+        defaultValue: 3,
+        range: [1, 5],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Список рычагов обрезается по ожидаемому эффекту: пять советов сразу означают, что не выполнят ни одного.',
+    },
+    {
+        code: 'goodhart_window_months',
+        title: 'Окно детектора Goodhart',
+        scope: 'global',
+        source: 'configured',
+        unit: 'месяцев',
+        defaultValue: 3,
+        range: [2, 6],
+        phase: 3,
+        breaksSeries: false,
+        description:
+            'Сигнал ставится при расхождении знаков сглаженных рядов за это окно: EWMA балла растёт, а нижняя граница апостериора следующего ребра падает — балл начали «делать», а не зарабатывать.',
+    },
+    {
+        code: 'next_step_confirm_min',
+        title: 'Минимальная доля подтверждённых следующих шагов',
+        scope: 'global',
+        source: 'configured',
+        unit: 'доля',
+        defaultValue: 0.5,
+        range: [0.3, 0.8],
+        phase: 3,
+        breaksSeries: false,
+        description:
+            'Доля названных в звонке следующих шагов, подтверждённых делом в CRM за 7 дней. Ниже порога раздел CLOSING считается «проговоренным», а не выполненным, и советы по нему приглушаются.',
+    },
+    {
+        code: 'trend_window_calls',
+        title: 'Окно тренда качества',
+        scope: 'global',
+        source: 'configured',
+        unit: 'разборов одного типа',
+        defaultValue: 30,
+        range: [20, 60],
+        phase: 3,
+        breaksSeries: false,
+        description:
+            'Тренд считается по числу разборов, а не по календарю: при 13 разборах в месяц календарное окно «месяц» давало бы точку из трёх звонков.',
+    },
+    {
+        code: 'trend_sigma_k',
+        title: 'Множитель σ для флага тренда',
+        scope: 'global',
+        source: 'configured',
+        unit: 'СКО личного ряда',
+        defaultValue: 1,
+        range: [0.5, 2],
+        phase: 3,
+        breaksSeries: false,
+        description:
+            'Флаг ставится, когда расхождение короткой и длинной EWMA превышает k·σ_personal два окна подряд; семейство гипотез калибруется циркулярным блочным перестановочным тестом.',
+    },
+] as const satisfies readonly ParamDescriptor[];

@@ -64,6 +64,7 @@ pbx-install нажать переустановку полей сделки и �
 | нормализатор | СОЗДАНИЕ сделки | `POST /api/sales-hooks/convert-normalizer/webhook?dealId={{ID}}` |
 | буфер отказников | стадия сделки | `POST /api/sales-hooks/reject-buffer/webhook?companyId={{Компания}}` |
 | merge / transfer | — (только кнопки фрейма) | `/run`, `/give`, `/take` |
+| холодный старт v2 | кнопка/робот из сделки или компании | `POST /api/event-sales-hook/cold-call-v2?entityType=deal&entityId={{ID}}&responsible=user_{{Ответственный}}&created=user_{{Автор}}&deadline=…&name=…&isTmc=N&force=N` — `force=Y` забирает клиента у другого сотрудника, `N` (дефолт) уступает; док `front/docs/cold-hook-v2.md` |
 
 ## Архитектура
 
@@ -132,7 +133,9 @@ pbx-install нажать переустановку полей сделки и �
   `ai/rules/bitrix-batch-grouping.md`.
 - **Импорт буфера** — ТОЛЬКО из `../shared/batch` (реэкспорт; единственная
   точка связи с cold-hook). Не из cold-hook напрямую и не из бочки shared.
-- **cold-hook не трогаем** — заморожен до отдельного рефакторинга.
+- **cold-hook (v1) не трогаем** — заморожен; развитие идёт в `cold-hook-v2`
+  (холодный старт из сделки, `force`, закрытие смартов, таймлайн + push —
+  `front/docs/cold-hook-v2.md`). PHP-хук по-прежнему зовёт v1.
 - **Разрушающие операции** (merge) — `dryRun` по умолчанию true, выполнение
   только с planHash-подтверждением, порции ≤5, никаких batch-вариантов.
 

@@ -63,6 +63,10 @@ export class EventEntityModel {
                     case ColdEntityCodesEnum.call_last_date:
                         result[bitrixId] = this.eventDeadline;
                         break;
+                    case ColdEntityCodesEnum.next_pres_plan_date:
+                        // Презентации закрыты холодным стартом — назначенной нет.
+                        result[bitrixId] = '';
+                        break;
                     case ColdEntityCodesEnum.xo_responsible:
                         result[bitrixId] = this.eventResponsible;
                         break;
@@ -149,14 +153,21 @@ export class EventEntityModel {
         return portalItem?.bitrixId ?? '';
     }
 
+    /**
+     * «Перспективность клиента» на холодном старте — «Перспективная»
+     * (item `op_prospects_good` реестра). В v1 справочник искался у поля
+     * `op_work_status` — item там не находился, и поле молча оставалось
+     * пустым; в v2 (02.09.2026) читаем свой справочник и ищем по коду, а
+     * не по имени: имя item'а на портале может быть переведено/поправлено.
+     */
     private getNextOpProspectsType() {
         const field = findPbxSalesEventField('op_prospects_type');
         const targetItem = field?.items.find(
-            item => item.name === 'Перспективная',
+            item => item.code === 'op_prospects_good',
         );
 
         const currentPortalField = this.getPortalFieldByCode(
-            ColdEntityCodesEnum.op_work_status,
+            ColdEntityCodesEnum.op_prospects_type,
         );
         const portalItem = currentPortalField?.items.find(
             item => item.code === targetItem?.code,

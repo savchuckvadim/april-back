@@ -1379,6 +1379,9 @@ model Ai {
   portal_id        BigInt?
   transcription_id BigInt?
 
+  @@index([transcription_id], map: "ais_transcription_id_index")
+  @@index([domain, type, activity_id], map: "ais_domain_type_activity_id_index")
+  @@index([domain, type, created_at], map: "ais_domain_type_created_at_index")
   @@map("ais")
 }
 

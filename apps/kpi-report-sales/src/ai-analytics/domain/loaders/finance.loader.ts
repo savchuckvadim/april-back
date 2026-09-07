@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import type { PbxDealSalesBaseStageCode } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
 import { AiAnalyticsCacheService } from '../../cache/ai-analytics-cache.service';
+import { AI_ANALYTICS_HOT_STAGE_CODE } from '../../constants/ai-overview.const';
 import { buildReportUsersKey } from '../../../report';
 import { SalesHotThreshold } from '../../../sales-finance';
 import { normalizeReportPeriod } from '../../../shared/lib/date-util';
@@ -7,11 +9,8 @@ import {
     MonthSegment,
     splitIntoMonthSegments,
 } from '../../../shared/lib/month-segments.util';
-import {
-    summarizeManagers,
-    toFinanceMonth,
-    toPipelineByManager,
-} from './finance.assembler';
+import { summarizeManagers, toFinanceMonth } from './finance.assembler';
+import { toPipelineByManager } from './finance-pipeline.assembler';
 import type {
     AiFinanceLoadOptions,
     AiFinanceMonth,
@@ -30,17 +29,21 @@ import {
     SalesFinanceUseCases,
 } from './sales-finance-use-case.factory';
 
-/** Пайплайн — от презентации и выше; «горячие» — от документов (ТЗ FR-40, план §2.2). */
+/**
+ * Пайплайн — от презентации и выше (ТЗ FR-40, план §2.2; самый широкий
+ * порог, ключ кэша sales-finance уже прогрет вкладкой «Финансы»).
+ * «Горячие» режутся в памяти по AI_ANALYTICS_HOT_STAGE_CODE.
+ */
 const DEFAULT_PIPELINE_THRESHOLD: SalesHotThreshold = 'presentation';
-const DEFAULT_HOT_THRESHOLD: SalesHotThreshold = 'document';
 
 /**
  * Загрузчик финансового хвоста (план, Фаза 1b п. 3): закрытые продажи —
  * по месячным сегментам через ClosedSalesUseCase (закрытые месяцы из кэша
  * `finance-month` 30 дней, живой сегмент 180 с; внутри use-case свой
  * месячный кэш sales-finance — общий с вкладкой «Финансы»); пайплайн —
- * один вызов HotClientsUseCase по порогу пайплайна, «горячие» выделяются
- * по порядку стадии (кэш `finance-pipeline` 180 с).
+ * один вызов HotClientsUseCase по порогу пайплайна, «горячие» (стадия ≥
+ * «В решении») и разрезы v2 выделяются по порядку стадии в памяти
+ * (кэш `finance-pipeline` 180 с).
  *
  * @Injectable без bitrix-состояния: фабрика use-case'ов, кэш, ростер.
  */
@@ -66,7 +69,8 @@ export class FinanceLoader {
         const usersKey = buildReportUsersKey(ids);
         const pipelineThreshold =
             options.pipelineThreshold ?? DEFAULT_PIPELINE_THRESHOLD;
-        const hotThreshold = options.hotThreshold ?? DEFAULT_HOT_THRESHOLD;
+        const hotStageCode =
+            options.hotStageCode ?? AI_ANALYTICS_HOT_STAGE_CODE;
         const segments = splitIntoMonthSegments(
             period.fromIso,
             period.toIsoInclusive,
@@ -93,7 +97,7 @@ export class FinanceLoader {
             usersKey,
             useCases,
             pipelineThreshold,
-            hotThreshold,
+            hotStageCode,
             options,
         );
 
@@ -102,7 +106,7 @@ export class FinanceLoader {
             to: period.toIsoInclusive,
             managerIds: ids,
             pipelineThreshold,
-            hotThreshold,
+            hotStageCode,
             months,
             pipeline,
             managers: summarizeManagers(months, pipeline.managers, ids),
@@ -162,12 +166,12 @@ export class FinanceLoader {
         usersKey: string,
         useCases: SalesFinanceUseCases,
         pipelineThreshold: SalesHotThreshold,
-        hotThreshold: SalesHotThreshold,
+        hotStageCode: PbxDealSalesBaseStageCode,
         options: AiFinanceLoadOptions,
     ): Promise<AiFinancePipelineResult> {
         const key = buildFinancePipelineKey(
             domain,
-            `${pipelineThreshold}-${hotThreshold}`,
+            `${pipelineThreshold}-${hotStageCode}`,
             usersKey,
         );
         const cached = options.forceRefresh
@@ -188,7 +192,7 @@ export class FinanceLoader {
             managers: toPipelineByManager(
                 report?.deals ?? [],
                 ids,
-                hotThreshold,
+                hotStageCode,
             ),
         };
         await this.store(key, result, AI_ANALYTICS_LIVE_TTL_SECONDS);

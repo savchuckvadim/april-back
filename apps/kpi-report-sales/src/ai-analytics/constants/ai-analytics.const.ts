@@ -79,6 +79,14 @@ export type AiAnalyticsRequesterRole =
 export const AI_ANALYTICS_LEADER_ROLES = ['cup', 'op', 'group'] as const;
 /** Сброс кэша и сохранение настроек — только cup|op (план, 6.5). */
 export const AI_ANALYTICS_ADMIN_ROLES = ['cup', 'op'] as const;
+/**
+ * Витрина только руководителям (решение владельца 07.09.2026, план §14.5
+ * п. 4): менеджер без headOf при ai_analytics_self_view_enabled = false
+ * получает 403 на читающих ручках с этим сообщением.
+ */
+export const AI_ANALYTICS_SELF_VIEW_FORBIDDEN_MESSAGE =
+    'Витрина AI-аналитики доступна руководителям; включите ' +
+    'ai_analytics_self_view_enabled, чтобы менеджеры видели свои данные';
 
 /** Виды алерта пульса: риск-флаг разбора либо срочный приоритет коучинга. */
 export const AI_ANALYTICS_ALERT_KINDS = [
@@ -130,9 +138,22 @@ export const AI_ANALYTICS_FEEDBACK_OBJECTS = {
 // Push-контур (шаг 2 Фазы 1a): повестка РОПам и утренний разбор менеджерам
 // ---------------------------------------------------------------------------
 
-/** Виды push-рассылки: повестка недели (пн) и утренний разбор (ежедневно). */
-export const AI_ANALYTICS_PUSH_KINDS = ['agenda', 'digest'] as const;
+/**
+ * Виды push-рассылки: повестка недели (пн), утренний разбор каждому
+ * менеджеру и сводный дайджест по всем менеджерам адресатам из
+ * ai_analytics_digest_all_user_ids (оба — ежедневно в 08:00).
+ */
+export const AI_ANALYTICS_PUSH_KINDS = [
+    'agenda',
+    'digest',
+    'digest_all',
+] as const;
 export type AiAnalyticsPushKind = (typeof AI_ANALYTICS_PUSH_KINDS)[number];
+/** Виды, которые ставит утренний тик крона (08:00 МСК). */
+export const AI_ANALYTICS_MORNING_PUSH_KINDS = [
+    'digest',
+    'digest_all',
+] as const satisfies readonly AiAnalyticsPushKind[];
 
 /**
  * Расписания крона в UTC (контейнер живёт в UTC, как остальные кроны):
@@ -169,12 +190,17 @@ export type AiAnalyticsPushReason =
 
 /**
  * Префиксы object ais-записей доставки (контракт 4): agenda_sent —
- * 'agenda:{weekKey}', digest_sent — 'digest:{day}' (+ managerId).
+ * 'agenda:{weekKey}', digest_sent — 'digest:{day}' (+ managerId) для
+ * личного дайджеста и 'digest_all:{day}' (managerId = null) для сводного.
  */
 export const AI_ANALYTICS_PUSH_OBJECTS = {
     AGENDA_PREFIX: 'agenda:',
     DIGEST_PREFIX: 'digest:',
+    DIGEST_ALL_PREFIX: 'digest_all:',
 } as const;
+
+/** Сводный дайджест: не больше стольких звонков на менеджера. */
+export const AI_ANALYTICS_DIGEST_ALL_CALLS_PER_MANAGER = 3;
 
 /** TAG уведомлений Bitrix: повтор с тем же TAG замещает, а не дублирует. */
 export const AI_ANALYTICS_NOTIFY_TAG_PREFIX = 'ai-analytics' as const;

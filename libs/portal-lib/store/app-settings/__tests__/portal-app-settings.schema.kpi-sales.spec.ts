@@ -56,6 +56,37 @@ const CONTRACT: Record<
         type: 'string',
         default: '',
     },
+    // Решения владельца 07.09.2026 (план §14.5).
+    aiAnalyticsSelfViewEnabled: {
+        code: 'ai_analytics_self_view_enabled',
+        type: 'boolean',
+        default: false,
+    },
+    aiAnalyticsDailyPlanEnabled: {
+        code: 'ai_analytics_daily_plan_enabled',
+        type: 'boolean',
+        default: false,
+    },
+    aiAnalyticsDigestAllUserIds: {
+        code: 'ai_analytics_digest_all_user_ids',
+        type: 'string',
+        default: '',
+    },
+    aiAnalyticsPoolOptIn: {
+        code: 'ai_analytics_pool_opt_in',
+        type: 'boolean',
+        default: false,
+    },
+    aiAnalyticsPoolConsentAt: {
+        code: 'ai_analytics_pool_consent_at',
+        type: 'string',
+        default: '',
+    },
+    aiAnalyticsExperimentsEnabled: {
+        code: 'ai_analytics_experiments_enabled',
+        type: 'boolean',
+        default: false,
+    },
 };
 
 const kpiSales: Record<string, PortalAppSettingDescriptor> =
@@ -88,7 +119,10 @@ const makeService = (settings: Record<string, unknown> | null) => {
 };
 
 describe('PORTAL_APP_SETTINGS_SCHEMA[kpiSales]: ключи AI-аналитики ОП', () => {
-    it('все пять ключей заведены с кодами и типами контракта', () => {
+    it('все ключи заведены с кодами и типами контракта, лишних нет', () => {
+        expect(Object.keys(kpiSales).sort()).toEqual(
+            Object.keys(CONTRACT).sort(),
+        );
         for (const [key, expected] of Object.entries(CONTRACT)) {
             expect(`${key}:${kpiSales[key]?.code}`).toBe(
                 `${key}:${expected.code}`,
@@ -99,7 +133,7 @@ describe('PORTAL_APP_SETTINGS_SCHEMA[kpiSales]: ключи AI-аналитики
         }
     });
 
-    it('дефолты выключают всё: флаги false, РОПы и календарь пустые', () => {
+    it('дефолты выключают всё: флаги false, списки id, календарь и дата согласия пустые', () => {
         const defaults: Record<string, unknown> = getPortalAppDefaults(APP);
         for (const [key, expected] of Object.entries(CONTRACT)) {
             expect(`${key}=${String(defaults[key])}`).toBe(
@@ -134,12 +168,20 @@ describe('PORTAL_APP_SETTINGS_SCHEMA[kpiSales]: ключи AI-аналитики
         expect(values.aiAnalyticsDigestEnabled).toBe(false);
         expect(values.aiAnalyticsRopUserIds).toBe('');
         expect(values.aiAnalyticsCalendar).toBe('');
+        expect(values.aiAnalyticsSelfViewEnabled).toBe(false);
+        expect(values.aiAnalyticsDailyPlanEnabled).toBe(false);
+        expect(values.aiAnalyticsDigestAllUserIds).toBe('');
+        expect(values.aiAnalyticsPoolOptIn).toBe(false);
+        expect(values.aiAnalyticsPoolConsentAt).toBe('');
+        expect(values.aiAnalyticsExperimentsEnabled).toBe(false);
     });
 
     it('resolve перекрывает дефолт сохранённым и держит остальные ключи дефолтными', async () => {
         const stored = {
             ai_analytics_enabled: true,
             ai_analytics_rop_user_ids: '1, 42',
+            ai_analytics_digest_all_user_ids: '7',
+            ai_analytics_self_view_enabled: true,
         };
 
         const values = await makeService(stored).resolve(DOMAIN, APP);
@@ -150,9 +192,14 @@ describe('PORTAL_APP_SETTINGS_SCHEMA[kpiSales]: ключи AI-аналитики
         expect(values.aiAnalyticsAlertsEnabled).toBe(false);
         expect(values.aiAnalyticsDigestEnabled).toBe(false);
         expect(values.aiAnalyticsCalendar).toBe('');
+        expect(values.aiAnalyticsDigestAllUserIds).toBe('7');
+        expect(values.aiAnalyticsSelfViewEnabled).toBe(true);
+        expect(values.aiAnalyticsPoolOptIn).toBe(false);
         expect(getStoredAppSettingKeys(APP, stored).sort()).toEqual([
+            'aiAnalyticsDigestAllUserIds',
             'aiAnalyticsEnabled',
             'aiAnalyticsRopUserIds',
+            'aiAnalyticsSelfViewEnabled',
         ]);
     });
 });

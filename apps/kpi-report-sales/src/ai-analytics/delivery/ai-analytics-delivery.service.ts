@@ -4,6 +4,10 @@ import { DigestItem } from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_NOTIFY_TAG_PREFIX } from '../constants/ai-analytics.const';
 import { AiAgendaDto } from '../dto/ai-agenda.dto';
 import {
+    buildDigestAllMessage,
+    DigestAllMessageInput,
+} from './ai-analytics-digest-all-message.util';
+import {
     buildAgendaMessage,
     buildDigestMessage,
 } from './ai-analytics-message.util';
@@ -22,7 +26,8 @@ export interface DigestDeliveryContext {
 
 /**
  * Доставка push-контура AI-аналитики в Bitrix: персональные уведомления
- * (im.notify.system.add) РОПам — повестка, менеджерам — утренний разбор.
+ * (im.notify.system.add) РОПам — повестка, менеджерам — утренний разбор,
+ * адресатам из настроек — сводный дайджест по всем менеджерам.
  * Одна ответственность — транспорт; тексты — ai-analytics-message.util.
  *
  * НЕ @Injectable: экземпляр Битрикса приходит в конструктор на каждый
@@ -83,6 +88,21 @@ export class AiAnalyticsDeliveryService {
             userIds,
             message,
             `${AI_ANALYTICS_NOTIFY_TAG_PREFIX}:digest:${context.day}:${context.managerId}`,
+        );
+    }
+
+    /**
+     * Сводный дайджест по всем менеджерам адресатам из
+     * ai_analytics_digest_all_user_ids (или ручным). TAG — по дню.
+     */
+    async sendDigestAll(
+        userIds: number[],
+        input: DigestAllMessageInput,
+    ): Promise<number[]> {
+        return this.notify(
+            userIds,
+            buildDigestAllMessage(input),
+            `${AI_ANALYTICS_NOTIFY_TAG_PREFIX}:digest_all:${input.day}`,
         );
     }
 

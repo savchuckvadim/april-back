@@ -20,8 +20,19 @@ import {
     AiAnalyticsPriorSource,
 } from '../constants/ai-overview.const';
 import { AiAttentionItemDto } from './ai-attention.dto';
+import { AiFinanceTailDto } from './ai-finance-tail.dto';
 import { AiManagerTypeCellDto } from './ai-manager-type-cell.dto';
 import { MetricDto } from './metric.dto';
+
+// Финансовый хвост вынесен в ai-finance-tail.dto.ts (v2, «≤ 300 строк»);
+// реэкспорт сохраняет импорты соседних DTO (ai-by-type.dto).
+export {
+    AiFinanceTailDto,
+    AiHotByColorDto,
+    AiPipelineByContractTypeDto,
+    AiPipelineByTermDto,
+    AiPipelineDto,
+} from './ai-finance-tail.dto';
 
 /** Оценка корзины за период (контакт / презентация / закрытие). */
 export class AiBucketScoreDto {
@@ -97,64 +108,6 @@ export class AiFunnelEdgeDto {
         example: 'none',
     })
     priorSource: AiAnalyticsPriorSource;
-}
-
-/** Открытые сделки от пороговой стадии и выше. */
-export class AiPipelineDto {
-    @ApiProperty({
-        description: 'Число открытых сделок.',
-        type: Number,
-        example: 5,
-    })
-    count: number;
-
-    @ApiProperty({
-        description: 'Их месячный чек, в рублях.',
-        type: Number,
-        example: 152000,
-    })
-    monthlyAmount: number;
-}
-
-/** Финансовый хвост менеджера (ТЗ FR-40/41). */
-export class AiFinanceTailDto {
-    @ApiProperty({
-        description:
-            'Продаж: сделок sales_base в успехе по CLOSEDATE за период.',
-        type: Number,
-        example: 4,
-    })
-    salesCount: number;
-
-    @ApiProperty({
-        description: 'Аванс: сумма price × qty по товарным строкам.',
-        type: Number,
-        example: 380000,
-    })
-    advanceAmount: number;
-
-    @ApiProperty({
-        description: 'Месячный чек: сумма (сумма строки / эффективные месяцы).',
-        type: Number,
-        example: 47500,
-    })
-    monthlyAmount: number;
-
-    @ApiProperty({
-        description:
-            'Пайплайн от стадии «Презентация» и выше (открытые сделки).',
-        type: AiPipelineDto,
-    })
-    pipelineFromStage: AiPipelineDto;
-
-    @ApiProperty({
-        description:
-            'Открытых сделок от стадии «Документы» и выше (стадийное ' +
-            'определение sales-finance; событие hot — с Фазы 2).',
-        type: Number,
-        example: 2,
-    })
-    hotEvents: number;
 }
 
 /** План CRM: запланировано / сделано за период (самоотчёт). */

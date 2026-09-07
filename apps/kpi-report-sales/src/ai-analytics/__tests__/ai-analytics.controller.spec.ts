@@ -4,6 +4,8 @@ import { RequesterAccessService } from '../domain/access/requester-access.servic
 import { RequesterAccess } from '../domain/access/perimeter.util';
 import { AiAgendaDto } from '../dto/ai-agenda.dto';
 import { AiPulseDto } from '../dto/ai-pulse.dto';
+import { AI_ANALYTICS_SELF_VIEW_FORBIDDEN_MESSAGE } from '../constants/ai-analytics.const';
+import { settingsLoaderWith } from './fixtures/lite-row.fixture';
 
 const metric = { value: 0.6, n: 40, confidence: { level: 'ok' as const } };
 
@@ -67,8 +69,17 @@ const agenda: AiAgendaDto = {
     disagreements: [{ managerId: '20', object: 'call:b', reason: null }],
 };
 
-function makeController(access: RequesterAccess, cached: unknown = null) {
-    const accessService = new RequesterAccessService({} as never, {} as never);
+function makeController(
+    access: RequesterAccess,
+    cached: unknown = null,
+    selfViewEnabled = false,
+) {
+    // resolve подменён; resolveViewer — настоящий: правило self_view проверяется.
+    const accessService = new RequesterAccessService(
+        {} as never,
+        {} as never,
+        settingsLoaderWith({ selfViewEnabled }),
+    );
     jest.spyOn(accessService, 'resolve').mockResolvedValue(access);
 
     const compute = jest.fn();
@@ -165,8 +176,32 @@ describe('AiAnalyticsController', () => {
         );
     });
 
-    it('pulse/agenda: менеджер без headOf получает только свои строки', async () => {
-        const { controller } = makeController(manager, pulse);
+    it('pulse/agenda/feedback-list: менеджер без headOf при выключенной self_view → 403; settings/get доступна', async () => {
+        const { controller, pulseUseCase, agendaUseCase, feedbackUseCase } =
+            makeController(manager, pulse);
+        const own = { ...base, requesterUserId: '20' };
+        await expect(controller.getPulse(own)).rejects.toThrow(
+            AI_ANALYTICS_SELF_VIEW_FORBIDDEN_MESSAGE,
+        );
+        await expect(controller.getAgenda(own)).rejects.toBeInstanceOf(
+            ForbiddenException,
+        );
+        await expect(
+            controller.listFeedback({
+                ...own,
+                from: '2026-09-01',
+                to: '2026-09-30',
+                managerId: '20',
+            }),
+        ).rejects.toBeInstanceOf(ForbiddenException);
+        expect(pulseUseCase.execute).not.toHaveBeenCalled();
+        expect(agendaUseCase.execute).not.toHaveBeenCalled();
+        expect(feedbackUseCase.list).not.toHaveBeenCalled();
+        expect((await controller.getSettings(own)).status).toBe('ready');
+    });
+
+    it('pulse/agenda: менеджер без headOf при self_view_enabled получает только свои строки', async () => {
+        const { controller } = makeController(manager, pulse, true);
         const own = await controller.getPulse({
             ...base,
             requesterUserId: '20',
@@ -180,6 +215,7 @@ describe('AiAnalyticsController', () => {
         const { controller: agendaController } = makeController(
             manager,
             agenda,
+            true,
         );
         const ownAgenda = await agendaController.getAgenda({
             ...base,
@@ -211,6 +247,22 @@ describe('AiAnalyticsController', () => {
         );
     });
 
+    it('cache/reset: scope overview|attention|kpi-month|plans — паттерн своей секции', async () => {
+        const { controller, cache } = makeController(leader);
+        for (const scope of [
+            'overview',
+            'attention',
+            'kpi-month',
+            'plans',
+        ] as const) {
+            expect(await controller.resetCache({ ...base, scope })).toEqual({
+                deletedCount: 4,
+                pattern: `sales-ai-analytics:v1:april.bitrix24.ru:${scope}:*`,
+            });
+        }
+        expect(cache.resetByPattern).toHaveBeenCalledTimes(4);
+    });
+
     it('cache/reset руководителю группы → 403 (нужен cup|op)', async () => {
         const { controller } = makeController({
             role: 'group',
@@ -223,13 +275,13 @@ describe('AiAnalyticsController', () => {
 
     it('feedback/list по всем — только руководителю; менеджер с managerId проходит в use-case', async () => {
         const list = { ...base, from: '2026-09-01', to: '2026-09-30' };
-        const { controller } = makeController(manager);
+        const { controller } = makeController(manager, null, true);
         await expect(controller.listFeedback(list)).rejects.toBeInstanceOf(
             ForbiddenException,
         );
 
         const { controller: managerController, feedbackUseCase } =
-            makeController(manager);
+            makeController(manager, null, true);
         const response = await managerController.listFeedback({
             ...list,
             managerId: '20',
@@ -256,6 +308,34 @@ describe('AiAnalyticsController', () => {
             data: { id: '9001' },
         });
         expect(feedbackUseCase.add).toHaveBeenCalledWith(dto, manager);
+    });
+
+    it('push digest_all: руководитель запускает «себе» — recipients уходят в use-case', async () => {
+        const { controller, pushUseCase } = makeController(leader);
+        const result = {
+            kind: 'digest_all' as const,
+            date: '2026-09-07',
+            status: 'sent' as const,
+            reason: null,
+            delivered: [447],
+        };
+        pushUseCase.execute.mockResolvedValue(result);
+        const response = await controller.push({
+            ...base,
+            kind: 'digest_all',
+            date: '2026-09-07',
+            recipients: [447],
+        });
+        expect(pushUseCase.execute).toHaveBeenCalledWith({
+            domain: base.domain,
+            kind: 'digest_all',
+            date: '2026-09-07',
+            recipients: [447],
+        });
+        expect(response.requestKey).toBe(
+            'ai-analytics:push:digest_all:april.bitrix24.ru:2026-09-07',
+        );
+        expect(response.data).toEqual(result);
     });
 
     it('push: менеджеру → 403, use-case не вызывается', async () => {

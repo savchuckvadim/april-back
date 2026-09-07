@@ -44,10 +44,21 @@ describe('SettingsUseCase', () => {
                 alertsEnabled: true,
                 auditEnabled: true,
                 ropUserIds: [447],
+                selfViewEnabled: true,
+                digestAllUserIds: [447, 512],
+                poolOptIn: true,
+                poolConsentAt: '2026-09-07',
             }),
         );
 
         const dto = await useCase.execute('d', { now: NOW });
+
+        expect(dto.selfViewEnabled).toBe(true);
+        expect(dto.dailyPlanEnabled).toBe(false);
+        expect(dto.digestAllUserIds).toEqual(['447', '512']);
+        expect(dto.poolOptIn).toBe(true);
+        expect(dto.poolConsentAt).toBe('2026-09-07');
+        expect(dto.experimentsEnabled).toBe(false);
 
         expect(loadLite).toHaveBeenCalledWith(
             expect.objectContaining({

@@ -84,11 +84,14 @@ describe('DI-граф AiAnalyticsModule (kpi-report-sales)', () => {
         expect(missing).toEqual([]);
     });
 
-    it('модуль не публикует чужих контроллеров (только AiAnalyticsController)', () => {
+    it('модуль не публикует чужих контроллеров (только свои два)', () => {
         const controllers = metadataList(AiAnalyticsModule, 'controllers').map(
             ctor => ctor.name,
         );
-        expect(controllers).toEqual(['AiAnalyticsController']);
+        expect(controllers).toEqual([
+            'AiAnalyticsController',
+            'AiAnalyticsOverviewController',
+        ]);
         // Импортируемые lib-модули — сервисные, без контроллеров (app-api-surface),
         // кроме BxDepartmentModule, чьи роуты приложение публикует и так.
         const leaking = metadataList(AiAnalyticsModule, 'imports')

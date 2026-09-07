@@ -2,7 +2,8 @@
  * Константы шага «overview» Фазы 1b (план ai/tasks/ai-sales-analytics-plan.md,
  * 6.2–6.5, 9 «Фаза 1b» п. 3): TTL кэша обзора, опции джобы, версии расчёта,
  * уровни менеджеров, форма воронки, рёбра воронки, раскладки by-type,
- * окно «Внимания», крон прогрева, ais-запись настроек. Runtime-массивы
+ * окно «Внимания», крон прогрева, ais-запись настроек, финансовый хвост v2
+ * (стадия «горячего», цвета компании, бакеты срока договора). Runtime-массивы
  * union-литералов переиспользуются в @IsIn и Swagger enum
  * (ai/rules/dto-conventions.md, pbx-typing.md).
  */
@@ -10,6 +11,15 @@ import {
     CALL_REPORT_CALL_TYPE_CODES,
     CallReportCallTypeCode,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
+import {
+    PBX_DEAL_SALES_BASE_STAGE_CODE,
+    PbxDealSalesBaseStageCode,
+} from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
+import {
+    AI_ANALYTICS_SETTINGS_TYPE,
+    AI_ANALYTICS_SNAPSHOT_APP,
+    AI_ANALYTICS_SNAPSHOT_PROVIDER,
+} from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_PULSE_TTL_SECONDS } from './ai-analytics.const';
 
 /** Версия кода расчёта витрины (semver, план 4.11). */
@@ -40,6 +50,15 @@ export const AI_ANALYTICS_OVERVIEW_JOB_OPTIONS = {
     timeout: 120_000,
     removeOnComplete: true,
     removeOnFail: true,
+} as const;
+
+/**
+ * Опции джобы прогрева (план 5.3): ночные джобы ниже приоритетом
+ * пользовательских (priority 1), без ретраев, тот же таймаут.
+ */
+export const AI_ANALYTICS_PREWARM_JOB_OPTIONS = {
+    ...AI_ANALYTICS_OVERVIEW_JOB_OPTIONS,
+    priority: 10,
 } as const;
 
 /** Состояния Bull-джобы, при которых повторный запрос получает processing. */
@@ -137,14 +156,21 @@ export const AI_ANALYTICS_BY_TYPE_LAYOUTS = ['wide', 'long'] as const;
 export type AiAnalyticsByTypeLayout =
     (typeof AI_ANALYTICS_BY_TYPE_LAYOUTS)[number];
 
+/** Псевдотип «Все» в by-type: все типы справочника вместе (менеджер × тип). */
+export const AI_ANALYTICS_BY_TYPE_ALL = 'all' as const;
 /** Сквозной срез возражений — псевдотип в by-type. */
 export const AI_ANALYTICS_BY_TYPE_OBJECTIONS = 'objections' as const;
-/** Допустимые значения callType в by-type: типы справочника + objections. */
+/**
+ * Допустимые значения callType в by-type: all (первым — как пункт «Все»
+ * переключателя), типы справочника, objections.
+ */
 export const AI_ANALYTICS_BY_TYPE_CODES = [
+    AI_ANALYTICS_BY_TYPE_ALL,
     ...CALL_REPORT_CALL_TYPE_CODES,
     AI_ANALYTICS_BY_TYPE_OBJECTIONS,
 ] as const;
 export type AiAnalyticsByTypeCode =
+    | typeof AI_ANALYTICS_BY_TYPE_ALL
     | CallReportCallTypeCode
     | typeof AI_ANALYTICS_BY_TYPE_OBJECTIONS;
 
@@ -169,11 +195,61 @@ export const AI_ANALYTICS_PREWARM_CRON = '30 2 * * *' as const;
  * Ais-запись настроек витрины (временное решение Фазы 1b до ключей
  * ai_analytics_levels/targets/absences в схеме app-settings, план 5.1):
  * type/app/provider фиксированы, activity_id — ключ набора, последняя
- * запись на ключ — актуальная.
+ * запись на ключ — актуальная. Сами литералы живут в реестре снапшотов
+ * библиотеки (contracts/snapshot-kinds.const, Фаза 2) — здесь только
+ * ссылка на них, чтобы значение не разъезжалось по двум местам.
  */
 export const AI_ANALYTICS_SETTINGS_RECORD = {
-    TYPE: 'ai-analytics-settings',
-    APP: 'ai-analytics',
-    PROVIDER: 'ai-analytics',
+    TYPE: AI_ANALYTICS_SETTINGS_TYPE,
+    APP: AI_ANALYTICS_SNAPSHOT_APP,
+    PROVIDER: AI_ANALYTICS_SNAPSHOT_PROVIDER,
     LEVELS_KEY: 'levels',
 } as const;
+
+/**
+ * «Горячая» сделка — открытая сделка sales_base со стадией не ниже
+ * «В решении» (sales_in_progress, order 8). Решение владельца А.2
+ * (ai/tasks/ai-sales-analytics-inputs.md): источник — тот же
+ * HotClientsUseCase, что и вкладка «Финансы» (порог presentation), порог
+ * «горячего» режется в памяти по порядку лестницы; цвет компании — разрез,
+ * а не условие. Порог decision в SALES_HOT_THRESHOLDS не заводится.
+ */
+export const AI_ANALYTICS_HOT_STAGE_CODE: PbxDealSalesBaseStageCode =
+    PBX_DEAL_SALES_BASE_STAGE_CODE.inProgress;
+
+/**
+ * Цвет компании («светофор», UF op_prospects компании): фронт подписывает
+ * green «горячий», yellow «средний», red «холодный».
+ */
+export const AI_ANALYTICS_COMPANY_COLORS = ['green', 'yellow', 'red'] as const;
+export type AiAnalyticsCompanyColor =
+    (typeof AI_ANALYTICS_COMPANY_COLORS)[number];
+/** Ключ разреза «цвет не задан» (companyColor = null либо вне справочника). */
+export const AI_ANALYTICS_COMPANY_COLOR_NONE = 'none' as const;
+/** Ключи разреза hotByColor: цвета справочника + none. */
+export const AI_ANALYTICS_COMPANY_COLOR_KEYS = [
+    ...AI_ANALYTICS_COMPANY_COLORS,
+    AI_ANALYTICS_COMPANY_COLOR_NONE,
+] as const;
+export type AiAnalyticsCompanyColorKey =
+    (typeof AI_ANALYTICS_COMPANY_COLOR_KEYS)[number];
+
+/**
+ * Бакеты срока договора открытой сделки, месяцев по countContractMonths
+ * (@lib/shared): ≤ 3 → '3', ≤ 6 → '6', ≤ 12 → '12', дольше → '24';
+ * нет дат договора → 'none'. Порядок массива — порядок в ответе.
+ */
+export const AI_ANALYTICS_CONTRACT_TERM_BUCKETS = [
+    '3',
+    '6',
+    '12',
+    '24',
+    'none',
+] as const;
+export type AiAnalyticsContractTermBucket =
+    (typeof AI_ANALYTICS_CONTRACT_TERM_BUCKETS)[number];
+/** Именованные бакеты: «срок неизвестен» и самый длинный (дольше 12 мес.). */
+export const AI_ANALYTICS_CONTRACT_TERM_BUCKET = {
+    none: 'none',
+    longest: '24',
+} as const satisfies Record<string, AiAnalyticsContractTermBucket>;
