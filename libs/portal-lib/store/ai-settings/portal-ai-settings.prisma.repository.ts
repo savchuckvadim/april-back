@@ -13,6 +13,11 @@ import {
     WeeklyReportDeliveryMode,
 } from './portal-ai-settings.types';
 
+/** Минимальная длина названия организации: «А» отфильтровало бы полразговора. */
+const MIN_ORG_NAME_LENGTH = 2;
+/** Потолок списка названий — защита промпта от свалки. */
+const MAX_ORG_NAMES = 20;
+
 /** Поля, которые редактируются снаружи (lastScanAt пишет только планировщик). */
 const EDITABLE_FIELDS = [
     'enabled',
@@ -141,7 +146,8 @@ export class PortalAiSettingsPrismaRepository
             update.weeklyReportRecipients !== undefined ||
             update.weeklyReportFolderId !== undefined ||
             update.weeklyReportDelivery !== undefined ||
-            update.complianceReviewEnabled !== undefined
+            update.complianceReviewEnabled !== undefined ||
+            update.ownOrgNames !== undefined
         ) {
             const json = this.toJsonSettings(current?.settings);
             if (update.irrelevantConfidence !== undefined) {
@@ -179,6 +185,13 @@ export class PortalAiSettingsPrismaRepository
                 json.complianceReviewEnabled =
                     update.complianceReviewEnabled ?? undefined;
             }
+            if (update.ownOrgNames !== undefined) {
+                // Пустой список из админки — это «сбросить», а не «сохранить
+                // пустоту»: undefined убирает ключ из JSON целиком.
+                json.ownOrgNames =
+                    this.toOrgNames(update.ownOrgNames as Prisma.JsonValue) ??
+                    undefined;
+            }
             data.settings = JSON.parse(
                 JSON.stringify(json),
             ) as Prisma.InputJsonValue;
@@ -197,6 +210,7 @@ export class PortalAiSettingsPrismaRepository
         weeklyReportFolderId?: number;
         weeklyReportDelivery?: WeeklyReportDeliveryMode;
         complianceReviewEnabled?: boolean;
+        ownOrgNames?: string[];
     } {
         if (!value || typeof value !== 'object' || Array.isArray(value)) {
             return {};
@@ -223,6 +237,12 @@ export class PortalAiSettingsPrismaRepository
                 typeof raw.complianceReviewEnabled === 'boolean'
                     ? raw.complianceReviewEnabled
                     : undefined,
+            // Названия своих организаций вводятся строкой «Альфа-центр,
+            // Апрель» либо массивом — принимаем оба вида (в БД лежит и то,
+            // и другое, как у получателей отчёта).
+            ownOrgNames:
+                this.toOrgNames(raw.ownOrgNames as Prisma.JsonValue) ??
+                undefined,
             weeklyReportDelivery: (
                 WEEKLY_REPORT_DELIVERY_MODES as readonly string[]
             ).includes(String(raw.weeklyReportDelivery))
@@ -290,7 +310,33 @@ export class PortalAiSettingsPrismaRepository
             complianceReviewEnabled:
                 this.toJsonSettings(row.settings).complianceReviewEnabled ??
                 null,
+            ownOrgNames: this.toJsonSettings(row.settings).ownOrgNames ?? null,
         };
+    }
+
+    /**
+     * Названия своих организаций: массив либо строка через запятую/перенос
+     * строки. Пустые и слишком короткие имена отбрасываются — одна буква в
+     * списке превратила бы в «наше название» половину разговора.
+     */
+    private toOrgNames(value: Prisma.JsonValue): string[] | null {
+        const source: unknown[] = Array.isArray(value)
+            ? value
+            : typeof value === 'string'
+              ? value.split(/[,;\n]+/)
+              : [];
+        const names = source
+            .map(item => (typeof item === 'string' ? item.trim() : ''))
+            .filter(name => name.length >= MIN_ORG_NAME_LENGTH);
+        // Дубликаты без учёта регистра: «Апрель» и «апрель» — одно имя.
+        const seen = new Set<string>();
+        const unique = names.filter(name => {
+            const key = name.toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+        return unique.length ? unique.slice(0, MAX_ORG_NAMES) : null;
     }
 
     /**

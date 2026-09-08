@@ -780,6 +780,33 @@ export const CALL_REPORT_SMART_FIELDS: CallReportSmartFieldDef[] = [
         type: 'enumeration',
         items: CALL_REPORT_REFUSAL_ITEMS,
     },
+    // ПРИЧИНА ОТКАЗА — четыре слоя по образцу «хвоста» и «5К»
+    // (решение владельца 08.09.2026, ai/tasks/call-report-prod-fixes.md §3):
+    // AI · менеджер · расхождение · объяснение. Причина отказа живёт В
+    // ПОЛЯХ карточек и в списках отчётности; комментарий ленты «08.09
+    // отказ» — как раз признак того, что поля НЕ заполнены. Систему
+    // сознательно ограничили фиксацией расхождения: поля менеджера она
+    // не переписывает.
+    {
+        code: 'REFUSAL_REASON_AI',
+        name: 'Причина отказа: услышал AI',
+        type: 'string',
+    },
+    {
+        code: 'REFUSAL_REASON_MANAGER',
+        name: 'Причина отказа: зафиксировал менеджер',
+        type: 'string',
+    },
+    {
+        code: 'REFUSAL_MISMATCH',
+        name: 'Причина отказа: не зафиксирована',
+        type: 'boolean',
+    },
+    {
+        code: 'REFUSAL_REASON_NOTE',
+        name: 'Причина отказа: объяснение сверки',
+        type: 'string',
+    },
 
     // — Метрики речи (из транскрипта) —
     {
@@ -1064,6 +1091,10 @@ export const CALL_REPORT_CARD_SECTIONS: readonly CallReportCardSection[] = [
             'OBJECTION_CATEGORIES',
             'RISK_FLAGS',
             'REFUSAL_CATEGORY',
+            'REFUSAL_REASON_AI',
+            'REFUSAL_REASON_MANAGER',
+            'REFUSAL_MISMATCH',
+            'REFUSAL_REASON_NOTE',
         ],
     },
     {

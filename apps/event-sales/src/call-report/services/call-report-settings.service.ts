@@ -39,6 +39,12 @@ const DEFAULTS = {
 } as const;
 
 /**
+ * Названий своих организаций по умолчанию НЕТ: пустой список означает
+ * прежнее поведение промптов (ни строчки про «наши имена»).
+ */
+const NO_OWN_ORG_NAMES: readonly string[] = [];
+
+/**
  * Эффективные настройки конвейера для конкретного портала: ни одного null
  * в обязательных полях, всё готово к использованию.
  */
@@ -77,6 +83,12 @@ export interface EffectiveCallReportSettings {
     presentationStrictness: PresentationStrictnessLevel;
     /** Проверка звонка по документам компании (скрипт, регламент, факты). */
     complianceReviewEnabled: boolean;
+    /**
+     * Названия НАШИХ организаций: как менеджеры представляются клиенту на
+     * этом портале («Альфа-центр», «Апрель»). Пустой массив — настройка не
+     * задана, промпты остаются прежними.
+     */
+    ownOrgNames: string[];
     /** Откуда взялись значения — для диагностики в логах. */
     source: 'portal' | 'default';
 }
@@ -148,6 +160,7 @@ export class CallReportSettingsService {
             complianceReviewEnabled:
                 portal?.complianceReviewEnabled ??
                 DEFAULTS.complianceReviewEnabled,
+            ownOrgNames: [...(portal?.ownOrgNames ?? NO_OWN_ORG_NAMES)],
             source: portal ? 'portal' : 'default',
         };
     }

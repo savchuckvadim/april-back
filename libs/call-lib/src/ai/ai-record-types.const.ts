@@ -17,3 +17,9 @@ export const AGENT_ANALYSIS_TYPE = 'agent-analysis';
  * и маркером идемпотентности: есть запись — проверка уже выполнена.
  */
 export const CALL_COMPLIANCE_REVIEW_TYPE = 'call-compliance-review';
+/**
+ * Сверка ПРИЧИНЫ ОТКАЗА: закрытие сделки финалом отказа против полей
+ * причины отказа в карточке и записях отчётности (решение владельца
+ * 08.09.2026). Запись служит и вердиктом, и маркером идемпотентности.
+ */
+export const CALL_REFUSAL_AUDIT_TYPE = 'call-refusal-audit';

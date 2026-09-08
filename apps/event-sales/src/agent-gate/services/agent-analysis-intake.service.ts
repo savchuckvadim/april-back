@@ -18,6 +18,8 @@ import {
     CallReportDealFamily,
     CallReportDealFamilyService,
 } from '@lib/call-lib/call-report/services/call-report-deal-family.service';
+import { resolveCallManagerId } from '@lib/call-lib/call-report/services/call-manager.util';
+import { CallReportDealVerifyService } from '@lib/call-lib/call-report/services/call-report-deal-verify.service';
 import {
     AgentCallAnalysisDto,
     AgentDialogTurnDto,
@@ -61,6 +63,7 @@ export class AgentAnalysisIntakeService {
         private readonly pbxService: PBXService,
         private readonly smartResolver: CallReportSmartResolverService,
         private readonly dealFamily: CallReportDealFamilyService,
+        private readonly dealVerify: CallReportDealVerifyService,
     ) {}
 
     async intake(
@@ -165,10 +168,11 @@ export class AgentAnalysisIntakeService {
             );
         }
 
-        await this.duplicateToTimeline(row, dto).catch(error =>
-            this.logger.warn(
-                `Дубль анализа в таймлайн не записан: ${(error as Error).message}`,
-            ),
+        await this.duplicateToTimeline(row, dto, written?.managerId).catch(
+            error =>
+                this.logger.warn(
+                    `Дубль анализа в таймлайн не записан: ${(error as Error).message}`,
+                ),
         );
 
         return {
@@ -498,25 +502,65 @@ export class AgentAnalysisIntakeService {
         // Корневая сделка — из CRM-поля «Корневая сделка Продажи», а не
         // владелец звонка: звонят из презентации, и без раскладки в поле
         // «ОП: основная сделка» уезжала сделка-презентация (alfacentr,
-        // 28.08.2026). Каркас это уже умеет — разбор не должен затирать.
-        const family = isLead
-            ? {}
-            : await this.dealFamily.resolve(domain, rowDealId);
+        // 28.08.2026). Сделку ЧУЖОЙ воронки раскладка в «основную» не
+        // пустит, а недостающую дотянет по компании/контакту звонка.
+        const family: CallReportDealFamily = await this.dealFamily.resolve(
+            domain,
+            rowDealId,
+            {
+                companyId: context.companyId,
+                contactId: context.contactId,
+                callStartedAt: row.callStartedAt,
+            },
+        );
+        // Ответственный карточки и автор записей — владелец звонка из
+        // телефонии; ответственный сущности только запасной вариант и
+        // только у «своей» сделки (иначе разбор уезжал чужому сотруднику).
+        const managerId = resolveCallManagerId({
+            callOwnerUserId: row.userId,
+            entityManagerId: context.managerId,
+            entityIsOwn: isLead || family.ownerCategoryCode !== undefined,
+        });
+        // Догадки агента принимаем ТОЛЬКО там, где раскладка по CRM молчит,
+        // и ТОЛЬКО после проверки воронки И КЛИЕНТА: DTO агента валидирует
+        // лишь «целое > 0», и без проверки в связи уезжала любая сделка
+        // портала (в том числе чужой воронки и чужого клиента).
+        const guess = await this.dealVerify.filterAgentDeals(
+            domain,
+            {
+                mainDealId: family.mainDealId
+                    ? undefined
+                    : dto.relatedDeals?.mainDealId,
+                presentationDealId: family.presentationDealId
+                    ? undefined
+                    : dto.relatedDeals?.presentationDealId,
+                xoDealId: family.xoDealId
+                    ? undefined
+                    : dto.relatedDeals?.xoDealId,
+            },
+            { companyId: context.companyId, contactId: context.contactId },
+        );
+        const links: CallReportDealFamily = {
+            ...family,
+            mainDealId: family.mainDealId ?? guess.mainDealId,
+            presentationDealId:
+                family.presentationDealId ?? guess.presentationDealId,
+            xoDealId: family.xoDealId ?? guess.xoDealId,
+        };
 
         try {
             const itemId = await this.writeItem(
                 writer,
                 row,
-                rowDealId,
                 rowLeadId,
-                family,
-                context,
+                links,
+                { ...context, managerId },
                 this.resolveCallDirection(activity),
                 gigachat,
                 agentName,
                 dto,
             );
-            return { itemId, managerId: context.managerId, activity };
+            return { itemId, managerId, activity };
         } catch (error) {
             // { telegram: true } — форс-алерт админам (транспорт логгера)
             this.logger.error(
@@ -530,7 +574,6 @@ export class AgentAnalysisIntakeService {
     private async writeItem(
         writer: CallReportSmartWriterService,
         row: TranscriptionPipelineView,
-        rowDealId: number | undefined,
         rowLeadId: number | undefined,
         family: CallReportDealFamily,
         dealContext: {
@@ -545,7 +588,9 @@ export class AgentAnalysisIntakeService {
     ): Promise<number> {
         return writer.addItem({
             activityId: row.activityId ?? '',
-            dealId: rowDealId,
+            // Родитель-сделка элемента — только «ОП Основная» (writer
+            // ставит parentId{DEAL} из mainDealId): сделка-владелец звонка
+            // чужой воронки в связь не идёт (решение владельца 08.09.2026).
             leadId: rowLeadId,
             companyId: dealContext.companyId,
             contactId: dealContext.contactId,
@@ -572,6 +617,10 @@ export class AgentAnalysisIntakeService {
             objectionCategories: this.resolveObjectionCategories(dto),
             riskFlags: dto.riskFlags,
             refusalCategory: dto.refusalCategory,
+            // Причина отказа словами клиента: слой «AI» четвёрки полей
+            // (менеджер · расхождение · объяснение дописывает утренняя
+            // сверка причин отказа, CallRefusalAuditService).
+            refusalReasonAi: dto.refusalReason ?? undefined,
             talkRatioPct: dto.talkRatioPct,
             questionsCount: dto.questionsCount,
             weightedScore: dto.weightedScore ?? this.computeWeightedScore(dto),
@@ -614,13 +663,12 @@ export class AgentAnalysisIntakeService {
             speechAnalysis: dto.speechAnalysis,
             employeeRecommendations: dto.employeeRecommendations,
             sections: dto.sections,
-            // Раскладка по CRM главнее догадок модели; сделка-владелец в
-            // «основную» не подставляется — она может быть презентацией.
-            mainDealId: family.mainDealId ?? dto.relatedDeals?.mainDealId,
-            presentationDealId:
-                family.presentationDealId ??
-                dto.relatedDeals?.presentationDealId,
-            xoDealId: family.xoDealId ?? dto.relatedDeals?.xoDealId,
+            // Связи уже сведены в writeSmartItem: раскладка по CRM, а где
+            // она молчит — ПРОВЕРЕННАЯ по воронке догадка агента. Сделка-
+            // владелец в «основную» не подставляется никогда.
+            mainDealId: family.mainDealId,
+            presentationDealId: family.presentationDealId,
+            xoDealId: family.xoDealId,
             kpiItem: dto.kpiItem,
             historyItem: dto.historyItem,
             relatedReports: dto.relatedReportIds?.join(', '),
@@ -696,7 +744,7 @@ export class AgentAnalysisIntakeService {
         const { bitrix } = await this.pbxService.init(domain);
 
         const entityType = `DYNAMIC_${smartInfo.entityTypeId}`;
-        const authorId = String(written.managerId ?? 1);
+        const authorId = this.resolveTimelineAuthorId(row, written.managerId);
         const sections = (dto.sections ?? []).filter(
             section => section.relevance > 0,
         );
@@ -999,17 +1047,20 @@ export class AgentAnalysisIntakeService {
     /**
      * Дубль анализа в таймлайн сделки (по требованию задачи): руководитель
      * и менеджер видят разбор в привычной ленте, не открывая смарт.
+     *
+     * Автор записи — УЖЕ СВЕДЁННЫЙ ответственный разбора (владелец звонка из
+     * телефонии, у «своей» сущности — её ответственный). Перечитывать
+     * сущность ради ASSIGNED_BY_ID нельзя: у сделки чужой воронки это чужой
+     * сотрудник, и дубль разбора подписывался им (прод-баг 08.09.2026).
      */
     private async duplicateToTimeline(
         row: TranscriptionPipelineView,
         dto: AgentCallAnalysisDto,
+        managerId: number | undefined,
     ): Promise<void> {
         if (!row.domain || !row.entityId) return;
         const { bitrix } = await this.pbxService.init(row.domain);
         const isLead = row.entityType === 'lead';
-        const dealContext = isLead
-            ? await this.loadLeadContext(bitrix.api, row.entityId)
-            : await this.loadDealContext(bitrix.api, row.entityId);
 
         // В таймлайне — ТОЛЬКО русские названия: внутренние коды (GREETING,
         // cold, call-report-analyzer) читателю ничего не говорят.
@@ -1051,8 +1102,30 @@ export class AgentAnalysisIntakeService {
             ENTITY_ID: Number(row.entityId),
             ENTITY_TYPE: isLead ? 'lead' : 'deal',
             COMMENT: comment,
-            AUTHOR_ID: String(dealContext.managerId ?? 1),
+            AUTHOR_ID: this.resolveTimelineAuthorId(row, managerId),
         });
+    }
+
+    /**
+     * Автор записи таймлайна: владелец звонка из телефонии, иначе
+     * ответственный сущности, иначе администратор (#1) — но с логом:
+     * записи «от администратора» это сигнал, что владелец не определился.
+     */
+    private resolveTimelineAuthorId(
+        row: TranscriptionPipelineView,
+        fallbackManagerId: number | undefined,
+    ): string {
+        const author = resolveCallManagerId({
+            callOwnerUserId: row.userId,
+            entityManagerId: fallbackManagerId,
+            entityIsOwn: true,
+        });
+        if (author) return String(author);
+        this.logger.warn(
+            `Автор записи таймлайна не определён (transcription ${row.id}, ` +
+                `${row.domain ?? '—'}) — пишем от администратора #1`,
+        );
+        return '1';
     }
 
     /**

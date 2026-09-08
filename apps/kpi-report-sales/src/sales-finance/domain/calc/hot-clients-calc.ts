@@ -32,6 +32,25 @@ function toStringArray(value: unknown): string[] {
     return [];
 }
 
+/**
+ * Разделитель записей в поле «ОП История» (`op_history`).
+ *
+ * Поле НЕ множественное: приложение дописывает очередную запись в конец
+ * одной строки через этот символ. Без разбора наружу уезжал бы один
+ * элемент со всей склеенной историей — читать такое нельзя ни человеку,
+ * ни разбору звонка. Множественное `op_mhistory` («ОП История
+ * (Комментарии)») приходит массивом и разбора не требует.
+ */
+const OP_HISTORY_SEPARATOR = '|';
+
+/** Записи «ОП История» из склеенной строки: по разделителю, без пустых. */
+function toHistoryEntries(value: unknown): string[] {
+    return toStringArray(value)
+        .flatMap(item => item.split(OP_HISTORY_SEPARATOR))
+        .map(item => item.trim())
+        .filter(item => item.length > 0);
+}
+
 export function buildHotClientDeal(
     deal: IBXDeal,
     rows: IBXProductRowRow[],
@@ -62,7 +81,7 @@ export function buildHotClientDeal(
         contractEnd: toIsoOrNull(deal[uf.contractEnd]),
         contractTypeCode: contractType?.code ?? null,
         contractTypeName: contractType?.name ?? null,
-        opHistory: toStringArray(deal[uf.opHistory]),
+        opHistory: toHistoryEntries(deal[uf.opHistory]),
         opMHistory: uf.opMHistory ? toStringArray(deal[uf.opMHistory]) : [],
         comments: toStringArray(deal[uf.presComments]),
         companyId,

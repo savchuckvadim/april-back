@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import {
+    buildRegistryContext,
     computePulse,
     lastWorkdays,
+    minDurationByType,
     previousWorkday,
+    resolveNumberParam,
     toPortalDate,
+    type MinDurationSecByType,
 } from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_WINDOWS } from '../../constants/ai-analytics.const';
 import { AiPulseDto } from '../../dto/ai-pulse.dto';
@@ -11,13 +15,42 @@ import { AiAnalyticsFeedbackStore } from '../../store/ai-analytics-feedback.stor
 import { CallsLoader } from '../loaders/calls.loader';
 import { toPulseRow } from '../loaders/lite-row.mapper';
 import { portalRangeUtc } from '../loaders/period.util';
-import { SettingsLoader } from '../loaders/settings.loader';
+import {
+    AiAnalyticsPortalSettings,
+    SettingsLoader,
+} from '../loaders/settings.loader';
 import { AlertMarks, collectPulseAlerts } from '../presenter/pulse-alerts.util';
 import { toPulseDto } from '../presenter/pulse.presenter';
 
 export interface PulseUseCaseOptions {
     /** «Сейчас» (для тестов и крона); по умолчанию — текущее время. */
     now?: Date;
+}
+
+/**
+ * Пороги «разбираемого» звонка портала (решение владельца А.1, P2-56):
+ * карта определений `ai_analytics_definitions.minDurationSecByType` —
+ * ровно та, которую читает ночной конвейер, — и значение реестра
+ * `min_duration_sec_by_type`, разрешённое с контекстом портала
+ * (`buildRegistryContext` собирает те же слои, что AiAnalyticsParamsLoader
+ * отдаёт шагам конвейера в `ctx.registry`).
+ *
+ * Портал ничего не решал — дефолт реестра 300 с, то есть поведение
+ * Фазы 1a бит-в-бит. Один вход для пульса и конвейера: разъехавшийся
+ * порог развёл бы знаменатель пульса и набор разбираемых звонков.
+ */
+export function portalMinDurationByType(
+    settings: AiAnalyticsPortalSettings,
+): MinDurationSecByType {
+    const ctx = buildRegistryContext({
+        modelParams: settings.modelParams,
+        definitions: settings.definitions,
+    });
+
+    return minDurationByType(
+        settings.definitions.minDurationSecByType,
+        resolveNumberParam('min_duration_sec_by_type', ctx),
+    );
 }
 
 /**
@@ -47,7 +80,8 @@ export class PulseUseCase {
         options: PulseUseCaseOptions = {},
     ): Promise<AiPulseDto> {
         const now = options.now ?? new Date();
-        const { calendar } = await this.settings.load(domain);
+        const settings = await this.settings.load(domain);
+        const { calendar } = settings;
         const endDate = previousWorkday(
             toPortalDate(now, calendar.timeZone),
             calendar,
@@ -71,6 +105,7 @@ export class PulseUseCase {
             endDate,
             calendar,
             historyWorkdays: AI_ANALYTICS_WINDOWS.pulseHistoryWorkdays,
+            minDurationSecByType: portalMinDurationByType(settings),
         });
         const alerts = collectPulseAlerts(
             rows,

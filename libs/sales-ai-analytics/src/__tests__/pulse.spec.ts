@@ -1,9 +1,13 @@
 import {
+    MIN_DURATION_DEFAULT_TYPE,
     PULSE_DEFAULTS,
     PulseCallRow,
     computePulse,
     isAnalyzedCall,
+    minDurationByType,
+    minDurationSecOf,
 } from '../model/pulse';
+import { AI_ANALYTICS_THRESHOLDS } from '../model/thresholds.const';
 import { DEFAULT_WORK_CALENDAR, lastWorkdays } from '../model/workdays.util';
 
 // Сентябрь 2026: 04 — пятница, 05 — суббота, 07–11 — пн–пт.
@@ -200,5 +204,103 @@ describe('computePulse', () => {
         const backward = computePulse([...rows].reverse(), options);
         expect(backward).toEqual(forward);
         expect(computePulse(rows, options)).toEqual(forward);
+    });
+});
+
+// Фаза 2, поток p2-pulse-threshold (P2-56): порог «разбираемого» звонка
+// приходит из реестра параметров и один для пульса и ночного конвейера.
+describe('порог длительности разбора (min_duration_sec_by_type)', () => {
+    it('minDurationSecOf: тип → ключ «все прочие» → константа Фазы 1a', () => {
+        const byType = { cold: 60, [MIN_DURATION_DEFAULT_TYPE]: 180 };
+        expect(minDurationSecOf('cold', byType)).toBe(60);
+        expect(minDurationSecOf('payment', byType)).toBe(180);
+        expect(minDurationSecOf(null, byType)).toBe(180);
+        expect(minDurationSecOf('cold')).toBe(
+            AI_ANALYTICS_THRESHOLDS.shortCallSec,
+        );
+        expect(minDurationSecOf(null, { cold: 60 })).toBe(
+            AI_ANALYTICS_THRESHOLDS.shortCallSec,
+        );
+    });
+
+    it('minDurationByType: одинаковый порог решает реестр, разный — карта типов', () => {
+        const uniform = { cold: 300, payment: 300 };
+        expect(minDurationByType(uniform, 60)).toEqual({
+            [MIN_DURATION_DEFAULT_TYPE]: 60,
+        });
+        expect(minDurationByType({ cold: 60, payment: 300 }, 300)).toEqual({
+            cold: 60,
+            payment: 300,
+            [MIN_DURATION_DEFAULT_TYPE]: 300,
+        });
+        expect(minDurationByType(undefined, undefined)).toEqual({
+            [MIN_DURATION_DEFAULT_TYPE]: AI_ANALYTICS_THRESHOLDS.shortCallSec,
+        });
+    });
+
+    it('без опции поведение Фазы 1a: порог 300 с для любого типа', () => {
+        const rows = [
+            withDate(END, { durationSec: 299, callType: 'cold' }),
+            withDate(END, { durationSec: 300, callType: 'cold' }),
+        ];
+        expect(computePulse(rows, options).analyzedCalls).toBe(1);
+        expect(isAnalyzedCall(rows[0])).toBe(false);
+        // Карта из дефолтов реестра (300 на все типы) — тот же результат.
+        expect(
+            computePulse(rows, {
+                ...options,
+                minDurationSecByType: minDurationByType(
+                    { cold: 300, payment: 300 },
+                    300,
+                ),
+            }),
+        ).toEqual(computePulse(rows, options));
+    });
+
+    it('порог 60 одинаково меняет знаменатель пульса и набор разбираемых звонков', () => {
+        const rows = [
+            withDate('2026-09-08', { durationSec: 100, callType: 'cold' }),
+            noDate('2026-09-08', { durationSec: 200, callType: 'cold' }),
+            withDate('2026-09-09', { durationSec: 59, callType: 'cold' }),
+            withDate('2026-09-09', { durationSec: 600, callType: 'payment' }),
+            withDate('2026-09-10', { durationSec: null, callType: null }),
+        ];
+        const byType = minDurationByType({ cold: 60, payment: 60 }, 60);
+
+        const before = computePulse(rows, options);
+        const after = computePulse(rows, {
+            ...options,
+            minDurationSecByType: byType,
+        });
+        // Набор «разбираемых» конвейера — тем же предикатом и той же картой.
+        const pipeline = rows.filter(row => isAnalyzedCall(row, byType));
+
+        expect(before.analyzedCalls).toBe(2);
+        expect(after.analyzedCalls).toBe(4);
+        expect(after.analyzedCalls).toBe(pipeline.length);
+        expect(after.nextStepDateRate.n).toBe(pipeline.length);
+        expect(pipeline.map(row => row.durationSec)).toEqual([
+            100,
+            200,
+            600,
+            null,
+        ]);
+        expect(after.shortCallsSharePct).toBe(20);
+    });
+
+    it('порог берётся по типу звонка: 60 у cold не трогает payment', () => {
+        const rows = [
+            withDate('2026-09-08', { durationSec: 100, callType: 'cold' }),
+            withDate('2026-09-08', { durationSec: 100, callType: 'payment' }),
+        ];
+        const result = computePulse(rows, {
+            ...options,
+            minDurationSecByType: minDurationByType(
+                { cold: 60, payment: 300 },
+                300,
+            ),
+        });
+        expect(result.analyzedCalls).toBe(1);
+        expect(result.shortCallsSharePct).toBe(50);
     });
 });

@@ -11,7 +11,11 @@ import {
 import { TranscriptionStoreService } from '../../transcription/services/transcription.store.service';
 import { CallReportSmartResolverService } from './call-report-smart-resolver.service';
 import { CallReportSmartWriterService } from './call-report-smart-writer.service';
-import { CallReportDealFamilyService } from './call-report-deal-family.service';
+import {
+    CallReportDealFamily,
+    CallReportDealFamilyService,
+} from './call-report-deal-family.service';
+import { resolveCallManagerId } from './call-manager.util';
 
 /**
  * Базовый смарт-элемент по обработанной транскрипции — БЕЗ глубокого анализа
@@ -61,31 +65,49 @@ export class CallReportBaseItemService {
 
         const isLead = row.entityType === 'lead';
         const entityId = row.entityId ? Number(row.entityId) : undefined;
-        // Звонят обычно из дочерней сделки (презентация/ХО): нативная
-        // связь покажет её (это владелец активности), а «ОП: основная
-        // сделка» должна вести на корневую — она известна порталу через
-        // поле «Корневая сделка Продажи».
-        const family = isLead
-            ? {}
-            : await this.dealFamily.resolve(domain, entityId);
         const context = await this.loadContext(
             bitrix,
             isLead ? 'lead' : 'deal',
             row.entityId,
         );
+        // Звонят обычно из дочерней сделки (презентация/ХО): нативная
+        // связь покажет её (это владелец активности), а «ОП: основная
+        // сделка» должна вести на корневую — она известна порталу через
+        // поле «Корневая сделка Продажи», а если нет — дотягивается по
+        // компании/контакту звонка (включая ЗАКРЫТЫЕ сделки).
+        const family: CallReportDealFamily = await this.dealFamily.resolve(
+            domain,
+            isLead ? undefined : entityId,
+            {
+                companyId: context.companyId,
+                contactId: context.contactId,
+                callStartedAt: row.callStartedAt,
+            },
+        );
+        // Ответственный — владелец звонка из телефонии; ответственный
+        // сущности только как запасной вариант и только у «своей» сделки
+        // (лид — всегда своя сущность).
+        const managerId = resolveCallManagerId({
+            callOwnerUserId: row.userId,
+            entityManagerId: context.managerId,
+            entityIsOwn: isLead || family.ownerCategoryCode !== undefined,
+        });
         const gigachat = await this.loadGigachat(transcriptionId);
 
         const writer = new CallReportSmartWriterService(bitrix, smartInfo);
         const itemId = await writer.addItem({
             activityId: row.activityId ?? '',
-            dealId: isLead ? undefined : entityId,
+            // Нативная связь-родитель со сделкой — ТОЛЬКО «ОП Основная»
+            // (writer берёт её из mainDealId, решение владельца
+            // 08.09.2026). Сделка-владелец звонка чужой воронки в родители
+            // больше не идёт: не нашли основную — связи со сделкой нет.
             leadId: isLead ? entityId : undefined,
             mainDealId: family.mainDealId,
             presentationDealId: family.presentationDealId,
             xoDealId: family.xoDealId,
             companyId: context.companyId,
             contactId: context.contactId,
-            managerId: context.managerId,
+            managerId,
             callId: row.callId ?? undefined,
             callStartedAt: row.callStartedAt ?? undefined,
             callDirection: this.resolveDirection(activity),

@@ -1,5 +1,5 @@
 import { Process, Processor } from '@nestjs/bull';
-import { Logger } from '@nestjs/common';
+import { Inject, Logger, Optional } from '@nestjs/common';
 import { Job } from 'bull';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
@@ -11,8 +11,13 @@ import { AiOverviewJobData } from '../dto/ai-overview-request.dto';
 import { AiPushJobData } from '../dto/ai-push.dto';
 import {
     AiAuditSnapshotResult,
+    AiPipelineRunSummary,
     AiSnapshotJobData,
 } from '../dto/ai-snapshot.dto';
+import {
+    AI_ANALYTICS_SNAPSHOT_RUNNER,
+    AiSnapshotRunner,
+} from '../steps/step.types';
 import { AiPushResult } from '../domain/use-cases/push.types';
 
 /**
@@ -24,6 +29,10 @@ import { AiPushResult } from '../domain/use-cases/push.types';
  * обзор (Фаза 1b) — в OverviewJobUseCase (расчёт, write-through в кэш,
  * WS done/error). Ошибка — warn + rethrow: джоба помечается failed,
  * ретраев нет (attempts: 1), повтор — следующим тиком или вручную.
+ *
+ * Снапшот-джоба диспетчеризуется по виду (план §5.3): `audit` — месячный
+ * аудит Фазы 0, остальные виды — ритмы ночного конвейера Фазы 2
+ * (у них свои опции: две попытки и таймаут 15 минут).
  */
 @Processor(QueueNames.SALES_KPI_REPORT)
 export class AiAnalyticsQueueProcessor {
@@ -33,6 +42,15 @@ export class AiAnalyticsQueueProcessor {
         private readonly push: AiAnalyticsPushUseCase,
         private readonly auditSnapshot: AuditSnapshotUseCase,
         private readonly overviewJob: OverviewJobUseCase,
+        /**
+         * Раннер конвейера — по токену и опционально: срез конвейера
+         * (AiAnalyticsPipelineModule) подключается сборкой приложения
+         * отдельно, а процессор живёт в модуле фичи. Не подключён —
+         * ритмовые джобы отвечают понятной ошибкой, аудит работает.
+         */
+        @Optional()
+        @Inject(AI_ANALYTICS_SNAPSHOT_RUNNER)
+        private readonly pipeline?: AiSnapshotRunner,
     ) {}
 
     /**
@@ -80,7 +98,7 @@ export class AiAnalyticsQueueProcessor {
     @Process(JobNames.SALES_AI_ANALYTICS_SNAPSHOT)
     async handleSnapshot(
         job: Job<AiSnapshotJobData>,
-    ): Promise<AiAuditSnapshotResult> {
+    ): Promise<AiAuditSnapshotResult | AiPipelineRunSummary> {
         const { domain, kind, monthKey } = job.data;
         this.logger.log(
             `SALES_AI_ANALYTICS_SNAPSHOT ${kind}: ${domain} ${monthKey}`,
@@ -93,19 +111,43 @@ export class AiAnalyticsQueueProcessor {
             ) {
                 throw new Error(`Неизвестный вид снапшота «${kind}»`);
             }
-            const result = await this.auditSnapshot.execute({
-                domain,
-                monthKey,
-            });
-            this.logger.log(
-                `Снапшот ${kind} ${domain} ${monthKey}: ${result.calls} звонков, ${result.analyzed} разборов`,
-            );
-            return result;
+            return kind === 'audit'
+                ? await this.runAudit(domain, monthKey)
+                : await this.runPipeline(job);
         } catch (error) {
             this.logger.warn(
                 `Снапшот ${kind} ${domain} ${monthKey} упал: ${(error as Error).message}`,
             );
             throw error;
         }
+    }
+
+    /** Месячный аудит данных (Фаза 0): живая БД → снапшот в ais. */
+    private async runAudit(
+        domain: string,
+        monthKey: string,
+    ): Promise<AiAuditSnapshotResult> {
+        const result = await this.auditSnapshot.execute({ domain, monthKey });
+        this.logger.log(
+            `Снапшот audit ${domain} ${monthKey}: ${result.calls} звонков, ${result.analyzed} разборов`,
+        );
+        return result;
+    }
+
+    /** Ритм ночного конвейера: слот портала → шаги → журнал прогона. */
+    private async runPipeline(
+        job: Job<AiSnapshotJobData>,
+    ): Promise<AiPipelineRunSummary> {
+        if (!this.pipeline) {
+            throw new Error(
+                'Конвейер снапшотов не подключён: нет провайдера AI_ANALYTICS_SNAPSHOT_RUNNER',
+            );
+        }
+        const result = await this.pipeline.run(job);
+        this.logger.log(
+            `Конвейер ${result.rhythm} ${result.domain} ${result.day}: ` +
+                `${result.status}, шагов ${result.steps.length}, ${result.durationMs} мс`,
+        );
+        return result;
     }
 }

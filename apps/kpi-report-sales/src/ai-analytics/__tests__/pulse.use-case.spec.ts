@@ -1,5 +1,20 @@
 import { AnalyticsCallLiteRow } from '@lib/call-lib';
-import { PulseUseCase } from '../domain/use-cases/pulse.use-case';
+import {
+    AI_DURATION_CALL_TYPES,
+    diffAiSettings,
+    isAnalyzedCall,
+    nextSettingsComparableFrom,
+    resolveNumberParam,
+    type AiPortalDefinitions,
+    type AiSettingsRaw,
+} from '@lib/sales-ai-analytics';
+import { defaultDefinitions } from '@lib/sales-ai-analytics/settings/ai-settings.defaults';
+import {
+    PulseUseCase,
+    portalMinDurationByType,
+} from '../domain/use-cases/pulse.use-case';
+import { AiAnalyticsParamsLoader } from '../domain/loaders/params.loader';
+import type { AiAnalyticsPortalSettings } from '../domain/loaders/settings.loader';
 import { applyPulsePerimeter } from '../domain/presenter/pulse.presenter';
 import {
     collectPulseAlerts,
@@ -11,6 +26,7 @@ import { AiAnalyticsFeedbackStore } from '../store/ai-analytics-feedback.store';
 import {
     callsLoaderWith,
     liteRow,
+    portalSettings,
     settingsLoaderWith,
 } from './fixtures/lite-row.fixture';
 
@@ -268,5 +284,143 @@ describe('pulse-alerts.util', () => {
             { sent: new Set(), handled: new Set() },
         );
         expect(alerts).toHaveLength(1);
+    });
+});
+
+// Фаза 2, поток p2-pulse-threshold (P2-56): порог «разбираемого» звонка —
+// один и тот же для пульса и ночного конвейера, источник — реестр
+// параметров с контекстом портала, а не константа библиотеки.
+describe('PulseUseCase: порог длительности из реестра', () => {
+    /** Определения портала с единым порогом sec на все типы звонка. */
+    const definitionsWith = (sec: number): AiPortalDefinitions => ({
+        ...defaultDefinitions(),
+        minDurationSecByType: Object.fromEntries(
+            AI_DURATION_CALL_TYPES.map(code => [code, sec]),
+        ) as AiPortalDefinitions['minDurationSecByType'],
+    });
+
+    /** 5 звонков по 100 с (тип cold) и 5 по 600 с (тип presentation). */
+    const mixedRows = (): AnalyticsCallLiteRow[] => [
+        ...Array.from({ length: 5 }, (_, index) =>
+            liteRow({
+                transcriptionId: `c${index}`,
+                callType: 'cold',
+                durationSec: 100,
+            }),
+        ),
+        ...Array.from({ length: 5 }, (_, index) =>
+            liteRow({
+                transcriptionId: `p${index}`,
+                callType: 'presentation',
+                durationSec: 600,
+            }),
+        ),
+    ];
+
+    /** Набор «разбираемых» звонков конвейера: тот же предикат, та же карта. */
+    const pipelineCalls = (
+        rows: AnalyticsCallLiteRow[],
+        settings: AiAnalyticsPortalSettings,
+    ): string[] =>
+        rows
+            .filter(hasCallDate)
+            .map(toPulseRow)
+            .filter(row =>
+                isAnalyzedCall(row, portalMinDurationByType(settings)),
+            )
+            .map(row => row.transcriptionId);
+
+    it('портал ничего не решал: порог 300 с, знаменатель как в Фазе 1a', async () => {
+        const settings = portalSettings();
+        const useCase = new PulseUseCase(
+            callsLoaderWith(mixedRows()).loader,
+            settingsLoaderWith(),
+            feedbackStoreWith([]),
+        );
+
+        const dto = await useCase.execute('d', { now: NOW });
+
+        expect(portalMinDurationByType(settings)).toEqual({ default: 300 });
+        expect(dto.analyzedCalls).toBe(5);
+        expect(dto.nextStepDateRate.n).toBe(5);
+        expect(pipelineCalls(mixedRows(), settings)).toHaveLength(5);
+    });
+
+    it('порог 60 одинаково меняет знаменатель пульса и набор разбираемых звонков конвейера', async () => {
+        const definitions = definitionsWith(60);
+        const settings = portalSettings({ definitions });
+        const settingsLoader = settingsLoaderWith({ definitions });
+        const useCase = new PulseUseCase(
+            callsLoaderWith(mixedRows()).loader,
+            settingsLoader,
+            feedbackStoreWith([]),
+        );
+
+        const dto = await useCase.execute('d', { now: NOW });
+        const pipeline = pipelineCalls(mixedRows(), settings);
+        // Контекст реестра шага конвейера (run-context.factory → ctx.registry).
+        const params = await new AiAnalyticsParamsLoader(settingsLoader).load(
+            'd',
+        );
+
+        expect(resolveNumberParam('min_duration_sec_by_type', params.ctx)).toBe(
+            60,
+        );
+        expect(portalMinDurationByType(settings)).toEqual({ default: 60 });
+        expect(dto.analyzedCalls).toBe(10);
+        expect(dto.analyzedCalls).toBe(pipeline.length);
+        expect(pipeline).toEqual([
+            'c0',
+            'c1',
+            'c2',
+            'c3',
+            'c4',
+            'p0',
+            'p1',
+            'p2',
+            'p3',
+            'p4',
+        ]);
+        expect(dto.shortCallsSharePct).toBe(0);
+    });
+
+    it('замена источника значения при том же 300 не двигает comparableFrom', async () => {
+        const settingsLoader = settingsLoaderWith({
+            definitions: definitionsWith(300),
+        });
+        const params = await new AiAnalyticsParamsLoader(settingsLoader).load(
+            'd',
+        );
+        const raw = (definitions: string): AiSettingsRaw => ({
+            levels: '',
+            targets: '',
+            absences: '',
+            modelParams: '',
+            managerParams: '',
+            definitions,
+            events: '',
+            scoring: '',
+            hypothesis: '',
+            rosterConfirmedAt: '',
+        });
+        const json = (sec: number): string =>
+            JSON.stringify({ minDurationSecByType: { cold: sec } });
+
+        expect(resolveNumberParam('min_duration_sec_by_type', params.ctx)).toBe(
+            300,
+        );
+        expect(params.comparableFrom).toBe('');
+
+        const same = diffAiSettings(raw(json(300)), raw(json(300)));
+        expect(same).toEqual([]);
+        expect(
+            nextSettingsComparableFrom('2026-06-01', same, '2026-09-08'),
+        ).toBe('2026-06-01');
+
+        const changed = diffAiSettings(raw(json(300)), raw(json(60)));
+        expect(changed.some(change => change.breaksSeries)).toBe(true);
+        expect(
+            nextSettingsComparableFrom('2026-06-01', changed, '2026-09-08'),
+        ).toBe('2026-09-08');
     });
 });

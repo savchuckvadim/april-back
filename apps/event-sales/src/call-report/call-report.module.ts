@@ -27,6 +27,7 @@ import { CallFocusAnalysisService } from './services/call-focus-analysis.service
 import { CallReportSettingsService } from './services/call-report-settings.service';
 import { CallRevisionService } from './services/call-revision.service';
 import { CallComplianceReviewService } from './services/call-compliance-review.service';
+import { CallRefusalAuditService } from './services/call-refusal-audit.service';
 import { PresentationAuditService } from './services/presentation-audit.service';
 import { PresentationPlanFactService } from './services/presentation-plan-fact.service';
 import { CallTypeStatsService } from './services/call-type-stats.service';
@@ -115,6 +116,9 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         PresentationAuditScheduler,
         // План-факт: запланированные презентации КПИ vs звонки-презентации
         PresentationPlanFactService,
+        // Сверка причины отказа: финал отказа сделки vs поля причины в
+        // карточке и записях отчётности (без вызовов модели)
+        CallRefusalAuditService,
         // Статистика типов звонков — калибровка классификатора по ais
         CallTypeStatsService,
         // Привязка звонка к записям ОП KPI / ОП История — кодом, без LLM

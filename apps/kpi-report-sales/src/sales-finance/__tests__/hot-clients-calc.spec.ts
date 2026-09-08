@@ -97,6 +97,28 @@ describe('buildHotClientDeal', () => {
         expect(deal.stageName).toBe('');
         expect(deal.companyId).toBeNull(); // COMPANY_ID не запрошен/пуст
     });
+
+    // «ОП История» — НЕ множественное поле: приложение дописывает записи в
+    // одну строку через разделитель. Без разбора наружу уезжала бы одна
+    // склейка со всей историей.
+    it('склеенная через разделитель история разбирается на записи', () => {
+        const deal = buildHotClientDeal(
+            openDeal({
+                UF_CRM_OP_HISTORY:
+                    '12.05 Презентация | 20.05 КП |  | 01.06 Счёт ',
+            }),
+            [],
+            undefined,
+            UF,
+            NO_COMPANIES,
+            NO_ITEMS,
+        );
+        expect(deal.opHistory).toEqual([
+            '12.05 Презентация',
+            '20.05 КП',
+            '01.06 Счёт',
+        ]);
+    });
 });
 
 describe('buildHotClientsTotals', () => {

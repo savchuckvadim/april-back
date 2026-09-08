@@ -195,11 +195,22 @@ export class AgentCallPackageDto {
 
     @ApiPropertyOptional({
         description:
-            'Сделка из Bitrix (сырые поля crm.deal). null — если не удалось получить.',
+            'Сделка-ВЛАДЕЛЕЦ звонка (сырые поля crm.deal). null — звонок по ' +
+            'лиду либо сделку не удалось получить.',
         type: Object,
         nullable: true,
     })
     deal?: Record<string, unknown> | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Лид-ВЛАДЕЛЕЦ звонка (сырые поля crm.lead). null — звонок по ' +
+            'сделке либо лид не удалось получить. Читается строго по типу ' +
+            'сущности звонка: для лида сделка с тем же номером НЕ читается.',
+        type: Object,
+        nullable: true,
+    })
+    lead?: Record<string, unknown> | null;
 
     @ApiPropertyOptional({
         description:
@@ -234,8 +245,10 @@ export class AgentCallPackageDto {
 
     @ApiProperty({
         description:
-            'Активные сделки компании по воронкам ОП: salesBase (основная), ' +
-            'salesPresentation (презентации), salesXo (ХО) — кандидаты для relatedDeals.',
+            'Сделки КЛИЕНТА звонка (компания и контакт) по воронкам ОП: ' +
+            'salesBase (основная), salesPresentation (презентации), salesXo (ХО) — ' +
+            'кандидаты для relatedDeals. ЗАКРЫТЫЕ сделки тоже здесь: целевая ' +
+            'сделка часто стоит в «Не состоялась» (открытые идут первыми).',
         type: Object,
     })
     dealCandidates: {

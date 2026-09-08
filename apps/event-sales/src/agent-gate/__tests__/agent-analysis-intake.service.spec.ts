@@ -37,8 +37,25 @@ const DTO: AgentCallAnalysisDto = {
     score: 8,
 };
 
-const makeDeps = (options?: { smartInstalled?: boolean }) => {
-    const store = { findPipelineById: jest.fn().mockResolvedValue(ROW) };
+interface Options {
+    smartInstalled?: boolean;
+    /** PORTAL_USER_ID телефонии в строке транскрибации (владелец звонка). */
+    userId?: string | null;
+    /** ASSIGNED_BY_ID сделки-владельца звонка — намеренно ЧУЖОЙ. */
+    assignedById?: string;
+    /** Раскладка связей: ownerCategoryCode задаёт «своя ли воронка». */
+    family?: Record<string, unknown>;
+    /** Что осталось от догадок агента после проверки воронок. */
+    verified?: Record<string, number | undefined>;
+}
+
+const makeDeps = (options?: Options) => {
+    // null — «телефония владельца не дала», отличаем от «опция не задана».
+    const row = {
+        ...ROW,
+        userId: options?.userId === undefined ? ROW.userId : options.userId,
+    };
+    const store = { findPipelineById: jest.fn().mockResolvedValue(row) };
     const aiService = {
         create: jest.fn().mockResolvedValue({ id: '18' }),
         update: jest.fn().mockResolvedValue({ id: '18' }),
@@ -56,7 +73,10 @@ const makeDeps = (options?: { smartInstalled?: boolean }) => {
                         result: {
                             COMPANY_ID: '33',
                             CONTACT_ID: '44',
-                            ASSIGNED_BY_ID: '7',
+                            // Ответственный сделки НЕ равен владельцу звонка:
+                            // иначе тест зелёный при любом из двух источников
+                            // и прод-баг 08.09.2026 остаётся незаметным.
+                            ASSIGNED_BY_ID: options?.assignedById ?? '317',
                         },
                     }),
                 },
@@ -80,7 +100,20 @@ const makeDeps = (options?: { smartInstalled?: boolean }) => {
     MockedWriter.mockImplementation(() => ({ addItem }) as never);
     // Раскладка сделок по воронкам: владелец звонка — основная сделка.
     const dealFamily = {
-        resolve: jest.fn().mockResolvedValue({ mainDealId: 555 }),
+        resolve: jest
+            .fn()
+            .mockResolvedValue(options?.family ?? { mainDealId: 555 }),
+    };
+    // Проверка догадок агента по воронкам: по умолчанию пропускает всё,
+    // отдельные кейсы подменяют результат.
+    const dealVerify = {
+        filterAgentDeals: jest.fn(
+            (
+                _domain: string,
+                guess: Record<string, number | undefined>,
+            ): Promise<Record<string, number | undefined>> =>
+                Promise.resolve(options?.verified ?? guess),
+        ),
     };
 
     const service = new AgentAnalysisIntakeService(
@@ -89,8 +122,9 @@ const makeDeps = (options?: { smartInstalled?: boolean }) => {
         pbxService as never,
         resolver as never,
         dealFamily as never,
+        dealVerify as never,
     );
-    return { service, aiService, addItem, timeline, dealFamily };
+    return { service, aiService, addItem, timeline, dealFamily, dealVerify };
 };
 
 describe('AgentAnalysisIntakeService', () => {
@@ -120,7 +154,6 @@ describe('AgentAnalysisIntakeService', () => {
         expect(addItem).toHaveBeenCalledWith(
             expect.objectContaining({
                 activityId: '101',
-                dealId: 555,
                 companyId: 33,
                 contactId: 44,
                 managerId: 7,
@@ -150,6 +183,151 @@ describe('AgentAnalysisIntakeService', () => {
             smartItemId: 7,
             smartInstalled: true,
         });
+    });
+
+    /**
+     * Прод-баг 08.09.2026 (alfacentr): аналитика включена на одного
+     * сотрудника, звонки разбирались реально его, а «Ответственный» карточки
+     * и автор записей таймлайна прилетали из ASSIGNED_BY_ID чужой сделки.
+     */
+    it('ответственный — владелец звонка из телефонии, а не ответственный сделки', async () => {
+        const { service, addItem, timeline } = makeDeps({
+            userId: '222',
+            assignedById: '317',
+        });
+
+        await service.intake('42', 'claw-main', DTO);
+
+        expect(addItem).toHaveBeenCalledWith(
+            expect.objectContaining({ managerId: 222 }),
+        );
+        expect(timeline.addTimelineComment).toHaveBeenCalledWith(
+            expect.objectContaining({ AUTHOR_ID: '222' }),
+        );
+    });
+
+    it('владельца звонка нет, сделка СВОЕЙ воронки — берём её ответственного', async () => {
+        const { service, addItem } = makeDeps({
+            userId: null,
+            assignedById: '317',
+            family: { mainDealId: 555, ownerCategoryCode: 'sales_base' },
+        });
+
+        await service.intake('42', 'claw-main', DTO);
+
+        expect(addItem).toHaveBeenCalledWith(
+            expect.objectContaining({ managerId: 317 }),
+        );
+    });
+
+    it('владельца звонка нет, сделка ЧУЖОЙ воронки — ответственный не подставляется', async () => {
+        const { service, addItem } = makeDeps({
+            userId: null,
+            assignedById: '317',
+            // ownerCategoryCode пуст — воронка сделки не из воронок ОП.
+            family: {},
+        });
+
+        await service.intake('42', 'claw-main', DTO);
+
+        expect(addItem).toHaveBeenCalledWith(
+            expect.objectContaining({ managerId: undefined }),
+        );
+    });
+
+    /**
+     * Дубль разбора уходит в таймлайн сущности-владельца звонка. Автор этой
+     * записи раньше брался вторым чтением сделки (ASSIGNED_BY_ID) — у чужой
+     * воронки это чужой сотрудник. Теперь автор один и тот же для всех
+     * записей: сведённый ответственный разбора, иначе администратор.
+     */
+    it('владельца нет и сделка чужая — дубль в таймлайн НЕ подписывается ответственным сделки', async () => {
+        const { service, timeline } = makeDeps({
+            userId: null,
+            assignedById: '317',
+            family: {},
+        });
+
+        await service.intake('42', 'claw-main', DTO);
+
+        expect(timeline.addTimelineComment).toHaveBeenCalledWith(
+            expect.objectContaining({
+                ENTITY_ID: 555,
+                ENTITY_TYPE: 'deal',
+                AUTHOR_ID: '1',
+            }),
+        );
+        expect(timeline.addTimelineComment).not.toHaveBeenCalledWith(
+            expect.objectContaining({ AUTHOR_ID: '317' }),
+        );
+    });
+
+    /**
+     * Решение владельца 08.09.2026: родитель элемента — только сделка
+     * воронки «ОП Основная» (writer строит parentId2 из mainDealId).
+     * Сделка-владелец звонка чужой воронки в writer не уходит вовсе.
+     */
+    it('сделка-владелец звонка в writer не передаётся: родителя даёт раскладка', async () => {
+        const { service, addItem } = makeDeps({
+            family: { mainDealId: 232, mainConfidence: 'likely' },
+        });
+
+        await service.intake('42', 'claw-main', DTO);
+
+        const input = (addItem.mock.calls[0] as [Record<string, unknown>])[0];
+        expect(input).not.toHaveProperty('dealId');
+        expect(input.mainDealId).toBe(232);
+    });
+
+    it('ни раскладки, ни догадки — связи со сделкой нет, разбор доходит до конца', async () => {
+        const { service, addItem } = makeDeps({ family: {}, verified: {} });
+
+        const result = await service.intake('42', 'claw-main', {
+            ...DTO,
+            relatedDeals: { mainDealId: 777 },
+        } as never);
+
+        const input = (addItem.mock.calls[0] as [Record<string, unknown>])[0];
+        expect(input).not.toHaveProperty('dealId');
+        expect(input.mainDealId).toBeUndefined();
+        expect(result.smartItemId).toBe(7);
+    });
+
+    it('клиент звонка передаётся в раскладку сделок — вход для дотяжки', async () => {
+        const { service, dealFamily } = makeDeps();
+
+        await service.intake('42', 'claw-main', DTO);
+
+        expect(dealFamily.resolve).toHaveBeenCalledWith(
+            'test.bitrix24.ru',
+            555,
+            expect.objectContaining({ companyId: 33, contactId: 44 }),
+        );
+    });
+
+    /**
+     * ЖИВОЙ СЛУЧАЙ alfacentr 08.09.2026 (смарт 1040, элемент 580) целиком:
+     * звонок сделан из сделки ЧУЖОЙ воронки, у компании есть сделка «ОП
+     * Основная» в стадии «Не состоялась» (её и вернула раскладка дотяжкой
+     * по клиенту), а владелец звонка (222) не равен ответственному чужой
+     * сделки (317). В карточку должны попасть сделка клиента и владелец
+     * звонка — ни одного значения из чужой сделки.
+     */
+    it('живой случай: связь — сделка клиента из раскладки, ответственный — владелец звонка', async () => {
+        const { service, addItem, timeline } = makeDeps({
+            userId: '222',
+            assignedById: '317',
+            family: { mainDealId: 232, mainConfidence: 'likely' },
+        });
+
+        await service.intake('42', 'claw-main', DTO);
+
+        expect(addItem).toHaveBeenCalledWith(
+            expect.objectContaining({ mainDealId: 232, managerId: 222 }),
+        );
+        expect(timeline.addTimelineComment).not.toHaveBeenCalledWith(
+            expect.objectContaining({ AUTHOR_ID: '317' }),
+        );
     });
 
     it('weightedScore считается по формуле Σ(score×relevance)/Σrelevance×10, если агент не прислал', async () => {
@@ -308,6 +486,44 @@ describe('AgentAnalysisIntakeService', () => {
                 mainDealId: 777,
                 presentationDealId: 555,
             }),
+        );
+    });
+
+    it('догадка агента проверяется по воронке: сделка чужой воронки в связь не идёт', async () => {
+        const { service, addItem, dealVerify } = makeDeps({
+            family: {},
+            verified: {},
+        });
+
+        await service.intake('42', 'claw-main', {
+            ...DTO,
+            relatedDeals: { mainDealId: 777 },
+        } as never);
+
+        // Проверять отдали ровно то, чего раскладка не дала.
+        expect(dealVerify.filterAgentDeals).toHaveBeenCalledWith(
+            'test.bitrix24.ru',
+            expect.objectContaining({ mainDealId: 777 }),
+            // Клиент звонка — вход для сверки догадки по компании/контакту.
+            { companyId: 33, contactId: 44 },
+        );
+        expect(addItem).toHaveBeenCalledWith(
+            expect.objectContaining({ mainDealId: undefined }),
+        );
+    });
+
+    it('раскладка нашла сделку — догадку агента о ней даже не проверяем', async () => {
+        const { service, dealVerify } = makeDeps();
+
+        await service.intake('42', 'claw-main', {
+            ...DTO,
+            relatedDeals: { mainDealId: 777 },
+        } as never);
+
+        expect(dealVerify.filterAgentDeals).toHaveBeenCalledWith(
+            'test.bitrix24.ru',
+            expect.objectContaining({ mainDealId: undefined }),
+            { companyId: 33, contactId: 44 },
         );
     });
 

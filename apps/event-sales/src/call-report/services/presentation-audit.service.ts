@@ -13,6 +13,8 @@ import {
 import { AiService, TranscriptionStoreService } from '@lib/call-lib';
 import { CallReportSmartResolverService } from '@lib/call-lib/call-report/services/call-report-smart-resolver.service';
 import { CallReportSmartWriterService } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
+import { CallReportDealFamilyService } from '@lib/call-lib/call-report/services/call-report-deal-family.service';
+import { CallReportDealVerifyService } from '@lib/call-lib/call-report/services/call-report-deal-verify.service';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 import { AGENT_ANALYSIS_TYPE } from '../../agent-gate/services/agent-call-package.service';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
@@ -75,6 +77,9 @@ interface AuditCandidate {
     activityId: string | null;
     callStartedAt: Date | null;
     managerId: string | null;
+    /** Владелец звонка — вход в раскладку связей (сделка/лид). */
+    entityType: string | null;
+    entityId: string | null;
 }
 
 /**
@@ -99,6 +104,8 @@ export class PresentationAuditService {
         private readonly smartResolver: CallReportSmartResolverService,
         private readonly vibeCodeClient: VibeCodeClient,
         private readonly vibeKeyResolver: VibeKeyResolverService,
+        private readonly dealFamily: CallReportDealFamilyService,
+        private readonly dealVerify: CallReportDealVerifyService,
     ) {}
 
     async runForDomain(
@@ -155,6 +162,8 @@ export class PresentationAuditService {
                     ? new Date(row.callStartedAt)
                     : null,
                 managerId: row.userId ?? null,
+                entityType: row.entityType ?? null,
+                entityId: row.entityId ?? null,
             });
         }
         result.candidates = candidates.length;
@@ -188,11 +197,7 @@ export class PresentationAuditService {
             await this.pbxService.init(domain);
         const dto = candidate.dto;
 
-        // Сделка-отчёт: связанная презентация из разбора, иначе основная.
-        const dealId =
-            dto.relatedDeals?.presentationDealId ??
-            dto.relatedDeals?.mainDealId ??
-            null;
+        const dealId = await this.resolveReportDealId(domain, candidate);
         const managerReport = await this.readManagerReport(
             bitrix,
             portal,
@@ -297,6 +302,34 @@ export class PresentationAuditService {
                 );
         }
         return verdict.mismatch;
+    }
+
+    /**
+     * Сделка-отчёт для сверки — ТОЛЬКО подтверждённая по воронке.
+     *
+     * Порядок: раскладка связей звонка (презентационная сделка, иначе
+     * корневая), затем ПРОВЕРЕННАЯ догадка агента. Брать id из dto как
+     * есть нельзя (прод-баг 08.09.2026): в таймлайн этой сделки уходит
+     * публичный комментарий о расхождении, и попасть он должен в сделку
+     * клиента, а не в чужую. Ничего не подтвердилось — null, и сверка
+     * честно скажет «сделка-презентация не связана».
+     */
+    private async resolveReportDealId(
+        domain: string,
+        candidate: AuditCandidate,
+    ): Promise<number | null> {
+        const ownerDealId =
+            candidate.entityType === 'deal' && candidate.entityId
+                ? Number(candidate.entityId)
+                : undefined;
+        const family = await this.dealFamily.resolve(domain, ownerDealId);
+        const fromCrm = family.presentationDealId ?? family.mainDealId;
+        if (fromCrm) return fromCrm;
+        const guess = await this.dealVerify.filterAgentDeals(domain, {
+            presentationDealId: candidate.dto.relatedDeals?.presentationDealId,
+            mainDealId: candidate.dto.relatedDeals?.mainDealId,
+        });
+        return guess.presentationDealId ?? guess.mainDealId ?? null;
     }
 
     /**

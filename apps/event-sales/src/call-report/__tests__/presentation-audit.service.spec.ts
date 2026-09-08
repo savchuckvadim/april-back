@@ -41,6 +41,8 @@ const makeDeps = (options?: {
     dealFields?: Record<string, unknown>;
     /** Записи списков отчётности (ответ listItem.get). */
     listItems?: Record<string, unknown>[];
+    /** Раскладка связей звонка — источник сделки-отчёта. */
+    family?: Record<string, number | undefined>;
 }) => {
     const timeline = { addTimelineComment: jest.fn().mockResolvedValue({}) };
     const api = {
@@ -125,6 +127,17 @@ const makeDeps = (options?: {
         ),
     };
     const vibeKeyResolver = { resolve: jest.fn().mockResolvedValue('key') };
+    // Сделка-отчёт берётся из раскладки связей (проверена по воронке),
+    // а не из сырого ответа агента: комментарий о расхождении уходит в
+    // таймлайн этой сделки.
+    const dealFamily = {
+        resolve: jest
+            .fn()
+            .mockResolvedValue(options?.family ?? { presentationDealId: 601 }),
+    };
+    const dealVerify = {
+        filterAgentDeals: jest.fn().mockResolvedValue({}),
+    };
     const service = new PresentationAuditService(
         pbxService as never,
         transcriptionStore as never,
@@ -132,8 +145,10 @@ const makeDeps = (options?: {
         smartResolver as never,
         vibeCodeClient as never,
         vibeKeyResolver as never,
+        dealFamily as never,
+        dealVerify as never,
     );
-    return { service, timeline, api, aiService, vibeCodeClient };
+    return { service, timeline, api, aiService, vibeCodeClient, dealVerify };
 };
 
 describe('PresentationAuditService (сверка отчёта менеджера с разбором)', () => {
@@ -251,6 +266,36 @@ describe('PresentationAuditService (сверка отчёта менеджера
                 (call as { ENTITY_TYPE: string }[])[0].ENTITY_TYPE === 'deal',
         );
         expect(dealPosts).toHaveLength(0);
+    });
+
+    /**
+     * Прод-баг 08.09.2026: сделка-отчёт бралась из СЫРОГО ответа агента
+     * (DTO проверяет только «целое > 0»), и обвинительный комментарий
+     * «есть расхождения» мог уйти в таймлайн чужой сделки.
+     */
+    it('раскладка и проверка воронки ничего не подтвердили — в сделку не постим', async () => {
+        const { service, timeline, dealVerify } = makeDeps({ family: {} });
+
+        await service.runForDomain(DOMAIN, new Date(0), new Date());
+
+        expect(dealVerify.filterAgentDeals).toHaveBeenCalled();
+        const dealPosts = timeline.addTimelineComment.mock.calls.filter(
+            call =>
+                (call as { ENTITY_TYPE: string }[])[0].ENTITY_TYPE === 'deal',
+        );
+        expect(dealPosts).toHaveLength(0);
+    });
+
+    it('сделка-отчёт берётся из раскладки связей, а не из ответа агента', async () => {
+        const { service, timeline } = makeDeps({
+            family: { presentationDealId: 601 },
+        });
+
+        await service.runForDomain(DOMAIN, new Date(0), new Date());
+
+        expect(timeline.addTimelineComment).toHaveBeenCalledWith(
+            expect.objectContaining({ ENTITY_ID: 601, ENTITY_TYPE: 'deal' }),
+        );
     });
 
     it('уже сверенная транскрипция пропускается (идемпотентность)', async () => {

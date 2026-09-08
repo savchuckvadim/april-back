@@ -1,5 +1,8 @@
 import { AI_ANALYTICS_THRESHOLDS } from './thresholds.const';
 
+/** Поправка β на надёжность оценщика — отдельный файл, публичный вход общий. */
+export * from './reliability-correction';
+
 /**
  * Надёжность оценок LLM-оценщика (план §4.3, §4.11).
  * - sigmaLlm — шум оценщика до измерения test-retest (configured);

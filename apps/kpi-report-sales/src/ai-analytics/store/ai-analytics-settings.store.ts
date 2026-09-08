@@ -1,6 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from 'generated/prisma';
 import { AiService } from '@lib/call-lib';
+import { PortalService } from '@lib/portal-lib/portal/portal.service';
+import {
+    EnumPortalAppCode,
+    PortalAppSettingsPatch,
+    PortalAppSettingsService,
+} from '@lib/portal-lib/store/app-settings';
+import { parseAiLevels } from '@lib/sales-ai-analytics/settings/ai-settings.parse';
+import type { AiSettingsKeyName } from '@lib/sales-ai-analytics/settings/ai-settings.types';
 import {
     AI_ANALYTICS_MANAGER_LEVELS,
     AI_ANALYTICS_SETTINGS_RECORD,
@@ -22,6 +30,23 @@ interface AiLevelsPayload {
     savedBy: string | null;
     savedAt: string;
 }
+
+/** Что писать в ключи схемы: имя блока → JSON-строка (или скаляр-строка). */
+export type AiSettingsPatch = Partial<Record<AiSettingsKeyName, string>>;
+
+/** Имя блока Фазы 2 → ключ схемы `[kpiSales]` (camelCase, см. §3.3). */
+const SETTINGS_SCHEMA_KEYS = {
+    levels: 'aiAnalyticsLevels',
+    targets: 'aiAnalyticsTargets',
+    absences: 'aiAnalyticsAbsences',
+    modelParams: 'aiAnalyticsModelParams',
+    managerParams: 'aiAnalyticsManagerParams',
+    definitions: 'aiAnalyticsDefinitions',
+    events: 'aiAnalyticsEvents',
+    scoring: 'aiAnalyticsScoring',
+    hypothesis: 'aiAnalyticsHypothesis',
+    rosterConfirmedAt: 'aiAnalyticsRosterConfirmedAt',
+} as const satisfies Record<AiSettingsKeyName, string>;
 
 const isLevel = (value: unknown): value is AiAnalyticsManagerLevel =>
     typeof value === 'string' &&
@@ -54,18 +79,61 @@ export function parseLevelsPayload(
 }
 
 /**
- * Хранилище настроек витрины в ais (временное решение Фазы 1b: ключей
- * ai_analytics_levels/targets/absences в схеме app-settings ещё нет,
- * план 5.1). Запись: type = ai-analytics-settings, app = provider =
- * ai-analytics, activity_id = ключ набора ('levels'); актуальна последняя
- * запись на ключ (findByDomainTypeKeys latestOnly). При появлении ключей
- * схемы стор меняется на PortalAppSettingsService без правки use-case'ов.
+ * Хранилище настроек витрины.
+ *
+ * Фаза 2: решения людей живут в ключах схемы `[kpiSales]`
+ * (`savePortalSettings` → PortalAppSettingsService.save, кэш настроек
+ * сбрасывается самим сервисом). Запись в ais (type =
+ * ai-analytics-settings, activity_id = 'levels') остаётся **только как
+ * одноразовый запасной путь переезда уровней**: пока ключ
+ * `ai_analytics_levels` пуст, витрина читает старый снапшот
+ * (`loadLevels`), иначе уже сохранённые уровни потерялись бы. Писать в
+ * ais новые уровни больше не нужно — `saveLevels` сохранён для отката.
  */
 @Injectable()
 export class AiAnalyticsSettingsStore {
-    constructor(private readonly aiService: AiService) {}
+    constructor(
+        private readonly aiService: AiService,
+        private readonly appSettings: PortalAppSettingsService,
+        private readonly portals: PortalService,
+    ) {}
 
-    /** Сохраняет полный список уровней; возвращает id ais. */
+    /**
+     * Пишет блоки Фазы 2 в ключи схемы портала. Отсутствующий блок не
+     * трогается (семантика PortalAppSettingsPatch), пустая строка —
+     * «портал снял своё решение», но остаётся заданной явно.
+     */
+    async savePortalSettings(
+        domain: string,
+        patch: AiSettingsPatch,
+    ): Promise<void> {
+        const entries = Object.entries(patch).flatMap(([name, value]) =>
+            value === undefined
+                ? []
+                : [[SETTINGS_SCHEMA_KEYS[name as AiSettingsKeyName], value]],
+        );
+        if (entries.length === 0) return;
+        await this.appSettings.save(
+            await this.resolvePortalId(domain),
+            EnumPortalAppCode.kpiSales,
+            Object.fromEntries(entries) as PortalAppSettingsPatch<
+                typeof EnumPortalAppCode.kpiSales
+            >,
+        );
+    }
+
+    /** Id портала по домену: без него запись настроек невозможна. */
+    async resolvePortalId(domain: string): Promise<number> {
+        const portal = await this.portals.getPortalByDomain(domain);
+        if (!portal?.id) {
+            throw new NotFoundException(
+                `Портал ${domain} не найден — настройки сохранять некуда`,
+            );
+        }
+        return portal.id;
+    }
+
+    /** Сохраняет полный список уровней в ais; возвращает id записи. */
     async saveLevels(
         domain: string,
         levels: readonly AiManagerLevelRecord[],
@@ -97,8 +165,40 @@ export class AiAnalyticsSettingsStore {
         return { id: created.id, savedAt };
     }
 
-    /** Последний сохранённый список уровней по managerId; пусто — не задавали. */
+    /**
+     * Уровни витрины: ключ схемы `ai_analytics_levels`, а при пустом
+     * ключе — **одноразовый запасной путь переезда** на старый снапшот
+     * `ai-analytics-settings`. Без него уровни, назначенные в Фазе 1b, в
+     * день выката Фазы 2 просто исчезли бы: ключ пуст, а снапшот никто
+     * больше не читает. Первое же сохранение заполняет ключ, и запасной
+     * путь перестаёт срабатывать сам.
+     */
     async loadLevels(
+        domain: string,
+    ): Promise<Map<number, AiManagerLevelRecord>> {
+        const settings = await this.appSettings.resolve(
+            domain,
+            EnumPortalAppCode.kpiSales,
+        );
+        const fromSchema = parseAiLevels(settings.aiAnalyticsLevels);
+        if (fromSchema.length > 0) {
+            return new Map(
+                fromSchema.map(level => [
+                    level.managerId,
+                    {
+                        managerId: level.managerId,
+                        level: level.level,
+                        since: level.since,
+                    },
+                ]),
+            );
+        }
+
+        return this.loadLegacyLevels(domain);
+    }
+
+    /** Уровни из ais-снапшота Фазы 1b (только запасной путь переезда). */
+    async loadLegacyLevels(
         domain: string,
     ): Promise<Map<number, AiManagerLevelRecord>> {
         const records = await this.aiService.findByDomainTypeKeys(

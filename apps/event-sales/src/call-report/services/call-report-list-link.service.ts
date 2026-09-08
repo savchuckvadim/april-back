@@ -168,6 +168,10 @@ export class CallReportListLinkService {
             const family = await this.dealFamily.resolve(
                 domain,
                 passport.entityId,
+                {
+                    companyId: passport.crmCompanyId ?? undefined,
+                    contactId: passport.crmContactId ?? undefined,
+                },
             );
             for (const id of [
                 family.mainDealId,

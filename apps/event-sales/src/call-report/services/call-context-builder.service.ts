@@ -11,8 +11,14 @@ import {
     TranscriptionPipelineView,
     TranscriptionStoreService,
 } from '@lib/call-lib';
+import { CallReportDealFamilyService } from '@lib/call-lib/call-report/services/call-report-deal-family.service';
 import { LeadRequestDetectorService } from '../../sales-hooks/lead-to-work/services/lead-request-detector.service';
 import { LeadWorkKind } from '../../shared/event-title';
+import {
+    renderOwnOrgNamesBlock,
+    renderOwnOrgNamesHint,
+} from '../contracts/own-org-names.contract';
+import { CallReportSettingsService } from './call-report-settings.service';
 import {
     CallTypePrior,
     renderCallTypePrior,
@@ -117,6 +123,13 @@ export interface CallPassport {
      * клиента; пустой массив — поле не заведено или пусто.
      */
     opHistory: string[];
+    /**
+     * Названия НАШИХ организаций на портале («Альфа-центр», «Апрель») из
+     * настройки `ownOrgNames`. Разбор без них читал партнёрское имя как
+     * чужой бренд и снижал оценку (прод alfacentr 08.09.2026). Пустой
+     * массив — настройка не задана, промпт прежний.
+     */
+    ownOrgNames: string[];
     /** Направление: ~99% исходящие (менеджер — инициатор). */
     direction: 'incoming' | 'outgoing' | null;
     /** Кандидаты «кто это на самом деле» по номеру телефона (suspected). */
@@ -148,6 +161,8 @@ export class CallContextBuilderService {
         private readonly transcriptionStore: TranscriptionStoreService,
         private readonly aiService: AiService,
         private readonly redisService: RedisService,
+        private readonly dealFamily: CallReportDealFamilyService,
+        private readonly reportSettings: CallReportSettingsService,
     ) {}
 
     async build(row: TranscriptionPipelineView): Promise<CallPassport> {
@@ -180,11 +195,13 @@ export class CallContextBuilderService {
             companyTitle: null,
             companyNotes: null,
             opHistory: [],
+            ownOrgNames: [],
             direction: null,
             identity: [],
             history: [],
         };
         if (!row.domain) return passport;
+        passport.ownOrgNames = await this.readOwnOrgNames(row.domain);
 
         try {
             const { bitrix, PortalModel } = await this.pbxService.init(
@@ -199,6 +216,23 @@ export class CallContextBuilderService {
         }
         await this.fillHistory(row, passport);
         return passport;
+    }
+
+    /**
+     * Названия своих организаций из настроек портала. Fail-open: настройки
+     * недоступны — паспорт без имён, промпт остаётся прежним (лучше пусто,
+     * чем ложное «это чужой бренд»).
+     */
+    private async readOwnOrgNames(domain: string): Promise<string[]> {
+        try {
+            const settings = await this.reportSettings.resolve(domain);
+            return settings.ownOrgNames;
+        } catch (error) {
+            this.logger.warn(
+                `Паспорт: названия своих организаций не прочитаны (${domain}): ${(error as Error).message}`,
+            );
+            return [];
+        }
     }
 
     /** Паспорт из кэша; любая ошибка Redis — просто собираем заново. */
@@ -339,7 +373,10 @@ export class CallContextBuilderService {
                 '  Сверь этот разговор с историей: невыполненные обещания и потерянные договорённости — обязательный флаг в разборе.',
             );
         }
-        return lines.join('\n');
+        // Названия наших организаций — отдельным блоком в конце: это не
+        // факт о клиенте, а правило разбора (представление своим именем —
+        // норма, снижать за это оценку нельзя). Список пуст — блока нет.
+        return lines.join('\n') + renderOwnOrgNamesBlock(passport.ownOrgNames);
     }
 
     /**
@@ -367,6 +404,10 @@ export class CallContextBuilderService {
                     'холодный контакт маловероятен',
             );
         }
+        // Наши собственные названия: без них классификатор читает реплику
+        // «вас беспокоит Альфа-центр» как разговор о чужой организации.
+        const ownOrgHint = renderOwnOrgNamesHint(passport.ownOrgNames);
+        if (ownOrgHint) facts.push(ownOrgHint);
         // Приор по стадии/лиду — отдельным блоком: он называет ожидаемый
         // тип прямо, тогда как факты выше лишь сужают выбор.
         const prior = renderCallTypePrior(passport.callTypePrior);
@@ -382,15 +423,20 @@ export class CallContextBuilderService {
      * через PortalModel). Воронка не заведена в pbx — коды остаются null и
      * приор не строится. Fail-open: ошибка портала паспорт не ломает.
      */
-    private fillDealCodes(portal: PortalModel, passport: CallPassport): void {
+    private fillDealCodes(
+        portal: PortalModel,
+        passport: CallPassport,
+        rawCategoryId: string | null = passport.categoryId,
+        rawStageId: string | null = passport.stageId,
+    ): void {
         try {
-            const categoryId = passport.categoryId ?? '0';
+            const categoryId = rawCategoryId ?? '0';
             const category = portal
                 .getDealCategories()
                 .find(item => String(item.bitrixId) === categoryId);
             if (!category) return;
             passport.dealCategoryCode = category.code;
-            const stageId = passport.stageId;
+            const stageId = rawStageId;
             if (!stageId) return;
             // В pbx STAGE_ID хранится полностью (C5:PREPARATION); на случай
             // хранения без префикса воронки сверяем и по суффиксу.
@@ -402,6 +448,58 @@ export class CallContextBuilderService {
                 )?.code ?? null;
         } catch {
             // портал без воронок/стадий — приор не строится
+        }
+    }
+
+    /**
+     * Коды воронки/стадии для приора — от ПРАВИЛЬНОЙ сделки «ОП Основная»
+     * (раскладка связей: корневая сделка или дотяжка по компании/контакту).
+     * Сырые stageId/categoryId паспорта остаются от владельца звонка — это
+     * факт CRM; коды же нужны классификатору, и брать их у сделки чужой
+     * воронки бессмысленно. Fail-open: не нашли — приора просто не будет.
+     */
+    private async fillCodesFromMainDeal(
+        bitrix: BitrixService,
+        portal: PortalModel,
+        row: TranscriptionPipelineView,
+        passport: CallPassport,
+    ): Promise<void> {
+        if (!row.domain) return;
+        try {
+            const family = await this.dealFamily.resolve(
+                row.domain,
+                passport.entityId ?? undefined,
+                {
+                    companyId: passport.crmCompanyId ?? undefined,
+                    contactId: passport.crmContactId ?? undefined,
+                    callStartedAt: row.callStartedAt,
+                },
+            );
+            if (!family.mainDealId || family.mainDealId === passport.entityId) {
+                return;
+            }
+            const response = (await bitrix.api.call('crm.deal.get', {
+                id: family.mainDealId,
+            })) as {
+                result?: { STAGE_ID?: string; CATEGORY_ID?: string | number };
+            };
+            const main = response?.result;
+            if (!main) return;
+            this.fillDealCodes(
+                portal,
+                passport,
+                main.CATEGORY_ID != null ? String(main.CATEGORY_ID) : null,
+                main.STAGE_ID ?? null,
+            );
+            this.logger.log(
+                `Паспорт: приор считаем по основной сделке ${family.mainDealId} ` +
+                    `(воронка ${passport.dealCategoryCode ?? '—'}, стадия ` +
+                    `${passport.dealStageCode ?? '—'})`,
+            );
+        } catch (error) {
+            this.logger.warn(
+                `Паспорт: основная сделка для приора не получена: ${(error as Error).message}`,
+            );
         }
     }
 
@@ -434,15 +532,27 @@ export class CallContextBuilderService {
                     response.result.CATEGORY_ID != null
                         ? String(response.result.CATEGORY_ID)
                         : null;
+                passport.crmCompanyId = this.toId(response.result.COMPANY_ID);
+                passport.crmContactId = this.toId(response.result.CONTACT_ID);
                 this.fillDealCodes(portal, passport);
+                // Воронка владельца звонка не из ОП — коды берём у
+                // ПРАВИЛЬНОЙ сделки «ОП Основная» из раскладки связей,
+                // иначе приора нет и тип скатывается в «Другое»
+                // (прод 08.09.2026).
+                if (!passport.dealCategoryCode) {
+                    await this.fillCodesFromMainDeal(
+                        bitrix,
+                        portal,
+                        row,
+                        passport,
+                    );
+                }
                 passport.callTypePrior = resolveCallTypePrior({
                     entityType: 'deal',
                     dealCategoryCode: passport.dealCategoryCode,
                     dealStageCode: passport.dealStageCode,
                     leadWorkKind: null,
                 });
-                passport.crmCompanyId = this.toId(response.result.COMPANY_ID);
-                passport.crmContactId = this.toId(response.result.CONTACT_ID);
                 this.appendOpHistory(portal, 'deal', response.result, passport);
                 await this.fillContactPersona(
                     bitrix,

@@ -105,6 +105,7 @@ import { BxImBotV2RevisionService } from './domain/imbot-v2/revision/services/bx
 import { BxImBotV2RevisionBatchService } from './domain/imbot-v2/revision/services/bx-imbot-v2-revision.batch.service';
 import { BxImOpenlinesBotSessionService } from './domain/imopenlines/bot-session/services/bx-imopenlines-bot-session.service';
 import { BxImOpenlinesBotSessionBatchService } from './domain/imopenlines/bot-session/services/bx-imopenlines-bot-session.batch.service';
+import { BxCalendarService } from './domain/calendar/services/bx-calendar.service';
 import { BxSonetGroupService } from './domain/sonet-group/services/sonet-group.service';
 import { BxSonetGroupBatchService } from './domain/sonet-group/services/sonet-group.batch.service';
 
@@ -172,6 +173,8 @@ export class BitrixService {
     public imBotV2Revision: BxImBotV2RevisionService;
     public imOpenlinesSession: BxImOpenlinesBotSessionService;
     public sonetGroup: BxSonetGroupService;
+    /** calendar.settings.get — производственный календарь портала (выходные, праздники, рабочий день). */
+    public calendar: BxCalendarService;
 
     public batch = {
         deal: null as unknown as BxDealBatchService,
@@ -283,6 +286,7 @@ export class BitrixService {
         this.initImBotV2Revision();
         this.initImOpenlinesSession();
         this.initSonetGroup();
+        this.initCalendar();
     }
 
     private initDeal() {
@@ -627,5 +631,11 @@ export class BitrixService {
             BxSonetGroupBatchService,
             this.api,
         );
+    }
+
+    private initCalendar() {
+        // Только обычный сервис: настройки календаря читаются один раз
+        // на портал, batch-варианта у домена нет сознательно.
+        this.calendar = this.cloner.clone(BxCalendarService, this.api);
     }
 }

@@ -1,6 +1,7 @@
 import {
     RELIABILITY_DEFAULTS,
     canOrderPair,
+    correctForReliability,
     groupManagers,
     icc21,
     resolveSigmaLlm,
@@ -230,5 +231,72 @@ describe('canOrderPair', () => {
         expect(verdict.delta).toBeCloseTo(2.4, 6);
         expect(verdict.separated).toBe(true);
         expect(verdict.reason).toBeUndefined();
+    });
+});
+
+describe('correctForReliability (regression calibration, §4.4)', () => {
+    it('надёжность не измерена → величина эффекта скрыта', () => {
+        const result = correctForReliability(0.17, null);
+
+        expect(result.beta).toBeNull();
+        expect(result.hidden).toBe(true);
+        expect(result.reason).toBe('reliability-unknown');
+        expect(result.betaObserved).toBeCloseTo(0.17, 9);
+        expect(resolveSigmaLlm(null).note).toBe('reliability-not-measured');
+    });
+
+    it('измеренная надёжность возвращает наклон: β_true = β/r', () => {
+        const result = correctForReliability(0.14, spearmanBrown(0.2, 20));
+
+        expect(result.hidden).toBe(false);
+        expect(result.reliability).toBeCloseTo(20 / 24, 9);
+        expect(result.beta).toBeCloseTo(0.14 / (20 / 24), 9);
+    });
+
+    it('неположительная надёжность тоже скрывает величину эффекта', () => {
+        const result = correctForReliability(0.3, 0);
+
+        expect(result.beta).toBeNull();
+        expect(result.reason).toBe('reliability-too-low');
+    });
+});
+
+describe('группы и порядок при малых n (§4.3)', () => {
+    const pair = {
+        reference: 6.5,
+        sigmaSkill: 1.2,
+        sigmaLlm: 1.2,
+        managers: [
+            { managerId: 'm1', mean: 7.0, n: 20 },
+            { managerId: 'm2', mean: 6.1, n: 20 },
+        ],
+    };
+
+    it('два менеджера с |Δ| = 0,9 при n = 20 попадают в одну группу', () => {
+        const result = groupManagers(pair);
+
+        expect(result.groups.map(group => group.group)).toEqual([
+            'level',
+            'level',
+        ]);
+        expect(result.groups[0].se).toBeCloseTo(0.38, 2);
+        expect(canOrderPair(result.groups[0], result.groups[1]).separated).toBe(
+            false,
+        );
+    });
+
+    it('n = 49 — порядка нет даже при большой разнице', () => {
+        const result = groupManagers({
+            ...pair,
+            managers: [
+                { managerId: 'm1', mean: 9.0, n: 49 },
+                { managerId: 'm2', mean: 4.0, n: 49 },
+            ],
+        });
+        const verdict = canOrderPair(result.groups[0], result.groups[1]);
+
+        expect(result.groups.every(group => group.orderAllowed)).toBe(false);
+        expect(verdict.separated).toBe(false);
+        expect(verdict.reason).toBe('few-data');
     });
 });

@@ -1,5 +1,6 @@
 import { createHash } from 'crypto';
 import { CallReportProcessor } from '../queue/call-report.processor';
+import { comparableFromVersions, versionDate } from '@lib/sales-ai-analytics';
 import {
     buildAnalysisVersions,
     buildRegistryHash,
@@ -229,5 +230,28 @@ describe('buildRegistryHash / buildAnalysisVersions', () => {
             attribution: CALL_REPORT_ATTRIBUTION_VERSION,
             classifier: CALL_REPORT_CLASSIFIER_VERSION,
         });
+    });
+});
+
+/**
+ * ГРАНИЦА СРАВНИМОЙ ИСТОРИИ. Правки промпта 08.09.2026 (свои названия
+ * организаций + причина отказа словами клиента) меняют оценки, поэтому
+ * ряды до и после смешивать нельзя: comparableFrom обязан сдвинуться.
+ */
+describe('версия промпта 08.09.2026 (свои названия + причина отказа)', () => {
+    /** Граница до правок — версия промпта focus-v2.1 от 05.09.2026. */
+    const PREVIOUS_BOUNDARY = '2026-09-05';
+
+    it('версия промпта поднята и несёт дату разрыва', () => {
+        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v2.2-2026-09-08');
+        expect(versionDate(CALL_REPORT_PROMPT_VERSION)).toBe('2026-09-08');
+    });
+
+    it('граница сравнимой истории сдвинулась вперёд', () => {
+        const boundary = comparableFromVersions(
+            buildAnalysisVersions('deadbeef'),
+        );
+        expect(boundary).toBe('2026-09-08');
+        expect(boundary > PREVIOUS_BOUNDARY).toBe(true);
     });
 });

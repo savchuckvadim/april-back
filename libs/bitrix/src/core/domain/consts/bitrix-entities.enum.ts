@@ -60,4 +60,6 @@ export enum EBXEntity {
     // sonet_group — entity-less методы: sonet_group.create / update / get / delete
     // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- намеренно '' как у BOT_LIFECYCLE (entity-less)
     SONET_GROUP = '',
+    /** calendar.settings.get — основные настройки календаря портала. */
+    SETTINGS = 'settings',
 }

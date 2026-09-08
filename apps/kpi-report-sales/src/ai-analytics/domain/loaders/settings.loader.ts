@@ -5,6 +5,29 @@ import {
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
 import { parseWorkCalendar, WorkCalendar } from '@lib/sales-ai-analytics';
+import {
+    parseAiAbsences,
+    parseAiDefinitions,
+    parseAiEvents,
+    parseAiHypothesis,
+    parseAiLevels,
+    parseAiManagerParams,
+    parseAiModelParams,
+    parseAiScoring,
+    parseAiTargets,
+    parseRosterConfirmedAt,
+} from '@lib/sales-ai-analytics/settings/ai-settings.parse';
+import type {
+    AiAbsencesByManager,
+    AiManagerLevelSetting,
+    AiManagerParamsByManager,
+    AiModelParams,
+    AiPortalDefinitions,
+    AiPortalEvent,
+    AiQualityHypothesis,
+    AiScoringSettings,
+    AiTargets,
+} from '@lib/sales-ai-analytics/settings/ai-settings.types';
 
 /** Настройки AI-аналитики портала (kpiSales, контракт 1) в разобранном виде. */
 export interface AiAnalyticsPortalSettings {
@@ -30,12 +53,36 @@ export interface AiAnalyticsPortalSettings {
     poolConsentAt: string | null;
     /** Эксперименты на портале (ai_analytics_experiments_enabled). */
     experimentsEnabled: boolean;
+    // --- Фаза 2, §3.3: решения людей JSON-строками. Битый JSON любого
+    // ключа даёт дефолт кода, а не исключение, — витрина не гаснет.
+    /** Уровни менеджеров (ai_analytics_levels); пусто — читается снапшот. */
+    levels: AiManagerLevelSetting[];
+    /** Цели по уровням и личные переопределения (ai_analytics_targets). */
+    targets: AiTargets;
+    /** Отсутствия менеджеров (ai_analytics_absences). */
+    absences: AiAbsencesByManager;
+    /** Гиперпараметры реестра, решённые порталом (ai_analytics_model_params). */
+    modelParams: AiModelParams;
+    /** Слои менеджеров (ai_analytics_manager_params). */
+    managerParams: AiManagerParamsByManager;
+    /** Определения событий портала (ai_analytics_definitions). */
+    definitions: AiPortalDefinitions;
+    /** Журнал событий портала (ai_analytics_events). */
+    events: AiPortalEvent[];
+    /** Потолки оценивания и стоп-фразы (ai_analytics_scoring). */
+    scoring: AiScoringSettings;
+    /** Гипотеза «качество → объём» (ai_analytics_hypothesis); null — не задана. */
+    hypothesis: AiQualityHypothesis | null;
+    /** Дата подтверждения ростера (ai_analytics_roster_confirmed_at); '' — нет. */
+    rosterConfirmedAt: string;
 }
 
 /**
  * Загрузчик настроек: PortalAppSettingsService.resolve(domain, kpiSales)
- * → флаги, списки id (parseUserIds) и календарь рабочих дней
- * (parseWorkCalendar: пустой/битый JSON → дефолт Europe/Moscow, пн–пт).
+ * → флаги, списки id (parseUserIds), календарь рабочих дней
+ * (parseWorkCalendar) и десять блоков Фазы 2 (парсеры lib: пустой или
+ * битый JSON → дефолт кода). Одно чтение настроек на запрос — сервис
+ * кэширует их в Redis сам.
  */
 @Injectable()
 export class SettingsLoader {
@@ -62,6 +109,20 @@ export class SettingsLoader {
             poolOptIn: settings.aiAnalyticsPoolOptIn,
             poolConsentAt: poolConsentAt || null,
             experimentsEnabled: settings.aiAnalyticsExperimentsEnabled,
+            levels: parseAiLevels(settings.aiAnalyticsLevels),
+            targets: parseAiTargets(settings.aiAnalyticsTargets),
+            absences: parseAiAbsences(settings.aiAnalyticsAbsences),
+            modelParams: parseAiModelParams(settings.aiAnalyticsModelParams),
+            managerParams: parseAiManagerParams(
+                settings.aiAnalyticsManagerParams,
+            ),
+            definitions: parseAiDefinitions(settings.aiAnalyticsDefinitions),
+            events: parseAiEvents(settings.aiAnalyticsEvents),
+            scoring: parseAiScoring(settings.aiAnalyticsScoring),
+            hypothesis: parseAiHypothesis(settings.aiAnalyticsHypothesis),
+            rosterConfirmedAt: parseRosterConfirmedAt(
+                settings.aiAnalyticsRosterConfirmedAt,
+            ),
         };
     }
 }

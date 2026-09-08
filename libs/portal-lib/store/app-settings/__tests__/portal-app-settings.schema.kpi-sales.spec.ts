@@ -87,7 +87,82 @@ const CONTRACT: Record<
         type: 'boolean',
         default: false,
     },
+    // Фаза 2 (план §3.3): решения людей JSON-строкой, дефолт — пусто.
+    aiAnalyticsLevels: {
+        code: 'ai_analytics_levels',
+        type: 'string',
+        default: '',
+    },
+    aiAnalyticsTargets: {
+        code: 'ai_analytics_targets',
+        type: 'string',
+        default: '',
+    },
+    aiAnalyticsAbsences: {
+        code: 'ai_analytics_absences',
+        type: 'string',
+        default: '',
+    },
+    aiAnalyticsModelParams: {
+        code: 'ai_analytics_model_params',
+        type: 'string',
+        default: '',
+    },
+    aiAnalyticsManagerParams: {
+        code: 'ai_analytics_manager_params',
+        type: 'string',
+        default: '',
+    },
+    aiAnalyticsDefinitions: {
+        code: 'ai_analytics_definitions',
+        type: 'string',
+        default: '',
+    },
+    aiAnalyticsEvents: {
+        code: 'ai_analytics_events',
+        type: 'string',
+        default: '',
+    },
+    aiAnalyticsScoring: {
+        code: 'ai_analytics_scoring',
+        type: 'string',
+        default: '',
+    },
+    aiAnalyticsHypothesis: {
+        code: 'ai_analytics_hypothesis',
+        type: 'string',
+        default: '',
+    },
+    aiAnalyticsRosterConfirmedAt: {
+        code: 'ai_analytics_roster_confirmed_at',
+        type: 'string',
+        default: '',
+    },
 };
+
+/** Ключи Фазы 2: добавлены ревизией, шесть ключей решений владельца не тронуты. */
+const PHASE_2_KEYS = [
+    'aiAnalyticsLevels',
+    'aiAnalyticsTargets',
+    'aiAnalyticsAbsences',
+    'aiAnalyticsModelParams',
+    'aiAnalyticsManagerParams',
+    'aiAnalyticsDefinitions',
+    'aiAnalyticsEvents',
+    'aiAnalyticsScoring',
+    'aiAnalyticsHypothesis',
+    'aiAnalyticsRosterConfirmedAt',
+];
+
+/** Ключи решений владельца 07.09.2026 — Фаза 2 их не трогает (план, поток 11). */
+const OWNER_DECISION_KEYS = [
+    'aiAnalyticsSelfViewEnabled',
+    'aiAnalyticsDailyPlanEnabled',
+    'aiAnalyticsDigestAllUserIds',
+    'aiAnalyticsPoolOptIn',
+    'aiAnalyticsPoolConsentAt',
+    'aiAnalyticsExperimentsEnabled',
+];
 
 const kpiSales: Record<string, PortalAppSettingDescriptor> =
     PORTAL_APP_SETTINGS_SCHEMA[APP];
@@ -200,6 +275,46 @@ describe('PORTAL_APP_SETTINGS_SCHEMA[kpiSales]: ключи AI-аналитики
             'aiAnalyticsEnabled',
             'aiAnalyticsRopUserIds',
             'aiAnalyticsSelfViewEnabled',
+        ]);
+    });
+
+    it('десять ключей Фазы 2 объявлены строками с пустым дефолтом', () => {
+        const defaults: Record<string, unknown> = getPortalAppDefaults(APP);
+        expect(PHASE_2_KEYS.length).toBe(10);
+        for (const key of PHASE_2_KEYS) {
+            expect(`${key}:${kpiSales[key]?.type}`).toBe(`${key}:string`);
+            expect(`${key}=${String(defaults[key])}`).toBe(`${key}=`);
+        }
+    });
+
+    it('шесть ключей решений владельца не тронуты Фазой 2', async () => {
+        const values = await makeService(null).resolve(DOMAIN, APP);
+        const asRecord: Record<string, unknown> = values;
+        for (const key of OWNER_DECISION_KEYS) {
+            expect(`${key}=${String(asRecord[key])}`).toBe(
+                `${key}=${String(CONTRACT[key].default)}`,
+            );
+        }
+        expect(kpiSales.aiAnalyticsPoolConsentAt.code).toBe(
+            'ai_analytics_pool_consent_at',
+        );
+    });
+
+    it('ключ Фазы 2 читается как обычная строка и не ломает соседей', async () => {
+        const stored = {
+            ai_analytics_levels:
+                '[{"managerId":447,"level":"senior","since":"2025-03-01"}]',
+            ai_analytics_roster_confirmed_at: '2026-09-08',
+        };
+
+        const values = await makeService(stored).resolve(DOMAIN, APP);
+
+        expect(values.aiAnalyticsLevels).toContain('"managerId":447');
+        expect(values.aiAnalyticsRosterConfirmedAt).toBe('2026-09-08');
+        expect(values.aiAnalyticsDefinitions).toBe('');
+        expect(getStoredAppSettingKeys(APP, stored).sort()).toEqual([
+            'aiAnalyticsLevels',
+            'aiAnalyticsRosterConfirmedAt',
         ]);
     });
 });

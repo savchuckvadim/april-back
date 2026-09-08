@@ -1,4 +1,8 @@
 import {
+    buildApplicability,
+    filterApplicableSections,
+} from '../model/applicability';
+import {
     QUALITY_CONTENT_SECTIONS,
     QUALITY_FORM_SECTIONS,
     QUALITY_SECTION_KIND,
@@ -214,5 +218,45 @@ describe('formScore (форма vs содержание, §4.3)', () => {
     it('ни одного раздела формы → null', () => {
         expect(formScore([])).toBeNull();
         expect(formScore([section('PRICE', 9, 100)])).toBeNull();
+    });
+});
+
+describe('применимость разделов к типу звонка (§4.3)', () => {
+    const table = buildApplicability();
+    const sections = [
+        section('GREETING', 8, 100),
+        section('PRESENTATION', 9, 60),
+    ];
+
+    it('раздел с нулевой применимостью не входит в счёт n_j', () => {
+        const applicable = filterApplicableSections(sections, 'cold', table);
+
+        expect(
+            aggregateQualityBySection([
+                call({ callType: 'cold', sections: applicable }),
+            ]).map(item => item.section),
+        ).toEqual(['GREETING']);
+    });
+
+    it('без гейта применимости презентация попала бы в холодный звонок', () => {
+        expect(
+            aggregateQualityBySection([
+                call({ callType: 'cold', sections }),
+            ]).map(item => item.section),
+        ).toEqual(['GREETING', 'PRESENTATION']);
+    });
+
+    it('для типа «презентация» тот же раздел в счёт входит', () => {
+        const applicable = filterApplicableSections(
+            sections,
+            'presentation',
+            table,
+        );
+
+        expect(
+            aggregateQualityBySection([
+                call({ callType: 'presentation', sections: applicable }),
+            ]).map(item => item.n),
+        ).toEqual([1, 1]);
     });
 });

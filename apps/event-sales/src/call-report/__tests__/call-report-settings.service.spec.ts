@@ -114,6 +114,27 @@ describe('CallReportSettingsService (портал → дефолт кода, env
         });
     });
 
+    it('названия своих организаций по умолчанию пусты — промпт прежний', async () => {
+        const { service } = makeDeps();
+
+        const settings = await service.resolve('gsr.bitrix24.ru');
+
+        expect(settings.ownOrgNames).toEqual([]);
+        expect(service.globals().ownOrgNames).toEqual([]);
+    });
+
+    it('названия своих организаций берутся с портала', async () => {
+        const { service } = makeDeps({
+            portal: {
+                ...emptyPortalSettings(),
+                ownOrgNames: ['Альфа-центр', 'Апрель'],
+            },
+        });
+
+        const settings = await service.resolve('alfacentr.bitrix24.ru');
+
+        expect(settings.ownOrgNames).toEqual(['Альфа-центр', 'Апрель']);
+    });
     it('демо-список сотрудников берётся с портала', async () => {
         const { service } = makeDeps({
             portal: { ...emptyPortalSettings(), allowedUserIds: [222, 323] },

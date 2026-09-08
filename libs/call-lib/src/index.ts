@@ -28,6 +28,7 @@ export * from './call-report/services/knowledge-materials.service';
 export * from './call-report/config/call-report-smart.config';
 export * from './call-report/services/call-report-smart-resolver.service';
 export * from './call-report/services/call-report-smart-writer.service';
+export * from './call-report/services/call-report-link-repair.service';
 export * from './call-report/services/call-report-base-item.service';
 export * from './call-report/use-cases/install-call-report-smart.use-case';
 export * from './call-analysis/call-analysis.module';

@@ -16,6 +16,8 @@ export enum EBxNamespace {
     IMBOT_V2 = 'imbot.v2',
     IMOPENLINES = 'imopenlines',
     SONET_GROUP = 'sonet_group',
+    /** calendar.* — производственный календарь портала (calendar.settings.get). */
+    CALENDAR = 'calendar',
 }
 
 export enum EBxMethod {

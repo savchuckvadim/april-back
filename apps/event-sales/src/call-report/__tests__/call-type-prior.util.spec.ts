@@ -66,6 +66,35 @@ describe('resolveCallTypePrior — ожидаемый тип звонка по C
         );
     });
 
+    /**
+     * Прод-случай alfacentr 08.09.2026: целевая сделка стояла в «Не
+     * состоялась», приора для финалов не было вовсе — и классификатор
+     * скатывался в «Другое». Финалы обязаны давать приор, но только слабый:
+     * стадия говорит об исходе сделки, а не о содержании звонка.
+     */
+    it('финалы основной воронки дают слабый приор, а не пустоту', () => {
+        const at = (dealStageCode: string) =>
+            resolveCallTypePrior({
+                entityType: 'deal',
+                dealCategoryCode: 'sales_base',
+                dealStageCode,
+                leadWorkKind: null,
+            });
+        expect(at('sales_success')).toEqual(
+            expect.objectContaining({ callType: 'payment', strength: 'weak' }),
+        );
+        expect(at('sales_fail')).toEqual(
+            expect.objectContaining({ callType: 'decision', strength: 'weak' }),
+        );
+        // «Не состоялась» и «Не ЦА» — разговор был, но сорвался/не тот клиент.
+        expect(at('sales_double')).toEqual(
+            expect.objectContaining({ callType: 'call', strength: 'weak' }),
+        );
+        expect(at('sales_not_ca')).toEqual(
+            expect.objectContaining({ callType: 'call', strength: 'weak' }),
+        );
+    });
+
     it('воронка презентаций: стадия «Презентация» — сильный presentation, «в работе» — слабый decision', () => {
         const at = (dealStageCode: string) =>
             resolveCallTypePrior({

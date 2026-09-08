@@ -195,6 +195,7 @@ export const FOCUS_MOVEMENT_SCHEMA: Record<string, unknown> = {
             type: ['string', 'null'],
             enum: [...CALL_REPORT_REFUSAL_CODES, null],
         },
+        refusalReason: { type: ['string', 'null'] },
         nextStep: NEXT_STEP_SCHEMA,
         productive: { type: 'boolean' },
         riskFlags: {
@@ -218,6 +219,7 @@ export const FOCUS_MOVEMENT_SCHEMA: Record<string, unknown> = {
         'priceDiscussed',
         'competitors',
         'refusalCategory',
+        'refusalReason',
         'nextStep',
         'productive',
         'riskFlags',
@@ -253,6 +255,13 @@ ${SECTION_FIELDS_SPEC}
 - priceDiscussed — обсуждалась ли цена фактически.
 - competitors — конкуренты, упомянутые клиентом (коды справочника).
 - refusalCategory — при отказе: РЫНОЧНАЯ причина или ИСПОЛНИТЕЛЬСКАЯ; null без отказа.
+- refusalReason — ПРИЧИНА ОТКАЗА СЛОВАМИ КЛИЕНТА, одно-два предложения по
+  тому, что реально прозвучало: «работают с Консультантом, договор оплачен
+  до декабря», «руководитель не согласовал бюджет до конца года». Не код и
+  не пересказ этапа. Заполняй и при мягком отказе («не интересно»,
+  «перезвоните через год»), если причина в разговоре названа. Причина не
+  прозвучала или отказа не было — null, НЕ ДОГАДЫВАЙСЯ: это поле уходит в
+  карточку как факт разговора.
 - nextStep.set — договорились ли о КОНКРЕТНОМ шаге («клиент подумает» — не шаг);
   description — что и когда; date — YYYY-MM-DD или null.
 - productive — состоялся ли контакт и есть ли продвижение по сделке.

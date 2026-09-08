@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { RedisService } from '@lib/core/redis/redis.service';
+import { CallRefusalAuditService } from '../services/call-refusal-audit.service';
 import { PresentationAuditService } from '../services/presentation-audit.service';
 import { PresentationPlanFactService } from '../services/presentation-plan-fact.service';
 import { CallReportSettingsService } from '../services/call-report-settings.service';
@@ -32,12 +33,15 @@ export class PresentationAuditScheduler implements OnModuleInit {
         private readonly settingsService: CallReportSettingsService,
         private readonly auditService: PresentationAuditService,
         private readonly planFactService: PresentationPlanFactService,
+        private readonly refusalAuditService: CallRefusalAuditService,
     ) {}
 
     onModuleInit(): void {
         this.logger.log(
-            `Сверка по презентациям: 08:00 МСК, включается per-portal в админке ` +
-                `(тумблер «Сверка по презентациям»); окно ${WINDOW_HOURS} ч, лимит ${MAX_ENTITIES}`,
+            `Утренняя сверка: 08:00 МСК. Презентации — per-portal в админке ` +
+                `(тумблер «Сверка по презентациям»); причины отказа — на любом ` +
+                `включённом портале с глубоким разбором (без вызовов модели). ` +
+                `Окно ${WINDOW_HOURS} ч, лимит ${MAX_ENTITIES}`,
         );
     }
 
@@ -67,12 +71,20 @@ export class PresentationAuditScheduler implements OnModuleInit {
                     const settings = await this.settingsService.resolve(
                         entry.domain,
                     );
-                    if (
-                        !settings.enabled ||
-                        !settings.presentationAuditEnabled
-                    ) {
-                        continue;
+                    if (!settings.enabled) continue;
+                    // Сверка ПРИЧИН ОТКАЗА идёт на любом включённом портале
+                    // с глубоким разбором: модель она не зовёт (сравнение
+                    // чисто программное), отдельного тумблера не требует.
+                    if (settings.deepAnalysisEnabled) {
+                        await this.refusalAuditService
+                            .runForDomain(entry.domain, from, to, MAX_ENTITIES)
+                            .catch((error: Error) =>
+                                this.logger.warn(
+                                    `Сверка причин отказа ${entry.domain} не выполнена: ${error.message}`,
+                                ),
+                            );
                     }
+                    if (!settings.presentationAuditEnabled) continue;
                     await this.auditService.runForDomain(
                         entry.domain,
                         from,

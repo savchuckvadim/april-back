@@ -6,7 +6,11 @@
  * (ai/rules/pbx-typing.md).
  */
 import { CALL_REPORT_RISK_FLAG_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart';
-import { PULSE_DEFAULTS } from '@lib/sales-ai-analytics';
+import {
+    AI_ANALYTICS_SNAPSHOT_APP,
+    AI_ANALYTICS_SNAPSHOT_PROVIDER,
+    PULSE_DEFAULTS,
+} from '@lib/sales-ai-analytics';
 
 export const AI_ANALYTICS_SWAGGER_TAG = 'Sales AI Analytics' as const;
 export const AI_ANALYTICS_ROUTE_PREFIX = 'ai-analytics' as const;
@@ -33,6 +37,20 @@ export const AI_ANALYTICS_CACHE_SECTIONS = {
     ATTENTION: 'attention',
     /** Ростер ОП и его раскладка по отделам/группам (managers:org). */
     MANAGERS: 'managers',
+    // --- Фаза 2 (план §3.4). TTL: model закрытых месяцев — 30 дней,
+    // plan — 180 с, brief — 6 ч, error-конверт — 120 с.
+    /** Портальная модель месяца: нормы μ, κ, φ, S_ref, потолки, готовность. */
+    MODEL: 'model',
+    /** План дня менеджера (обратная задача от цели). */
+    PLAN: 'plan',
+    /** AI-резюме дня/недели по ключу пакета фактов. */
+    BRIEF: 'brief',
+    /** Счётчик вызовов LLM на менеджера в день (квота brief). */
+    BRIEF_QUOTA: 'brief-quota',
+    /** История стадий сделок (crm.stagehistory) — эпизоды воронки. */
+    STAGE_HISTORY: 'stage-history',
+    /** Производственный календарь портала (calendar.settings.get). */
+    CALENDAR: 'calendar',
 } as const;
 
 export const AI_ANALYTICS_WS_EVENTS = {
@@ -63,8 +81,27 @@ export const AI_ANALYTICS_CACHE_SCOPES = [
     'attention',
     'kpi-month',
     'plans',
+    // Фаза 2: секции модели, плана дня, резюме и тяжёлых источников.
+    'model',
+    'plan',
+    'brief',
+    'brief-quota',
+    'stage-history',
+    'calendar',
 ] as const;
 export type AiAnalyticsCacheScope = (typeof AI_ANALYTICS_CACHE_SCOPES)[number];
+
+/**
+ * Что сбрасывает `settings/save` (план §3.4): решение человека меняет
+ * нормы, план и «Внимание», поэтому обзор, модель и план пересчитываются
+ * заново. Кэш звонков и финансов не трогаем — исходные данные не менялись.
+ */
+export const AI_ANALYTICS_SETTINGS_RESET_SCOPES = [
+    'overview',
+    'attention',
+    'model',
+    'plan',
+] as const satisfies readonly AiAnalyticsCacheScope[];
 
 /** Роли requester'а по структуре продаж (план, 6.5). */
 export const AI_ANALYTICS_REQUESTER_ROLES = [
@@ -212,10 +249,32 @@ export const AI_ANALYTICS_PUSH_QUOTE_MAX_LENGTH = 300;
 // Снапшоты (Фаза 0 → ais): месячный аудит данных по крону
 // ---------------------------------------------------------------------------
 
-/** Виды снапшот-джоб SALES_AI_ANALYTICS_SNAPSHOT; пока только аудит данных. */
-export const AI_ANALYTICS_SNAPSHOT_KINDS = ['audit'] as const;
+/**
+ * Виды снапшот-джоб SALES_AI_ANALYTICS_SNAPSHOT (план §5.3): месячный
+ * аудит данных Фазы 0 плюс ритмы ночного конвейера Фазы 2. Новых значений
+ * `JobNames` не заводим — вид и ритм едут в payload джобы.
+ */
+export const AI_ANALYTICS_SNAPSHOT_KINDS = [
+    'audit',
+    'nightly',
+    'weekly',
+    'monthly',
+    'backfill',
+] as const;
 export type AiAnalyticsSnapshotKind =
     (typeof AI_ANALYTICS_SNAPSHOT_KINDS)[number];
+
+/**
+ * Тип и адресация ais-записи аудита сохранений настроек (план §3.1,
+ * `ai-analytics-settings-audit`): каждое `settings/save` пишет снапшот с
+ * автором, списком изменений и границей сравнимой истории до и после.
+ * Ключ записи — день сохранения в TZ портала.
+ */
+export const AI_ANALYTICS_SETTINGS_AUDIT_RECORD = {
+    TYPE: 'ai-analytics-settings-audit',
+    APP: AI_ANALYTICS_SNAPSHOT_APP,
+    PROVIDER: AI_ANALYTICS_SNAPSHOT_PROVIDER,
+} as const;
 
 /** Крон аудита в UTC: 1-е число 04:10 МСК (после ночных KPI-пересчётов). */
 export const AI_ANALYTICS_AUDIT_CRON = '10 1 1 * *' as const;

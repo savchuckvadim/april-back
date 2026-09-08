@@ -175,13 +175,7 @@ export const FIVE_K_ITEMS_SCHEMA = {
         competitor: { type: ['boolean', 'null'] },
         criteria: { type: ['boolean', 'null'] },
     },
-    required: [
-        'client',
-        'company',
-        'colleagues',
-        'competitor',
-        'criteria',
-    ],
+    required: ['client', 'company', 'colleagues', 'competitor', 'criteria'],
     additionalProperties: false,
 } as const;
 
@@ -194,7 +188,11 @@ export const FIVE_K_ITEMS_SCHEMA = {
  * модели.
  */
 const renderChecklistSpec = (
-    templates: readonly { code: string; title: string; questions: readonly string[] }[],
+    templates: readonly {
+        code: string;
+        title: string;
+        questions: readonly string[];
+    }[],
     keyByCode: Readonly<Record<string, string>>,
 ): string =>
     templates
@@ -268,6 +266,7 @@ export const CALL_DEEP_ANALYSIS_SCHEMA: Record<string, unknown> = {
             type: ['string', 'null'],
             enum: [...CALL_REPORT_REFUSAL_CODES, null],
         },
+        refusalReason: { type: ['string', 'null'] },
         recommendations: { type: 'array', items: { type: 'string' } },
         sections: { type: 'array', items: SECTION_ITEM_SCHEMA },
         speechAnalysis: { type: ['string', 'null'] },
@@ -313,6 +312,7 @@ export const CALL_DEEP_ANALYSIS_SCHEMA: Record<string, unknown> = {
         'competitors',
         'riskFlags',
         'refusalCategory',
+        'refusalReason',
         'recommendations',
         'sections',
         'speechAnalysis',
@@ -628,6 +628,10 @@ ${FIVE_K_CHECKLIST_SPEC}
   (цена, конкурент, нет потребности) от ИСПОЛНИТЕЛЬСКОЙ (менеджер не дожал, не
   дошёл до ЛПР, не отработал возражение). Это разные управленческие выводы:
   первое — вопрос к продукту и цене, второе — к обучению. null, если отказа не было.
+- refusalReason — ПРИЧИНА ОТКАЗА СЛОВАМИ КЛИЕНТА, одно-два предложения по тому,
+  что реально прозвучало: «работают с Консультантом, договор оплачен до декабря».
+  Не код справочника и не пересказ этапа. Причина не прозвучала или отказа не
+  было — null, не догадывайся: это поле уходит в карточку как факт разговора.
 - recommendations — 3-5 главных выводов по звонку в целом, тем же форматом
   «приём → реплика → зачем». Первым пунктом дай ЗАГОТОВКУ ПЕРВОЙ ФРАЗЫ
   СЛЕДУЮЩЕГО КОНТАКТА с этим клиентом — с чего начать, чтобы продолжить

@@ -15,6 +15,11 @@ export interface PulseCallRow {
     managerId: string | null;
     callStartedAt: Date;
     durationSec: number | null;
+    /**
+     * Тип звонка классификатора: нужен только для порога длительности по
+     * типу. Поля нет или null — порог берётся из ключа «все прочие типы».
+     */
+    callType?: string | null;
     analysisPresent: boolean;
     nextStep: PulseNextStep | null;
     riskFlags: string[];
@@ -58,6 +63,71 @@ export interface PulseOptions {
     historyWorkdays?: number;
     /** Минимум разобранных звонков менеджера для строки byManager (20). */
     managerMinN?: number;
+    /**
+     * Пороги «разбираемого» звонка по типу (реестр
+     * `min_duration_sec_by_type`, решение владельца А.1). Опции нет —
+     * поведение Фазы 1a: единый порог `AI_ANALYTICS_THRESHOLDS.shortCallSec`.
+     */
+    minDurationSecByType?: MinDurationSecByType;
+}
+
+/** Порог «разбираемого» звонка по типу звонка, секунды. */
+export type MinDurationSecByType = Readonly<Record<string, number>>;
+
+/**
+ * Ключ «все прочие типы» карты порогов: звонок без типа и типы, которых в
+ * карте нет. Под него сценарий кладёт значение реестра
+ * `min_duration_sec_by_type`, разрешённое с контекстом портала.
+ */
+export const MIN_DURATION_DEFAULT_TYPE = 'default' as const;
+
+const secondsOf = (value: unknown): number | undefined =>
+    typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+
+/**
+ * Порог для типа звонка: значение типа → ключ «все прочие типы» →
+ * константа Фазы 1a. Карты нет — прежние `shortCallSec` секунд.
+ */
+export function minDurationSecOf(
+    callType: string | null | undefined,
+    byType?: MinDurationSecByType,
+): number {
+    const configured = callType ? secondsOf(byType?.[callType]) : undefined;
+
+    return (
+        configured ??
+        secondsOf(byType?.[MIN_DURATION_DEFAULT_TYPE]) ??
+        AI_ANALYTICS_THRESHOLDS.shortCallSec
+    );
+}
+
+/**
+ * Эффективные пороги «разбираемого» звонка: карта определений портала и
+ * значение реестра для типов вне карты (в том числе для звонка без типа).
+ * Одинаковый порог у всех типов — это одно решение, и его владелец —
+ * реестр (портал мог переопределить код в `ai_analytics_model_params`);
+ * разные пороги по типам — это карта, и тогда тип решает сам за себя.
+ *
+ * Пульс и ночной конвейер обязаны строить пороги этой функцией: иначе
+ * знаменатель пульса и набор разбираемых звонков конвейера разойдутся.
+ */
+export function minDurationByType(
+    configured: MinDurationSecByType | undefined,
+    registrySec?: number,
+): MinDurationSecByType {
+    const fallback =
+        secondsOf(registrySec) ?? AI_ANALYTICS_THRESHOLDS.shortCallSec;
+    const entries = Object.entries(configured ?? {}).flatMap(([type, sec]) => {
+        const seconds = secondsOf(sec);
+
+        return seconds === undefined ? [] : [[type, seconds] as const];
+    });
+    const uniform = new Set(entries.map(([, sec]) => sec)).size <= 1;
+
+    return {
+        ...(uniform ? {} : Object.fromEntries(entries)),
+        [MIN_DURATION_DEFAULT_TYPE]: fallback,
+    };
 }
 
 export const PULSE_DEFAULTS = {
@@ -71,13 +141,21 @@ interface DatedRow {
     day: string;
 }
 
-const isShortCall = (row: PulseCallRow): boolean =>
+const isShortCall = (
+    row: PulseCallRow,
+    byType?: MinDurationSecByType,
+): boolean =>
     row.durationSec !== null &&
-    row.durationSec < AI_ANALYTICS_THRESHOLDS.shortCallSec;
+    row.durationSec < minDurationSecOf(row.callType, byType);
 
-/** Разобранный звонок: есть разбор и он не короткий (длительность null — ок). */
-export const isAnalyzedCall = (row: PulseCallRow): boolean =>
-    row.analysisPresent && !isShortCall(row);
+/**
+ * Разобранный звонок: есть разбор и он не короткий (длительность null —
+ * ок). Карта порогов не передана — порог Фазы 1a (300 с) для всех типов.
+ */
+export const isAnalyzedCall = (
+    row: PulseCallRow,
+    byType?: MinDurationSecByType,
+): boolean => row.analysisPresent && !isShortCall(row, byType);
 
 const hasNextStepDate = (row: PulseCallRow): boolean =>
     row.nextStep?.set === true &&
@@ -143,7 +221,10 @@ function buildDaily(
  * Пульс дисциплины «следующий шаг с датой»: окно из windowWorkdays рабочих
  * дней (диапазон дат от первого рабочего дня до последнего включительно),
  * доля считается только по разобранным звонкам окна (isAnalyzedCall),
- * короткие звонки — в shortCallsSharePct, но не в знаменателе.
+ * короткие звонки — в shortCallsSharePct, но не в знаменателе. Порог
+ * «короткого» — options.minDurationSecByType (реестр
+ * `min_duration_sec_by_type`, тот же, что у ночного конвейера); опции нет —
+ * прежний единый AI_ANALYTICS_THRESHOLDS.shortCallSec.
  * Дневной ряд и XmR — по рабочим дням истории historyWorkdays.
  * Чистая детерминированная функция.
  */
@@ -169,12 +250,17 @@ export function computePulse(
         row,
         day: toPortalDate(row.callStartedAt, calendar.timeZone),
     }));
+    const byType = options.minDurationSecByType;
     const inWindow = dated.filter(item => item.day >= from && item.day <= to);
-    const analyzedInWindow = inWindow.filter(item => isAnalyzedCall(item.row));
-    const shortCalls = inWindow.filter(item => isShortCall(item.row)).length;
+    const analyzedInWindow = inWindow.filter(item =>
+        isAnalyzedCall(item.row, byType),
+    );
+    const shortCalls = inWindow.filter(item =>
+        isShortCall(item.row, byType),
+    ).length;
 
     const daily = buildDaily(
-        dated.filter(item => isAnalyzedCall(item.row)),
+        dated.filter(item => isAnalyzedCall(item.row, byType)),
         historyDays,
     );
 

@@ -16,6 +16,13 @@ import {
 import { AnalysisVersions } from './versions.types';
 
 /**
+ * Паспорт менеджера и снимок планов руководителя (поток 14a) объявлены
+ * отдельным файлом по лимиту 300 строк, но остаются частью контрактов
+ * снапшотов: потребители импортируют их отсюда и из корневого barrel.
+ */
+export * from './passport.types';
+
+/**
  * Конверт снапшота. Раскладка по ais: domain → domain, type → type,
  * periodKey → activity_id, managerId → user_id, calcVersion → model;
  * paramsVersion, inputsHash, generatedAt и payload едут в user_result.

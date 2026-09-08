@@ -12,6 +12,7 @@ import { BxTaskDomainModule } from './tasks/task/bx-tasks.module';
 import { BitrixImBotAggregateDomainModule } from './imbot/imbot-domain.module';
 import { BitrixImBotV2AggregateDomainModule } from './imbot-v2/imbot-v2-domain.module';
 import { BitrixImOpenlinesAggregateDomainModule } from './imopenlines/imopenlines-domain.module';
+import { BitrixCalendarDomainModule } from './calendar/bx-calendar.module';
 @Module({
     imports: [
         BitrixActivityDomainModule,
@@ -27,6 +28,7 @@ import { BitrixImOpenlinesAggregateDomainModule } from './imopenlines/imopenline
         BitrixImBotAggregateDomainModule,
         BitrixImBotV2AggregateDomainModule,
         BitrixImOpenlinesAggregateDomainModule,
+        BitrixCalendarDomainModule,
     ],
     exports: [
         BitrixActivityDomainModule,
@@ -42,6 +44,7 @@ import { BitrixImOpenlinesAggregateDomainModule } from './imopenlines/imopenline
         BitrixImBotAggregateDomainModule,
         BitrixImBotV2AggregateDomainModule,
         BitrixImOpenlinesAggregateDomainModule,
+        BitrixCalendarDomainModule,
     ],
 })
 export class BitrixDomainModule {}

@@ -33,6 +33,7 @@ export const AI_ANALYTICS_SNAPSHOT_TYPE = {
     brief: 'ai-analytics-brief',
     etlRun: 'ai-analytics-etl-run',
     style: 'ai-analytics-style',
+    plan: 'ai-analytics-plan',
     feedback: AI_ANALYTICS_FEEDBACK_TYPE,
     audit: AI_ANALYTICS_AUDIT_TYPE,
     settings: AI_ANALYTICS_SETTINGS_TYPE,
@@ -47,6 +48,7 @@ export const AI_ANALYTICS_SNAPSHOT_TYPES = [
     AI_ANALYTICS_SNAPSHOT_TYPE.brief,
     AI_ANALYTICS_SNAPSHOT_TYPE.etlRun,
     AI_ANALYTICS_SNAPSHOT_TYPE.style,
+    AI_ANALYTICS_SNAPSHOT_TYPE.plan,
     AI_ANALYTICS_SNAPSHOT_TYPE.feedback,
     AI_ANALYTICS_SNAPSHOT_TYPE.audit,
     AI_ANALYTICS_SNAPSHOT_TYPE.settings,
@@ -222,6 +224,17 @@ export const AI_ANALYTICS_SNAPSHOT_DESCRIPTORS = {
         description:
             'Стиль менеджера за окно (план 4.6а): оси, подписи-факты, ' +
             'сигнатура набора маркеров; 12 окон, анонимизация после ухода.',
+    },
+    [AI_ANALYTICS_SNAPSHOT_TYPE.plan]: {
+        type: AI_ANALYTICS_SNAPSHOT_TYPE.plan,
+        grain: 'portal-month',
+        keyFormat: KEY_FORMAT.month,
+        retention: { unit: 'records', value: 36 },
+        description:
+            'Снимок планов руководителя (UF_USR_A_SALES_PLAN_*) 1-го ' +
+            'числа: цели месяца по всем менеджерам и флаг «план = ' +
+            'пожелание». Снимается раз в месяц, чтобы копилась история ' +
+            'планов и цель месяца не переезжала задним числом.',
     },
     [AI_ANALYTICS_SNAPSHOT_TYPE.feedback]: {
         type: AI_ANALYTICS_SNAPSHOT_TYPE.feedback,

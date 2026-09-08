@@ -9,6 +9,11 @@ import {
 import { CallReportSmartResolverService } from '@lib/call-lib/call-report/services/call-report-smart-resolver.service';
 import { CallReportSmartWriterService } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
 import { CallReportDealFamilyService } from '@lib/call-lib/call-report/services/call-report-deal-family.service';
+import {
+    CallReportLinkDesired,
+    CallReportLinkRepairService,
+} from '@lib/call-lib/call-report/services/call-report-link-repair.service';
+import { resolveCallManagerId } from '@lib/call-lib/call-report/services/call-manager.util';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 import { AGENT_ANALYSIS_TYPE } from '../../agent-gate/services/agent-call-package.service';
 import {
@@ -277,9 +282,15 @@ export class CallRevisionService {
 
     /**
      * Применение вердикта: обновление СУЩЕСТВУЮЩЕГО смарт-элемента
-     * (рекомендации по сделке, риски, coaching + ДОЛИВ CRM-связей из
-     * паспорта — чинит элементы, где intake связи не заполнил) + итоговый
-     * коммент в таймлайн сущности.
+     * (рекомендации по сделке, риски, coaching + ПЕРЕСЧЁТ связей и
+     * ОТВЕТСТВЕННОГО — чинит карточки, созданные до починки раскладки)
+     * + итоговый коммент в таймлайн сущности.
+     *
+     * РЕМОНТ СТАРЫХ КАРТОЧЕК (решение владельца 08.09.2026): отдельной
+     * ручки пересчёта нет — чинит ночной ревизор, который и так ходит по
+     * звонкам за окно. Связи и ответственный сравниваются с тем, что
+     * стоит у элемента СЕЙЧАС (CallReportLinkRepairService), и в update
+     * уходит только разница — с записью в лог, что и почему поменяли.
      *
      * Элемент ищется по звонкам сущности ОТ НОВОГО К СТАРОМУ и только
      * ОБНОВЛЯЕТСЯ (updateExisting): у последнего звонка элемента может не
@@ -305,33 +316,35 @@ export class CallRevisionService {
             // сделка-презентация, и класть её в «ОП: основная сделка» —
             // ошибка (alfacentr, 05.09.2026); ночной долив связей раньше
             // перетирал этим правильное значение intake.
-            const family =
+            // Клиент звонка (компания/контакт) — вход для дотяжки основной
+            // сделки, если владелец звонка её не даёт (чужая воронка, лид).
+            const family = await this.dealFamily.resolve(
+                domain,
                 passport.entityType === 'deal'
-                    ? await this.dealFamily.resolve(
-                          domain,
-                          passport.entityId ?? undefined,
-                      )
-                    : {};
-            const input = {
-                // Связи владельца звонка из CRM (источник истины) — update
-                // дополняет существующий элемент, пустые значения не шлются.
-                // НАТИВНЫЕ связи (parentId2/parentId1) обязательны наравне с
-                // crm-полем DEAL_MAIN: без dealId/leadId «долив связей» чинил
-                // только компанию и контакт, а сделка у элемента так и
-                // оставалась непривязанной (карточка-сирота).
-                dealId:
-                    passport.entityType === 'deal'
-                        ? (passport.entityId ?? undefined)
-                        : undefined,
+                    ? (passport.entityId ?? undefined)
+                    : undefined,
+                {
+                    companyId: passport.crmCompanyId ?? undefined,
+                    contactId: passport.crmContactId ?? undefined,
+                    callStartedAt: last?.callStartedAt ?? undefined,
+                },
+            );
+            // Желаемые связи элемента. РОДИТЕЛЬ-СДЕЛКА — только «ОП
+            // Основная» из раскладки (решение владельца 08.09.2026):
+            // владелец звонка чужой воронки сюда больше не подставляется,
+            // а не нашли основную — связи со сделкой у элемента нет.
+            const links: CallReportLinkDesired = {
+                mainDealId: family.mainDealId,
+                presentationDealId: family.presentationDealId,
+                xoDealId: family.xoDealId,
                 leadId:
                     passport.entityType === 'lead'
                         ? (passport.entityId ?? undefined)
                         : undefined,
-                mainDealId: family.mainDealId,
-                presentationDealId: family.presentationDealId,
-                xoDealId: family.xoDealId,
                 companyId: passport.crmCompanyId ?? undefined,
                 contactId: passport.crmContactId ?? undefined,
+            };
+            const input = {
                 // Привязка записей отчётности (после sanitizeListLinks id
                 // гарантированно из кандидатов).
                 kpiItem: verdict.kpiItemId
@@ -363,11 +376,30 @@ export class CallRevisionService {
                     : undefined,
                 coachingPriority: verdict.coachingPriority ?? undefined,
             };
+            // ПЕРЕСЧЁТ связей и ответственного у уже созданных карточек
+            // (решение владельца 08.09.2026: чиним ревизором, отдельной
+            // ручки не заводим). Шлём ТОЛЬКО изменившееся: лишний update
+            // пишет в историю элемента и перетирает правки руками.
+            const repair = new CallReportLinkRepairService(bitrix, smartInfo);
             let updatedId: number | null = null;
             for (const row of [...fresh].reverse()) {
                 if (!row.activityId) continue;
+                const plan = await repair.plan(row.activityId, {
+                    ...links,
+                    // Ответственный — владелец ИМЕННО ЭТОГО звонка из
+                    // телефонии (у каждого элемента свой звонок).
+                    // ASSIGNED_BY_ID сущности ревизор в запас не берёт:
+                    // сделка может быть чужой воронки, а подставлять
+                    // наугад нельзя — тогда поле просто не трогаем.
+                    managerId: resolveCallManagerId({
+                        callOwnerUserId: row.userId,
+                    }),
+                });
+                // Элемента у звонка нет — карточку-пустышку не создаём.
+                if (!plan) continue;
                 updatedId = await writer.updateExisting({
                     ...input,
+                    ...plan.changes,
                     activityId: row.activityId,
                 });
                 if (updatedId) break;

@@ -213,7 +213,11 @@ describe('CallReportExcelBuilder', () => {
                 smartItemId: 206,
                 companyId: 33,
                 contactId: 44,
-                hvostSteps: { desire: true, offered: false, priceReaction: null },
+                hvostSteps: {
+                    desire: true,
+                    offered: false,
+                    priceReaction: null,
+                },
                 fiveKItems: { client: true, colleagues: false },
                 entityType: 'deal',
                 entityId: 555,

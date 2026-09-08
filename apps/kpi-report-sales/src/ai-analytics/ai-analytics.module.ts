@@ -19,6 +19,7 @@ import { FinanceLoader } from './domain/loaders/finance.loader';
 import { KpiLoader } from './domain/loaders/kpi.loader';
 import { ManagerOrgLoader } from './domain/loaders/manager-org.loader';
 import { ManagersLoader } from './domain/loaders/managers.loader';
+import { AiAnalyticsParamsLoader } from './domain/loaders/params.loader';
 import { PlansLoader } from './domain/loaders/plans.loader';
 import { AiAnalyticsPortalsLoader } from './domain/loaders/portals.loader';
 import { SalesFinanceUseCaseFactory } from './domain/loaders/sales-finance-use-case.factory';
@@ -43,6 +44,7 @@ import { SettingsUseCase } from './domain/use-cases/settings.use-case';
 import { AiAnalyticsQueueProcessor } from './queue/ai-analytics.processor';
 import { AiAnalyticsFeedbackStore } from './store/ai-analytics-feedback.store';
 import { AiAnalyticsPushLogStore } from './store/ai-analytics-push-log.store';
+import { AiAnalyticsSettingsAuditStore } from './store/ai-analytics-settings-audit.store';
 import { AiAnalyticsSettingsStore } from './store/ai-analytics-settings.store';
 import { AiAnalyticsSnapshotStore } from './store/ai-analytics-snapshot.store';
 
@@ -95,6 +97,17 @@ import { AiAnalyticsSnapshotStore } from './store/ai-analytics-snapshot.store';
  * SnapshotEnvelope в ais поверх AiService (тот же AiModule, что и у
  * обратной связи). Пока ни к одной ручке не подключён: его читает и пишет
  * будущий ETL-конвейер Фазы 2; экспортируется для соседних модулей.
+ *
+ * Настройки и параметры (Фаза 2, волна 2): SettingsSaveUseCase вырос до
+ * десяти ключей схемы `[kpiSales]` (уровни, цели, отсутствия, параметры
+ * менеджеров, определения событий, журнал, гиперпараметры, потолки
+ * оценивания, гипотеза, подтверждение ростера) и пишет аудит каждой правки
+ * через AiAnalyticsSettingsAuditStore (обычный провайдер поверх AiService,
+ * ais type `ai-analytics-settings-audit`). AiAnalyticsParamsLoader
+ * раскладывает эти ключи по слоям реестра (менеджер → полоса стажа →
+ * портал → дефолт) и отдаёт `{ ctx, paramsVersion, comparableFrom }`;
+ * он экспортируется и **к ручкам пока не подключён** — его потребители
+ * (портальная модель, план дня, резюме) появятся в следующих волнах.
  */
 @Module({
     imports: [
@@ -119,11 +132,13 @@ import { AiAnalyticsSnapshotStore } from './store/ai-analytics-snapshot.store';
         ManagersLoader,
         ManagerOrgLoader,
         KpiLoader,
+        AiAnalyticsParamsLoader,
         SalesFinanceUseCaseFactory,
         FinanceLoader,
         PlansLoader,
         AiAnalyticsFeedbackStore,
         AiAnalyticsSettingsStore,
+        AiAnalyticsSettingsAuditStore,
         AiAnalyticsSnapshotStore,
         SettingsUseCase,
         PulseUseCase,
@@ -159,6 +174,7 @@ import { AiAnalyticsSnapshotStore } from './store/ai-analytics-snapshot.store';
         OverviewUseCase,
         OverviewLookupUseCase,
         AiAnalyticsSnapshotStore,
+        AiAnalyticsParamsLoader,
     ],
 })
 export class AiAnalyticsModule {}

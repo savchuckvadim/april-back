@@ -298,6 +298,30 @@ describe('CallComplianceReviewService', () => {
         expect(prompt).not.toContain('ОСОБОЕ ВНИМАНИЕ — ПРЕЗЕНТАЦИЯ');
     });
 
+    it('названия своих организаций уходят в промпт проверки по регламенту', async () => {
+        const { service, vibeCodeClient } = makeDeps();
+
+        await service.run(ROW, 'cold', undefined, ['Альфа-центр', 'Апрель']);
+
+        const prompt = String(
+            (vibeCodeClient.structuredCompletion.mock.calls[0] as unknown[])[0],
+        );
+        expect(prompt).toContain('НАШИ СОБСТВЕННЫЕ НАЗВАНИЯ');
+        expect(prompt).toContain('«Альфа-центр»');
+        // Представление своим именем не должно попасть в нарушения.
+        expect(prompt).toContain('нарушения');
+    });
+
+    it('без настройки промпт проверки прежний — ни строчки про названия', async () => {
+        const { service, vibeCodeClient } = makeDeps();
+
+        await service.run(ROW, 'cold');
+
+        const prompt = String(
+            (vibeCodeClient.structuredCompletion.mock.calls[0] as unknown[])[0],
+        );
+        expect(prompt).not.toContain('НАШИ СОБСТВЕННЫЕ НАЗВАНИЯ');
+    });
     it('ошибка модели не роняет конвейер', async () => {
         const { service, vibeCodeClient } = makeDeps();
         vibeCodeClient.structuredCompletion.mockRejectedValue(

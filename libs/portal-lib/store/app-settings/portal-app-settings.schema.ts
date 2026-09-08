@@ -274,6 +274,135 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             type: 'boolean',
             default: false,
         }),
+        // --- Фаза 2 (план ai/tasks/ai-sales-analytics-phase2-plan.md, §3.3):
+        // решения ЛЮДЕЙ, которых нет ни в Bitrix, ни в разборах — уровни,
+        // цели, отсутствия, определения событий, гиперпараметры модели,
+        // журнал событий портала, потолки оценивания, гипотеза качества и
+        // подтверждение ростера. Все ключи — JSON-СТРОКОЙ по образцу
+        // ai_analytics_calendar: реестр настроек держит три скаляра
+        // (boolean/number/string) и не превращается в дерево, а разбор
+        // живёт чистыми функциями в libs/sales-ai-analytics/src/settings
+        // (битый JSON → дефолт кода, без исключения). Дефолт у всех —
+        // пустая строка: «портал ничего не решал» отличимо от «решил так».
+        aiAnalyticsLevels: setting({
+            code: 'ai_analytics_levels',
+            name: 'JSON уровней менеджеров',
+            description:
+                'Массив [{"managerId":447,"level":"senior",' +
+                '"since":"2025-03-01","source":"manual"}]: уровень назначает ' +
+                'руководитель, since — начало стажа (не позже сегодня в TZ ' +
+                'портала). Пусто — уровень подсказывается по стажу. Заменяет ' +
+                'временную ais-запись ai-analytics-settings (Фаза 1b): пока ' +
+                'ключ пуст, читается она.',
+            type: 'string',
+            default: '',
+        }),
+        aiAnalyticsTargets: setting({
+            code: 'ai_analytics_targets',
+            name: 'JSON целей по уровням и переопределений по менеджерам',
+            description:
+                '{"byLevel":{"junior":{"sales":3,"presentationsMin":20,' +
+                '"coldPerDay":40}},"overrides":{"447":5}}: цель продаж ' +
+                'уровня в месяц, минимум презентаций обучения и дневной ' +
+                'минимум холодных; overrides — личная цель менеджера ' +
+                '(null — снять). Пусто — цель считается медианой полосы стажа.',
+            type: 'string',
+            default: '',
+        }),
+        aiAnalyticsAbsences: setting({
+            code: 'ai_analytics_absences',
+            name: 'JSON отсутствий менеджеров',
+            description:
+                '{"447":[{"from":"2026-07-01","to":"2026-07-14",' +
+                '"kind":"vacation"}]}: отпуска, больничные и обучение. ' +
+                'Отрезки одного менеджера не пересекаются, from ≤ to. ' +
+                'Экспозиция считается по календарю минус отсутствия, иначе ' +
+                'отпуск выглядит как провал темпа.',
+            type: 'string',
+            default: '',
+        }),
+        aiAnalyticsModelParams: setting({
+            code: 'ai_analytics_model_params',
+            name: 'JSON гиперпараметров модели (коды реестра)',
+            description:
+                '{"forget_lambda":0.85,"kappa_edge_early":100,' +
+                '"norm_stratum":"tenure"}: переопределения портала для кодов ' +
+                'реестра параметров (libs/sales-ai-analytics/src/params). ' +
+                'Значение вне диапазона реестра или чужого типа не ' +
+                'применяется — действует дефолт кода.',
+            type: 'string',
+            default: '',
+        }),
+        aiAnalyticsManagerParams: setting({
+            code: 'ai_analytics_manager_params',
+            name: 'JSON параметров по менеджерам',
+            description:
+                '{"447":{"fteShare":0.5,"targetOverride":4,' +
+                '"excludeFromNorms":true,"alertsMuted":false}}: ставка ' +
+                '[0.25; 1], личная цель, исключение из норм отдела, ' +
+                'глушение алертов, наставник, свой рабочий календарь. ' +
+                'Слой менеджера сильнее полосы стажа и портала.',
+            type: 'string',
+            default: '',
+        }),
+        aiAnalyticsDefinitions: setting({
+            code: 'ai_analytics_definitions',
+            name: 'JSON определений событий портала',
+            description:
+                'Что считается продуктивным звонком и презентацией, порог ' +
+                'длительности по типам, вложенность счетов, стадии решения, ' +
+                'рёбра воронки, слой нормы (tenure|level) и цвета «горячих». ' +
+                'Смена определения рвёт сравнимость рядов: сохранение ' +
+                'сдвигает comparableFrom вперёд.',
+            type: 'string',
+            default: '',
+        }),
+        aiAnalyticsEvents: setting({
+            code: 'ai_analytics_events',
+            name: 'JSON журнала событий портала',
+            description:
+                '[{"date":"2026-09-05","kind":"script_change",' +
+                '"note":"новый скрипт","source":"manual"}]: смена скрипта, ' +
+                'рубрики, цены, приход новичка и автособытие разрыва ряда ' +
+                'после смены определений. Журнал объясняет изломы трендов.',
+            type: 'string',
+            default: '',
+        }),
+        aiAnalyticsScoring: setting({
+            code: 'ai_analytics_scoring',
+            name: 'JSON потолков оценивания и стоп-фраз',
+            description:
+                '{"caps":[{"ruleCode":"no_next_step","condition":' +
+                '"nextStep.set = false","section":"CLOSING","maxScore":5,' +
+                '"flag":"no_next_step"}],"stopWords":["как-то так"]}: не ' +
+                'более 20 правил (maxScore 1–9) и 100 стоп-фраз. Меняет ' +
+                'шкалу оценки — сохранение сдвигает comparableFrom.',
+            type: 'string',
+            default: '',
+        }),
+        aiAnalyticsHypothesis: setting({
+            code: 'ai_analytics_hypothesis',
+            name: 'JSON гипотезы «качество → объём»',
+            description:
+                '{"pairs":[{"s":8,"n":30},{"s":5,"n":50}],' +
+                '"since":"2026-09-08","author":"447"}: сколько презентаций ' +
+                'нужно при качестве S. Не меньше двух пар, S ∈ [3; 10], ' +
+                'n > 0. Без неё режим гипотезы недоступен и план считается ' +
+                'только по объёму.',
+            type: 'string',
+            default: '',
+        }),
+        aiAnalyticsRosterConfirmedAt: setting({
+            code: 'ai_analytics_roster_confirmed_at',
+            name: 'Дата подтверждения состава и уровней (YYYY-MM-DD)',
+            description:
+                'Руководитель подтвердил, что список менеджеров и их уровни ' +
+                'верны. Дата не может быть в будущем. Учитывается только ' +
+                'при roster_confirm_required = true; иначе ростер считается ' +
+                'подтверждённым, если заполнен ai_analytics_levels.',
+            type: 'string',
+            default: '',
+        }),
     },
     [EnumPortalAppCode.eventSales]: {
         // --- Выключатель портального каталога анкет ПО ТИПУ СОБЫТИЯ.

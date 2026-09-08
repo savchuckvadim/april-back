@@ -24,6 +24,13 @@
 | `params/` | реестр 60 параметров модели, послойный `resolveParam`, `paramsVersion` (Фаза 2) |
 | `model/norms.index.ts` | экспозиция, κ, leave-one-out нормы, апостериоры рёбер (Фаза 2) |
 | `model/quality.index.ts` | качество за период, усадка разделов, форма/содержание, надёжность (Фаза 2) |
+| `contracts/quality-link.types.ts` | `QualityLink`, `AI_BETA_SOURCES` — режимы связи качества с исходом (Фаза 2) |
+| `contracts/ai-brief.contract.ts` | схема, лимиты и стоп-слова AI-резюме (Фаза 2) |
+| `settings/` | десять ключей `[kpiSales]`: типы, дефолты из реестра, парсеры, проверка, сдвиг сравнимой истории, контекст реестра (Фаза 2) |
+| `model/scoring-caps.ts`, `model/applicability.ts` | потолки оценок и стоп-фразы, применимость «тип × раздел» (Фаза 2) |
+| `model/style-*.ts` | профиль стиля менеджера: оси, усадка, подписи вместо ярлыков (Фаза 2) |
+| `model/episode*.ts`, `model/stage-theta.ts`, `model/edge-estimand.ts`, `model/timestamp-audit.ts` | эпизоды сделки, сцепка звонков, стадийные θ, трактовка ребра, плацебо-тест меток времени (Фаза 2) |
+| `model/{lag-cdf,forecast,capacity,target,ramp,daily-plan}.ts` | лаг F(d), прогноз, потолок полосы, каскад цели, ramp, план дня (Фаза 2) |
 
 `SalesAiAnalyticsModule` — пустая обёртка под будущие провайдеры.
 
@@ -114,6 +121,184 @@ magic string), `kappa_portal_to_global` = 0 (А.3, пула нет).
 - `reliability.ts` — `sigmaFromRetest`, `icc21`, `spearmanBrown`, `seOfMean`,
   `groupManagers` (группы above/level/below/unknown по 90 %-интервалам, **не**
   рейтинг) и `canOrderPair` (порядок пары только при n ≥ 50 и |Δ| > 2·SE).
+
+## Фаза 2, волна 2: качество → исход, готовность, резюме, настройки
+
+Продолжение фундамента Фазы 2. Всё ниже — по-прежнему чистая математика и
+контракты; **к ручкам не подключено ничего, кроме `settings/*`** (их читает
+`settings/save` в kpi-report-sales). Экспорт — из корневого `src/index.ts`.
+
+### Связь качества с исходом и рычаги (`model/qav.ts` и соседи, план §4.4, §4.9)
+
+- `contracts/quality-link.types.ts` — `QualityLink` с режимом
+  `betaSource: none | hypothesis | data` (`AI_BETA_SOURCES`), точки кривой
+  `p̂(S)`, множитель `QualityMultiplier` со шкалой `probability | exp-beta`.
+- `model/prng.ts` — детерминированная случайность: `fnv1a`, `seedOf`,
+  `mulberry32`, выборки `sampleNormal / Gamma / Beta / Binomial`. `Math.random`
+  и `Date.now` в модели запрещены, seed и время приходят параметром.
+- `model/quality-curve.ts` — интерполяция `p̂(S)` по логиту и её обращение
+  (`probabilityOnCurve`, `scoreForProbability`, `logit`, `expit`).
+- `model/qav.ts` — `buildQualityLink`, `qualityMultiplier` (отношение
+  вероятностей `p̂(S)/p̂(S_ref)`, а не odds; `exp(β·ΔS)` — только при редком
+  исходе и всегда с пометкой `rareOutcomeOnly`), `isoLine`,
+  `requiredQualityFor`, `requiredVolumeWithQuality`. В режимах `none` и
+  `hypothesis` множитель ровно 1 с `applied: false`, изо-линия — `null`,
+  план по объёму не меняется.
+- `model/beta-hypothesis.ts` — калькулятор «что если» на гипотезе портала:
+  `fitHypothesisBeta` (МНК по логарифмам), `hypothesisRequiredVolume`,
+  `hypothesisFan`, `hypothesisVsData`. β гипотезы в рычаги и планы не попадает.
+- `model/beta-power.ts` — мощность и гейт β: `betaStandardError`,
+  `presentationsForSe`, `betaGateCountdown` (счётчик «до оценки β» показывается
+  с первого дня), `betaGatePassed` (SE ≤ 0,07 **и** накрытие 1 наклоном
+  калибровки два месячных пересчёта подряд).
+- `model/funnel-gap.ts` + `model/funnel-gap-permutation.ts` — разложение разрыва
+  по рёбрам пути на апостериорах Beta с фиксированным seed
+  (`decomposeFunnelGap`: сумма вкладов равна `expectedGap`, компонента
+  `quality` появляется только при `betaSource: 'data'`, утечка скрыта при
+  `n < n_min_none`) и перестановочная проверка ложных утечек
+  (`permutationLeakRate` — ≤ 5 % на 200 перемешиваниях).
+- `model/recommend.ts` — отбор рычагов `AI_LEVERS`
+  (`volume | quality | checklist | pipeline | objection`) по критерию
+  `LB80(Δ) > 0`, не более `lever_max`, у каждого `basis` и `ruleCode`.
+- `model/evidence.ts` — лестница доказательности `E0…E3`
+  (`evidenceLevelFor`, `adviceAllowed`, `phraseFor`): на E1 формулировка без
+  императива «делай X вместо Y».
+
+### Готовность витрины и ядро AI-резюме (план §4.10, §6)
+
+- `model/readiness.ts` — **единственный источник правил режимов**
+  (`kpi-only → calibration → descriptive → norms → hypothesis`),
+  `buildReadiness(input, gates)`, гейт `rosterConfirmed` из
+  `roster_confirm_required` и `ai_analytics_roster_confirmed_at`,
+  `readinessReason`. `readiness.util.ts` в приложении становится тонким
+  адаптером (следующая волна).
+- `model/readiness-confidence.ts` — правило показа одного числа:
+  `confidenceForPeriod` / `metricForPeriod` (период до `comparableFrom` →
+  `confidence: none`, `reason: 'version-changed'`; `n < 8` → значение `null`).
+- `contracts/ai-brief.contract.ts` — строгая JSON-схема ответа LLM,
+  `AI_BRIEF_LIMITS` (140 / 30 слов / 5 буллетов / 4 КБ / 10 фактов),
+  стоп-слова `AI_BRIEF_FORBIDDEN` (включая «значимо»), каузальные обороты,
+  причины отбраковки и шаблона.
+- `model/brief-pack.ts` — сборка и обрезка пакета фактов по приоритету
+  «алерты → отклонения → финансы → дисциплина → телефония → качество данных»,
+  `packHash` = sha256 канонического JSON (устойчив к перестановке ключей).
+- `model/brief-numbers.ts` — **общая** нормализация чисел: presenter и факт-чек
+  обязаны печатать и сверять числа одними и теми же функциями, иначе приёмка
+  «≥ 95 % буллетов проходят факт-чек» не выполняется на живых ответах.
+- `model/brief-factcheck.ts` / `model/brief-template.ts` — разбор и факт-чек
+  ответа модели, откат на шаблон при отсутствии ключа LLM, исчерпанной квоте
+  или менее чем двух выживших буллетах.
+
+### Настройки портала (`src/settings`, план §3.3)
+
+Разбор десяти ключей `[kpiSales]` — чистые функции с контрактом
+«битый JSON → дефолт кода, без исключения»:
+
+| Файл | Что даёт |
+|---|---|
+| `settings/ai-settings.types.ts` | типы десяти блоков, `AI_SETTINGS_KEYS`, `AI_MANAGER_LEVELS`, `AI_FUNNEL_EDGE_CODES`, `AI_PORTAL_EVENT_KINDS`, `AI_SETTINGS_LIMITS` |
+| `settings/ai-settings.defaults.ts` | дефолты блоков **из реестра параметров** (`registryNumber/Text/Range`), `defaultDefinitions`, `defaultTargets`, `hotStageOf` без magic string |
+| `settings/ai-settings.parse.ts` | `parseAiLevels / Targets / Absences / ManagerParams / Events / RosterConfirmedAt` + `parseAiModelParams / Definitions / Scoring / Hypothesis` |
+| `settings/ai-settings.sanity.ts` | `settingsSanity(input): { blocking, warnings }` — блокирующая проверка значений, диапазоны берутся из `findParam(code).range`, а не литералами |
+| `settings/ai-settings.series.ts` | `diffAiSettings`, `nextSettingsComparableFrom`, `comparableFromEvents`, автособытие `settings_break`: поля с `breaksSeries` двигают границу сравнимой истории, отсутствия/цели/гипотеза/ростер — нет |
+| `settings/registry-context.builder.ts` | `buildRegistryContext(input): ParamContext` — слои портал → полоса стажа → менеджер, решение человека кладётся поверх оценки модели |
+
+## Фаза 2, волна 1 (добор): потолки и стиль, эпизоды, прогноз и план дня
+
+Третий кусок фундамента Фазы 2 — по-прежнему чистая математика без DI, Bitrix и
+Prisma: время и seed приходят параметром, `Math.random`/`Date.now` внутри нет.
+К ручкам не подключено, экспорт — из корневого `src/index.ts`.
+
+### Потолки, применимость и стиль (план §4.3, документ «профиль стиля» §2.4, 3.1)
+
+- `model/scoring-caps.ts` — правила `ai_analytics_scoring` (готовый тип
+  `AiScoringCapRule` из `settings/`): условие вида `nextStep.set = false`
+  разбирается детерминированным мини-парсером, при срабатывании балл раздела
+  режется до `maxScore` и пишется флаг (вход не мутируется), несработавшие
+  правила уходят в `skipped` с причиной. Стоп-фразы (`findStopWords`) только
+  **возвращаются списком** и балл не меняют.
+- `model/applicability.ts` — таблица «тип звонка × раздел рубрики»: не
+  настраивается и не хранится, а выводится из `CALL_REPORT_TYPE_PROFILES`
+  по порогу приора (30). «Презентация» в холодном звонке (приор 20)
+  неприменима и в знаменатель `n_j` не входит.
+- `model/style-*.ts` — профиль стиля менеджера: 8 осей
+  (`style-axes.const.ts`), 12 подписей-фактов вместо ярлыков
+  (`style-tags.const.ts`), leave-one-out норма коллег и σ_w с оффсетом полосы
+  стажа (`style-axis.ts`), апостериор τ на сетке и смесь усадок
+  (`style-shrink.ts`), сборка вектора, BH для яруса «похоже», гистерезис и
+  не более трёх подписей (`style-profile.ts`). Свои строки менеджера не
+  входят ни в норму коллег, ни в разброс.
+- `model/reliability-correction.ts` — `correctForReliability`: поправка
+  наклона на надёжность оценщика (`β_true = β_obs / r`); если надёжность не
+  измерена, величина эффекта **скрывается**, а не делится на догадку.
+  Реэкспортируется из `reliability.ts` — публичный вход не менялся.
+
+### Эпизоды сделки (план §4.1–4.2, §4.4, §4.8, §4.11)
+
+- `model/episode.ts` (+ `episode.types.ts`) — история стадий → эпизоды с
+  тремя видами конца: продвижение, провал, цензура (открытый эпизод —
+  `durationDays = null`). Коды стадий — `PBX_DEAL_SALES_BASE_STAGE_CODE`.
+- `model/episode-link.ts` — сцепка звонков с эпизодами: прямой путь по
+  сделке, связанная сделка, лид → сделка и запасной путь по компании и
+  контакту с уверенностью `high | low | none`; три звонка одного эпизода
+  дают **одну** продажу, а не три.
+- `model/stage-theta.ts` (+ типы) — стадийные θ Beta-биномиалом с усадкой,
+  факты сроков p25/p50/p90 (`stageQuantileOf`) и лаги продаж под `F(d)`.
+- `model/edge-estimand.ts` — выбор трактовки ребра: интенсивность ↔
+  вероятность с гистерезисом 80/70 по доле сцепленных звонков, инвариант
+  «один источник» (`s > n` → `mixed-sources`).
+- `model/timestamp-audit.ts` — плацебо-тест меток времени: доля продаж, у
+  которых оплата раньше презентации; выше порога — `flagged`.
+
+### Прогноз и план дня (план §4.8–4.9)
+
+- `model/lag-cdf.ts` — `F(d)` как распределение лага **среди проданных**
+  (cure-шкала `F(0) = 0 … F(∞) = 1`), Каплан–Мейер по окну, средняя зрелость
+  `F̄(D_rem)` и пол `f_min`. Валидатор реестра различает `lag_cdf_F`
+  (вся шкала) и безусловную `cif_sale_inf` (`[0,03; 0,3]`).
+- `model/forecast.ts` — ожидание от пайплайна по cure-формуле со знаменателем
+  `1 − θ·F(age)`, ожидание нового потока через `F̄`, `p50` и потолок
+  `G′`. Без истории стадий возвращается `null` с причиной
+  `no-stage-history`, а не ноль.
+- `model/capacity.ts` — потолок полосы: квантиль дневного темпа (p90) с
+  гейтом «≥ 3 менеджера × 3 месяца без proxy», иначе дефолт реестра; плюс
+  связующее ограничение и бюджет времени дня.
+- `model/target.ts`, `model/ramp.ts` — каскад цели (план → override → цель
+  уровня → медиана полосы) с флагами «мечта» и «недостижимо по объёму»;
+  ramp по стажу применяется **к цели**, не к норме.
+- `model/daily-plan.ts` (+ `daily-plan.types.ts`) — обратная задача плана
+  на день: `N_req`, разворот по путям воронки, потолок `plan_day_ceiling`
+  (догонять месячный недобор за три дня — не план) и бюджет времени.
+- `model/quantile.util.ts` — общий квантиль (тип 7) для `capacity.ts` и
+  `stage-theta.ts`: одна формула на библиотеку, реэкспортируется из
+  `capacity.ts`.
+
+Источник производственного календаря портала для экспозиции и `day_hours` —
+домен `calendar` в `@lib/bitrix` (`bitrix.calendar.settingsGetSafe()`,
+деградация без исключения наружу).
+
+### Три звонка недели для слепой проверки (план §12 и §4.11)
+
+`model/rop-mark.ts` — подбор звонков недели, которые руководитель слушает
+сам: `pickRopMarkCalls(candidates, { seed, limit = 3 })` берёт один звонок
+с неуверенным типом (`uncertain_type`: `other`, `irrelevant`, пустой или
+незнакомый код — `isUncertainCallType`), один с лучшим баллом
+(`best_score` — это и есть проверка на подыгрывание метрике) и один
+случайный (`random`). Правила: **не больше одного звонка на менеджера,
+пока есть подходящие кандидаты у других**; кандидатов меньше трёх —
+возвращается столько, сколько есть (не ошибка); зерно — только
+`ropMarkSeed(domain, weekKey)`, поэтому повтор подбора за ту же неделю
+даёт тот же набор, а порядок входных строк на результат не влияет
+(кандидаты приводятся к каноническому порядку и дедуплицируются).
+
+Форма записей — в `contracts/feedback.types.ts`: вид `rop_mark` в
+`AI_ANALYTICS_FEEDBACK_KINDS`, `AiAnalyticsRopMarkPayload` (метка: `agree`,
+`ropScore`, `sections`, `why`, `howTo`, `reason`, `blind`, `weekKey`) и
+`AiAnalyticsRopMarkPickPayload` (подбор недели: `weekKey`, `seed`,
+`generatedAt`, `calls`). **Слепой режим — свойство ручки приложения, а не
+звонка:** библиотека только подбирает и описывает форму, а прятать оценку
+AI до сохранения метки умеет ручка `ai-analytics` (см. её README);
+карточку разбора в Битрикс руководитель может открыть и увидеть оценку.
 
 ## Тесты
 

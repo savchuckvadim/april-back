@@ -1,4 +1,20 @@
 import { CallReportCallTypeCode } from '@lib/call-lib';
+import {
+    PBX_DEAL_SALES_BASE_STAGE_CODE,
+    PbxDealSalesBaseStageCode,
+} from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
+import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
+
+/** Коды воронок как строки — сравнение с pbx-кодом паспорта (не magic string). */
+const CATEGORY_CODE_BASE: string = PbxDealCategoryCodeEnum.sales_base;
+const CATEGORY_CODE_PRESENTATION: string =
+    PbxDealCategoryCodeEnum.sales_presentation;
+
+/** Ожидаемый тип звонка для одной стадии. */
+interface StagePrior {
+    callType: CallReportCallTypeCode;
+    strength: 'strong' | 'weak';
+}
 
 /** Ожидаемый тип звонка по данным CRM — до какого-либо LLM. */
 export interface CallTypePrior {
@@ -26,30 +42,80 @@ export interface CallTypePriorInput {
 
 /**
  * Стадия основной воронки → этап разговора. Ключи — pbx-коды стадий
- * (PBX_DEAL_SALES_BASE_STAGES); сила приора отражает, насколько стадия
- * фиксирует содержание звонка.
+ * (PBX_DEAL_SALES_BASE_STAGE_CODE, никаких строк-литералов); сила приора
+ * отражает, насколько стадия фиксирует содержание звонка.
+ *
+ * ФИНАЛЫ ЗАПОЛНЕНЫ ОБЯЗАТЕЛЬНО (прод 08.09.2026): по закрытой сделке приора
+ * не было вовсе, и классификатор скатывался в «Другое» — а звонок по
+ * отказной сделке остаётся рабочим разговором. Тип Record<…> по лестнице
+ * стадий: забытая стадия — ошибка компиляции, а не тихая дыра.
  */
-const BASE_STAGE_PRIORS: Record<
-    string,
-    { callType: CallReportCallTypeCode; strength: 'strong' | 'weak' }
-> = {
-    sales_new: { callType: 'call', strength: 'weak' },
-    sales_cold: { callType: 'cold', strength: 'weak' },
-    sales_warm: { callType: 'call', strength: 'weak' },
-    sales_pres: { callType: 'presentation', strength: 'strong' },
-    sales_refine: { callType: 'refine', strength: 'strong' },
-    sales_offer_create: { callType: 'decision', strength: 'weak' },
-    sales_document_send: { callType: 'decision', strength: 'weak' },
-    sales_in_progress: { callType: 'payment', strength: 'weak' },
-    sales_money_await: { callType: 'payment', strength: 'strong' },
-    sales_supply: { callType: 'payment', strength: 'weak' },
+const BASE_STAGE_PRIORS: Record<PbxDealSalesBaseStageCode, StagePrior> = {
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.new]: {
+        callType: 'call',
+        strength: 'weak',
+    },
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.cold]: {
+        callType: 'cold',
+        strength: 'weak',
+    },
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.warm]: {
+        callType: 'call',
+        strength: 'weak',
+    },
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.presentation]: {
+        callType: 'presentation',
+        strength: 'strong',
+    },
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.refine]: {
+        callType: 'refine',
+        strength: 'strong',
+    },
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.offerCreate]: {
+        callType: 'decision',
+        strength: 'weak',
+    },
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.documentSend]: {
+        callType: 'decision',
+        strength: 'weak',
+    },
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.inProgress]: {
+        callType: 'payment',
+        strength: 'weak',
+    },
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.moneyAwait]: {
+        callType: 'payment',
+        strength: 'strong',
+    },
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.supply]: {
+        callType: 'payment',
+        strength: 'weak',
+    },
+    // Финалы. Сделка закрыта — разговор уже состоялся, и «Другое» для него
+    // почти всегда ошибка. Приоры СЛАБЫЕ: закрытая стадия говорит об исходе
+    // сделки, а не о содержании конкретного звонка.
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.success]: {
+        callType: 'payment',
+        strength: 'weak',
+    },
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.fail]: {
+        callType: 'decision',
+        strength: 'weak',
+    },
+    /** «Не состоялась» — сорвавшийся контакт, но рабочий звонок. */
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.apology]: {
+        callType: 'call',
+        strength: 'weak',
+    },
+    /** «Не ЦА» — отсев на квалификации, ранний контакт. */
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.notCa]: {
+        callType: 'call',
+        strength: 'weak',
+    },
 };
 
 /** Стадия воронки презентаций → этап разговора. */
-const PRESENTATION_STAGE_PRIORS: Record<
-    string,
-    { callType: CallReportCallTypeCode; strength: 'strong' | 'weak' }
-> = {
+const PRESENTATION_STAGE_PRIORS: Record<string, StagePrior> = {
     sales_presentation_new: { callType: 'call', strength: 'weak' },
     sales_presentation_warm: { callType: 'call', strength: 'weak' },
     sales_presentation_presentation: {
@@ -97,10 +163,10 @@ export function resolveCallTypePrior(
     }
     if (input.entityType !== 'deal' || !input.dealStageCode) return null;
 
-    const table =
-        input.dealCategoryCode === 'sales_presentation'
+    const table: Readonly<Record<string, StagePrior>> | null =
+        input.dealCategoryCode === CATEGORY_CODE_PRESENTATION
             ? PRESENTATION_STAGE_PRIORS
-            : input.dealCategoryCode === 'sales_base' ||
+            : input.dealCategoryCode === CATEGORY_CODE_BASE ||
                 input.dealCategoryCode === null
               ? BASE_STAGE_PRIORS
               : null;

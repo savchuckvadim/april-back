@@ -38,7 +38,7 @@ describe('CallReportSmartWriterService', () => {
         );
         const itemId = await writer.addItem({
             activityId: '101',
-            dealId: 555,
+            mainDealId: 555,
             companyId: 33,
             contactId: 44,
             managerId: 7,
@@ -420,7 +420,6 @@ describe('CallReportSmartWriterService', () => {
 
         await writer.addItem({
             activityId: '101',
-            dealId: 555,
             companyId: 33,
             mainDealId: 555,
         });
@@ -463,7 +462,6 @@ describe('CallReportSmartWriterService', () => {
 
         await writer.addItem({
             activityId: '101',
-            dealId: 555,
             companyId: 33,
             mainDealId: 555,
         });
@@ -502,6 +500,48 @@ describe('CallReportSmartWriterService', () => {
         error.mockRestore();
     });
 
+    /**
+     * Решение владельца 08.09.2026: родителем элемента разбора может быть
+     * ТОЛЬКО сделка воронки «ОП Основная» (mainDealId). Владелец звонка
+     * любой воронки в parentId2 больше не подставляется.
+     */
+    it('родитель элемента — сделка «ОП Основная», а не владелец звонка', async () => {
+        const bitrix = makeBitrix();
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+
+        await writer.addItem({ activityId: '101', mainDealId: 175244 });
+
+        const fields = (
+            bitrix.item.add.mock.calls[0] as unknown[]
+        )[1] as Record<string, unknown>;
+        expect(fields.parentId2).toBe(175244);
+        expect(fields.ufCrm128DealMain).toBe('175244');
+    });
+
+    it('основной сделки нет — родителя-сделки нет вовсе (связь с лидом остаётся)', async () => {
+        const bitrix = makeBitrix();
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+
+        await writer.addItem({
+            activityId: '101',
+            leadId: 900,
+            companyId: 33,
+        });
+
+        const fields = (
+            bitrix.item.add.mock.calls[0] as unknown[]
+        )[1] as Record<string, unknown>;
+        expect(fields).not.toHaveProperty('parentId2');
+        expect(fields.parentId1).toBe(900);
+        expect(fields.companyId).toBe(33);
+    });
+
     it('дописывающий проход (без паспорта звонка) НЕ перезаписывает название элемента', async () => {
         const bitrix = makeBitrix();
         bitrix.item.list.mockResolvedValue({ result: { items: [{ id: 42 }] } });
@@ -513,7 +553,7 @@ describe('CallReportSmartWriterService', () => {
         // Ревизор/сверка: связи и рекомендации есть, паспорта звонка нет.
         await writer.updateExisting({
             activityId: '101',
-            dealId: 555,
+            mainDealId: 555,
             recommendations: 'Отправить КП',
         });
 

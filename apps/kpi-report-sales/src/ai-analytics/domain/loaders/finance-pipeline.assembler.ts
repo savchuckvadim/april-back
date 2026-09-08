@@ -59,6 +59,20 @@ export function stageOrderOf(stageCode: string): number {
     );
 }
 
+/**
+ * «Горячие» сделки — открытые сделки со стадией не ниже порога
+ * (`sales_in_progress`, order 8 — решение владельца А.2). Порог режется
+ * в памяти поверх фабрики финансов с широким порогом `presentation`:
+ * набор порогов sales-finance (`SALES_HOT_THRESHOLDS`) не меняем, иначе
+ * разъедутся числа вкладки «Финансы» и share-link.
+ */
+export function hotDealsByStageOrder<T extends { stageCode: string }>(
+    deals: readonly T[],
+    minStageOrder: number = getSalesBaseStageOrder(AI_ANALYTICS_HOT_STAGE_CODE),
+): T[] {
+    return deals.filter(deal => stageOrderOf(deal.stageCode) >= minStageOrder);
+}
+
 export function emptyHotByColor(): AiFinanceHotByColor {
     const counters = {} as AiFinanceHotByColor;
     for (const key of AI_ANALYTICS_COMPANY_COLOR_KEYS) counters[key] = 0;
@@ -217,7 +231,7 @@ export function toPipelineFacts(
     deals: readonly PipelineDeal[],
     hotOrder: number,
 ): AiFinancePipelineFacts {
-    const hot = deals.filter(deal => stageOrderOf(deal.stageCode) >= hotOrder);
+    const hot = hotDealsByStageOrder(deals, hotOrder);
     return {
         pipelineFromStage: sumPipeline(deals),
         hotEvents: hot.length,

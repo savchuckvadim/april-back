@@ -20,6 +20,9 @@ const row = (overrides: Record<string, unknown>) => ({
     entityId: '555',
     text: 'текст',
     status: 'done',
+    // Владелец звонка из телефонии — источник истины для «Ответственного»
+    // (у элемента прод-случая стоял чужой сотрудник 317).
+    userId: '222',
     ...overrides,
 });
 
@@ -42,6 +45,12 @@ const makeDeps = (options?: {
     /** Элементы списков отчётности (ответ listItem.get для обоих списков). */
     listItems?: Record<string, unknown>[];
     verdict?: Record<string, unknown>;
+    /**
+     * Текущее состояние смарт-элемента (ответ crm.item.list по xmlId) —
+     * по нему ревизор считает, что реально изменилось. По умолчанию у
+     * элемента связей нет вовсе (карточка-сирота).
+     */
+    smartItem?: Record<string, unknown> | null;
 }) => {
     const timeline = { addTimelineComment: jest.fn().mockResolvedValue({}) };
     const listItemGet = jest
@@ -63,9 +72,27 @@ const makeDeps = (options?: {
         })),
         getIdByCodeFieldList: jest.fn(() => ({ bitrixId: 'PROPERTY_77' })),
     };
+    // Текущее состояние элемента для пересчёта связей (crm.item.list).
+    const itemList = jest.fn().mockResolvedValue({
+        result: {
+            items:
+                options?.smartItem === null
+                    ? []
+                    : [
+                          options?.smartItem ?? {
+                              id: '580',
+                              xmlId: 'aicall_102',
+                          },
+                      ],
+        },
+    });
     const pbxService = {
         init: jest.fn().mockResolvedValue({
-            bitrix: { timeline, listItem: { get: listItemGet } },
+            bitrix: {
+                timeline,
+                listItem: { get: listItemGet },
+                item: { list: itemList },
+            },
             PortalModel: portalModel,
         }),
     };
@@ -162,6 +189,7 @@ const makeDeps = (options?: {
         addItem,
         updateExisting,
         timeline,
+        itemList,
     };
 };
 
@@ -193,14 +221,14 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
                 activityId: '102',
                 riskFlags: ['promise'],
                 coachingPriority: 'planned',
-                // Долив CRM-связей из паспорта владельца звонка: НАТИВНАЯ
-                // связь (dealId → parentId2) наравне с crm-полем DEAL_MAIN —
-                // без неё «долив» чинил только компанию/контакт, а сделка у
-                // элемента оставалась непривязанной.
-                dealId: 555,
+                // Пересчёт связей и ОТВЕТСТВЕННОГО у существующего
+                // элемента: родитель-сделка ставится из «ОП Основная»
+                // (mainDealId), сделка-владелец звонка сюда не идёт, а
+                // ответственный берётся от владельца звонка (222).
                 mainDealId: 555,
                 companyId: 33,
                 contactId: 44,
+                managerId: 222,
             }),
         );
         const written = (
@@ -217,6 +245,77 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
                 COMMENT: expect.stringContaining('Ночная ревизия') as string,
             }),
         );
+    });
+
+    /**
+     * РЕМОНТ УЖЕ СОЗДАННЫХ КАРТОЧЕК (решение владельца 08.09.2026): у
+     * элемента прод-случая стоял чужой ответственный (317). Ревизор обязан
+     * пересчитать его на владельца звонка из телефонии — раньше managerId
+     * в обновление не передавался вовсе.
+     */
+    it('пересчитывает ОТВЕТСТВЕННОГО существующего элемента на владельца звонка', async () => {
+        const { service, updateExisting } = makeDeps({
+            smartItem: {
+                id: '580',
+                xmlId: 'aicall_102',
+                // Связи уже верные — трогать их не за чем.
+                parentId2: '555',
+                companyId: '33',
+                contactId: '44',
+                ufCrm128DealMain: '555',
+                // …а ответственный чужой (из сделки, а не от телефонии).
+                assignedById: '317',
+                ufCrm128Manager: '317',
+            },
+        });
+
+        await service.runForDomain(DOMAIN, new Date(0), new Date());
+
+        const input = (
+            updateExisting.mock.calls[0] as [Record<string, unknown>]
+        )[0];
+        expect(input.managerId).toBe(222);
+        // Неизменившиеся поля в update не уходят: лишняя запись пишет
+        // историю элемента и перетирает правки руками.
+        expect(input).not.toHaveProperty('mainDealId');
+        expect(input).not.toHaveProperty('companyId');
+        expect(input).not.toHaveProperty('contactId');
+    });
+
+    it('связи и ответственный актуальны — в update уходит только вердикт', async () => {
+        const { service, updateExisting } = makeDeps({
+            smartItem: {
+                id: '580',
+                xmlId: 'aicall_102',
+                parentId2: '555',
+                companyId: '33',
+                contactId: '44',
+                assignedById: '222',
+                ufCrm128DealMain: ['D_555'],
+                ufCrm128Manager: '222',
+            },
+        });
+
+        await service.runForDomain(DOMAIN, new Date(0), new Date());
+
+        const input = (
+            updateExisting.mock.calls[0] as [Record<string, unknown>]
+        )[0];
+        expect(input).not.toHaveProperty('managerId');
+        expect(input).not.toHaveProperty('mainDealId');
+        expect(input.recommendations).toContain('Отправить КП до пятницы');
+    });
+
+    it('смарт-элемента у звонков нет — обновлять нечего, вердикт в таймлайне', async () => {
+        const { service, updateExisting, addItem, timeline } = makeDeps({
+            smartItem: null,
+        });
+
+        await service.runForDomain(DOMAIN, new Date(0), new Date());
+
+        expect(updateExisting).not.toHaveBeenCalled();
+        expect(addItem).not.toHaveBeenCalled();
+        expect(timeline.addTimelineComment).toHaveBeenCalled();
     });
 
     it('кандидаты списков уходят в LLM, валидная привязка пишется в смарт и таймлайн', async () => {

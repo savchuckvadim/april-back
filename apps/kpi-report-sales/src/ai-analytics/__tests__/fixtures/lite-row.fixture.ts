@@ -5,6 +5,10 @@ import {
     SettingsLoader,
 } from '../../domain/loaders/settings.loader';
 import { DEFAULT_WORK_CALENDAR } from '@lib/sales-ai-analytics';
+import {
+    defaultDefinitions,
+    defaultTargets,
+} from '@lib/sales-ai-analytics/settings/ai-settings.defaults';
 
 /** Lite-строка звонка с разбором; переопределяй нужные поля. */
 export function liteRow(
@@ -58,6 +62,17 @@ export function portalSettings(
         poolOptIn: false,
         poolConsentAt: null,
         experimentsEnabled: false,
+        // Блоки Фазы 2: дефолты кода (портал ничего не решал).
+        levels: [],
+        targets: defaultTargets(),
+        absences: {},
+        modelParams: {},
+        managerParams: {},
+        definitions: defaultDefinitions(),
+        events: [],
+        scoring: { caps: [], stopWords: [] },
+        hypothesis: null,
+        rosterConfirmedAt: '',
         ...overrides,
     };
 }

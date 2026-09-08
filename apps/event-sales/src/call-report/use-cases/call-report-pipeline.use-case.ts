@@ -447,7 +447,13 @@ export class CallReportPipelineUseCase {
         resume: string,
     ): Promise<void> {
         const { bitrix } = await this.pbxService.init(payload.domain);
-        const responsibleId = await this.getResponsibleId(bitrix, bx, payload);
+        // Автор записи — ТОТ, КТО ЗВОНИЛ (телефония), как и менеджер строки
+        // в БД выше. Ответственный сущности — запасной вариант: у сделки
+        // чужой воронки это чужой сотрудник, и резюме публиковалось от его
+        // имени (прод-баг 08.09.2026).
+        const responsibleId =
+            payload.callerUserId ??
+            (await this.getResponsibleId(bitrix, bx, payload));
         const comment =
             `📞 [b]AI-резюме звонка[/b] (активность #${payload.activityId})\n\n` +
             `${resume.slice(0, 3000)}${resume.length > 3000 ? '...' : ''}`;

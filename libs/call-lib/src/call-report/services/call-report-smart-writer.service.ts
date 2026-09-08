@@ -3,7 +3,7 @@ import { BitrixService, BitrixOwnerTypeId } from '@lib/bitrix';
 import { buildCrmRefValue } from '@lib/bitrix/domain/crm/utils/crm-ref-format.util';
 import { IBXItem } from '@lib/bitrix/domain/crm/item/interface/item.interface';
 import {
-    buildCallReportItemFieldName,
+    callReportSmartUfName,
     CALL_REPORT_SECTION_CODES,
     CALL_REPORT_SMART_FIELDS,
     CALL_REPORT_SMART_TITLE,
@@ -39,7 +39,6 @@ export interface CallReportListItemLink {
 /** Данные для записи элемента смарта «AI-анализ звонков». */
 export interface CallReportSmartItemInput {
     activityId: string;
-    dealId?: number;
     /** Звонок по лиду (entityType='lead'): нативная связь parentId1. */
     leadId?: number;
     companyId?: number;
@@ -103,6 +102,17 @@ export interface CallReportSmartItemInput {
     auditPoints?: string;
     auditSummary?: string;
     /**
+     * ПРИЧИНА ОТКАЗА, четыре слоя (решение владельца 08.09.2026):
+     * что услышал AI в разговоре (пишет разбор), что зафиксировал менеджер
+     * в полях карточки и записях отчётности, флаг «не зафиксирована» и
+     * объяснение сверки. Поля менеджера система НЕ переписывает — только
+     * фиксирует расхождение.
+     */
+    refusalReasonAi?: string;
+    refusalReasonManager?: string;
+    refusalMismatch?: boolean;
+    refusalReasonNote?: string;
+    /**
      * Гранулярный «Хвост» — зеркало анкеты менеджера (op_xvost_*): пять
      * блоков по теме. Состав переписан 01.09.2026: было три галочки и две
      * даты, стало пять смысловых блоков, и пункты обязаны совпадать с
@@ -146,7 +156,17 @@ export interface CallReportSmartItemInput {
     speechAnalysis?: string;
     employeeRecommendations?: string;
     sections?: CallReportSectionInput[];
-    /** Связи с воронками (id сделок). */
+    /**
+     * Связи с воронками (id сделок).
+     *
+     * `mainDealId` — сделка воронки «ОП Основная», подтверждённая через
+     * PortalModel (CallReportDealFamilyService). Она же идёт в НАТИВНУЮ
+     * связь элемента `parentId{DEAL}`: решение владельца 08.09.2026 —
+     * родителем элемента разбора может быть только сделка основной
+     * воронки. Владелец звонка (дочерняя презентация, сделка чужой
+     * воронки) в родители больше не подставляется, и если основной сделки
+     * не нашлось — элемент остаётся БЕЗ связи со сделкой.
+     */
     mainDealId?: number;
     presentationDealId?: number;
     xoDealId?: number;
@@ -821,8 +841,12 @@ export class CallReportSmartWriterService {
         }
 
         // — Нативные связи смарта (работают при relations.parent у типа) —
-        if (input.dealId) {
-            fields[`parentId${BitrixOwnerTypeId.DEAL}`] = input.dealId;
+        // РОДИТЕЛЬ-СДЕЛКА — только «ОП Основная» (решение владельца
+        // 08.09.2026): раньше сюда шёл владелец звонка ЛЮБОЙ воронки, и в
+        // карточке разбора стояла чужая сделка. Не нашли основную —
+        // родителя не ставим вовсе (пусто честнее неверной связи).
+        if (input.mainDealId) {
+            fields[`parentId${BitrixOwnerTypeId.DEAL}`] = input.mainDealId;
         }
         if (input.leadId) {
             fields[`parentId${BitrixOwnerTypeId.LEAD}`] = input.leadId;
@@ -946,6 +970,19 @@ export class CallReportSmartWriterService {
         this.setBoolUf(fields, 'AUDIT_MISMATCH', input.auditMismatch);
         this.setShortTextUf(fields, 'AUDIT_POINTS', input.auditPoints);
         this.setShortTextUf(fields, 'AUDIT_SUMMARY', input.auditSummary);
+        // Причина отказа: AI · менеджер · расхождение · объяснение.
+        this.setShortTextUf(fields, 'REFUSAL_REASON_AI', input.refusalReasonAi);
+        this.setShortTextUf(
+            fields,
+            'REFUSAL_REASON_MANAGER',
+            input.refusalReasonManager,
+        );
+        this.setBoolUf(fields, 'REFUSAL_MISMATCH', input.refusalMismatch);
+        this.setShortTextUf(
+            fields,
+            'REFUSAL_REASON_NOTE',
+            input.refusalReasonNote,
+        );
         this.setUf(fields, 'PRODUCTS_OFFERED', input.productsOffered);
         this.setUf(fields, 'OBJECTIONS', input.objections);
         this.setUf(fields, 'OBJECTIONS_HANDLING', input.objectionsHandling);
@@ -1182,15 +1219,8 @@ export class CallReportSmartWriterService {
     }
 
     private ufName(code: string): string {
-        // Канонический ключ — из зеркала PortalDB/PortalModel (bitrixCamelId);
-        // fallback — сборка по typeId (id crm.type.list — основа UF-имён,
-        // НЕ entityTypeId; см. доки userfieldconfig).
-        return (
-            this.smartInfo.ufKeyByCode?.[code] ??
-            buildCallReportItemFieldName(
-                this.smartInfo.typeId ?? this.smartInfo.entityTypeId,
-                code,
-            )
-        );
+        // Общий с читателем связей резолв ключа (call-report-smart.config):
+        // зеркало PortalDB/PortalModel, иначе сборка по typeId.
+        return callReportSmartUfName(this.smartInfo, code);
     }
 }

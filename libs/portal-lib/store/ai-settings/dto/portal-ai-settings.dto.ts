@@ -53,6 +53,7 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         this.weeklyReportFolderId = source.weeklyReportFolderId ?? null;
         this.weeklyReportDelivery = source.weeklyReportDelivery ?? null;
         this.complianceReviewEnabled = source.complianceReviewEnabled ?? null;
+        this.ownOrgNames = source.ownOrgNames ?? null;
     }
 
     @ApiProperty({
@@ -333,6 +334,18 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         nullable: true,
     })
     complianceReviewEnabled: boolean | null;
+
+    @ApiProperty({
+        description:
+            'Названия НАШИХ организаций на этом портале: как менеджеры ' +
+            'представляются клиенту («Альфа-центр», «Апрель»). Разбор ' +
+            'считает представление одним из этих имён нормой и не снижает ' +
+            'за него оценку. Пусто — прежнее поведение.',
+        example: ['Альфа-центр', 'Апрель'],
+        type: [String],
+        nullable: true,
+    })
+    ownOrgNames: string[] | null;
 }
 
 /**
@@ -641,4 +654,18 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
     @IsOptional()
     @IsBoolean()
     complianceReviewEnabled?: boolean | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Названия наших организаций (как менеджеры представляются ' +
+            'клиенту). Пустой список или null — сбросить: разбор перестанет ' +
+            'считать эти имена своими.',
+        example: ['Альфа-центр', 'Апрель'],
+        type: [String],
+        nullable: true,
+    })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    ownOrgNames?: string[] | null;
 }

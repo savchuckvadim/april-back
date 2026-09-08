@@ -1,33 +1,23 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { RequesterAccess } from '../domain/access/perimeter.util';
-import { SettingsSaveUseCase } from '../domain/use-cases/settings-save.use-case';
-import { settingsLoaderWith } from './fixtures/lite-row.fixture';
+import {
+    lastArg,
+    patchOf,
+    settingsSaveHarness,
+} from './fixtures/settings-save.fixture';
 
 /** 07.09.2026 00:30 МСК = 06.09 21:30Z — в TZ портала уже 7-е. */
 const NOW = new Date('2026-09-06T21:30:00Z');
 const DOMAIN = 'april.bitrix24.ru';
 
-function makeUseCase() {
-    const store = {
-        saveLevels: jest
-            .fn()
-            .mockResolvedValue({ id: '90210', savedAt: NOW.toISOString() }),
-    };
-    const cache = { resetByPattern: jest.fn().mockResolvedValue(2) };
-    const useCase = new SettingsSaveUseCase(
-        settingsLoaderWith(),
-        store as never,
-        cache as never,
-    );
-    return { useCase, store, cache };
-}
-
 const op: RequesterAccess = { role: 'op', visibleManagerIds: ['10', '20'] };
 const base = { domain: DOMAIN, requesterUserId: '447' };
 
-describe('SettingsSaveUseCase', () => {
-    it('сохраняет уровни в стор и сбрасывает overview/attention домена', async () => {
-        const { useCase, store, cache } = makeUseCase();
+describe('SettingsSaveUseCase: уровни (переезд на ключ схемы)', () => {
+    it('пишет уровни в ключ схемы и сбрасывает overview/attention/model/plan', async () => {
+        const { useCase, savePortalSettings, resetByPattern } =
+            settingsSaveHarness();
+
         const result = await useCase.execute(
             {
                 ...base,
@@ -39,34 +29,43 @@ describe('SettingsSaveUseCase', () => {
             op,
             NOW,
         );
-        expect(store.saveLevels).toHaveBeenCalledWith(
-            DOMAIN,
-            [
-                { managerId: 10, level: 'senior', since: '2025-03-01' },
-                { managerId: 20, level: 'junior', since: null },
-            ],
-            '447',
-            NOW,
-        );
-        expect(cache.resetByPattern).toHaveBeenCalledWith(
-            `sales-ai-analytics:v1:${DOMAIN}:overview:*`,
-        );
-        expect(cache.resetByPattern).toHaveBeenCalledWith(
-            `sales-ai-analytics:v1:${DOMAIN}:attention:*`,
-        );
-        expect(result).toEqual({
+
+        expect(savePortalSettings).toHaveBeenCalledTimes(1);
+        expect(lastArg(savePortalSettings, 0)).toBe(DOMAIN);
+        expect(Object.keys(patchOf(savePortalSettings))).toEqual(['levels']);
+        const savedLevels = JSON.parse(
+            patchOf(savePortalSettings).levels,
+        ) as unknown;
+        expect(savedLevels).toEqual([
+            {
+                managerId: 10,
+                level: 'senior',
+                since: '2025-03-01',
+                source: 'manual',
+            },
+            { managerId: 20, level: 'junior', since: null, source: 'manual' },
+        ]);
+        for (const scope of ['overview', 'attention', 'model', 'plan']) {
+            expect(resetByPattern).toHaveBeenCalledWith(
+                `sales-ai-analytics:v1:${DOMAIN}:${scope}:*`,
+            );
+        }
+        expect(result).toMatchObject({
             id: '90210',
             levels: [
                 { managerId: 10, level: 'senior', since: '2025-03-01' },
                 { managerId: 20, level: 'junior' },
             ],
             savedAt: NOW.toISOString(),
-            resetCount: 4,
+            resetCount: 8,
+            breaksSeries: [],
         });
+        expect(result.paramsVersion).toMatch(/^[0-9a-f]{64}$/);
     });
 
-    it('since = сегодня в TZ портала допустим, since > today → 400, стор не вызывается', async () => {
-        const { useCase, store } = makeUseCase();
+    it('since = сегодня в TZ портала допустим, since > today → 400 без записи', async () => {
+        const { useCase, savePortalSettings } = settingsSaveHarness();
+
         await expect(
             useCase.execute(
                 {
@@ -91,11 +90,12 @@ describe('SettingsSaveUseCase', () => {
                 NOW,
             ),
         ).rejects.toBeInstanceOf(BadRequestException);
-        expect(store.saveLevels).toHaveBeenCalledTimes(1);
+        expect(savePortalSettings).toHaveBeenCalledTimes(1);
     });
 
     it('managerId вне периметра → 403; дубль managerId → 400', async () => {
-        const { useCase, store } = makeUseCase();
+        const { useCase, savePortalSettings } = settingsSaveHarness();
+
         await expect(
             useCase.execute(
                 { ...base, levels: [{ managerId: 30, level: 'middle' }] },
@@ -116,18 +116,21 @@ describe('SettingsSaveUseCase', () => {
                 NOW,
             ),
         ).rejects.toBeInstanceOf(BadRequestException);
-        expect(store.saveLevels).not.toHaveBeenCalled();
+        expect(savePortalSettings).not.toHaveBeenCalled();
     });
 
-    it('cup видит всех; пустой список — сброс к дефолту; ошибка кэша не отменяет сохранение', async () => {
-        const { useCase, cache } = makeUseCase();
-        cache.resetByPattern.mockRejectedValue(new Error('redis down'));
+    it('cup видит всех; пустой список — сброс; ошибка кэша не отменяет запись', async () => {
+        const { useCase, resetByPattern, create } = settingsSaveHarness();
+        resetByPattern.mockRejectedValue(new Error('redis down'));
+
         const result = await useCase.execute(
             { ...base, levels: [] },
             { role: 'cup', visibleManagerIds: null },
             NOW,
         );
+
         expect(result.levels).toEqual([]);
         expect(result.resetCount).toBe(0);
+        expect(create).toHaveBeenCalledTimes(1);
     });
 });

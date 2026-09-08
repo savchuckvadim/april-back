@@ -133,7 +133,7 @@ TZ портала, `from ≤ to`, не длиннее 3 мес. — валида
 | `ai-analytics/overview` | очередь + WS + кэш | периметр | `AiOverviewResponseDto {status, requestKey, jobId?, data?: AiOverviewDto, message?}` |
 | `ai-analytics/attention` | sync над кэшем обзора | периметр | `AiAttentionResponseDto {…, data?: AiAttentionDto {from, to, items[], managersConsidered}}` |
 | `ai-analytics/by-type` | sync над кэшем обзора | периметр | `AiByTypeResponseDto {…, data?: AiByTypeDto {callType, title, layout, period, wide, long, totals, totalsByType, objections}}`; `callType` — `all` (все типы вместе), тип из `CALL_REPORT_CALL_TYPE_CODES` либо `objections` (`AI_ANALYTICS_BY_TYPE_CODES`, `all` первым); `layout: wide` (по умолчанию) / `long` |
-| `ai-analytics/settings/save` | sync | только `cup`/`op` | `AiSettingsSaveResponseDto {status: ready, requestKey, data: {id, levels[], savedAt, resetCount}}` |
+| `ai-analytics/settings/save` | sync | только `cup`/`op` | `AiSettingsSaveResponseDto {status: ready, requestKey, data: {id, levels[], savedAt, resetCount, comparableFrom, paramsVersion, breaksSeries[], warnings[]}}` |
 
 **Конверт обзора.** `requestKey` = ключ кэша = `jobId`:
 `sales-ai-analytics:v1:{domain}:overview:{from}_{to}:{usersKey}:{0|1}`, где
@@ -194,13 +194,14 @@ primaryKpi, finance}`, тип строки — `cell.callType`.
 `objections = null`. Сборка — `domain/presenter/by-type.presenter.ts`
 (`pairsOf` общий для одиночного типа и `all`).
 
-**settings/save** (`domain/use-cases/settings-save.use-case.ts`): полный список
-`levels[] {managerId, level: junior|middle|senior, since?}` — каждый `managerId`
-в периметре requester'а (403), `since ≤ сегодня` в TZ портала и без дублей
-(400); запись в `ais` (`type = ai-analytics-settings`, `activity_id = levels`,
-актуальна последняя) и сброс кэша `overview` + `attention` домена (`resetCount`).
-Уровень попадает в строку обзора как `levelSource = manual`, `tenureMonths` — от
-`since`; без записи — `default` по стажу.
+**settings/save** (`domain/use-cases/settings-save.use-case.ts`): в Фазе 1b —
+только `levels[] {managerId, level: junior|middle|senior, since?}`, каждый
+`managerId` в периметре requester'а (403), `since ≤ сегодня` в TZ портала и без
+дублей (400). Уровень попадает в строку обзора как `levelSource = manual`,
+`tenureMonths` — от `since`; без записи — `default` по стажу. В Фазе 2 ручка
+выросла до девяти блоков, уровни переехали с временного снапшота
+`ai-analytics-settings` на ключ схемы, а сброс кэша дополнился `model` и `plan` —
+см. раздел «Настройки портала и параметры расчёта (Фаза 2, волна 2)».
 
 **Прогрев** (`cron/ai-analytics-overview-prewarm.scheduler.ts`): ежедневно
 05:30 МСК (`AI_ANALYTICS_PREWARM_CRON = '30 2 * * *'` UTC — после ночных
@@ -307,6 +308,98 @@ README, раздел «Фаза 2, волна 1». Приложение её п�
 фильтры `findByKeys`, окно `created_at`, `latest`, `prune` по ретенции
 дескриптора), `__tests__/ai-analytics-module-di.spec.ts` (провайдер разрешается
 в графе модуля).
+
+## Настройки портала и параметры расчёта (Фаза 2, волна 2)
+
+`settings/save` вырос с одних уровней до **девяти блоков** настроек, которые
+хранятся ключами `[kpiSales]` схемы `portal-app-settings.schema.ts` (JSON-строки,
+разбор — чистые функции `@lib/sales-ai-analytics/settings/*`, битый JSON даёт
+дефолт кода, а не 500). Это **единственная ручка Фазы 2, уже подключённая
+к коду волны 2**; остальное (модель портала, план дня, резюме) появится
+в следующих волнах.
+
+| Блок запроса | Ключ настроек | Что задаёт |
+|---|---|---|
+| `levels` | `ai_analytics_levels` | уровни менеджеров и начало стажа (переезд с временного снапшота `ai-analytics-settings`; при пустом ключе — одноразовый fallback на старый снапшот) |
+| `targets` | `ai_analytics_targets` | цели по уровням и личные переопределения |
+| `absences` | `ai_analytics_absences` | отсутствия менеджеров (экспозиция норм) |
+| `managerParams` | `ai_analytics_manager_params` | слой параметров менеджера: `fteShare`, цель, исключение из норм, немой алерт |
+| `definitions` | `ai_analytics_definitions` | определения владельца: продуктивный звонок, канон презентации, «горячий» клиент, пороги длительности, рёбра воронки, слой нормы |
+| `events` | `ai_analytics_events` | журнал событий портала (+ автособытие `settings_break`) |
+| `modelParams` | `ai_analytics_model_params` | гиперпараметры модели — только коды реестра, диапазоны из `findParam(code).range` |
+| `scoring` | `ai_analytics_scoring` | потолки оценивания (≤ 20 правил, `maxScore ∈ [1; 9]`) и стоп-фразы (≤ 100) |
+| `hypothesis` | `ai_analytics_hypothesis` | гипотеза «при качестве S нужно N презентаций» (≥ 2 пар) — делает достижимым `betaSource: 'hypothesis'` |
+| `rosterConfirmedAt` | `ai_analytics_roster_confirmed_at` | дата подтверждения состава ростера РОПом |
+
+Три следствия каждого сохранения: пишутся **только изменившиеся** ключи,
+сбрасываются кэши `overview` / `attention` / `model` / `plan`
+(`AI_ANALYTICS_SETTINGS_RESET_SCOPES`) и создаётся снапшот
+`ai-analytics-settings-audit` с автором, списком изменений и границей
+`comparableFrom` до/после. Правка поля с `breaksSeries` двигает
+`comparableFrom` вперёд и оставляет в журнале автособытие — ответ возвращает
+`comparableFrom`, `paramsVersion`, `breaksSeries[]` и `warnings[]`.
+
+| Файл | Что даёт |
+|---|---|
+| `domain/loaders/settings.loader.ts` | к прежним флагам добавились десять разобранных блоков (`levels`, `targets`, `absences`, `modelParams`, `managerParams`, `definitions`, `events`, `scoring`, `hypothesis`, `rosterConfirmedAt`) |
+| `domain/loaders/params.loader.ts` | `@Injectable AiAnalyticsParamsLoader.load(domain, { managerId?, tenureBand?, model? })` → `{ ctx, paramsVersion, comparableFrom }` — раскладка настроек по слоям реестра (менеджер → полоса стажа → портал → дефолт). Провайдер зарегистрирован и экспортирован, **но ни одной ручкой пока не вызывается**: его потребители — портальная модель, план дня и резюме следующих волн |
+| `domain/use-cases/settings-save.use-case.ts` + `settings-save.mapper.ts` | периметр (403), блокирующая проверка значений (400), запись изменившихся ключей, сброс кэшей, аудит |
+| `store/ai-analytics-settings.store.ts` | `savePortalSettings(domain, patch)` поверх `PortalAppSettingsService` (portalId — по `PortalService.getPortalByDomain`), `loadLevels` с fallback на старый снапшот |
+| `store/ai-analytics-settings-audit.store.ts` | `@Injectable AiAnalyticsSettingsAuditStore.save(...)` — запись `ai-analytics-settings-audit` в ais поверх `AiService` |
+| `dto/ai-settings-*.dto.ts` | блоки запроса и ответа с русскими описаниями; `levels` стал необязательным (не передан — уровни не меняются) |
+
+Тесты: `__tests__/settings-save-phase2.spec.ts` (девять блоков, 400/403, аудит,
+сдвиг `comparableFrom`), `__tests__/settings-parsers.spec.ts` (загрузчик и
+переезд уровней), `__tests__/params.loader.spec.ts` (слои и `paramsVersion`),
+`__tests__/settings-save.use-case.spec.ts` (прежние сценарии уровней),
+`__tests__/ai-analytics-module-di.spec.ts` (оба новых провайдера разрешаются
+в графе модуля).
+
+## Слепая проверка «три звонка недели» (Фаза 2, волна 4)
+
+Единственный человеческий бюджет недели по плану §12: система сама
+подбирает руководителю **три звонка** — с неуверенным типом, с лучшим
+баллом (проверка на подыгрывание метрике) и случайный, — а он ставит
+метку: согласен ли с оценкой AI, своя оценка 1–10, разделы рубрики,
+почему так и как лучше. Подбор детерминирован зерном
+`seedOf(domain, weekKey)`: ночной шаг понедельника и ручка дают один и
+тот же набор, повтор ничего не меняет.
+
+> ⚠ **Слепой режим гарантируется только этой ручкой.** Пока по звонку нет
+> метки, `aiCallType` и `aiScore` в ответе отсутствуют. Но карточку
+> разбора в Битрикс руководитель открыть может и оценку там увидит —
+> техническими средствами это не закрывается, это договорённость (текст
+> оговорки — `AI_ROP_MARK_BLIND_NOTE`, он же едет в поле `blindNote`
+> ответа и в описание DTO). Поэтому у метки есть флаг `blind`: первая
+> метка по звонку — слепая, повторная (после того как ручка раскрыла
+> оценку) — уже нет.
+
+| Файл | Что даёт |
+|---|---|
+| `@lib/sales-ai-analytics/model/rop-mark` | `pickRopMarkCalls`, `ropMarkSeed`, `isUncertainCallType`, `ROP_MARK_REASONS` — чистый подбор без DI и Bitrix |
+| `constants/ai-rop-mark.const.ts` | тип записи `ai-analytics-rop-mark`, код и ритм шага, лимиты метки, русские подписи причин, `mondayOfIsoWeek`, оговорка о слепоте |
+| `store/ai-analytics-rop-mark.store.ts` | подбор недели — запись `ai-analytics-rop-mark` с ключом `YYYY-Www`; метка — запись обратной связи `ai-analytics-feedback` вида `rop_mark` с тем же `activity_id` и `transcription_id`; повтор переводит прошлую запись в `superseded` |
+| `steps/rop-mark.step.ts` | шаг конвейера `rop-mark` (ритм `weekly`): кандидаты из шины `calls.rows`, запись подбора; строк нет — `skipped` с причиной, прогон продолжается |
+| `domain/use-cases/rop-mark.use-case.ts` | `pick` / `list` / `save`: подбор (идемпотентный, `forceRefresh` пересобирает), список с метками и сохранение метки |
+| `domain/presenter/rop-mark.presenter.ts` | слепой режим и периметр: колонки AI — только у звонков с меткой, чужие менеджеры вырезаются |
+| `dto/ai-rop-mark-request.dto.ts`, `dto/ai-rop-mark.dto.ts` | запросы и ответы с русскими описаниями (разделены, чтобы файлы остались ≤ 300 строк) |
+
+Права: все три метода — только руководителям (`cup`/`op`/`group`,
+`assertLeader`), менеджеру 403; звонок вне периметра — 403; звонок вне
+подбора недели или подбор, которого ещё нет, — 400 с текстом причины.
+
+Вид `rop_mark` добавлен в общий словарь `AI_ANALYTICS_FEEDBACK_KINDS`,
+поэтому формально его принимает и общая ручка `feedback` — но записанная
+там строка уходит без `activity_id`, в подбор недели не попадает и меткой
+проверки не считается. Метки читаются только по ключу недели.
+
+Тесты: `libs/sales-ai-analytics/src/__tests__/rop-mark.spec.ts` (состав
+набора, воспроизводимость по зерну, пять менеджеров → три разных, меньше
+трёх кандидатов → сколько есть), `__tests__/rop-mark.use-case.spec.ts`
+(слепой режим до метки и раскрытие после, замена повторной метки, 403/400,
+периметр), `__tests__/rop-mark.step.spec.ts` (ритм, идемпотентность,
+штатные пропуски), `__tests__/rop-mark.store.spec.ts` (раскладка по ais,
+перевод прошлых записей в `superseded`, разбор чужих форм).
 
 ## Проверка
 

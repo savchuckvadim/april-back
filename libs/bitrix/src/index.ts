@@ -1,4 +1,7 @@
 export * from './domain';
+// calendar.settings.get — домен вне barrel'а './domain' (см. domain/index.ts):
+// подключён здесь, чтобы не трогать общий barrel доменов.
+export * from './domain/calendar';
 export * from './core';
 export * from './bitrix.service';
 export * from './bitrix-service.factory';

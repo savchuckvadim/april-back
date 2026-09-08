@@ -69,6 +69,7 @@ describe('feedback.types', () => {
             'alert_handled',
             'digest_sent',
             'agenda_sent',
+            'rop_mark',
         ]);
     });
 

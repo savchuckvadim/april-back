@@ -7,7 +7,10 @@ import {
     CALL_REPORT_CALL_TYPE_CODES,
     CallReportCallTypeCode,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
-import { PBX_DEAL_SALES_BASE_STAGES } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
+import {
+    PBX_DEAL_SALES_BASE_STAGES,
+    PBX_DEAL_SALES_BASE_WON_ORDER,
+} from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
 import { findPbxSalesKpiListField } from '@lib/portal-lib/pbx/pbx-sales-kpi-list/type/pbx-sales-kpi-list-field.type';
 import { resolveCallTypePrior } from '../services/call-type-prior.util';
 
@@ -25,6 +28,17 @@ const priorOfStage = (dealStageCode: string) =>
         dealStageCode,
         leadWorkKind: null,
     });
+
+/**
+ * Рабочие стадии (сделка ещё в работе) и финалы: граница — порядок стадии
+ * «Успех» (PBX_DEAL_SALES_BASE_WON_ORDER), а не список кодов руками.
+ */
+const OPEN_STAGES = PBX_DEAL_SALES_BASE_STAGES.filter(
+    stage => stage.order < PBX_DEAL_SALES_BASE_WON_ORDER,
+);
+const FINAL_STAGES = PBX_DEAL_SALES_BASE_STAGES.filter(
+    stage => stage.order >= PBX_DEAL_SALES_BASE_WON_ORDER,
+);
 
 const kinds: readonly (readonly [
     CallReportCallTypeCode,
@@ -50,13 +64,33 @@ describe('AI_ANALYTICS_EVENT_KINDS — карта трёх алфавитов (�
         }
     });
 
-    it('стадия основной воронки, известная приору, есть ровно в одном типе; неизвестная — ни в одном', () => {
-        for (const { code } of PBX_DEAL_SALES_BASE_STAGES) {
+    it('рабочая стадия, известная приору, есть ровно в одном типе; неизвестная — ни в одном', () => {
+        for (const { code } of OPEN_STAGES) {
             const owners = kinds
                 .filter(([, kind]) => kind.stagePriorCodes.includes(code))
                 .map(([callType]) => callType);
             expect(`${code}:${owners.join(',')}`).toBe(
                 `${code}:${priorOfStage(code)?.callType ?? ''}`,
+            );
+        }
+    });
+
+    /**
+     * Финалы лестницы («Успех», «Провал», «Не состоялась», «Не ЦА») — это
+     * ИСХОД сделки, а не этап разговора: витрина AI-аналитики их событием не
+     * считает, поэтому в карту они не входят. Но приор классификатору они
+     * давать обязаны (прод 08.09.2026): без него звонок по закрытой сделке
+     * оставался «Другим». Приор при этом только СЛАБЫЙ — стадия говорит об
+     * исходе сделки, а не о содержании конкретного звонка.
+     */
+    it('финалы лестницы: в карте их нет, но слабый приор у них есть', () => {
+        for (const { code } of FINAL_STAGES) {
+            const owners = kinds
+                .filter(([, kind]) => kind.stagePriorCodes.includes(code))
+                .map(([callType]) => callType);
+            expect(`${code}:${owners.join(',')}`).toBe(`${code}:`);
+            expect(`${code}:${priorOfStage(code)?.strength ?? 'нет'}`).toBe(
+                `${code}:weak`,
             );
         }
     });

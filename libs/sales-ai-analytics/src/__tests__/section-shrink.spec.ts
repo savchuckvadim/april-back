@@ -157,3 +157,35 @@ describe('shrinkSectionMetric', () => {
         expect(shrunk.w).toBeCloseTo(3 / 13, 6);
     });
 });
+
+describe('границы усадки оценки (§4.3)', () => {
+    it('при n = 0 усаженная оценка равна норме слоя', () => {
+        const result = shrinkSectionScore({ n: 0, mean: 9, mu: 6.4, mS: 10 });
+
+        expect(result.value).toBeCloseTo(6.4, 9);
+        expect(result.w).toBe(0);
+    });
+
+    it('при большом n усаженная оценка стремится к собственному среднему', () => {
+        const small = shrinkSectionScore({ n: 20, mean: 8, mu: 6, mS: 10 });
+        const large = shrinkSectionScore({ n: 10000, mean: 8, mu: 6, mS: 10 });
+
+        expect(small.value).toBeCloseTo(6 + (2 * 20) / 30, 9);
+        expect(large.value).toBeCloseTo(8, 2);
+        expect(large.w).toBeGreaterThan(0.999);
+        expect(large.value).toBeGreaterThan(small.value);
+    });
+
+    it('сильная усадка при неразличимых менеджерах тянет к норме', () => {
+        const weak = shrinkSectionScore({ n: 20, mean: 8, mu: 6, mS: 10 });
+        const strong = shrinkSectionScore({
+            n: 20,
+            mean: 8,
+            mu: 6,
+            mS: SECTION_SHRINK_DEFAULTS.mMax,
+        });
+
+        expect(strong.value).toBeLessThan(weak.value);
+        expect(strong.w).toBeCloseTo(20 / 70, 9);
+    });
+});

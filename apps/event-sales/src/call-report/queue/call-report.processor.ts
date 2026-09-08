@@ -398,6 +398,9 @@ export class CallReportProcessor {
                 row,
                 callType,
                 settings.deepAnalysisModel ?? undefined,
+                // Наши собственные названия: без них проверка по регламенту
+                // принимает партнёрское имя за чужой бренд (прод 08.09.2026).
+                settings.ownOrgNames,
             );
         } catch (error) {
             this.logger.warn(

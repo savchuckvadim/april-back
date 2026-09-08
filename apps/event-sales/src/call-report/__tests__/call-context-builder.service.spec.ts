@@ -29,14 +29,35 @@ const makeDeps = (options?: {
     companyComments?: string;
     /** Записи «ОП История» (UF_CRM_OP_MHISTORY) в строке сделки. */
     dealOpHistory?: string[];
+    /** Раскладка связей: сделка «ОП Основная», найденная по клиенту. */
+    mainDealId?: number;
+    /** Стадия/воронка этой основной сделки — источник приора. */
+    mainDealStage?: string;
+    mainDealCategory?: number;
     direction?: string;
     phoneMatches?: Record<string, number[]>;
     history?: { id: string; callStartedAt: Date | null }[];
     resumeByTranscription?: Record<string, string>;
+    /** Названия наших организаций из настроек портала. */
+    ownOrgNames?: string[];
+    /** Настройки портала недоступны — паспорт без имён (fail-open). */
+    settingsError?: boolean;
 }) => {
     const api = {
-        call: jest.fn((method: string) => {
+        call: jest.fn((method: string, data?: Record<string, unknown>) => {
             if (method === 'crm.deal.get') {
+                // Дочитывание основной сделки из раскладки связей — по её id.
+                if (
+                    options?.mainDealId &&
+                    Number(data?.id) === options.mainDealId
+                ) {
+                    return Promise.resolve({
+                        result: {
+                            STAGE_ID: options.mainDealStage ?? 'PREPARATION',
+                            CATEGORY_ID: options.mainDealCategory ?? 0,
+                        },
+                    });
+                }
                 return Promise.resolve(
                     options?.dealStage === null
                         ? {}
@@ -111,7 +132,10 @@ const makeDeps = (options?: {
             {
                 bitrixId: '0',
                 code: 'sales_base',
-                stages: [{ code: 'sales_pres', bitrixId: 'PREPARATION' }],
+                stages: [
+                    { code: 'sales_pres', bitrixId: 'PREPARATION' },
+                    { code: 'sales_double', bitrixId: 'APOLOGY' },
+                ],
             },
             {
                 bitrixId: '5',
@@ -148,13 +172,37 @@ const makeDeps = (options?: {
             ),
         ),
     };
+    // Раскладка связей: даёт правильную сделку «ОП Основная» для приора.
+    const dealFamily = {
+        resolve: jest.fn().mockResolvedValue({
+            mainDealId: options?.mainDealId,
+        }),
+    };
+    // Настройки портала: нужны только названия своих организаций (по
+    // умолчанию их нет — прежнее поведение промпта).
+    const reportSettings = {
+        resolve: options?.settingsError
+            ? jest.fn().mockRejectedValue(new Error('db down'))
+            : jest.fn().mockResolvedValue({
+                  ownOrgNames: options?.ownOrgNames ?? [],
+              }),
+    };
     const service = new CallContextBuilderService(
         pbxService as never,
         transcriptionStore as never,
         aiService as never,
         redisService as never,
+        dealFamily as never,
+        reportSettings as never,
     );
-    return { service, api, transcriptionStore, redisClient };
+    return {
+        service,
+        api,
+        transcriptionStore,
+        redisClient,
+        dealFamily,
+        reportSettings,
+    };
 };
 
 describe('CallContextBuilderService', () => {
@@ -197,6 +245,52 @@ describe('CallContextBuilderService', () => {
         expect(service.renderClassifyHint(passport)).toContain(
             "'presentation'",
         );
+    });
+
+    /**
+     * Прод-случай alfacentr 08.09.2026: звонок сделан из сделки ЧУЖОЙ
+     * воронки, коды не резолвились, приора не было — и тип скатывался в
+     * «Другое». Теперь коды берутся у правильной сделки «ОП Основная» из
+     * раскладки связей, даже если та стоит в финале отказа.
+     */
+    it('чужая воронка владельца: коды и приор берутся у сделки «ОП Основная» из раскладки', async () => {
+        const { service, dealFamily } = makeDeps({
+            dealCategory: 28,
+            dealStage: 'SERVICE:NEW',
+            dealCompanyId: 232232,
+            mainDealId: 232,
+            mainDealCategory: 0,
+            mainDealStage: 'APOLOGY',
+        });
+
+        const passport = await service.build(row() as never);
+
+        expect(dealFamily.resolve).toHaveBeenCalledWith(
+            'test.bitrix24.ru',
+            555,
+            expect.objectContaining({ companyId: 232232 }),
+        );
+        // Стадия/воронка сырыми остаются от владельца звонка (факт CRM),
+        // а pbx-коды — от правильной основной сделки.
+        expect(passport.categoryId).toBe('28');
+        expect(passport.dealCategoryCode).toBe('sales_base');
+        expect(passport.dealStageCode).toBe('sales_double');
+        expect(passport.callTypePrior).toEqual(
+            expect.objectContaining({ callType: 'call', strength: 'weak' }),
+        );
+    });
+
+    it('чужая воронка и основной сделки нет — приора нет, паспорт собирается', async () => {
+        const { service } = makeDeps({
+            dealCategory: 28,
+            dealStage: 'SERVICE:NEW',
+        });
+
+        const passport = await service.build(row() as never);
+
+        expect(passport.dealCategoryCode).toBeNull();
+        expect(passport.callTypePrior).toBeNull();
+        expect(passport.certainty).toBe('rich');
     });
 
     it('сделка в воронке, которой нет в pbx — коды и приор пусты, подсказка только «сделка»', async () => {
@@ -364,5 +458,59 @@ describe('CallContextBuilderService', () => {
         const passport = await service.build(row() as never);
         expect(passport.certainty).toBe('naked');
         expect(passport.history).toHaveLength(1);
+    });
+});
+
+/**
+ * НАЗВАНИЯ НАШИХ ОРГАНИЗАЦИЙ (прод alfacentr 08.09.2026): модель писала
+ * «менеджер представляется через стороннюю организацию „Альфа-центр“» и
+ * снижала за это оценку, хотя «Альфа-центр» — сама компания-клиент портала.
+ */
+describe('CallContextBuilderService: свои названия организаций', () => {
+    it('имена из настройки попадают в паспорт и в промпт запретом снижать оценку', async () => {
+        const { service } = makeDeps({
+            ownOrgNames: ['Альфа-центр', 'Апрель'],
+        });
+
+        const passport = await service.build(row() as never);
+
+        expect(passport.ownOrgNames).toEqual(['Альфа-центр', 'Апрель']);
+        const prompt = service.renderForPrompt(passport);
+        expect(prompt).toContain('«Альфа-центр»');
+        expect(prompt).toContain('«Апрель»');
+        // Явная формулировка: догадываться модель не должна.
+        expect(prompt).toContain('Это МЫ');
+        expect(prompt).toContain('стороннюю организацию');
+        expect(prompt).toContain('ЗАПРЕЩЕНО');
+    });
+
+    it('имя из списка знает и классификатор — это представление, а не чужая фирма', async () => {
+        const { service } = makeDeps({ ownOrgNames: ['Альфа-центр'] });
+
+        const passport = await service.build(row() as never);
+
+        expect(service.renderClassifyHint(passport)).toContain('«Альфа-центр»');
+    });
+
+    it('пустой список — прежнее поведение: в промпте про названия ни строчки', async () => {
+        const { service } = makeDeps();
+
+        const passport = await service.build(row() as never);
+
+        expect(passport.ownOrgNames).toEqual([]);
+        const prompt = service.renderForPrompt(passport);
+        expect(prompt).not.toContain('НАШИ СОБСТВЕННЫЕ НАЗВАНИЯ');
+        expect(service.renderClassifyHint(passport) ?? '').not.toContain(
+            'наша компания на этом портале',
+        );
+    });
+
+    it('настройки недоступны → паспорт без имён, разбор не падает (fail-open)', async () => {
+        const { service } = makeDeps({ settingsError: true });
+
+        const passport = await service.build(row() as never);
+
+        expect(passport.ownOrgNames).toEqual([]);
+        expect(passport.certainty).toBe('rich');
     });
 });

@@ -1,17 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@lib/pbx/pbx.service';
 import { TranscriptionPipelineView } from '@lib/call-lib';
+import {
+    AgentCallClient,
+    AgentDealCandidates,
+    AgentDealCandidatesLoader,
+} from './agent-deal-candidates.loader';
 
-/** Активные сделки компании по воронкам ОП — кандидаты для связей. */
-export interface AgentDealCandidates {
-    salesBase: Record<string, unknown>[];
-    salesPresentation: Record<string, unknown>[];
-    salesXo: Record<string, unknown>[];
-}
+export {
+    AgentCallClient,
+    AgentDealCandidates,
+} from './agent-deal-candidates.loader';
 
 /** Bitrix-контекст пакета звонка (для глубокого анализа агентом). */
 export interface AgentBitrixContext {
+    /** Сделка-владелец звонка; null — звонок по лиду или сделка не прочитана. */
     deal: Record<string, unknown> | null;
+    /** Лид-владелец звонка; null — звонок по сделке. */
+    lead: Record<string, unknown> | null;
     company: Record<string, unknown> | null;
     contact: Record<string, unknown> | null;
     historyCandidates: Record<string, unknown>[];
@@ -27,9 +33,10 @@ const HISTORY_CANDIDATES_LIMIT = 30;
 /**
  * Сборка Bitrix-контекста звонка для пакета агента — вынесено из
  * AgentCallPackageService (одна ответственность: походы в Bitrix):
- * сделка/компания/контакт, кандидаты записей отчётности (sales_history /
- * sales_kpi в окне ±N дней), активные сделки воронок ОП и словарь
- * pbx-полей компании. Семантическую привязку кандидатов делает агент.
+ * сделка ИЛИ лид владельца звонка, компания/контакт, кандидаты записей
+ * отчётности (sales_history / sales_kpi в окне ±N дней), сделки клиента по
+ * воронкам ОП (AgentDealCandidatesLoader) и словарь pbx-полей компании.
+ * Семантическую привязку кандидатов делает агент.
  *
  * Все шаги мягкие: недоступность Bitrix отдаёт пустой контекст/куски —
  * пакет звонка важнее полноты контекста.
@@ -44,15 +51,12 @@ export class AgentBitrixContextService {
     empty(): AgentBitrixContext {
         return {
             deal: null,
+            lead: null,
             company: null,
             contact: null,
             historyCandidates: [],
             kpiCandidates: [],
-            dealCandidates: {
-                salesBase: [],
-                salesPresentation: [],
-                salesXo: [],
-            },
+            dealCandidates: AgentDealCandidatesLoader.empty(),
             companyFields: [],
         };
     }
@@ -66,25 +70,32 @@ export class AgentBitrixContextService {
             row.domain,
         );
 
-        const deal = (await this.callRaw(bitrix.api, 'crm.deal.get', {
-            id: row.entityId,
-        })) as Record<string, unknown> | null;
+        // ТИП СУЩНОСТИ РЕШАЕТ, ЧТО ЧИТАТЬ (приёмка 08.09.2026): раньше
+        // crm.deal.get звался с entityId ЛЮБОЙ сущности, и звонок по лиду
+        // #900 подтягивал ЧУЖУЮ сделку #900 — вместе с её компанией,
+        // контактом и кандидатами.
+        const isLead = row.entityType === 'lead';
+        const owner = (await this.callRaw(
+            bitrix.api,
+            isLead ? 'crm.lead.get' : 'crm.deal.get',
+            { id: row.entityId },
+        )) as Record<string, unknown> | null;
 
-        const companyId = this.idToString(deal?.COMPANY_ID);
-        const contactId = this.idToString(deal?.CONTACT_ID);
+        const client: AgentCallClient = {
+            companyId: this.idToString(owner?.COMPANY_ID),
+            contactId: this.idToString(owner?.CONTACT_ID),
+        };
 
-        const company =
-            companyId && companyId !== '0'
-                ? ((await this.callRaw(bitrix.api, 'crm.company.get', {
-                      id: companyId,
-                  })) as Record<string, unknown> | null)
-                : null;
-        const contact =
-            contactId && contactId !== '0'
-                ? ((await this.callRaw(bitrix.api, 'crm.contact.get', {
-                      id: contactId,
-                  })) as Record<string, unknown> | null)
-                : null;
+        const company = client.companyId
+            ? ((await this.callRaw(bitrix.api, 'crm.company.get', {
+                  id: client.companyId,
+              })) as Record<string, unknown> | null)
+            : null;
+        const contact = client.contactId
+            ? ((await this.callRaw(bitrix.api, 'crm.contact.get', {
+                  id: client.contactId,
+              })) as Record<string, unknown> | null)
+            : null;
 
         const historyCandidates = await this.loadListCandidates(
             bitrix,
@@ -98,16 +109,17 @@ export class AgentBitrixContextService {
             'sales_kpi',
             row,
         );
-        const dealCandidates = await this.loadDealCandidates(
+        // Сделки клиента по воронкам ОП — включая ЗАКРЫТЫЕ и по контакту.
+        const dealCandidates = await new AgentDealCandidatesLoader(
             bitrix,
             portalModel,
-            companyId,
-            row,
-        );
+            this.logger,
+        ).load(client);
         const companyFields = this.buildCompanyFieldsDictionary(portalModel);
 
         return {
-            deal,
+            deal: isLead ? null : owner,
+            lead: isLead ? owner : null,
             company,
             contact,
             historyCandidates,
@@ -157,63 +169,6 @@ export class AgentBitrixContextService {
     }
 
     /**
-     * Активные сделки компании по воронкам ОП (sales_base /
-     * sales_presentation / sales_xo) — кандидаты для связей
-     * DEAL_MAIN/DEAL_PRESENTATION/DEAL_XO.
-     */
-    private async loadDealCandidates(
-        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
-        portalModel: Awaited<ReturnType<PBXService['init']>>['PortalModel'],
-        companyId: string | null,
-        row: TranscriptionPipelineView,
-    ): Promise<AgentDealCandidates> {
-        const empty: AgentDealCandidates = {
-            salesBase: [],
-            salesPresentation: [],
-            salesXo: [],
-        };
-        if (!companyId || companyId === '0') return empty;
-        try {
-            const response = await bitrix.deal.getList(
-                { COMPANY_ID: companyId } as never,
-                [
-                    'ID',
-                    'TITLE',
-                    'CATEGORY_ID',
-                    'STAGE_ID',
-                    'CLOSED',
-                    'ASSIGNED_BY_ID',
-                ],
-            );
-            const deals = (response.result ?? []) as unknown as Record<
-                string,
-                unknown
-            >[];
-            const active = deals.filter(deal => deal.CLOSED !== 'Y');
-
-            const categories = portalModel.getDealCategories() ?? [];
-            const byCode = (code: string) =>
-                active.filter(deal => {
-                    const category = categories.find(
-                        c => String(c.bitrixId) === String(deal.CATEGORY_ID),
-                    );
-                    return category?.code === code;
-                });
-
-            return {
-                salesBase: byCode('sales_base'),
-                salesPresentation: byCode('sales_presentation'),
-                salesXo: byCode('sales_xo'),
-            };
-        } catch (error) {
-            this.logger.warn(
-                `Сделки-кандидаты не собраны (${row.domain}): ${(error as Error).message}`,
-            );
-            return empty;
-        }
-    }
-
-    /**
      * Словарь pbx-полей компании портала: код → UF-имя + элементы enum —
      * для расшифровки сырых UF_CRM_* значений компании агентом.
      */
@@ -239,7 +194,7 @@ export class AgentBitrixContextService {
 
     /** Приводит сырое поле Bitrix к строковому id (числа/строки, иначе null). */
     private idToString(value: unknown): string | null {
-        if (typeof value === 'string' && value) return value;
+        if (typeof value === 'string' && value && value !== '0') return value;
         if (typeof value === 'number' && value) return String(value);
         return null;
     }

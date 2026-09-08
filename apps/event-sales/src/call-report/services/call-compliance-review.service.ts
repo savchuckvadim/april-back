@@ -22,6 +22,7 @@ import {
     ComplianceSeverityCode,
     PRESENTATION_COMPLIANCE_BLOCK,
 } from '../contracts/call-compliance-review.contract';
+import { renderOwnOrgNamesBlock } from '../contracts/own-org-names.contract';
 
 /** Минимальная длина цитаты, которую есть смысл проверять на подлинность. */
 const MIN_QUOTE_CHARS = 20;
@@ -62,11 +63,15 @@ export class CallComplianceReviewService {
      * @param row строка конвейера (домен, транскрипт, активность)
      * @param callType тип звонка от классификатора
      * @param model модель VibeCode из настроек портала
+     * @param ownOrgNames названия НАШИХ организаций (настройка портала):
+     * представление менеджера одним из этих имён — норма, а не нарушение
+     * регламента и не «сторонняя организация» (прод alfacentr 08.09.2026)
      */
     async run(
         row: TranscriptionPipelineView,
         callType: string | null,
         model?: string,
+        ownOrgNames?: readonly string[],
     ): Promise<ComplianceReviewResult | null> {
         const domain = row.domain;
         if (!domain || !row.text?.trim()) return null;
@@ -111,9 +116,11 @@ export class CallComplianceReviewService {
             }
 
             const apiKey = await this.vibeKeyResolver.resolve(domain);
-            const prompt = isPresentation
-                ? COMPLIANCE_REVIEW_PROMPT + PRESENTATION_COMPLIANCE_BLOCK
-                : COMPLIANCE_REVIEW_PROMPT;
+            const prompt =
+                (isPresentation
+                    ? COMPLIANCE_REVIEW_PROMPT + PRESENTATION_COMPLIANCE_BLOCK
+                    : COMPLIANCE_REVIEW_PROMPT) +
+                renderOwnOrgNamesBlock(ownOrgNames);
             const raw = (await this.vibeCodeClient.structuredCompletion(
                 prompt,
                 buildComplianceUserContent({

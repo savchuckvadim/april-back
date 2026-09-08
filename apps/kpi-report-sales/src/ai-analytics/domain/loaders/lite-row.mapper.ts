@@ -19,6 +19,8 @@ export function toPulseRow(row: DatedLiteRow): PulseCallRow {
         managerId: row.managerId,
         callStartedAt: row.callStartedAt,
         durationSec: row.durationSec,
+        // Тип нужен пульсу только для порога длительности по типу (А.1).
+        callType: row.callType,
         analysisPresent: row.analysisPresent,
         nextStep: row.nextStep,
         riskFlags: row.riskFlags,
