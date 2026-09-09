@@ -46,6 +46,35 @@ export enum EnumXoEventFieldCode {
 export const XO_EVENT_FIELD_CODES = Object.values(EnumXoEventFieldCode);
 
 /**
+ * Поля МАРШРУТИЗАЦИИ ХО — их заполняет РОБОТ Битрикса ПЕРЕД тем, как
+ * поставить элемент в очередь и дёрнуть хук; бэкенд их только ЧИТАЕТ.
+ *
+ * Набор отдельный от {@link XO_EVENT_FIELD_CODES} намеренно: тот перечисляет
+ * то, что ХО-хук ПИШЕТ (и цикл записи в XoEventEntityModel идёт ровно по
+ * нему) — добавить сюда код значит потребовать для него ветку записи.
+ *
+ * Пара «кому» обязательна ХОТЯ БЫ одной половиной, иначе назначать некому:
+ *  - `responsible` — конкретный сотрудник, round-robin не нужен;
+ *  - `department` — строка-подсказка, в каком ОП крутить round-robin
+ *    (сравнение нестрогое, по вхождению — см. LeadToWorkAssigneeService).
+ * Остальное необязательно и имеет дефолты в хуке: без `name` берётся
+ * название сущности, без `date` задача ставится без дедлайна.
+ *
+ * Читается и очередью ХО из лидов, и реанимацией отказников из сделок
+ * (там робот снимает сотрудника, оставляя отдел), поэтому коды общие.
+ */
+export const XO_ROUTING_FIELD_CODES = {
+    /** Явный ответственный ХО (`employee`). */
+    responsible: EnumXoEventFieldCode.xoResponsible,
+    /** Отдел строкой — подсказка для round-robin (`string`). */
+    department: 'department_string',
+    /** Название события ХО → имя задачи/события (`string`). */
+    name: EnumXoEventFieldCode.xoName,
+    /** Плановая дата обзвона → дедлайн задачи (`datetime`). */
+    date: EnumXoEventFieldCode.xoDate,
+} as const satisfies Record<string, PbxSalesEventFieldCode>;
+
+/**
  * Значение `op_work_status`, которое ХО ставит клиенту: «В работе».
  *
  * Item-код справочника ПОЛЯ КАРТОЧКИ (`PBX_SALES_EVENT_FIELDS`), а не

@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
+import { EnumLeadWorkKindCode } from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
 import {
     LEAD_WORK_KIND,
     LeadWorkKind,
@@ -73,11 +74,13 @@ type BxRow = Record<string, unknown>;
  * только тому, чем управляем мы сами:
  *
  *  1. `op_lead_work_kind` — НАШЕ поле вида работы. Его пишет этот же хук
- *     при передаче лида в работу, поэтому оно и есть источник истины:
- *     переживает ручные правки карточки и не зависит от настроек портала.
+ *     при передаче лида в работу, а до того — робот Битрикса, когда ставит
+ *     лид в очередь ХО; поэтому оно и есть источник истины: переживает
+ *     ручные правки карточки и не зависит от настроек портала.
  *     Поле уже установлено на порталах (авг 2026) — ветка рабочая с
  *     первого дня; «нет в слепке → идём дальше» остаётся для свежих
- *     порталов до прогона установки полей.
+ *     порталов до прогона установки полей. Значение «Неопределён»
+ *     (`undef`) спор НЕ кончает — робот сказал «не знаю», идём дальше.
  *  2. Поля лидогена «Гарант» (`UF_CRM_REG_NUMBER` «Код партнёра»,
  *     `UF_CRM_LEAD_QUEST_URL` «Оценка») — тоже наши, заполняются ТОЛЬКО у
  *     заявок. Однозначная ЗАЯВКА.
@@ -104,16 +107,27 @@ export class LeadRequestDetectorService {
         const signals: string[] = [];
 
         // 1. НАШЕ поле вида работы — источник истины, спор на нём и кончается.
-        const ownKind = this.kindByOwnField(lead);
-        if (ownKind) {
+        const own = this.kindByOwnField(lead);
+        if (own.kind) {
             signals.push(
-                `наше поле ${PBX_SALES_EVENT_FIELD_CODES.op_lead_work_kind}=${ownKind}`,
+                `наше поле ${PBX_SALES_EVENT_FIELD_CODES.op_lead_work_kind}=${own.kind}`,
             );
             return {
-                isRequest: ownKind !== LEAD_WORK_KIND.cold,
-                kind: ownKind,
+                isRequest: own.kind !== LEAD_WORK_KIND.cold,
+                kind: own.kind,
                 signals,
             };
+        }
+        /*
+         * «Неопределён» — это НЕ вид работы, а честное «робот не знает».
+         * Спор не кончается: идём по остальным признакам ровно как при
+         * пустом поле, но факт выбора записываем — иначе непонятно, робот
+         * промолчал или сказал «не знаю».
+         */
+        if (own.itemCode === EnumLeadWorkKindCode.undef) {
+            signals.push(
+                `наше поле ${PBX_SALES_EVENT_FIELD_CODES.op_lead_work_kind}=«Неопределён» — вид определяем по признакам`,
+            );
         }
 
         // 2. Поля лидогена портала — однозначная заявка.
@@ -205,20 +219,32 @@ export class LeadRequestDetectorService {
         return LEAD_WORK_KIND.request;
     }
 
-    /** Вид работы по НАШЕМУ полю лида; null — поле не заведено либо пусто. */
-    private kindByOwnField(lead: BxRow): LeadWorkKind | null {
+    /**
+     * Вид работы по НАШЕМУ полю лида.
+     *
+     * Возвращает и сам код значения: `kind: null` бывает по трём разным
+     * причинам — поля нет на портале, оно пусто, либо робот честно выбрал
+     * «Неопределён» (`undef`). Первые две молчат, третья должна попасть в
+     * `signals`, иначе разбор «почему лид сочли холодным» упирается в
+     * пустоту.
+     */
+    private kindByOwnField(lead: BxRow): {
+        kind: LeadWorkKind | null;
+        itemCode: string | null;
+    } {
         const field = this.portal.getEntityFieldByCode(
             'lead',
             PBX_SALES_EVENT_FIELD_CODES.op_lead_work_kind,
         );
         // Поля нет в слепке портала — работаем как раньше (graceful).
-        if (!field) return null;
+        if (!field) return { kind: null, itemCode: null };
         const raw = lead[this.portal.getFieldBitrixId(field)];
-        if (!this.filled(raw)) return null;
+        if (!this.filled(raw)) return { kind: null, itemCode: null };
         const item = field.items.find(
             entry => String(entry.bitrixId) === String(raw),
         );
-        return leadWorkKindByItemCode(item?.code);
+        const itemCode = item?.code ?? null;
+        return { kind: leadWorkKindByItemCode(itemCode), itemCode };
     }
 
     /** Вид работы по штатному источнику; null — источник ничего не говорит. */

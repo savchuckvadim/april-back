@@ -61,8 +61,16 @@ describe('InitSupplyDealFileFieldsService', () => {
     it('игнорирует файлы других полей и пустой base64', () => {
         const result = service.get(
             dtoWith([
-                { code: 'current_supply', filename: 'otchet.docx', base64: 'X' },
-                { code: 'current_contract', filename: 'dogovor.docx', base64: '' },
+                {
+                    code: 'current_supply',
+                    filename: 'otchet.docx',
+                    base64: 'X',
+                },
+                {
+                    code: 'current_contract',
+                    filename: 'dogovor.docx',
+                    base64: '',
+                },
             ]),
             portalModelWith({
                 current_supply: 'UF_CRM_SUPPLY',

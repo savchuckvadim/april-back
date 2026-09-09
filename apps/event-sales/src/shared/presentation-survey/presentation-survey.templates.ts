@@ -146,9 +146,7 @@ export const SURVEY_TEMPLATES: readonly SurveyTemplate[] = [
 ];
 
 /** Блок по коду поля; `null` — код не из опросника. */
-export const surveyTemplateByCode = (
-    code: string,
-): SurveyTemplate | null =>
+export const surveyTemplateByCode = (code: string): SurveyTemplate | null =>
     SURVEY_TEMPLATES.find(template => template.code === code) ?? null;
 
 /**
@@ -165,8 +163,7 @@ export const buildSurveyTemplateText = (template: SurveyTemplate): string =>
         .join('\n');
 
 /** Пробелы схлопнуты, края обрезаны — форма для сравнения, не для показа. */
-const normalize = (value: string): string =>
-    value.replace(/\s+/gu, ' ').trim();
+const normalize = (value: string): string => value.replace(/\s+/gu, ' ').trim();
 
 /** Ведущий номер пункта («3. ») — служебный, к тексту вопроса не относится. */
 const stripLeadingNumber = (line: string): string =>

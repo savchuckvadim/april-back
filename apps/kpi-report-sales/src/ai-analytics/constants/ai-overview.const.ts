@@ -19,6 +19,13 @@ import {
     AI_ANALYTICS_SETTINGS_TYPE,
     AI_ANALYTICS_SNAPSHOT_APP,
     AI_ANALYTICS_SNAPSHOT_PROVIDER,
+    AI_EDGE_ESTIMANDS,
+    AI_EVIDENCE_LEVELS,
+    AI_LEVERS,
+    type AiEdgeEstimand,
+    type AiEvidenceLevel,
+    type AiLever,
+    type NormLayer,
 } from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_PULSE_TTL_SECONDS } from './ai-analytics.const';
 
@@ -141,10 +148,48 @@ export const AI_ANALYTICS_FUNNEL_EDGE_CODES = AI_ANALYTICS_FUNNEL_EDGES.map(
     edge => edge.code,
 ) as readonly AiAnalyticsFunnelEdgeCode[];
 
-/** Источник приора ребра: Фаза 1b — none; portal/pool — с Фазы 2. */
-export const AI_ANALYTICS_PRIOR_SOURCES = ['none', 'portal', 'pool'] as const;
+/**
+ * Источник приора ребра (Фаза 2, поток 16b): none — модели портала нет,
+ * усадки не было; tenure / portal / global — слой нормы leave-one-out,
+ * значения совпадают с `NormLayer` библиотеки и прокидываются как есть;
+ * pool — межпортальный слой, зарезервирован под Фазы 3–4 (решение А.3:
+ * `kappa_portal_to_global = 0`, слой пула в Фазе 2 не считается).
+ */
+export const AI_ANALYTICS_PRIOR_SOURCES = [
+    'none',
+    'portal',
+    'tenure',
+    'global',
+    'pool',
+] as const;
 export type AiAnalyticsPriorSource =
     (typeof AI_ANALYTICS_PRIOR_SOURCES)[number];
+
+/**
+ * Слои нормы библиотеки как источники приора: проверка на этапе
+ * компиляции, что `NormLayer` целиком лежит внутри списка витрины —
+ * расширить один список и забыть другой не выйдет.
+ */
+export const AI_ANALYTICS_NORM_LAYER_SOURCES = [
+    'tenure',
+    'portal',
+    'global',
+] as const satisfies readonly (AiAnalyticsPriorSource & NormLayer)[];
+
+/**
+ * Рычаги рекомендаций и уровни доказательности витрины — те же значения,
+ * что в библиотеке (`AI_LEVERS`, `AI_EVIDENCE_LEVELS`): списки не
+ * дублируются, иначе Swagger-enum и модель разъедутся.
+ */
+export const AI_ANALYTICS_LEVERS = AI_LEVERS;
+export type AiAnalyticsLever = AiLever;
+
+export const AI_ANALYTICS_EVIDENCE_LEVELS = AI_EVIDENCE_LEVELS;
+export type AiAnalyticsEvidenceLevel = AiEvidenceLevel;
+
+/** Трактовка ребра: интенсивность (rate) или вероятность (prob). */
+export const AI_ANALYTICS_EDGE_ESTIMANDS = AI_EDGE_ESTIMANDS;
+export type AiAnalyticsEdgeEstimand = AiEdgeEstimand;
 
 /** Источник текста объяснения ячейки (ТЗ FR-23). */
 export const AI_ANALYTICS_EXPLANATION_SOURCES = ['template', 'llm'] as const;

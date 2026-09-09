@@ -4,24 +4,20 @@ import {
     AiAnalyticsBucket,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import {
-    AI_ANALYTICS_ALERT_KINDS,
-    AiAnalyticsAlertKind,
-} from '../constants/ai-analytics.const';
-import {
-    AI_ANALYTICS_FUNNEL_EDGE_CODES,
     AI_ANALYTICS_FUNNEL_SHAPES,
     AI_ANALYTICS_LEVEL_SOURCES,
     AI_ANALYTICS_MANAGER_LEVELS,
-    AI_ANALYTICS_PRIOR_SOURCES,
-    AiAnalyticsFunnelEdgeCode,
     AiAnalyticsFunnelShape,
     AiAnalyticsLevelSource,
     AiAnalyticsManagerLevel,
-    AiAnalyticsPriorSource,
 } from '../constants/ai-overview.const';
 import { AiAttentionItemDto } from './ai-attention.dto';
 import { AiFinanceTailDto } from './ai-finance-tail.dto';
+import { AiFunnelEdgeDto } from './ai-funnel-edge.dto';
 import { AiManagerTypeCellDto } from './ai-manager-type-cell.dto';
+import { AiNextStepRateDto, AiRiskCallDto } from './ai-manager-signals.dto';
+import { AiRecommendationDto } from './ai-recommendation.dto';
+import { AiStyleProfileDto } from './ai-style-profile.dto';
 import { MetricDto } from './metric.dto';
 
 // Финансовый хвост вынесен в ai-finance-tail.dto.ts (v2, «≤ 300 строк»);
@@ -33,6 +29,14 @@ export {
     AiPipelineByTermDto,
     AiPipelineDto,
 } from './ai-finance-tail.dto';
+
+// Ребро воронки, рекомендации, профиль стиля и сигнальные части строки —
+// в своих файлах (Фаза 2 их расширила, «≤ 300 строк»); реэкспорт
+// сохраняет прежние импорты соседей.
+export { AiFunnelEdgeDto } from './ai-funnel-edge.dto';
+export { AiNextStepRateDto, AiRiskCallDto } from './ai-manager-signals.dto';
+export { AiRecommendationDto } from './ai-recommendation.dto';
+export { AiStyleProfileDto, AiStyleTagDto } from './ai-style-profile.dto';
 
 /** Оценка корзины за период (контакт / презентация / закрытие). */
 export class AiBucketScoreDto {
@@ -55,59 +59,6 @@ export class AiBucketScoreDto {
         type: MetricDto,
     })
     score: MetricDto;
-}
-
-/** Ребро воронки по KPI-фактам (Фаза 1b: без усадки, priorSource none). */
-export class AiFunnelEdgeDto {
-    @ApiProperty({
-        description: 'Код ребра.',
-        enum: AI_ANALYTICS_FUNNEL_EDGE_CODES,
-        example: 'call_to_presentation',
-    })
-    edge: AiAnalyticsFunnelEdgeCode;
-
-    @ApiProperty({
-        description: 'Подпись ребра.',
-        type: String,
-        example: 'Звонок → презентация',
-    })
-    title: string;
-
-    @ApiProperty({
-        description: 'Вошло в ребро (знаменатель, факт самоотчёта).',
-        type: Number,
-        example: 120,
-    })
-    n: number;
-
-    @ApiProperty({
-        description: 'Перешло дальше (числитель).',
-        type: Number,
-        example: 23,
-    })
-    s: number;
-
-    @ApiProperty({
-        description:
-            'Доля s/n (0..1) с интервалом Уилсона; s > n → confidence ' +
-            'mixed-sources (числитель и знаменатель из разных событий).',
-        type: MetricDto,
-    })
-    rate: MetricDto;
-
-    @ApiPropertyOptional({
-        description: 'Норма уровня (Фаза 2; сейчас не отдаётся).',
-        type: Number,
-        example: 0.25,
-    })
-    levelNorm?: number;
-
-    @ApiProperty({
-        description: 'Источник приора усадки: Фаза 1b — none.',
-        enum: AI_ANALYTICS_PRIOR_SOURCES,
-        example: 'none',
-    })
-    priorSource: AiAnalyticsPriorSource;
 }
 
 /** План CRM: запланировано / сделано за период (самоотчёт). */
@@ -139,116 +90,6 @@ export class AiDisciplineDto {
         example: 10,
     })
     presentationDone: number;
-}
-
-/** Риск-звонок периода (риск-флаг разбора или срочный коучинг). */
-export class AiRiskCallDto {
-    @ApiProperty({ description: 'Id транскрипции.', type: String })
-    transcriptionId: string;
-
-    @ApiProperty({
-        description: 'Вид сигнала.',
-        enum: AI_ANALYTICS_ALERT_KINDS,
-        example: 'promise',
-    })
-    kind: AiAnalyticsAlertKind;
-
-    @ApiProperty({
-        description: 'Начало звонка (ISO 8601).',
-        type: String,
-        example: '2026-09-03T10:15:00.000Z',
-    })
-    callStartedAt: string;
-}
-
-/** Доля «шаг с датой» за два последних окна периода (сигнал next_step_drop). */
-export class AiNextStepRateDto {
-    @ApiProperty({
-        description: 'Окно, дней (по умолчанию 14).',
-        type: Number,
-        example: 14,
-    })
-    windowDays: number;
-
-    @ApiProperty({
-        description: 'Последнее окно периода: доля 0..1, n, Уилсон 90 %.',
-        type: MetricDto,
-    })
-    current: MetricDto;
-
-    @ApiProperty({
-        description:
-            'Предыдущее окно (может быть урезано началом периода → малое n).',
-        type: MetricDto,
-    })
-    previous: MetricDto;
-}
-
-/** Рекомендация (Фаза 2; в Фазе 1b список всегда пуст). */
-export class AiRecommendationDto {
-    @ApiProperty({
-        description:
-            'Рычаг: volume | quality | checklist | pipeline | objection.',
-        type: String,
-        example: 'quality',
-    })
-    lever: string;
-
-    @ApiPropertyOptional({
-        description: 'AI-тип звонка.',
-        type: String,
-        example: 'presentation',
-    })
-    callType?: string;
-
-    @ApiPropertyOptional({
-        description: 'Раздел рубрики.',
-        type: String,
-        example: 'PRICE',
-    })
-    section?: string;
-
-    @ApiPropertyOptional({
-        description: 'Категория возражения.',
-        type: String,
-        example: 'price',
-    })
-    category?: string;
-
-    @ApiPropertyOptional({
-        description: 'Ожидаемый прирост продаж.',
-        type: Number,
-        example: 0.4,
-    })
-    deltaSales?: number;
-
-    @ApiProperty({
-        description: 'Стоимость рекомендации.',
-        type: Number,
-        example: 1,
-    })
-    cost: number;
-
-    @ApiProperty({
-        description: 'Уровень доказательности: data | prior-only.',
-        type: String,
-        example: 'data',
-    })
-    evidence: string;
-
-    @ApiProperty({
-        description: 'Опоры.',
-        type: [String],
-        example: ['score=6.4'],
-    })
-    basis: string[];
-
-    @ApiProperty({
-        description: 'Код правила.',
-        type: String,
-        example: 'quality-weak-section',
-    })
-    ruleCode: string;
 }
 
 /** Строка менеджера в обзоре (план 6.3, ТЗ FR-13/14). */
@@ -382,8 +223,29 @@ export class AiManagerRowDto {
     riskCalls: AiRiskCallDto[];
 
     @ApiProperty({
-        description: 'Рекомендации (Фаза 2; сейчас пусто).',
+        description:
+            'Топ-3 рычага из дневного снапшота прогноза; пусто — модели ' +
+            'портала нет либо разборов меньше порога n_min_none (8).',
         type: [AiRecommendationDto],
     })
     recommendations: AiRecommendationDto[];
+
+    @ApiPropertyOptional({
+        description:
+            'Профиль стиля из снапшота ai-analytics-style; null — разборов ' +
+            'меньше style_min_calls (40) либо коллег для сравнения мало.',
+        type: AiStyleProfileDto,
+        nullable: true,
+    })
+    style?: AiStyleProfileDto | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Дата начала стажа YYYY-MM-DD (since уровня; каскад ' +
+            'UF_EMPLOYMENT_DATE → DATE_REGISTER приезжает из паспорта ' +
+            'конвейера); нет — дата не задана.',
+        type: String,
+        example: '2025-04-01',
+    })
+    since?: string;
 }

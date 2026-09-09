@@ -1,15 +1,25 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+    BadRequestException,
+    Injectable,
+    Logger,
+    Optional,
+} from '@nestjs/common';
 import { AI_ANALYTICS_OVERVIEW_MAX_MONTHS } from '../../constants/ai-overview.const';
 import { AiOverviewDto } from '../../dto/ai-overview.dto';
 import { isOverviewPeriodValid } from '../../dto/validators/overview-period.validator';
 import { AiAnalyticsFeedbackStore } from '../../store/ai-analytics-feedback.store';
 import { AiAnalyticsSettingsStore } from '../../store/ai-analytics-settings.store';
-import type { OverviewSources } from '../assembler/overview-model.types';
+import { AiAnalyticsSnapshotStore } from '../../store/ai-analytics-snapshot.store';
+import type {
+    OverviewSnapshots,
+    OverviewSources,
+} from '../assembler/overview-model.types';
 import { CallsLoader } from '../loaders/calls.loader';
 import { FinanceLoader } from '../loaders/finance.loader';
 import { KpiLoader } from '../loaders/kpi.loader';
 import { ManagerOrgLoader } from '../loaders/manager-org.loader';
 import { ManagersLoader } from '../loaders/managers.loader';
+import { OverviewSnapshotsLoader } from '../loaders/overview-snapshots.loader';
 import { portalRangeUtc } from '../loaders/period.util';
 import { PlansLoader } from '../loaders/plans.loader';
 import { SettingsLoader } from '../loaders/settings.loader';
@@ -59,6 +69,13 @@ export class OverviewUseCase {
         private readonly org: ManagerOrgLoader,
         private readonly levels: AiAnalyticsSettingsStore,
         private readonly feedback: AiAnalyticsFeedbackStore,
+        /**
+         * Стор снапшотов Фазы 2 (модель портала, прогнозы, стиль).
+         * Необязателен: без него витрина отдаёт то же, что в Фазе 1b —
+         * нормы null, `priorSource: none`, рекомендации пусты (§5.4).
+         */
+        @Optional()
+        private readonly snapshots?: AiAnalyticsSnapshotStore,
     ) {}
 
     async execute(
@@ -109,6 +126,9 @@ export class OverviewUseCase {
             org,
             levels,
             disagreementsCount,
+            snapshots: await this.loadSnapshots(domain, to),
+            rosterConfirmedAt: settings.rosterConfirmedAt,
+            hypothesisPairs: settings.hypothesis?.pairs.length ?? 0,
         };
         const dto = buildOverviewDto(sources, now);
         this.logger.log(
@@ -117,6 +137,29 @@ export class OverviewUseCase {
                 `${Date.now() - startedAt} мс`,
         );
         return dto;
+    }
+
+    /**
+     * Снапшоты Фазы 2 на конец периода. Стора нет либо `ais` не ответила —
+     * витрина остаётся в поведении Фазы 1b: обзор не должен гаснуть из-за
+     * ночного конвейера (§5.4).
+     */
+    private async loadSnapshots(
+        domain: string,
+        to: string,
+    ): Promise<OverviewSnapshots> {
+        if (!this.snapshots) return {};
+        try {
+            return await new OverviewSnapshotsLoader(this.snapshots).load(
+                domain,
+                to,
+            );
+        } catch (error) {
+            this.logger.warn(
+                `Снапшоты Фазы 2 недоступны (${domain}): ${String(error)}`,
+            );
+            return {};
+        }
     }
 
     /** Период задан, from ≤ to и не длиннее AI_ANALYTICS_OVERVIEW_MAX_MONTHS. */

@@ -3,6 +3,7 @@ import { PresentationFlowJobData } from '../../../presentation-flow/dto/presenta
 import {
     derivePresentationOutcome,
     isPresentationMoveOutcome,
+    PRESENTATION_OUTCOME,
 } from '../../../presentation-flow/lib/presentation-outcome';
 import { buildPresentationSurveySnapshot } from '../../../presentation-flow/lib/presentation-survey-snapshot';
 import {
@@ -64,8 +65,22 @@ export function buildPresentationFlowJobs(
      * ответы анкеты элемент унесёт. Флаг `isMove` выше для этого не
      * годится: «перенос + отказ» даёт исход `fail`, элемент
      * закрывается и плановую анкету не принимает.
+     *
+     * СПОНТАННАЯ презентация — исключение: её исход НЕ выводится из флагов
+     * отчёта. `isUnplannedPresentation` уже означает «презентация
+     * состоялась» (гейт — `isPresentationDone`), а отчёт при этом пришёл
+     * по ЧУЖОЙ задаче — по ней `resultStatus` может быть `NEW`/`NORESULT`
+     * или отсутствовать вовсе, и общий вывод дал бы `noresult`: элемент
+     * рождался бы сразу в «Не состоялась», хотя презентация прошла.
+     *
+     * Зеркало ветки 3 SalesPresentationDealService: unplanned pres-сделка
+     * создаётся с `eventAction: done` жёстко, `isResult` там не участвует.
+     * Отсюда и расхождение, которое ловили на портале: сделки презентаций
+     * вставали правильно, а элементы смарта — в «Не состоялась».
      */
-    const outcome = derivePresentationOutcome(ctx);
+    const outcome = ctx.isUnplannedPresentation
+        ? PRESENTATION_OUTCOME.done
+        : derivePresentationOutcome(ctx);
     const answers = buildSmartAnswers(questionnaire, PRESENTATION_SMART_KIND);
     warnOrphanAnswers(
         'presentation-flow',

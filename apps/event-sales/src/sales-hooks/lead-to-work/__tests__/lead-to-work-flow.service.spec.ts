@@ -182,9 +182,10 @@ const REQUEST_FIELDS = {
     'lead:op_lead_work_kind': {
         bitrixId: 'OP_LEAD_WORK_KIND',
         items: [
-            { code: 'op_lead_work_kind1', bitrixId: 101 },
-            { code: 'op_lead_work_kind2', bitrixId: 102 },
-            { code: 'op_lead_work_kind3', bitrixId: 103 },
+            { code: 'cold', bitrixId: 101 },
+            { code: 'request', bitrixId: 102 },
+            { code: 'lead', bitrixId: 103 },
+            { code: 'undef', bitrixId: 104 },
         ],
     },
     'lead:op_lead_firstprepare_history': {

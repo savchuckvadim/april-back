@@ -1,12 +1,48 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { AI_BETA_SOURCES, AiBetaSource } from '@lib/sales-ai-analytics';
 import {
     AI_ANALYTICS_READINESS_MODES,
     AiAnalyticsReadinessMode,
 } from '../constants/ai-analytics.const';
 
 /**
+ * Счётчик «до оценки β» (решение А.3): сколько ещё нужно презентаций и
+ * месяцев, чтобы связь «качество → исход» считалась по данным портала, а
+ * не по гипотезе. Показывается с первого дня — чтобы срок был виден
+ * заранее, а не «когда-нибудь».
+ */
+export class AiBetaCountdownDto {
+    @ApiProperty({
+        description:
+            'Стандартная ошибка наклона при накопленном объёме; null — ' +
+            'объёма ещё нет.',
+        type: Number,
+        nullable: true,
+        example: 0.19,
+    })
+    seNow: number | null;
+
+    @ApiProperty({
+        description: 'Сколько презентаций осталось до гейта.',
+        type: Number,
+        example: 340,
+    })
+    presentationsLeft: number;
+
+    @ApiProperty({
+        description:
+            'Месяцев при текущем темпе презентаций; null — темп неизвестен.',
+        type: Number,
+        nullable: true,
+        example: 7,
+    })
+    monthsLeft: number | null;
+}
+
+/**
  * Готовность витрины (план, 4.11): режим по объёму истории, число
- * презентаций и продаж, дата сопоставимости версий разбора, причины.
+ * презентаций и продаж, дата сопоставимости версий разбора, причины,
+ * режим связи качества с исходом и счётчик до его гейта.
  */
 export class ReadinessDto {
     @ApiProperty({
@@ -36,10 +72,10 @@ export class ReadinessDto {
 
     @ApiProperty({
         description:
-            'Продаж за окно готовности (Фаза 1b — из закрытых сделок; ' +
-            'в Фазе 1a всегда 0).',
+            'Продаж за окно готовности: закрытые сделки финансов, а при ' +
+            'пустых финансах — продажи эпизодов из снапшота прогноза.',
         type: Number,
-        example: 0,
+        example: 12,
     })
     sales: number;
 
@@ -59,4 +95,23 @@ export class ReadinessDto {
         example: ['history-months-below-3', 'presentations-below-60'],
     })
     reasons: string[];
+
+    @ApiProperty({
+        description:
+            'Связь «качество → исход»: none — не задана, hypothesis — ' +
+            'гипотеза портала (ai_analytics_hypothesis), data — оценка по ' +
+            'данным портала (гейт β пройден).',
+        enum: AI_BETA_SOURCES,
+        example: 'none',
+    })
+    betaSource: AiBetaSource;
+
+    @ApiPropertyOptional({
+        description:
+            'Счётчик «до оценки β»; null — гейт уже пройден (betaSource = ' +
+            'data), режим kpi-only либо считать не из чего.',
+        type: AiBetaCountdownDto,
+        nullable: true,
+    })
+    betaCountdown?: AiBetaCountdownDto | null;
 }

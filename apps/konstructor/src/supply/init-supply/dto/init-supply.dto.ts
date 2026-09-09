@@ -66,7 +66,9 @@ export class InitSupplyFileDto {
     @IsString()
     filename: string;
 
-    @ApiProperty({ description: 'Содержимое файла в base64, без data:-префикса' })
+    @ApiProperty({
+        description: 'Содержимое файла в base64, без data:-префикса',
+    })
     @IsString()
     base64: string;
 }

@@ -571,7 +571,10 @@ export class QuestionnaireCheckService {
                 bitrixId: live.id,
                 xmlId: live.xmlId,
             });
-            if (before && !isSameQuestionnaireFieldTitle(before.title, live.value)) {
+            if (
+                before &&
+                !isSameQuestionnaireFieldTitle(before.title, live.value)
+            ) {
                 diff.renamedOptions.push({
                     optionId: option.id,
                     code: option.code,

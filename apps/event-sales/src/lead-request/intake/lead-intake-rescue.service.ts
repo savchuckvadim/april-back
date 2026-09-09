@@ -12,6 +12,8 @@ import { SalesHookDispatchService } from '../../sales-hooks/core/services/sales-
 import { SalesHookIdempotencyService } from '../../sales-hooks/core/services/sales-hook-idempotency.service';
 import { buildLeadToWorkItem } from '../../sales-hooks/lead-to-work/dto/lead-to-work.dto';
 import { LeadRequestDetectorService } from '../../sales-hooks/lead-to-work/services/lead-request-detector.service';
+import { XoQueueReader } from './xo-queue.reader';
+import { XoRouting, XoRoutingModel } from './xo-routing.model';
 
 // Плагины idempotent: extend() повторно — no-op (см. lead-request-history.util).
 dayjs.extend(utc);
@@ -23,32 +25,57 @@ const CRM_DATETIME_FORMAT = 'DD.MM.YYYY HH:mm:ss';
 /** Лид «в работе»: закрытые (CONVERTED/JUNK) дожимать нельзя. */
 const IN_PROGRESS_SEMANTIC = 'P';
 
-/**
- * Код видимой стадии-очереди отправки в ХО (todo2508 №3). Лид ставится в
- * неё ПЕРЕД отправкой хука и уезжает дальше, когда хук отработал.
- */
+/** Код видимой стадии-очереди отправки в ХО (todo2508 №3). */
 const XO_QUEUE_STAGE_CODE = 'lead_xo_queue';
 
-/**
- * Сколько минут лид должен провисеть в очереди, чтобы считаться
- * «недоехавшим». Меньше — рискуем продублировать хук, который прямо сейчас
- * выполняется.
- */
-const QUEUE_STUCK_MINUTES = 15;
-
 type BxRow = Record<string, unknown>;
+type BitrixInstance = Awaited<ReturnType<PBXService['init']>>['bitrix'];
+
+/** Лид, готовый к дожиму: id + маршрутизация от робота. */
+interface ReadyLead {
+    leadId: number;
+    routing: XoRouting;
+}
+
+/**
+ * Откуда крон брал лиды в этом проходе — решает НАСТРОЙКА ПОРТАЛА:
+ *  - `queue` — стадия «Очередь в ХО» сопоставлена в админке, разбираем
+ *    ТОЛЬКО её, целиком и без ограничений по датам;
+ *  - `window` — стадия не сопоставлена, берём свежие лиды окна создания в
+ *    любой открытой стадии.
+ */
+export type LeadIntakeRescueSource = 'queue' | 'window';
 
 /** Итог прохода страховки по домену (лог/диагностика/тесты). */
 export interface LeadIntakeRescueRunResult {
-    /** Свежих лидов в выборке (до отсева). */
+    /** Источник выборки этого прохода. */
+    source: LeadIntakeRescueSource;
+    /** Лидов просмотрено (до отсева). */
     scanned: number;
     /** Назначений, запущенных повторно. */
     dispatched: number;
     /** Отсеяно: уже назначены, уже есть работа, не заявка. */
     skipped: number;
-    /** Из них подобрано по ЗАСТРЯВШЕЙ стадии-очереди, вне окна создания. */
-    rescuedFromQueue: number;
+    /**
+     * Оставлено в очереди на РУЧНОЙ разбор: нет ни ответственного ХО, ни
+     * отдела строкой — назначать некому. Всегда 0 в режиме `window`.
+     */
+    notReady: number;
     warnings: string[];
+}
+
+/** Всё, что нужно обеим выборкам: собирается один раз на домен. */
+interface RescueContext {
+    domain: string;
+    bitrix: BitrixInstance;
+    portal: PortalModel;
+    /** UF-имя `op_lead_assigned_at`; null — поле не установлено. */
+    assignedAtName: string | null;
+    /** UF-имя `to_base_sales`; null — поле не установлено. */
+    toBaseName: string | null;
+    select: string[];
+    maxPerRun: number;
+    routing: XoRoutingModel;
 }
 
 /**
@@ -58,15 +85,26 @@ export interface LeadIntakeRescueRunResult {
  * зависает без ответственного. SLA-крон такой лид не видит принципиально —
  * он ищет НАЗНАЧЕННЫЕ и непринятые, а здесь назначения не было вовсе.
  *
- * Признак «хук не проходил» берём по НАШИМ полям, а не по стадии (её
- * двигают конструктор, роботы и люди):
+ * ГДЕ ИСКАТЬ — решает настройка портала, а не код (см.
+ * {@link LeadIntakeRescueSource}).
+ *
+ * Режим `queue` (стадия «Очередь в ХО» сопоставлена) — основной. Стадия
+ * здесь буквально очередь: её надо разобрать ВСЮ, поэтому никаких окон по
+ * дате создания или изменения. Что не влезло в порцию (`maxPerRun`) —
+ * останется до следующего тика, что разобрать нельзя — останется в очереди
+ * навсегда, пока человек не поправит карточку. Робот входа сам решает, кто
+ * сюда попадает, поэтому фильтр «только заявки» здесь НЕ применяется:
+ * очередь держит и заявки, и обычные лиды на обзвон.
+ *
+ * Режим `window` (стадия не сопоставлена) — прежнее поведение: свежие лиды
+ * окна создания в любой открытой стадии, с фильтром «только заявки».
+ *
+ * Признак «хук не проходил» в обоих режимах — по НАШИМ полям, а не по
+ * стадии (её двигают конструктор, роботы и люди):
  *  - `op_lead_assigned_at` пусто — заявку никому не назначали;
  *  - `to_base_sales` пусто — нашей сделки по лиду нет.
  * Оба заполняются в одной batch-группе хука, поэтому «пусто и там, и там»
  * означает именно «хук не отрабатывал», а не «отработал наполовину».
- *
- * Выборка ограничена окном создания (lookback) и лимитом на проход: крон
- * не должен перелопачивать десятки тысяч старых лидов портала.
  */
 @Injectable()
 export class LeadIntakeRescueService {
@@ -85,10 +123,11 @@ export class LeadIntakeRescueService {
         requestsOnly: boolean,
     ): Promise<LeadIntakeRescueRunResult> {
         const result: LeadIntakeRescueRunResult = {
+            source: 'window',
             scanned: 0,
             dispatched: 0,
             skipped: 0,
-            rescuedFromQueue: 0,
+            notReady: 0,
             warnings: [],
         };
         const { bitrix, PortalModel: portal } = await this.pbx.init(domain);
@@ -108,8 +147,111 @@ export class LeadIntakeRescueService {
             return result;
         }
 
+        const ctx: RescueContext = {
+            domain,
+            bitrix,
+            portal,
+            assignedAtName,
+            toBaseName,
+            // `UF_*` забирает все пользовательские поля разом — отдельно
+            // перечислять поля маршрутизации не нужно.
+            select: [
+                'ID',
+                'TITLE',
+                'STATUS_ID',
+                'SOURCE_ID',
+                'ASSIGNED_BY_ID',
+                'DATE_CREATE',
+                'UF_*',
+            ],
+            maxPerRun,
+            routing: new XoRoutingModel(portal, 'lead'),
+        };
+
+        const queueStatusId =
+            portal.getLeadStatusIdByCode(XO_QUEUE_STAGE_CODE) ?? null;
+        result.source = queueStatusId ? 'queue' : 'window';
+
+        const ready = queueStatusId
+            ? await this.collectFromQueue(ctx, queueStatusId, result)
+            : await this.collectFromWindow(
+                  ctx,
+                  lookbackMinutes,
+                  requestsOnly,
+                  result,
+              );
+
+        for (const lead of ready) {
+            const sent = await this.dispatchAssignment(
+                domain,
+                lead.leadId,
+                lead.routing,
+            );
+            if (sent) {
+                result.dispatched += 1;
+            } else {
+                result.warnings.push(
+                    `Лид ${lead.leadId}: назначение уже выполняется другой операцией`,
+                );
+            }
+        }
+
+        this.logger.log(
+            `[intake-rescue] ${domain} (${result.source}): просмотрено ` +
+                `${result.scanned}, дожато ${result.dispatched}, пропущено ` +
+                `${result.skipped}, ждут ручного разбора ${result.notReady}`,
+        );
+        return result;
+    }
+
+    /**
+     * Режим `queue`: разбираем стадию целиком, страницами по ID, пока не
+     * наберём порцию. Даты не участвуют вообще — очередь есть очередь.
+     */
+    private async collectFromQueue(
+        ctx: RescueContext,
+        queueStatusId: string,
+        result: LeadIntakeRescueRunResult,
+    ): Promise<ReadyLead[]> {
+        const reader = new XoQueueReader(ctx.bitrix, queueStatusId, ctx.select);
+        const ready: ReadyLead[] = [];
+
+        for await (const page of reader.pages()) {
+            if (page.error) {
+                result.warnings.push(
+                    `Чтение очереди ХО прервано: ${page.error.message} — остаток дожмётся следующим тиком`,
+                );
+                break;
+            }
+            for (const row of page.rows) {
+                if (ready.length >= ctx.maxPerRun) break;
+                result.scanned += 1;
+                const lead = this.classify(ctx, row, result);
+                if (lead) ready.push(lead);
+            }
+            if (ready.length >= ctx.maxPerRun) {
+                result.warnings.push(
+                    `Порция ${ctx.maxPerRun} лидов набрана — остаток очереди ХО разберётся следующим тиком`,
+                );
+                break;
+            }
+        }
+        return ready;
+    }
+
+    /**
+     * Режим `window`: одна выборка по окну создания. Здесь стадия ничего не
+     * гарантирует, поэтому фильтр «только заявки» остаётся — иначе крон
+     * дожимал бы всё подряд, включая заведённое руками.
+     */
+    private async collectFromWindow(
+        ctx: RescueContext,
+        lookbackMinutes: number,
+        requestsOnly: boolean,
+        result: LeadIntakeRescueRunResult,
+    ): Promise<ReadyLead[]> {
         const since = dayjs()
-            .tz(portal.getTimezone())
+            .tz(ctx.portal.getTimezone())
             .subtract(lookbackMinutes, 'minute')
             .format(CRM_DATETIME_FORMAT);
         const filter: Record<string, unknown> = {
@@ -118,177 +260,88 @@ export class LeadIntakeRescueService {
         };
         // Сужаем выборку на стороне Битрикса, когда поле есть: пустое
         // `op_lead_assigned_at` и есть «никем не назначен».
-        if (assignedAtName) filter[assignedAtName] = '';
+        if (ctx.assignedAtName) filter[ctx.assignedAtName] = '';
 
-        const select = [
-            'ID',
-            'TITLE',
-            'STATUS_ID',
-            'SOURCE_ID',
-            'ASSIGNED_BY_ID',
-            'DATE_CREATE',
-            'UF_*',
-        ];
-        const { result: leads } = await bitrix.lead.getList(
+        const { result: rows } = await ctx.bitrix.lead.getList(
             filter as never,
-            select,
+            ctx.select,
         );
-        const rows = (leads ?? []) as unknown as BxRow[];
+        const detector = new LeadRequestDetectorService(ctx.portal);
+        const ready: ReadyLead[] = [];
 
-        /*
-         * Вторая выборка — по ВИДИМОЙ стадии-очереди. Окно создания её не
-         * ограничивает: лид, застрявший в очереди сутки назад, из окна давно
-         * выпал бы и не дожался никогда. Свежие (моложе QUEUE_STUCK_MINUTES)
-         * не берём — по ним хук, возможно, прямо сейчас работает.
-         */
-        const queueStatusId = portal.getLeadStatusIdByCode(XO_QUEUE_STAGE_CODE);
-        const queued = queueStatusId
-            ? await this.listStuckInQueue(
-                  bitrix,
-                  portal,
-                  queueStatusId,
-                  assignedAtName,
-                  select,
-                  result.warnings,
-              )
-            : [];
-        const seen = new Set(rows.map(row => String(row.ID)));
-        for (const row of queued) {
-            if (seen.has(String(row.ID))) continue;
-            seen.add(String(row.ID));
-            rows.push(row);
-            result.rescuedFromQueue += 1;
-        }
-
-        result.scanned = rows.length;
-        if (!rows.length) return result;
-
-        const detector = new LeadRequestDetectorService(portal);
-        let dispatched = 0;
-
-        for (const lead of rows) {
-            const leadId = Number(lead.ID);
-            if (!Number.isFinite(leadId) || leadId <= 0) continue;
-
-            // Фильтр Битрикса по пустоте UF срабатывает не на всех порталах —
-            // перепроверяем сами: лишний dispatch назначил бы заявку заново
-            // и увёл её у работающего менеджера.
-            if (assignedAtName && this.hasValue(lead[assignedAtName])) {
-                result.skipped += 1;
-                continue;
-            }
-            if (toBaseName && this.hasValue(lead[toBaseName])) {
-                result.skipped += 1;
-                continue;
-            }
-            if (requestsOnly && !detector.detect(lead).isRequest) {
-                result.skipped += 1;
-                continue;
-            }
-            if (dispatched >= maxPerRun) {
+        for (const row of ((rows ?? []) as unknown as BxRow[]).filter(
+            Boolean,
+        )) {
+            if (ready.length >= ctx.maxPerRun) {
                 result.warnings.push(
-                    `Лимит ${maxPerRun} лидов за проход исчерпан — остальные дожмутся следующим тиком`,
+                    `Лимит ${ctx.maxPerRun} лидов за проход исчерпан — остальные дожмутся следующим тиком`,
                 );
                 break;
             }
-
-            // Стадия-очередь ставится ДО отправки: упади хук сейчас — лид
-            // останется видимо «в очереди», и следующий тик его подберёт
-            // (порядок как у маркеров реанимации отказников).
-            if (queueStatusId && String(lead.STATUS_ID) !== queueStatusId) {
-                await this.stampQueueStage(
-                    bitrix,
-                    leadId,
-                    queueStatusId,
-                    result.warnings,
-                );
+            result.scanned += 1;
+            if (requestsOnly && !detector.detect(row).isRequest) {
+                result.skipped += 1;
+                continue;
             }
-
-            const sent = await this.dispatchAssignment(domain, leadId);
-            if (sent) {
-                dispatched += 1;
-                result.dispatched += 1;
-            } else {
-                result.warnings.push(
-                    `Лид ${leadId}: назначение уже выполняется другой операцией`,
-                );
-            }
+            const lead = this.classify(ctx, row, result);
+            if (lead) ready.push(lead);
         }
-
-        this.logger.log(
-            `[intake-rescue] ${domain}: просмотрено ${result.scanned}, ` +
-                `дожато ${result.dispatched}, пропущено ${result.skipped}, ` +
-                `из очереди ХО ${result.rescuedFromQueue}`,
-        );
-        return result;
+        return ready;
     }
 
     /**
-     * Лиды, застрявшие в стадии-очереди дольше порога. Проверка непустоты
-     * наших полей — общая для обеих выборок (ниже по циклу), здесь только
-     * сужаем на стороне Битрикса.
+     * Общий отсев строки: валидный id → не обработан ранее → есть кому
+     * назначать. Готовность (`isReady`) обязательна только для очереди —
+     * в режиме `window` маршрутизации может не быть вовсе, и ответственного
+     * тогда выбирает сам хук round-robin'ом по всем ОП (прежнее поведение).
      */
-    private async listStuckInQueue(
-        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
-        portal: PortalModel,
-        queueStatusId: string,
-        assignedAtName: string | null,
-        select: string[],
-        warnings: string[],
-    ): Promise<BxRow[]> {
-        const stuckBefore = dayjs()
-            .tz(portal.getTimezone())
-            .subtract(QUEUE_STUCK_MINUTES, 'minute')
-            .format(CRM_DATETIME_FORMAT);
-        const filter: Record<string, unknown> = {
-            STATUS_ID: queueStatusId,
-            STATUS_SEMANTIC_ID: IN_PROGRESS_SEMANTIC,
-            '<DATE_MODIFY': stuckBefore,
-        };
-        if (assignedAtName) filter[assignedAtName] = '';
-        try {
-            const { result } = await bitrix.lead.getList(
-                filter as never,
-                select,
-            );
-            return ((result ?? []) as unknown as BxRow[]).filter(Boolean);
-        } catch (error) {
-            warnings.push(
-                `Выборка застрявших в очереди ХО не удалась: ${(error as Error).message}`,
-            );
-            return [];
-        }
-    }
+    private classify(
+        ctx: RescueContext,
+        row: BxRow,
+        result: LeadIntakeRescueRunResult,
+    ): ReadyLead | null {
+        const leadId = Number(row.ID);
+        if (!Number.isFinite(leadId) || leadId <= 0) return null;
 
-    /** Видимая отметка «лид отправляется в ХО»; падение не блокирует отправку. */
-    private async stampQueueStage(
-        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
-        leadId: number,
-        queueStatusId: string,
-        warnings: string[],
-    ): Promise<void> {
-        try {
-            await bitrix.lead.update(leadId, {
-                STATUS_ID: queueStatusId,
-            } as never);
-        } catch (error) {
-            warnings.push(
-                `Лид ${leadId}: стадию «Очередь в ХО» поставить не удалось (${(error as Error).message}) — назначение всё равно запускается`,
-            );
+        // Фильтр Битрикса по пустоте UF срабатывает не на всех порталах, а в
+        // очереди его нет вовсе — перепроверяем сами: лишний dispatch
+        // назначил бы заявку заново и увёл её у работающего менеджера.
+        if (ctx.assignedAtName && this.hasValue(row[ctx.assignedAtName])) {
+            result.skipped += 1;
+            return null;
         }
+        if (ctx.toBaseName && this.hasValue(row[ctx.toBaseName])) {
+            result.skipped += 1;
+            return null;
+        }
+
+        const routing = ctx.routing.read(row);
+        if (result.source === 'queue' && !ctx.routing.isReady(routing)) {
+            result.notReady += 1;
+            return null;
+        }
+        return { leadId, routing };
     }
 
     /**
      * Повторный запуск назначения — тем же хуком и теми же флагами, что у
      * робота входа (ХО-ветка: сделка + задача + KPI + round-robin).
-     * `responsible` не передаём: отдел и сотрудника выбирает хук.
+     *
+     * Маршрутизацию отдаём хуку как есть: заполнил робот `xo_responsible` —
+     * пойдёт к нему, заполнил только отдел — round-robin внутри отдела,
+     * пусто — round-robin по всем ОП (возможно только в режиме `window`).
      */
     private async dispatchAssignment(
         domain: string,
         leadId: number,
+        routing: XoRouting,
     ): Promise<boolean> {
         const item = buildLeadToWorkItem({
             leadId,
+            responsible: routing.responsible ?? undefined,
+            department: routing.department ?? undefined,
+            name: routing.name ?? undefined,
+            deadline: routing.deadline ?? undefined,
             isXo: 'Y',
             stageMode: 'new',
             taskMode: 'close',

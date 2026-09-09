@@ -73,13 +73,20 @@ describe('SettingsUseCase', () => {
         expect(dto.pipelineEnabled).toBe(true);
         expect(dto.ropUserIds).toEqual([447]);
         expect(dto.comparableFrom).toBe('2026-09-05');
+        // Фаза 2: заглушки «продажи не считаются» больше нет, зато режим
+        // норм требует ≥ 100 презентаций и подтверждённого состава.
         expect(dto.readiness).toEqual({
             mode: 'descriptive',
             historyMonths: 3,
             presentations: 70,
             sales: 0,
             comparableFrom: '2026-09-05',
-            reasons: [READINESS_REASONS.salesNotComputed],
+            reasons: [
+                READINESS_REASONS.normsPresentationsFew,
+                READINESS_REASONS.rosterNotConfirmed,
+            ],
+            betaSource: 'none',
+            betaCountdown: null,
         });
         expect(dto.callTypes.map(type => type.code)).toEqual([
             ...CALL_REPORT_CALL_TYPE_CODES,
@@ -117,7 +124,6 @@ describe('SettingsUseCase', () => {
         expect(readiness.reasons).toEqual([
             READINESS_REASONS.historyShort,
             READINESS_REASONS.presentationsFew,
-            READINESS_REASONS.salesNotComputed,
         ]);
     });
 

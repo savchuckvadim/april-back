@@ -180,10 +180,7 @@ const acceptedMeta = (
 });
 
 /** Слепки, которые сверка записала вопросу. */
-const mirrorApplied = (
-    mock: jest.Mock,
-    index = 0,
-): QuestionnaireFieldMirror =>
+const mirrorApplied = (mock: jest.Mock, index = 0): QuestionnaireFieldMirror =>
     readQuestionnaireFieldMirror(appliedBy(mock)[index]?.meta);
 
 const makeDeps = (options: {
@@ -444,7 +441,11 @@ describe('QuestionnaireCheckService', () => {
                             title: 'Итог презентации',
                             type: 'enumeration',
                             options: [
-                                { bitrixId: 41, xmlId: 'OK', title: 'Согласен' },
+                                {
+                                    bitrixId: 41,
+                                    xmlId: 'OK',
+                                    title: 'Согласен',
+                                },
                                 { bitrixId: 42, xmlId: 'NO', title: 'Отказ' },
                             ],
                         }),
@@ -797,9 +798,12 @@ describe('QuestionnaireCheckService', () => {
             const { service, questionnaires } = makeDeps({
                 record: makeRecord([
                     makeItem({
-                        meta: acceptedMeta({ title: 'Дата решения' }, {
-                            rows: 3,
-                        }),
+                        meta: acceptedMeta(
+                            { title: 'Дата решения' },
+                            {
+                                rows: 3,
+                            },
+                        ),
                     }),
                 ]),
                 live: onCompany(makeField({ title: 'Дата решения' })),

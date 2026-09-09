@@ -18,6 +18,40 @@ import type {
 import type { DatedLiteRow } from '../loaders/lite-row.mapper';
 import type { ManagerOrg } from '../loaders/manager-org.loader';
 import type { AiPlansResult } from '../loaders/plans.types';
+import type { PortalModelPayload } from './portal-model.types';
+
+/**
+ * Снапшоты Фазы 2 в том виде, в каком они приходят из `ais`: форма чужая
+ * и может быть неполной, поэтому читается структурно. Пусто — витрина
+ * работает как в Фазе 1b (§5.4).
+ */
+export type PortalModelView = Partial<PortalModelPayload>;
+
+/** Дневной прогноз менеджера (`ai-analytics-forecast`). */
+export interface ForecastView {
+    /** Рычаги, отобранные ночным шагом (`buildLevers`). */
+    levers?: unknown;
+    /** `Y₀` — продажи месяца по эпизодам и финансам. */
+    doneSales?: unknown;
+}
+
+/** Профиль стиля менеджера (`ai-analytics-style`). */
+export interface StyleView {
+    calls?: unknown;
+    vector?: unknown;
+    tags?: unknown;
+    confidence?: unknown;
+}
+
+/** Снапшоты Фазы 2, которые читает витрина обзора. */
+export interface OverviewSnapshots {
+    /** Месячная модель портала; null — норм нет. */
+    model?: PortalModelView | null;
+    /** Дневной прогноз по менеджеру. */
+    forecasts?: ReadonlyMap<string, ForecastView>;
+    /** Профиль стиля по менеджеру. */
+    styles?: ReadonlyMap<string, StyleView>;
+}
 
 /** Всё, что нужно presenter'у обзора, собранное loader'ами параллельно. */
 export interface OverviewSources {
@@ -38,6 +72,12 @@ export interface OverviewSources {
     levels: Map<number, AiManagerLevelRecord>;
     /** Реакций disagree за период. */
     disagreementsCount: number;
+    /** Снапшоты Фазы 2: модель портала, прогнозы, профили стиля. */
+    snapshots?: OverviewSnapshots;
+    /** `ai_analytics_roster_confirmed_at`; '' — состав не подтверждали. */
+    rosterConfirmedAt?: string;
+    /** Пар в `ai_analytics_hypothesis` (режим `hypothesis` требует ≥ 2). */
+    hypothesisPairs?: number;
 }
 
 /** KPI-факты менеджера за период: сумма месячных сегментов. */

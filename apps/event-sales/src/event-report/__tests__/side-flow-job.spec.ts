@@ -333,6 +333,81 @@ describe('buildPresentationFlowJobs', () => {
         });
     });
 
+    /*
+     * Спонтанная презентация: отчёт пришёл по ЧУЖОЙ задаче, и `resultStatus`
+     * там про неё, а не про презентацию. Общий вывод исхода давал `noresult`,
+     * и элемент смарта рождался сразу в «Не состоялась» — при том, что
+     * pres-сделка того же отчёта вставала в «Проведена» (ветка 3
+     * SalesPresentationDealService создаёт её с `eventAction: done` жёстко).
+     * Именно это расхождение ловили на портале garantservisvoronezh.
+     */
+    describe('исход спонтанной презентации = done (зеркало pres-сделки)', () => {
+        const spontaneousCtx = (report: Record<string, unknown>) =>
+            makeCtx({
+                // Задача НЕ презентационная — отсюда и берётся «спонтанность».
+                currentTask: { eventType: 'hot' },
+                presentation: { isPresentationDone: true },
+                report,
+            });
+
+        it.each([
+            ['resultStatus=new', { resultStatus: 'new' }],
+            ['resultStatus=noresult', { resultStatus: 'noresult' }],
+            ['меню результата не открывали', {}],
+        ])('%s → done, а не noresult', (_case, report) => {
+            const ctx = spontaneousCtx({
+                ...report,
+                workStatus: { current: { code: 'inJob' } },
+            });
+
+            const jobs = buildPresentationFlowJobs(makeInput(ctx));
+
+            expect(ctx.isUnplannedPresentation).toBe(true);
+            expect(jobs.map(job => job.kind)).toEqual(['report']);
+            expect(jobs[0].outcome).toBe('done');
+            expect(jobs[0].isSpontaneous).toBe(true);
+        });
+
+        /*
+         * Отказ по чужой задаче не отменяет ФАКТА проведённой презентации:
+         * элемент фиксирует «презентация была», а отказ живёт на базовой
+         * сделке. Ровно так же ведёт себя unplanned pres-сделка.
+         */
+        it('отказ в отчёте не уводит элемент в fail', () => {
+            const ctx = spontaneousCtx({
+                resultStatus: 'result',
+                workStatus: { current: { code: 'fail' } },
+            });
+
+            const jobs = buildPresentationFlowJobs(makeInput(ctx));
+
+            expect(jobs[0].outcome).toBe('done');
+        });
+
+        /*
+         * Обратная сторона: НЕспонтанный отчёт (по презентационной задаче,
+         * с живой pres-сделкой) исход по-прежнему выводит из флагов —
+         * иначе сорванная презентация закрывалась бы как проведённая.
+         */
+        it('отчёт по своей презентации исход по-прежнему выводит из флагов', () => {
+            const ctx = makeCtx(
+                {
+                    currentTask: { eventType: 'presentation' },
+                    report: {
+                        resultStatus: 'new',
+                        workStatus: { current: { code: 'inJob' } },
+                    },
+                },
+                { currentPresDeal: { ID: '25485' } },
+            );
+
+            const jobs = buildPresentationFlowJobs(makeInput(ctx));
+
+            expect(ctx.isUnplannedPresentation).toBe(false);
+            expect(jobs[0].outcome).toBe('noresult');
+        });
+    });
+
     it('план-задача уезжает и в презентационный джоб', () => {
         const ctx = makeCtx({
             currentTask: { eventType: 'warm' },

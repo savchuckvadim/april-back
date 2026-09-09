@@ -75,6 +75,28 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
+        // Подсказка робота «в каком ОП искать сотрудника»: пишется строкой
+        // (значение multiple-справочника отдела либо просто название), а
+        // сравнивается НЕСТРОГО — по вхождению в любую сторону. Нужна там,
+        // где конкретного человека выбирать не робот, а round-robin:
+        // очередь ХО и реанимация отказников (сотрудник снят, отдел оставлен).
+        name: 'ОП Отдел строкой',
+        appType: 'xo',
+        type: 'string',
+        items: [],
+        code: 'department_string',
+        lead: 'DEPARTMENT_STRING',
+        company: 'DEPARTMENT_STRING',
+        deal: 'DEPARTMENT_STRING',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 210,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
         name: 'ОП Дата назначенной презентации',
         appType: 'pres',
         type: 'datetime',
@@ -1818,10 +1840,19 @@ export const PBX_SALES_EVENT_FIELDS = [
         name: 'ОП Вид работы по лиду',
         appType: 'lead',
         type: 'enumeration',
+        /*
+         * Коды значений СЕМАНТИЧЕСКИЕ (`cold`/`request`/`lead`/`undef`), а не
+         * порядковые `op_lead_work_kindN`: по коду item'а идёт сопоставление
+         * в обе стороны (детектор читает, хук пишет), и порядковый номер там
+         * ничего не значил, зато молча разъезжался с названием значения на
+         * портале. Порталы переустановлены под этот набор — legacy-коды не
+         * поддерживаются намеренно.
+         */
         items: [
-            { code: 'op_lead_work_kind1', name: 'Холодный' },
-            { code: 'op_lead_work_kind2', name: 'Заявка' },
-            { code: 'op_lead_work_kind3', name: 'Лид' },
+            { code: 'cold', name: 'Холодный' },
+            { code: 'request', name: 'Заявка' },
+            { code: 'lead', name: 'Лид' },
+            { code: 'undef', name: 'Неопределён' },
         ],
         code: 'op_lead_work_kind',
         lead: 'OP_LEAD_WORK_KIND',

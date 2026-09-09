@@ -1,10 +1,15 @@
 import { LeadRequestDetectorService } from '../services/lead-request-detector.service';
 
-/** items НАШЕГО поля вида работы — как они приходят из слепка портала. */
+/**
+ * items НАШЕГО поля вида работы — как они приходят из слепка портала.
+ * Коды семантические (`cold`/`request`/`lead`/`undef`), порталы
+ * переустановлены под этот набор; `undef` — «робот не знает».
+ */
 const WORK_KIND_ITEMS = [
-    { code: 'op_lead_work_kind1', bitrixId: 101 },
-    { code: 'op_lead_work_kind2', bitrixId: 102 },
-    { code: 'op_lead_work_kind3', bitrixId: 103 },
+    { code: 'cold', bitrixId: 101 },
+    { code: 'request', bitrixId: 102 },
+    { code: 'lead', bitrixId: 103 },
+    { code: 'undef', bitrixId: 104 },
 ];
 
 /**
@@ -118,6 +123,61 @@ describe('LeadRequestDetectorService', () => {
         const result = detector.detect({
             ID: '42',
             UF_CRM_OP_LEAD_WORK_KIND: 0,
+            UF_CRM_REG_NUMBER: '48-00691',
+        });
+        expect(result.kind).toBe('request');
+    });
+
+    /*
+     * «Неопределён» — не четвёртый вид работы, а честное «робот не знает».
+     * Спор он не кончает: разбор идёт дальше по признакам, ровно как при
+     * пустом поле. Иначе робот, не сумевший определить вид, приговаривал
+     * бы заявку к холодному обзвону.
+     */
+    it('undef → спор не кончает, вид берётся из признаков', () => {
+        const detector = new LeadRequestDetectorService(makePortal(true, true));
+        const result = detector.detect({
+            ID: '42',
+            UF_CRM_OP_LEAD_WORK_KIND: 104, // «Неопределён»
+            UF_CRM_REG_NUMBER: '48-00691', // лидоген говорит «заявка»
+        });
+        expect(result.kind).toBe('request');
+        expect(result.isRequest).toBe(true);
+    });
+
+    it('undef без других признаков → холодный, как и пустое поле', () => {
+        const detector = new LeadRequestDetectorService(makePortal(true, true));
+        const result = detector.detect({
+            ID: '42',
+            UF_CRM_OP_LEAD_WORK_KIND: 104,
+        });
+        expect(result.kind).toBe('cold');
+        expect(result.isRequest).toBe(false);
+    });
+
+    /* Отличить «робот промолчал» от «робот сказал не знаю» — по signals. */
+    it('undef попадает в signals — иначе разбор упирается в пустоту', () => {
+        const detector = new LeadRequestDetectorService(makePortal(true, true));
+        const undef = detector.detect({
+            ID: '42',
+            UF_CRM_OP_LEAD_WORK_KIND: 104,
+            UF_CRM_REG_NUMBER: '48-00691',
+        });
+        const silent = detector.detect({
+            ID: '42',
+            UF_CRM_REG_NUMBER: '48-00691',
+        });
+
+        expect(undef.signals.join(' ')).toContain('Неопределён');
+        expect(silent.signals.join(' ')).not.toContain('Неопределён');
+    });
+
+    /* Неизвестный код значения (портал не переустановлен) — тоже «не знаю». */
+    it('чужой код значения не ломает разбор', () => {
+        const detector = new LeadRequestDetectorService(makePortal(true, true));
+        const result = detector.detect({
+            ID: '42',
+            UF_CRM_OP_LEAD_WORK_KIND: 999,
             UF_CRM_REG_NUMBER: '48-00691',
         });
         expect(result.kind).toBe('request');

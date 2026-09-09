@@ -1,9 +1,10 @@
 /**
  * OverviewSources → AiOverviewDto (план 6.3): матрица и возражения
- * (assembler), строки менеджеров (manager-row.presenter), сигналы
- * «Внимания», итоги по типам и отделам, готовность (readiness.util),
- * версии разбора, meta. Периметр requester'а — applyOverviewPerimeter.
- * Чистые функции; «сейчас» приходит параметром.
+ * (assembler), строки менеджеров (manager-row.presenter), расчёты Фазы 2
+ * поверх строк (overview-phase2.presenter: нормы рёбер, рычаги, стиль),
+ * сигналы «Внимания», итоги по типам и отделам, готовность
+ * (readiness.util), версии разбора, meta. Периметр requester'а —
+ * applyOverviewPerimeter. Чистые функции; «сейчас» приходит параметром.
  */
 import {
     isWorkday,
@@ -35,7 +36,12 @@ import type { OverviewSources } from '../assembler/overview-model.types';
 import type { DatedLiteRow } from '../loaders/lite-row.mapper';
 import { withSignals } from './attention.presenter';
 import { buildManagerRow } from './manager-row.presenter';
-import { buildReadiness, resolveComparableFrom } from './readiness.util';
+import {
+    applyPhase2,
+    buildOverviewReadiness,
+    type Phase2Context,
+} from './overview-phase2.presenter';
+import { resolveComparableFrom } from './readiness.util';
 import {
     emptyCellCore,
     median,
@@ -43,8 +49,6 @@ import {
     toCellDto,
 } from './type-cell.presenter';
 import { emptyCellKpi } from '../assembler/manager-facts.assembler';
-
-const READINESS_SALES_REASON = 'sales-not-computed-in-phase-1a';
 
 /** Рабочих дней [from; to] по календарю портала. */
 export function countWorkdays(
@@ -197,8 +201,15 @@ export function buildOverviewDto(
             }),
         );
     // Два прохода: медиана команды известна только после первого.
+    // Затем расчёты Фазы 2 (нормы рёбер, рычаги, стиль) — и лишь потом
+    // сигналы: разрыв плана считается по норме, попавшей в строку.
+    const phase2: Phase2Context = {
+        kpi: kpiByManager,
+        levels: sources.levels,
+        ...(sources.snapshots ?? {}),
+    };
     const managers = withSignals(
-        buildRows(teamMediansOf(buildRows(new Map()))),
+        applyPhase2(buildRows(teamMediansOf(buildRows(new Map()))), phase2),
     );
 
     const departmentTotals: AiDepartmentTotalsDto[] = assembleDepartmentTotals(
@@ -215,15 +226,7 @@ export function buildOverviewDto(
         ),
     }));
 
-    const readiness = buildReadiness(rows, {
-        now,
-        enabled: sources.enabled,
-        pipelineEnabled: rows.some(row => row.analysisPresent),
-    });
-    const sales = sources.finance.managers.reduce(
-        (sum, item) => sum + item.salesCount,
-        0,
-    );
+    const readiness = buildOverviewReadiness(sources, now);
 
     return {
         period: {
@@ -233,13 +236,7 @@ export function buildOverviewDto(
             days: countDays(sources.from, sources.to),
             workdays,
         },
-        readiness: {
-            ...readiness,
-            sales,
-            reasons: readiness.reasons.filter(
-                reason => reason !== READINESS_SALES_REASON,
-            ),
-        },
+        readiness,
         calcVersion: AI_ANALYTICS_CALC_VERSION,
         versions: resolveVersions(rows),
         comparableFrom,

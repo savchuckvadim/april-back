@@ -93,9 +93,7 @@ export class OrkSupplyTaskService {
 
         const created: number[] = [];
         for (const fields of tasks) {
-            const response = (await bitrix.task.add(
-                fields,
-            )) as TaskAddResponse;
+            const response = (await bitrix.task.add(fields)) as TaskAddResponse;
             const taskId = Number(response?.result?.task?.id);
             if (taskId) {
                 created.push(taskId);

@@ -18,8 +18,8 @@ import { normalizePresentationSurvey } from '../presentation-survey.values';
  * трогал» теперь отдельный вопрос — и этот файл про него.
  */
 
-const desire = XVOST_TEMPLATES[0]!; // ЖЕЛАНИЕ РАБОТАТЬ С ГАРАНТОМ, 3 вопроса
-const priceReaction = XVOST_TEMPLATES[2]!; // РЕАКЦИЯ НА ЦЕНУ, 1 вопрос
+const desire = XVOST_TEMPLATES[0]; // ЖЕЛАНИЕ РАБОТАТЬ С ГАРАНТОМ, 3 вопроса
+const priceReaction = XVOST_TEMPLATES[2]; // РЕАКЦИЯ НА ЦЕНУ, 1 вопрос
 
 describe('состав шаблонов', () => {
     it('пять блоков «5К» и пять блоков «Хвоста»', () => {
@@ -73,9 +73,9 @@ describe('buildSurveyTemplateText', () => {
 
 describe('stripSurveyTemplate — что менеджер дописал', () => {
     it('нетронутый шаблон не даёт ни одного ответа', () => {
-        expect(stripSurveyTemplate(buildSurveyTemplateText(desire), desire)).toBe(
-            '',
-        );
+        expect(
+            stripSurveyTemplate(buildSurveyTemplateText(desire), desire),
+        ).toBe('');
     });
 
     it('ответ следующей строкой', () => {
@@ -98,9 +98,7 @@ describe('stripSurveyTemplate — что менеджер дописал', () =>
             '3. С чем клиент хотел бы работать в Гаранте',
         ].join('\n');
 
-        expect(stripSurveyTemplate(value, desire)).toBe(
-            'понравилось\nтаблицы',
-        );
+        expect(stripSurveyTemplate(value, desire)).toBe('понравилось\nтаблицы');
     });
 
     it('переносы и лишние пробелы шаблон не ломают', () => {
@@ -117,7 +115,9 @@ describe('stripSurveyTemplate — что менеджер дописал', () =>
     });
 
     it('текст без шаблона вовсе считается ответом целиком', () => {
-        expect(stripSurveyTemplate('просто ответ', desire)).toBe('просто ответ');
+        expect(stripSurveyTemplate('просто ответ', desire)).toBe(
+            'просто ответ',
+        );
     });
 });
 

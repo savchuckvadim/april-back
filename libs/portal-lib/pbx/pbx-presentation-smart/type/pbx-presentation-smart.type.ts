@@ -499,7 +499,11 @@ export const PRESENTATION_SMART_FIELDS = [
         name: 'ХВОСТ ЖЕЛАНИЕ РАБОТАТЬ С ГАРАНТОМ',
         type: 'string',
     },
-    { code: 'PRES_XVOST_OFFERED', name: 'ХВОСТ ЧТО ПРЕДЛОЖИЛИ', type: 'string' },
+    {
+        code: 'PRES_XVOST_OFFERED',
+        name: 'ХВОСТ ЧТО ПРЕДЛОЖИЛИ',
+        type: 'string',
+    },
     {
         code: 'PRES_XVOST_PRICE_REACTION',
         name: 'ХВОСТ РЕАКЦИЯ НА ЦЕНУ',
