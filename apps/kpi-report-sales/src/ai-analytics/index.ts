@@ -28,3 +28,22 @@ export type {
     AiOverviewWsDonePayload,
     AiOverviewWsErrorPayload,
 } from './dto/ai-overview.dto';
+
+// Фаза 2, волна 4 «сборка конвейера»: модули срезов со своими шагами и
+// готовый динамический модуль конвейера с полным порядком шагов
+// (AiAnalyticsPipelineModule.registerPhase2()). Контроллеров у срезов нет —
+// поверхность API приложения от них не растёт.
+export {
+    AI_ANALYTICS_PIPELINE_STEP_MODULES,
+    AI_ANALYTICS_PIPELINE_STEP_ORDER,
+    AiAnalyticsPipelineModule,
+} from './pipeline/ai-analytics-pipeline.module';
+export type { AiAnalyticsPipelineOptions } from './pipeline/ai-analytics-pipeline.module';
+export { AiAnalyticsSnapshotsModule } from './snapshots/ai-analytics-snapshots.module';
+export { AiAnalyticsPassportModule } from './passport/ai-analytics-passport.module';
+export { AiAnalyticsStageHistoryModule } from './stage-history/ai-analytics-stage-history.module';
+export { AiAnalyticsRopMarkModule } from './rop-mark/ai-analytics-rop-mark.module';
+export { RopMarkUseCase } from './domain/use-cases/rop-mark.use-case';
+// Единый порог длительности разбора (реестр + определения портала):
+// шаги конвейера обязаны фильтровать звонки той же функцией, что и пульс.
+export { portalMinDurationByType } from './domain/use-cases/pulse.use-case';

@@ -35,7 +35,11 @@ describe('clipTaskTitle', () => {
 
     it('имени плана не хватает даже под многоточие — режется весь заголовок', () => {
         const title = clipTaskTitle(
-            { typeName: 'т'.repeat(200), eventName: 'x', contactName: 'к'.repeat(100) },
+            {
+                typeName: 'т'.repeat(200),
+                eventName: 'x',
+                contactName: 'к'.repeat(100),
+            },
             250,
         );
 

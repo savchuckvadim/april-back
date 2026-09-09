@@ -19,7 +19,11 @@ type Row = Record<string, unknown>;
 
 const stage = (code: string, bitrixId: string) => ({ code, bitrixId });
 const CATEGORIES = [
-    { bitrixId: '17', code: 'sales_base', stages: [stage('sales_cold', 'PREPARATION')] },
+    {
+        bitrixId: '17',
+        code: 'sales_base',
+        stages: [stage('sales_cold', 'PREPARATION')],
+    },
     { bitrixId: '32', code: 'sales_xo', stages: [stage('cold_plan', 'PLAN')] },
 ];
 
@@ -55,11 +59,15 @@ const list = (type: string): IPBXList =>
 const portal = {
     getTimezone: () => 'Europe/Moscow',
     getSalesTaskGroupId: () => 41,
-    getDealCategoryByCode: (code: string) => CATEGORIES.find(c => c.code === code),
+    getDealCategoryByCode: (code: string) =>
+        CATEGORIES.find(c => c.code === code),
     getDealCategories: () => CATEGORIES,
     getEntityFieldByCode: (_entity: string, code: string) =>
-        code === 'to_base_sales' ? { bitrixId: 'TO_BASE_SALES', items: [] } : undefined,
-    getListByCode: (code: string) => list(code === 'sales_kpi' ? 'kpi' : 'history'),
+        code === 'to_base_sales'
+            ? { bitrixId: 'TO_BASE_SALES', items: [] }
+            : undefined,
+    getListByCode: (code: string) =>
+        list(code === 'sales_kpi' ? 'kpi' : 'history'),
 } as unknown as PortalModel;
 
 const makeBitrix = () => {
@@ -114,7 +122,13 @@ const companyTarget: ColdTarget = {
     rootDealId: null,
 };
 
-const ENTRY: Row = { ID: '600', CATEGORY_ID: '48', COMPANY_ID: '', CONTACT_ID: '9', LEAD_ID: '12' };
+const ENTRY: Row = {
+    ID: '600',
+    CATEGORY_ID: '48',
+    COMPANY_ID: '',
+    CONTACT_ID: '9',
+    LEAD_ID: '12',
+};
 const dealTarget: ColdTarget = {
     hookKey: 'h2',
     hook: hook(EnumColdCallEntityType.DEAL, '600'),
@@ -251,10 +265,9 @@ describe('ColdCallV2UseCase — корень сделка без компани�
     });
 
     it('сохранённая корневая основная обновляется без перезаписи её связей', async () => {
-        const fake = await run(
-            { ...dealTarget, rootDealId: 77 },
-            { ID: '77' } as never,
-        );
+        const fake = await run({ ...dealTarget, rootDealId: 77 }, {
+            ID: '77',
+        } as never);
         expect(fake.dealUpdate).toHaveBeenCalledWith(
             'update_base_deal_77',
             77,

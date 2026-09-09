@@ -21,7 +21,9 @@ const pushes = [
 describe('ColdStartNotifyV2Service', () => {
     it('шлёт системное уведомление каждому адресату с тегом', async () => {
         const fake = makeBitrix();
-        const delivered = await new ColdStartNotifyV2Service(fake.bitrix).send(pushes);
+        const delivered = await new ColdStartNotifyV2Service(fake.bitrix).send(
+            pushes,
+        );
         expect(delivered).toEqual([448, 449]);
         expect(fake.systemAdd).toHaveBeenCalledWith({
             USER_ID: 448,
@@ -32,7 +34,9 @@ describe('ColdStartNotifyV2Service', () => {
 
     it('сбой по одному адресату не мешает остальным и не бросает', async () => {
         const fake = makeBitrix([448]);
-        const delivered = await new ColdStartNotifyV2Service(fake.bitrix).send(pushes);
+        const delivered = await new ColdStartNotifyV2Service(fake.bitrix).send(
+            pushes,
+        );
         expect(delivered).toEqual([449]);
     });
 });

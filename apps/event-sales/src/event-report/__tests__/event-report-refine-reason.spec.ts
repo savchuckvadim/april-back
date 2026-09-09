@@ -42,9 +42,9 @@ describe('composeRefineReason', () => {
     });
 
     it('только формулировка — без тире', () => {
-        expect(
-            composeRefineReason(src({ objectionComment: 'дорого' })),
-        ).toBe('«дорого»');
+        expect(composeRefineReason(src({ objectionComment: 'дорого' }))).toBe(
+            '«дорого»',
+        );
     });
 
     it('возражений нет — комментарий отчёта', () => {

@@ -22,7 +22,8 @@ const item = (code: string, bitrixId: number) => ({
 const FIELDS: Record<string, { bitrixId: string; items: unknown[] }> = {
     op_work_status: {
         bitrixId: 'OP_WORK_STATUS',
-        items: [item('op_status_in_work', 11), item('op_status_fail', 12)],
+        // Коды поля КАРТОЧКИ (не KPI-списка): «В работе» = `work`.
+        items: [item('work', 11), item('op_status_fail', 12)],
     },
     op_prospects_type: {
         bitrixId: 'OP_PROSPECTS_TYPE',

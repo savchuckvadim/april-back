@@ -30,16 +30,34 @@ const OBJECTION = 'UF_CRM_OP_OBJECTION_REASON';
 const OBJECTION_COMMENT = 'UF_CRM_OP_OBJECTION_COMMENT';
 
 const OBJECTION_ITEMS = [
-    { code: 'op_objection_nomoney', name: 'op_objection_nomoney', title: 'Нет денег', bitrixId: 101 },
-    { code: 'op_objection_lpr', name: 'op_objection_lpr', title: 'ЛПР против', bitrixId: 102 },
-    { code: 'op_objection_none', name: 'op_objection_none', title: 'Нет возражений', bitrixId: 103 },
+    {
+        code: 'op_objection_nomoney',
+        name: 'op_objection_nomoney',
+        title: 'Нет денег',
+        bitrixId: 101,
+    },
+    {
+        code: 'op_objection_lpr',
+        name: 'op_objection_lpr',
+        title: 'ЛПР против',
+        bitrixId: 102,
+    },
+    {
+        code: 'op_objection_none',
+        name: 'op_objection_none',
+        title: 'Нет возражений',
+        bitrixId: 103,
+    },
 ];
 
 const FIELDS: Record<string, { bitrixId: string; items: unknown[] }> = {
     op_is_in_refine: { bitrixId: 'OP_IS_IN_REFINE', items: [] },
     op_refined_at: { bitrixId: 'OP_REFINED_AT', items: [] },
     op_refined_reason: { bitrixId: 'OP_REFINED_REASON', items: [] },
-    op_objection_reason: { bitrixId: 'OP_OBJECTION_REASON', items: OBJECTION_ITEMS },
+    op_objection_reason: {
+        bitrixId: 'OP_OBJECTION_REASON',
+        items: OBJECTION_ITEMS,
+    },
     op_objection_comment: { bitrixId: 'OP_OBJECTION_COMMENT', items: [] },
 };
 
@@ -292,7 +310,10 @@ describe('Состояние «на доработке» — не трогают
     it.each(['warm', 'presentation', 'document'])(
         'план %s при состоянии — без команд',
         code => {
-            const out = fieldsOf(makeCtx({ plan: plan(code) }), dealRow(IN_STATE));
+            const out = fieldsOf(
+                makeCtx({ plan: plan(code) }),
+                dealRow(IN_STATE),
+            );
             expect(stateOf(out)).toEqual({
                 flag: undefined,
                 at: undefined,
@@ -304,7 +325,11 @@ describe('Состояние «на доработке» — не трогают
     it('отчёт по доработке без плана — без команд', () => {
         const out = fieldsOf(
             makeCtx({
-                currentTask: { id: 100, eventType: 'refine', name: 'Доработка' },
+                currentTask: {
+                    id: 100,
+                    eventType: 'refine',
+                    name: 'Доработка',
+                },
             }),
             dealRow(IN_STATE),
         );
@@ -332,7 +357,10 @@ describe('Состояние «на доработке» — выход', () => 
     it.each(['hot', 'moneyAwait', 'supply'])(
         'план %s снимает состояние: 0 / пусто / пусто',
         code => {
-            const out = fieldsOf(makeCtx({ plan: plan(code) }), dealRow(IN_STATE));
+            const out = fieldsOf(
+                makeCtx({ plan: plan(code) }),
+                dealRow(IN_STATE),
+            );
             expect(stateOf(out)).toEqual(CLEARED);
         },
     );
@@ -340,7 +368,10 @@ describe('Состояние «на доработке» — выход', () => 
     it.each(['xo', 'xoRequest', 'xoLead'])(
         'холодный план %s снимает состояние',
         code => {
-            const out = fieldsOf(makeCtx({ plan: plan(code) }), dealRow(IN_STATE));
+            const out = fieldsOf(
+                makeCtx({ plan: plan(code) }),
+                dealRow(IN_STATE),
+            );
             expect(stateOf(out)).toEqual(CLEARED);
         },
     );

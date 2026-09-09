@@ -10,6 +10,8 @@ import {
 } from '../domain/prompts/prompts';
 import { CallAnalysisPair } from '../domain/interfaces/llm-provider.interface';
 import { extractMessageContent } from './extract-message-content.util';
+import { AlertThrottle } from '@lib/logger';
+import { describeRagError } from './rag-error.util';
 
 /** RAG-kind знаний, участвующие в объединённом анализе. */
 export type CombinedAnalysisKind = 'resume' | 'recomendation';
@@ -56,6 +58,9 @@ export function parseCombinedAnalysis(text: string): CallAnalysisPair | null {
  */
 @Injectable()
 export class CombinedCallAnalysisService {
+    /** Одно оповещение об отказе провайдера знаний в полчаса на причину. */
+    private readonly alerts = new AlertThrottle();
+
     private readonly logger = new Logger(CombinedCallAnalysisService.name);
 
     /** @throws если LLM не вернул распарсиваемый двухсекционный ответ. */
@@ -83,6 +88,34 @@ export class CombinedCallAnalysisService {
      * Контекст знаний из обоих kind'ов; отсутствие материалов одного kind
      * (нет загруженных документов) — не ошибка, просто пустой контекст.
      */
+    /**
+     * Сбой контекста знаний: в лог всегда, в Telegram — не чаще одного раза
+     * в полчаса на пару «вид знаний + причина».
+     *
+     * Отсутствие материалов у kind'а — не авария (документы просто не
+     * загружены), поэтому сообщение остаётся предупреждением. А вот отказ
+     * самого провайдера (лимит токенов, отвал ключа, 5xx, сеть) означает,
+     * что рекомендации молча собираются БЕЗ базы знаний — это надо видеть
+     * сразу, иначе качество разбора падает незаметно.
+     */
+    private reportContextFailure(
+        kind: CombinedAnalysisKind,
+        error: unknown,
+    ): void {
+        const info = describeRagError(error);
+        const message = `Контекст знаний kind=${kind} недоступен: ${info.text}`;
+        if (info.code === 'unknown') {
+            this.logger.warn(message);
+            return;
+        }
+        const key = `rag-context:${kind}:${info.code}`;
+        const alert = this.alerts.allow(key, Date.now());
+        this.logger.error(
+            `${message}${alert ? '' : ' (повтор, оповещение подавлено)'}`,
+            alert ? { telegram: true } : undefined,
+        );
+    }
+
     private async buildContext(
         params: CombinedAnalysisParams,
     ): Promise<string> {
@@ -98,9 +131,7 @@ export class CombinedCallAnalysisService {
                     if (doc.pageContent) parts.push(doc.pageContent);
                 }
             } catch (error) {
-                this.logger.warn(
-                    `Контекст знаний kind=${kind} недоступен: ${(error as Error).message}`,
-                );
+                this.reportContextFailure(kind, error);
             }
         }
         return Array.from(new Set(parts)).join('\n\n---\n\n');

@@ -22,6 +22,18 @@ export type OpProspectsTypeCode =
     PbxSalesEventFieldItemCode<'op_prospects_type'>;
 
 /**
+ * Статус работы В КАРТОЧКЕ клиента (лид/компания/сделка).
+ *
+ * Не путать с {@link OpWorkStatusCode}: это одноимённое поле, но ДРУГОГО
+ * справочника — у поля карточки свои item-коды (`work`, `long`,
+ * `in_progress`, `money_await`), совпадают только `op_status_success` и
+ * `op_status_fail`. Раньше в карточку писались коды KPI-списка, item не
+ * находился, и статус молча не сохранялся.
+ */
+export type OpEntityWorkStatusCode =
+    PbxSalesEventFieldItemCode<'op_work_status'>;
+
+/**
  * Тип события из задачи (`currentTask.eventType`) и плана (`plan.type.current.code`).
  *
  * NB: значения совпадают с item-кодами `event_type` KPI-списка для тех, что

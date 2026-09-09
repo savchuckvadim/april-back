@@ -90,8 +90,8 @@ export const fitMultipleEntries = (
         const dropped = kept.pop() as string;
         total -= dropped.length;
     }
-    if (kept.length === 1 && (kept[0] as string).length > maxTotalChars) {
-        return [(kept[0] as string).slice(0, maxTotalChars)];
+    if (kept.length === 1 && kept[0].length > maxTotalChars) {
+        return [kept[0].slice(0, maxTotalChars)];
     }
     return kept;
 };

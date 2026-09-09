@@ -71,3 +71,52 @@ export {
     buildManagersKey,
     monthSegmentTtlSeconds,
 } from './loader-cache-key.util';
+
+// Фаза 2, волна 4: история стадий воронки (курсор >ID, окна по месяцам,
+// маппинг в переходы только по лестнице PBX_DEAL_SALES_BASE_STAGES),
+// сущности звонков из записей ais и паспорт менеджера (каскад since,
+// статус, полоса стажа). Шаги конвейера берут их из своих модулей срезов,
+// барель нужен соседним модулям и тестам.
+export { StageHistoryLoader, monthWindows } from './stage-history.loader';
+export type {
+    StageHistoryLoadOptions,
+    StageHistoryResult,
+    StageHistoryWindowOptions,
+} from './stage-history.contract';
+export {
+    buildSalesBaseStageDict,
+    salesBaseCategoryOf,
+    toStageTransitions,
+    toStageTransitionsByDict,
+} from './stage-history.mapper';
+export type {
+    SalesBaseStage,
+    SalesBaseStageDict,
+    StageHistoryPortal,
+} from './stage-history.mapper';
+
+export {
+    AI_CALL_ENTITY_CHUNK,
+    CallEntityLoader,
+    toCallEntityRef,
+    toCallEntityType,
+} from './call-entity.loader';
+export type { CallEntityRef } from './call-entity.loader';
+
+export { ManagerPassportLoader } from './manager-passport.loader';
+export type {
+    ManagerPassportLoadOptions,
+    ManagerPassportResult,
+} from './manager-passport.loader';
+export {
+    buildPassport,
+    isActiveValue,
+    resolveSince,
+    resolveStatus,
+    toPassportDate,
+    toUserFacts,
+} from './manager-passport.util';
+export type {
+    BuildPassportInput,
+    ManagerUserFacts,
+} from './manager-passport.util';

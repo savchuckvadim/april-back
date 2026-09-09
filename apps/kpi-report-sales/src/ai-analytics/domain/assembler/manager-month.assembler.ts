@@ -10,6 +10,13 @@
  *   (решение принимает шаг — здесь только флаг `frozen`);
  * - экспозиция, рёбра и стиль собираются отдельными функциями (файл
  *   ассемблера обязан оставаться в пределах 300 строк);
+ * - правила портала (применимость разделов → потолки оценивания →
+ *   стоп-фразы) применяются к разборам ДО матрицы теми же функциями, что
+ *   и в неделе: месяц и неделя обязаны считать разборы одинаково. В
+ *   месячные факты типа разделы не попадают (там объём и балл звонка),
+ *   поэтому правила месяца видны его следом — `caps` / `flags` /
+ *   `stopWords` / `applicability`: руководитель должен видеть, что его
+ *   правило за месяц отработало, а не догадываться об этом по неделям;
  * - живой пайплайн относится к моменту расчёта, поэтому у закрытого
  *   месяца его нет.
  *
@@ -42,6 +49,11 @@ import {
     buildTypeFacts,
     buildWorkdays,
 } from './manager-month.facts';
+import { applyPeriodScoring, traceOf } from './period-scoring.util';
+import {
+    applicabilityTraceOf,
+    applySectionApplicability,
+} from './section-applicability.util';
 import type {
     AiSnapshotMeta,
     ManagerExposureFacts,
@@ -139,7 +151,9 @@ export function buildManagerMonthPayload(
 ): ManagerMonthAssembly {
     const frozen = isMonthFrozen(input.monthKey, input.day);
     const estimand = resolveMonthEstimand(input.registry, input.chainSharePct);
-    const matrix = buildManagerTypeMatrix(input.rows.map(toMatrixRow), {
+    const applicable = applySectionApplicability(input.rows);
+    const scoring = applyPeriodScoring(applicable.rows, input.settings.scoring);
+    const matrix = buildManagerTypeMatrix(scoring.rows.map(toMatrixRow), {
         ...(input.shortCallSec === undefined
             ? {}
             : { thresholds: { shortCallSec: input.shortCallSec } }),
@@ -194,6 +208,7 @@ export function buildManagerMonthPayload(
                       row => String(row.managerId) === managerId,
                   ) ?? null)
                 : null;
+        const scoringTrace = traceOf(scoring, managerId);
         const level = buildLevelFacts(
             input.settings.levels,
             passport,
@@ -207,6 +222,10 @@ export function buildManagerMonthPayload(
             finance: buildFinanceFacts(financeRow, kpiRow, pipeline),
             edges: buildManagerEdges(kpiRow, estimand.estimand),
             exposure,
+            caps: scoringTrace.caps,
+            flags: scoringTrace.flags,
+            stopWords: scoringTrace.stopWords,
+            applicability: applicabilityTraceOf(applicable, managerId),
             level: level.level,
             levelSource: level.levelSource,
             passport,

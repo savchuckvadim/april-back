@@ -1,7 +1,10 @@
 import { BATCH_LINE_BREAK_SYMBOL } from '@lib/bitrix/consts/batch.consts';
 import { BitrixEntityType } from '@lib/bitrix/domain/enums/bitrix-constants.enum';
 import { UserNameMap } from '../../../shared/lead-request/user-name.resolver';
-import { ColdStartDecision, ForeignOpenDeal } from '../../lib/cold-force.decision';
+import {
+    ColdStartDecision,
+    ForeignOpenDeal,
+} from '../../lib/cold-force.decision';
 import { ColdCloseResult } from '../relations/cold-relations-closer.service';
 import { ColdTarget } from '../target/cold-target.types';
 
@@ -105,7 +108,10 @@ const entryEntities = (
     if (target.kind === 'company') {
         push(BitrixEntityType.COMPANY, target.companyId);
     }
-    push(BitrixEntityType.DEAL, target.entryDeal ? Number(target.entryDeal.ID) : null);
+    push(
+        BitrixEntityType.DEAL,
+        target.entryDeal ? Number(target.entryDeal.ID) : null,
+    );
     if (decision.mode === 'proceed' && closed.preservedBaseDeal) {
         push(BitrixEntityType.DEAL, Number(closed.preservedBaseDeal.ID));
     }
@@ -171,7 +177,10 @@ export const buildColdStartTimeline = (
             comment,
         }));
         // force=Y: у кого забрали — след в их основной сделке.
-        for (const foreignDeal of [...decision.foreign, ...takenList(decision)]) {
+        for (const foreignDeal of [
+            ...decision.foreign,
+            ...takenList(decision),
+        ]) {
             entries.push({
                 entityType: BitrixEntityType.DEAL,
                 entityId: foreignDeal.dealId,

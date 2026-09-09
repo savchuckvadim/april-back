@@ -90,7 +90,9 @@ describe('buildColdStartTimeline — proceed', () => {
             [BitrixEntityType.DEAL, 600],
         ]);
         const [company] = entries;
-        expect(company.comment).toContain('[B]Холодный старт[/B] — ответственный: Вадим Савчук.');
+        expect(company.comment).toContain(
+            '[B]Холодный старт[/B] — ответственный: Вадим Савчук.',
+        );
         expect(company.comment).toContain(
             'Закрыто: сделок — 2, задач — 1, презентаций — 1, ЗПР — 0.',
         );
@@ -106,15 +108,19 @@ describe('buildColdStartTimeline — proceed', () => {
             closed: closed({ preservedBaseDeal: { ID: '77' } as never }),
         });
         expect(entries.map(e => e.entityId)).toEqual([600, 77]);
-        expect(entries.every(e => e.entityType === BitrixEntityType.DEAL)).toBe(true);
+        expect(entries.every(e => e.entityType === BitrixEntityType.DEAL)).toBe(
+            true,
+        );
     });
 
     it('без закрытых сделок строки ссылок нет; больше десяти — «и ещё N»', () => {
-        expect(build({ closed: closed({ closedDealIds: [] }) })[0].comment).not.toContain(
-            'Закрытые сделки',
-        );
+        expect(
+            build({ closed: closed({ closedDealIds: [] }) })[0].comment,
+        ).not.toContain('Закрытые сделки');
         const many = build({
-            closed: closed({ closedDealIds: Array.from({ length: 12 }, (_, i) => 100 + i) }),
+            closed: closed({
+                closedDealIds: Array.from({ length: 12 }, (_, i) => 100 + i),
+            }),
         });
         expect(many[0].comment).toContain('и ещё 2.');
     });
@@ -139,7 +145,9 @@ describe('buildColdStartTimeline — proceed с force=Y (забрали у др�
         expect(foreign[0].comment).toContain(
             '[B]Вашу компанию забрали в работу[/B]: Вадим Савчук (ответственный холодного старта).',
         );
-        expect(foreign[0].comment).toContain('Входная сделка: [URL=https://d.b24.ru/crm/deal/details/600/]#600[/URL]; компания:');
+        expect(foreign[0].comment).toContain(
+            'Входная сделка: [URL=https://d.b24.ru/crm/deal/details/600/]#600[/URL]; компания:',
+        );
         expect(foreign[0].comment).toContain(
             'Ваша работа по клиенту закрыта или переназначена: сделок — 2, задач — 1, презентаций — 1, ЗПР — 0.',
         );
@@ -150,10 +158,16 @@ describe('buildColdStartTimeline — proceed с force=Y (забрали у др�
 
 describe('buildColdStartPushes', () => {
     it('proceed без чужой работы — пушей нет', () => {
-        expect(buildColdStartPushes({
-            domain: 'd.b24.ru', target: companyTarget, decision: PROCEED,
-            closed: closed(), responsibleId: 447, names: {},
-        })).toEqual([]);
+        expect(
+            buildColdStartPushes({
+                domain: 'd.b24.ru',
+                target: companyTarget,
+                decision: PROCEED,
+                closed: closed(),
+                responsibleId: 447,
+                names: {},
+            }),
+        ).toEqual([]);
     });
 
     it('force=Y: «у вас забрали» — по одному на сотрудника, с его сделками и тегом', () => {
@@ -175,9 +189,15 @@ describe('buildColdStartPushes', () => {
             names: { 447: 'Вадим Савчук' },
         });
         expect(pushes.map(p => p.userId)).toEqual([448, 449]);
-        expect(pushes[0].message).toContain('[B]У вас забрали компанию в работу[/B]: Вадим Савчук');
-        expect(pushes[0].message).toContain('Ваши сделки: [URL=https://d.b24.ru/crm/deal/details/700/]#700[/URL], [URL=https://d.b24.ru/crm/deal/details/710/]#710[/URL].');
-        expect(pushes[0].message).toContain('Ваша работа по клиенту закрыта или переназначена.');
+        expect(pushes[0].message).toContain(
+            '[B]У вас забрали компанию в работу[/B]: Вадим Савчук',
+        );
+        expect(pushes[0].message).toContain(
+            'Ваши сделки: [URL=https://d.b24.ru/crm/deal/details/700/]#700[/URL], [URL=https://d.b24.ru/crm/deal/details/710/]#710[/URL].',
+        );
+        expect(pushes[0].message).toContain(
+            'Ваша работа по клиенту закрыта или переназначена.',
+        );
         expect(pushes[0].message).toContain('\n');
         expect(pushes[0].message).not.toContain('%0A');
         // Тег — по клиенту (компания 7), не по ключу хука: ключ уникален
@@ -202,7 +222,9 @@ describe('buildColdStartPushes', () => {
         });
         // Входная получает «уступлен», чужая 700 — «попытка», и входная же — «забрали» её владельцу.
         expect(entries.map(e => e.entityId)).toEqual([600, 700, 600]);
-        expect(entries[2].comment).toContain('[B]Вашего клиента забрали в работу[/B]');
+        expect(entries[2].comment).toContain(
+            '[B]Вашего клиента забрали в работу[/B]',
+        );
         const pushes = buildColdStartPushes({
             domain: 'd.b24.ru',
             target: dealTarget,
@@ -212,8 +234,12 @@ describe('buildColdStartPushes', () => {
             names: {},
         });
         expect(pushes).toHaveLength(1);
-        expect(pushes[0].message).toContain('[B]У вас забрали клиента в работу[/B]');
-        expect(pushes[0].message).toContain('#700[/URL], [URL=https://d.b24.ru/crm/deal/details/600/]#600[/URL]');
+        expect(pushes[0].message).toContain(
+            '[B]У вас забрали клиента в работу[/B]',
+        );
+        expect(pushes[0].message).toContain(
+            '#700[/URL], [URL=https://d.b24.ru/crm/deal/details/600/]#600[/URL]',
+        );
         expect(pushes[0].tag).toBe('xo2_cold_start_d_600_448');
     });
 
@@ -226,8 +252,12 @@ describe('buildColdStartPushes', () => {
             responsibleId: 447,
             names: {},
         });
-        expect(pushes[0].message).toContain('[B]У вас попытались забрать клиента в работу[/B]: сотрудник #447');
-        expect(pushes[0].message).toContain('Уступлено — ваша работа не тронута.');
+        expect(pushes[0].message).toContain(
+            '[B]У вас попытались забрать клиента в работу[/B]: сотрудник #447',
+        );
+        expect(pushes[0].message).toContain(
+            'Уступлено — ваша работа не тронута.',
+        );
         expect(pushes[0].message).not.toContain('компания:');
     });
 });
@@ -255,7 +285,9 @@ describe('buildColdStartTimeline — yield', () => {
         expect(foreign[0].comment).toContain(
             'Входная сделка: [URL=https://d.b24.ru/crm/deal/details/600/]#600[/URL]; компания: [URL=https://d.b24.ru/crm/company/details/7/]#7[/URL].',
         );
-        expect(foreign[0].comment).toContain('Уступлено — ваша работа не тронута.');
+        expect(foreign[0].comment).toContain(
+            'Уступлено — ваша работа не тронута.',
+        );
         expect(foreign[1].entityId).toBe(800);
     });
 

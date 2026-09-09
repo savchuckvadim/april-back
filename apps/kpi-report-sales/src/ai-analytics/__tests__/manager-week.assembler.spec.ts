@@ -229,3 +229,83 @@ describe('Потолки оценивания и стоп-фразы', () => {
         expect(closing?.avgScore).toBe(9);
     });
 });
+
+describe('Применимость разделов рубрики', () => {
+    /** Холодный звонок: «презентация» (приор 20) к нему неприменима. */
+    const coldRows = (): DatedLiteRow[] =>
+        callRows('cold', {
+            callType: 'cold',
+            sections: [
+                {
+                    section: 'GREETING',
+                    relevance: 90,
+                    score: 8,
+                    asWas: null,
+                    alternatives: [],
+                },
+                {
+                    section: 'PRESENTATION',
+                    relevance: 70,
+                    score: 2,
+                    asWas: null,
+                    alternatives: [],
+                },
+            ],
+        });
+
+    it('неприменимый раздел не попадает в знаменатель типа', () => {
+        const payload = input(coldRows()).rows[0].payload;
+
+        const codes = payload.byType[0].sections.map(
+            section => section.section,
+        );
+        expect(codes).toEqual(['GREETING']);
+    });
+
+    it('вычеркнутый раздел виден в снапшоте с порогом и числом разборов', () => {
+        const payload = input(coldRows()).rows[0].payload;
+
+        expect(payload.applicability).toEqual({
+            minRelevance: 30,
+            excluded: [{ callType: 'cold', section: 'PRESENTATION', calls: 8 }],
+        });
+    });
+
+    it('применимый раздел типа не вычёркивается', () => {
+        const payload = input(callRows('t')).rows[0].payload;
+
+        expect(payload.applicability.excluded).toEqual([]);
+        expect(payload.byType[0].sections[0].section).toBe('CLOSING');
+    });
+
+    it('потолок портала неприменимый раздел не трогает', () => {
+        const assembly = input(
+            coldRows().map(row => ({
+                ...row,
+                nextStep: { set: true, date: null },
+            })),
+            {
+                scoring: {
+                    caps: [
+                        {
+                            ruleCode: 'presentation-no-next-step-date',
+                            condition: 'nextStep.date = null',
+                            section: 'PRESENTATION',
+                            maxScore: 5,
+                            flag: 'no-next-step-date',
+                        },
+                    ],
+                    stopWords: [],
+                },
+            },
+        );
+
+        expect(assembly.rows[0].payload.caps).toEqual([]);
+        expect(assembly.capsSkipped).toEqual([
+            {
+                ruleCode: 'presentation-no-next-step-date',
+                reason: 'no-section',
+            },
+        ]);
+    });
+});

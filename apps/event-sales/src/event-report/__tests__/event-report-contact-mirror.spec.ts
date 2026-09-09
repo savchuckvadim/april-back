@@ -90,11 +90,10 @@ describe('EventReportContactMirrorModel', () => {
     });
 
     it('элемент справочника без пары по коду выпадает', () => {
-        const fields = build(
-            { ID: '77' },
-            makePortal(),
-            { ...DEAL, UF_CRM_OP_OBJECTION_REASON: ['101', '103'] },
-        );
+        const fields = build({ ID: '77' }, makePortal(), {
+            ...DEAL,
+            UF_CRM_OP_OBJECTION_REASON: ['101', '103'],
+        });
 
         // 103 (op_objection_lpr) на контакте не установлен — остаётся один.
         expect(fields.UF_CRM_OP_OBJECTION_REASON).toEqual(['201']);
@@ -157,7 +156,10 @@ describe('EventReportContactMirrorModel', () => {
     });
 
     it('поля нет на сделке — читать нечего', () => {
-        const fields = build({ ID: '77' }, makePortal(['deal:op_objection_reason']));
+        const fields = build(
+            { ID: '77' },
+            makePortal(['deal:op_objection_reason']),
+        );
 
         expect(fields).not.toHaveProperty('UF_CRM_OP_OBJECTION_REASON');
     });

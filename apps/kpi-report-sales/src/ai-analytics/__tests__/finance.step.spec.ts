@@ -197,7 +197,14 @@ describe('Заморозка месяца', () => {
         );
 
         expect(result.written).toBe(1);
-        expect(store.findByKeys).not.toHaveBeenCalled();
+        // Проверки заморозки нет вовсе (запрос месячных записей не идёт);
+        // запрос снимка планов того же месяца к заморозке отношения не
+        // имеет и остаётся — цели в снапшот попасть обязаны.
+        expect(store.findByKeys).not.toHaveBeenCalledWith(
+            expect.anything(),
+            AI_ANALYTICS_SNAPSHOT_TYPE.managerMonth,
+            expect.anything(),
+        );
     });
 
     it('незамороженная запись пересчитывается ночью', async () => {
@@ -281,5 +288,79 @@ describe('«Горячие» клиенты', () => {
         expect(pipeline[0].hotEvents).toBe(hotDealsByStageOrder(deals).length);
         expect(payload.finance.pipeline?.hot).toBe(pipeline[0].hotEvents);
         expect(payload.finance.pipeline?.count).toBe(deals.length);
+    });
+});
+
+/**
+ * Цели руководителя в месячном снапшоте (план §3.1, поле `planSnapshot`).
+ * Снимок планов делает шаг `plans` тиком 1-го числа, а месяц пишется
+ * каждую ночь и догоняется backfill'ом — значит источников два: шина того
+ * же прогона и записанный снапшот `ai-analytics-plan`.
+ */
+describe('Цели месяца: шина или снапшот планов', () => {
+    const planPayload = {
+        monthKey: '2026-09',
+        takenOn: '2026-09-01',
+        managers: [
+            { managerId: '10', sales: 5, calls: 400, presentations: 30 },
+        ],
+    };
+
+    it('снимок сделан в этом же прогоне — цели берутся из шины', async () => {
+        const { loader } = financeLoaderWith(defaultFinance());
+        const store = snapshotStoreMock();
+        const bus = busWithKpi(['2026-09']);
+        bus.set(AI_PIPELINE_BUS_KEYS.plans, planPayload);
+
+        await new FinanceStep(loader, store as never).run(stepContext(), bus);
+
+        expect(monthUpserts(store)[0].payload.planSnapshot).toEqual({
+            sales: 5,
+            calls: 400,
+            presentations: 30,
+        });
+        expect(store.findByKeys).not.toHaveBeenCalledWith(
+            expect.anything(),
+            AI_ANALYTICS_SNAPSHOT_TYPE.plan,
+            expect.anything(),
+        );
+    });
+
+    it('шина пуста — цели читаются из снапшота ai-analytics-plan месяца', async () => {
+        const { loader } = financeLoaderWith(defaultFinance());
+        const store = snapshotStoreMock({
+            records: [
+                { periodKey: '2026-09', managerId: null, payload: planPayload },
+            ],
+        });
+
+        await new FinanceStep(loader, store as never).run(
+            stepContext(),
+            busWithKpi(['2026-09']),
+        );
+
+        expect(store.findByKeys).toHaveBeenCalledWith(
+            'a.bitrix24.ru',
+            AI_ANALYTICS_SNAPSHOT_TYPE.plan,
+            { periodKeys: ['2026-09'] },
+        );
+        expect(monthUpserts(store)[0].payload.planSnapshot).toEqual({
+            sales: 5,
+            calls: 400,
+            presentations: 30,
+        });
+    });
+
+    it('целей нет нигде — planSnapshot пуст, прогон идёт дальше', async () => {
+        const { loader } = financeLoaderWith(defaultFinance());
+        const store = snapshotStoreMock();
+
+        const result = await new FinanceStep(loader, store as never).run(
+            stepContext(),
+            busWithKpi(['2026-09']),
+        );
+
+        expect(result.status).toBe('ok');
+        expect(monthUpserts(store)[0].payload.planSnapshot).toBeNull();
     });
 });

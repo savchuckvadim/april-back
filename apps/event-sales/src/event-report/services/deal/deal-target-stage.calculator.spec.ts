@@ -460,7 +460,10 @@ describe('getSalesBaseTargetStageCode — воронка без ступени �
     it('план refine с презентации — сделка остаётся на презентации', () => {
         expect(
             getSalesBaseTargetStageCode(
-                input({ currentStageEvent: 'presentation', planEventType: 'refine' }),
+                input({
+                    currentStageEvent: 'presentation',
+                    planEventType: 'refine',
+                }),
             ),
         ).toBe('PRES');
     });
@@ -514,7 +517,9 @@ describe('getSalesBaseTargetStageCode — воронка без ступени �
     it('другая отсутствующая стадия по-прежнему даёт null', () => {
         const noHot = {
             ...baseCategory,
-            stages: baseCategory.stages.filter(s => s.code !== 'sales_in_progress'),
+            stages: baseCategory.stages.filter(
+                s => s.code !== 'sales_in_progress',
+            ),
         } as IPCategory;
         expect(
             getSalesBaseTargetStageCode(

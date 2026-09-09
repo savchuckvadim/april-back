@@ -25,13 +25,19 @@ const CATEGORIES = [
         bitrixId: '17',
         code: 'sales_base',
         title: 'ОП',
-        stages: [stage('sales_cold', 'PREPARATION'), stage('sales_double', 'APOLOGY')],
+        stages: [
+            stage('sales_cold', 'PREPARATION'),
+            stage('sales_double', 'APOLOGY'),
+        ],
     },
     {
         bitrixId: '48',
         code: 'sales_presentation',
         title: 'Презентации',
-        stages: [stage('spres_plan', 'PLAN'), stage('spres_noresult', 'NORESULT')],
+        stages: [
+            stage('spres_plan', 'PLAN'),
+            stage('spres_noresult', 'NORESULT'),
+        ],
     },
     {
         bitrixId: '99',
@@ -49,7 +55,8 @@ const DATE_FIELDS: Record<string, string> = {
 };
 
 const portal = {
-    getDealCategoryByCode: (code: string) => CATEGORIES.find(c => c.code === code),
+    getDealCategoryByCode: (code: string) =>
+        CATEGORIES.find(c => c.code === code),
     getDealCategories: () => CATEGORIES,
     getEntityFieldByCode: (_entity: string, code: string) =>
         DATE_FIELDS[code] ? { bitrixId: DATE_FIELDS[code] } : undefined,
@@ -155,7 +162,8 @@ const closeWith = (
     t: ColdTarget,
     r: ColdRelations,
     decision: ColdStartDecision,
-) => new ColdRelationsCloserV2Service(portal, fake.bitrix).close(t, r, decision);
+) =>
+    new ColdRelationsCloserV2Service(portal, fake.bitrix).close(t, r, decision);
 
 describe('ColdRelationsCloserV2Service — proceed', () => {
     it('корень компания: всё открытое закрывается, свежая основная сохраняется', async () => {
@@ -172,13 +180,17 @@ describe('ColdRelationsCloserV2Service — proceed', () => {
     it('сделка уезжает в double/noresult своей воронки с обнулением оси планов', async () => {
         const fake = makeBitrix();
         await closeWith(fake, target(), relations(), PROCEED);
-        expect(fake.dealUpdate).toHaveBeenCalledWith('xo2_close_deal_h1_500', 500, {
-            STAGE_ID: 'C17:APOLOGY',
-            UF_CRM_CALL_NEXT_DATE: '',
-            UF_CRM_CALL_NEXT_NAME: '',
-            UF_CRM_NEXT_PRES_PLAN_DATE: '',
-            UF_CRM_XO_DATE: '',
-        });
+        expect(fake.dealUpdate).toHaveBeenCalledWith(
+            'xo2_close_deal_h1_500',
+            500,
+            {
+                STAGE_ID: 'C17:APOLOGY',
+                UF_CRM_CALL_NEXT_DATE: '',
+                UF_CRM_CALL_NEXT_NAME: '',
+                UF_CRM_NEXT_PRES_PLAN_DATE: '',
+                UF_CRM_XO_DATE: '',
+            },
+        );
         expect(fake.dealUpdate).toHaveBeenCalledWith(
             'xo2_close_deal_h1_510',
             510,
@@ -200,12 +212,22 @@ describe('ColdRelationsCloserV2Service — proceed', () => {
     it('элементы: презентации → pres_noresult, ЗПР → zpr_fail по entityTypeId смарта', async () => {
         const fake = makeBitrix();
         await closeWith(fake, target(), relations(), PROCEED);
-        expect(fake.itemUpdate).toHaveBeenCalledWith('xo2_close_pres_h1_11', 11, '1040', {
-            stageId: 'DT1040_9:NORESULT',
-        });
-        expect(fake.itemUpdate).toHaveBeenCalledWith('xo2_close_zpr_h1_21', 21, '1038', {
-            stageId: 'DT1038_9:FAIL',
-        });
+        expect(fake.itemUpdate).toHaveBeenCalledWith(
+            'xo2_close_pres_h1_11',
+            11,
+            '1040',
+            {
+                stageId: 'DT1040_9:NORESULT',
+            },
+        );
+        expect(fake.itemUpdate).toHaveBeenCalledWith(
+            'xo2_close_zpr_h1_21',
+            21,
+            '1038',
+            {
+                stageId: 'DT1038_9:FAIL',
+            },
+        );
     });
 
     it('закрывающей стадии смарта нет — элементы не трогаем', async () => {
@@ -234,7 +256,12 @@ describe('ColdRelationsCloserV2Service — proceed', () => {
         const fake = makeBitrix();
         const result = await closeWith(
             fake,
-            target({ kind: 'deal', company: null, companyId: null, rootDealId: 500 }),
+            target({
+                kind: 'deal',
+                company: null,
+                companyId: null,
+                rootDealId: 500,
+            }),
             relations(),
             PROCEED,
         );
@@ -247,7 +274,12 @@ describe('ColdRelationsCloserV2Service — proceed', () => {
         // Входная — ХО-сделка без to_base_sales (rootDealId=null), своя основная 600 найдена по лиду.
         const result = await closeWith(
             fake,
-            target({ kind: 'deal', company: null, companyId: null, rootDealId: null }),
+            target({
+                kind: 'deal',
+                company: null,
+                companyId: null,
+                rootDealId: null,
+            }),
             relations({ openBaseDeals: [DEALS[1]] }),
             PROCEED,
         );

@@ -355,6 +355,69 @@ README, раздел «Фаза 2, волна 1». Приложение её п�
 `__tests__/ai-analytics-module-di.spec.ts` (оба новых провайдера разрешаются
 в графе модуля).
 
+## Ночной конвейер снапшотов и его сборка (Фаза 2, волны 3–4)
+
+Все тяжёлые расчёты Фазы 2 считает один ночной конвейер: раннер
+(`pipeline/snapshot-pipeline.service.ts`) берёт слот портала, собирает
+контекст прогона (ритм, ключи периода, TZ, производственный календарь,
+настройки, слои реестра параметров, версии, ростер) и последовательно
+выполняет шаги ритма, передавая значения через шину (`StepBus`). Пропуск
+шага не останавливает прогон (журнал «частично»), падение — останавливает,
+но журнал `ai-analytics-etl-run` всё равно пишется. Шаги инжектятся
+токеном `AI_ANALYTICS_PIPELINE_STEPS`: раннер не импортирует их напрямую,
+иначе срезы замкнулись бы в цикл.
+
+**Порядок шагов** (`AI_ANALYTICS_PIPELINE_STEP_ORDER` в
+`pipeline/ai-analytics-pipeline.module.ts`) — единственная гарантия того,
+что читающий шаг увидит значение писавшего:
+
+| № | Шаг | Ритмы | Читает из шины | Пишет в шину |
+|---|---|---|---|---|
+| 1 | `calls` | nightly, weekly, monthly, backfill | — | `calls.rows` |
+| 2 | `passport` | nightly, weekly, monthly | `calls.rows` (прокси `since`) | `passport` |
+| 3 | `stage-history` | nightly, monthly, backfill | `calls.rows` | `episodes`, `chain`, `stageTheta`, `cycleMedian`, `slaFacts`, `timestampLeak`, `historyMonths` |
+| 4 | `kpi` | nightly, monthly, backfill | — | `kpi.months` |
+| 5 | `style` | monthly | `calls.rows`, `passport` | `style` |
+| 6 | `plans` | monthly (тик 1-го числа) | — | `plans` |
+| 7 | `finance` | nightly, monthly, backfill | `kpi.months`, `calls.rows`, `passport`, `plans`, `style`, `chain` | `finance.result` |
+| 8 | `rop-mark` | weekly | `calls.rows` | — |
+| 9 | `sanity` | weekly | шину целиком | — |
+
+Снимок планов шаг `plans` делает только тиком 1-го числа, поэтому финансы
+берут цели из двух источников: шина того же прогона, иначе — записанный
+снапшот `ai-analytics-plan` нужного месяца (`steps/finance.plans.ts`). Без
+второго источника поле `planSnapshot` месячной записи пустовало бы все дни,
+кроме первого.
+
+Финансы закрывают месяц последними (им нужны все шесть ключей),
+санити-панель — последняя в недельном ритме, а догон истории (`backfill`)
+выполняют четыре шага: `calls` → `stage-history` → `kpi` → `finance`, то
+есть месяцы восстанавливаются без похода в портал за паспортом и планами.
+
+**Срезы шагов** — отдельные модули (§1.6 п. 2 плана: срез объявляет
+собственный `@Module`, корневой модуль фичи не растёт), контроллеров ни у
+одного нет:
+
+| Модуль | Шаги | Что ещё даёт |
+|---|---|---|
+| `snapshots/ai-analytics-snapshots.module.ts` | `calls`, `kpi`, `style`, `finance` | загрузчики разборов, KPI и финансов |
+| `passport/ai-analytics-passport.module.ts` | `passport`, `plans` | `ManagerPassportLoader`, `PlansSnapshotUseCase` |
+| `stage-history/ai-analytics-stage-history.module.ts` | `stage-history` | `StageHistoryLoader`, `CallEntityLoader` |
+| `rop-mark/ai-analytics-rop-mark.module.ts` | `rop-mark` | `RopMarkUseCase` и стор подбора (для будущей ручки) |
+
+Готовая сборка — `AiAnalyticsPipelineModule.registerPhase2()`: динамический
+модуль со всеми срезами в `imports` и всеми шагами в порядке массива.
+Сборке приложения (`ai-analytics.module.ts`, поток `p2-wiring`) остаётся
+добавить его в `imports` — процессор берёт раннер по токену
+`AI_ANALYTICS_SNAPSHOT_RUNNER` и `@Optional()`, поэтому до подключения
+ритмовые джобы отвечают понятной ошибкой, а аудит и обзор работают.
+
+Тесты сборки: `__tests__/pipeline-wiring.spec.ts` (DI каждого среза, коды
+шагов уникальны, писатель ключа шины идёт раньше читателя, у каждого ритма
+есть шаги и у `backfill` их ровно четыре, `registerPhase2` собирает те же
+шаги в том же порядке), `__tests__/snapshot-pipeline.service.spec.ts`
+(сам раннер), `__tests__/snapshots-module-di.spec.ts` (срез снапшотов).
+
 ## Слепая проверка «три звонка недели» (Фаза 2, волна 4)
 
 Единственный человеческий бюджет недели по плану §12: система сама

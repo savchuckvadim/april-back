@@ -8,8 +8,10 @@
  * ложная тревога калибровочного контура хуже молчания.
  */
 import {
+    minDurationSecOf,
     quantileOf,
     type AiTargets,
+    type MinDurationSecByType,
     type StageSlaFact,
     type WorkCalendar,
 } from '@lib/sales-ai-analytics';
@@ -123,9 +125,18 @@ export function slaRule(
         : verdict(AI_SANITY_RULES.sla, warnings);
 }
 
-/** Порог длительности против фактических длительностей типа звонка. */
+/**
+ * Порог длительности против фактических длительностей типа звонка.
+ *
+ * Порог берётся тем же правилом, что и в пульсе, — `minDurationSecOf`
+ * (тип → ключ «все прочие» → дефолт реестра): панель обязана проверять
+ * ровно тот гейт, который отсекает звонки от разбора, иначе руководителю
+ * покажут не то число. Поэтому перебираются типы, которые реально
+ * встретились в неделе, а не ключи карты: тип без своего порога всё равно
+ * отсекается значением по умолчанию.
+ */
 export function durationRule(
-    thresholds: Readonly<Record<string, number>>,
+    thresholds: MinDurationSecByType,
     rows: readonly SanityCallFact[],
     minN: number,
 ): AiSanityRuleResult {
@@ -136,9 +147,9 @@ export function durationRule(
     );
     const warnings: string[] = [];
     let checked = 0;
-    for (const [callType, threshold] of Object.entries(thresholds)) {
-        const durations = byType.get(callType) ?? [];
+    for (const [callType, durations] of byType) {
         if (durations.length < minN) continue;
+        const threshold = minDurationSecOf(callType, thresholds);
         checked += 1;
         const cut =
             durations.filter(value => value < threshold).length /

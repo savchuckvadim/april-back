@@ -255,7 +255,7 @@ export const PBX_SALES_EVENT_FIELDS = [
      * op_presentation_xvost выше не тронуты.
      */
     {
-        name: "5К КЛИЕНТ",
+        name: '5К КЛИЕНТ',
         appType: 'pres',
         type: 'string',
         items: [],
@@ -272,7 +272,7 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
-        name: "5К КОМПАНИЯ",
+        name: '5К КОМПАНИЯ',
         appType: 'pres',
         type: 'string',
         items: [],
@@ -289,7 +289,7 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
-        name: "5К КОЛЛЕГИ",
+        name: '5К КОЛЛЕГИ',
         appType: 'pres',
         type: 'string',
         items: [],
@@ -306,7 +306,7 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
-        name: "5К КОНКУРЕНТ",
+        name: '5К КОНКУРЕНТ',
         appType: 'pres',
         type: 'string',
         items: [],
@@ -323,7 +323,7 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
-        name: "5К КРИТЕРИИ ВЫБОРА",
+        name: '5К КРИТЕРИИ ВЫБОРА',
         appType: 'pres',
         type: 'string',
         items: [],
@@ -514,12 +514,24 @@ export const PBX_SALES_EVENT_FIELDS = [
         appType: 'general',
         type: 'enumeration',
         items: [
-            { code: 'op_status_in_progress', name: 'В работе (прогресс)' },
-            { code: 'op_status_money_await', name: 'Ожидание оплаты' },
-            { code: 'op_status_in_work', name: 'В работе' },
-            { code: 'op_status_in_long', name: 'Отложено' },
-            { code: 'op_status_fail', name: 'Провал' },
-            { code: 'op_status_success', name: 'Успех' },
+            /*
+             * ВНИМАНИЕ: коды item'ов ОБЯЗАНЫ совпадать с элементами поля
+             * `op_work_status` в базе установщика (и, как следствие, с
+             * XML_ID элементов на портале) — иначе поиск item'а по коду
+             * не находит значение и статус молча НЕ пишется в карточку.
+             *
+             * Это НЕ те же коды, что у одноимённого поля `op_work_status`
+             * СПИСКА «ОП KPI» (`PBX_SALES_KPI_LIST_FIELDS`, там
+             * `op_status_in_work` / `op_status_in_long` / …). Совпадают
+             * только `op_status_success` и `op_status_fail`; остальные
+             * четыре различаются, и путать их нельзя.
+             */
+            { code: 'work', name: 'В работе' },
+            { code: 'long', name: 'Отложена' },
+            { code: 'in_progress', name: 'В решении' },
+            { code: 'money_await', name: 'В оплате' },
+            { code: 'op_status_success', name: 'Продажа' },
+            { code: 'op_status_fail', name: 'Отказ' },
         ],
         code: 'op_work_status',
         lead: 'OP_WORK_STATUS',
@@ -2306,7 +2318,7 @@ export const PBX_SALES_EVENT_FIELDS = [
      * в shared/presentation-survey) и в подсказке поля.
      */
     {
-        name: "ХВОСТ ЖЕЛАНИЕ РАБОТАТЬ С ГАРАНТОМ",
+        name: 'ХВОСТ ЖЕЛАНИЕ РАБОТАТЬ С ГАРАНТОМ',
         appType: 'pres',
         type: 'string',
         items: [],
@@ -2323,7 +2335,7 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
-        name: "ХВОСТ ЧТО ПРЕДЛОЖИЛИ",
+        name: 'ХВОСТ ЧТО ПРЕДЛОЖИЛИ',
         appType: 'pres',
         type: 'string',
         items: [],
@@ -2340,7 +2352,7 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
-        name: "ХВОСТ РЕАКЦИЯ НА ЦЕНУ",
+        name: 'ХВОСТ РЕАКЦИЯ НА ЦЕНУ',
         appType: 'pres',
         type: 'string',
         items: [],
@@ -2357,7 +2369,7 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
-        name: "ХВОСТ ПРОЦЕСС ПРИНЯТИЯ РЕШЕНИЯ",
+        name: 'ХВОСТ ПРОЦЕСС ПРИНЯТИЯ РЕШЕНИЯ',
         appType: 'pres',
         type: 'string',
         items: [],
@@ -2374,7 +2386,7 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
-        name: "ХВОСТ ВЫХОД НА РЕШЕНИЕ",
+        name: 'ХВОСТ ВЫХОД НА РЕШЕНИЕ',
         appType: 'pres',
         type: 'string',
         items: [],

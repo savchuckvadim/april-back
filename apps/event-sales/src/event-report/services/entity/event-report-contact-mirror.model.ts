@@ -1,6 +1,7 @@
 import { IField } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PbxSalesEventFieldCode } from '@lib/portal-lib/pbx';
+import { scalarText } from './scalar-text.util';
 
 type ContactMirrorValue = string | number | Array<string | number>;
 export type ContactMirrorMap = Record<string, ContactMirrorValue>;
@@ -114,13 +115,13 @@ export class EventReportContactMirrorModel {
             const b = next.map(String).sort();
             return a.every((value, index) => value === b[index]);
         }
-        return String(current ?? '') === String(next);
+        return scalarText(current) === scalarText(next);
     }
 
     private hasValue(raw: unknown): boolean {
         if (raw == null) return false;
         if (Array.isArray(raw)) return raw.length > 0;
-        return String(raw).trim() !== '';
+        return scalarText(raw).trim() !== '';
     }
 
     /**
@@ -151,6 +152,6 @@ export class EventReportContactMirrorModel {
             mapped.push(String(contactItem.bitrixId));
         }
         if (!mapped.length) return null;
-        return Array.isArray(raw) || mapped.length > 1 ? mapped : mapped[0]!;
+        return Array.isArray(raw) || mapped.length > 1 ? mapped : mapped[0];
     }
 }

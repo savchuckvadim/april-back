@@ -161,9 +161,19 @@ const makeBitrix = (
         api: { domain: 'd.b24.ru', callBatchWithConcurrency: callBatch },
         deal: { all: dealAll },
         item: { listAll: itemListAll },
-        batch: { deal: { getList: dealGetList }, task: { getList: taskGetList } },
+        batch: {
+            deal: { getList: dealGetList },
+            task: { getList: taskGetList },
+        },
     } as unknown as BitrixService;
-    return { bitrix, dealAll, dealGetList, taskGetList, itemListAll, callBatch };
+    return {
+        bitrix,
+        dealAll,
+        dealGetList,
+        taskGetList,
+        itemListAll,
+        callBatch,
+    };
 };
 
 const collect = (
@@ -180,14 +190,29 @@ const OPEN_STAGES = ['C17:PREPARATION', 'C17:WARM', 'C32:PLAN'];
 
 describe('ColdRelationsCollectorV2Service — корень компания', () => {
     const deals = [
-        { ID: '500', CATEGORY_ID: '17', COMPANY_ID: '7', ASSIGNED_BY_ID: '447' },
-        { ID: '510', CATEGORY_ID: '32', COMPANY_ID: '7', ASSIGNED_BY_ID: '447' },
+        {
+            ID: '500',
+            CATEGORY_ID: '17',
+            COMPANY_ID: '7',
+            ASSIGNED_BY_ID: '447',
+        },
+        {
+            ID: '510',
+            CATEGORY_ID: '32',
+            COMPANY_ID: '7',
+            ASSIGNED_BY_ID: '447',
+        },
     ];
     const tasksByKey = (key: string) =>
         key.endsWith('CO_7')
             ? { tasks: [{ id: '1', title: 'ХО', ufCrmTask: ['CO_7'] }] }
             : key.endsWith('D_500')
-              ? { tasks: [{ id: '2', title: 'Звонок', ufCrmTask: ['D_500'] }, { id: '1', title: 'ХО' }] }
+              ? {
+                    tasks: [
+                        { id: '2', title: 'Звонок', ufCrmTask: ['D_500'] },
+                        { id: '1', title: 'ХО' },
+                    ],
+                }
               : { tasks: [] };
 
     it('сделки — открытые стадии четырёх воронок по COMPANY_ID (как v1)', async () => {
@@ -195,7 +220,11 @@ describe('ColdRelationsCollectorV2Service — корень компания', ()
         const relations = await collect(companyTarget(), fake);
         expect(fake.dealAll).toHaveBeenCalledWith(
             { '=STAGE_ID': OPEN_STAGES, '=COMPANY_ID': [7] },
-            expect.arrayContaining(['ID', 'CATEGORY_ID', 'UF_CRM_TO_BASE_SALES']),
+            expect.arrayContaining([
+                'ID',
+                'CATEGORY_ID',
+                'UF_CRM_TO_BASE_SALES',
+            ]),
         );
         expect(relations.deals.map(d => d.ID)).toEqual(['500', '510']);
         expect(relations.openBaseDeals.map(d => d.ID)).toEqual(['500']);
@@ -213,23 +242,35 @@ describe('ColdRelationsCollectorV2Service — корень компания', ()
             '!STATUS': '5',
             GROUP_ID: 41,
         });
-        expect(relations.tasks.map(t => (t as unknown as Row).id)).toEqual(['1', '2']);
+        expect(relations.tasks.map(t => (t as unknown as Row).id)).toEqual([
+            '1',
+            '2',
+        ]);
     });
 
     it('элементы — открытые стадии через listAll, матч по компании или сделке', async () => {
-        const fake = makeBitrix(tasksByKey, {
-            '1040': [
-                { id: 1, ufCrm7Company: 'CO_7' },
-                { id: 2, ufCrm7BaseDeal: 500 },
-                { id: 3, ufCrm7Company: 'CO_8', ufCrm7BaseDeal: 'D_999' },
-            ],
-            '1038': [{ id: 9, ufCrm8BaseDeal: 'D_510' }, { id: 10 }],
-        }, deals);
+        const fake = makeBitrix(
+            tasksByKey,
+            {
+                '1040': [
+                    { id: 1, ufCrm7Company: 'CO_7' },
+                    { id: 2, ufCrm7BaseDeal: 500 },
+                    { id: 3, ufCrm7Company: 'CO_8', ufCrm7BaseDeal: 'D_999' },
+                ],
+                '1038': [{ id: 9, ufCrm8BaseDeal: 'D_510' }, { id: 10 }],
+            },
+            deals,
+        );
         const relations = await collect(companyTarget(), fake);
         expect(fake.itemListAll).toHaveBeenCalledWith(
             '1040',
             { stageId: ['DT1040_9:NEW', 'DT1040_9:PLAN'] },
-            expect.arrayContaining(['id', 'stageId', 'assignedById', 'ufCrm7Company']),
+            expect.arrayContaining([
+                'id',
+                'stageId',
+                'assignedById',
+                'ufCrm7Company',
+            ]),
         );
         expect(fake.itemListAll).toHaveBeenCalledWith(
             '1038',
@@ -272,7 +313,10 @@ describe('ColdRelationsCollectorV2Service — корень сделка без �
             ];
         }
         if (key.endsWith('_by_lead')) {
-            return [{ ID: '77', CATEGORY_ID: '17' }, { ID: '80', CATEGORY_ID: '17' }];
+            return [
+                { ID: '77', CATEGORY_ID: '17' },
+                { ID: '80', CATEGORY_ID: '17' },
+            ];
         }
         if (key.endsWith('_by_root')) {
             return [{ ID: '78', CATEGORY_ID: '48' }];
@@ -298,7 +342,12 @@ describe('ColdRelationsCollectorV2Service — корень сделка без �
             ['by_lead', { LEAD_ID: [12, 5, 13], '=STAGE_ID': OPEN_STAGES }],
             ['by_root', { UF_CRM_TO_BASE_SALES: 77, '=STAGE_ID': OPEN_STAGES }],
         ]);
-        expect(relations.deals.map(d => d.ID)).toEqual(['600', '77', '80', '78']);
+        expect(relations.deals.map(d => d.ID)).toEqual([
+            '600',
+            '77',
+            '80',
+            '78',
+        ]);
         expect(relations.openBaseDeals.map(d => d.ID)).toEqual(['77', '80']);
         expect(relations.leadIds).toEqual([12, 5, 13]);
         expect(relations.dealIds).toEqual([600, 77, 80, 78]);
@@ -320,7 +369,10 @@ describe('ColdRelationsCollectorV2Service — корень сделка без �
             ['L_5'],
             ['L_13'],
         ]);
-        expect(relations.tasks.map(t => (t as unknown as Row).id)).toEqual(['21', '22']);
+        expect(relations.tasks.map(t => (t as unknown as Row).id)).toEqual([
+            '21',
+            '22',
+        ]);
     });
 
     it('элементы — по сделкам графа и по лидам, чужие не попадают', async () => {
@@ -330,7 +382,10 @@ describe('ColdRelationsCollectorV2Service — корень сделка без �
                 { id: 2, ufCrm7Lead: 13 },
                 { id: 3, ufCrm7Company: 'CO_7' },
             ],
-            '1038': [{ id: 9, ufCrm8BaseDeal: 999 }, { id: 10, ufCrm8Lead: 'L_12' }],
+            '1038': [
+                { id: 9, ufCrm8BaseDeal: 999 },
+                { id: 10, ufCrm8Lead: 'L_12' },
+            ],
         });
         const relations = await collect(dealTarget(entry, 77), fake);
         expect(relations.pres.rows.map(r => r.id)).toEqual([1, 2]);

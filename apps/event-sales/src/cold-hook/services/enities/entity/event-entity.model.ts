@@ -134,11 +134,14 @@ export class EventEntityModel {
         return currentValue;
     }
 
+    /**
+     * «В работе» в `op_work_status` КАРТОЧКИ: item-код справочника поля
+     * карточки — `work`. До 09.09.2026 искался код KPI-списка
+     * (`op_status_in_work`), item не находился и статус молча не писался.
+     */
     private getNextOpWorkStatus() {
         const field = findPbxSalesEventField('op_work_status');
-        const targetItem = field?.items.find(
-            item => item.code === 'op_status_in_work',
-        );
+        const targetItem = field?.items.find(item => item.code === 'work');
 
         const currentPortalField = this.getPortalFieldByCode(
             ColdEntityCodesEnum.op_work_status,

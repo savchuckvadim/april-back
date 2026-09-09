@@ -33,7 +33,9 @@ describe('decideColdStart', () => {
     });
 
     it('force=Y без чужой работы — foreign пуст', () => {
-        expect(decide(EnumColdCallForce.Y, [deal('700', '447')]).foreign).toEqual([]);
+        expect(
+            decide(EnumColdCallForce.Y, [deal('700', '447')]).foreign,
+        ).toEqual([]);
     });
 
     it('force=N, других основных нет — полный старт', () => {
@@ -41,21 +43,28 @@ describe('decideColdStart', () => {
     });
 
     it('force=N, вторая основная своя — не мешает', () => {
-        expect(
-            decide(EnumColdCallForce.N, [deal('700', '447')]).mode,
-        ).toBe('proceed');
+        expect(decide(EnumColdCallForce.N, [deal('700', '447')]).mode).toBe(
+            'proceed',
+        );
     });
 
     it('force=N, входная сделка — чужая основная: забираем, режим не меняется, владельцу — takenEntry', () => {
         const decision = decide(EnumColdCallForce.N, [deal('500', '448')], 500);
         expect(decision.mode).toBe('proceed');
         expect(decision.foreign).toEqual([]);
-        expect(decision.takenEntry).toEqual({ dealId: 500, responsibleId: 448 });
+        expect(decision.takenEntry).toEqual({
+            dealId: 500,
+            responsibleId: 448,
+        });
     });
 
     it('входная своя или вход-компания — takenEntry пуст', () => {
-        expect(decide(EnumColdCallForce.N, [deal('500', '447')], 500).takenEntry).toBeNull();
-        expect(decide(EnumColdCallForce.N, [deal('700', '448')], null).takenEntry).toBeNull();
+        expect(
+            decide(EnumColdCallForce.N, [deal('500', '447')], 500).takenEntry,
+        ).toBeNull();
+        expect(
+            decide(EnumColdCallForce.N, [deal('700', '448')], null).takenEntry,
+        ).toBeNull();
     });
 
     it('force=N, открытая основная другого сотрудника — уступаем с адресатом', () => {

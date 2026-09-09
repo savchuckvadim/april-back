@@ -130,13 +130,18 @@ export class EventReportContactFieldsModel {
 
         const survey = this.ctx.presentationSurvey;
         if (isPresentationSurveyEmpty(survey)) return;
-        this.setText(out, PRESENTATION_SURVEY_SUMMARY_CODES.xvost, survey.xvost);
+        this.setText(
+            out,
+            PRESENTATION_SURVEY_SUMMARY_CODES.xvost,
+            survey.xvost,
+        );
         this.setText(
             out,
             PRESENTATION_SURVEY_SUMMARY_CODES.fiveKSummary,
             survey.fiveKSummary,
         );
-        for (const [code, value] of survey.fiveK) this.setText(out, code, value);
+        for (const [code, value] of survey.fiveK)
+            this.setText(out, code, value);
         for (const [code, value] of survey.talk) this.setText(out, code, value);
     }
 
@@ -255,7 +260,9 @@ export class EventReportContactFieldsModel {
         out[this.key(field)] = fitMultipleEntries(
             [
                 toBatchSafeText(toMultiFieldEntryText(line)),
-                ...this.readMultiple(field).map(entry => toBatchSafeText(entry)),
+                ...this.readMultiple(field).map(entry =>
+                    toBatchSafeText(entry),
+                ),
             ],
             limit,
         );
@@ -277,7 +284,10 @@ export const resolveEventContacts = (
         const contact = raw as Record<string, unknown> | null;
         const id = Number(contact?.ID);
         if (!contact || !Number.isFinite(id) || id <= 0) return;
-        const entry = byId.get(id) ?? { contact, roles: new Set<ContactRole>() };
+        const entry = byId.get(id) ?? {
+            contact,
+            roles: new Set<ContactRole>(),
+        };
         entry.roles.add(role);
         byId.set(id, entry);
     };

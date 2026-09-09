@@ -160,3 +160,12 @@ export * from './model/capacity';
 export * from './model/target';
 export * from './model/ramp';
 export * from './model/daily-plan';
+
+// Фаза 2, волна 4 «паспорт менеджера и три звонка недели»: полосы стажа
+// (границы кода реестра tenure_gates, стаж в месяцах, подсказка уровня) и
+// детерминированный подбор трёх звонков недели для слепой проверки РОПа
+// (неуверенный тип, лучший балл, случайный; PRNG от seedOf(domain, weekKey),
+// не более одного звонка на менеджера). Контракты ManagerPassport и
+// PlanSnapshot уже доступны из contracts/snapshot.types.
+export * from './model/tenure-bands';
+export * from './model/rop-mark';

@@ -11,7 +11,10 @@
  *   отдельно (`nBeforeComparable`) — иначе смена рубрики выглядит
  *   изменением работы менеджера;
  * - потолки оценивания применяются ДО сборки матрицы, иначе в снапшот
- *   уедет балл, который руководитель уже отменил правилом.
+ *   уедет балл, который руководитель уже отменил правилом;
+ * - неприменимые к типу разделы рубрики вычёркиваются ПЕРЕД потолками:
+ *   раздела, которого в таком разговоре быть не должно, не касаются ни
+ *   правила портала, ни знаменатель оценки.
  *
  * Чистая детерминированная функция: без DI, Bitrix и `new Date()`.
  */
@@ -31,7 +34,11 @@ import {
     type ManagerSnapshotRow,
     type ManagerWeekPayload,
 } from './manager-snapshot.types';
-import { applyWeekScoring, traceOf } from './week-scoring.util';
+import { applyPeriodScoring, traceOf } from './period-scoring.util';
+import {
+    applicabilityTraceOf,
+    applySectionApplicability,
+} from './section-applicability.util';
 
 export interface ManagerWeekInput {
     /** ISO-неделя снапшота 'YYYY-Www'. */
@@ -108,7 +115,8 @@ function objectionsOf(
 export function buildManagerWeekPayload(
     input: ManagerWeekInput,
 ): ManagerWeekAssembly {
-    const scoring = applyWeekScoring(input.rows, input.scoring);
+    const applicable = applySectionApplicability(input.rows);
+    const scoring = applyPeriodScoring(applicable.rows, input.scoring);
     const matrixOptions = {
         ...(input.shortCallSec === undefined
             ? {}
@@ -145,6 +153,7 @@ export function buildManagerWeekPayload(
             caps: trace.caps,
             flags: trace.flags,
             stopWords: trace.stopWords,
+            applicability: applicabilityTraceOf(applicable, manager.managerId),
             meta: input.meta,
         };
         return { managerId: manager.managerId, payload };

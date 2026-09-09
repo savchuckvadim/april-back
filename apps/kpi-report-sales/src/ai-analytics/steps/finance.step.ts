@@ -35,7 +35,6 @@ import { AI_PIPELINE_BUS_KEYS } from '../constants/ai-snapshot.const';
 import {
     readChainSharePct,
     readPassports,
-    readPlans,
     readStyles,
 } from '../domain/assembler/bus-facts.util';
 import { buildManagerMonthPayload } from '../domain/assembler/manager-month.assembler';
@@ -44,6 +43,7 @@ import type { AiFinanceResult } from '../domain/loaders/finance.types';
 import type { AiKpiMonthsResult } from '../domain/loaders/kpi.types';
 import type { DatedLiteRow } from '../domain/loaders/lite-row.mapper';
 import { AiAnalyticsSnapshotStore } from '../store/ai-analytics-snapshot.store';
+import { NO_PLANS, plansByMonth } from './finance.plans';
 import {
     AiAnalyticsPipelineStep,
     AiPipelineStepContext,
@@ -182,7 +182,6 @@ export class FinanceStep implements AiAnalyticsPipelineStep {
             settings: ctx.settings,
             registry: ctx.registry,
             passports: readPassports(bus.get(AI_PIPELINE_BUS_KEYS.passport)),
-            plans: readPlans(bus.get(AI_PIPELINE_BUS_KEYS.plans)),
             styles: readStyles(bus.get(AI_PIPELINE_BUS_KEYS.style)),
             chainSharePct: readChainSharePct(
                 bus.get(AI_PIPELINE_BUS_KEYS.chain),
@@ -197,11 +196,21 @@ export class FinanceStep implements AiAnalyticsPipelineStep {
                 modelSnapshotId,
             },
         };
+        // Цели месяца: свежий снимок из шины (тик 1-го числа) либо
+        // записанный снапшот `ai-analytics-plan` — иначе поле planSnapshot
+        // месячной записи пустовало бы все дни, кроме первого.
+        const plans = await plansByMonth(this.snapshots, {
+            domain: ctx.domain,
+            monthKey: ctx.monthKey,
+            months,
+            fromBus: bus.get(AI_PIPELINE_BUS_KEYS.plans),
+        });
         let written = 0;
         for (const monthKey of months) {
             const bounds = monthBounds(monthKey);
             const assembly = buildManagerMonthPayload({
                 ...shared,
+                plans: plans.get(monthKey) ?? NO_PLANS,
                 monthKey,
                 rows: rows.filter(row => inMonth(row, bounds, ctx.timeZone)),
                 kpi: data.kpi.months.find(month => month.month === monthKey),

@@ -69,12 +69,15 @@ const DEAL_FIELDS: Record<string, Field> = {
 const makePortal = (contactCodes: string[] = Object.keys(CONTACT_FIELDS)) => ({
     getEntityFieldByCode: (entity: string, code: string) => {
         if (entity === 'contact') {
-            return contactCodes.includes(code) ? CONTACT_FIELDS[code] : undefined;
+            return contactCodes.includes(code)
+                ? CONTACT_FIELDS[code]
+                : undefined;
         }
         if (entity === 'deal') return DEAL_FIELDS[code];
         return undefined;
     },
-    getFieldBitrixId: (field: { bitrixId: string }) => `UF_CRM_${field.bitrixId}`,
+    getFieldBitrixId: (field: { bitrixId: string }) =>
+        `UF_CRM_${field.bitrixId}`,
     getFieldItemByCode: (field: Field, code: string) =>
         field.items.find(item => item.code === code),
     getPortal: () => ({ domain: 'd.b24.ru' }),
@@ -140,7 +143,9 @@ const fieldsOf = (
 
 describe('EventReportContactFieldsModel', () => {
     it('контакт отчёта: история лентой и скаляром через « | », возражение и дата со сделки', () => {
-        const out = fieldsOf(makeCtx({}), REPORT_CONTACT, [EContactRole.REPORT]);
+        const out = fieldsOf(makeCtx({}), REPORT_CONTACT, [
+            EContactRole.REPORT,
+        ]);
 
         const history = out.UF_CRM_OP_MHISTORY as string[];
         expect(history).toHaveLength(1);
@@ -225,8 +230,8 @@ describe('resolveEventContacts', () => {
         const contacts = resolveEventContacts(makeCtx({}));
 
         expect(contacts.map(c => c.contact.ID)).toEqual(['77', '88']);
-        expect([...contacts[0]!.roles]).toEqual([EContactRole.REPORT]);
-        expect([...contacts[1]!.roles]).toEqual([EContactRole.PLAN]);
+        expect([...contacts[0].roles]).toEqual([EContactRole.REPORT]);
+        expect([...contacts[1].roles]).toEqual([EContactRole.PLAN]);
     });
 
     it('один человек в обеих ролях — одна запись с двумя ролями', () => {
@@ -235,7 +240,7 @@ describe('resolveEventContacts', () => {
         );
 
         expect(contacts).toHaveLength(1);
-        expect([...contacts[0]!.roles].sort()).toEqual(['plan', 'report']);
+        expect([...contacts[0].roles].sort()).toEqual(['plan', 'report']);
     });
 
     it('контактов нет — пусто', () => {
@@ -263,9 +268,10 @@ describe('EventReportEntityFlowService × контакты', () => {
         };
         const portal = makePortal();
 
-        new EventReportEntityFlowService(bitrix as never, portal as never).queue(
-            makeCtx({}, {}, portal),
-        );
+        new EventReportEntityFlowService(
+            bitrix as never,
+            portal as never,
+        ).queue(makeCtx({}, {}, portal));
 
         expect(contactUpdates).toEqual([
             { cmd: 'update_contact_77', id: 77 },

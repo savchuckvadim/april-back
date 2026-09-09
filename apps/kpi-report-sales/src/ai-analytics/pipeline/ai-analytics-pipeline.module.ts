@@ -11,6 +11,18 @@ import { ManagersLoader } from '../domain/loaders/managers.loader';
 import { AiAnalyticsParamsLoader } from '../domain/loaders/params.loader';
 import { AiAnalyticsPortalsLoader } from '../domain/loaders/portals.loader';
 import { SettingsLoader } from '../domain/loaders/settings.loader';
+import { AiAnalyticsPassportModule } from '../passport/ai-analytics-passport.module';
+import { AiAnalyticsRopMarkModule } from '../rop-mark/ai-analytics-rop-mark.module';
+import { AiAnalyticsSnapshotsModule } from '../snapshots/ai-analytics-snapshots.module';
+import { AiAnalyticsStageHistoryModule } from '../stage-history/ai-analytics-stage-history.module';
+import { CallsStep } from '../steps/calls.step';
+import { FinanceStep } from '../steps/finance.step';
+import { KpiStep } from '../steps/kpi.step';
+import { PassportStep } from '../steps/passport.step';
+import { PlansStep } from '../steps/plans.step';
+import { RopMarkStep } from '../steps/rop-mark.step';
+import { StageHistoryStep } from '../steps/stage-history.step';
+import { StyleStep } from '../steps/style.step';
 import { SanityStep } from '../steps/sanity.step';
 import {
     AI_ANALYTICS_PIPELINE_STEPS,
@@ -32,6 +44,61 @@ export interface AiAnalyticsPipelineOptions {
     /** Классы шагов в порядке выполнения. */
     steps: Type<AiAnalyticsPipelineStep>[];
 }
+
+/**
+ * Порядок шагов ночного конвейера Фазы 2 (волна 4, сборка) — он же
+ * порядок массива под токеном AI_ANALYTICS_PIPELINE_STEPS. Прямых
+ * зависимостей между шагами нет: они общаются через шину, поэтому
+ * порядок здесь — единственная гарантия того, что читающий шаг увидит
+ * значение писавшего.
+ *
+ * Обоснование порядка (стрелка — ключ шины, кто пишет → кто читает):
+ * 1. `calls` — источник строк разборов (`calls.rows`), сам из шины
+ *    ничего не читает, поэтому идёт первым;
+ * 2. `passport` — паспорт менеджера; из `calls.rows` берёт прокси-дату
+ *    первого события для каскада `since`, публикует `passport`;
+ * 3. `stage-history` — эпизоды сделок из `calls.rows` и истории стадий;
+ *    публикует `episodes`, `chain`, `stageTheta`, `cycleMedian`,
+ *    `slaFacts`, `timestampLeak`, `historyMonths` — их ждут финансы и
+ *    будущая модель портала с прогнозом;
+ * 4. `kpi` — KPI-месяцы (`kpi.months`) для месячного снапшота;
+ * 5. `style` — профиль стиля: читает `calls.rows` и полосы стажа из
+ *    `passport`, публикует `style`;
+ * 6. `plans` — снимок целей руководителя 1-го числа, публикует `plans`;
+ * 7. `finance` — закрывает месяц: читает `kpi.months`, `calls.rows`,
+ *    `passport`, `plans`, `style` и `chain`, поэтому идёт после всех;
+ * 8. `rop-mark` — недельный подбор трёх звонков из `calls.rows`; на
+ *    месячную цепочку не влияет;
+ * 9. `sanity` — недельная санити-панель, читает шину целиком, поэтому
+ *    последняя (правило потока 12).
+ *
+ * Ритмы объявляет сам шаг, раннер фильтрует массив по ритму прогона:
+ * `backfill` выполняют `calls`, `stage-history`, `kpi` и `finance` —
+ * догон месяцев без похода в портал за паспортом и планами.
+ */
+export const AI_ANALYTICS_PIPELINE_STEP_ORDER: Type<AiAnalyticsPipelineStep>[] =
+    [
+        CallsStep,
+        PassportStep,
+        StageHistoryStep,
+        KpiStep,
+        StyleStep,
+        PlansStep,
+        FinanceStep,
+        RopMarkStep,
+        SanityStep,
+    ];
+
+/**
+ * Модули срезов, экспортирующие шаги из порядка выше. `SanityStep` в
+ * списке нет намеренно: он объявлен провайдером самого конвейера.
+ */
+export const AI_ANALYTICS_PIPELINE_STEP_MODULES: Type<unknown>[] = [
+    AiAnalyticsSnapshotsModule,
+    AiAnalyticsPassportModule,
+    AiAnalyticsStageHistoryModule,
+    AiAnalyticsRopMarkModule,
+];
 
 /**
  * Модуль среза «ночной конвейер» (правило владения общими файлами §1.6
@@ -112,5 +179,18 @@ export class AiAnalyticsPipelineModule {
                 },
             ],
         };
+    }
+
+    /**
+     * Конвейер Фазы 2 «как в проде»: все модули срезов волны 4 и все их
+     * шаги в порядке AI_ANALYTICS_PIPELINE_STEP_ORDER. Сборке приложения
+     * остаётся импортировать `AiAnalyticsPipelineModule.registerPhase2()`
+     * — состав и порядок шагов живут здесь, а не в корневом модуле фичи.
+     */
+    static registerPhase2(): DynamicModule {
+        return AiAnalyticsPipelineModule.register({
+            imports: AI_ANALYTICS_PIPELINE_STEP_MODULES,
+            steps: AI_ANALYTICS_PIPELINE_STEP_ORDER,
+        });
     }
 }

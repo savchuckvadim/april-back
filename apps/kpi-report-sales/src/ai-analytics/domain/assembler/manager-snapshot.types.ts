@@ -166,6 +166,26 @@ export interface ManagerScoringFlag {
     cut: number;
 }
 
+/** Раздел, вычеркнутый как неприменимый к типу звонка, и объём вычерка. */
+export interface ApplicabilityCut {
+    callType: string;
+    section: string;
+    /** Разборов, где раздел не пошёл в знаменатель. */
+    calls: number;
+}
+
+/**
+ * След применимости разделов за период (план §4.3): по какому порогу
+ * приора построена таблица и что она вычеркнула. Таблица выводится из
+ * профилей типов и не настраивается, поэтому в снапшот едет только след.
+ */
+export interface ManagerApplicabilityTrace {
+    /** Порог приора релевантности, с которого раздел применим. */
+    minRelevance: number;
+    /** Вычеркнутые разделы по возрастанию типа и кода раздела. */
+    excluded: ApplicabilityCut[];
+}
+
 /**
  * Неделя менеджера (`ai-analytics-manager-week`): базовая форма плюс
  * счёт звонков до границы сравнимой истории, следы потолков оценивания
@@ -180,6 +200,8 @@ export interface ManagerWeekPayload extends ManagerWeekSnapshot {
     flags: string[];
     /** Найденные стоп-фразы недели (балл не меняют — материал разговора). */
     stopWords: string[];
+    /** Что вычеркнула применимость разделов (материал «Как считаем»). */
+    applicability: ManagerApplicabilityTrace;
     meta: AiSnapshotMeta;
 }
 
@@ -192,6 +214,14 @@ export interface ManagerMonthPayload extends ManagerMonthSnapshot {
     edges: ManagerEdgeFacts[];
     finance: ManagerFinanceMonthFacts;
     exposure: ManagerExposureFacts;
+    /** Сработавшие правила потолков месяца (`ai_analytics_scoring.caps`). */
+    caps: ManagerScoringFlag[];
+    /** Флаги разбора, выставленные потолками, без повторов. */
+    flags: string[];
+    /** Найденные стоп-фразы месяца (балл не меняют — материал разговора). */
+    stopWords: string[];
+    /** Что вычеркнула применимость разделов (материал «Как считаем»). */
+    applicability: ManagerApplicabilityTrace;
     /** Паспорт из шины; null — шаг паспорта не отработал. */
     passport: ManagerPassportFacts | null;
     /** Снимок плана руководителя; null — планов на месяц нет. */

@@ -26,7 +26,7 @@ export class BxUserFieldEnumItemDto {
     @ApiPropertyOptional({
         description:
             'XML_ID элемента списка (стабильный внешний идентификатор).',
-        example: 'op_status_in_progress',
+        example: 'op_status_success',
         type: String,
     })
     XML_ID?: string;

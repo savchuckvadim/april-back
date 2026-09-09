@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import type { AiScoringSettings } from '@lib/sales-ai-analytics';
 import { buildManagerMonthPayload } from '../domain/assembler/manager-month.assembler';
 import type { ManagerMonthInput } from '../domain/assembler/manager-month.assembler';
 import type { ManagerPassportFacts } from '../domain/assembler/manager-snapshot.types';
@@ -263,5 +264,132 @@ describe('Экспозиция и уровень', () => {
 
         expect(payload.passport).toBeNull();
         expect(payload.planSnapshot).not.toBeNull();
+    });
+});
+
+describe('Правила портала в месяце', () => {
+    /** Восемь разборов сентября с оценённым закрытием. */
+    function scoredRows(overrides: Partial<DatedLiteRow> = {}): DatedLiteRow[] {
+        return Array.from({ length: 8 }, (_, index) =>
+            liteRow({
+                transcriptionId: `s-${index}`,
+                callStartedAt: new Date(`2026-09-0${index + 1}T09:00:00Z`),
+                sections: [
+                    {
+                        section: 'CLOSING',
+                        relevance: 80,
+                        score: 9,
+                        asWas: 'Ну это самое, я перезвоню',
+                        alternatives: [],
+                    },
+                ],
+                ...overrides,
+            }),
+        ) as DatedLiteRow[];
+    }
+
+    /** Правило «нет даты следующего шага → закрытие не выше 5». */
+    const capRules: AiScoringSettings = {
+        caps: [
+            {
+                ruleCode: 'closing-no-next-step-date',
+                condition: 'nextStep.date = null',
+                section: 'CLOSING',
+                maxScore: 5,
+                flag: 'no-next-step-date',
+            },
+        ],
+        stopWords: [],
+    };
+
+    it('потолок оценивания месяца доезжает до снапшота и пишет флаг', () => {
+        const payload = buildManagerMonthPayload(
+            input({
+                rows: scoredRows({ nextStep: { set: true, date: null } }),
+                settings: portalSettings({ scoring: capRules }),
+            }),
+        ).rows[0].payload;
+
+        expect(payload.flags).toEqual(['no-next-step-date']);
+        expect(payload.caps).toEqual([
+            {
+                ruleCode: 'closing-no-next-step-date',
+                section: 'CLOSING',
+                flag: 'no-next-step-date',
+                maxScore: 5,
+                calls: 8,
+                cut: 8,
+            },
+        ]);
+    });
+
+    it('условие правила не выполнено — следа в месяце нет', () => {
+        const payload = buildManagerMonthPayload(
+            input({
+                rows: scoredRows(),
+                settings: portalSettings({ scoring: capRules }),
+            }),
+        ).rows[0].payload;
+
+        expect(payload.caps).toEqual([]);
+        expect(payload.flags).toEqual([]);
+    });
+
+    it('стоп-фраза месяца попадает в снапшот и объём типа не меняет', () => {
+        const payload = buildManagerMonthPayload(
+            input({
+                rows: scoredRows(),
+                settings: portalSettings({
+                    scoring: { caps: [], stopWords: ['я перезвоню'] },
+                }),
+            }),
+        ).rows[0].payload;
+
+        expect(payload.stopWords).toEqual(['я перезвоню']);
+        expect(payload.byType[0]).toMatchObject({
+            callType: 'presentation',
+            n: 8,
+        });
+    });
+
+    it('«презентация» в холодном звонке вычеркнута из знаменателя', () => {
+        const payload = buildManagerMonthPayload(
+            input({
+                rows: scoredRows({
+                    callType: 'cold',
+                    sections: [
+                        {
+                            section: 'GREETING',
+                            relevance: 90,
+                            score: 8,
+                            asWas: null,
+                            alternatives: [],
+                        },
+                        {
+                            section: 'PRESENTATION',
+                            relevance: 70,
+                            score: 2,
+                            asWas: null,
+                            alternatives: [],
+                        },
+                    ],
+                }),
+            }),
+        ).rows[0].payload;
+
+        expect(payload.applicability).toEqual({
+            minRelevance: 30,
+            excluded: [{ callType: 'cold', section: 'PRESENTATION', calls: 8 }],
+        });
+    });
+
+    it('все разделы применимы — след применимости пуст', () => {
+        const payload = buildManagerMonthPayload(input({ rows: scoredRows() }))
+            .rows[0].payload;
+
+        expect(payload.applicability).toEqual({
+            minRelevance: 30,
+            excluded: [],
+        });
     });
 });

@@ -468,3 +468,61 @@ describe('SanityStep — недельный шаг конвейера', () => {
         );
     });
 });
+
+/**
+ * Единый порог длительности разбора (решение владельца А.1, P2-56): пульс
+ * и конвейер обязаны считать «разбираемым» один и тот же звонок, поэтому
+ * панель берёт порог тем же правилом `minDurationSecOf` — карта портала,
+ * потом ключ «все прочие типы», потом дефолт реестра.
+ */
+describe('Порог длительности: один источник у пульса и конвейера', () => {
+    it('тип без своего порога проверяется значением «все прочие»', () => {
+        const rows = [
+            ...calls(5, 30, { callType: 'cold' }),
+            ...calls(5, 900, { callType: 'cold' }),
+        ];
+
+        const result = durationRule({ default: 60 }, rows, MIN_N);
+
+        expect(result.status).toBe('warning');
+        expect(result.warnings[0]).toContain('Порог длительности типа cold');
+        expect(result.warnings[0]).toContain('(60 с)');
+    });
+
+    it('без карты и без реестра порог прежний — 300 с Фазы 1a', () => {
+        const rows = [...calls(6, 100), ...calls(4, 900)];
+
+        const result = durationRule({}, rows, MIN_N);
+
+        expect(result.status).toBe('warning');
+        expect(result.warnings[0]).toContain('(300 с)');
+    });
+
+    it('значение реестра портала доезжает до правила панели', async () => {
+        const store = makeStore({ kappa: 30 });
+        const step = new SanityStep(store as never);
+        const bus = createStepBus();
+        bus.set(
+            AI_PIPELINE_BUS_KEYS.callsRows,
+            [...calls(6, 100), ...calls(4, 900)].map(row => ({
+                ...row,
+                riskFlags: [],
+            })),
+        );
+
+        const result = await step.run(
+            makeContext({
+                registry: { portal: { min_duration_sec_by_type: 60 } },
+            }),
+            bus,
+        );
+
+        const duration = result.report.rules.find(
+            rule => rule.rule === AI_SANITY_RULES.duration,
+        );
+        expect(duration?.status).toBe('ok');
+        expect(result.report.warnings.join(' ')).not.toContain(
+            'Порог длительности',
+        );
+    });
+});

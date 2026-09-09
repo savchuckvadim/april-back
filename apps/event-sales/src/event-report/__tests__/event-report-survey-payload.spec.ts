@@ -287,12 +287,7 @@ describe('Анкета 5К/Хвост из payload отчёта', () => {
      * одного её ключа, с анкетой отличается ровно на них.
      */
     it('payload без анкеты — ни одной новой команды', () => {
-        const surveyKeys = [
-            XVOST,
-            FIVE_K_SUMMARY,
-            CLIENT_BLOCK,
-            XVOST_DESIRE,
-        ];
+        const surveyKeys = [XVOST, FIVE_K_SUMMARY, CLIENT_BLOCK, XVOST_DESIRE];
         const without = fieldsOf(
             makeCtx(undefined),
             EEventReportEntityType.LEAD,

@@ -6,7 +6,10 @@ import { IColdHookSilenceHandlerData } from '../../type/cold-hook-silence.interf
 import { ColdCallV2UseCase } from '../../use-cases/cold-call.use-case';
 import { getErrorDetails } from '@/shared';
 
-import { ColdStartDecision, decideColdStart } from '../../lib/cold-force.decision';
+import {
+    ColdStartDecision,
+    decideColdStart,
+} from '../../lib/cold-force.decision';
 import { ColdRelationsCollectorV2Service } from '../relations/cold-relations-collector.service';
 import {
     ColdCloseResult,
@@ -98,7 +101,10 @@ export class ColdHooksHandlerV2Service {
                 PortalModel,
                 bitrix,
             );
-            const closer = new ColdRelationsCloserV2Service(PortalModel, bitrix);
+            const closer = new ColdRelationsCloserV2Service(
+                PortalModel,
+                bitrix,
+            );
             const timeline = new ColdStartTimelineV2Service(bitrix);
             const notify = new ColdStartNotifyV2Service(bitrix);
             const useCase = new ColdCallV2UseCase(PortalModel, bitrix);

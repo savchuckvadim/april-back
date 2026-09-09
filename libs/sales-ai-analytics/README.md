@@ -300,6 +300,37 @@ Prisma: время и seed приходят параметром, `Math.random`/
 AI до сохранения метки умеет ручка `ai-analytics` (см. её README);
 карточку разбора в Битрикс руководитель может открыть и увидеть оценку.
 
+### Паспорт менеджера и полосы стажа (Фаза 2, волна 4, план §4.1 и P2-26)
+
+`model/tenure-bands.ts` — полосы стажа `0-6 | 6-18 | 18+` (`AI_TENURE_BANDS`)
+и всё, что вокруг них: `parseTenureGates` разбирает код реестра
+`tenure_gates` (битое значение → `TENURE_GATES_DEFAULT = { junior: 6,
+senior: 18 }`), `tenureMonthsBetween(since, until)` считает стаж в месяцах
+(время — параметром, `new Date()` внутри нет), `tenureBandOf` кладёт стаж в
+полосу по границам портала (5 мес. → `0-6`, 6 → `6-18`, 18 → `18+`), а
+`levelByTenureBand` даёт подсказку уровня, когда руководитель его не
+назначал.
+
+Формы паспорта и снимка планов — в `contracts/passport.types.ts`
+(реэкспорт из `contracts/snapshot.types.ts`, поэтому доступны из корня
+пакета): `ManagerPassport` (`since` + `sinceSource: employment | register |
+proxy`, `status: active | probation | absent | left`, `leftAt`, `level`,
+`levelSource`, `tenureMonths`, `tenureBand`) и `PlanSnapshot` (цели
+менеджеров на месяц, доля выполняющих план, флаг `planIsWish`). Снимок
+планов лежит в `ais` отдельным типом `ai-analytics-plan` (зерно
+`portal-month`, ключ `YYYY-MM`) — внутрь `manager-month` его класть нельзя:
+ночной шаг переписывает месяц каждую ночь и затёр бы цель, снятую 1-го
+числа.
+
+### Публичный барель волны 4
+
+`src/index.ts` реэкспортирует `model/tenure-bands` и `model/rop-mark` —
+приложению больше не нужны глубокие пути
+`@lib/sales-ai-analytics/model/rop-mark`. Реестр параметров, контракты
+снапшотов, нормы, качество, стиль, эпизоды, прогноз, план дня, готовность,
+резюме и настройки были подключены раньше; глубокие пути `audit/*` и
+`params/index` остаются рабочими (их ломать нельзя).
+
 ## Тесты
 
 ```bash

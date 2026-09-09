@@ -26,6 +26,7 @@ import {
     eventTypeName,
     GSIRK_DOMAIN,
     isColdEventType,
+    OpEntityWorkStatusCode,
 } from '../../types/event-report.event-codes';
 import { EnumWorkStatusCode } from '../../types/report-types';
 import {
@@ -53,6 +54,7 @@ import {
     RefineObjection,
     RefineReasonSource,
 } from './refine-reason';
+import { scalarText } from './scalar-text.util';
 
 type EntityFieldValue = string | number | string[] | null;
 type EntityFieldsMap = Record<string, EntityFieldValue>;
@@ -694,7 +696,8 @@ export class EventReportEntityFieldsModel {
         const entering =
             this.ctx.planEventType ??
             (this.ctx.isExpired ? this.ctx.reportEventType : null);
-        const isTransfer = this.ctx.planEventType === null && this.ctx.isExpired;
+        const isTransfer =
+            this.ctx.planEventType === null && this.ctx.isExpired;
         const isFinal = this.ctx.isFinalOutcome;
         const isCold = isColdEventType(entering);
         const isPlanBeyond =
@@ -754,7 +757,7 @@ export class EventReportEntityFieldsModel {
             PbxDealCategoryCodeEnum.sales_base,
         );
         if (!category) return false;
-        return String(row['CATEGORY_ID'] ?? '') === String(category.bitrixId);
+        return scalarText(row['CATEGORY_ID']) === String(category.bitrixId);
     }
 
     /** Хоть одно из установленных полей состояния непусто. */
@@ -828,7 +831,12 @@ export class EventReportEntityFieldsModel {
                 candidate => String(candidate.bitrixId) === id,
             );
             return item
-                ? [{ code: item.code, name: item.title || item.name || item.code }]
+                ? [
+                      {
+                          code: item.code,
+                          name: item.title || item.name || item.code,
+                      },
+                  ]
                 : [];
         });
     }
@@ -1003,15 +1011,25 @@ export class EventReportEntityFieldsModel {
         }
     }
 
-    private resolveWorkStatusCode(): string | null {
+    /**
+     * Item-код «ОП Статус Работы» ДЛЯ КАРТОЧКИ (лид/компания/сделка).
+     *
+     * Коды здесь — из справочника поля карточки
+     * (`PBX_SALES_EVENT_FIELDS.op_work_status`), а НЕ из одноимённого поля
+     * KPI-списка (`mapWorkStatus` в event-report-kpi-payload.builder). До
+     * 09.09.2026 сюда возвращались коды списка (`op_status_in_work` и др.),
+     * item в поле карточки не находился, и в карточку записывались только
+     * «Продажа» и «Отказ» — единственные два кода, совпадающие в обоих
+     * справочниках.
+     */
+    private resolveWorkStatusCode(): OpEntityWorkStatusCode | null {
         if (this.ctx.isSuccessSale) return 'op_status_success';
         if (this.ctx.isFail) return 'op_status_fail';
         if (this.ctx.workStatusCode === EnumWorkStatusCode.setAside)
-            return 'op_status_in_long';
-        if (this.ctx.planEventType === 'hot') return 'op_status_in_progress';
-        if (this.ctx.planEventType === 'moneyAwait')
-            return 'op_status_money_await';
-        if (this.ctx.isInWork) return 'op_status_in_work';
+            return 'long';
+        if (this.ctx.planEventType === 'hot') return 'in_progress';
+        if (this.ctx.planEventType === 'moneyAwait') return 'money_await';
+        if (this.ctx.isInWork) return 'work';
         /*
          * Статус обязан «поддерживаться при любом event-report» (todo2508-02
          * №9): активный план сам по себе означает, что клиент снова в работе.
@@ -1020,7 +1038,7 @@ export class EventReportEntityFieldsModel {
          * workStatus при чистом плане не выбирается, и резолвер возвращал
          * null. Ничего не утверждаем только когда нет ни финала, ни плана.
          */
-        if (this.ctx.isPlanned) return 'op_status_in_work';
+        if (this.ctx.isPlanned) return 'work';
         return null;
     }
 

@@ -479,9 +479,7 @@ describe('EventReportLeadRequestSyncService', () => {
         const fields = updates[0].fields;
         // Скаляр перезаписан значением последней проведённой.
         expect(fields.UF_CRM_OP_PRESENTATION_XVOST).toBe('Дожать по хвосту');
-        expect(fields.UF_CRM_OP_5K_CLIENT).toBe(
-            'Хочет замену Консультанта',
-        );
+        expect(fields.UF_CRM_OP_5K_CLIENT).toBe('Хочет замену Консультанта');
         // Пустой ответ не затирает то, что уже стоит на заявке.
         expect(fields.UF_CRM_OP_PRESENTATION_5K).toBeUndefined();
     });

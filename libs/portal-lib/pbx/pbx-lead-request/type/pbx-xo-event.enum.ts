@@ -1,4 +1,7 @@
-import { PbxSalesEventFieldCode } from '@lib/portal-lib/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
+import {
+    PbxSalesEventFieldCode,
+    PbxSalesEventFieldItemCode,
+} from '@lib/portal-lib/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
 
 /**
  * Тотальная типизация СОБЫТИЙНЫХ полей холодного обзвона — набора, который
@@ -43,10 +46,14 @@ export enum EnumXoEventFieldCode {
 export const XO_EVENT_FIELD_CODES = Object.values(EnumXoEventFieldCode);
 
 /**
- * Значение `op_work_status`, которое ХО ставит клиенту: «в работе».
- * Item-код справочника — не magic string на местах применения.
+ * Значение `op_work_status`, которое ХО ставит клиенту: «В работе».
+ *
+ * Item-код справочника ПОЛЯ КАРТОЧКИ (`PBX_SALES_EVENT_FIELDS`), а не
+ * одноимённого поля KPI-списка (там этот же статус зовётся
+ * `op_status_in_work`). Тип-страж не даст разъехаться со справочником.
  */
-export const XO_EVENT_WORK_STATUS_ITEM_CODE = 'op_status_in_work';
+export const XO_EVENT_WORK_STATUS_ITEM_CODE: PbxSalesEventFieldItemCode<'op_work_status'> =
+    'work';
 
 /** Значение `op_prospects_type` по умолчанию для ХО: «Перспективная». */
 export const XO_EVENT_PROSPECTS_ITEM_NAME = 'Перспективная';

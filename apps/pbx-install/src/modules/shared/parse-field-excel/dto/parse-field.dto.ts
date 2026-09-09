@@ -36,7 +36,7 @@ export const FIELD_TYPE_VALUES = [
 export class ListItemDto implements ListItem {
     @ApiProperty({
         description: 'Отображаемое название значения списка (label)',
-        example: 'В работе',
+        example: 'Продажа',
         type: String,
     })
     @IsString()
@@ -60,7 +60,7 @@ export class ListItemDto implements ListItem {
         description:
             'XML_ID элемента списка в Bitrix. Используется как стабильный ' +
             'внешний идентификатор при синхронизации значений.',
-        example: 'op_status_in_progress',
+        example: 'op_status_success',
         type: String,
     })
     @IsString()
@@ -71,7 +71,7 @@ export class ListItemDto implements ListItem {
         description:
             'Внутренний код значения списка в приложении April. ' +
             'Обычно совпадает с XML_ID, но используется на стороне backend для маппинга.',
-        example: 'op_status_in_progress',
+        example: 'op_status_success',
         type: String,
     })
     @IsString()

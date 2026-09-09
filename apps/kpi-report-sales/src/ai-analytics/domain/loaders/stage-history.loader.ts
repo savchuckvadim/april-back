@@ -20,25 +20,23 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
 import type { BitrixService } from '@lib/bitrix';
 import type { StageTransition } from '@lib/sales-ai-analytics';
-import type {
-    BxStageHistoryEntityTypeId,
-    BxStageHistoryFilter,
-    IBXStageHistoryItem,
-    IBXStageHistoryListRequest,
-} from '@lib/bitrix/domain/crm/stage-history';
 import { AiAnalyticsCacheService } from '../../cache/ai-analytics-cache.service';
 import {
     AI_STAGE_HISTORY_ENTITY_TYPE_ID,
     AI_STAGE_HISTORY_ERROR_TTL_SECONDS,
     AI_STAGE_HISTORY_LIMITS,
-    AI_STAGE_HISTORY_PAGE_SIZE,
     AI_STAGE_HISTORY_SKIP_REASONS,
     AI_STAGE_HISTORY_TTL_SECONDS,
     AI_STAGE_HISTORY_WINDOW_MONTHS,
     buildStageHistoryKey,
     stageHistoryFromDate,
-    stageHistoryShiftMonths,
 } from '../../constants/ai-stage-history.const';
+import {
+    failedStageHistory,
+    type StageHistoryLoadOptions,
+    type StageHistoryWindowOptions,
+    type StageHistoryResult,
+} from './stage-history.contract';
 import {
     buildSalesBaseStageDict,
     salesBaseCategoryOf,
@@ -46,55 +44,21 @@ import {
     type StageHistoryPortal,
     toStageTransitionsByDict,
 } from './stage-history.mapper';
+import {
+    advance,
+    itemsOf,
+    monthWindows,
+    pageRequest,
+    type BatchChunk,
+    type HistoryWindow,
+} from './stage-history.window';
 
-/** Что грузим: тип сущности, окно, курсор и предел строк. */
-export interface StageHistoryLoadOptions {
-    /** Тип сущности Битрикс; по умолчанию сделка (entityTypeId = 2). */
-    entityTypeId?: BxStageHistoryEntityTypeId;
-    /** Читать записи с ID больше указанного (докачка окна). */
-    fromId?: number;
-    /** Начало окна 'YYYY-MM-DD'; по умолчанию — 12 месяцев назад от toDate. */
-    fromDate?: string;
-    /** Конец окна 'YYYY-MM-DD' (день прогона, входит в ключ кэша). */
-    toDate?: string;
-    /** Предел строк; по умолчанию AI_STAGE_HISTORY_LIMITS.maxRows. */
-    limit?: number;
-    /** Перечитать портал, игнорируя кэш. */
-    forceRefresh?: boolean;
-}
-
-/** Результат выгрузки: переходы плюс всё, что нужно журналу прогона. */
-export interface StageHistoryResult {
-    /** Нормализованные переходы стадий лестницы sales_base. */
-    transitions: StageTransition[];
-    /** Прочитано записей истории (до маппинга). */
-    rows: number;
-    /** Отправлено HTTP-батчей — они же вызовы Битрикса в журнале. */
-    bitrixCalls: number;
-    /** Достигнут предел строк: окно прочитано не полностью. */
-    truncated: boolean;
-    /** История прочитана; false — метод недоступен либо нет воронки. */
-    ok: boolean;
-    /** Причина отказа (AI_STAGE_HISTORY_SKIP_REASONS); null — всё хорошо. */
-    reason: string | null;
-    /** Текст ошибки Битрикса для журнала; null — ошибки не было. */
-    error: string | null;
-    /** Максимальный прочитанный ID — курсор следующей докачки. */
-    lastId: number | null;
-    fromCache: boolean;
-}
-
-/** Окно выгрузки: границы дат и курсор последней прочитанной записи. */
-interface HistoryWindow {
-    cmd: string;
-    from: string;
-    to: string;
-    lastId?: number;
-    done: boolean;
-}
-
-/** Ответ батча в объёме, нужном загрузчику. */
-type BatchChunk = { result?: Record<string, unknown> };
+export type {
+    StageHistoryLoadOptions,
+    StageHistoryResult,
+    StageHistoryWindowOptions,
+} from './stage-history.contract';
+export { monthWindows } from './stage-history.window';
 
 @Injectable()
 export class StageHistoryLoader {
@@ -110,35 +74,20 @@ export class StageHistoryLoader {
         domain: string,
         options: StageHistoryLoadOptions = {},
     ): Promise<StageHistoryResult> {
-        const entityTypeId =
-            options.entityTypeId ?? AI_STAGE_HISTORY_ENTITY_TYPE_ID;
-        const toDate = options.toDate ?? new Date().toISOString().slice(0, 10);
-        const fromDate =
-            options.fromDate ??
-            stageHistoryFromDate(toDate, AI_STAGE_HISTORY_WINDOW_MONTHS);
-        const limit = Math.max(
-            1,
-            options.limit ?? AI_STAGE_HISTORY_LIMITS.maxRows,
-        );
+        const window = windowOf(options);
         const key = buildStageHistoryKey(
             domain,
-            entityTypeId,
-            fromDate,
-            toDate,
-            limit,
+            window.entityTypeId,
+            window.fromDate,
+            window.toDate,
+            window.limit,
         );
         const cached = options.forceRefresh
             ? null
             : await this.cache.getJson<StageHistoryResult>(key);
         if (cached) return { ...cached, fromCache: true };
 
-        const result = await this.fetch(domain, {
-            entityTypeId,
-            fromDate,
-            toDate,
-            limit,
-            ...(options.fromId === undefined ? {} : { fromId: options.fromId }),
-        });
+        const result = await this.fetch(domain, window);
         await this.store(key, result);
 
         return result;
@@ -147,20 +96,14 @@ export class StageHistoryLoader {
     /** Один инстанс на вызов: портал для лестницы, api — для батчей. */
     private async fetch(
         domain: string,
-        options: Required<
-            Pick<
-                StageHistoryLoadOptions,
-                'entityTypeId' | 'fromDate' | 'toDate' | 'limit'
-            >
-        > &
-            Pick<StageHistoryLoadOptions, 'fromId'>,
+        options: StageHistoryWindowOptions,
     ): Promise<StageHistoryResult> {
         try {
             const { bitrix, PortalModel } = await this.pbx.init(domain);
             const portal: StageHistoryPortal = PortalModel;
             const category = salesBaseCategoryOf(portal);
             if (!category) {
-                return failed(
+                return failedStageHistory(
                     AI_STAGE_HISTORY_SKIP_REASONS.noCategory,
                     'Категория sales_base не настроена на портале',
                 );
@@ -178,7 +121,10 @@ export class StageHistoryLoader {
                 `История стадий не прочитана (${domain}): ${message}`,
             );
 
-            return failed(AI_STAGE_HISTORY_SKIP_REASONS.unavailable, message);
+            return failedStageHistory(
+                AI_STAGE_HISTORY_SKIP_REASONS.unavailable,
+                message,
+            );
         }
     }
 
@@ -191,24 +137,9 @@ export class StageHistoryLoader {
         bitrix: BitrixService,
         dict: SalesBaseStageDict,
         categoryId: number,
-        options: Required<
-            Pick<
-                StageHistoryLoadOptions,
-                'entityTypeId' | 'fromDate' | 'toDate' | 'limit'
-            >
-        > &
-            Pick<StageHistoryLoadOptions, 'fromId'>,
+        options: StageHistoryWindowOptions,
     ): Promise<StageHistoryResult> {
-        const windows = monthWindows(options.fromDate, options.toDate).map(
-            (window, index): HistoryWindow => ({
-                ...window,
-                cmd: `history_${index}`,
-                ...(options.fromId === undefined
-                    ? {}
-                    : { lastId: options.fromId }),
-                done: false,
-            }),
-        );
+        const windows = openWindows(options);
         const transitions: StageTransition[] = [];
         let rows = 0;
         let bitrixCalls = 0;
@@ -290,100 +221,33 @@ export class StageHistoryLoader {
     }
 }
 
-/** Отказ выгрузки: причина пропуска шага плюс текст для журнала. */
-function failed(reason: string, error: string): StageHistoryResult {
-    return {
-        transitions: [],
-        rows: 0,
-        bitrixCalls: 0,
-        truncated: false,
-        ok: false,
-        reason,
-        error,
-        lastId: null,
-        fromCache: false,
-    };
-}
-
-/** Запрос страницы окна: курсор `>ID`, order ID ASC, start -1. */
-function pageRequest(
-    window: HistoryWindow,
-    categoryId: number,
-    entityTypeId: BxStageHistoryEntityTypeId,
-): IBXStageHistoryListRequest {
-    const filter: BxStageHistoryFilter = {
-        CATEGORY_ID: categoryId,
-        '>=CREATED_TIME': window.from,
-        '<CREATED_TIME': window.to,
-        ...(window.lastId === undefined ? {} : { '>ID': window.lastId }),
-    };
+/**
+ * Окно выгрузки из запроса: тип сущности, границы и предел заданы явно —
+ * дальше загрузчик работает только с разрешёнными значениями, а ключ кэша
+ * строится из тех же полей (повтор за тот же день попадает в кэш).
+ */
+function windowOf(options: StageHistoryLoadOptions): StageHistoryWindowOptions {
+    const toDate = options.toDate ?? new Date().toISOString().slice(0, 10);
 
     return {
-        entityTypeId,
-        filter,
-        order: { ID: 'ASC' },
-        start: -1,
+        entityTypeId: options.entityTypeId ?? AI_STAGE_HISTORY_ENTITY_TYPE_ID,
+        fromDate:
+            options.fromDate ??
+            stageHistoryFromDate(toDate, AI_STAGE_HISTORY_WINDOW_MONTHS),
+        toDate,
+        limit: Math.max(1, options.limit ?? AI_STAGE_HISTORY_LIMITS.maxRows),
+        ...(options.fromId === undefined ? {} : { fromId: options.fromId }),
     };
 }
 
-/** Записи команды из ответов батча (чужая форма — пустой список). */
-function itemsOf(
-    chunks: readonly BatchChunk[],
-    cmd: string,
-): IBXStageHistoryItem[] {
-    for (const chunk of chunks) {
-        const value = chunk?.result?.[cmd] as
-            | { items?: IBXStageHistoryItem[] }
-            | undefined;
-        if (Array.isArray(value?.items)) return value.items;
-    }
-
-    return [];
-}
-
-/**
- * Сдвиг курсора окна: неполная страница закрывает окно; полная без роста
- * ID — тоже (иначе бесконечный цикл, как в BxStageHistoryRepository.listAll).
- */
-function advance(
-    window: HistoryWindow,
-    items: readonly IBXStageHistoryItem[],
-): number | null {
-    let lastId: number | null = null;
-    for (const item of items) {
-        const id = Number(item.ID);
-        if (Number.isFinite(id))
-            lastId = lastId === null ? id : Math.max(lastId, id);
-    }
-    const moved = lastId !== null && lastId !== window.lastId;
-    if (moved) window.lastId = lastId ?? window.lastId;
-    window.done = items.length < AI_STAGE_HISTORY_PAGE_SIZE || !moved;
-
-    return lastId;
-}
-
-/**
- * Окна по месяцам: объём за 12 месяцев велик, поэтому история грузится
- * окнами, а окна одного раунда уезжают одним батчем. Конец окна не входит
- * в него (`<CREATED_TIME`), поэтому записи не задваиваются.
- */
-export function monthWindows(
-    fromDate: string,
-    toDate: string,
-): { from: string; to: string }[] {
-    const windows: { from: string; to: string }[] = [];
-    let cursor = fromDate;
-    while (
-        cursor < toDate &&
-        windows.length < AI_STAGE_HISTORY_LIMITS.batchSize
-    ) {
-        const next = stageHistoryShiftMonths(cursor, 1);
-        const to = next > toDate ? toDate : next;
-        windows.push({ from: cursor, to });
-        cursor = to;
-    }
-
-    return windows.length > 0
-        ? windows
-        : [{ from: fromDate, to: toDate > fromDate ? toDate : fromDate }];
+/** Окна раунда: месяц на команду батча, курсор — с переданного `fromId`. */
+function openWindows(options: StageHistoryWindowOptions): HistoryWindow[] {
+    return monthWindows(options.fromDate, options.toDate).map(
+        (window, index): HistoryWindow => ({
+            ...window,
+            cmd: `history_${index}`,
+            ...(options.fromId === undefined ? {} : { lastId: options.fromId }),
+            done: false,
+        }),
+    );
 }

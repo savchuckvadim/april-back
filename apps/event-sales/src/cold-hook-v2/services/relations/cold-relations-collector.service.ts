@@ -162,7 +162,8 @@ export class ColdRelationsCollectorV2Service {
             this.bitrix.batch.deal.getList(
                 `${prefix}_by_root`,
                 {
-                    [dealLinkKey(this.portal, 'to_base_sales')]: target.rootDealId,
+                    [dealLinkKey(this.portal, 'to_base_sales')]:
+                        target.rootDealId,
                     '=STAGE_ID': openStages,
                 } as never,
                 select,
@@ -260,7 +261,7 @@ export class ColdRelationsCollectorV2Service {
             )) {
                 const list = (value as { tasks?: unknown })?.tasks;
                 for (const row of this.rowsOf(list ?? value)) {
-                    const id = String((row as Row)['id'] ?? (row as Row)['ID'] ?? '');
+                    const id = String(row['id'] ?? row['ID'] ?? '');
                     if (!id || seen.has(id)) continue;
                     seen.add(id);
                     tasks.push(row as unknown as IBXTask);

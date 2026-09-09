@@ -1,5 +1,5 @@
 /**
- * Потолки оценивания и стоп-фразы недели (план §4.3, поток 14b): правила
+ * Потолки оценивания и стоп-фразы периода (план §4.3, поток 14b): правила
  * ключа `ai_analytics_scoring` применяются к разборам ПОСЛЕ выборки и до
  * сборки матрицы — оценивает разговор LLM, а решает, что «нет даты
  * следующего шага» не даёт закрытию больше пяти баллов, руководитель.
@@ -28,7 +28,7 @@ export interface ManagerScoringTrace {
     stopWords: string[];
 }
 
-export interface WeekScoringResult {
+export interface PeriodScoringResult {
     /** Строки с применёнными потолками (в том же порядке). */
     rows: DatedLiteRow[];
     /** След правил по менеджеру (ключ — managerId строкой). */
@@ -104,10 +104,10 @@ const pushUnique = (list: string[], value: string): void => {
  * факта или без раздела в разборе не применяется — его причина попадает в
  * `skipped` (без повторов), а балл остаётся как был.
  */
-export function applyWeekScoring(
+export function applyPeriodScoring(
     rows: readonly DatedLiteRow[],
     scoring: AiScoringSettings,
-): WeekScoringResult {
+): PeriodScoringResult {
     const byManager = new Map<string, ManagerScoringTrace>();
     const skipped: ScoringCapSkipped[] = [];
     const capped = rows.map(row => {
@@ -140,7 +140,7 @@ export function applyWeekScoring(
 
 /** След менеджера или пустой (менеджера правила не задели). */
 export function traceOf(
-    result: WeekScoringResult,
+    result: PeriodScoringResult,
     managerId: string,
 ): ManagerScoringTrace {
     return result.byManager.get(managerId) ?? emptyTrace();

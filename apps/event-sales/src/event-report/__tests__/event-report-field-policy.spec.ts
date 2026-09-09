@@ -321,13 +321,19 @@ describe('Политики состояния «на доработке»', () =
     it('план «Доработка» ставит флаг, если он не стоял', () => {
         expect(resolveFieldValue(IS_IN_REFINE_POLICY, entry())).toBe(1);
         expect(
-            resolveFieldValue(IS_IN_REFINE_POLICY, entry({ currentFlag: false })),
+            resolveFieldValue(
+                IS_IN_REFINE_POLICY,
+                entry({ currentFlag: false }),
+            ),
         ).toBe(1);
     });
 
     it('флаг уже стоит — не трогаем (запись в ленту не плодится)', () => {
         expect(
-            resolveFieldValue(IS_IN_REFINE_POLICY, entry({ currentFlag: true })),
+            resolveFieldValue(
+                IS_IN_REFINE_POLICY,
+                entry({ currentFlag: true }),
+            ),
         ).toBe(POLICY_KEEP);
     });
 
@@ -347,7 +353,9 @@ describe('Политики состояния «на доработке»', () =
     });
 
     it('дата входа — «сегодня» при входе, KEEP, пока состояние держится', () => {
-        expect(resolveFieldValue(REFINED_AT_POLICY, entry())).toBe('02.09.2026');
+        expect(resolveFieldValue(REFINED_AT_POLICY, entry())).toBe(
+            '02.09.2026',
+        );
         expect(
             resolveFieldValue(
                 REFINED_AT_POLICY,
@@ -370,7 +378,10 @@ describe('Политики состояния «на доработке»', () =
 
     it('причина — только в пустое поле; набранное менеджером не перекрывается', () => {
         expect(
-            resolveFieldValue(REFINED_REASON_POLICY, entry({ reason: 'Нет денег' })),
+            resolveFieldValue(
+                REFINED_REASON_POLICY,
+                entry({ reason: 'Нет денег' }),
+            ),
         ).toBe('Нет денег');
         expect(
             resolveFieldValue(
@@ -426,7 +437,11 @@ describe('Политики состояния «на доработке»', () =
     });
 
     it('«дальше доработки» — решение, оплата, поставка; документы — нет', () => {
-        expect(REFINE_BEYOND_PLAN_TYPES).toEqual(['hot', 'moneyAwait', 'supply']);
+        expect(REFINE_BEYOND_PLAN_TYPES).toEqual([
+            'hot',
+            'moneyAwait',
+            'supply',
+        ]);
     });
 
     it('холодный вход ось следующего события не трогает', () => {

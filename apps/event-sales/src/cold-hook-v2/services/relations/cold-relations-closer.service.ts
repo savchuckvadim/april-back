@@ -17,7 +17,11 @@ import {
 } from '../../lib/deal-link-fields';
 import { PortalDealColdCategoryService } from '../enities/deal/portal-deal-cold-category.service';
 import { ColdTarget } from '../target/cold-target.types';
-import { ColdRelations, ColdSmartRelations, SmartRow } from './cold-relations.types';
+import {
+    ColdRelations,
+    ColdSmartRelations,
+    SmartRow,
+} from './cold-relations.types';
 
 type Row = Record<string, unknown>;
 
@@ -96,9 +100,10 @@ export class ColdRelationsCloserV2Service {
         const clearedDates = this.clearedPlanDates();
 
         for (const deal of scope.deals) {
-            const stageId = this.categories.getNoresultDealSageIdByCategoryBitrixId(
-                String(deal.CATEGORY_ID),
-            );
+            const stageId =
+                this.categories.getNoresultDealSageIdByCategoryBitrixId(
+                    String(deal.CATEGORY_ID),
+                );
             if (!stageId) {
                 this.logger.warn(
                     `[close] hook=${target.hookKey} deal=${deal.ID}: у воронки ${deal.CATEGORY_ID} нет стадии double/noresult — пропуск`,
@@ -231,13 +236,18 @@ export class ColdRelationsCloserV2Service {
         for (const deal of relations.deals) {
             const id = Number(deal.ID);
             if (foreign.has(id)) continue;
-            const refs = toLinkedIds((deal as unknown as Row)[toBaseKey], /^D_/i);
+            const refs = toLinkedIds(
+                (deal as unknown as Row)[toBaseKey],
+                /^D_/i,
+            );
             if (roots.has(id) || refs.some(ref => roots.has(ref))) {
                 graph.add(id);
             }
         }
         const graphIds = [...graph];
-        const deals = relations.deals.filter(deal => graph.has(Number(deal.ID)));
+        const deals = relations.deals.filter(deal =>
+            graph.has(Number(deal.ID)),
+        );
         const tasks = relations.tasks.filter(task =>
             this.taskBindings(task).some(binding =>
                 graphIds.some(id => binding === `D_${id}`),

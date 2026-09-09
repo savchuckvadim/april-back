@@ -43,7 +43,10 @@ export class ColdTargetResolverV2Service {
 
         const dealIds = this.uniqueIds(
             entries
-                .filter(([, hook]) => hook.entityType === EnumColdCallEntityType.DEAL)
+                .filter(
+                    ([, hook]) =>
+                        hook.entityType === EnumColdCallEntityType.DEAL,
+                )
                 .map(([, hook]) => toId(hook.entityId)),
         );
         const deals = await this.load<IBXDeal>(
@@ -125,7 +128,11 @@ export class ColdTargetResolverV2Service {
             };
         }
         // Контакт/лид холодным стартом v1 не обрабатывались — v2 пока тоже.
-        this.warnSkip(hookKey, hook, `тип входа ${hook.entityType} не поддержан`);
+        this.warnSkip(
+            hookKey,
+            hook,
+            `тип входа ${hook.entityType} не поддержан`,
+        );
         return null;
     }
 
@@ -147,7 +154,9 @@ export class ColdTargetResolverV2Service {
     }
 
     private async load<T extends IBXCompany | IBXDeal>(
-        entityType: EnumColdCallEntityType.COMPANY | EnumColdCallEntityType.DEAL,
+        entityType:
+            | EnumColdCallEntityType.COMPANY
+            | EnumColdCallEntityType.DEAL,
         ids: number[],
     ): Promise<T[]> {
         if (!ids.length) return [];

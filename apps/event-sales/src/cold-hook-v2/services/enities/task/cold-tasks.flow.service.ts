@@ -69,7 +69,8 @@ export class ColdTaskFlowService {
         if (owner.kind === 'company') crms.push(`CO_${owner.companyId}`);
         crms.push(`D_${baseDealId}`);
         crms.push(`D_${xoDealId}`);
-        if (owner.kind === 'deal' && owner.leadId) crms.push(`L_${owner.leadId}`);
+        if (owner.kind === 'deal' && owner.leadId)
+            crms.push(`L_${owner.leadId}`);
         return crms;
     }
 }
