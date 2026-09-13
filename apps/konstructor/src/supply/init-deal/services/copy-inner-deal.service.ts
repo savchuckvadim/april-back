@@ -1,63 +1,111 @@
-import { PrismaService } from '@lib/core/prisma/prisma.service';
-import { TelegramService } from '@lib/telegram/telegram.service';
 import { Injectable } from '@nestjs/common';
+import { TelegramService } from '@lib/telegram/telegram.service';
+import { BxDocumentDeal } from 'generated/prisma';
+import { InnerDealService } from '../../../modules/inner-deal/services/inner-deal.service';
+import { InnerDealCopySource } from '../../../modules/inner-deal/lib/inner-deal-copy';
 
+/** Слепок конструктора, который сервисная сделка наследует от продажи. */
+interface RenewalSnapshotSource {
+    /** Элемент смарта «предложение на будущий период». */
+    serviceSmartId: number | null;
+    /** Базовая сделка отдела продаж — фолбэк, если по смарту слепка нет. */
+    baseDealId: number | null;
+}
+
+/**
+ * Перенос состояния конструктора на сделку, созданную роботом.
+ *
+ * Само копирование живёт в InnerDealService — та же логика доступна вручную
+ * через POST /api/konstructor/deal/copy, когда робот не смог перенести слепок.
+ */
 @Injectable()
 export class CopyInnerDealService {
     constructor(
-        private readonly prisma: PrismaService,
+        private readonly innerDealService: InnerDealService,
         private readonly telegram: TelegramService,
     ) {}
 
-    public async copyInnerDeal(
-        serviceSmartId: number,
+    /**
+     * Перезаключение: слепок берём из смарта «предложение на будущий период».
+     * Если по смарту записи нет (смарт мог быть заведён не конструктором, либо
+     * в RPA указан не тот элемент), откатываемся на слепок базовой сделки —
+     * иначе менеджер получит пустой конструктор и восстанавливать будет нечего.
+     */
+    async copyFromServiceSmart(
+        source: RenewalSnapshotSource,
         newDealId: number,
         domain: string,
-    ) {
-        console.log('copyInnerDeal', serviceSmartId, newDealId, domain);
-        const deal = await this.prisma.bxDocumentDeal.findFirst({
-            where: {
-                serviceSmartId,
+        userId: number | null,
+    ): Promise<BxDocumentDeal | null> {
+        if (source.serviceSmartId) {
+            const bySmart = await this.copy(
+                { kind: 'serviceSmart', serviceSmartId: source.serviceSmartId },
+                newDealId,
                 domain,
-            },
-        });
-
-        if (!deal) {
-            await this.telegram.sendMessage(
-                `Сделка с таким serviceSmartId не найдена: ${domain} ${serviceSmartId}`,
+                userId,
+                `смарт ${source.serviceSmartId}`,
             );
-            return;
+            if (bySmart) {
+                return bySmart;
+            }
         }
 
-        const {
-            id,
-            dealId,
-            serviceSmartId: _,
-            created_at,
-            updated_at,
-            ...rest
-        } = deal;
+        if (!source.baseDealId) {
+            return null;
+        }
 
-        const newDeal = await this.prisma.bxDocumentDeal.create({
-            data: {
-                ...rest,
-                dealId: newDealId,
-                serviceSmartId: null,
-                domain: deal.domain,
-                portalId: deal.portalId,
-                created_at: new Date(),
-                updated_at: new Date(),
-            },
+        return await this.copy(
+            { kind: 'deal', dealId: source.baseDealId, serviceSmartId: null },
+            newDealId,
+            domain,
+            userId,
+            `базовая сделка ${source.baseDealId} (фолбэк)`,
+        );
+    }
+
+    /** Поставка: слепок берём из базовой сделки отдела продаж. */
+    async copyFromBaseDeal(
+        baseDealId: number,
+        newDealId: number,
+        domain: string,
+        userId: number | null,
+    ): Promise<BxDocumentDeal | null> {
+        return await this.copy(
+            { kind: 'deal', dealId: baseDealId, serviceSmartId: null },
+            newDealId,
+            domain,
+            userId,
+            `базовая сделка ${baseDealId}`,
+        );
+    }
+
+    private async copy(
+        source: InnerDealCopySource,
+        newDealId: number,
+        domain: string,
+        userId: number | null,
+        sourceLabel: string,
+    ): Promise<BxDocumentDeal | null> {
+        const result = await this.innerDealService.copySnapshot({
+            domain,
+            source,
+            targetDealId: newDealId,
+            // повторный прогон робота обновляет слепок, а не плодит копии
+            force: true,
+            userId,
+            department: 'service',
         });
-        console.log('newDeal', newDeal);
+
+        if (!result.copied) {
+            await this.telegram.sendMessage(
+                `Слепок конструктора не скопирован (${result.reason}): ${domain} ${sourceLabel} → сделка ${newDealId}`,
+            );
+            return null;
+        }
+
         await this.telegram.sendMessage(
-            `Сделка скопирована: ${domain} ${serviceSmartId}`,
+            `Слепок конструктора скопирован: ${domain} ${sourceLabel} → сделка ${newDealId}`,
         );
-        await this.telegram.sendMessage(
-            JSON.stringify(newDeal, (_, value) =>
-                typeof value === 'bigint' ? value.toString() : value,
-            ),
-        );
-        return newDeal;
+        return result.deal;
     }
 }

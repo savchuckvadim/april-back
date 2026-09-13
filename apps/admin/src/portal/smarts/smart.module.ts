@@ -5,6 +5,7 @@ import { CallReportSmartModule } from '@lib/call-lib';
 import { SkapInstallModule } from '@lib/skap-lib';
 import { ZprSmartInstallModule } from '@app/pbx-install/smart/zpr/zpr-smart-install.module';
 import { PresentationSmartInstallModule } from '@app/pbx-install/smart/presentation/presentation-smart-install.module';
+import { ComplectVariantSmartInstallModule } from '@app/pbx-install/smart/complect-variant/complect-variant-smart-install.module';
 import { SmartService } from './services/smart.service';
 import { SmartDetailsService } from './services/smart-details.service';
 import { ConstSmartInstallerResolver } from './services/const-smart-installer.service';
@@ -24,6 +25,7 @@ import { SmartController } from './controllers/smart.controller';
         SkapInstallModule,
         ZprSmartInstallModule,
         PresentationSmartInstallModule,
+        ComplectVariantSmartInstallModule,
     ],
     providers: [
         SmartService,

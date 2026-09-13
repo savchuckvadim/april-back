@@ -39,13 +39,23 @@ describe('ConstSmartInstallerResolver', () => {
                 fieldsFailed: [],
             }),
         };
+        const complectVariant = {
+            execute: jest.fn().mockResolvedValue({
+                entityTypeId: 1046,
+                created: true,
+                fieldsAdded: ['UF_CRM_15_VARIANT_NAME'],
+                fieldsExisting: [],
+                fieldsFailed: [],
+            }),
+        };
         const resolver = new ConstSmartInstallerResolver(
             aicall as never,
             skap as never,
             zpr as never,
             presentation as never,
+            complectVariant as never,
         );
-        return { resolver, aicall, skap, zpr, presentation };
+        return { resolver, aicall, skap, zpr, presentation, complectVariant };
     };
 
     it('resolve(aicall) проксирует execute(domain)', async () => {
@@ -55,6 +65,15 @@ describe('ConstSmartInstallerResolver', () => {
             .execute('gsr.bitrix24.ru');
         expect(aicall.execute).toHaveBeenCalledWith('gsr.bitrix24.ru');
         expect(result.entityTypeId).toBe(128);
+    });
+
+    it('resolve(complect_variant) проксирует execute(domain)', async () => {
+        const { resolver, complectVariant } = makeResolver();
+        const result = await resolver
+            .resolve('complect_variant')
+            .execute('gsr.bitrix24.ru');
+        expect(complectVariant.execute).toHaveBeenCalledWith('gsr.bitrix24.ru');
+        expect(result.entityTypeId).toBe(1046);
     });
 
     it('resolve(skap) проксирует execute(domain)', async () => {

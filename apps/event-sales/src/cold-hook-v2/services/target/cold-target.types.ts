@@ -1,5 +1,8 @@
 import { IBXCompany, IBXDeal } from '@/modules/bitrix';
-import { IColdCallData } from '../../type/cold-hook-silence.interface';
+import {
+    IColdCallData,
+    IResolvedColdCallData,
+} from '../../type/cold-hook-silence.interface';
 
 /**
  * Корень холодного старта: от него собираются связи (шаг 3 плана v2) и на
@@ -29,3 +32,11 @@ export interface ColdTarget {
      */
     rootDealId: number | null;
 }
+
+/**
+ * Цель, у которой данные хука УЖЕ слиты с полями карточки
+ * (`resolveColdCallData`): здесь известно и «кому», и «когда». Флоу
+ * принимают только её — цель с неполными данными до записи не доходит,
+ * вместо этого в таймлайн уходит объяснение, чего не хватило.
+ */
+export type ResolvedColdTarget = ColdTarget & { hook: IResolvedColdCallData };

@@ -55,6 +55,7 @@ import {
     RefineReasonSource,
 } from './refine-reason';
 import { scalarText } from './scalar-text.util';
+import { isBxTrue } from '@lib/shared/lib/utils';
 
 type EntityFieldValue = string | number | string[] | null;
 type EntityFieldsMap = Record<string, EntityFieldValue>;
@@ -164,8 +165,7 @@ const REFINE_STATE_CODES = {
 } as const;
 
 /** Истина булева UF Bitrix во всех формах, в которых REST её отдаёт. */
-const isTruthyFlag = (raw: unknown): boolean =>
-    raw === true || raw === 1 || raw === '1' || raw === 'Y';
+const isTruthyFlag = isBxTrue;
 
 /** Пустое значение поля состояния: нет, ноль, «N», пустая строка. */
 const isEmptyStateValue = (raw: unknown): boolean =>

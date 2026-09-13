@@ -7,6 +7,7 @@ import {
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
 import { RejectReviveService } from './reject-revive.service';
+import { PortalWorkingHoursService } from '../../shared/working-hours/portal-working-hours.service';
 import { RejectReviveOptions } from './dto/reject-revive.types';
 
 const LOCK_KEY = 'sales-hooks:reject-revive-lock';
@@ -32,6 +33,7 @@ export class RejectReviveScheduler {
         private readonly redisService: RedisService,
         private readonly reviveService: RejectReviveService,
         private readonly appSettings: PortalAppSettingsService,
+        private readonly workingHours: PortalWorkingHoursService,
     ) {}
 
     @Cron(REVIVE_CRON)
@@ -62,6 +64,15 @@ export class RejectReviveScheduler {
                         EnumPortalAppCode.eventSales,
                     );
                     if (!settings.rejectReviveEnabled) continue;
+                    /*
+                     * Реанимация ставит клиенту ЗВОНОК и задачу живому
+                     * менеджеру — вне рабочего времени портала этого делать
+                     * нельзя. График берём из календаря портала; он же
+                     * знает выходные и праздники клиента.
+                     */
+                    if (!(await this.workingHours.isWorkingTime(domain))) {
+                        continue;
+                    }
 
                     const options: RejectReviveOptions = {
                         intervalDays: Number(settings.rejectReviveIntervalDays),

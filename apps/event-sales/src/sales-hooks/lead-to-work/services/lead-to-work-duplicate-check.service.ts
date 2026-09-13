@@ -10,6 +10,7 @@ import { EnumSalesHookSource } from '../../core/contracts/sales-hook-job.type';
 import { SalesHookDispatchService } from '../../core/services/sales-hook-dispatch.service';
 import { SalesHookIdempotencyService } from '../../core/services/sales-hook-idempotency.service';
 import { buildDuplicateCheckItem } from '../../duplicate-check/dto/duplicate-check.dto';
+import { isBxTrue } from '@lib/shared/lib/utils';
 
 type BxRow = Record<string, unknown>;
 
@@ -115,9 +116,6 @@ export class LeadToWorkDuplicateCheckService {
 
     /** Битрикс отдаёт чекбокс как '1'/'0', 'Y'/'N' либо true/false. */
     private isChecked(raw: unknown): boolean {
-        if (raw === true || raw === 1) return true;
-        if (typeof raw !== 'string') return false;
-        const text = raw.trim().toUpperCase();
-        return text === '1' || text === 'Y';
+        return isBxTrue(raw);
     }
 }

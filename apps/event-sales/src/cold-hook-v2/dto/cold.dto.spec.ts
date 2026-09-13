@@ -45,9 +45,30 @@ describe('ColdCallQueryDto.force', () => {
 });
 
 describe('toColdCallData', () => {
-    it('без force подставляет дефолт N', () => {
+    /*
+     * Дефолт force СДВИНУТ с границы в resolveColdCallData: на границе
+     * «робот не сказал» обязано отличаться от «робот сказал N», иначе поле
+     * карточки op_xo_is_force уже никогда не спросить. Поведение при этом
+     * не изменилось — isForcedColdCall по-прежнему читает undefined как N.
+     */
+    it('без force флаг остаётся пустым — дефолт применит резолвер', () => {
         const data = toColdCallData(plainToInstance(ColdCallQueryDto, base));
-        expect(data.force).toBe(COLD_CALL_FORCE_DEFAULT);
+        expect(data.force).toBeUndefined();
+    });
+
+    it('пустой force трактуется как «не забирать» (дефолт N)', () => {
+        const data = toColdCallData(plainToInstance(ColdCallQueryDto, base));
+        expect(isForcedColdCall(data)).toBe(false);
+        expect(COLD_CALL_FORCE_DEFAULT).toBe(EnumColdCallForce.N);
+    });
+
+    it('явный force=N сохраняется и отличим от пустого', () => {
+        const data = toColdCallData(
+            plainToInstance(ColdCallQueryDto, {
+                ...base,
+                force: EnumColdCallForce.N,
+            }),
+        );
         expect(data.force).toBe(EnumColdCallForce.N);
         expect(isForcedColdCall(data)).toBe(false);
     });
@@ -69,7 +90,8 @@ describe('toColdCallData', () => {
             ...base,
             responsible: 447,
             created: 1,
-            force: EnumColdCallForce.N,
+            // force не подставляется — см. комментарий выше.
+            force: undefined,
         });
     });
 });

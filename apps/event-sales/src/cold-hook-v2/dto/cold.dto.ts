@@ -1,5 +1,5 @@
 import { IsBxHookUserId } from '@/core/decorators/dto/bx-hook-user-id.decorator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 export enum EnumColdCallEntityType {
@@ -55,25 +55,29 @@ export class ColdCallQueryDto {
     @IsString()
     entityId: string;
 
-    @ApiProperty({
+    @ApiPropertyOptional({
         description:
             'Ответственный за звонок — идентификатор пользователя Bitrix ' +
-            'в формате hook (user_<id>).',
+            'в формате hook (user_<id>).' +
+            '\n\nНе передан — читается из поля карточки `xo_responsible`, которое робот заполняет ПЕРЕД вызовом хука. Нет и там — звонок не ставится, а в таймлайн сущности уходит запись, каких данных не хватило.',
         example: 'user_123',
         type: String,
     })
+    @IsOptional()
     @IsBxHookUserId()
-    responsible: string;
+    responsible?: string;
 
-    @ApiProperty({
+    @ApiPropertyOptional({
         description:
             'Создатель/постановщик звонка — идентификатор пользователя Bitrix ' +
-            'в формате hook (user_<id>).',
+            'в формате hook (user_<id>).' +
+            '\n\nНе передан — читается из поля карточки `xo_created`, которое робот заполняет ПЕРЕД вызовом хука. Нет и там — звонок не ставится, а в таймлайн сущности уходит запись, каких данных не хватило.',
         example: 'user_123',
         type: String,
     })
+    @IsOptional()
     @IsBxHookUserId()
-    created: string;
+    created?: string;
 
     @ApiProperty({
         description:
@@ -83,17 +87,22 @@ export class ColdCallQueryDto {
             'через BitrixDateTime на стороне use-case.',
         example: '01.07.2026 02:14:00',
         type: String,
+        required: false,
     })
+    @IsOptional()
     @IsString()
-    deadline: string; // raw 01.07.2026 02:14:00, локальное время портала
+    deadline?: string; // raw 01.07.2026 02:14:00, локальное время портала
 
-    @ApiProperty({
-        description: 'Название/тема холодного звонка.',
+    @ApiPropertyOptional({
+        description:
+            'Название/тема холодного звонка.' +
+            '\n\nНе передан — читается из поля карточки `xo_name`, которое робот заполняет ПЕРЕД вызовом хука. Нет и там — звонок не ставится, а в таймлайн сущности уходит запись, каких данных не хватило.',
         example: 'some name',
         type: String,
     })
+    @IsOptional()
     @IsString()
-    name: string;
+    name?: string;
 
     @ApiProperty({
         description:

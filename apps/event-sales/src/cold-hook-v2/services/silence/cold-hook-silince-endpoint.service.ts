@@ -49,7 +49,8 @@ export class ColdHookSilinceEndpointV2Service {
             accepted: true,
             domain,
             keyPrefix,
-            rawDeadline: coldCallData.deadline,
+            // Пусто — дедлайн придёт из поля карточки при обработке.
+            rawDeadline: coldCallData.deadline ?? '',
             message: 'Холодный звонок принят и поставлен в очередь обработки.',
         };
     }

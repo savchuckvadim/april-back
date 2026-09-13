@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { InitDealDto } from './dto/init-deal.dto';
+import { InitDealDto, SupplyInitDealFlow } from './dto/init-deal.dto';
+import { SupplyDealFlowService } from './services/supply-deal-flow.service';
+import { resolveInitDealFlow } from './lib/resolve-init-deal-flow';
+import { INIT_DEAL_RPA_FIELD } from './lib/init-deal-rpa-fields';
+
 import { PBXService } from '@lib/pbx';
 import {
     BitrixService,
@@ -17,6 +21,8 @@ import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { CopyInnerDealService } from './services/copy-inner-deal.service';
 import { TelegramService } from '@lib/telegram/telegram.service';
 import { CopyProductRowsService } from './services/copy-product-rows.service';
+import { CopyComplectVariantsService } from './services/copy-complect-variants.service';
+import { InnerDealService } from '../../modules/inner-deal/services/inner-deal.service';
 import { QueueDispatcherService } from '@lib/queue/dispatch/queue-dispatcher.service';
 import { JobNames } from '@lib/queue/constants/job-names.enum';
 import { QueueNames } from '@lib/queue/constants/queue-names.enum';
@@ -26,6 +32,42 @@ import {
     OrkHistoryBxListService,
 } from '@lib/portal-lib/pbx/pbx-ork-history-bx-list';
 
+/** Файловое поле Bitrix: пара [имя файла, base64]. */
+interface BitrixFileFieldValue {
+    fileData: [string, string];
+}
+
+/**
+ * Значение, пригодное для записи в поле сделки. Файловый вариант в IBXDeal не
+ * описан, поэтому union объявлен здесь, а присваивание идёт через один
+ * локальный каст на границе с библиотекой.
+ */
+type DealFieldValue =
+    | string
+    | number
+    | boolean
+    | string[]
+    | number[]
+    | BitrixFileFieldValue
+    | undefined;
+
+/** Элемент справочника, у которого есть человекочитаемое имя. */
+const isNamedItem = (value: unknown): value is { name: string } =>
+    typeof value === 'object' &&
+    value !== null &&
+    'name' in value &&
+    typeof (value as { name: unknown }).name === 'string';
+
+/** URL файла Bitrix: в RPA он приезжает то как urlMachine, то как downloadUrl. */
+const getBitrixFileUrl = (value: unknown): string | null => {
+    if (typeof value !== 'object' || value === null) {
+        return null;
+    }
+    const file = value as { urlMachine?: unknown; downloadUrl?: unknown };
+    const url = file.urlMachine ?? file.downloadUrl;
+    return typeof url === 'string' && url !== '' ? url : null;
+};
+
 @Injectable()
 export class InitDealUseCase {
     constructor(
@@ -34,6 +76,7 @@ export class InitDealUseCase {
         private readonly telegram: TelegramService,
         private readonly orkHistoryBxListService: OrkHistoryBxListService,
         private readonly dispatcher: QueueDispatcherService,
+        private readonly innerDealService: InnerDealService,
     ) {}
 
     async execute(dto: InitDealDto) {
@@ -71,11 +114,23 @@ export class InitDealUseCase {
             'service_offer_smart',
         );
 
+        const offerSmartRawId: unknown = offerSmartInRpaId
+            ? rpa[offerSmartInRpaId]
+            : undefined;
+        const hasOfferSmart = Boolean(offerSmartRawId && offerSmartEntityType);
+        const flow: SupplyInitDealFlow = resolveInitDealFlow({
+            explicit: dto.flow,
+            isExtension: this.getIsExtensionFromRpa(rpa, PortalModel),
+            hasOfferSmart,
+        });
+
+        const supplyFlow = new SupplyDealFlowService(bitrix, PortalModel);
+
         let serviceSmartId = null as number | null;
-        if (rpa && offerSmartEntityType && offerSmartInRpaId) {
+        if (flow === 'renewal' && hasOfferSmart && offerServicePortalSmart) {
             const offerSmartResponse = await bitrix.item.get(
-                rpa[offerSmartInRpaId].toString(),
-                offerSmartEntityType.toString(),
+                String(offerSmartRawId),
+                String(offerSmartEntityType),
             );
             const offerSmart = offerSmartResponse.result.item;
 
@@ -104,8 +159,31 @@ export class InitDealUseCase {
         dealValues.CATEGORY_ID = targetCategoryDeal?.bitrixId;
         dealValues.COMPANY_ID = companyId?.toString() || '';
         dealValues.ASSIGNED_BY_ID = responsibleId?.toString() || '';
-        // console.log('companyId')
-        // console.log(companyId)
+
+        if (flow === 'supply') {
+            dealValues = {
+                ...dealValues,
+                ...supplyFlow.buildSupplyOnlyValues(rpa),
+            };
+            if (oldDealId) {
+                // значения базовой сделки — только те, которых ещё нет: RPA свежее
+                dealValues = {
+                    ...dealValues,
+                    ...(await supplyFlow.buildBaseDealValues(
+                        oldDealId,
+                        dealValues,
+                    )),
+                };
+            }
+            dealValues = {
+                ...dealValues,
+                ...supplyFlow.buildClearedDocumentValues(),
+            };
+            const stageId = supplyFlow.resolveStageId(rpa);
+            if (stageId) {
+                dealValues.STAGE_ID = stageId;
+            }
+        }
 
         const newDealResponse = await bitrix.deal.set(dealValues);
 
@@ -120,16 +198,12 @@ export class InitDealUseCase {
                 true,
             );
 
+            // файлы льём по одному: batch не кодирует их корректно
             for (const key in dealValuesFromFiles) {
-                const response = await bitrix.deal.update(
-                    // `update_deal_${newDealId}_${key}`,
-                    newDealId,
-                    {
-                        [key]: dealValuesFromFiles[key],
-                    },
-                );
+                await bitrix.deal.update(newDealId, {
+                    [key]: dealValuesFromFiles[key],
+                });
             }
-            // await bitrix.api.callBatchWithConcurrency(1)
 
             const rpaComment = this.getCommentRpaMessage(domain, newDealId);
             const rpaCommentEntity = this.getCommentEntityMessage(
@@ -142,7 +216,10 @@ export class InitDealUseCase {
                 itemId: itemId,
                 userId: '1',
                 fields: {
-                    title: 'Перезаключение: Новая Сделка',
+                    title:
+                        flow === 'renewal'
+                            ? 'Перезаключение: Новая Сделка'
+                            : 'Поставка: Новая Сделка',
                     description: rpaComment,
                 },
             });
@@ -154,22 +231,55 @@ export class InitDealUseCase {
             });
         }
 
-        if (serviceSmartId && oldDealId) {
-            const productRowService = new CopyProductRowsService(
-                oldDealId,
-                newDealId,
-                bitrix,
-            );
-            offerServicePortalSmart &&
-                void (await productRowService.copyProductFromSmartToDeal(
+        const productRowService = new CopyProductRowsService(
+            oldDealId ?? 0,
+            Number(newDealId),
+            bitrix,
+        );
+
+        if (flow === 'renewal') {
+            if (serviceSmartId && offerServicePortalSmart) {
+                await productRowService.copyProductFromSmartToDeal(
                     serviceSmartId,
                     offerServicePortalSmart,
-                ));
-
-            await this.copyInnerDealService.copyInnerDeal(
-                serviceSmartId,
-                newDealId,
+                );
+            }
+            // слепок конструктора — из смарта «предложение на будущий период»,
+            // с фолбэком на базовую сделку: смарт мог быть собран не конструктором
+            await this.copyInnerDealService.copyFromServiceSmart(
+                { serviceSmartId, baseDealId: oldDealId },
+                Number(newDealId),
                 domain,
+                responsibleId,
+            );
+        } else {
+            if (oldDealId) {
+                await productRowService.copyProductFromDealToDeal();
+                await this.copyInnerDealService.copyFromBaseDeal(
+                    oldDealId,
+                    Number(newDealId),
+                    domain,
+                    responsibleId,
+                );
+            }
+            // поставка передаёт клиента в сервис: ответственные и номер АРМ
+            await supplyFlow.updateParticipants(rpa);
+        }
+
+        // Вместе со сделкой переезжают ВСЕ собранные наборы комплектов, а не
+        // один: у каждого может быть свой договор, в том числе другого типа.
+        // Смарт не установлен или вариантов нет — шаг проходит вхолостую.
+        if (oldDealId) {
+            const variantsService = new CopyComplectVariantsService(
+                bitrix,
+                PortalModel,
+                this.innerDealService,
+            );
+            await variantsService.copy(
+                domain,
+                oldDealId,
+                Number(newDealId),
+                responsibleId,
             );
         }
         // Задачи ОРК живут в event-service — отдаём их туда джобой, как только
@@ -184,6 +294,11 @@ export class InitDealUseCase {
                 dealId: Number(newDealId),
             },
         );
+
+        if (flow !== 'renewal') {
+            // история ОРК ведётся по событию «перезаключение»; у поставки его нет
+            return newDealId;
+        }
 
         const elementCode = `ork_pere_contract_${oldDealId}_${responsibleId}`;
         const listResult =
@@ -217,7 +332,6 @@ export class InitDealUseCase {
         portalDeal: IPDeal,
         bitrix: BitrixService,
     ): Promise<Partial<IBXDeal>> {
-        const smartTypeId = portalSmart.entityTypeId;
         const dealValues = {} as Partial<IBXDeal>;
 
         for (const key in offerSmartItem) {
@@ -232,15 +346,17 @@ export class InitDealUseCase {
                         field => field.code === fieldCode,
                     );
                     if (dealField) {
-                        const rawValue = offerSmartItem[key];
+                        const rawValue: unknown = offerSmartItem[key];
 
                         const value = await this.prepareFieldValue(
                             rawValue,
                             bitrix,
                             fieldCode,
                         );
-                        if (value) {
-                            dealValues[`UF_CRM_${dealField.bitrixId}`] = value;
+                        if (value !== undefined) {
+                            // файловое поле в типах библиотеки не описано
+                            dealValues[`UF_CRM_${dealField.bitrixId}`] =
+                                value as IBXDeal[keyof IBXDeal];
                         }
                     }
                 }
@@ -284,15 +400,17 @@ export class InitDealUseCase {
 
                     if (dealField) {
                         // dealValues[`UF_CRM_${dealField.bitrixId}`] = rpa[key]
-                        const rawValue = rpa[key];
+                        const rawValue: unknown = rpa[key];
 
                         const value = await this.prepareFieldValue(
                             rawValue,
                             bitrix,
                             fieldCode,
                         );
-                        if (value) {
-                            dealValues[`UF_CRM_${dealField.bitrixId}`] = value;
+                        if (value !== undefined) {
+                            // файловое поле в типах библиотеки не описано
+                            dealValues[`UF_CRM_${dealField.bitrixId}`] =
+                                value as IBXDeal[keyof IBXDeal];
                         }
                     }
                 }
@@ -300,31 +418,59 @@ export class InitDealUseCase {
         }
         return dealValues;
     }
+    /**
+     * Приводит значение из RPA/смарта к тому, что принимает поле сделки:
+     * комплекты схлопываются в строку, вложенные массивы разворачиваются,
+     * файлы скачиваются в base64.
+     */
     private async prepareFieldValue(
-        rawValue: any,
+        rawValue: unknown,
         bitrix: BitrixService,
         fldCode: string,
-    ): Promise<any> {
-        let value = rawValue;
+    ): Promise<DealFieldValue> {
+        if (fldCode === 'complect_name' && Array.isArray(rawValue)) {
+            return rawValue
+                .map(item => (isNamedItem(item) ? item.name : String(item)))
+                .join(', ');
+        }
 
-        if (fldCode === 'complect_name') {
-            if (Array.isArray(rawValue)) {
-                value = rawValue.map(item => item.name).join(', ');
-            }
-        } else if (
+        if (
             Array.isArray(rawValue) &&
             rawValue.every(item => Array.isArray(item))
         ) {
-            value = rawValue.flat();
-        } else {
-            if (rawValue?.urlMachine || rawValue?.downloadUrl) {
-                const url = rawValue?.urlMachine || rawValue?.downloadUrl;
-                const fileData =
-                    await bitrix.file.downloadBitrixFileAndConvertToBase64(url);
-                value = { fileData };
-            }
+            return (rawValue as unknown[][]).flat() as DealFieldValue;
         }
-        return value;
+
+        const fileUrl = getBitrixFileUrl(rawValue);
+        if (fileUrl) {
+            const fileData =
+                await bitrix.file.downloadBitrixFileAndConvertToBase64(fileUrl);
+            return { fileData };
+        }
+
+        return rawValue as DealFieldValue;
+    }
+
+    /**
+     * Флаг RPA «Перезаключение?». null — поля на портале нет или оно пустое:
+     * тогда сценарий определяется косвенно.
+     */
+    private getIsExtensionFromRpa(
+        rpa: IBxRpaItem,
+        portalModel: PortalModel,
+    ): boolean | null {
+        const rpaField = portalModel.getRpaFieldBitrixIdByCode(
+            'supply',
+            INIT_DEAL_RPA_FIELD.isExtension,
+        );
+        if (!rpaField) {
+            return null;
+        }
+        const value: unknown = rpa[rpaField];
+        if (value === undefined || value === null || value === '') {
+            return null;
+        }
+        return value === true || value === 1 || value === 'Y' || value === '1';
     }
 
     private getCompanyIdFromRpa(

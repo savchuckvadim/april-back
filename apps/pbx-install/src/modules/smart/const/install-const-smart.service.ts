@@ -196,7 +196,12 @@ export class InstallConstSmartService {
                     isStagesEnabled: withStages,
                     isClientEnabled: 'Y',
                     isDocumentsEnabled: 'N',
-                    isLinkWithProductsEnabled: 'N',
+                    // Товарные строки нужны смартам, которые хранят состав
+                    // продажи (варианты комплекта). Остальным — выключены,
+                    // как было: лишняя вкладка в карточке только мешает.
+                    isLinkWithProductsEnabled: descriptor.hasProductRows
+                        ? 'Y'
+                        : 'N',
                     isMycompanyEnabled: 'N',
                     isRecyclebinEnabled: 'Y',
                     relations: { parent: parentRelations },

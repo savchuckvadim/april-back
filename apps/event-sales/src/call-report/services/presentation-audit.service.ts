@@ -23,6 +23,7 @@ import {
     PRESENTATION_AUDIT_PROMPT,
     PRESENTATION_AUDIT_SCHEMA,
 } from '../contracts/presentation-audit.contract';
+import { bxFieldBool } from '@lib/shared/lib/utils';
 
 /** Итог сверки одного домена. */
 export interface PresentationAuditDomainResult {
@@ -496,10 +497,13 @@ export class PresentationAuditService {
         const readField = (code: string): string | null =>
             readEntityField('deal', deal, code);
         // 'Y'/'1' → «да», 'N'/'0' → «нет», прочее (даты) — как есть.
+        // Разбор трёхзначный, поэтому bxFieldBool (true/false/null), а не
+        // isBxTrue: «не флаг» обязано отличаться от «флаг снят».
         const answerLabel = (raw: string | null): string => {
             if (raw === null) return 'не заполнено';
-            if (raw === 'Y' || raw === '1' || raw === 'true') return 'да';
-            if (raw === 'N' || raw === '0' || raw === 'false') return 'нет';
+            const flag = bxFieldBool(raw);
+            if (flag === true) return 'да';
+            if (flag === false) return 'нет';
             return raw;
         };
 

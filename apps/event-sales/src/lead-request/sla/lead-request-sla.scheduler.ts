@@ -7,6 +7,7 @@ import {
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
 import { LeadRequestSlaService } from './lead-request-sla.service';
+import { PortalWorkingHoursService } from '../../shared/working-hours/portal-working-hours.service';
 
 const LOCK_KEY = 'lead-request:sla-lock';
 const LOCK_TTL_SEC = 9 * 60;
@@ -32,6 +33,7 @@ export class LeadRequestSlaScheduler implements OnModuleInit {
         private readonly redisService: RedisService,
         private readonly slaService: LeadRequestSlaService,
         private readonly appSettings: PortalAppSettingsService,
+        private readonly workingHours: PortalWorkingHoursService,
     ) {}
 
     onModuleInit(): void {
@@ -70,6 +72,25 @@ export class LeadRequestSlaScheduler implements OnModuleInit {
                         EnumPortalAppCode.eventSales,
                     );
                     if (!settings.leadIntakeSlaEnabled) continue;
+                    /*
+                     * Передача непринятой заявки — это назначение работы
+                     * ЖИВОМУ человеку и уведомление ему же. Ночью и в
+                     * выходные такая передача только прогоняет заявку по
+                     * кругу менеджеров, которые её всё равно не видят.
+                     *
+                     * Заявка не потеряется: срок считается от
+                     * `op_lead_assigned_at`, она остаётся просроченной и
+                     * будет передана первым тиком рабочего дня.
+                     *
+                     * ОТДЕЛЬНО СТОИТ ЗНАТЬ: сам срок SLA измеряется
+                     * КАЛЕНДАРНЫМИ минутами (см. buildOverdueFilter).
+                     * Заявка, назначенная в 17:55 при пороге 30 минут,
+                     * утром понедельника будет просрочена, хотя рабочего
+                     * времени у менеджера было пять минут.
+                     */
+                    if (!(await this.workingHours.isWorkingTime(domain))) {
+                        continue;
+                    }
 
                     const run = await this.slaService.runForDomain(
                         domain,

@@ -89,6 +89,12 @@ const PortalModel = {
     getDealCategories: () => CATEGORIES,
     getEntityFieldByCode: (_entity: string, code: string) =>
         FIELDS[code] ? { bitrixId: FIELDS[code], items: [] } : undefined,
+    // Читатели полей карточки (XoRoutingModel/XoIntentModel) переводят
+    // bitrixId в полное имя через портал — как и боевой PortalModel.
+    getFieldBitrixId: (field: { bitrixId: string }) =>
+        field.bitrixId.startsWith('UF_CRM_')
+            ? field.bitrixId
+            : `UF_CRM_${field.bitrixId}`,
     getListByCode: (code: string) =>
         list(code === 'sales_kpi' ? 'kpi' : 'history'),
 };

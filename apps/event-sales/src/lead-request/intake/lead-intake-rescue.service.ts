@@ -14,6 +14,12 @@ import { buildLeadToWorkItem } from '../../sales-hooks/lead-to-work/dto/lead-to-
 import { LeadRequestDetectorService } from '../../sales-hooks/lead-to-work/services/lead-request-detector.service';
 import { XoQueueReader } from './xo-queue.reader';
 import { XoRouting, XoRoutingModel } from './xo-routing.model';
+import { XoIntentModel } from './xo-intent.model';
+import { LEAD_WORK_KIND } from '../../shared/event-title';
+import {
+    resolveXoStageMode,
+    XoStageMode,
+} from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-xo-event.enum';
 
 // Плагины idempotent: extend() повторно — no-op (см. lead-request-history.util).
 dayjs.extend(utc);
@@ -28,6 +34,13 @@ const IN_PROGRESS_SEMANTIC = 'P';
 /** Код видимой стадии-очереди отправки в ХО (todo2508 №3). */
 const XO_QUEUE_STAGE_CODE = 'lead_xo_queue';
 
+/**
+ * Сколько причин отсева печатать за проход поимённо. Очередь с сотнями уже
+ * обработанных лидов иначе залила бы лог целиком; итоговые числа всё равно
+ * есть в сводной строке.
+ */
+const MAX_SKIP_LOGS = 20;
+
 type BxRow = Record<string, unknown>;
 type BitrixInstance = Awaited<ReturnType<PBXService['init']>>['bitrix'];
 
@@ -35,6 +48,12 @@ type BitrixInstance = Awaited<ReturnType<PBXService['init']>>['bitrix'];
 interface ReadyLead {
     leadId: number;
     routing: XoRouting;
+    /**
+     * Режим стадии, решённый на месте: поле робота либо подтверждённая
+     * заявка. Считаем ЗДЕСЬ, а не в dispatch — там уже нет строки лида, по
+     * которой подтверждается заявка.
+     */
+    stageMode: XoStageMode;
 }
 
 /**
@@ -76,6 +95,8 @@ interface RescueContext {
     select: string[];
     maxPerRun: number;
     routing: XoRoutingModel;
+    intent: XoIntentModel;
+    detector: LeadRequestDetectorService;
 }
 
 /**
@@ -166,6 +187,8 @@ export class LeadIntakeRescueService {
             ],
             maxPerRun,
             routing: new XoRoutingModel(portal, 'lead'),
+            intent: new XoIntentModel(portal, 'lead'),
+            detector: new LeadRequestDetectorService(portal),
         };
 
         const queueStatusId =
@@ -186,6 +209,7 @@ export class LeadIntakeRescueService {
                 domain,
                 lead.leadId,
                 lead.routing,
+                lead.stageMode,
             );
             if (sent) {
                 result.dispatched += 1;
@@ -213,6 +237,20 @@ export class LeadIntakeRescueService {
         queueStatusId: string,
         result: LeadIntakeRescueRunResult,
     ): Promise<ReadyLead[]> {
+        /*
+         * Поля маршрутизации не видны бэкенду — очередь не разберётся
+         * НИКОГДА, сколько карточки ни заполняй. Это конфигурация портала,
+         * а не данные, поэтому предупреждение одно на проход (его печатает
+         * планировщик), а не строка на каждый лид.
+         */
+        const missingRouting = ctx.routing.missingRoutingFields();
+        if (missingRouting.length) {
+            result.warnings.push(
+                `Поля маршрутизации ХО (${missingRouting.join(', ')}) не найдены ` +
+                    'в слепке портала — очередь разобрать нечем, нужна установка полей',
+            );
+        }
+
         const reader = new XoQueueReader(ctx.bitrix, queueStatusId, ctx.select);
         const ready: ReadyLead[] = [];
 
@@ -266,7 +304,6 @@ export class LeadIntakeRescueService {
             filter as never,
             ctx.select,
         );
-        const detector = new LeadRequestDetectorService(ctx.portal);
         const ready: ReadyLead[] = [];
 
         for (const row of ((rows ?? []) as unknown as BxRow[]).filter(
@@ -279,7 +316,7 @@ export class LeadIntakeRescueService {
                 break;
             }
             result.scanned += 1;
-            if (requestsOnly && !detector.detect(row).isRequest) {
+            if (requestsOnly && !ctx.detector.detect(row).isRequest) {
                 result.skipped += 1;
                 continue;
             }
@@ -308,19 +345,106 @@ export class LeadIntakeRescueService {
         // назначил бы заявку заново и увёл её у работающего менеджера.
         if (ctx.assignedAtName && this.hasValue(row[ctx.assignedAtName])) {
             result.skipped += 1;
+            this.logSkip(
+                ctx,
+                result,
+                leadId,
+                'заполнено «Заявка назначена (дата)» — назначение по лиду уже было',
+            );
             return null;
         }
         if (ctx.toBaseName && this.hasValue(row[ctx.toBaseName])) {
             result.skipped += 1;
+            this.logSkip(
+                ctx,
+                result,
+                leadId,
+                'заполнена «Корневая сделка Продажи» ' +
+                    `(${this.shortValue(row[ctx.toBaseName])}) — работа по лиду уже есть`,
+            );
             return null;
         }
 
         const routing = ctx.routing.read(row);
         if (result.source === 'queue' && !ctx.routing.isReady(routing)) {
             result.notReady += 1;
+            this.logSkip(ctx, result, leadId, this.notReadyReason(ctx));
             return null;
         }
-        return { leadId, routing };
+        /*
+         * Режим стадии решаем здесь, пока строка лида под рукой: «new»
+         * требует ПОДТВЕРЖДЕНИЯ заявки, а подтверждается оно либо полем
+         * робота, либо признаками самого лида (детектор). В dispatch этих
+         * данных уже нет, а полагаться на то, что робот поле заполнил,
+         * нельзя — безотказность наша, не его.
+         */
+        const stageMode = resolveXoStageMode(
+            ctx.intent.read(row).stageMode,
+            // Именно kind === 'request', а НЕ detection.isRequest: тот
+            // включает и входящее обращение (вид 'lead' — звонок, письмо,
+            // чат). Клиент, который позвонил сам, заявки не оставлял, и в
+            // начало воронки продаж уезжать не должен.
+            ctx.detector.detect(row).kind === LEAD_WORK_KIND.request,
+        );
+        return { leadId, routing, stageMode };
+    }
+
+    /**
+     * Почему элемент очереди разобрать нельзя. Две причины выглядят снаружи
+     * одинаково («лид висит»), но чинятся в разных местах, поэтому
+     * разводятся здесь, а не оставляются на догадки.
+     */
+    private notReadyReason(ctx: RescueContext): string {
+        const missing = ctx.routing.missingRoutingFields();
+        if (missing.length) {
+            return (
+                `поля ${missing.join(', ')} нет в слепке портала — ` +
+                'маршрутизацию бэкенд не видит вообще, карточку заполнять ' +
+                'бесполезно, нужна установка полей'
+            );
+        }
+        return (
+            'не заполнен ни «ОП Ответственный ХО», ни «Отдел строкой» — ' +
+            'назначать некому, лид ждёт ручного разбора'
+        );
+    }
+
+    /**
+     * Причина отсева ПО КОНКРЕТНОМУ лиду. Уровень `log`, не `debug`: на
+     * проде debug отключён, а это основной инструмент разбора «почему лид
+     * висит в очереди» (тот же приём, что в LeadRequestDetectorService).
+     *
+     * Поток ограничен {@link MAX_SKIP_LOGS} на проход: очередь с сотнями
+     * уже обработанных лидов иначе залила бы лог целиком, а итоговые числа
+     * всё равно есть в сводной строке прохода.
+     */
+    private logSkip(
+        ctx: RescueContext,
+        result: LeadIntakeRescueRunResult,
+        leadId: number,
+        reason: string,
+    ): void {
+        const shown = result.skipped + result.notReady;
+        if (shown > MAX_SKIP_LOGS) return;
+        if (shown === MAX_SKIP_LOGS) {
+            this.logger.log(
+                `[intake-rescue] ${ctx.domain}: причин отсева больше ` +
+                    `${MAX_SKIP_LOGS} — остальные не печатаю, итог в сводке`,
+            );
+            return;
+        }
+        this.logger.log(
+            `[intake-rescue] ${ctx.domain}: лид ${leadId} не дожат — ${reason}`,
+        );
+    }
+
+    /** Короткое представление значения поля для лога (multiple → первое). */
+    private shortValue(raw: unknown): string {
+        const value: unknown = Array.isArray(raw) ? (raw as unknown[])[0] : raw;
+        if (typeof value !== 'string' && typeof value !== 'number') {
+            return '—';
+        }
+        return String(value).slice(0, 40);
     }
 
     /**
@@ -335,6 +459,7 @@ export class LeadIntakeRescueService {
         domain: string,
         leadId: number,
         routing: XoRouting,
+        stageMode: XoStageMode,
     ): Promise<boolean> {
         const item = buildLeadToWorkItem({
             leadId,
@@ -343,7 +468,13 @@ export class LeadIntakeRescueService {
             name: routing.name ?? undefined,
             deadline: routing.deadline ?? undefined,
             isXo: 'Y',
-            stageMode: 'new',
+            // Режим решён в classify() по полю робота + подтверждению
+            // заявки: «new» ставит работу в начало воронки продаж, и
+            // лишние туда лететь не должны.
+            stageMode,
+            // Автоподъём всегда закрывает старые задачи лида и ставит
+            // новую (решение владельца 12.09.2026); createCompany не
+            // передаём — дефолт 'N'.
             taskMode: 'close',
         });
         const entityKey = `lead:${leadId}`;

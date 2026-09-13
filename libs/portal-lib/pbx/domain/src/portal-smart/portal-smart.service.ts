@@ -77,6 +77,12 @@ export class PortalSmartService {
             crmId: BigInt(entityTypeId),
             forFilterId: BigInt(entityTypeId),
             forFilter: `DYNAMIC_${entityTypeId}_`,
+            // ownerType товарных строк: `T{hex(entityTypeId)}_` — так Битрикс
+            // адресует динамические типы (1042 → T412_). Раньше колонка
+            // заполнялась только Excel-путём, и у const-смарта оставалась
+            // пустой — copy-product-rows читает её как ownerType и уходил
+            // не туда.
+            crm: `T${entityTypeId.toString(16)}_`,
         };
         if (!existing) {
             await this.prisma.smarts.create({

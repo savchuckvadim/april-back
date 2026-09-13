@@ -8,3 +8,4 @@ export * from './name';
 export * from './word';
 export * from './semaphore.util';
 export * from './env.util';
+export * from './bx-field-value.util';

@@ -8,10 +8,7 @@ import { PBXService } from '@/modules/pbx';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import {
     EnumLeadNotCaTypeCode,
-    EnumLeadOpStatusCode,
-    EnumLeadRelatedBaseStageCode,
     EnumLeadRequestFieldCode,
-    EnumLeadSiteStageCode,
     EnumLeadSiteStatusCode,
 } from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
@@ -30,6 +27,7 @@ import {
     LeadUfDefinitions,
     LeadUfDefinitionsService,
 } from '../../shared/portal-fields';
+import { isBxTrue } from '@lib/shared/lib/utils';
 
 type BxRow = Record<string, unknown>;
 
@@ -413,8 +411,7 @@ export class LeadRequestService {
         lead: BxRow,
         code: EnumLeadRequestFieldCode,
     ): boolean {
-        const raw = this.fieldRaw(portal, lead, code);
-        return raw === 1 || raw === '1' || raw === true || raw === 'Y';
+        return isBxTrue(this.fieldRaw(portal, lead, code));
     }
 
     private fieldText(

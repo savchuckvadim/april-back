@@ -1,5 +1,5 @@
 import { BitrixService, IBXDeal, IBXLead } from '@/modules/bitrix';
-import { ColdTarget } from '../services/target/cold-target.types';
+import { ResolvedColdTarget } from '../services/target/cold-target.types';
 import { ownerFromTarget } from '../services/enities/cold-owner.type';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import {
@@ -38,17 +38,25 @@ export class ColdCallV2UseCase {
      * `lead` пока не используется — параметр оставлен под работу с лидом.
      */
     async flow(
-        target: ColdTarget,
+        target: ResolvedColdTarget,
         baseDeal: IBXDeal | null,
         lead: IBXLead | null,
         buffer: ColdHookBatchGroupBuffer,
     ) {
         const data = target.hook;
         const owner = ownerFromTarget(target);
-        const deadline = BitrixDateTime.fromPortalInput(
-            data.deadline,
-            this.portal.getTimezone(),
-        );
+        /*
+         * fromBitrixField, а не fromPortalInput: дедлайн мог прийти не из
+         * запроса, а из поля карточки — там Битрикс отдаёт ISO со
+         * смещением, на котором fromPortalInput бросает. Резолвер уже
+         * нормализовал значение, но полагаться на это по всей цепочке
+         * незачем: разбор обеих форм ничего не стоит.
+         */
+        const deadline =
+            BitrixDateTime.fromBitrixField(
+                data.deadline,
+                this.portal.getTimezone(),
+            ) ?? BitrixDateTime.now(this.portal.getTimezone());
 
         const dealsFlowService = new ColdDealFlowService(
             this.bitrix,

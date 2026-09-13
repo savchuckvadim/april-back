@@ -5,6 +5,8 @@ import timezone from 'dayjs/plugin/timezone';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { PBXService } from '@/modules/pbx';
 import { IBXDeal } from '@/modules/bitrix';
+import { parseBitrixField } from '@lib/shared/lib/date';
+import { isXoDispatchPending } from '../../shared/xo-dispatch/xo-dispatch-marker.model';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { PBX_DEAL_SALES_BASE_STAGE_CODE } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
@@ -134,8 +136,17 @@ export class RejectReviveService {
         );
         for (const deal of stuck) {
             if (budget <= 0) break;
-            if (this.text(deal[sentName])) continue;
-            const queuedAt = this.parsePortalDate(deal[queuedName], tz);
+            /*
+             * «Недоехал» = queued НОВЕЕ sent, а не «sent пуст». По наличию
+             * сделка с уже заполненным sent выпадала бы навсегда: повторный
+             * заход (свежий queued при старом sent) считался бы доставленным
+             * и упавший хук никто бы не дослал.
+             */
+            const queuedAt = parseBitrixField(deal[queuedName], tz);
+            const sentAt = parseBitrixField(deal[sentName], tz);
+            if (!isXoDispatchPending({ queuedAt, sentAt })) continue;
+            // Порог: только «висит дольше resendAfterMinutes», иначе дошлём
+            // хук, который прямо сейчас нормально обрабатывается.
             if (!queuedAt || queuedAt.isAfter(resendThreshold)) continue;
 
             budget -= 1;
@@ -373,14 +384,6 @@ export class RejectReviveService {
     }
 
     /** CRM отдаёт либо портальный формат, либо ISO с оффсетом. */
-    private parsePortalDate(raw: unknown, tz: string): dayjs.Dayjs | null {
-        const value = this.text(raw);
-        if (!value) return null;
-        const crm = dayjs.tz(value, CRM_DATETIME_FORMAT, tz);
-        if (crm.isValid()) return crm;
-        const iso = dayjs(value);
-        return iso.isValid() ? iso : null;
-    }
 
     private text(raw: unknown): string | null {
         if (typeof raw !== 'string') return null;

@@ -13,6 +13,7 @@ const FIELD_BY_CODE: Record<string, string> = {
     department_string: 'DEPARTMENT_STRING',
     xo_name: 'XO_NAME',
     xo_date: 'XO_DATE',
+    xo_created: 'XO_CREATED',
 };
 
 const makeModel = (installed = true) => {
@@ -35,6 +36,7 @@ describe('XoRoutingModel', () => {
             UF_CRM_DEPARTMENT_STRING: 'Отдел продаж №2',
             UF_CRM_XO_NAME: 'Восстановление из Отказников',
             UF_CRM_XO_DATE: '20.09.2026 10:00:00',
+            UF_CRM_XO_CREATED: '7',
         });
 
         expect(routing).toEqual({
@@ -42,7 +44,18 @@ describe('XoRoutingModel', () => {
             department: 'Отдел продаж №2',
             name: 'Восстановление из Отказников',
             deadline: '20.09.2026 10:00:00',
+            created: 7,
         });
+    });
+
+    it('постановщик необязателен — без него остальное читается как обычно', () => {
+        const routing = makeModel().read({
+            UF_CRM_XO_RESPONSIBLE: '15',
+            UF_CRM_DEPARTMENT_STRING: 'Отдел продаж №2',
+        });
+
+        expect(routing.created).toBeNull();
+        expect(routing.responsible).toBe(15);
     });
 
     /* Битрикс отдаёт незаполненное поле как '', false, '0' или []. */

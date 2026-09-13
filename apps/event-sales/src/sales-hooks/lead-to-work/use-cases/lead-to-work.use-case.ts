@@ -14,6 +14,12 @@ import {
     LeadToWorkResultDto,
 } from '../dto/lead-to-work-result.dto';
 import { LeadToWorkContextService } from '../services/lead-to-work-context.service';
+import {
+    LeadToWorkIntentResolution,
+    resolveLeadToWorkIntent,
+} from '../lib/lead-to-work-intent';
+import { LeadRequestDetectorService } from '../services/lead-request-detector.service';
+import { LEAD_WORK_KIND } from '../../../shared/event-title';
 import { LeadToWorkStageResolver } from '../services/lead-to-work-stage.resolver';
 import {
     LeadToWorkAssigneeService,
@@ -148,19 +154,52 @@ export class LeadToWorkUseCase
             assignee?: Awaited<
                 ReturnType<LeadToWorkAssigneeService['resolve']>
             >;
+            /** Намерение после слияния «запрос + карточка». */
+            resolution?: LeadToWorkIntentResolution;
             error?: string;
         }[] = [];
+        const detector = new LeadRequestDetectorService(ctx.portal);
         for (const item of items) {
             try {
                 const leadContext = await contextService.load(item.leadId);
                 const leadRow = leadContext.lead as unknown as BxRow;
-                const assignee = await this.assignee.resolve(ctx.domain, item, {
-                    leadResponsibleId: Number(leadRow.ASSIGNED_BY_ID) || null,
-                    // ХО распределяет заявку по кругу, конвертация —
-                    // переносит работу как есть, за текущим менеджером.
-                    keepLeadResponsible: item.isXo !== 'Y',
+                /*
+                 * Намерение резолвим ДО выбора ответственного: от isXo
+                 * зависит keepLeadResponsible, а isXo теперь может прийти
+                 * не из запроса, а из поля карточки.
+                 *
+                 * Подтверждением заявки служит kind === 'request', а НЕ
+                 * detection.isRequest: тот включает и входящее обращение
+                 * (звонок/письмо/чат), а такой клиент заявки не оставлял и
+                 * в начало воронки продаж уезжать не должен.
+                 */
+                const resolution = resolveLeadToWorkIntent({
+                    item,
+                    leadRow,
+                    portal: ctx.portal,
+                    isSiteRequest:
+                        detector.detect(leadRow).kind ===
+                        LEAD_WORK_KIND.request,
                 });
-                prepared.push({ item, leadContext, assignee });
+                const assignee = await this.assignee.resolve(
+                    ctx.domain,
+                    // Именно слитый элемент: responsible и department могли
+                    // прийти не из запроса, а из полей карточки.
+                    resolution.item,
+                    {
+                        leadResponsibleId:
+                            Number(leadRow.ASSIGNED_BY_ID) || null,
+                        // ХО распределяет заявку по кругу, конвертация —
+                        // переносит работу как есть, за текущим менеджером.
+                        keepLeadResponsible: resolution.intent.isXo !== 'Y',
+                    },
+                );
+                prepared.push({
+                    item: resolution.item,
+                    leadContext,
+                    assignee,
+                    resolution,
+                });
             } catch (error) {
                 const { message } = getErrorDetails(error);
                 this.logger.warn(
@@ -207,9 +246,9 @@ export class LeadToWorkUseCase
 
         // ── Шаг 1. Планируем запись по каждому лиду (данные уже прочитаны).
         for (const entry of prepared) {
-            const { item, leadContext, assignee } = entry;
+            const { item, leadContext, assignee, resolution } = entry;
             try {
-                if (!leadContext || !assignee) {
+                if (!leadContext || !assignee || !resolution) {
                     queued.push({
                         item,
                         companyId: null,
@@ -236,6 +275,7 @@ export class LeadToWorkUseCase
                 }
                 const resolvedItem: ResolvedLeadToWorkItem = {
                     ...item,
+                    ...resolution.intent,
                     responsible: assignee.responsible,
                 };
 

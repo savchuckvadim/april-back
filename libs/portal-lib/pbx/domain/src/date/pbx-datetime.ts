@@ -47,6 +47,15 @@ export class PBXDateTime {
         return BitrixDateTime.fromInstant(date, this.timezone);
     }
 
+    /**
+     * Значение ПОЛЯ Bitrix из карточки (`crm.lead.get`, `crm.deal.get`).
+     * В отличие от {@link fromInput} переживает ISO со смещением и не бросает
+     * на пустом/мусорном значении — возвращает null.
+     */
+    fromField(raw: unknown): BitrixDateTime | null {
+        return BitrixDateTime.fromBitrixField(raw, this.timezone);
+    }
+
     /** «Сейчас» как значение. */
     now(): BitrixDateTime {
         return BitrixDateTime.now(this.timezone);

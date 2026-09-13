@@ -29,16 +29,21 @@ const FIELD_BY_CODE: Record<string, string> = {
     department_string: 'DEPARTMENT_STRING',
     xo_name: 'XO_NAME',
     xo_date: 'XO_DATE',
+    op_xo_lead_stage_mode: 'OP_XO_LEAD_STAGE_MODE',
+    op_xo_is_xo: 'OP_XO_IS_XO',
+    op_xo_is_force: 'OP_XO_IS_FORCE',
 };
 
 const makePortal = (
     withFields = true,
     queueStatusId: string | null = null,
+    /** Коды полей, которых нет в слепке портала (не установлены). */
+    withoutFields: string[] = [],
 ) => ({
     getLeadStatusIdByCode: (code: string) =>
         code === 'lead_xo_queue' ? (queueStatusId ?? undefined) : undefined,
     getEntityFieldByCode: (_entity: string, code: string) => {
-        if (!withFields) return undefined;
+        if (!withFields || withoutFields.includes(code)) return undefined;
         const bitrixId = FIELD_BY_CODE[code];
         return bitrixId ? { bitrixId, items: [] } : undefined;
     },
@@ -59,6 +64,8 @@ const makeDeps = (input: {
     pageSize?: number;
     /** Выборка по стадии-очереди падает (портал недоступен). */
     queueFails?: boolean;
+    /** Коды полей, не установленных на портале (нет в слепке). */
+    withoutFields?: string[];
 }) => {
     /*
      * Отдаём выборку ПО ФИЛЬТРУ, а не по порядку вызовов: тест не должен
@@ -90,6 +97,7 @@ const makeDeps = (input: {
             PortalModel: makePortal(
                 input.withFields ?? true,
                 input.queueStatusId ?? null,
+                input.withoutFields ?? [],
             ),
         }),
     };
@@ -527,6 +535,41 @@ describe('LeadIntakeRescueService', () => {
             );
         });
 
+        /*
+         * Две беды выглядят одинаково — «лид висит в очереди», но чинятся в
+         * разных местах: робот не заполнил карточку либо бэкенд не видит
+         * поля вовсе. Второе безнадёжно без установки полей, поэтому обязано
+         * попадать в warnings прохода, а не растворяться в счётчике notReady.
+         */
+        it('полей маршрутизации нет в слепке → warning про установку полей', async () => {
+            const { service } = makeDeps({
+                leads: [],
+                queueStatusId: 'PBX_XO_QUEUE',
+                queuedLeads: [{ ID: '5', TITLE: 'Без маршрута' }],
+                // Поле «Отдел строкой» на портале не установлено.
+                withoutFields: ['department_string'],
+            });
+
+            const run = await service.runForDomain('d.b24.ru', 180, 20, true);
+
+            expect(run.notReady).toBe(1);
+            expect(run.warnings.join(' ')).toContain('department_string');
+            expect(run.warnings.join(' ')).toContain('установка полей');
+        });
+
+        it('поля есть, но пустые → warning не поднимаем: это данные, а не конфиг', async () => {
+            const { service } = makeDeps({
+                leads: [],
+                queueStatusId: 'PBX_XO_QUEUE',
+                queuedLeads: [{ ID: '5', TITLE: 'Без маршрута' }],
+            });
+
+            const run = await service.runForDomain('d.b24.ru', 180, 20, true);
+
+            expect(run.notReady).toBe(1);
+            expect(run.warnings.join(' ')).not.toContain('установка полей');
+        });
+
         it('карточку лида не правит: только читает и дожимает', async () => {
             const { service, leadUpdate } = makeDeps({
                 leads: [],
@@ -537,6 +580,83 @@ describe('LeadIntakeRescueService', () => {
             await service.runForDomain('d.b24.ru', 180, 20, true);
 
             expect(leadUpdate).not.toHaveBeenCalled();
+        });
+    });
+
+    /*
+     * «new» ставит работу в НАЧАЛО ВОРОНКИ ПРОДАЖ. Туда имеет право
+     * попасть только подтверждённая заявка с сайта — раньше режим был
+     * зашит в 'new' для всех, кого дожимал крон.
+     */
+    describe('режим стадии решается, а не зашит', () => {
+        it('лид без признаков заявки уходит в cold, а не в воронку продаж', async () => {
+            const { service, dispatch } = makeDeps({
+                leads: [],
+                queueStatusId: 'PBX_XO_QUEUE',
+                queuedLeads: [QUEUED],
+            });
+
+            await service.runForDomain('d.b24.ru', 180, 20, true);
+
+            expect(sentItem(dispatch).stageMode).toBe('cold');
+        });
+
+        it('подтверждённая заявка лидогена уходит в new', async () => {
+            const { service, dispatch } = makeDeps({
+                leads: [],
+                queueStatusId: 'PBX_XO_QUEUE',
+                queuedLeads: [{ ...QUEUED, UF_CRM_REG_NUMBER: '48-00691' }],
+            });
+
+            await service.runForDomain('d.b24.ru', 180, 20, true);
+
+            expect(sentItem(dispatch).stageMode).toBe('new');
+        });
+
+        it('поле робота главнее подтверждения', async () => {
+            const { service, dispatch } = makeDeps({
+                leads: [],
+                queueStatusId: 'PBX_XO_QUEUE',
+                queuedLeads: [
+                    { ...QUEUED, UF_CRM_OP_XO_LEAD_STAGE_MODE: 'new' },
+                ],
+            });
+
+            await service.runForDomain('d.b24.ru', 180, 20, true);
+
+            expect(sentItem(dispatch).stageMode).toBe('new');
+        });
+
+        it('робот сказал cold — заявка его не перебивает', async () => {
+            const { service, dispatch } = makeDeps({
+                leads: [],
+                queueStatusId: 'PBX_XO_QUEUE',
+                queuedLeads: [
+                    {
+                        ...QUEUED,
+                        UF_CRM_REG_NUMBER: '48-00691',
+                        UF_CRM_OP_XO_LEAD_STAGE_MODE: 'cold',
+                    },
+                ],
+            });
+
+            await service.runForDomain('d.b24.ru', 180, 20, true);
+
+            expect(sentItem(dispatch).stageMode).toBe('cold');
+        });
+
+        it('поля намерения не установлены на портале — крон работает, режим cold', async () => {
+            const { service, dispatch } = makeDeps({
+                leads: [],
+                queueStatusId: 'PBX_XO_QUEUE',
+                queuedLeads: [QUEUED],
+                withoutFields: ['op_xo_lead_stage_mode'],
+            });
+
+            const run = await service.runForDomain('d.b24.ru', 180, 20, true);
+
+            expect(run.dispatched).toBe(1);
+            expect(sentItem(dispatch).stageMode).toBe('cold');
         });
     });
 });

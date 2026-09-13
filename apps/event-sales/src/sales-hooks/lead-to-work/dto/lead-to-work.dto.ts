@@ -411,10 +411,18 @@ export interface ILeadToWorkItem {
      * получает подсвеченную запись, отдел для round-robin — его отдел.
      */
     transferredBy?: number;
-    createCompany: LeadToWorkFlag;
-    stageMode: LeadToWorkStageMode;
-    taskMode: LeadToWorkTaskMode;
-    isXo: LeadToWorkFlag;
+    /*
+     * НАМЕРЕНИЕ — необязательное. `undefined` означает «вызывающий не
+     * указал», и это ОБЯЗАНО отличаться от явно переданного значения:
+     * по `undefined` мы читаем поле карточки, по значению — слушаемся
+     * вызывающего. Подставь дефолт здесь — отличить стало бы нечем, и
+     * поля карточки никогда бы не сработали.
+     * Дефолты применяет `resolveLeadToWorkIntent()` после чтения лида.
+     */
+    createCompany?: LeadToWorkFlag;
+    stageMode?: LeadToWorkStageMode;
+    taskMode?: LeadToWorkTaskMode;
+    isXo?: LeadToWorkFlag;
     /** Явный признак заявки от робота; отсутствует — автодетект по полям. */
     isRequest?: LeadToWorkFlag;
     /**
@@ -432,9 +440,27 @@ export interface ILeadToWorkItem {
  * Элемент после резолва ответственного (LeadToWorkAssigneeService):
  * flow-слой работает только с гарантированным responsible.
  */
-export type ResolvedLeadToWorkItem = ILeadToWorkItem & { responsible: number };
+export type ResolvedLeadToWorkItem = ILeadToWorkItem & {
+    responsible: number;
+} & LeadToWorkIntent;
 
-/** Сборка элемента с дефолтами флагов. */
+/**
+ * Намерение хука после резолва «запрос + карточка»: здесь дефолты уже
+ * применены и неопределённости не осталось — флоу работают только с ним.
+ */
+export interface LeadToWorkIntent {
+    createCompany: LeadToWorkFlag;
+    stageMode: LeadToWorkStageMode;
+    taskMode: LeadToWorkTaskMode;
+    isXo: LeadToWorkFlag;
+}
+
+/**
+ * Сборка элемента из запроса (вебхук робота / кнопка фрейма).
+ *
+ * Флаги намерения переносятся КАК ЕСТЬ, без дефолтов: «не передано» должно
+ * дожить до `resolveLeadToWorkIntent()`, где сливается с полями карточки.
+ */
 export function buildLeadToWorkItem(input: {
     leadId: number;
     responsible?: string | number;
@@ -463,10 +489,12 @@ export function buildLeadToWorkItem(input: {
         department: input.department,
         excludeResponsible: input.excludeResponsible,
         transferredBy: input.transferredBy,
-        createCompany: input.createCompany ?? 'N',
-        stageMode: input.stageMode ?? 'from_lead',
-        taskMode: input.taskMode ?? 'move',
-        isXo: input.isXo ?? 'N',
+        // Дефолты НЕ подставляем: см. комментарий у ILeadToWorkItem —
+        // их применяет resolveLeadToWorkIntent() после чтения карточки.
+        createCompany: input.createCompany,
+        stageMode: input.stageMode,
+        taskMode: input.taskMode,
+        isXo: input.isXo,
         isRequest: input.isRequest,
         workKind: input.workKind,
         deadline: input.deadline,

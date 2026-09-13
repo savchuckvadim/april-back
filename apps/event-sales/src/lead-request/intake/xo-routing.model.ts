@@ -3,6 +3,7 @@ import {
     PortalModel,
 } from '@lib/portal-lib/portal/services/portal.model';
 import { XO_ROUTING_FIELD_CODES } from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-xo-event.enum';
+import { bxFieldId, bxFieldText } from '@lib/shared/lib/utils';
 
 type BxRow = Record<string, unknown>;
 
@@ -16,6 +17,8 @@ export interface XoRouting {
     name: string | null;
     /** Плановая дата обзвона (как её отдал Битрикс); null — без дедлайна. */
     deadline: string | null;
+    /** Постановщик ХО; null — автором станет ответственный. */
+    created: number | null;
 }
 
 /**
@@ -46,15 +49,18 @@ export class XoRoutingModel {
     /** Маршрутизация из строки Битрикса; отсутствующие поля → null. */
     read(row: BxRow): XoRouting {
         return {
-            responsible: this.numberOf(
+            responsible: bxFieldId(
                 this.valueOf(row, XO_ROUTING_FIELD_CODES.responsible),
             ),
-            department: this.textOf(
+            department: bxFieldText(
                 this.valueOf(row, XO_ROUTING_FIELD_CODES.department),
             ),
-            name: this.textOf(this.valueOf(row, XO_ROUTING_FIELD_CODES.name)),
-            deadline: this.textOf(
+            name: bxFieldText(this.valueOf(row, XO_ROUTING_FIELD_CODES.name)),
+            deadline: bxFieldText(
                 this.valueOf(row, XO_ROUTING_FIELD_CODES.date),
+            ),
+            created: bxFieldId(
+                this.valueOf(row, XO_ROUTING_FIELD_CODES.created),
             ),
         };
     }
@@ -62,6 +68,23 @@ export class XoRoutingModel {
     /** Есть кому назначать: сотрудник ИЛИ отдел для round-robin. */
     isReady(routing: XoRouting): boolean {
         return routing.responsible !== null || routing.department !== null;
+    }
+
+    /**
+     * Коды полей «кому» (`xo_responsible` / `department_string`), которых НЕТ
+     * в слепке портала.
+     *
+     * Разделяет две очень разные беды, снаружи выглядящие одинаково — «лид
+     * висит в очереди»: робот не заполнил маршрутизацию (чинить робота) либо
+     * бэкенд физически не видит поле, потому что оно не установлено или не
+     * доехало в слепок портала (чинить установку полей). Во втором случае
+     * очередь не разберётся НИКОГДА, сколько карточку ни заполняй.
+     */
+    missingRoutingFields(): string[] {
+        return [
+            XO_ROUTING_FIELD_CODES.responsible,
+            XO_ROUTING_FIELD_CODES.department,
+        ].filter(code => this.fieldName(code) === null);
     }
 
     /** Значение поля по pbx-коду; поле не установлено на портале → undefined. */
@@ -74,30 +97,5 @@ export class XoRoutingModel {
     private fieldName(code: string): string | null {
         const field = this.portal.getEntityFieldByCode(this.entityType, code);
         return field ? this.portal.getFieldBitrixId(field) : null;
-    }
-
-    /**
-     * Непустой текст либо null. Битрикс отдаёт незаполненные поля и как
-     * `''`, и как `false`, и как `'0'` (employee), и как пустой массив —
-     * все они означают «не заполнено».
-     */
-    private textOf(raw: unknown): string | null {
-        // Array.isArray сужает unknown до any[] — возвращаем в unknown,
-        // иначе значение элемента растекается по коду как any.
-        const value: unknown = Array.isArray(raw) ? (raw as unknown[])[0] : raw;
-        // Скалярами Битрикс отдаёт эти поля всегда; объект здесь означал бы
-        // не «значение», а другую форму ответа — трактуем как «не заполнено»,
-        // а не превращаем в '[object Object]'.
-        if (typeof value !== 'string' && typeof value !== 'number') return null;
-        const text = String(value).trim();
-        return text === '' || text === '0' ? null : text;
-    }
-
-    /** Положительный id сотрудника либо null. */
-    private numberOf(raw: unknown): number | null {
-        const text = this.textOf(raw);
-        if (text === null) return null;
-        const id = Number(text);
-        return Number.isFinite(id) && id > 0 ? id : null;
     }
 }

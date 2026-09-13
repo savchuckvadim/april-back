@@ -295,12 +295,17 @@ export class LeadToWorkFlowService {
             xoDealRef: input.xoRef,
             companyId: ctx.company ? Number(ctx.company.ID) : null,
         };
-        const deadline = item.deadline
-            ? BitrixDateTime.fromPortalInput(
-                  item.deadline,
-                  this.portal.getTimezone(),
-              )
-            : null;
+        /*
+         * fromBitrixField, а НЕ fromPortalInput: дедлайн может прийти из
+         * поля карточки, а там Битрикс отдаёт ISO со смещением
+         * (`2026-09-13T16:16:12+03:00`), на котором fromPortalInput
+         * БРОСАЕТ. Здесь вызов не обёрнут в try — падение утащило бы всю
+         * обработку лида из-за необязательного KPI-поля.
+         */
+        const deadline = BitrixDateTime.fromBitrixField(
+            item.deadline,
+            this.portal.getTimezone(),
+        );
 
         const prev = this.leadFlow.prevResponsible(ctx);
         if (prev && prev !== item.responsible) {
@@ -332,9 +337,10 @@ export class LeadToWorkFlowService {
     }
 
     /**
-     * Общий контекст события ХО для всех моделей сущностей. Дедлайн —
-     * из параметра хука; строка не парсится (робот прислал мусор) → null,
-     * и событийные поля времени просто не пишутся (graceful).
+     * Общий контекст события ХО для всех моделей сущностей. Дедлайн — из
+     * запроса ЛИБО из поля карточки (см. resolveLeadToWorkIntent); строка
+     * не парсится (робот прислал мусор) → null, и событийные поля времени
+     * просто не пишутся (graceful).
      */
     private eventContext(
         item: ResolvedLeadToWorkItem,
@@ -342,17 +348,18 @@ export class LeadToWorkFlowService {
         authorId: number | null,
     ): IXoEventContext | null {
         const tz = this.portal.getTimezone();
-        let deadline: BitrixDateTime | null = null;
-        if (item.deadline) {
-            try {
-                deadline = BitrixDateTime.fromPortalInput(item.deadline, tz);
-            } catch {
+        // fromBitrixField: дедлайн может прийти из поля карточки (ISO со
+        // смещением), а не только из запроса. Null отдаётся вместо
+        // исключения — событийные поля ХО просто не пишутся.
+        const deadline = BitrixDateTime.fromBitrixField(item.deadline, tz);
+        if (!deadline) {
+            if (item.deadline) {
                 this.logger.warn(
                     `[event-fields] дедлайн «${item.deadline}» не распознан — событийные поля ХО пропущены`,
                 );
             }
+            return null;
         }
-        if (!deadline) return null;
         return {
             eventName,
             deadline,

@@ -2,6 +2,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import { Logger } from '@nestjs/common';
 import { ETimeZone } from './timezone';
 import { parsePortalInput } from './parse-portal-input';
+import { parseBitrixField } from './parse-bitrix-field';
 
 const logger = new Logger('BitrixDateTime');
 
@@ -68,6 +69,27 @@ export class BitrixDateTime {
     ): BitrixDateTime {
         const instant = dayjs(date instanceof Date ? date : date.toDate());
         return new BitrixDateTime(instant, portalTz, instant.toISOString());
+    }
+
+    /**
+     * Создаёт значение из ЗНАЧЕНИЯ ПОЛЯ Bitrix (`crm.lead.get` и подобные).
+     *
+     * Отличается от {@link fromPortalInput} тем, что переживает обе формы,
+     * в которых Bitrix отдаёт datetime-поля: локаль портала без смещения
+     * (`13.09.2026 16:16:12`) и ISO со смещением (`2026-09-13T16:16:12+03:00`).
+     * На второй `fromPortalInput` БРОСАЕТ (strict-парсер dayjs не понимает
+     * токен `Z`), поэтому читать поля им нельзя — см. `parseBitrixField`.
+     *
+     * @returns null вместо исключения: поле может быть не заполнено или
+     *   содержать мусор, и чтение карточки обязано это переживать.
+     */
+    static fromBitrixField(
+        raw: unknown,
+        portalTz: ETimeZone,
+    ): BitrixDateTime | null {
+        const instant = parseBitrixField(raw, portalTz);
+        if (!instant) return null;
+        return new BitrixDateTime(instant, portalTz, String(raw));
     }
 
     /** «Сейчас» как значение (TZ портала применяется при форматировании). */

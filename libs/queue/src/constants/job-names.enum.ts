@@ -79,6 +79,9 @@ export enum JobNames {
 
     OFFER_WORD_EPHEMERAL_PDF_GENERATE = 'offer-word-ephemeral-pdf-generate',
 
+    /** Отправка сделки из конструктора: поля сделки + товарные строки в Bitrix */
+    KONSTRUCTOR_DEAL_SEND = 'konstructor-deal-send',
+
     //marketplace
     MARKETPLACE_PROVISION_PRODUCT = 'marketplace-provision-product',
 

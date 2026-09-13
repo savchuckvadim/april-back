@@ -8,6 +8,7 @@ import { TelegramModule } from '@lib/telegram/telegram.module';
 import { QueueModule } from '@lib/queue/queue.module';
 import { InitDealProcessor } from './processor/init-deal.processor';
 import { OrkHistoryBxListModule } from '@lib/portal-lib/pbx/pbx-ork-history-bx-list';
+import { InnerDealModule } from '../../modules/inner-deal/inner-deal.module';
 
 @Module({
     imports: [
@@ -16,6 +17,7 @@ import { OrkHistoryBxListModule } from '@lib/portal-lib/pbx/pbx-ork-history-bx-l
         TelegramModule,
         QueueModule,
         OrkHistoryBxListModule,
+        InnerDealModule,
     ],
     controllers: [InitDealController],
     providers: [InitDealUseCase, CopyInnerDealService, InitDealProcessor],

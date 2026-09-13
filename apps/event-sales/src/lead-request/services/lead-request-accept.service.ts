@@ -11,7 +11,6 @@ import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import { PbxSalesEventFieldCode } from '@lib/portal-lib/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
 import {
     EnumLeadRequestFieldCode,
-    EnumLeadSiteStageCode,
     EnumLeadSiteStatusCode,
 } from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
 import {

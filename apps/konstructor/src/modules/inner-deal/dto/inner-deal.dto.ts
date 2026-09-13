@@ -6,7 +6,9 @@ import {
     IsNotEmpty,
     IsOptional,
     IsString,
+    ValidateNested,
 } from 'class-validator';
+import { ComplectCompositionDto } from './complect-composition.dto';
 
 /**
  * Слепок сделки конструктора (строка bx_document_deals).
@@ -28,6 +30,14 @@ export class InnerDealSnapshotDto {
 
     @ApiProperty({ type: Number, nullable: true })
     serviceSmartId: number | null;
+
+    @ApiProperty({
+        type: Number,
+        nullable: true,
+        description:
+            'Элемент смарта «Варианты комплекта» (колонка smartId). Заполнен — это один из вариантов предложения на сделке',
+    })
+    variantSmartId: number | null;
 
     @ApiProperty({ type: Number, nullable: true })
     templateId: number | null;
@@ -73,6 +83,14 @@ export class InnerDealSnapshotDto {
 
     @ApiProperty({ type: String, nullable: true })
     ltOther: string | null;
+
+    @ApiProperty({
+        type: ComplectCompositionDto,
+        nullable: true,
+        description:
+            'Настройки сборки комплекта: режим, участники, настройки КП. null — сделка ведёт себя как раньше (один набор, одно КП)',
+    })
+    settings: ComplectCompositionDto | null;
 }
 
 export class InnerDealFindQueryDto {
@@ -139,6 +157,18 @@ export class InnerDealUpsertDto {
     @IsInt()
     @Type(() => Number)
     serviceSmartId?: number | null;
+
+    @ApiProperty({
+        type: Number,
+        required: false,
+        nullable: true,
+        description:
+            'Элемент смарта «Варианты комплекта»: с ним слепок становится одним из вариантов предложения на сделке',
+    })
+    @IsOptional()
+    @IsInt()
+    @Type(() => Number)
+    variantSmartId?: number | null;
 
     @ApiProperty({ type: Number, required: false, nullable: true })
     @IsOptional()
@@ -210,4 +240,150 @@ export class InnerDealUpsertDto {
     @IsOptional()
     @IsString()
     ltOther?: string | null;
+
+    @ApiProperty({
+        type: ComplectCompositionDto,
+        required: false,
+        nullable: true,
+        description:
+            'Настройки сборки комплекта. Хранятся у строки самой сделки; передавать вместе со слепком сделки, а не варианта',
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => ComplectCompositionDto)
+    settings?: ComplectCompositionDto | null;
+}
+
+/**
+ * Сохранение только настроек сборки комплекта.
+ *
+ * Отдельная ручка, а не `POST /konstructor/deal` с одними настройками: upsert
+ * слепка пишет ВСЕ колонки, и частичный запрос обнулил бы состояние
+ * конструктора. Настройки меняются отдельно от слепка и гораздо реже.
+ */
+export class InnerDealSettingsDto {
+    @ApiProperty({ type: String, example: 'gsr.bitrix24.ru' })
+    @IsNotEmpty()
+    @IsString()
+    domain: string;
+
+    @ApiProperty({ type: Number, example: 129487 })
+    @IsInt()
+    @Type(() => Number)
+    dealId: number;
+
+    @ApiProperty({
+        type: ComplectCompositionDto,
+        nullable: true,
+        description: 'null — вернуть сделку к поведению «один набор, одно КП»',
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => ComplectCompositionDto)
+    settings: ComplectCompositionDto | null;
+}
+
+/** Почему копирование слепка не состоялось. */
+export const INNER_DEAL_COPY_SKIP_REASONS = [
+    'source_not_found',
+    'target_exists',
+] as const;
+
+export type InnerDealCopySkipReason =
+    (typeof INNER_DEAL_COPY_SKIP_REASONS)[number];
+
+/**
+ * Копирование слепка из одной сделки в другую — ручное восстановление, когда
+ * робот перезаключения не смог перенести состояние конструктора в новую сделку.
+ */
+export class InnerDealCopyDto {
+    @ApiProperty({ type: String, example: 'gsr.bitrix24.ru' })
+    @IsNotEmpty()
+    @IsString()
+    domain: string;
+
+    @ApiProperty({
+        type: Number,
+        example: 159701,
+        description: 'Сделка-источник, из которой берём слепок',
+    })
+    @IsInt()
+    @Type(() => Number)
+    sourceDealId: number;
+
+    @ApiProperty({
+        type: Number,
+        example: 182895,
+        description: 'Сделка-получатель, в которую кладём копию',
+    })
+    @IsInt()
+    @Type(() => Number)
+    targetDealId: number;
+
+    @ApiProperty({
+        type: Number,
+        required: false,
+        nullable: true,
+        description:
+            'Взять у источника слепок конкретного сервисного смарта, а не обычный слепок сделки',
+    })
+    @IsOptional()
+    @IsInt()
+    @Type(() => Number)
+    sourceServiceSmartId?: number | null;
+
+    @ApiProperty({
+        type: Boolean,
+        required: false,
+        default: false,
+        description:
+            'Перезаписать слепок сделки-получателя, если он уже есть. Без флага такой вызов отклоняется, чтобы не затереть работу менеджера',
+    })
+    @IsOptional()
+    @IsBoolean()
+    force?: boolean;
+}
+
+/**
+ * «Не скопировали» — штатный исход (нет источника, занята цель), поэтому не
+ * исключение: глобальный фильтр на каждую ошибку шлёт алерт в Telegram.
+ */
+export class InnerDealCopyResponseDto {
+    @ApiProperty({ type: Boolean })
+    copied: boolean;
+
+    @ApiProperty({
+        enum: INNER_DEAL_COPY_SKIP_REASONS,
+        required: false,
+        nullable: true,
+        description: 'Заполнено, когда copied:false',
+    })
+    reason: InnerDealCopySkipReason | null;
+
+    @ApiProperty({ type: InnerDealSnapshotDto, nullable: true })
+    deal: InnerDealSnapshotDto | null;
+}
+
+/** Запрос списка вариантов комплекта сделки. */
+export class InnerDealVariantListQueryDto {
+    @ApiProperty({ type: String, example: 'gsr.bitrix24.ru' })
+    @IsNotEmpty()
+    @IsString()
+    domain: string;
+
+    @ApiProperty({ type: Number, example: 129487 })
+    @IsInt()
+    @Type(() => Number)
+    dealId: number;
+}
+
+/** Запрос слепка конкретного варианта. */
+export class InnerDealVariantFindQueryDto extends InnerDealVariantListQueryDto {
+    @ApiProperty({
+        type: Number,
+        description: 'Элемент смарта «Варианты комплекта»',
+    })
+    @IsInt()
+    @Type(() => Number)
+    variantSmartId: number;
 }

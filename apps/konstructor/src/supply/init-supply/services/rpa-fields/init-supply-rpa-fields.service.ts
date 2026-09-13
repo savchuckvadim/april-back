@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
-import { InitSupplyDto, InitSupplyFlow } from '../../dto/init-supply.dto';
+import { InitSupplyDto } from '../../dto/init-supply.dto';
+import { buildInitSupplyFlowFields } from '../../lib/init-supply-flow-fields';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { BitrixService, IBxRpaItem } from '@lib/bitrix';
 import { InitSupplyRpaPbxItemsFieldsService } from './pbx-items-fields.service';
@@ -23,14 +24,19 @@ export class InitSupplyRpaFieldsService {
         PortalModel: PortalModel,
         bitrix: BitrixService,
     ) {
-        const rpaNameField = PortalModel.getRpaFieldBitrixIdByCode(
-            'supply',
-            'name',
-        );
-        const rpaExtensionField = PortalModel.getRpaFieldBitrixIdByCode(
-            'supply',
-            'is_extension',
-        );
+        // название заявки, галка «Перезаключение» и тип договора: по ним отдел
+        // сервиса отличает поставку от перезаключения и фильтрует заявки
+        const flowFields = buildInitSupplyFlowFields(dto, {
+            nameField: PortalModel.getRpaFieldBitrixIdByCode('supply', 'name'),
+            extensionField: PortalModel.getRpaFieldBitrixIdByCode(
+                'supply',
+                'is_extension',
+            ),
+            contractTypeField: PortalModel.getRpaFieldBitrixIdByCode(
+                'supply',
+                'contract_type',
+            ),
+        });
         const rpaCurrentSupplyReportValues =
             await this.initSupplyRpaSupplyReportFileFieldService.get(
                 dto,
@@ -56,12 +62,8 @@ export class InitSupplyRpaFieldsService {
                 bitrix,
             );
 
-        const isSupply = dto.flow === InitSupplyFlow.SUPPLY;
         const rpaFields = {
-            [`${rpaNameField}`]: isSupply
-                ? `Поставка "${dto.companyName}"`
-                : `Перезаключение ${dto.companyName}`,
-            [`${rpaExtensionField}`]: !isSupply,
+            ...flowFields,
             ...rpaCurrentSupplyReportValues,
 
             // [`${rpaCommentField}`]: '🎯 Перезаключение ТЕСТ',

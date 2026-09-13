@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PortalWorkingHoursService } from '../shared/working-hours/portal-working-hours.service';
 import { PBXModule } from '@lib/pbx';
 import { RedisModule } from '@lib/core/redis/redis.module';
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.module';
@@ -55,6 +56,9 @@ import { LeadToWorkAssigneeService } from '../sales-hooks/lead-to-work/services/
          * регистрацией хука ради одного класса — лишняя связность.
          */
         LeadToWorkAssigneeService,
+        // Гейт рабочего времени портала: кроны не тревожат клиентов
+        // ночью, в выходные и праздники (график — из календаря портала).
+        PortalWorkingHoursService,
     ],
     exports: [LeadRequestService, LeadRequestAcceptService],
 })

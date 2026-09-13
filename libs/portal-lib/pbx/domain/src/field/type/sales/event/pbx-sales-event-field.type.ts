@@ -1625,8 +1625,8 @@ export const PBX_SALES_EVENT_FIELDS = [
         type: 'datetime',
         items: [],
         code: 'op_xo_revive_queued_at',
-        lead: '',
-        company: '',
+        lead: 'OP_XO_REVIVE_QUEUED_AT',
+        company: 'OP_XO_REVIVE_QUEUED_AT',
         deal: 'OP_XO_REVIVE_QUEUED_AT',
         smart: '',
         task: '',
@@ -1643,13 +1643,79 @@ export const PBX_SALES_EVENT_FIELDS = [
         type: 'datetime',
         items: [],
         code: 'op_xo_revive_sent_at',
-        lead: '',
-        company: '',
+        lead: 'OP_XO_REVIVE_SENT_AT',
+        company: 'OP_XO_REVIVE_SENT_AT',
         deal: 'OP_XO_REVIVE_SENT_AT',
         smart: '',
         task: '',
         app: 'calling',
         order: 713,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        /*
+         * НАМЕРЕНИЕ ХУКА в карточке (2026-09, «поля вместо query»).
+         *
+         * Робот Битрикса пишет эти поля ПЕРЕД тем, как дёрнуть хук, а
+         * бэкенд их ЧИТАЕТ — тем же приёмом, что и XO_ROUTING_FIELD_CODES.
+         * Зачем дублировать query-параметры полями: query живёт только на
+         * время вызова, и подстраховка (крон досыла по маркерам
+         * op_xo_revive_*) восстановить сценарий по нему уже не может —
+         * досылала бы с дефолтами вместо того, что задумал робот.
+         * Плюс query-строку роботов ломали кириллица и '#' в шаблонах.
+         */
+        name: 'ОП ХО режим стадии сделки',
+        appType: 'xo',
+        type: 'string',
+        items: [],
+        code: 'op_xo_lead_stage_mode',
+        lead: 'OP_XO_LEAD_STAGE_MODE',
+        company: 'OP_XO_LEAD_STAGE_MODE',
+        deal: 'OP_XO_LEAD_STAGE_MODE',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 715,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        // Пара к op_xo_lead_stage_mode: ставить ли ХО-сделку и называть ли
+        // задачу «Холодный обзвон» (query-флаг isXo хука lead-to-work).
+        name: 'ОП ХО холодный обзвон?',
+        appType: 'xo',
+        type: 'boolean',
+        items: [],
+        code: 'op_xo_is_xo',
+        lead: 'OP_XO_IS_XO',
+        company: 'OP_XO_IS_XO',
+        deal: 'OP_XO_IS_XO',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 716,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        // Забрать клиента у другого сотрудника (query-флаг force хука
+        // cold-call v2): закрыть чужую открытую работу и завести новую.
+        name: 'ОП ХО с очищением?',
+        appType: 'xo',
+        type: 'boolean',
+        items: [],
+        code: 'op_xo_is_force',
+        lead: 'OP_XO_IS_FORCE',
+        company: 'OP_XO_IS_FORCE',
+        deal: 'OP_XO_IS_FORCE',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 717,
         is_rewrite: '',
         isNeedUpdate: true,
         isMultiple: false,

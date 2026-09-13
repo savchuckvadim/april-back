@@ -220,6 +220,51 @@ describe('RejectReviveService', () => {
         expect(updates).toHaveLength(0);
     });
 
+    /*
+     * Повторная отправка в ХО: свежий queued при СТАРОМ sent. По прежней
+     * логике «sent заполнен → пропускаем» такую сделку не дожали бы
+     * никогда, и упавший хук потерялся бы молча.
+     */
+    it('повторный заход: queued новее sent → досылается, несмотря на sent', async () => {
+        const staleQueued = dayjs().tz(TZ).subtract(3, 'hour').format(FMT);
+        const olderSent = dayjs().tz(TZ).subtract(5, 'hour').format(FMT);
+        const { service, hooks, updates } = makeHarness({
+            deals: [
+                {
+                    ID: '210',
+                    ASSIGNED_BY_ID: '8',
+                    COMPANY_ID: '431',
+                    [QUEUED]: staleQueued,
+                    [SENT]: olderSent,
+                },
+            ],
+        });
+        const run = await service.runForDomain('x.bitrix24.ru', OPTS);
+
+        expect(run.resent).toBe(1);
+        expect(hooks).toHaveLength(1);
+        expect(updates[0].fields[SENT]).toBeTruthy();
+    });
+
+    it('доставленная сделка (sent новее queued) не трогается', async () => {
+        const staleQueued = dayjs().tz(TZ).subtract(3, 'hour').format(FMT);
+        const laterSent = dayjs().tz(TZ).subtract(2, 'hour').format(FMT);
+        const { service, hooks } = makeHarness({
+            deals: [
+                {
+                    ID: '220',
+                    ASSIGNED_BY_ID: '8',
+                    [QUEUED]: staleQueued,
+                    [SENT]: laterSent,
+                },
+            ],
+        });
+        const run = await service.runForDomain('x.bitrix24.ru', OPTS);
+
+        expect(run.resent).toBe(0);
+        expect(hooks).toHaveLength(0);
+    });
+
     it('перебивающая post_fail_date включает сделку без интервала; заполненная дата исключает её из интервальной ветки', async () => {
         const { service, hooks } = makeHarness({
             deals: [

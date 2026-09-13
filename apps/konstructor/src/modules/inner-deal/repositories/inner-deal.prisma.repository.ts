@@ -1,7 +1,14 @@
 import { PrismaService } from '@lib/core';
 import { BxDocumentDeal } from 'generated/prisma';
-import { InnerDealRepository } from './inner-deal.repository';
+import {
+    InnerDealRepository,
+    InnerDealSnapshotOrder,
+} from './inner-deal.repository';
 import { Injectable } from '@nestjs/common';
+
+const orderById = (order: InnerDealSnapshotOrder): { id: 'asc' | 'desc' } => ({
+    id: order === 'newest' ? 'desc' : 'asc',
+});
 
 @Injectable()
 export class InnerDealPrismaRepository implements InnerDealRepository {
@@ -24,11 +31,12 @@ export class InnerDealPrismaRepository implements InnerDealRepository {
         domain: string,
         dealId: number,
         serviceSmartId: number | null,
+        order: InnerDealSnapshotOrder = 'oldest',
     ): Promise<BxDocumentDeal | null> {
         // serviceSmartId: null матчит SQL NULL — обычные (не смарт) записи
         return this.prisma.bxDocumentDeal.findFirst({
             where: { domain, dealId, serviceSmartId },
-            orderBy: { id: 'asc' },
+            orderBy: orderById(order),
         });
     }
     async listByDealId(
@@ -37,6 +45,28 @@ export class InnerDealPrismaRepository implements InnerDealRepository {
     ): Promise<BxDocumentDeal[]> {
         return this.prisma.bxDocumentDeal.findMany({
             where: { domain, dealId },
+            orderBy: { id: 'asc' },
+        });
+    }
+    async findVariantSnapshot(
+        domain: string,
+        dealId: number,
+        variantSmartId: number,
+        order: InnerDealSnapshotOrder = 'newest',
+    ): Promise<BxDocumentDeal | null> {
+        return this.prisma.bxDocumentDeal.findFirst({
+            where: { domain, dealId, smartId: variantSmartId },
+            orderBy: orderById(order),
+        });
+    }
+    async listVariantsByDealId(
+        domain: string,
+        dealId: number,
+    ): Promise<BxDocumentDeal[]> {
+        // варианты — строки с непустым smartId; обычный слепок сделки и слепок
+        // «предложения на будущий период» сюда не попадают
+        return this.prisma.bxDocumentDeal.findMany({
+            where: { domain, dealId, smartId: { not: null } },
             orderBy: { id: 'asc' },
         });
     }
@@ -63,10 +93,14 @@ export class InnerDealPrismaRepository implements InnerDealRepository {
     }
 
     async findByServiceSmartId(
+        domain: string,
         serviceSmartId: number,
+        order: InnerDealSnapshotOrder = 'oldest',
     ): Promise<BxDocumentDeal | null> {
+        // domain обязателен: id элемента смарта уникален только внутри портала
         return this.prisma.bxDocumentDeal.findFirst({
-            where: { serviceSmartId },
+            where: { domain, serviceSmartId },
+            orderBy: orderById(order),
         });
     }
     async create(innerDeal: Partial<BxDocumentDeal>): Promise<BxDocumentDeal> {

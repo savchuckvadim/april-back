@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ColdHookModule } from './cold-hook/hook.module';
 import { ColdHookV2Module } from './cold-hook-v2/hook.module';
+import { XoDispatchRescueModule } from './shared/xo-dispatch/xo-dispatch-rescue.module';
 import { LeadHookModule } from './lead-hook/lead-hook.module';
 import { EventReportModule } from './event-report/event-report.module';
 import { EventReportDeferredModule } from './event-report-deferred/event-report-deferred.module';
@@ -16,6 +17,9 @@ import { PresentationFlowModule } from './presentation-flow/presentation-flow.mo
     imports: [
         ColdHookModule,
         ColdHookV2Module,
+        // Подстраховка ХО: крон досылает холодный звонок, который не
+        // доехал по компании или сделке (хук упал). Контроллеров нет.
+        XoDispatchRescueModule,
         LeadHookModule,
         EventReportModule,
         // Досылка хвоста прямого исполнения отчёта (POST /flow/deferred):

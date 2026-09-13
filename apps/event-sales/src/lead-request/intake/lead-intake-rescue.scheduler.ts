@@ -7,6 +7,7 @@ import {
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
 import { LeadIntakeRescueService } from './lead-intake-rescue.service';
+import { PortalWorkingHoursService } from '../../shared/working-hours/portal-working-hours.service';
 
 const LOCK_KEY = 'lead-request:intake-rescue-lock';
 const LOCK_TTL_SEC = 25 * 60;
@@ -33,6 +34,7 @@ export class LeadIntakeRescueScheduler {
         private readonly redisService: RedisService,
         private readonly rescueService: LeadIntakeRescueService,
         private readonly appSettings: PortalAppSettingsService,
+        private readonly workingHours: PortalWorkingHoursService,
     ) {}
 
     @Cron(RESCUE_CRON)
@@ -63,6 +65,16 @@ export class LeadIntakeRescueScheduler {
                         EnumPortalAppCode.eventSales,
                     );
                     if (!settings.leadIntakeRescueEnabled) continue;
+                    /*
+                     * Дожим назначает заявку живому менеджеру и ставит ему
+                     * задачу — вне рабочего времени портала это только
+                     * копит непрочитанные уведомления. Заявка не пропадёт:
+                     * она так и висит неназначенной, и её подберёт первый
+                     * тик рабочего дня.
+                     */
+                    if (!(await this.workingHours.isWorkingTime(domain))) {
+                        continue;
+                    }
 
                     const run = await this.rescueService.runForDomain(
                         domain,

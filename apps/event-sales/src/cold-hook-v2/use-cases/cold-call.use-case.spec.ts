@@ -7,7 +7,7 @@ import {
     EnumColdCallForce,
     EnumColdCallIsTmc,
 } from '../dto/cold.dto';
-import { ColdTarget } from '../services/target/cold-target.types';
+import { ResolvedColdTarget } from '../services/target/cold-target.types';
 import { ColdCallV2UseCase } from './cold-call.use-case';
 
 /**
@@ -112,7 +112,7 @@ const hook = (entityType: EnumColdCallEntityType, entityId: string) => ({
     force: EnumColdCallForce.N,
 });
 
-const companyTarget: ColdTarget = {
+const companyTarget: ResolvedColdTarget = {
     hookKey: 'h1',
     hook: hook(EnumColdCallEntityType.COMPANY, '7'),
     kind: 'company',
@@ -129,7 +129,7 @@ const ENTRY: Row = {
     CONTACT_ID: '9',
     LEAD_ID: '12',
 };
-const dealTarget: ColdTarget = {
+const dealTarget: ResolvedColdTarget = {
     hookKey: 'h2',
     hook: hook(EnumColdCallEntityType.DEAL, '600'),
     kind: 'deal',
@@ -139,7 +139,7 @@ const dealTarget: ColdTarget = {
     rootDealId: null,
 };
 
-const run = async (target: ColdTarget, baseDeal: IBXDeal | null) => {
+const run = async (target: ResolvedColdTarget, baseDeal: IBXDeal | null) => {
     const fake = makeBitrix();
     await new ColdCallV2UseCase(portal, fake.bitrix).flow(
         target,

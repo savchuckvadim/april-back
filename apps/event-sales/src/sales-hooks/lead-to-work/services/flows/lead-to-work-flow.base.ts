@@ -69,18 +69,26 @@ export abstract class LeadToWorkFlowBase {
         return field ? this.portal.getFieldBitrixId(field) : null;
     }
 
-    /** Дедлайн хука в объект-значение; строка-мусор → null (graceful). */
+    /**
+     * Дедлайн в объект-значение; пусто и мусор → null (graceful).
+     *
+     * `fromBitrixField`, а не `fromPortalInput`: значение приходит либо из
+     * запроса (локаль портала), либо из поля карточки, где Битрикс отдаёт
+     * ISO со смещением — на нём `fromPortalInput` бросает. Обе формы
+     * различает `fromBitrixField`, и он же возвращает null вместо
+     * исключения, так что try здесь больше не нужен.
+     */
     protected parseDeadline(raw: string | undefined): BitrixDateTime | null {
+        // Ранний выход: без дедлайна портал дёргать незачем.
         if (!raw) return null;
-        try {
-            return BitrixDateTime.fromPortalInput(
-                raw,
-                this.portal.getTimezone(),
-            );
-        } catch {
+        const deadline = BitrixDateTime.fromBitrixField(
+            raw,
+            this.portal.getTimezone(),
+        );
+        if (!deadline) {
             this.logger.warn(`дедлайн «${raw}» не распознан — пропущен`);
-            return null;
         }
+        return deadline;
     }
 
     /** Список ссылок (`L_1`, `D_2`) из сырого значения поля. */

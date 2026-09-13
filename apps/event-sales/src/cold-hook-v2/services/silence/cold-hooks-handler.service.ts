@@ -17,7 +17,12 @@ import {
 } from '../relations/cold-relations-closer.service';
 import { ColdSmartInfos } from '../relations/cold-relations.types';
 import { ColdTargetResolverV2Service } from '../target/cold-target-resolver.service';
-import { ColdTarget } from '../target/cold-target.types';
+import { ColdTarget, ResolvedColdTarget } from '../target/cold-target.types';
+import {
+    buildColdCallMissingNote,
+    resolveColdCallData,
+} from '../../lib/cold-call-intent';
+import { BitrixEntityType } from '@lib/bitrix/domain/enums/bitrix-constants.enum';
 import {
     buildColdStartPushes,
     buildColdStartTimeline,
@@ -30,7 +35,7 @@ import { SalesBatchGroupBuffer as ColdHookBatchGroupBuffer } from '../../../shar
 
 /** Что решено по хуку в фазе чтения — вход фазы записи. */
 interface PreparedTarget {
-    target: ColdTarget;
+    target: ResolvedColdTarget;
     decision: ColdStartDecision;
     closed: ColdCloseResult;
     noteInput: ColdStartTimelineInput;
@@ -117,21 +122,64 @@ export class ColdHooksHandlerV2Service {
             // ===== Фаза 1: чтение, решение, закрытие — по всем хукам =====
             const targets = await targetResolver.resolve(hooks);
             const prepared: PreparedTarget[] = [];
+            /** Цели, по которым не хватило данных — объясняем в таймлайне. */
+            const incomplete: { target: ColdTarget; note: string }[] = [];
             for (const target of targets) {
-                const relations = await collector.collect(target, smarts);
-                const responsibleId = Number(target.hook.responsible);
+                /*
+                 * Данные события: запрос ПЕРЕБИВАЕТ карточку. Робот мог не
+                 * передать их в query (кириллица и '#' ломали URL), тогда
+                 * берём из полей, которые он заполнил перед вызовом хука.
+                 */
+                const resolution = resolveColdCallData({
+                    hook: target.hook,
+                    entityRow: (target.kind === 'company'
+                        ? target.company
+                        : target.entryDeal) as Record<string, unknown> | null,
+                    entityType: target.kind,
+                    portal: PortalModel,
+                });
+                if (!resolution.data) {
+                    /*
+                     * Round-robin здесь нет (в отличие от lead-to-work), и
+                     * придумывать ответственного молча нельзя — звонок уехал
+                     * бы случайному человеку. Объясняем в карточке, чего не
+                     * хватило и что заполнить, чтобы повторить.
+                     */
+                    this.logger.warn(
+                        `[v2] hook=${target.hookKey}: не хватает данных — ` +
+                            resolution.missing
+                                .map(item => item.fieldCode)
+                                .join(', '),
+                    );
+                    incomplete.push({
+                        target,
+                        note: buildColdCallMissingNote(resolution.missing),
+                    });
+                    continue;
+                }
+                const resolved: ResolvedColdTarget = {
+                    ...target,
+                    hook: resolution.data,
+                };
+                const relations = await collector.collect(resolved, smarts);
+                const responsibleId = Number(resolved.hook.responsible);
                 const decision = decideColdStart({
-                    force: target.hook.force,
+                    force: resolved.hook.force,
                     responsibleId,
-                    entryDealId: target.entryDeal
-                        ? Number(target.entryDeal.ID)
+                    entryDealId: resolved.entryDeal
+                        ? Number(resolved.entryDeal.ID)
                         : null,
                     openBaseDeals: relations.openBaseDeals,
                 });
                 this.logger.log(
-                    `[v2] hook=${target.hookKey} ${this.describe(target)}: ${decision.reason}`,
+                    `[v2] hook=${resolved.hookKey} ${this.describe(resolved)}: ` +
+                        `${decision.reason} | ${resolution.signals.join('; ')}`,
                 );
-                const closed = await closer.close(target, relations, decision);
+                const closed = await closer.close(
+                    resolved,
+                    relations,
+                    decision,
+                );
                 const names = await this.userNames.resolve(domain, bitrix, [
                     responsibleId,
                     ...decision.foreign.map(item => item.responsibleId),
@@ -140,12 +188,12 @@ export class ColdHooksHandlerV2Service {
                         : []),
                 ]);
                 prepared.push({
-                    target,
+                    target: resolved,
                     decision,
                     closed,
                     noteInput: {
                         domain,
-                        target,
+                        target: resolved,
                         decision,
                         closed,
                         responsibleId,
@@ -165,6 +213,26 @@ export class ColdHooksHandlerV2Service {
             const buffer = new ColdHookBatchGroupBuffer(bitrix);
             let created = 0;
             let yielded = 0;
+            // Объяснения по целям, которым не хватило данных — своей
+            // группой: записи независимы и ссылок друг на друга не имеют.
+            for (const item of incomplete) {
+                const entityType =
+                    item.target.kind === 'company'
+                        ? BitrixEntityType.COMPANY
+                        : BitrixEntityType.DEAL;
+                const entityId =
+                    item.target.kind === 'company'
+                        ? item.target.companyId
+                        : Number(item.target.entryDeal?.ID);
+                if (entityId) {
+                    timeline.queue(
+                        item.target.hookKey,
+                        [{ entityType, entityId, comment: item.note }],
+                        buffer,
+                    );
+                }
+                await buffer.endGroup();
+            }
             for (const item of prepared) {
                 timeline.queue(
                     item.target.hookKey,

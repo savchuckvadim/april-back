@@ -10,4 +10,6 @@ export type SmartType =
     // Const-смарт «Презентации» — зеркало сделок «ОП Презентации»
     // (libs/portal-lib/pbx/pbx-presentation-smart). Отдельный от
     // 'presentation' тип: то имя занято Excel-шаблоном выше.
-    | 'pres';
+    | 'pres'
+    // варианты комплекта: несколько собранных предложений на одной сделке
+    | 'complect_variant';

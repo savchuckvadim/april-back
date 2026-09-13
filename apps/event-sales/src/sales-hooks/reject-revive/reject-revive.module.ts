@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PortalWorkingHoursService } from '../../shared/working-hours/portal-working-hours.service';
 import { PBXModule } from '@/modules/pbx/pbx.module';
 import { RedisModule } from '@lib/core/redis/redis.module';
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.module';
@@ -18,6 +19,10 @@ import { RejectReviveScheduler } from './reject-revive.scheduler';
  */
 @Module({
     imports: [PBXModule, RedisModule, PortalAppSettingsModule, ColdHookModule],
-    providers: [RejectReviveService, RejectReviveScheduler],
+    providers: [
+        RejectReviveService,
+        RejectReviveScheduler,
+        PortalWorkingHoursService,
+    ],
 })
 export class RejectReviveHookModule {}

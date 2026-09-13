@@ -6,6 +6,7 @@ import {
 import { InstallSkapSmartUseCase } from '@lib/skap-lib';
 import { InstallZprSmartUseCase } from '@app/pbx-install/smart/zpr/install-zpr-smart.use-case';
 import { InstallPresentationSmartUseCase } from '@app/pbx-install/smart/presentation/install-presentation-smart.use-case';
+import { InstallComplectVariantSmartUseCase } from '@app/pbx-install/smart/complect-variant/install-complect-variant-smart.use-case';
 import { CONST_SMART_REGISTRY } from '@lib/portal-lib/pbx/const-smart-registry';
 
 /** Общий контракт установщика const-смарта. */
@@ -27,6 +28,7 @@ export class ConstSmartInstallerResolver {
         skapInstaller: InstallSkapSmartUseCase,
         zprInstaller: InstallZprSmartUseCase,
         presentationInstaller: InstallPresentationSmartUseCase,
+        complectVariantInstaller: InstallComplectVariantSmartUseCase,
     ) {
         this.byKind = {
             aicall: aicallInstaller,
@@ -35,6 +37,8 @@ export class ConstSmartInstallerResolver {
             zpr: zprInstaller,
             // «Презентации» — зеркало сделок sales_presentation (тип 'pres').
             presentation: presentationInstaller,
+            // «Варианты комплекта» — несколько предложений на одной сделке.
+            complect_variant: complectVariantInstaller,
         };
     }
 

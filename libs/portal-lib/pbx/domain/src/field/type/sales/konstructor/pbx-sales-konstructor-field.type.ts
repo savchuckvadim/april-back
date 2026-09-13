@@ -868,6 +868,46 @@ export const PBX_SALES_KONSTRUCTOR_FIELDS = [
         isNeedUpdate: true,
         isMultiple: false,
     },
+    {
+        // Блок-описание СТАР — «Система торговых аналитических решений»
+        // (пакет `starpack`, сервисы РТС-Тендер для госзакупок). В конструкторе
+        // лежит в группе «Дополнительные программные продукты».
+        // В легаси-карте из Google-таблицы жил под безымянным ключом `field_14`
+        // (UF_CRM_1689656772) — кода у него не было, и сослаться на него
+        // семантически конструктор не мог.
+        name: 'СТАР',
+        appType: 'update',
+        type: 'multiple',
+        list: [],
+        code: 'star',
+        lead: '',
+        company: '',
+        deal: 'STAR',
+        smart: '',
+        order: 300,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
+    {
+        // Описание поставки для КП («Интернет версия на 1 одновременный доступ
+        // к системе»). В легаси-карте — `field_1`, заполнялся из
+        // `product.quantityForKp`. Зеркалим на смарт: сервисное предложение
+        // печатает то же описание.
+        name: 'Количество для КП',
+        appType: 'product',
+        type: 'string',
+        list: [],
+        code: 'quantity_for_kp',
+        lead: '',
+        company: '',
+        deal: 'QUANTITY_FOR_KP',
+        smart: 'QUANTITY_FOR_KP',
+        order: 300,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
 ] as const;
 
 export type PbxSalesKonstructorField =

@@ -112,6 +112,13 @@ export interface ConstSmartDescriptor {
     fieldsCount: number;
     /** Есть ли у смарта воронки/стадии. */
     hasCategories: boolean;
+    /**
+     * Нужны ли элементам товарные строки (`crm.item.productrow.*`). По
+     * умолчанию нет — вкладка товаров в карточке только мешает. Включать тем
+     * смартам, что хранят состав продажи: вариант комплекта без строк
+     * бессмыслен.
+     */
+    hasProductRows?: boolean;
     /** Короткое описание для карточки галереи. */
     description?: string;
     /**

@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Query } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { InitDealDto } from './dto/init-deal.dto';
