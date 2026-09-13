@@ -1666,14 +1666,17 @@ export const PBX_SALES_EVENT_FIELDS = [
          * досылала бы с дефолтами вместо того, что задумал робот.
          * Плюс query-строку роботов ломали кириллица и '#' в шаблонах.
          */
+        // ТОЛЬКО ЛИД: поле отвечает на вопрос «в какую стадию ставить
+        // сделку, рождённую ИЗ ЛИДА». У входа-компании и входа-сделки
+        // такого вопроса нет — работа там уже существует.
         name: 'ОП ХО режим стадии сделки',
         appType: 'xo',
         type: 'string',
         items: [],
         code: 'op_xo_lead_stage_mode',
         lead: 'OP_XO_LEAD_STAGE_MODE',
-        company: 'OP_XO_LEAD_STAGE_MODE',
-        deal: 'OP_XO_LEAD_STAGE_MODE',
+        company: '',
+        deal: '',
         smart: '',
         task: '',
         app: 'calling',
@@ -1683,16 +1686,17 @@ export const PBX_SALES_EVENT_FIELDS = [
         isMultiple: false,
     },
     {
-        // Пара к op_xo_lead_stage_mode: ставить ли ХО-сделку и называть ли
-        // задачу «Холодный обзвон» (query-флаг isXo хука lead-to-work).
+        // ТОЛЬКО ЛИД: флаг выбирает ветку хука «лид → работа» — ХО либо
+        // обычная конвертация. Холодный хук по компании и сделке — это ХО
+        // по определению, спрашивать там нечего.
         name: 'ОП ХО холодный обзвон?',
         appType: 'xo',
         type: 'boolean',
         items: [],
         code: 'op_xo_is_xo',
         lead: 'OP_XO_IS_XO',
-        company: 'OP_XO_IS_XO',
-        deal: 'OP_XO_IS_XO',
+        company: '',
+        deal: '',
         smart: '',
         task: '',
         app: 'calling',
@@ -1704,6 +1708,9 @@ export const PBX_SALES_EVENT_FIELDS = [
     {
         // Забрать клиента у другого сотрудника (query-флаг force хука
         // cold-call v2): закрыть чужую открытую работу и завести новую.
+        // Лид тоже несёт поле: у хука «лид → работа» своего force нет, но
+        // лид может быть входом в холодный старт, и робот выставляет флаг
+        // заранее — читать его будет уже компания/сделка.
         name: 'ОП ХО с очищением?',
         appType: 'xo',
         type: 'boolean',

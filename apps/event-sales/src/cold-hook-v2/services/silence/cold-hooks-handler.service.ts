@@ -23,6 +23,9 @@ import {
     resolveColdCallData,
 } from '../../lib/cold-call-intent';
 import { BitrixEntityType } from '@lib/bitrix/domain/enums/bitrix-constants.enum';
+import { XoDispatchMarkerModel } from '../../../shared/xo-dispatch/xo-dispatch-marker.model';
+import { EnumColdCallEntityType } from '../../dto/cold.dto';
+import dayjs from 'dayjs';
 import {
     buildColdStartPushes,
     buildColdStartTimeline,
@@ -202,6 +205,58 @@ export class ColdHooksHandlerV2Service {
                 });
             }
 
+            /**
+             * Отметка «хук отработал» (`op_xo_revive_sent_at`) на ТОЙ
+             * сущности, которую пометил робот — то есть на входе хука, а не
+             * на вычисленном владельце.
+             *
+             * Это вторая фаза подстраховки. Робот ставит
+             * `op_xo_revive_queued_at` ПЕРЕД вызовом, бэкенд — `sent_at`
+             * после обработки; крон досылает те элементы, где queued новее
+             * sent. Без этой записи КАЖДЫЙ нормально отработавший хук
+             * выглядел бы для крона недоехавшим, и клиент получал бы второй
+             * холодный звонок через порог досылки.
+             *
+             * Ставится и на `yield` (хук решил уступить чужую работу), и на
+             * цели без данных: хук ОТРАБОТАЛ и сказал результат. Повтор с
+             * теми же данными дал бы тот же исход и только спамил бы
+             * таймлайн — перевзводит подстраховку робот, записывая свежий
+             * `queued_at`.
+             */
+            const queueSentMark = (target: ColdTarget): void => {
+                const entityType =
+                    target.hook.entityType === EnumColdCallEntityType.COMPANY
+                        ? 'company'
+                        : 'deal';
+                const markers = new XoDispatchMarkerModel(
+                    PortalModel,
+                    entityType,
+                );
+                const fieldName = markers.fieldName('sentAt');
+                const entityId = Number(target.hook.entityId);
+                if (!fieldName || !Number.isFinite(entityId) || entityId <= 0) {
+                    return;
+                }
+                const stamp = dayjs()
+                    .tz(PortalModel.getTimezone())
+                    .format('DD.MM.YYYY HH:mm:ss');
+                const cmd = `xo2_sent_${target.hookKey}`;
+                const fields = { [fieldName]: stamp };
+                buffer.queue(() =>
+                    entityType === 'company'
+                        ? bitrix.batch.company.update(
+                              cmd,
+                              entityId,
+                              fields as never,
+                          )
+                        : bitrix.batch.deal.update(
+                              cmd,
+                              entityId,
+                              fields as never,
+                          ),
+                );
+            };
+
             // ===== Фаза 2: запись — группа на хук, один flush =====
             /**
              * Каждый хук = одна атомарная группа batch-команд. Буфер
@@ -231,6 +286,7 @@ export class ColdHooksHandlerV2Service {
                         buffer,
                     );
                 }
+                queueSentMark(item.target);
                 await buffer.endGroup();
             }
             for (const item of prepared) {
@@ -248,6 +304,9 @@ export class ColdHooksHandlerV2Service {
                         foreign: item.decision.foreign,
                         closed: item.closed.closedDealIds,
                     });
+                    // Уступили чужой работе — но хук ОТРАБОТАЛ: повтор дал
+                    // бы то же решение и только спамил бы таймлайн.
+                    queueSentMark(item.target);
                     await buffer.endGroup();
                     continue;
                 }
@@ -257,6 +316,17 @@ export class ColdHooksHandlerV2Service {
                     null,
                     buffer,
                 );
+                /*
+                 * Строго ПОСЛЕ работы: flow() закрывает свою группу, и
+                 * отметка уезжает отдельной командой, не вклиниваясь в
+                 * цепочку $result[...] создания сделок и задачи.
+                 *
+                 * endGroup() здесь обязателен: buffer.queue() регистрирует
+                 * ОТЛОЖЕННЫЙ enqueue, и группа без закрытия не уедет во
+                 * flush вовсе — отметка просто потерялась бы.
+                 */
+                queueSentMark(item.target);
+                await buffer.endGroup();
                 created += 1;
             }
             await buffer.flush();

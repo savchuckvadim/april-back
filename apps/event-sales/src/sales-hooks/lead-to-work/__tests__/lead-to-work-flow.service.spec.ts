@@ -161,6 +161,7 @@ const FIELDS = {
     'deal:deal_from_lead_id': { bitrixId: 'DEAL_FROM_LEAD_ID' },
     'deal:deal_joined_leads': { bitrixId: 'DEAL_JOINED_LEADS' },
     'lead:to_base_sales': { bitrixId: 'TO_BASE_SALES' },
+    'deal:to_base_sales': { bitrixId: 'TO_BASE_SALES' },
     'lead:op_lead_is_company': { bitrixId: 'OP_LEAD_IS_COMPANY' },
     'lead:op_lead_status': {
         bitrixId: 'OP_LEAD_STATUS',
@@ -329,6 +330,55 @@ describe('LeadToWorkFlowService', () => {
         expect(lead.UF_CRM_MANAGER_OP).toBe('5');
         const mhistory = lead.UF_CRM_OP_MHISTORY as string[];
         expect(mhistory[0]).toContain('ХО: ООО Ромашка (заявка)');
+    });
+
+    /*
+     * Пара «основная ↔ ХО» держится на этом поле: по нему сборщик связей
+     * находит ХО-работу клиента, а менеджер видит в карточке обзвона, к
+     * какой продаже он относится. Связь уже терялась в бою (сделка 25543,
+     * 13.09.2026) — молча, потому что Битрикс на такое не ругается.
+     */
+    describe('ХО-сделка ссылается на корневую основную', () => {
+        const runXo = (ctxOverrides = {}) => {
+            const { bitrix, calls } = makeBitrix();
+            const service = new LeadToWorkFlowService(
+                bitrix as never,
+                makePortal(XO_EVENT_FIELDS) as never,
+            );
+            service.queue(
+                makeItem({ leadId: 42, responsible: 5, isXo: 'Y' }),
+                baseContext(ctxOverrides),
+                basePlan({ xoCategoryId: '7', xoStageId: 'C7:PLAN' }),
+                makeBuffer() as never,
+                900,
+            );
+            return calls;
+        };
+
+        /** Поля команды создания ХО-сделки (вторая deal.set в батче). */
+        const xoFieldsOf = (calls: { method: string; args: unknown[] }[]) => {
+            const sets = calls.filter(c => c.method === 'deal.set');
+            return (sets.at(-1)?.args.at(-1) ?? {}) as Record<string, unknown>;
+        };
+
+        it('новая основная в том же батче → ссылка токеном $result', () => {
+            const xo = xoFieldsOf(runXo());
+
+            expect(String(xo.UF_CRM_TO_BASE_SALES)).toContain(`$result[`);
+        });
+
+        /*
+         * Основная уже есть, а ХО всё равно СОЗДАЁТСЯ — то есть ссылка
+         * уходит в deal.set, а не в deal.update, и значением идёт реальный
+         * id, без токена батча.
+         */
+        it('основная уже существует → ссылка её реальным id', () => {
+            const xo = xoFieldsOf(
+                runXo({ existingOurDeal: { ID: '25543' } as never }),
+            );
+
+            expect(xo.UF_CRM_TO_BASE_SALES).toBe('25543');
+        });
     });
 
     it('конвертация (isXo=N) событийные поля ХО НЕ пишет', () => {

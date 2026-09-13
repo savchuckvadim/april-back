@@ -168,6 +168,8 @@ export class LeadToWorkFlowService {
             company.ref,
             eventCtx,
             buffer,
+            // Корневая основная: реальный id либо $result[…] того же батча.
+            baseDeal.ref,
         );
         result.xoCmd = xoDeal.cmd;
 

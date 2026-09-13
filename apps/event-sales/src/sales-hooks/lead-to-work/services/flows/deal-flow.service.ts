@@ -127,6 +127,7 @@ export class DealFlowService extends LeadToWorkFlowBase {
         companyRef: string | null,
         eventCtx: IXoEventContext | null,
         buffer: IBatchGroupBuffer,
+        baseDealRef: string | null,
     ): DealFlowResult {
         if (item.isXo !== 'Y') return { ref: null };
 
@@ -137,6 +138,7 @@ export class DealFlowService extends LeadToWorkFlowBase {
             const fields: BxRow = {
                 ASSIGNED_BY_ID: String(item.responsible),
                 ...this.dealLinkFields(item.leadId, row),
+                ...this.baseDealLink(baseDealRef),
                 ...this.eventFields(eventCtx, 'deal', row),
             };
             buffer.queue(() =>
@@ -156,6 +158,7 @@ export class DealFlowService extends LeadToWorkFlowBase {
             CATEGORY_ID: plan.xoCategoryId,
             ASSIGNED_BY_ID: String(item.responsible),
             ...this.dealLinkFields(item.leadId, null),
+            ...this.baseDealLink(baseDealRef),
             // Событийные поля обзвона — как у ХО-сделки классического хука.
             ...this.eventFields(eventCtx, 'deal', null),
         };
@@ -180,6 +183,33 @@ export class DealFlowService extends LeadToWorkFlowBase {
      * У существующей сделки не перетираем: там может стоять лид штатной
      * конвертации, и он первичнее нашего.
      */
+    /**
+     * Ссылка ХО-сделки на КОРНЕВУЮ основную (`to_base_sales`).
+     *
+     * Без неё пара «основная ↔ ХО» существует только на словах: сборщик
+     * связей ищет ХО-работу клиента именно по этому полю, а менеджер не
+     * видит в карточке обзвона, к какой продаже тот относится. Классический
+     * ХО-хук поле пишет всегда — здесь его просто забыли, и связь молча
+     * не появлялась (сделка 25543, 13.09.2026).
+     *
+     * ССЫЛКА В BATCH. Значением идёт либо реальный id уже существующей
+     * основной, либо токен `$result[lw_deal_…]` сделки, создаваемой в ЭТОМ
+     * ЖЕ батче — Битрикс подставляет токен и в UF-поле. Готовое значение
+     * приходит из `queueBase`, здесь его не собирают заново.
+     *
+     * Формат — голый id, как в классическом ХО-хуке (ColdDealFlowService):
+     * поле разрешает единственный тип DEAL. Разрешай оно несколько,
+     * понадобился бы префикс `D_`, и Битрикс молча не сохранил бы
+     * значение, не ругнувшись.
+     */
+    private baseDealLink(baseDealRef: string | null): BxRow {
+        if (!baseDealRef) return {};
+        const name = this.dealFieldName(
+            PBX_SALES_EVENT_FIELD_CODES.to_base_sales,
+        );
+        return name ? { [name]: baseDealRef } : {};
+    }
+
     private dealLinkFields(leadId: number, existingRow: BxRow | null): BxRow {
         const fields: BxRow = {};
         if (!existingRow || !this.text(existingRow.LEAD_ID)) {

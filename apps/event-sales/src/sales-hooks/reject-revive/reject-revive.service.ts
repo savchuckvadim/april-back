@@ -10,11 +10,11 @@ import { isXoDispatchPending } from '../../shared/xo-dispatch/xo-dispatch-marker
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { PBX_DEAL_SALES_BASE_STAGE_CODE } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
-import { ColdHookSilinceEndpointService } from '../../cold-hook/services/silence/cold-hook-silince-endpoint.service';
+import { ColdHookSilinceEndpointV2Service } from '../../cold-hook-v2/services/silence/cold-hook-silince-endpoint.service';
 import {
     EnumColdCallEntityType,
     EnumColdCallIsTmc,
-} from '../../cold-hook/dto/cold.dto';
+} from '../../cold-hook-v2/dto/cold.dto';
 import { composeStageId } from '../../event-report/services/deal/deal-target-stage.calculator';
 import { RejectReviveResponsibleResolver } from './reject-revive-responsible.resolver';
 import {
@@ -62,7 +62,7 @@ export class RejectReviveService {
 
     constructor(
         private readonly pbx: PBXService,
-        private readonly coldHook: ColdHookSilinceEndpointService,
+        private readonly coldHook: ColdHookSilinceEndpointV2Service,
     ) {}
 
     async runForDomain(

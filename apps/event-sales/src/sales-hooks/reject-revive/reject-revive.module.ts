@@ -3,7 +3,7 @@ import { PortalWorkingHoursService } from '../../shared/working-hours/portal-wor
 import { PBXModule } from '@/modules/pbx/pbx.module';
 import { RedisModule } from '@lib/core/redis/redis.module';
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.module';
-import { ColdHookModule } from '../../cold-hook/hook.module';
+import { ColdHookV2Module } from '../../cold-hook-v2/hook.module';
 import { RejectReviveService } from './reject-revive.service';
 import { RejectReviveScheduler } from './reject-revive.scheduler';
 
@@ -18,7 +18,12 @@ import { RejectReviveScheduler } from './reject-revive.scheduler';
  * краш-луп event-sales на проде 2026-08-26).
  */
 @Module({
-    imports: [PBXModule, RedisModule, PortalAppSettingsModule, ColdHookModule],
+    imports: [
+        PBXModule,
+        RedisModule,
+        PortalAppSettingsModule,
+        ColdHookV2Module,
+    ],
     providers: [
         RejectReviveService,
         RejectReviveScheduler,

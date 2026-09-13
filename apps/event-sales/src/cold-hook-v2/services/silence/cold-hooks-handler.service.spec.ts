@@ -59,6 +59,7 @@ const FIELDS: Record<string, string> = {
     deal_from_lead_id: 'DEAL_FROM_LEAD_ID',
     call_next_date: 'CALL_NEXT_DATE',
     xo_date: 'XO_DATE',
+    op_xo_revive_sent_at: 'OP_XO_REVIVE_SENT_AT',
 };
 
 const list = (type: string) => ({
@@ -424,6 +425,8 @@ describe('ColdHooksHandlerV2Service — сделка без компании', (
 
         expect(of(journal, 'deal.update').map(([, key]) => key)).toEqual([
             'xo2_close_deal_h2_600',
+            // Уступили — но хук отработал, и подстраховка это фиксирует.
+            'xo2_sent_h2',
         ]);
         expect(of(journal, 'task.complete').map(([, , id]) => id)).toEqual([
             41,
@@ -486,6 +489,7 @@ describe('ColdHooksHandlerV2Service — сделка без компании', (
         // Корень — сама сделка (sales_base): сохранена и обновлена как основная.
         expect(of(journal, 'deal.update').map(([, key]) => key)).toEqual([
             'update_base_deal_600',
+            'xo2_sent_h3',
         ]);
         const [, , , basePayload] = of(journal, 'deal.update')[0];
         expect(basePayload).not.toHaveProperty('COMPANY_ID');
@@ -602,5 +606,40 @@ describe('ColdHooksHandlerV2Service — пустое окно', () => {
         await handler.handleHooks('d.b24.ru', {});
         expect(journal).toEqual([]);
         expect(bitrix.api.callBatchWithConcurrency).not.toHaveBeenCalled();
+    });
+});
+
+/**
+ * Вторая фаза подстраховки. Робот ставит «взято в очередь» ПЕРЕД вызовом,
+ * бэкенд — «хук отправлен» после обработки; крон досылает те элементы, где
+ * первая метка новее второй.
+ *
+ * Без этой записи КАЖДЫЙ нормально отработавший хук выглядел бы для крона
+ * недоехавшим, и клиент получал бы второй холодный звонок через порог
+ * досылки. Проверяем именно факт записи, а не её значение.
+ */
+describe('ColdHooksHandlerV2Service — отметка «хук отработал»', () => {
+    const world: World = {
+        companies: [{ ID: '7', TITLE: 'ООО Ромашка' }],
+        deals: [],
+        tasks: [],
+        items: {},
+    };
+
+    const sentMarks = (journal: Array<[string, ...unknown[]]>) =>
+        of(journal, 'company.update').filter(([, , , fields]) =>
+            Object.keys((fields ?? {}) as Record<string, unknown>).includes(
+                'UF_CRM_OP_XO_REVIVE_SENT_AT',
+            ),
+        );
+
+    it('после обработки метка ставится на сущность входа хука', async () => {
+        const { handler, journal } = makeHandler(world);
+
+        await handler.handleHooks('d.b24.ru', {
+            h1: hook(EnumColdCallEntityType.COMPANY, '7', EnumColdCallForce.N),
+        });
+
+        expect(sentMarks(journal)).toHaveLength(1);
     });
 });

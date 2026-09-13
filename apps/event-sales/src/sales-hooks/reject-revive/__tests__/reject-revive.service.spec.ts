@@ -3,7 +3,7 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { RejectReviveService } from '../reject-revive.service';
 import { PBXService } from '@/modules/pbx';
-import { ColdHookSilinceEndpointService } from '../../../cold-hook/services/silence/cold-hook-silince-endpoint.service';
+import { ColdHookSilinceEndpointV2Service } from '../../../cold-hook-v2/services/silence/cold-hook-silince-endpoint.service';
 import { RejectReviveOptions } from '../dto/reject-revive.types';
 
 dayjs.extend(utc);
@@ -97,7 +97,7 @@ const makeHarness = (over?: {
             hooks.push(dto);
             return Promise.resolve({ accepted: true });
         },
-    } as unknown as ColdHookSilinceEndpointService;
+    } as unknown as ColdHookSilinceEndpointV2Service;
 
     return {
         service: new RejectReviveService(pbx, coldHook),
