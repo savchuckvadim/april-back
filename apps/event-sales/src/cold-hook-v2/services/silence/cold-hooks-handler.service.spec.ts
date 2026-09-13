@@ -60,6 +60,9 @@ const FIELDS: Record<string, string> = {
     call_next_date: 'CALL_NEXT_DATE',
     xo_date: 'XO_DATE',
     op_xo_revive_sent_at: 'OP_XO_REVIVE_SENT_AT',
+    xo_responsible: 'XO_RESPONSIBLE',
+    xo_created: 'XO_CREATED',
+    xo_name: 'XO_NAME',
 };
 
 const list = (type: string) => ({
@@ -313,6 +316,8 @@ describe('ColdHooksHandlerV2Service — компания, force=Y, клиент 
                 STAGE_ID: 'C48:NORESULT',
                 UF_CRM_CALL_NEXT_DATE: '',
                 UF_CRM_XO_DATE: '',
+                // Поле есть в слепке — закрытие обнуляет и название события.
+                UF_CRM_XO_NAME: '',
             },
         ]);
         expect(of(journal, 'task.complete').map(([, , id]) => id)).toEqual([
@@ -641,5 +646,85 @@ describe('ColdHooksHandlerV2Service — отметка «хук отработа
         });
 
         expect(sentMarks(journal)).toHaveLength(1);
+    });
+});
+
+/**
+ * Вход-сделка, У КОТОРОЙ ЕСТЬ КОМПАНИЯ.
+ *
+ * Корнем работы становится компания, но робот заполнял поля события НА
+ * СДЕЛКЕ — он же её и отправлял. Если читать поля по корню, в карточке
+ * компании не найдётся ничего, и звонок молча не поставится (ровно это и
+ * случилось на сделке 25521, 13.09.2026).
+ */
+describe('ColdHooksHandlerV2Service — поля читаются со входа хука', () => {
+    const world: World = {
+        companies: [{ ID: '7', TITLE: 'ООО Ромашка' }],
+        deals: [
+            {
+                ID: '600',
+                CATEGORY_ID: '17',
+                STAGE_ID: 'C17:NEW',
+                COMPANY_ID: '7',
+                ASSIGNED_BY_ID: '447',
+                // Робот заполнил событие именно здесь.
+                UF_CRM_XO_RESPONSIBLE: '447',
+                UF_CRM_XO_DATE: '05.09.2026 11:00:00',
+                UF_CRM_XO_NAME: 'ООО Ромашка',
+            },
+        ],
+        tasks: [],
+        items: {},
+    };
+
+    /** Хук без данных события в query — всё должно прийти из карточки. */
+    const bareHook = (): IColdCallData => ({
+        entityType: EnumColdCallEntityType.DEAL,
+        entityId: '600',
+        isTmc: EnumColdCallIsTmc.N,
+    });
+
+    it('вход-сделка с компанией: звонок ставится по полям СДЕЛКИ', async () => {
+        const { handler, journal } = makeHandler(world);
+
+        await handler.handleHooks('d.b24.ru', { h9: bareHook() });
+
+        // Работа создана: появилась холодная сделка.
+        expect(of(journal, 'deal.set').length).toBeGreaterThan(0);
+    });
+
+    it('данных нет нигде → в таймлайн уходит объяснение, а не тишина', async () => {
+        const bare: World = {
+            ...world,
+            deals: [
+                {
+                    ID: '600',
+                    CATEGORY_ID: '17',
+                    STAGE_ID: 'C17:NEW',
+                    COMPANY_ID: '7',
+                    ASSIGNED_BY_ID: '447',
+                },
+            ],
+        };
+        const { handler, journal } = makeHandler(bare);
+
+        await handler.handleHooks('d.b24.ru', { h9: bareHook() });
+
+        expect(of(journal, 'deal.set')).toHaveLength(0);
+        const notes = of(journal, 'timeline.add');
+        expect(notes.length).toBeGreaterThan(0);
+        /*
+         * Запись должна лечь В КАРТОЧКУ, ИЗ КОТОРОЙ ЗАПУСКАЛИ. У входа-сделки
+         * с компанией корнем работы становится компания, и объяснение
+         * уезжало в чужую карточку — снаружи это выглядело как «вообще
+         * ничего не произошло» (сделка 25391, 13.09.2026).
+         */
+        const [, , payload] = notes[0] as [
+            string,
+            string,
+            { ENTITY_TYPE: string; ENTITY_ID: number },
+        ];
+        expect(payload.ENTITY_TYPE).toBe('deal');
+        expect(payload.ENTITY_ID).toBe(600);
     });
 });

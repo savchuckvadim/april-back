@@ -52,15 +52,44 @@ export class DealFlowService extends LeadToWorkFlowBase {
                 ctx.contactIds,
             );
             if (mergedContacts.length) fields.CONTACT_IDS = mergedContacts;
-            // Повторный ХО передаёт работу: сделка — новому ответственному,
-            // таймер подтверждения стартует заново (todo2508: assigned_at
-            // живёт и на сделке; снимает его принятие работы).
+            /*
+             * ХО ЗАБИРАЕТ клиента: сделка переходит новому ответственному,
+             * таймер подтверждения стартует заново (todo2508: assigned_at
+             * живёт и на сделке; снимает его принятие работы), а стадия
+             * ОБНУЛЯЕТСЯ до холодной либо «Новой» — как решил stageMode.
+             *
+             * Стадия двигается ТОЛЬКО в ХО-ветке, и это разделение смысловое
+             * (решение владельца 13.09.2026):
+             *  - isXo=N — это ПЕРЕЕЗД лида в работу: клиент продолжает с той
+             *    стадии, на которой стоял, обнулять чужой прогресс нельзя;
+             *  - isXo=Y — это холодный старт из лида, ровно как классический
+             *    ХО: прежняя работа обнуляется, клиент начинает заново.
+             *
+             * Закрытую сделку сюда не пускает DealConsolidationService
+             * (pickMain берёт только открытые), поэтому «оживить» выигранную
+             * сделку этим нельзя.
+             */
             if (item.isXo === 'Y') {
                 fields.ASSIGNED_BY_ID = String(item.responsible);
+                if (plan.dealStageId) {
+                    fields.STAGE_ID = plan.dealStageId;
+                }
                 stampDealAssignedAt(
                     this.portal,
                     fields,
                     this.portal.getTimezone(),
+                );
+            } else if (item.stageMode !== 'from_lead' && plan.dealStageId) {
+                /*
+                 * Переезд стадию не трогает — но если робот явно просил
+                 * cold/new, он вправе знать, что просьба не выполнена.
+                 * Молчание здесь уже приводило к «передал stageMode=new, а
+                 * сделка осталась в Переговорах».
+                 */
+                this.logger.warn(
+                    `[deal] лид ${item.leadId}: stageMode=${item.stageMode} ` +
+                        'проигнорирован — существующая сделка ' +
+                        `${dealId} при isXo=N стадию не меняет`,
                 );
             }
             buffer.queue(() =>

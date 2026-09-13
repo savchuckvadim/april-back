@@ -25,7 +25,18 @@ export class ColdHookSilinceEndpointV2Service {
         coldCallData: IColdCallData,
     ): Promise<ColdCallHookResponseDto> {
         const domainKey = domain.replace(/\./g, '_');
-        const keyPrefix = `XO2_event_sales_cold_call_${domainKey}_${coldCallData.responsible}`;
+        /*
+         * Окно тишины группируется по ответственному — так burst по
+         * одному менеджеру схлопывается в одну обработку.
+         *
+         * Ответственный может НЕ прийти в запросе: с 2026-09 он читается из
+         * карточки, а на момент приёма хука карточка ещё не прочитана. Тогда
+         * группируем весь домен в одно окно — это ровно то, чего хочет
+         * схлопывание. Подставлять сюда `undefined` строкой нельзя: ключ
+         * становится нечитаемым в логах и в ответе эндпоинта.
+         */
+        const groupKey = coldCallData.responsible ?? 'from_card';
+        const keyPrefix = `XO2_event_sales_cold_call_${domainKey}_${groupKey}`;
         this.logger.log(
             `[DEADLINE][silent] createColdCallHook enter domain=${domain} keyPrefix=${keyPrefix} ` +
                 `entityType=${coldCallData.entityType} entityId=${coldCallData.entityId} ` +

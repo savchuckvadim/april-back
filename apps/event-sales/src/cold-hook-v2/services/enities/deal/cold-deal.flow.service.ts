@@ -92,10 +92,10 @@ export class ColdDealFlowService {
                     this.bitrix.batch.deal.update(
                         updateBaseDealKey,
                         Number(baseDeal.ID),
-                        {
-                            ...baseUpdateDealData,
-                            ...baseDealEntity.getNextValues(),
-                        },
+                        // Значения уже посчитаны в baseUpdateDealData —
+                        // повторный getNextValues() здесь и задваивал
+                        // историю, пока модель мутировала массив сущности.
+                        baseUpdateDealData,
                     ),
                 );
             } else {

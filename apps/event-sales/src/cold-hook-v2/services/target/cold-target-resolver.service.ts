@@ -39,7 +39,7 @@ export class ColdTargetResolverV2Service {
     }
 
     async resolve(hooks: Record<string, IColdCallData>): Promise<ColdTarget[]> {
-        const entries = Object.entries(hooks);
+        const entries = this.dedupeByEntity(Object.entries(hooks));
 
         const dealIds = this.uniqueIds(
             entries
@@ -78,6 +78,40 @@ export class ColdTargetResolverV2Service {
             if (target) targets.push(target);
         }
         return targets;
+    }
+
+    /**
+     * Схлопывает хуки, пришедшие в ОДНО окно по ОДНОЙ И ТОЙ ЖЕ сущности.
+     *
+     * Окно тишины собирает все хуки подряд, и по одному клиенту их легко
+     * оказывается несколько: робот сработал дважды, пользователь нажал
+     * кнопку повторно, БП перезапустили на списке. Без схлопывания каждый
+     * дубль становится своей целью и проходит весь путь заново — клиент
+     * получает вторую холодную сделку, вторую задачу и вторую запись в
+     * истории (сделка 25431, 13.09.2026: две одинаковые строки истории
+     * секунда в секунду).
+     *
+     * Побеждает ПОСЛЕДНИЙ хук: если робот успел дописать поля между
+     * вызовами, свежие данные важнее первых.
+     */
+    private dedupeByEntity(
+        entries: [string, IColdCallData][],
+    ): [string, IColdCallData][] {
+        const byEntity = new Map<string, [string, IColdCallData]>();
+        for (const entry of entries) {
+            const [, hook] = entry;
+            const key = `${hook.entityType}:${hook.entityId}`;
+            const previous = byEntity.get(key);
+            if (previous) {
+                this.logger.warn(
+                    `[target] ${key}: в одном окне несколько хуков ` +
+                        `(${previous[0]}, ${entry[0]}) — берём последний, ` +
+                        'дубль работы не создаём',
+                );
+            }
+            byEntity.set(key, entry);
+        }
+        return [...byEntity.values()];
     }
 
     private toTarget(

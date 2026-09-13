@@ -187,6 +187,58 @@ describe('ColdTargetResolverV2Service', () => {
         expect(target.rootDealId).toBe(77);
     });
 
+    /*
+     * Окно тишины собирает все хуки подряд, и по одному клиенту их легко
+     * бывает несколько: робот сработал дважды, кнопку нажали повторно, БП
+     * перезапустили на списке. Без схлопывания каждый дубль проходит весь
+     * путь заново — вторая холодная сделка, вторая задача, вторая запись в
+     * истории (сделка 25431, 13.09.2026).
+     */
+    describe('дубли в одном окне схлопываются', () => {
+        it('два хука по одной сделке → одна цель', async () => {
+            const targets = await resolve({
+                h1: hook(EnumColdCallEntityType.DEAL, '500'),
+                h2: hook(EnumColdCallEntityType.DEAL, '500'),
+            });
+
+            expect(targets).toHaveLength(1);
+        });
+
+        it('два хука по одной компании → одна цель', async () => {
+            const targets = await resolve({
+                h1: hook(EnumColdCallEntityType.COMPANY, '7'),
+                h2: hook(EnumColdCallEntityType.COMPANY, '7'),
+            });
+
+            expect(targets).toHaveLength(1);
+        });
+
+        it('побеждает ПОСЛЕДНИЙ хук — робот мог дописать поля между вызовами', async () => {
+            const targets = await resolve({
+                h1: {
+                    ...hook(EnumColdCallEntityType.DEAL, '500'),
+                    name: 'первый',
+                },
+                h2: {
+                    ...hook(EnumColdCallEntityType.DEAL, '500'),
+                    name: 'второй',
+                },
+            });
+
+            expect(targets).toHaveLength(1);
+            expect(targets[0].hook.name).toBe('второй');
+        });
+
+        it('разные сущности не схлопываются', async () => {
+            const targets = await resolve({
+                h1: hook(EnumColdCallEntityType.DEAL, '500'),
+                h2: hook(EnumColdCallEntityType.COMPANY, '7'),
+            });
+
+            expect(targets).toHaveLength(2);
+        });
+    });
+
     it('контакт и лид пропускаются, сделка/компания не найдены — тоже', async () => {
         const targets = await resolve({
             h1: hook(EnumColdCallEntityType.CONTACT, '1'),

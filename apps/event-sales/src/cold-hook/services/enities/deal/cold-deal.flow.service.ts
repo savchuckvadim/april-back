@@ -88,7 +88,8 @@ export class ColdDealFlowService {
                         Number(baseDeal.ID),
                         {
                             ...baseUpdateDealData,
-                            ...baseDealEntity.getNextValues(),
+                            // Значения уже в baseUpdateDealData — повторный
+                            // вызов задваивал историю.
                         },
                     ),
                 );

@@ -133,12 +133,26 @@ export class ColdHooksHandlerV2Service {
                  * передать их в query (кириллица и '#' ломали URL), тогда
                  * берём из полей, которые он заполнил перед вызовом хука.
                  */
+                /*
+                 * Поля читаем с ВХОДА ХУКА, а не с вычисленного корня.
+                 *
+                 * Различие принципиальное: у входа-сделки с компанией
+                 * `target.kind` становится 'company' (корнем работы будет
+                 * компания), но робот-то заполнял `xo_responsible`,
+                 * `xo_date` и метки НА СДЕЛКЕ. Читать по kind значило бы
+                 * искать их в карточке компании, ничего не найти и молча
+                 * отказать в постановке звонка.
+                 */
+                const hookEntityType =
+                    target.hook.entityType === EnumColdCallEntityType.COMPANY
+                        ? 'company'
+                        : 'deal';
                 const resolution = resolveColdCallData({
                     hook: target.hook,
-                    entityRow: (target.kind === 'company'
+                    entityRow: (hookEntityType === 'company'
                         ? target.company
                         : target.entryDeal) as Record<string, unknown> | null,
-                    entityType: target.kind,
+                    entityType: hookEntityType,
                     portal: PortalModel,
                 });
                 if (!resolution.data) {
@@ -271,14 +285,21 @@ export class ColdHooksHandlerV2Service {
             // Объяснения по целям, которым не хватило данных — своей
             // группой: записи независимы и ссылок друг на друга не имеют.
             for (const item of incomplete) {
-                const entityType =
-                    item.target.kind === 'company'
-                        ? BitrixEntityType.COMPANY
-                        : BitrixEntityType.DEAL;
-                const entityId =
-                    item.target.kind === 'company'
-                        ? item.target.companyId
-                        : Number(item.target.entryDeal?.ID);
+                /*
+                 * Запись уходит НА ВХОД ХУКА, а не на вычисленный корень.
+                 * Человек смотрит ту карточку, из которой запускал: у
+                 * входа-сделки с компанией корнем становится компания, и
+                 * объяснение «не хватает данных» уезжало бы в чужую
+                 * карточку — со стороны это выглядит как «вообще ничего не
+                 * произошло».
+                 */
+                const fromCompany =
+                    item.target.hook.entityType ===
+                    EnumColdCallEntityType.COMPANY;
+                const entityType = fromCompany
+                    ? BitrixEntityType.COMPANY
+                    : BitrixEntityType.DEAL;
+                const entityId = Number(item.target.hook.entityId);
                 if (entityId) {
                     timeline.queue(
                         item.target.hookKey,

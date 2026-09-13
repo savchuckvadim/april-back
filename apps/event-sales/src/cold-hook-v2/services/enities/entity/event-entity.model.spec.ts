@@ -30,6 +30,7 @@ const FIELDS: Record<string, { bitrixId: string; items: unknown[] }> = {
         items: [item('op_prospects_good', 21), item('op_prospects_fail', 22)],
     },
     next_pres_plan_date: { bitrixId: 'NEXT_PRES_PLAN_DATE', items: [] },
+    op_mhistory: { bitrixId: 'OP_MHISTORY', items: [] },
 };
 
 const portal = {
@@ -62,5 +63,66 @@ describe('EventEntityModel — справочные поля холодного 
 
     it('дата назначенной презентации обнуляется: презентации закрыты стартом', () => {
         expect(model().getNextValues()['UF_CRM_NEXT_PRES_PLAN_DATE']).toBe('');
+    });
+});
+
+/**
+ * История-список. Модель обязана быть ЧИСТОЙ функцией от состояния
+ * сущности: `getNextValues()` вызывают не один раз, и мутация массива
+ * внутри сущности приводила к двум одинаковым записям в карточке
+ * (сделки 25431 и 25541, 13.09.2026).
+ */
+describe('EventEntityModel — история не задваивается', () => {
+    const withHistory = (history: string[]) =>
+        new EventEntityModel(
+            portal,
+            { ID: '7', UF_CRM_OP_MHISTORY: history } as never,
+            EnumColdCallEntityType.COMPANY,
+            'ООО Ромашка',
+            BitrixDateTime.fromPortalInput(
+                '05.09.2026 11:00:00',
+                ETimeZone.EUROPE_MOSCOW,
+            ),
+            '447',
+            '1',
+        );
+
+    it('свежая запись одна и идёт первой', () => {
+        const entity = withHistory(['старая']);
+
+        const history = entity.getNextValues()[
+            'UF_CRM_OP_MHISTORY'
+        ] as string[];
+
+        expect(history).toHaveLength(2);
+        expect(history[1]).toBe('старая');
+    });
+
+    it('повторный вызов даёт ТОТ ЖЕ результат, а не вторую запись', () => {
+        const entity = withHistory(['старая']);
+
+        const first = entity.getNextValues()['UF_CRM_OP_MHISTORY'] as string[];
+        const second = entity.getNextValues()['UF_CRM_OP_MHISTORY'] as string[];
+
+        expect(second).toEqual(first);
+        expect(second).toHaveLength(2);
+    });
+
+    it('массив самой сущности не мутируется', () => {
+        const original = ['старая'];
+        const entity = withHistory(original);
+
+        entity.getNextValues();
+        entity.getNextValues();
+
+        expect(original).toEqual(['старая']);
+    });
+
+    it('пустая история — только свежая запись', () => {
+        const history = withHistory([]).getNextValues()[
+            'UF_CRM_OP_MHISTORY'
+        ] as string[];
+
+        expect(history).toHaveLength(1);
     });
 });

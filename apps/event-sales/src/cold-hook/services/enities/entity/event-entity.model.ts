@@ -130,8 +130,10 @@ export class EventEntityModel {
             ColdEntityCodesEnum.op_mhistory,
         ) ?? []) as string[];
         const nextValue = this.eventComment;
-        currentValue.unshift(nextValue);
-        return currentValue;
+        // НОВЫЙ массив, а не мутация массива внутри сущности: повторный
+        // getNextValues() на той же модели дописывал запись ещё раз и
+        // задваивал историю в карточке (то же исправлено в v2 13.09.2026).
+        return [nextValue, ...currentValue];
     }
 
     /**

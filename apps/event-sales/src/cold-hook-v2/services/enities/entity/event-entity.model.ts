@@ -129,13 +129,24 @@ export class EventEntityModel {
         ) ?? '') as string;
         return `${currentValue} ${this.eventComment}`;
     }
+    /**
+     * История списком: свежая запись первой.
+     *
+     * НОВЫЙ массив, а не `unshift` в существующий. Раньше запись
+     * добавлялась мутацией `currentValue`, а `currentValue` — это ссылка
+     * на массив ВНУТРИ объекта сущности. Второй вызов `getNextValues()`
+     * на той же модели видел уже дополненный массив и дописывал запись
+     * ещё раз: в карточке появлялись две одинаковые строки истории
+     * секунда в секунду (сделки 25431 и 25541, 13.09.2026).
+     *
+     * Чистая функция от состояния сущности — сколько раз ни позови,
+     * результат один.
+     */
     private getNextMHistory(): string[] {
         const currentValue: string[] = (this.getCurrentValueByCode(
             ColdEntityCodesEnum.op_mhistory,
         ) ?? []) as string[];
-        const nextValue = this.eventComment;
-        currentValue.unshift(nextValue);
-        return currentValue;
+        return [this.eventComment, ...currentValue];
     }
 
     /**
