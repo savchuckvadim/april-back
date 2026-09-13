@@ -19,6 +19,7 @@ describe('InnerDealService.updateSettings', () => {
             infoblocks: ComplectOfferInfoblocksEnum.MERGED,
             showAlternatives: true,
         },
+        openVariantSmartId: 9001,
     };
 
     const makeService = (existing: Partial<BxDocumentDeal> | null) => {

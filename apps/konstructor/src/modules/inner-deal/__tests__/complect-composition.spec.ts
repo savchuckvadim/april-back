@@ -22,7 +22,7 @@ describe('complect composition', () => {
         expect(parseComplectComposition('"строка"')).toBeNull();
     });
 
-    it('читает режим, участников и настройки КП', () => {
+    it('читает режим и настройки КП', () => {
         const composition = parseComplectComposition(
             JSON.stringify({
                 mode: 'single_contract',
@@ -36,7 +36,26 @@ describe('complect composition', () => {
                 infoblocks: ComplectOfferInfoblocksEnum.MERGED,
                 showAlternatives: true,
             },
+            openVariantSmartId: null,
         });
+    });
+
+    it('помнит открытый вариант, мусор в нём отбрасывает', () => {
+        expect(
+            parseComplectComposition(
+                JSON.stringify({ openVariantSmartId: 9001 }),
+            )?.openVariantSmartId,
+        ).toBe(9001);
+
+        expect(
+            parseComplectComposition(
+                JSON.stringify({ openVariantSmartId: 'открыт' }),
+            )?.openVariantSmartId,
+        ).toBeNull();
+
+        expect(
+            parseComplectComposition(JSON.stringify({}))?.openVariantSmartId,
+        ).toBeNull();
     });
 
     it('незнакомый режим не ломает сделку — падаем на compare', () => {
@@ -57,6 +76,7 @@ describe('complect composition', () => {
                 infoblocks: ComplectOfferInfoblocksEnum.INDEPENDENT,
                 showAlternatives: false,
             },
+            openVariantSmartId: 9001,
         };
 
         expect(
@@ -85,6 +105,11 @@ describe('complect composition', () => {
         it('типов нет — запрещён, а не «разрешён по умолчанию»', () => {
             expect(isSingleContractAllowed([])).toBe(false);
             expect(isSingleContractAllowed(['', ''])).toBe(false);
+        });
+
+        it('тип не прочитался хотя бы у одного набора — запрещён', () => {
+            // договор оформляется по типу: объединять вслепую нельзя
+            expect(isSingleContractAllowed(['abonYear', ''])).toBe(false);
         });
     });
 });

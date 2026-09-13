@@ -41,6 +41,15 @@ export interface ComplectOfferSettings {
 export interface ComplectComposition {
     mode: ComplectModeEnum;
     offer: ComplectOfferSettings;
+    /**
+     * Вариант, открытый в конструкторе прямо сейчас.
+     *
+     * Это не участие и не дубль стадии: стадия говорит «набор в игре», а это —
+     * «менеджер сейчас редактирует именно его». Без такой пометки конструктор
+     * после перезагрузки открывал слепок сделки и терял, в каком варианте шла
+     * работа.
+     */
+    openVariantSmartId: number | null;
 }
 
 /** Сделка без явных настроек ведёт себя как раньше: один набор, одно КП. */
@@ -50,6 +59,7 @@ export const DEFAULT_COMPLECT_COMPOSITION: ComplectComposition = {
         infoblocks: ComplectOfferInfoblocksEnum.INDEPENDENT,
         showAlternatives: false,
     },
+    openVariantSmartId: null,
 };
 
 const isMode = (value: unknown): value is ComplectModeEnum =>
@@ -61,6 +71,12 @@ const isInfoblocksMode = (
 ): value is ComplectOfferInfoblocksEnum =>
     typeof value === 'string' &&
     (Object.values(ComplectOfferInfoblocksEnum) as string[]).includes(value);
+
+/** Идентификатор элемента смарта: мусор и нули считаем «не задано». */
+const toPositiveIdOrNull = (value: unknown): number | null => {
+    const id = Number(value);
+    return Number.isFinite(id) && id > 0 ? id : null;
+};
 
 /**
  * Разбор колонки `settings`.
@@ -102,6 +118,7 @@ export const parseComplectComposition = (
                 : DEFAULT_COMPLECT_COMPOSITION.offer.infoblocks,
             showAlternatives: Boolean(offerSource.showAlternatives),
         },
+        openVariantSmartId: toPositiveIdOrNull(source.openVariantSmartId),
     };
 };
 
@@ -112,14 +129,19 @@ export const serializeComplectComposition = (
 
 /**
  * Один договор возможен только при одинаковом типе договора у всех наборов.
- * Типы приходят с фронта — здесь только правило, без знания о том, откуда они.
+ *
+ * Нечитаемый тип хотя бы у одного набора запрещает объединение: договор
+ * оформляется по типу, и объединять вслепую нельзя — ошибка вскроется уже на
+ * подписании. Типы приходят с фронта: здесь только правило.
  */
 export const isSingleContractAllowed = (
     contractTypeCodes: readonly string[],
 ): boolean => {
-    const filled = contractTypeCodes.filter(code => Boolean(code));
-    if (!filled.length) {
+    if (!contractTypeCodes.length) {
         return false;
     }
-    return new Set(filled).size === 1;
+    if (contractTypeCodes.some(code => !code)) {
+        return false;
+    }
+    return new Set(contractTypeCodes).size === 1;
 };

@@ -1,6 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsEnum, IsOptional, ValidateNested } from 'class-validator';
+import {
+    IsBoolean,
+    IsEnum,
+    IsInt,
+    IsOptional,
+    ValidateNested,
+} from 'class-validator';
 import {
     ComplectModeEnum,
     ComplectOfferInfoblocksEnum,
@@ -51,4 +57,16 @@ export class ComplectCompositionDto {
     @ValidateNested()
     @Type(() => ComplectOfferSettingsDto)
     offer: ComplectOfferSettingsDto;
+
+    @ApiProperty({
+        description:
+            'Вариант, открытый в конструкторе сейчас. Не участие (участие — стадия элемента), а «что редактируется»: без него конструктор после перезагрузки терял, в каком варианте шла работа',
+        type: Number,
+        nullable: true,
+        required: false,
+    })
+    @IsOptional()
+    @IsInt()
+    @Type(() => Number)
+    openVariantSmartId: number | null;
 }
