@@ -10,6 +10,7 @@ import {
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import { EnumSalesKpiEventAction } from '@lib/portal-lib/pbx/pbx-sales-kpi-list/type/pbx-sales-kpi-list.enum';
 import { PBX_SALES_KPI_LIST_FIELD_CODES } from '@lib/portal-lib/pbx/pbx-sales-kpi-list/type/pbx-sales-kpi-list-field.type';
+import { SALES_LIST_CODES } from '@lib/portal-lib/pbx/pbx-sales-list-reader/type/sales-list-record.type';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import {
     IField,
@@ -18,7 +19,7 @@ import {
 
 /** Код списка в слепке портала — прижат к сигнатуре PortalModel.getListByCode. */
 type PortalListCode = Parameters<PortalModel['getListByCode']>[0];
-export const SALES_KPI_LIST_CODE: PortalListCode = 'sales_kpi';
+export const SALES_KPI_LIST_CODE: PortalListCode = SALES_LIST_CODES.kpi;
 
 /** Ошибка конфигурации портала: список/поле sales_kpi не настроены. */
 export class KpiListConfigError extends Error {

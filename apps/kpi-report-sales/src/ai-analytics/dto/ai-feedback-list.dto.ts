@@ -42,22 +42,32 @@ export class AiFeedbackListRequestDto extends AiRequestBaseDto {
 }
 
 export class AiFeedbackItemDto {
-    @ApiProperty({ description: 'Id записи ais.', type: String })
+    @ApiProperty({
+        description: 'Id записи ais.',
+        type: String,
+        example: '3081',
+    })
     id: string;
 
     @ApiProperty({
         description: 'Вид реакции.',
         enum: AI_ANALYTICS_FEEDBACK_KINDS,
+        example: 'disagree',
     })
     kind: AiAnalyticsFeedbackKind;
 
-    @ApiProperty({ description: 'Объект реакции.', type: String })
+    @ApiProperty({
+        description: 'Объект реакции.',
+        type: String,
+        example: 'call:10245',
+    })
     object: string;
 
     @ApiProperty({
         description: 'Bitrix-id менеджера.',
         type: String,
         nullable: true,
+        example: '512',
     })
     managerId: string | null;
 
@@ -65,6 +75,7 @@ export class AiFeedbackItemDto {
         description: 'Id транскрипции.',
         type: String,
         nullable: true,
+        example: '10245',
     })
     transcriptionId: string | null;
 
@@ -72,10 +83,16 @@ export class AiFeedbackItemDto {
         description: 'Кто оставил реакцию; null — push-контур.',
         type: String,
         nullable: true,
+        example: '447',
     })
     requesterUserId: string | null;
 
-    @ApiProperty({ description: 'Причина.', type: String, nullable: true })
+    @ApiProperty({
+        description: 'Причина.',
+        type: String,
+        nullable: true,
+        example: 'Оценка занижена: клиент сам перенёс встречу',
+    })
     reason: string | null;
 
     @ApiProperty({

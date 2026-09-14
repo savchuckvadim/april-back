@@ -14,13 +14,18 @@ export class AiAgendaRequestDto extends AiRequestBaseDto {}
 
 /** Звонок повестки: почему попал, цитата, ссылка на разбор. */
 export class AiAgendaItemDto {
-    @ApiProperty({ description: 'Id транскрипции звонка.', type: String })
+    @ApiProperty({
+        description: 'Id транскрипции звонка.',
+        type: String,
+        example: '10245',
+    })
     transcriptionId: string;
 
     @ApiProperty({
         description: 'Bitrix-id менеджера; null — не определён.',
         type: String,
         nullable: true,
+        example: '512',
     })
     managerId: string | null;
 
@@ -47,7 +52,11 @@ export class AiAgendaItemDto {
     })
     reason: string;
 
-    @ApiProperty({ description: 'Цитата из разбора.', type: String })
+    @ApiProperty({
+        description: 'Цитата из разбора.',
+        type: String,
+        example: 'У вас дорого, в другой системе то же самое дешевле',
+    })
     quote: string;
 
     @ApiProperty({
@@ -55,6 +64,7 @@ export class AiAgendaItemDto {
             'Смещение цитаты в тексте транскрипта; null — текст не загружался.',
         type: Number,
         nullable: true,
+        example: 1840,
     })
     charOffset: number | null;
 
@@ -72,6 +82,7 @@ export class AiAgendaItemDto {
         description: 'Оценка звонка 0–100; null — нет.',
         type: Number,
         nullable: true,
+        example: 72,
     })
     score: number | null;
 }
@@ -82,6 +93,7 @@ export class AiAgendaDisagreementDto {
         description: 'Bitrix-id менеджера; null — не указан.',
         type: String,
         nullable: true,
+        example: '512',
     })
     managerId: string | null;
 
@@ -96,6 +108,7 @@ export class AiAgendaDisagreementDto {
         description: 'Причина несогласия; null — не указана.',
         type: String,
         nullable: true,
+        example: 'Клиент сам перенёс встречу, оценка занижена',
     })
     reason: string | null;
 }

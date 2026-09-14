@@ -10,9 +10,15 @@
  *
  * Чистые функции.
  */
-import { AI_BETA_SOURCES, tenureBandOf } from '@lib/sales-ai-analytics';
+import {
+    AI_BETA_SOURCES,
+    tenureBandOf,
+    type ReadinessWindowCounters,
+    type SnapshotReadiness,
+} from '@lib/sales-ai-analytics';
 import { AiManagerRowDto } from '../../dto/ai-manager-row.dto';
 import { ReadinessDto } from '../../dto/readiness.dto';
+import { AI_SANITY_DATA_QUALITY } from '../../steps/sanity.types';
 import type { AiManagerLevelRecord } from '../../store/ai-analytics-settings.store';
 import { toFunnelWithNorms } from '../assembler/funnel-edges.assembler';
 import {
@@ -51,6 +57,46 @@ export function episodeSalesOf(
     }
 
     return total;
+}
+
+/** Неотрицательное целое из чужой нагрузки снапшота; иначе 0. */
+function counterOf(value: unknown): number {
+    return typeof value === 'number' && Number.isFinite(value) && value > 0
+        ? Math.floor(value)
+        : 0;
+}
+
+/**
+ * Счётчики окна готовности из модели портала: её окно — 12 месяцев, а
+ * период витрины ограничен тремя, поэтому режим `norms` достижим только
+ * по модели (находка M9). Форма нагрузки чужая — читается структурно,
+ * неполная деградирует до нулей, и окном остаётся период (§5.4).
+ */
+export function modelReadinessWindow(
+    model: PortalModelView | null | undefined,
+): ReadinessWindowCounters | null {
+    if (model === null || model === undefined) return null;
+    const readiness = model.readiness as Partial<SnapshotReadiness> | undefined;
+
+    return {
+        historyMonths: counterOf(readiness?.historyMonths),
+        presentations: counterOf(readiness?.presentations),
+        months: Array.isArray(model.window) ? model.window.length : 0,
+    };
+}
+
+/**
+ * Вердикт качества данных санити-панели модели: `flagged` — плацебо-тест
+ * меток времени нашёл продажи, закрытые раньше объясняющих их активностей
+ * (факт — в `sanity.readiness.timestampLeak`). Причина уезжает в баннер
+ * витрины отдельной строкой `reasons`.
+ */
+export function modelDataQualityFlagged(
+    model: PortalModelView | null | undefined,
+): boolean {
+    return (
+        model?.sanity?.readiness?.dataQuality === AI_SANITY_DATA_QUALITY.flagged
+    );
 }
 
 /** Нормы строки: полоса стажа берётся по стажу самой строки. */
@@ -96,10 +142,11 @@ export function applyPhase2(
 }
 
 /**
- * Готовность витрины обзора: счётчики окна считает адаптер, продажи
- * приходят из финансов (при пустых финансах — из эпизодов прогноза),
- * состав и гипотеза — из настроек портала, режим β и счётчик до его
- * гейта — из модели портала.
+ * Готовность витрины обзора: окно берётся из модели портала (12 месяцев),
+ * а без модели остаётся периодом витрины; продажи приходят из финансов
+ * (при пустых финансах — из эпизодов прогноза), состав и гипотеза — из
+ * настроек портала, режим β, счётчик до его гейта и вердикт качества
+ * данных — из модели портала.
  */
 export function buildOverviewReadiness(
     sources: OverviewSources,
@@ -127,5 +174,7 @@ export function buildOverviewReadiness(
         hypothesisPairs: sources.hypothesisPairs ?? 0,
         ...(betaSource === undefined ? {} : { betaSource }),
         betaCountdown: model?.betaCountdown ?? null,
+        modelWindow: modelReadinessWindow(model),
+        dataQualityFlagged: modelDataQualityFlagged(model),
     });
 }

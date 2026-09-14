@@ -141,6 +141,44 @@ describe('runAiAnalyticsAudit (оркестратор аудита)', () => {
         expect(result.report.totals.calls).toBe(0);
     });
 
+    it('порог портала доезжает до правил, отчёта и рекомендации', async () => {
+        const db = makeDb(
+            [
+                // 120 с: короткий при пороге 300 и НЕ короткий при 60.
+                transcription(1, '10', '2026-09-01T07:00:00Z', '120'),
+                transcription(2, '10', '2026-09-02T07:00:00Z', '600'),
+            ],
+            [],
+        );
+        const options = {
+            domain: 'd',
+            months: 1,
+            timeZone: 'Europe/Moscow',
+            now: NOW,
+        };
+
+        const byDefault = await runAiAnalyticsAudit(db, options);
+        expect(byDefault.report.rules.shortCallSec).toBe(300);
+        expect(byDefault.report.duration).toMatchObject({
+            shortCount: 1,
+            shortPct: 50,
+        });
+
+        const byPortal = await runAiAnalyticsAudit(db, {
+            ...options,
+            shortCallSec: 60,
+        });
+        expect(byPortal.report.rules.shortCallSec).toBe(60);
+        expect(byPortal.report.duration).toMatchObject({
+            shortCount: 0,
+            shortPct: 0,
+        });
+        expect(byPortal.markdown).toContain('< 60 с');
+        expect(byPortal.report.recommendation.lines.join(' ')).toContain(
+            'Доля звонков < 60 с',
+        );
+    });
+
     it('ошибка источника данных пробрасывается наружу', async () => {
         const db = makeDb([], []);
         db.calls[0].mockRejectedValueOnce(new Error('db down'));

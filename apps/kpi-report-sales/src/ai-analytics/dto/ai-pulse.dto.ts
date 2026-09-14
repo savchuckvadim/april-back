@@ -41,18 +41,21 @@ export class AiPulseXmrDto {
     @ApiProperty({
         description: 'Центр (среднее дневных долей).',
         type: Number,
+        example: 0.62,
     })
     center: number;
 
     @ApiProperty({
         description: 'Верхняя граница (центр + 2,66·MR̄).',
         type: Number,
+        example: 0.88,
     })
     ucl: number;
 
     @ApiProperty({
         description: 'Нижняя граница (центр − 2,66·MR̄).',
         type: Number,
+        example: 0.36,
     })
     lcl: number;
 
@@ -67,7 +70,11 @@ export class AiPulseXmrDto {
 }
 
 export class AiPulseManagerDto {
-    @ApiProperty({ description: 'Bitrix-id менеджера.', type: String })
+    @ApiProperty({
+        description: 'Bitrix-id менеджера.',
+        type: String,
+        example: '512',
+    })
     managerId: string;
 
     @ApiProperty({
@@ -90,10 +97,15 @@ export class AiPulseAlertDto {
         description: 'Bitrix-id менеджера; null — менеджер не определён.',
         type: String,
         nullable: true,
+        example: '512',
     })
     managerId: string | null;
 
-    @ApiProperty({ description: 'Id транскрипции звонка.', type: String })
+    @ApiProperty({
+        description: 'Id транскрипции звонка.',
+        type: String,
+        example: '10245',
+    })
     transcriptionId: string;
 
     @ApiProperty({
@@ -109,6 +121,7 @@ export class AiPulseAlertDto {
         description:
             'Цитата из разбора (возражение или худший раздел); может быть пустой.',
         type: String,
+        example: 'Я сегодня же вышлю договор и согласую скидку',
     })
     quote: string;
 
@@ -123,6 +136,7 @@ export class AiPulseAlertDto {
         description:
             'Отработан ли сигнал (есть feedback kind = alert_handled).',
         type: Boolean,
+        example: false,
     })
     handled: boolean;
 }
@@ -155,7 +169,11 @@ export class AiPulseDto {
     })
     xmr: AiPulseXmrDto | null;
 
-    @ApiProperty({ description: 'Разобранных звонков в окне.', type: Number })
+    @ApiProperty({
+        description: 'Разобранных звонков в окне.',
+        type: Number,
+        example: 96,
+    })
     analyzedCalls: number;
 
     @ApiProperty({

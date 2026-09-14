@@ -9,6 +9,7 @@ import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { delay } from '@/shared/lib';
 import { BxListItemGetRequestDto } from '@/modules/bitrix/domain/list-item';
 import { EnumSalesKpiFieldCode } from '@lib/portal-lib/pbx/pbx-sales-kpi-list/type/pbx-sales-kpi-list.enum';
+import { SALES_LIST_CODES } from '@lib/portal-lib/pbx/pbx-sales-list-reader/type/sales-list-record.type';
 import { BitrixFieldType } from '@lib/shared/enums';
 import {
     PbxSalesKpiCompanyDto,
@@ -30,7 +31,7 @@ export class SalesUserReportService {
         }
         const { dateFrom, dateTo } = dto.filters;
         const { bitrix, PortalModel } = await this.pbx.init(domain);
-        const portalKPIList = PortalModel.getListByCode('sales_kpi');
+        const portalKPIList = PortalModel.getListByCode(SALES_LIST_CODES.kpi);
         if (!portalKPIList) throw new Error('Portal KPI list not found');
 
         const filterForBitrix = this.getFilter(PortalModel, portalKPIList, {

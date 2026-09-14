@@ -12,6 +12,11 @@ import { PrismaAuditDb } from '../audit/ai-analytics-audit.db';
 import { AuditReport } from '../audit/ai-analytics-audit.report';
 import { runAiAnalyticsAudit } from '../audit/ai-analytics-audit.run';
 import { AiAnalyticsAuditSource } from '../contracts/audit-snapshot.types';
+import {
+    minDurationByTypeOfSettings,
+    minDurationFloorSec,
+    type PortalMinDurationSettings,
+} from '../settings/min-duration.resolve';
 import { AiAnalyticsAuditSnapshotStore } from './ai-analytics-audit-snapshot.store';
 
 export interface AiAnalyticsAuditRunOptions {
@@ -22,6 +27,13 @@ export interface AiAnalyticsAuditRunOptions {
     source: AiAnalyticsAuditSource;
     /** Момент запуска (по умолчанию сейчас; в тестах — фиксированный). */
     now?: Date;
+    /**
+     * Порог «короткого» звонка, с. Не задан — считается из настроек
+     * [kpiSales] портала (карта `min_duration_sec_by_type`, минимум по ней).
+     * Вызывающий, у которого настройки уже разобраны (месячный крон
+     * kpi-report-sales), передаёт значение и второго чтения не делает.
+     */
+    shortCallSec?: number;
 }
 
 export interface AiAnalyticsAuditResult {
@@ -36,6 +48,23 @@ export interface AiAnalyticsAuditResult {
     report: AuditReport;
     /** Самоописание: что считалось и как читать (то же, что в Swagger/README). */
     about: AiAnalyticsAuditAbout;
+}
+
+/** Настройки [kpiSales], которые читает аудит: признак и ключи порога. */
+type AuditPortalSettings = PortalMinDurationSettings & {
+    aiAnalyticsAuditEnabled: boolean;
+};
+
+/**
+ * Порог «короткого» звонка портала для правил аудита: минимум по карте
+ * `min_duration_sec_by_type` (решение владельца А.1). В аудите тип звонка
+ * в расчёте доли коротких не участвует, поэтому берётся минимум карты —
+ * звонок короче него не проходит порог НИ ОДНОГО типа и точно остаётся вне
+ * разбора. Настроек [kpiSales] нет — дефолт реестра (300 с), поведение
+ * Фазы 0 прежнее.
+ */
+function portalShortCallSec(settings: PortalMinDurationSettings): number {
+    return minDurationFloorSec(minDurationByTypeOfSettings(settings));
 }
 
 /** Состояние признака аудита на портале + дата последнего снапшота. */
@@ -71,11 +100,19 @@ export class AiAnalyticsAuditService {
         domain: string,
         options: AiAnalyticsAuditRunOptions,
     ): Promise<AiAnalyticsAuditResult> {
-        await this.assertAllowed(domain);
+        const settings = await this.assertAllowed(domain);
         const { months, timeZone, source } = options;
+        const shortCallSec =
+            options.shortCallSec ?? portalShortCallSec(settings);
         const { report, markdown, generatedAt } = await runAiAnalyticsAudit(
             new PrismaAuditDb(this.prisma),
-            { domain, months, timeZone, now: options.now ?? new Date() },
+            {
+                domain,
+                months,
+                timeZone,
+                now: options.now ?? new Date(),
+                shortCallSec,
+            },
         );
         if (options.save) {
             await this.snapshots.save({
@@ -128,16 +165,16 @@ export class AiAnalyticsAuditService {
         };
     }
 
-    private async isAllowed(domain: string): Promise<boolean> {
+    /**
+     * Настройки [kpiSales] портала с проверкой признака аудита: одно чтение
+     * на запуск — из него же берётся порог «короткого» звонка.
+     */
+    private async assertAllowed(domain: string): Promise<AuditPortalSettings> {
         const settings = await this.appSettings.resolve(
             domain,
             EnumPortalAppCode.kpiSales,
         );
-        return settings.aiAnalyticsAuditEnabled;
-    }
-
-    private async assertAllowed(domain: string): Promise<void> {
-        if (await this.isAllowed(domain)) return;
+        if (settings.aiAnalyticsAuditEnabled) return settings;
         throw new ForbiddenException(
             `Аудит данных по порталу ${domain} не разрешён: включите признак ` +
                 '«Аудит и калибровка данных AI-аналитики разрешены» ' +

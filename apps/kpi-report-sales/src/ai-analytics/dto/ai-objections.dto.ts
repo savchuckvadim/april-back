@@ -73,7 +73,11 @@ export class AiObjectionCategoryDto {
 }
 
 export class AiObjectionsManagerDto {
-    @ApiProperty({ description: 'Bitrix-id менеджера.', type: String })
+    @ApiProperty({
+        description: 'Bitrix-id менеджера.',
+        type: String,
+        example: '512',
+    })
     managerId: string;
 
     @ApiProperty({

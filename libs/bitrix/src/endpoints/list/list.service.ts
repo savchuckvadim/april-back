@@ -2,6 +2,7 @@ import { BxListRepository } from '../../domain/list/repository/bx-list.repositor
 import { Logger, Injectable, HttpStatus, HttpException } from '@nestjs/common';
 import { IField } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { EBxListCode } from '../../domain';
+import { SALES_LIST_CODES } from '@lib/portal-lib/pbx/pbx-sales-list-reader/type/sales-list-record.type';
 
 import { PBXService } from '@/modules/pbx';
 
@@ -26,7 +27,7 @@ export class ListService {
         const repository = new BxListRepository(bitrix.api);
         const { PortalModel } = await this.pbx.init(domain);
         const portal = PortalModel;
-        const kpiPList = PortalModel.getListByCode('sales_kpi');
+        const kpiPList = PortalModel.getListByCode(SALES_LIST_CODES.kpi);
         let kpiListField: IField | undefined;
         if (kpiPList) {
             kpiListField = portal.getIdByCodeFieldList(kpiPList, 'event_type');

@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { BitrixService } from '@lib/bitrix';
 import { TranscriptionPipelineView } from '@lib/call-lib';
 import {
+    SALES_LIST_CODES,
     SalesListCode,
     SalesListReaderService,
     SalesListRecord,
@@ -47,8 +48,12 @@ export class RevisionListCandidatesService {
         rows: TranscriptionPipelineView[],
     ): Promise<RevisionListCandidates> {
         return {
-            kpi: await this.findForList('sales_kpi', passport, rows),
-            history: await this.findForList('sales_history', passport, rows),
+            kpi: await this.findForList(SALES_LIST_CODES.kpi, passport, rows),
+            history: await this.findForList(
+                SALES_LIST_CODES.history,
+                passport,
+                rows,
+            ),
         };
     }
 

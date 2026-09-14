@@ -94,7 +94,11 @@ export class AiDisciplineDto {
 
 /** Строка менеджера в обзоре (план 6.3, ТЗ FR-13/14). */
 export class AiManagerRowDto {
-    @ApiProperty({ description: 'Bitrix-id менеджера.', type: String })
+    @ApiProperty({
+        description: 'Bitrix-id менеджера.',
+        type: String,
+        example: '512',
+    })
     managerId: string;
 
     @ApiProperty({

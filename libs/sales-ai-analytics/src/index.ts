@@ -105,6 +105,7 @@ export * from './model/evidence';
 // Ручка brief появится в следующих волнах — здесь только модель.
 export * from './model/readiness';
 export * from './model/readiness-confidence';
+export * from './model/readiness-window';
 export * from './contracts/ai-brief.contract';
 export * from './model/brief-pack';
 export * from './model/brief-numbers';
@@ -122,6 +123,7 @@ export * from './settings/ai-settings.parse';
 export * from './settings/ai-settings.sanity';
 export * from './settings/ai-settings.series';
 export * from './settings/registry-context.builder';
+export * from './settings/min-duration.resolve';
 
 // Фаза 2, волна 1 (добор) «потолки, применимость и стиль»: потолки оценок
 // и стоп-фразы правил `ai_analytics_scoring` (балл режется, стоп-слово только

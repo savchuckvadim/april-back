@@ -16,6 +16,7 @@ import {
 } from '../dto/sales-user-report.dto';
 import { SalesUserReportService } from '../services/sales-user-report.service';
 import { PbxSalesKpiListItemDto } from '@lib/portal-lib/pbx/pbx-sales-kpi-list/dto/pbx-sales-kpi-list.dto';
+import { SALES_LIST_CODES } from '@lib/portal-lib/pbx/pbx-sales-list-reader/type/sales-list-record.type';
 import { PBXService } from '@/modules/pbx';
 
 const REPORT_OPERATION_HASH = `${JobNames.SALES_USER_REPORT_GENERATE}-operation:`;
@@ -48,7 +49,7 @@ export class SalesUserReportController {
         const { domain } = body;
 
         const { PortalModel } = await this.pbx.init(domain);
-        const portalKPIList = PortalModel.getListByCode('sales_kpi');
+        const portalKPIList = PortalModel.getListByCode(SALES_LIST_CODES.kpi);
         if (!portalKPIList) throw new Error('Portal KPI list not found');
         const listId = Number(portalKPIList.bitrixId);
         if (

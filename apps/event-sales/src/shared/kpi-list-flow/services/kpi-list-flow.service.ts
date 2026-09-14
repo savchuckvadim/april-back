@@ -2,6 +2,7 @@ import { BitrixService } from '@/modules/bitrix';
 import { IBXListItem } from '@/modules/bitrix/domain/list-item/interface/bx-list-item.interface';
 import { IPBXList } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { SALES_LIST_CODES } from '@lib/portal-lib/pbx/pbx-sales-list-reader/type/sales-list-record.type';
 import { Logger } from '@nestjs/common';
 import { IBatchGroupBuffer } from '../../batch/batch-group-buffer.interface';
 import { KpiEventItemModel } from '../models/kpi-event-item.model';
@@ -294,8 +295,8 @@ export class KpiListFlowService {
 
     private collectLists(): IPBXList[] {
         const lists: IPBXList[] = [];
-        const kpi = this.portal.getListByCode('sales_kpi');
-        const history = this.portal.getListByCode('sales_history');
+        const kpi = this.portal.getListByCode(SALES_LIST_CODES.kpi);
+        const history = this.portal.getListByCode(SALES_LIST_CODES.history);
 
         if (kpi) lists.push(kpi);
         if (history) lists.push(history);

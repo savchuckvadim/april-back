@@ -1,3 +1,4 @@
+import { registryMinDurationSec } from '@lib/sales-ai-analytics';
 import { CallReportSettingsService } from '../services/call-report-settings.service';
 
 /** Полный набор настроек портала: все поля не заданы. */
@@ -26,14 +27,31 @@ const emptyPortalSettings = () => ({
 const makeDeps = (options?: {
     portal?: Record<string, unknown> | null;
     dbError?: boolean;
+    /** Значения ключей приложения [kpiSales] портала (PortalAppSettings). */
+    appSettings?: Record<string, string>;
+    /** Настройки [kpiSales] не читаются (Redis/БД недоступны). */
+    appSettingsError?: boolean;
 }) => {
     const portalAiSettings = {
         getByDomain: options?.dbError
             ? jest.fn().mockRejectedValue(new Error('db down'))
             : jest.fn().mockResolvedValue(options?.portal ?? null),
     };
-    const service = new CallReportSettingsService(portalAiSettings as never);
-    return { service, portalAiSettings };
+    // Портал без настроек AI-аналитики: ключи отдаются дефолтами схемы ('').
+    const appSettings = {
+        resolve: options?.appSettingsError
+            ? jest.fn().mockRejectedValue(new Error('redis down'))
+            : jest.fn().mockResolvedValue({
+                  aiAnalyticsDefinitions: '',
+                  aiAnalyticsModelParams: '',
+                  ...options?.appSettings,
+              }),
+    };
+    const service = new CallReportSettingsService(
+        portalAiSettings as never,
+        appSettings as never,
+    );
+    return { service, portalAiSettings, appSettings };
 };
 
 describe('CallReportSettingsService (портал → дефолт кода, env-слоя нет)', () => {
@@ -135,6 +153,94 @@ describe('CallReportSettingsService (портал → дефолт кода, env
 
         expect(settings.ownOrgNames).toEqual(['Альфа-центр', 'Апрель']);
     });
+    // Решение владельца А.1 (план §14.5 п.1): порог длительности — только
+    // фильтр, и источник у конвейера разбора тот же, что у пульса и аудита
+    // Фазы 0 — карта min_duration_sec_by_type настроек [kpiSales] портала.
+    describe('порог длительности (min_duration_sec_by_type, А.1)', () => {
+        it('дефолт реестра — 300 с (на нём стоят все ожидания ниже)', () => {
+            expect(registryMinDurationSec()).toBe(300);
+        });
+
+        it('карта настроек портала: cold 60, presentation 300, скан — по минимуму', async () => {
+            const { service } = makeDeps({
+                portal: { ...emptyPortalSettings(), enabled: true },
+                appSettings: {
+                    aiAnalyticsDefinitions: JSON.stringify({
+                        minDurationSecByType: { cold: 60 },
+                    }),
+                },
+            });
+
+            expect(
+                await service.minDurationFor('gsr.bitrix24.ru', 'cold'),
+            ).toBe(60);
+            expect(
+                await service.minDurationFor('gsr.bitrix24.ru', 'presentation'),
+            ).toBe(300);
+            // Тип ещё не известен (выборка звонков из Битрикса) — минимум карты.
+            expect(await service.minDurationFor('gsr.bitrix24.ru')).toBe(60);
+
+            const settings = await service.resolve('gsr.bitrix24.ru');
+            expect(settings.minDurationSec).toBe(60);
+            expect(settings.minDurationSecByType.cold).toBe(60);
+            expect(settings.minDurationSecByType.presentation).toBe(300);
+        });
+
+        it('без настроек [kpiSales] действует прежний скаляр portal_ai_settings', async () => {
+            const { service } = makeDeps({
+                portal: { ...emptyPortalSettings(), minDurationSec: 60 },
+            });
+
+            const settings = await service.resolve('gsr.bitrix24.ru');
+
+            expect(settings.minDurationSec).toBe(60);
+            expect(
+                await service.minDurationFor('gsr.bitrix24.ru', 'cold'),
+            ).toBe(60);
+            expect(
+                await service.minDurationFor('gsr.bitrix24.ru', 'presentation'),
+            ).toBe(60);
+        });
+
+        it('нет ни настроек [kpiSales], ни скаляра портала — дефолт реестра', async () => {
+            const { service } = makeDeps();
+
+            expect(await service.minDurationFor('gsr.bitrix24.ru')).toBe(300);
+            expect(service.globals().minDurationSec).toBe(300);
+        });
+
+        it('портал без kpiSales-настроек не падает: недоступность настроек оставляет скаляр', async () => {
+            const { service, appSettings } = makeDeps({
+                portal: { ...emptyPortalSettings(), minDurationSec: 120 },
+                appSettingsError: true,
+            });
+
+            const settings = await service.resolve('gsr.bitrix24.ru');
+
+            expect(appSettings.resolve).toHaveBeenCalled();
+            expect(settings.minDurationSec).toBe(120);
+            expect(settings.source).toBe('portal');
+        });
+
+        it('настройки [kpiSales] главнее скаляра: заведённая карта побеждает', async () => {
+            const { service } = makeDeps({
+                portal: { ...emptyPortalSettings(), minDurationSec: 60 },
+                appSettings: {
+                    aiAnalyticsDefinitions: JSON.stringify({
+                        minDurationSecByType: { cold: 90, presentation: 240 },
+                    }),
+                },
+            });
+
+            const settings = await service.resolve('gsr.bitrix24.ru');
+
+            expect(settings.minDurationSec).toBe(90);
+            expect(
+                await service.minDurationFor('gsr.bitrix24.ru', 'presentation'),
+            ).toBe(240);
+        });
+    });
+
     it('демо-список сотрудников берётся с портала', async () => {
         const { service } = makeDeps({
             portal: { ...emptyPortalSettings(), allowedUserIds: [222, 323] },

@@ -82,6 +82,7 @@ export class AiPushResultDto {
     @ApiProperty({
         description: 'Вид рассылки.',
         enum: AI_ANALYTICS_PUSH_KINDS,
+        example: 'agenda',
     })
     kind: AiAnalyticsPushKind;
 

@@ -252,7 +252,7 @@ function styledValue(fact: AiBriefFact, style: number): string {
     return `${shown}`;
 }
 
-describe('приёмка: 20 прогонов синтетических ответов', () => {
+describe('толерантность факт-чека к форматам чисел (не измерение LLM): 20 прогонов синтетических ответов', () => {
     it('не меньше 95 % буллетов проходят факт-чек', () => {
         let total = 0;
         let kept = 0;

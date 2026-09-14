@@ -2,8 +2,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
     buildReadiness as buildReadinessRules,
+    resolveReadinessWindow,
     type BetaCountdown,
     type ReadinessInput,
+    type ReadinessWindowCounters,
 } from '@lib/sales-ai-analytics';
 import { hasCallDate } from '../domain/loaders/lite-row.mapper';
 import {
@@ -131,6 +133,106 @@ describe('готовность витрины Фазы 2', () => {
     });
 });
 
+/**
+ * Находка M9 аудита: период обзора ограничен тремя месяцами
+ * (`AI_ANALYTICS_OVERVIEW_MAX_MONTHS`), поэтому на обычном месячном
+ * периоде режим `norms` по строкам периода недостижим в принципе — окно
+ * готовности обязано приходить из модели портала (12 месяцев).
+ */
+describe('окно готовности: модель портала против периода витрины', () => {
+    /** Месяц строк витрины: 100 разборов, самый ранний 25 дней назад. */
+    const monthRows = presentations(100, 25);
+    /** Окно модели портала: 6 месяцев истории и 420 презентаций. */
+    const modelWindow: ReadinessWindowCounters = {
+        historyMonths: 6,
+        presentations: 420,
+        months: 12,
+    };
+
+    it('период 1 месяц при 6 месяцах истории в модели → norms', () => {
+        const readiness = buildReadiness(monthRows, ready({ modelWindow }));
+        // Период сам по себе не дотягивает даже до конца калибровки.
+        const periodCounters = readinessCounters(monthRows, NOW);
+
+        expect(periodCounters.historyMonths).toBe(0);
+        expect(readiness.historyMonths).toBe(modelWindow.historyMonths);
+        expect(readiness.presentations).toBe(modelWindow.presentations);
+        expect(readiness.mode).toBe('norms');
+        expect(readiness.reasons).toEqual([]);
+    });
+
+    it('без модели и период 1 месяц → режим по гейту периода', () => {
+        const readiness = buildReadiness(monthRows, ready());
+
+        // Гейт истории (3 мес.) не пройден: режим ниже norms, причина —
+        // код гейта библиотеки, а не своя строка адаптера.
+        expect(readiness.mode).toBe('calibration');
+        expect(readiness.reasons).toEqual([READINESS_REASONS.historyShort]);
+        expect(readiness.historyMonths).toBe(0);
+        expect(readiness.presentations).toBe(100);
+    });
+
+    it('модель отстала от периода → счётчики не пропадают', () => {
+        const readiness = buildReadiness(
+            presentations(100, 95),
+            ready({
+                modelWindow: {
+                    historyMonths: 1,
+                    presentations: 12,
+                    months: 12,
+                },
+            }),
+        );
+        const period = readinessCounters(presentations(100, 95), NOW);
+
+        expect(readiness.historyMonths).toBe(period.historyMonths);
+        expect(readiness.presentations).toBe(100);
+    });
+
+    it('пустое окно модели равнозначно её отсутствию', () => {
+        const empty = buildReadiness(
+            monthRows,
+            ready({
+                modelWindow: {
+                    historyMonths: 0,
+                    presentations: 0,
+                    months: 12,
+                },
+            }),
+        );
+        const none = buildReadiness(monthRows, ready());
+
+        expect(empty).toEqual(none);
+    });
+});
+
+describe('качество данных модели портала в причинах DTO', () => {
+    it('dataQuality = flagged → причина «протечка меток времени»', () => {
+        const flagged = buildReadiness(
+            presentations(100, 95),
+            ready({ dataQualityFlagged: true }),
+        );
+        const clean = buildReadiness(presentations(100, 95), ready());
+
+        expect(flagged.reasons).toContain(READINESS_REASONS.timestampLeak);
+        // Вердикт качества данных — причина, а не гейт: режим тот же.
+        expect(flagged.mode).toBe(clean.mode);
+        expect(clean.reasons).not.toContain(READINESS_REASONS.timestampLeak);
+    });
+
+    it('причина дописывается к причинам гейтов, а не вместо них', () => {
+        const readiness = buildReadiness(
+            presentations(70, 95),
+            ready({ dataQualityFlagged: true }),
+        );
+
+        expect(readiness.reasons).toEqual([
+            READINESS_REASONS.normsPresentationsFew,
+            READINESS_REASONS.timestampLeak,
+        ]);
+    });
+});
+
 describe('продажи окна готовности', () => {
     it('считаются из финансов, а при пустых финансах — из эпизодов', () => {
         expect(resolveReadinessSales(12, 9)).toBe(12);
@@ -201,12 +303,28 @@ describe('адаптер приложения не держит своих пр�
                 hypothesisPairs: 2,
             }),
         },
+        {
+            name: 'norms по окну модели при месячном периоде',
+            rows: presentations(100, 25),
+            options: ready({
+                modelWindow: {
+                    historyMonths: 6,
+                    presentations: 420,
+                    months: 12,
+                },
+            }),
+        },
     ];
 
     it.each(fixtures)(
         'режим совпадает с библиотечным: $name',
         ({ rows, options }) => {
-            const counters = readinessCounters(rows, options.now);
+            // Окно выбирает та же функция библиотеки, что и адаптер:
+            // своих правил «период или модель» у приложения нет.
+            const counters = resolveReadinessWindow(
+                readinessCounters(rows, options.now),
+                options.modelWindow ?? null,
+            );
             const input: ReadinessInput = {
                 enabled: options.enabled,
                 pipelineEnabled: options.pipelineEnabled,

@@ -13,7 +13,11 @@ import { MetricDto } from './metric.dto';
 
 /** Риск-звонок периода (риск-флаг разбора или срочный коучинг). */
 export class AiRiskCallDto {
-    @ApiProperty({ description: 'Id транскрипции.', type: String })
+    @ApiProperty({
+        description: 'Id транскрипции.',
+        type: String,
+        example: '10245',
+    })
     transcriptionId: string;
 
     @ApiProperty({

@@ -58,8 +58,13 @@ export const CALL_REPORT_DEAL_CATEGORY_CODES = [
     PbxDealCategoryCodeEnum.sales_xo,
 ] as const;
 
-/** Поля сделки для `crm.deal.list`: воронка, закрытость и даты. */
-const DEAL_LIST_SELECT = [
+/**
+ * Поля сделки для `crm.deal.list` в раскладке звонка: воронка, стадия,
+ * закрытость, ответственный и даты. ЕДИНЫЙ набор для всех читателей сделок
+ * звонка (раскладка связей, кандидаты агента) — расширять список надо здесь,
+ * а не копией рядом: иначе один читатель видит поле, другой нет.
+ */
+export const CALL_REPORT_DEAL_SELECT = [
     'ID',
     'CATEGORY_ID',
     'STAGE_ID',
@@ -67,7 +72,7 @@ const DEAL_LIST_SELECT = [
     'ASSIGNED_BY_ID',
     'DATE_CREATE',
     'DATE_MODIFY',
-];
+] as const;
 
 /**
  * Чтение и поиск сделок для раскладки связей звонка: проверка воронки
@@ -169,7 +174,7 @@ export class CallReportDealLookup {
         try {
             const response = (await this.api.call('crm.deal.list', {
                 filter: { ...filter, CATEGORY_ID: categoryId },
-                select: DEAL_LIST_SELECT,
+                select: CALL_REPORT_DEAL_SELECT,
                 order: { ID: 'DESC' },
             })) as { result?: CallReportDealRow[] };
             const rows = response?.result;

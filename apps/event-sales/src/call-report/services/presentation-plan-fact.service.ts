@@ -1,18 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@lib/pbx/pbx.service';
 import {
+    SALES_LIST_CODES,
     SalesListReaderService,
     SalesListRecord,
 } from '@lib/portal-lib/pbx/pbx-sales-list-reader';
+import {
+    EnumSalesKpiEventAction,
+    EnumSalesKpiEventType,
+} from '@lib/portal-lib/pbx/pbx-sales-kpi-list/type/pbx-sales-kpi-list.enum';
 import { AiService, TranscriptionStoreService } from '@lib/call-lib';
 import { AGENT_ANALYSIS_TYPE } from '../../agent-gate/services/agent-call-package.service';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 
 /** Коды типов события «презентация» в списках отчётности. */
-const PRESENTATION_EVENT_TYPE_CODES = [
-    'presentation',
-    'presentation_uniq',
-    'presentation_contact_uniq',
+const PRESENTATION_EVENT_TYPE_CODES: readonly EnumSalesKpiEventType[] = [
+    EnumSalesKpiEventType.presentation,
+    EnumSalesKpiEventType.presentation_uniq,
+    EnumSalesKpiEventType.presentation_contact_uniq,
 ];
 /** Допуск сопоставления план ↔ факт, дней в каждую сторону. */
 const MATCH_TOLERANCE_DAYS = 1;
@@ -86,9 +91,9 @@ export class PresentationPlanFactService {
         const reader = new SalesListReaderService(bitrix, PortalModel);
 
         const planned = (
-            await reader.read('sales_kpi', {
+            await reader.read(SALES_LIST_CODES.kpi, {
                 eventTypeCodes: PRESENTATION_EVENT_TYPE_CODES,
-                eventActionCodes: ['plan'],
+                eventActionCodes: [EnumSalesKpiEventAction.plan],
                 dateFrom: from,
                 dateTo: to,
                 limit: PLANNED_LIMIT,
@@ -106,9 +111,9 @@ export class PresentationPlanFactService {
             factFrom,
             factTo,
         );
-        const doneRecords = await reader.read('sales_kpi', {
+        const doneRecords = await reader.read(SALES_LIST_CODES.kpi, {
             eventTypeCodes: PRESENTATION_EVENT_TYPE_CODES,
-            eventActionCodes: ['done'],
+            eventActionCodes: [EnumSalesKpiEventAction.done],
             dateFrom: factFrom,
             dateTo: factTo,
             limit: PLANNED_LIMIT * 2,

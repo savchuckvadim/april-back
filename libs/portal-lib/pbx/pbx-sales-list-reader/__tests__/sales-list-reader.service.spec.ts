@@ -1,5 +1,9 @@
+import { EBxListCode } from '@lib/bitrix/domain/list/interface/bx-list.interface';
 import { SalesListReaderService } from '../sales-list-reader.service';
-import { renderSalesListRecordLine } from '../type/sales-list-record.type';
+import {
+    SALES_LIST_CODES,
+    renderSalesListRecordLine,
+} from '../type/sales-list-record.type';
 
 /** Слепок списка sales_kpi с полями по канону kpi-report. */
 const makeList = () => ({
@@ -197,6 +201,37 @@ describe('SalesListReaderService («робот» списков отчётнос
             eventTypeCodes: ['presentation'],
         });
         expect(records.map(record => record.id)).toEqual(['9001']);
+    });
+
+    /**
+     * SALES_LIST_CODES — единственный источник кодов списков отчётности
+     * (ai/rules/pbx-typing.md). Значения сверяются с двумя независимыми
+     * источниками: ключом слепка портала `${group}_${type}` и кодами тех же
+     * списков в @lib/bitrix (EBxListCode) — расхождение поймает тест.
+     */
+    it('коды списков совпадают с ключом слепка и с EBxListCode', () => {
+        const list = makeList();
+
+        expect(SALES_LIST_CODES.kpi).toBe(`${list.group}_${list.type}`);
+        expect(SALES_LIST_CODES.kpi).toBe(EBxListCode.SALES_KPI);
+        expect(SALES_LIST_CODES.history).toBe(EBxListCode.SALES_HISTORY);
+    });
+
+    it('readBoth читает оба списка отчётности по типизированным кодам', async () => {
+        const { service, portal } = makeDeps();
+
+        const records = await service.readBoth({});
+
+        expect(
+            (portal.getListByCode.mock.calls as unknown as [string][]).map(
+                ([code]) => code,
+            ),
+        ).toEqual([SALES_LIST_CODES.kpi, SALES_LIST_CODES.history]);
+        // По записи из каждого списка — записи обоих склеены в один список.
+        expect(records.map(record => record.listCode)).toEqual([
+            SALES_LIST_CODES.kpi,
+            SALES_LIST_CODES.history,
+        ]);
     });
 
     it('список не настроен или Bitrix упал — пустой массив без исключений', async () => {

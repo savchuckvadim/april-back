@@ -81,7 +81,9 @@ const makeDeps = (options?: {
     }
     listItemGet.mockResolvedValue({ result: [] });
     const portal = {
-        getListByCode: jest.fn(() => salesList),
+        getListByCode: jest.fn((code: string) =>
+            code ? salesList : undefined,
+        ),
         getIdByCodeFieldList: jest.fn(
             (list: { group: string; type: string }, code: string) =>
                 salesList.bitrixfields.find(
@@ -108,7 +110,7 @@ const makeDeps = (options?: {
         transcriptionStore as never,
         aiService as never,
     );
-    return { service, listItemGet };
+    return { service, listItemGet, portal };
 };
 
 describe('PresentationPlanFactService (план-факт по презентациям)', () => {
@@ -202,6 +204,39 @@ describe('PresentationPlanFactService (план-факт по презентац
         );
         expect(result.confirmed).toBe(0);
         expect(result.missed).toBe(1);
+    });
+
+    /**
+     * Типизация pbx-кодов (ai/rules/pbx-typing.md): список берётся по коду
+     * слепка `${group}_${type}`, а «План»/«Проведено» уезжают в фильтр
+     * bitrixId-ами ИМЕННО тех элементов, что заведены на портале.
+     */
+    it('список и действия события берутся из слепка портала, а не из литералов', async () => {
+        const { service, listItemGet, portal } = makeDeps({
+            listResponses: [[planItem()], [doneItem()]],
+        });
+
+        await service.runForDomain(
+            DOMAIN,
+            new Date('2026-08-13T00:00:00Z'),
+            new Date('2026-08-15T00:00:00Z'),
+        );
+
+        const actionItems = salesList.bitrixfields.find(
+            field => field.code === 'sales_kpi_event_action',
+        )?.items as { code: string; bitrixId: number }[];
+        const itemId = (code: string) =>
+            actionItems.find(item => item.code === code)?.bitrixId;
+        expect(portal.getListByCode).toHaveBeenCalledWith(
+            `${salesList.group}_${salesList.type}`,
+        );
+        const filters = (
+            listItemGet.mock.calls as unknown as [
+                { filter: Record<string, unknown> },
+            ][]
+        ).map(([payload]) => payload.filter);
+        expect(filters[0].PROPERTY_3).toEqual([itemId('sales_kpi_plan')]);
+        expect(filters[1].PROPERTY_3).toEqual([itemId('sales_kpi_done')]);
     });
 
     it('планов нет — пустой результат без обращения к разборам', async () => {

@@ -18,17 +18,24 @@ function makePrisma() {
     };
 }
 
-function makeService(auditEnabled = true) {
+function makeService(
+    auditEnabled = true,
+    aiSettings: Record<string, string> = {},
+) {
     const prisma = makePrisma();
     const snapshots = {
         save: jest.fn().mockResolvedValue('9001'),
         latest: jest.fn().mockResolvedValue(null),
     };
-    // Настройки kpi-sales портала: признак разрешения аудита.
+    // Настройки kpi-sales портала: признак разрешения аудита и ключи
+    // AI-аналитики (из них берётся порог «короткого» звонка).
     const appSettings = {
         resolve: jest.fn().mockResolvedValue({
             aiAnalyticsEnabled: true,
             aiAnalyticsAuditEnabled: auditEnabled,
+            aiAnalyticsDefinitions: '',
+            aiAnalyticsModelParams: '',
+            ...aiSettings,
         }),
     };
     return {
@@ -150,6 +157,51 @@ describe('AiAnalyticsAuditService', () => {
         expect(prisma.transcription.findMany).not.toHaveBeenCalled();
         expect(snapshots.save).not.toHaveBeenCalled();
         expect(await service.latest('april.bitrix24.ru')).toBeNull();
+    });
+
+    // Решение владельца А.1: у аудита Фазы 0 и конвейера разбора один порог —
+    // карта min_duration_sec_by_type портала (находка M12 аудита Фазы 2).
+    it('порог «короткого» берётся из настроек портала: минимум карты', async () => {
+        const { service, appSettings } = makeService(true, {
+            aiAnalyticsDefinitions: JSON.stringify({
+                minDurationSecByType: { cold: 60 },
+            }),
+        });
+
+        const result = await service.run('april.bitrix24.ru', {
+            months: 1,
+            timeZone: 'Europe/Moscow',
+            save: false,
+            source: 'admin',
+            now: NOW,
+        });
+
+        expect(result.report.rules.shortCallSec).toBe(60);
+        // Одно чтение настроек на запуск: признак и порог — из него же.
+        expect(appSettings.resolve).toHaveBeenCalledTimes(1);
+    });
+
+    it('без настроек AI-аналитики порог прежний (300 с), явный shortCallSec главнее', async () => {
+        const { service } = makeService();
+
+        const byDefault = await service.run('april.bitrix24.ru', {
+            months: 1,
+            timeZone: 'Europe/Moscow',
+            save: false,
+            source: 'admin',
+            now: NOW,
+        });
+        expect(byDefault.report.rules.shortCallSec).toBe(300);
+
+        const byCaller = await service.run('april.bitrix24.ru', {
+            months: 1,
+            timeZone: 'Europe/Moscow',
+            save: false,
+            source: 'cron',
+            now: NOW,
+            shortCallSec: 90,
+        });
+        expect(byCaller.report.rules.shortCallSec).toBe(90);
     });
 
     it('ответ несёт самоописание about; status — признак и дату последнего снапшота', async () => {

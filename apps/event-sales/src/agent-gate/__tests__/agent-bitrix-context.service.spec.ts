@@ -1,6 +1,16 @@
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { IField } from '@lib/portal-lib/portal/interfaces/portal.interface';
+import { SALES_LIST_CODES } from '@lib/portal-lib/pbx/pbx-sales-list-reader/type/sales-list-record.type';
 import { AgentBitrixContextService } from '../services/agent-bitrix-context.service';
 
 const DOMAIN = 'alfacentr.bitrix24.ru';
+
+/**
+ * Настоящий PortalModel (слепок не нужен: getFieldBitrixId читает только
+ * переданное поле) — чтобы имя UF-поля в тесте считала реальная защита от
+ * двойного префикса, а не копия её логики в моке.
+ */
+const REAL_PORTAL = new PortalModel({} as never, {} as never);
 
 /** Строка конвейера: по умолчанию звонок по СДЕЛКЕ #900. */
 const ROW = {
@@ -26,6 +36,8 @@ interface Options {
     entity?: Record<string, unknown> | null;
     /** Сделки по фильтру: ключ — имя поля фильтра (COMPANY_ID / CONTACT_ID). */
     deals?: Record<string, Record<string, unknown>[]>;
+    /** pbx-поля компании из слепка портала для словаря агента. */
+    companyFields?: IField[];
 }
 
 const makeDeps = (options: Options = {}) => {
@@ -50,15 +62,20 @@ const makeDeps = (options: Options = {}) => {
         listItem: { get: jest.fn().mockResolvedValue({ result: [] }) },
     };
     const portalModel = {
-        getListByCode: jest.fn(() => ({ bitrixId: '10' })),
+        getListByCode: jest.fn((code: string) => ({ bitrixId: '10', code })),
         getDealCategories: jest.fn(() => CATEGORIES),
-        getCompanyFields: jest.fn(() => []),
+        getCompanyFields: jest.fn(() => options.companyFields ?? []),
+        // НАСТОЯЩАЯ реализация защиты от двойного префикса (мок повторять её
+        // не должен — иначе тест проверял бы сам себя).
+        getFieldBitrixId: jest.fn((field: IField) =>
+            REAL_PORTAL.getFieldBitrixId(field),
+        ),
     };
     const pbxService = {
         init: jest.fn().mockResolvedValue({ bitrix, PortalModel: portalModel }),
     };
     const service = new AgentBitrixContextService(pbxService as never);
-    return { service, call, getList };
+    return { service, call, getList, portalModel };
 };
 
 describe('AgentBitrixContextService — контекст звонка для агента', () => {
@@ -167,6 +184,48 @@ describe('AgentBitrixContextService — контекст звонка для а�
             salesPresentation: [],
             salesXo: [],
         });
+    });
+
+    /**
+     * Аудит M15: имя UF-поля клеилось вручную (`UF_CRM_${field.bitrixId}`),
+     * а konstructor-поля хранят в слепке УЖЕ полное имя — агент получал
+     * несуществующий ключ `UF_CRM_UF_CRM_…` и не мог расшифровать компанию.
+     */
+    it('bitrixId уже с префиксом UF_CRM_ — префикс НЕ дублируется, суффиксу префикс добавляется', async () => {
+        const field = (code: string, bitrixId: string): IField => ({
+            type: 'string',
+            code,
+            name: code,
+            title: code,
+            bitrixId,
+            bitrixCamelId: bitrixId,
+            items: [],
+        });
+        const { service } = makeDeps({
+            companyFields: [
+                // konstructor-поле: в слепке лежит полное имя.
+                field('contract_start', 'UF_CRM_1684144993'),
+                // обычное pbx-поле: в слепке лежит суффикс.
+                field('contract_type', 'CONTRACT_TYPE'),
+            ],
+        });
+
+        const context = await service.load(ROW as never);
+
+        expect(context.companyFields.map(item => item.ufId)).toEqual([
+            'UF_CRM_1684144993',
+            'UF_CRM_CONTRACT_TYPE',
+        ]);
+    });
+
+    it('кандидаты отчётности читаются по типизированным кодам списков', async () => {
+        const { service, portalModel } = makeDeps();
+
+        await service.load(ROW as never);
+
+        expect(
+            portalModel.getListByCode.mock.calls.map(([code]) => code),
+        ).toEqual([SALES_LIST_CODES.history, SALES_LIST_CODES.kpi]);
     });
 
     it('клиента у сущности нет — сделки-кандидаты не ищем вовсе', async () => {

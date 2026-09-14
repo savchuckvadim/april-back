@@ -299,6 +299,32 @@ describe('ai-analytics-audit.calc', () => {
             });
         });
 
+        // Порог приходит из правил аудита, а правила — из настроек портала
+        // (min_duration_sec_by_type, решение владельца А.1): смена порога
+        // обязана двигать долю коротких, иначе аудит описывает не ту выборку.
+        it('порог из rules меняет долю коротких на тех же звонках', () => {
+            const rows = [
+                row({ durationSec: 100 }),
+                row({ durationSec: 200 }),
+                row({ durationSec: 400 }),
+                row({ durationSec: 800 }),
+            ];
+
+            // 2 из 4 короче 300 с; 1 из 4 короче 120 с; короче 60 с — ни одного.
+            expect(durationStats(rows, 300)).toMatchObject({
+                shortCount: 2,
+                shortPct: 50,
+            });
+            expect(durationStats(rows, 120)).toMatchObject({
+                shortCount: 1,
+                shortPct: 25,
+            });
+            expect(durationStats(rows, 60)).toMatchObject({
+                shortCount: 0,
+                shortPct: 0,
+            });
+        });
+
         it('без длительностей — null-квантили и null-доля', () => {
             expect(durationStats([row({ durationSec: null })], 300)).toEqual({
                 n: 0,

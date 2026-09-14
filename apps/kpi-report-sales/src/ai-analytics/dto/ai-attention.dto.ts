@@ -51,7 +51,11 @@ export class AiAttentionBasisDto implements AttentionBasis {
 
 /** Куда ведёт карточка: менеджер, тип, звонки. */
 export class AiAttentionLinkDto implements AttentionLink {
-    @ApiProperty({ description: 'Bitrix-id менеджера.', type: String })
+    @ApiProperty({
+        description: 'Bitrix-id менеджера.',
+        type: String,
+        example: '512',
+    })
     managerId: string;
 
     @ApiPropertyOptional({
@@ -71,7 +75,11 @@ export class AiAttentionLinkDto implements AttentionLink {
 
 /** Карточка «Внимания» (план 6.3, ТЗ FR-12). */
 export class AiAttentionItemDto implements AttentionItem {
-    @ApiProperty({ description: 'Bitrix-id менеджера.', type: String })
+    @ApiProperty({
+        description: 'Bitrix-id менеджера.',
+        type: String,
+        example: '512',
+    })
     managerId: string;
 
     @ApiProperty({

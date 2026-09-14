@@ -8,6 +8,7 @@ import {
 } from '@lib/portal-lib/portal/interfaces/portal.interface';
 
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { SALES_LIST_CODES } from '@lib/portal-lib/pbx/pbx-sales-list-reader/type/sales-list-record.type';
 import { BXUserDto, ReportGetFiltersDto } from '../dto/kpi-report-request.dto';
 import { ReportData, Filter, KPI } from '../../shared/dto/kpi.dto';
 import { ActionService } from '../services/action.service';
@@ -73,9 +74,12 @@ export class ReportKpiUseCase {
         this.cache = cache;
         this.hook = this.portalModel.getHook();
 
-        this.portalKPIList = this.portalModel.getListByCode('sales_kpi');
-        this.portalHistoryList =
-            this.portalModel.getListByCode('sales_history');
+        this.portalKPIList = this.portalModel.getListByCode(
+            SALES_LIST_CODES.kpi,
+        );
+        this.portalHistoryList = this.portalModel.getListByCode(
+            SALES_LIST_CODES.history,
+        );
     }
 
     async generateKpiReport(dto: ReportGetFiltersDto): Promise<ReportData[]> {

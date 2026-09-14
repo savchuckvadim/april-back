@@ -4,6 +4,16 @@ import {
     PortalAiSettingsRecord,
     PresentationStrictnessLevel,
 } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.types';
+import {
+    EnumPortalAppCode,
+    PortalAppSettingsService,
+} from '@lib/portal-lib/store/app-settings';
+import {
+    minDurationByTypeOfSettings,
+    minDurationFloorSec,
+    minDurationSecOf,
+    type MinDurationSecByType,
+} from '@lib/sales-ai-analytics';
 
 /**
  * Дефолты кода — действуют, пока настройка не задана на портале.
@@ -18,7 +28,9 @@ const DEFAULTS = {
     createSmartEnabled: true,
     classifyEnabled: true,
     salesOnly: true,
-    minDurationSec: 300,
+    // minDurationSec дефолта здесь НЕТ намеренно: порог общий с
+    // AI-аналитикой и приходит из реестра параметров
+    // (`min_duration_sec_by_type`) — см. minDurationByType ниже.
     windowHours: 25,
     maxPerRun: 10,
     staleMinutes: 90,
@@ -55,7 +67,18 @@ export interface EffectiveCallReportSettings {
     createSmartEnabled: boolean;
     classifyEnabled: boolean;
     salesOnly: boolean;
+    /**
+     * Порог разбора для этапов, где ТИП ЗВОНКА ЕЩЁ НЕ ИЗВЕСТЕН (выборка
+     * звонков из Битрикса в CallReportScanUseCase): минимум по карте
+     * `minDurationSecByType`. Порог конкретного типа — `minDurationFor`.
+     */
     minDurationSec: number;
+    /**
+     * Пороги разбора по типам звонка (решение владельца А.1: порог — только
+     * фильтр, тип он не назначает). Источник тот же, что у пульса и витрины:
+     * настройки [kpiSales] портала → код реестра `min_duration_sec_by_type`.
+     */
+    minDurationSecByType: MinDurationSecByType;
     windowHours: number;
     maxPerRun: number;
     staleMinutes: number;
@@ -99,12 +122,22 @@ export interface EffectiveCallReportSettings {
  * Настройки портала опциональны: незаданное поле работает на дефолте кода.
  * Недоступность БД не роняет конвейер — но без строки настроек портал
  * просто не обрабатывается (enabled=false по умолчанию).
+ *
+ * Исключение — порог длительности: он общий с AI-аналитикой ОП (решение
+ * владельца А.1, находка M12 аудита Фазы 2) и резолвится из настроек
+ * [kpiSales] портала (`ai_analytics_definitions` / `ai_analytics_model_params`
+ * → код реестра `min_duration_sec_by_type`). Настроек [kpiSales] нет —
+ * работает прежний скаляр `PortalAiSettings.minDurationSec`, нет и его —
+ * дефолт реестра (300 с). Иначе порог пульса и порог конвейера разъезжаются.
  */
 @Injectable()
 export class CallReportSettingsService {
     private readonly logger = new Logger(CallReportSettingsService.name);
 
-    constructor(private readonly portalAiSettings: PortalAiSettingsService) {}
+    constructor(
+        private readonly portalAiSettings: PortalAiSettingsService,
+        private readonly appSettings: PortalAppSettingsService,
+    ) {}
 
     /** Эффективные настройки домена. Недоступность БД не роняет конвейер. */
     async resolve(domain: string): Promise<EffectiveCallReportSettings> {
@@ -116,18 +149,59 @@ export class CallReportSettingsService {
                 );
                 return null;
             });
-        return this.merge(portal);
+        return this.merge(portal, await this.minDurationByType(domain, portal));
+    }
+
+    /**
+     * Порог разбора для типа звонка, с. Тип ещё не определён (выборка из
+     * Битрикса до классификации) — МИНИМУМ по карте: звонок короче него не
+     * проходит порог ни одного типа, а окончательный отсев делается, когда
+     * тип известен.
+     */
+    async minDurationFor(
+        domain: string,
+        callType?: string | null,
+    ): Promise<number> {
+        const { minDurationSecByType } = await this.resolve(domain);
+
+        return callType
+            ? minDurationSecOf(callType, minDurationSecByType)
+            : minDurationFloorSec(minDurationSecByType);
     }
 
     /** Дефолты кода без обращения к БД — для глобальных процедур и логов. */
     globals(): EffectiveCallReportSettings {
-        return this.merge(null);
+        return this.merge(null, minDurationByTypeOfSettings(null));
+    }
+
+    /**
+     * Карта порогов портала: настройки [kpiSales] → запасной скаляр
+     * конвейера → дефолт реестра. Недоступность настроек не роняет скан:
+     * остаётся прежний скаляр портала.
+     */
+    private async minDurationByType(
+        domain: string,
+        portal: PortalAiSettingsRecord | null,
+    ): Promise<MinDurationSecByType> {
+        const fallbackSec = portal?.minDurationSec ?? null;
+        const settings = await this.appSettings
+            .resolve(domain, EnumPortalAppCode.kpiSales)
+            .catch((error: Error) => {
+                this.logger.warn(
+                    `Настройки kpiSales портала ${domain} не прочитаны (${error.message}) — порог из portal_ai_settings`,
+                );
+                return null;
+            });
+
+        return minDurationByTypeOfSettings(settings, fallbackSec);
     }
 
     private merge(
         portal: PortalAiSettingsRecord | null,
+        minDurationSecByType: MinDurationSecByType,
     ): EffectiveCallReportSettings {
         return {
+            minDurationSecByType,
             enabled: portal?.enabled ?? DEFAULTS.enabled,
             deepAnalysisEnabled:
                 portal?.deepAnalysisEnabled ?? DEFAULTS.deepAnalysisEnabled,
@@ -136,7 +210,9 @@ export class CallReportSettingsService {
             classifyEnabled:
                 portal?.classifyEnabled ?? DEFAULTS.classifyEnabled,
             salesOnly: portal?.salesOnly ?? DEFAULTS.salesOnly,
-            minDurationSec: portal?.minDurationSec ?? DEFAULTS.minDurationSec,
+            // Скалярный порог = минимум карты: его читает скан, где тип
+            // звонка ещё не известен (фильтр >=CALL_DURATION в Битриксе).
+            minDurationSec: minDurationFloorSec(minDurationSecByType),
             windowHours: portal?.windowHours ?? DEFAULTS.windowHours,
             maxPerRun: portal?.maxPerRun ?? DEFAULTS.maxPerRun,
             staleMinutes: portal?.staleMinutes ?? DEFAULTS.staleMinutes,

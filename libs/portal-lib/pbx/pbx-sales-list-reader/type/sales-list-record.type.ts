@@ -4,8 +4,27 @@
  * значения выпадающих списков по справочникам слепка портала, даты.
  */
 
+/**
+ * Коды списков отчётности ОП в слепке портала (ключ списка строится как
+ * `${group}_${type}`). ЕДИНСТВЕННЫЙ источник этих кодов: строковые литералы
+ * 'sales_kpi'/'sales_history' в рабочем коде запрещены
+ * (ai/rules/pbx-typing.md).
+ */
+export const SALES_LIST_CODES = {
+    /** Список КПИ менеджера (самоотчёт по событиям). */
+    kpi: 'sales_kpi',
+    /** Список «ОП История» (история работы с клиентом). */
+    history: 'sales_history',
+} as const;
+
+/** Оба кода одним массивом в каноническом порядке (КПИ → История). */
+export const SALES_LIST_CODE_VALUES = [
+    SALES_LIST_CODES.kpi,
+    SALES_LIST_CODES.history,
+] as const;
+
 /** Код списка отчётности ОП в слепке портала. */
-export type SalesListCode = 'sales_kpi' | 'sales_history';
+export type SalesListCode = (typeof SALES_LIST_CODE_VALUES)[number];
 
 /** Запрос записей: все условия опциональны и комбинируются через И. */
 export interface SalesListQuery {
@@ -14,14 +33,16 @@ export interface SalesListQuery {
      * CO_{id} компания, C_{id} контакт (поле множественное — совпадение
      * по любой ссылке).
      */
-    crmRefs?: string[];
+    crmRefs?: readonly string[];
     /**
      * Коды типов события (items поля event_type: presentation, xo, call…) —
      * фильтр по значению выпадающего списка через bitrixId элемента.
+     * `readonly`, чтобы вызывающий отдавал типизированные `as const`/enum
+     * наборы кодов, а не одноразовые литеральные массивы.
      */
-    eventTypeCodes?: string[];
+    eventTypeCodes?: readonly string[];
     /** Коды действия события (items поля event_action: plan, done…). */
-    eventActionCodes?: string[];
+    eventActionCodes?: readonly string[];
     /** Окно по ДАТЕ СОБЫТИЯ (поле event_date; нет поля — DATE_CREATE). */
     dateFrom?: Date;
     dateTo?: Date;

@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { PBXService } from '@lib/pbx/pbx.service';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
+import { CALL_REPORT_DEAL_SELECT } from '@lib/call-lib/call-report/services/call-report-deal-lookup';
 
 /** Сделки клиента по воронкам ОП — кандидаты для связей. */
 export interface AgentDealCandidates {
@@ -18,18 +19,16 @@ export interface AgentCallClient {
 /** Сколько сделок одной воронки показываем агенту (свежие — первыми). */
 const DEAL_CANDIDATES_PER_CATEGORY = 20;
 
-/** Поля сделок-кандидатов: воронка, стадия, закрытость и даты. */
-const DEAL_CANDIDATE_SELECT = [
-    'ID',
+/**
+ * Поля сделок-кандидатов: общий набор раскладки звонка
+ * (CALL_REPORT_DEAL_SELECT — воронка, стадия, закрытость, даты) плюс то,
+ * что нужно только показу кандидатов агенту: заголовок и клиент.
+ */
+const DEAL_CANDIDATE_SELECT: string[] = [
+    ...CALL_REPORT_DEAL_SELECT,
     'TITLE',
-    'CATEGORY_ID',
-    'STAGE_ID',
-    'CLOSED',
-    'ASSIGNED_BY_ID',
     'COMPANY_ID',
     'CONTACT_ID',
-    'DATE_CREATE',
-    'DATE_MODIFY',
 ];
 
 type Bitrix = Awaited<ReturnType<PBXService['init']>>['bitrix'];

@@ -6,6 +6,7 @@ import {
 } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import {
+    SALES_LIST_CODES,
     SALES_LIST_TECHNICAL_FIELD_CODES,
     SalesListCode,
     SalesListQuery,
@@ -71,8 +72,8 @@ export class SalesListReaderService {
     /** Записи обоих списков одним вызовом (КПИ + ОП История). */
     async readBoth(query: SalesListQuery): Promise<SalesListRecord[]> {
         return [
-            ...(await this.read('sales_kpi', query)),
-            ...(await this.read('sales_history', query)),
+            ...(await this.read(SALES_LIST_CODES.kpi, query)),
+            ...(await this.read(SALES_LIST_CODES.history, query)),
         ];
     }
 
@@ -166,7 +167,7 @@ export class SalesListReaderService {
     ): SalesListRecord[] {
         const matches = (
             resolved: string | null,
-            wanted: string[] | undefined,
+            wanted: readonly string[] | undefined,
         ): boolean =>
             !wanted?.length ||
             !resolved ||
@@ -300,7 +301,7 @@ export class SalesListReaderService {
     /** bitrixId элементов выпадающего списка по кодам (терпим к префиксам). */
     private itemIdsByCodes(
         field: IField | undefined,
-        codes: string[],
+        codes: readonly string[],
     ): (string | number)[] {
         if (!field?.items?.length) return [];
         return field.items

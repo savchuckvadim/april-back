@@ -2,6 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@lib/pbx/pbx.service';
 import { TranscriptionPipelineView } from '@lib/call-lib';
 import {
+    SALES_LIST_CODES,
+    SalesListCode,
+} from '@lib/portal-lib/pbx/pbx-sales-list-reader/type/sales-list-record.type';
+import {
     AgentCallClient,
     AgentDealCandidates,
     AgentDealCandidatesLoader,
@@ -100,13 +104,13 @@ export class AgentBitrixContextService {
         const historyCandidates = await this.loadListCandidates(
             bitrix,
             portalModel,
-            'sales_history',
+            SALES_LIST_CODES.history,
             row,
         );
         const kpiCandidates = await this.loadListCandidates(
             bitrix,
             portalModel,
-            'sales_kpi',
+            SALES_LIST_CODES.kpi,
             row,
         );
         // Сделки клиента по воронкам ОП — включая ЗАКРЫТЫЕ и по контакту.
@@ -136,7 +140,7 @@ export class AgentBitrixContextService {
     private async loadListCandidates(
         bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
         portalModel: Awaited<ReturnType<PBXService['init']>>['PortalModel'],
-        listCode: 'sales_history' | 'sales_kpi',
+        listCode: SalesListCode,
         row: TranscriptionPipelineView,
     ): Promise<Record<string, unknown>[]> {
         try {
@@ -171,6 +175,11 @@ export class AgentBitrixContextService {
     /**
      * Словарь pbx-полей компании портала: код → UF-имя + элементы enum —
      * для расшифровки сырых UF_CRM_* значений компании агентом.
+     *
+     * Полное имя поля берём ТОЛЬКО через `portalModel.getFieldBitrixId`:
+     * `bitrixId` в слепке портала неоднороден (konstructor-поля хранят уже
+     * полное «UF_CRM_1684144993»), и ручная склейка давала агенту
+     * несуществующий ключ `UF_CRM_UF_CRM_…` (аудит M15).
      */
     private buildCompanyFieldsDictionary(
         portalModel: Awaited<ReturnType<PBXService['init']>>['PortalModel'],
@@ -178,7 +187,7 @@ export class AgentBitrixContextService {
         try {
             return (portalModel.getCompanyFields() ?? []).map(field => ({
                 code: field.code,
-                ufId: `UF_CRM_${field.bitrixId}`,
+                ufId: portalModel.getFieldBitrixId(field),
                 items: (field.items ?? []).map(item => ({
                     code: item.code,
                     bitrixId: item.bitrixId,
