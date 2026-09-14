@@ -117,6 +117,7 @@
         "nodemailer": "^7.0.9",
         "number-to-words-ru": "^2.4.1",
         "officegen": "^0.6.5",
+        "pdf-lib": "^1.17.1",
         "pdf-parse": "^1.1.4",
         "pizzip": "^3.2.0",
         "prom-client": "^15.1.3",

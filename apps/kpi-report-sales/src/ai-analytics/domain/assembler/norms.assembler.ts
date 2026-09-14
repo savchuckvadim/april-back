@@ -14,11 +14,8 @@
  *
  * Чистые функции: без DI, Bitrix и `new Date()`.
  */
-import type { NormLayer } from '@lib/sales-ai-analytics';
-import {
-    AI_ANALYTICS_NORM_LIMITS,
-    AiAnalyticsNormFlag,
-} from '../../constants/ai-norms.const';
+import { levelNormFlag, type NormLayer } from '@lib/sales-ai-analytics';
+import type { AiAnalyticsNormFlag } from '../../constants/ai-norms.const';
 import type { AiAnalyticsPriorSource } from '../../constants/ai-overview.const';
 import type { PortalModelView } from './overview-model.types';
 import type {
@@ -105,20 +102,15 @@ function portalMuOf(
 }
 
 /**
- * Флаг «норма полосы занижена составом»: μ_lk < 0,7·μ_pk — полоса
- * отличается от портала не мастерством, а составом, и сравнивать
- * менеджера только с ней нечестно.
+ * Флаг «норма полосы занижена составом»: правило μ_lk < 0,7·μ_pk живёт в
+ * библиотеке (`levelNormUnderstated`, план §4.2) — витрина его только
+ * применяет к норме слоя и норме портала.
  */
 function flagOf(
     mu: number,
     portalMu: number | null,
 ): AiAnalyticsNormFlag | null {
-    if (portalMu === null || portalMu <= 0) {
-        return null;
-    }
-    return mu < AI_ANALYTICS_NORM_LIMITS.levelUnderstatedRatio * portalMu
-        ? 'level_norm_understated'
-        : null;
+    return levelNormFlag(mu, portalMu);
 }
 
 /** Ребро снапшота → норма ребра витрины; чужая форма отбрасывается. */

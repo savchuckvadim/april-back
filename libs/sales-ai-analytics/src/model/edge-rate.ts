@@ -1,18 +1,28 @@
+import {
+    ActivityRateInput,
+    ActivityRateResult,
+    shrinkActivityRate,
+} from './activity-rate';
 import { KAPPA_DEFAULTS } from './kappa';
+import { DISPERSION_DEFAULTS } from './overdispersion';
 import {
     SHRINK_DEFAULTS,
     ShrinkPrior,
     ShrinkRateResult,
-    forgetSeries,
     shrinkRate,
 } from './shrink';
 import { AI_ANALYTICS_THRESHOLDS } from './thresholds.const';
 import { wilsonInterval } from './wilson';
 
+export type { ActivitySeriesPoint } from './activity-rate';
+
 /** Дефолты апостериоров рёбер и темпов (план §4.2). */
 export const EDGE_RATE_DEFAULTS = {
-    /** Сверхдисперсия φ_mk: квази-Пуассон, дефолт до 12 недель данных. */
-    phi: 2.5,
+    /**
+     * Сверхдисперсия φ_mk до гейта оценки (`overdispersion_default`
+     * реестра через DISPERSION_DEFAULTS); оценка — `quasiPoissonPhi`.
+     */
+    phi: DISPERSION_DEFAULTS.fallback,
     /** Забывание месяцев forget_lambda. */
     lambda: SHRINK_DEFAULTS.forgetLambda,
     /** κ_a = kappa_activity_days для темпов активностей. */
@@ -52,31 +62,11 @@ export interface EdgePosteriorInput extends GapSample {
     z?: number;
 }
 
-/** Точка ряда темпа: события N_t и дни экспозиции D_t периода. */
-export interface ActivitySeriesPoint {
-    periodKey: string;
-    events: number;
-    days: number;
-}
+/** Вход апостериора темпа — см. ActivityRateInput (φ числом или оценкой). */
+export type ActivityPosteriorInput = ActivityRateInput;
 
-export interface ActivityPosteriorInput {
-    series: readonly ActivitySeriesPoint[];
-    /** Норма слоя μ_lk и κ_a. */
-    prior: ShrinkPrior;
-    phi?: number;
-    lambda?: number;
-    z?: number;
-}
-
-export interface ActivityPosteriorResult extends ShrinkRateResult {
-    /** Ñ = Σ λ^(T−t)·N_t. */
-    forgottenEvents: number;
-    /** D̃ = Σ λ^(T−t)·D_t. */
-    forgottenDays: number;
-    phi: number;
-    lambda: number;
-    periods: number;
-}
+/** Результат апостериора темпа — см. ActivityRateResult. */
+export type ActivityPosteriorResult = ActivityRateResult;
 
 export type EdgeGapKind = 'prob' | 'rate';
 
@@ -127,37 +117,17 @@ export function edgePosterior(input: EdgePosteriorInput): ShrinkRateResult {
  * Ñ = Σ λ^(T−t)N_t, D̃ = Σ λ^(T−t)D_t, затем
  * E[a] = (Ñ/φ + κ_a·μ)/(D̃/φ + κ_a), w = (D̃/φ)/(D̃/φ + κ_a),
  * 90 %-интервал — квантили Gamma(Ñ/φ + κμ, D̃/φ + κ).
- * Пропущенные периоды подаются нулевыми точками, иначе расстояние
- * забывания считается по позициям, а не по календарю.
+ * φ принимается извне числом или оценкой `quasiPoissonPhi`; без неё —
+ * дефолт реестра. Пропуски периодов передаются ключами `gaps`
+ * (`shrinkActivityRate`), чтобы забывание шло по календарю.
  */
 export function activityPosterior(
     input: ActivityPosteriorInput,
 ): ActivityPosteriorResult {
-    const phi = input.phi && input.phi > 0 ? input.phi : EDGE_RATE_DEFAULTS.phi;
-    const lambda = input.lambda ?? EDGE_RATE_DEFAULTS.lambda;
-    const forgotten = forgetSeries(
-        input.series.map(point => ({
-            periodKey: point.periodKey,
-            n: positive(point.days),
-            s: positive(point.events),
-        })),
-        lambda,
-    );
-    const posterior = shrinkRate({
-        successes: forgotten.s / phi,
-        exposure: forgotten.n / phi,
-        prior: input.prior,
-        intervalKind: 'gamma',
-        z: input.z,
+    return shrinkActivityRate({
+        ...input,
+        lambda: input.lambda ?? EDGE_RATE_DEFAULTS.lambda,
     });
-    return {
-        ...posterior,
-        forgottenEvents: forgotten.s,
-        forgottenDays: forgotten.n,
-        phi,
-        lambda: forgotten.lambda,
-        periods: forgotten.periods,
-    };
 }
 
 /**

@@ -1,3 +1,4 @@
+import { shrinkActivityRate } from '../model/activity-rate';
 import {
     EDGE_GAP_PRACTICAL,
     EDGE_RATE_DEFAULTS,
@@ -8,50 +9,19 @@ import {
     newcombeDifference,
     practicalDeltaFromPct,
 } from '../model/edge-rate';
+import {
+    DISPERSION_DEFAULTS,
+    OVERDISPERSION_PARAM_CODE,
+    quasiPoissonPhi,
+} from '../model/overdispersion';
+import { mulberry32, seedOf } from '../model/prng';
+import { findParam } from '../params/registry.const';
 import { resolveNumberParam } from '../params/resolve';
 import { wilsonInterval } from '../model/wilson';
+import { sampleOverdispersedCount } from './rate-synthetic.fixture';
 
 /** Норма полосы и сила усадки из иллюстрации плана §4.2. */
 const PRIOR = { mu: 0.09, kappa: 30 };
-
-/** Детерминированный генератор (mulberry32): поток задаётся seed. */
-function seededRandom(seed: number): () => number {
-    let state = seed >>> 0;
-    return () => {
-        state = (state + 0x6d2b79f5) >>> 0;
-        let t = state;
-        t = Math.imul(t ^ (t >>> 15), t | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-}
-
-/** Стандартная нормаль по Боксу–Мюллеру из того же потока. */
-function gauss(random: () => number): number {
-    const u1 = Math.max(random(), 1e-12);
-    return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * random());
-}
-
-function binomial(random: () => number, n: number, p: number): number {
-    let hits = 0;
-    for (let trial = 0; trial < n; trial += 1) {
-        if (random() < p) {
-            hits += 1;
-        }
-    }
-    return hits;
-}
-/** Пуассон методом Кнута: число событий за экспозицию mean. */
-function poisson(random: () => number, mean: number): number {
-    const limit = Math.exp(-mean);
-    let count = 0;
-    let product = 1;
-    do {
-        product *= random();
-        count += 1;
-    } while (product > limit);
-    return count - 1;
-}
 
 describe('edgePosterior — числа плана §4.2', () => {
     it('μ = 0,09, κ = 30, менеджер 4/15 → (4 + 2,7)/45 = 0,149, w = 0,33', () => {
@@ -269,69 +239,57 @@ describe('newcombeDifference / edgeGap', () => {
     });
 });
 
-describe('покрытие 90 %-интервала на синтетике с известным θ', () => {
-    const CELLS = 300;
+/**
+ * Покрытие 90 %-интервалов на синтетике (500 ячеек, фильтр κμ ≥ 2, NegBin
+ * через гамма-смесь) — в posterior-coverage.spec.ts.
+ */
+describe('activityPosterior — φ извне (оценка, число, дефолт реестра)', () => {
+    const series = [
+        { periodKey: '2026-01', events: 100, days: 20 },
+        { periodKey: '2026-03', events: 140, days: 20 },
+    ];
+    const prior = { mu: 6, kappa: EDGE_RATE_DEFAULTS.kappaActivity };
 
-    function coverProb(seed: number): number {
-        const random = seededRandom(seed);
-        let covered = 0;
-        for (let cell = 0; cell < CELLS; cell += 1) {
-            const theta = Math.min(
-                0.45,
-                Math.max(0.005, PRIOR.mu + 0.03 * gauss(random)),
-            );
-            const exposure = 40 + Math.floor(random() * 110);
-            const successes = binomial(random, exposure, theta);
-            const [low, high] = edgePosterior({
-                successes,
-                exposure,
-                prior: PRIOR,
-            }).ci90 ?? [NaN, NaN];
-            if (theta >= low && theta <= high) {
-                covered += 1;
-            }
-        }
-        return covered / CELLS;
-    }
-
-    function coverRate(seed: number): number {
-        const random = seededRandom(seed);
-        const prior = { mu: 1.6, kappa: EDGE_RATE_DEFAULTS.kappaActivity };
-        let covered = 0;
-        for (let cell = 0; cell < CELLS; cell += 1) {
-            const rate = Math.max(0.1, prior.mu + 0.3 * gauss(random));
-            const days = 10 + Math.floor(random() * 12);
-            const events = poisson(random, rate * days);
-            const [low, high] = activityPosterior({
-                series: [{ periodKey: '2026-03', events, days }],
-                prior,
-            }).ci90 ?? [NaN, NaN];
-            if (rate >= low && rate <= high) {
-                covered += 1;
-            }
-        }
-        return covered / CELLS;
-    }
-
-    const draw = (seed: number): number[] => {
-        const random = seededRandom(seed);
-        return [random(), random(), random()];
-    };
-
-    it.each([42, 7, 2026])('доли, seed %i: ≥ 85 %% ячеек в интервале', seed => {
-        expect(coverProb(seed)).toBeGreaterThanOrEqual(0.85);
+    it('дефолт φ берётся из реестра overdispersion_default, а не из константы', () => {
+        expect(EDGE_RATE_DEFAULTS.phi).toBe(DISPERSION_DEFAULTS.fallback);
+        expect(EDGE_RATE_DEFAULTS.phi).toBe(
+            findParam(OVERDISPERSION_PARAM_CODE)?.defaultValue,
+        );
+        const result = activityPosterior({ series, prior });
+        expect(result.phiSource).toBe('default');
+        expect(result.phi).toBe(DISPERSION_DEFAULTS.fallback);
     });
 
-    it.each([42, 7, 2026])(
-        'интенсивности, seed %i: ≥ 85 %% ячеек в интервале',
-        seed => {
-            expect(coverRate(seed)).toBeGreaterThanOrEqual(0.85);
-        },
-    );
+    it('оценка quasiPoissonPhi проходит в апостериор вместе с источником', () => {
+        const random = mulberry32(seedOf('edge-rate', 'phi'));
+        const estimate = quasiPoissonPhi(
+            Array.from({ length: 24 }, () => ({
+                count: sampleOverdispersedCount(30, 3, random),
+                exposure: 5,
+            })),
+        );
+        expect(estimate.source).toBe('estimated');
+        const result = activityPosterior({ series, prior, phi: estimate });
+        expect(result.phi).toBe(estimate.phi);
+        expect(result.phiSource).toBe('estimated');
+        expect(result.value).toBeCloseTo(
+            activityPosterior({ series, prior, phi: estimate.phi }).value,
+            12,
+        );
+        expect(activityPosterior({ series, prior, phi: 1.5 }).phiSource).toBe(
+            'explicit',
+        );
+    });
 
-    it('генератор детерминирован и зависит от seed', () => {
-        expect(draw(42)).toEqual(draw(42));
-        expect(draw(42)).not.toEqual(draw(7));
-        expect(coverProb(42)).toBe(coverProb(42));
+    it('пропуски периодов (gaps) уходят в shrinkActivityRate: февраль весит нулём', () => {
+        const withGap = activityPosterior({ series, prior, gaps: ['2026-02'] });
+        const direct = shrinkActivityRate({ series, prior, gaps: ['2026-02'] });
+        expect(withGap).toEqual(direct);
+        expect(withGap.gaps).toBe(1);
+        expect(withGap.forgottenDays).toBeCloseTo(20 + 0.85 ** 2 * 20, 9);
+        expect(activityPosterior({ series, prior }).forgottenDays).toBeCloseTo(
+            20 + 0.85 * 20,
+            9,
+        );
     });
 });

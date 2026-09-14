@@ -3,6 +3,10 @@ import { Logger } from '@nestjs/common';
 import * as http from 'http';
 import * as https from 'https';
 import { TelegramService } from '@lib/telegram/telegram.service';
+import {
+    benignBitrixErrorMarker,
+    requestedEntityId,
+} from './bitrix-benign-error.util';
 import { BxAuthType } from './bx-auth-type.enum';
 import { Semaphore } from './semaphor';
 import { delay } from '@/shared/lib';
@@ -131,21 +135,14 @@ export class BitrixCore {
               ` | request: ${this.stringifyResponse(data)}`
             : '';
         // Ожидаемые «ошибки», которые вызывающий код обрабатывает сам —
-        // телеграм-алерт не шлём (логи остаются):
-        // - ACTIVITY_IS_ALREADY_BOUND: идемпотентный повтор привязки,
-        //   трактуется как успех;
-        // - Row size too large: штатная ступень бюджетной записи смарта
-        //   (CallReportSmartWriterService деградирует состав полей и сам
-        //   алертит ТОЛЬКО финальный отказ; 12.08.2026 промежуточные
-        //   попытки заспамили админ-чат восемью алертами за минуту).
+        // телеграм-алерт не шлём (логи остаются). Правило и его
+        // обоснование — в bitrix-benign-error.util.ts.
         const responseJson = JSON.stringify(responseText ?? '');
-        const benignMarker = [
-            'ACTIVITY_IS_ALREADY_BOUND',
-            'Row size too large',
-        ].find(marker => responseJson.includes(marker));
+        const benignMarker = benignBitrixErrorMarker(method, responseJson);
         if (benignMarker) {
             this.logger.warn(
-                `Bitrix [${method}]: ${benignMarker} — обрабатывается вызывающим кодом, без алерта`,
+                `Bitrix [${method}]: ${benignMarker} (id ${requestedEntityId(data)}) — ` +
+                    'обрабатывается вызывающим кодом, без алерта',
             );
         } else {
             this.logger.error(

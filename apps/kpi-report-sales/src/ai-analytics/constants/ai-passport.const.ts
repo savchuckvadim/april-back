@@ -15,14 +15,17 @@ import { AiPipelineRhythm } from './ai-snapshot.const';
 export const AI_PASSPORT_STEP_CODE = 'passport' as const;
 
 /**
- * Паспорт нужен всем ритмам, кроме догона истории: недельные и месячные
- * снапшоты берут из него полосу стажа и статус, а backfill считает по уже
- * записанным снапшотам и в портал не ходит.
+ * Паспорт нужен всем ритмам, включая догон истории: месячный снапшот берёт
+ * из него полосу стажа и статус, и без паспорта у догнанных месяцев
+ * `passport`/`tenureBand` оставались бы пустыми (аудит Фазы 2, N5). В
+ * догоне факты `user.get` берутся из кэша паспортов (TTL ниже), джоба
+ * догона недели паспорт не зовёт — её белый список только `calls`.
  */
 export const AI_PASSPORT_STEP_RHYTHMS = [
     'nightly',
     'weekly',
     'monthly',
+    'backfill',
 ] as const satisfies readonly AiPipelineRhythm[];
 
 /**

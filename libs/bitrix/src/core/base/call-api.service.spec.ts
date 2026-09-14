@@ -21,7 +21,10 @@ describe('CallApiService.callType — построение метода', () => 
         service = new CallApiService(core, {} as never);
     });
 
-    const lastMethod = (): string => requestMock.mock.calls[0][0] as string;
+    const lastMethod = (): string => {
+        const [method] = requestMock.mock.calls[0] as [string];
+        return method;
+    };
 
     it('обычный метод: crm.deal.get', async () => {
         await service.callType(

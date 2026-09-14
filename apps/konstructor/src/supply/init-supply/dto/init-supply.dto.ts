@@ -5,7 +5,6 @@ import {
     IsArray,
     IsEnum,
     IsNumber,
-    IsObject,
     IsOptional,
     IsString,
     ValidateNested,
@@ -20,6 +19,7 @@ import { SupplyReportDto } from './supply-fields/supply-fields.dto';
 import { ClientTypeEnum } from '@app/konstructor/document-generate/type/client.type';
 import { CONTRACT_LTYPE } from '@app/konstructor/document-generate/type/contract.type';
 import {
+    DocumentVariantDto,
     ProductRowDto,
     ProductRowSupplyDto,
 } from '@app/konstructor/document-generate';
@@ -234,4 +234,16 @@ export class InitSupplyDto {
     @ValidateNested({ each: true })
     @Type(() => InitSupplyFileDto)
     files?: InitSupplyFileDto[];
+
+    @ApiProperty({
+        description:
+            'Участники заявки — варианты комплекта. На каждого своя страница в таймлайне и ссылка в поле заявки. Нет или один — заявка как раньше',
+        type: [DocumentVariantDto],
+        required: false,
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => DocumentVariantDto)
+    variants?: DocumentVariantDto[];
 }

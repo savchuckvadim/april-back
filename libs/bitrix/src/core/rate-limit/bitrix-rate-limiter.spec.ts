@@ -29,7 +29,12 @@ describe('BitrixRateLimiterService', () => {
     describe('disabled mode', () => {
         it('возвращается мгновенно без вызова Redis', async () => {
             const redis = makeRedis(0);
-            const evalFn = redis.getClient().eval as jest.Mock;
+            // Клиент сужаем до формы «свойство — мок»: прямая ссылка на
+            // метод класса — unbound method, правило линтера ловит
+            // потенциальную потерю `this`. Сам мок при этом тот же объект,
+            // счётчик вызовов сохраняется.
+            const client = redis.getClient() as unknown as { eval: jest.Mock };
+            const evalFn = client.eval;
             const service = new BitrixRateLimiterService(
                 redis,
                 makeConfig(false),

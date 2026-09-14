@@ -14,6 +14,7 @@
  */
 import type {
     AiEdgeEstimand,
+    AiSnapshotMeta,
     AnalysisVersions,
     ExposureDaysSource,
     ManagerEdgeCounts,
@@ -24,20 +25,12 @@ import type {
 } from '@lib/sales-ai-analytics';
 
 /**
- * Версии расчёта в нагрузке (план §3.1). `modelSnapshotId` — id записи
- * `ai-analytics-portal-model`, по которой посчитан месяц: без него
- * пересчёт не воспроизводит месяц, посчитанный по прошлой модели.
+ * Версии расчёта в нагрузке (план §3.1, §10.3 m1) с `modelSnapshotId`
+ * объявлены в контрактах библиотеки (`contracts/snapshot.types.ts`,
+ * владелец — поток стора); здесь реэкспорт, чтобы прежние импорты
+ * ассемблеров и use-case'ов не менялись.
  */
-export interface AiSnapshotMeta {
-    calcVersion: string;
-    paramsVersion: string;
-    /** Начало сравнимой истории 'YYYY-MM-DD'; null — ряд не рвался. */
-    comparableFrom: string | null;
-    /** Момент расчёта, ISO (UTC). */
-    generatedAt: string;
-    /** id модели портала, по которой считался период; null — модели нет. */
-    modelSnapshotId: string | null;
-}
+export type { AiSnapshotMeta };
 
 /**
  * Паспорт менеджера в том объёме, в каком его читают ассемблеры. Берётся

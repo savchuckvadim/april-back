@@ -8,7 +8,12 @@
  * 2. не больше `maxMonthsPerNight` месяцев за ночь и `weekLimit` недель —
  *    иначе один портал занял бы очередь на всю ночь;
  * 3. идемпотентность: период со снапшотом не пересчитывается без
- *    `forceRefresh`, а `jobId` детерминирован (повтор Bull игнорирует).
+ *    `forceRefresh`, а `jobId` детерминирован (повтор Bull игнорирует);
+ * 4. сходимость (аудит Фазы 2, M3): период закрыт ЛЮБОЙ актуальной записью
+ *    типа — строкой менеджера или маркером пустой недели (`managerId:
+ *    null`) шага звонков; джоба недели несёт белый список
+ *    `AI_BACKFILL_WEEK_STEPS` (только `calls`) и месяц не переписывает;
+ *    заморозку догнанного месяца шаг финансов ставит по дню прогона.
  *
  * Админ-ручка backfill — Фаза 3 (§1.1): здесь только ночной конвейер.
  */
@@ -22,6 +27,10 @@ import {
     shiftDate,
     toPortalDate,
 } from '@lib/sales-ai-analytics';
+import {
+    AI_BACKFILL_WEEK_STEPS,
+    weekBounds,
+} from '../constants/ai-manager-snapshot.const';
 import {
     AI_PIPELINE_BACKFILL,
     AI_PIPELINE_JOB_OPTIONS,
@@ -49,10 +58,7 @@ export type AiBackfillReason =
     (typeof AI_BACKFILL_REASONS)[keyof typeof AI_BACKFILL_REASONS];
 
 /** По умолчанию ищем дыры на год назад по месяцам и на квартал по неделям. */
-export const AI_BACKFILL_LOOKBACK = {
-    months: 12,
-    weeks: 13,
-} as const;
+export const AI_BACKFILL_LOOKBACK = { months: 12, weeks: 13 } as const;
 
 export interface AiBackfillOptions {
     /** Момент планирования (время параметром, не `new Date()` внутри). */
@@ -112,15 +118,12 @@ function closedMonths(day: string, depth: number): string[] {
 }
 
 /** Закончившиеся ISO-недели перед неделей дня, свежие первыми. */
-function closedWeeks(
-    day: string,
-    depth: number,
-): { key: string; day: string }[] {
-    const weeks: { key: string; day: string }[] = [];
+function closedWeeks(day: string, depth: number): string[] {
+    const weeks: string[] = [];
     let monday = weekMondayOf(day);
     for (let index = 0; index < depth; index += 1) {
         monday = shiftDate(monday, -7);
-        weeks.push({ key: isoWeekKey(monday), day: shiftDate(monday, 6) });
+        weeks.push(isoWeekKey(monday));
     }
     return weeks;
 }
@@ -173,7 +176,7 @@ export class AiAnalyticsBackfillService {
             this.missing(
                 domain,
                 AI_ANALYTICS_SNAPSHOT_TYPE.managerWeek,
-                weeks.map(week => week.key),
+                weeks,
                 options.forceRefresh,
             ),
         ]);
@@ -202,12 +205,6 @@ export class AiAnalyticsBackfillService {
             this.logger.log(`Догон истории ${domain} пропущен: ${plan.reason}`);
             return [];
         }
-        const settings = await this.settings.load(domain);
-        const day = toPortalDate(now, settings.calendar.timeZone);
-        const weeks = closedWeeks(
-            day,
-            options.weeksBack ?? AI_BACKFILL_LOOKBACK.weeks,
-        );
         const jobs: { key: string; data: AiSnapshotJobData }[] = [
             ...plan.monthKeys.map(monthKey => ({
                 key: monthKey,
@@ -215,7 +212,7 @@ export class AiAnalyticsBackfillService {
             })),
             ...plan.weekKeys.map(weekKey => ({
                 key: weekKey,
-                data: this.weekJob(domain, weekKey, weeks, plan),
+                data: this.weekJob(domain, weekKey, plan),
             })),
         ];
         const jobIds: string[] = [];
@@ -229,7 +226,10 @@ export class AiAnalyticsBackfillService {
         return jobIds;
     }
 
-    /** Периоды без актуального снапшота типа (forceRefresh — все). */
+    /**
+     * Периоды без актуальной записи типа (forceRefresh — все). Считается
+     * любая запись периода: строка менеджера или маркер пустой недели.
+     */
     private async missing(
         domain: string,
         type: AiAnalyticsSnapshotType,
@@ -261,20 +261,23 @@ export class AiAnalyticsBackfillService {
         };
     }
 
-    /** Джоба недели: день прогона — воскресенье этой недели. */
+    /**
+     * Джоба недели: день прогона — воскресенье этой недели, шаги — только
+     * белый список недели (месяц этой недели джоба не переписывает).
+     */
     private weekJob(
         domain: string,
         weekKey: string,
-        weeks: readonly { key: string; day: string }[],
         backfill: AiSnapshotBackfillPlan,
     ): AiSnapshotJobData {
-        const day = weeks.find(week => week.key === weekKey)?.day ?? '';
+        const day = weekBounds(weekKey).to;
         return {
             domain,
             kind: 'backfill',
             monthKey: day.slice(0, 7),
             day,
             weekKey,
+            steps: [...AI_BACKFILL_WEEK_STEPS],
             backfill,
         };
     }

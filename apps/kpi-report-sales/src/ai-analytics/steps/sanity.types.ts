@@ -11,10 +11,17 @@ import { PBX_DEAL_SALES_BASE_STAGE_CODE } from '@lib/portal-lib/pbx-domain/porta
 import type { AiPipelineRhythm } from '../constants/ai-snapshot.const';
 import type { AiPipelineStepResult } from './step.types';
 
-/** Код шага и его ритм: панель считается раз в неделю, по понедельникам. */
+/**
+ * Код шага и его ритмы: панель считается раз в неделю, по понедельникам,
+ * и на месячной заморозке — там её отчёт из шины (ключ `sanity`) забирает
+ * месячная модель портала в поле `sanity` ТОГО ЖЕ прогона. Отдельного
+ * снапшота у панели нет и чужие записи она не переписывает (аудит N1):
+ * предупреждения уезжают в `etl-run.warnings`, отчёт — в шину.
+ */
 export const AI_SANITY_STEP_CODE = 'sanity' as const;
 export const AI_SANITY_STEP_RHYTHMS = [
     'weekly',
+    'monthly',
 ] as const satisfies readonly AiPipelineRhythm[];
 
 /** Коды правил панели — они же ключи вердиктов в снапшоте модели. */
@@ -31,6 +38,8 @@ export const AI_SANITY_RULES = {
     calendar: 'calendar-holidays',
     /** Менеджер-месяцы с прокси-отсутствиями (выпали из норм). */
     exposure: 'exposure-proxy',
+    /** Плацебо-тест меток времени: продажи «закрыты до активности». */
+    timestampLeak: 'timestamp-leak',
 } as const;
 export type AiSanityRuleCode =
     (typeof AI_SANITY_RULES)[keyof typeof AI_SANITY_RULES];
@@ -66,12 +75,27 @@ export const AI_SANITY_SKIP_REASONS = {
     durationFacts: 'duration-facts-too-few',
     alertFacts: 'alert-facts-too-few',
     exposureFacts: 'exposure-facts-missing',
+    /** Плацебо-теста в шине нет либо продаж в нём меньше порога. */
+    leakFacts: 'leak-facts-missing',
     /** Ни одно правило не набрало наблюдений — шаг пропущен целиком. */
     noData: 'sanity-no-observations',
 } as const;
 
 /** Источник экспозиции, при котором менеджер-месяц исключён из норм. */
 export const AI_SANITY_PROXY_DAYS_SOURCE = 'proxy' as const;
+
+/**
+ * Вердикт качества данных для dq-гейта: `unknown` — плацебо-тест не
+ * отработал или продаж меньше порога, `flagged` — доля протечки выше
+ * порога, `ok` — метки времени в порядке.
+ */
+export const AI_SANITY_DATA_QUALITY = {
+    ok: 'ok',
+    flagged: 'flagged',
+    unknown: 'unknown',
+} as const;
+export type AiSanityDataQuality =
+    (typeof AI_SANITY_DATA_QUALITY)[keyof typeof AI_SANITY_DATA_QUALITY];
 
 /** Вердикт одного правила: предупреждения либо причина пропуска. */
 export interface AiSanityRuleResult {
@@ -82,7 +106,22 @@ export interface AiSanityRuleResult {
     reason?: string;
 }
 
-/** Санити-отчёт недели: он же поле `sanity` снапшота модели портала. */
+/**
+ * Готовность по качеству данных: то, что из панели доезжает до dq-гейта
+ * (аудит N2 — плацебо-тест меток времени раньше терялся в шине).
+ */
+export interface AiSanityReadiness {
+    dataQuality: AiSanityDataQuality;
+    /** Плацебо-тест шага истории стадий; null — шаг не отработал. */
+    timestampLeak: SanityLeakFact | null;
+    /** Коды правил с предупреждениями — что мешает доверять цифрам. */
+    warningRules: AiSanityRuleCode[];
+}
+
+/**
+ * Санити-отчёт прогона: значение ключа шины `sanity` и поле `sanity`
+ * месячной модели портала (модель читает его из шины того же прогона).
+ */
 export interface AiSanityReport {
     /** День прогона 'YYYY-MM-DD' в TZ портала. */
     day: string;
@@ -93,6 +132,7 @@ export interface AiSanityReport {
     rules: AiSanityRuleResult[];
     /** Все предупреждения панели: они же уезжают в журнал прогона. */
     warnings: string[];
+    readiness: AiSanityReadiness;
 }
 
 /** Результат шага + предупреждения для журнала прогона и сам отчёт. */
@@ -119,4 +159,21 @@ export interface SanityCallFact {
 export interface SanityExposureFact {
     managerId: string;
     daysSource: string;
+}
+
+/**
+ * Плацебо-тест меток времени в объёме панели — форма писателя
+ * `TimestampLeakResult` шага истории стадий без списка эпизодов.
+ */
+export interface SanityLeakFact {
+    /** Продаж в выборке. */
+    n: number;
+    /** Из них закрыты раньше последней презентации или счёта. */
+    leaked: number;
+    /** Доля протечки, %. */
+    sharePct: number;
+    /** Порог в доле (0,05 = 5 %), с которым сравнивалась доля. */
+    maxPct: number;
+    /** Доля выше порога — dq-гейт не пройден. */
+    flagged: boolean;
 }

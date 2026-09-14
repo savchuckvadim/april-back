@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import {
     AI_ANALYTICS_SNAPSHOT_TYPE,
     DEFAULT_WORK_CALENDAR,
+    timestampLeakShare,
     type AiTargets,
     type StageSlaFact,
 } from '@lib/sales-ai-analytics';
@@ -12,25 +13,29 @@ import { createStepBus } from '../steps/step.types';
 import {
     agreedSla,
     callFacts,
-    exposureFacts,
     levelFactOf,
     slaFacts,
 } from '../steps/sanity.facts';
 import {
     alertsRule,
+    buildSanityReadiness,
     calendarRule,
     durationRule,
     exposureRule,
     slaRule,
     targetRule,
+    timestampLeakRule,
 } from '../steps/sanity.rules';
+import { leakFactOf, monthFactsOf } from '../steps/sanity.sources';
 import { SanityStep } from '../steps/sanity.step';
 import {
+    AI_SANITY_DATA_QUALITY,
     AI_SANITY_LIMITS,
     AI_SANITY_RULES,
     AI_SANITY_SKIP_REASONS,
     type AiSanityReport,
     type SanityCallFact,
+    type SanityLeakFact,
     type SanityLevelFact,
 } from '../steps/sanity.types';
 import type { AiPipelineStepContext } from '../steps/step.types';
@@ -77,6 +82,23 @@ const slaFact = (n: number, p50: number): StageSlaFact => ({
     p90: p50 + 10,
     n,
 });
+
+/**
+ * Плацебо-тест на n продажах, из которых leaked закрыты раньше
+ * презентации: считает библиотека — правило должно повторить её флаг.
+ */
+function leakOf(n: number, leaked: number): SanityLeakFact {
+    const sales = Array.from({ length: n }, (unused, index) => ({
+        episodeKey: `D-${index}#0`,
+        closedAt: '2026-06-10T10:00:00Z',
+        lastPresentationAt:
+            index < leaked ? '2026-06-12T10:00:00Z' : '2026-06-01T10:00:00Z',
+        lastInvoiceAt: null,
+    }));
+    const fact = leakFactOf(timestampLeakShare(sales));
+    if (fact === null) throw new Error('плацебо-тест библиотеки не разобран');
+    return fact;
+}
 
 describe('Правило «цель против медианы факта полосы»', () => {
     it('цель втрое выше медианы факта — предупреждение', () => {
@@ -250,7 +272,7 @@ describe('Правило «менеджер-месяцы с прокси-отс�
         ).toBe('ok');
     });
 
-    it('экспозиции в шине нет — правило пропущено', () => {
+    it('менеджер-месяцев в сторе нет — правило пропущено', () => {
         const result = exposureRule([]);
 
         expect(result.status).toBe('skipped');
@@ -258,7 +280,95 @@ describe('Правило «менеджер-месяцы с прокси-отс�
     });
 });
 
-describe('Разбор шины и настроек', () => {
+describe('Правило «плацебо-тест меток времени»', () => {
+    it('доля протечки выше порога — предупреждение с числами и порогом', () => {
+        const fact = leakOf(MIN_N + 2, 2);
+
+        const result = timestampLeakRule(fact, MIN_N);
+
+        expect(fact.flagged).toBe(true);
+        expect(result.status).toBe('warning');
+        expect(result.rule).toBe(AI_SANITY_RULES.timestampLeak);
+        expect(result.warnings[0]).toContain(
+            `${fact.leaked} из ${fact.n} продаж`,
+        );
+        expect(result.warnings[0]).toContain(`${fact.sharePct} % при пороге`);
+        expect(result.warnings[0]).toContain(
+            `${Math.round(fact.maxPct * 100)} %`,
+        );
+    });
+
+    it('протечек нет — «ok»', () => {
+        const result = timestampLeakRule(leakOf(MIN_N, 0), MIN_N);
+
+        expect(result.status).toBe('ok');
+        expect(result.warnings).toEqual([]);
+    });
+
+    it('шаг истории стадий не отработал — правило пропущено', () => {
+        const result = timestampLeakRule(null, MIN_N);
+
+        expect(result.status).toBe('skipped');
+        expect(result.reason).toBe(AI_SANITY_SKIP_REASONS.leakFacts);
+    });
+
+    it('продаж меньше порога — правило молчит даже при флаге библиотеки', () => {
+        const fact = leakOf(MIN_N - 1, 3);
+
+        expect(fact.flagged).toBe(true);
+        expect(timestampLeakRule(fact, MIN_N).status).toBe('skipped');
+    });
+});
+
+describe('Готовность по качеству данных (dq-гейт)', () => {
+    it('предупреждение плацебо-теста — flagged, коды правил с предупреждениями рядом', () => {
+        const leak = leakOf(MIN_N, 2);
+        const rules = [
+            timestampLeakRule(leak, MIN_N),
+            targetRule(targets(12), levelFacts(MIN_N, 4), MIN_N),
+            calendarRule(ruWorkCalendar(2026), '2026-09-07'),
+        ];
+
+        const readiness = buildSanityReadiness(rules, leak);
+
+        expect(readiness.dataQuality).toBe(AI_SANITY_DATA_QUALITY.flagged);
+        expect(readiness.timestampLeak).toEqual(leak);
+        expect(readiness.warningRules).toEqual([
+            AI_SANITY_RULES.timestampLeak,
+            AI_SANITY_RULES.target,
+        ]);
+    });
+
+    it('плацебо-тест в порядке — ok', () => {
+        const leak = leakOf(MIN_N, 0);
+
+        expect(
+            buildSanityReadiness([timestampLeakRule(leak, MIN_N)], leak)
+                .dataQuality,
+        ).toBe(AI_SANITY_DATA_QUALITY.ok);
+    });
+
+    it('плацебо-тест пропущен — unknown, факт не теряется', () => {
+        const leak = leakOf(MIN_N - 1, 1);
+
+        const readiness = buildSanityReadiness(
+            [timestampLeakRule(leak, MIN_N)],
+            leak,
+        );
+
+        expect(readiness.dataQuality).toBe(AI_SANITY_DATA_QUALITY.unknown);
+        expect(readiness.timestampLeak).toEqual(leak);
+        expect(
+            buildSanityReadiness([timestampLeakRule(null, MIN_N)], null),
+        ).toEqual({
+            dataQuality: AI_SANITY_DATA_QUALITY.unknown,
+            timestampLeak: null,
+            warningRules: [],
+        });
+    });
+});
+
+describe('Разбор шины, стора и настроек', () => {
     it('коды SLA настроек превращаются в стадии лестницы', () => {
         expect(
             agreedSla({ sla_refine_days: 14, kappa_star: 30 } as never),
@@ -301,23 +411,58 @@ describe('Разбор шины и настроек', () => {
         expect(rows[0].alert).toBe(true);
     });
 
-    it('факты сроков и экспозиция читаются из шины в обеих формах', () => {
+    it('факты сроков читаются из шины, чужая форма даёт пусто', () => {
         expect(slaFacts({ [STAGE.refine]: { p50: 12, n: 9 } })).toEqual({
             [STAGE.refine]: { p25: 0, p50: 12, p90: 0, n: 9 },
         });
         expect(slaFacts('мусор')).toEqual({});
-        expect(exposureFacts([{ managerId: 7, daysSource: 'proxy' }])).toEqual([
-            { managerId: '7', daysSource: 'proxy' },
-        ]);
-        expect(exposureFacts({ '7': { daysSource: 'proxy' } })).toEqual([
-            { managerId: '7', daysSource: 'proxy' },
-        ]);
     });
 
-    it('уровень и продажи берутся из нагрузки менеджер-месяца', () => {
-        expect(
-            levelFactOf({ level: 'middle', finance: { salesCount: 4 } }),
-        ).toEqual([{ level: 'middle', sales: 4 }]);
+    it('плацебо-тест читается в форме писателя, чужая форма — null', () => {
+        const written = timestampLeakShare([]);
+
+        expect(leakFactOf(written)).toEqual({
+            n: 0,
+            leaked: 0,
+            sharePct: 0,
+            maxPct: written.maxPct,
+            flagged: false,
+        });
+        expect(leakFactOf({ leaked: 1 })).toBeNull();
+        expect(leakFactOf(undefined)).toBeNull();
+    });
+
+    it('уровни и экспозиция берутся из записей менеджер-месяцев одним проходом', () => {
+        const facts = monthFactsOf([
+            {
+                managerId: '10',
+                payload: {
+                    level: 'middle',
+                    finance: { salesCount: 4 },
+                    exposure: { daysSource: 'proxy', dMt: 12 },
+                },
+            },
+            {
+                managerId: '20',
+                payload: {
+                    level: 'senior',
+                    finance: { salesCount: 7 },
+                    exposure: { daysSource: 'calendar', dMt: 21 },
+                },
+            },
+            // Портальная запись без менеджера и нагрузка без экспозиции.
+            { managerId: null, payload: { exposure: { daysSource: 'proxy' } } },
+            { managerId: '30', payload: { level: 'middle' } },
+        ]);
+
+        expect(facts.levels).toEqual([
+            { level: 'middle', sales: 4 },
+            { level: 'senior', sales: 7 },
+        ]);
+        expect(facts.exposure).toEqual([
+            { managerId: '10', daysSource: 'proxy' },
+            { managerId: '20', daysSource: 'calendar' },
+        ]);
         expect(levelFactOf({ level: 'middle' })).toEqual([]);
     });
 });
@@ -351,93 +496,131 @@ function makeContext(
     } as AiPipelineStepContext;
 }
 
-/** Стор снапшотов: месяц-факты и последняя модель портала. */
-function makeStore(model: Record<string, unknown> | null) {
+/**
+ * Стор снапшотов глазами панели: записи менеджер-месяцев с уровнем,
+ * продажами и экспозицией. Модель портала панель не читает и не пишет.
+ */
+function makeStore(daysSource = 'proxy') {
     const findByKeys = jest.fn().mockResolvedValue(
         levelFacts(MIN_N, 4).map(fact => ({
-            payload: { level: fact.level, finance: { salesCount: fact.sales } },
+            managerId: '10',
+            payload: {
+                level: fact.level,
+                finance: { salesCount: fact.sales },
+                exposure: { daysSource },
+            },
         })),
     );
-    const latest = jest.fn().mockResolvedValue(
-        model === null
-            ? null
-            : {
-                  id: '1',
-                  domain: DOMAIN,
-                  type: AI_ANALYTICS_SNAPSHOT_TYPE.portalModel,
-                  periodKey: '2026-08',
-                  managerId: null,
-                  calcVersion: 'sam-1.0.0',
-                  paramsVersion: 'pv-1',
-                  inputsHash: 'hash',
-                  generatedAt: '2026-09-03T01:00:00.000Z',
-                  payload: model,
-              },
-    );
+    const latest = jest.fn().mockResolvedValue(null);
     const upsert = jest.fn().mockResolvedValue({ id: '2', supersededIds: [] });
     return { findByKeys, latest, upsert };
 }
 
-describe('SanityStep — недельный шаг конвейера', () => {
-    it('код и ритм шага: панель считается раз в неделю', () => {
-        const step = new SanityStep(makeStore(null) as never);
+/** Шина после шагов звонков и истории стадий — в форме их писателей. */
+function filledBus() {
+    const bus = createStepBus();
+    bus.set(
+        AI_PIPELINE_BUS_KEYS.callsRows,
+        calls(10, 100).map(row => ({ ...row, riskFlags: [] })),
+    );
+    bus.set(AI_PIPELINE_BUS_KEYS.slaFacts, {
+        [STAGE.refine]: slaFact(12, 21),
+    });
+    bus.set(
+        AI_PIPELINE_BUS_KEYS.timestampLeak,
+        timestampLeakShare(
+            Array.from({ length: MIN_N }, (unused, index) => ({
+                episodeKey: `D-${index}#0`,
+                closedAt: '2026-06-10T10:00:00Z',
+                lastPresentationAt:
+                    index < 2 ? '2026-06-12T10:00:00Z' : '2026-06-01T10:00:00Z',
+                lastInvoiceAt: null,
+            })),
+        ),
+    );
+    return bus;
+}
+
+describe('SanityStep — шаг конвейера', () => {
+    it('код и ритмы: неделя и месячная заморозка (отчёт забирает модель портала)', () => {
+        const step = new SanityStep(makeStore() as never);
 
         expect(step.code).toBe('sanity');
-        expect(step.rhythms).toEqual(['weekly']);
+        expect(step.rhythms).toEqual(['weekly', 'monthly']);
     });
 
-    it('предупреждения уезжают в журнал прогона и в поле sanity модели', async () => {
-        const store = makeStore({ kappa: 30 });
+    it('предупреждения уезжают в журнал прогона, отчёт — в шину, снапшоты не пишутся', async () => {
+        const store = makeStore();
         const step = new SanityStep(store as never);
-        const bus = createStepBus();
-        bus.set(
-            AI_PIPELINE_BUS_KEYS.callsRows,
-            calls(10, 100).map(row => ({ ...row, riskFlags: [] })),
-        );
-        bus.set(AI_PIPELINE_BUS_KEYS.slaFacts, {
-            [STAGE.refine]: slaFact(12, 21),
-        });
-        bus.set(AI_PIPELINE_BUS_KEYS.exposure, [
-            { managerId: '10', daysSource: 'proxy' },
-        ]);
+        const bus = filledBus();
 
         const result = await step.run(makeContext(), bus);
 
         expect(result.status).toBe('ok');
-        expect(result.written).toBe(1);
+        expect(result.written).toBe(0);
         expect(result.rows).toBe(10);
         expect(result.warnings).toEqual(result.report.warnings);
-        expect(result.report.warnings.length).toBeGreaterThanOrEqual(4);
-        const [envelope] = store.upsert.mock.calls[0] as [
-            {
-                periodKey: string;
-                payload: { kappa: number; sanity: AiSanityReport };
-            },
-        ];
-        expect(envelope.periodKey).toBe('2026-08');
-        expect(envelope.payload.kappa).toBe(30);
-        expect(envelope.payload.sanity.weekKey).toBe('2026-W36');
-        expect(envelope.payload.sanity.rules).toHaveLength(6);
+        expect(store.upsert).not.toHaveBeenCalled();
+        expect(store.latest).not.toHaveBeenCalled();
+        const report = bus.get<AiSanityReport>(AI_PIPELINE_BUS_KEYS.sanity);
+        expect(report).toBe(result.report);
+        expect(report?.weekKey).toBe('2026-W36');
+        expect(report?.rules).toHaveLength(7);
+        expect(report?.rules.map(rule => [rule.rule, rule.status])).toEqual([
+            [AI_SANITY_RULES.target, 'warning'],
+            [AI_SANITY_RULES.sla, 'warning'],
+            [AI_SANITY_RULES.duration, 'warning'],
+            [AI_SANITY_RULES.alerts, 'ok'],
+            [AI_SANITY_RULES.calendar, 'ok'],
+            [AI_SANITY_RULES.exposure, 'warning'],
+            [AI_SANITY_RULES.timestampLeak, 'warning'],
+        ]);
+        expect(report?.warnings).toHaveLength(5);
     });
 
-    it('модели портала ещё нет — оговорка вместо записи', async () => {
-        const store = makeStore(null);
-        const step = new SanityStep(store as never);
+    it('плацебо-тест доезжает до готовности отчёта (dq-гейт)', async () => {
+        const step = new SanityStep(makeStore('calendar') as never);
+        const bus = filledBus();
 
-        const result = await step.run(makeContext(), createStepBus());
+        const result = await step.run(makeContext(), bus);
 
-        expect(store.upsert).not.toHaveBeenCalled();
-        expect(result.written).toBe(0);
-        expect(result.warnings).toContain(
-            'Санити-отчёт не приложен к модели портала: снапшота ' +
-                'ai-analytics-portal-model ещё нет',
+        expect(result.report.readiness.dataQuality).toBe(
+            AI_SANITY_DATA_QUALITY.flagged,
+        );
+        expect(result.report.readiness.timestampLeak).toEqual(
+            leakFactOf(bus.get(AI_PIPELINE_BUS_KEYS.timestampLeak)),
+        );
+        expect(result.report.readiness.warningRules).not.toContain(
+            AI_SANITY_RULES.exposure,
         );
     });
 
-    it('фактов нет и календарь в порядке — шаг пропущен с причиной', async () => {
-        const store = makeStore({ kappa: 30 });
+    it('шаг истории стадий пропущен — правила SLA и протечки молчат с причиной', async () => {
+        const step = new SanityStep(makeStore() as never);
+
+        const result = await step.run(makeContext(), createStepBus());
+
+        const byRule = new Map(
+            result.report.rules.map(rule => [rule.rule, rule]),
+        );
+        expect(byRule.get(AI_SANITY_RULES.sla)).toMatchObject({
+            status: 'skipped',
+            reason: AI_SANITY_SKIP_REASONS.slaFacts,
+        });
+        expect(byRule.get(AI_SANITY_RULES.timestampLeak)).toMatchObject({
+            status: 'skipped',
+            reason: AI_SANITY_SKIP_REASONS.leakFacts,
+        });
+        expect(result.report.readiness.dataQuality).toBe(
+            AI_SANITY_DATA_QUALITY.unknown,
+        );
+    });
+
+    it('фактов нет и календарь в порядке — шаг пропущен с причиной, отчёт всё равно в шине', async () => {
+        const store = makeStore();
         store.findByKeys.mockResolvedValue([]);
         const step = new SanityStep(store as never);
+        const bus = createStepBus();
 
         const result = await step.run(
             makeContext({
@@ -447,20 +630,22 @@ describe('SanityStep — недельный шаг конвейера', () => {
                     definitions: { minDurationSecByType: {} },
                 } as never,
             }),
-            createStepBus(),
+            bus,
         );
 
         expect(result.status).toBe('skipped');
         expect(result.reason).toBe(AI_SANITY_SKIP_REASONS.noData);
         expect(result.warnings).toEqual([]);
+        expect(bus.get(AI_PIPELINE_BUS_KEYS.sanity)).toBe(result.report);
     });
 
-    it('месяцы фактов берутся до месяца прогона', async () => {
-        const store = makeStore({ kappa: 30 });
+    it('месяцы фактов берутся до месяца прогона одним чтением стора', async () => {
+        const store = makeStore();
         const step = new SanityStep(store as never);
 
         await step.run(makeContext(), createStepBus());
 
+        expect(store.findByKeys).toHaveBeenCalledTimes(1);
         expect(store.findByKeys).toHaveBeenCalledWith(
             DOMAIN,
             AI_ANALYTICS_SNAPSHOT_TYPE.managerMonth,
@@ -499,8 +684,7 @@ describe('Порог длительности: один источник у пу
     });
 
     it('значение реестра портала доезжает до правила панели', async () => {
-        const store = makeStore({ kappa: 30 });
-        const step = new SanityStep(store as never);
+        const step = new SanityStep(makeStore() as never);
         const bus = createStepBus();
         bus.set(
             AI_PIPELINE_BUS_KEYS.callsRows,

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { InitSupplyDto } from '../../dto/init-supply.dto';
 import { buildInitSupplyFlowFields } from '../../lib/init-supply-flow-fields';
+import { buildVariantLinksField } from '../../lib/init-supply-variants';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { BitrixService, IBxRpaItem } from '@lib/bitrix';
 import { InitSupplyRpaPbxItemsFieldsService } from './pbx-items-fields.service';
@@ -62,8 +63,12 @@ export class InitSupplyRpaFieldsService {
                 bitrix,
             );
 
+        // ссылки на элементы вариантов — если поле на портале заведено
+        const variantLinks = buildVariantLinksField(dto, PortalModel);
+
         const rpaFields = {
             ...flowFields,
+            ...variantLinks,
             ...rpaCurrentSupplyReportValues,
 
             // [`${rpaCommentField}`]: '🎯 Перезаключение ТЕСТ',

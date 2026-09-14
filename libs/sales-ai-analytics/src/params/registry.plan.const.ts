@@ -1,0 +1,230 @@
+import {
+    AI_ANALYTICS_CAP_PARAMS,
+    AI_ANALYTICS_DURATION_MIN_PARAMS,
+} from './registry.activity.const';
+import { AI_PIPELINE_ESTIMANDS } from './registry.enums.const';
+import type { ParamDescriptor } from './registry.types';
+
+/**
+ * Часть реестра: цели, обучение, capacity, план дня, SLA стадий и зрелость
+ * пайплайна (план §2.1–2.2: training_min_presentations, target_*,
+ * cap_*, duration_min_*, sla_*, s_req_max, lag_cdf_F, cif_sale_inf,
+ * pipeline_estimand). Собирается в `registry.const.ts`.
+ */
+export const AI_ANALYTICS_PLAN_PARAMS = [
+    {
+        code: 'training_min_presentations',
+        title: 'Обучающий минимум презентаций в месяц',
+        scope: 'tenure',
+        source: 'configured',
+        unit: 'презентаций в месяц',
+        defaultValue: 0,
+        range: [0, 60],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Минимум презентаций независимо от конверсии — тренировка навыка: полоса junior задаёт 20 через цели уровня, middle и senior — 0; менеджер может переопределить в карточке. Не выше плана активностей.',
+    },
+    {
+        code: 'target_sales_by_level',
+        title: 'Цель продаж полосы стажа',
+        scope: 'tenure',
+        source: 'configured',
+        unit: 'продаж в месяц',
+        defaultValue: 0,
+        range: [0, 50],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Портальный дефолт цели G для уровня; ноль означает «не задана» — тогда цель считается медианой полосы стажа за 3 месяца (source = median). Минимумы не выше capacity × рабочие дни.',
+    },
+    {
+        code: 'target_override',
+        title: 'Личная цель продаж менеджера',
+        scope: 'manager',
+        source: 'configured',
+        unit: 'продаж в месяц',
+        defaultValue: 0,
+        range: [0, 50],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Переопределяет план руководителя и цель полосы стажа на месяц; ноль — переопределения нет, действует план из UF_USR_A_SALES_PLAN_* или цель уровня.',
+    },
+    {
+        code: 'plan_snapshot_history',
+        title: 'История планов руководителя',
+        scope: 'manager',
+        source: 'estimated',
+        unit: 'JSON-массив {month, plan}',
+        defaultValue: '[]',
+        phase: 2,
+        breaksSeries: false,
+        kind: 'json',
+        estimator:
+            'снимок UF_USR_A_SALES_PLAN_* 1-го числа каждого месяца, копится автоматически',
+        minN: 3,
+        gate: 'санити: меньше 30 % выполняющих три месяца подряд — пожелание руководителю',
+        description:
+            'Снапшоты планов руководителя по месяцам: нужны, чтобы цель G не переписывалась задним числом и чтобы санити видел систематически невыполнимые планы.',
+    },
+    {
+        code: 'cap_quantile',
+        title: 'Квантиль capacity',
+        scope: 'global',
+        source: 'configured',
+        unit: 'квантиль',
+        defaultValue: 0.9,
+        range: [0.75, 0.95],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Какой квантиль дневного темпа полосы стажа считается потолком cap_*: 0,9 — «как лучшие 10 % дней», ниже 0,75 потолок стал бы нормой, выше 0,95 — выбросом.',
+    },
+    ...AI_ANALYTICS_CAP_PARAMS,
+    ...AI_ANALYTICS_DURATION_MIN_PARAMS,
+    {
+        code: 'coaching_hours_section',
+        title: 'Часы коучинга на +1 балл раздела',
+        scope: 'portal',
+        source: 'configured',
+        unit: 'часов',
+        defaultValue: 2,
+        range: [0.5, 20],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Стоимость рычага quality: во сколько часов работы руководителя обходится прирост среднего балла раздела на один; сравнивается со стоимостью рычага volume по длительностям активностей.',
+    },
+    {
+        code: 's_req_max',
+        title: 'Максимум требуемого качества S_req',
+        scope: 'global',
+        source: 'configured',
+        unit: 'баллов шкалы 1–10',
+        defaultValue: 9,
+        range: [7, 9.5],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Если обратная задача требует качества выше порога, цель считается недостижимой качеством: вместо S_req показывается достижимая цель G′ при S_req = порогу.',
+    },
+    {
+        code: 'sla_refine_days',
+        title: 'SLA стадии «доработка»',
+        scope: 'portal',
+        source: 'configured',
+        unit: 'дней',
+        defaultValue: 14,
+        range: [1, 60],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Норматив дней в стадии sales_refine (расщепление stage_sla): дольше — сделка попадает в «застрявшие» и в блок «Внимание»; факт p50/p90 считается из stagehistory.',
+    },
+    {
+        code: 'sla_decision_days',
+        title: 'SLA стадии «в решении»',
+        scope: 'portal',
+        source: 'configured',
+        unit: 'дней',
+        defaultValue: 21,
+        range: [1, 60],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Норматив дней в стадиях decision_stages (расщепление stage_sla): дольше — сделка застряла, повторный контакт после КП просрочен.',
+    },
+    {
+        code: 'sla_money_await_days',
+        title: 'SLA стадии «ждём оплату»',
+        scope: 'portal',
+        source: 'configured',
+        unit: 'дней',
+        defaultValue: 14,
+        range: [1, 60],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Норматив дней в стадии sales_money_await (расщепление stage_sla): дольше — контроль оплаты просрочен, счёт уходит в зону риска пайплайна.',
+    },
+    {
+        code: 'sla_first_touch_min',
+        title: 'SLA первого касания заявки',
+        scope: 'portal',
+        source: 'configured',
+        unit: 'минут',
+        defaultValue: 30,
+        range: [1, 1440],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Первая ступень лестницы перезвонов по входящей заявке (расщепление stage_sla «30м → 60м → 3ч → 24ч → 24ч → 7д»): минут до первого касания, дальше касание считается просроченным.',
+    },
+    {
+        code: 'pipeline_estimand',
+        title: 'Оцениваемая величина ожидания от пайплайна',
+        scope: 'portal',
+        source: 'configured',
+        unit: 'код формы',
+        defaultValue: 'cure',
+        phase: 2,
+        breaksSeries: false,
+        kind: 'enum',
+        enumValues: AI_PIPELINE_ESTIMANDS,
+        description:
+            'cure — лаг F(d) считается среди проданных, а доля «не купят» сидит в θ_j стадии; cif — безусловная кумулятивная функция продажи cif_sale_inf. Смешивать формы запрещено (§4.8): прогноз читает только выбранную.',
+    },
+    {
+        code: 'lag_cdf_F',
+        title: 'Зрелость пайплайна F(d)',
+        scope: 'portal',
+        source: 'estimated',
+        unit: 'доля проданных, оплативших не позже дня d',
+        defaultValue: 0.5,
+        range: [0, 1],
+        phase: 4,
+        breaksSeries: false,
+        estimator:
+            'Каплан–Майер лага «активность → оплата» среди проданных с цензурой по окну атрибуции, нормировка F(∞) = 1',
+        minN: 30,
+        gate: '≥ 30 закрытых продаж в окне; ≥ 100 — портальная таблица с усадкой к глобальной',
+        description:
+            'Условное на продажу распределение лага (pipeline_estimand = cure): F(0) = 0, монотонно, F(∞) = 1, значения на всей шкале [0; 1] — F(cycle_median_days) = 0,5 по определению медианы и отвергаться не должно. До оценки — экспонента с медианой цикла.',
+    },
+    {
+        code: 'cif_sale_inf',
+        title: 'Безусловная CIF продажи',
+        scope: 'portal',
+        source: 'estimated',
+        unit: 'доля эпизодов, дошедших до продажи',
+        defaultValue: 0.09,
+        range: [0.03, 0.3],
+        phase: 4,
+        breaksSeries: false,
+        estimator:
+            'Аалена–Йохансена: доля эпизодов с продажей на горизонте окна атрибуции',
+        minN: 100,
+        gate: 'pipeline_estimand = cif и ≥ 100 эпизодов с исходом',
+        description:
+            'Другая величина, чем lag_cdf_F: предел кумулятивной функции продажи без условия на исход (pipeline_estimand = cif). Узкий диапазон анкеты Ж [0,03; 0,3] относится только к ней — F(28) = 0,5 сюда не проходит.',
+    },
+    {
+        code: 'lag_window_near_days',
+        title: 'Окно атрибуции ближнего исхода',
+        scope: 'portal',
+        source: 'hybrid',
+        unit: 'календарных дней',
+        defaultValue: 14,
+        range: [7, 30],
+        phase: 3,
+        breaksSeries: false,
+        prior: 14,
+        estimator:
+            'P90 лага «активность → переход в следующую стадию» по stagehistory',
+        minN: 100,
+        gate: '≥ 100 переходов со сцепкой',
+        description:
+            'Половина W_attribution_days анкеты Ж (near): за сколько дней после звонка переход сделки в следующую стадию ещё относится к нему; окно продажи задаёт lag_window_sale_days.',
+    },
+] as const satisfies readonly ParamDescriptor[];

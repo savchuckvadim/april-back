@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
-import { AI_ANALYTICS_PARAM_CODES } from './registry.const';
+import { comparableFrom } from '../contracts/versions.types';
+import { AI_ANALYTICS_PARAMS, findParam } from './registry.const';
+import type { ParamDescriptor } from './registry.types';
 
 /** Примитив канонического JSON. */
 export type JsonPrimitive = string | number | boolean | null;
@@ -53,13 +55,45 @@ export function canonicalJson(value: JsonValue): string {
 }
 
 /**
- * Версия состава реестра: sha256 отсортированного списка кодов. Меняется
- * при добавлении, удалении или переименовании параметра — то есть когда
- * снапшоты перестают быть сопоставимыми по составу.
+ * Расчётно значимая часть дескриптора: то, от чего зависят числа модели.
+ * Тексты («Как считаем», заголовки, единицы) в версию не входят — правка
+ * описания не должна рвать сравнимость снапшотов.
  */
-export const REGISTRY_VERSION: string = sha256(
-    canonicalJson([...AI_ANALYTICS_PARAM_CODES].sort()),
-);
+function descriptorFingerprint(descriptor: ParamDescriptor): JsonObject {
+    return {
+        code: descriptor.code,
+        scope: descriptor.scope,
+        source: descriptor.source,
+        defaultValue: descriptor.defaultValue,
+        range: descriptor.range ? [...descriptor.range] : null,
+        breaksSeries: descriptor.breaksSeries,
+        kind: descriptor.kind ?? null,
+        enumValues: descriptor.enumValues ? [...descriptor.enumValues] : null,
+        prior: descriptor.prior ?? null,
+        estimand: descriptor.estimand ?? null,
+        intervalKind: descriptor.intervalKind ?? null,
+    };
+}
+
+/**
+ * Версия состава реестра: sha256 канонического JSON расчётно значимых полей
+ * дескрипторов, отсортированных по коду. Меняется при добавлении, удалении
+ * или переименовании параметра и при смене дефолта, диапазона, словаря или
+ * признака `breaksSeries` — то есть когда снапшоты перестают быть
+ * сопоставимыми по составу или по значениям нижнего слоя.
+ */
+export function registryVersionOf(
+    descriptors: readonly ParamDescriptor[],
+): string {
+    const fingerprints = [...descriptors]
+        .sort((a, b) => a.code.localeCompare(b.code))
+        .map(descriptorFingerprint);
+
+    return sha256(canonicalJson(fingerprints));
+}
+
+/** Версия текущего реестра `AI_ANALYTICS_PARAMS`. */
+export const REGISTRY_VERSION: string = registryVersionOf(AI_ANALYTICS_PARAMS);
 
 /** Эффективные настройки слоёв для расчёта версии параметров. */
 export interface ParamsVersionPayload {
@@ -91,4 +125,26 @@ export function paramsVersion(payload: ParamsVersionPayload): string {
             registryVersion: payload.registryVersion ?? REGISTRY_VERSION,
         }),
     );
+}
+
+/** Коды из списка, у которых по реестру стоит `breaksSeries`. */
+export function breakingParamCodes(codes: readonly string[]): string[] {
+    return codes.filter(code => findParam(code)?.breaksSeries === true);
+}
+
+/**
+ * Новая граница сравнимой истории после смены параметров (план §2.4, §3):
+ * сдвиг вперёд на дату сохранения `now` — только если среди изменённых
+ * кодов есть хотя бы один с `breaksSeries` по реестру; иначе граница
+ * остаётся прежней. Назад граница не едет никогда (`max`), неизвестные коды
+ * ряд не рвут. Даты — 'YYYY-MM-DD' или строки версий с датой внутри.
+ */
+export function nextComparableFrom(
+    prev: string,
+    changedCodes: readonly string[],
+    now: string,
+): string {
+    return breakingParamCodes(changedCodes).length > 0
+        ? comparableFrom([prev, now])
+        : prev;
 }

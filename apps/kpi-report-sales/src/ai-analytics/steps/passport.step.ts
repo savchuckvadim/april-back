@@ -12,7 +12,10 @@
  * берётся слоем портала (штатная деградация §5.4).
  */
 import { Injectable } from '@nestjs/common';
-import { AI_ANALYTICS_SNAPSHOT_TYPE } from '@lib/sales-ai-analytics';
+import {
+    AI_ANALYTICS_SNAPSHOT_TYPE,
+    AI_ANALYTICS_SNAPSHOT_WINDOW_LIMIT,
+} from '@lib/sales-ai-analytics';
 import type { ManagerPassport } from '@lib/sales-ai-analytics';
 import { AI_PIPELINE_BUS_KEYS } from '../constants/ai-snapshot.const';
 import {
@@ -194,7 +197,11 @@ export class PassportStep implements AiAnalyticsPipelineStep {
         const records = await this.snapshots.findByKeys(
             ctx.domain,
             AI_ANALYTICS_SNAPSHOT_TYPE.managerMonth,
-            { managerIds: [...managerIds], now: ctx.now },
+            {
+                managerIds: [...managerIds],
+                now: ctx.now,
+                limit: AI_ANALYTICS_SNAPSHOT_WINDOW_LIMIT,
+            },
         );
 
         return records.map(record => ({

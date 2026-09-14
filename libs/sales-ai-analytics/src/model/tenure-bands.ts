@@ -14,6 +14,20 @@ import type { AiManagerLevelCode } from '../settings/ai-settings.types';
 export const AI_TENURE_BANDS = ['0-6', '6-18', '18+'] as const;
 export type AiTenureBand = (typeof AI_TENURE_BANDS)[number];
 
+/** Код полосы стажа — имя контракта плана Фазы 2 (поток `p2-model-norms`). */
+export type AiTenureBandCode = AiTenureBand;
+
+/**
+ * Полосы стажа в форме записей `{ code }` — контракт плана Фазы 2 для
+ * справочников и витрины, которые перебирают полосы как элементы, а не
+ * как строки. Коды те же, что в `AI_TENURE_BANDS`, и в том же порядке.
+ */
+export const AI_TENURE_BAND_ITEMS = [
+    { code: '0-6' },
+    { code: '6-18' },
+    { code: '18+' },
+] as const satisfies readonly { code: AiTenureBandCode }[];
+
 /** Границы полос в месяцах стажа: junior — до, senior — от. */
 export interface TenureGates {
     junior: number;
@@ -76,6 +90,9 @@ export function tenureMonthsBetween(
 
     return months < 0 ? null : months;
 }
+
+/** Стаж в месяцах — имя контракта плана Фазы 2 (`tenureMonths(since, until)`). */
+export const tenureMonths = tenureMonthsBetween;
 
 /**
  * Полоса стажа по числу месяцев: `5 → '0-6'`, `6 → '6-18'`, `18 → '18+'`.

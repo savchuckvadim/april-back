@@ -34,10 +34,13 @@ export function priceMedianOf(
 }
 
 /**
- * Модель месяца уже посчитана на тех же настройках и том же объёме —
- * переписывать её нечем. Повтор прогона за ту же дату не плодит записи
- * `superseded` (идемпотентность шага, контракт конвейера); `forceRefresh`
- * этот путь обходит.
+ * Последняя запись — ровно то, что прогон записал бы сейчас: тот же месяц
+ * и та же версия параметров, а дальше по виду записи. Посчитанная модель
+ * совпадает, когда в окне тот же объём наблюдений; деградация (`reused`)
+ * — когда окно по-прежнему пусто и причина та же (аудит M4: раньше копия
+ * прошлой модели писалась каждый прогон). В обоих случаях запись не
+ * переписывается — `written: 0`, `superseded` не плодится (идемпотентность
+ * шага, контракт конвейера); `forceRefresh` этот путь обходит.
  */
 export function freshResult(
     previous: PortalModelRecord | null,
@@ -46,24 +49,30 @@ export function freshResult(
     months: readonly PortalManagerMonth[],
 ): PortalModelResult | null {
     const payload = previous?.payload;
-    const observations = months.filter(month => !month.excludeFromNorms).length;
     if (
         request.forceRefresh === true ||
         previous === null ||
         payload === undefined ||
         previous.monthKey !== request.monthKey ||
-        payload.reused === true ||
-        payload.meta?.paramsVersion !== paramsVersion ||
-        payload.observations !== observations
+        payload.meta?.paramsVersion !== paramsVersion
     ) {
+        return null;
+    }
+    const reused = payload.reused === true;
+    const observations = months.filter(month => !month.excludeFromNorms).length;
+    const same = reused
+        ? months.length === 0 &&
+          payload.reusedReason === AI_PORTAL_MODEL_REASONS.monthsMissing
+        : months.length > 0 && payload.observations === observations;
+    if (!same) {
         return null;
     }
 
     return {
         id: previous.id,
         payload: payload as PortalModelPayload,
-        reused: false,
-        reason: null,
+        reused,
+        reason: reused ? AI_PORTAL_MODEL_REASONS.reusedPrevious : null,
         months: months.length,
         written: 0,
     };

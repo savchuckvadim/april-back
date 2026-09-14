@@ -127,10 +127,18 @@ describe('PassportStep — паспорта в шине конвейера', () 
         expect(snapshots.findByKeys).not.toHaveBeenCalled();
     });
 
-    it('ритмы шага — ночной, недельный и месячный (не backfill)', () => {
+    it('ритмы шага — ночной, недельный, месячный и догон (паспорт из кэша)', () => {
         const { step } = makeStep();
 
-        expect([...step.rhythms]).toEqual(['nightly', 'weekly', 'monthly']);
+        // Догон истории тоже получает паспорт: без него у догнанных месяцев
+        // `tenureBand: null`. В ритме `backfill` паспорт берётся из кэша
+        // `user.get`, лишнего похода в портал за каждый месяц не будет.
+        expect([...step.rhythms]).toEqual([
+            'nightly',
+            'weekly',
+            'monthly',
+            'backfill',
+        ]);
         expect(step.code).toBe('passport');
     });
 

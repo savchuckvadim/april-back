@@ -88,7 +88,14 @@ export interface EpisodesAssemblyInput {
     readonly saleTimestamps?: readonly SaleTimestampFact[];
 }
 
-/** Сцепка звонков с эпизодами: доля, связи и трактовка ребра. */
+/**
+ * Сцепка звонков с эпизодами: доля, связи и трактовка ребра.
+ *
+ * Это и есть форма ключа шины `chain` (шаг истории стадий кладёт объект
+ * целиком): финансы и модель портала читают долю из `sharePct`
+ * (`readChainSharePct`), прогноз — `links`, модель — `estimand`. Полей-дублей
+ * под читателей здесь нет — контракт закреплён `bus-contract.spec.ts`.
+ */
 export interface EpisodesChain {
     /** Доля сцепленных звонков, % (вход гистерезиса `rate ↔ prob`). */
     readonly sharePct: number;

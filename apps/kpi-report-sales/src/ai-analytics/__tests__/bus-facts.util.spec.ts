@@ -83,9 +83,17 @@ describe('Чтение снимка планов из шины', () => {
 });
 
 describe('Чтение доли сцепки и профиля стиля', () => {
-    it('доля сцепки читается числом и полем конверта', () => {
-        expect(readChainSharePct(85)).toBe(85);
-        expect(readChainSharePct({ chainSharePct: 70 })).toBe(70);
+    it('доля сцепки читается из формы писателя `EpisodesChain.sharePct`', () => {
+        // Форма ключа `chain` — объект ассемблера эпизодов; полный контракт
+        // «stage-history пишет → читают» — в bus-contract.spec.ts.
+        expect(readChainSharePct({ sharePct: 85, links: [] })).toBe(85);
+        expect(readChainSharePct({ sharePct: 0, links: [] })).toBe(0);
+    });
+
+    it('чужая форма (число, поле-дубль, пустая шина) даёт 0 — рёбра остаются rate', () => {
+        expect(readChainSharePct(85)).toBe(0);
+        expect(readChainSharePct({ chainSharePct: 70 })).toBe(0);
+        expect(readChainSharePct({ sharePct: 'много' })).toBe(0);
         expect(readChainSharePct(undefined)).toBe(0);
         expect(readChainSharePct({ other: 1 })).toBe(0);
     });

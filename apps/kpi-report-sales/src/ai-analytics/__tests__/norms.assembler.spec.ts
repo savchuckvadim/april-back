@@ -1,3 +1,9 @@
+import {
+    levelNormFlag,
+    levelNormUnderstated,
+    NORM_HIERARCHY_DEFAULTS,
+} from '@lib/sales-ai-analytics';
+import { AI_ANALYTICS_NORM_LIMITS } from '../constants/ai-norms.const';
 import { buildManagerNorms } from '../domain/assembler/norms.assembler';
 import { toFunnelWithNorms } from '../domain/assembler/funnel-edges.assembler';
 import { buildPortalNorms } from '../domain/assembler/portal-model.norms';
@@ -99,6 +105,22 @@ describe('buildManagerNorms — слой нормы из снапшота мод
         expect(norms?.edges[0].flag).toBe('level_norm_understated');
         expect(edge?.normFlag).toBe('level_norm_understated');
         expect(edge?.portalNorm).toBeCloseTo(0.2, 6);
+    });
+
+    it('флаг витрины — правило библиотеки levelNormUnderstated, порог не дублируется', () => {
+        const understated = managerNormsFrom(bandCells(3), '10', '6-18');
+        const mu = understated.edges[0].mu;
+        const portalMu = 0.4;
+        const norms = buildManagerNorms(
+            modelWith([understated], portalMu),
+            '10',
+        );
+
+        expect(norms?.edges[0].flag).toBe(levelNormFlag(mu, portalMu));
+        expect(levelNormUnderstated(mu, portalMu)).toBe(true);
+        expect(AI_ANALYTICS_NORM_LIMITS.levelUnderstatedRatio).toBe(
+            NORM_HIERARCHY_DEFAULTS.levelUnderstatedRatio,
+        );
     });
 
     it('норма полосы близка к портальной → флага нет', () => {

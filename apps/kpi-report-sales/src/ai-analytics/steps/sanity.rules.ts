@@ -17,14 +17,17 @@ import {
 } from '@lib/sales-ai-analytics';
 import { calendarWarnings } from '../domain/loaders/calendar.util';
 import {
+    AI_SANITY_DATA_QUALITY,
     AI_SANITY_LIMITS,
     AI_SANITY_PROXY_DAYS_SOURCE,
     AI_SANITY_RULES,
     AI_SANITY_SKIP_REASONS,
+    AiSanityReadiness,
     AiSanityRuleCode,
     AiSanityRuleResult,
     SanityCallFact,
     SanityExposureFact,
+    SanityLeakFact,
     SanityLevelFact,
 } from './sanity.types';
 
@@ -227,4 +230,59 @@ export function exposureRule(
                       'они исключены из норм, отсутствия стоит завести руками',
               ];
     return verdict(AI_SANITY_RULES.exposure, warnings);
+}
+
+/**
+ * Плацебо-тест меток времени (план §4.4, аудит N2): доля продаж, закрытых
+ * раньше последней презентации или счёта, против порога `maxPct`. Сам
+ * флаг ставит библиотека (`timestampLeakShare`), правило переводит его в
+ * слова и молчит при нехватке продаж.
+ */
+export function timestampLeakRule(
+    fact: SanityLeakFact | null,
+    minN: number,
+): AiSanityRuleResult {
+    if (fact === null || fact.n < minN) {
+        return skip(
+            AI_SANITY_RULES.timestampLeak,
+            AI_SANITY_SKIP_REASONS.leakFacts,
+        );
+    }
+    const warnings = fact.flagged
+        ? [
+              `Протечка меток времени: ${fact.leaked} из ${fact.n} продаж ` +
+                  'закрыты раньше последней презентации или счёта ' +
+                  `(${fact.sharePct} % при пороге ` +
+                  `${Math.round(fact.maxPct * PERCENT)} %) — сделки ` +
+                  'оформлены задним числом, dq-гейт не пройден',
+          ]
+        : [];
+    return verdict(AI_SANITY_RULES.timestampLeak, warnings);
+}
+
+/**
+ * Готовность по качеству данных из вердиктов правил: плацебо-тест
+ * пропущен — `unknown`, предупредил — `flagged`, иначе `ok`. Коды правил
+ * с предупреждениями едут рядом — dq-гейту видно, что именно не так.
+ */
+export function buildSanityReadiness(
+    rules: readonly AiSanityRuleResult[],
+    leak: SanityLeakFact | null,
+): AiSanityReadiness {
+    const leakRule = rules.find(
+        rule => rule.rule === AI_SANITY_RULES.timestampLeak,
+    );
+    const dataQuality =
+        leakRule === undefined || leakRule.status === 'skipped'
+            ? AI_SANITY_DATA_QUALITY.unknown
+            : leakRule.status === 'warning'
+              ? AI_SANITY_DATA_QUALITY.flagged
+              : AI_SANITY_DATA_QUALITY.ok;
+    return {
+        dataQuality,
+        timestampLeak: leak,
+        warningRules: rules
+            .filter(rule => rule.status === 'warning')
+            .map(rule => rule.rule),
+    };
 }

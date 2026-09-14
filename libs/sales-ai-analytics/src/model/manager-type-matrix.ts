@@ -16,12 +16,56 @@ import {
     TypeTotalsCell,
 } from './matrix.types';
 import { MetricValue, scoreMetric } from './metric';
+import {
+    MIN_DURATION_DEFAULT_TYPE,
+    minDurationSecOf,
+    type MinDurationSecByType,
+} from './pulse';
 import { AI_ANALYTICS_THRESHOLDS } from './thresholds.const';
 import { DEFAULT_WORK_CALENDAR, toPortalDate } from './workdays.util';
 
 export const MATRIX_DEFAULT_THRESHOLDS: MatrixThresholds = {
     shortCallSec: AI_ANALYTICS_THRESHOLDS.shortCallSec,
 };
+
+/**
+ * Опции матрицы с порогом длительности ПО ТИПАМ (реестр
+ * `min_duration_sec_by_type`, решение владельца А.1): карта побеждает
+ * скаляр `thresholds.shortCallSec`, скаляр остаётся запасным порогом для
+ * типов вне карты. Без карты и скаляра — константа Фазы 1a (300 с).
+ */
+export interface ManagerTypeMatrixOptions extends MatrixOptions {
+    minDurationSecByType?: MinDurationSecByType;
+}
+
+/**
+ * Эффективная карта порогов из опций: ключ «все прочие типы» — скаляр
+ * (или 300 с), поверх — карта по типам. Одна функция для матрицы и среза
+ * возражений: оба обязаны считать «короткий» одинаково.
+ */
+export function minDurationMapOf(
+    shortCallSec?: number,
+    byType?: MinDurationSecByType,
+): MinDurationSecByType {
+    return {
+        [MIN_DURATION_DEFAULT_TYPE]:
+            shortCallSec ?? MATRIX_DEFAULT_THRESHOLDS.shortCallSec,
+        ...(byType ?? {}),
+    };
+}
+
+/**
+ * Звонок короче порога своего типа (тип неизвестен — ключ «все прочие
+ * типы»); длительность null — не короткий. Тот же предикат, что внутри
+ * `isAnalyzedCall` пульса: знаменатель пульса и слой качества матрицы
+ * режут одни и те же звонки.
+ */
+export const isBelowMinDuration = (
+    row: Pick<MatrixCallRow, 'durationSec' | 'callType'>,
+    byType: MinDurationSecByType,
+): boolean =>
+    row.durationSec !== null &&
+    row.durationSec < minDurationSecOf(row.callType, byType);
 
 /** Строка, прошедшая фильтры слоя качества: менеджер и тип известны. */
 type QualityRow = MatrixCallRow & { managerId: string; callType: string };
@@ -47,7 +91,7 @@ const emptyExcluded = (): MatrixExcluded => ({
 
 function judge(
     row: MatrixCallRow,
-    shortCallSec: number,
+    byType: MinDurationSecByType,
     comparableFrom: string | null,
     timeZone: string,
 ): Verdict {
@@ -60,7 +104,7 @@ function judge(
     if (row.callType === null || row.callType === '') {
         return { kind: 'noType' };
     }
-    if (row.durationSec !== null && row.durationSec < shortCallSec) {
+    if (isBelowMinDuration(row, byType)) {
         return { kind: 'short' };
     }
     const quality: QualityRow = {
@@ -82,11 +126,12 @@ function judge(
 
 function classify(
     rows: readonly MatrixCallRow[],
-    options: MatrixOptions,
+    options: ManagerTypeMatrixOptions,
 ): Classified {
-    const shortCallSec =
-        options.thresholds?.shortCallSec ??
-        MATRIX_DEFAULT_THRESHOLDS.shortCallSec;
+    const byType = minDurationMapOf(
+        options.thresholds?.shortCallSec,
+        options.minDurationSecByType,
+    );
     const comparableFrom = options.comparableFrom ?? null;
     const timeZone = options.timeZone ?? DEFAULT_WORK_CALENDAR.timeZone;
     const result: Classified = {
@@ -95,7 +140,7 @@ function classify(
         excluded: emptyExcluded(),
     };
     for (const row of rows) {
-        const verdict = judge(row, shortCallSec, comparableFrom, timeZone);
+        const verdict = judge(row, byType, comparableFrom, timeZone);
         if (verdict.kind === 'ok') {
             result.ok.push(verdict.row);
         } else if (verdict.kind === 'before') {
@@ -195,7 +240,8 @@ function buildTotals(
 /**
  * Матрица менеджер × тип звонка за период (план §4.3, §6.3, ТЗ FR-22).
  * В слой качества попадают строки с разбором, менеджером и типом,
- * не короче shortCallSec; при заданном comparableFrom строки до этой даты
+ * не короче порога своего типа (карта `minDurationSecByType`, иначе
+ * скаляр shortCallSec, иначе 300 с); при заданном comparableFrom строки до этой даты
  * (в TZ портала) и строки без даты считаются отдельно (nBeforeComparable)
  * и в оценки не смешиваются (§5.4). Ячейка: n, score (среднее S/10 при
  * n ≥ 8), разделы с relevance > 0, чек-листы, три опорных звонка,
@@ -204,7 +250,7 @@ function buildTotals(
  */
 export function buildManagerTypeMatrix(
     rows: readonly MatrixCallRow[],
-    options: MatrixOptions = {},
+    options: ManagerTypeMatrixOptions = {},
 ): ManagerTypeMatrix {
     const { ok, before, excluded } = classify(rows, options);
     const okByManager = groupBy(ok, row => row.managerId);

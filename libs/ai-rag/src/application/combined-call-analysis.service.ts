@@ -12,9 +12,17 @@ import { CallAnalysisPair } from '../domain/interfaces/llm-provider.interface';
 import { extractMessageContent } from './extract-message-content.util';
 import { AlertThrottle } from '@lib/logger';
 import { describeRagError } from './rag-error.util';
+import { buildRetrievalQueries, mergeRoundRobin } from './retrieval-query.util';
 
 /** RAG-kind знаний, участвующие в объединённом анализе. */
 export type CombinedAnalysisKind = 'resume' | 'recomendation';
+
+/**
+ * Сколько документов одного kind попадает в контекст. Ретривер отдаёт по
+ * два на окно запроса; при шести окнах без потолка промпт разросся бы до
+ * двенадцати фрагментов на kind.
+ */
+export const MAX_CONTEXT_DOCS_PER_KIND = 4;
 
 export interface CombinedAnalysisParams {
     llm: BaseChatModel;
@@ -120,16 +128,23 @@ export class CombinedCallAnalysisService {
         params: CombinedAnalysisParams,
     ): Promise<string> {
         const kinds: CombinedAnalysisKind[] = ['resume', 'recomendation'];
+        // Запрос к ретриверу — окнами по лимиту модели эмбеддингов, а не
+        // весь транскрипт (см. retrieval-query.util.ts).
+        const queries = buildRetrievalQueries(params.transcript);
         const parts: string[] = [];
         for (const kind of kinds) {
             try {
                 const retriever = await params.getRetriever(kind);
-                const docs: Document[] = await retriever.invoke(
-                    params.transcript,
-                );
-                for (const doc of docs) {
-                    if (doc.pageContent) parts.push(doc.pageContent);
+                const perQuery: Document[][] = [];
+                for (const query of queries) {
+                    perQuery.push(await retriever.invoke(query));
                 }
+                const docs = mergeRoundRobin(
+                    perQuery,
+                    doc => doc.pageContent,
+                    MAX_CONTEXT_DOCS_PER_KIND,
+                );
+                for (const doc of docs) parts.push(doc.pageContent);
             } catch (error) {
                 this.reportContextFailure(kind, error);
             }

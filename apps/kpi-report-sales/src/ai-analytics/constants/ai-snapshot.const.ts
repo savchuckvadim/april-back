@@ -141,10 +141,40 @@ export type AiPipelineJournalStatus =
  * под своим ключом, следующие читают — прямых зависимостей между шагами
  * нет, поэтому порядок шагов задаётся регистрацией, а не импортами.
  * Новые шаги следующих волн добавляют сюда свои ключи.
+ *
+ * Форма значения — форма ПИСАТЕЛЯ: читатели разбирают её структурно и не
+ * придумывают своих полей (закреплено `__tests__/bus-contract.spec.ts`).
+ *
+ * ключ           | пишет         | форма                                   | читают
+ * calls.rows     | calls         | DatedLiteRow[]                          | passport, stage-history, style, finance, rop-mark, sanity, portal-model, forecast
+ * kpi.months     | kpi           | AiKpiMonthsResult                       | finance
+ * finance.result | finance       | AiFinanceResult                         | никто (см. @deprecated)
+ * episodes       | stage-history | DealEpisode[]                           | portal-model, forecast
+ * chain          | stage-history | EpisodesChain {sharePct, links, linked, sales, estimand} | finance, portal-model, forecast
+ * stageTheta     | stage-history | StageTheta[]                            | portal-model
+ * cycleMedian    | stage-history | number (дней)                           | portal-model
+ * slaFacts       | stage-history | Record<stageCode, StageSlaFact>         | sanity (weekly|monthly — у stage-history те же ритмы)
+ * timestampLeak  | stage-history | TimestampLeakResult                     | sanity (правило + readiness.dataQuality)
+ * historyMonths  | stage-history | number (0 при пропуске)                 | portal-model, forecast
+ * passport       | passport      | ManagerPassport[]                       | style, finance, portal-model
+ * plans          | plans         | PlanSnapshot                            | finance
+ * style          | style         | профили стиля по менеджерам             | finance
+ * sanity         | sanity        | AiSanityReport (+ readiness)            | portal-model (поле sanity, тот же monthly-прогон)
+ * portalModel    | portal-model  | PortalModelBusEntry                     | forecast
+ *
+ * Экспозиции менеджер-месяцев в шине НЕТ: санити-панель читает её из
+ * нагрузок снапшотов `manager-month` (`payload.exposure.daysSource`),
+ * которые и так грузит ради уровней. Снапшота санити тоже нет: отчёт
+ * живёт в шине и в `etl-run.warnings`, модель портала его встраивает.
  */
 export const AI_PIPELINE_BUS_KEYS = {
     callsRows: 'calls.rows',
     kpiMonths: 'kpi.months',
+    /**
+     * @deprecated Читателя нет (аудит Фазы 2, N2). Ключ живёт только потому,
+     * что запись `bus.set(financeResult, …)` в `steps/finance.step.ts`
+     * принадлежит другому потоку; удалять вместе с ней.
+     */
     financeResult: 'finance.result',
     episodes: 'episodes',
     chain: 'chain',
@@ -153,10 +183,11 @@ export const AI_PIPELINE_BUS_KEYS = {
     slaFacts: 'slaFacts',
     timestampLeak: 'timestampLeak',
     historyMonths: 'historyMonths',
-    exposure: 'exposure',
     passport: 'passport',
     /** Снимок планов руководителя на месяц (шаг планов 1-го числа). */
     plans: 'plans',
+    /** Отчёт санити-панели прогона — его встраивает месячная модель портала. */
+    sanity: 'sanity',
     portalModel: 'portalModel',
     /** Профили стиля менеджеров за месячное окно (шаг стиля). */
     style: 'style',

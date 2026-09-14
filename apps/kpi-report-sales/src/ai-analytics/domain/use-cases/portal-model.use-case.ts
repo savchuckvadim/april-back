@@ -13,6 +13,8 @@
  * Деградация (§5.4): месячных снапшотов в окне нет — переиспользуется
  * прошлая модель с пометкой `reused` и причиной; прошлой тоже нет —
  * запись не создаётся, а шаг уходит в журнал «частично» с причиной.
+ * Повтор деградации за тот же месяц на той же версии параметров копию
+ * НЕ переписывает (`freshResult`, аудит M4).
  *
  * `@Injectable` без bitrix-состояния: Битрикс на месячном шаге не
  * вызывается вовсе — все входы уже лежат в `ais`.
@@ -83,9 +85,7 @@ export class PortalModelUseCase {
         );
         const months = await this.loader.loadMonths(request.domain, window);
         const previous = await this.loader.latestModel(request.domain);
-        if (months.length === 0) {
-            return this.degrade(request, previous, layers, now);
-        }
+        // Идемпотентность до любой записи — и модели, и деградации (M4).
         const fresh = freshResult(
             previous,
             request,
@@ -93,6 +93,9 @@ export class PortalModelUseCase {
             months,
         );
         if (fresh) return fresh;
+        if (months.length === 0) {
+            return this.degrade(request, previous, layers, now);
+        }
         const detected = this.detect(
             request,
             facts,
@@ -126,7 +129,9 @@ export class PortalModelUseCase {
                 rosterConfirmedAt: settings.rosterConfirmedAt,
                 comparableFrom: layers.comparableFrom,
             },
-            sanity: facts.sanity ?? previous?.payload.sanity ?? null,
+            // Отчёт панели — только из шины этого прогона (ключ `sanity`);
+            // старый из прошлой модели не тянется: он про другой месяц (N1).
+            sanity: facts.sanity ?? null,
             events: mergePortalEvents(settings.events, detected),
             detectedEvents: detected,
             signature: {

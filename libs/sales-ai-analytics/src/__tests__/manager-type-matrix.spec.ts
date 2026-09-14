@@ -1,6 +1,8 @@
 import {
     MATRIX_DEFAULT_THRESHOLDS,
     buildManagerTypeMatrix,
+    isBelowMinDuration,
+    minDurationMapOf,
 } from '../model/manager-type-matrix';
 import { MatrixCallRow } from '../model/matrix.types';
 import { liteRow, liteRows, section, shuffle } from './lite-row.fixture';
@@ -276,6 +278,86 @@ describe('buildManagerTypeMatrix', () => {
         });
         expect(lenient.excluded.short).toBe(0);
         expect(lenient.analyzed).toBe(25);
+    });
+
+    describe('порог по типам (min_duration_sec_by_type, решение А.1)', () => {
+        /** Холодный 90 с и презентация 90 с — одна длительность, разные типы. */
+        const mixed = [
+            liteRow({
+                transcriptionId: 'k1',
+                callType: 'cold',
+                durationSec: 90,
+            }),
+            liteRow({
+                transcriptionId: 'p1',
+                callType: 'presentation',
+                durationSec: 90,
+            }),
+        ];
+        const byType = { cold: 60, presentation: 300 };
+
+        it('карта: cold 60 / presentation 300 — холодный 90 с в слое, презентация — нет', () => {
+            const matrix = buildManagerTypeMatrix(mixed, {
+                minDurationSecByType: byType,
+            });
+
+            expect(matrix.analyzed).toBe(1);
+            expect(matrix.excluded.short).toBe(1);
+            expect(matrix.totals.map(cell => cell.callType)).toEqual(['cold']);
+        });
+
+        it('скаляр thresholds — запасной порог для типов вне карты', () => {
+            const payment = liteRow({
+                transcriptionId: 'q1',
+                callType: 'payment',
+                durationSec: 90,
+            });
+
+            expect(minDurationMapOf(120, byType)).toEqual({
+                default: 120,
+                cold: 60,
+                presentation: 300,
+            });
+            expect(minDurationMapOf()).toEqual({ default: 300 });
+            expect(minDurationMapOf(undefined, { default: 45 })).toEqual({
+                default: 45,
+            });
+            expect(
+                buildManagerTypeMatrix([...mixed, payment], {
+                    thresholds: { shortCallSec: 120 },
+                    minDurationSecByType: byType,
+                }).excluded.short,
+            ).toBe(2);
+        });
+
+        it('предикат «короче порога»: тип без ключа берёт default, null-длительность не короткая', () => {
+            const map = minDurationMapOf(120, byType);
+
+            expect(isBelowMinDuration(mixed[0], map)).toBe(false);
+            expect(isBelowMinDuration(mixed[1], map)).toBe(true);
+            expect(
+                isBelowMinDuration({ callType: null, durationSec: 119 }, map),
+            ).toBe(true);
+            expect(
+                isBelowMinDuration(
+                    { callType: 'cold', durationSec: null },
+                    map,
+                ),
+            ).toBe(false);
+        });
+
+        it('равномерная карта даёт то же, что скаляр (бит-в-бит Фаза 1a)', () => {
+            const uniform = Object.fromEntries(
+                ['cold', 'presentation', 'payment', 'other'].map(type => [
+                    type,
+                    300,
+                ]),
+            );
+
+            expect(
+                buildManagerTypeMatrix(rows, { minDurationSecByType: uniform }),
+            ).toEqual(matrix);
+        });
     });
 
     it('детерминизм: перестановка входа и повторный вызов дают тот же результат', () => {

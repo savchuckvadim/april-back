@@ -37,6 +37,21 @@ export type ParamEstimand = ParamEdgeEstimand | ParamBetaEstimand;
 export type ParamPrimitive = number | string | boolean;
 
 /**
+ * Вид значения параметра. Скаляры выводятся из типа дефолта; составные
+ * значения по правилу «один код реестра = один скаляр» кодируются строкой:
+ * `enum` — одно из `enumValues`, `csv` — список через запятую (элементы из
+ * `enumValues`, если они заданы), `json` — строка с JSON-объектом или
+ * массивом (карты по типам, списки правил, журналы).
+ */
+export type ParamValueKind =
+    | 'number'
+    | 'boolean'
+    | 'string'
+    | 'enum'
+    | 'csv'
+    | 'json';
+
+/**
  * Значение параметра нужного типа. Обёртка нужна, чтобы в сигнатурах
  * читалось «значение параметра», а не безымянный union примитивов.
  */
@@ -79,6 +94,13 @@ export interface ParamDescriptor<T extends ParamPrimitive = ParamPrimitive> {
     readonly intervalKind?: ParamIntervalKind;
     /** Для рёбер и β: оцениваемая величина. */
     readonly estimand?: ParamEstimand;
+    /**
+     * Вид значения; не задан — выводится из типа `defaultValue`. Для
+     * `enum`/`csv`/`json` значение слоя проверяет `validateParamValue`.
+     */
+    readonly kind?: ParamValueKind;
+    /** Допустимые значения для `enum` и элементов списка `csv`. */
+    readonly enumValues?: readonly string[];
 }
 
 /** Откуда взято итоговое значение при разрешении параметра. */
@@ -89,10 +111,14 @@ export type ParamResolveSource =
     | 'manager'
     | 'hybrid';
 
-/** Почему значение слоя не было применено. */
+/**
+ * Почему значение слоя не было применено: число вне диапазона, чужой тип,
+ * строка не из перечисления / битый CSV или JSON, неизвестный код.
+ */
 export type ParamResolveReason =
     | 'out-of-range'
     | 'type-mismatch'
+    | 'invalid-value'
     | 'unknown-code';
 
 /**

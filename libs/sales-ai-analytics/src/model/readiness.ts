@@ -10,6 +10,7 @@
  * время и пороги приходят параметрами.
  */
 import type { AiBetaSource } from '../contracts/quality-link.types';
+import { registryDefault } from '../params/registry.access';
 import type { BetaGateCountdown } from './beta-power';
 
 /** Режимы готовности витрины (план §4.11). */
@@ -70,12 +71,16 @@ export interface ReadinessGates {
     rosterConfirmRequired: boolean;
 }
 
-/** Дефолты гейтов (план §4.11); реестр их переопределяет. */
+/**
+ * Дефолты гейтов (план §4.11) — из реестра параметров: контекст портала
+ * переопределяет их через `resolveParam` тех же кодов. Гейт витрины
+ * «60 презентаций» кода в реестре не имеет и остаётся решением плана.
+ */
 export const AI_READINESS_GATE_DEFAULTS: ReadinessGates = {
-    calibrationMonths: 3,
+    calibrationMonths: registryDefault('calibration_min_months'),
     calibrationPresentations: 60,
-    normsPresentations: 100,
-    rosterConfirmRequired: false,
+    normsPresentations: registryDefault('calibration_min_presentations'),
+    rosterConfirmRequired: registryDefault('roster_confirm_required'),
 };
 
 /** Вход правил режимов: витрина, снапшоты и настройки портала. */

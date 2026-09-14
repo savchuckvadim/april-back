@@ -23,6 +23,14 @@ import { AnalysisVersions } from './versions.types';
 export * from './passport.types';
 
 /**
+ * Разбор `user_result` чужих записей ais (parseSnapshotPayload,
+ * parseSnapshotUserResult, parseSnapshotMeta) объявлен отдельным файлом
+ * и по той же причине реэкспортирован отсюда: потребители контрактов
+ * снапшотов читают записи через него, а не через свои приведения типов.
+ */
+export * from './snapshot.parse';
+
+/**
  * Конверт снапшота. Раскладка по ais: domain → domain, type → type,
  * periodKey → activity_id, managerId → user_id, calcVersion → model;
  * paramsVersion, inputsHash, generatedAt и payload едут в user_result.
@@ -44,6 +52,27 @@ export interface SnapshotEnvelope<T> {
     /** Момент формирования, ISO (UTC). */
     generatedAt: string;
     payload: T;
+}
+
+/**
+ * Версии расчёта в нагрузке снапшота (план §3.1, §10.3 m1): каждая
+ * нагрузка Фазы 2 несёт `meta` этой формы. `modelSnapshotId` — id записи
+ * `ai-analytics-portal-model`, по которой посчитан период (обязателен
+ * для manager-month и forecast, null для самой модели и служебных типов):
+ * без него recompute не воспроизводит месяц, посчитанный по прошлой
+ * модели. inputsHash и versions в meta не дублируются — хэш входов живёт
+ * в конверте (колонка user_result), сигнатура версий разбора — в самой
+ * нагрузке (ManagerWeekSnapshot.versions).
+ */
+export interface AiSnapshotMeta {
+    calcVersion: string;
+    paramsVersion: string;
+    /** Начало сравнимой истории 'YYYY-MM-DD'; null — ряд не рвался. */
+    comparableFrom: string | null;
+    /** Момент расчёта, ISO (UTC). */
+    generatedAt: string;
+    /** id модели портала, по которой считался период; null — модели нет. */
+    modelSnapshotId: string | null;
 }
 
 /**

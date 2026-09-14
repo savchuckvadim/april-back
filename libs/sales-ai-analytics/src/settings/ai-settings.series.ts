@@ -8,11 +8,16 @@
  * ростера) историю не рвут — иначе каждая правка отпуска обнуляла бы
  * тренды.
  *
- * Признак берётся из **реестра параметров**, а где кода реестра ещё нет —
- * из явной карты ключей §3.3. Чистые функции: без DI и без «сейчас»
+ * Признак берётся **только из реестра параметров**: каждому ключу схемы и
+ * каждому полю определений сопоставлены коды реестра, а ручной таблицы
+ * «ключ → рвёт/не рвёт» нет. Чистые функции: без DI и без «сейчас»
  * внутри (дата сохранения приходит параметром).
  */
-import { findParam } from '../params/registry.const';
+import {
+    breakingParamCodes,
+    nextComparableFrom,
+} from '../params/params-version';
+import type { AiAnalyticsParamCode } from '../params/registry.const';
 import { comparableFrom } from '../contracts/versions.types';
 import {
     AI_SETTINGS_KEYS,
@@ -20,6 +25,7 @@ import {
     type AiSettingsKeyName,
     type AiSettingsRaw,
 } from './ai-settings.types';
+import { AI_DEFINITION_PARAM_CODES } from './registry-context.builder';
 
 /** Вид автособытия, которым журнал фиксирует разрыв ряда настройкой. */
 export const AI_SETTINGS_BREAK_EVENT = 'settings_break' as const;
@@ -34,47 +40,62 @@ export interface AiSettingsChange {
 }
 
 /**
- * Ключи, у которых разрыв ряда решается целиком (§3.3): потолки
- * оценивания меняют шкалу оценки, остальные девять — нет. Определения и
- * гиперпараметры разбираются по полям, поэтому их здесь нет.
+ * Коды реестра, которыми ключ схемы решается целиком (§3.3): ключ рвёт ряд,
+ * если рвёт хотя бы один из его кодов. Определения и гиперпараметры
+ * разбираются по полям (`FIELD_LEVEL_KEYS`), поэтому их списки пусты.
  */
-const KEY_BREAKS_SERIES: Readonly<Record<AiSettingsKeyName, boolean>> = {
-    levels: false,
-    targets: false,
-    absences: false,
-    modelParams: false,
-    managerParams: false,
-    definitions: false,
-    events: false,
-    scoring: true,
-    hypothesis: false,
-    rosterConfirmedAt: false,
+export const AI_SETTINGS_KEY_PARAM_CODES: Readonly<
+    Record<AiSettingsKeyName, readonly AiAnalyticsParamCode[]>
+> = {
+    levels: ['level', 'since'],
+    targets: [
+        'target_sales_by_level',
+        'training_min_presentations',
+        'cap_cold',
+    ],
+    absences: ['absences'],
+    modelParams: [],
+    managerParams: [
+        'fte_share',
+        'absences',
+        'target_override',
+        'training_min_presentations',
+        'exclude_from_norms',
+        'workweek',
+        'time_zone',
+    ],
+    definitions: [],
+    events: ['portal_events'],
+    scoring: ['scoring_caps', 'scoring_stop_words', 'scoring_applicability'],
+    hypothesis: ['portal_quality_hypothesis'],
+    rosterConfirmedAt: ['roster_confirm_required'],
 };
 
-/**
- * Поля определений, меняющие смысл события (план §2.1: коды
- * `productive_call_definition`, `presentation_canon`,
- * `min_duration_sec_by_type`, `invoice_nesting`,
- * `call_done_includes_site_come_call`). Остальные поля — разрезы и
- * справочники: они историю не рвут.
- */
-const BREAKING_DEFINITION_FIELDS: readonly string[] = [
-    'productiveCall',
-    'presentationCanon',
-    'confirmedOnly',
-    'minDurationSecByType',
-    'invoiceNesting',
-    'callDoneIncludesSiteComeCall',
-];
+/** Рвёт ли ряд правка ключа целиком (по кодам реестра ключа). */
+export function keyBreaksSeries(name: AiSettingsKeyName): boolean {
+    return breakingParamCodes(AI_SETTINGS_KEY_PARAM_CODES[name]).length > 0;
+}
 
-/** Рвёт ли ряд правка поля определений. */
+const DEFINITION_FIELDS: readonly string[] = Object.keys(
+    AI_DEFINITION_PARAM_CODES,
+);
+
+const isDefinitionField = (
+    field: string,
+): field is keyof typeof AI_DEFINITION_PARAM_CODES =>
+    DEFINITION_FIELDS.includes(field);
+
+/** Рвёт ли ряд правка поля определений (через код реестра поля). */
 export function definitionFieldBreaksSeries(field: string): boolean {
-    return BREAKING_DEFINITION_FIELDS.includes(field);
+    return (
+        isDefinitionField(field) &&
+        paramBreaksSeries(AI_DEFINITION_PARAM_CODES[field])
+    );
 }
 
 /** Рвёт ли ряд правка кода реестра (источник признака — сам реестр). */
 export function paramBreaksSeries(code: string): boolean {
-    return findParam(code)?.breaksSeries ?? false;
+    return breakingParamCodes([code]).length > 0;
 }
 
 /** JSON-объект строки настройки; битая строка → пустой объект. */
@@ -156,7 +177,7 @@ export function diffAiSettings(
                 code: keyCode,
                 before: fromRaw,
                 after: toRaw,
-                breaksSeries: KEY_BREAKS_SERIES[name],
+                breaksSeries: keyBreaksSeries(name),
             },
         ];
     });
@@ -165,7 +186,8 @@ export function diffAiSettings(
 /**
  * Новая граница сравнимой истории: если хотя бы одно изменение рвёт ряд,
  * `comparableFrom` двигается на дату сохранения; иначе остаётся прежним.
- * Назад граница не едет никогда — история уже разорвана.
+ * Назад граница не едет никогда — история уже разорвана. То же правило
+ * для кодов реестра — `nextComparableFrom` в `params/params-version.ts`.
  */
 export function nextSettingsComparableFrom(
     current: string,
@@ -175,6 +197,9 @@ export function nextSettingsComparableFrom(
     const breaking = changes.some(change => change.breaksSeries);
     return breaking ? comparableFrom([current, savedOn]) : current;
 }
+
+/** Граница после смены кодов реестра `ai_analytics_model_params`. */
+export const nextParamsComparableFrom = nextComparableFrom;
 
 /**
  * Граница сравнимой истории, накопленная настройками портала: последнее

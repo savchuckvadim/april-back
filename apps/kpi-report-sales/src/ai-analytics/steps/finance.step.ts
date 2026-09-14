@@ -11,7 +11,13 @@
  * Что нельзя ломать:
  * - **замороженный месяц не перезаписывается**: с 3-го числа следующего
  *   месяца запись окончательна, и ночной прогон её не трогает
- *   (`forceRefresh` — единственный обход, он же ручной пересчёт);
+ *   (`forceRefresh` — единственный обход, он же ручной пересчёт). Флаг
+ *   `frozen` ставится по календарному дню прогона (`ctx.now` в TZ
+ *   портала), а не по дню периода: у догона истории день джобы — последний
+ *   день догоняемого месяца, и по нему закрытый месяц никогда не замерзал
+ *   бы (аудит Фазы 2, M3);
+ * - порог «разбираемого» звонка — карта по типам `portalMinDurationByType`,
+ *   та же, что у недели и пульса (M2);
  * - закрытые месяцы берутся из кэша, Битрикс для них не зовётся;
  * - догон истории пишет не больше `AI_MONTH_BACKFILL_LIMIT` месяцев за
  *   ночь: иначе нормам следующей волны нечего будет читать регулярно.
@@ -21,7 +27,6 @@
 import { Injectable } from '@nestjs/common';
 import {
     AI_ANALYTICS_SNAPSHOT_TYPE,
-    resolveNumberParam,
     toPortalDate,
 } from '@lib/sales-ai-analytics';
 import {
@@ -42,6 +47,7 @@ import { FinanceLoader } from '../domain/loaders/finance.loader';
 import type { AiFinanceResult } from '../domain/loaders/finance.types';
 import type { AiKpiMonthsResult } from '../domain/loaders/kpi.types';
 import type { DatedLiteRow } from '../domain/loaders/lite-row.mapper';
+import { portalMinDurationByType } from '../domain/loaders/min-duration.util';
 import { AiAnalyticsSnapshotStore } from '../store/ai-analytics-snapshot.store';
 import { NO_PLANS, plansByMonth } from './finance.plans';
 import {
@@ -176,6 +182,7 @@ export class FinanceStep implements AiAnalyticsPipelineStep {
         const modelSnapshotId = await this.modelSnapshotId(ctx);
         const shared = {
             day: ctx.day,
+            today: toPortalDate(ctx.now, ctx.timeZone),
             managerIds: ctx.managerIds.map(String),
             calendar: ctx.calendar,
             timeZone: ctx.timeZone,
@@ -187,7 +194,7 @@ export class FinanceStep implements AiAnalyticsPipelineStep {
                 bus.get(AI_PIPELINE_BUS_KEYS.chain),
             ),
             comparableFrom: ctx.comparableFrom || null,
-            ...this.shortCallSec(ctx),
+            minDurationSecByType: portalMinDurationByType(ctx.settings),
             meta: {
                 calcVersion: ctx.calcVersion,
                 paramsVersion: ctx.paramsVersion,
@@ -244,17 +251,6 @@ export class FinanceStep implements AiAnalyticsPipelineStep {
             null,
         );
         return record?.id ?? null;
-    }
-
-    /** Единый порог длительности портала (решение А.1). */
-    private shortCallSec(ctx: AiPipelineStepContext): {
-        shortCallSec?: number;
-    } {
-        const value = resolveNumberParam(
-            'min_duration_sec_by_type',
-            ctx.registry,
-        );
-        return value === undefined ? {} : { shortCallSec: value };
     }
 }
 

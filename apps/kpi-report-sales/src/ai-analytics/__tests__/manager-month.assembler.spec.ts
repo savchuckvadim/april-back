@@ -111,6 +111,26 @@ describe('buildManagerMonthPayload — месяц менеджера', () => {
         ).toBe(false);
     });
 
+    it('заморозка — по календарному дню прогона today, а не по дню периода day', () => {
+        // Догон: день джобы — конец догоняемого месяца, прогон — 3 октября.
+        expect(
+            buildManagerMonthPayload(
+                input({ day: '2026-09-30', today: '2026-10-03' }),
+            ).frozen,
+        ).toBe(true);
+        expect(
+            buildManagerMonthPayload(
+                input({ day: '2026-09-30', today: '2026-10-02' }),
+            ).frozen,
+        ).toBe(false);
+        // Живой пайплайн при этом решает day: месяц периода — текущий.
+        expect(
+            buildManagerMonthPayload(
+                input({ day: '2026-09-30', today: '2026-10-03' }),
+            ).rows[0].payload.finance.pipeline,
+        ).not.toBeNull();
+    });
+
     it('финансы: закрытые продажи, средний чек и живой пайплайн текущего месяца', () => {
         const current = buildManagerMonthPayload(
             input({ monthKey: '2026-09', day: '2026-09-30' }),
@@ -133,6 +153,45 @@ describe('buildManagerMonthPayload — месяц менеджера', () => {
         const payload = buildManagerMonthPayload(input()).rows[0].payload;
 
         expect(payload.finance.pipeline).toBeNull();
+    });
+});
+
+/** Порог «разбираемого» звонка — карта по типам, как у недели (M2). */
+describe('Порог длительности по типам в фактах месяца', () => {
+    const rows = () =>
+        [
+            liteRow({
+                transcriptionId: 'cold-90',
+                callType: 'cold',
+                durationSec: 90,
+                callStartedAt: new Date('2026-09-02T09:00:00Z'),
+            }),
+            liteRow({
+                transcriptionId: 'pres-90',
+                callType: 'presentation',
+                durationSec: 90,
+                callStartedAt: new Date('2026-09-02T09:00:00Z'),
+            }),
+        ] as DatedLiteRow[];
+
+    it('cold 60 / presentation 300: холодный 90 с — факт типа, презентация 90 с — нет', () => {
+        const payload = buildManagerMonthPayload(
+            input({
+                rows: rows(),
+                minDurationSecByType: { cold: 60, presentation: 300 },
+            }),
+        ).rows[0].payload;
+
+        expect(payload.byType.map(fact => [fact.callType, fact.n])).toEqual([
+            ['cold', 1],
+        ]);
+    });
+
+    it('без карты дефолт 300 с режет оба звонка', () => {
+        expect(
+            buildManagerMonthPayload(input({ rows: rows() })).rows[0].payload
+                .byType,
+        ).toEqual([]);
     });
 });
 

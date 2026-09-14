@@ -8,10 +8,37 @@ import {
     AI_PIPELINE_RETRY_DELAY_MS,
     buildPipelineJobId,
     resolvePipelineKeys,
+    type AiPipelineRhythm,
 } from '../constants/ai-snapshot.const';
-import { AiAnalyticsSnapshotScheduler } from '../cron/ai-analytics-snapshot.scheduler';
+import {
+    AiAnalyticsSnapshotScheduler,
+    freezeTickSteps,
+} from '../cron/ai-analytics-snapshot.scheduler';
 import { AiAnalyticsPortalsLoader } from '../domain/loaders/portals.loader';
 import { AiSnapshotJobData } from '../dto/ai-snapshot.dto';
+import type { AiAnalyticsPipelineStep } from '../steps/step.types';
+
+/** Шаг глазами планировщика: код и ритмы; прогон планировщику не нужен. */
+const fakeStep = (
+    code: string,
+    rhythms: AiPipelineRhythm[],
+): AiAnalyticsPipelineStep => ({
+    code,
+    rhythms,
+    run: () => Promise.reject(new Error('планировщик шаги не выполняет')),
+});
+
+/** Состав шагов как в проде (порядок регистрации конвейера Фазы 2). */
+const STEPS: AiAnalyticsPipelineStep[] = [
+    fakeStep('calls', ['nightly', 'weekly', 'monthly', 'backfill']),
+    fakeStep('passport', ['nightly', 'weekly', 'monthly', 'backfill']),
+    fakeStep('stage-history', ['nightly', 'weekly', 'monthly', 'backfill']),
+    fakeStep('kpi', ['nightly', 'monthly', 'backfill']),
+    fakeStep('style', ['monthly']),
+    fakeStep('plans', ['monthly']),
+    fakeStep('finance', ['nightly', 'monthly', 'backfill']),
+    fakeStep('forecast', ['nightly']),
+];
 
 interface PortalFlags {
     enabled?: boolean;
@@ -24,7 +51,10 @@ type DispatchMock = jest.Mock<
     [string, string, AiSnapshotJobData, string, object]
 >;
 
-function makeScheduler(portals: Record<string, PortalFlags>) {
+function makeScheduler(
+    portals: Record<string, PortalFlags>,
+    steps: readonly AiAnalyticsPipelineStep[] = STEPS,
+) {
     const appSettings = {
         listByAppCode: jest
             .fn()
@@ -58,6 +88,7 @@ function makeScheduler(portals: Record<string, PortalFlags>) {
             settings as never,
             dispatcher as never,
             backfill as never,
+            steps,
         ),
         dispatcher,
         backfill,
@@ -168,6 +199,50 @@ describe('AiAnalyticsSnapshotScheduler — ритмы ночного конве�
         expect(
             buildPipelineJobId('monthly', 'a.bitrix24.ru', '2026-09'),
         ).not.toBe(dispatcher.dispatch.mock.calls[0][3]);
+    });
+
+    it('тик заморозки 3-го числа: белый список всех месячных шагов без снимка планов', async () => {
+        const { scheduler, dispatcher } = makeScheduler(ENABLED);
+
+        await scheduler.dispatchAll('monthly', THIRD);
+
+        const monthlyCodes = STEPS.filter(step =>
+            step.rhythms.includes('monthly'),
+        ).map(step => step.code);
+        expect(monthlyCodes).toContain('plans');
+        expect(freezeTickSteps(STEPS)).toEqual(
+            monthlyCodes.filter(code => code !== 'plans'),
+        );
+        expect(jobData(dispatcher)).toEqual({
+            domain: 'a.bitrix24.ru',
+            kind: 'monthly',
+            day: '2026-10-03',
+            weekKey: '2026-W40',
+            monthKey: '2026-09',
+            steps: [
+                'calls',
+                'passport',
+                'stage-history',
+                'kpi',
+                'style',
+                'finance',
+            ],
+        });
+    });
+
+    it('ночной и недельный тики белого списка не несут; без зарегистрированных шагов список не ставится', async () => {
+        const nightly = makeScheduler(ENABLED);
+        const weekly = makeScheduler(ENABLED);
+        const bare = makeScheduler(ENABLED, []);
+
+        await nightly.scheduler.dispatchAll('nightly', NIGHT);
+        await weekly.scheduler.dispatchAll('weekly', MONDAY);
+        await bare.scheduler.dispatchAll('monthly', THIRD);
+
+        expect(jobData(nightly.dispatcher).steps).toBeUndefined();
+        expect(jobData(weekly.dispatcher).steps).toBeUndefined();
+        expect(freezeTickSteps([])).toEqual([]);
+        expect(jobData(bare.dispatcher).steps).toBeUndefined();
     });
 
     it('опции джобы как в плане; пользовательские джобы обзора не задеты', async () => {

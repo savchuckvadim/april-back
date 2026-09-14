@@ -1,7 +1,10 @@
 import {
+    AI_PIPELINE_ESTIMANDS,
     CIF_SALE_INF_PARAM_CODE,
+    CIF_SALE_INF_RANGE,
     LAG_CDF_DEFAULTS,
     LAG_CDF_PARAM_CODE,
+    LAG_CDF_VALUE_RANGE,
     SaleLag,
     exponentialLagCdf,
     isValidCifSaleInf,
@@ -13,6 +16,9 @@ import {
     selectSaleLags,
     validatePipelineParamValue,
 } from '../model/lag-cdf';
+import { registryDefault } from '../params/registry.access';
+import { findParam } from '../params/registry.const';
+import { resolveParam } from '../params/resolve';
 
 /**
  * Распределение лага `F(d)` среди проданных эпизодов и средняя зрелость
@@ -91,15 +97,41 @@ describe('maturityFloor', () => {
     });
 });
 
-describe('шкала F(d) против безусловной CIF', () => {
-    it('валидатор реестра не отвергает F(28) = 0,5', () => {
+describe('шкала F(d) против безусловной CIF — через реестр параметров', () => {
+    it('дескриптор lag_cdf_F: диапазон [0; 1], условное на продажу, оценка', () => {
+        const descriptor = findParam(LAG_CDF_PARAM_CODE);
+
+        expect(descriptor?.range).toEqual([0, 1]);
+        expect(descriptor?.source).toBe('estimated');
+        expect(LAG_CDF_VALUE_RANGE).toEqual(descriptor?.range);
+        expect(findParam('pipeline_estimand')?.defaultValue).toBe('cure');
+    });
+
+    it('реестр не отвергает F(28) = 0,5 — resolveParam берёт значение слоя', () => {
+        const resolved = resolveParam(LAG_CDF_PARAM_CODE, {
+            portal: { [LAG_CDF_PARAM_CODE]: exponentialLagCdf(28).at(28) },
+        });
+
+        expect(resolved.reason).toBeUndefined();
+        expect(resolved.value).toBeCloseTo(0.5, 10);
         expect(isValidLagCdfValue(0.5)).toBe(true);
         expect(validatePipelineParamValue(LAG_CDF_PARAM_CODE, 0.5)).toBe(true);
         expect(validatePipelineParamValue(LAG_CDF_PARAM_CODE, 1)).toBe(true);
         expect(validatePipelineParamValue(LAG_CDF_PARAM_CODE, 1.2)).toBe(false);
     });
 
-    it('диапазон [0,03; 0,3] относится только к cif_sale_inf', () => {
+    it('диапазон [0,03; 0,3] относится только к cif_sale_inf: 0,5 отвергается', () => {
+        expect(findParam(CIF_SALE_INF_PARAM_CODE)?.range).toEqual([0.03, 0.3]);
+        expect(CIF_SALE_INF_RANGE).toEqual([0.03, 0.3]);
+        expect(
+            resolveParam(CIF_SALE_INF_PARAM_CODE, {
+                portal: { [CIF_SALE_INF_PARAM_CODE]: 0.5 },
+            }),
+        ).toMatchObject({
+            value: 0.09,
+            source: 'default',
+            reason: 'out-of-range',
+        });
         expect(isValidCifSaleInf(0.5)).toBe(false);
         expect(isValidCifSaleInf(0.09)).toBe(true);
         expect(validatePipelineParamValue(CIF_SALE_INF_PARAM_CODE, 0.5)).toBe(
@@ -114,6 +146,22 @@ describe('шкала F(d) против безусловной CIF', () => {
         expect(LAG_CDF_PARAM_CODE).toBe('lag_cdf_F');
         expect(CIF_SALE_INF_PARAM_CODE).toBe('cif_sale_inf');
         expect(LAG_CDF_PARAM_CODE).not.toBe(CIF_SALE_INF_PARAM_CODE);
+    });
+
+    it('дефолты F(d) берутся из реестра, а не из литералов', () => {
+        expect(LAG_CDF_DEFAULTS.medianDays).toBe(
+            registryDefault('cycle_median_days'),
+        );
+        expect(LAG_CDF_DEFAULTS.windowDays).toBe(
+            registryDefault('lag_window_sale_days'),
+        );
+        expect(LAG_CDF_DEFAULTS.fMin).toBe(registryDefault('f_min'));
+        expect(LAG_CDF_DEFAULTS.minSales).toBe(
+            findParam(LAG_CDF_PARAM_CODE)?.minN,
+        );
+        expect(AI_PIPELINE_ESTIMANDS).toEqual(
+            findParam('pipeline_estimand')?.enumValues,
+        );
     });
 });
 

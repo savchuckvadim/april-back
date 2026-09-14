@@ -7,7 +7,12 @@
  * Что нельзя ломать:
  * - месяц замораживается 3-го числа следующего месяца: ночной прогон
  *   пересчитывать его не должен, иначе ряд норм «поедет» задним числом
- *   (решение принимает шаг — здесь только флаг `frozen`);
+ *   (решение принимает шаг — здесь только флаг `frozen`). Заморозка
+ *   считается по КАЛЕНДАРНОМУ дню прогона (`today`), а не по дню периода
+ *   `day`: у догона истории `day` — последний день догоняемого месяца, и
+ *   по нему месяц никогда не выглядел бы закрытым (аудит Фазы 2, M3);
+ * - порог «разбираемого» звонка — карта по типам, та же, что у недели и
+ *   пульса (M2);
  * - экспозиция, рёбра и стиль собираются отдельными функциями (файл
  *   ассемблера обязан оставаться в пределах 300 строк);
  * - правила портала (применимость разделов → потолки оценивания →
@@ -27,6 +32,7 @@ import {
     resolveNumberParam,
     type AiAbsence,
     type ManagerMatrixRow,
+    type MinDurationSecByType,
     type ParamContext,
     type WorkCalendar,
 } from '@lib/sales-ai-analytics';
@@ -36,6 +42,7 @@ import type { AiFinanceResult } from '../loaders/finance.types';
 import type { AiKpiMonth } from '../loaders/kpi.types';
 import type { DatedLiteRow } from '../loaders/lite-row.mapper';
 import { toMatrixRow } from './manager-type-matrix.assembler';
+import { periodMatrixOptions } from './manager-week.assembler';
 import {
     buildManagerEdges,
     resolveMonthEstimand,
@@ -67,8 +74,17 @@ import type {
 export interface ManagerMonthInput {
     /** Месяц снапшота 'YYYY-MM'. */
     monthKey: string;
-    /** День прогона 'YYYY-MM-DD' в TZ портала (по нему считается заморозка). */
+    /**
+     * День периода 'YYYY-MM-DD' в TZ портала: текущий ли месяц (живой
+     * пайплайн) и на какую дату считается уровень. У догона истории —
+     * последний день догоняемого месяца.
+     */
     day: string;
+    /**
+     * Календарный день прогона в TZ портала (`toPortalDate(ctx.now)`): по
+     * нему решается заморозка. Нет — совпадает с `day` (обычные ритмы).
+     */
+    today?: string;
     /** Ростер ОП строками (ключ снапшота — managerId строкой). */
     managerIds: readonly string[];
     calendar: WorkCalendar;
@@ -89,8 +105,8 @@ export interface ManagerMonthInput {
     styles: ReadonlyMap<string, ManagerStyleFacts>;
     /** Доля сцепки звонков со сделками, % (ключ `chain`). */
     chainSharePct: number;
-    /** Порог короткого звонка, секунды; нет — дефолт матрицы. */
-    shortCallSec?: number;
+    /** Порог «разбираемого» звонка по типам; нет — дефолт матрицы 300 с. */
+    minDurationSecByType?: MinDurationSecByType;
     /** Начало сравнимой истории 'YYYY-MM-DD'; null — ряд не рвался. */
     comparableFrom: string | null;
     meta: AiSnapshotMeta;
@@ -149,19 +165,14 @@ function matrixRowOf(
 export function buildManagerMonthPayload(
     input: ManagerMonthInput,
 ): ManagerMonthAssembly {
-    const frozen = isMonthFrozen(input.monthKey, input.day);
+    const frozen = isMonthFrozen(input.monthKey, input.today ?? input.day);
     const estimand = resolveMonthEstimand(input.registry, input.chainSharePct);
     const applicable = applySectionApplicability(input.rows);
     const scoring = applyPeriodScoring(applicable.rows, input.settings.scoring);
-    const matrix = buildManagerTypeMatrix(scoring.rows.map(toMatrixRow), {
-        ...(input.shortCallSec === undefined
-            ? {}
-            : { thresholds: { shortCallSec: input.shortCallSec } }),
-        ...(input.comparableFrom === null
-            ? {}
-            : { comparableFrom: input.comparableFrom }),
-        timeZone: input.timeZone,
-    });
+    const matrix = buildManagerTypeMatrix(
+        scoring.rows.map(toMatrixRow),
+        periodMatrixOptions(input),
+    );
     const financeMonth = input.finance?.months.find(
         month => month.month === input.monthKey,
     );

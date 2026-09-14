@@ -1,23 +1,26 @@
 /**
  * Распределение лага «активность → оплата» `F(d)` и средняя зрелость
- * пайплайна (план `ai-sales-analytics`, §4.8; Фаза 2, поток
- * `p2-model-forecast-plan`).
+ * пайплайна (план §4.8; Фаза 2, поток `p2-model-forecast-plan`).
  *
- * **Шкала (исправление ревизии).** `F(d)` — распределение лага **среди
- * проданных** эпизодов (cure-форма): `F(0) = 0`, монотонно, `F(∞) = 1`,
- * значения ∈ [0; 1]. Доля «не купят» сидит в вероятности продажи из стадии
- * `θ_j`, а не в `F`. Диапазон анкеты Ж [0,03; 0,3] относится к
- * **безусловной** CIF продажи (`cif_sale_inf`) — это другая величина с
- * другим кодом реестра, поэтому валидатор обязан пропускать `F(28) = 0,5`.
+ * **Шкала.** `F(d)` — распределение лага **среди проданных** (cure-форма):
+ * `F(0) = 0`, монотонно, `F(∞) = 1`, значения ∈ [0; 1]; доля «не купят»
+ * сидит в `θ_j` стадии. Диапазон анкеты Ж [0,03; 0,3] — это **безусловная**
+ * CIF продажи `cif_sale_inf`, другой код реестра: `F(28) = 0,5` проходит.
  *
- * Чистая математика: без DI, Bitrix и Prisma, без `Date.now`/`Math.random`.
+ * Чистая математика без DI, Bitrix, Prisma, `Date.now`/`Math.random`;
+ * дефолты и диапазоны — из реестра параметров (`params/`), не литералами.
  */
+import {
+    isRegistryValue,
+    registryDefault,
+    registryRangeOf,
+} from '../params/registry.access';
+import { findParam, type AiAnalyticsParamCode } from '../params/registry.const';
+import type { ParamRange } from '../params/registry.types';
 
-/** Оцениваемая величина ожидания от пайплайна: cure-форма или CIF. */
-export const AI_PIPELINE_ESTIMANDS = ['cure', 'cif'] as const;
-
-/** Формы ожидания от пайплайна — смешивать их запрещено (§4.8). */
-export type AiPipelineEstimand = (typeof AI_PIPELINE_ESTIMANDS)[number];
+/** Форма ожидания от пайплайна (словарь `pipeline_estimand`); смешивать формы запрещено (§4.8). */
+export { AI_PIPELINE_ESTIMANDS } from '../params/registry.enums.const';
+export type { AiPipelineEstimand } from '../params/registry.enums.const';
 
 /** Как получена таблица `F(d)`. */
 export const AI_LAG_CDF_KINDS = [
@@ -52,57 +55,55 @@ export interface SaleLag {
     readonly censored?: boolean;
 }
 
+/** Коды реестра: распределение лага и безусловная CIF — разные величины. */
+export const LAG_CDF_PARAM_CODE = 'lag_cdf_F' satisfies AiAnalyticsParamCode;
+export const CIF_SALE_INF_PARAM_CODE =
+    'cif_sale_inf' satisfies AiAnalyticsParamCode;
+
 /** Дефолты реестра, участвующие в оценке `F(d)`. */
 export const LAG_CDF_DEFAULTS = {
     /** `cycle_median_days` — медиана цикла до оценки Каплана–Мейера. */
-    medianDays: 28,
+    medianDays: registryDefault('cycle_median_days'),
     /** `lag_window_sale_days` — окно атрибуции продажи. */
-    windowDays: 60,
-    /** Гейт таблицы Каплана–Мейера: закрытых продаж в окне. */
-    minSales: 30,
+    windowDays: registryDefault('lag_window_sale_days'),
+    /** Гейт таблицы Каплана–Мейера: `minN` кода `lag_cdf_F` (30 продаж). */
+    minSales: findParam(LAG_CDF_PARAM_CODE)?.minN ?? 30,
     /** `f_min` — нижняя граница зрелости в обратной задаче. */
-    fMin: 0.1,
+    fMin: registryDefault('f_min'),
 } as const;
 
-/** Коды реестра: распределение лага и безусловная CIF — разные величины. */
-export const LAG_CDF_PARAM_CODE = 'lag_cdf_F';
-export const CIF_SALE_INF_PARAM_CODE = 'cif_sale_inf';
-
-/** Диапазон значений `F(d)` в cure-форме — вся шкала долей. */
-export const LAG_CDF_VALUE_RANGE: readonly [number, number] = [0, 1];
-
-/** Диапазон безусловной CIF продажи `cif_sale_inf` (анкета Ж). */
-export const CIF_SALE_INF_RANGE: readonly [number, number] = [0.03, 0.3];
+/** Диапазоны из реестра: `F(d)` — вся шкала [0; 1], CIF — [0,03; 0,3]. */
+export const LAG_CDF_VALUE_RANGE: ParamRange = registryRangeOf(
+    LAG_CDF_PARAM_CODE,
+) ?? [0, 1];
+export const CIF_SALE_INF_RANGE: ParamRange = registryRangeOf(
+    CIF_SALE_INF_PARAM_CODE,
+) ?? [0.03, 0.3];
 
 /** Максимум дней в расчёте средней зрелости — защита от бесконечных сумм. */
 export const LAG_CDF_MAX_DAYS = 3660;
 
 const HALF = 0.5;
 
-const inRange = (value: number, range: readonly [number, number]): boolean =>
-    Number.isFinite(value) && value >= range[0] && value <= range[1];
-
 /** Значение `F(d)` допустимо в cure-форме: вся шкала [0; 1], включая 0,5. */
 export const isValidLagCdfValue = (value: number): boolean =>
-    inRange(value, LAG_CDF_VALUE_RANGE);
+    isRegistryValue(LAG_CDF_PARAM_CODE, value);
 
 /** Значение безусловной CIF продажи допустимо: узкий диапазон [0,03; 0,3]. */
 export const isValidCifSaleInf = (value: number): boolean =>
-    inRange(value, CIF_SALE_INF_RANGE);
+    isRegistryValue(CIF_SALE_INF_PARAM_CODE, value);
 
 /**
- * Валидатор значения по коду реестра. Разделение кодов — суть исправления:
- * `F(28) = 0,5` проходит как распределение лага и отвергается как CIF.
+ * Валидатор значения по коду реестра — диапазон берётся из дескриптора.
+ * Разделение кодов — суть исправления: `F(28) = 0,5` проходит как
+ * распределение лага и отвергается как CIF. Чужой код — только конечность.
  */
 export function validatePipelineParamValue(
     code: string,
     value: number,
 ): boolean {
-    if (code === CIF_SALE_INF_PARAM_CODE) {
-        return isValidCifSaleInf(value);
-    }
-    if (code === LAG_CDF_PARAM_CODE) {
-        return isValidLagCdfValue(value);
+    if (code === CIF_SALE_INF_PARAM_CODE || code === LAG_CDF_PARAM_CODE) {
+        return isRegistryValue(code, value);
     }
 
     return Number.isFinite(value);

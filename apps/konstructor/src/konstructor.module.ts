@@ -11,6 +11,7 @@ import { SupplyInitTaskAccountantModule } from './supply/init-task-accountant/su
 import { InnerDealModule } from './modules/inner-deal/inner-deal.module';
 import { DealSendModule } from './modules/deal-send/deal-send.module';
 import { DirectServiceDealModule } from './supply/direct-service-deal/direct-service-deal.module';
+import { BitrixHelperModule } from './modules/bitrix-helper/bitrix-helper.module';
 @Module({
     imports: [
         ZakupkiOfferModule,
@@ -25,6 +26,7 @@ import { DirectServiceDealModule } from './supply/direct-service-deal/direct-ser
         InnerDealModule,
         DealSendModule,
         DirectServiceDealModule,
+        BitrixHelperModule,
     ],
 
     exports: [

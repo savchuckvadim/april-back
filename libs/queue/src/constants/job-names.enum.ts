@@ -33,6 +33,8 @@ export enum JobNames {
     DOCUMENT_SUPPLY_REPORT = 'generate-supply-report',
     ZAKUPKI_OFFER_GENERATE = 'zakupki-offer-generate',
     OFFER_GENERATE = 'offer-generate',
+    /** Генерация КП v2: несколько участников (варианты комплекта). Своё имя джобы — старый путь генерации не трогаем. */
+    OFFER_GENERATE_MULTI = 'offer-generate-multi',
 
     //sales report
     SALES_KPI_REPORT_GENERATE = 'sales-kpi-report-generate',

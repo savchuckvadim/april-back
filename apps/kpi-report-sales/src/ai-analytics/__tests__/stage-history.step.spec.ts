@@ -125,12 +125,25 @@ function busWithCalls(bus: StepBus, count: number): void {
 }
 
 describe('StageHistoryStep: контракт шага', () => {
-    it('код и ритмы: ночной пересчёт, месяц и backfill', () => {
+    it('код и ритмы: ночной пересчёт, неделя (для санити-панели), месяц и backfill', () => {
         const { step } = makeStep(loaded());
 
         expect(step.code).toBe(AI_STAGE_HISTORY_STEP_CODE);
         expect(step.rhythms).toEqual(AI_STAGE_HISTORY_RHYTHMS);
-        expect(step.rhythms).not.toContain('weekly');
+        // Санити-панель читает `slaFacts`/`timestampLeak` только из шины
+        // и считается по понедельникам — без недельного ритма два её
+        // правила были бы мертвы (аудит M1).
+        expect(step.rhythms).toContain('weekly');
+    });
+
+    it('недельный прогон читает то же окно, что и ночной того же дня (кэш по дню)', async () => {
+        const { step, load } = makeStep(loaded());
+
+        await step.run(makeCtx({ rhythm: 'weekly' }), createStepBus());
+        await step.run(makeCtx({ rhythm: 'nightly' }), createStepBus());
+
+        expect(load).toHaveBeenCalledTimes(2);
+        expect(load.mock.calls[0]).toEqual(load.mock.calls[1]);
     });
 
     it('грузит окно в двенадцать месяцев от дня прогона', async () => {

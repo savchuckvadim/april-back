@@ -14,7 +14,13 @@
  *   уедет балл, который руководитель уже отменил правилом;
  * - неприменимые к типу разделы рубрики вычёркиваются ПЕРЕД потолками:
  *   раздела, которого в таком разговоре быть не должно, не касаются ни
- *   правила портала, ни знаменатель оценки.
+ *   правила портала, ни знаменатель оценки;
+ * - порог «разбираемого» звонка — КАРТА по типам (единый порог портала,
+ *   тот же, что у пульса), а не один скаляр: при разных порогах по типам
+ *   скаляр уводил конвейер на дефолт 300 с (аудит Фазы 2, M2);
+ * - неделя без разборов пишется маркером ПОРТАЛЬНОГО зерна
+ *   (`managerId: null`, `empty: true`): без него догон истории считал бы
+ *   пустую неделю дырой каждую ночь (M3); строк менеджеров у неё нет.
  *
  * Чистая детерминированная функция: без DI, Bitrix и `new Date()`.
  */
@@ -23,9 +29,15 @@ import {
     buildObjectionsSlice,
     type AiScoringSettings,
     type AnalysisVersions,
+    type ManagerTypeMatrixOptions,
+    type MinDurationSecByType,
     type ObjectionCategoryStat,
     type ScoringCapSkipped,
 } from '@lib/sales-ai-analytics';
+import {
+    AI_MANAGER_SNAPSHOT_REASONS,
+    type AiManagerSnapshotReason,
+} from '../../constants/ai-manager-snapshot.const';
 import type { DatedLiteRow } from '../loaders/lite-row.mapper';
 import { toMatrixRow } from './manager-type-matrix.assembler';
 import {
@@ -47,13 +59,65 @@ export interface ManagerWeekInput {
     rows: readonly DatedLiteRow[];
     /** Правила портала: потолки оценивания и стоп-фразы. */
     scoring: AiScoringSettings;
-    /** Порог короткого звонка, секунды; нет — дефолт матрицы. */
-    shortCallSec?: number;
+    /**
+     * Порог «разбираемого» звонка по типам (`portalMinDurationByType`);
+     * нет — дефолт матрицы 300 с для всех типов.
+     */
+    minDurationSecByType?: MinDurationSecByType;
     /** Начало сравнимой истории 'YYYY-MM-DD'; null — ряд не рвался. */
     comparableFrom: string | null;
     /** TZ портала: по ней день звонка сравнивается с `comparableFrom`. */
     timeZone: string;
     meta: AiSnapshotMeta;
+}
+
+/** Общие для недели и месяца опции матрицы: порог, граница, TZ. */
+export type PeriodMatrixInput = Pick<
+    ManagerWeekInput,
+    'minDurationSecByType' | 'comparableFrom' | 'timeZone'
+>;
+
+/**
+ * Опции матрицы периода: карта порогов и граница сравнимости кладутся,
+ * только если заданы, — опции без ключа означают «дефолт библиотеки».
+ * Неделя и месяц обязаны строить матрицу одними опциями.
+ */
+export function periodMatrixOptions(
+    input: PeriodMatrixInput,
+): ManagerTypeMatrixOptions {
+    return {
+        ...(input.minDurationSecByType === undefined
+            ? {}
+            : { minDurationSecByType: input.minDurationSecByType }),
+        ...(input.comparableFrom === null
+            ? {}
+            : { comparableFrom: input.comparableFrom }),
+        timeZone: input.timeZone,
+    };
+}
+
+/**
+ * Маркер недели без разборов — запись `ai-analytics-manager-week`
+ * портального зерна (`managerId: null`). Читатели рядов менеджеров обязаны
+ * фильтровать по `managerId`; догон истории считает такую неделю
+ * обработанной.
+ */
+export interface ManagerWeekEmptyPayload {
+    empty: true;
+    n: 0;
+    reason: AiManagerSnapshotReason;
+    meta: AiSnapshotMeta;
+}
+
+export function emptyWeekPayload(
+    meta: AiSnapshotMeta,
+): ManagerWeekEmptyPayload {
+    return {
+        empty: true,
+        n: 0,
+        reason: AI_MANAGER_SNAPSHOT_REASONS.weekNoAnalysis,
+        meta,
+    };
 }
 
 export interface ManagerWeekAssembly {
@@ -117,23 +181,15 @@ export function buildManagerWeekPayload(
 ): ManagerWeekAssembly {
     const applicable = applySectionApplicability(input.rows);
     const scoring = applyPeriodScoring(applicable.rows, input.scoring);
-    const matrixOptions = {
-        ...(input.shortCallSec === undefined
-            ? {}
-            : { thresholds: { shortCallSec: input.shortCallSec } }),
-        ...(input.comparableFrom === null
-            ? {}
-            : { comparableFrom: input.comparableFrom }),
-        timeZone: input.timeZone,
-    };
+    const matrixOptions = periodMatrixOptions(input);
     const matrix = buildManagerTypeMatrix(
         scoring.rows.map(toMatrixRow),
         matrixOptions,
     );
     const objections = buildObjectionsSlice(scoring.rows, {
-        ...(input.shortCallSec === undefined
+        ...(matrixOptions.minDurationSecByType === undefined
             ? {}
-            : { shortCallSec: input.shortCallSec }),
+            : { minDurationSecByType: matrixOptions.minDurationSecByType }),
     });
     const rows = matrix.managers.map(manager => {
         const trace = traceOf(scoring, manager.managerId);

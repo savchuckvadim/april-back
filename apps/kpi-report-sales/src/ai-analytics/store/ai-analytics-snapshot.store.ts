@@ -4,76 +4,69 @@ import { AiEntityDto, AiService } from '@lib/call-lib';
 import {
     AI_ANALYTICS_SNAPSHOT_LOOKBACK_DAYS,
     AI_ANALYTICS_SNAPSHOT_STATUS,
-    AiAnalyticsSnapshotStatus,
+    AI_ANALYTICS_SNAPSHOT_TYPE,
+    AI_ANALYTICS_SNAPSHOT_WINDOW_LIMIT,
     AiAnalyticsSnapshotType,
     SnapshotEnvelope,
     snapshotRetention,
 } from '@lib/sales-ai-analytics';
+import type {
+    AiAnalyticsManagerMonthsOptions,
+    AiAnalyticsSnapshotFilter,
+    AiAnalyticsSnapshotPruneResult,
+    AiAnalyticsSnapshotRecord,
+    AiAnalyticsSnapshotUpsertOptions,
+    AiAnalyticsSnapshotUpsertResult,
+    AiAnalyticsSnapshotWindowOptions,
+} from './ai-analytics-snapshot.types';
 import {
     fromAisRecord,
     parseSnapshotStatus,
+    snapshotManagerId,
     toAisRecord,
 } from './snapshot-serialize.util';
+import {
+    capNewest,
+    DAY_MS,
+    expiredByCount,
+    expiredByDays,
+    isPositiveInteger,
+    matchesFilter,
+    pickLatestPerKey,
+    sameSignature,
+} from './snapshot-store.util';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** Снапшот, прочитанный из ais: конверт плюс поля записи. */
-export interface AiAnalyticsSnapshotRecord<T = unknown>
-    extends SnapshotEnvelope<T> {
-    id: string;
-    createdAt: Date;
-    status: AiAnalyticsSnapshotStatus;
-}
-
-export interface AiAnalyticsSnapshotFilter {
-    /** Ключи периодов (activity_id); пусто — выборка по окну created_at. */
-    periodKeys?: readonly string[];
-    /** Менеджеры (null — портальные записи); пусто — все. */
-    managerIds?: readonly (string | null)[];
-    /** Включать записи со status = 'superseded' (по умолчанию нет). */
-    includeSuperseded?: boolean;
-    /** Глубина окна created_at, дней (когда ключи неизвестны). */
-    lookbackDays?: number;
-    /** Момент отсчёта окна (по умолчанию — сейчас). */
-    now?: Date;
-}
-
-export interface AiAnalyticsSnapshotUpsertResult {
-    /** id новой ais-записи. */
-    id: string;
-    /** id записей того же ключа, помеченных superseded. */
-    supersededIds: string[];
-}
-
-export interface AiAnalyticsSnapshotPruneResult {
-    /** id записей, выведенных из актуальных по ретенции. */
-    retiredIds: string[];
-    /** Сколько записей осталось актуальными. */
-    kept: number;
-}
+export * from './ai-analytics-snapshot.types';
 
 /**
- * Хранилище снапшотов AI-аналитики в таблице ais (план 5.1–5.2): новых
- * таблиц нет, ключ — domain + type + activity_id (+ менеджер), актуальна
- * последняя запись, прошлые — status 'superseded'. Всё через AiService
- * библиотеки call-lib, прямых обращений к Prisma нет.
+ * Хранилище снапшотов AI-аналитики в таблице ais (план 5.1–5.2, Фаза 2
+ * §3.2): новых таблиц нет, ключ — domain + type + activity_id (+ менеджер),
+ * актуальна последняя запись, прошлые — status 'superseded'. Всё через
+ * AiService библиотеки call-lib, прямых обращений к Prisma нет.
+ *
+ * Выборки. Ключи периодов известны → findByDomainTypeKeys (порции по
+ * 500, без окна); неизвестны → окно created_at, и тогда **обязателен
+ * limit**: стор берёт не больше limit самых свежих строк (сейчас граница
+ * применяется в памяти — у AiService нет `take`, см. handoff call-lib),
+ * фильтры менеджера, статуса и latestOnly — поверх них в памяти.
+ * Транзакции нет (AiService умеет только create / update(id)); защита от
+ * гонки — детерминированный jobId конвейера плюс идемпотентный upsert:
+ * повтор с той же сигнатурой inputsHash + paramsVersion + calcVersion
+ * копию не создаёт (written: 0), force — принудительный пересчёт.
  *
  * prune не удаляет строки физически (в AiRepository нет delete): он
- * выводит просроченные записи из актуальных тем же статусом; физическая
- * чистка — админ-джоба Фазы 3 после появления AiRepository.delete.
+ * выводит просроченные записи из актуальных тем же статусом и видит
+ * только limit свежих строк окна — скорее недочистит, чем лишнее;
+ * физическая чистка — админ-джоба Фазы 3 после AiRepository.delete.
  *
- * ⚠ Стор работает только с типами Фазы 2 (manager-week, manager-month,
- * portal-model, forecast, brief, etl-run, style), записи которых лежат в
- * конверте SnapshotEnvelope. Типы feedback, audit и settings из того же
- * реестра писались раньше своими сторами в собственной форме (у feedback
- * нет activity_id), поэтому здесь они вернут пустой список, а не строки —
- * читать их надо AiAnalyticsFeedbackStore / AiAnalyticsSettingsStore и
- * AiAnalyticsAuditSnapshotStore.
- *
- * ⚠ Выборка без ключей периодов ограничена окном created_at
- * AI_ANALYTICS_SNAPSHOT_LOOKBACK_DAYS (400 дней), поэтому prune по
- * ретенции в записях (manager-week 104 недели ≈ 2 года) видит не всю
- * историю и скорее недочистит, чем лишнее: полная чистка — джоба Фазы 3.
+ * ⚠ Стор читает только записи в конверте SnapshotEnvelope (manager-week,
+ * manager-month, portal-model, forecast, brief, etl-run, style, plan).
+ * Типы feedback, audit, settings, settings-audit и rop-mark из того же
+ * реестра пишутся своими сторами в собственной форме (без конверта),
+ * поэтому здесь они вернут пустой список — читать их надо
+ * AiAnalyticsFeedbackStore / AiAnalyticsSettingsStore /
+ * AiAnalyticsAuditSnapshotStore / AiAnalyticsSettingsAuditStore /
+ * AiAnalyticsRopMarkStore.
  */
 @Injectable()
 export class AiAnalyticsSnapshotStore {
@@ -81,15 +74,26 @@ export class AiAnalyticsSnapshotStore {
 
     /**
      * Пишет новую версию снапшота; прошлые актуальные записи того же
-     * ключа помечает superseded.
+     * ключа помечает superseded. Идемпотентен: если актуальная запись
+     * ключа уже несёт ту же сигнатуру расчёта, ничего не пишет и отдаёт
+     * её id (written: 0); force пишет всегда.
      */
     async upsert<T>(
         envelope: SnapshotEnvelope<T>,
+        options: AiAnalyticsSnapshotUpsertOptions = {},
     ): Promise<AiAnalyticsSnapshotUpsertResult> {
         const previous = await this.findByKeys(envelope.domain, envelope.type, {
             periodKeys: [envelope.periodKey],
-            managerIds: [envelope.managerId],
+            managerIds: [snapshotManagerId(envelope.type, envelope.managerId)],
         });
+        const current = previous[previous.length - 1];
+        if (
+            !options.force &&
+            current !== undefined &&
+            sameSignature(current, envelope)
+        ) {
+            return { id: current.id, supersededIds: [], written: 0 };
+        }
         const supersededIds: string[] = [];
         for (const record of previous) {
             await this.markSuperseded(record.id);
@@ -107,45 +111,97 @@ export class AiAnalyticsSnapshotStore {
             ) as Prisma.JsonValue,
             ...(userId === null ? {} : { user_id: userId }),
         });
-        return { id: created.id, supersededIds };
+        return { id: created.id, supersededIds, written: 1 };
     }
 
     /**
-     * Снапшоты домена и типа по ключам периодов и менеджерам. Без
-     * periodKeys выборка идёт окном created_at (индекса по ключу нет).
+     * Снапшоты домена и типа по ключам периодов и менеджерам, по
+     * возрастанию возраста. Без periodKeys выборка идёт окном created_at
+     * (индекса по ключу нет) и требует limit.
      */
     async findByKeys(
         domain: string,
         type: AiAnalyticsSnapshotType,
         filter: AiAnalyticsSnapshotFilter = {},
     ): Promise<AiAnalyticsSnapshotRecord[]> {
+        assertLimit(type, filter);
         const rows = filter.periodKeys?.length
             ? await this.aiService.findByDomainTypeKeys(domain, type, {
                   activityIds: [...filter.periodKeys],
               })
             : await this.findInWindow(domain, type, filter);
-        return sortByAge(
-            rows
-                .flatMap(row => this.toRecord(row))
-                .filter(record => matchesFilter(record, filter)),
-        );
+        const records = capNewest(rows, filter.limit)
+            .flatMap(row => this.toRecord(row))
+            .filter(record => matchesFilter(record, filter));
+        return filter.latestOnly ? pickLatestPerKey(records) : records;
     }
 
     /**
      * Последний актуальный снапшот типа: по менеджеру, если он передан
-     * (null — портальные записи), иначе по всем.
+     * (null — портальные записи), иначе по всем. Просматривает limit
+     * свежих строк окна (по умолчанию AI_ANALYTICS_SNAPSHOT_WINDOW_LIMIT).
      */
     async latest(
         domain: string,
         type: AiAnalyticsSnapshotType,
         managerId?: string | null,
-        options: Pick<AiAnalyticsSnapshotFilter, 'lookbackDays' | 'now'> = {},
+        options: AiAnalyticsSnapshotWindowOptions = {},
     ): Promise<AiAnalyticsSnapshotRecord | null> {
         const records = await this.findByKeys(domain, type, {
             ...options,
+            limit: options.limit ?? AI_ANALYTICS_SNAPSHOT_WINDOW_LIMIT,
             ...(managerId === undefined ? {} : { managerIds: [managerId] }),
         });
         return records[records.length - 1] ?? null;
+    }
+
+    /**
+     * Актуальная модель портала: за месяц monthKey (по ключу, без окна)
+     * либо последняя записанная вообще. null — модели ещё нет.
+     */
+    async latestModel(
+        domain: string,
+        monthKey?: string,
+    ): Promise<AiAnalyticsSnapshotRecord | null> {
+        if (monthKey === undefined) {
+            return this.latest(
+                domain,
+                AI_ANALYTICS_SNAPSHOT_TYPE.portalModel,
+                null,
+            );
+        }
+        const records = await this.findByKeys(
+            domain,
+            AI_ANALYTICS_SNAPSHOT_TYPE.portalModel,
+            { periodKeys: [monthKey], managerIds: [null], latestOnly: true },
+        );
+        return records[records.length - 1] ?? null;
+    }
+
+    /**
+     * Актуальные месяцы менеджеров по ключам месяцев: одна запись на
+     * менеджер-месяц (максимальный id), портальных записей нет. Широкая
+     * выборка — limit обязателен.
+     */
+    async findManagerMonths(
+        domain: string,
+        monthKeys: readonly string[],
+        options: AiAnalyticsManagerMonthsOptions,
+    ): Promise<AiAnalyticsSnapshotRecord[]> {
+        if (monthKeys.length === 0) return [];
+        const records = await this.findByKeys(
+            domain,
+            AI_ANALYTICS_SNAPSHOT_TYPE.managerMonth,
+            {
+                periodKeys: monthKeys,
+                limit: options.limit,
+                latestOnly: true,
+                ...(options.managerIds?.length
+                    ? { managerIds: options.managerIds }
+                    : {}),
+            },
+        );
+        return records.filter(record => record.managerId !== null);
     }
 
     /**
@@ -157,10 +213,13 @@ export class AiAnalyticsSnapshotStore {
         domain: string,
         type: AiAnalyticsSnapshotType,
         keep?: number,
-        options: Pick<AiAnalyticsSnapshotFilter, 'lookbackDays' | 'now'> = {},
+        options: AiAnalyticsSnapshotWindowOptions = {},
     ): Promise<AiAnalyticsSnapshotPruneResult> {
         const retention = snapshotRetention(type);
-        const records = await this.findByKeys(domain, type, options);
+        const records = await this.findByKeys(domain, type, {
+            ...options,
+            limit: options.limit ?? AI_ANALYTICS_SNAPSHOT_WINDOW_LIMIT,
+        });
         const keepRecords = keep ?? retention.value ?? 0;
         const expired =
             keep === undefined && retention.unit === 'days'
@@ -208,53 +267,25 @@ export class AiAnalyticsSnapshotStore {
     }
 }
 
-/** По возрастанию возраста записи: created_at, при равенстве — id. */
-function sortByAge(
-    records: AiAnalyticsSnapshotRecord[],
-): AiAnalyticsSnapshotRecord[] {
-    return [...records].sort(
-        (a, b) =>
-            a.createdAt.getTime() - b.createdAt.getTime() ||
-            Number(a.id) - Number(b.id),
-    );
-}
-
-function matchesFilter(
-    record: AiAnalyticsSnapshotRecord,
+/**
+ * limit — целое > 0; без periodKeys он обязателен: выборка окном
+ * created_at иначе не ограничена (план §3.2).
+ */
+function assertLimit(
+    type: AiAnalyticsSnapshotType,
     filter: AiAnalyticsSnapshotFilter,
-): boolean {
+): void {
+    const missing = filter.limit === undefined;
     if (
-        !filter.includeSuperseded &&
-        record.status === AI_ANALYTICS_SNAPSHOT_STATUS.superseded
+        missing
+            ? Boolean(filter.periodKeys?.length)
+            : isPositiveInteger(filter.limit)
     ) {
-        return false;
+        return;
     }
-    if (!filter.managerIds?.length) return true;
-    return filter.managerIds.includes(record.managerId);
-}
-
-/** Все записи, кроме keep последних на менеджера (keep ≤ 0 — все). */
-function expiredByCount(
-    records: readonly AiAnalyticsSnapshotRecord[],
-    keep: number,
-): AiAnalyticsSnapshotRecord[] {
-    const byManager = new Map<string, AiAnalyticsSnapshotRecord[]>();
-    for (const record of records) {
-        const key = record.managerId ?? '';
-        byManager.set(key, [...(byManager.get(key) ?? []), record]);
-    }
-    return [...byManager.values()].flatMap(group =>
-        keep > 0 ? group.slice(0, Math.max(group.length - keep, 0)) : group,
+    throw new Error(
+        `AiAnalyticsSnapshotStore.findByKeys(${type}): без periodKeys ` +
+            'обязателен limit (целое > 0) — верхняя граница строк выборки ' +
+            'окном created_at, иначе она не ограничена (план Фазы 2 §3.2)',
     );
-}
-
-/** Записи старше retention дней от now. */
-function expiredByDays(
-    records: readonly AiAnalyticsSnapshotRecord[],
-    days: number | null,
-    now: Date = new Date(),
-): AiAnalyticsSnapshotRecord[] {
-    if (days === null) return [];
-    const edge = now.getTime() - days * DAY_MS;
-    return records.filter(record => record.createdAt.getTime() < edge);
 }

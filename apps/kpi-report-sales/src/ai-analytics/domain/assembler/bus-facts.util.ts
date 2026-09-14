@@ -125,13 +125,13 @@ export function readStyles(value: unknown): Map<string, ManagerStyleFacts> {
 }
 
 /**
- * Доля сцепки звонков со сделками, % (ключ `chain` шага истории стадий).
- * Нет значения — 0: рёбра остаются интенсивностями.
+ * Доля сцепки звонков со сделками, % — ключ `chain` шага истории стадий.
+ * Форма ключа — форма писателя, `EpisodesChain` ассемблера эпизодов
+ * (`domain/assembler/episodes.assembler.ts`): доля лежит в поле `sharePct`.
+ * Нет значения или чужая форма — 0: рёбра остаются интенсивностями.
+ * Контракт «stage-history пишет → finance/portal-model читают» закреплён
+ * `__tests__/bus-contract.spec.ts` на реальном прогоне шага.
  */
 export function readChainSharePct(value: unknown): number {
-    if (typeof value === 'number' && Number.isFinite(value)) return value;
-    if (isObject(value)) {
-        return asNumber(value.chainSharePct) ?? 0;
-    }
-    return 0;
+    return isObject(value) ? (asNumber(value.sharePct) ?? 0) : 0;
 }

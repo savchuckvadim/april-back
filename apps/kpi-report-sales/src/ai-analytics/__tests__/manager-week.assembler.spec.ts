@@ -2,6 +2,8 @@ import 'reflect-metadata';
 import type { AiScoringSettings } from '@lib/sales-ai-analytics';
 import {
     buildManagerWeekPayload,
+    emptyWeekPayload,
+    periodMatrixOptions,
     toAnalysisVersions,
 } from '../domain/assembler/manager-week.assembler';
 import type { DatedLiteRow } from '../domain/loaders/lite-row.mapper';
@@ -155,6 +157,85 @@ describe('Граница сравнимой истории', () => {
     it('неполная карта версий разбора версиями не считается', () => {
         expect(toAnalysisVersions({ prompt: 'p' })).toBeNull();
         expect(toAnalysisVersions(null)).toBeNull();
+    });
+});
+
+/**
+ * Порог «разбираемого» звонка — карта по типам (реестр
+ * `min_duration_sec_by_type`, аудит Фазы 2, M2): матрица и срез
+ * возражений режут одни и те же звонки.
+ */
+describe('Порог длительности по типам звонков', () => {
+    const byType = { cold: 60, presentation: 300 };
+    const objectionRow = (id: string, overrides: Partial<DatedLiteRow>) =>
+        callRow(id, {
+            objections: [
+                {
+                    category: 'price',
+                    quote: null,
+                    handled: true,
+                    outcome: 'continued',
+                },
+            ],
+            ...overrides,
+        });
+    /** 8 холодных по 90 с и 8 презентаций по 90 с, в каждом — возражение. */
+    const rows = () => [
+        ...Array.from({ length: 8 }, (_, index) =>
+            objectionRow(`c-${index}`, { callType: 'cold', durationSec: 90 }),
+        ),
+        ...Array.from({ length: 8 }, (_, index) =>
+            objectionRow(`p-${index}`, {
+                callType: 'presentation',
+                durationSec: 90,
+            }),
+        ),
+    ];
+
+    it('cold 60 / presentation 300: холодные 90 с в неделе, презентации 90 с — нет, возражения — той же картой', () => {
+        const assembly = input(rows(), { minDurationSecByType: byType });
+
+        const payload = assembly.rows[0].payload;
+        expect(assembly.analyzed).toBe(8);
+        expect(payload.n).toBe(8);
+        expect(payload.byType.map(cell => [cell.callType, cell.n])).toEqual([
+            ['cold', 8],
+        ]);
+        expect(payload.objections).toEqual([
+            expect.objectContaining({ category: 'price', n: 8, calls: 8 }),
+        ]);
+    });
+
+    it('без карты порог 300 с на все типы — те же строки дают неделю без записей', () => {
+        expect(input(rows()).rows).toEqual([]);
+    });
+
+    it('опции матрицы периода: карта и граница кладутся только когда заданы', () => {
+        expect(
+            periodMatrixOptions({ comparableFrom: null, timeZone: 'UTC' }),
+        ).toEqual({ timeZone: 'UTC' });
+        expect(
+            periodMatrixOptions({
+                minDurationSecByType: byType,
+                comparableFrom: '2026-09-01',
+                timeZone: 'UTC',
+            }),
+        ).toEqual({
+            minDurationSecByType: byType,
+            comparableFrom: '2026-09-01',
+            timeZone: 'UTC',
+        });
+    });
+});
+
+describe('Маркер недели без разборов', () => {
+    it('портальное зерно: empty, n = 0, причина week-no-analysis и версии расчёта', () => {
+        expect(emptyWeekPayload(META)).toEqual({
+            empty: true,
+            n: 0,
+            reason: 'week-no-analysis',
+            meta: META,
+        });
     });
 });
 

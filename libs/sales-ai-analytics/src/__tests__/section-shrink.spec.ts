@@ -1,4 +1,5 @@
 import { confidenceFor, scoreMetric } from '../model/metric';
+import { mulberry32, seedOf } from '../model/prng';
 import {
     QualityGroup,
     SECTION_SHRINK_DEFAULTS,
@@ -187,5 +188,67 @@ describe('границы усадки оценки (§4.3)', () => {
 
         expect(strong.value).toBeLessThan(weak.value);
         expect(strong.w).toBeCloseTo(20 / 70, 9);
+    });
+});
+
+describe('property: w ∈ [0, 1] на 1000 случайных входов (mulberry32)', () => {
+    const random = mulberry32(seedOf('section-shrink', 'w-property'));
+    /** Равномерно в [−0,3·scale; 0,7·scale] — с отрицательной зоной. */
+    const spread = (scale: number): number => (random() - 0.3) * scale;
+    /** Шкала оценок 1–10. */
+    const score = (): number => 1 + 9 * random();
+
+    it('shrinkSectionScore: w в [0, 1], Ŝ = w·S̄ + (1 − w)·μ', () => {
+        for (let trial = 0; trial < 1000; trial += 1) {
+            const roll = random();
+            const n = roll < 0.1 ? Number.NaN : spread(200);
+            const mean = score();
+            const mu = score();
+            const result = shrinkSectionScore({
+                n,
+                mean,
+                mu,
+                mS: random() < 0.2 ? undefined : spread(100),
+            });
+            expect(result.w).toBeGreaterThanOrEqual(0);
+            expect(result.w).toBeLessThanOrEqual(1);
+            expect(result.n).toBeGreaterThanOrEqual(0);
+            expect(result.mS).toBeGreaterThanOrEqual(0);
+            expect(result.value).toBeCloseTo(
+                result.w * mean + (1 - result.w) * mu,
+                9,
+            );
+        }
+    });
+
+    it('shrinkSectionMetric: w в [0, 1], value null только при confidence none', () => {
+        for (let trial = 0; trial < 1000; trial += 1) {
+            const size = Math.floor(random() * 40);
+            const metric = scoreMetric(Array.from({ length: size }, score));
+            const shrunk = shrinkSectionMetric(metric, score(), spread(60));
+            expect(shrunk.w).toBeGreaterThanOrEqual(0);
+            expect(shrunk.w).toBeLessThanOrEqual(1);
+            expect(shrunk.value === null).toBe(metric.value === null);
+        }
+    });
+
+    it('estimateMS: m_S всегда в [mMin; mMax] на случайных группах', () => {
+        for (let trial = 0; trial < 200; trial += 1) {
+            const groups = Array.from(
+                { length: 3 + Math.floor(random() * 6) },
+                (_, index) => ({
+                    key: `m${index}`,
+                    values: Array.from(
+                        { length: 5 + Math.floor(random() * 36) },
+                        score,
+                    ),
+                }),
+            );
+            const result = estimateMS(groups);
+            expect(result.mS).toBeGreaterThanOrEqual(
+                SECTION_SHRINK_DEFAULTS.mMin,
+            );
+            expect(result.mS).toBeLessThanOrEqual(SECTION_SHRINK_DEFAULTS.mMax);
+        }
     });
 });

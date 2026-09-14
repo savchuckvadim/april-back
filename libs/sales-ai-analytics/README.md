@@ -21,7 +21,7 @@
 | `contracts/feedback.types.ts` | `AI_ANALYTICS_FEEDBACK_TYPE`, `AI_ANALYTICS_FEEDBACK_KINDS`, payload записи `ais` |
 | `contracts/snapshot.types.ts` | `SnapshotEnvelope<T>`, нагрузки снапшотов Фазы 2, `SkillSnapshot` |
 | `contracts/snapshot-kinds.const.ts` | реестр 10 типов ais-снапшотов: зерно, ключ, ретенция, статусы (Фаза 2) |
-| `params/` | реестр 60 параметров модели, послойный `resolveParam`, `paramsVersion` (Фаза 2) |
+| `params/` | реестр параметров модели (~190 кодов, покрытие 84 кодов анкеты Ж), послойный `resolveParam`, `registryDefault`, `paramsVersion` / `nextComparableFrom` (Фаза 2) |
 | `model/norms.index.ts` | экспозиция, κ, leave-one-out нормы, апостериоры рёбер (Фаза 2) |
 | `model/quality.index.ts` | качество за период, усадка разделов, форма/содержание, надёжность (Фаза 2) |
 | `contracts/quality-link.types.ts` | `QualityLink`, `AI_BETA_SOURCES` — режимы связи качества с исходом (Фаза 2) |
@@ -62,22 +62,38 @@
 Наружу торчит через корневой `src/index.ts` (барьеры `params/index.ts`,
 `model/norms.index.ts`, `model/quality.index.ts`).
 
-### Реестр параметров (`src/params`, план §4.1)
+### Реестр параметров (`src/params`, план Фазы 2 §2, анкета Ж)
 
-60 дескрипторов `ParamDescriptor` (код, заголовок, слой `scope`, источник,
-единица, дефолт, диапазон, фаза, `breaksSeries`, описание по-русски) собраны
-`as const satisfies` из шести тематических файлов `registry.*.const.ts` —
-нормы и усадка, стаж и capacity, воронка/бета/цикл/план, пороги, определения
-владельца, стиль. `AiAnalyticsParamCode` — литеральный union кодов.
+Около 190 дескрипторов `ParamDescriptor` (код, заголовок, слой `scope`,
+источник, единица, дефолт, диапазон, фаза, `breaksSeries`, описание
+по-русски) собраны `as const satisfies` из тематических файлов
+`registry.*.const.ts` — нормы и усадка, стаж, воронка, рёбра (генератор
+`e{n}_rate` / `e{n}_prob` / `mu_e{n}` из `AI_EDGE_CODES`), пороги,
+определения событий, стиль, экспозиция и ростер, план и capacity, политики,
+пул и версии, качество, гейты данных. `AiAnalyticsParamCode` — литеральный
+union кодов.
 
+- **Один код = один скаляр.** Составные значения анкеты Ж расщеплены
+  (`kappa_edge` → `kappa_edge_early/late`, `stage_sla` → `sla_*_days` …);
+  списки и карты кодируются строкой с `kind: 'enum' | 'csv' | 'json'` и
+  словарём `enumValues` (`params/registry.enums.const.ts`), проверка —
+  `validateParamValue`.
+- **Покрытие анкеты Ж (84 кода)** — `registry.mapping.const.ts`:
+  `AI_ANALYTICS_ANKETA_CODES` и `AI_ANALYTICS_PARAM_MAPPING` (код анкеты →
+  ≥ 1 код реестра); карта на рёбра витрины — `AI_ANALYTICS_EDGE_VIEW_MAP`.
 - `resolveParam(code, ctx?, evidence?)` — послойный resolve менеджер → полоса
-  стажа → портал → глобальный дефолт; значение вне диапазона или неверного типа
-  не проваливается на слой ниже, а откатывается к дефолту с `reason`
-  (`out-of-range` | `type-mismatch` | `unknown-code`). Гибрид считает
-  `w·data + (1 − w)·prior` по `evidence`.
-- `paramsVersion(payload)` / `REGISTRY_VERSION` — sha256 по каноническому JSON
-  (`canonicalJson`: рекурсивная сортировка ключей, нормализация `-0` и
-  не-конечных чисел). Кладётся в снапшоты рядом с `inputsHash` и `calcVersion`.
+  стажа → портал → глобальный дефолт; значение вне диапазона, неверного типа
+  или не из словаря не проваливается на слой ниже, а откатывается к дефолту с
+  `reason` (`out-of-range` | `type-mismatch` | `invalid-value` |
+  `unknown-code`). Гибрид считает `w·data + (1 − w)·prior` по `evidence`.
+- `registryDefault(code)` / `registryDefault(code, fallback)`,
+  `registryRangeOf`, `isRegistryValue` — типизированный доступ библиотеки к
+  дефолтам и диапазонам (`lag-cdf.ts`, `readiness.ts` берут числа отсюда).
+- `paramsVersion(payload)` / `REGISTRY_VERSION` = `registryVersionOf(params)`
+  — sha256 по каноническому JSON расчётно значимых полей дескрипторов
+  (дефолт, диапазон, словарь, `breaksSeries`; тексты не входят), поэтому
+  версия меняется при смене дефолта. `nextComparableFrom(prev, codes, now)`
+  двигает границу сравнимой истории только при смене кода с `breaksSeries`.
 
 Решения владельца зашиты дефолтами реестра, а не ветвлениями кода:
 `min_duration_sec_by_type` = 300 (А.1), `hot_client_definition` =
@@ -196,12 +212,12 @@ magic string), `kappa_portal_to_global` = 0 (А.3, пула нет).
 
 | Файл | Что даёт |
 |---|---|
-| `settings/ai-settings.types.ts` | типы десяти блоков, `AI_SETTINGS_KEYS`, `AI_MANAGER_LEVELS`, `AI_FUNNEL_EDGE_CODES`, `AI_PORTAL_EVENT_KINDS`, `AI_SETTINGS_LIMITS` |
+| `settings/ai-settings.types.ts` | типы десяти блоков, `AI_SETTINGS_KEYS`, `AI_PORTAL_EVENT_KINDS`, `AI_SETTINGS_LIMITS`; словари (`AI_MANAGER_LEVELS`, `AI_NORM_STRATA`, `AI_INVOICE_NESTINGS`, `AI_HOT_CLIENT_COLORS`) реэкспортируются из реестра, `AI_FUNNEL_EDGE_CODES` = `AI_EDGE_CODES` |
 | `settings/ai-settings.defaults.ts` | дефолты блоков **из реестра параметров** (`registryNumber/Text/Range`), `defaultDefinitions`, `defaultTargets`, `hotStageOf` без magic string |
 | `settings/ai-settings.parse.ts` | `parseAiLevels / Targets / Absences / ManagerParams / Events / RosterConfirmedAt` + `parseAiModelParams / Definitions / Scoring / Hypothesis` |
 | `settings/ai-settings.sanity.ts` | `settingsSanity(input): { blocking, warnings }` — блокирующая проверка значений, диапазоны берутся из `findParam(code).range`, а не литералами |
-| `settings/ai-settings.series.ts` | `diffAiSettings`, `nextSettingsComparableFrom`, `comparableFromEvents`, автособытие `settings_break`: поля с `breaksSeries` двигают границу сравнимой истории, отсутствия/цели/гипотеза/ростер — нет |
-| `settings/registry-context.builder.ts` | `buildRegistryContext(input): ParamContext` — слои портал → полоса стажа → менеджер, решение человека кладётся поверх оценки модели |
+| `settings/ai-settings.series.ts` | `diffAiSettings`, `nextSettingsComparableFrom`, `comparableFromEvents`, автособытие `settings_break`: признак `breaksSeries` берётся только из реестра — ключ схемы → коды `AI_SETTINGS_KEY_PARAM_CODES`, поле определений → код `AI_DEFINITION_PARAM_CODES`; ручной таблицы «ключ → рвёт» нет |
+| `settings/registry-context.builder.ts` | `buildRegistryContext(input): ParamContext` — слои портал → полоса стажа → менеджер, решение человека кладётся поверх оценки модели; слои типизированы кодами реестра, `AI_DEFINITION_PARAM_CODES` — поле определений → код |
 
 ## Фаза 2, волна 1 (добор): потолки и стиль, эпизоды, прогноз и план дня
 

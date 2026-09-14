@@ -4,8 +4,9 @@
  * Prisma. Ключ периода (activity_id) зависит от зерна типа: 'YYYY-MM',
  * 'YYYY-Www' (ISO-неделя), 'YYYY-MM-DD' или хэш входов.
  *
- * Типы снапшотов, зёрна и дескрипторы ретенции берутся из публичного
- * API библиотеки (@lib/sales-ai-analytics), глубоких путей нет.
+ * Типы снапшотов, зёрна, дескрипторы ретенции и разбор `user_result`
+ * (parseSnapshotUserResult) берутся из публичного API библиотеки
+ * (@lib/sales-ai-analytics), глубоких путей нет.
  */
 import { createHash } from 'node:crypto';
 import {
@@ -18,20 +19,15 @@ import {
     isAiAnalyticsSnapshotStatus,
     isAiAnalyticsSnapshotType,
     isManagerGrain,
+    parseSnapshotUserResult,
     SnapshotEnvelope,
     snapshotGrain,
+    SnapshotUserResult,
 } from '@lib/sales-ai-analytics';
 import { isoWeekKey } from '../domain/loaders/period.util';
 
-/** user_result записи снапшота: метаданные конверта и нагрузка. */
-export interface AiSnapshotUserResult<T = unknown> {
-    /** Менеджер строкой (ростер отдаёт строковые id); null — портал. */
-    managerId: string | null;
-    paramsVersion: string;
-    inputsHash: string;
-    generatedAt: string;
-    payload: T;
-}
+/** user_result записи снапшота: метаданные конверта и нагрузка (форма lib). */
+export type AiSnapshotUserResult<T = unknown> = SnapshotUserResult<T>;
 
 /** Колонки ais одной записи снапшота (вход AiService.create). */
 export interface AiSnapshotAisRecord<T = unknown> {
@@ -70,6 +66,7 @@ export const AI_ANALYTICS_SNAPSHOT_KEY_PATTERNS: Record<
 > = {
     'manager-week': /^\d{4}-W\d{2}$/,
     'manager-month': /^\d{4}-\d{2}$/,
+    'portal-week': /^\d{4}-W\d{2}$/,
     'portal-month': /^\d{4}-\d{2}$/,
     'manager-day': /^\d{4}-\d{2}-\d{2}$/,
     'portal-day': /^\d{4}-\d{2}-\d{2}$/,
@@ -85,9 +82,6 @@ export const AI_ANALYTICS_SNAPSHOT_HASH_LENGTH = 16;
  * символ в исходнике ломает grep/diff (файл читается как бинарный).
  */
 const SNAPSHOT_HASH_SEPARATOR = '\u0000';
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-    typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const asString = (value: unknown): string | null =>
     typeof value === 'string' ? value : null;
@@ -115,6 +109,7 @@ export function periodKeyOf(
 ): string {
     switch (grain) {
         case 'manager-week':
+        case 'portal-week':
             return isoWeekKey(day);
         case 'manager-month':
         case 'portal-month':
@@ -139,6 +134,18 @@ export function toManagerUserId(managerId: string | null): number | null {
     return Number.isInteger(userId) && userId > 0 ? userId : null;
 }
 
+/**
+ * Менеджер записи по зерну типа: у портальных зёрен менеджера нет —
+ * переданный отбрасывается. Так же ключ записи видит стор при поиске
+ * прежних версий.
+ */
+export function snapshotManagerId(
+    type: AiAnalyticsSnapshotType,
+    managerId: string | null,
+): string | null {
+    return isManagerGrain(snapshotGrain(type)) ? managerId : null;
+}
+
 /** Статус ais-записи → статус снапшота; чужое значение → null. */
 export function parseSnapshotStatus(
     value: unknown,
@@ -151,9 +158,7 @@ export function toAisRecord<T>(
     envelope: SnapshotEnvelope<T>,
     status: AiAnalyticsSnapshotStatus = AI_ANALYTICS_SNAPSHOT_STATUS.done,
 ): AiSnapshotAisRecord<T> {
-    const managerId = isManagerGrain(snapshotGrain(envelope.type))
-        ? envelope.managerId
-        : null;
+    const managerId = snapshotManagerId(envelope.type, envelope.managerId);
     return {
         provider: AI_ANALYTICS_SNAPSHOT_PROVIDER,
         app: AI_ANALYTICS_SNAPSHOT_APP,
@@ -195,7 +200,7 @@ export function fromAisRecord(
     if (!isSnapshotPeriodKey(grain, periodKey)) return null;
     if (parseSnapshotStatus(record.status) === null) return null;
 
-    const meta = parseUserResult(record.user_result);
+    const meta = parseSnapshotUserResult(record.user_result);
     if (meta === null) return null;
 
     const managerId = isManagerGrain(grain)
@@ -221,25 +226,4 @@ function userIdToManagerId(userId: number | null | undefined): string | null {
     return typeof userId === 'number' && Number.isInteger(userId) && userId > 0
         ? String(userId)
         : null;
-}
-
-/** user_result → метаданные конверта и нагрузка; чужая форма → null. */
-function parseUserResult(value: unknown): AiSnapshotUserResult | null {
-    if (!isRecord(value)) return null;
-    const paramsVersion = asString(value.paramsVersion);
-    const inputsHash = asString(value.inputsHash);
-    const generatedAt = asNonEmptyString(value.generatedAt);
-    if (paramsVersion === null || inputsHash === null || generatedAt === null) {
-        return null;
-    }
-    if (value.payload === undefined || value.payload === null) return null;
-    const managerId =
-        value.managerId === null ? null : asNonEmptyString(value.managerId);
-    return {
-        managerId,
-        paramsVersion,
-        inputsHash,
-        generatedAt,
-        payload: value.payload,
-    };
 }

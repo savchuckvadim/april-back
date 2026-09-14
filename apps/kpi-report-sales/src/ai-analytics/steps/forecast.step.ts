@@ -31,6 +31,7 @@ import {
     AI_PIPELINE_BUS_KEYS,
     previousMonthKey,
 } from '../constants/ai-snapshot.const';
+import { AI_STAGE_HISTORY_MIN_MONTHS } from '../constants/ai-stage-history.const';
 import {
     buildForecastPayload,
     type ForecastPayload,
@@ -59,9 +60,6 @@ import {
     stepOk,
     stepSkipped,
 } from './step.types';
-
-/** Минимум месяцев истории стадий, с которого считается пайплайн. */
-const MIN_STAGE_HISTORY_MONTHS = 3;
 
 /** Предыдущий месяц по ключу месяца ('2026-09' → '2026-08'). */
 const previousMonthOf = (monthKey: string): string =>
@@ -158,7 +156,9 @@ export class ForecastStep implements AiAnalyticsPipelineStep {
                 daysLeft: days.left,
                 model: model.payload,
                 modelSnapshotId: model.id,
-                hasStageHistory: historyMonths >= MIN_STAGE_HISTORY_MONTHS,
+                // Тот же гейт, что у шага истории стадий (аудит N3): ниже
+                // него шаг сам уходит в skipped и пайплайна в шине нет.
+                hasStageHistory: historyMonths >= AI_STAGE_HISTORY_MIN_MONTHS,
                 registry: ctx.registry,
                 manager: managerInput({
                     managerId,

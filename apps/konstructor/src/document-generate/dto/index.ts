@@ -6,3 +6,4 @@ export * from './offer-price/price-cells.dto';
 export * from './recipient.dto';
 export * from './region.dto';
 export * from './recipient.dto';
+export * from './document-variant/document-variant.dto';

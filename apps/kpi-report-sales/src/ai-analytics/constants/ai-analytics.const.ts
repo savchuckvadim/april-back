@@ -9,6 +9,7 @@ import { CALL_REPORT_RISK_FLAG_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smar
 import {
     AI_ANALYTICS_SNAPSHOT_APP,
     AI_ANALYTICS_SNAPSHOT_PROVIDER,
+    AI_ANALYTICS_SNAPSHOT_TYPE,
     PULSE_DEFAULTS,
 } from '@lib/sales-ai-analytics';
 
@@ -268,10 +269,11 @@ export type AiAnalyticsSnapshotKind =
  * Тип и адресация ais-записи аудита сохранений настроек (план §3.1,
  * `ai-analytics-settings-audit`): каждое `settings/save` пишет снапшот с
  * автором, списком изменений и границей сравнимой истории до и после.
- * Ключ записи — день сохранения в TZ портала.
+ * Ключ записи — день сохранения в TZ портала. Литерал типа — из реестра
+ * снапшотов библиотеки (AI_ANALYTICS_SNAPSHOT_TYPE.settingsAudit).
  */
 export const AI_ANALYTICS_SETTINGS_AUDIT_RECORD = {
-    TYPE: 'ai-analytics-settings-audit',
+    TYPE: AI_ANALYTICS_SNAPSHOT_TYPE.settingsAudit,
     APP: AI_ANALYTICS_SNAPSHOT_APP,
     PROVIDER: AI_ANALYTICS_SNAPSHOT_PROVIDER,
 } as const;

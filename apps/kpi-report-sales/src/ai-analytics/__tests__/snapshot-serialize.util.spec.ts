@@ -17,6 +17,7 @@ import {
     isSnapshotPeriodKey,
     periodKeyOf,
     snapshotHashKey,
+    snapshotManagerId,
     toAisRecord,
     toManagerUserId,
 } from '../store/snapshot-serialize.util';
@@ -25,6 +26,7 @@ import {
 const KEY_SAMPLE: Record<AiAnalyticsSnapshotGrain, string> = {
     'manager-week': '2026-W36',
     'manager-month': '2026-09',
+    'portal-week': '2026-W36',
     'portal-month': '2026-09',
     'manager-day': '2026-09-04',
     'portal-day': '2026-09-04',
@@ -157,12 +159,19 @@ describe('snapshot-serialize.util (ais ↔ конверт снапшота)', ()
 
     it('ключи периодов строятся по зерну и проверяются по нему же', () => {
         expect(periodKeyOf('manager-week', '2026-09-04')).toBe('2026-W36');
+        expect(periodKeyOf('portal-week', '2026-09-04')).toBe('2026-W36');
         expect(periodKeyOf('manager-month', '2026-09-04')).toBe('2026-09');
         expect(periodKeyOf('portal-month', '2026-09-04')).toBe('2026-09');
         expect(periodKeyOf('manager-day', '2026-09-04')).toBe('2026-09-04');
         expect(periodKeyOf('portal-day', '2026-09-04')).toBe('2026-09-04');
+        // Стык года: 2026 начинается с четверга, в нём 53 ISO-недели, и
+        // пятница 1 января 2027 относится ещё к 2026-W53.
+        expect(periodKeyOf('portal-week', '2027-01-01')).toBe('2026-W53');
+        expect(periodKeyOf('manager-week', '2027-01-04')).toBe('2027-W01');
 
         expect(isSnapshotPeriodKey('manager-week', '2026-W36')).toBe(true);
+        expect(isSnapshotPeriodKey('portal-week', '2026-W53')).toBe(true);
+        expect(isSnapshotPeriodKey('portal-week', '2026-09-04')).toBe(false);
         expect(isSnapshotPeriodKey('manager-week', '2026-09')).toBe(false);
         expect(isSnapshotPeriodKey('portal-month', '2026-09-04')).toBe(false);
         expect(isSnapshotPeriodKey('portal-day', '2026-09-4')).toBe(false);
@@ -178,6 +187,44 @@ describe('snapshot-serialize.util (ais ↔ конверт снапшота)', ()
         expect(key).toMatch(/^[0-9a-f]{16}$/);
         expect(snapshotHashKey(['d', '2026-09', 'v1'])).toBe(key);
         expect(snapshotHashKey(['d', '2026-09', 'v2'])).not.toBe(key);
+    });
+
+    it('snapshotManagerId: менеджер только у менеджерских зёрен', () => {
+        expect(
+            snapshotManagerId(AI_ANALYTICS_SNAPSHOT_TYPE.managerMonth, '10'),
+        ).toBe('10');
+        expect(
+            snapshotManagerId(AI_ANALYTICS_SNAPSHOT_TYPE.portalModel, '10'),
+        ).toBeNull();
+        expect(
+            snapshotManagerId(AI_ANALYTICS_SNAPSHOT_TYPE.ropMark, '10'),
+        ).toBeNull();
+        expect(
+            snapshotManagerId(AI_ANALYTICS_SNAPSHOT_TYPE.settingsAudit, '10'),
+        ).toBeNull();
+    });
+
+    it('новые типы реестра раскладываются по своим зёрнам', () => {
+        const ropMark = toAisRecord({
+            ...envelopeOf(AI_ANALYTICS_SNAPSHOT_TYPE.ropMark),
+            periodKey: '2026-W53',
+        });
+        expect(ropMark.activity_id).toBe('2026-W53');
+        expect(ropMark.user_id).toBeNull();
+        expect(fromAisRecord(toRow(ropMark))?.type).toBe(
+            AI_ANALYTICS_SNAPSHOT_TYPE.ropMark,
+        );
+        expect(
+            fromAisRecord({ ...toRow(ropMark), activity_id: '2026-09' }),
+        ).toBeNull();
+
+        const audit = toAisRecord(
+            envelopeOf(AI_ANALYTICS_SNAPSHOT_TYPE.settingsAudit),
+        );
+        expect(audit.activity_id).toBe('2026-09-04');
+        expect(
+            fromAisRecord({ ...toRow(audit), activity_id: '2026-W36' }),
+        ).toBeNull();
     });
 
     it('toManagerUserId: только целый положительный id', () => {

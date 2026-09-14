@@ -1,4 +1,5 @@
 import { gammaInterval } from '../model/gamma';
+import { mulberry32, seedOf } from '../model/prng';
 import { SHRINK_DEFAULTS, forgetSeries, shrinkRate } from '../model/shrink';
 import { wilsonInterval } from '../model/wilson';
 
@@ -172,5 +173,71 @@ describe('gammaInterval', () => {
         const [l1, u1] = gammaInterval(5, 50) ?? [0, 0];
         const [l2, u2] = gammaInterval(50, 500) ?? [0, 0];
         expect(u2 - l2).toBeLessThan(u1 - l1);
+    });
+});
+
+describe('property: w ∈ [0, 1] на 1000 случайных входов (mulberry32)', () => {
+    const random = mulberry32(seedOf('shrink', 'w-property'));
+    /** Равномерно в [−0,3·scale; 0,7·scale] — с отрицательной зоной. */
+    const spread = (scale: number): number => (random() - 0.3) * scale;
+
+    it('shrinkRate: w в [0, 1], value = w·(s/n) + (1 − w)·μ конечно', () => {
+        for (let trial = 0; trial < 1000; trial += 1) {
+            const successes = spread(200);
+            const exposure = spread(500);
+            const mu = random();
+            const result = shrinkRate({
+                successes,
+                exposure,
+                prior: { mu, kappa: spread(300) },
+                intervalKind: random() < 0.5 ? 'wilson' : 'gamma',
+            });
+            expect(result.w).toBeGreaterThanOrEqual(0);
+            expect(result.w).toBeLessThanOrEqual(1);
+            expect(Number.isFinite(result.value)).toBe(true);
+            if (result.n > 0) {
+                const own = Math.max(0, successes) / result.n;
+                expect(result.value).toBeCloseTo(
+                    result.w * own + (1 - result.w) * mu,
+                    9,
+                );
+            } else {
+                // s при n = 0 — нарушение инварианта s ≤ n на стороне
+                // вызывающего (§4.1 mixed-sources); здесь только w = 0.
+                expect(result.w).toBe(0);
+            }
+        }
+    });
+
+    it('w не убывает с ростом экспозиции при той же κ', () => {
+        for (let trial = 0; trial < 1000; trial += 1) {
+            const kappa = spread(300);
+            const smaller = spread(500);
+            const larger = smaller + random() * 100;
+            const prior = { mu: random(), kappa };
+            const low = shrinkRate({ successes: 0, exposure: smaller, prior });
+            const high = shrinkRate({ successes: 0, exposure: larger, prior });
+            expect(high.w).toBeGreaterThanOrEqual(low.w);
+        }
+    });
+
+    it('forgetSeries + shrinkRate: w в [0, 1] при любых λ и знаках точек', () => {
+        for (let trial = 0; trial < 1000; trial += 1) {
+            const length = Math.floor(random() * 5);
+            const points = Array.from({ length }, (_, index) => ({
+                periodKey: `2026-0${index + 1}`,
+                n: spread(40),
+                s: spread(200),
+            }));
+            const forgotten = forgetSeries(points, spread(3));
+            const result = shrinkRate({
+                successes: forgotten.s,
+                exposure: forgotten.n,
+                prior: { mu: random(), kappa: spread(100) },
+            });
+            expect(forgotten.n).toBeGreaterThanOrEqual(0);
+            expect(result.w).toBeGreaterThanOrEqual(0);
+            expect(result.w).toBeLessThanOrEqual(1);
+        }
     });
 });

@@ -4,7 +4,8 @@
  * отбрасывается — панель не должна падать из-за шага-соседа, который
  * положил в шину не то, что ожидалось.
  *
- * Отделено от `sanity.rules.ts` (правила) и `sanity.types.ts` (словарь):
+ * Отделено от `sanity.rules.ts` (правила), `sanity.types.ts` (словарь) и
+ * `sanity.sources.ts` (записи стора менеджер-месяцев и плацебо-тест):
  * каждый файл — одна ответственность и лимит 300 строк.
  */
 import type { AiModelParams, StageSlaFact } from '@lib/sales-ai-analytics';
@@ -12,7 +13,6 @@ import { AI_ANALYTICS_URGENT_COACHING } from '../constants/ai-analytics.const';
 import {
     AI_SANITY_SLA_STAGES,
     SanityCallFact,
-    SanityExposureFact,
     SanityLevelFact,
 } from './sanity.types';
 
@@ -83,23 +83,6 @@ export function slaFacts(value: unknown): Record<string, StageSlaFact> {
     return facts;
 }
 
-/** Экспозиция из шины: массив записей либо словарь по менеджеру. */
-export function exposureFacts(value: unknown): SanityExposureFact[] {
-    const entries: [string, unknown][] = Array.isArray(value)
-        ? value.map((item: unknown, index: number) => [String(index), item])
-        : Object.entries(asRecord(value) ?? {});
-    return entries.flatMap(([key, item]) => {
-        const row = asRecord(item);
-        if (!row || typeof row.daysSource !== 'string') return [];
-        return [
-            {
-                managerId: idOf(row.managerId, key),
-                daysSource: row.daysSource,
-            },
-        ];
-    });
-}
-
 /** Уровень и продажи менеджер-месяца из нагрузки снапшота. */
 export function levelFactOf(payload: unknown): SanityLevelFact[] {
     const record = asRecord(payload);
@@ -109,11 +92,4 @@ export function levelFactOf(payload: unknown): SanityLevelFact[] {
     return typeof level === 'string' && typeof sales === 'number'
         ? [{ level, sales }]
         : [];
-}
-
-/** Нагрузка снапшота модели портала как словарь (для дописывания поля). */
-export function modelPayloadOf(
-    payload: unknown,
-): Record<string, unknown> | null {
-    return asRecord(payload);
 }

@@ -384,6 +384,34 @@ describe('PulseUseCase: порог длительности из реестра'
         expect(dto.shortCallsSharePct).toBe(0);
     });
 
+    it('неравномерная карта (cold 60, остальные 300): пульс и конвейер режут одни звонки', async () => {
+        const definitions: AiPortalDefinitions = {
+            ...defaultDefinitions(),
+            minDurationSecByType: {
+                ...definitionsWith(300).minDurationSecByType,
+                cold: 60,
+            },
+        };
+        const settings = portalSettings({ definitions });
+        const useCase = new PulseUseCase(
+            callsLoaderWith(mixedRows()).loader,
+            settingsLoaderWith({ definitions }),
+            feedbackStoreWith([]),
+        );
+
+        const dto = await useCase.execute('d', { now: NOW });
+
+        // Скалярного значения у такой карты нет — прежний путь шагов
+        // конвейера уходил на 300 с и терял холодные звонки по 100 с.
+        expect(portalMinDurationByType(settings)).toMatchObject({
+            cold: 60,
+            presentation: 300,
+            default: 300,
+        });
+        expect(dto.analyzedCalls).toBe(10);
+        expect(pipelineCalls(mixedRows(), settings)).toHaveLength(10);
+    });
+
     it('замена источника значения при том же 300 не двигает comparableFrom', async () => {
         const settingsLoader = settingsLoaderWith({
             definitions: definitionsWith(300),

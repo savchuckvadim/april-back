@@ -153,13 +153,18 @@ describe('Ритмы прогона', () => {
         },
     );
 
-    it('догон истории считает месяцы без похода за паспортом и планами', () => {
+    it('догон истории считает месяцы с паспортом из кэша, но без снимка планов', () => {
+        // Паспорт нужен и в догоне: без него у догнанных месяцев
+        // `tenureBand: null`, и полосы стажа не собираются. В этом ритме он
+        // берётся из кэша `user.get`, в портал за ним не ходим.
         expect(codesOfRhythm('backfill')).toEqual([
             'calls',
+            'passport',
             'stage-history',
             'kpi',
             'finance',
         ]);
+        expect(codesOfRhythm('backfill')).not.toContain('plans');
     });
 
     it('ночной ритм: разборы, паспорт, эпизоды, KPI и финансы', () => {
@@ -173,16 +178,26 @@ describe('Ритмы прогона', () => {
     });
 
     it('недельный ритм: три звонка недели есть, санити-панель последняя', () => {
-        expect(codesOfRhythm('weekly')).toEqual([
+        // История стадий идёт и в недельном ритме: санити-панель читает из
+        // шины `slaFacts` и метки времени, которые пишет только этот шаг —
+        // без него два правила панели из шести молчали бы в проде.
+        const weekly = codesOfRhythm('weekly');
+        expect(weekly).toEqual([
             'calls',
             'passport',
+            'stage-history',
             'rop-mark',
             'sanity',
         ]);
+        expect(weekly[weekly.length - 1]).toBe('sanity');
     });
 
     it('месячный ритм: стиль и снимок планов есть, финансы закрывают месяц', () => {
         const monthly = codesOfRhythm('monthly');
+        // Санити-панель идёт и в месяце: её структурный отчёт забирает
+        // модель портала (`portal-model.sanity`), а модель считается по
+        // закрытому месяцу — иначе в модель попадала бы панель за другой
+        // период либо не попадала вовсе.
         expect(monthly).toEqual([
             'calls',
             'passport',
@@ -191,8 +206,12 @@ describe('Ритмы прогона', () => {
             'style',
             'plans',
             'finance',
+            'sanity',
         ]);
-        expect(monthly[monthly.length - 1]).toBe('finance');
+        expect(monthly.indexOf('finance')).toBeGreaterThan(
+            monthly.indexOf('kpi'),
+        );
+        expect(monthly[monthly.length - 1]).toBe('sanity');
     });
 });
 

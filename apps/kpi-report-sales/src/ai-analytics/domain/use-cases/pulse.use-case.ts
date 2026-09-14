@@ -1,56 +1,32 @@
 import { Injectable } from '@nestjs/common';
 import {
-    buildRegistryContext,
     computePulse,
     lastWorkdays,
-    minDurationByType,
     previousWorkday,
-    resolveNumberParam,
     toPortalDate,
-    type MinDurationSecByType,
 } from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_WINDOWS } from '../../constants/ai-analytics.const';
 import { AiPulseDto } from '../../dto/ai-pulse.dto';
 import { AiAnalyticsFeedbackStore } from '../../store/ai-analytics-feedback.store';
 import { CallsLoader } from '../loaders/calls.loader';
 import { toPulseRow } from '../loaders/lite-row.mapper';
+import { portalMinDurationByType } from '../loaders/min-duration.util';
 import { portalRangeUtc } from '../loaders/period.util';
-import {
-    AiAnalyticsPortalSettings,
-    SettingsLoader,
-} from '../loaders/settings.loader';
+import { SettingsLoader } from '../loaders/settings.loader';
 import { AlertMarks, collectPulseAlerts } from '../presenter/pulse-alerts.util';
 import { toPulseDto } from '../presenter/pulse.presenter';
+
+/**
+ * Единый порог «разбираемого» звонка живёт в
+ * `domain/loaders/min-duration.util` (его же читают шаги calls/finance
+ * конвейера); реэкспорт держит прежний публичный путь фичи (`index.ts`)
+ * без правки барреля.
+ */
+export { portalMinDurationByType } from '../loaders/min-duration.util';
 
 export interface PulseUseCaseOptions {
     /** «Сейчас» (для тестов и крона); по умолчанию — текущее время. */
     now?: Date;
-}
-
-/**
- * Пороги «разбираемого» звонка портала (решение владельца А.1, P2-56):
- * карта определений `ai_analytics_definitions.minDurationSecByType` —
- * ровно та, которую читает ночной конвейер, — и значение реестра
- * `min_duration_sec_by_type`, разрешённое с контекстом портала
- * (`buildRegistryContext` собирает те же слои, что AiAnalyticsParamsLoader
- * отдаёт шагам конвейера в `ctx.registry`).
- *
- * Портал ничего не решал — дефолт реестра 300 с, то есть поведение
- * Фазы 1a бит-в-бит. Один вход для пульса и конвейера: разъехавшийся
- * порог развёл бы знаменатель пульса и набор разбираемых звонков.
- */
-export function portalMinDurationByType(
-    settings: AiAnalyticsPortalSettings,
-): MinDurationSecByType {
-    const ctx = buildRegistryContext({
-        modelParams: settings.modelParams,
-        definitions: settings.definitions,
-    });
-
-    return minDurationByType(
-        settings.definitions.minDurationSecByType,
-        resolveNumberParam('min_duration_sec_by_type', ctx),
-    );
 }
 
 /**

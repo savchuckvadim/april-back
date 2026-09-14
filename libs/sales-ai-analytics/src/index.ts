@@ -77,6 +77,7 @@ export type {
 // Пока к ручкам не подключено — чистая математика и контракты.
 export * from './params';
 export * from './contracts/snapshot-kinds.const';
+export * from './contracts/snapshot-descriptors.const';
 export * from './model/norms.index';
 export * from './model/quality.index';
 
@@ -168,4 +169,5 @@ export * from './model/daily-plan';
 // не более одного звонка на менеджера). Контракты ManagerPassport и
 // PlanSnapshot уже доступны из contracts/snapshot.types.
 export * from './model/tenure-bands';
+export * from './model/norms-backtest';
 export * from './model/rop-mark';

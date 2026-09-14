@@ -20,6 +20,7 @@ import {
     AI_PORTAL_MODEL_RHYTHMS,
     AI_PORTAL_MODEL_STEP_CODE,
 } from '../constants/ai-portal-model.const';
+import { readChainSharePct } from '../domain/assembler/bus-facts.util';
 import type { PortalModelFacts } from '../domain/assembler/portal-model.types';
 import { PortalModelUseCase } from '../domain/use-cases/portal-model.use-case';
 import {
@@ -29,6 +30,7 @@ import {
     rosterOf,
     rubricVersionOf,
     saleLagsOf,
+    sanityReportOf,
     stageThetasOf,
 } from './portal-model.facts';
 import {
@@ -48,18 +50,26 @@ export interface PortalModelBusEntry {
     payload: unknown;
 }
 
-/** Входы модели, которых нет в месячных снапшотах, — из шины прогона. */
+/**
+ * Входы модели, которых нет в месячных снапшотах, — из шины прогона.
+ * Доля сцепки читается тем же `readChainSharePct`, что и у финансов:
+ * один читатель на форму писателя `EpisodesChain.sharePct` (аудит B1).
+ * Санити-отчёт — из ключа `sanity` того же прогона (панель идёт перед
+ * моделью в месячном ритме); нет отчёта — `null`, старый не тянется.
+ */
 export function portalModelFacts(
     ctx: AiPipelineStepContext,
     bus: StepBus,
 ): PortalModelFacts {
     const rows = bus.get(AI_PIPELINE_BUS_KEYS.callsRows);
+    const chain = bus.get(AI_PIPELINE_BUS_KEYS.chain);
 
     return {
         stageThetas: stageThetasOf(bus.get(AI_PIPELINE_BUS_KEYS.stageTheta)),
         saleLags: saleLagsOf(bus.get(AI_PIPELINE_BUS_KEYS.episodes)),
-        chainSharePct: busNumber(bus.get(AI_PIPELINE_BUS_KEYS.chain)) ?? 0,
-        ...chainEstimandOf(bus.get(AI_PIPELINE_BUS_KEYS.chain)),
+        chainSharePct: readChainSharePct(chain),
+        ...chainEstimandOf(chain),
+        sanity: sanityReportOf(bus.get(AI_PIPELINE_BUS_KEYS.sanity)),
         cycleMedianDays:
             busNumber(bus.get(AI_PIPELINE_BUS_KEYS.cycleMedian)) ?? null,
         historyMonths:

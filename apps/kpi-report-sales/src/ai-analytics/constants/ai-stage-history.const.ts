@@ -17,12 +17,17 @@ import type { AiPipelineRhythm } from './ai-snapshot.const';
 export const AI_STAGE_HISTORY_STEP_CODE = 'stage-history' as const;
 
 /**
- * Ритмы шага: ночной пересчёт, месячная заморозка и backfill. Недельного
- * ритма нет — история стадий нужна модели портала и прогнозу, а они
- * считаются ночью и на закрытии месяца.
+ * Ритмы шага: ночной пересчёт, месячная заморозка, backfill и НЕДЕЛЬНЫЙ
+ * ритм — его ждёт санити-панель: правила «SLA против факта» и «протечка
+ * меток времени» читают `slaFacts`/`timestampLeak` только из шины, а
+ * панель считается по понедельникам. Лишнего похода в портал недельный
+ * ритм не добавляет: окно истории кэшируется по дню прогона
+ * (`buildStageHistoryKey` ← `toDate = ctx.day`, TTL сутки), поэтому
+ * понедельничные weekly 03:15 и nightly 03:45 читают одно окно.
  */
 export const AI_STAGE_HISTORY_RHYTHMS = [
     'nightly',
+    'weekly',
     'monthly',
     'backfill',
 ] as const satisfies readonly AiPipelineRhythm[];

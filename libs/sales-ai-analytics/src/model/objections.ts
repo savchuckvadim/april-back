@@ -1,8 +1,9 @@
 import type { AnalyticsCallLiteRow } from '@lib/call-lib/call-report-analytics/types/analytics-lite.types';
 import { CALL_REPORT_OBJECTION_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-smart.type';
+import { isBelowMinDuration, minDurationMapOf } from './manager-type-matrix';
 import { MetricValue } from './metric';
 import { ratePctMetric } from './metric-pct.util';
-import { AI_ANALYTICS_THRESHOLDS } from './thresholds.const';
+import type { MinDurationSecByType } from './pulse';
 
 /** Исходы возражения из справочника агента (AgentObjectionDto.outcome). */
 export const OBJECTION_OUTCOMES = [
@@ -51,6 +52,11 @@ export interface ObjectionsSlice {
 export interface ObjectionsOptions {
     /** Звонок короче — вне слоя качества (по умолчанию shortCallSec). */
     shortCallSec?: number;
+    /**
+     * Порог по типам звонков (реестр `min_duration_sec_by_type`): карта
+     * побеждает скаляр, скаляр — запасной порог для типов вне карты.
+     */
+    minDurationSecByType?: MinDurationSecByType;
 }
 
 interface ObjectionRecord {
@@ -80,7 +86,7 @@ export const compareObjectionCategories = (a: string, b: string): number =>
 
 function collect(
     rows: readonly AnalyticsCallLiteRow[],
-    shortCallSec: number,
+    byType: MinDurationSecByType,
 ): ObjectionRecord[] {
     const records: ObjectionRecord[] = [];
     for (const row of rows) {
@@ -88,9 +94,7 @@ function collect(
         if (!row.analysisPresent || managerId === null || managerId === '') {
             continue;
         }
-        if (row.durationSec !== null && row.durationSec < shortCallSec) {
-            continue;
-        }
+        if (isBelowMinDuration(row, byType)) continue;
         for (const objection of row.objections) {
             records.push({
                 managerId,
@@ -157,7 +161,8 @@ function byCategory(
  * возражений с известным handled) и исходы. outcome читается как есть:
  * continued / converted / disengaged, всё прочее и null → other.
  * Возражение без категории → OBJECTION_CATEGORY_UNKNOWN. Строки без
- * разбора, без менеджера и короче shortCallSec не участвуют.
+ * разбора, без менеджера и короче порога своего типа (карта
+ * `minDurationSecByType`, иначе shortCallSec) не участвуют.
  * Чистая детерминированная функция.
  */
 export function buildObjectionsSlice(
@@ -166,7 +171,7 @@ export function buildObjectionsSlice(
 ): ObjectionsSlice {
     const records = collect(
         rows,
-        options.shortCallSec ?? AI_ANALYTICS_THRESHOLDS.shortCallSec,
+        minDurationMapOf(options.shortCallSec, options.minDurationSecByType),
     );
     const managers = new Map<string, ObjectionRecord[]>();
     for (const record of records) {

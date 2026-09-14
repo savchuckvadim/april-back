@@ -1,7 +1,7 @@
 /**
  * Разбор чужих значений шины для шага модели портала (план Фазы 2,
  * поток 16a): эпизоды и стадийные θ шага истории стадий, строки разборов
- * шага звонков, паспорта шага паспорта.
+ * шага звонков, паспорта шага паспорта, отчёт санити-панели.
  *
  * Отделено от `portal-model.step.ts` по образцу `sanity.facts.ts` и
  * `stage-history.facts.ts`: шаг оркеструет, разбор — здесь, каждый файл в
@@ -19,6 +19,7 @@ import {
 } from '@lib/sales-ai-analytics';
 import type { PortalRosterMember } from '@lib/sales-ai-analytics/model/portal-events';
 import { readPassports } from '../domain/assembler/bus-facts.util';
+import type { AiSanityReport } from './sanity.types';
 
 /** Делитель шкалы разбора: 0–100 в звонке, 1–10 в модели качества. */
 const SCORE_SCALE = 10;
@@ -27,6 +28,28 @@ const asRecord = (value: unknown): Record<string, unknown> | null =>
     value !== null && typeof value === 'object'
         ? (value as Record<string, unknown>)
         : null;
+
+/**
+ * Отчёт санити-панели из ключа `sanity` (форма писателя — `AiSanityReport`
+ * шага санити). Чужая или неполная форма — null: модель честно остаётся
+ * без панели, а не с обрывком отчёта.
+ */
+export function sanityReportOf(value: unknown): AiSanityReport | null {
+    const report = asRecord(value);
+    if (
+        report === null ||
+        typeof report.day !== 'string' ||
+        typeof report.weekKey !== 'string' ||
+        typeof report.generatedAt !== 'string' ||
+        !Array.isArray(report.rules) ||
+        !Array.isArray(report.warnings) ||
+        asRecord(report.readiness) === null
+    ) {
+        return null;
+    }
+
+    return report as unknown as AiSanityReport;
+}
 
 function rowsOf(value: unknown): Record<string, unknown>[] {
     if (!Array.isArray(value)) return [];

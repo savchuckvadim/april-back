@@ -1,5 +1,6 @@
 import { InitSupplyDto } from '../../dto/init-supply.dto';
 import { Injectable } from '@nestjs/common';
+import { initSupplyForVariant } from '../../lib/init-supply-variants';
 import { ArmCommentService } from './arm-comment.service';
 import { ProviderCommentService } from './provider-comment.service';
 import { RqCommentService } from './rq-comment.service';
@@ -87,5 +88,42 @@ export class InitSupplyTimelineCommentService {
         }
 
         return timelineComment;
+    }
+
+    /**
+     * Записи таймлайна заявки. Участников несколько — на каждого своя
+     * страница со своим комплектом, ОД, типом договора и итогом: сотрудник
+     * сервиса должен видеть наборы по отдельности, а не одним списком.
+     * Один участник или его нет — одна страница, как раньше.
+     */
+    public async getTimelineEntries(
+        dto: InitSupplyDto,
+        flowTitle: string,
+    ): Promise<{ title: string; description: string }[]> {
+        const variants = dto.variants ?? [];
+        if (variants.length < 2) {
+            return [
+                {
+                    title: flowTitle,
+                    description: await this.getTimelineComment(
+                        variants[0]
+                            ? initSupplyForVariant(dto, variants[0])
+                            : dto,
+                    ),
+                },
+            ];
+        }
+
+        const entries: { title: string; description: string }[] = [];
+        for (const [index, variant] of variants.entries()) {
+            const title = variant.title || `Набор ${index + 1}`;
+            entries.push({
+                title: `${flowTitle}: ${title}`,
+                description: await this.getTimelineComment(
+                    initSupplyForVariant(dto, variant),
+                ),
+            });
+        }
+        return entries;
     }
 }

@@ -10,6 +10,29 @@ import {
     metricForPeriod,
     readinessReason,
 } from '../model/readiness';
+import { registryDefault } from '../params/registry.access';
+import { findParam } from '../params/registry.const';
+
+describe('AI_READINESS_GATE_DEFAULTS: гейты из реестра параметров', () => {
+    it('roster_confirm_required и калибровочные гейты — дефолты реестра', () => {
+        expect(AI_READINESS_GATE_DEFAULTS.rosterConfirmRequired).toBe(
+            registryDefault('roster_confirm_required'),
+        );
+        expect(findParam('roster_confirm_required')?.defaultValue).toBe(false);
+        expect(AI_READINESS_GATE_DEFAULTS.calibrationMonths).toBe(
+            registryDefault('calibration_min_months'),
+        );
+        expect(AI_READINESS_GATE_DEFAULTS.normsPresentations).toBe(
+            registryDefault('calibration_min_presentations'),
+        );
+        expect(AI_READINESS_GATE_DEFAULTS).toEqual({
+            calibrationMonths: 3,
+            calibrationPresentations: 60,
+            normsPresentations: 100,
+            rosterConfirmRequired: false,
+        });
+    });
+});
 
 /** Портал, уже прошедший калибровку: 3 мес., 100 презентаций, календарь. */
 const input = (over: Partial<ReadinessInput> = {}): ReadinessInput => ({

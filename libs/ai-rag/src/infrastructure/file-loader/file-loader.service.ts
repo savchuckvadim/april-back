@@ -44,7 +44,12 @@ export class FileLoaderService {
 
     private async extractPdf(filePath: string): Promise<string> {
         const buffer = await fs.readFile(filePath);
-        const parsed = await pdfParse(buffer);
+        // У пакета pdf-parse нет деклараций типов, поэтому импорт приходит
+        // как `error`-тип: сужаем результат явно, а не через any.
+        const parse = pdfParse as unknown as (
+            data: Buffer,
+        ) => Promise<{ text?: string }>;
+        const parsed = await parse(buffer);
         return parsed.text ?? '';
     }
 

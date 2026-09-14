@@ -206,6 +206,11 @@ describe('PortalModelUseCase — состав месячного снапшот�
                         generatedAt: NOW.toISOString(),
                         rules: [],
                         warnings: ['цель оторвана от факта'],
+                        readiness: {
+                            dataQuality: 'ok',
+                            timestampLeak: null,
+                            warningRules: [],
+                        },
                     },
                 },
             },
@@ -353,6 +358,115 @@ describe('PortalModelUseCase — штатная деградация', () => {
             AI_PORTAL_MODEL_REASONS.monthsMissing,
         );
         expect(upsert).toHaveBeenCalledTimes(1);
+    });
+
+    it('второй прогон деградации за тот же месяц копию не переписывает', async () => {
+        const first = makeUseCase({ months: [], previous: previousModel() });
+        const firstResult = await first.useCase.execute(
+            { domain: DOMAIN, monthKey: MONTH },
+            NOW,
+        );
+        expect(first.upsert).toHaveBeenCalledTimes(1);
+        // Последняя запись — копия, которую записал первый прогон.
+        const copy: PortalModelRecord = {
+            id: 'ais-9',
+            monthKey: MONTH,
+            payload: firstResult.payload as PortalModelPayload,
+        };
+        const second = makeUseCase({ months: [], previous: copy });
+
+        const secondResult = await second.useCase.execute(
+            { domain: DOMAIN, monthKey: MONTH },
+            NOW,
+        );
+
+        expect(second.upsert).not.toHaveBeenCalled();
+        expect(secondResult).toMatchObject({
+            id: 'ais-9',
+            reused: true,
+            reason: AI_PORTAL_MODEL_REASONS.reusedPrevious,
+            written: 0,
+            months: 0,
+        });
+        expect(secondResult.payload).toBe(copy.payload);
+    });
+
+    it('смена версии параметров переписывает копию деградации', async () => {
+        const first = makeUseCase({ months: [], previous: previousModel() });
+        const firstResult = await first.useCase.execute(
+            { domain: DOMAIN, monthKey: MONTH },
+            NOW,
+        );
+        const copy: PortalModelRecord = {
+            id: 'ais-9',
+            monthKey: MONTH,
+            payload: firstResult.payload as PortalModelPayload,
+        };
+        const second = makeUseCase({ months: [], previous: copy });
+
+        const secondResult = await second.useCase.execute(
+            {
+                domain: DOMAIN,
+                monthKey: MONTH,
+                facts: { paramsVersion: 'pv-2' },
+            },
+            NOW,
+        );
+
+        expect(second.upsert).toHaveBeenCalledTimes(1);
+        expect(secondResult.written).toBe(1);
+        expect(secondResult.payload?.meta.paramsVersion).toBe('pv-2');
+    });
+
+    it('данные появились — копия деградации пересчитывается заново', async () => {
+        const first = makeUseCase({ months: [], previous: previousModel() });
+        const firstResult = await first.useCase.execute(
+            { domain: DOMAIN, monthKey: MONTH },
+            NOW,
+        );
+        const copy: PortalModelRecord = {
+            id: 'ais-9',
+            monthKey: MONTH,
+            payload: firstResult.payload as PortalModelPayload,
+        };
+        const second = makeUseCase({ months: window(6, 5), previous: copy });
+
+        const secondResult = await second.useCase.execute(
+            { domain: DOMAIN, monthKey: MONTH },
+            NOW,
+        );
+
+        expect(second.upsert).toHaveBeenCalledTimes(1);
+        expect(secondResult.reused).toBe(false);
+        expect(secondResult.written).toBe(1);
+        expect(secondResult.payload?.observations).toBe(30);
+    });
+
+    it('свежая модель не тянет санити-отчёт из прошлой модели', async () => {
+        const { useCase } = makeUseCase({
+            months: window(6, 5),
+            previous: previousModel({
+                sanity: {
+                    day: '2026-09-07',
+                    weekKey: '2026-W37',
+                    generatedAt: NOW.toISOString(),
+                    rules: [],
+                    warnings: ['старое'],
+                    readiness: {
+                        dataQuality: 'unknown',
+                        timestampLeak: null,
+                        warningRules: [],
+                    },
+                },
+            }),
+        });
+
+        const result = await useCase.execute(
+            { domain: DOMAIN, monthKey: MONTH },
+            NOW,
+        );
+
+        expect(result.payload?.sanity).toBeNull();
     });
 
     it('нет ни данных, ни прошлой модели: запись не создаётся', async () => {

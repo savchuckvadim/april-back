@@ -36,6 +36,11 @@ export interface ComplectOfferSettings {
      * конструкторе уже есть — альтернативные наборы (`sets.alternative`).
      */
     showAlternatives: boolean;
+    /**
+     * Печатать КП отдельными документами (режим independent): по документу
+     * на участника, PDF не склеиваются. Не задано — склеиваем как раньше.
+     */
+    separateDocuments?: boolean;
 }
 
 export interface ComplectComposition {
@@ -117,6 +122,12 @@ export const parseComplectComposition = (
                 ? offerSource.infoblocks
                 : DEFAULT_COMPLECT_COMPOSITION.offer.infoblocks,
             showAlternatives: Boolean(offerSource.showAlternatives),
+            // ключ пишем только если он был: старые слепки без флага остаются равными себе
+            ...('separateDocuments' in offerSource
+                ? {
+                      separateDocuments: Boolean(offerSource.separateDocuments),
+                  }
+                : {}),
         },
         openVariantSmartId: toPositiveIdOrNull(source.openVariantSmartId),
     };

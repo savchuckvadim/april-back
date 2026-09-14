@@ -1,10 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { QueueDispatcherService } from '@/modules/queue';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { toPortalDate } from '@lib/sales-ai-analytics';
 import {
+    AI_PIPELINE_CORE_STEP_CODES,
     AI_PIPELINE_CRON,
     AI_PIPELINE_JOB_OPTIONS,
     AI_PIPELINE_PLANS_KEY_PREFIX,
@@ -19,13 +20,38 @@ import { SettingsLoader } from '../domain/loaders/settings.loader';
 import { isoWeekKey } from '../domain/loaders/period.util';
 import { AiSnapshotJobData } from '../dto/ai-snapshot.dto';
 import { AiAnalyticsBackfillService } from '../pipeline/backfill.service';
+import {
+    AI_ANALYTICS_PIPELINE_STEPS,
+    AiAnalyticsPipelineStep,
+} from '../steps/step.types';
 
 /**
  * Тик планировщика: три ритма пересчёта плюс снимок планов 1-го числа.
  * Снимок планов идёт ритмом `monthly` (новых видов джоб не заводим), но в
- * собственном пространстве ключей и только со своим шагом.
+ * собственном пространстве ключей и только со своим шагом. Тик заморозки
+ * (3-е число, тот же ритм `monthly`) идёт с белым списком ВСЕХ месячных
+ * шагов, кроме снимка планов: закрытый месяц снимать нельзя, и без списка
+ * шаг планов каждый раз давал бы `skipped` → журнал `partial` (аудит
+ * Фазы 2, N4).
  */
 export type AiPipelineTick = 'nightly' | 'weekly' | 'monthly' | 'plans';
+
+/**
+ * Белый список тика заморозки: коды шагов ритма `monthly` без шага планов,
+ * в порядке регистрации. Пусто (шаги не зарегистрированы) — списка нет,
+ * джоба идёт всеми шагами ритма.
+ */
+export function freezeTickSteps(
+    steps: readonly AiAnalyticsPipelineStep[],
+): string[] {
+    return steps
+        .filter(
+            step =>
+                step.rhythms.includes('monthly') &&
+                step.code !== AI_PIPELINE_CORE_STEP_CODES.plans,
+        )
+        .map(step => step.code);
+}
 
 /** Что ставим в очередь по тику: ритм, ключ дедупликации и payload. */
 interface TickPlan {
@@ -57,6 +83,8 @@ export class AiAnalyticsSnapshotScheduler {
         private readonly settings: SettingsLoader,
         private readonly dispatcher: QueueDispatcherService,
         private readonly backfill: AiAnalyticsBackfillService,
+        @Inject(AI_ANALYTICS_PIPELINE_STEPS)
+        private readonly steps: readonly AiAnalyticsPipelineStep[],
     ) {}
 
     @Cron(AI_PIPELINE_CRON.NIGHTLY)
@@ -112,7 +140,7 @@ export class AiAnalyticsSnapshotScheduler {
             const settings = await this.settings.load(domain);
             if (!settings.enabled) return null;
             const day = toPortalDate(now, settings.calendar.timeZone);
-            const plan = buildTickPlan(tick, day);
+            const plan = buildTickPlan(tick, day, freezeTickSteps(this.steps));
             const jobId = buildPipelineJobId(plan.rhythm, domain, plan.key);
             await this.dispatcher.dispatch<AiSnapshotJobData>(
                 QueueNames.SALES_KPI_REPORT,
@@ -162,9 +190,14 @@ export class AiAnalyticsSnapshotScheduler {
  * Ключи периода и ключ дедупликации по тику. Ночной ритм дедуплицируется
  * днём, недельный — закончившейся неделей, месячный — закрытым месяцем,
  * снимок планов — текущим месяцем с префиксом (иначе через месяц его
- * jobId столкнулся бы с заморозкой того же месяца).
+ * jobId столкнулся бы с заморозкой того же месяца). Тик заморозки несёт
+ * белый список без шага планов.
  */
-function buildTickPlan(tick: AiPipelineTick, day: string): TickPlan {
+function buildTickPlan(
+    tick: AiPipelineTick,
+    day: string,
+    freezeSteps: readonly string[],
+): TickPlan {
     if (tick === 'plans') {
         const monthKey = day.slice(0, 7);
         return {
@@ -175,11 +208,17 @@ function buildTickPlan(tick: AiPipelineTick, day: string): TickPlan {
         };
     }
     const keys = resolvePipelineKeys(tick, day);
-    const key =
-        tick === 'weekly'
-            ? keys.weekKey
-            : tick === 'monthly'
-              ? keys.monthKey
-              : keys.day;
-    return { rhythm: tick, key, keys };
+    if (tick === 'monthly') {
+        return {
+            rhythm: tick,
+            key: keys.monthKey,
+            keys,
+            ...(freezeSteps.length ? { steps: freezeSteps } : {}),
+        };
+    }
+    return {
+        rhythm: tick,
+        key: tick === 'weekly' ? keys.weekKey : keys.day,
+        keys,
+    };
 }

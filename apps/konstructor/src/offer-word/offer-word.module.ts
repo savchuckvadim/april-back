@@ -5,6 +5,7 @@ import { OfferWordCoreGenerateService } from './services/offer-word-core/offer-w
 import { OfferWordByTemplateGenerateUseCase } from './use-cases/offer-word-by-template-generate.use-case';
 import { OfferWordEphemeralPdfDocumentService } from './services/preview-generate/offer-word-ephemeral-pdf-document.service';
 import { OfferWordPdfExportService } from './services/pdf-export/offer-word-pdf-export.service';
+import { PdfMergeService } from './services/pdf-export/pdf-merge.service';
 import { Module } from '@nestjs/common';
 import { QueueModule } from '@lib/queue/queue.module';
 import { RedisModule } from '@lib/core/redis/redis.module';
@@ -37,6 +38,11 @@ import { BitrixDocumentSaveFlowService } from './services/bitrix/bitrix-document
 import { DocumentBuildService } from './services/document-build.service';
 import { OfferTemplateModule } from '@app/konstructor/modules/offer-template/offer-template.module';
 import { OfferRenderGeneralProductService } from './services/render-data-services/offer-render-general-product.service';
+import { OfferWordMultiGenerateController } from './multi/controllers/offer-word-multi-generate.controller';
+import { OfferWordMultiBuildService } from './multi/services/offer-word-multi-build.service';
+import { OfferWordMultiGenerateUseCase } from './multi/use-cases/offer-word-multi-generate.use-case';
+import { OfferGenerateMultiQueueService } from './multi/services/queue/offer-generate-multi-queue.service';
+import { OfferGenerateMultiProcessor } from './multi/queue/offer-generate-multi.processor';
 
 @Module({
     imports: [
@@ -55,12 +61,17 @@ import { OfferRenderGeneralProductService } from './services/render-data-service
         InvoiceTemplateModule,
         PBXModule,
     ],
-    controllers: [OfferWordGenerateController, OfferWordPdfPreviewController],
+    controllers: [
+        OfferWordGenerateController,
+        OfferWordPdfPreviewController,
+        OfferWordMultiGenerateController,
+    ],
     providers: [
         OfferWordCoreGenerateService,
         OfferWordByTemplateGenerateUseCase,
         OfferWordEphemeralPdfDocumentService,
         OfferWordPdfExportService,
+        PdfMergeService,
         OfferRenderInfoblocksService,
         InfoblocksRenderDataService,
         OfferRenderPriceService,
@@ -79,6 +90,11 @@ import { OfferRenderGeneralProductService } from './services/render-data-service
         OfferBxTimelineService,
         BitrixDocumentSaveFlowService,
         DocumentBuildService,
+        // КП v2 — мультивариантность: отдельный путь рядом со старым
+        OfferWordMultiBuildService,
+        OfferWordMultiGenerateUseCase,
+        OfferGenerateMultiQueueService,
+        OfferGenerateMultiProcessor,
     ],
 })
 export class OfferWordModule {}

@@ -2,12 +2,16 @@ import 'reflect-metadata';
 import { DEFAULT_WORK_CALENDAR } from '@lib/sales-ai-analytics';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
+import { AI_BACKFILL_WEEK_STEPS } from '../constants/ai-manager-snapshot.const';
 import {
     AI_PIPELINE_BACKFILL,
     AI_PIPELINE_JOB_OPTIONS,
     buildPipelineJobId,
 } from '../constants/ai-snapshot.const';
+import { emptyWeekPayload } from '../domain/assembler/manager-week.assembler';
+import type { AiSnapshotJobData } from '../dto/ai-snapshot.dto';
 import {
+    AI_BACKFILL_LOOKBACK,
     AI_BACKFILL_REASONS,
     AiAnalyticsBackfillService,
     isBackfillWindow,
@@ -16,36 +20,65 @@ import {
 } from '../pipeline/backfill.service';
 
 const DOMAIN = 'a.bitrix24.ru';
+const DAY_MS = 24 * 60 * 60 * 1000;
+const META = {
+    calcVersion: 'sam-1.0.0',
+    paramsVersion: 'pv-1',
+    comparableFrom: null,
+    generatedAt: '2026-09-08T20:00:00.000Z',
+    modelSnapshotId: null,
+};
 /** 8 сентября 2026, 20:00 UTC = 23:00 МСК — ночное окно портала. */
 const NIGHT = new Date('2026-09-08T20:00:00Z');
 /** 8 сентября 2026, 09:00 UTC = 12:00 МСК — рабочий день, окно закрыто. */
 const NOON = new Date('2026-09-08T09:00:00Z');
 
-/** Стор снапшотов: периоды, по которым снапшоты уже есть. */
-function makeStore(existing: readonly string[] = []) {
+/**
+ * Стор снапшотов: периоды со строками менеджеров (`existing`) и недели с
+ * маркером «разборов не было» портального зерна (`markers`).
+ */
+function makeStore(
+    existing: readonly string[] = [],
+    markers: readonly string[] = [],
+) {
     const findByKeys = jest.fn(
         (
             _domain: string,
             _type: string,
             filter: { periodKeys?: readonly string[] },
         ) =>
-            Promise.resolve(
-                (filter.periodKeys ?? [])
+            Promise.resolve([
+                ...(filter.periodKeys ?? [])
                     .filter(key => existing.includes(key))
-                    .map(periodKey => ({ periodKey })),
-            ),
+                    .map(periodKey => ({
+                        periodKey,
+                        managerId: '10',
+                        payload: {},
+                    })),
+                ...(filter.periodKeys ?? [])
+                    .filter(key => markers.includes(key))
+                    .map(periodKey => ({
+                        periodKey,
+                        managerId: null,
+                        payload: emptyWeekPayload(META),
+                    })),
+            ]),
     );
     return { findByKeys };
 }
 
-function makeService(existing: readonly string[] = [], enabled = true) {
+function makeService(
+    existing: readonly string[] = [],
+    enabled = true,
+    markers: readonly string[] = [],
+) {
     const settings = {
         load: jest.fn().mockResolvedValue({
             enabled,
             calendar: DEFAULT_WORK_CALENDAR,
         }),
     };
-    const store = makeStore(existing);
+    const store = makeStore(existing, markers);
     const dispatcher = { dispatch: jest.fn().mockResolvedValue(undefined) };
     const service = new AiAnalyticsBackfillService(
         settings as never,
@@ -114,6 +147,46 @@ describe('AiAnalyticsBackfillService.plan — план догона истори
         expect(plan.monthKeys).toEqual(['2026-06', '2026-05', '2026-04']);
         expect(plan.weekKeys).not.toContain('2026-W36');
         expect(plan.weekKeys[0]).toBe('2026-W35');
+    });
+
+    it('неделя с маркером «разборов не было» закрыта для догона', async () => {
+        const { service } = makeService([], true, ['2026-W36', '2026-W35']);
+
+        const plan = await service.plan(DOMAIN, { now: NIGHT });
+
+        expect(plan.weekKeys).not.toContain('2026-W36');
+        expect(plan.weekKeys).not.toContain('2026-W35');
+        expect(plan.weekKeys[0]).toBe('2026-W34');
+    });
+
+    it('вторая ночь не ставит те же периоды — план сходится к «дыр нет»', async () => {
+        const done: string[] = [];
+        const nights: string[][] = [];
+        for (let night = 0; night < 8; night += 1) {
+            const { service } = makeService(done);
+            const plan = await service.plan(DOMAIN, {
+                now: new Date(NIGHT.getTime() + night * DAY_MS),
+            });
+            if (plan.reason === AI_BACKFILL_REASONS.nothingToDo) break;
+            nights.push([...plan.monthKeys, ...plan.weekKeys]);
+            // Джобы ночи отработали: строки менеджеров либо маркеры недель.
+            done.push(...plan.monthKeys, ...plan.weekKeys);
+        }
+
+        const planned = nights.flat();
+        expect(new Set(planned).size).toBe(planned.length);
+        expect(nights).toHaveLength(
+            Math.ceil(
+                AI_BACKFILL_LOOKBACK.months /
+                    AI_PIPELINE_BACKFILL.maxMonthsPerNight,
+            ),
+        );
+        expect(planned.filter(key => key.includes('-W'))).toHaveLength(
+            AI_BACKFILL_LOOKBACK.weeks,
+        );
+        expect(planned.filter(key => !key.includes('-W'))).toHaveLength(
+            AI_BACKFILL_LOOKBACK.months,
+        );
     });
 
     it('forceRefresh пересчитывает даже посчитанные периоды', async () => {
@@ -229,6 +302,28 @@ describe('AiAnalyticsBackfillService.dispatch — постановка джоб'
             buildPipelineJobId('backfill', DOMAIN, '2026-W36'),
             AI_PIPELINE_JOB_OPTIONS,
         );
+    });
+
+    it('джоба недели несёт белый список только calls, джоба месяца — все шаги ритма', async () => {
+        const { service, dispatcher } = makeService();
+
+        await service.dispatch(DOMAIN, { now: NIGHT, weeksBack: 1 });
+
+        const jobs = (
+            dispatcher.dispatch.mock.calls as [
+                string,
+                string,
+                AiSnapshotJobData,
+            ][]
+        ).map(([, , data]) => data);
+        // У джобы месяца 2026-08 weekKey тоже 2026-W36 (31.08 — понедельник
+        // этой недели): джобы различаются днём прогона.
+        const week = jobs.find(job => job.day === '2026-09-06');
+        const month = jobs.find(job => job.day === '2026-08-31');
+        expect(week).toMatchObject({ day: '2026-09-06', steps: ['calls'] });
+        expect(week?.steps).toEqual([...AI_BACKFILL_WEEK_STEPS]);
+        expect(month).toMatchObject({ day: '2026-08-31' });
+        expect(month?.steps).toBeUndefined();
     });
 
     it('вне окна джобы не ставятся', async () => {

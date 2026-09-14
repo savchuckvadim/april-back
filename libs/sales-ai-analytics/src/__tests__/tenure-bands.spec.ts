@@ -1,10 +1,13 @@
 import {
+    AI_TENURE_BAND_ITEMS,
     AI_TENURE_BANDS,
+    AiTenureBandCode,
     isAiTenureBand,
     levelByTenureBand,
     parseTenureGates,
     TENURE_GATES_DEFAULT,
     tenureBandOf,
+    tenureMonths,
     tenureMonthsBetween,
 } from '../model/tenure-bands';
 
@@ -62,6 +65,32 @@ describe('Стаж в месяцах', () => {
 
     it('день выхода — стаж 0 месяцев, а не null', () => {
         expect(tenureMonthsBetween('2026-09-08', '2026-09-08')).toBe(0);
+    });
+});
+
+describe('Контракт плана Фазы 2 (поток p2-model-norms)', () => {
+    it('AI_TENURE_BAND_ITEMS — те же коды в том же порядке, что AI_TENURE_BANDS', () => {
+        expect(AI_TENURE_BAND_ITEMS.map(item => item.code)).toEqual([
+            ...AI_TENURE_BANDS,
+        ]);
+        AI_TENURE_BAND_ITEMS.forEach(item =>
+            expect(isAiTenureBand(item.code)).toBe(true),
+        );
+    });
+
+    it('tenureMonths — тот же расчёт, что tenureMonthsBetween', () => {
+        expect(tenureMonths).toBe(tenureMonthsBetween);
+        expect(tenureMonths('2026-04-01', '2026-09-08')).toBe(5);
+        expect(tenureMonths(null, '2026-09-08')).toBeNull();
+    });
+
+    it('tenureBandOf возвращает код полосы контракта', () => {
+        const band: AiTenureBandCode | null = tenureBandOf(7, {
+            junior: 6,
+            senior: 18,
+        });
+
+        expect(band).toBe(AI_TENURE_BAND_ITEMS[1].code);
     });
 });
 

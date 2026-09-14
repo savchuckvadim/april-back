@@ -3,11 +3,14 @@ import type {
     ParamContext,
     ParamDescriptor,
     ParamEvidence,
-    ParamPrimitive,
-    ParamRange,
     ParamResolveSource,
     ResolvedParam,
 } from './registry.types';
+import {
+    inParamRange,
+    isParamPrimitive,
+    validateParamValue,
+} from './registry.validate';
 
 /** Слои переопределения снизу вверх: менеджер → полоса стажа → портал. */
 const PARAM_LAYERS = [
@@ -18,14 +21,6 @@ const PARAM_LAYERS = [
     source: ParamResolveSource;
     key: keyof ParamContext;
 }[];
-
-const isPrimitive = (value: unknown): value is ParamPrimitive =>
-    typeof value === 'number' ||
-    typeof value === 'string' ||
-    typeof value === 'boolean';
-
-const inRange = (value: number, range?: ParamRange): boolean =>
-    range === undefined || (value >= range[0] && value <= range[1]);
 
 /** Первый слой снизу вверх, в котором код параметра вообще присутствует. */
 function pickLayer(
@@ -44,9 +39,10 @@ function pickLayer(
 
 /**
  * Настроенное значение: слой менеджера важнее полосы стажа, полоса важнее
- * портала, портал важнее глобального дефолта. Значение неверного типа или
- * вне диапазона не «проваливается» на слой ниже — берётся дефолт реестра с
- * причиной, иначе портал мог бы молча испортить норму опечаткой.
+ * портала, портал важнее глобального дефолта. Значение неверного типа, вне
+ * диапазона или не из словаря не «проваливается» на слой ниже — берётся
+ * дефолт реестра с причиной, иначе портал мог бы молча испортить норму
+ * опечаткой. Правила проверки — `validateParamValue` (registry.validate).
  */
 function resolveConfigured(
     descriptor: ParamDescriptor,
@@ -61,18 +57,12 @@ function resolveConfigured(
     if (!layer) {
         return fallback;
     }
-    if (
-        !isPrimitive(layer.value) ||
-        typeof layer.value !== typeof descriptor.defaultValue
-    ) {
+    if (!isParamPrimitive(layer.value)) {
         return { ...fallback, reason: 'type-mismatch' };
     }
-    if (
-        typeof layer.value === 'number' &&
-        (!Number.isFinite(layer.value) ||
-            !inRange(layer.value, descriptor.range))
-    ) {
-        return { ...fallback, reason: 'out-of-range' };
+    const reason = validateParamValue(descriptor, layer.value);
+    if (reason !== undefined) {
+        return { ...fallback, reason };
     }
 
     return { code: descriptor.code, value: layer.value, source: layer.source };
@@ -102,7 +92,7 @@ function mixHybrid(
     ) {
         return configured;
     }
-    if (!inRange(data, descriptor.range)) {
+    if (!inParamRange(data, descriptor.range)) {
         return { ...configured, reason: 'out-of-range' };
     }
 

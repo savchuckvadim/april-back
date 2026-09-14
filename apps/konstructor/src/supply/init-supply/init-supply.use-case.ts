@@ -73,18 +73,25 @@ export class InitSupplyUseCase {
         const flowTitle =
             dto.flow === InitSupplyFlow.SUPPLY ? 'Поставка' : 'Перезаключение';
 
-        const timelineComment =
-            await this.initSupplyTimelineCommentService.getTimelineComment(dto);
+        // страница таймлайна на каждого участника: наборы сервис смотрит по
+        // отдельности
+        const timelineEntries =
+            await this.initSupplyTimelineCommentService.getTimelineEntries(
+                dto,
+                flowTitle,
+            );
         if (rpaId && dto.userId) {
-            await bitrix.api.call('rpa.timeline.add', {
-                typeId: rpaTypeId,
-                itemId: rpaResponse?.id,
-                userId: dto.userId.toString(),
-                fields: {
-                    title: flowTitle,
-                    description: timelineComment,
-                },
-            });
+            for (const entry of timelineEntries) {
+                await bitrix.api.call('rpa.timeline.add', {
+                    typeId: rpaTypeId,
+                    itemId: rpaResponse?.id,
+                    userId: dto.userId.toString(),
+                    fields: {
+                        title: entry.title,
+                        description: entry.description,
+                    },
+                });
+            }
 
             if (dto.dealId) {
                 await bitrix.timeline.addTimelineComment({

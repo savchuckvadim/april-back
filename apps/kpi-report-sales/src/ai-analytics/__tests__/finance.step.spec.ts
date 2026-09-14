@@ -1,6 +1,10 @@
 import 'reflect-metadata';
-import { AI_ANALYTICS_SNAPSHOT_TYPE } from '@lib/sales-ai-analytics';
+import {
+    AI_ANALYTICS_SNAPSHOT_TYPE,
+    type AiPortalDefinitions,
+} from '@lib/sales-ai-analytics';
 import type { SnapshotEnvelope } from '@lib/sales-ai-analytics';
+import { defaultDefinitions } from '@lib/sales-ai-analytics/settings/ai-settings.defaults';
 import {
     AI_PIPELINE_BACKFILL,
     AI_PIPELINE_BUS_KEYS,
@@ -15,6 +19,7 @@ import { FinanceStep, monthsForRun } from '../steps/finance.step';
 import { createStepBus } from '../steps/step.types';
 import type { StepBus } from '../steps/step.types';
 import type { AiAnalyticsSnapshotUpsertResult } from '../store/ai-analytics-snapshot.store';
+import { liteRow, portalSettings } from './fixtures/lite-row.fixture';
 import {
     financeMonth,
     financeResult,
@@ -243,6 +248,38 @@ describe('Догон истории', () => {
         expect(monthsForRun(stepContext(), undefined)).toEqual(['2026-09']);
     });
 
+    it('заморозка догнанного месяца — по календарному дню прогона (now), а не по дню джобы', async () => {
+        const { loader } = financeLoaderWith(
+            financeResult([financeMonth('2026-06', 10)], []),
+        );
+        const store = snapshotStoreMock();
+        const june = (now: string) =>
+            stepContext({
+                rhythm: 'backfill',
+                day: '2026-06-30',
+                weekKey: '2026-W27',
+                monthKey: '2026-06',
+                now: new Date(now),
+            });
+
+        const closed = await new FinanceStep(loader, store as never).run(
+            june('2026-09-08T00:45:00Z'),
+            busWithKpi(['2026-06']),
+        );
+        await new FinanceStep(loader, store as never).run(
+            june('2026-07-02T00:45:00Z'),
+            busWithKpi(['2026-06']),
+        );
+
+        expect(closed.written).toBe(1);
+        const [frozenByNow, stillOpen] = monthUpserts(store);
+        expect(frozenByNow.periodKey).toBe('2026-06');
+        // По дню джобы (30.06) месяц не выглядел бы закрытым никогда.
+        expect(frozenByNow.payload.frozen).toBe(true);
+        // 2 июля — до 3-го числа: тик заморозки ещё впереди.
+        expect(stillOpen.payload.frozen).toBe(false);
+    });
+
     it('догон пишет ровно запланированные месяцы', async () => {
         const { loader } = financeLoaderWith(defaultFinance());
         const store = snapshotStoreMock();
@@ -257,6 +294,63 @@ describe('Догон истории', () => {
         expect(monthUpserts(store).map(envelope => envelope.periodKey)).toEqual(
             ['2026-07', '2026-08', '2026-09'],
         );
+    });
+});
+
+/**
+ * Порог «разбираемого» звонка — карта по типам (аудит Фазы 2, M2): месяц
+ * считает факты типов той же картой, что неделя и пульс.
+ */
+describe('Порог длительности по типам в фактах месяца', () => {
+    const coldLenient = (): AiPortalDefinitions => ({
+        ...defaultDefinitions(),
+        minDurationSecByType: {
+            ...defaultDefinitions().minDurationSecByType,
+            cold: 60,
+        },
+    });
+    const call = (id: string, callType: string) =>
+        liteRow({
+            transcriptionId: id,
+            callType,
+            durationSec: 90,
+            callStartedAt: new Date('2026-09-02T09:00:00Z'),
+        });
+
+    it('cold 60 / presentation 300: холодный 90 с — факт типа, презентация 90 с — нет', async () => {
+        const { loader } = financeLoaderWith(defaultFinance());
+        const store = snapshotStoreMock();
+        const bus = busWithKpi(['2026-09']);
+        bus.set(AI_PIPELINE_BUS_KEYS.callsRows, [
+            call('cold-90', 'cold'),
+            call('pres-90', 'presentation'),
+        ]);
+
+        await new FinanceStep(loader, store as never).run(
+            stepContext({
+                settings: portalSettings({ definitions: coldLenient() }),
+            }),
+            bus,
+        );
+
+        const byType = monthUpserts(store)[0].payload.byType;
+        expect(byType.map(fact => [fact.callType, fact.n])).toEqual([
+            ['cold', 1],
+        ]);
+    });
+
+    it('портал ничего не решал — порог 300 с на все типы режет оба', async () => {
+        const { loader } = financeLoaderWith(defaultFinance());
+        const store = snapshotStoreMock();
+        const bus = busWithKpi(['2026-09']);
+        bus.set(AI_PIPELINE_BUS_KEYS.callsRows, [
+            call('cold-90', 'cold'),
+            call('pres-90', 'presentation'),
+        ]);
+
+        await new FinanceStep(loader, store as never).run(stepContext(), bus);
+
+        expect(monthUpserts(store)[0].payload.byType).toEqual([]);
     });
 });
 

@@ -12,6 +12,7 @@
 import {
     AI_ANALYTICS_SNAPSHOT_APP,
     AI_ANALYTICS_SNAPSHOT_PROVIDER,
+    AI_ANALYTICS_SNAPSHOT_TYPE,
     isoWeekday,
     shiftDate,
 } from '@lib/sales-ai-analytics';
@@ -25,12 +26,13 @@ import type { AiPipelineRhythm } from './ai-snapshot.const';
  * Тип и адресация ais-записи подбора недели (план §3.1,
  * `ai-analytics-rop-mark`): ключ записи — ISO-неделя 'YYYY-Www',
  * `user_id` не заполняется (запись портальная, менеджеры — внутри).
- * Своя константа, а не значение реестра снапшотов: реестр принадлежит
- * потоку стора (§1.6 п. 10), а форма записи здесь — собственная, как у
+ * Литерал типа — из реестра снапшотов библиотеки
+ * (AI_ANALYTICS_SNAPSHOT_TYPE.ropMark, зерно portal-week); форма записи
+ * здесь — собственная (без конверта), как у
  * `AI_ANALYTICS_SETTINGS_AUDIT_RECORD`.
  */
 export const AI_ROP_MARK_RECORD = {
-    TYPE: 'ai-analytics-rop-mark',
+    TYPE: AI_ANALYTICS_SNAPSHOT_TYPE.ropMark,
     APP: AI_ANALYTICS_SNAPSHOT_APP,
     PROVIDER: AI_ANALYTICS_SNAPSHOT_PROVIDER,
 } as const;

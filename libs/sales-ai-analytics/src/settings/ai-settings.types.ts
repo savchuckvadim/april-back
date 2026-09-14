@@ -15,7 +15,32 @@ import type { CallReportCallTypeCode } from '@lib/portal-lib/pbx/pbx-aicall-smar
 import type { CallReportSectionCode } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-smart.type';
 import type { PbxDealSalesBaseStageCode } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
 import type { AiAnalyticsParamCode } from '../params/registry.const';
+import { AI_EDGE_CODES, type AiEdgeCode } from '../params/registry.edges.const';
 import type { ParamPrimitive } from '../params/registry.types';
+import type {
+    AiHotClientColor,
+    AiInvoiceNesting,
+    AiManagerLevelCode,
+    AiNormStratum,
+} from '../params/registry.enums.const';
+
+/**
+ * Словари значений настроек живут в реестре параметров
+ * (`params/registry.enums.const.ts`) — дескрипторы ссылаются на них как на
+ * `enumValues`; здесь только реэкспорт для DTO и парсеров.
+ */
+export {
+    AI_HOT_CLIENT_COLORS,
+    AI_INVOICE_NESTINGS,
+    AI_MANAGER_LEVELS,
+    AI_NORM_STRATA,
+} from '../params/registry.enums.const';
+export type {
+    AiHotClientColor,
+    AiInvoiceNesting,
+    AiManagerLevelCode,
+    AiNormStratum,
+} from '../params/registry.enums.const';
 
 /** Ключи настроек Фазы 2 в схеме `[kpiSales]` (snake_case-коды JSON). */
 export const AI_SETTINGS_KEYS = {
@@ -41,15 +66,6 @@ export type AiSettingsRaw = Readonly<Record<AiSettingsKeyName, string>>;
 // ---------------------------------------------------------------------------
 // Уровни и полосы стажа
 // ---------------------------------------------------------------------------
-
-/**
- * Уровень менеджера. Он же — метка полосы стажа (`tenure_bands` = 0–6 /
- * 6–18 / 18+ мес.): цели и capacity стратифицируются по стажу, а уровень
- * назначает руководитель. Значения совпадают с
- * `AI_ANALYTICS_MANAGER_LEVELS` приложения — совпадение проверяет спека.
- */
-export const AI_MANAGER_LEVELS = ['junior', 'middle', 'senior'] as const;
-export type AiManagerLevelCode = (typeof AI_MANAGER_LEVELS)[number];
 
 /** Откуда взят уровень: назначен руководителем или подсказан по стажу. */
 export const AI_LEVEL_SOURCES = ['manual', 'default'] as const;
@@ -141,33 +157,14 @@ export type AiManagerParamsByManager = Readonly<
 // Определения событий портала
 // ---------------------------------------------------------------------------
 
-/** Слой, по которому стратифицируются нормы (решение админа). */
-export const AI_NORM_STRATA = ['tenure', 'level'] as const;
-export type AiNormStratum = (typeof AI_NORM_STRATA)[number];
-
-/** Вложенность счетов относительно КП. */
-export const AI_INVOICE_NESTINGS = ['disjoint', 'nested'] as const;
-export type AiInvoiceNesting = (typeof AI_INVOICE_NESTINGS)[number];
-
-/** Цвет компании («ОП Прогноз работы»); none — не установлен. */
-export const AI_HOT_CLIENT_COLORS = ['green', 'yellow', 'red', 'none'] as const;
-export type AiHotClientColor = (typeof AI_HOT_CLIENT_COLORS)[number];
-
 /**
  * Рёбра воронки (канон §2.3 плана): E1 звонок → презентация, E2 → КП,
  * E3 → счёт после презентации, E3′ звонок → счёт без презентации,
- * E4 счёт → продажа, E5 презентация → продажа. Совпадает с `AI_EDGE_CODES`
- * потока реестра — после его слияния список импортируется оттуда.
+ * E4 счёт → продажа, E5 презентация → продажа. Единый источник кодов —
+ * `AI_EDGE_CODES` реестра (`params/registry.edges.const.ts`).
  */
-export const AI_FUNNEL_EDGE_CODES = [
-    'e1',
-    'e2',
-    'e3',
-    'e3_prime',
-    'e4',
-    'e5',
-] as const;
-export type AiFunnelEdgeCode = (typeof AI_FUNNEL_EDGE_CODES)[number];
+export const AI_FUNNEL_EDGE_CODES: typeof AI_EDGE_CODES = AI_EDGE_CODES;
+export type AiFunnelEdgeCode = AiEdgeCode;
 
 /** Порог длительности разбираемого звонка по типу, секунды. */
 export type AiMinDurationByType = Readonly<

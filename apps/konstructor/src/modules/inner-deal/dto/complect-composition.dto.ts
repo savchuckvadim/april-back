@@ -31,6 +31,17 @@ export class ComplectOfferSettingsDto {
     })
     @IsBoolean()
     showAlternatives: boolean;
+
+    @ApiProperty({
+        description:
+            'Печатать КП отдельными документами: в режиме independent по документу на участника, PDF не склеиваются. Без флага PDF участников склеиваются в один',
+        type: Boolean,
+        required: false,
+        default: false,
+    })
+    @IsOptional()
+    @IsBoolean()
+    separateDocuments?: boolean;
 }
 
 /**

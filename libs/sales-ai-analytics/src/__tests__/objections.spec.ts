@@ -143,6 +143,26 @@ describe('buildObjectionsSlice', () => {
         expect(buildObjectionsSlice(rows, { shortCallSec: 60 }).n).toBe(9);
     });
 
+    it('карта порогов по типам: короткий x3 (presentation, 120 с) возвращается только своим порогом', () => {
+        // x3 — презентация 120 с: порог презентации 300 режет, порог 60 — нет;
+        // карта с cold: 60 презентацию не задевает (её тип вне карты → default).
+        expect(
+            buildObjectionsSlice(rows, { minDurationSecByType: { cold: 60 } })
+                .n,
+        ).toBe(slice.n);
+        expect(
+            buildObjectionsSlice(rows, {
+                minDurationSecByType: { presentation: 60 },
+            }).n,
+        ).toBe(9);
+        expect(
+            buildObjectionsSlice(rows, {
+                shortCallSec: 60,
+                minDurationSecByType: { presentation: 300 },
+            }).n,
+        ).toBe(slice.n);
+    });
+
     it('детерминизм: перестановка входа и повторный вызов дают тот же результат', () => {
         expect(buildObjectionsSlice(shuffle(rows, 7))).toEqual(slice);
         expect(buildObjectionsSlice(rows)).toEqual(slice);

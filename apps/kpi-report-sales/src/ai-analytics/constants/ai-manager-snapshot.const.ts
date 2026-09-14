@@ -57,6 +57,17 @@ export const AI_STYLE_STEP_RHYTHMS = [
 ] as const satisfies readonly AiPipelineRhythm[];
 
 /**
+ * Белый список шагов джобы догона НЕДЕЛИ: только выборка разборов и
+ * недельный снапшот. Без списка джоба недели ритма `backfill` выполняла бы
+ * и kpi/finance — и переписывала бы `manager-month` месяца этой недели
+ * (аудит Фазы 2, M3). Джоба догона месяца списка не несёт: ей нужны все
+ * шаги ритма.
+ */
+export const AI_BACKFILL_WEEK_STEPS = [
+    AI_MANAGER_STEP_CODE.calls,
+] as const satisfies readonly AiManagerStepCode[];
+
+/**
  * Причины пропуска шагов (штатная деградация §5.4): каждая объясняет
  * руководителю, почему записи за период нет, — молчания без причины быть
  * не должно.

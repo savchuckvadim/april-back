@@ -133,6 +133,74 @@ describe('resolveParam: валидация значений слоя', () => {
     });
 });
 
+describe('resolveParam: словари строковых кодов (enum / csv / json)', () => {
+    it('enum: значение не из словаря откатывается с invalid-value', () => {
+        const ok = resolveParam('norm_stratum', {
+            portal: { norm_stratum: 'level' },
+        });
+        const bad = resolveParam('norm_stratum', {
+            portal: { norm_stratum: 'shoe-size' },
+        });
+
+        expect(ok.value).toBe('level');
+        expect(ok.reason).toBeUndefined();
+        expect(bad.value).toBe('tenure');
+        expect(bad.source).toBe('default');
+        expect(bad.reason).toBe('invalid-value');
+    });
+
+    it('csv: элементы из словаря, без дублей; пустая строка допустима', () => {
+        expect(
+            resolveParam('hot_client_colors', {
+                portal: { hot_client_colors: 'green,yellow' },
+            }).reason,
+        ).toBeUndefined();
+        expect(
+            resolveParam('hot_client_colors', {
+                portal: { hot_client_colors: 'green,purple' },
+            }).reason,
+        ).toBe('invalid-value');
+        expect(
+            resolveParam('funnel_edges', {
+                portal: { funnel_edges: 'e1,e1' },
+            }).reason,
+        ).toBe('invalid-value');
+        expect(
+            resolveParam('funnel_edges', { portal: { funnel_edges: '' } })
+                .reason,
+        ).toBeUndefined();
+        expect(
+            resolveParam('decision_stages', {
+                portal: { decision_stages: 'sales_new,sales_cold' },
+            }).value,
+        ).toBe('sales_new,sales_cold');
+    });
+
+    it('json: только объект или массив', () => {
+        expect(
+            resolveParam('holidays', {
+                portal: { holidays: '["2026-11-04"]' },
+            }).reason,
+        ).toBeUndefined();
+        expect(
+            resolveParam('holidays', { portal: { holidays: 'not json' } })
+                .reason,
+        ).toBe('invalid-value');
+        expect(
+            resolveParam('holidays', { portal: { holidays: '5' } }).reason,
+        ).toBe('invalid-value');
+    });
+
+    it('флаговый код: строка «true» — type-mismatch', () => {
+        const resolved = resolveParam('roster_confirm_required', {
+            portal: { roster_confirm_required: 'true' },
+        });
+
+        expect(resolved.value).toBe(false);
+        expect(resolved.reason).toBe('type-mismatch');
+    });
+});
+
 describe('resolveParam: гибриды', () => {
     it('смешивает настройку и данные по весу w', () => {
         const resolved = resolveParam(
