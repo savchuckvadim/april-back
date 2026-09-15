@@ -49,11 +49,12 @@ describe('PBX_DEAL_SALES_BASE_STAGES', () => {
     });
 
     /* Отрицательные финалы стоят ниже «Успеха» и не попадают в «горячие». */
-    it('отрицательные финалы (fail/double/not_ca) выше WON по порядку', () => {
+    it('отрицательные финалы (fail/double/not_ca/not_call) выше WON по порядку', () => {
         [
             PBX_DEAL_SALES_BASE_STAGE_CODE.fail,
             PBX_DEAL_SALES_BASE_STAGE_CODE.apology,
             PBX_DEAL_SALES_BASE_STAGE_CODE.notCa,
+            PBX_DEAL_SALES_BASE_STAGE_CODE.notCall,
         ].forEach(code => {
             expect(getSalesBaseStageOrder(code)).toBeGreaterThan(
                 PBX_DEAL_SALES_BASE_WON_ORDER,

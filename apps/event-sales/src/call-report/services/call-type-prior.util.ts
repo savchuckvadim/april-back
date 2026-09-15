@@ -112,6 +112,15 @@ const BASE_STAGE_PRIORS: Record<PbxDealSalesBaseStageCode, StagePrior> = {
         callType: 'call',
         strength: 'weak',
     },
+    /**
+     * «Не Беспокоить» — клиент попросил не звонить. Разговор, после
+     * которого сделка сюда уехала, был обычным звонком; содержания
+     * конкретного звонка стадия не задаёт, поэтому приор слабый.
+     */
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.notCall]: {
+        callType: 'call',
+        strength: 'weak',
+    },
 };
 
 /** Стадия воронки презентаций → этап разговора. */

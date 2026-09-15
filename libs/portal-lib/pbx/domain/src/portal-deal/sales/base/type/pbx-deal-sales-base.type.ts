@@ -266,5 +266,23 @@ export type PbxDealSalesBaseCategoryType = {
             order: 14;
             isDefault: 'N';
         },
+        {
+            id: 14;
+            categoryId: 0;
+            entityType: 'deal';
+            parentType: 'sales';
+            type: 'deal';
+            group: 'sales';
+            name: 'Не Беспокоить';
+            title: 'Не Беспокоить';
+            bitrixId: 'NOT_CALL';
+            isActive: true;
+            smartBitrixId: 'DEAL_STAGE';
+            color: '#2d0b0d';
+            code: 'sales_not_call';
+            isNeedUpdate: true;
+            order: 15;
+            isDefault: 'N';
+        },
     ];
 };

@@ -131,9 +131,13 @@ export class EventReportUseCase {
         if (ctx.strategy !== EEventReportFlowStrategy.LEAD_ONLY) {
             returnToTmc.queue(ctx);
         }
-        // Запись в таймлайн владельца — ПОСЛЕ deal-flow: в неё уходит
-        // ссылка на основную сделку, и делать её до расчёта сделок незачем.
-        timeline.queue(ctx);
+        /*
+         * Запись в таймлайн — строго ПОСЛЕ deal-flow: она уходит и в саму
+         * основную сделку, а её id при создании приезжает подстановкой
+         * `$result[set_base_deal]` — команда сделки обязана стоять в очереди
+         * раньше команды комментария.
+         */
+        timeline.queue(ctx, deals);
 
         // Коммитим KPI группу + flush'им буфер.
         //

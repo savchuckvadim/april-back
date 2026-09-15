@@ -3,10 +3,15 @@ import { PortalAppSettingsService } from '@lib/portal-lib/store/app-settings';
 import { EventSalesFlowDto } from '../dto/event-sale-flow/event-sales-flow.dto';
 
 /**
- * Гард продажи в POST /flow: сумма (OPPORTUNITY) и дата первой оплаты
- * обязательны ТОЛЬКО когда на портале включён чек-лист продажи
- * (checklist_sale_enabled) и есть кому создавать сделку (не lead-only).
- * Недоступные настройки не блокируют отправку.
+ * Гард продажи в POST /flow. С 15.09 он ПРЕДУПРЕЖДАЮЩИЙ: отчёт о продаже
+ * не отвергается никогда — ни без суммы, ни без даты первой оплаты. Раньше
+ * здесь стоял 400, и он терял готовую работу менеджера при полностью
+ * заполненной сделке (фрейм закрывал вопрос значением карточки, а в payload
+ * ответа не возникало). Данные он не берёг: писатель полей graceful —
+ * пустое значение просто не пишется.
+ *
+ * Собирает недостающее модалка продажи во фрейме; здесь остаётся warn —
+ * след, по которому видно порталы и сделки с пробелом.
  */
 const makeGuard = (
     settings: Record<string, unknown> | Error,
@@ -41,10 +46,18 @@ const dto = (over: {
 describe('EventFlowGuardService: чек-лист продажи', () => {
     const enabled = { withChecklistSale: true };
 
-    it('включён + продажа без суммы/даты → 400', async () => {
+    it('включён + продажа без суммы/даты → проходит, отчёт не теряем', async () => {
         await expect(
             makeGuard(enabled).assertValid(dto({ companyId: 431 })),
-        ).rejects.toThrow(/сумму сделки и дату/);
+        ).resolves.toBeUndefined();
+    });
+
+    it('включён + сумма есть, даты нет → тоже проходит', async () => {
+        await expect(
+            makeGuard(enabled).assertValid(
+                dto({ companyId: 431, opportunity: 150000 }),
+            ),
+        ).resolves.toBeUndefined();
     });
 
     it('включён + сумма и дата на месте → проходит', async () => {

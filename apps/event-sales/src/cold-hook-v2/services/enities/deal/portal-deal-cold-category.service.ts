@@ -54,11 +54,23 @@ export class PortalDealColdCategoryService {
     public getTargetDealStagesForClosePreCold(): string[] {
         const categories = this.getTargetPDealCategories();
         const stages: string[] = [];
+        /*
+         * Стадия НЕ рабочая — сделку на ней холодный старт не трогает.
+         *
+         * 'not_call' («Не Беспокоить», добавлена 15.09.2026): клиент прямо
+         * просил не звонить. Без этой строки такая сделка считалась бы
+         * открытой работой — ХО закрыл бы её и завёл новую, то есть позвонил
+         * бы тому, кто звонить запретил.
+         *
+         * NB: 'not_ca' («Не ЦА») в список НЕ входит и сейчас — поведение
+         * оставлено как было, менять его отдельным решением.
+         */
         const isNotTargetStage = (code: string): boolean => {
             return (
                 code.includes('fail') ||
                 code.includes('noresult') ||
                 code.includes('double') ||
+                code.includes('not_call') ||
                 code.includes('success')
             );
         };

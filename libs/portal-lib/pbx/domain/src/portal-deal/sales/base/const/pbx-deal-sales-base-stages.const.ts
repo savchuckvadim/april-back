@@ -30,6 +30,16 @@ export const PBX_DEAL_SALES_BASE_STAGES = [
     { code: 'sales_fail', order: 12 },
     { code: 'sales_double', order: 13 },
     { code: 'sales_not_ca', order: 14 },
+    /*
+     * «Не Беспокоить» (NOT_CALL) — добавлена на портале 15.09.2026.
+     * Семантика Битрикса — отрицательная (F), но это НЕ отказ по сделке:
+     * клиент просил больше не звонить. Поэтому стадия сознательно НЕ
+     * добавлена ни в список отказных стадий реанимации
+     * (reject-revive.service), ни в проигрышные эпизоды AI-аналитики
+     * (episode.types) — «не беспокоить» не поднимают и не считают
+     * потерянной сделкой. Понадобится обратное — правится там явно.
+     */
+    { code: 'sales_not_call', order: 15 },
 ] as const satisfies readonly { code: string; order: number }[];
 
 export type PbxDealSalesBaseStageCode =
@@ -70,6 +80,8 @@ export const PBX_DEAL_SALES_BASE_STAGE_CODE = {
     apology: 'sales_double',
     /** «Не ЦА» (NOT_CA) — клиент не целевой, отдельный финал отказа. */
     notCa: 'sales_not_ca',
+    /** «Не Беспокоить» (NOT_CALL) — клиент просил больше не звонить. */
+    notCall: 'sales_not_call',
 } as const satisfies Record<string, PbxDealSalesBaseStageCode>;
 
 /**

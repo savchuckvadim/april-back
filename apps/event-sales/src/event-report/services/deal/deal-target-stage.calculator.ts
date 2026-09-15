@@ -67,6 +67,17 @@ const SALES_BASE_STAGE_SUFFIX = {
     apology: 'double',
     /** «Не ЦА» (NOT_CA) — клиент нецелевой. */
     notCa: 'not_ca',
+    /**
+     * «Не Беспокоить» (NOT_CALL) — клиент просил не звонить.
+     *
+     * На лестнице {@link SALES_BASE_EVENT_ORDER} её НЕТ и быть не должно:
+     * flow эту стадию не выставляет (решение владельца 15.09 — стадия пока
+     * только для сопоставления при переносе лидов). Имя заведено, чтобы
+     * ссылаться на неё кодом, а не строкой, когда перенос до неё дойдёт;
+     * `detectEventFromBaseStage` на ней вернёт null — как и на остальных
+     * финалах, то есть лестница сделку с неё никуда не потащит.
+     */
+    notCall: 'not_call',
 } as const satisfies Record<string, PbxDealSalesBaseStageSuffix>;
 
 /** Суффиксы стадий воронки ХО (sales_xo). */

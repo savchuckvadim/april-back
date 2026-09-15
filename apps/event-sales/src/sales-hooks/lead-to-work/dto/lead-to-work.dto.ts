@@ -83,12 +83,22 @@ export const LEAD_TO_WORK_STAGE_MODES = ['from_lead', 'cold', 'new'] as const;
 export type LeadToWorkStageMode = (typeof LEAD_TO_WORK_STAGE_MODES)[number];
 
 /**
- * Что делать с открытыми задачами лида: move — перенести с префиксом
- * «Звонок», close — закрыть и поставить новую, none — не трогать вовсе
- * (и НЕ создавать новую: работа переезжает, а следующий шаг менеджер
- * ставит сам).
+ * Что делать с открытыми задачами лида:
+ *  - `move` — перенести с префиксом «Звонок»; открытых задач НЕ БЫЛО —
+ *    поставить новую, чтобы клиент не остался без следующего шага;
+ *  - `move_keep` — то же, но новую НЕ создавать. Режим МАССОВОГО ПЕРЕНОСА
+ *    исторической базы (15.09.2026): там «следующий шаг» ставить не надо,
+ *    а `move` на тысячах лидов без задач разом завалил бы менеджеров
+ *    задачами «Звонок»;
+ *  - `close` — закрыть открытые и поставить одну новую;
+ *  - `none` — не трогать вовсе и новую не создавать.
  */
-export const LEAD_TO_WORK_TASK_MODES = ['move', 'close', 'none'] as const;
+export const LEAD_TO_WORK_TASK_MODES = [
+    'move',
+    'move_keep',
+    'close',
+    'none',
+] as const;
 export type LeadToWorkTaskMode = (typeof LEAD_TO_WORK_TASK_MODES)[number];
 
 /**
@@ -168,9 +178,11 @@ export class LeadToWorkWebhookQueryDto {
 
     @ApiPropertyOptional({
         description:
-            'Задачи лида: move — перенести с префиксом «Звонок», ' +
-            'close — закрыть и поставить новую, none — не трогать и новую ' +
-            'не создавать.',
+            'Задачи лида: move — перенести с префиксом «Звонок» (а если ' +
+            'открытых задач не было — поставить новую), move_keep — то ' +
+            'же, но новую НЕ создавать (режим массового переноса ' +
+            'исторической базы), close — закрыть и поставить новую, ' +
+            'none — не трогать и новую не создавать.',
         example: 'move',
         type: String,
         enum: LEAD_TO_WORK_TASK_MODES,

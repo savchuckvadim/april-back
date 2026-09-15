@@ -21,6 +21,7 @@ import { DuplicatesModule } from './duplicates/duplicates.module';
 import { AppCacheServiceModule } from '@lib/app-cache';
 import { EventSalesAppSettingsModule } from './app-settings/app-settings.module';
 import { EventSalesQuestionnairesModule } from './questionnaires/questionnaires.module';
+import { DealAuditModule } from './deal-audit/deal-audit.module';
 
 @Module({
     imports: [
@@ -61,6 +62,9 @@ import { EventSalesQuestionnairesModule } from './questionnaires/questionnaires.
         EventSalesAppSettingsModule,
         // Портальный каталог анкет плана/отчёта — читается фреймом на старте
         EventSalesQuestionnairesModule,
+        // Аудит сделок: крон ищет «забытые» сделки и размечает их полями
+        // op_audit_*. По умолчанию выключен на всех порталах.
+        DealAuditModule,
     ],
     providers: [GlobalExceptionFilter],
     exports: [BxDepartmentModule, AiRagModule],

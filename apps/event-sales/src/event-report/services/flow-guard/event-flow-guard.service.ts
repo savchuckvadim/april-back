@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
     EnumPortalAppCode,
     PortalAppSettingsService,
@@ -13,6 +13,10 @@ import { assertEventFlowDtoValid } from './event-flow-guard';
  * Всё, что проверяется по одному DTO, живёт в чистой
  * {@link assertEventFlowDtoValid}; здесь — правила, включаемые настройками
  * (Redis-кэш 300 с, лишних запросов при отправке нет).
+ *
+ * Что здесь МОЖЕТ отвергнуть отправку: только рассинхрон самого DTO
+ * (assertEventFlowDtoValid). Правило продажи с 15.09 предупреждающее —
+ * см. комментарий в теле: отчёт о продаже дороже любой недостающей ячейки.
  *
  * Тексты по-русски: 400 из POST фронт показывает менеджеру баннером
  * (flowStatus.setError); 400 из очереди не увидел бы никто.
@@ -53,10 +57,33 @@ export class EventFlowGuardService {
         const sale = dto.sale;
         const hasOpportunity =
             typeof sale?.opportunity === 'number' && sale.opportunity > 0;
-        if (!hasOpportunity || !sale?.firstPayDate) {
-            throw new BadRequestException(
-                'Продажа: заполните сумму сделки и дату первой оплаты',
-            );
-        }
+        if (hasOpportunity && sale?.firstPayDate) return;
+
+        /*
+         * ПРОДАЖУ НЕ БЛОКИРУЕМ — предупреждаем.
+         *
+         * Раньше здесь стоял 400 на весь отчёт, и он терял готовую работу
+         * менеджера: фрейм закрывал эти же вопросы значением, уже стоящим в
+         * карточке (сумма в сделке есть → вопрос выглядит заполненным →
+         * ответа нет → в payload пусто), и отправка продажи падала при
+         * полностью заполненной сделке.
+         *
+         * Защищать было нечего: писатель полей и так graceful
+         * (`sales-base-deal.service`) — суммы нет, значит `OPPORTUNITY` не
+         * трогаем и в сделке остаётся прежнее значение; поля
+         * `first_pay_date` нет на портале — значение молча пропускается.
+         * То есть гард не берёг данные, он только отменял отчёт.
+         *
+         * Собирает эти данные там, где это видно менеджеру, — модалка
+         * продажи во фрейме: пустую сумму она не пропускает. Здесь остаётся
+         * след для нас: по нему видно порталы и сделки, где продажа ушла без
+         * суммы или без даты.
+         */
+        this.logger.warn(
+            `flow-guard: продажа без ${
+                hasOpportunity ? 'даты первой оплаты' : 'суммы сделки'
+            } — ${dto.domain}, сделка ${dto.context?.dealId ?? '—'}, ` +
+                `компания ${dto.context?.companyId ?? '—'}: отчёт отправлен как есть`,
+        );
     }
 }

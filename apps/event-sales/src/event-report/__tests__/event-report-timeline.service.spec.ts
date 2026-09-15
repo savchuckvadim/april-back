@@ -1,9 +1,11 @@
 import { EventReportContext } from '../services/context/event-report.context';
+import { DealFlowResult } from '../services/deal/event-report-deal-flow.service';
 import { EventReportTimelineService } from '../services/timeline/event-report-timeline.service';
 
 /**
- * Запись таймлайна отчёта: КУДА пишется, ЧТО в неё попадает из контекста и
- * КАК готовится к batch-проводу (экранирование — здесь, ровно один раз).
+ * Запись таймлайна отчёта: В КАКИЕ КАРТОЧКИ пишется, что в неё попадает из
+ * контекста и как готовится к batch-проводу (экранирование — здесь, ровно
+ * один раз).
  */
 const NOW = new Date('2026-09-15T09:00:00.000Z');
 
@@ -40,37 +42,142 @@ const makeCtx = (
 
 type TimelinePayload = {
     ENTITY_TYPE: string;
-    ENTITY_ID: number;
+    ENTITY_ID: number | string;
     COMMENT: string;
 };
 
-const queue = (ctx: EventReportContext) => {
+/** Итог deal-flow; `baseDealId` — реальный id либо подстановка батча. */
+const deals = (baseDealId: string | null = null): DealFlowResult => ({
+    baseDealId,
+    newPlanPresDealId: null,
+    newUnplannedPresDealId: null,
+});
+
+const queue = (ctx: EventReportContext, dealFlow: DealFlowResult = deals()) => {
     const addTimelineComment = jest.fn<void, [string, TimelinePayload]>();
     new EventReportTimelineService({
         batch: { timeline: { addTimelineComment } },
-    } as never).queue(ctx);
+    } as never).queue(ctx, dealFlow);
     return addTimelineComment;
 };
 
-/** Текст единственной поставленной команды. */
-const commentOf = (add: ReturnType<typeof queue>, call = 0): string =>
+type Add = ReturnType<typeof queue>;
+
+/** Куда уехали записи: пары `тип:id` в порядке постановки команд. */
+const targetsOf = (add: Add): string[] =>
+    add.mock.calls.map(
+        ([, payload]) => `${payload.ENTITY_TYPE}:${String(payload.ENTITY_ID)}`,
+    );
+
+const commentOf = (add: Add, call = 0): string =>
     add.mock.calls[call][1].COMMENT;
 
-describe('EventReportTimelineService', () => {
-    it('пишет в карточку владельца события одной командой', () => {
-        const add = queue(makeCtx());
+describe('EventReportTimelineService — куда пишем', () => {
+    it('владелец-компания + основная сделка: две записи', () => {
+        const add = queue(
+            makeCtx({}, { currentBaseDeal: { ID: '34', TITLE: 'СПС' } }),
+            deals('34'),
+        );
 
-        expect(add).toHaveBeenCalledTimes(1);
-        const [cmd, payload] = add.mock.calls[0];
-        expect(cmd).toBe('add_timeline_company_12');
-        expect(payload.ENTITY_TYPE).toBe('company');
-        expect(payload.ENTITY_ID).toBe(12);
+        expect(targetsOf(add)).toEqual(['company:12', 'deal:34']);
     });
 
+    it('основная сделка получает запись и когда создаётся этим же батчем', () => {
+        // Реального id ещё нет — ENTITY_ID уезжает подстановкой батча.
+        const add = queue(makeCtx(), deals('$result[set_base_deal]'));
+
+        expect(targetsOf(add)).toEqual([
+            'company:12',
+            'deal:$result[set_base_deal]',
+        ]);
+    });
+
+    it('владелец-лид: запись в лид, компанию и основную сделку', () => {
+        const add = queue(
+            makeCtx(
+                {},
+                {
+                    entityType: 'lead',
+                    entityId: 7,
+                    company: { ID: '12', TITLE: 'ООО «Ромашка»' },
+                    lead: { ID: '7', TITLE: 'Заявка с сайта' },
+                    currentBaseDeal: { ID: '34', TITLE: 'СПС' },
+                },
+            ),
+            deals('34'),
+        );
+
+        expect(targetsOf(add)).toEqual(['lead:7', 'company:12', 'deal:34']);
+    });
+
+    it('владелец — та же основная сделка: запись одна, без дубля', () => {
+        const add = queue(
+            makeCtx(
+                {},
+                {
+                    entityType: 'deal',
+                    entityId: 34,
+                    company: null,
+                    currentBaseDeal: { ID: '34', TITLE: 'СПС' },
+                },
+            ),
+            deals('34'),
+        );
+
+        expect(targetsOf(add)).toEqual(['deal:34']);
+    });
+
+    it('сделки нет вовсе (lead-only) — только карточка владельца', () => {
+        const add = queue(
+            makeCtx(
+                {},
+                {
+                    entityType: 'lead',
+                    entityId: 7,
+                    company: null,
+                    lead: { ID: '7', TITLE: 'Заявка' },
+                },
+            ),
+            deals(null),
+        );
+
+        expect(targetsOf(add)).toEqual(['lead:7']);
+    });
+
+    it('без сущности-владельца и без сделки команд нет', () => {
+        expect(
+            queue(makeCtx({}, { entityId: 0, company: null }), deals(null)),
+        ).not.toHaveBeenCalled();
+    });
+});
+
+describe('EventReportTimelineService — что в записи', () => {
     it('запись пишется на ЛЮБОМ портале, а не только на gsirk', () => {
         // До 15.09 запись была под гейтом isGsirk, и на остальных порталах
         // таймлайн клиента после отчёта оставался пустым.
-        expect(queue(makeCtx())).toHaveBeenCalledTimes(1);
+        expect(queue(makeCtx())).toHaveBeenCalled();
+    });
+
+    it('в своей карточке нет ссылки на саму себя, в чужой — есть', () => {
+        const add = queue(
+            makeCtx(
+                {},
+                {
+                    currentBaseDeal: { ID: '34', TITLE: 'СПС' },
+                    lead: { ID: '7', TITLE: 'Заявка с сайта' },
+                },
+            ),
+            deals('34'),
+        );
+
+        const companyRecord = commentOf(add, 0);
+        expect(companyRecord).not.toContain('/crm/company/details/12/');
+        expect(companyRecord).toContain('/crm/deal/details/34/');
+        expect(companyRecord).toContain('/crm/lead/details/7/');
+
+        const dealRecord = commentOf(add, 1);
+        expect(dealRecord).not.toContain('/crm/deal/details/34/');
+        expect(dealRecord).toContain('/crm/company/details/12/');
     });
 
     it('комментарий экранирован под batch: переносы — %0A, «#» — %23', () => {
@@ -82,10 +189,9 @@ describe('EventReportTimelineService', () => {
                         description: 'счёт #1 на 50% + НДС',
                     },
                 },
-                {
-                    currentBaseDeal: { ID: '34', TITLE: 'СПС' },
-                },
+                { currentBaseDeal: { ID: '34', TITLE: 'СПС' } },
             ),
+            deals('34'),
         );
         const comment = commentOf(add);
 
@@ -98,40 +204,6 @@ describe('EventReportTimelineService', () => {
         expect(comment).toContain(
             '<a href="https://d.b24.ru/crm/deal/details/34/" target="_blank">СПС</a>',
         );
-    });
-
-    it('карточка владельца себя не дублирует, остальные — ссылками', () => {
-        const add = queue(
-            makeCtx(
-                {},
-                {
-                    currentBaseDeal: { ID: '34', TITLE: 'СПС' },
-                    lead: { ID: '7', TITLE: 'Заявка с сайта' },
-                },
-            ),
-        );
-        const comment = commentOf(add);
-
-        expect(comment).toContain('/crm/deal/details/34/');
-        expect(comment).toContain('/crm/lead/details/7/');
-        // Владелец — компания 12: ссылки на саму себя в записи нет.
-        expect(comment).not.toContain('/crm/company/details/12/');
-    });
-
-    it('владелец-сделка: ссылки на саму себя тоже нет', () => {
-        const add = queue(
-            makeCtx(
-                {},
-                {
-                    entityType: 'deal',
-                    entityId: 34,
-                    company: null,
-                    currentBaseDeal: { ID: '34', TITLE: 'СПС' },
-                },
-            ),
-        );
-        const comment = commentOf(add);
-        expect(comment).not.toContain('/crm/deal/details/34/');
     });
 
     it('контакты отчёта и плана уезжают ссылками на свои карточки', () => {
@@ -165,9 +237,5 @@ describe('EventReportTimelineService', () => {
         expect(comment).toContain('Иванов Иван');
         expect(comment).toContain('/crm/contact/details/57/');
         expect(comment).toContain('Петров Пётр');
-    });
-
-    it('без сущности-владельца команда не ставится', () => {
-        expect(queue(makeCtx({}, { entityId: 0 }))).not.toHaveBeenCalled();
     });
 });

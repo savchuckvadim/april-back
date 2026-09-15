@@ -181,6 +181,32 @@ const SALES_LEAD_STAGES = [
         semantics: 'F',
         installMode: 'map-only',
     },
+    {
+        /*
+         * «Не беспокоить» — зеркало стадии ОП «Не Беспокоить» (NOT_CALL),
+         * заведено 15.09.2026 под перенос лидов в сделки.
+         *
+         * `map-only` + `bitrixStatusId: null`: такой статус на портале УЖЕ
+         * есть, свой мы не создаём — админ сопоставляет существующий. Без
+         * сопоставления перенос по-прежнему сработает, но лид уедет в
+         * стадию по умолчанию (`DEFAULT_FROM_LEAD_STAGE`) с предупреждением
+         * — то есть клиенту, просившему не звонить, завели бы рабочую
+         * сделку. Поэтому сопоставление обязательно ДО массового переноса.
+         *
+         * Семантика F: стадия отрицательная. Зеркало означает и то, что
+         * лид ОСТАЁТСЯ в своей стадии (см. resolveLeadStatus).
+         */
+        code: 'lead_not_call',
+        name: 'not_call',
+        title: 'Не беспокоить (зеркало ОП)',
+        color: '#2d0b0d',
+        order: 41,
+        isActive: true,
+        bitrixStatusId: null,
+        semantics: 'F',
+        installMode: 'map-only',
+        dealStageCode: 'sales_not_call',
+    },
 ] as const satisfies readonly PbxLeadStageTemplateItem[];
 
 /** Группа SERVICE новых стадий не получает (решение по умолчанию, вопрос №10 ТЗ). */

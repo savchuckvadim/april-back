@@ -102,3 +102,6 @@ schemacopy
 
 /scripts/**
 /infra/nginx/**
+
+# Отчёты разведки перед перегоном лидов (scripts/analyze-lead-migration.ts)
+lead-migration-analysis-*.json

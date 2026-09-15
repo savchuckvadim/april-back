@@ -572,32 +572,35 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
             batch: { timeline: { addTimelineComment } },
         } as never);
 
-        service.queue({
-            domain: 'd.b24.ru',
-            // Даты форматирует контекст (ctx.dateTime) — фейк обязан отдавать
-            // ту же обёртку, что и настоящий EventReportContext.
-            dateTime: new PBXDateTime(makePortal() as never),
-            entityType: 'lead',
-            entityId: 42,
-            nowDate: NOW,
-            reportEventType: 'xoRequest',
-            reportEventName: '',
-            isResult: true,
-            planEventType: 'xoLead',
-            planEventName: '',
-            planDeadline: null,
-            isExpired: false,
-            reportContact: null,
-            planContact: null,
-            isUnplannedPresentation: false,
-            reportComment: '',
-            isSuccessSale: false,
-            isFail: false,
-            isNotCa: false,
-            currentBaseDeal: null,
-            company: null,
-            lead: null,
-        } as never);
+        service.queue(
+            {
+                domain: 'd.b24.ru',
+                // Даты форматирует контекст (ctx.dateTime) — фейк обязан отдавать
+                // ту же обёртку, что и настоящий EventReportContext.
+                dateTime: new PBXDateTime(makePortal() as never),
+                entityType: 'lead',
+                entityId: 42,
+                nowDate: NOW,
+                reportEventType: 'xoRequest',
+                reportEventName: '',
+                isResult: true,
+                planEventType: 'xoLead',
+                planEventName: '',
+                planDeadline: null,
+                isExpired: false,
+                reportContact: null,
+                planContact: null,
+                isUnplannedPresentation: false,
+                reportComment: '',
+                isSuccessSale: false,
+                isFail: false,
+                isNotCa: false,
+                currentBaseDeal: null,
+                company: null,
+                lead: null,
+            } as never,
+            deals,
+        );
 
         const [, payload] = addTimelineComment.mock.calls[0] as [
             string,
