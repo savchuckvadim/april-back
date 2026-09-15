@@ -34,12 +34,24 @@ export function buildComplectVariantInstallFields(): ConstSmartInstallField[] {
 /** Код единственной воронки вариантов (ключ идемпотентности категории). */
 export const COMPLECT_VARIANT_CATEGORY_CODE = 'cvar_main';
 
-/** Цвета стадий: черновик — нейтральный, текущий — зелёный, отклонён — серый. */
+/**
+ * Цвета стадий канбана: работа в конструкторе — голубой/зелёный, продажа —
+ * тёплая гамма (КП → счёт → договор), поставка — синяя, финал — зелёный успех
+ * и серые провалы. Провальные стадии обе серые: в канбане их различает
+ * название, а не цвет.
+ */
 const COMPLECT_VARIANT_STAGE_COLORS: Record<string, string> = {
     cvar_draft: '#3bc8f5',
     cvar_current: '#0ec96f',
     cvar_merged: '#f5a623',
+    cvar_offer: '#ffa900',
+    cvar_invoice: '#ff5752',
+    cvar_contract: '#9985df',
+    cvar_supply: '#2fc6f6',
+    cvar_approval: '#47d1e2',
+    cvar_success: '#1ba344',
     cvar_rejected: '#7d8087',
+    cvar_failed: '#a8adb4',
 };
 
 /** Const-конфиг → Category[] установочного контракта: одна воронка со стадиями. */

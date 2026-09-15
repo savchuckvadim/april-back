@@ -5,6 +5,13 @@ import PizZip from 'pizzip';
 import { SupplyReportTemplateData } from '../data/supply-report-data.service';
 import { randomUUID } from 'crypto';
 import dayjs from 'dayjs';
+import { getErrorString } from '@lib/shared';
+
+/** Домены, у которых в документ добавляется блок реквизитов клиента. */
+const DOMAINS_WITH_CLIENT_RQ = [
+    'april-dev.bitrix24.ru',
+    'april-garant.bitrix24.ru',
+];
 
 @Injectable()
 export class SupplyReportTemplateService {
@@ -13,45 +20,44 @@ export class SupplyReportTemplateService {
     constructor(private readonly storageService: StorageService) {}
 
     /**
-     * Создает Word документ из шаблона
+     * Собирает docx отчёта из шаблона.
+     *
+     * Файл кладётся в `konstructor/supply/{year}/{domain}/{userId}` — ровно
+     * туда, куда потом смотрит `FileLinkService.getFilePath`. Уникальность
+     * живёт в ИМЕНИ файла, а не в подпапке с хэшем: иначе ссылка
+     * `/api/files/<token>` отдаёт 404, и init-supply не скачивает отчёт.
      */
     async createWordDocument(
         templateData: SupplyReportTemplateData,
         domain: string,
         userId: number,
         isNewTemplate: boolean = true,
-    ): Promise<{ filePath: string; fileName: string }> {
-        // Определяем путь к шаблону
-        const templatePath = this.getTemplatePath(isNewTemplate);
+    ): Promise<{ filePath: string; fileName: string; subPath: string }> {
+        const templatePath = await this.resolveTemplatePath(
+            domain,
+            isNewTemplate,
+        );
 
-        // Проверяем существование шаблона
-        if (!(await this.storageService.fileExists(templatePath))) {
-            throw new NotFoundException(`Template not found: ${templatePath}`);
-        }
-
-        // Читаем шаблон
         const templateBuffer = await this.storageService.readFile(templatePath);
 
-        // Создаем документ из шаблона
         const doc = new Docxtemplater(new PizZip(templateBuffer), {
             paragraphLoop: true,
             linebreaks: true,
         });
 
-        // Заполняем шаблон данными
-        this.fillTemplate(doc, templateData, domain);
+        // ОДИН объект и ОДИН render: doc.setData() заменяет весь набор данных
+        // целиком, поэтому серия вызовов оставляла в документе только последний
+        this.renderTemplate(doc, this.buildRenderData(templateData, domain));
 
-        // Генерируем файл
         const buffer = doc.getZip().generate({
             type: 'nodebuffer',
             compression: 'DEFLATE',
         });
 
-        // Сохраняем файл
         const currentYear = dayjs().format('YYYY');
         const hash = randomUUID().replace(/-/g, '').substring(0, 8);
-        const fileName = 'Отчет_о_продаже.docx';
-        const subPath = `konstructor/supply/${currentYear}/${domain}/${userId}/${hash}`;
+        const fileName = `Отчет_о_продаже_${hash}.docx`;
+        const subPath = `konstructor/supply/${currentYear}/${domain}/${userId}`;
 
         const filePath = await this.storageService.saveFile(
             buffer,
@@ -60,45 +66,60 @@ export class SupplyReportTemplateService {
             subPath,
         );
 
-        this.logger.log(`Word document created: ${filePath}`);
+        this.logger.log(`Отчёт о поставке собран: ${filePath}`);
 
-        return { filePath, fileName };
+        return { filePath, fileName, subPath };
     }
 
     /**
-     * Получает путь к шаблону
+     * Путь к шаблону: сначала переопределение под домен, потом общий шаблон —
+     * как в Laravel (`templates/supply/{domain}/sales_report.docx` с фолбэком).
      */
-    private getTemplatePath(isNewTemplate: boolean): string {
+    private async resolveTemplatePath(
+        domain: string,
+        isNewTemplate: boolean,
+    ): Promise<string> {
         const basePath = 'konstructor/templates/supply';
-        if (isNewTemplate) {
-            return this.storageService.getFilePath(
-                StorageType.APP,
-                basePath,
-                'sales_report.docx',
-            );
-        } else {
-            return this.storageService.getFilePath(
-                StorageType.APP,
-                basePath,
-                'supply_report_gsr.docx',
-            );
+        const fileName = isNewTemplate
+            ? 'sales_report.docx'
+            : 'supply_report_gsr.docx';
+
+        const domainPath = this.storageService.getFilePath(
+            StorageType.APP,
+            `${basePath}/${domain}`,
+            fileName,
+        );
+        if (await this.storageService.fileExists(domainPath)) {
+            return domainPath;
         }
+
+        const commonPath = this.storageService.getFilePath(
+            StorageType.APP,
+            basePath,
+            fileName,
+        );
+        if (await this.storageService.fileExists(commonPath)) {
+            return commonPath;
+        }
+
+        throw new NotFoundException(
+            `Шаблон отчёта о поставке не найден: ${commonPath}`,
+        );
     }
 
     /**
-     * Заполняет шаблон данными
+     * Плоский набор данных для docxtemplater.
+     *
+     * Ключи компании, сделки и формы отчёта раскладываются в корень: в шаблоне
+     * они стоят тегами по коду поля ({sale_date}, {supply_information}, …).
      */
-    private fillTemplate(
-        doc: Docxtemplater,
+    private buildRenderData(
         data: SupplyReportTemplateData,
         domain: string,
-    ): void {
-        const withRq =
-            domain === 'april-dev.bitrix24.ru' ||
-            domain === 'april-garant.bitrix24.ru';
+    ): Record<string, unknown> {
+        const withRq = DOMAINS_WITH_CLIENT_RQ.includes(domain);
 
-        // Базовые поля клиента
-        doc.setData({
+        return {
             client_company_name: data.client_company_name || '',
             client_inn: data.client_inn || '',
             client_company_registred_address:
@@ -119,101 +140,41 @@ export class SupplyReportTemplateService {
             garant_client_assigned_phone:
                 data.garant_client_assigned_phone || '',
             email_garant: data.email_garant || '',
-        });
 
-        // Обрабатываем блок реквизитов клиента
-        // В docxtemplater блоки обрабатываются через теги в шаблоне: {#client_rq_block}{client_rq}{/client_rq_block}
-        if (withRq && data.client_rq) {
-            const formattedRq = data.client_rq.replace(
-                /\n/g,
-                '</w:t><w:br/><w:t>',
-            );
-            doc.setData({
-                client_rq: formattedRq,
-                client_rq_block: [{ client_rq: formattedRq }], // Массив для клонирования блока
-            });
-        } else {
-            doc.setData({ client_rq_block: [] }); // Пустой массив удалит блок
-        }
+            complect_fields_left: data.complect_fields_left || '',
+            complect_fields_right: data.complect_fields_right || '',
+            complect_lt_left: data.complect_lt_left || '',
+            complect_lt_right: data.complect_lt_right || '',
+            complect_pk: data.complect_pk || '',
 
-        // Обрабатываем строки продуктов
-        // В docxtemplater строки таблицы клонируются через: {#productRows}{productNumber}...{/productRows}
-        if (data.productRows && data.productRows.length > 0) {
-            doc.setData({ productRows: data.productRows });
-        } else {
-            doc.setData({ productRows: [] });
-        }
+            client_rq: withRq ? (data.client_rq ?? '') : '',
+            // пустой массив схлопывает блок {#client_rq_block}…{/client_rq_block}
+            client_rq_block:
+                withRq && data.client_rq ? [{ client_rq: data.client_rq }] : [],
 
-        // Обрабатываем итоговые данные
-        if (data.totalData) {
-            doc.setData(data.totalData);
-        }
+            productRows: data.productRows ?? [],
+            contacts: data.contacts ?? [],
+            complects: data.complects ?? [],
 
-        // Обрабатываем спецификацию
-        const formattedIblocks = data.complect_fields_left.replace(
-            /\n/g,
-            '</w:t><w:br/><w:t>',
-        );
-        const formattedIfree = data.complect_fields_right.replace(
-            /\n/g,
-            '</w:t><w:br/><w:t>',
-        );
-        const formattedLtFree = data.complect_lt_left.replace(
-            /\n/g,
-            '</w:t><w:br/><w:t>',
-        );
-        const formattedLtPacket = data.complect_lt_right.replace(
-            /\n/g,
-            '</w:t><w:br/><w:t>',
-        );
-        const formattedPk = data.complect_pk.replace(
-            /\n/g,
-            '</w:t><w:br/><w:t>',
-        );
+            ...(data.totalData ?? {}),
+            ...(data.companyItems ?? {}),
+            ...(data.dealItems ?? {}),
+            ...(data.supplyReportItems ?? {}),
+        };
+    }
 
-        doc.setData({
-            complect_fields_left: formattedIblocks,
-            complect_fields_right: formattedIfree,
-            complect_lt_left: formattedLtFree,
-            complect_lt_right: formattedLtPacket,
-            complect_pk: formattedPk,
-        });
-
-        // Обрабатываем контакты
-        // В docxtemplater контакты клонируются через: {#contacts}{contact_name}...{/contacts}
-        if (data.contacts && data.contacts.length > 0) {
-            doc.setData({ contacts: data.contacts });
-        } else {
-            doc.setData({ contacts: [] });
-        }
-
-        // Обрабатываем элементы компании
-        if (data.companyItems) {
-            for (const [key, value] of Object.entries(data.companyItems)) {
-                doc.setData({ [key]: value || '' });
-            }
-        }
-
-        // Обрабатываем элементы сделки
-        if (data.dealItems) {
-            for (const [key, value] of Object.entries(data.dealItems)) {
-                doc.setData({ [key]: value || '' });
-            }
-        }
-
-        // Обрабатываем элементы отчета о поставке
-        if (data.supplyReportItems) {
-            for (const [key, value] of Object.entries(data.supplyReportItems)) {
-                doc.setData({ [key]: value || '' });
-            }
-        }
-
-        // Рендерим документ
+    /** Единственный render: падение шаблона — ошибка генерации. */
+    private renderTemplate(
+        doc: Docxtemplater,
+        renderData: Record<string, unknown>,
+    ): void {
         try {
-            doc.render();
+            doc.render(renderData);
         } catch (error) {
-            this.logger.error('Error rendering template:', error);
-            throw new Error(`Template rendering failed: ${error.message}`);
+            this.logger.error(
+                `Не удалось отрендерить шаблон отчёта: ${getErrorString(error)}`,
+            );
+            throw error;
         }
     }
 }

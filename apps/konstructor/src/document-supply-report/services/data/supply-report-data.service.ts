@@ -2,10 +2,45 @@ import { Injectable, Logger } from '@nestjs/common';
 import { DocumentSupplyReportGenerateDto } from '../../dto/document-supply-report-generate.dto';
 import { CONTRACT_LTYPE } from '../../../document-generate/type/contract.type';
 import { ProductRowDto } from '../../../document-generate/dto/product-row/product-row.dto';
+import {
+    ProductDto,
+    ProductTypeEnum,
+} from '../../../document-generate/dto/product/product.dto';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
+import { formatRuble } from '../../../document-generate/lib/rubles.util';
+import { ClientTypeEnum } from '../../../document-generate/type/client.type';
+import {
+    getMonthTitleAccusative,
+    readFieldText,
+    readPbxCurrent,
+    resolveClientTypeCode,
+    toMoneyString,
+    toPbxEntries,
+} from '../../lib/supply-report.util';
+import {
+    ConsaltingPayload,
+    ContractProviderStatePayload,
+    SupplyReportContactPayload,
+    SupplyReportFormPayloadItem,
+} from '../../lib/supply-report-payload.type';
+import { BxRqDto } from '../../../document-generate/dto/bx-rq/bx-rq.dto';
+import {
+    ADDRESS_RQ_ITEM_CODE,
+    BANK_RQ_ITEM_CODE,
+    BX_ADDRESS_TYPE,
+    RQ_ITEM_CODE,
+} from '../../../document-generate/type/bx-rq.type';
+import {
+    ContractSpecificationCodeEnum,
+    ContractSpecificationItemDto,
+} from '../../../document-generate/dto/specification/specification.dto';
+import { getErrorString } from '@lib/shared';
+
+/** Куда в блоке реквизитов кладётся банковское поле. */
+type BankRqSlot = 'bank' | 'rs' | 'ks' | 'bik' | 'other';
 
 dayjs.extend(customParseFormat);
 dayjs.extend(localizedFormat);
@@ -50,10 +85,10 @@ export interface SupplyReportTemplateData {
     client_rq?: string;
 
     // Products rows
-    productRows: any[];
+    productRows: Record<string, string | number>[];
 
     // Total data
-    totalData: Record<string, any>;
+    totalData: Record<string, string | number>;
 
     // Complects
     complects: Array<{
@@ -72,13 +107,13 @@ export interface SupplyReportTemplateData {
     }>;
 
     // Company items
-    companyItems: Record<string, any>;
+    companyItems: Record<string, string>;
 
     // Deal items
-    dealItems: Record<string, any>;
+    dealItems: Record<string, string>;
 
     // Supply report items
-    supplyReportItems: Record<string, any>;
+    supplyReportItems: Record<string, string>;
 }
 
 @Injectable()
@@ -92,18 +127,14 @@ export class SupplyReportDataService {
         dto: DocumentSupplyReportGenerateDto,
     ): SupplyReportTemplateData {
         const {
-            domain,
             companyId,
             contractType,
             contract,
-            productSet,
-            // products,
             arows,
             total,
             supply,
             region,
             bxrq,
-            contractClientState,
             contractProviderState,
             contractSpecificationState,
             bxCompanyItems,
@@ -114,16 +145,19 @@ export class SupplyReportDataService {
             consalting,
         } = dto;
 
-        // Получаем общую модель контракта
-        const generalContractModel = (contract as any).contract || contract;
-        const contractQuantity = generalContractModel?.coefficient || 1;
-        const contractProductName = generalContractModel?.productName || '';
+        // Название продукта лежит во вложенной модели контракта (contract.contract):
+        // именно её конструктор заполняет из справочника портала.
+        const contractProductName = contract.contract?.productName ?? '';
         const contractCoefficient = contract?.prepayment || 1;
         const isProduct = contractType !== CONTRACT_LTYPE.SERVICE;
 
-        // Обрабатываем total
-        const contractFullTotal =
-            Array.isArray(total) && total.length > 0 ? total[0] : total;
+        // Обрабатываем total: конструктор шлёт его то объектом, то массивом строк
+        const totalPayload = total as ProductRowDto | ProductRowDto[];
+        const contractFullTotal: ProductRowDto | undefined = Array.isArray(
+            totalPayload,
+        )
+            ? totalPayload[0]
+            : totalPayload;
 
         // Вычисляем суммы
         const { totalSum, totalMonth, quantity } = this.calculateTotals(
@@ -131,9 +165,12 @@ export class SupplyReportDataService {
             contractFullTotal,
         );
 
+        // фронт шлёт clientType объектом SelectItem, ветка IS_BACK — строкой
+        const clientTypeCode = resolveClientTypeCode(clientType);
+
         // Обрабатываем адреса и реквизиты клиента
         const { clientCompanyFullName, inn, registredString, primaryString } =
-            this.processClientAddresses(bxrq, clientType);
+            this.processClientAddresses(bxrq, clientTypeCode);
 
         // Получаем данные провайдера
         const providerFullname = this.getProviderFullname(
@@ -165,14 +202,17 @@ export class SupplyReportDataService {
             contractProductName,
             isProduct,
             contractCoefficient,
-            clientType,
+            clientTypeCode,
         );
 
         // Обрабатываем итоги
-        const totalData = this.getSupplyTotal(contractFullTotal, clientType);
+        const totalData = this.getSupplyTotal(
+            contractFullTotal,
+            clientTypeCode,
+        );
 
         // Обрабатываем реквизиты клиента
-        const clientRqData = this.getClientRQ(clientType, bxrq);
+        const clientRqData = this.getClientRQ(clientTypeCode, bxrq);
 
         // Обрабатываем комплекты
         const complects = this.processComplects(arows);
@@ -229,7 +269,7 @@ export class SupplyReportDataService {
      */
     private calculateTotals(
         arows: ProductRowDto[],
-        total: any,
+        total: ProductRowDto | undefined,
     ): { totalSum: number; totalMonth: number; quantity: number } {
         let totalSum = 0;
 
@@ -249,8 +289,8 @@ export class SupplyReportDataService {
      * Обрабатывает адреса и реквизиты клиента
      */
     private processClientAddresses(
-        bxrq: any,
-        clientType: string,
+        bxrq: BxRqDto | undefined,
+        clientType: ClientTypeEnum,
     ): {
         clientCompanyFullName: string;
         inn: string;
@@ -278,15 +318,16 @@ export class SupplyReportDataService {
 
                 let addressString = '';
                 for (const field of address.fields) {
-                    if (field.value) {
-                        addressString += `${field.value}, `;
+                    const value = readFieldText(field.value);
+                    if (value) {
+                        addressString += `${value}, `;
                     }
                 }
 
-                if (address.type_id === 6) {
+                if (address.type_id === BX_ADDRESS_TYPE.REGISTERED) {
                     // Юридический адрес
                     registredString = addressString;
-                } else if (address.type_id === 1) {
+                } else if (address.type_id === BX_ADDRESS_TYPE.PRIMARY) {
                     // Фактический адрес
                     if (addressString) {
                         primaryString = `Фактический адрес: ${addressString}`;
@@ -298,17 +339,21 @@ export class SupplyReportDataService {
         // Обрабатываем поля реквизитов
         if (bxrq.fields) {
             for (const field of bxrq.fields) {
-                if (!field.value) continue;
+                const value = readFieldText(field.value);
+                if (!value) continue;
 
-                if (field.code === 'inn') {
-                    inn = field.value;
-                } else if (field.code === 'fullname' && clientType !== 'fiz') {
-                    clientCompanyFullName = field.value;
+                if (field.code === RQ_ITEM_CODE.INN) {
+                    inn = value;
                 } else if (
-                    field.code === 'personName' &&
-                    clientType === 'fiz'
+                    field.code === RQ_ITEM_CODE.FULLNAME &&
+                    clientType !== ClientTypeEnum.FIZ
                 ) {
-                    clientCompanyFullName = field.value;
+                    clientCompanyFullName = value;
+                } else if (
+                    field.code === RQ_ITEM_CODE.PERSON_NAME &&
+                    clientType === ClientTypeEnum.FIZ
+                ) {
+                    clientCompanyFullName = value;
                 }
             }
         }
@@ -319,39 +364,39 @@ export class SupplyReportDataService {
     /**
      * Получает полное имя провайдера
      */
-    private getProviderFullname(contractProviderState: any): string {
-        if (!contractProviderState?.current?.rq?.fullname) {
-            return '';
-        }
-        return contractProviderState.current.rq.fullname;
+    private getProviderFullname(
+        contractProviderState: ContractProviderStatePayload | undefined,
+    ): string {
+        return contractProviderState?.current?.rq?.fullname ?? '';
     }
 
     /**
      * Получает строку консалтинга
      */
-    private getConsaltingString(consalting?: any): string {
-        if (consalting?.current?.title) {
-            return consalting.current.title;
-        }
-        return 'Горячая Линия';
+    private getConsaltingString(consalting?: ConsaltingPayload): string {
+        return consalting?.current?.title ?? 'Горячая Линия';
     }
 
     /**
      * Фильтрует спецификацию контракта
      */
     private filterContractSpecification(
-        items: any[],
+        items: ContractSpecificationItemDto[],
         contractType: CONTRACT_LTYPE,
         supplyType?: string,
-    ): any[] {
-        let filtered = items.filter(item => {
-            return item.contractType?.includes(contractType);
-        });
+    ): ContractSpecificationItemDto[] {
+        let filtered = items.filter(item =>
+            item.contractType?.includes(contractType),
+        );
 
         if (supplyType) {
-            filtered = filtered.filter(item => {
-                return item.supplies?.includes(supplyType);
-            });
+            // supplies — enum SupplyTypeEnum, а тип поставки приходит строкой,
+            // поэтому сравниваем строковые значения
+            filtered = filtered.filter(item =>
+                (item.supplies ?? []).some(
+                    supply => String(supply) === supplyType,
+                ),
+            );
         }
 
         return filtered;
@@ -361,7 +406,7 @@ export class SupplyReportDataService {
      * Обрабатывает спецификацию
      */
     private processSpecification(
-        filteredSpecification: any[],
+        filteredSpecification: ContractSpecificationItemDto[],
         consaltingString: string,
     ): {
         iblocks: string;
@@ -370,48 +415,62 @@ export class SupplyReportDataService {
         lt_packet: string;
         pk: string;
     } {
+        void consaltingString; // в Laravel аргумент тоже не используется — оставлен ради совпадения сигнатур
+
         let iblocks = '';
         let ifree = '';
         let lt_free = '';
         let lt_packet = '';
         let pk = '';
 
+        /** Значение связанного пункта спецификации (список услуг LT). */
+        const findValue = (code: ContractSpecificationCodeEnum): string => {
+            const found = filteredSpecification.find(i => i.code === code);
+            return found ? readFieldText(found.value) : '';
+        };
+
         for (const item of filteredSpecification) {
-            if (item.code === 'specification_iblocks') {
-                iblocks += `${item.value}\n`;
-            } else if (item.code === 'specification_ers') {
-                iblocks += `${item.value}\n`;
-            } else if (item.code === 'specification_ers_packets') {
-                if (item.value) {
-                    iblocks += `${item.value}: \n`;
+            const value = readFieldText(item.value);
+
+            if (item.code === ContractSpecificationCodeEnum.IBLOCKS) {
+                iblocks += `${value}\n`;
+            } else if (item.code === ContractSpecificationCodeEnum.IERS) {
+                iblocks += `${value}\n`;
+            } else if (
+                item.code === ContractSpecificationCodeEnum.IERS_PACKETS
+            ) {
+                if (value) {
+                    iblocks += `${value}: \n`;
                 }
-            } else if (item.code === 'specification_ers_in_packets') {
-                iblocks += `${item.value}\n`;
-            } else if (item.code === 'specification_ifree') {
-                ifree = item.value || '';
-            } else if (item.code === 'specification_lt_free') {
-                if (item.value) {
-                    lt_free = `Бесплатный LT ${item.value}`;
+            } else if (
+                item.code === ContractSpecificationCodeEnum.IERS_IN_PACKETS
+            ) {
+                iblocks += `${value}\n`;
+            } else if (item.code === ContractSpecificationCodeEnum.IFREE) {
+                ifree = value;
+            } else if (item.code === ContractSpecificationCodeEnum.LT_FREE) {
+                if (value) {
+                    lt_free = `Бесплатный LT ${value}`;
                     // Ищем связанные сервисы
-                    const servicesItem = filteredSpecification.find(
-                        i => i.code === 'specification_lt_free_services',
+                    const services = findValue(
+                        ContractSpecificationCodeEnum.LT_FREE_SERVICES,
                     );
-                    if (servicesItem) {
-                        lt_free += `: \n${servicesItem.value}`;
+                    if (services) {
+                        lt_free += `: \n${services}`;
                     }
                 }
-            } else if (item.code === 'specification_lt_packet') {
-                if (item.value) {
-                    lt_packet = `${item.name} ${item.value}`;
-                    const servicesItem = filteredSpecification.find(
-                        i => i.code === 'specification_lt_services',
+            } else if (item.code === ContractSpecificationCodeEnum.LT_PACKET) {
+                if (value) {
+                    lt_packet = `${item.name} ${value}`;
+                    const services = findValue(
+                        ContractSpecificationCodeEnum.LT_SERVICES,
                     );
-                    if (servicesItem) {
-                        lt_packet += `: \n${servicesItem.value}`;
+                    if (services) {
+                        lt_packet += `: \n${services}`;
                     }
                 }
-            } else if (item.code === 'specification_pk') {
-                pk = item.value || '';
+            } else if (item.code === ContractSpecificationCodeEnum.PK) {
+                pk = value;
             }
         }
 
@@ -421,7 +480,7 @@ export class SupplyReportDataService {
     /**
      * Обрабатывает даты
      */
-    private processDates(bxDealItems: any[]): {
+    private processDates(bxDealItems: unknown): {
         contract_start: string;
         contract_end: string;
         present_period: string;
@@ -437,31 +496,36 @@ export class SupplyReportDataService {
         let garant_client_assigned_phone: string | undefined;
         let email_garant: string | undefined;
 
-        for (const item of bxDealItems) {
-            const value = item.current?.name || item.current || '';
+        // фронт шлёт объект, ключованный кодом поля; массив с item.key тоже
+        // поддерживаем — им пользуется ветка IS_BACK
+        for (const [key, item] of toPbxEntries(bxDealItems)) {
+            const value = readPbxCurrent(item);
+            if (!value) {
+                continue;
+            }
 
-            if (item.key === 'contract_start' && value) {
+            if (key === 'contract_start') {
                 contract_start = this.formatDateForWord(
                     'contract_start',
                     value,
                 );
-            } else if (item.key === 'contract_end' && value) {
+            } else if (key === 'contract_end') {
                 contract_end = this.formatDateForWord('contract_end', value);
-            } else if (item.key === 'contract_present_start' && value) {
+            } else if (key === 'contract_present_start') {
                 contract_present_start = this.formatDateForWord(
                     'contract_present_start',
                     value,
                 );
-            } else if (item.key === 'contract_present_end' && value) {
+            } else if (key === 'contract_present_end') {
                 contract_present_end = this.formatDateForWord(
                     'contract_present_end',
                     value,
                 );
-            } else if (item.key === 'garant_client_assigned_name' && value) {
+            } else if (key === 'garant_client_assigned_name') {
                 garant_client_assigned_name = `Контактное лицо по Гаранту: ${value}`;
-            } else if (item.key === 'garant_client_assigned_phone' && value) {
+            } else if (key === 'garant_client_assigned_phone') {
                 garant_client_assigned_phone = ` ${value}`;
-            } else if (item.key === 'garant_client_email' && value) {
+            } else if (key === 'garant_client_email') {
                 email_garant = `Email для интернет версии: ${value}`;
             }
         }
@@ -519,46 +583,286 @@ export class SupplyReportDataService {
             return String(date);
         } catch (error) {
             this.logger.warn(
-                `Error formatting date for code ${code}: ${error.message}`,
+                `Error formatting date for code ${code}: ${getErrorString(error)}`,
             );
             return String(date);
         }
     }
 
     /**
-     * Получает продукты для поставки
-     * TODO: Реализовать полную логику из ContractController.getSupplyProducts
+     * Строки таблицы товаров.
+     * Порт `ContractController::getSupplyProducts` (Laravel, строка 4353).
      */
     private getSupplyProducts(
         arows: ProductRowDto[],
         contractProductName: string,
         isProduct: boolean,
         contractCoefficient: number,
-        clientType: string,
-    ): any[] {
-        // TODO: Реализовать полную логику
-        return [];
+        clientType: ClientTypeEnum,
+    ): Record<string, string | number>[] {
+        void clientType; // в Laravel аргумент тоже не используется — оставлен ради совпадения сигнатур
+
+        const contractFullName = isProduct
+            ? `${contractProductName} длительность ${contractCoefficient} мес. `
+            : contractProductName;
+
+        return arows.map((row, index) => {
+            const productQuantity = row.price?.quantity ?? 0;
+            const productContractCoefficient =
+                row.product?.contractCoefficient ?? 1;
+
+            return {
+                productNumber: index + 1,
+                productName: `${contractFullName}(${row.name})`,
+                productQuantity,
+                productMeasure: row.price?.measure?.name ?? '',
+                productPrice: toMoneyString(row.price?.current),
+                productSum: toMoneyString(row.price?.sum),
+                // вид размещения показываем только у гарантовских строк
+                complect_sup:
+                    row.productType === ProductTypeEnum.garant
+                        ? (row.currentSupply?.name ?? '')
+                        : '',
+                complectName: row.name,
+                productPriceDefault: toMoneyString(row.price?.default),
+                // произведение количества и коэффициента Laravel считает, но в
+                // строку таблицы не кладёт — оставляем для шаблонов, где нужно
+                productTotalQuantity:
+                    productQuantity * productContractCoefficient,
+            };
+        });
     }
 
     /**
-     * Получает итоговые данные
-     * TODO: Реализовать полную логику из ContractController.getSupplyTotal
+     * Итоги под таблицей товаров (в т.ч. суммы прописью).
+     * Порт `ContractController::getSupplyTotal` (Laravel, строка 4462).
+     *
+     * Ветка `org_state` в Laravel закомментирована — итоги одинаковы для всех
+     * типов клиента, поэтому её здесь нет.
      */
     private getSupplyTotal(
-        total: any,
-        clientType: string,
-    ): Record<string, any> {
-        // TODO: Реализовать полную логику
-        return {};
+        total: ProductRowDto | undefined,
+        clientType: ClientTypeEnum,
+    ): Record<string, string | number> {
+        void clientType;
+
+        if (!total) {
+            return {};
+        }
+
+        const productQuantity = Number(total.price?.quantity) || 0;
+        const productContractCoefficient =
+            Number(total.product?.contractCoefficient) || 1;
+        const totalQuantity = productQuantity * productContractCoefficient;
+
+        const contractSum = toMoneyString(total.price?.sum);
+        const totalSumMonth = toMoneyString(
+            Math.round(
+                ((Number(total.price?.current) || 0) /
+                    productContractCoefficient) *
+                    100,
+            ) / 100,
+        );
+
+        const totalQuantityString = getMonthTitleAccusative(totalQuantity);
+        const contractSumString = `(${formatRuble(Number(contractSum))})`;
+        const totalSumMonthString = `(${formatRuble(Number(totalSumMonth))})`;
+
+        return {
+            total_product_name: total.name ?? '',
+            total_supply_name: total.supply?.name ?? '',
+            total_prepayment_quantity: totalQuantity,
+            total_prepayment_quantity_string: totalQuantityString,
+            total_prepayment_sum: contractSum,
+            total_prepayment_sum_string: contractSumString,
+            contract_total_sum: contractSum,
+            contract_total_sum_string: contractSumString,
+            total_quantity: totalQuantity,
+            total_quantity_string: totalQuantityString,
+            total_month_sum: totalSumMonth,
+            total_month_sum_string: totalSumMonthString,
+            total_measure: total.price?.measure?.name ?? '',
+        };
     }
 
     /**
-     * Получает реквизиты клиента
-     * TODO: Реализовать полную логику из ContractController.getClientRQ
+     * Блок реквизитов клиента одной строкой.
+     * Порт `ContractController::getClientRQ` (Laravel, строка 3981).
+     *
+     * Переводы строк оставляем как `\n`: в docx их превращает в переносы сам
+     * docxtemplater (`linebreaks: true`).
      */
-    private getClientRQ(clientType: string, bxrq: any): string {
-        // TODO: Реализовать полную логику
-        return '';
+    private getClientRQ(
+        clientType: ClientTypeEnum,
+        bxrq: BxRqDto | undefined,
+    ): string {
+        const EMPTY_NAME =
+            '____________________________________________________';
+        const EMPTY_SHORT = '___________________________';
+        const EMPTY_ADDRESS = '_____________________________________________';
+        const EMPTY_FIELD = '________________________________';
+
+        let companyName = EMPTY_NAME;
+        let inn = EMPTY_SHORT;
+        let fizDocument = EMPTY_FIELD;
+        let address = EMPTY_ADDRESS;
+        let bank = EMPTY_FIELD;
+        let rs = '_________________________________';
+        let ks = '______________________________________';
+        let bik = '_________________________________';
+        let bankOther = '';
+        let phone = '_________________________________';
+
+        const isFiz = clientType === ClientTypeEnum.FIZ;
+
+        for (const item of bxrq?.fields ?? []) {
+            const value = readFieldText(item?.value);
+            if (!value) {
+                continue;
+            }
+
+            switch (item.code) {
+                case RQ_ITEM_CODE.INN:
+                    inn = value;
+                    break;
+                case RQ_ITEM_CODE.PHONE:
+                    phone = value;
+                    break;
+                case RQ_ITEM_CODE.SHORTNAME:
+                    if (!isFiz) {
+                        companyName = value;
+                    }
+                    break;
+                case RQ_ITEM_CODE.PERSON_NAME:
+                    if (isFiz) {
+                        companyName = value;
+                    }
+                    break;
+                case RQ_ITEM_CODE.DOCUMENT:
+                    if (isFiz) {
+                        fizDocument = `${value} `;
+                    }
+                    break;
+                case RQ_ITEM_CODE.DOCUMENT_SERIES:
+                    if (isFiz) {
+                        fizDocument += `Серия: ${value} `;
+                    }
+                    break;
+                case RQ_ITEM_CODE.DOCUMENT_NUMBER:
+                    if (isFiz) {
+                        fizDocument += `Номер: ${value} `;
+                    }
+                    break;
+                case RQ_ITEM_CODE.DOCUMENT_DATE:
+                    if (isFiz) {
+                        fizDocument += `Дата выдачи: ${value}`;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        const addressCodes: string[] = [
+            ADDRESS_RQ_ITEM_CODE.ADDRESS_COUNTRY,
+            ADDRESS_RQ_ITEM_CODE.ADDRESS_REGION,
+            ADDRESS_RQ_ITEM_CODE.ADDRESS_CITY,
+            ADDRESS_RQ_ITEM_CODE.ADDRESS_1,
+            ADDRESS_RQ_ITEM_CODE.ADDRESS_2,
+        ];
+
+        for (const rqAddress of bxrq?.address?.items ?? []) {
+            const parts: string[] = [];
+            for (const code of addressCodes) {
+                const field = (rqAddress?.fields ?? []).find(
+                    item => String(item?.code) === code,
+                );
+                const value = readFieldText(field?.value);
+                if (value) {
+                    parts.push(value);
+                }
+            }
+
+            // type_id из json приходит и числом, и строкой — сравниваем числа
+            if (
+                parts.length &&
+                Number(rqAddress?.type_id) ===
+                    Number(BX_ADDRESS_TYPE.REGISTERED)
+            ) {
+                address = parts.join(', ');
+            }
+        }
+
+        // 'rs' / 'ks' / 'bik' — короткие коды легаси-конструктора,
+        // bank_* — коды битрикса; реквизиты приходят и в той, и в другой форме
+        const bankFieldByCode: Record<string, BankRqSlot> = {
+            [BANK_RQ_ITEM_CODE.BANK_NAME]: 'bank',
+            [BANK_RQ_ITEM_CODE.BANK_PC]: 'rs',
+            rs: 'rs',
+            [BANK_RQ_ITEM_CODE.BANK_KC]: 'ks',
+            ks: 'ks',
+            [BANK_RQ_ITEM_CODE.BANK_BIK]: 'bik',
+            bik: 'bik',
+            [BANK_RQ_ITEM_CODE.BANK_COMMENTS]: 'other',
+        };
+
+        const bankFields = bxrq?.bank?.items?.[0]?.fields ?? [];
+        for (const item of bankFields) {
+            const value = readFieldText(item?.value);
+            if (!value) {
+                continue;
+            }
+
+            switch (bankFieldByCode[String(item.code)]) {
+                case 'bank':
+                    bank = value;
+                    break;
+                case 'rs':
+                    rs = value;
+                    break;
+                case 'ks':
+                    ks = value;
+                    break;
+                case 'bik':
+                    bik = value;
+                    break;
+                case 'other':
+                    bankOther = value;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        const tail =
+            `ИНН: ${inn}\n` +
+            `Банк: ${bank}\n` +
+            `Р/с: ${rs}\n` +
+            `К/с: ${ks}\n` +
+            (bik ? `БИК: ${bik}\n` : '') +
+            (bankOther ? `${bankOther}\n` : '');
+
+        if (isFiz) {
+            return (
+                `${companyName}\n\n` +
+                `Документ: ${fizDocument}\n` +
+                `ИНН: ${inn}\n` +
+                `Адрес: ${address}\n` +
+                `Телефон.: ${phone}\n` +
+                `Банк: ${bank}\n` +
+                `Р/с: ${rs}\n` +
+                `К/с: ${ks}\n` +
+                (bik ? `БИК: ${bik}\n` : '') +
+                (bankOther ? `${bankOther}\n` : '')
+            );
+        }
+
+        return (
+            `${companyName}\n\n` +
+            `Адрес: ${address}\n` +
+            `Телефон.: ${phone}\n` +
+            tail
+        );
     }
 
     /**
@@ -581,7 +885,12 @@ export class SupplyReportDataService {
 
             if (row.supply?.name) {
                 supply = row.supply.name;
-                complect_hdd = (row.product as any)?.contractSupplyProp1 || '';
+                // contractSupplyProp1 в ProductDto не объявлен — его кладёт
+                // конструктор рядом с остальными полями продукта
+                const product = row.product as ProductDto & {
+                    contractSupplyProp1?: string;
+                };
+                complect_hdd = product?.contractSupplyProp1 ?? '';
             }
 
             complects.push({
@@ -597,7 +906,7 @@ export class SupplyReportDataService {
     /**
      * Обрабатывает контакты
      */
-    private processContacts(bxContacts: any[]): Array<{
+    private processContacts(bxContacts: SupplyReportContactPayload[]): Array<{
         contact_name: string;
         contact_post: string;
         contact_status: string;
@@ -621,8 +930,8 @@ export class SupplyReportDataService {
                 contact_comment: '',
             };
 
-            if (contactData.contact) {
-                const contact = contactData.contact;
+            const contact = contactData.contact;
+            if (contact) {
                 if (contact.NAME) {
                     contactDataForTemplate.contact_name = contact.NAME;
                 }
@@ -634,20 +943,24 @@ export class SupplyReportDataService {
                 }
                 if (contact.PHONE) {
                     for (const phone of contact.PHONE) {
-                        contactDataForTemplate.contact_phone += `${phone.VALUE}</w:t><w:br/><w:t>`;
+                        // перенос строки ставим обычным \n: в docx его
+                        // разворачивает docxtemplater (linebreaks: true),
+                        // сырой XML <w:br/> он бы экранировал в текст
+                        contactDataForTemplate.contact_phone += `${phone?.VALUE ?? ''}\n`;
                     }
                 }
             }
 
             if (contactData.fields) {
                 for (const field of contactData.fields) {
-                    if (field.field?.code === 'ork_is_most_user') {
-                        if (
-                            field.current?.code &&
-                            String(field.current.code).includes('yes')
-                        ) {
+                    const code = field.field?.code ?? '';
+                    const fieldTitle = field.field?.title ?? '';
+                    const currentTitle = field.current?.title ?? '';
+
+                    if (code === 'ork_is_most_user') {
+                        if (field.current?.code?.includes('yes')) {
                             contactDataForTemplate.contact_name +=
-                                '</w:t><w:br/><w:t>(Основной пользователь)';
+                                '\n(Основной пользователь)';
                         }
                     } else if (
                         [
@@ -655,16 +968,16 @@ export class SupplyReportDataService {
                             'ork_contact_garant',
                             'ork_contact_concurent',
                             'ork_needs',
-                        ].includes(field.field?.code)
+                        ].includes(code)
                     ) {
                         if (field.field && field.current) {
-                            contactDataForTemplate.contact_status += `${field.field.title}: `;
-                            contactDataForTemplate.contact_status += `${field.current.title}</w:t><w:br/><w:t>`;
+                            contactDataForTemplate.contact_status += `${fieldTitle}: `;
+                            contactDataForTemplate.contact_status += `${currentTitle}\n`;
                         }
-                    } else if (field.field?.code === 'ork_call_frequency') {
+                    } else if (code === 'ork_call_frequency') {
                         if (field.field && field.current) {
-                            contactDataForTemplate.contact_comment += `${field.field.title}: `;
-                            contactDataForTemplate.contact_comment += `${field.current.title}</w:t><w:br/><w:t></w:t><w:br/><w:t>`;
+                            contactDataForTemplate.contact_comment += `${fieldTitle}: `;
+                            contactDataForTemplate.contact_comment += `${currentTitle}\n\n`;
                         }
                     }
                 }
@@ -679,12 +992,13 @@ export class SupplyReportDataService {
     /**
      * Обрабатывает элементы компании
      */
-    private processCompanyItems(bxCompanyItems: any[]): Record<string, any> {
-        const items: Record<string, any> = {};
+    private processCompanyItems(
+        bxCompanyItems: unknown,
+    ): Record<string, string> {
+        const items: Record<string, string> = {};
 
-        for (const item of bxCompanyItems) {
-            const value = item.current?.name || item.current || '';
-            items[item.key] = value;
+        for (const [key, item] of toPbxEntries(bxCompanyItems)) {
+            items[key] = readPbxCurrent(item);
         }
 
         return items;
@@ -693,8 +1007,8 @@ export class SupplyReportDataService {
     /**
      * Обрабатывает элементы сделки
      */
-    private processDealItems(bxDealItems: any[]): Record<string, any> {
-        const items: Record<string, any> = {};
+    private processDealItems(bxDealItems: unknown): Record<string, string> {
+        const items: Record<string, string> = {};
 
         const excludedKeys = [
             'garant_client_email',
@@ -706,19 +1020,13 @@ export class SupplyReportDataService {
             'garant_client_assigned_phone',
         ];
 
-        for (const item of bxDealItems) {
-            if (excludedKeys.includes(item.key)) {
+        for (const [key, item] of toPbxEntries(bxDealItems)) {
+            if (excludedKeys.includes(key)) {
                 continue;
             }
 
-            const value = item.current?.name || item.current || '';
-            if (value) {
-                const formattedValue =
-                    this.formatDateForWord(item.key, value) + '\n';
-                items[item.key] = formattedValue;
-            } else {
-                items[item.key] = '';
-            }
+            const value = readPbxCurrent(item);
+            items[key] = value ? this.formatDateForWord(key, value) + '\n' : '';
         }
 
         return items;
@@ -727,35 +1035,42 @@ export class SupplyReportDataService {
     /**
      * Обрабатывает элементы отчета о поставке
      */
-    private processSupplyReportItems(supplyReport: any[]): Record<string, any> {
-        const items: Record<string, any> = {};
+    private processSupplyReportItems(
+        supplyReport: SupplyReportFormPayloadItem[],
+    ): Record<string, string> {
+        const items: Record<string, string> = {};
 
         for (const reportItem of supplyReport) {
+            const code = reportItem.code ?? '';
+            if (!code) {
+                continue;
+            }
+
             let value = '';
 
             if (
                 reportItem.type !== 'select' &&
                 reportItem.type !== 'enumeration'
             ) {
-                value = reportItem.value || '';
-            } else {
-                if (reportItem.value && reportItem.items) {
-                    for (const item of reportItem.items) {
-                        if (item.code === reportItem.value?.code) {
-                            value = item.name;
-                            break;
-                        }
+                value = readFieldText(reportItem.value);
+            } else if (reportItem.value && reportItem.items) {
+                // у select’а значение — объект {code}, подпись берём из items
+                const selectedCode =
+                    typeof reportItem.value === 'object'
+                        ? reportItem.value.code
+                        : String(reportItem.value);
+
+                for (const item of reportItem.items) {
+                    if (item.code === selectedCode) {
+                        value = item.name ?? '';
+                        break;
                     }
                 }
             }
 
-            if (value) {
-                const formattedValue =
-                    this.formatDateForWord(reportItem.code, value) + '\n';
-                items[reportItem.code] = formattedValue;
-            } else {
-                items[reportItem.code] = '';
-            }
+            items[code] = value
+                ? this.formatDateForWord(code, value) + '\n'
+                : '';
         }
 
         return items;

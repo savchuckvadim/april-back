@@ -8,6 +8,7 @@ import {
 import { TranscriptionStoreService } from '../../transcription/services/transcription.store.service';
 import { asRecord, asString } from '../lib/json-value.util';
 import { mapLiteAnalysis } from '../lib/analytics-lite.mapper';
+import { mapLiteStyle } from '../lib/analytics-lite-style.mapper';
 import {
     AnalyticsFilterResult,
     filterAnalyticsRows,
@@ -144,6 +145,9 @@ export class CallReportAnalyticsDataService {
             return {
                 ...this.baseRow(row, ai),
                 ...mapLiteAnalysis(ai.analysis),
+                // Маркеры стиля (S3): поля разбора, которые проекция
+                // раньше теряла, — оси 1, 2, 6 и оффсет роли.
+                style: mapLiteStyle(ai.analysis),
             };
         });
         const result = filterAnalyticsRows(candidates, query);

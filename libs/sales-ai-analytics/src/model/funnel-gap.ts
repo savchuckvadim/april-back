@@ -1,3 +1,4 @@
+import { registryDefault } from '../params/registry.access';
 import { EDGE_GAP_PRACTICAL } from './edge-rate';
 import type {
     FunnelEdgeInput,
@@ -8,7 +9,6 @@ import type {
 } from './funnel-gap.types';
 import { mulberry32, sampleBeta } from './prng';
 import { probabilityOnCurve } from './quality-curve';
-import { AI_ANALYTICS_THRESHOLDS } from './thresholds.const';
 
 export * from './funnel-gap.types';
 
@@ -27,17 +27,24 @@ export * from './funnel-gap.types';
  * которого исходы пути не ниже нормы.
  */
 export const FUNNEL_GAP_DEFAULTS = {
-    /** Сэмплов апостериора на ребро. */
-    samples: 2000,
-    /** Перемешиваний перестановочного теста. */
+    /** `lever_samples` — сэмплов апостериора на ребро. */
+    samples: registryDefault('lever_samples'),
+    /**
+     * Перемешиваний перестановочного теста и сэмплов на перемешивание.
+     * Не параметр реестра: настройки точности самой проверки (план §4.5,
+     * «≤ 5 % ложных утечек на 200 перемешиваниях»), кода в §2.1–2.2 нет.
+     */
     iterations: 200,
-    /** Сэмплов на одно перемешивание (скорость против точности). */
     permutationSamples: 500,
     /** `n_min_none` — ниже знаменателя чисел наружу нет. */
-    minN: AI_ANALYTICS_THRESHOLDS.scoreNone,
+    minN: registryDefault('n_min_none'),
     /** Практический порог разрыва доли `delta_prac_pct` (в доле). */
     practicalDelta: EDGE_GAP_PRACTICAL.prob,
-    /** Квантили 90 %-интервала вклада. */
+    /**
+     * Квантили 90 %-интервала вклада.
+     * Не параметр реестра: следствие уровня интервала витрины (90 %),
+     * а не отдельная настройка.
+     */
     lowQuantile: 0.05,
     highQuantile: 0.95,
 } as const;

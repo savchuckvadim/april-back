@@ -1,3 +1,4 @@
+import { registryDefault } from '../params/registry.access';
 import { WorkCalendar, isWorkday, shiftDate } from './workdays.util';
 
 /**
@@ -57,11 +58,14 @@ export interface ExposureResult {
     fte: number;
 }
 
-/** Дефолты реестра параметров экспозиции (план §4.2). */
+/** Дефолты экспозиции (план §4.2) — значения только из реестра. */
 export const EXPOSURE_DEFAULTS = {
-    absenceProxyMinRun: 3,
-    minWorkdaysMonth: 8,
-    fte: 1,
+    /** `absence_proxy_min_run` — длина серии нулевых дней. */
+    absenceProxyMinRun: registryDefault('absence_proxy_min_run'),
+    /** `min_workdays_month` — ниже менеджер-месяц не идёт в нормы. */
+    minWorkdaysMonth: registryDefault('min_workdays_month'),
+    /** `fte_share_default` — ставка, пока в карточке менеджера её нет. */
+    fte: registryDefault('fte_share_default'),
 } as const;
 
 /** Предохранитель обхода месяца (длиннее 62 дней окна не бывает). */

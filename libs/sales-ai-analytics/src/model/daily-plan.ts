@@ -1,3 +1,4 @@
+import { registryDefault } from '../params/registry.access';
 import { CAPACITY_DEFAULTS, TimeBudget, timeBudget } from './capacity';
 import type {
     DailyPlan,
@@ -34,7 +35,7 @@ export * from './daily-plan.types';
 /** Дефолты плана дня из реестра параметров. */
 export const DAILY_PLAN_DEFAULTS = {
     /** `plan_day_ceiling` — множитель к равномерному дневному плану. */
-    ceilingMultiplier: 1.5,
+    ceilingMultiplier: registryDefault('plan_day_ceiling'),
     /** `f_min` — нижняя граница зрелости в обратной задаче. */
     fMin: LAG_CDF_DEFAULTS.fMin,
     /** `day_hours` — рабочих часов в дне; один источник — `capacity.ts`. */

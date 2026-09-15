@@ -1,3 +1,4 @@
+import { registryDefault } from '../params/registry.access';
 import type {
     AiBetaSource,
     QualityLink,
@@ -24,12 +25,12 @@ import {
  */
 export const QAV_DEFAULTS = {
     /** `s_ref` — fallback медианы полосы 6–18 мес. */
-    sRef: 7,
+    sRef: registryDefault('s_ref'),
     /** `s_req_max` — выше требуемое качество считается недостижимым. */
-    sReqMax: 9,
-    /** Нижняя граница шкалы оценки звонка. */
+    sReqMax: registryDefault('s_req_max'),
+    /** Не параметр реестра: нижняя граница шкалы оценки звонка 1–10. */
     sMin: 1,
-    /** Верхняя граница шкалы оценки звонка. */
+    /** Не параметр реестра: верхняя граница шкалы оценки звонка 1–10. */
     sMax: 10,
 } as const;
 

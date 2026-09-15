@@ -1,13 +1,17 @@
+import { Logger } from '@nestjs/common';
 import { CallReportDealFamilyService } from '../services/call-report-deal-family.service';
+import {
+    makeSalesList,
+    SALES_CATEGORIES,
+    SALES_LIST_IBLOCK,
+    salesListFieldByCode,
+    salesListItem,
+} from './fixtures/sales-list.fixture';
 
 const DOMAIN = 'alfacentr.bitrix24.ru';
 
 /** Категории портала: основная / презентации / ХО (чужая воронка — 28). */
-const CATEGORIES: Record<string, { bitrixId: number } | undefined> = {
-    sales_base: { bitrixId: 0 },
-    sales_presentation: { bitrixId: 12 },
-    sales_xo: { bitrixId: 14 },
-};
+const CATEGORIES = SALES_CATEGORIES;
 
 /** UF-ключи полей-ссылок сделки — как их отдаёт PortalModel. */
 const FIELD_KEYS: Record<string, string> = {
@@ -25,12 +29,30 @@ interface Options {
     lists?: Record<string, Deal[]>;
     /** Справочник воронок портала (по умолчанию все три заведены). */
     categories?: Record<string, { bitrixId: number } | undefined>;
+    /**
+     * Элементы списка «ОП История» (шаг 0). По умолчанию списки в слепке
+     * портала НЕ заведены — тогда работают прежние шаги 1–3.
+     */
+    history?: Record<string, unknown>[];
 }
 
 const makeDeps = (options: Options = {}) => {
     const deals = options.deals ?? {};
     const lists = options.lists ?? {};
     const listCalls: Record<string, unknown>[] = [];
+    const salesLists: Record<string, ReturnType<typeof makeSalesList>> = {
+        sales_kpi: makeSalesList('kpi'),
+        sales_history: makeSalesList('history'),
+    };
+    /** lists.element.get: «ОП История» отдаёт элементы фикстуры, КПИ пуст. */
+    const listItemGet = jest.fn((payload: Record<string, unknown>) =>
+        Promise.resolve({
+            result:
+                String(payload.IBLOCK_ID) === SALES_LIST_IBLOCK.history
+                    ? (options.history ?? [])
+                    : [],
+        }),
+    );
 
     const call = jest.fn((method: string, data: Record<string, unknown>) => {
         if (method === 'crm.deal.get') {
@@ -57,16 +79,29 @@ const makeDeps = (options: Options = {}) => {
         getFieldBitrixId: jest.fn(
             (field: { code: string }) => FIELD_KEYS[field.code],
         ),
+        // Списки отчётности заведены только когда спек их задаёт: без них
+        // читатель списков отдаёт пусто и шаг 0 ничего не находит.
+        getListByCode: jest.fn((code: string) =>
+            options.history ? salesLists[code] : undefined,
+        ),
+        getIdByCodeFieldList: jest.fn(salesListFieldByCode),
     };
     const pbxService = {
         init: jest.fn().mockResolvedValue({
-            bitrix: { api: { call } },
+            bitrix: { api: { call }, listItem: { get: listItemGet } },
             PortalModel: portal,
         }),
     };
     const service = new CallReportDealFamilyService(pbxService as never);
-    return { service, call, portal, listCalls };
+    return { service, call, portal, listCalls, listItemGet };
 };
+
+/** Фильтры дотяжки по клиенту — по ним проверяется, что её НЕ было. */
+const clientLookupCalls = (listCalls: Record<string, unknown>[]) =>
+    listCalls.filter(data => {
+        const filter = (data.filter ?? {}) as Record<string, unknown>;
+        return 'COMPANY_ID' in filter || 'CONTACT_ID' in filter;
+    });
 
 describe('CallReportDealFamilyService — «основная сделка» только воронки ОП', () => {
     it('звонок из основной сделки: она сама и есть корневая (ссылку не читаем)', async () => {
@@ -430,5 +465,237 @@ describe('CallReportDealFamilyService — дочерние сделки от к�
 
         expect(family.presentationDealId).toBe(601);
         expect(family.presentationConfidence).toBe('exact');
+    });
+});
+
+/**
+ * §4 прод-фиксов: элемент «ОП История» этого звонка — ИСТОЧНИК ИСТИНЫ,
+ * дотяжка по компании и контакту остаётся запасным путём.
+ */
+describe('CallReportDealFamilyService — шаг 0: семья из элемента «ОП История»', () => {
+    const CALL_AT = new Date('2026-09-14T09:00:00Z');
+    /** Контекст звонка из презентационной сделки 601 компании 232232. */
+    const context = (overrides?: Record<string, unknown>) => ({
+        companyId: 232232,
+        contactId: 44,
+        callStartedAt: CALL_AT,
+        callerId: '622',
+        callType: 'call',
+        ...overrides,
+    });
+
+    it('запись с полной семьёй даёт точные связи БЕЗ дотяжки по клиенту', async () => {
+        const { service, listCalls } = makeDeps({
+            deals: {
+                '601': { ID: '601', CATEGORY_ID: '12' },
+                '175244': { ID: '175244', CATEGORY_ID: '0' },
+            },
+            // Дотяжка по компании нашла бы ДРУГУЮ сделку — она не должна
+            // даже запрашиваться, пока запись списка отвечает.
+            lists: { '0': [{ ID: '999', CATEGORY_ID: '0' }] },
+            history: [
+                salesListItem({
+                    id: 9001,
+                    crm: ['D_175244', 'D_601', 'CO_232232', 'C_44'],
+                }),
+            ],
+        });
+
+        const family = await service.resolve(DOMAIN, 601, context());
+
+        expect(family.mainDealId).toBe(175244);
+        expect(family.mainConfidence).toBe('exact');
+        expect(family.source).toBe('list');
+        expect(family.listRecordId).toBe('9001');
+        expect(family.presentationDealId).toBe(601);
+        expect(clientLookupCalls(listCalls)).toEqual([]);
+    });
+
+    it('повторный запрос того же звонка не идёт в портал заново', async () => {
+        // За один разбор раскладку спрашивают трижды — из сборщика
+        // контекста, из карточки разбора и из приёма анализа. Без короткой
+        // памяти шаг 0 читал бы списки на каждый вызов: шесть лишних
+        // обращений к порталу на звонок с заведомо одинаковым ответом.
+        const { service, listCalls } = makeDeps({
+            deals: {
+                '601': { ID: '601', CATEGORY_ID: '12' },
+                '175244': { ID: '175244', CATEGORY_ID: '0' },
+            },
+            history: [salesListItem({ id: 9001, crm: ['D_175244', 'D_601'] })],
+        });
+
+        const first = await service.resolve(DOMAIN, 601, context());
+        const callsAfterFirst = listCalls.length;
+        const second = await service.resolve(DOMAIN, 601, context());
+
+        expect(second).toEqual(first);
+        expect(listCalls.length).toBe(callsAfterFirst);
+        // Другой звонок той же сделки — запись ищется заново.
+        await service.resolve(
+            DOMAIN,
+            601,
+            context({ callStartedAt: new Date('2026-09-14T10:00:00Z') }),
+        );
+        expect(listCalls.length).toBeGreaterThan(callsAfterFirst);
+    });
+
+    it('звонок по ЛИДУ: основная сделка находится через запись списка', async () => {
+        const { service, listCalls } = makeDeps({
+            deals: { '175244': { ID: '175244', CATEGORY_ID: '0' } },
+            lists: { '0': [{ ID: '999', CATEGORY_ID: '0' }] },
+            history: [salesListItem({ id: 9002, crm: ['L_77', 'D_175244'] })],
+        });
+
+        const family = await service.resolve(DOMAIN, undefined, {
+            leadId: 77,
+            callStartedAt: CALL_AT,
+        });
+
+        expect(family.mainDealId).toBe(175244);
+        expect(family.source).toBe('list');
+        expect(clientLookupCalls(listCalls)).toEqual([]);
+    });
+
+    it('звонок по КОНТАКТУ без сделки: основная сделка тоже из записи', async () => {
+        const { service } = makeDeps({
+            deals: { '175244': { ID: '175244', CATEGORY_ID: '0' } },
+            history: [salesListItem({ id: 9003, crm: ['C_44', 'D_175244'] })],
+        });
+
+        const family = await service.resolve(DOMAIN, undefined, {
+            contactId: 44,
+            callStartedAt: CALL_AT,
+        });
+
+        expect(family.mainDealId).toBe(175244);
+        expect(family.source).toBe('list');
+    });
+
+    it('две сделки «ОП Основная» в элементе: связь пустая, дотяжки по клиенту НЕТ', async () => {
+        const { service, listCalls } = makeDeps({
+            deals: {
+                '900': { ID: '900', CATEGORY_ID: '28' },
+                '175244': { ID: '175244', CATEGORY_ID: '0' },
+                '175300': { ID: '175300', CATEGORY_ID: '0' },
+            },
+            lists: { '0': [{ ID: '999', CATEGORY_ID: '0' }] },
+            history: [
+                salesListItem({
+                    id: 9004,
+                    crm: ['D_175244', 'D_175300', 'CO_232232'],
+                }),
+            ],
+        });
+
+        const family = await service.resolve(DOMAIN, 900, context());
+
+        expect(family.mainDealId).toBeUndefined();
+        expect(family.mainConfidence).toBeUndefined();
+        expect(family.listConflicts).toEqual([
+            { category: 'sales_base', dealIds: [175244, 175300] },
+        ]);
+        expect(clientLookupCalls(listCalls)).toEqual([]);
+    });
+
+    it('записи нет — работают запасные пути (дотяжка по компании)', async () => {
+        const { service, listCalls } = makeDeps({
+            deals: { '900': { ID: '900', CATEGORY_ID: '28' } },
+            lists: { '0': [{ ID: '232', CATEGORY_ID: '0' }] },
+            history: [],
+        });
+
+        const family = await service.resolve(DOMAIN, 900, context());
+
+        expect(family.mainDealId).toBe(232);
+        expect(family.source).toBe('client-lookup');
+        expect(family.listRecordId).toBeUndefined();
+        expect(clientLookupCalls(listCalls)).toHaveLength(1);
+    });
+
+    it('crm-поле записи без сделок — деградация на запасные пути, без падения', async () => {
+        const { service } = makeDeps({
+            deals: { '900': { ID: '900', CATEGORY_ID: '28' } },
+            lists: { '0': [{ ID: '232', CATEGORY_ID: '0' }] },
+            history: [salesListItem({ id: 9005, crm: ['CO_232232'] })],
+        });
+
+        const family = await service.resolve(DOMAIN, 900, context());
+
+        expect(family.listRecordId).toBe('9005');
+        expect(family.mainDealId).toBe(232);
+        expect(family.source).toBe('client-lookup');
+        expect(family.mainConfidence).toBe('likely');
+    });
+
+    it('сделка-владелец сама в «ОП Основная» — она старше записи, расхождение в лог', async () => {
+        const { service } = makeDeps({
+            deals: {
+                '555': { ID: '555', CATEGORY_ID: '0' },
+                '175244': { ID: '175244', CATEGORY_ID: '0' },
+            },
+            history: [salesListItem({ id: 9006, crm: ['D_175244', 'D_555'] })],
+        });
+
+        const family = await service.resolve(DOMAIN, 555, context());
+
+        // В элементе две сделки основной воронки — инвариант нарушен, из
+        // записи связь не берётся; факт CRM (звонок сделан из 555) остаётся.
+        expect(family.mainDealId).toBe(555);
+        expect(family.source).toBe('root-link');
+        expect(family.listConflicts).toHaveLength(1);
+    });
+
+    /**
+     * Отступление от буквы §4, зафиксированное потоком: запись выбрана
+     * РАНЖИРОВАНИЕМ (может описывать соседнее событие), а карточка, из
+     * которой физически сделан звонок, — факт CRM. Поэтому владелец воронки
+     * «ОП Основная» перекрывает связь записи, но расхождение обязано
+     * попасть в лог, иначе подмена молчаливая.
+     */
+    it('владелец в «ОП Основная» перекрывает ОДНУ основную сделку записи — с предупреждением', async () => {
+        const warn = jest
+            .spyOn(Logger.prototype, 'warn')
+            .mockImplementation(() => undefined);
+        try {
+            const { service } = makeDeps({
+                deals: {
+                    '555': { ID: '555', CATEGORY_ID: '0' },
+                    '175244': { ID: '175244', CATEGORY_ID: '0' },
+                },
+                // Запись найдена по КОМПАНИИ и указывает ДРУГУЮ основную
+                // сделку: сделки-владельца 555 в её crm-поле нет.
+                history: [
+                    salesListItem({
+                        id: 9008,
+                        crm: ['D_175244', 'CO_232232'],
+                    }),
+                ],
+            });
+
+            const family = await service.resolve(DOMAIN, 555, context());
+
+            expect(family.mainDealId).toBe(555);
+            expect(family.source).toBe('root-link');
+            expect(family.listRecordId).toBe('9008');
+            expect(family.listConflicts).toBeUndefined();
+            expect(warn).toHaveBeenCalledWith(
+                expect.stringContaining('175244'),
+            );
+        } finally {
+            warn.mockRestore();
+        }
+    });
+
+    it('без даты звонка запись не ищется вовсе (опознать «этот звонок» нечем)', async () => {
+        const { service, listItemGet } = makeDeps({
+            deals: { '555': { ID: '555', CATEGORY_ID: '0' } },
+            history: [salesListItem({ id: 9007, crm: ['D_175244'] })],
+        });
+
+        const family = await service.resolve(DOMAIN, 555, { companyId: 1 });
+
+        expect(family.mainDealId).toBe(555);
+        expect(family.listRecordId).toBeUndefined();
+        expect(listItemGet).not.toHaveBeenCalled();
     });
 });

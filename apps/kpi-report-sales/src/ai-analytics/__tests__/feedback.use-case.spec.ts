@@ -8,10 +8,21 @@ import { settingsLoaderWith } from './fixtures/lite-row.fixture';
 
 const created = new Date('2026-09-03T10:00:00Z');
 
-function makeUseCase(records: object[] = []) {
+function makeUseCase(
+    records: object[] = [],
+    styleSnapshot: object | null = null,
+) {
     const store = {
         add: jest.fn().mockResolvedValue('9001'),
         listInPeriod: jest.fn().mockResolvedValue(records),
+    };
+    const snapshots = {
+        latest: jest.fn().mockResolvedValue(styleSnapshot),
+        upsert: jest.fn().mockResolvedValue({
+            id: '1',
+            supersededIds: [],
+            written: 1,
+        }),
     };
     // Реальный сервис доступа ради assertVisible; структура и кэш не нужны.
     const access = new RequesterAccessService(
@@ -24,10 +35,33 @@ function makeUseCase(records: object[] = []) {
             store as never,
             access,
             settingsLoaderWith(),
+            snapshots as never,
         ),
         store,
+        snapshots,
     };
 }
+
+/** Матчер вложенного объекта: без него nested objectContaining даёт any. */
+const objectWith = (fields: Record<string, unknown>): unknown =>
+    expect.objectContaining(fields) as unknown;
+
+/** Снапшот стиля с двумя подписями — материал для «оспорена». */
+const styleSnapshotOf = (disputedTags?: string[]) => ({
+    domain: 'd',
+    type: 'ai-analytics-style',
+    periodKey: '2026-08',
+    managerId: '512',
+    calcVersion: 'v1',
+    paramsVersion: 'p1',
+    inputsHash: 'h1',
+    generatedAt: '2026-09-01T03:00:00.000Z',
+    payload: {
+        calls: 60,
+        tags: [{ code: 'persistent' }, { code: 'fast' }],
+        ...(disputedTags ? { disputedTags } : {}),
+    },
+});
 
 const leader = { role: 'op' as const, visibleManagerIds: ['10', '20', '447'] };
 const manager = { role: 'manager' as const, visibleManagerIds: ['512'] };
@@ -184,6 +218,97 @@ describe('FeedbackUseCase', () => {
         expect(disagreementSharePct(['useful', 'disagree'])).toBe(50);
         expect(disagreementSharePct(['useful', 'useful', 'disagree'])).toBe(
             33.3,
+        );
+    });
+});
+
+describe('FeedbackUseCase: несогласие субъекта с подписью стиля', () => {
+    const styleDisagree = (object: string) => ({
+        domain: 'd',
+        requesterUserId: '512',
+        kind: 'disagree' as const,
+        object,
+        managerId: '512',
+    });
+
+    it('ставит disputed на названную подпись в снапшоте стиля', async () => {
+        const { useCase, snapshots } = makeUseCase([], styleSnapshotOf());
+
+        await useCase.add(styleDisagree('style:tag:persistent'), manager);
+
+        expect(snapshots.upsert).toHaveBeenCalledTimes(1);
+        expect(snapshots.upsert).toHaveBeenCalledWith(
+            expect.objectContaining({
+                periodKey: '2026-08',
+                payload: objectWith({ disputedTags: ['persistent'] }),
+            }),
+            { force: true },
+        );
+    });
+
+    it('несогласие с профилем целиком оспаривает все подписи', async () => {
+        const { useCase, snapshots } = makeUseCase([], styleSnapshotOf());
+
+        await useCase.add(styleDisagree('style'), manager);
+
+        expect(snapshots.upsert).toHaveBeenCalledWith(
+            expect.objectContaining({
+                payload: objectWith({ disputedTags: ['fast', 'persistent'] }),
+            }),
+            { force: true },
+        );
+    });
+
+    it('подпись уже оспорена — снапшот не переписывается', async () => {
+        const { useCase, snapshots } = makeUseCase(
+            [],
+            styleSnapshotOf(['persistent']),
+        );
+
+        await useCase.add(styleDisagree('style:tag:persistent'), manager);
+
+        expect(snapshots.upsert).not.toHaveBeenCalled();
+    });
+
+    it('несогласие руководителя подпись не снимает', async () => {
+        const { useCase, snapshots } = makeUseCase([], styleSnapshotOf());
+
+        await useCase.add(
+            {
+                domain: 'd',
+                requesterUserId: '447',
+                kind: 'disagree',
+                object: 'style:tag:persistent',
+                managerId: '10',
+            },
+            leader,
+        );
+
+        expect(snapshots.upsert).not.toHaveBeenCalled();
+    });
+
+    it('чужой объект и другие реакции снапшот не трогают', async () => {
+        const { useCase, snapshots } = makeUseCase([], styleSnapshotOf());
+
+        await useCase.add(styleDisagree('call:1'), manager);
+        await useCase.add(
+            { ...styleDisagree('style'), kind: 'useful' },
+            manager,
+        );
+
+        expect(snapshots.latest).not.toHaveBeenCalled();
+        expect(snapshots.upsert).not.toHaveBeenCalled();
+    });
+
+    it('роль автора пишется в запись обратной связи', async () => {
+        const { useCase, store } = makeUseCase([], styleSnapshotOf());
+
+        await useCase.add(styleDisagree('style:tag:fast'), manager);
+
+        expect(store.add).toHaveBeenCalledWith(
+            expect.objectContaining({
+                payload: objectWith({ authorRole: 'subject' }),
+            }),
         );
     });
 });

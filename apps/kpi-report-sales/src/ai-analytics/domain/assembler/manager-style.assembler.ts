@@ -7,13 +7,14 @@
  * коллег, усадка к τ, ROPE и частотный пол, гистерезис подписей) делает
  * библиотека — здесь только перевод разборов в единицы осей.
  *
- * ⚠ Маркеры осей ограничены lite-выборкой: в ней нет доли речи, числа
- * вопросов, истории лидов и сделок, поэтому из восьми осей считается одна
- * — `inquiry` (контраст «Выявление потребностей» против «Презентация»).
- * Остальные оси появятся, когда загрузчик начнёт отдавать их маркеры:
- * добавление оси — это одна строка в `axesOf`, шаг и снапшот не меняются.
- * Половина осей «на глазок» была бы хуже одной честной: подпись стиля
- * человек читает как факт о себе.
+ * Маркеры осей приходят из двух источников (`manager-style.axes.ts`):
+ * разбор звонка даёт оси `inquiry`, `initiative`, `price_position`,
+ * `funnel_focus` (единица — звонок), жёсткие счётчики телефонии и CRM —
+ * `persistence`, `tempo`, `rhythm` (единицы — лид и рабочий день).
+ * Ось `objection_response` ждёт поля `objections[].reaction` из strict-схем
+ * (поток S3, Фаза 3) и до него молчит: половина осей «на глазок» была бы
+ * хуже честного «данных пока мало» — подпись стиля человек читает как
+ * факт о себе.
  *
  * Чистые функции: без DI, Bitrix и `new Date()`.
  */
@@ -21,12 +22,13 @@ import {
     buildStyleProfile,
     resolveNumberParam,
     type ParamContext,
-    type StyleAxisCode,
     type StyleProfile,
     type StyleProfileOptions,
     type StyleRow,
 } from '@lib/sales-ai-analytics';
 import type { DatedLiteRow } from '../loaders/lite-row.mapper';
+import type { StyleCrmManagerMonth } from '../loaders/style-crm.types';
+import { axesOf, crmStyleRows } from './manager-style.axes';
 import type {
     AiSnapshotMeta,
     ManagerSnapshotRow,
@@ -34,11 +36,12 @@ import type {
     ManagerStylePayload,
 } from './manager-snapshot.types';
 
-/** Разделы рубрики, из контраста которых собирается ось `inquiry`. */
-export const STYLE_INQUIRY_SECTIONS = {
-    plus: 'NEEDS',
-    minus: 'PRESENTATION',
-} as const;
+export {
+    axesOf,
+    crmStyleRows,
+    STYLE_INQUIRY_SECTIONS,
+    STYLE_LATE_STAGE_CALL_TYPES,
+} from './manager-style.axes';
 
 export interface ManagerStyleInput {
     /** Месяц снапшота 'YYYY-MM' (последний месяц окна). */
@@ -54,6 +57,11 @@ export interface ManagerStyleInput {
     tenureBands: Readonly<Record<string, string>>;
     /** Подписи прошлого окна по менеджеру — гистерезис профиля. */
     previousTags: ReadonlyMap<string, readonly string[]>;
+    /**
+     * Жёсткие счётчики телефонии и CRM за то же окно (StyleCrmLoader):
+     * оси 4, 7, 8. Не передан — эти оси молчат.
+     */
+    crm?: readonly StyleCrmManagerMonth[];
     meta: AiSnapshotMeta;
 }
 
@@ -64,35 +72,23 @@ export interface ManagerStyleAssembly {
     facts: Map<string, ManagerStyleFacts>;
 }
 
-/** Оценка раздела разбора (relevance > 0 и score задан); иначе null. */
-function sectionScore(row: DatedLiteRow, code: string): number | null {
-    const section = row.sections.find(item => item.section === code);
-    return section && section.relevance > 0 && section.score !== null
-        ? section.score
-        : null;
-}
-
 /**
- * Единицы осей одного разбора. Ось попадает в строку только если её
- * маркер в разборе есть: отсутствующая ось молчит, а не подставляет ноль.
+ * Разборы окна и жёсткие счётчики → строки осей стиля. Строка без единиц
+ * не участвует; единицы телефонии идут своими строками (лид, рабочий
+ * день), потому что их нельзя складывать со звонками.
  */
-export function axesOf(
-    row: DatedLiteRow,
-): Partial<Record<StyleAxisCode, number>> {
-    const plus = sectionScore(row, STYLE_INQUIRY_SECTIONS.plus);
-    const minus = sectionScore(row, STYLE_INQUIRY_SECTIONS.minus);
-    return plus !== null && minus !== null ? { inquiry: plus - minus } : {};
-}
-
-/** Разборы окна → строки осей стиля (строки без единиц не участвуют). */
-export function buildStyleRows(rows: readonly DatedLiteRow[]): StyleRow[] {
-    return rows.flatMap(row => {
+export function buildStyleRows(
+    rows: readonly DatedLiteRow[],
+    crm: readonly StyleCrmManagerMonth[] = [],
+): StyleRow[] {
+    const callRows = rows.flatMap(row => {
         if (row.managerId === null || !row.analysisPresent) return [];
         const axes = axesOf(row);
         return Object.keys(axes).length === 0
             ? []
             : [{ managerId: row.managerId, axes }];
     });
+    return [...callRows, ...crmStyleRows(crm)];
 }
 
 /**
@@ -143,7 +139,7 @@ export function toStyleFacts(
 export function buildManagerStylePayload(
     input: ManagerStyleInput,
 ): ManagerStyleAssembly {
-    const styleRows = buildStyleRows(input.rows);
+    const styleRows = buildStyleRows(input.rows, input.crm ?? []);
     const options = styleOptions(input.registry);
     const facts = new Map<string, ManagerStyleFacts>();
     const rows = input.managerIds.map(managerId => {

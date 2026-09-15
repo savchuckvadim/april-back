@@ -1,8 +1,9 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
     ArrayNotEmpty,
     IsArray,
+    IsIn,
     IsInt,
     IsNotEmpty,
     IsOptional,
@@ -10,6 +11,15 @@ import {
     ValidateNested,
 } from 'class-validator';
 import { DealSendFieldDto } from '../../../modules/deal-send/dto/deal-send.dto';
+
+/** Что делать с сервисной сделкой: создать новую или обновить существующую. */
+export type DirectServiceDealMode = 'create' | 'update';
+
+/** Runtime-список режимов: используется и в @IsIn, и в Swagger. */
+export const DIRECT_SERVICE_DEAL_MODES = [
+    'create',
+    'update',
+] as const satisfies readonly DirectServiceDealMode[];
 
 /**
  * Облегчённая поставка: сервисная сделка создаётся напрямую из конструктора,
@@ -85,6 +95,57 @@ export class DirectServiceDealDto {
     @ValidateNested({ each: true })
     @Type(() => DealSendFieldDto)
     fields: DealSendFieldDto[];
+
+    @ApiPropertyOptional({
+        type: String,
+        enum: DIRECT_SERVICE_DEAL_MODES,
+        default: 'create',
+        description:
+            'Переотправка в отдел сервиса: create — создать новую сервисную сделку (поведение по умолчанию, обратная совместимость), update — обновить уже созданную, её id передаётся в targetDealId.',
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(DIRECT_SERVICE_DEAL_MODES as unknown as string[])
+    mode?: DirectServiceDealMode;
+
+    @ApiPropertyOptional({
+        type: Number,
+        example: 159800,
+        description:
+            'Сервисная сделка, которую обновляем. Обязателен при mode = update; при create игнорируется.',
+    })
+    @IsOptional()
+    @IsInt()
+    @Type(() => Number)
+    targetDealId?: number;
+}
+
+/** Уже созданная сервисная сделка по этой же базовой сделке. */
+export class ExistingServiceDealDto {
+    @ApiProperty({ type: Number, example: 159800 })
+    id: number;
+
+    @ApiProperty({ type: String, nullable: true })
+    title: string | null;
+
+    @ApiProperty({ type: String, nullable: true, example: 'C5:REG_ONE' })
+    stageId: string | null;
+
+    @ApiProperty({
+        type: String,
+        nullable: true,
+        description: 'Дата создания сделки (DATE_CREATE как отдал битрикс).',
+        example: '2026-09-01T10:15:00+03:00',
+    })
+    createdAt: string | null;
+
+    @ApiProperty({
+        type: String,
+        enum: ['link', 'company'],
+        description:
+            'Как нашли: link — по полю-связи с базовой сделкой (надёжно), company — по компании и сервисной воронке (вероятная, но не гарантированная связь; менеджеру стоит показать это отдельно).',
+    })
+    matchedBy: 'link' | 'company';
 }
 
 /** Что конструктору показать в форме до создания сделки. */
@@ -111,12 +172,28 @@ export class DirectServiceDealPrepareResponseDto {
         description: 'Сколько вариантов комплекта переедет вместе со сделкой',
     })
     variantsCount: number;
+
+    @ApiProperty({
+        type: ExistingServiceDealDto,
+        nullable: true,
+        description:
+            'Сервисная сделка, уже созданная по этой базовой. Не null — конструктор обязан спросить менеджера: обновить её (mode = update, targetDealId = id) или создать новую (mode = create).',
+    })
+    existingServiceDeal: ExistingServiceDealDto | null;
 }
 
 /** Результат облегчённой поставки. */
 export class DirectServiceDealResponseDto {
     @ApiProperty({ type: Number })
     dealId: number;
+
+    @ApiProperty({
+        type: String,
+        enum: ['created', 'updated'],
+        description:
+            'Что именно произошло: created — сервисная сделка создана, updated — обновлена существующая (mode = update).',
+    })
+    action: 'created' | 'updated';
 
     @ApiProperty({
         type: Boolean,

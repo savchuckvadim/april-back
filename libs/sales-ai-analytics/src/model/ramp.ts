@@ -10,12 +10,14 @@
  * Чистая математика: без DI, Bitrix и Prisma, без `Date.now`/`Math.random`.
  */
 
+import { registryDefault } from '../params/registry.access';
+
 /** Дефолты реестра, участвующие в ramp. */
 export const RAMP_DEFAULTS = {
     /** `ramp_tau0_months` — характерное время выхода новичка. */
-    tau0Months: 3,
+    tau0Months: registryDefault('ramp_tau0_months'),
     /** `ramp_volume_boost` — надбавка к цели по объёму. */
-    volumeBoost: 0.3,
+    volumeBoost: registryDefault('ramp_volume_boost'),
 } as const;
 
 /** Настройки надбавки новичку. */

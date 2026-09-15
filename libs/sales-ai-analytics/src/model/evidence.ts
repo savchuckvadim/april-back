@@ -6,27 +6,34 @@
  *   портал×месяц, страта базы), гейт β пройден, интервал не накрывает
  *   практический ноль, знак сохраняется внутри страт, плацебо пройдены,
  *   версии сравнимы;
- * - **E2** — пул ≥ 5 порталов с отчитанным I², портал внутри
- *   предиктивного интервала, наклон калибровки накрывает 1 — либо
- *   квази-эксперимент;
+ * - **E2** — пул ≥ `pool_min_portals_beta` порталов с отчитанным I²,
+ *   портал внутри предиктивного интервала, наклон калибровки накрывает
+ *   1 — либо квази-эксперимент;
  * - **E3** — пререгистрированный эксперимент.
  *
  * Совет «делай X вместо Y» разрешён с E2; при E1 формулировка —
  * «ниже нормы по X; в данных это связано с Y», без императива.
  * Слово «значимо» в формулировках запрещено (приёмка §6).
  */
+import {
+    registryDefault,
+    registryEnumDefault,
+} from '../params/registry.access';
+
+/** Лестница уровней доказательности; порядок значим (E0 → E3). */
 export const AI_EVIDENCE_LEVELS = ['E0', 'E1', 'E2', 'E3'] as const;
 
 /** Уровень доказательности рекомендации. */
 export type AiEvidenceLevel = (typeof AI_EVIDENCE_LEVELS)[number];
 
+/** Дефолты уровней доказательности — все три из реестра. */
 export const EVIDENCE_DEFAULTS = {
     /** `n_min_none` — ниже ни одного числа наружу. */
-    minN: 8,
-    /** Минимум порталов пула для E2. */
-    minPoolPortals: 5,
-    /** `evidence_gate` — с какого уровня разрешён совет «что менять». */
-    adviceGate: 'E2',
+    minN: registryDefault('n_min_none'),
+    /** `pool_min_portals_beta` — минимум порталов пула для E2. */
+    minPoolPortals: registryDefault('pool_min_portals_beta'),
+    /** `evidence_gate_advice` — с какого уровня разрешён совет. */
+    adviceGate: registryEnumDefault('evidence_gate_advice', AI_EVIDENCE_LEVELS),
 } as const satisfies {
     minN: number;
     minPoolPortals: number;

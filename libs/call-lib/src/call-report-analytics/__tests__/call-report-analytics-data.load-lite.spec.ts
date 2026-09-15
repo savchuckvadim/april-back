@@ -186,8 +186,62 @@ describe('CallReportAnalyticsDataService.loadLite', () => {
                     attribution: '2026-08-24',
                     classifier: '2026-09-05',
                 },
+                // Маркеры стиля: в этом разборе их нет — все null, а не 0.
+                style: {
+                    talkRatioPct: null,
+                    questionsCount: null,
+                    needsFound: null,
+                    needsCount: null,
+                    presentationDone: null,
+                    productsOfferedCount: null,
+                    priceDiscussed: null,
+                    competitorsCount: null,
+                    refusalCategory: null,
+                    interlocutorRole: null,
+                    productive: null,
+                    scriptCompliance: null,
+                    callDirection: null,
+                },
             },
         ]);
+    });
+
+    it('маркеры стиля разбора попадают в лёгкую строку (оси 1, 2, 6)', async () => {
+        const { service } = makeService({
+            lite: [liteRow('1', '7', '720')],
+            ai: [
+                aiRecord('1', AGENT_ANALYSIS_TYPE, {
+                    ...FULL_ANALYSIS,
+                    talkRatioPct: 58,
+                    questionsCount: 12,
+                    needsFound: true,
+                    needs: ['срок', 'бюджет'],
+                    presentationDone: false,
+                    productsOffered: [],
+                    priceDiscussed: true,
+                    competitors: ['consultant'],
+                    interlocutorRole: 'decision_maker',
+                    productive: true,
+                }),
+            ],
+        });
+
+        const { rows } = await service.loadLite(QUERY);
+
+        expect(rows[0].style).toEqual(
+            expect.objectContaining({
+                talkRatioPct: 58,
+                questionsCount: 12,
+                needsFound: true,
+                needsCount: 2,
+                presentationDone: false,
+                productsOfferedCount: 0,
+                priceDiscussed: true,
+                competitorsCount: 1,
+                interlocutorRole: 'decision_maker',
+                productive: true,
+            }),
+        );
     });
 
     it('без разбора: analysisPresent=false, null/[] и тип из классификатора', async () => {

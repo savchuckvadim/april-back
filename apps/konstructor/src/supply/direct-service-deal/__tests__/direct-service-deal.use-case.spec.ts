@@ -20,9 +20,17 @@ describe('DirectServiceDealUseCase', () => {
         over: {
             company?: Record<string, unknown>;
             variants?: { smartId: number }[];
+            /** Что вернёт поиск сервисных сделок (deal.getList). */
+            serviceDeals?: Record<string, unknown>[];
+            /** Варианты, которые уже есть у обновляемой сделки. */
+            targetVariants?: { smartId: number }[];
         } = {},
     ) => {
         const dealSet = jest.fn().mockResolvedValue({ result: 200 });
+        const dealUpdate = jest.fn().mockResolvedValue({});
+        const dealGetList = jest
+            .fn()
+            .mockResolvedValue({ result: over.serviceDeals ?? [] });
         const companyUpdate = jest.fn().mockResolvedValue({});
         const contactUpdate = jest.fn().mockResolvedValue({});
         const productRowGet = jest
@@ -33,7 +41,8 @@ describe('DirectServiceDealUseCase', () => {
             deal: {
                 get: jest.fn().mockResolvedValue({ result: SOURCE_DEAL }),
                 set: dealSet,
-                update: jest.fn().mockResolvedValue({}),
+                update: dealUpdate,
+                getList: dealGetList,
                 contactItemsGet: jest
                     .fn()
                     .mockResolvedValue({ result: [{ CONTACT_ID: 11 }] }),
@@ -67,7 +76,17 @@ describe('DirectServiceDealUseCase', () => {
                 .mockResolvedValue({ bitrix, PortalModel: portalModel }),
         } as unknown as PBXService;
 
-        const listVariants = jest.fn().mockResolvedValue(over.variants ?? []);
+        // варианты исходной сделки и варианты целевой различаются: по ним
+        // решается, переносить ли наборы повторно при обновлении
+        const listVariants = jest
+            .fn()
+            .mockImplementation((_domain: string, dealId: number) =>
+                Promise.resolve(
+                    dealId === 100
+                        ? (over.variants ?? [])
+                        : (over.targetVariants ?? []),
+                ),
+            );
         const copySnapshot = jest
             .fn()
             .mockResolvedValue({ copied: true, reason: null, deal: null });
@@ -79,6 +98,8 @@ describe('DirectServiceDealUseCase', () => {
         return {
             useCase: new DirectServiceDealUseCase(pbx, innerDeal),
             dealSet,
+            dealUpdate,
+            dealGetList,
             companyUpdate,
             contactUpdate,
             copySnapshot,
@@ -174,5 +195,146 @@ describe('DirectServiceDealUseCase', () => {
         await expect(useCase.execute(dto())).rejects.toThrow(
             /нет сервисной воронки/,
         );
+    });
+
+    describe('переотправка в отдел сервиса', () => {
+        it('prepare показывает уже созданную сервисную сделку, найденную по связи', async () => {
+            const { useCase, dealGetList } = build({
+                serviceDeals: [
+                    {
+                        ID: '300',
+                        TITLE: 'Гарант-Юрист',
+                        STAGE_ID: 'C5:REG_ONE',
+                        DATE_CREATE: '2026-09-01T10:15:00+03:00',
+                    },
+                ],
+            });
+
+            const result = await useCase.prepare('gsr.bitrix24.ru', 100);
+
+            expect(result.existingServiceDeal).toEqual({
+                id: 300,
+                title: 'Гарант-Юрист',
+                stageId: 'C5:REG_ONE',
+                createdAt: '2026-09-01T10:15:00+03:00',
+                matchedBy: 'link',
+            });
+            // искали в сервисной воронке по полю-связи с базовой сделкой
+            const [filter] = dealGetList.mock.calls[0] as [
+                Record<string, unknown>,
+            ];
+            expect(filter.CATEGORY_ID).toBe(5);
+            expect(filter.UF_CRM_TO_SALE_DEAL).toEqual(['D_100', '100']);
+        });
+
+        it('нет связи — ищем по компании и честно помечаем находку как вероятную', async () => {
+            const { useCase, dealGetList } = build();
+            dealGetList
+                .mockResolvedValueOnce({ result: [] })
+                .mockResolvedValueOnce({
+                    result: [{ ID: '301', TITLE: 'Старая сервисная' }],
+                });
+
+            const result = await useCase.prepare('gsr.bitrix24.ru', 100);
+
+            expect(result.existingServiceDeal).toMatchObject({
+                id: 301,
+                matchedBy: 'company',
+            });
+            const [companyFilter] = dealGetList.mock.calls[1] as [
+                Record<string, unknown>,
+            ];
+            expect(companyFilter.COMPANY_ID).toBe('555');
+        });
+
+        it('дублей нет — existingServiceDeal пустой, вопрос менеджеру не задаётся', async () => {
+            const { useCase } = build({ serviceDeals: [] });
+
+            const result = await useCase.prepare('gsr.bitrix24.ru', 100);
+
+            expect(result.existingServiceDeal).toBeNull();
+        });
+
+        it('при создании в сделку пишется ссылка на базовую — по ней найдётся дубль', async () => {
+            const { useCase, dealSet } = build();
+
+            const result = await useCase.execute(dto());
+
+            const [fields] = dealSet.mock.calls[0] as [Record<string, unknown>];
+            expect(fields.UF_CRM_TO_SALE_DEAL).toBe('D_100');
+            expect(result.action).toBe('created');
+        });
+
+        it('нет поля связи на портале — сделка всё равно создаётся', async () => {
+            const { useCase, dealSet } = build();
+            const pbx = (useCase as unknown as { pbx: { init: jest.Mock } })
+                .pbx;
+            const { bitrix, PortalModel } = (await pbx.init()) as {
+                bitrix: unknown;
+                PortalModel: {
+                    getDealFieldBitrixIdByCode: (code: string) => string | null;
+                };
+            };
+            PortalModel.getDealFieldBitrixIdByCode = (code: string) =>
+                code === 'to_sale_deal' ? null : `UF_CRM_${code.toUpperCase()}`;
+            pbx.init.mockResolvedValue({ bitrix, PortalModel });
+
+            const result = await useCase.execute(dto());
+
+            expect(result.dealId).toBe(200);
+            const [fields] = dealSet.mock.calls[0] as [Record<string, unknown>];
+            expect(fields.UF_CRM_TO_SALE_DEAL).toBeUndefined();
+        });
+
+        it('update обновляет существующую сделку и не создаёт вторую', async () => {
+            const { useCase, dealSet, dealUpdate } = build();
+
+            const result = await useCase.execute(
+                dto({ mode: 'update', targetDealId: 300 }),
+            );
+
+            expect(dealSet).not.toHaveBeenCalled();
+            expect(dealUpdate).toHaveBeenCalledTimes(1);
+            const [dealId, fields] = dealUpdate.mock.calls[0] as [
+                number,
+                Record<string, unknown>,
+            ];
+            expect(dealId).toBe(300);
+            expect(fields.ASSIGNED_BY_ID).toBe('77');
+            expect(fields.UF_CRM_NOTE).toBe('от менеджера');
+            expect(result).toMatchObject({ dealId: 300, action: 'updated' });
+        });
+
+        it('update без targetDealId — ошибка, а не молчаливое создание дубля', async () => {
+            const { useCase, dealSet } = build();
+
+            await expect(
+                useCase.execute(dto({ mode: 'update' })),
+            ).rejects.toThrow(/targetDealId/);
+            expect(dealSet).not.toHaveBeenCalled();
+        });
+
+        it('update: слепок конструктора перезаписывается с force', async () => {
+            const { useCase, copySnapshot } = build();
+
+            await useCase.execute(dto({ mode: 'update', targetDealId: 300 }));
+
+            expect(copySnapshot).toHaveBeenCalledWith(
+                expect.objectContaining({ targetDealId: 300, force: true }),
+            );
+        });
+
+        it('update: варианты, которые уже есть у сделки, повторно не переносятся', async () => {
+            const { useCase } = build({
+                variants: [{ smartId: 1 }],
+                targetVariants: [{ smartId: 9 }],
+            });
+
+            const result = await useCase.execute(
+                dto({ mode: 'update', targetDealId: 300 }),
+            );
+
+            expect(result.variantsCopied).toBe(0);
+        });
     });
 });

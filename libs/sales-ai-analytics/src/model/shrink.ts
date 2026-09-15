@@ -1,3 +1,4 @@
+import { registryDefault } from '../params/registry.access';
 import { gammaInterval } from './gamma';
 import { AI_ANALYTICS_THRESHOLDS } from './thresholds.const';
 import { wilsonInterval } from './wilson';
@@ -58,8 +59,12 @@ export interface ForgetResult {
 }
 
 export const SHRINK_DEFAULTS = {
-    /** Забывание месяцев forget_lambda (план §4.2). */
-    forgetLambda: 0.85,
+    /** `forget_lambda` — забывание месяцев (план §4.2). */
+    forgetLambda: registryDefault('forget_lambda'),
+    /**
+     * Не параметр реестра: вид интервала — свойство дескриптора ребра
+     * (`intervalKind`), у долей Уилсон, у интенсивностей гамма.
+     */
     intervalKind: 'wilson',
 } as const satisfies { forgetLambda: number; intervalKind: ShrinkIntervalKind };
 

@@ -5,33 +5,27 @@ import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import {
     callReportDealText,
     CallReportDealFamilyContext,
-    CallReportDealLinkConfidence,
     CallReportDealLookup,
     CallReportDealRow,
 } from './call-report-deal-lookup';
+import {
+    applyListFamily,
+    CallReportDealFamily,
+    callListSearchInputOf,
+    listConflictBlocks,
+} from './call-report-deal-family.types';
+import { CallReportDealChildren } from './call-report-deal-children';
+import {
+    CallReportFamilyCache,
+    familyCacheKey,
+} from './call-report-family-cache';
+import { CallReportListTruthService } from './call-report-list-truth.service';
 
 export {
     CallReportDealFamilyContext,
     CallReportDealLinkConfidence,
 } from './call-report-deal-lookup';
-
-/** Раскладка сделок звонка по воронкам. */
-export interface CallReportDealFamily {
-    /** Корневая сделка продажи — «ОП: основная сделка». */
-    mainDealId?: number;
-    /** Сделка воронки «ОП Презентации». */
-    presentationDealId?: number;
-    /** Сделка воронки «ОП ХО». */
-    xoDealId?: number;
-    /** Чем доказана основная связь; пусто — связи нет. */
-    mainConfidence?: CallReportDealLinkConfidence;
-    /** Чем доказана связь презентации; пусто — связи нет. */
-    presentationConfidence?: CallReportDealLinkConfidence;
-    /** Воронка сделки-владельца звонка; undefined — чужая или не заведена. */
-    ownerCategoryCode?: PbxDealCategoryCodeEnum;
-    /** Раскладку построить не удалось (ошибка чтения, нет справочника). */
-    unresolved?: boolean;
-}
+export * from './call-report-deal-family.types';
 
 /**
  * Определение «семьи сделок» по владельцу звонка.
@@ -48,7 +42,10 @@ export interface CallReportDealFamily {
  * `mainDealId = dealId`, и в отчётность уезжали сделки чужих воронок
  * (вместе с их ответственным).
  *
- * Порядок определения корня:
+ * Порядок определения корня (§4 прод-фиксов, от надёжного к запасному):
+ * 0. элемент «ОП История»/«ОП KPI» ЭТОГО звонка: его множественное
+ *    crm-поле содержит всю семью потока (`CallReportListTruthService`);
+ *    две сделки одной воронки в элементе — ошибка разметки, связь пустая;
  * 1. сама сделка стоит в «ОП Основная» — она и есть корень (ссылку
  *    `to_base_sales` игнорируем: стоящая в воронке сделка корень по
  *    определению, ошибочная ссылка не должна её переписывать);
@@ -58,9 +55,7 @@ export interface CallReportDealFamily {
  *    сделки (целевая сделка живого случая стоит в «Не состоялась»);
  * 4. не нашли — пусто. Выдумывать связь нельзя.
  *
- * Дочерние связи (презентация/ХО) доливаются от корня: прямое crm-поле
- * корня, иначе обратная ссылка дочерней сделки на корень. Поэтому звонок
- * ИЗ основной сделки тоже получает связь с презентационной сделкой.
+ * Дочерние связи (презентация/ХО) доливает `CallReportDealChildren`.
  *
  * Fail-open: любая ошибка чтения → пустая раскладка, звонок обрабатывается
  * дальше (связи дольются повторным прогоном / ночной ревизией).
@@ -68,6 +63,14 @@ export interface CallReportDealFamily {
 @Injectable()
 export class CallReportDealFamilyService {
     private readonly logger = new Logger(CallReportDealFamilyService.name);
+
+    /**
+     * Короткая память ответа: за один разбор звонка раскладку спрашивают
+     * трижды (сборщик контекста, карточка разбора, приём анализа), а шаг 0
+     * читает при этом два списка отчётности. Без памяти это шесть лишних
+     * обращений к порталу на звонок с заведомо одинаковым ответом.
+     */
+    private readonly cache = new CallReportFamilyCache<CallReportDealFamily>();
 
     constructor(private readonly pbxService: PBXService) {}
 
@@ -81,7 +84,19 @@ export class CallReportDealFamilyService {
         dealId: number | undefined,
         context: CallReportDealFamilyContext = {},
     ): Promise<CallReportDealFamily> {
-        if (!dealId && !context.companyId && !context.contactId) return {};
+        if (
+            !dealId &&
+            !context.leadId &&
+            !context.companyId &&
+            !context.contactId
+        ) {
+            return {};
+        }
+        const cacheKey = familyCacheKey({ domain, dealId, ...context });
+        const remembered = this.cache.get(cacheKey, Date.now());
+        // Копия, а не сама запись: вызывающие дополняют раскладку своими
+        // полями, и мутация не должна портить запомненный ответ.
+        if (remembered) return { ...remembered };
         try {
             const { bitrix, PortalModel: portal } =
                 await this.pbxService.init(domain);
@@ -98,14 +113,26 @@ export class CallReportDealFamilyService {
                 return { unresolved: true };
             }
 
-            const family = await this.build(lookup, dealId, context);
+            const family = await this.build(
+                lookup,
+                new CallReportListTruthService(bitrix, portal, this.logger),
+                dealId,
+                context,
+            );
             this.logger.log(
                 `Сделки звонка (${domain}, сделка ${dealId ?? '—'}): основная ` +
-                    `${family.mainDealId ?? '—'} (${family.mainConfidence ?? 'нет'}), ` +
-                    `презентация ${family.presentationDealId ?? '—'}, ` +
-                    `ХО ${family.xoDealId ?? '—'}` +
+                    `${family.mainDealId ?? '—'} (${family.mainConfidence ?? 'нет'}` +
+                    `, источник ${family.source ?? 'нет'}, запись ` +
+                    `${family.listRecordId ?? '—'}), презентация ` +
+                    `${family.presentationDealId ?? '—'}, ХО ` +
+                    `${family.xoDealId ?? '—'}` +
                     (family.unresolved ? ', раскладка неполная' : ''),
             );
+            // Неполную раскладку не запоминаем: следующий вызов имеет право
+            // попробовать снова (права могли появиться, справочник — тоже).
+            if (!family.unresolved) {
+                this.cache.set(cacheKey, { ...family }, Date.now());
+            }
             return family;
         } catch (error) {
             // Fail-open — но БЕЗ подстановки сделки: неверная связь хуже
@@ -118,9 +145,10 @@ export class CallReportDealFamilyService {
         }
     }
 
-    /** Сборка раскладки: владелец → корень → дотяжка → дочерние. */
+    /** Сборка раскладки: запись списка → владелец → корень → дотяжка. */
     private async build(
         lookup: CallReportDealLookup,
+        truth: CallReportListTruthService,
         dealId: number | undefined,
         context: CallReportDealFamilyContext,
     ): Promise<CallReportDealFamily> {
@@ -135,21 +163,58 @@ export class CallReportDealFamilyService {
         }
 
         const family: CallReportDealFamily = {};
-        let mainRow: CallReportDealRow | null = null;
+        let mainRow = await this.fromListRecord(truth, family, dealId, context);
         if (owner && dealId) {
-            mainRow = this.fillFromOwner(lookup, family, owner, dealId);
+            mainRow =
+                this.fillFromOwner(lookup, family, owner, dealId) ?? mainRow;
             if (!family.mainDealId) {
-                mainRow = await this.fromRootLink(lookup, family, owner);
+                mainRow =
+                    (await this.fromRootLink(lookup, family, owner)) ?? mainRow;
             }
         }
-        if (!family.mainDealId) {
+        if (
+            !family.mainDealId &&
+            !listConflictBlocks(family, PbxDealCategoryCodeEnum.sales_base)
+        ) {
             mainRow = await this.fromClient(lookup, family, context);
         }
-        if (mainRow) await this.fillChildren(lookup, family, mainRow, context);
+        if (mainRow) {
+            await new CallReportDealChildren(lookup, this.logger).fill(
+                family,
+                mainRow,
+                context,
+            );
+        }
         return family;
     }
 
-    /** Раскладка самой сделки-владельца по её воронке. */
+    /**
+     * Шаг 0 — ИСТОЧНИК ИСТИНЫ §4: элемент «ОП История»/«ОП KPI» этого
+     * звонка. Его множественное crm-поле содержит всю семью потока, поэтому
+     * связи берутся оттуда, а не дотягиваются догадкой. Записи нет (или нет
+     * даты звонка, чтобы её опознать) — работают запасные пути.
+     */
+    private async fromListRecord(
+        truth: CallReportListTruthService,
+        family: CallReportDealFamily,
+        dealId: number | undefined,
+        context: CallReportDealFamilyContext,
+    ): Promise<CallReportDealRow | null> {
+        if (!context.callStartedAt) return null;
+        const list = await truth.resolve(
+            callListSearchInputOf(dealId, context),
+        );
+        return list ? applyListFamily(family, list) : null;
+    }
+
+    /**
+     * Раскладка самой сделки-владельца по её воронке.
+     *
+     * Сделка, из которой ФИЗИЧЕСКИ сделан звонок, — факт CRM, а запись
+     * списка выбрана ранжированием. Поэтому владелец воронки «ОП Основная»
+     * перекрывает связь из записи, а расхождение попадает в лог: это сигнал
+     * ошибки разметки, а не повод молчать.
+     */
     private fillFromOwner(
         lookup: CallReportDealLookup,
         family: CallReportDealFamily,
@@ -159,11 +224,14 @@ export class CallReportDealFamilyService {
         const code = lookup.categoryCodeOf(owner);
         family.ownerCategoryCode = code;
         if (code === PbxDealCategoryCodeEnum.sales_presentation) {
+            this.warnOwnerMismatch(family, code, dealId);
             family.presentationDealId = dealId;
             family.presentationConfidence = 'exact';
         } else if (code === PbxDealCategoryCodeEnum.sales_xo) {
             family.xoDealId = dealId;
         } else if (code === PbxDealCategoryCodeEnum.sales_base) {
+            if (family.mainDealId !== dealId) family.source = 'root-link';
+            this.warnOwnerMismatch(family, code, dealId);
             family.mainDealId = dealId;
             family.mainConfidence = 'exact';
             return owner;
@@ -201,7 +269,26 @@ export class CallReportDealFamilyService {
         }
         family.mainDealId = rootId;
         family.mainConfidence = 'exact';
+        family.source = 'root-link';
         return root;
+    }
+
+    /** Связь из записи списка разошлась с фактом карточки — это в лог. */
+    private warnOwnerMismatch(
+        family: CallReportDealFamily,
+        code: PbxDealCategoryCodeEnum,
+        dealId: number,
+    ): void {
+        const fromList =
+            code === PbxDealCategoryCodeEnum.sales_base
+                ? family.mainDealId
+                : family.presentationDealId;
+        if (!fromList || fromList === dealId) return;
+        this.logger.warn(
+            `Запись отчётности ${family.listRecordId ?? '—'} указывает сделку ` +
+                `${fromList} воронки ${code}, а звонок сделан из ${dealId} ` +
+                'той же воронки — берём сделку-владельца звонка (факт CRM)',
+        );
     }
 
     /**
@@ -220,73 +307,12 @@ export class CallReportDealFamilyService {
         if (!found) return null;
         family.mainDealId = found.id;
         family.mainConfidence = found.confidence;
+        family.source = 'client-lookup';
         this.logger.log(
             'Основная сделка дотянута по клиенту (компания ' +
                 `${context.companyId ?? '—'}, контакт ${context.contactId ?? '—'}) ` +
                 `→ ${found.id} (${found.confidence})`,
         );
         return found.deal;
-    }
-
-    /**
-     * Дочерние сделки корня: прямые crm-поля «Сделка Презентации Продажи» /
-     * «Сделка ХО Продажи», а если они пусты — обратная ссылка дочерней
-     * сделки на корень (`to_base_sales`). Так презентационная сделка
-     * находится и когда звонок сделан ИЗ основной сделки (жалоба владельца
-     * 08.09.2026), а не только когда владелец звонка — сама презентация.
-     */
-    private async fillChildren(
-        lookup: CallReportDealLookup,
-        family: CallReportDealFamily,
-        mainRow: CallReportDealRow,
-        context: CallReportDealFamilyContext,
-    ): Promise<void> {
-        if (!family.presentationDealId) {
-            const found = await this.resolveChild(
-                lookup,
-                mainRow,
-                PbxDealCategoryCodeEnum.sales_presentation,
-                PBX_SALES_EVENT_FIELD_CODES.to_presentation_sales,
-                family.mainDealId,
-                context,
-            );
-            if (found) {
-                family.presentationDealId = found;
-                family.presentationConfidence = 'exact';
-            }
-        }
-        if (!family.xoDealId) {
-            const found = await this.resolveChild(
-                lookup,
-                mainRow,
-                PbxDealCategoryCodeEnum.sales_xo,
-                PBX_SALES_EVENT_FIELD_CODES.to_xo_sales,
-                family.mainDealId,
-                context,
-            );
-            if (found) family.xoDealId = found;
-        }
-    }
-
-    /** Дочерняя сделка воронки: прямая ссылка корня, затем обратная. */
-    private async resolveChild(
-        lookup: CallReportDealLookup,
-        mainRow: CallReportDealRow,
-        code: PbxDealCategoryCodeEnum,
-        fieldCode: string,
-        mainDealId: number | undefined,
-        context: CallReportDealFamilyContext,
-    ): Promise<number | undefined> {
-        const linked = lookup.dealRefField(mainRow, fieldCode);
-        if (linked) {
-            const deal = await lookup.getDeal(linked);
-            if (deal && lookup.categoryCodeOf(deal) === code) return linked;
-            this.logger.warn(
-                `Ссылка на дочернюю сделку ${linked} не ведёт в воронку ` +
-                    `${code} — отброшена`,
-            );
-        }
-        if (!mainDealId) return undefined;
-        return lookup.findChildOfRoot(code, mainDealId, context);
     }
 }

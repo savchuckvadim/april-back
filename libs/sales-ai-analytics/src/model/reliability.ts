@@ -1,3 +1,4 @@
+import { registryDefault } from '../params/registry.access';
 import { AI_ANALYTICS_THRESHOLDS } from './thresholds.const';
 
 /** Поправка β на надёжность оценщика — отдельный файл, публичный вход общий. */
@@ -12,10 +13,15 @@ export * from './reliability-correction';
  * - notMeasuredNote — пометка «надёжность не измерена» для UI.
  */
 export const RELIABILITY_DEFAULTS = {
-    sigmaLlm: 1.2,
-    iccMin: 0.7,
-    retestBudgetCalls: 300,
-    deltaPracticalScore: 1,
+    /** `sigma_llm_default` — шум оценщика до измерения test-retest. */
+    sigmaLlm: registryDefault('sigma_llm_default'),
+    /** `dq_score_icc_min` — гейт надёжности оценок. */
+    iccMin: registryDefault('dq_score_icc_min'),
+    /** `retest_budget_calls` — квота повторных прогонов. */
+    retestBudgetCalls: registryDefault('retest_budget_calls'),
+    /** `delta_prac_score` — практический порог в баллах. */
+    deltaPracticalScore: registryDefault('delta_prac_score'),
+    /** Не параметр реестра: код пометки UI, а не величина расчёта. */
     notMeasuredNote: 'reliability-not-measured',
 } as const;
 

@@ -75,6 +75,10 @@ export class CallReportBaseItemService {
         // сделка» должна вести на корневую — она известна порталу через
         // поле «Корневая сделка Продажи», а если нет — дотягивается по
         // компании/контакту звонка (включая ЗАКРЫТЫЕ сделки).
+        // Шаг 0 раскладки — элемент «ОП История» ЭТОГО звонка (§4
+        // прод-фиксов): чтобы его опознать, нужны лид-владелец (звонок
+        // пишется и в лид), владелец звонка и тип звонка — иначе источник
+        // истины остаётся недостижимым на этом пути.
         const family: CallReportDealFamily = await this.dealFamily.resolve(
             domain,
             isLead ? undefined : entityId,
@@ -82,6 +86,9 @@ export class CallReportBaseItemService {
                 companyId: context.companyId,
                 contactId: context.contactId,
                 callStartedAt: row.callStartedAt,
+                leadId: isLead ? entityId : undefined,
+                callerId: row.userId,
+                callType,
             },
         );
         // Ответственный — владелец звонка из телефонии; ответственный

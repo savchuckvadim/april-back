@@ -1,17 +1,24 @@
+import { registryDefault } from '../params/registry.access';
 import { MetricValue } from './metric';
 
 /**
- * Параметры усадки качества Normal-Normal (план §4.3):
- * - mDefault — сила усадки до оценки ANOVA (10 псевдонаблюдений);
- * - mMax — потолок; он же значение при τ̂² ≤ 0 («менеджеры неразличимы»);
- * - mMin — пол, чтобы почти нулевая τ̂² не давала бесконечную усадку;
- * - minGroups / minGroupSize — ценз оценки: ≥ 5 менеджеров с n ≥ 20.
+ * Параметры усадки качества Normal-Normal (план §4.3): сила усадки — из
+ * реестра (`m_s_default`, `m_s_max`), ценз и пол клипа — константы метода.
  */
 export const SECTION_SHRINK_DEFAULTS = {
-    mDefault: 10,
-    mMax: 50,
+    /** `m_s_default` — сила усадки до оценки ANOVA (псевдонаблюдения). */
+    mDefault: registryDefault('m_s_default'),
+    /** `m_s_max` — потолок; он же значение при τ̂² ≤ 0. */
+    mMax: registryDefault('m_s_max'),
+    /**
+     * Пол клипа m_S, чтобы почти нулевая τ̂² не давала бесконечную усадку.
+     * Не параметр реестра: §2.1 плана расщепляет `m_score_pseudo_n` только
+     * на `m_s_default` и `m_s_max`.
+     */
     mMin: 1,
+    /** Не параметр реестра: ценз ANOVA — ≥ 5 менеджеров (план §4.3). */
     minGroups: 5,
+    /** Не параметр реестра: ценз ANOVA — n ≥ 20 у менеджера (план §4.3). */
     minGroupSize: 20,
 } as const;
 

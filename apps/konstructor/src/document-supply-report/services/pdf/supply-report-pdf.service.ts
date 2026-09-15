@@ -1,44 +1,32 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { StorageService, StorageType } from '@lib/core/storage';
-
-import { join, dirname } from 'path';
 import { LibreOfficeService } from '@app/konstructor/modules/libre-office';
+import { getErrorStack, getErrorString } from '@lib/shared';
 
 @Injectable()
 export class SupplyReportPdfService {
     private readonly logger = new Logger(SupplyReportPdfService.name);
 
-    constructor(
-        private readonly storageService: StorageService,
-        private readonly libreOfficeService: LibreOfficeService,
-    ) {}
+    constructor(private readonly libreOfficeService: LibreOfficeService) {}
 
-    /**
-     * Конвертирует Word документ в PDF
-     */
+    /** Конвертирует docx отчёта в PDF и отдаёт путь к нему. */
     async convertToPdf(docxFilePath: string): Promise<string> {
         try {
-            this.logger.log(`Converting DOCX to PDF: ${docxFilePath}`);
-
-            // Используем LibreOffice для конвертации
             const pdfFilePath =
                 await this.libreOfficeService.convertToPdf(docxFilePath);
 
-            this.logger.log(`PDF created: ${pdfFilePath}`);
+            this.logger.log(`PDF отчёта собран: ${pdfFilePath}`);
 
             return pdfFilePath;
         } catch (error) {
             this.logger.error(
-                `Error converting to PDF: ${error.message}`,
-                error.stack,
+                `Не удалось конвертировать отчёт в PDF: ${getErrorString(error)}`,
+                getErrorStack(error),
             );
-            throw new Error(`Failed to convert DOCX to PDF: ${error.message}`);
+            throw error;
         }
     }
 
-    /**
-     * Получает путь к PDF файлу (заменяет расширение)
-     */
+    /** Путь к PDF по пути docx — только замена расширения. */
     getPdfFilePath(docxFilePath: string): string {
         return docxFilePath.replace(/\.docx$/, '.pdf');
     }

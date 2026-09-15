@@ -11,7 +11,23 @@ export interface ExplanationContext {
     previous?: MetricValue | null;
     /** σ оценок прошлого периода (для ±интервала изменения). */
     previousSd?: number | null;
+    /**
+     * Факт о манере работы менеджера (подпись стиля в родных единицах).
+     * Попадает в объяснение отдельным предложением с разделителем
+     * «Независимо от стиля» — стиль не объясняет разрыв к норме и не
+     * является его причиной (документ ai/tasks/ai-analytics-manager-style.md,
+     * §1.4, §2.5). Пусто — предложения нет, текст прежний.
+     */
+    styleNote?: string | null;
 }
+
+/**
+ * Разделитель перед оценочной частью объяснения: то, что идёт после
+ * него, — описание манеры, а не причина оценки. Слово «поэтому» между
+ * стилем и результатом запрещено: связи «стиль → результат» на одном
+ * портале нет.
+ */
+export const EXPLANATION_STYLE_SEPARATOR = 'Независимо от стиля' as const;
 
 export interface CellExplanation {
     text: string;
@@ -104,6 +120,19 @@ function changeSentence(
     return `Изменение ${signed(delta)} (n = ${cell.n}/${previous.n}; ±${ru1(halfWidth)})${withinNoise}.`;
 }
 
+/**
+ * Предложение о манере с разделителем: «Независимо от стиля: …».
+ * Пустая заметка — предложения нет (пустого разделителя быть не должно).
+ */
+export function styleNoteSentence(
+    styleNote: string | null | undefined,
+): string | null {
+    const note = (styleNote ?? '').trim();
+    if (note === '') return null;
+    const text = note.endsWith('.') ? note.slice(0, -1) : note;
+    return `${EXPLANATION_STYLE_SEPARATOR}: ${text}.`;
+}
+
 function adviceSentence(
     sections: readonly ScoredSection[],
     cell: MatrixCellCore,
@@ -144,6 +173,11 @@ export function renderCellExplanation(
     if (typeof context.teamMedian === 'number') {
         basis.push(`team_median=${en1(context.teamMedian)}`);
         sentences.push(`Команда: медиана ${ru1(context.teamMedian)}.`);
+    }
+    const styleSentence = styleNoteSentence(context.styleNote);
+    if (styleSentence !== null) {
+        basis.push('style=note');
+        sentences.push(styleSentence);
     }
     sentences.push(adviceSentence(sections, cell));
     const { best, worst, median } = cell.evidenceCallIds;

@@ -1,3 +1,4 @@
+import { registryDefault } from '../params/registry.access';
 import type { QualityLink } from '../contracts/quality-link.types';
 import { newcombeDifference, type GapSample } from './edge-rate';
 import {
@@ -37,16 +38,14 @@ export * from './lever.types';
  * не попадает никогда.
  */
 export const LEVER_DEFAULTS = {
-    /** `lever_max`. */
-    max: 3,
-    /** `lever_lb_level` — уровень интервала эффекта. */
-    lbLevel: 0.8,
-    /** Квантиль двустороннего 80 %-интервала (`lever_lb_level`). */
+    max: registryDefault('lever_max'),
+    /** Уровень интервала эффекта. */
+    lbLevel: registryDefault('lever_lb_level'),
+    /** Не параметр реестра: квантиль интервала уровня `lever_lb_level`. */
     z80: 1.2816,
-    /** `lever_min_section_calls` — минимум разборов раздела. */
-    minSectionCalls: 20,
-    /** `n_min_none`. */
-    minN: 8,
+    /** Минимум разборов раздела. */
+    minSectionCalls: registryDefault('lever_min_section_calls'),
+    minN: registryDefault('n_min_none'),
 } as const;
 
 const toGapSample = (sample: OutcomeSample): GapSample => ({

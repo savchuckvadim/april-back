@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * Подпись стиля: КАК человек работает. Оба полюса оси нейтральны,
@@ -32,6 +32,18 @@ export class AiStyleTagDto {
         example: 62,
     })
     n: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Подпись оспорена самим сотрудником (feedback disagree от ' +
+            'субъекта): в карточке помечается «оспорена менеджером», вне ' +
+            'карточки (совет, повестка, подбор эталонов) не используется до ' +
+            'следующего пересчёта. Поле необязательное — строки обзора его ' +
+            'не несут, там оспоренных подписей просто нет.',
+        type: Boolean,
+        example: false,
+    })
+    disputed?: boolean;
 }
 
 /**

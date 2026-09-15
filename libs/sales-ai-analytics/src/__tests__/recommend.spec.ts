@@ -1,4 +1,5 @@
 import {
+    EVIDENCE_DEFAULTS,
     adviceAllowed,
     evidenceLevelFor,
     hasImperative,
@@ -40,9 +41,13 @@ const E1_EVIDENCE: EvidenceInput = {
     versionsComparable: true,
 };
 
-/** Пул для уровня E2: ≥ 5 порталов, I² отчитан, калибровка накрывает 1. */
+/**
+ * Пул для уровня E2: порталов не меньше `pool_min_portals_beta` реестра,
+ * I² отчитан, калибровка накрывает 1. Число берётся из дефолта, а не
+ * литералом: гейт пула — параметр реестра, и спека следует за ним.
+ */
 const POOL = {
-    portals: 6,
+    portals: EVIDENCE_DEFAULTS.minPoolPortals,
     iSquaredReported: true,
     withinPredictiveInterval: true,
     calibrationSlopeCoversOne: true,
@@ -286,7 +291,10 @@ describe('уровни доказательности и формулировк�
         expect(
             evidenceLevelFor({
                 ...E2_EVIDENCE,
-                pool: { ...POOL, portals: 3 },
+                pool: {
+                    ...POOL,
+                    portals: EVIDENCE_DEFAULTS.minPoolPortals - 1,
+                },
             }),
         ).toBe('E1');
     });

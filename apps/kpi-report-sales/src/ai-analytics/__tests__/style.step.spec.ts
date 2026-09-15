@@ -111,13 +111,18 @@ function busWithPassport(): StepBus {
 
 describe('Единицы осей стиля из разбора', () => {
     it('ось «вопросы против презентации» — контраст разделов рубрики', () => {
+        // Тип звонка фикстуры — presentation, поэтому строка несёт и
+        // маркер оси «куда уходят усилия» (поздняя стадия = 1).
         expect(
             axesOf(styleCall('t-1', '10', { needs: 8, presentation: 5 })),
-        ).toEqual({ inquiry: 3 });
+        ).toEqual({ inquiry: 3, funnel_focus: 1 });
     });
 
-    it('раздела в разборе нет — ось молчит, ноль не подставляется', () => {
-        const row = liteRow({ transcriptionId: 't-1' }) as DatedLiteRow;
+    it('маркеров в разборе нет — оси молчат, ноль не подставляется', () => {
+        const row = liteRow({
+            transcriptionId: 't-1',
+            callType: 'other',
+        }) as DatedLiteRow;
 
         expect(axesOf(row)).toEqual({});
         expect(buildStyleRows([row])).toEqual([]);

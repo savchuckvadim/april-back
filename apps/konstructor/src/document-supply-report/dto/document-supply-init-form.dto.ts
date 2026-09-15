@@ -746,4 +746,25 @@ export class DocumentSupplyInitFormDto {
     @IsOptional()
     @IsBoolean()
     isSupplyReport?: boolean;
+
+    @ApiProperty({
+        description:
+            'Строка пакетов LegalTech, собранная конструктором. Laravel передаёт её 13-м аргументом в getSpecification — без неё пакеты ЛТ в спецификации теряются.',
+        required: false,
+        type: String,
+        example: 'Пакет «Документовед» — 3 услуги',
+    })
+    @IsOptional()
+    @IsString()
+    paymentLtPacketString?: string;
+
+    @ApiProperty({
+        description:
+            'Ячейки таблицы цен (state.documentPrice.cells). Фронт шлёт их в init, Laravel не использует — принимаем, чтобы whitelist их молча не срезал.',
+        required: false,
+        type: Object,
+    })
+    @IsOptional()
+    @IsObject()
+    documentPrice?: Record<string, unknown>;
 }

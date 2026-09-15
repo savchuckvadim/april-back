@@ -12,10 +12,11 @@
  * форм данных Битрикс здесь нет; `new Date()` и `Date.now()` запрещены —
  * сравниваются только переданные метки.
  */
+import { registryDefault } from '../params/registry.access';
 import { MS_PER_DAY, parseInstant } from './episode';
 
-/** Порог доли протечки меток времени по умолчанию (`dq.timestamp_leak_max`). */
-export const TIMESTAMP_LEAK_MAX = 0.05;
+/** Порог доли протечки меток времени — код реестра `dq_timestamp_leak_max`. */
+export const TIMESTAMP_LEAK_MAX = registryDefault('dq_timestamp_leak_max');
 
 /** Процентных пунктов в единице доли. */
 const PCT_IN_UNIT = 100;

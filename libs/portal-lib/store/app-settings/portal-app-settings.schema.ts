@@ -241,6 +241,21 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             type: 'string',
             default: '',
         }),
+        aiAnalyticsStyleOptOut: setting({
+            code: 'ai_analytics_style_opt_out',
+            name: 'Bitrix-id сотрудников, отказавшихся от профиля стиля',
+            description:
+                'Право сотрудника на отказ от профилирования (документ ' +
+                'ai/tasks/ai-analytics-manager-style.md, §1.3): «1, 42, 107». ' +
+                'Профиль стиля такому сотруднику не показывается никому — ' +
+                'карточка приходит со статусом opt_out и текстом «профиль ' +
+                'отключён по запросу сотрудника». Из нормы коллег (peers) ' +
+                'чужих профилей его строки пока НЕ исключаются — это ' +
+                'отдельная доработка ночного шага. Пусто — отказавшихся ' +
+                'нет. Разбор строки — parseUserIds.',
+            type: 'string',
+            default: '',
+        }),
         aiAnalyticsPoolOptIn: setting({
             code: 'ai_analytics_pool_opt_in',
             name: 'Согласие на обезличенный пул порталов',

@@ -75,6 +75,28 @@ export function registryDefault(
         : fallback;
 }
 
+/**
+ * Дефолт кода-перечисления, суженный до словаря модели. Нужен там, где
+ * значение кода реестра — строка из `enumValues`, а модель работает с
+ * собственным union того же словаря (уровни доказательности, трактовки).
+ * Дефолт вне словаря — ошибка реестра, а не входных данных, поэтому
+ * исключение бросается сразу, при загрузке модуля.
+ */
+export function registryEnumDefault<T extends string>(
+    code: string,
+    allowed: readonly T[],
+): T {
+    const value = findParam(code)?.defaultValue;
+    const found = allowed.find(item => item === value);
+    if (found === undefined) {
+        throw new Error(
+            `Дефолт кода реестра ${code} не входит в словарь модели: ${String(value)}`,
+        );
+    }
+
+    return found;
+}
+
 /** Диапазон числового кода реестра; без диапазона или кода — undefined. */
 export function registryRangeOf(code: string): ParamRange | undefined {
     return findParam(code)?.range;

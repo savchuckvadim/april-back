@@ -1,5 +1,5 @@
 import {
-    COMPLECT_VARIANT_STAGE,
+    COMPLECT_VARIANT_FINAL_STAGES,
     resolveComplectVariantStageCode,
 } from '@lib/portal-lib/pbx/pbx-complect-variant-smart';
 
@@ -9,32 +9,36 @@ export interface VariantStageCandidate {
 }
 
 /**
- * Какие варианты комплекта переезжают вместе со сделкой.
+ * Итог по варианту уже подведён: «Успех» (уехал в поставку в прошлый раз),
+ * «Отклонён» (менеджер сказал «нет») или «Не состоялся» (не выбрали).
  *
- * Правило:
- *  1. отклонённые не едут никогда — менеджер уже сказал «нет»;
- *  2. если хоть один вариант помечен «Текущий», едут только текущие: выбор
- *     сделан явно, и тащить за ним черновики незачем;
- *  3. иначе едут все оставшиеся — менеджер стадий не трогал, и отбирать за
- *     него мы не вправе.
+ * Такие варианты не едут никуда и не переоцениваются: иначе наборы прошлых
+ * периодов копились бы в каждой новой сервисной сделке, а робот затирал бы
+ * ручное решение менеджера.
+ */
+export const isFinalVariantStage = (stageId?: string | null): boolean => {
+    const code = resolveComplectVariantStageCode(stageId);
+    return code !== null && COMPLECT_VARIANT_FINAL_STAGES.includes(code);
+};
+
+/**
+ * Какие варианты комплекта переезжают вместе со сделкой: все, по которым ещё
+ * не подведён итог.
  *
- * Пункт 2 заодно лечит накопление: сделка живёт годами, и без него в каждое
- * перезаключение уезжали бы наборы всех прошлых периодов.
+ * Раньше здесь было ещё правило «есть помеченные „Текущий“ — едут только
+ * они». Его пришлось убрать: конструктор теперь ставит «Текущий»
+ * АВТОМАТИЧЕСКИ тому варианту, который менеджер открыл на экране. С прежним
+ * правилом робот увозил бы в сервисную сделку один открытый набор, а
+ * менеджер, отправляя поставку, видел бы в заявке все свои варианты.
+ *
+ * Накопление наборов прошлых периодов лечит не это правило, а финальные
+ * стадии: уехавшие помечаются «Успех», не уехавшие — «Не состоялся»
+ * (ComplectVariantLifecycleService), и в следующий раз они уже не поедут.
+ *
+ * Зеркало правила на фронте — `selectParticipants` в
+ * `front/konstructor/src/modules/modules/complect-variant/lib/complect-variant-participants.ts`.
  */
 export const selectVariantsToCopy = <T extends VariantStageCandidate>(
     candidates: readonly T[],
-): T[] => {
-    const alive = candidates.filter(
-        candidate =>
-            resolveComplectVariantStageCode(candidate.stageId) !==
-            COMPLECT_VARIANT_STAGE.REJECTED,
-    );
-
-    const current = alive.filter(
-        candidate =>
-            resolveComplectVariantStageCode(candidate.stageId) ===
-            COMPLECT_VARIANT_STAGE.CURRENT,
-    );
-
-    return current.length ? current : alive;
-};
+): T[] =>
+    candidates.filter(candidate => !isFinalVariantStage(candidate.stageId));

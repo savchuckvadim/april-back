@@ -63,7 +63,7 @@ export type BetaCountdown = BetaGateCountdown;
 export interface ReadinessGates {
     /** `calibration_min_months`: месяцев истории для выхода из калибровки. */
     calibrationMonths: number;
-    /** Презентаций для выхода из калибровки (гейт витрины — 60). */
+    /** Презентаций для выхода из калибровки (гейт витрины). */
     calibrationPresentations: number;
     /** `calibration_min_presentations`: гейт L2, презентаций для норм. */
     normsPresentations: number;
@@ -73,13 +73,20 @@ export interface ReadinessGates {
 
 /**
  * Дефолты гейтов (план §4.11) — из реестра параметров: контекст портала
- * переопределяет их через `resolveParam` тех же кодов. Гейт витрины
- * «60 презентаций» кода в реестре не имеет и остаётся решением плана.
+ * переопределяет их через `resolveParam` тех же кодов.
  */
 export const AI_READINESS_GATE_DEFAULTS: ReadinessGates = {
+    /** `calibration_min_months`. */
     calibrationMonths: registryDefault('calibration_min_months'),
+    /**
+     * Не параметр реестра: гейт витрины «60 презентаций» — решение плана
+     * §4.11; `calibration_min_presentations` — гейт норм L2, он ниже по
+     * лестнице не опускается.
+     */
     calibrationPresentations: 60,
+    /** `calibration_min_presentations` — гейт норм L2. */
     normsPresentations: registryDefault('calibration_min_presentations'),
+    /** `roster_confirm_required`. */
     rosterConfirmRequired: registryDefault('roster_confirm_required'),
 };
 
@@ -124,7 +131,11 @@ export interface ReadinessResult {
     betaCountdown: BetaCountdown | null;
 }
 
-/** Минимум пар гипотезы портала для режима `hypothesis`. */
+/**
+ * Минимум пар гипотезы портала для режима `hypothesis`.
+ * Не параметр реестра: по одной паре наклон не строится — это условие
+ * метода (план §4.11), а не настройка портала.
+ */
 export const AI_READINESS_MIN_HYPOTHESIS_PAIRS = 2;
 
 /**

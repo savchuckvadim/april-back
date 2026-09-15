@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InitDealDto, SupplyInitDealFlow } from './dto/init-deal.dto';
 import { SupplyDealFlowService } from './services/supply-deal-flow.service';
 import { resolveInitDealFlow } from './lib/resolve-init-deal-flow';
@@ -22,6 +22,7 @@ import { CopyInnerDealService } from './services/copy-inner-deal.service';
 import { TelegramService } from '@lib/telegram/telegram.service';
 import { CopyProductRowsService } from './services/copy-product-rows.service';
 import { CopyComplectVariantsService } from './services/copy-complect-variants.service';
+import { ComplectVariantLifecycleService } from '../../modules/complect-variant-lifecycle';
 import { InnerDealService } from '../../modules/inner-deal/services/inner-deal.service';
 import { QueueDispatcherService } from '@lib/queue/dispatch/queue-dispatcher.service';
 import { JobNames } from '@lib/queue/constants/job-names.enum';
@@ -70,6 +71,8 @@ const getBitrixFileUrl = (value: unknown): string | null => {
 
 @Injectable()
 export class InitDealUseCase {
+    private readonly logger = new Logger(InitDealUseCase.name);
+
     constructor(
         private readonly pbx: PBXService,
         private readonly copyInnerDealService: CopyInnerDealService,
@@ -275,12 +278,16 @@ export class InitDealUseCase {
                 PortalModel,
                 this.innerDealService,
             );
-            await variantsService.copy(
+            const variantsResult = await variantsService.copy(
                 domain,
                 oldDealId,
                 Number(newDealId),
                 responsibleId,
             );
+            await this.closeSourceVariants(domain, bitrix, PortalModel, {
+                movedSourceIds: variantsResult.movedSourceIds,
+                notMovedSourceIds: variantsResult.notMovedSourceIds,
+            });
         }
         // Задачи ОРК живут в event-service — отдаём их туда джобой, как только
         // поставка доехала до сервисной сделки.
@@ -312,6 +319,42 @@ export class InitDealUseCase {
             });
         return listResult;
     }
+    /**
+     * Судьба вариантов исходной сделки: уехавшие → «Успех», оставшиеся →
+     * «Не состоялся».
+     *
+     * Единственное место, где судьба вообще известна: дальше по коду исходные
+     * элементы не фигурируют. Шаг best-effort — сам по себе он ничего не
+     * создаёт, поэтому его падение (нет прав на смарт, выключены стадии,
+     * Битрикс отдал 500) не должно ронять робота: сделка уже создана, и
+     * повторный прогон ничего не починит, а только наплодит дублей.
+     */
+    private async closeSourceVariants(
+        domain: string,
+        bitrix: BitrixService,
+        portalModel: PortalModel,
+        variants: { movedSourceIds: number[]; notMovedSourceIds: number[] },
+    ): Promise<void> {
+        if (
+            !variants.movedSourceIds.length &&
+            !variants.notMovedSourceIds.length
+        ) {
+            return;
+        }
+        try {
+            const lifecycle = new ComplectVariantLifecycleService(
+                bitrix,
+                portalModel,
+            );
+            await lifecycle.markSuccess(domain, variants.movedSourceIds);
+            await lifecycle.markRejected(domain, variants.notMovedSourceIds);
+        } catch (error) {
+            this.logger.warn(
+                `${domain}: стадии вариантов не проставлены — ${(error as Error).message}`,
+            );
+        }
+    }
+
     private getCommentRpaMessage(domain: string, newDealId: number) {
         const link = `https://${domain}/crm/deal/details/${newDealId}/`;
         const message = `<a href="${link}" target="_blank">Сделка создана</a>`;

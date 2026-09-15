@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
     IsArray,
     IsBoolean,
+    IsDefined,
     IsEnum,
     IsNumber,
     IsObject,
@@ -23,8 +24,14 @@ import { ClientTypeEnum } from '../../document-generate/type/client.type';
 import { BxRqDto } from '../../document-generate/dto/bx-rq/bx-rq.dto';
 import { ContractSpecificationDto } from '../../document-generate/dto/specification/specification.dto';
 import { CONTRACT_LTYPE } from '../../document-generate/type/contract.type';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ContractDto } from '../../dto/contract.dto';
+import {
+    ConsaltingPayload,
+    ContractProviderStatePayload,
+    SupplyReportContactPayload,
+    SupplyReportFormPayloadItem,
+} from '../lib/supply-report-payload.type';
 
 class PlacementDto {
     @ApiProperty({ description: 'Placement of the contract' })
@@ -33,6 +40,33 @@ class PlacementDto {
     @ApiProperty({ description: 'Options of the placement', type: Object })
     @IsObject()
     options: { ID: number };
+}
+
+/** Тип клиента в виде, в котором его шлёт легаси-конструктор (SelectItem). */
+export class ClientTypeSelectDto {
+    @ApiPropertyOptional({ type: Number, example: 0 })
+    @IsOptional()
+    @IsNumber()
+    id?: number;
+
+    @ApiProperty({
+        type: String,
+        enum: ClientTypeEnum,
+        example: ClientTypeEnum.ORG,
+        description: 'Код типа клиента — по нему и работает генерация.',
+    })
+    @IsString()
+    code: string;
+
+    @ApiPropertyOptional({ type: String, example: 'Организация Коммерческая' })
+    @IsOptional()
+    @IsString()
+    name?: string;
+
+    @ApiPropertyOptional({ type: String, example: 'Организация Коммерческая' })
+    @IsOptional()
+    @IsString()
+    title?: string;
 }
 
 export class DocumentSupplyReportGenerateDto {
@@ -89,10 +123,15 @@ export class DocumentSupplyReportGenerateDto {
     @Type(() => ProductRowSupplyDto)
     supply: ProductRowSupplyDto;
 
-    @ApiProperty({ description: 'Price of the contract', type: PriceDto })
+    @ApiPropertyOptional({
+        description:
+            'Цены оффера. Легаси-конструктор это поле не шлёт, поэтому обязательным его делать нельзя — иначе весь запрос отвалится с 400 ещё до сервиса.',
+        type: PriceDto,
+    })
+    @IsOptional()
     @ValidateNested()
     @Type(() => PriceDto)
-    price: PriceDto;
+    price?: PriceDto;
 
     @ApiProperty({ description: 'Contract of the contract', type: ContractDto })
     @ValidateNested()
@@ -166,11 +205,16 @@ export class DocumentSupplyReportGenerateDto {
     firstPayDate?: string;
 
     @ApiProperty({
-        description: 'Client type of the contract',
-        enum: ClientTypeEnum,
+        description:
+            'Тип клиента. Легаси-конструктор шлёт объект SelectItem {id, code, name, title}, ветка IS_BACK и новый фронт — строку-код. Принимаем обе формы, код достаём через resolveClientTypeCode.',
+        oneOf: [
+            { type: 'string', enum: Object.values(ClientTypeEnum) },
+            { $ref: '#/components/schemas/ClientTypeSelectDto' },
+        ],
+        example: { id: 0, code: 'org', name: 'Организация Коммерческая' },
     })
-    @IsEnum(ClientTypeEnum)
-    clientType: ClientTypeEnum;
+    @IsDefined()
+    clientType: ClientTypeEnum | ClientTypeSelectDto;
 
     @ApiProperty({ description: 'BxRQ of the contract', type: BxRqDto })
     @IsObject()
@@ -194,12 +238,12 @@ export class DocumentSupplyReportGenerateDto {
     arows: ProductRowDto[];
 
     @ApiProperty({
-        description: 'Bitrix company items',
-        type: [Object],
+        description:
+            'Поля компании из битрикса, ключованные кодом поля pbx: {op_client_type: {current, field, items}, ...} — именно так их отдаёт formatBxCompanyState. Массив с item.key тоже принимаем ради ветки IS_BACK.',
+        type: Object,
     })
-    @IsArray()
-    @IsObject({ each: true })
-    bxCompanyItems: any[];
+    @IsDefined()
+    bxCompanyItems: Record<string, unknown> | unknown[];
 
     @ApiProperty({
         description: 'Bitrix contacts',
@@ -207,30 +251,31 @@ export class DocumentSupplyReportGenerateDto {
     })
     @IsArray()
     @IsObject({ each: true })
-    bxContacts: any[];
+    bxContacts: SupplyReportContactPayload[];
 
     @ApiProperty({
-        description: 'Bitrix deal items',
+        description:
+            'Поля сделки из битрикса, ключованные кодом поля pbx: {contract_start: {current, field}, ...}. Форма та же, что у bxCompanyItems.',
+        type: Object,
+    })
+    @IsDefined()
+    bxDealItems: Record<string, unknown> | unknown[];
+
+    @ApiProperty({
+        description:
+            'Заполненная менеджером форма отчёта о поставке — те же 15 полей, что отдал init-form, со значениями.',
         type: [Object],
     })
     @IsArray()
     @IsObject({ each: true })
-    bxDealItems: any[];
-
-    @ApiProperty({
-        description: 'Supply report data',
-        type: [Object],
-    })
-    @IsArray()
-    @IsObject({ each: true })
-    supplyReport: any[];
+    supplyReport: SupplyReportFormPayloadItem[];
 
     @ApiProperty({
         description: 'Contract provider state',
         type: Object,
     })
     @IsObject()
-    contractProviderState: any;
+    contractProviderState: ContractProviderStatePayload;
 
     @ApiProperty({
         description: 'Contract base state',
@@ -253,7 +298,7 @@ export class DocumentSupplyReportGenerateDto {
     })
     @IsOptional()
     @IsObject()
-    consalting?: any;
+    consalting?: ConsaltingPayload;
 
     @ApiProperty({
         description: 'Document price',
@@ -263,4 +308,119 @@ export class DocumentSupplyReportGenerateDto {
     @IsOptional()
     @IsObject()
     documentPrice?: any;
+
+    // === Поля легаси-payload’а konstruct/supply ===
+    // whitelist: true молча срезает всё необъявленное, поэтому то, что фронт
+    // реально шлёт, объявлено здесь опциональным: часть уже используется, часть
+    // нужна, чтобы не терять контекст при отладке и при переносе логики.
+
+    @ApiPropertyOptional({
+        type: String,
+        description:
+            'Id элемента RPA «Поставка», если отчёт делается из заявки. Пусто при облегчённом пути.',
+    })
+    @IsOptional()
+    @IsString()
+    rpa_id?: string;
+
+    @ApiPropertyOptional({
+        type: Boolean,
+        description: 'Показывать ли набор товаров в документе.',
+    })
+    @IsOptional()
+    @IsBoolean()
+    isSetShow?: boolean;
+
+    @ApiPropertyOptional({
+        type: Boolean,
+        description: 'Признак генерации счёта вместе с отчётом.',
+    })
+    @IsOptional()
+    @IsBoolean()
+    isInvoice?: boolean;
+
+    @ApiPropertyOptional({
+        type: Boolean,
+        description: 'Публичный документ (без реквизитов).',
+    })
+    @IsOptional()
+    @IsBoolean()
+    isPublic?: boolean;
+
+    @ApiPropertyOptional({
+        type: Boolean,
+        description:
+            'Признак отчёта о поставке. Легаси шлёт его вместе с supplyReport.',
+    })
+    @IsOptional()
+    @IsBoolean()
+    isSupplyReport?: boolean;
+
+    @ApiPropertyOptional({
+        type: Boolean,
+        description:
+            'Дёргать ли внешний хук full/contract/flow. На бэке не используется — хук шлёт сам фронт.',
+    })
+    @IsOptional()
+    @IsBoolean()
+    withHook?: boolean;
+
+    @ApiPropertyOptional({
+        type: Object,
+        description: 'Менеджер отдела продаж, как его собрал конструктор.',
+    })
+    @IsOptional()
+    @IsObject()
+    manager?: Record<string, unknown>;
+
+    @ApiPropertyOptional({
+        type: Object,
+        description: 'Данные счёта.',
+    })
+    @IsOptional()
+    @IsObject()
+    invoice?: Record<string, unknown>;
+
+    @ApiPropertyOptional({
+        type: [Object],
+        description: 'Продукты конструктора (ProductTypesEnum.GARANT).',
+    })
+    @IsOptional()
+    @IsArray()
+    products?: Record<string, unknown>[];
+
+    @ApiPropertyOptional({
+        type: Object,
+        description: 'Состояние блока LegalTech.',
+    })
+    @IsOptional()
+    @IsObject()
+    legalTech?: Record<string, unknown>;
+
+    @ApiPropertyOptional({
+        type: Object,
+        description: 'Текущий комплект конструктора.',
+    })
+    @IsOptional()
+    @IsObject()
+    currentComplect?: Record<string, unknown>;
+
+    @ApiPropertyOptional({
+        type: String,
+        description:
+            'Пустые заглушки легаси-payload’а: фронт шлёт document/link/file пустыми строками и заполняет их уже нашим ответом.',
+    })
+    @IsOptional()
+    @IsString()
+    document?: string;
+
+    @ApiPropertyOptional({ type: String, description: 'См. document.' })
+    @IsOptional()
+    @IsString()
+    link?: string;
+
+    @ApiPropertyOptional({ type: String, description: 'См. document.' })
+    @IsOptional()
+    @IsString()
+    file?: string;
 }

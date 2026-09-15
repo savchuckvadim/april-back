@@ -1,339 +1,277 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { DocumentSupplyInitFormDto } from '../dto/document-supply-init-form.dto';
-import { PortalService } from '@lib/portal-lib/portal';
 import { BitrixService } from '@lib/bitrix';
+import { PBXService } from '@lib/pbx';
+import { ProviderService } from '@lib/portal-lib/konstructor/provider';
+import { getErrorString } from '@lib/shared';
+import { DocumentSupplyInitFormDto } from '../dto/document-supply-init-form.dto';
 import { CONTRACT_LTYPE } from '../../document-generate/type/contract.type';
 import { ProductRowDto } from '../../document-generate/dto/product-row/product-row.dto';
 import { ProductDto } from '../../document-generate/dto/product/product.dto';
 import { ContractDto } from '../../dto/contract.dto';
-import { PBXService } from '@lib/pbx';
-import { ProviderService } from '@lib/portal-lib/konstructor/provider';
+import {
+    getClientTypeSelect,
+    getSupplyReportFormFields,
+    SupplyReportFormField,
+} from '../lib/supply-report-form';
+
+/** Реквизит компании из битрикса, в том виде, в котором его отдаёт REST. */
+interface BxRequisiteRaw {
+    ID?: number | string;
+    [key: string]: unknown;
+}
+
+/** Данные формы конструктора — то, что легаси-фронт ждёт в ключе `init`. */
+export interface SupplyInitFormResult {
+    providers: unknown;
+    client: { rq: unknown[]; bank: unknown[]; address: unknown[] };
+    provider: { rq: unknown[]; bank: unknown[]; address: unknown[] };
+    contract: unknown[];
+    specification: unknown[];
+    clientType: ReturnType<typeof getClientTypeSelect>;
+    currentComplect: string;
+    products: ProductDto[];
+    consaltingProduct: unknown;
+    lt: unknown;
+    starProduct: unknown;
+    contractType: CONTRACT_LTYPE;
+    supply?: SupplyReportFormField[];
+}
 
 @Injectable()
 export class InitFormService {
     private readonly logger = new Logger(InitFormService.name);
 
     constructor(
-        // private readonly portalService: PortalService,
-        // private readonly bitrixService: BitrixService,
         private readonly pbx: PBXService,
         private readonly provider: ProviderService,
     ) {}
 
-    async frontInit(dto: DocumentSupplyInitFormDto) {
+    /**
+     * Данные для формы конструктора (аналог `SupplyController::frontInit`).
+     *
+     * Возвращает ГОЛЫЙ объект формы: обёртку `{resultCode, data}` дописывает
+     * ResponseInterceptor, а ключ `init` — контроллер. Своей обёртки
+     * `{success, data}` здесь быть не должно, иначе легаси-фронт
+     * (`response.data.data['init']`) получит undefined.
+     */
+    async frontInit(
+        dto: DocumentSupplyInitFormDto,
+    ): Promise<SupplyInitFormResult> {
         const { domain, companyId, contractType } = dto;
 
-        try {
-            const { bitrix, portal, PortalModel } = await this.pbx.init(domain);
-            const providers = await this.provider.findByDomain(domain);
-            // Получаем портал по домену
-            // const portal = await this.portalService.getPortalByDomain(domain);
-            // const providers = (portal as any).providers || [];
+        const { bitrix } = await this.pbx.init(domain);
+        const providers = await this.provider.findByDomain(domain);
 
-            // Получаем хук Bitrix
-            // const hook = await this.portalService.getHook(domain);
+        // у контракта бывает вложенный contract — в нём и лежат коэффициент и
+        // название продукта, как их читает Laravel
+        const generalContractModel =
+            (dto.contract as unknown as { contract?: ContractDto })?.contract ??
+            dto.contract;
+        const contractQuantity = (
+            generalContractModel as unknown as { coefficient?: number }
+        )?.coefficient;
+        const contractProductName = (
+            generalContractModel as unknown as { productName?: string }
+        )?.productName;
 
-            // Инициализируем Bitrix API для работы с порталом
-            // this.bitrixService.init(portal);
+        // total приходит и объектом, и массивом из одного элемента
+        const total: ProductRowDto | undefined = Array.isArray(dto.total)
+            ? dto.total[0]
+            : dto.total;
 
-            // Обрабатываем contract если он есть
-            let contractQuantity: number | undefined;
-            let contractProductName: string | undefined;
-            let generalContractModel = dto.contract;
+        const result: SupplyInitFormResult = {
+            providers,
+            client: { rq: [], bank: [], address: [] },
+            provider: { rq: [], bank: [], address: [] },
+            contract: this.getContractGeneralForm(dto.arows, contractQuantity),
+            specification: this.getSpecification(
+                dto.complect.name || dto.complect.title,
+                dto.products,
+                dto.consalting.product,
+                dto.legalTech,
+                dto.star.product,
+                contractType,
+                dto.contract,
+                dto.arows,
+                contractQuantity,
+                dto.documentInfoblocks,
+                contractProductName,
+                total,
+                dto.paymentLtPacketString,
+            ),
+            clientType: getClientTypeSelect(),
+            currentComplect: dto.complect.name || dto.complect.title,
+            products: dto.products,
+            consaltingProduct: dto.consalting.product,
+            lt: dto.legalTech,
+            starProduct: dto.star.product,
+            contractType,
+        };
 
-            if (dto.contract) {
-                // Если есть вложенный contract, используем его
-                if ((dto.contract as any).contract) {
-                    generalContractModel = (dto.contract as any).contract;
-                }
-                contractQuantity = (generalContractModel as any)?.coefficient;
-                contractProductName = (generalContractModel as any)
-                    ?.productName;
-            }
+        if (dto.isSupplyReport) {
+            result.supply = getSupplyReportFormFields();
+        }
 
-            // Обрабатываем total (может быть объектом или массивом)
-            let total: ProductRowDto | undefined;
-            if (dto.total) {
-                if (Array.isArray(dto.total) && dto.total.length > 0) {
-                    total = dto.total[0];
-                } else if (!Array.isArray(dto.total)) {
-                    total = dto.total;
-                }
-            }
+        const clientRq = await this.getCompanyRequisites(bitrix, companyId);
+        if (clientRq?.ID) {
+            const rqId = clientRq.ID;
+            const bankDetails = await this.getCompanyBankDetails(bitrix, rqId);
+            const addresses = await this.getCompanyAddresses(bitrix, rqId);
 
-            // Формируем базовую структуру результата
-            const result: any = {
-                providers: providers,
-                client: {
-                    rq: [],
-                    bank: [],
-                    address: [],
-                },
-                provider: {
-                    rq: [],
-                    bank: [],
-                    address: [],
-                },
-                contract: this.getContractGeneralForm(
-                    dto.arows,
-                    contractQuantity,
-                ),
-                specification: this.getSpecification(
-                    dto.complect.name || dto.complect.title, // Используем name или title из объекта complect
-                    dto.products,
-                    dto.consalting.product,
-                    dto.legalTech,
-                    dto.star.product,
-                    contractType,
-                    dto.contract,
-                    dto.arows,
-                    contractQuantity,
-                    dto.documentInfoblocks,
-                    contractProductName,
-                    total,
-                ),
-                clientType: {
-                    type: 'select',
-                    name: 'Тип клиента',
-                    value: {
-                        id: 0,
-                        code: 'org',
-                        name: 'Организация Коммерческая',
-                        title: 'Организация Коммерческая',
-                    },
-                    isRequired: true,
-                    code: 'type',
-                    items: [
-                        {
-                            id: 0,
-                            code: 'org',
-                            name: 'Организация Коммерческая',
-                            title: 'Организация Коммерческая',
-                        },
-                        {
-                            id: 1,
-                            code: 'org_state',
-                            name: 'Организация Бюджетная',
-                            title: 'Организация Бюджетная',
-                        },
-                        {
-                            id: 2,
-                            code: 'ip',
-                            name: 'Индивидуальный предприниматель',
-                            title: 'Индивидуальный предприниматель',
-                        },
-                        {
-                            id: 4,
-                            code: 'fiz',
-                            name: 'Физическое лицо',
-                            title: 'Физическое лицо',
-                        },
-                    ],
-                    includes: ['org', 'org_state', 'ip', 'advokat', 'fiz'],
-                    group: 'rq',
-                    isActive: true,
-                    isDisable: false,
-                    order: 0,
-                },
-                currentComplect: dto.complect.name || dto.complect.title, // Используем name или title из объекта complect
-                products: dto.products,
-                consaltingProduct: dto.consalting.product,
-                lt: dto.legalTech,
-                starProduct: dto.star.product,
-                contractType: contractType,
-            };
-
-            // Добавляем supply если это отчет о поставке
-            if (dto.isSupplyReport) {
-                result.supply = this.getSupplyReportData();
-            }
-
-            // Получаем реквизиты компании из Bitrix
-            const clientRq = await this.getCompanyRequisites(companyId);
-            let clientRqBank = null;
-            let clientRqAddress = null;
-
-            if (clientRq && clientRq.ID) {
-                const rqId = clientRq.ID;
-
-                // Получаем банковские реквизиты
-                const bankDetails = await this.getCompanyBankDetails(rqId);
-                if (
-                    bankDetails &&
-                    Array.isArray(bankDetails) &&
-                    bankDetails.length > 0
-                ) {
-                    clientRqBank = bankDetails[0];
-                }
-
-                // Получаем адреса
-                clientRqAddress = await this.getCompanyAddresses(rqId);
-            }
-
-            // Формируем форму клиента
             result.client = this.getClientRqForm(
                 clientRq,
-                clientRqAddress,
-                clientRqBank,
+                addresses,
+                bankDetails[0] ?? null,
                 contractType,
             );
-
-            return {
-                success: true,
-                data: {
-                    init: result,
-                },
-            };
-        } catch (error) {
-            this.logger.error(
-                `Error in frontInit: ${error.message}`,
-                error.stack,
-            );
-            return {
-                success: false,
-                error: error.message,
-            };
         }
+
+        return result;
     }
 
-    /**
-     * Получает реквизиты компании из Bitrix
-     */
-    private async getCompanyRequisites(companyId: string): Promise<any> {
+    /** Реквизит компании (crm.requisite.list, ENTITY_TYPE_ID = 4). */
+    private async getCompanyRequisites(
+        bitrix: BitrixService,
+        companyId: string,
+    ): Promise<BxRequisiteRaw | null> {
         try {
-            // const response = await this.bitrixService.api.call('crm.requisite.list', {
-            //     filter: {
-            //         ENTITY_TYPE_ID: 4, // Company
-            //         ENTITY_ID: companyId,
-            //     },
-            // });
-
-            // if (response?.result && Array.isArray(response.result) && response.result.length > 0) {
-            //     return response.result[0];
-            // }
-
-            return null;
+            const response = await bitrix.requisite.getList({
+                ENTITY_TYPE_ID: 4,
+                ENTITY_ID: Number(companyId),
+            });
+            const items = (response?.result ?? []) as BxRequisiteRaw[];
+            return items[0] ?? null;
         } catch (error) {
-            this.logger.error(
-                `Error getting company requisites: ${error.message}`,
+            // отсутствие реквизитов — не повод валить всю форму
+            this.logger.warn(
+                `Не удалось получить реквизиты компании ${companyId}: ${getErrorString(error)}`,
             );
             return null;
         }
     }
 
-    /**
-     * Получает банковские реквизиты компании
-     */
-    private async getCompanyBankDetails(rqId: string | number): Promise<any> {
+    /** Банковские реквизиты (crm.requisite.bankdetail.list). */
+    private async getCompanyBankDetails(
+        bitrix: BitrixService,
+        rqId: string | number,
+    ): Promise<Record<string, unknown>[]> {
         try {
-            // const response = await this.bitrixService.api.call('crm.requisite.bankdetail.list', {
-            //     filter: {
-            //         ENTITY_ID: rqId,
-            //     },
-            // });
-
-            return null;
+            const response = (await bitrix.api.call(
+                'crm.requisite.bankdetail.list',
+                { filter: { ENTITY_ID: rqId } },
+            )) as { result?: Record<string, unknown>[] };
+            return response?.result ?? [];
         } catch (error) {
-            this.logger.error(`Error getting bank details: ${error.message}`);
-            return null;
+            this.logger.warn(
+                `Не удалось получить банковские реквизиты ${rqId}: ${getErrorString(error)}`,
+            );
+            return [];
+        }
+    }
+
+    /** Адреса реквизита (crm.address.list, ENTITY_TYPE_ID = 8). */
+    private async getCompanyAddresses(
+        bitrix: BitrixService,
+        rqId: string | number,
+    ): Promise<Record<string, unknown>[]> {
+        try {
+            const response = (await bitrix.api.call('crm.address.list', {
+                filter: { ENTITY_TYPE_ID: 8, ENTITY_ID: rqId },
+            })) as { result?: Record<string, unknown>[] };
+            return response?.result ?? [];
+        } catch (error) {
+            this.logger.warn(
+                `Не удалось получить адреса реквизита ${rqId}: ${getErrorString(error)}`,
+            );
+            return [];
         }
     }
 
     /**
-     * Получает адреса компании
-     */
-    private async getCompanyAddresses(rqId: string | number): Promise<any> {
-        try {
-            // const response = await this.bitrixService.api.call('crm.address.list', {
-            //     filter: {
-            //         ENTITY_TYPE_ID: 8, // Requisite
-            //         ENTITY_ID: rqId,
-            //     },
-            // });
-
-            return null;
-        } catch (error) {
-            this.logger.error(`Error getting addresses: ${error.message}`);
-            return null;
-        }
-    }
-
-    /**
-     * Формирует общую форму контракта
-     * TODO: Реализовать полную логику из PHP метода getContractGeneralForm
+     * Общая форма договора.
+     *
+     * НЕ ПЕРЕНЕСЕНО из Laravel (`SupplyController::getContractGeneralForm`,
+     * строки 2531-2712). Пока пусто — фронт получит пустой блок «Договор».
      */
     private getContractGeneralForm(
         arows: ProductRowDto[],
         contractQuantity?: number,
-    ): any {
-        // TODO: Реализовать полную логику
+    ): unknown[] {
+        void arows;
+        void contractQuantity;
         return [];
     }
 
     /**
-     * Формирует спецификацию
-     * TODO: Реализовать полную логику из PHP метода getSpecification
+     * Спецификация договора.
+     *
+     * НЕ ПЕРЕНЕСЕНО из Laravel (`SupplyController::getSpecification`,
+     * строки 2712-3512, ~800 строк). `paymentLtPacketString` принимается уже
+     * сейчас — это тринадцатый аргумент Laravel-версии, чтобы при переносе не
+     * пришлось снова трогать DTO и фронт.
      */
     private getSpecification(
         currentComplect: string,
         products: ProductDto[],
-        consaltingProduct: any, // Может быть null или объект
-        lt: any, // LegalTechDto | undefined
-        starProduct: any, // Может быть null или объект
+        consaltingProduct: unknown,
+        lt: unknown,
+        starProduct: unknown,
         contractType: CONTRACT_LTYPE,
         contract: ContractDto | undefined,
         arows: ProductRowDto[],
         contractQuantity?: number,
-        documentInfoblocks?: any[], // DocumentInfoblockDto[] | undefined
+        documentInfoblocks?: unknown[],
         contractProductName?: string,
         total?: ProductRowDto,
-    ): any {
-        // TODO: Реализовать полную логику
+        paymentLtPacketString?: string,
+    ): unknown[] {
+        void currentComplect;
+        void products;
+        void consaltingProduct;
+        void lt;
+        void starProduct;
+        void contractType;
+        void contract;
+        void arows;
+        void contractQuantity;
+        void documentInfoblocks;
+        void contractProductName;
+        void total;
+        void paymentLtPacketString;
         return [];
     }
 
     /**
-     * Получает данные для отчета о поставке
-     * TODO: Реализовать полную логику из PHP метода getSupplyReportData
-     */
-    private getSupplyReportData(): any {
-        // TODO: Реализовать полную логику
-        return {};
-    }
-
-    /**
-     * Формирует форму реквизитов клиента
-     * TODO: Реализовать полную логику из PHP метода getClientRqForm
+     * Форма реквизитов клиента.
+     *
+     * НЕ ПЕРЕНЕСЕНО из Laravel (`SupplyController::getClientRqForm`,
+     * строки 1627-2531, ~900 строк). Роль клиента по типу договора считается
+     * уже сейчас — на ней завязан заголовок документа.
      */
     private getClientRqForm(
-        bxRq: any,
-        bxAddressesRq: any,
-        bxBankRq: any,
+        bxRq: BxRequisiteRaw | null,
+        bxAddressesRq: Record<string, unknown>[],
+        bxBankRq: Record<string, unknown> | null,
         contractType: CONTRACT_LTYPE,
-    ): any {
-        // Определяем роль клиента в зависимости от типа контракта
-        let clientRole = 'Заказчик';
+    ): { rq: unknown[]; bank: unknown[]; address: unknown[] } {
+        void bxRq;
+        void bxAddressesRq;
+        void bxBankRq;
+        void this.getClientRole(contractType);
 
+        return { rq: [], bank: [], address: [] };
+    }
+
+    /** Как клиент называется в договоре: заказчик / покупатель / лицензиат. */
+    private getClientRole(contractType: CONTRACT_LTYPE): string {
         switch (contractType) {
             case CONTRACT_LTYPE.ABON:
             case CONTRACT_LTYPE.KEY:
-                clientRole = 'Покупатель';
-                break;
+                return 'Покупатель';
             case CONTRACT_LTYPE.LIC:
-                clientRole = 'Лицензиат';
-                break;
+                return 'Лицензиат';
             default:
-                clientRole = 'Заказчик';
-                break;
+                return 'Заказчик';
         }
-
-        // TODO: Реализовать полную логику формирования формы
-        // Включая обработку адресов, банковских реквизитов и т.д.
-
-        return {
-            rq: [],
-            bank: [],
-            address: [],
-        };
     }
 }

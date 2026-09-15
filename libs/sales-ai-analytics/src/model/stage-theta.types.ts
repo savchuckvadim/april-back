@@ -7,13 +7,18 @@
  * 300 строк; публичный вход слоя прежний — `model/stage-theta`
  * реэкспортирует этот словарь.
  */
+import { registryDefault } from '../params/registry.access';
 import type { ShrinkPrior, ShrinkRateResult } from './shrink';
 
 /** Дефолты стадийных величин. */
 export const STAGE_THETA_DEFAULTS = {
     /** κ_k до гейта Клейнмана — код реестра `kappa_edge_late`. */
-    kappa: 30,
-    /** Норма слоя до появления собственной оценки. */
+    kappa: registryDefault('kappa_edge_late'),
+    /**
+     * Норма слоя до появления собственной оценки.
+     * Не параметр реестра: нейтральный ноль — усадка ни к чему не тянет,
+     * пока нормы слоя нет (план §4.2).
+     */
     mu: 0,
 } as const;
 

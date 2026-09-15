@@ -5,7 +5,10 @@ import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { COMPLECT_VARIANT_SMART_TYPE } from '@lib/portal-lib/pbx/pbx-complect-variant-smart';
 import { ListProductRowDto } from '@lib/bitrix/domain/crm/product-row/dto/list-product-row.sto';
 import { InnerDealService } from '../../../modules/inner-deal/services/inner-deal.service';
-import { selectVariantsToCopy } from '../lib/select-variants-to-copy';
+import {
+    isFinalVariantStage,
+    selectVariantsToCopy,
+} from '../lib/select-variants-to-copy';
 
 /** Вариант исходной сделки вместе с прочитанным элементом смарта. */
 interface SourceVariant {
@@ -22,7 +25,32 @@ export interface CopyComplectVariantsResult {
     selected: number;
     /** Сколько перенесено целиком (элемент + товарные строки + слепок). */
     copied: number;
+    /**
+     * ИСХОДНЫЕ элементы, которые реально уехали в поставку. Нужны роботу, чтобы
+     * закрыть их «Успехом»: судьба варианта видна только здесь — дальше по коду
+     * источник уже не фигурирует.
+     */
+    movedSourceIds: number[];
+    /**
+     * ИСХОДНЫЕ элементы, которые остались на старой сделке и ещё не закрыты:
+     * неучастники отбора. Их робот помечает «Не состоялся». Уже финальные
+     * (успех / отклонён / не состоялся) сюда не попадают — переписывать ручное
+     * решение менеджера нельзя.
+     */
+    notMovedSourceIds: number[];
 }
+
+/** Перенос не состоялся: смарта нет, вариантов нет или робот идёт повторно. */
+const emptyResult = (
+    found: number,
+    selected = 0,
+): CopyComplectVariantsResult => ({
+    found,
+    selected,
+    copied: 0,
+    movedSourceIds: [],
+    notMovedSourceIds: [],
+});
 
 /**
  * Поля элемента смарта, которые не переносятся: их задаёт новая сделка.
@@ -77,7 +105,7 @@ export class CopyComplectVariantsService {
         );
         if (!portalSmart?.entityTypeId) {
             // смарт на портале не установлен — сделки живут по-старому
-            return { found: 0, selected: 0, copied: 0 };
+            return emptyResult(0);
         }
 
         const variants = await this.innerDealService.listVariants(
@@ -85,7 +113,7 @@ export class CopyComplectVariantsService {
             sourceDealId,
         );
         if (!variants.length) {
-            return { found: 0, selected: 0, copied: 0 };
+            return emptyResult(0);
         }
 
         // Повторный прогон робота не должен плодить копии. Элемент смарта
@@ -100,7 +128,7 @@ export class CopyComplectVariantsService {
             this.logger.log(
                 `${domain}: в сделке ${targetDealId} уже ${alreadyInTarget.length} вариант(ов) — перенос пропущен`,
             );
-            return { found: variants.length, selected: 0, copied: 0 };
+            return emptyResult(variants.length);
         }
 
         const entityTypeId = Number(portalSmart.entityTypeId);
@@ -125,6 +153,7 @@ export class CopyComplectVariantsService {
         }
 
         const selected = selectVariantsToCopy(candidates);
+        const movedSourceIds: number[] = [];
         let copied = 0;
 
         for (const candidate of selected) {
@@ -139,6 +168,9 @@ export class CopyComplectVariantsService {
                 );
                 continue;
             }
+            // копия создана — вариант физически уехал в поставку; слепок
+            // может не доехать, но судьбу исходника это уже не меняет
+            movedSourceIds.push(candidate.sourceItemId);
 
             await this.copyProductRows(
                 portalSmart.crm,
@@ -165,10 +197,27 @@ export class CopyComplectVariantsService {
             }
         }
 
+        const moved = new Set(movedSourceIds);
+        // Остались на старой сделке и ещё не закрыты: их робот пометит
+        // «Не состоялся». Финальные стадии не трогаем — там уже есть итог.
+        const notMovedSourceIds = candidates
+            .filter(
+                candidate =>
+                    !moved.has(candidate.sourceItemId) &&
+                    !isFinalVariantStage(candidate.stageId),
+            )
+            .map(candidate => candidate.sourceItemId);
+
         this.logger.log(
             `${domain}: вариантов ${variants.length}, отобрано ${selected.length}, перенесено ${copied} (сделка ${sourceDealId} → ${targetDealId})`,
         );
-        return { found: variants.length, selected: selected.length, copied };
+        return {
+            found: variants.length,
+            selected: selected.length,
+            copied,
+            movedSourceIds,
+            notMovedSourceIds,
+        };
     }
 
     /** Элемент варианта из Битрикса. null — прочитать не удалось. */

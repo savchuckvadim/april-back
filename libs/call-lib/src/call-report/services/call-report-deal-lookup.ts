@@ -42,6 +42,11 @@ export interface CallReportDealFamilyContext {
     contactId?: number;
     /** Дата звонка — для выбора ближайшей сделки при нескольких кандидатах. */
     callStartedAt?: Date | null;
+    /** Лид-владелец звонка — поиск элемента «ОП История» (шаг 0, §4). */
+    leadId?: number;
+    /** Владелец звонка и тип звонка — ранжирование записи отчётности. */
+    callerId?: string | number | null;
+    callType?: string | null;
 }
 
 /** Найденная сделка и то, чем она доказана. */

@@ -3,6 +3,7 @@
  * (гибрид «настройка → оценка Клейнмана»), κ слоя как доля типичной
  * экспозиции. Все усреднения и регуляризация к пулу — в log κ.
  */
+import { registryDefault } from '../params/registry.access';
 
 /** Менеджерская ячейка ребра за окно оценки: переходы s из знаменателя n. */
 export interface KappaCell {
@@ -59,23 +60,48 @@ export interface EdgeKappaResult {
     kappaHat: number | null;
 }
 
-/** Дефолты реестра параметров усадки (план §4.2). */
+/**
+ * Дефолты усадки (план §4.2): величины κ — из реестра, константы формулы
+ * (пол клипа, ценз Клейнмана, вес прайора пула) — локальные.
+ */
 export const KAPPA_DEFAULTS = {
-    /** κ_a = kappa_activity_days для темпов активностей. */
-    activityDays: 20,
-    edgeEarly: 100,
-    edgeLate: 30,
-    /** До этого числа месяцев истории действует kappa_edge_early. */
+    /** κ_a = `kappa_activity_days` для темпов активностей. */
+    activityDays: registryDefault('kappa_activity_days'),
+    /** `kappa_edge_early` — пока истории меньше `lateFromMonths`. */
+    edgeEarly: registryDefault('kappa_edge_early'),
+    /** `kappa_edge_late` — после накопления истории. */
+    edgeLate: registryDefault('kappa_edge_late'),
+    /**
+     * До этого числа месяцев истории действует `kappa_edge_early`.
+     * Не параметр реестра: граница переключения ранней κ на позднюю —
+     * константа формулы плана §4.2, реестр параметризует сами κ.
+     */
     lateFromMonths: 3,
+    /**
+     * Нижняя граница клипа κ̂ Клейнмана.
+     * Не параметр реестра: §2.2 плана заводит только верхнюю границу
+     * (`kappa_max`), кода нижней в реестре нет — вопрос владельцу.
+     */
     min: 5,
-    max: 500,
+    /** `kappa_max` — потолок усадки и значение при ρ̂ ≤ 0. */
+    max: registryDefault('kappa_max'),
+    /**
+     * Ценз оценки Клейнмана: месяцев истории и менеджеров портала.
+     * Не параметр реестра: гейт метода из плана §4.2 (≥ 6 мес. и ≥ 5
+     * менеджеров), кода в §2.1–2.2 нет.
+     */
     gateMonths: 6,
     gateManagers: 5,
+    /**
+     * Вес прайора пула в log-регуляризации.
+     * Не параметр реестра: константа формулы плана §4.2
+     * log κ_pk = (K_p·log κ̂ + 10·log κ̄_k)/(K_p + 10).
+     */
     poolPriorWeight: 10,
-    /** ρ_κ = kappa_layer_ratio: κ слоя = ρ_κ · median(знаменателей). */
-    layerRatio: 0.4,
-    /** kappa_portal_to_global до появления пула. */
-    portalToGlobal: 0,
+    /** ρ_κ = `kappa_layer_ratio`: κ слоя = ρ_κ · median(знаменателей). */
+    layerRatio: registryDefault('kappa_layer_ratio'),
+    /** `kappa_portal_to_global` до появления пула. */
+    portalToGlobal: registryDefault('kappa_portal_to_global'),
 } as const;
 
 const clip = (x: number, low: number, high: number): number =>

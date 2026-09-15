@@ -4,6 +4,7 @@ import { CallReportListLinkService } from '../services/call-report-list-link.ser
 // важен только запрос к нему и ранжирование записей кодом.
 const mockRead = jest.fn();
 jest.mock('@lib/portal-lib/pbx/pbx-sales-list-reader', () => ({
+    SALES_LIST_CODES: { kpi: 'sales_kpi', history: 'sales_history' },
     SalesListReaderService: jest.fn().mockImplementation(() => ({
         read: (...args: unknown[]): unknown => mockRead(...args),
     })),
@@ -22,7 +23,7 @@ const record = (overrides: Record<string, unknown>) => ({
     eventActionCode: 'done',
     eventActionName: 'Проведено',
     responsibleId: '622',
-    crmRefs: ['D_555'],
+    crmRefs: ['D_601'],
     fields: [],
     ...overrides,
 });
@@ -47,7 +48,6 @@ const row = (overrides?: Record<string, unknown>) =>
 const makeService = (options?: {
     kpi?: Record<string, unknown>[];
     history?: Record<string, unknown>[];
-    family?: Record<string, number>;
 }) => {
     mockRead.mockReset();
     mockRead.mockImplementation((listCode: string) =>
@@ -60,30 +60,19 @@ const makeService = (options?: {
     const pbxService = {
         init: jest.fn().mockResolvedValue({ bitrix: {}, PortalModel: {} }),
     };
-    const dealFamily = {
-        resolve: jest
-            .fn()
-            .mockResolvedValue(
-                options?.family ?? { mainDealId: 555, presentationDealId: 601 },
-            ),
-    };
     return {
-        service: new CallReportListLinkService(
-            pbxService as never,
-            dealFamily as never,
-        ),
-        dealFamily,
+        service: new CallReportListLinkService(pbxService as never),
     };
 };
 
 describe('CallReportListLinkService — привязка звонка к записям отчётности', () => {
-    it('ищет по ВСЕМ ссылкам клиента (владелец, семья сделок, компания) в окне ±3 дня', async () => {
+    it('ищет по ссылкам САМОГО ЗВОНКА (сущность-владелец, компания) в окне ±3 дня — без дотянутой семьи сделок', async () => {
         const { service } = makeService();
         await service.find('test.bitrix24.ru', passport(), row(), 'call');
         expect(mockRead).toHaveBeenCalledWith(
             'sales_kpi',
             expect.objectContaining({
-                crmRefs: ['D_601', 'D_555', 'CO_77'],
+                crmRefs: ['D_601', 'CO_77'],
                 dateFrom: new Date('2026-08-11T10:00:00Z'),
                 dateTo: new Date('2026-08-17T10:00:00Z'),
             }),
@@ -174,8 +163,8 @@ describe('CallReportListLinkService — привязка звонка к зап�
         expect(links.relatedReportIds).toEqual([]);
     });
 
-    it('лид: ссылка L_ и без раскладки сделок', async () => {
-        const { service, dealFamily } = makeService({
+    it('лид: поиск по ссылке L_ владельца звонка', async () => {
+        const { service } = makeService({
             history: [record({ id: '14', crmRefs: ['L_77'] })],
         });
         const links = await service.find(
@@ -184,7 +173,6 @@ describe('CallReportListLinkService — привязка звонка к зап�
             row(),
             'site_lead',
         );
-        expect(dealFamily.resolve).not.toHaveBeenCalled();
         expect(mockRead).toHaveBeenCalledWith(
             'sales_kpi',
             expect.objectContaining({ crmRefs: ['L_77'] }),

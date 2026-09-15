@@ -1,7 +1,9 @@
 import {
     EXPLANATION_FORBIDDEN_WORDS,
+    EXPLANATION_STYLE_SEPARATOR,
     renderCellExplanation,
     sectionTitle,
+    styleNoteSentence,
 } from '../model/explanation-template';
 import { buildCellCore } from '../model/matrix-cell';
 import { MatrixCellCore } from '../model/matrix.types';
@@ -194,5 +196,57 @@ describe('renderCellExplanation', () => {
     it('подпись раздела строчными, неизвестный код — как есть', () => {
         expect(sectionTitle('NEEDS')).toBe('выявление потребностей');
         expect(sectionTitle('CUSTOM')).toBe('CUSTOM');
+    });
+});
+
+describe('renderCellExplanation: разделитель «Независимо от стиля»', () => {
+    it('факт о манере идёт отдельным предложением перед советом', () => {
+        const result = renderCellExplanation(cell, {
+            previous,
+            previousSd: SD,
+            styleNote: 'по разборам он чаще показывает решение до вопросов',
+        });
+
+        expect(result.text).toContain(
+            `${EXPLANATION_STYLE_SEPARATOR}: по разборам он чаще показывает ` +
+                'решение до вопросов.',
+        );
+        expect(result.text.indexOf(EXPLANATION_STYLE_SEPARATOR)).toBeLessThan(
+            result.text.indexOf('Совет:'),
+        );
+        expect(result.basis).toContain('style=note');
+    });
+
+    it('без стиля текст и опоры прежние (разделителя нет)', () => {
+        const withStyle = renderCellExplanation(cell, {
+            previous,
+            previousSd: SD,
+            styleNote: null,
+        });
+        const plain = renderCellExplanation(cell, {
+            previous,
+            previousSd: SD,
+        });
+
+        expect(withStyle).toEqual(plain);
+        expect(plain.text).not.toContain(EXPLANATION_STYLE_SEPARATOR);
+        expect(plain.basis).not.toContain('style=note');
+    });
+
+    it('пустая заметка разделителя не печатает, точка не удваивается', () => {
+        expect(styleNoteSentence('   ')).toBeNull();
+        expect(
+            styleNoteSentence('чаще коллег возвращается после переноса.'),
+        ).toBe(
+            `${EXPLANATION_STYLE_SEPARATOR}: чаще коллег возвращается после переноса.`,
+        );
+    });
+
+    it('запрещённое слово не появляется и в варианте со стилем', () => {
+        const result = renderCellExplanation(cell, {
+            styleNote: 'чаще коллег задаёт ход разговора',
+        });
+
+        expect(containsForbidden(result.text)).toBe(false);
     });
 });

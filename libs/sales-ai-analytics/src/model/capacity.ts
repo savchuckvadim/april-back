@@ -13,6 +13,7 @@
  *
  * Чистая математика: без DI, Bitrix и Prisma, без `Date.now`/`Math.random`.
  */
+import { registryDefault } from '../params/registry.access';
 import { quantileOf } from './quantile.util';
 
 /** Как получен потолок дневного темпа. */
@@ -88,12 +89,16 @@ export interface TimeBudget {
 /** Дефолты Фазы 2 по разделу 4.9 и реестру параметров. */
 export const CAPACITY_DEFAULTS = {
     /** `cap_quantile`. */
-    quantile: 0.9,
-    /** Гейт оценки: менеджеров и месяцев. */
+    quantile: registryDefault('cap_quantile'),
+    /**
+     * Гейт оценки: менеджеров и месяцев.
+     * Не параметр реестра: ценз оценки потолка из плана §4.9
+     * (≥ 3 менеджера × 3 месяца без proxy), кода в §2.1–2.2 нет.
+     */
     minManagers: 3,
     minMonths: 3,
     /** `day_hours` — рабочих часов в дне. */
-    dayHours: 6,
+    dayHours: registryDefault('day_hours'),
 } as const;
 
 /**

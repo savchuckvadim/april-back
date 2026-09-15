@@ -1,3 +1,4 @@
+import { registryDefault } from '../params/registry.access';
 import {
     ActivityRateInput,
     ActivityRateResult,
@@ -29,26 +30,27 @@ export const EDGE_RATE_DEFAULTS = {
     kappaActivity: KAPPA_DEFAULTS.activityDays,
 } as const;
 
-/**
- * Практические пороги разрыва: 5 п.п. для долей, 1 балл для оценок.
- *
- * ⚠ Единицы: `practicalDelta` в `edgeGap` измеряется в тех же единицах,
- * что и Δ, то есть для долей — в ДОЛЕ (0,05), а не в процентных пунктах.
- * Реестр параметров хранит тот же порог в п.п. (`delta_prac_pct = 5`),
- * поэтому значение из реестра надо делить на PERCENT_POINTS_IN_UNIT;
- * `delta_prac_score = 1` уже в баллах и конверсии не требует.
- */
-export const EDGE_GAP_PRACTICAL = {
-    prob: 0.05,
-    score: 1,
-} as const;
-
 /** Процентных пунктов в единице доли — множитель конверсии delta_prac_pct. */
 export const PERCENT_POINTS_IN_UNIT = 100;
 
 /** delta_prac_pct (п.п. реестра) → порог разрыва в доле для `edgeGap`. */
 export const practicalDeltaFromPct = (pct: number): number =>
     pct / PERCENT_POINTS_IN_UNIT;
+
+/**
+ * Практические пороги разрыва — оба из реестра.
+ *
+ * ⚠ Единицы: `practicalDelta` в `edgeGap` измеряется в тех же единицах,
+ * что и Δ, то есть для долей — в ДОЛЕ (0,05), а не в процентных пунктах.
+ * Реестр хранит тот же порог в п.п. (`delta_prac_pct`), поэтому значение
+ * делится на PERCENT_POINTS_IN_UNIT; `delta_prac_score` уже в баллах.
+ */
+export const EDGE_GAP_PRACTICAL = {
+    /** `delta_prac_pct` в доле. */
+    prob: practicalDeltaFromPct(registryDefault('delta_prac_pct')),
+    /** `delta_prac_score` — практический порог в баллах. */
+    score: registryDefault('delta_prac_score'),
+} as const;
 
 /** Выборка для сравнения: переходы/события и знаменатель. */
 export interface GapSample {

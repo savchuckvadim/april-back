@@ -1,26 +1,40 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { BitrixService } from '@lib/bitrix';
 import { IPortal } from '@lib/portal-lib/portal/interfaces/portal.interface';
+import { getErrorString } from '@lib/shared';
 
+/**
+ * Комментарий в таймлайн сделки со ссылкой на отчёт.
+ *
+ * Намеренно НЕ @Injectable: внутри живёт per-domain инстанс Bitrix, держать его
+ * в синглтоне нельзя (CLAUDE.md — race condition). Создаётся через
+ * `new SupplyReportBitrixService(bitrix)` в use-case.
+ */
 export class SupplyReportBitrixService {
     private readonly logger = new Logger(SupplyReportBitrixService.name);
 
     constructor(private readonly bitrixService: BitrixService) {}
 
     /**
-     * Отправляет комментарий в Bitrix с ссылкой на документ
+     * Ссылка на docx (и на pdf, если он собрался) одним комментарием.
+     *
+     * Laravel слал два комментария: первый сразу, второй — из очереди после
+     * конвертации в PDF. Здесь конвертация синхронная, поэтому комментарий один.
      */
     async addTimelineComment(
         portal: IPortal,
         dealId: string,
         fileName: string,
         link: string,
+        pdfLink?: string,
     ): Promise<void> {
         try {
-            // Инициализируем Bitrix API для портала
             this.bitrixService.init(portal.domain);
 
-            const message = `<a href="${link}" target="_blank">${fileName}</a>`;
+            const pdfFileName = fileName.replace(/\.docx$/, '.pdf');
+            const message = pdfLink
+                ? `<a href="${link}" target="_blank">${fileName}</a><br><a href="${pdfLink}" target="_blank">${pdfFileName}</a>`
+                : `<a href="${link}" target="_blank">${fileName}</a>`;
 
             await this.bitrixService.api.call('crm.timeline.comment.add', {
                 fields: {
@@ -30,13 +44,11 @@ export class SupplyReportBitrixService {
                 },
             });
 
-            this.logger.log(`Timeline comment added for deal ${dealId}`);
+            this.logger.log(`Комментарий добавлен в сделку ${dealId}`);
         } catch (error) {
-            this.logger.error(
-                `Error adding timeline comment: ${error.message}`,
-                error.stack,
+            throw new Error(
+                `Не удалось добавить комментарий в таймлайн: ${getErrorString(error)}`,
             );
-            throw new Error(`Failed to add timeline comment: ${error.message}`);
         }
     }
 }

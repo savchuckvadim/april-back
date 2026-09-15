@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { StorageService } from '@lib/core/storage';
+import { ConfigService } from '@nestjs/config';
 import { DocumentSupplyReportGenerateDto } from '../dto/document-supply-report-generate.dto';
 import { SupplyReportDataService } from '../services/data/supply-report-data.service';
 import { SupplyReportTemplateService } from '../services/template/supply-report-template.service';
@@ -9,144 +9,146 @@ import { PortalService } from '@lib/portal-lib/portal';
 import { FileLinkService } from '@lib/core/file-link/file-link.service';
 import dayjs from 'dayjs';
 import { PBXService } from '@lib/pbx';
-import { getErrorStack, getErrorString } from '@lib/shared';
+import { getErrorString } from '@lib/shared';
+import { SupplyReportGenerateResultDto } from '../dto/document-supply-report-response.dto';
 
 @Injectable()
 export class GenerateUseCase {
     private readonly logger = new Logger(GenerateUseCase.name);
 
     constructor(
-        private readonly storageService: StorageService,
         private readonly dataService: SupplyReportDataService,
         private readonly templateService: SupplyReportTemplateService,
         private readonly pdfService: SupplyReportPdfService,
         private readonly pbx: PBXService,
-        // private readonly bitrixService: SupplyReportBitrixService,
         private readonly portalService: PortalService,
         private readonly fileLinkService: FileLinkService,
+        private readonly configService: ConfigService,
     ) {}
 
-    async execute(dto: DocumentSupplyReportGenerateDto): Promise<{
-        success: boolean;
-        data?: {
-            link: string;
-            document: string;
-            file: string;
-            pdfLink?: string;
-        };
-        error?: string;
-    }> {
-        try {
-            const { domain, userId, dealId } = dto;
-            const { bitrix } = await this.pbx.init(domain);
-            const bitrixService = new SupplyReportBitrixService(bitrix);
+    /**
+     * Собирает отчёт о поставке и возвращает ссылки на него.
+     *
+     * Ошибки НЕ гасятся в `{success:false}`: их подхватывает
+     * GlobalExceptionFilter (и шлёт алерт), а фронт видит ненулевой resultCode.
+     * Исключение — побочные эффекты (PDF, комментарий в таймлайн): из-за них
+     * терять уже собранный документ нельзя.
+     */
+    async execute(
+        dto: DocumentSupplyReportGenerateDto,
+    ): Promise<SupplyReportGenerateResultDto> {
+        const { domain, userId, dealId } = dto;
+        const { bitrix } = await this.pbx.init(domain);
+        const bitrixService = new SupplyReportBitrixService(bitrix);
 
-            // Получаем портал
-            const portal = await this.portalService.getPortalByDomain(domain);
+        const portal = await this.portalService.getPortalByDomain(domain);
 
-            // Определяем, использовать ли новый шаблон
-            const isNewTemplate = true; // Можно сделать настраиваемым
+        // второй шаблон (supply_report_gsr.docx) сейчас нигде не включается
+        const isNewTemplate = true;
 
-            // Подготавливаем данные для шаблона
-            this.logger.log('Preparing template data...');
-            const templateData = this.dataService.prepareTemplateData(dto);
+        const templateData = this.dataService.prepareTemplateData(dto);
 
-            // Создаем Word документ
-            this.logger.log('Creating Word document...');
-            const { filePath: docxFilePath, fileName } =
-                await this.templateService.createWordDocument(
-                    templateData,
-                    domain,
-                    userId,
-                    isNewTemplate,
-                );
-
-            // Создаем публичную ссылку на Word документ
-            const currentYear = dayjs().format('YYYY');
-            const link = await this.fileLinkService.createPublicLink(
+        const { filePath: docxFilePath, fileName } =
+            await this.templateService.createWordDocument(
+                templateData,
                 domain,
                 userId,
-                'konstructor',
-                'supply',
-                currentYear,
-                fileName,
+                isNewTemplate,
             );
 
-            // Извлекаем hash из пути для создания других ссылок
-            // const pathParts = docxFilePath.split('/');
-            // const hashIndex = pathParts.findIndex(
-            //     part => part.length === 8 && /^[a-f0-9]+$/i.test(part),
-            // );
-            // const hash = hashIndex !== -1 ? pathParts[hashIndex] : '';
+        const currentYear = dayjs().format('YYYY');
+        const link = await this.buildAbsoluteLink(
+            domain,
+            userId,
+            currentYear,
+            fileName,
+        );
 
-            const document = link; // Можно использовать тот же формат
-            const file = link; // Можно использовать тот же формат
+        const pdfLink = await this.createPdfLink(
+            docxFilePath,
+            fileName,
+            domain,
+            userId,
+            currentYear,
+        );
 
-            let pdfLink: string | undefined;
-
-            // Конвертируем в PDF если используется новый шаблон
-            if (isNewTemplate) {
-                try {
-                    this.logger.log('Converting to PDF...');
-                    const pdfFilePath =
-                        await this.pdfService.convertToPdf(docxFilePath);
-
-                    // Создаем ссылку на PDF
-                    const pdfFileName = fileName.replace('.docx', '.pdf');
-                    pdfLink = await this.fileLinkService.createPublicLink(
-                        domain,
-                        userId,
-                        'konstructor',
-                        'supply',
-                        currentYear,
-                        pdfFileName,
-                    );
-
-                    this.logger.log(`PDF created: ${pdfFilePath}`);
-                } catch (error) {
-                    this.logger.warn(
-                        `Failed to convert to PDF: ${getErrorString(error)}`,
-                    );
-                    // Не прерываем выполнение, если конвертация в PDF не удалась
-                }
-            }
-
-            // Отправляем комментарий в Bitrix
-            if (dealId) {
-                try {
-                    this.logger.log('Adding timeline comment to Bitrix...');
-                    await bitrixService.addTimelineComment(
-                        portal,
-                        dealId,
-                        fileName,
-                        link,
-                    );
-                } catch (error) {
-                    this.logger.warn(
-                        `Failed to add timeline comment: ${getErrorString(error)}`,
-                    );
-                    // Не прерываем выполнение, если отправка комментария не удалась
-                }
-            }
-
-            return {
-                success: true,
-                data: {
+        if (dealId) {
+            try {
+                await bitrixService.addTimelineComment(
+                    portal,
+                    dealId,
+                    fileName,
                     link,
-                    document,
-                    file,
                     pdfLink,
-                },
-            };
-        } catch (error) {
-            this.logger.error(
-                `Error generating supply report: ${getErrorString(error)}`,
-                getErrorStack(error),
+                );
+            } catch (error) {
+                this.logger.warn(
+                    `Комментарий в таймлайн сделки ${dealId} не ушёл: ${getErrorString(error)}`,
+                );
+            }
+        }
+
+        return {
+            link,
+            // отдельного base64-роута (Laravel supply-report) в несте нет,
+            // а init-supply скачивает файл именно по прямой ссылке
+            document: link,
+            file: link,
+            pdfLink,
+        };
+    }
+
+    /**
+     * Абсолютная ссылка на файл.
+     *
+     * `FileLinkService` отдаёт относительный `/api/files/<token>`, а ссылка
+     * уходит наружу: её скачивает init-supply (axios без базового домена) и
+     * открывает менеджер из таймлайна.
+     */
+    private async buildAbsoluteLink(
+        domain: string,
+        userId: number,
+        year: string,
+        fileName: string,
+    ): Promise<string> {
+        const rootLink = await this.fileLinkService.createPublicLink(
+            domain,
+            userId,
+            'konstructor',
+            'supply',
+            year,
+            fileName,
+        );
+
+        const baseUrl = (
+            this.configService.get<string>('APP_URL') ?? ''
+        ).replace(/\/+$/, '');
+
+        return `${baseUrl}${rootLink}`;
+    }
+
+    /** PDF-версия отчёта. Не получилось — отчёт всё равно отдаём. */
+    private async createPdfLink(
+        docxFilePath: string,
+        fileName: string,
+        domain: string,
+        userId: number,
+        year: string,
+    ): Promise<string | undefined> {
+        try {
+            await this.pdfService.convertToPdf(docxFilePath);
+            const pdfFileName = fileName.replace(/\.docx$/, '.pdf');
+            return await this.buildAbsoluteLink(
+                domain,
+                userId,
+                year,
+                pdfFileName,
             );
-            return {
-                success: false,
-                error: getErrorString(error),
-            };
+        } catch (error) {
+            this.logger.warn(
+                `Конвертация отчёта в PDF не удалась: ${getErrorString(error)}`,
+            );
+            return undefined;
         }
     }
 }

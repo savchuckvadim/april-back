@@ -18,6 +18,7 @@
  * времени. При вероятностной трактовке `s > n` означает разные источники,
  * и ребро отдаётся с `confidence: none, reason: mixed-sources`.
  */
+import { registryDefault } from '../params/registry.access';
 import type { ParamEdgeEstimand } from '../params/registry.types';
 
 /** Оцениваемая величина ребра: интенсивность или вероятность. */
@@ -51,10 +52,14 @@ export type AiEdgeEstimandReason = (typeof AI_EDGE_ESTIMAND_REASONS)[number];
 /** Дефолты гистерезиса — зеркало кодов реестра, в процентах. */
 export const EDGE_ESTIMAND_DEFAULTS = {
     /** `deal_chain_min_pct` — вход в режим вероятностей. */
-    enterPct: 80,
+    enterPct: registryDefault('deal_chain_min_pct'),
     /** `deal_chain_exit_pct` — выход из режима вероятностей. */
-    exitPct: 70,
-    /** Трактовка до накопления сцепки. */
+    exitPct: registryDefault('deal_chain_exit_pct'),
+    /**
+     * Трактовка до накопления сцепки.
+     * Не параметр реестра: до сцепки ребро всегда интенсивность (§4.1),
+     * переключение считается по доле сцепки и настройкой не является.
+     */
     estimand: 'rate',
 } as const satisfies {
     enterPct: number;

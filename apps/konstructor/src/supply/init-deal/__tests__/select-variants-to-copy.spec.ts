@@ -1,4 +1,7 @@
-import { selectVariantsToCopy } from '../lib/select-variants-to-copy';
+import {
+    isFinalVariantStage,
+    selectVariantsToCopy,
+} from '../lib/select-variants-to-copy';
 
 /**
  * Отбор вариантов, которые переезжают со сделкой в отдел сервиса. Стадия
@@ -21,20 +24,17 @@ describe('selectVariantsToCopy', () => {
         expect(selectVariantsToCopy(candidates)).toEqual([draft]);
     });
 
-    it('есть текущие — едут только они, черновики остаются', () => {
+    it('«Текущий» больше никого не выкидывает: это признак открытого варианта, а не выбора', () => {
+        // конструктор ставит «Текущий» автоматически тому набору, который
+        // открыт на экране — если бы правило осталось, робот увозил бы один
+        const draft = stage('DRAFT');
         const current = stage('CURRENT');
-        const candidates = [stage('DRAFT'), current, stage('MERGED')];
+        const merged = stage('MERGED');
 
-        expect(selectVariantsToCopy(candidates)).toEqual([current]);
-    });
-
-    it('текущих несколько — едут все текущие', () => {
-        const first = stage('CURRENT');
-        const second = stage('CURRENT');
-
-        expect(selectVariantsToCopy([first, stage('DRAFT'), second])).toEqual([
-            first,
-            second,
+        expect(selectVariantsToCopy([draft, current, merged])).toEqual([
+            draft,
+            current,
+            merged,
         ]);
     });
 
@@ -54,5 +54,30 @@ describe('selectVariantsToCopy', () => {
 
     it('все отклонены — не едет никто', () => {
         expect(selectVariantsToCopy([stage('REJECTED')])).toEqual([]);
+    });
+
+    it('закрытые прошлым периодом наборы не едут по второму кругу', () => {
+        const draft = stage('DRAFT');
+
+        expect(
+            selectVariantsToCopy([
+                draft,
+                // уже уехал в поставку когда-то
+                stage('SUCCESS'),
+                // не выбрали в прошлый раз
+                stage('FAILED'),
+            ]),
+        ).toEqual([draft]);
+    });
+
+    it('стадии продажи не финальные — набор в работе и едет', () => {
+        expect(isFinalVariantStage('DT1046_1:OFFER')).toBe(false);
+        expect(isFinalVariantStage('DT1046_1:APPROVAL')).toBe(false);
+        expect(isFinalVariantStage('DT1046_1:SUCCESS')).toBe(true);
+        expect(isFinalVariantStage('DT1046_1:REJECTED')).toBe(true);
+        expect(isFinalVariantStage('DT1046_1:FAILED')).toBe(true);
+        // чужая и пустая стадия финалом не считаются
+        expect(isFinalVariantStage('DT999_1:SOMETHING')).toBe(false);
+        expect(isFinalVariantStage(null)).toBe(false);
     });
 });

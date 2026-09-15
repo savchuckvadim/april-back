@@ -88,6 +88,8 @@ describe('CopyComplectVariantsService', () => {
             found: 0,
             selected: 0,
             copied: 0,
+            movedSourceIds: [],
+            notMovedSourceIds: [],
         });
         expect(listVariants).not.toHaveBeenCalled();
     });
@@ -104,6 +106,8 @@ describe('CopyComplectVariantsService', () => {
             found: 0,
             selected: 0,
             copied: 0,
+            movedSourceIds: [],
+            notMovedSourceIds: [],
         });
         expect(itemAdd).not.toHaveBeenCalled();
     });
@@ -122,7 +126,13 @@ describe('CopyComplectVariantsService', () => {
 
         const result = await service.copy('d.ru', 100, 200, 7);
 
-        expect(result).toEqual({ found: 2, selected: 2, copied: 2 });
+        expect(result).toEqual({
+            found: 2,
+            selected: 2,
+            copied: 2,
+            movedSourceIds: [5001, 5002],
+            notMovedSourceIds: [],
+        });
         expect(itemAdd).toHaveBeenCalledTimes(2);
 
         const [entityTypeId, fields] = itemAdd.mock.calls[0] as [
@@ -155,11 +165,16 @@ describe('CopyComplectVariantsService', () => {
             found: 2,
             selected: 1,
             copied: 1,
+            movedSourceIds: [5001],
+            // отклонённый уже закрыт — робот не переписывает решение менеджера
+            notMovedSourceIds: [],
         });
         expect(itemAdd).toHaveBeenCalledTimes(1);
     });
 
-    it('есть текущий вариант — едет только он, черновики остаются', async () => {
+    it('открытый вариант («Текущий») не отменяет остальные — едут все незакрытые', async () => {
+        // стадия «Текущий» ставится автоматически тому набору, который открыт
+        // в конструкторе; отбор к переносу она менять не должна
         const { bitrix, itemAdd } = makeBitrix({
             5002: 'DT1046_1:CURRENT',
         });
@@ -171,14 +186,12 @@ describe('CopyComplectVariantsService', () => {
 
         expect(await service.copy('d.ru', 100, 200, 7)).toEqual({
             found: 2,
-            selected: 1,
-            copied: 1,
+            selected: 2,
+            copied: 2,
+            movedSourceIds: [5001, 5002],
+            notMovedSourceIds: [],
         });
-        const [, fields] = itemAdd.mock.calls[0] as [
-            string,
-            Record<string, unknown>,
-        ];
-        expect(fields.ufCrm15VariantName).toBe('набор 5002');
+        expect(itemAdd).toHaveBeenCalledTimes(2);
     });
 
     it('слепок каждого варианта привязывается к НОВОМУ элементу смарта', async () => {
@@ -238,6 +251,8 @@ describe('CopyComplectVariantsService', () => {
             found: 1,
             selected: 0,
             copied: 0,
+            movedSourceIds: [],
+            notMovedSourceIds: [],
         });
         expect(itemAdd).not.toHaveBeenCalled();
     });
@@ -255,6 +270,8 @@ describe('CopyComplectVariantsService', () => {
             found: 2,
             selected: 1,
             copied: 1,
+            movedSourceIds: [5002],
+            notMovedSourceIds: [],
         });
     });
 });

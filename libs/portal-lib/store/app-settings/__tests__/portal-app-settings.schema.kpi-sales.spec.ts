@@ -72,6 +72,11 @@ const CONTRACT: Record<
         type: 'string',
         default: '',
     },
+    aiAnalyticsStyleOptOut: {
+        code: 'ai_analytics_style_opt_out',
+        type: 'string',
+        default: '',
+    },
     aiAnalyticsPoolOptIn: {
         code: 'ai_analytics_pool_opt_in',
         type: 'boolean',
@@ -246,6 +251,7 @@ describe('PORTAL_APP_SETTINGS_SCHEMA[kpiSales]: ключи AI-аналитики
         expect(values.aiAnalyticsSelfViewEnabled).toBe(false);
         expect(values.aiAnalyticsDailyPlanEnabled).toBe(false);
         expect(values.aiAnalyticsDigestAllUserIds).toBe('');
+        expect(values.aiAnalyticsStyleOptOut).toBe('');
         expect(values.aiAnalyticsPoolOptIn).toBe(false);
         expect(values.aiAnalyticsPoolConsentAt).toBe('');
         expect(values.aiAnalyticsExperimentsEnabled).toBe(false);

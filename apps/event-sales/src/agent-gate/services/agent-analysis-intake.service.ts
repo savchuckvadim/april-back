@@ -504,6 +504,9 @@ export class AgentAnalysisIntakeService {
         // «ОП: основная сделка» уезжала сделка-презентация (alfacentr,
         // 28.08.2026). Сделку ЧУЖОЙ воронки раскладка в «основную» не
         // пустит, а недостающую дотянет по компании/контакту звонка.
+        // Шаг 0 раскладки — элемент «ОП История» этого звонка (§4
+        // прод-фиксов): чтобы его найти, раскладке нужны лид-владелец,
+        // владелец звонка и тип звонка, а не только клиент.
         const family: CallReportDealFamily = await this.dealFamily.resolve(
             domain,
             rowDealId,
@@ -511,6 +514,9 @@ export class AgentAnalysisIntakeService {
                 companyId: context.companyId,
                 contactId: context.contactId,
                 callStartedAt: row.callStartedAt,
+                leadId: rowLeadId,
+                callerId: row.userId,
+                callType: dto.callType,
             },
         );
         // Ответственный карточки и автор записей — владелец звонка из

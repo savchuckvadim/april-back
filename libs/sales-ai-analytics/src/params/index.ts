@@ -47,6 +47,7 @@ export {
 export {
     isRegistryValue,
     registryDefault,
+    registryEnumDefault,
     registryRangeOf,
     registryValueReason,
 } from './registry.access';

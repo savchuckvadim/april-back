@@ -31,6 +31,13 @@ export * from './passport.types';
 export * from './snapshot.parse';
 
 /**
+ * Нагрузка снапшота AI-резюме (`ai-analytics-brief`) объявлена отдельным
+ * файлом по тому же лимиту 300 строк и реэкспортируется отсюда: ручка
+ * резюме читает её из публичного API библиотеки, а не глубоким путём.
+ */
+export * from './brief-snapshot.types';
+
+/**
  * Конверт снапшота. Раскладка по ais: domain → domain, type → type,
  * periodKey → activity_id, managerId → user_id, calcVersion → model;
  * paramsVersion, inputsHash, generatedAt и payload едут в user_result.

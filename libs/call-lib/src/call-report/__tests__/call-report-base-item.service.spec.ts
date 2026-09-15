@@ -142,6 +142,27 @@ describe('CallReportBaseItemService — связи и ответственный
     });
 
     /**
+     * §4 прод-фиксов: источник истины — элемент «ОП История» ЭТОГО звонка.
+     * Опознать его раскладка может только по владельцу звонка и типу
+     * события, поэтому каркас обязан их передавать.
+     */
+    it('в раскладку идут владелец звонка и тип — вход поиска записи «ОП История»', async () => {
+        const { service, dealFamily } = makeDeps();
+
+        await service.createBaseItem('42', 'call');
+
+        expect(dealFamily.resolve).toHaveBeenCalledWith(
+            'alfacentr.bitrix24.ru',
+            900,
+            expect.objectContaining({
+                callerId: '222',
+                callType: 'call',
+                callStartedAt: ROW.callStartedAt,
+            }),
+        );
+    });
+
+    /**
      * Решение владельца 08.09.2026: родитель элемента — только сделка
      * воронки «ОП Основная». Сделка-владелец звонка (900, чужая воронка) в
      * writer не передаётся вовсе — родителя из неё поставить нельзя.
@@ -207,10 +228,12 @@ describe('CallReportBaseItemService — связи и ответственный
 
         await service.createBaseItem('42', 'call');
 
+        // Лид-владелец уходит отдельным полем: по ссылке L_ ищется элемент
+        // «ОП История» звонка (§4) — по компании его может не быть вовсе.
         expect(dealFamily.resolve).toHaveBeenCalledWith(
             'alfacentr.bitrix24.ru',
             undefined,
-            expect.objectContaining({ companyId: 232232 }),
+            expect.objectContaining({ companyId: 232232, leadId: 900 }),
         );
     });
 });

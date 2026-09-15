@@ -68,28 +68,94 @@ export interface ComplectVariantStageDef {
 }
 
 /**
- * Жизненный цикл варианта: черновик → либо становится текущим, либо уходит в
- * мердж, либо отклоняется. «Текущий» и «В мердже» — не финальные стадии:
- * менеджер переключается между вариантами, пока идёт торг.
+ * Жизненный цикл варианта. Полный набор стадий заведён СРАЗУ, чтобы потом не
+ * переустанавливать смарт: reconcile при повторной установке доливает новые
+ * стадии (`crm.status.add`) и не трогает `STATUS_ID` существующих — элементы на
+ * старых стадиях не страдают. Ломает только переименование кода стадии и её
+ * удаление, поэтому коды `cvar_draft`/`cvar_current`/`cvar_merged`/
+ * `cvar_rejected` зафиксированы навсегда.
+ *
+ * Смысловые группы:
+ *  1. работа в конструкторе — `cvar_draft`, `cvar_current`, `cvar_merged`:
+ *     менеджер переключается между вариантами, пока идёт торг;
+ *  2. продажа — `cvar_offer` (по варианту сделали КП), `cvar_invoice`
+ *     (выставили счёт), `cvar_contract` (договор);
+ *  3. поставка — `cvar_supply` (создан отчёт/процесс о поставке),
+ *     `cvar_approval` (отчёт есть, приёмка ещё идёт);
+ *  4. финал — `cvar_success` ('S', поставка принята), `cvar_rejected` ('F',
+ *     менеджер отклонил вариант руками), `cvar_failed` ('F', вариант не доехал
+ *     до поставки — «не состоялся»).
+ *
+ * Порядок важен: успешная стадия перед провальными, провальные — последними по
+ * sort. Черновик обязан остаться первым: дефолтная стадия воронки в Битриксе —
+ * первая по SORT (`isDefault` в `crm.status.add` не передаётся).
+ *
+ * КТО СТАВИТ СТАДИИ СЕЙЧАС: `cvar_current`/`cvar_rejected` — кнопки
+ * конструктора, `cvar_success`/`cvar_failed` — робот поставки через
+ * `ComplectVariantLifecycleService`. Стадии продажи и поставки заведены впрок;
+ * кто и когда будет их ставить — расписано в
+ * `apps/konstructor/src/modules/complect-variant-lifecycle/README.md`.
  */
 export const COMPLECT_VARIANT_SMART_STAGES: readonly ComplectVariantStageDef[] =
     [
         { code: 'cvar_draft', name: 'Черновик', sort: 10, semantics: '' },
         { code: 'cvar_current', name: 'Текущий', sort: 20, semantics: '' },
         { code: 'cvar_merged', name: 'В мердже', sort: 30, semantics: '' },
-        { code: 'cvar_rejected', name: 'Отклонён', sort: 40, semantics: 'F' },
+        { code: 'cvar_offer', name: 'КП', sort: 40, semantics: '' },
+        { code: 'cvar_invoice', name: 'Счёт', sort: 50, semantics: '' },
+        { code: 'cvar_contract', name: 'Договор', sort: 60, semantics: '' },
+        { code: 'cvar_supply', name: 'Поставка', sort: 70, semantics: '' },
+        {
+            code: 'cvar_approval',
+            name: 'Согласование',
+            sort: 80,
+            semantics: '',
+        },
+        { code: 'cvar_success', name: 'Успех', sort: 90, semantics: 'S' },
+        { code: 'cvar_rejected', name: 'Отклонён', sort: 100, semantics: 'F' },
+        {
+            code: 'cvar_failed',
+            name: 'Не состоялся',
+            sort: 110,
+            semantics: 'F',
+        },
     ];
 
-/** Коды стадий — чтобы не писать строки руками там, где важен смысл. */
+/**
+ * Коды стадий — чтобы не писать строки руками там, где важен смысл.
+ *
+ * `REJECTED` и `FAILED` — разные вещи, хотя обе провальные: первую ставит
+ * человек («этот вариант не берём»), вторую робот («вариант не доехал до
+ * поставки»). Различать нужно для разбора: сколько наборов отвалилось по
+ * решению клиента, а сколько просто не выбрали.
+ */
 export const COMPLECT_VARIANT_STAGE = {
     DRAFT: 'cvar_draft',
     CURRENT: 'cvar_current',
     MERGED: 'cvar_merged',
+    OFFER: 'cvar_offer',
+    INVOICE: 'cvar_invoice',
+    CONTRACT: 'cvar_contract',
+    SUPPLY: 'cvar_supply',
+    APPROVAL: 'cvar_approval',
+    SUCCESS: 'cvar_success',
     REJECTED: 'cvar_rejected',
+    FAILED: 'cvar_failed',
 } as const;
 
 export type ComplectVariantStageCode =
     (typeof COMPLECT_VARIANT_STAGE)[keyof typeof COMPLECT_VARIANT_STAGE];
+
+/**
+ * Стадии, после которых вариант закрыт и никуда больше не едет: ни в КП, ни в
+ * перенос на сервисную сделку.
+ */
+export const COMPLECT_VARIANT_FINAL_STAGES: readonly ComplectVariantStageCode[] =
+    [
+        COMPLECT_VARIANT_STAGE.SUCCESS,
+        COMPLECT_VARIANT_STAGE.REJECTED,
+        COMPLECT_VARIANT_STAGE.FAILED,
+    ];
 
 /** Суффикс STATUS_ID: DT{entityTypeId}_{catId}:{SUFFIX}. */
 export const complectVariantStageBitrixId = (stageCode: string): string =>
@@ -116,6 +182,31 @@ export const resolveComplectVariantStageCode = (
         item => complectVariantStageBitrixId(item.code) === suffix,
     );
     return (stage?.code as ComplectVariantStageCode) ?? null;
+};
+
+/**
+ * Новый `stageId` элемента: у текущего меняется только суффикс после ':'.
+ *
+ * Префикс `DT{entityTypeId}_{bxCategoryId}` НЕ собираем формулой — id категории
+ * на каждом портале свой, а элемент может лежать и не в дефолтной воронке.
+ * Берём его из стадии, на которой элемент стоит сейчас: это единственный
+ * источник, который точно совпадает с реальностью портала.
+ *
+ * `null` — у элемента нет стадии (у типа выключены стадии или поле не попало в
+ * select): двигать нечего, вызывающий должен молча пропустить элемент.
+ */
+export const buildComplectVariantStageId = (
+    currentStageId: string | null | undefined,
+    targetStage: ComplectVariantStageCode,
+): string | null => {
+    if (!currentStageId || !currentStageId.includes(':')) {
+        return null;
+    }
+    const prefix = currentStageId.slice(0, currentStageId.lastIndexOf(':'));
+    if (!prefix) {
+        return null;
+    }
+    return `${prefix}:${complectVariantStageBitrixId(targetStage)}`;
 };
 
 // ---------------------------------------------------------------------------
