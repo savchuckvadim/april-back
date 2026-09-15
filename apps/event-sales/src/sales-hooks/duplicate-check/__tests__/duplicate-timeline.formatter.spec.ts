@@ -63,10 +63,13 @@ describe('duplicate-timeline.formatter', () => {
         );
 
         expect(comment).toContain('Проверка на дубли — глубокая');
-        expect(comment).toContain('Найдено кандидатов: [B]1[/B]');
+        expect(comment).toContain('Найдено кандидатов: <b>1</b>');
+        // Разметка таймлайна — HTML: BB-код `[URL=…]` карточка показывает
+        // сырым текстом (инцидент 15.09).
         expect(comment).toContain(
-            'Компания [URL=https://d.b24.ru/crm/company/details/431/][B]ООО Ромашка[/B][/URL] — 95 баллов',
+            'Компания <a href="https://d.b24.ru/crm/company/details/431/" target="_blank">ООО Ромашка</a> — 95 баллов',
         );
+        expect(comment).not.toContain('[URL=');
         expect(comment).toContain('ИНН 4826000000 (реквизиты)');
         expect(comment).toContain('телефон 9192569798 (телефон/email базы)');
         expect(comment).toContain('https://d.b24.ru/crm/company/details/431/');

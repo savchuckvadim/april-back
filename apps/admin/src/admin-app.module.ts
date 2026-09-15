@@ -47,6 +47,7 @@ import { PortalQuestionnairesAdminModule } from '@lib/portal-lib/store/questionn
 import { AdminQuestionnairesModule } from './portal/questionnaires/questionnaires.module';
 import { MarketplaceModerationModule } from './marketplace-moderation/marketplace-moderation.module';
 import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.module';
+import { MaintenanceModule } from './maintenance';
 
 @Module({
     imports: [
@@ -112,6 +113,10 @@ import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.
         // OAuth-креды приложений (bitrix_app_secrets) — источник истины
         // для рефреша маркетплейс-токенов; секреты в ответах маскируются.
         BitrixAppSecretsModule,
+        // Служебные операции над общей с Laravel БД: починка пустых
+        // created_at/updated_at, из-за которых python-сервис не мог разобрать
+        // модель портала.
+        MaintenanceModule,
     ],
 })
 export class AdminAddModule {}

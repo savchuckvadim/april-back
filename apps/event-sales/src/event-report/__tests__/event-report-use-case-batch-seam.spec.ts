@@ -173,8 +173,8 @@ jest.mock(
         },
     }),
 );
-jest.mock('../services/history/event-report-entity-history.service', () => ({
-    EventReportEntityHistoryService: class {
+jest.mock('../services/timeline/event-report-timeline.service', () => ({
+    EventReportTimelineService: class {
         queue(): void {}
     },
 }));

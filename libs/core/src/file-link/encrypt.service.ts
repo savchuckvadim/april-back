@@ -34,8 +34,19 @@ export class EncryptService {
     }
 
     decryptData(token: string): any {
+        // Токен всегда имеет вид `iv:данные` (оба в hex). Без этой проверки
+        // произвольная строка в адресе (например /api/files/58) роняла
+        // Buffer.from(undefined), и наружу вместо человеческого «ссылка
+        // недействительна» уходил текст TypeError с внутренностями.
+        const [ivHex, encryptedHex] = (token ?? '').split(':');
+        if (!ivHex || !encryptedHex) {
+            throw new HttpException(
+                'Ссылка на файл недействительна',
+                HttpStatus.NOT_FOUND,
+            );
+        }
+
         try {
-            const [ivHex, encryptedHex] = token.split(':');
             const iv = Buffer.from(ivHex, 'hex');
             const encryptedText = Buffer.from(encryptedHex, 'hex');
             const decipher = crypto.createDecipheriv(
@@ -47,8 +58,11 @@ export class EncryptService {
             decrypted = Buffer.concat([decrypted, decipher.final()]);
             return JSON.parse(decrypted.toString());
         } catch (e) {
+            // Токен по форме верный, но не расшифровался: чужой ключ, обрезанная
+            // ссылка, испорченный hex. Наружу — одно сообщение, подробности в лог.
+            console.error('Не удалось расшифровать токен ссылки на файл', e);
             throw new HttpException(
-                'decrypt Недопустимый токен ' + e,
+                'Ссылка на файл недействительна',
                 HttpStatus.NOT_FOUND,
             );
         }

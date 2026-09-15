@@ -1,4 +1,8 @@
-import { BATCH_LINE_BREAK_SYMBOL } from '@lib/bitrix/consts/batch.consts';
+import {
+    crmCardUrl,
+    timelineBold,
+    timelineLink,
+} from '@lib/bitrix/consts/timeline.consts';
 import { BitrixEntityType } from '@lib/bitrix/domain/enums/bitrix-constants.enum';
 import { UserNameMap } from '../../../shared/lead-request/user-name.resolver';
 import {
@@ -23,8 +27,16 @@ import { ColdTarget } from '../target/cold-target.types';
  *  - входная сделка, оказавшаяся чужой основной (`takenEntry`), забирается
  *    в любом режиме — её владельцу «забрали» и push всегда.
  *
- * BB-код таймлайна: `[B]` и `[URL=]`; переносы в batch-командах — символ
- * batch-провода, в push (прямой вызов im.notify) — обычный перевод строки.
+ * РАЗМЕТКА — РАЗНАЯ У ДВУХ ПРОВОДОВ, и путать их нельзя:
+ *  - запись ТАЙМЛАЙНА — HTML (`<b>`, `<a href>`): BB-код `[URL=]` в карточке
+ *    доезжает сырым текстом (см. `@lib/bitrix/consts/timeline.consts`);
+ *  - push (`im.notify`) — BB-код (`[B]`, `[URL=]`): там он и рендерится.
+ *
+ * Переносы В ОБОИХ случаях обычные `\n`. Запись таймлайна уезжает
+ * batch-командой, и её экранирование — забота транспорта
+ * (`ColdStartTimelineV2Service` → `toTimelineComment`), а не текста:
+ * экранировать здесь значило бы делать это дважды. Push зовёт im.notify
+ * напрямую и не экранируется вовсе.
  */
 
 export interface TimelineEntry {
@@ -58,14 +70,26 @@ export interface ColdStartTimelineInput {
 /** Сколько ссылок на закрытые сделки помещаем в запись; дальше — «и ещё N». */
 const CLOSED_LINKS_LIMIT = 10;
 
-const NL = BATCH_LINE_BREAK_SYMBOL;
+/**
+ * Разделитель строк — обычный перевод строки. Под batch его готовит
+ * транспорт записи таймлайна; push уходит с ним как есть.
+ */
+const NL = '\n';
 
 export const dealUrl = (domain: string, id: number): string =>
-    `https://${domain}/crm/deal/details/${id}/`;
+    crmCardUrl(domain, 'deal', id);
 export const companyUrl = (domain: string, id: number): string =>
-    `https://${domain}/crm/company/details/${id}/`;
+    crmCardUrl(domain, 'company', id);
 
-const link = (url: string, text: string): string => `[URL=${url}]${text}[/URL]`;
+/** Ссылка записи ТАЙМЛАЙНА — HTML. */
+const link = timelineLink;
+
+/** Ссылка PUSH-сообщения — BB-код: im.notify рендерит именно его. */
+const pushLink = (url: string, text: string): string =>
+    `[URL=${url}]${text}[/URL]`;
+
+/** Жирный заголовок push — тоже BB-код. */
+const pushBold = (text: string): string => `[B]${text}[/B]`;
 
 /** Имя сотрудника; портал не ответил — честный id, а не пустота. */
 export const personName = (names: UserNameMap, id: number): string =>
@@ -81,11 +105,21 @@ const closedSummary = (closed: ColdCloseResult): string =>
     `сделок — ${closed.closedDealIds.length}, задач — ${closed.completedTaskIds.length}, ` +
     `презентаций — ${closed.closedPresIds.length}, ЗПР — ${closed.closedZprIds.length}`;
 
-const closedDealLinks = (domain: string, ids: number[]): string => {
+/**
+ * Рендер ссылки — параметр, а не константа: один и тот же список сделок
+ * уезжает и в таймлайн (HTML), и в push (BB-код).
+ */
+type LinkRenderer = (url: string, text: string) => string;
+
+const closedDealLinks = (
+    domain: string,
+    ids: number[],
+    renderLink: LinkRenderer,
+): string => {
     if (!ids.length) return '';
     const shown = ids
         .slice(0, CLOSED_LINKS_LIMIT)
-        .map(id => link(dealUrl(domain, id), `#${id}`))
+        .map(id => renderLink(dealUrl(domain, id), `#${id}`))
         .join(', ');
     const rest = ids.length - CLOSED_LINKS_LIMIT;
     return `Закрытые сделки: ${shown}${rest > 0 ? ` и ещё ${rest}` : ''}.`;
@@ -119,16 +153,21 @@ const entryEntities = (
 };
 
 /** «Входная сделка: …; компания: …» — с большой буквы и точкой; пусто — ''. */
-const entryLinksLine = (input: ColdStartTimelineInput): string => {
+const entryLinksLine = (
+    input: ColdStartTimelineInput,
+    renderLink: LinkRenderer,
+): string => {
     const { target, domain } = input;
     const parts: string[] = [];
     if (target.entryDeal) {
         const id = Number(target.entryDeal.ID);
-        parts.push(`входная сделка: ${link(dealUrl(domain, id), `#${id}`)}`);
+        parts.push(
+            `входная сделка: ${renderLink(dealUrl(domain, id), `#${id}`)}`,
+        );
     }
     if (target.kind === 'company' && target.companyId) {
         parts.push(
-            `компания: ${link(companyUrl(domain, target.companyId), `#${target.companyId}`)}`,
+            `компания: ${renderLink(companyUrl(domain, target.companyId), `#${target.companyId}`)}`,
         );
     }
     if (!parts.length) return '';
@@ -149,7 +188,7 @@ const takenComment = (
     links: string,
 ): string =>
     [
-        `[B]${capitalize(whoseClient(input.target))} забрали в работу[/B]: ${responsible} (ответственный холодного старта).`,
+        `${timelineBold(`${capitalize(whoseClient(input.target))} забрали в работу`)}: ${responsible} (ответственный холодного старта).`,
         links,
         `Ваша работа по клиенту закрыта или переназначена: ${closedSummary(input.closed)}.`,
     ]
@@ -161,14 +200,14 @@ export const buildColdStartTimeline = (
 ): TimelineEntry[] => {
     const { domain, decision, closed, names, responsibleId, target } = input;
     const responsible = personName(names, responsibleId);
-    const links = entryLinksLine(input);
+    const links = entryLinksLine(input, link);
     const taken = takenComment(input, responsible, links);
 
     if (decision.mode === 'proceed') {
         const comment = [
-            `[B]Холодный старт[/B] — ответственный: ${responsible}.`,
+            `${timelineBold('Холодный старт')} — ответственный: ${responsible}.`,
             `Закрыто: ${closedSummary(closed)}.`,
-            closedDealLinks(domain, closed.closedDealIds),
+            closedDealLinks(domain, closed.closedDealIds, link),
         ]
             .filter(Boolean)
             .join(NL);
@@ -193,7 +232,7 @@ export const buildColdStartTimeline = (
     const [primary] = decision.foreign;
     const owner = personName(names, primary.responsibleId);
     const entryComment = [
-        `[B]Холодный старт уступлен[/B]: клиент в работе у ${owner} ` +
+        `${timelineBold('Холодный старт уступлен')}: клиент в работе у ${owner} ` +
             `(${link(dealUrl(domain, primary.dealId), `сделка #${primary.dealId}`)}).`,
         `Закрыты только входная сделка и её связи: ${closedSummary(closed)}. ` +
             'Новая работа не создана.',
@@ -208,7 +247,7 @@ export const buildColdStartTimeline = (
             entityType: BitrixEntityType.DEAL,
             entityId: foreignDeal.dealId,
             comment: [
-                `[B]Попытка взять ${whoseClient(target)} в работу[/B]: ${responsible} (ответственный холодного старта).`,
+                `${timelineBold(`Попытка взять ${whoseClient(target)} в работу`)}: ${responsible} (ответственный холодного старта).`,
                 links,
                 'Уступлено — ваша работа не тронута.',
             ]
@@ -260,18 +299,19 @@ export const buildColdStartPushes = (
     if (!recipients.size) return [];
 
     const responsible = personName(names, responsibleId);
-    const links = entryLinksLine(input);
+    // Push рендерится BB-кодом — своим рендером ссылок, не таймлайновым.
+    const links = entryLinksLine(input, pushLink);
     const what = whatClient(target);
 
     return [...recipients.entries()].map(([userId, recipient]) => {
         const title = recipient.taken
-            ? `[B]У вас забрали ${what} в работу[/B]`
-            : `[B]У вас попытались забрать ${what} в работу[/B]`;
+            ? pushBold(`У вас забрали ${what} в работу`)
+            : pushBold(`У вас попытались забрать ${what} в работу`);
         const tail = recipient.taken
             ? 'Ваша работа по клиенту закрыта или переназначена.'
             : 'Уступлено — ваша работа не тронута.';
         const own = recipient.dealIds
-            .map(id => link(dealUrl(domain, id), `#${id}`))
+            .map(id => pushLink(dealUrl(domain, id), `#${id}`))
             .join(', ');
         return {
             userId,

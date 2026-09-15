@@ -4,6 +4,12 @@ import {
     BitrixEntityType,
     BitrixOwnerTypeId,
 } from '@lib/bitrix/domain/enums/bitrix-constants.enum';
+import {
+    crmCardUrl,
+    timelineBold,
+    timelineLink,
+    toTimelineComment,
+} from '@lib/bitrix/consts/timeline.consts';
 import { getErrorDetails } from '@/shared';
 
 type BxRow = Record<string, unknown>;
@@ -96,16 +102,20 @@ export class LeadToWorkTimelineService {
         warnings: string[],
     ): void {
         try {
-            const url = `https://${this.domain}/crm/lead/details/${target.leadId}/`;
+            const url = crmCardUrl(this.domain, 'lead', target.leadId);
             const title = target.leadTitle || `Лид ${target.leadId}`;
             this.bitrix.batch.timeline.addTimelineComment(
                 `lw_tl_comment_${target.dealId}`,
                 {
                     ENTITY_ID: target.dealId,
                     ENTITY_TYPE: BitrixEntityType.DEAL,
-                    COMMENT:
-                        `[B]Работа создана из заявки[/B]: ` +
-                        `[URL=${url}]${title} (лид #${target.leadId})[/URL]`,
+                    COMMENT: toTimelineComment([
+                        `${timelineBold('Работа создана из заявки')}: ` +
+                            timelineLink(
+                                url,
+                                `${title} (лид #${target.leadId})`,
+                            ),
+                    ]),
                 },
             );
         } catch (error) {

@@ -1,4 +1,9 @@
-import { BATCH_LINE_BREAK_SYMBOL } from '@lib/bitrix/consts/batch.consts';
+import {
+    crmCardUrl,
+    timelineBold,
+    timelineLink,
+    timelineText,
+} from '@lib/bitrix/consts/timeline.consts';
 import {
     DuplicateCandidate,
     DuplicateEntityType,
@@ -40,19 +45,20 @@ export function entityCardUrl(
     entityType: DuplicateEntityType,
     id: number,
 ): string {
-    return `https://${domain}/crm/${URL_SEGMENT[entityType]}/details/${id}/`;
+    return crmCardUrl(domain, URL_SEGMENT[entityType], id);
 }
 
 /**
  * Итог проверки дублей для timeline-комментария.
  *
- * ПЕРЕНОС СТРОК: комментарий уходит batch-командой, а там обычный `\n`
- * съедается — Битрикс склеивает весь текст в одну строку. Разделитель —
- * `BATCH_LINE_BREAK_SYMBOL` (`%0A`), иначе комментарий нечитаем.
+ * ОФОРМЛЕНИЕ — HTML, НЕ BB-КОД: `[URL=…]` в таймлайне карточки доезжает
+ * сырым текстом (см. `@lib/bitrix/consts/timeline.consts`). Кандидат —
+ * строка с типом, кликабельным названием и баллом, под ней причина
+ * совпадения: голый url в тексте выглядит мусорно.
  *
- * Оформление: BB-разметка Битрикса. Кандидат — заголовок с типом, именем
- * и баллом, под ним причина совпадения; название кандидата само является
- * ссылкой ([URL=…]…[/URL]) — голый url в тексте выглядит мусорно.
+ * ПЕРЕНОСЫ — обычные `\n`. К batch-проводу комментарий готовит вызывающий
+ * (`toTimelineComment`): экранирование — свойство транспорта, а не текста,
+ * и делать его дважды нельзя.
  *
  * Чистая функция без обращений к Bitrix — легко тестируется.
  */
@@ -64,15 +70,15 @@ export function formatDuplicateTimelineComment(
     const lines: string[] = [];
     const total = result.candidates.length;
 
-    lines.push(`[B]🔍 Проверка на дубли — ${levelTitle}[/B]`);
+    lines.push(timelineBold(`🔍 Проверка на дубли — ${levelTitle}`));
     if (total === 0) {
         lines.push('Дубликаты не найдены.');
         lines.push('');
-        lines.push(`[I]Сигналы поиска: ${describeSignals(result)}[/I]`);
-        return lines.join(BATCH_LINE_BREAK_SYMBOL);
+        lines.push(`Сигналы поиска: ${timelineText(describeSignals(result))}`);
+        return lines.join('\n');
     }
 
-    lines.push(`Найдено кандидатов: [B]${total}[/B]`);
+    lines.push(`Найдено кандидатов: ${timelineBold(String(total))}`);
     lines.push('');
 
     const shown = result.candidates.slice(0, MAX_CANDIDATES_IN_COMMENT);
@@ -81,25 +87,25 @@ export function formatDuplicateTimelineComment(
         const title = candidate.title ?? `#${candidate.id}`;
         lines.push(
             `${index + 1}. ${TYPE_TITLE[candidate.entityType]} ` +
-                `[URL=${url}][B]${title}[/B][/URL] — ${candidate.score} баллов`,
+                `${timelineLink(url, title)} — ${candidate.score} баллов`,
         );
         const reasons = describeReasons(candidate);
-        if (reasons) lines.push(`     ↳ ${reasons}`);
+        if (reasons) lines.push(`     ↳ ${timelineText(reasons)}`);
     });
     if (total > shown.length) {
         lines.push('');
         lines.push(
-            `[I]… и ещё ${total - shown.length} — весь список во фрейме «Звонки».[/I]`,
+            `… и ещё ${total - shown.length} — весь список во фрейме «Звонки».`,
         );
     }
 
     lines.push('');
-    lines.push(`[I]Сигналы поиска: ${describeSignals(result)}[/I]`);
+    lines.push(`Сигналы поиска: ${timelineText(describeSignals(result))}`);
     if (result.warnings.length) {
-        lines.push(`[I]Примечания: ${result.warnings.join('; ')}[/I]`);
+        lines.push(`Примечания: ${timelineText(result.warnings.join('; '))}`);
     }
 
-    return lines.join(BATCH_LINE_BREAK_SYMBOL);
+    return lines.join('\n');
 }
 
 /** «телефон 8005553535 (findbycomm), ИНН 4826… (реквизиты)». */

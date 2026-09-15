@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
-import { BATCH_LINE_BREAK_SYMBOL } from '@lib/bitrix/consts/batch.consts';
+import { toTimelineComment } from '@lib/bitrix/consts/timeline.consts';
 import { SalesBatchGroupBuffer as ColdHookBatchGroupBuffer } from '../../../shared/batch';
 import { TimelineEntry } from './cold-start-timeline.formatter';
 
@@ -12,6 +12,11 @@ import { TimelineEntry } from './cold-start-timeline.formatter';
  * Ключ команды — с порядковым номером записи: одна сущность получает и
  * итог старта, и «забрали» (чужая основная = сохранённая), а batch-карта
  * Bitrix при одинаковом ключе молча оставляет первую команду (ревью 02.09).
+ *
+ * ЭКРАНИРОВАНИЕ ЖИВЁТ ЗДЕСЬ, а не в форматтере: комментарий вклеивается в
+ * query-строку `cmd` сырым, и его `#`, `&`, `+`, `%` и переносы обязан
+ * подготовить транспорт — ровно один раз (`toTimelineComment`). Форматтер
+ * отдаёт человекочитаемый текст с обычными `\n`.
  */
 export class ColdStartTimelineV2Service {
     private readonly logger = new Logger(ColdStartTimelineV2Service.name);
@@ -26,13 +31,13 @@ export class ColdStartTimelineV2Service {
         entries.forEach((entry, index) => {
             const cmd = `xo2_tl_${hookKey}_${index}_${entry.entityType}_${entry.entityId}`;
             this.logger.log(
-                `[timeline] ${cmd}: ${entry.comment.split(BATCH_LINE_BREAK_SYMBOL).join(' / ')}`,
+                `[timeline] ${cmd}: ${entry.comment.split('\n').join(' / ')}`,
             );
             buffer.queue(() =>
                 this.bitrix.batch.timeline.addTimelineComment(cmd, {
                     ENTITY_TYPE: entry.entityType,
                     ENTITY_ID: entry.entityId,
-                    COMMENT: entry.comment,
+                    COMMENT: toTimelineComment([entry.comment]),
                 }),
             );
         });

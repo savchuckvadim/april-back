@@ -371,10 +371,10 @@ describe('ColdHooksHandlerV2Service — компания, force=Y, клиент 
             'xo2_tl_h1_2_deal_500',
         ]);
         expect(String(timeline[0][1])).toContain(
-            '[B]Холодный старт[/B] — ответственный: Вадим Савчук.',
+            '<b>Холодный старт</b> — ответственный: Вадим Савчук.',
         );
         expect(String(timeline[2][1])).toContain(
-            '[B]Вашу компанию забрали в работу[/B]: Вадим Савчук',
+            '<b>Вашу компанию забрали в работу</b>: Вадим Савчук',
         );
         expect(bitrix.imNotify.systemAdd).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -452,10 +452,10 @@ describe('ColdHooksHandlerV2Service — сделка без компании', (
             'xo2_tl_h2_1_deal_77',
         ]);
         expect(String(timeline[0][1])).toContain(
-            '[B]Холодный старт уступлен[/B]: клиент в работе у Иван Петров',
+            '<b>Холодный старт уступлен</b>: клиент в работе у Иван Петров',
         );
         expect(String(timeline[1][1])).toContain(
-            '[B]Попытка взять вашего клиента в работу[/B]: Вадим Савчук',
+            '<b>Попытка взять вашего клиента в работу</b>: Вадим Савчук',
         );
         expect(bitrix.imNotify.systemAdd).toHaveBeenCalledWith(
             expect.objectContaining({

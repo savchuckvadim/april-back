@@ -18,7 +18,7 @@ import {
 import { EventReportContext } from '../context/event-report.context';
 import { EEventReportEntityType } from '../init/event-report-init.types';
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';
-import { toBatchText } from '@lib/bitrix/consts/batch.consts';
+import { toBatchSafeText } from '@lib/bitrix/consts/batch.consts';
 
 import { EnumWorkStatusCode } from '../../types/report-types';
 
@@ -341,15 +341,17 @@ export class EventReportKpiPayloadBuilder {
             ? 'done'
             : 'act_noresult_fail';
 
+        const contactId = this.scenarioContactId('report');
         return this.assemble({
             scenario: 'report',
+            contactId,
             name: withRefineMark(
                 ctx.reportEventName || ctx.planEventName,
                 ctx.reportEventType,
             ),
             eventType,
             action,
-            crm: this.crmLinks(),
+            crm: this.crmLinks(contactId),
             // История различает доработку своим item'ом; сводка KPI — нет.
             historyItems: undefined,
         });
@@ -364,12 +366,14 @@ export class EventReportKpiPayloadBuilder {
          * «состоялась» (+2). Раньше эта запись шла без смещения и совпадала
          * датой с отчётной — порядок в ленте был недетерминированным.
          */
+        const contactId = this.scenarioContactId('unplanned_presentation_plan');
         return this.assemble({
             scenario: 'unplanned_presentation_plan',
             name: `Незапланированная презентация ${this.nowFormatted()}`,
             eventType: 'presentation',
             action: 'plan',
-            crm: this.crmLinks(),
+            contactId,
+            crm: this.crmLinks(contactId),
             eventDateOffsetSec: UNPLANNED_PRES_PLAN_OFFSET_SEC,
         });
     }
@@ -377,12 +381,14 @@ export class EventReportKpiPayloadBuilder {
     private buildPresentationDone(): KpiEventPayload | null {
         const ctx = this.ctx;
         if (!ctx.isPresentationDone || ctx.isExpired) return null;
+        const contactId = this.scenarioContactId('presentation_done');
         return this.assemble({
             scenario: 'presentation_done',
             name: `Презентация состоялась ${this.nowFormatted()}`,
             eventType: 'presentation',
             action: 'done',
-            crm: this.crmLinks(),
+            contactId,
+            crm: this.crmLinks(contactId),
             // Пара к «Незапланированной презентации»: факт проведения — ПОЗЖЕ
             // факта планирования (см. хронологию у констант смещений).
             eventDateOffsetSec: this.ctx.isUnplannedPresentation
@@ -406,15 +412,17 @@ export class EventReportKpiPayloadBuilder {
         const planEventType = ctx.planEventType ?? ctx.reportEventType;
         const eventType = mapEventType(planEventType);
         if (!eventType) return null;
+        const contactId = this.scenarioContactId('plan');
         return this.assemble({
             scenario: 'plan',
+            contactId,
             name: withRefineMark(
                 ctx.planEventName || ctx.reportEventName,
                 planEventType,
             ),
             eventType,
             action: ctx.isExpired ? 'pound' : 'plan',
-            crm: this.crmLinks(),
+            crm: this.crmLinks(contactId),
             // При спонтанной презентации план (например, ЗПР) — последний
             // шаг хронологии, после «запланирована»/«состоялась».
             eventDateOffsetSec: ctx.isUnplannedPresentation
@@ -441,12 +449,14 @@ export class EventReportKpiPayloadBuilder {
          * (crm-привязки, даты, причину). Имя тоже подробнее легаси
          * («Продажа»/«Отказ» → finalName с поводом и причиной).
          */
+        const contactId = this.scenarioContactId('final');
         return this.assemble({
             scenario: 'final',
             name: this.finalName(),
             eventType: ctx.isSuccessSale ? 'ev_success' : 'ev_fail',
             action: 'done',
-            crm: this.crmLinks(),
+            contactId,
+            crm: this.crmLinks(contactId),
             // Финал — последний шаг хронологии: следующим тиком секунды после
             // отчётной записи (недозвонный отказ даёт ПАРУ «Не состоялся» →
             // «Отказ», и порядок в ленте обязан быть детерминированным).
@@ -589,7 +599,7 @@ export class EventReportKpiPayloadBuilder {
                     'plan',
                     owner,
                     baseDealId,
-                    ctx.dto.plan?.contact?.ID,
+                    this.scenarioContactId('plan'),
                 ),
             );
         }
@@ -603,7 +613,7 @@ export class EventReportKpiPayloadBuilder {
                     'plan',
                     owner,
                     baseDealId,
-                    ctx.dto.report?.contact?.ID,
+                    this.scenarioContactId('unplanned_presentation_plan'),
                 ),
             );
         }
@@ -615,7 +625,7 @@ export class EventReportKpiPayloadBuilder {
                     'done',
                     owner,
                     baseDealId,
-                    ctx.dto.report?.contact?.ID,
+                    this.scenarioContactId('presentation_done'),
                 ),
             );
         }
@@ -750,6 +760,11 @@ export class EventReportKpiPayloadBuilder {
          * логическую последовательность.
          */
         eventDateOffsetSec?: number;
+        /**
+         * Контакт ЭТОГО элемента (`crm_contact`) — см. {@link scenarioContactId}.
+         * Не указан — контакта у записи нет.
+         */
+        contactId?: string | number | null;
         /** Правило дедупликации (финал/уникальные); нет — множественная. */
         dedup?: KpiEventDedup;
         /** Override item'ов для sales_history (см. KpiEventPayload). */
@@ -776,12 +791,21 @@ export class EventReportKpiPayloadBuilder {
                     ctx.entityId
                         ? { n0: `CO_${ctx.entityId}` }
                         : undefined,
-                crm_contact: ctx.dto.report?.contact?.ID
-                    ? { n0: `C_${ctx.dto.report.contact.ID}` }
+                // Контакт элемента — СВОЙ у каждого сценария: у отчётной
+                // записи тот, с кем говорили, у плановой — тот, на кого
+                // назначен следующий шаг (см. scenarioContactId).
+                crm_contact: input.contactId
+                    ? { n0: `C_${input.contactId}` }
                     : undefined,
-                // Комментарий уходит в lists.element.* через batch-строку:
-                // сырые \n там теряются, экранируем в %0A.
-                manager_comment: toBatchText(ctx.reportComment),
+                /*
+                 * Комментарий уходит в lists.element.* через batch-строку и
+                 * экранируется СТРОГИМ вариантом: это свободный текст
+                 * менеджера, где живут и `&`, и `+`, и `%`, и `#`. Слабый
+                 * toBatchText знает только про переносы — «#1 по цене»
+                 * обрывало команду на решётке (`parse_url` режет фрагмент),
+                 * и элемент списка терял хвост полей целиком.
+                 */
+                manager_comment: toBatchSafeText(ctx.reportComment),
             },
             items: {
                 event_type: input.eventType,
@@ -804,7 +828,38 @@ export class EventReportKpiPayloadBuilder {
         };
     }
 
-    private crmLinks(): Record<string, string> {
+    /**
+     * Контакт СЦЕНАРИЯ: у плановой записи — контакт плана, у всех
+     * остальных — контакт отчёта.
+     *
+     * Баг, который это чинит (15.09): и `crm_contact`, и привязка `C_*`
+     * жёстко брались из `report.contact`, поэтому обе записи одного отчёта
+     * — «Отчёт» и «План» — уезжали в список с ОДНИМ и тем же контактом.
+     * Менеджер отчитывался по одному человеку, а следующий шаг назначал на
+     * другого, и в карточке второго контакта не было ни одной записи.
+     * Ключи уникальных презентаций контакты РАЗЛИЧАЛИ и раньше
+     * (buildPresentationUniq), из-за чего дедуп и поле элемента расходились;
+     * теперь источник один — этот метод.
+     *
+     * Контакт плана не выбран — берём контакт отчёта: разговор был с ним, и
+     * запись без контакта хуже записи с прежним.
+     */
+    private scenarioContactId(
+        scenario: KpiScenario,
+    ): string | number | undefined {
+        const planContactId = this.ctx.dto.plan?.contact?.ID;
+        const reportContactId = this.ctx.dto.report?.contact?.ID;
+        return scenario === 'plan'
+            ? (planContactId ?? reportContactId)
+            : reportContactId;
+    }
+
+    /**
+     * CRM-привязки записи. `contactId` — контакт СЦЕНАРИЯ (см.
+     * {@link scenarioContactId}): по нему запись находится из карточки
+     * контакта, и у плановой записи это контакт плана.
+     */
+    private crmLinks(contactId?: string | number): Record<string, string> {
         const links: Record<string, string> = {};
         const seen = new Set<string>();
         let i = 0;
@@ -876,9 +931,8 @@ export class EventReportKpiPayloadBuilder {
         if (this.deals.newUnplannedPresDealId) {
             push(`D_${this.deals.newUnplannedPresDealId}`);
         }
-        const reportContact = this.ctx.dto.report?.contact?.ID;
-        if (reportContact) {
-            push(`C_${reportContact}`);
+        if (contactId) {
+            push(`C_${contactId}`);
         }
         /*
          * Привязки САМОЙ задачи (ufCrmTask): элемент обязан ссылаться на все

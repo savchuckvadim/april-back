@@ -148,6 +148,54 @@ export const EVENT_REPORT_EVENT_DONE_PHRASE: Record<
 };
 
 /**
+ * НЕсостоявшееся событие → фраза с согласованным по роду глаголом
+ * («Звонок не состоялся», «Презентация не состоялась»).
+ *
+ * Парная таблица к {@link EVENT_REPORT_EVENT_DONE_PHRASE}, а не отрицание
+ * «не» перед ней: род и глагол у типов разные («Заявка не отработана», но
+ * «Звонок не состоялся»), и склеенная строка читалась бы кривой. Легаси
+ * различал ровно два рода вручную, в одном `if` на «Презентация».
+ */
+export const EVENT_REPORT_EVENT_FAIL_PHRASE: Record<
+    EventReportEventType,
+    string
+> = {
+    xo: 'Холодный звонок не состоялся',
+    xoRequest: 'Заявка не отработана',
+    xoLead: 'Лид не отработан',
+    warm: 'Звонок не состоялся',
+    presentation: 'Презентация не состоялась',
+    hot: 'Звонок по решению не состоялся',
+    refine: 'Доработка не проведена',
+    moneyAwait: 'Звонок по оплате не состоялся',
+    supply: 'Поставка не выполнена',
+    document: 'Документы не отработаны',
+};
+
+/**
+ * ПЕРЕНЕСЁННОЕ событие → фраза с согласованным по роду причастием
+ * («Перенесён Звонок», «Перенесена Презентация»). Дата добавляется
+ * вызывающим («… на 28 мая 14:30»). Перенос — это НЕ план: событие то же
+ * самое, просто уезжает на другой срок, и в записи он обязан читаться
+ * иначе (легаси: «Перенесён … на …»).
+ */
+export const EVENT_REPORT_EVENT_MOVED_PHRASE: Record<
+    EventReportEventType,
+    string
+> = {
+    xo: 'Перенесён Холодный звонок',
+    xoRequest: 'Перенесена работа по заявке',
+    xoLead: 'Перенесена работа по лиду',
+    warm: 'Перенесён Звонок',
+    presentation: 'Перенесена Презентация',
+    hot: 'Перенесён Звонок по решению',
+    refine: 'Перенесена Доработка',
+    moneyAwait: 'Перенесён Звонок по оплате',
+    supply: 'Перенесена Поставка',
+    document: 'Перенесена работа по документам',
+};
+
+/**
  * Запланированное событие → фраза с согласованным по роду причастием
  * («Запланирован Звонок», «Запланирована Презентация»). Дата плана
  * добавляется вызывающим («… на 28 мая 14:30»).
@@ -172,6 +220,16 @@ export const EVENT_REPORT_EVENT_PLAN_PHRASE: Record<
 export const eventDonePhrase = (type: string): string =>
     EVENT_REPORT_EVENT_DONE_PHRASE[type as EventReportEventType] ??
     eventTypeName(type);
+
+/** Фраза несостоявшегося события; неизвестный код — «<тип> не состоялся». */
+export const eventFailPhrase = (type: string): string =>
+    EVENT_REPORT_EVENT_FAIL_PHRASE[type as EventReportEventType] ??
+    `${eventTypeName(type)} не состоялся`;
+
+/** Фраза переноса; неизвестный код — «Перенесено: <название типа>». */
+export const eventMovedPhrase = (type: string): string =>
+    EVENT_REPORT_EVENT_MOVED_PHRASE[type as EventReportEventType] ??
+    `Перенесено: ${eventTypeName(type)}`;
 
 /** Фраза плана; неизвестный код — «Запланировано: <название типа>». */
 export const eventPlanPhrase = (type: string): string =>

@@ -91,15 +91,16 @@ describe('buildColdStartTimeline — proceed', () => {
         ]);
         const [company] = entries;
         expect(company.comment).toContain(
-            '[B]Холодный старт[/B] — ответственный: Вадим Савчук.',
+            '<b>Холодный старт</b> — ответственный: Вадим Савчук.',
         );
         expect(company.comment).toContain(
             'Закрыто: сделок — 2, задач — 1, презентаций — 1, ЗПР — 0.',
         );
         expect(company.comment).toContain(
-            '[URL=https://d.b24.ru/crm/deal/details/510/]#510[/URL], [URL=https://d.b24.ru/crm/deal/details/520/]#520[/URL]',
+            '<a href="https://d.b24.ru/crm/deal/details/510/" target="_blank">#510</a>, <a href="https://d.b24.ru/crm/deal/details/520/" target="_blank">#520</a>',
         );
-        expect(company.comment).toContain('%0A');
+        expect(company.comment).toContain(String.fromCharCode(10));
+        expect(company.comment).not.toContain('%0A');
     });
 
     it('клиент без компании: входная сделка и сохранённая основная', () => {
@@ -143,16 +144,16 @@ describe('buildColdStartTimeline — proceed с force=Y (забрали у др�
         const foreign = entries.filter(e => [700, 800].includes(e.entityId));
         expect(foreign).toHaveLength(2);
         expect(foreign[0].comment).toContain(
-            '[B]Вашу компанию забрали в работу[/B]: Вадим Савчук (ответственный холодного старта).',
+            '<b>Вашу компанию забрали в работу</b>: Вадим Савчук (ответственный холодного старта).',
         );
         expect(foreign[0].comment).toContain(
-            'Входная сделка: [URL=https://d.b24.ru/crm/deal/details/600/]#600[/URL]; компания:',
+            'Входная сделка: <a href="https://d.b24.ru/crm/deal/details/600/" target="_blank">#600</a>; компания:',
         );
         expect(foreign[0].comment).toContain(
             'Ваша работа по клиенту закрыта или переназначена: сделок — 2, задач — 1, презентаций — 1, ЗПР — 0.',
         );
         // Входные сущности при этом получают обычный итог старта.
-        expect(entries[0].comment).toContain('[B]Холодный старт[/B]');
+        expect(entries[0].comment).toContain('<b>Холодный старт</b>');
     });
 });
 
@@ -223,7 +224,7 @@ describe('buildColdStartPushes', () => {
         // Входная получает «уступлен», чужая 700 — «попытка», и входная же — «забрали» её владельцу.
         expect(entries.map(e => e.entityId)).toEqual([600, 700, 600]);
         expect(entries[2].comment).toContain(
-            '[B]Вашего клиента забрали в работу[/B]',
+            '<b>Вашего клиента забрали в работу</b>',
         );
         const pushes = buildColdStartPushes({
             domain: 'd.b24.ru',
@@ -268,7 +269,7 @@ describe('buildColdStartTimeline — yield', () => {
         const [company, entry] = entries;
         expect([company.entityId, entry.entityId]).toEqual([7, 600]);
         expect(company.comment).toContain(
-            '[B]Холодный старт уступлен[/B]: клиент в работе у Иван Петров ([URL=https://d.b24.ru/crm/deal/details/700/]сделка #700[/URL]).',
+            '<b>Холодный старт уступлен</b>: клиент в работе у Иван Петров (<a href="https://d.b24.ru/crm/deal/details/700/" target="_blank">сделка #700</a>).',
         );
         expect(company.comment).toContain(
             'Закрыты только входная сделка и её связи: сделок — 2, задач — 1, презентаций — 1, ЗПР — 0. Новая работа не создана.',
@@ -280,10 +281,10 @@ describe('buildColdStartTimeline — yield', () => {
         const foreign = entries.filter(e => [700, 800].includes(e.entityId));
         expect(foreign).toHaveLength(2);
         expect(foreign[0].comment).toContain(
-            '[B]Попытка взять вашу компанию в работу[/B]: Вадим Савчук (ответственный холодного старта).',
+            '<b>Попытка взять вашу компанию в работу</b>: Вадим Савчук (ответственный холодного старта).',
         );
         expect(foreign[0].comment).toContain(
-            'Входная сделка: [URL=https://d.b24.ru/crm/deal/details/600/]#600[/URL]; компания: [URL=https://d.b24.ru/crm/company/details/7/]#7[/URL].',
+            'Входная сделка: <a href="https://d.b24.ru/crm/deal/details/600/" target="_blank">#600</a>; компания: <a href="https://d.b24.ru/crm/company/details/7/" target="_blank">#7</a>.',
         );
         expect(foreign[0].comment).toContain(
             'Уступлено — ваша работа не тронута.',

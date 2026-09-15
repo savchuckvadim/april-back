@@ -4,6 +4,7 @@ import {
     normalizePhone,
 } from '@lib/portal-lib/pbx-duplicate';
 import { entityCardUrl } from '../../../sales-hooks/duplicate-check/lib/duplicate-timeline.formatter';
+import { contactFullName as contactName } from '../../../shared/bitrix/crm-entity-name.util';
 
 /**
  * Каркас и палитра DESCRIPTION задачи обзвона.
@@ -139,13 +140,6 @@ const readMultifield = (raw: unknown): PhoneEntry[] => {
  */
 const phoneKey = (value: string): string =>
     normalizePhone(value) ?? (value.replace(/\D/g, '') || value);
-
-/** Имя контакта одной строкой; пусто — контакт без имени. */
-const contactName = (contact: IBXContact): string =>
-    [contact.LAST_NAME, contact.NAME, contact.SECOND_NAME]
-        .map(part => (part ?? '').trim())
-        .filter(Boolean)
-        .join(' ');
 
 const numericId = (raw: unknown): number => {
     const id = Number(raw);

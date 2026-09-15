@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { getErrorDetails } from '@/shared';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
+import { toTimelineComment } from '@lib/bitrix/consts/timeline.consts';
 import {
     DuplicateSearchLevel,
     DuplicateSearchResult,
@@ -127,7 +128,9 @@ export class DuplicateCheckUseCase
                     {
                         ENTITY_TYPE: item.entityType,
                         ENTITY_ID: item.entityId,
-                        COMMENT: comment,
+                        // Экранирование под batch-провод — здесь, на границе
+                        // транспорта: форматтер отдаёт текст с `\n`.
+                        COMMENT: toTimelineComment([comment]),
                     },
                 ),
             );

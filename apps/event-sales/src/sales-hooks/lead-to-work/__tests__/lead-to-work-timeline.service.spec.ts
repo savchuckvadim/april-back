@@ -82,6 +82,33 @@ describe('LeadToWorkTimelineService', () => {
         expect(comments[0].data.ENTITY_TYPE).toBe('deal');
     });
 
+    /*
+     * Ссылка обязана быть КЛИКАБЕЛЬНОЙ и ЦЕЛОЙ (инцидент 15.09): BB-код
+     * таймлайн карточки показывает сырым текстом, а `#` в подписи резал
+     * batch-команду на месте решётки — тег оставался незакрытым.
+     */
+    it('ссылка — html-тег, а «#» в подписи уезжает экранированным', async () => {
+        const { bitrix, comments } = makeBitrix();
+        const service = new LeadToWorkTimelineService(
+            bitrix as never,
+            'd.b24.ru',
+        );
+
+        await service.run([transfer()], {
+            ...OPTIONS,
+            copyActivities: false,
+        });
+
+        const comment = String(comments[0].data.COMMENT);
+        expect(comment).toContain(
+            '<a href="https://d.b24.ru/crm/lead/details/42/" target="_blank">',
+        );
+        expect(comment).toContain('</a>');
+        expect(comment).toContain('%2342');
+        expect(comment).not.toContain('[URL=');
+        expect(comment).not.toContain('#');
+    });
+
     /* Работа уже шла — «создана из заявки» было бы неправдой. */
     it('reuse: комментарий не пишется', async () => {
         const { bitrix, comments } = makeBitrix();

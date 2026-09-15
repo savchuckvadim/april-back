@@ -196,6 +196,20 @@ export class BitrixDateTime {
         return `${date} ${time}`;
     }
 
+    /**
+     * Человекочитаемые дата, ГОД и время «23 сентября 2026, 16:20» в TZ
+     * портала. Нужен там, где полной даты записи рядом НЕТ, а срок может
+     * уехать за год вперёд (следующий шаг в комментарии таймлайна): без года
+     * «23 сентября 16:20» читается как ближайшее — и это враньё.
+     */
+    toRuHumanFullDateTime(): string {
+        return `${this.toRuHuman()}, ${new Intl.DateTimeFormat('ru-RU', {
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: this.portalTz,
+        }).format(this.instant.toDate())}`;
+    }
+
     /** Копия абсолютного момента, если нужен нестандартный формат. */
     toDayjs(): Dayjs {
         return this.instant.clone();

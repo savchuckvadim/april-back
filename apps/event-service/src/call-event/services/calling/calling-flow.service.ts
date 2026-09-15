@@ -22,6 +22,7 @@ import {
     normalizeCallingEventType,
 } from '../../types/calling-event.enum';
 import { toBatchText } from '@lib/bitrix/consts/batch.consts';
+import { toTimelineComment } from '@lib/bitrix/consts/timeline.consts';
 import {
     buildTimelineComment,
     completedPhrase,
@@ -80,8 +81,15 @@ export class CallingFlowService {
         );
         if (!text) return;
 
-        // комментарий уходит batch-командой: сырые \n теряются, только %0A
-        const comment = toBatchText(text);
+        /*
+         * Комментарий уходит batch-командой — экранируем СТРОГО
+         * (toTimelineComment → toBatchSafeText). Слабый toBatchText знал
+         * только про переносы, а внутри живёт свободный текст менеджера:
+         * `#` резал команду на месте решётки (Битрикс разбирает её как url
+         * и отбрасывает фрагмент), `&` уводил хвост в мусорное поле,
+         * `+` доезжал пробелом.
+         */
+        const comment = toTimelineComment([text]);
 
         if (ctx.dealId) {
             this.bitrix.batch.timeline.addTimelineComment('timeline_deal', {

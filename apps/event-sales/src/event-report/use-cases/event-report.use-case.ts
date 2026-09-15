@@ -31,7 +31,7 @@ import { EventReportPostFailService } from '../services/post-fail/event-report-p
 import { EventReportLeadRelationService } from '../services/lead/event-report-lead-relation.service';
 import { EventReportLeadRequestSyncService } from '../services/lead/event-report-lead-request-sync.service';
 import { EventReportReturnToTmcService } from '../services/return-to-tmc/event-report-return-to-tmc.service';
-import { EventReportEntityHistoryService } from '../services/history/event-report-entity-history.service';
+import { EventReportTimelineService } from '../services/timeline/event-report-timeline.service';
 import { ColdHookBatchGroupBuffer } from '../../cold-hook/services/batch/cold-hook-batch-group-buffer';
 import { EventReportPostFlowService } from '../services/post-flow/event-report-post-flow.service';
 
@@ -44,7 +44,7 @@ import { EventReportPostFlowService } from '../services/post-flow/event-report-p
  *     company/lead, deals по 4 категориям, task, lead, контакты.
  *  3. Сконструировать {@link EventReportContext} (все флаги).
  *  4. Прогнать flow-сервисы (entity → deal → task → kpi → presentation list →
- *     post-fail → lead → return-to-tmc → history) — каждый просто queue'ит
+ *     post-fail → lead → return-to-tmc → timeline) — каждый просто queue'ит
  *     команды в `bitrix.batch.*`.
  *  5. Один финальный `bitrix.api.callBatchWithConcurrency(1)` отправит всё
  *     одним HTTP-вызовом (рассчитываем на ≤50 команд).
@@ -100,7 +100,7 @@ export class EventReportUseCase {
         const postFail = new EventReportPostFailService(bitrix, portal);
         const leadRelation = new EventReportLeadRelationService(bitrix, portal);
         const returnToTmc = new EventReportReturnToTmcService(bitrix, portal);
-        const history = new EventReportEntityHistoryService(bitrix);
+        const timeline = new EventReportTimelineService(bitrix);
 
         // KPI использует тот же ColdHookBatchGroupBuffer (контракт KpiListFlowService).
         // По факту мы тут одна группа = весь endpoint; вся работа упадёт в один HTTP.
@@ -131,7 +131,9 @@ export class EventReportUseCase {
         if (ctx.strategy !== EEventReportFlowStrategy.LEAD_ONLY) {
             returnToTmc.queue(ctx);
         }
-        history.queue(ctx);
+        // Запись в таймлайн владельца — ПОСЛЕ deal-flow: в неё уходит
+        // ссылка на основную сделку, и делать её до расчёта сделок незачем.
+        timeline.queue(ctx);
 
         // Коммитим KPI группу + flush'им буфер.
         //

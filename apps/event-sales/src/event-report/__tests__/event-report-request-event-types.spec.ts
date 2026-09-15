@@ -5,7 +5,7 @@ import { BitrixDateTime, ETimeZone } from '@/shared/lib/date';
 import { PBXDateTime } from '@lib/portal-lib/pbx-domain/date/pbx-datetime';
 import { EventReportContext } from '../services/context/event-report.context';
 import { EventReportKpiPayloadBuilder } from '../services/kpi-list/event-report-kpi-payload.builder';
-import { EventReportEntityHistoryService } from '../services/history/event-report-entity-history.service';
+import { EventReportTimelineService } from '../services/timeline/event-report-timeline.service';
 import { EventReportTaskFlowService } from '../services/task/event-report-task-flow.service';
 import { DealFlowResult } from '../services/deal/event-report-deal-flow.service';
 import {
@@ -568,12 +568,12 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
 
     it('таймлайн: пишется русское название типа, а не сырой код', () => {
         const addTimelineComment = jest.fn();
-        const service = new EventReportEntityHistoryService({
+        const service = new EventReportTimelineService({
             batch: { timeline: { addTimelineComment } },
         } as never);
 
         service.queue({
-            isGsirk: true,
+            domain: 'd.b24.ru',
             // Даты форматирует контекст (ctx.dateTime) — фейк обязан отдавать
             // ту же обёртку, что и настоящий EventReportContext.
             dateTime: new PBXDateTime(makePortal() as never),
@@ -581,8 +581,22 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
             entityId: 42,
             nowDate: NOW,
             reportEventType: 'xoRequest',
+            reportEventName: '',
+            isResult: true,
             planEventType: 'xoLead',
+            planEventName: '',
+            planDeadline: null,
+            isExpired: false,
+            reportContact: null,
+            planContact: null,
+            isUnplannedPresentation: false,
             reportComment: '',
+            isSuccessSale: false,
+            isFail: false,
+            isNotCa: false,
+            currentBaseDeal: null,
+            company: null,
+            lead: null,
         } as never);
 
         const [, payload] = addTimelineComment.mock.calls[0] as [

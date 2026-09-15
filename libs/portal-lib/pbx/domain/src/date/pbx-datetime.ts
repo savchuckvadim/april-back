@@ -94,6 +94,11 @@ export class PBXDateTime {
         return this.valueOf(value).toRuHumanDateTime();
     }
 
+    /** Момент → «23 сентября 2026, 16:20» в TZ портала (с годом). */
+    ruHumanFullDateTime(value: Date | Dayjs | string): string {
+        return this.valueOf(value).toRuHumanFullDateTime();
+    }
+
     /**
      * Строка трактуется как локальное время портала, `Date`/`Dayjs` — как
      * готовый абсолютный момент. Разница принципиальная, поэтому один вход.
