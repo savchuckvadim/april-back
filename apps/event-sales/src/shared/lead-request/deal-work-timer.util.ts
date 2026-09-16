@@ -83,6 +83,24 @@ export function clearDealAssignedAt(
 }
 
 /**
+ * «Кто принял» на сделке — пишется рядом со снятием ожидания. Принявший
+ * неизвестен или поля нет — молча пропускаем.
+ */
+export function setDealAcceptedBy(
+    portal: PortalModel,
+    fields: BxRow,
+    acceptedBy: number | null,
+): boolean {
+    const field = portal.getEntityFieldByCode(
+        'deal',
+        EnumLeadRequestFieldCode.op_lead_accepted_by,
+    );
+    if (!field || !acceptedBy) return false;
+    fields[portal.getFieldBitrixId(field)] = acceptedBy;
+    return true;
+}
+
+/**
  * Зеркальная запись в историю СДЕЛКИ (`op_mhistory`).
  *
  * Менеджер живёт в воронке сделок и в лид не заходит — без зеркала путь

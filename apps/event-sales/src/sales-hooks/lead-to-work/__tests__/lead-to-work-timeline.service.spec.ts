@@ -11,17 +11,25 @@ const makeBitrix = (activityIds: number[] = []) => {
         entityTypeId: number;
         entityId: number;
     }[] = [];
-    const flush = jest.fn().mockResolvedValue([]);
+    /*
+     * Чтение дел идёт ПАЧКОЙ: первый flush отдаёт ответы команд
+     * `lw_src_act_<лид>`, дальнейшие — запись.
+     */
+    const flush = jest
+        .fn()
+        .mockResolvedValueOnce([
+            {
+                result: {
+                    lw_src_act_42: activityIds.map(id => ({ ID: String(id) })),
+                },
+            },
+        ])
+        .mockResolvedValue([]);
     return {
         comments,
         bindings,
         flush,
         bitrix: {
-            activity: {
-                getList: jest.fn().mockResolvedValue({
-                    result: activityIds.map(id => ({ ID: String(id) })),
-                }),
-            },
             batch: {
                 timeline: {
                     addTimelineComment: (
@@ -32,6 +40,7 @@ const makeBitrix = (activityIds: number[] = []) => {
                     },
                 },
                 activity: {
+                    getList: jest.fn(),
                     addBinding: (
                         _cmd: string,
                         activityId: number,
@@ -163,10 +172,11 @@ describe('LeadToWorkTimelineService', () => {
 
     /* Сделка уже создана — падение таймлайна не должно её отменять. */
     it('ошибка чтения дел → warning, комментарий всё равно ставится', async () => {
-        const { bitrix, comments } = makeBitrix();
-        bitrix.activity.getList = jest
-            .fn()
-            .mockRejectedValue(new Error('портал недоступен'));
+        const { bitrix, comments, flush } = makeBitrix();
+        // Чтение идёт пачкой — падает именно flush первой волны.
+        flush.mockReset();
+        flush.mockRejectedValueOnce(new Error('портал недоступен'));
+        flush.mockResolvedValue([]);
         const service = new LeadToWorkTimelineService(
             bitrix as never,
             'd.b24.ru',

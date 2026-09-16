@@ -199,3 +199,86 @@ describe('LeadToWorkStageResolver — graceful degradation', () => {
         expect(plan.warnings.some(w => w.includes('sales_xo'))).toBe(true);
     });
 });
+
+/**
+ * ЯВНАЯ стадия сделки (`dealStageCode`) — режим массового переноса
+ * исторической базы: волна знает целевую стадию заранее и не зависит от
+ * того, сопоставили ли зеркало стадии лида в админке.
+ */
+describe('LeadToWorkStageResolver — явная стадия сделки', () => {
+    const portal = () =>
+        makePortal({
+            salesBase: {
+                stages: [
+                    { code: 'sales_refine', bitrixId: 'REFINE' },
+                    { code: 'sales_pres', bitrixId: 'PRESENTATION' },
+                    { code: 'sales_warm', bitrixId: 'WARM' },
+                ],
+            },
+            leadStages: { UC_3PYGQW: 'lead_pres' },
+            leadStatusByCode: {
+                lead_company_work: 'PBX_COMPANY_WORK',
+                lead_taken_in_work: 'PBX_TAKEN_IN_WORK',
+            },
+        });
+
+    it('перебивает зеркало стадии лида', () => {
+        const resolver = new LeadToWorkStageResolver(
+            portal() as never,
+        ).withCurrentLeadStatus('UC_3PYGQW');
+
+        const plan = resolver.resolve(
+            item({
+                leadId: 1,
+                responsible: 5,
+                stageMode: 'from_lead',
+                dealStageCode: 'sales_refine',
+            }),
+            false,
+            false,
+        );
+
+        // Зеркало дало бы PRESENTATION — явная стадия сильнее.
+        expect(plan.dealStageId).toBe('C3:REFINE');
+    });
+
+    /*
+     * Главное свойство режима: переносу запрещено что-либо менять в
+     * лидах. Без этой ветки хук увёл бы всю историческую базу в
+     * «Работа с компанией» / «Взята в работу».
+     */
+    it('статус лида НЕ меняется — даже когда зеркала нет', () => {
+        const resolver = new LeadToWorkStageResolver(
+            portal() as never,
+        ).withCurrentLeadStatus('UC_5ZSP43');
+
+        const plan = resolver.resolve(
+            item({
+                leadId: 1,
+                responsible: 5,
+                stageMode: 'from_lead',
+                dealStageCode: 'sales_refine',
+            }),
+            true,
+            false,
+        );
+
+        expect(plan.dealStageId).toBe('C3:REFINE');
+        expect(plan.leadStatusId).toBeUndefined();
+    });
+
+    /* Без явной стадии и без зеркала поведение прежнее: лид двигается. */
+    it('без dealStageCode и без зеркала лид уезжает в рабочую стадию', () => {
+        const resolver = new LeadToWorkStageResolver(
+            portal() as never,
+        ).withCurrentLeadStatus('UC_5ZSP43');
+
+        const plan = resolver.resolve(
+            item({ leadId: 1, responsible: 5, stageMode: 'from_lead' }),
+            true,
+            false,
+        );
+
+        expect(plan.leadStatusId).toBe('PBX_COMPANY_WORK');
+    });
+});

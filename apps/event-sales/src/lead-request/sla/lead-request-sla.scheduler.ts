@@ -13,6 +13,20 @@ const LOCK_KEY = 'lead-request:sla-lock';
 const LOCK_TTL_SEC = 9 * 60;
 
 /**
+ * Периодичность тика — она же НИЖНЯЯ ГРАНИЦА порога SLA.
+ *
+ * Авария 16.09.2026: на портале порог выставили в 10 минут, то есть ровно в
+ * тик. Просроченным становилось всё, что крон только что передал, и один и
+ * тот же пул сделок переназначался НА КАЖДОМ ТИКЕ — карусель из задач
+ * «Звонок по переданной работе» и смены ответственного каждые десять минут.
+ *
+ * Порог меньше тика не имеет смысла ни при каких настройках: крон всё равно
+ * не может среагировать быстрее, чем раз в SLA_TICK_MINUTES. Поэтому
+ * поднимаем молча, но с предупреждением в лог.
+ */
+const SLA_TICK_MINUTES = 10;
+
+/**
  * Планировщик SLA принятия заявок: раз в 10 минут обходит порталы, у
  * которых в настройках приложения «Звонки» включён SLA (админка →
  * карточка портала → Settings → event-sales → «SLA принятия заявок»).
@@ -92,10 +106,15 @@ export class LeadRequestSlaScheduler implements OnModuleInit {
                         continue;
                     }
 
-                    const run = await this.slaService.runForDomain(
+                    const minutes = this.safeMinutes(
                         domain,
                         settings.leadIntakeSlaMinutes,
+                    );
+                    const run = await this.slaService.runForDomain(
+                        domain,
+                        minutes,
                         settings.leadIntakeSlaMaxPerRun,
+                        settings.leadIntakeSlaMaxTransfers,
                     );
                     if (run.warnings.length) {
                         this.logger.warn(
@@ -112,6 +131,20 @@ export class LeadRequestSlaScheduler implements OnModuleInit {
         } finally {
             await redis.del(LOCK_KEY).catch(() => undefined);
         }
+    }
+
+    /**
+     * Порог не ниже тика: см. {@link SLA_TICK_MINUTES}. Меньшее значение —
+     * ошибка настройки, а не осознанный выбор, и стоит она каруселью.
+     */
+    private safeMinutes(domain: string, configured: number): number {
+        if (configured >= SLA_TICK_MINUTES) return configured;
+        this.logger.warn(
+            `[sla] ${domain}: порог ${configured} мин меньше периода крона ` +
+                `(${SLA_TICK_MINUTES} мин) — поднят до ${SLA_TICK_MINUTES}. ` +
+                'Порог меньше тика означал бы передачу работы на каждом тике.',
+        );
+        return SLA_TICK_MINUTES;
     }
 
     /** Домены с включённым SLA; недоступность БД → пустой список (no-op). */

@@ -14,6 +14,15 @@ export class BxActivityBatchService {
         this.repo = new BxActivityRepository(api);
     }
 
+    /** Список дел сущности батч-командой (перенос таймлайна пачкой). */
+    getList(
+        cmdCode: string,
+        filter: Record<string, unknown>,
+        select?: string[],
+    ) {
+        return this.repo.getListBtch(cmdCode, filter as never, select);
+    }
+
     get(cmdCode: string, activityId: number | string) {
         return this.repo.getBtch(cmdCode, activityId);
     }

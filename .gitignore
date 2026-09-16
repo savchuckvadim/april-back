@@ -105,3 +105,10 @@ schemacopy
 
 # Отчёты разведки перед перегоном лидов (scripts/analyze-lead-migration.ts)
 lead-migration-analysis-*.json
+
+# Журналы прогонов перегона лидов (scripts/migrate-leads-to-work.ts)
+lead-migration-*.log
+
+# Журнал цепочки волн (scripts/migrate-waves.sh)
+migrate-waves.log
+migrate-waves.out

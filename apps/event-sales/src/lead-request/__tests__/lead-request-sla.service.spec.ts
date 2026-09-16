@@ -122,6 +122,14 @@ const makeDeps = (input: {
             PortalModel: makePortal(input.withAssignedAt),
         }),
     };
+    /*
+     * Счётчик передач: incr возвращает 1 — лимит не исчерпан, поведение
+     * тестов прежнее. Отдельный тест на исчерпание лимита — ниже.
+     */
+    const incr = jest.fn().mockResolvedValue(1);
+    const redisService = {
+        getClient: () => ({ incr, expire: jest.fn().mockResolvedValue(1) }),
+    };
     const service = new LeadRequestSlaService(
         pbx as never,
         acceptService as never,
@@ -129,9 +137,11 @@ const makeDeps = (input: {
         idempotency as never,
         structure as never,
         assignee as never,
+        redisService as never,
     );
     return {
         service,
+        incr,
         leadUpdate,
         notify,
         acceptService,
@@ -285,6 +295,28 @@ describe('LeadRequestSlaService', () => {
             /^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}:\d{2}$/,
         );
         expect(filter.CLOSED).toBe('N');
+    });
+
+    /*
+     * Авария 16.09.2026: работу передавали по кругу каждые десять минут,
+     * потому что передача снимает просрочку лишь до следующего порога, а
+     * подтверждения не было. Лимит — единственное, что рвёт круг.
+     */
+    it('лимит передач исчерпан → передачи нет, эскалация руководителю', async () => {
+        const { service, dispatch, incr, notify } = makeDeps({
+            leads: [],
+            deals: [OVERDUE_DEAL],
+            withAssignedAt: true,
+        });
+        // Четвёртая передача той же сделки за сутки — сверх лимита.
+        incr.mockResolvedValue(4);
+
+        const run = await service.runForDomain('d.b24.ru', 60, 30);
+
+        expect(run.dealsTransferred).toBe(0);
+        expect(dispatch.accept).not.toHaveBeenCalled();
+        expect(notify).toHaveBeenCalled();
+        expect(run.warnings.join(' ')).toContain('лимит передач');
     });
 
     it('сделка не подтверждена → передача хуком transfer-work', async () => {

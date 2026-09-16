@@ -360,16 +360,28 @@ export class RejectReviveService {
         }
     }
 
-    /** STAGE_ID отказных стадий (fail / apology / not_ca) в нотации C{n}:{X}. */
+    /**
+     * STAGE_ID стадий, ИЗ КОТОРЫХ реанимируем, в нотации C{n}:{X}.
+     *
+     * ТОЛЬКО «Отказ» (`sales_fail`) — решение владельца 15.09.2026.
+     * До этого список был шире (fail + apology + not_ca), и реанимация
+     * поднимала всех подряд:
+     *  - «Не состоялась» (`sales_double`) — разговор не состоялся, это не
+     *    отказ клиента и не повод звонить через сто двадцать дней;
+     *  - «Не ЦА» (`sales_not_ca`) — клиент нецелевой по определению,
+     *    возвращать его в обзвон бессмысленно.
+     *
+     * «Не Беспокоить» (`sales_not_call`) здесь не было и быть не должно:
+     * клиент прямо просил не звонить.
+     *
+     * Нужна другая стадия — добавляется СЮДА, и только осознанно: каждая
+     * строка этого списка возвращает людей в обзвон.
+     */
     private failStageIds(category: {
         bitrixId: number | string;
         stages: Array<{ code: string; bitrixId: string }>;
     }): string[] {
-        const codes: string[] = [
-            PBX_DEAL_SALES_BASE_STAGE_CODE.fail,
-            PBX_DEAL_SALES_BASE_STAGE_CODE.apology,
-            PBX_DEAL_SALES_BASE_STAGE_CODE.notCa,
-        ];
+        const codes: string[] = [PBX_DEAL_SALES_BASE_STAGE_CODE.fail];
         return codes
             .map(code => category.stages.find(stage => stage.code === code))
             .filter((stage): stage is { code: string; bitrixId: string } =>

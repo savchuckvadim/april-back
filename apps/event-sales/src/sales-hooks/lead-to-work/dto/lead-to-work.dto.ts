@@ -6,6 +6,7 @@ import {
     LeadWorkKind,
 } from '../../../shared/event-title';
 import { SalesHookRunRequestBaseDto } from '../../core/dto/sales-hook-run-request.dto';
+import { PbxDealSalesBaseStageCode } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
 
 /**
  * Описание параметра `workKind` — одно на вебхук робота и кнопку фрейма,
@@ -442,6 +443,46 @@ export interface ILeadToWorkItem {
      * isRequest и автодетекта: именно он решает слово в заголовке задачи.
      */
     workKind?: LeadWorkKind;
+    /**
+     * ЯВНАЯ целевая стадия сделки ОП — перебивает `stageMode` и зеркало
+     * стадии лида.
+     *
+     * Заведено 15.09.2026 под МАССОВЫЙ ПЕРЕНОС исторической базы: там
+     * волна = один статус лида, целевая стадия известна заранее, и
+     * гонять её через сопоставление зеркал в админке — лишняя ручная
+     * работа и лишний способ ошибиться.
+     *
+     * ВАЖНО: при заданной стадии статус ЛИДА не трогается совсем (как и
+     * при совпавшем зеркале). Без этого хук увёл бы лиды в
+     * «Работа с компанией» / «Взята в работу» — а переносу запрещено
+     * что-либо менять в лидах.
+     *
+     * Робот и кнопка фрейма поле не передают: в их DTO его нет.
+     */
+    dealStageCode?: PbxDealSalesBaseStageCode;
+    /**
+     * ПЕРЕНОСИТЬ ЛИ ДЕЛА ТАЙМЛАЙНА лида на сделку — перебивает
+     * портальную настройку `lead_work_copy_activities` для ЭТОГО прогона.
+     *
+     * Заведено 15.09.2026 под массовый перенос: настройка портала одна
+     * на всё, а таймлайн нужен только рабочим стадиям («В работе»,
+     * «Демонстрация», «Возражения», «КП»). Волнам успехов и отказников
+     * он не нужен — там переносится только состояние, и тащить туда
+     * сотни дел значит впустую выесть лимиты портала.
+     */
+    copyActivities?: LeadToWorkFlag;
+    /**
+     * Искать открытые задачи лида ВО ВСЕХ группах, а не только в группе
+     * продаж. У исторических задач группы продаж нет — её и ставит
+     * перенос, — поэтому обычный фильтр их не видит.
+     */
+    taskAnyGroup?: LeadToWorkFlag;
+    /**
+     * Переносить КОММЕНТАРИИ таймлайна лида в сделку. Отдельно от
+     * `copyActivities`: дела привязываются второй привязкой, комментарии
+     * копируются — это разные сущности и разная цена.
+     */
+    copyComments?: LeadToWorkFlag;
     /** Сырой дедлайн в локали портала; отсутствует — задача без дедлайна. */
     deadline?: string;
     /** Название события; отсутствует — берётся название лида. */
@@ -485,6 +526,10 @@ export function buildLeadToWorkItem(input: {
     isXo?: LeadToWorkFlag;
     isRequest?: LeadToWorkFlag;
     workKind?: LeadWorkKind;
+    dealStageCode?: PbxDealSalesBaseStageCode;
+    copyActivities?: LeadToWorkFlag;
+    taskAnyGroup?: LeadToWorkFlag;
+    copyComments?: LeadToWorkFlag;
     deadline?: string;
     name?: string;
 }): ILeadToWorkItem {
@@ -509,6 +554,10 @@ export function buildLeadToWorkItem(input: {
         isXo: input.isXo,
         isRequest: input.isRequest,
         workKind: input.workKind,
+        dealStageCode: input.dealStageCode,
+        copyActivities: input.copyActivities,
+        taskAnyGroup: input.taskAnyGroup,
+        copyComments: input.copyComments,
         deadline: input.deadline,
         name: input.name,
     };

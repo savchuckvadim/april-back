@@ -23,6 +23,7 @@ import {
     appendDealHistory,
     clearDealAssignedAt,
     dealAssignedAtName,
+    setDealAcceptedBy,
 } from '../../shared/lead-request/deal-work-timer.util';
 import {
     LeadRequestAcceptDto,
@@ -235,7 +236,17 @@ export class LeadRequestAcceptService {
             ),
             tz,
         );
-        if (acceptState.acceptedAfterAssign === true) {
+        /*
+         * «Уже принята» — только если заявка при этом НЕ ждёт: заполненное
+         * «Заявка назначена (дата)» перебивает историю. Карточка решает
+         * именно по этому полю, и раньше расхождение запирало менеджера:
+         * экран просил принять, а кнопка по истории отвечала «уже» и ничего
+         * не писала — поле оставалось заполненным навсегда.
+         */
+        if (
+            acceptState.acceptedAfterAssign === true &&
+            !this.isWaiting(portal, lead)
+        ) {
             return {
                 already: true,
                 fields: {},
@@ -307,6 +318,15 @@ export class LeadRequestAcceptService {
                     tz,
                 ),
             );
+        }
+
+        // «Кто принял» — справка рядом с историей; поля нет — пропуск.
+        const acceptedByField = portal.getEntityFieldByCode(
+            'lead',
+            EnumLeadRequestFieldCode.op_lead_accepted_by,
+        );
+        if (acceptedByField && acceptedBy) {
+            fields[portal.getFieldBitrixId(acceptedByField)] = acceptedBy;
         }
 
         return {
@@ -422,6 +442,7 @@ export class LeadRequestAcceptService {
         acceptedBy: number | null,
     ): void {
         clearDealAssignedAt(portal, fields);
+        setDealAcceptedBy(portal, fields, acceptedBy);
         appendDealHistory(
             portal,
             fields,
@@ -488,6 +509,20 @@ export class LeadRequestAcceptService {
 
     private text(raw: unknown): string {
         return typeof raw === 'string' ? raw.trim() : '';
+    }
+
+    /**
+     * Заявка ждёт подтверждения: «Заявка назначена (дата)» заполнено.
+     * Поле не заведено — ждать нечего, решает история (как раньше).
+     */
+    isWaiting(portal: PortalModel, lead: BxRow): boolean {
+        const field = portal.getEntityFieldByCode(
+            'lead',
+            EnumLeadRequestFieldCode.op_lead_assigned_at,
+        );
+        return field
+            ? Boolean(this.text(lead[portal.getFieldBitrixId(field)]))
+            : false;
     }
 
     /**

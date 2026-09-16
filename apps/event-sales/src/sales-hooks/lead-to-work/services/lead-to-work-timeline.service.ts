@@ -32,7 +32,21 @@ export interface ILeadTimelineOptions {
     activitiesLimit: number;
     /** Писать в таймлайн сделки комментарий со ссылкой на заявку. */
     writeOriginComment: boolean;
+    /**
+     * Переносить КОММЕНТАРИИ таймлайна лида в таймлайн сделки.
+     *
+     * Это отдельная от дел сущность (`crm.timeline.comment`), и
+     * `crm.activity.binding.add` её не касается: в старой базе в
+     * комментариях лежит самое ценное — «кому звонить», «когда вернуться»,
+     * реквизиты (владелец, 15.09.2026).
+     */
+    copyComments?: boolean;
+    /** Сколько последних комментариев переносить на лид. */
+    commentsLimit?: number;
 }
+
+/** Сколько последних комментариев лида переносим, если лимит не задан. */
+const DEFAULT_COMMENTS_LIMIT = 50;
 
 /** Максимум привязок у одного дела — ограничение Битрикса. */
 const MAX_BINDINGS_PER_ACTIVITY = 100;
@@ -71,15 +85,33 @@ export class LeadToWorkTimelineService {
         const targets = transfers.filter(item => item.dealId > 0);
         if (!targets.length) return warnings;
 
+        /*
+         * СНАЧАЛА ЧИТАЕМ ВСЕХ ОДНИМ БАТЧЕМ, ПОТОМ ПИШЕМ.
+         *
+         * Раньше на каждый лид шли два ОТДЕЛЬНЫХ HTTP-запроса (список дел и
+         * список комментариев) прямо в цикле — на пачке из двадцати лидов это
+         * сорок последовательных запросов, и именно они, а не запись, были
+         * потолком массового переноса (замер 15.09: с таймлайном 11 лидов/мин
+         * против 17 без него). Одним батчем это два-три запроса на пачку.
+         */
+        const sources = await this.readSources(targets, options, warnings);
+
         for (const target of targets) {
             if (options.writeOriginComment && !target.reused) {
                 this.queueOriginComment(target, warnings);
             }
             if (options.copyActivities) {
-                await this.queueActivityBindings(
+                this.queueActivityBindings(
                     target,
+                    sources.activities.get(target.leadId) ?? [],
                     options.activitiesLimit,
-                    warnings,
+                );
+            }
+            if (options.copyComments) {
+                this.queueComments(
+                    target,
+                    sources.comments.get(target.leadId) ?? [],
+                    options.commentsLimit ?? DEFAULT_COMMENTS_LIMIT,
                 );
             }
         }
@@ -90,6 +122,80 @@ export class LeadToWorkTimelineService {
             warnings.push(`Таймлайн сделки: ${getErrorDetails(error).message}`);
         }
         return warnings;
+    }
+
+    /**
+     * Дела и комментарии ВСЕХ лидов пачки — одним batch-проводом.
+     *
+     * Ключи команд привязаны к лиду: одинаковый ключ batch-карта Битрикса
+     * молча схлопывает, и пачка потеряла бы всё, кроме первого лида.
+     */
+    private async readSources(
+        targets: ILeadTimelineTransfer[],
+        options: ILeadTimelineOptions,
+        warnings: string[],
+    ): Promise<{
+        activities: Map<number, BxRow[]>;
+        comments: Map<number, BxRow[]>;
+    }> {
+        const activities = new Map<number, BxRow[]>();
+        const comments = new Map<number, BxRow[]>();
+        if (!options.copyActivities && !options.copyComments) {
+            return { activities, comments };
+        }
+
+        for (const target of targets) {
+            if (options.copyActivities) {
+                this.bitrix.batch.activity.getList(
+                    `lw_src_act_${target.leadId}`,
+                    {
+                        OWNER_TYPE_ID: BitrixOwnerTypeId.LEAD,
+                        OWNER_ID: target.leadId,
+                    } as never,
+                    ['ID', 'CREATED'],
+                );
+            }
+            if (options.copyComments) {
+                this.bitrix.batch.timeline.getTimelineComments(
+                    `lw_src_cmt_${target.leadId}`,
+                    {
+                        ENTITY_ID: target.leadId,
+                        ENTITY_TYPE: BitrixEntityType.LEAD,
+                    },
+                );
+            }
+        }
+
+        try {
+            const responses = await this.bitrix.api.callBatchWithConcurrency(1);
+            for (const chunk of responses) {
+                for (const [cmd, value] of Object.entries(
+                    (chunk?.result ?? {}) as Record<string, unknown>,
+                )) {
+                    const rows = Array.isArray(value) ? (value as BxRow[]) : [];
+                    const actId = Number(cmd.replace('lw_src_act_', ''));
+                    if (cmd.startsWith('lw_src_act_') && actId) {
+                        activities.set(actId, rows);
+                        continue;
+                    }
+                    const cmtId = Number(cmd.replace('lw_src_cmt_', ''));
+                    if (cmd.startsWith('lw_src_cmt_') && cmtId) {
+                        comments.set(cmtId, rows);
+                    }
+                }
+            }
+        } catch (error) {
+            /*
+             * Fail-open: таймлайн — украшение поверх уже созданной сделки,
+             * ронять перенос из-за него нельзя. Но МОЛЧА терять историю
+             * тоже нельзя: предупреждение уходит в результат операции и в
+             * журнал прогона, чтобы такие лиды догнать вторым проходом.
+             */
+            warnings.push(
+                `Таймлайн заявок не прочитан: ${getErrorDetails(error).message}`,
+            );
+        }
+        return { activities, comments };
     }
 
     /**
@@ -126,27 +232,92 @@ export class LeadToWorkTimelineService {
     }
 
     /**
+     * КОММЕНТАРИИ таймлайна лида → комментарии таймлайна сделки.
+     *
+     * Копия, а не привязка: у комментария, в отличие от дела, второй
+     * привязки не бывает — `crm.timeline.comment` живёт у одной сущности.
+     * В лиде оригинал остаётся нетронутым.
+     *
+     * ЧТО СОХРАНЯЕМ И ЧТО ТЕРЯЕМ:
+     *  - автор сохраняется (`AUTHOR_ID`) — иначе вся история стала бы
+     *    «от вебхука»;
+     *  - дата НЕ сохраняется: новый комментарий получает текущее время,
+     *    другого способа у REST нет. Поэтому первой строкой ставим шапку
+     *    «перенесено из заявки, исходная дата …» — без неё лента сделки
+     *    врала бы по хронологии;
+     *  - закрепление не переносится (решение владельца): прочитать, что
+     *    закреплено у лида, REST не позволяет.
+     *
+     * Порядок — от старых к новым, чтобы лента сделки читалась сверху вниз
+     * так же, как читалась у лида.
+     */
+    private queueComments(
+        target: ILeadTimelineTransfer,
+        rows: BxRow[],
+        limit: number,
+    ): void {
+        {
+            const recent = rows
+                .slice()
+                .sort((a, b) => Number(a.ID) - Number(b.ID))
+                .slice(-Math.max(1, limit));
+
+            for (const row of recent) {
+                const body = this.commentText(row);
+                if (!body) continue;
+                const authorId = Number(row.AUTHOR_ID) || 0;
+                this.bitrix.batch.timeline.addTimelineComment(
+                    `lw_tl_copy_${target.dealId}_${String(row.ID)}`,
+                    {
+                        ENTITY_ID: target.dealId,
+                        ENTITY_TYPE: BitrixEntityType.DEAL,
+                        COMMENT: toTimelineComment([
+                            timelineBold(
+                                `Из заявки #${target.leadId}` +
+                                    (this.text(row.CREATED)
+                                        ? `, ${this.text(row.CREATED)}`
+                                        : ''),
+                            ),
+                            body,
+                        ]),
+                        ...(authorId ? { AUTHOR_ID: String(authorId) } : {}),
+                    },
+                );
+            }
+            if (recent.length) {
+                this.logger.log(
+                    `[timeline] лид ${target.leadId} → сделка ${target.dealId}: ` +
+                        `комментариев к переносу ${recent.length}`,
+                );
+            }
+        }
+    }
+
+    /** Текст комментария; пустой/нечитаемый — пропускаем. */
+    private commentText(row: BxRow): string {
+        const raw = this.text(row.COMMENT);
+        return raw ? raw : '';
+    }
+
+    /** Строковое поле Битрикса; объекты дают пустую строку. */
+    private text(raw: unknown): string {
+        return typeof raw === 'string' ? raw.trim() : '';
+    }
+
+    /**
      * Дела лида → привязка к сделке. Берём последние N по дате создания:
      * у давно живущего лида дел могут быть сотни, а ценность у свежих.
      */
-    private async queueActivityBindings(
+    private queueActivityBindings(
         target: ILeadTimelineTransfer,
+        rows: BxRow[],
         limit: number,
-        warnings: string[],
-    ): Promise<void> {
+    ): void {
         const safeLimit = Math.max(
             1,
             Math.min(limit, MAX_BINDINGS_PER_ACTIVITY),
         );
-        try {
-            const { result } = await this.bitrix.activity.getList(
-                {
-                    OWNER_TYPE_ID: BitrixOwnerTypeId.LEAD,
-                    OWNER_ID: target.leadId,
-                },
-                ['ID', 'CREATED'],
-            );
-            const rows = (result ?? []) as unknown as BxRow[];
+        {
             const ids = rows
                 .map(row => Number(row.ID))
                 .filter(id => Number.isFinite(id) && id > 0)
@@ -165,10 +336,6 @@ export class LeadToWorkTimelineService {
             this.logger.log(
                 `[timeline] лид ${target.leadId} → сделка ${target.dealId}: ` +
                     `дел к привязке ${ids.length}`,
-            );
-        } catch (error) {
-            warnings.push(
-                `Дела лида ${target.leadId} не привязаны к сделке: ${getErrorDetails(error).message}`,
             );
         }
     }

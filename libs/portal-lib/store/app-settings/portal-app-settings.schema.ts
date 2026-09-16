@@ -464,6 +464,18 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             type: 'number',
             default: 60,
         }),
+        leadIntakeSlaMaxTransfers: setting({
+            code: 'lead_intake_sla_max_transfers',
+            name: 'SLA: передач одной заявки за сутки',
+            description:
+                'Сколько раз одну и ту же непринятую работу можно передать ' +
+                'по кругу за сутки. Дальше передача прекращается и ' +
+                'руководителю уходит уведомление: если работу не приняли ' +
+                'столько раз подряд, дело не в расписании. 0 — без лимита ' +
+                '(не рекомендуется).',
+            type: 'number',
+            default: 3,
+        }),
         leadIntakeSlaMaxPerRun: setting({
             code: 'lead_intake_sla_max_per_run',
             name: 'SLA: лидов за проход',

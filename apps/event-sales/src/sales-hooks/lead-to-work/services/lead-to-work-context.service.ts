@@ -37,6 +37,27 @@ export interface LeadToWorkContext {
 type BxRow = Record<string, unknown>;
 
 /**
+ * Сколько чанков чтения шлём параллельно.
+ *
+ * ЕДИНИЦА — ПО ЗАМЕРУ, А НЕ ПО ОСТОРОЖНОСТИ. Тройка выглядела бесплатным
+ * ускорением (в командах чтения нет ссылок $result, расщеплять их безопасно),
+ * но на бою 15.09 дала ХУДШИЙ результат: 40 лидов за 294 с против 218 с при
+ * единице. Портал не распараллеливает, а придушивает — и на четырёх и выше
+ * начинает рвать соединения (socket hang up). Менять только с новым замером.
+ */
+const READ_CONCURRENCY = 1;
+
+/** Что нужно знать о лиде, чтобы прочитать его ответы из общего батча. */
+interface IEnvMeta {
+    leadId: number;
+    companyId: number | null;
+    ourDealId: number | null;
+    xoDealId: number | null;
+    taskBindings: string[];
+    warnings: string[];
+}
+
+/**
  * Prefetch контекста лида двумя волнами batch (2 HTTP):
  *   W1: лид;
  *   W2: компания + наша сделка (to_base_sales) + сделки конвертации + задачи.
@@ -51,15 +72,130 @@ export class LeadToWorkContextService {
         private readonly portal: PortalModel,
     ) {}
 
-    async load(leadId: number): Promise<LeadToWorkContext> {
-        const warnings: string[] = [];
+    /**
+     * @param anyTaskGroup искать открытые задачи лида ВО ВСЕХ группах, а не
+     * только в группе продаж портала. Нужен МАССОВОМУ ПЕРЕНОСУ исторической
+     * базы (15.09.2026): у старых задач группы продаж нет — её как раз и
+     * ставит перенос, — а обычный фильтр по `GROUP_ID` их не находил, и
+     * задачи молча не переезжали: ни префикса «Звонок», ни группы, ни
+     * привязки к сделке.
+     */
+    /**
+     * Читает САМИ ЛИДЫ пачки одним batch-вызовом.
+     *
+     * Волна 1 (`crm.lead.get`) исторически шла отдельным HTTP НА КАЖДЫЙ лид,
+     * и на массовом переносе именно она была потолком: замер 15.09 —
+     * 20 лидов за 69 с, то есть ~1,7 с на запрос, 40 запросов на пачку из 20.
+     * Батчем это один запрос на пачку.
+     *
+     * Лид, которого портал не отдал, в карту не попадает — `load()` для него
+     * честно сходит за ним сам и бросит, если его действительно нет.
+     */
+    async preloadLeads(leadIds: number[]): Promise<Map<number, IBXLead>> {
+        const byId = new Map<number, IBXLead>();
+        if (!leadIds.length) return byId;
 
-        const leadResponse = await this.bitrix.lead.get(leadId);
-        const lead = leadResponse?.result;
+        for (const leadId of leadIds) {
+            this.bitrix.batch.lead.get(`pre_lead_${leadId}`, leadId);
+        }
+        const responses =
+            await this.bitrix.api.callBatchWithConcurrency(READ_CONCURRENCY);
+        for (const chunk of responses) {
+            for (const [cmd, value] of Object.entries(
+                (chunk?.result ?? {}) as Record<string, unknown>,
+            )) {
+                const id = Number(cmd.replace('pre_lead_', ''));
+                if (!Number.isFinite(id) || !value) continue;
+                byId.set(id, value as IBXLead);
+            }
+        }
+        return byId;
+    }
+
+    /**
+     * Контекст ПАЧКИ лидов — окружение всех лидов ОДНИМ batch-проводом.
+     *
+     * Было: на каждый лид отдельный `callBatchWithConcurrency` из ~6 команд,
+     * то есть N HTTP-вызовов на пачку. На массовом переносе это и было
+     * потолком скорости — замер 15.09: 20 лидов за ~100 с, портал отвечает
+     * ~5 с на вызов.
+     *
+     * Стало: команды всех лидов копятся с ключами, привязанными к лиду
+     * (`ctx_company_1961`), и уезжают одним вызовом. 20 лидов × 6 команд =
+     * 120 команд = 3 HTTP (батч Битрикса режется по 50). Примерно в шесть раз
+     * меньше запросов — и ровно во столько же быстрее.
+     *
+     * Лид, которого портал не отдал, попадает в результат ошибкой, а не
+     * роняет пачку: на 6 тысячах записей один битый лид — норма.
+     */
+    async loadMany(
+        leadIds: number[],
+        anyTaskGroup = false,
+    ): Promise<Map<number, LeadToWorkContext | Error>> {
+        const out = new Map<number, LeadToWorkContext | Error>();
+        if (!leadIds.length) return out;
+
+        const leads = await this.preloadLeads(leadIds);
+
+        // Волна 2: окружение ВСЕХ лидов в один буфер.
+        const metaById = new Map<number, IEnvMeta>();
+        for (const leadId of leadIds) {
+            const lead = leads.get(leadId);
+            if (!lead) {
+                out.set(
+                    leadId,
+                    new Error(`Лид ${leadId} не найден на портале`),
+                );
+                continue;
+            }
+            metaById.set(
+                leadId,
+                this.queueEnvironment(leadId, lead, anyTaskGroup),
+            );
+        }
+        if (!metaById.size) return out;
+
+        const flat = await this.flushToFlatMap();
+
+        for (const [leadId, meta] of metaById) {
+            const lead = leads.get(leadId);
+            if (!lead) continue;
+            out.set(leadId, this.buildContext(lead, meta, flat));
+        }
+        return out;
+    }
+
+    /**
+     * @param preloaded лид, уже прочитанный {@link preloadLeads} — тогда
+     * волна 1 не делает своего HTTP-запроса.
+     */
+    async load(
+        leadId: number,
+        anyTaskGroup = false,
+        preloaded?: IBXLead,
+    ): Promise<LeadToWorkContext> {
+        const lead = preloaded ?? (await this.bitrix.lead.get(leadId))?.result;
         if (!lead) {
             throw new Error(`Лид ${leadId} не найден на портале`);
         }
+        const meta = this.queueEnvironment(leadId, lead, anyTaskGroup);
+        const flat = await this.flushToFlatMap();
+        return this.buildContext(lead, meta, flat);
+    }
 
+    /**
+     * Ставит команды окружения ОДНОГО лида в общий буфер. Ключи команд
+     * привязаны к лиду: без этого пачка из двадцати лидов затирала бы сама
+     * себя (batch-карта Битрикса при одинаковом ключе молча оставляет первую
+     * команду), а задачи двух лидов ОДНОЙ компании склеились бы по общему
+     * `CO_`-ключу.
+     */
+    private queueEnvironment(
+        leadId: number,
+        lead: IBXLead,
+        anyTaskGroup: boolean,
+    ): IEnvMeta {
+        const warnings: string[] = [];
         const companyId = this.numberOf((lead as BxRow).COMPANY_ID);
         const ourDealId = this.parseDealRef(
             this.leadFieldValue(
@@ -74,21 +210,20 @@ export class LeadToWorkContextService {
             ),
         );
 
-        // === Волна 2: окружение одним batch ===
         if (companyId) {
-            this.bitrix.batch.company.get('ctx_company', companyId);
+            this.bitrix.batch.company.get(`ctx_company_${leadId}`, companyId);
         }
         if (ourDealId) {
-            this.bitrix.batch.deal.get('ctx_our_deal', ourDealId);
+            this.bitrix.batch.deal.get(`ctx_our_deal_${leadId}`, ourDealId);
         }
         if (xoDealId) {
             // Повторный ХО: существующая ХО-сделка нужна для передачи
             // ответственного и KPI «не состоялся» прежнему менеджеру.
-            this.bitrix.batch.deal.get('ctx_our_xo_deal', xoDealId);
+            this.bitrix.batch.deal.get(`ctx_our_xo_deal_${leadId}`, xoDealId);
         }
         // Штатная конвертация: гейт против сделки-дубля.
         this.bitrix.batch.deal.getList(
-            'ctx_converted_deals',
+            `ctx_converted_deals_${leadId}`,
             { LEAD_ID: leadId } as never,
             ['ID', 'TITLE', 'CATEGORY_ID', 'STAGE_ID', 'CLOSED', 'COMPANY_ID'],
         );
@@ -98,7 +233,7 @@ export class LeadToWorkContextService {
         );
         if (fromLeadFieldName) {
             this.bitrix.batch.deal.getList(
-                'ctx_from_lead_deals',
+                `ctx_from_lead_deals_${leadId}`,
                 { [fromLeadFieldName]: `L_${leadId}` } as never,
                 [
                     'ID',
@@ -117,24 +252,49 @@ export class LeadToWorkContextService {
         }
         // Контакты лида: у лида их бывает несколько (штатный CONTACT_ID —
         // только «главный»), а на сделку должны переехать все.
-        this.bitrix.batch.lead.contactItemsGet('ctx_lead_contacts', leadId);
+        this.bitrix.batch.lead.contactItemsGet(
+            `ctx_lead_contacts_${leadId}`,
+            leadId,
+        );
 
         const taskGroupId = this.portal.getSalesTaskGroupId();
         const taskBindings = [`L_${leadId}`];
         if (companyId) taskBindings.push(`CO_${companyId}`);
         for (const binding of taskBindings) {
             this.bitrix.batch.task.getList(
-                `ctx_tasks_${binding}`,
+                `ctx_tasks_${leadId}_${binding}`,
                 {
                     UF_CRM_TASK: [binding],
                     '!STATUS': EBXTaskStatus.COMPLETED,
-                    ...(taskGroupId ? { GROUP_ID: taskGroupId } : {}),
+                    ...(taskGroupId && !anyTaskGroup
+                        ? { GROUP_ID: taskGroupId }
+                        : {}),
                 } as never,
                 ['ID', 'TITLE', 'RESPONSIBLE_ID', 'UF_CRM_TASK', 'STATUS'],
             );
         }
 
-        const responses = await this.bitrix.api.callBatchWithConcurrency(1);
+        return {
+            leadId,
+            companyId,
+            ourDealId,
+            xoDealId,
+            taskBindings,
+            warnings,
+        };
+    }
+
+    /** Отправляет накопленный буфер и раскладывает ответы в плоскую карту. */
+    private async flushToFlatMap(): Promise<Map<string, unknown>> {
+        /*
+         * ЧТЕНИЕ можно слать параллельно: между командами чтения нет ссылок
+         * $result[...], поэтому расщепление на чанки ничего не ломает — в
+         * отличие от ЗАПИСИ, где порядок и одна HTTP-граница обязательны
+         * (ai/rules/bitrix-batch-grouping.md). Портал отвечает ~5 с на батч
+         * независимо от его размера, так что три чанка разом — втрое быстрее.
+         */
+        const responses =
+            await this.bitrix.api.callBatchWithConcurrency(READ_CONCURRENCY);
         const flat = new Map<string, unknown>();
         for (const chunk of responses) {
             for (const [cmd, value] of Object.entries(
@@ -143,27 +303,39 @@ export class LeadToWorkContextService {
                 flat.set(cmd, value);
             }
         }
+        return flat;
+    }
 
-        const company = companyId
-            ? ((flat.get('ctx_company') as IBXCompany | undefined) ?? null)
+    /** Ответы батча → контекст одного лида. */
+    private buildContext(
+        lead: IBXLead,
+        meta: IEnvMeta,
+        flat: Map<string, unknown>,
+    ): LeadToWorkContext {
+        const { leadId } = meta;
+        const company = meta.companyId
+            ? ((flat.get(`ctx_company_${leadId}`) as IBXCompany | undefined) ??
+              null)
             : null;
-        const existingOurDeal = ourDealId
-            ? ((flat.get('ctx_our_deal') as IBXDeal | undefined) ?? null)
+        const existingOurDeal = meta.ourDealId
+            ? ((flat.get(`ctx_our_deal_${leadId}`) as IBXDeal | undefined) ??
+              null)
             : null;
-        const existingXoDeal = xoDealId
-            ? ((flat.get('ctx_our_xo_deal') as IBXDeal | undefined) ?? null)
+        const existingXoDeal = meta.xoDealId
+            ? ((flat.get(`ctx_our_xo_deal_${leadId}`) as IBXDeal | undefined) ??
+              null)
             : null;
         const convertedDeals = this.rowsOf(
-            flat.get('ctx_converted_deals'),
+            flat.get(`ctx_converted_deals_${leadId}`),
         ) as unknown as IBXDeal[];
         const fromLeadDeals = this.rowsOf(
-            flat.get('ctx_from_lead_deals'),
+            flat.get(`ctx_from_lead_deals_${leadId}`),
         ) as unknown as IBXDeal[];
 
         const openTasks: IBXTask[] = [];
         const seenTaskIds = new Set<string>();
-        for (const binding of taskBindings) {
-            const raw = flat.get(`ctx_tasks_${binding}`) as
+        for (const binding of meta.taskBindings) {
+            const raw = flat.get(`ctx_tasks_${leadId}_${binding}`) as
                 | { tasks?: IBXTask[] }
                 | undefined;
             for (const task of raw?.tasks ?? []) {
@@ -192,10 +364,10 @@ export class LeadToWorkContextService {
             openTasks,
             contactIds: this.collectContactIds(
                 lead as BxRow,
-                flat.get('ctx_lead_contacts'),
+                flat.get(`ctx_lead_contacts_${leadId}`),
             ),
             isConverted,
-            warnings,
+            warnings: meta.warnings,
         };
     }
 

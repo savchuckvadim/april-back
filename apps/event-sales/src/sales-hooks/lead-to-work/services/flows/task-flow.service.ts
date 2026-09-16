@@ -1,3 +1,4 @@
+import { toBatchSafeText } from '@lib/bitrix/consts/batch.consts';
 import {
     mergeTaskCrmBindings,
     taskCrmBinding,
@@ -112,7 +113,9 @@ export class TaskFlowService extends LeadToWorkFlowBase {
                     `lw_task_move_${taskId}`,
                     taskId,
                     {
-                        TITLE: this.withPrefix(rawTitle, CALL_TASK_PREFIX),
+                        TITLE: toBatchSafeText(
+                            this.withPrefix(rawTitle, CALL_TASK_PREFIX),
+                        ),
                         RESPONSIBLE_ID: item.responsible,
                         ...(groupId ? { GROUP_ID: groupId } : {}),
                         UF_CRM_TASK: mergeTaskCrmBindings(
@@ -145,7 +148,7 @@ export class TaskFlowService extends LeadToWorkFlowBase {
                 : `${CALL_TASK_PREFIX} ${input.eventName}`;
         const cmd = `lw_task_add_${item.leadId}`;
         const payload: BxRow = {
-            TITLE: title,
+            TITLE: toBatchSafeText(title),
             RESPONSIBLE_ID: item.responsible,
             UF_CRM_TASK: bindings,
             ...(groupId ? { GROUP_ID: groupId } : {}),

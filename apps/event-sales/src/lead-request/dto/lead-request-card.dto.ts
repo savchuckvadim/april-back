@@ -259,9 +259,9 @@ export class LeadRequestCardDto {
     @ApiPropertyOptional({
         description:
             'Кому назначен лид (ASSIGNED_BY_ID). Фронт сравнивает с ' +
-            'текущим пользователем: непринятая ЧУЖАЯ заявка — кнопки ' +
-            'принятия не показываются (после передачи принимает новый ' +
-            'ответственный, а не прежний).',
+            'текущим пользователем: своей непринятой заявке — экран ' +
+            'подтверждения, чужая — только справка, работу она не ' +
+            'блокирует (решение владельца 16.09).',
         type: Number,
         nullable: true,
         example: 447,
@@ -269,6 +269,19 @@ export class LeadRequestCardDto {
     @IsOptional()
     @IsInt()
     assignedById: number | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Кто принял заявку (поле op_lead_accepted_by) — справка. ' +
+            'Пишется кнопкой принятия, долечиванием SLA и адресным ХО ' +
+            'из сделки. null — не принята либо поле не заведено на портале.',
+        type: Number,
+        nullable: true,
+        example: 325,
+    })
+    @IsOptional()
+    @IsInt()
+    acceptedById: number | null;
 
     @ApiProperty({
         description: 'Готовность к фиксации продажи (что ещё не отмечено).',

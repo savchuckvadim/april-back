@@ -17,6 +17,7 @@ import {
     toLinkedIds,
 } from '../../lib/deal-link-fields';
 import { EnumColdCallEntityType } from '../../dto/cold.dto';
+import { dealAssignedAtName } from '../../../shared/lead-request/deal-work-timer.util';
 import { PortalDealColdCategoryService } from '../enities/deal/portal-deal-cold-category.service';
 import { EventColdCallEntityTargetFieldsModel } from '../enities/entity/event-entity-fields.model';
 import { ColdTarget } from '../target/cold-target.types';
@@ -182,6 +183,8 @@ export class ColdRelationsCollectorV2Service {
     }
 
     private dealSelect(): string[] {
+        // Таймер подтверждения: адресный ХО снимает его с основной сделки.
+        const assignedAt = dealAssignedAtName(this.portal);
         return [
             ...new Set([
                 'ID',
@@ -196,6 +199,7 @@ export class ColdRelationsCollectorV2Service {
                     dealLinkKey(this.portal, code),
                 ),
                 ...this.dealFields.getBitrixIds(),
+                ...(assignedAt ? [assignedAt] : []),
             ]),
         ];
     }

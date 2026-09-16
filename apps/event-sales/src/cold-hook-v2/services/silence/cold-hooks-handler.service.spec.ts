@@ -63,6 +63,10 @@ const FIELDS: Record<string, string> = {
     xo_responsible: 'XO_RESPONSIBLE',
     xo_created: 'XO_CREATED',
     xo_name: 'XO_NAME',
+    // Ось заявки: адресный ХО принимает ждущую заявку.
+    op_lead_assigned_at: 'OP_LEAD_ASSIGNED_AT',
+    op_lead_accepted_by: 'OP_LEAD_ACCEPTED_BY',
+    op_lead_firstprepare_history: 'OP_LEAD_FIRSTPREPARE_HISTORY',
 };
 
 const list = (type: string) => ({
@@ -101,6 +105,8 @@ const PortalModel = {
             : `UF_CRM_${field.bitrixId}`,
     getListByCode: (code: string) =>
         list(code === 'sales_kpi' ? 'kpi' : 'history'),
+    getLeadStatusIdByCode: (code: string) =>
+        code === 'lead_taken_in_work' ? 'PBX_TAKEN_IN_WORK' : undefined,
 };
 
 const PRES_INFO = {
@@ -131,6 +137,8 @@ interface World {
     companies: Row[];
     tasks: Array<{ id: string; ufCrmTask: string[] }>;
     items: Record<string, Row[]>;
+    /** Лиды клиента (для оси заявки); по умолчанию — нет. */
+    leads?: Row[];
 }
 
 const matches = (row: Row, filter: Row): boolean =>
@@ -172,7 +180,19 @@ const makeBitrix = (world: World) => {
             ),
         },
         imNotify: { systemAdd: jest.fn(async () => 1) },
+        lead: {
+            getList: jest.fn((filter: Row) =>
+                Promise.resolve({
+                    result: (world.leads ?? []).filter(row =>
+                        (filter.ID as number[])
+                            .map(String)
+                            .includes(String(row.ID)),
+                    ),
+                }),
+            ),
+        },
         batch: {
+            lead: { update: rec('lead.update', () => ({})) },
             deal: {
                 get: rec(
                     'deal.get',
@@ -523,6 +543,96 @@ describe('ColdHooksHandlerV2Service — сделка без компании', (
         expect(of(journal, 'timeline.add').map(([, key]) => key)).toEqual([
             'xo2_tl_h3_0_deal_600',
         ]);
+    });
+});
+
+describe('ColdHooksHandlerV2Service — адресный ХО принимает ждущую заявку', () => {
+    const world: World = {
+        companies: [],
+        deals: [
+            {
+                ID: '600',
+                CATEGORY_ID: '17',
+                STAGE_ID: 'C17:WARM',
+                COMPANY_ID: '',
+                ASSIGNED_BY_ID: '447',
+                LEAD_ID: '',
+                UF_CRM_DEAL_FROM_LEAD_ID: 'L_12',
+                UF_CRM_OP_LEAD_ASSIGNED_AT: '2026-09-16T16:20:47+03:00',
+            },
+        ],
+        tasks: [],
+        items: {},
+        leads: [
+            {
+                ID: '12',
+                ASSIGNED_BY_ID: '448',
+                STATUS_SEMANTIC_ID: 'P',
+                UF_CRM_OP_LEAD_ASSIGNED_AT: '2026-09-16T16:20:47+03:00',
+                UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [
+                    '16.09.2026 16:20 — ХО назначен: Иван Петров',
+                ],
+            },
+        ],
+    };
+
+    it('лид уходит новому ответственному, таймеры лида и сделки сняты, в истории — передача и принятие', async () => {
+        const { handler, journal, bitrix } = makeHandler(world);
+        await handler.handleHooks('d.b24.ru', {
+            h4: hook(EnumColdCallEntityType.DEAL, '600', EnumColdCallForce.N),
+        });
+
+        expect(bitrix.lead.getList).toHaveBeenCalledWith(
+            { ID: [12] },
+            expect.any(Array),
+        );
+        const leadUpdates = of(journal, 'lead.update');
+        expect(leadUpdates).toHaveLength(1);
+        const [, key, leadId, fields] = leadUpdates[0] as [
+            string,
+            string,
+            number,
+            Row,
+        ];
+        expect(key).toBe('xo2_lead_h4_12');
+        expect(leadId).toBe(12);
+        expect(fields).toMatchObject({
+            ASSIGNED_BY_ID: '447',
+            STATUS_ID: 'PBX_TAKEN_IN_WORK',
+            UF_CRM_OP_LEAD_ASSIGNED_AT: '',
+            UF_CRM_OP_LEAD_ACCEPTED_BY: 447,
+        });
+        const history = fields.UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
+        expect(history[1]).toContain('ХО передан: Иван Петров → Вадим Савчук');
+        expect(history[2]).toContain(
+            'Заявка принята в работу: Вадим Савчук (адресный ХО)',
+        );
+
+        const basePayload = of(journal, 'deal.update')[0][3];
+        expect(basePayload).toMatchObject({
+            UF_CRM_OP_LEAD_ASSIGNED_AT: '',
+            UF_CRM_OP_LEAD_ACCEPTED_BY: 447,
+        });
+    });
+
+    it('принятая и закрытая заявки не трогаются', async () => {
+        const quiet: World = {
+            ...world,
+            deals: [{ ...world.deals[0], UF_CRM_OP_LEAD_ASSIGNED_AT: '' }],
+            leads: [
+                { ...world.leads![0], UF_CRM_OP_LEAD_ASSIGNED_AT: '' },
+                { ...world.leads![0], ID: '13', STATUS_SEMANTIC_ID: 'F' },
+            ],
+        };
+        const { handler, journal } = makeHandler(quiet);
+        await handler.handleHooks('d.b24.ru', {
+            h5: hook(EnumColdCallEntityType.DEAL, '600', EnumColdCallForce.N),
+        });
+
+        expect(of(journal, 'lead.update')).toHaveLength(0);
+        const basePayload = of(journal, 'deal.update')[0][3];
+        expect(basePayload).not.toHaveProperty('UF_CRM_OP_LEAD_ASSIGNED_AT');
+        expect(basePayload).not.toHaveProperty('UF_CRM_OP_LEAD_ACCEPTED_BY');
     });
 });
 

@@ -35,6 +35,11 @@ import { ColdStartNotifyV2Service } from '../timeline/cold-start-notify.service'
 import { ColdStartTimelineV2Service } from '../timeline/cold-start-timeline.service';
 import { UserNameResolver } from '../../../shared/lead-request/user-name.resolver';
 import { SalesBatchGroupBuffer as ColdHookBatchGroupBuffer } from '../../../shared/batch';
+import { LeadRequestAcceptService } from '../../../lead-request/services/lead-request-accept.service';
+import {
+    ColdLeadRequestV2Service,
+    ColdWaitingLead,
+} from '../lead-request/cold-lead-request.service';
 
 /** Что решено по хуку в фазе чтения — вход фазы записи. */
 interface PreparedTarget {
@@ -42,6 +47,8 @@ interface PreparedTarget {
     decision: ColdStartDecision;
     closed: ColdCloseResult;
     noteInput: ColdStartTimelineInput;
+    /** Заявки клиента, ждущие подтверждения: адресный ХО их принимает. */
+    waitingLeads: ColdWaitingLead[];
 }
 
 /**
@@ -116,6 +123,13 @@ export class ColdHooksHandlerV2Service {
             const timeline = new ColdStartTimelineV2Service(bitrix);
             const notify = new ColdStartNotifyV2Service(bitrix);
             const useCase = new ColdCallV2UseCase(PortalModel, bitrix);
+            // План принятия — чистый расчёт, его единственная зависимость
+            // (PBXService) у обработчика уже есть: модуль заявок не нужен.
+            const leadRequests = new ColdLeadRequestV2Service(
+                PortalModel,
+                bitrix,
+                new LeadRequestAcceptService(this.pbx),
+            );
             // Резолв смартов — один на окно тишины, null = не установлен.
             const smarts: ColdSmartInfos = {
                 pres: await this.presSmart.resolveInfo(domain),
@@ -197,8 +211,14 @@ export class ColdHooksHandlerV2Service {
                     relations,
                     decision,
                 );
+                // Уступили чужой работе — заявки не трогаем, читать незачем.
+                const waitingLeads =
+                    decision.mode === 'proceed'
+                        ? await leadRequests.loadWaiting(relations.leadIds)
+                        : [];
                 const names = await this.userNames.resolve(domain, bitrix, [
                     responsibleId,
+                    ...ColdLeadRequestV2Service.responsibleIds(waitingLeads),
                     ...decision.foreign.map(item => item.responsibleId),
                     ...(decision.takenEntry
                         ? [decision.takenEntry.responsibleId]
@@ -208,6 +228,7 @@ export class ColdHooksHandlerV2Service {
                     target: resolved,
                     decision,
                     closed,
+                    waitingLeads,
                     noteInput: {
                         domain,
                         target: resolved,
@@ -346,6 +367,13 @@ export class ColdHooksHandlerV2Service {
                  * ОТЛОЖЕННЫЙ enqueue, и группа без закрытия не уедет во
                  * flush вовсе — отметка просто потерялась бы.
                  */
+                leadRequests.queue(
+                    item.target.hookKey,
+                    item.waitingLeads,
+                    item.noteInput.responsibleId,
+                    item.noteInput.names,
+                    buffer,
+                );
                 queueSentMark(item.target);
                 await buffer.endGroup();
                 created += 1;

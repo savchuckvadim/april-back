@@ -159,9 +159,23 @@ export class LeadToWorkUseCase
             error?: string;
         }[] = [];
         const detector = new LeadRequestDetectorService(ctx.portal);
+        /*
+         * Сами лиды пачки — ОДНИМ батчем. Волна 1 контекста иначе делает
+         * свой HTTP на каждый лид, и на массовом переносе она и есть
+         * потолок скорости (замер 15.09: ~1,7 с на запрос).
+         */
+        const contexts = await contextService.loadMany(
+            items.map(entry => entry.leadId),
+            items.some(entry => entry.taskAnyGroup === 'Y'),
+        );
         for (const item of items) {
             try {
-                const leadContext = await contextService.load(item.leadId);
+                const loaded = contexts.get(item.leadId);
+                if (loaded instanceof Error) throw loaded;
+                if (!loaded) {
+                    throw new Error(`Лид ${item.leadId} не прочитан`);
+                }
+                const leadContext = loaded;
                 const leadRow = leadContext.lead as unknown as BxRow;
                 /*
                  * Намерение резолвим ДО выбора ответственного: от isXo
@@ -454,8 +468,26 @@ export class LeadToWorkUseCase
             ctx.domain,
             EnumPortalAppCode.eventSales,
         );
+        /*
+         * Флаг элемента перебивает портальную настройку: массовый перенос
+         * включает дела только рабочим волнам, а настройка портала одна на
+         * всё. Флага нет (робот, кнопка) — поведение прежнее.
+         */
+        const itemCopyFlag = queued.find(
+            entry => entry.item.copyActivities !== undefined,
+        )?.item.copyActivities;
+        const copyActivities =
+            itemCopyFlag !== undefined
+                ? itemCopyFlag === 'Y'
+                : settings.leadWorkCopyActivities;
+
+        const copyComments =
+            queued.find(entry => entry.item.copyComments !== undefined)?.item
+                .copyComments === 'Y';
+
         if (
-            !settings.leadWorkCopyActivities &&
+            !copyActivities &&
+            !copyComments &&
             !settings.leadWorkOriginComment
         ) {
             return [];
@@ -477,9 +509,10 @@ export class LeadToWorkUseCase
         return new LeadToWorkTimelineService(ctx.bitrix, ctx.domain).run(
             transfers,
             {
-                copyActivities: settings.leadWorkCopyActivities,
+                copyActivities,
                 activitiesLimit: settings.leadWorkCopyActivitiesLimit,
                 writeOriginComment: settings.leadWorkOriginComment,
+                copyComments,
             },
         );
     }

@@ -2079,6 +2079,30 @@ export const PBX_SALES_EVENT_FIELDS = [
         isNeedUpdate: true,
         isMultiple: false,
     },
+    /*
+     * КТО принял заявку — справка для людей и отчётов, на доступ к работе не
+     * влияет (решение владельца 16.09: принял кто угодно или отдали адресным
+     * ХО — заявка принята). Пишется в ту же операцию, что снимает
+     * «Заявка назначена (дата)»: кнопкой принятия, долечиванием SLA и
+     * адресным ХО из сделки. Поле не заведено — молча пропускается.
+     */
+    {
+        name: 'Кто принял заявку',
+        appType: 'lead',
+        type: 'employee',
+        items: [],
+        code: 'op_lead_accepted_by',
+        lead: 'OP_LEAD_ACCEPTED_BY',
+        company: '',
+        deal: 'OP_LEAD_ACCEPTED_BY',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 702,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
     {
         name: 'История Обработки заяки',
         appType: 'lead',

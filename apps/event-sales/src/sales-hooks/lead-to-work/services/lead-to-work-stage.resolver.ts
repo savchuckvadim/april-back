@@ -102,6 +102,11 @@ export class LeadToWorkStageResolver {
         item: ILeadToWorkItem,
         warnings: string[],
     ): string {
+        /*
+         * Явная стадия перебивает всё: массовый перенос знает целевую
+         * стадию волны заранее и не зависит от сопоставления зеркал.
+         */
+        if (item.dealStageCode) return item.dealStageCode;
         if (item.stageMode === 'cold') return COLD_BASE_STAGE;
         if (item.stageMode === 'new') return NEW_BASE_STAGE;
 
@@ -156,6 +161,13 @@ export class LeadToWorkStageResolver {
             );
             return;
         }
+
+        /*
+         * Явная стадия сделки — признак переноса состояния: лид НЕ
+         * двигаем. Без этой ветки хук увёл бы всю историческую базу в
+         * «Работа с компанией»/«Взята в работу».
+         */
+        if (item.dealStageCode) return;
 
         // from_lead с зеркалом: лид остаётся в своей стадии (решение ТЗ).
         if (item.stageMode === 'from_lead') {

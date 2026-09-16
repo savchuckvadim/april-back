@@ -132,10 +132,30 @@ export class LeadToWorkAssigneeService {
         // Передача: прежний ответственный исключается — заявка не должна
         // вернуться ему же (если он не единственный в отделе).
         const excluded = item.excludeResponsible ?? null;
-        const candidates =
+        const withoutPrevious =
             excluded && allCandidates.length > 1
                 ? allCandidates.filter(id => id !== excluded)
                 : allCandidates;
+
+        /*
+         * РУКОВОДИТЕЛИ ИЗ КРУГА ИСКЛЮЧАЮТСЯ.
+         *
+         * Round-robin раздаёт рядовую работу, а руководитель отдела и его
+         * заместители в очереди на обзвон стоять не должны — до этой правки
+         * заявки уезжали и к ним наравне со всеми.
+         *
+         * Если после отсева не осталось никого (отдел состоит из одних
+         * руководителей), берём исходный список: назначить руководителю
+         * лучше, чем не назначить никому.
+         */
+        const heads = await this.headUserIds(domain);
+        const withoutHeads = withoutPrevious.filter(id => !heads.has(id));
+        const candidates = withoutHeads.length ? withoutHeads : withoutPrevious;
+        if (!withoutHeads.length && withoutPrevious.length) {
+            warnings.push(
+                'В отделе не осталось кандидатов кроме руководителей — назначаем руководителю',
+            );
+        }
 
         if (candidates.length === 0) {
             warnings.push(
@@ -159,6 +179,39 @@ export class LeadToWorkAssigneeService {
                 `user ${responsible} (кандидатов: ${candidates.length})`,
         );
         return { responsible, source: 'round-robin', departmentKey, warnings };
+    }
+
+    /**
+     * Руководители отделов продаж (руководитель + заместители) — из HEADS
+     * структуры, с откатом на легаси `UF_HEAD`. Структура недоступна —
+     * пустое множество: круг тогда работает как раньше, без отсева.
+     */
+    private async headUserIds(domain: string): Promise<Set<number>> {
+        const heads = new Set<number>();
+        try {
+            const data = await this.structure.getStructure(
+                domain,
+                EDepartamentGroup.sales,
+                0,
+            );
+            for (const sales of data.salesDepartments ?? []) {
+                const department = sales.department as
+                    | { HEADS?: number[]; UF_HEAD?: number | null }
+                    | undefined;
+                for (const raw of department?.HEADS ?? []) {
+                    const id = Number(raw);
+                    if (Number.isInteger(id) && id > 0) heads.add(id);
+                }
+                const legacy = Number(department?.UF_HEAD);
+                if (Number.isInteger(legacy) && legacy > 0) heads.add(legacy);
+            }
+        } catch (error) {
+            this.logger.warn(
+                `Структура отделов ${domain} не прочитана (${(error as Error).message}) — ` +
+                    'руководители из круга не исключены',
+            );
+        }
+        return heads;
     }
 
     /**

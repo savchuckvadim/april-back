@@ -1,3 +1,4 @@
+import { toBatchSafeText } from '@lib/bitrix/consts/batch.consts';
 import { IBatchGroupBuffer } from '../../../../shared/batch/batch-group-buffer.interface';
 import { ResolvedLeadToWorkItem } from '../../dto/lead-to-work.dto';
 import { LeadToWorkContext } from '../lead-to-work-context.service';
@@ -58,7 +59,7 @@ export class CompanyFlowService extends LeadToWorkFlowBase {
             this.text(lead.COMPANY_TITLE) ?? this.text(lead.TITLE) ?? '';
         buffer.queue(() =>
             this.bitrix.batch.company.set(cmd, {
-                TITLE: title,
+                TITLE: toBatchSafeText(title),
                 ASSIGNED_BY_ID: String(item.responsible),
                 LEAD_ID: String(item.leadId),
                 ...this.eventFields(eventCtx, 'company', null),

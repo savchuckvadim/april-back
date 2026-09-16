@@ -31,6 +31,7 @@ const FIELDS: Record<
     op_lead_firstprepare_long: { bitrixId: 'OP_LEAD_FIRSTPREPARE_LONG' },
     op_lead_firstprepare_history: { bitrixId: 'OP_LEAD_FIRSTPREPARE_HISTORY' },
     op_lead_assigned_at: { bitrixId: 'OP_LEAD_ASSIGNED_AT' },
+    op_lead_accepted_by: { bitrixId: 'OP_LEAD_ACCEPTED_BY' },
     to_base_sales: { bitrixId: 'TO_BASE_SALES' },
     op_mhistory: { bitrixId: 'OP_MHISTORY' },
 };
@@ -204,6 +205,54 @@ describe('LeadRequestAcceptService', () => {
         const result = await service.accept({ domain: 'd.b24.ru', leadId: 42 });
         expect(result.already).toBe(true);
         expect(update).not.toHaveBeenCalled();
+    });
+
+    it('пишет «Кто принял» на лид и на основную сделку', async () => {
+        const { pbx, update, dealUpdate } = makePbx(
+            {
+                ID: '42',
+                UF_CRM_TO_BASE_SALES: 'D_1024',
+                UF_CRM_OP_LEAD_ASSIGNED_AT: '01.08.2026 10:00:00',
+                UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
+            },
+            { ID: '1024' },
+        );
+        const service = new LeadRequestAcceptService(pbx as never);
+
+        await service.accept({ domain: 'd.b24.ru', leadId: 42, userId: 7 });
+
+        expect(update.mock.calls[0][1].UF_CRM_OP_LEAD_ACCEPTED_BY).toBe(7);
+        const [, dealFields] = dealUpdate.mock.calls[0];
+        expect(dealFields.UF_CRM_OP_LEAD_ACCEPTED_BY).toBe(7);
+        expect(dealFields.UF_CRM_OP_LEAD_ASSIGNED_AT).toBe('');
+    });
+
+    /*
+     * Карточка решает по таймеру. Если история уже говорит «принята», а
+     * таймер заполнен, кнопка раньше отвечала already и ничего не писала —
+     * экран подтверждения возвращался бесконечно.
+     */
+    it('по истории принята, но таймер заполнен — принимаем и снимаем таймер', async () => {
+        const { pbx, update } = makePbx({
+            ID: '42',
+            UF_CRM_OP_LEAD_ASSIGNED_AT: '16.09.2026 16:20:47',
+            UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [
+                ASSIGNED_ENTRY,
+                ACCEPTED_ENTRY,
+            ],
+        });
+        const service = new LeadRequestAcceptService(pbx as never);
+
+        const result = await service.accept({
+            domain: 'd.b24.ru',
+            leadId: 42,
+            userId: 9,
+        });
+
+        expect(result.already).toBe(false);
+        const fields = update.mock.calls[0][1];
+        expect(fields.UF_CRM_OP_LEAD_ASSIGNED_AT).toBe('');
+        expect(fields.UF_CRM_OP_LEAD_ACCEPTED_BY).toBe(9);
     });
 
     it('передали другому после принятия — принимать заново (не already)', async () => {

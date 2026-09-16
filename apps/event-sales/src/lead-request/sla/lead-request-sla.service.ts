@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import { RedisService } from '@lib/core/redis/redis.service';
 import { PBXService } from '@/modules/pbx';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
@@ -29,6 +30,24 @@ dayjs.extend(timezone);
 
 /** Формат CRM datetime-полей Битрикса (локальное время портала). */
 const CRM_DATETIME_FORMAT = 'DD.MM.YYYY HH:mm:ss';
+
+/**
+ * Сколько раз ОДНУ И ТУ ЖЕ работу можно передать за окно.
+ *
+ * Передача снимает просрочку только на время порога: таймер ставится
+ * заново, и если работу так и не подтвердили, через порог она снова
+ * просрочена. Единственный выход из круга — подтверждение
+ * (`LeadRequestAcceptService.accept`), и если его не будет никогда, не будет
+ * и конца передачам: 16.09.2026 два десятка сделок ходили по кругу весь
+ * рабочий день.
+ *
+ * После лимита работа НЕ передаётся, а уходит эскалацией руководителю:
+ * дальше это вопрос не расписания, а управления.
+ */
+const MAX_TRANSFERS_PER_WINDOW = 3;
+
+/** Окно лимита передач — сутки: новый день начинается с чистого счётчика. */
+const TRANSFER_WINDOW_SECONDS = 24 * 3600;
 
 type BxRow = Record<string, unknown>;
 
@@ -73,12 +92,16 @@ export class LeadRequestSlaService {
         private readonly structure: BxDepartmentStructureService,
         /** Round-robin выбор нового ответственного для передачи сделки. */
         private readonly assignee: LeadToWorkAssigneeService,
+        /** Счётчик передач одной работы — защита от бесконечной карусели. */
+        private readonly redisService: RedisService,
     ) {}
 
     async runForDomain(
         domain: string,
         minutes: number,
         maxPerRun: number,
+        /** Передач одной работы за сутки; 0 — без лимита. */
+        maxTransfers: number = MAX_TRANSFERS_PER_WINDOW,
     ): Promise<LeadRequestSlaRunResult> {
         const result: LeadRequestSlaRunResult = {
             candidates: 0,
@@ -157,6 +180,7 @@ export class LeadRequestSlaService {
                             ? portal.getFieldBitrixId(historyField)
                             : null,
                         result,
+                        maxTransfers,
                     );
                 } catch (error) {
                     result.warnings.push(
@@ -175,6 +199,7 @@ export class LeadRequestSlaService {
             maxPerRun,
             handledDealIds,
             result,
+            maxTransfers,
         );
 
         this.logger.log(
@@ -208,6 +233,7 @@ export class LeadRequestSlaService {
         maxPerRun: number,
         handledDealIds: ReadonlySet<number>,
         result: LeadRequestSlaRunResult,
+        maxTransfers: number,
     ): Promise<void> {
         const assignedAtName = dealAssignedAtName(portal);
         if (!assignedAtName) {
@@ -256,7 +282,15 @@ export class LeadRequestSlaService {
                 continue;
             }
             try {
-                await this.transferDeal(domain, deal, dealId, minutes, result);
+                await this.transferDeal(
+                    bitrix,
+                    domain,
+                    deal,
+                    dealId,
+                    minutes,
+                    result,
+                    maxTransfers,
+                );
             } catch (error) {
                 result.warnings.push(
                     `Сделка ${dealId}: ${(error as Error).message}`,
@@ -307,16 +341,40 @@ export class LeadRequestSlaService {
      * ожидания, так что подтвердить обязан уже новый ответственный.
      */
     private async transferDeal(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
         domain: string,
         deal: BxRow,
         dealId: number,
         minutes: number,
         result: LeadRequestSlaRunResult,
+        maxTransfers: number,
     ): Promise<void> {
         const previous = Number(deal.ASSIGNED_BY_ID) || null;
         const department = previous
             ? await this.findUserDepartment(domain, previous)
             : null;
+
+        // Лимит передач: дальше — эскалация, а не новый круг.
+        if (
+            await this.transfersExhausted(
+                domain,
+                `deal:${dealId}`,
+                maxTransfers,
+            )
+        ) {
+            await this.escalate(
+                bitrix,
+                `Сделку ${dealId} передавали ${maxTransfers} раза за сутки, ` +
+                    'и её так и не подтвердили. Передачи остановлены — нужно решение руководителя. ' +
+                    `[URL=https://${domain}/crm/deal/details/${dealId}/]Открыть сделку[/URL]`,
+                department?.headUserIds ?? [],
+                result,
+            );
+            result.warnings.push(
+                `Сделка ${dealId}: лимит передач за сутки исчерпан — эскалация руководителю`,
+            );
+            return;
+        }
 
         const assignee = await this.assignee.resolve(domain, {
             // leadId у синтетического элемента используется только в логах
@@ -492,8 +550,35 @@ export class LeadRequestSlaService {
         minutes: number,
         historyBitrixId: string | null,
         result: LeadRequestSlaRunResult,
+        maxTransfers: number,
     ): Promise<void> {
         const prevResponsible = Number(lead.ASSIGNED_BY_ID) || null;
+
+        // 0. Лимит передач: дальше — эскалация, а не новый круг.
+        if (
+            await this.transfersExhausted(
+                domain,
+                `lead:${leadId}`,
+                maxTransfers,
+            )
+        ) {
+            const heads = prevResponsible
+                ? (await this.findUserDepartment(domain, prevResponsible))
+                      .headUserIds
+                : [];
+            await this.escalate(
+                bitrix,
+                `Заявку ${leadId} передавали ${maxTransfers} раза за сутки, ` +
+                    'и её так и не приняли. Передачи остановлены — нужно решение руководителя. ' +
+                    `[URL=https://${domain}/crm/lead/details/${leadId}/]Открыть лид[/URL]`,
+                heads,
+                result,
+            );
+            result.warnings.push(
+                `Лид ${leadId}: лимит передач за сутки исчерпан — эскалация руководителю`,
+            );
+            return;
+        }
 
         // 1. Причина передачи — в историю ДО передачи (хук допишет «ХО передан»).
         if (historyBitrixId) {
@@ -515,6 +600,17 @@ export class LeadRequestSlaService {
 
         // 3. Повторный ХО = передача (закрыть-передать + KPI + round-robin).
         // Прежний ответственный исключается — заявка не вернётся ему же.
+        /*
+         * stageMode: 'new' — СДЕЛКА ВОЗВРАЩАЕТСЯ В «НОВУЮ», И ЭТО НАМЕРЕННО.
+         *
+         * Именно выход из «Новой» служит признаком принятия: `isBaseDealMoved`
+         * сравнивает стадию с «Новой», и переданная работа обязана начинаться
+         * с неё — иначе сделка, стоящая в «Холодных», была бы засчитана как
+         * принятая новым менеджером ещё до того, как он её увидел.
+         *
+         * Бесконечный круг рвёт не стадия, а лимит передач выше: работу,
+         * которую не приняли N раз, передавать дальше бессмысленно.
+         */
         const item = buildLeadToWorkItem({
             leadId,
             isXo: 'Y',
@@ -603,6 +699,65 @@ export class LeadRequestSlaService {
         if (heads.length > 0) return heads;
         const legacy = Number(department?.UF_HEAD);
         return Number.isInteger(legacy) && legacy > 0 ? [legacy] : [];
+    }
+
+    /**
+     * Счётчик передач одной работы за окно; true — лимит исчерпан.
+     *
+     * Redis, а не поле в Битриксе: счётчик служебный, живёт сутки и не
+     * должен занимать поле на портале. Redis недоступен — НЕ блокируем
+     * передачу: это предохранитель, а не пропускной пункт, и его отказ не
+     * должен останавливать штатную работу SLA.
+     */
+    private async transfersExhausted(
+        domain: string,
+        key: string,
+        maxTransfers: number,
+    ): Promise<boolean> {
+        // 0 в настройке — лимит отключён (владелец знает, что делает).
+        if (!maxTransfers || maxTransfers <= 0) return false;
+        try {
+            const redis = this.redisService.getClient();
+            const cacheKey = `lead-request:sla-transfers:${domain}:${key}`;
+            const count = await redis.incr(cacheKey);
+            if (count === 1) {
+                await redis.expire(cacheKey, TRANSFER_WINDOW_SECONDS);
+            }
+            return count > maxTransfers;
+        } catch (error) {
+            this.logger.warn(
+                `Счётчик передач недоступен (${(error as Error).message}) — ` +
+                    'передача разрешена',
+            );
+            return false;
+        }
+    }
+
+    /** Эскалация руководителям: работа встала, расписание больше не поможет. */
+    private async escalate(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        message: string,
+        headUserIds: number[],
+        result: LeadRequestSlaRunResult,
+    ): Promise<void> {
+        if (!headUserIds.length) {
+            result.warnings.push(
+                'Лимит передач исчерпан, но руководитель отдела не найден — эскалация не отправлена',
+            );
+            return;
+        }
+        for (const headUserId of headUserIds) {
+            try {
+                await bitrix.imNotify.systemAdd({
+                    USER_ID: headUserId,
+                    MESSAGE: message,
+                });
+            } catch (error) {
+                result.warnings.push(
+                    `Эскалация руководителю ${headUserId} не отправлена — ${(error as Error).message}`,
+                );
+            }
+        }
     }
 
     private async notifyHead(

@@ -1,3 +1,4 @@
+import { toBatchSafeText } from '@lib/bitrix/consts/batch.consts';
 import { mergeTaskCrmBindings } from '@/modules/bitrix/domain/tasks/task/lib/task-crm-binding.util';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import { stampDealAssignedAt } from '../../../../shared/lead-request/deal-work-timer.util';
@@ -52,6 +53,7 @@ export class DealFlowService extends LeadToWorkFlowBase {
                 ctx.contactIds,
             );
             if (mergedContacts.length) fields.CONTACT_IDS = mergedContacts;
+            Object.assign(fields, this.moneyFields(ctx, row));
             /*
              * ХО ЗАБИРАЕТ клиента: сделка переходит новому ответственному,
              * таймер подтверждения стартует заново (todo2508: assigned_at
@@ -104,7 +106,7 @@ export class DealFlowService extends LeadToWorkFlowBase {
 
         const cmd = `lw_deal_${item.leadId}`;
         const fields: BxRow = {
-            TITLE: eventName,
+            TITLE: toBatchSafeText(eventName),
             CATEGORY_ID: plan.dealCategoryId,
             ASSIGNED_BY_ID: String(item.responsible),
             ...this.dealLinkFields(item.leadId, null),
@@ -127,9 +129,42 @@ export class DealFlowService extends LeadToWorkFlowBase {
             fields.CONTACT_ID = String(ctx.contactIds[0]);
             fields.CONTACT_IDS = ctx.contactIds;
         }
+        Object.assign(fields, this.moneyFields(ctx, null));
 
         buffer.queue(() => this.bitrix.batch.deal.set(cmd, fields as never));
         return { ref: `$result[${cmd}]`, cmd };
+    }
+
+    /**
+     * СУММА лида → сделка (решение владельца 15.09.2026, массовый
+     * перенос: «давай сумму хотя бы если есть — переносим»).
+     *
+     * `IS_MANUAL_OPPORTUNITY: Y` обязателен: без него Битрикс пересчитает
+     * OPPORTUNITY из товарных строк — и как только строки на сделке
+     * появятся (руками менеджера или следующим этапом переноса), сумма,
+     * ради которой всё делалось, обнулится. Тот же приём применён в
+     * sales-base-deal.service для продажи.
+     *
+     * Валюта переносится вместе с суммой: без неё Битрикс возьмёт
+     * валюту портала по умолчанию, и цифра поменяет смысл.
+     *
+     * У СУЩЕСТВУЮЩЕЙ сделки сумма перезаписывается ТОЛЬКО если она
+     * пуста: там уже могла быть цифра, которую посчитал менеджер, и
+     * затирать её лидом нельзя.
+     */
+    private moneyFields(ctx: LeadToWorkContext, dealRow: BxRow | null): BxRow {
+        const lead = ctx.lead as unknown as BxRow | null;
+        const amount = Number(lead?.OPPORTUNITY ?? 0);
+        if (!Number.isFinite(amount) || amount <= 0) return {};
+        if (dealRow && Number(dealRow.OPPORTUNITY ?? 0) > 0) return {};
+
+        const fields: BxRow = {
+            OPPORTUNITY: String(amount),
+            IS_MANUAL_OPPORTUNITY: 'Y',
+        };
+        const currency = this.text(lead?.CURRENCY_ID);
+        if (currency) fields.CURRENCY_ID = currency;
+        return fields;
     }
 
     /** Union контактов с сохранением порядка (главный лида — первым). */
@@ -183,7 +218,7 @@ export class DealFlowService extends LeadToWorkFlowBase {
         if (!plan.xoCategoryId) return { ref: null };
         const cmd = `lw_xo_${item.leadId}`;
         const fields: BxRow = {
-            TITLE: xoTitle,
+            TITLE: toBatchSafeText(xoTitle),
             CATEGORY_ID: plan.xoCategoryId,
             ASSIGNED_BY_ID: String(item.responsible),
             ...this.dealLinkFields(item.leadId, null),

@@ -44,10 +44,12 @@ const makeHarness = (over?: {
 }) => {
     const updates: Array<{ id: number; fields: Record<string, unknown> }> = [];
     const hooks: Array<Record<string, unknown>> = [];
+    const filters: Array<Record<string, unknown>> = [];
 
     const bitrix = {
         deal: {
             getList: (filter: Record<string, unknown>) => {
+                filters.push(filter);
                 const rows = (over?.deals ?? []).filter(deal => {
                     // Грубая эмуляция двух наших фильтров: непустой queued
                     // (фаза A) и остальное — сервис дофильтрует в JS.
@@ -103,6 +105,7 @@ const makeHarness = (over?: {
         service: new RejectReviveService(pbx, coldHook),
         updates,
         hooks,
+        filters,
     };
 };
 
@@ -349,5 +352,31 @@ describe('RejectReviveService', () => {
         expect(hooks).toHaveLength(0);
         expect(updates).toHaveLength(0);
         expect(run.warnings.join(' ')).toContain('не установлены');
+    });
+});
+
+/**
+ * ИЗ КАКИХ СТАДИЙ реанимируем. Решение владельца 15.09.2026: только
+ * «Отказ». Тест держит этот список руками, потому что каждая лишняя
+ * строка в нём возвращает живых людей в обзвон — молча расширить его
+ * нельзя.
+ */
+describe('RejectReviveService — стадии-источники', () => {
+    it('берёт ТОЛЬКО «Отказ» (LOSE), не трогая «Не состоялась» и «Не ЦА»', async () => {
+        const { service, filters } = makeHarness({
+            deals: [{ ID: 1, ...oldClosed }],
+        });
+
+        await service.runForDomain('d.b24.ru', OPTS);
+
+        const stageFilters = filters
+            .map(filter => filter['STAGE_ID'])
+            .filter(Boolean) as string[][];
+        expect(stageFilters.length).toBeGreaterThan(0);
+        for (const stages of stageFilters) {
+            expect(stages).toEqual(['C1:LOSE']);
+            expect(stages).not.toContain('C1:APOLOGY');
+            expect(stages).not.toContain('C1:NOT_CA');
+        }
     });
 });

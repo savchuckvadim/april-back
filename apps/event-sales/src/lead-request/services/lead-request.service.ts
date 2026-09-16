@@ -140,6 +140,13 @@ export class LeadRequestService {
             ),
             isAccepted: true,
             assignedById: this.numeric(lead.ASSIGNED_BY_ID),
+            acceptedById: this.numeric(
+                this.fieldRaw(
+                    portal,
+                    lead,
+                    EnumLeadRequestFieldCode.op_lead_accepted_by,
+                ),
+            ),
             saleReadiness: { ready: false, missing: [] },
             warnings,
         };

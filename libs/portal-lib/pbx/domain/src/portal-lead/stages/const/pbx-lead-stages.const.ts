@@ -159,6 +159,43 @@ const SALES_LEAD_STAGES = [
         installMode: 'map-only',
         dealStageCode: 'sales_warm',
     },
+    /*
+     * ЗЕРКАЛА РАБОЧИХ И ФИНАЛЬНЫХ СТАДИЙ ОП, заведены 15.09.2026 под массовый
+     * перенос лидов (ai/tasks/2026-09-15-lead-to-work-mass-migration.md).
+     *
+     * Все `map-only` + `bitrixStatusId: null`: статусы на портале клиента уже
+     * есть под своими именами («ВОЗРАЖЕНИЯ», «СОГЛАСОВАНИЕ КП», …), свои мы не
+     * создаём — админ сопоставляет существующие.
+     *
+     * Зачем понадобились: без зеркала `stageMode: from_lead` кладёт сделку в
+     * стадию по умолчанию («Переговоры») с предупреждением. До 15.09 зеркал
+     * было ДВА (`lead_pres`, `lead_warm`), и вся историческая база уехала бы
+     * в «Переговоры» независимо от того, на каком этапе клиент реально был.
+     */
+    {
+        code: 'lead_refine',
+        name: 'refine',
+        title: 'Доработка (зеркало ОП)',
+        color: '#F3B01D',
+        order: 28,
+        isActive: true,
+        bitrixStatusId: null,
+        semantics: '',
+        installMode: 'map-only',
+        dealStageCode: 'sales_refine',
+    },
+    {
+        code: 'lead_offer_create',
+        name: 'offer_create',
+        title: 'Документы (зеркало ОП)',
+        color: '#8E5CBF',
+        order: 29,
+        isActive: true,
+        bitrixStatusId: null,
+        semantics: '',
+        installMode: 'map-only',
+        dealStageCode: 'sales_offer_create',
+    },
     {
         code: 'lead_converted',
         name: 'converted',
@@ -169,6 +206,18 @@ const SALES_LEAD_STAGES = [
         bitrixStatusId: 'CONVERTED',
         semantics: 'S',
         installMode: 'map-only',
+    },
+    {
+        code: 'lead_success',
+        name: 'success',
+        title: 'Продажа (зеркало ОП)',
+        color: '#00FF00',
+        order: 31,
+        isActive: true,
+        bitrixStatusId: null,
+        semantics: 'S',
+        installMode: 'map-only',
+        dealStageCode: 'sales_success',
     },
     {
         code: 'lead_junk',
@@ -206,6 +255,42 @@ const SALES_LEAD_STAGES = [
         semantics: 'F',
         installMode: 'map-only',
         dealStageCode: 'sales_not_call',
+    },
+    {
+        /*
+         * «Отказ» — зеркало финальной стадии ОП. На garant этим статусом
+         * живёт «Перезапуск через 120 дней»: именно ИЗ «Отказа» реанимация
+         * возвращает клиента в обзвон (см. RejectReviveService.failStageIds —
+         * там теперь ТОЛЬКО эта стадия).
+         */
+        code: 'lead_fail',
+        name: 'fail',
+        title: 'Отказ (зеркало ОП)',
+        color: '#E7354A',
+        order: 42,
+        isActive: true,
+        bitrixStatusId: null,
+        semantics: 'F',
+        installMode: 'map-only',
+        dealStageCode: 'sales_fail',
+    },
+    {
+        /*
+         * «Не состоялась» — контакт не состоялся, а НЕ отказ клиента. На
+         * garant сюда ложится «Клиент не идёт на контакт»: реанимация эту
+         * стадию не трогает, и это осознанно — звонить через 120 дней тому,
+         * до кого не дозвонились, смысла нет.
+         */
+        code: 'lead_apology',
+        name: 'apology',
+        title: 'Не состоялась (зеркало ОП)',
+        color: '#2D0B0D',
+        order: 43,
+        isActive: true,
+        bitrixStatusId: null,
+        semantics: 'F',
+        installMode: 'map-only',
+        dealStageCode: 'sales_double',
     },
 ] as const satisfies readonly PbxLeadStageTemplateItem[];
 

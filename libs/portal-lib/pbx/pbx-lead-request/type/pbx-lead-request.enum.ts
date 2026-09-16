@@ -43,6 +43,11 @@ export enum EnumLeadRequestFieldCode {
      * «заполнено» = заявка ждёт подтверждения прямо сейчас.
      */
     op_lead_assigned_at = 'op_lead_assigned_at',
+    /**
+     * Кто принял заявку (сотрудник) — справка, доступ к работе не задаёт.
+     * Пишется вместе со снятием `op_lead_assigned_at`.
+     */
+    op_lead_accepted_by = 'op_lead_accepted_by',
     /** История обработки заявки (multiple, append-only). */
     op_lead_firstprepare_history = 'op_lead_firstprepare_history',
     /** Установлена компания. */

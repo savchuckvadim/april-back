@@ -9,6 +9,11 @@ import { EventEntityModel } from '../entity/event-entity.model';
 import { EnumColdCallEntityType } from '../../../dto/cold.dto';
 import { dealLinkKey } from '../../../lib/deal-link-fields';
 import { ColdOwner, ownerKey } from '../cold-owner.type';
+import {
+    clearDealAssignedAt,
+    dealAssignedAtName,
+    setDealAcceptedBy,
+} from '../../../../shared/lead-request/deal-work-timer.util';
 
 interface IColdDealFlowResult {
     baseDealId: string;
@@ -82,6 +87,11 @@ export class ColdDealFlowService {
             };
 
             if (baseDeal) {
+                this.acceptWaitingWork(
+                    baseDeal,
+                    responsibleId,
+                    baseUpdateDealData as Record<string, unknown>,
+                );
                 this.logger.log(
                     `[DEADLINE][deal][SEND] base deal.update owner=${key} ` +
                         `cmdKey=${updateBaseDealKey} dealId=${baseDeal.ID} ` +
@@ -167,6 +177,25 @@ export class ColdDealFlowService {
         }
 
         return this.getDealIdByBatchCommandKey(createColdKey);
+    }
+
+    /**
+     * Адресный ХО = принятие работы (решение владельца 16.09): основная
+     * сделка ждала подтверждения — снимаем ожидание и пишем, кто принял.
+     * Иначе новый хозяин получал сделку с чужим таймером, и SLA забирал бы
+     * её по чужой просрочке. Сделка не ждала — ничего не трогаем.
+     */
+    private acceptWaitingWork(
+        baseDeal: IBXDeal,
+        responsibleId: number | string,
+        fields: Record<string, unknown>,
+    ): void {
+        const assignedAt = dealAssignedAtName(this.portal);
+        const row = baseDeal as unknown as Record<string, unknown>;
+        const waitingSince = assignedAt ? row[assignedAt] : null;
+        if (typeof waitingSince !== 'string' || !waitingSince.trim()) return;
+        clearDealAssignedAt(this.portal, fields);
+        setDealAcceptedBy(this.portal, fields, Number(responsibleId) || null);
     }
 
     /**
