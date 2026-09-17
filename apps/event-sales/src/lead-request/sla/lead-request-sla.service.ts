@@ -330,6 +330,7 @@ export class LeadRequestSlaService {
             try {
                 await this.transferDeal(
                     bitrix,
+                    portal,
                     domain,
                     deal,
                     dealId,
@@ -388,6 +389,7 @@ export class LeadRequestSlaService {
      */
     private async transferDeal(
         bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        portal: PortalModel,
         domain: string,
         deal: BxRow,
         dealId: number,
@@ -440,6 +442,19 @@ export class LeadRequestSlaService {
                 `Сделка ${dealId}: некому передать (${assignee.warnings.join('; ') || 'кандидатов нет'})`,
             );
             return;
+        }
+
+        /*
+         * Таймер сделки — синхронно, до постановки в очередь. Та же защита от
+         * карусели, что в лидовом проходе: передача работы асинхронна, и без
+         * этого отставание очереди давало повторную передачу на следующем
+         * тике.
+         */
+        const dealAssignedAt = dealAssignedAtName(portal);
+        if (dealAssignedAt) {
+            await bitrix.deal.update(dealId, {
+                [dealAssignedAt]: this.nowCrm(portal),
+            } as never);
         }
 
         const entityKey = `deal:${dealId}`;
@@ -635,17 +650,36 @@ export class LeadRequestSlaService {
             return;
         }
 
-        // 1. Причина передачи — в историю ДО передачи (хук допишет «ХО передан»).
+        /*
+         * 1. Причина передачи в историю И ТАЙМЕР — синхронно, одной записью,
+         *    ДО вызова хука.
+         *
+         * ЗАЩИТА ОТ КАРУСЕЛИ (17.09.2026). Хук идёт через очередь и
+         * выполняется асинхронно: если очередь отстаёт больше чем на тик,
+         * следующий проход SLA видел старый таймер, снова считал заявку
+         * просроченной и ставил её в передачу ещё раз. Так одни и те же
+         * заявки ходили по кругу каждые десять минут при пороге в час, хотя
+         * порог, часы и фильтр были исправны.
+         *
+         * Таймер «передано сейчас» ставим здесь, не дожидаясь хука: тогда
+         * лид не попадёт в выборку ещё порог минут — что бы ни случилось с
+         * заданием в очереди. Хук затем перезапишет таймер тем же «сейчас»,
+         * это безвредно.
+         */
+        const patch: Record<string, unknown> = {};
         if (historyBitrixId) {
-            await bitrix.lead.update(leadId, {
-                [historyBitrixId]: appendLeadRequestHistory(
-                    lead[historyBitrixId],
-                    buildLeadRequestHistoryEntry(
-                        `Не принял за ${minutes} мин: ${prevResponsible ?? '—'}`,
-                        portal.getTimezone(),
-                    ),
+            patch[historyBitrixId] = appendLeadRequestHistory(
+                lead[historyBitrixId],
+                buildLeadRequestHistoryEntry(
+                    `Не принял за ${minutes} мин: ${prevResponsible ?? '—'}`,
+                    portal.getTimezone(),
                 ),
-            } as never);
+            );
+        }
+        const assignedAt = this.leadAssignedAtName(portal);
+        if (assignedAt) patch[assignedAt] = this.nowCrm(portal);
+        if (Object.keys(patch).length) {
+            await bitrix.lead.update(leadId, patch as never);
         }
 
         // 2. Отдел прежнего ответственного — передаём внутри него.
@@ -754,6 +788,20 @@ export class LeadRequestSlaService {
         if (heads.length > 0) return heads;
         const legacy = Number(department?.UF_HEAD);
         return Number.isInteger(legacy) && legacy > 0 ? [legacy] : [];
+    }
+
+    /** «Сейчас» в формате CRM-даты портала. */
+    private nowCrm(portal: PortalModel): string {
+        return dayjs().tz(portal.getTimezone()).format(CRM_DATETIME_FORMAT);
+    }
+
+    /** UF-имя таймера подтверждения на ЛИДЕ; null — поле не установлено. */
+    private leadAssignedAtName(portal: PortalModel): string | null {
+        const field = portal.getEntityFieldByCode(
+            'lead',
+            EnumLeadRequestFieldCode.op_lead_assigned_at,
+        );
+        return field ? portal.getFieldBitrixId(field) : null;
     }
 
     /**

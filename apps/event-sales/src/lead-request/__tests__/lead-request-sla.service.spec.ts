@@ -52,6 +52,7 @@ const makeDeps = (input: {
     withAssignedAt?: boolean;
 }) => {
     const leadUpdate = jest.fn().mockResolvedValue({});
+    const dealUpdate = jest.fn().mockResolvedValue({});
     const notify = jest.fn().mockResolvedValue(1);
     const acceptService = {
         accept: jest.fn().mockResolvedValue({}),
@@ -111,6 +112,7 @@ const makeDeps = (input: {
                 },
                 deal: {
                     getList: dealGetList,
+                    update: dealUpdate,
                     get: jest.fn().mockResolvedValue({
                         result: input.dealStage
                             ? { ID: '1024', STAGE_ID: input.dealStage }
@@ -143,6 +145,7 @@ const makeDeps = (input: {
         service,
         incr,
         leadUpdate,
+        dealUpdate,
         notify,
         acceptService,
         dispatch,
@@ -317,6 +320,35 @@ describe('LeadRequestSlaService', () => {
         expect(dispatch.accept).not.toHaveBeenCalled();
         expect(notify).toHaveBeenCalled();
         expect(run.warnings.join(' ')).toContain('лимит передач');
+    });
+
+    /*
+     * Карусель 16–17.09.2026: хук передачи асинхронный, и при отставании
+     * очереди следующий тик SLA видел старый таймер и передавал заявку ещё
+     * раз. Таймер обязан встать СИНХРОННО, до постановки в очередь.
+     */
+    it('таймер сделки ставится до передачи — защита от карусели', async () => {
+        const { service, dispatch, dealUpdate } = makeDeps({
+            leads: [],
+            deals: [OVERDUE_DEAL],
+            withAssignedAt: true,
+        });
+
+        await service.runForDomain('d.b24.ru', 60, 30);
+
+        expect(dealUpdate).toHaveBeenCalledTimes(1);
+        const [dealId, fields] = dealUpdate.mock.calls[0] as [
+            number,
+            Record<string, unknown>,
+        ];
+        expect(dealId).toBe(1024);
+        expect(Object.values(fields)[0]).toMatch(
+            /^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}:\d{2}$/,
+        );
+        // Порядок важен: сначала таймер, потом очередь.
+        expect(dealUpdate.mock.invocationCallOrder[0]).toBeLessThan(
+            dispatch.accept.mock.invocationCallOrder[0],
+        );
     });
 
     it('сделка не подтверждена → передача хуком transfer-work', async () => {
