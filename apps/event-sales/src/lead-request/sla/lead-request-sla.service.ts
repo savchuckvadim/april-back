@@ -156,16 +156,28 @@ export class LeadRequestSlaService {
                     : null;
                 if (baseDealId) handledDealIds.add(baseDealId);
                 try {
-                    const moved = await this.isBaseDealMoved(
+                    const base = await this.baseDealState(
                         bitrix,
                         portal,
                         lead,
                         toBaseName,
                         newStageId,
                     );
-                    if (moved) {
-                        // Менеджер работает, вебхук принятия потерялся — доводим.
-                        await this.acceptService.accept({ domain, leadId });
+                    if (base.moved) {
+                        /*
+                         * Менеджер работает, вебхук принятия потерялся —
+                         * доводим. «Кто принял» — ответственный СДЕЛКИ, а не
+                         * лида: признаком принятия служит именно движение
+                         * сделки, и сделал его её хозяин. У лида ответственный
+                         * может быть другим (например, после передачи).
+                         */
+                        await this.acceptService.accept({
+                            domain,
+                            leadId,
+                            ...(base.responsibleId
+                                ? { userId: base.responsibleId }
+                                : {}),
+                        });
                         result.healed += 1;
                         continue;
                     }
@@ -521,23 +533,32 @@ export class LeadRequestSlaService {
      * Менеджер реально двинул свою сделку из «Новая»? Тогда он принял
      * работу, просто сигнал не долетел. Сделки/стадии нет — считаем, что
      * не двигал (передача по времени валидна).
+     *
+     * Возвращает и ОТВЕТСТВЕННОГО сделки: именно он сделал работу, и именно
+     * его надо записать в «Кто принял» — у лида ответственный может быть
+     * другим.
      */
-    private async isBaseDealMoved(
+    private async baseDealState(
         bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
         portal: PortalModel,
         lead: BxRow,
         toBaseBitrixId: string | null,
         newStageId: string | null,
-    ): Promise<boolean> {
-        if (!toBaseBitrixId || !newStageId) return false;
+    ): Promise<{ moved: boolean; responsibleId: number | null }> {
+        const none = { moved: false, responsibleId: null };
+        if (!toBaseBitrixId || !newStageId) return none;
         const dealId = this.parseRef(lead[toBaseBitrixId]);
-        if (!dealId) return false;
+        if (!dealId) return none;
         const deal = (await bitrix.deal.get(dealId))?.result as
             | BxRow
             | undefined;
-        if (!deal) return false;
+        if (!deal) return none;
         const stage = typeof deal.STAGE_ID === 'string' ? deal.STAGE_ID : '';
-        return stage !== '' && stage !== newStageId;
+        const responsibleId = Number(deal.ASSIGNED_BY_ID) || null;
+        return {
+            moved: stage !== '' && stage !== newStageId,
+            responsibleId,
+        };
     }
 
     /** Передача: история → повторный ХО (round-robin) → алерт руководителю. */

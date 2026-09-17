@@ -25,6 +25,9 @@ type BxRow = Record<string, unknown>;
 /** Префикс задач при передаче (идемпотентный). */
 const CALL_TASK_PREFIX = 'Звонок';
 
+/** Заголовок задачи, которую ставим новому ответственному при передаче. */
+const TRANSFER_TASK_TITLE = `${CALL_TASK_PREFIX} по переданной работе`;
+
 /** Категории-«аналитические спутники»: при передаче закрываются в fail. */
 const SATELLITE_CATEGORIES = new Set<PbxDealCategoryCodeEnum>([
     PbxDealCategoryCodeEnum.sales_presentation,
@@ -217,8 +220,33 @@ export class TransferWorkUseCase
             movedTasks += 1;
         }
 
-        // Новому ответственному — задача «Звонок», если попросили.
-        if (item.createCallTask && (mainDealId || item.companyId)) {
+        /*
+         * Новому ответственному — задача «Звонок», если попросили.
+         *
+         * НО НЕ ВТОРУЮ ТАКУЮ ЖЕ. 16.09.2026 SLA передавал одну сделку по
+         * кругу каждые десять минут, и каждая передача добавляла ещё одну
+         * задачу «Звонок по переданной работе» — к вечеру их набралось под
+         * три десятка на карточку. Лимит передач такое теперь ограничивает,
+         * но плодить задачу нельзя и в пределах лимита: открытая задача с
+         * тем же заголовком означает, что следующий шаг уже поставлен.
+         */
+        const alreadyAsked = scope.openTasks.some(
+            task =>
+                this.textOf(
+                    (task as unknown as BxRow).title ??
+                        (task as unknown as BxRow).TITLE,
+                ) === TRANSFER_TASK_TITLE,
+        );
+        if (alreadyAsked) {
+            warnings.push(
+                'Задача «по переданной работе» уже открыта — вторая не создаётся',
+            );
+        }
+        if (
+            item.createCallTask &&
+            !alreadyAsked &&
+            (mainDealId || item.companyId)
+        ) {
             const bindings: string[] = [];
             if (item.companyId)
                 bindings.push(taskCrmBinding('COMPANY', item.companyId));
@@ -227,7 +255,7 @@ export class TransferWorkUseCase
                 ctx.bitrix.batch.task.add(
                     `tw_task_add_${item.companyId ?? mainDealId}`,
                     {
-                        TITLE: `${CALL_TASK_PREFIX} по переданной работе`,
+                        TITLE: TRANSFER_TASK_TITLE,
                         RESPONSIBLE_ID: item.newResponsibleId,
                         // Постановщик = ответственный: иначе Битрикс ставит
                         // владельца интеграции (админа портала).
