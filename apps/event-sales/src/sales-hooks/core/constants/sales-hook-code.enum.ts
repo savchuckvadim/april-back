@@ -16,6 +16,8 @@ export enum EnumSalesHookCode {
     DUPLICATE_CHECK = 'duplicate-check',
     /** Принятие заявки менеджером (вебхук робота через silence). */
     LEAD_ACCEPT = 'lead-accept',
+    /** Клиент из лида: контакт/компания, привязка к сделке, дела. */
+    LEAD_CLIENT = 'lead-client',
 }
 
 /**
@@ -31,6 +33,7 @@ export const SALES_HOOK_JOB_NAMES: Record<EnumSalesHookCode, JobNames> = {
         JobNames.SALES_HOOK_CONVERT_NORMALIZER,
     [EnumSalesHookCode.DUPLICATE_CHECK]: JobNames.SALES_HOOK_DUPLICATE_CHECK,
     [EnumSalesHookCode.LEAD_ACCEPT]: JobNames.SALES_HOOK_LEAD_ACCEPT,
+    [EnumSalesHookCode.LEAD_CLIENT]: JobNames.SALES_HOOK_LEAD_CLIENT,
 };
 
 /** Runtime-массив кодов — для @IsIn и Swagger enum. */

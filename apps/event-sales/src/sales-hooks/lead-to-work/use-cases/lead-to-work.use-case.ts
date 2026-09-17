@@ -34,7 +34,7 @@ import { LeadUfDefinitionsService } from '../../../shared/portal-fields';
 import { UserNameResolver } from '../../../shared/lead-request/user-name.resolver';
 import { LeadToWorkNotifyService } from '../services/lead-to-work-notify.service';
 import { LeadToWorkDuplicateCheckService } from '../services/lead-to-work-duplicate-check.service';
-import { LeadDataEnrichService } from '../../../shared/lead-enrich/lead-data-enrich.service';
+import { LeadDealCompletion } from '../../../shared/lead-client/lead-deal-completion';
 import { PortalWorkingHoursService } from '../../../shared/working-hours/portal-working-hours.service';
 import { nextWorkingMoment } from '../../../shared/working-hours/working-hours.model';
 import { LeadToWorkTimelineService } from '../services/lead-to-work-timeline.service';
@@ -411,13 +411,20 @@ export class LeadToWorkUseCase
             entry.warnings.push(...warnings);
         }
 
+        // ── Шаг 4. Сшиваем план каждого лида с реальными id из ответов.
+        const results = queued.map(entry => this.toItemResult(entry, byCmd));
+
         /*
-         * Шаг 3.6. Дубли на входе: увидеть «клиента уже ведут» надо ДО
+         * Шаг 4.1. Дубли на входе: увидеть «клиента уже ведут» надо ДО
          * первого звонка менеджера, а руками кнопку никто не жмёт. Ставим
          * проверку в очередь (не блокируя ответ) только по входящим
          * заявкам и только если по лиду её ещё не было — гейт внутри
          * сервиса. Выключено по умолчанию, включается настройкой портала.
+         * После шага 4 — чтобы итог ушёл и в таймлайн созданной сделки.
          */
+        const dealIdOf = new Map(
+            results.map(result => [result.leadId, result.baseDealId]),
+        );
         const dupWarnings = await this.duplicateCheck.queueForLeads(
             ctx.domain,
             ctx.portal,
@@ -427,14 +434,12 @@ export class LeadToWorkUseCase
                     leadId: entry.item.leadId,
                     leadRow: entry.leadContext!.lead as unknown as BxRow,
                     isIncoming: entry.item.isXo === 'Y',
+                    dealId: dealIdOf.get(entry.item.leadId) ?? null,
                 })),
         );
-        if (dupWarnings.length && queued.length) {
-            queued[0].warnings.push(...dupWarnings);
+        if (dupWarnings.length && results.length) {
+            results[0].warnings.push(...dupWarnings);
         }
-
-        // ── Шаг 4. Сшиваем план каждого лида с реальными id из ответов.
-        const results = queued.map(entry => this.toItemResult(entry, byCmd));
 
         /*
          * Шаг 4.5. Прошлое заявки — в сделку: комментарий со ссылкой на лид
@@ -451,9 +456,10 @@ export class LeadToWorkUseCase
         }
 
         /*
-         * Шаг 4.6. Данные заявки — в сделку: ИНН в поля, остальное записью в
-         * таймлайн. Тем же сервисом, которым идёт ночной догон прошлого, —
-         * иначе конвертация у клиента и перегон давали бы разный результат.
+         * Шаг 4.6. Клиент и данные заявки — в сделку: контакт или компания
+         * из голого лида, поля заявки, ИНН, карточка в таймлайне. Тем же
+         * кодом, которым идёт перегон прошлого, — иначе конвертация у
+         * клиента и перегон давали бы разный результат.
          */
         const enrichWarnings = await this.enrichDeals(ctx, results);
         if (enrichWarnings.length && results.length) {
@@ -516,33 +522,37 @@ export class LeadToWorkUseCase
     }
 
     /**
-     * Обогащение созданных сделок данными лида.
+     * Достройка созданных сделок: клиент из голого лида (контакт или
+     * компания — по настройкам портала), затем данные заявки.
      *
-     * Ошибка обогащения НЕ роняет конвертацию: сделка уже создана, работа
-     * менеджеру передана, а недостающий ИНН — повод для предупреждения, а не
-     * для отката.
+     * Ошибка здесь НЕ роняет конвертацию: сделка уже создана, работа
+     * менеджеру передана, а недостающий клиент или ИНН — повод для
+     * предупреждения, а не для отката.
      */
     private async enrichDeals(
         ctx: SalesHookExecutionContext,
         results: readonly LeadToWorkItemResultDto[],
     ): Promise<string[]> {
         const warnings: string[] = [];
-        const enricher = new LeadDataEnrichService(
+        const settings = await this.appSettings.resolve(
+            ctx.domain,
+            EnumPortalAppCode.eventSales,
+        );
+        const completion = new LeadDealCompletion(
             ctx.bitrix,
             ctx.portal,
             ctx.domain,
+            {
+                linkClient: settings.leadWorkLinkClient,
+                companyDepartmentIds: settings.leadClientCompanyDepartmentIds,
+                activitiesLimit: settings.leadWorkCopyActivitiesLimit,
+            },
         );
         for (const result of results) {
             const dealId = Number(result.baseDealId);
             if (!Number.isFinite(dealId) || dealId <= 0) continue;
             try {
-                const deal = (
-                    (await ctx.bitrix.api.call('crm.deal.get', {
-                        id: dealId,
-                    })) as { result?: Record<string, unknown> }
-                ).result;
-                if (!deal) continue;
-                const outcome = await enricher.enrich(dealId, deal, [
+                const outcome = await completion.complete(dealId, [
                     result.leadId,
                 ]);
                 warnings.push(...outcome.warnings);

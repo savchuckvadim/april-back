@@ -92,6 +92,13 @@ export class SalesHookSilenceSubscriber {
         return this.acceptBatch(EnumSalesHookCode.LEAD_ACCEPT, event);
     }
 
+    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.SALES_HOOK_LEAD_CLIENT}`, {
+        async: true,
+    })
+    onLeadClient(event: EventSilentJobManagerHandler<SalesHookRobotEnvelope>) {
+        return this.acceptBatch(EnumSalesHookCode.LEAD_CLIENT, event);
+    }
+
     private async acceptBatch(
         hook: EnumSalesHookCode,
         event: EventSilentJobManagerHandler<SalesHookRobotEnvelope>,

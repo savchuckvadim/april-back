@@ -56,4 +56,9 @@ export class SalesHookOpsProcessor {
     handleLeadAccept(job: Job<SalesHookJobData>) {
         return this.runner.run(job.data);
     }
+
+    @Process({ name: JobNames.SALES_HOOK_LEAD_CLIENT, concurrency: 1 })
+    handleLeadClient(job: Job<SalesHookJobData>) {
+        return this.runner.run(job.data);
+    }
 }

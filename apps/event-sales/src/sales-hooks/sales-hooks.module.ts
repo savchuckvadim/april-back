@@ -8,6 +8,7 @@ import { RejectReviveHookModule } from './reject-revive/reject-revive.module';
 import { ConvertNormalizerHookModule } from './convert-normalizer/convert-normalizer.module';
 import { DuplicateCheckHookModule } from './duplicate-check/duplicate-check.module';
 import { LeadAcceptHookModule } from './lead-accept/lead-accept.module';
+import { LeadClientHookModule } from './lead-client/lead-client.module';
 
 /**
  * Семейство sales-хуков: ядро (silence + очередь операций + статусы + WS)
@@ -24,6 +25,7 @@ import { LeadAcceptHookModule } from './lead-accept/lead-accept.module';
         ConvertNormalizerHookModule,
         DuplicateCheckHookModule,
         LeadAcceptHookModule,
+        LeadClientHookModule,
     ],
 })
 export class SalesHooksModule {}
