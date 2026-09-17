@@ -21,6 +21,8 @@ export interface ILeadForDuplicateCheck {
     leadRow: BxRow;
     /** Входящая работа (ХО/заявка): только её и проверяем автоматически. */
     isIncoming: boolean;
+    /** Сделка прогона — итог проверки дублируется в её таймлайн. */
+    dealId?: number | null;
 }
 
 /**
@@ -74,6 +76,7 @@ export class LeadToWorkDuplicateCheckService {
                 entityType: 'lead',
                 entityId: lead.leadId,
                 level: settings.leadIntakeDuplicateCheckDeep ? 'deep' : 'fast',
+                mirrorDealId: lead.dealId,
             });
             const entityKey = `lead:${lead.leadId}`;
             const operation = await this.dispatch.accept(

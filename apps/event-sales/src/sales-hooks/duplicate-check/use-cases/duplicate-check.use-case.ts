@@ -122,18 +122,26 @@ export class DuplicateCheckUseCase
                 result,
                 LEVEL_TITLES[item.level],
             );
-            ctx.buffer.queue(() =>
-                ctx.bitrix.batch.timeline.addTimelineComment(
-                    `dup_tl_${item.entityType}_${item.entityId}`,
-                    {
-                        ENTITY_TYPE: item.entityType,
-                        ENTITY_ID: item.entityId,
-                        // Экранирование под batch-провод — здесь, на границе
-                        // транспорта: форматтер отдаёт текст с `\n`.
-                        COMMENT: toTimelineComment([comment]),
-                    },
-                ),
-            );
+            const targets: { type: DuplicateCheckEntityType; id: number }[] = [
+                { type: item.entityType, id: item.entityId },
+            ];
+            if (item.mirrorDealId) {
+                targets.push({ type: 'deal', id: item.mirrorDealId });
+            }
+            for (const target of targets) {
+                ctx.buffer.queue(() =>
+                    ctx.bitrix.batch.timeline.addTimelineComment(
+                        `dup_tl_${target.type}_${target.id}`,
+                        {
+                            ENTITY_TYPE: target.type,
+                            ENTITY_ID: target.id,
+                            // Экранирование под batch-провод — здесь, на
+                            // границе транспорта: форматтер отдаёт текст с `\n`.
+                            COMMENT: toTimelineComment([comment]),
+                        },
+                    ),
+                );
+            }
             timelineWritten = true;
         }
 

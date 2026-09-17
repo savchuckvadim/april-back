@@ -72,6 +72,42 @@ describe('LeadToWorkDuplicateCheckService', () => {
         });
     });
 
+    /*
+     * Решение владельца 17.09.2026: менеджер работает в сделке, поэтому
+     * итог проверки дублей пишется и в её таймлайн.
+     */
+    it('сделка прогона передаётся для второго комментария', async () => {
+        const { service, dispatch, portal } = makeDeps({ enabled: true });
+
+        await service.queueForLeads('d.b24.ru', portal, [
+            { ...incoming(), dealId: 555 },
+        ]);
+
+        const [, , , items] = dispatch.accept.mock.calls[0] as [
+            string,
+            string,
+            string,
+            { data: Record<string, unknown> }[],
+        ];
+        expect(items[0].data.mirrorDealId).toBe(555);
+    });
+
+    it('сделки нет — второго комментария не будет', async () => {
+        const { service, dispatch, portal } = makeDeps({ enabled: true });
+
+        await service.queueForLeads('d.b24.ru', portal, [
+            { ...incoming(), dealId: null },
+        ]);
+
+        const [, , , items] = dispatch.accept.mock.calls[0] as [
+            string,
+            string,
+            string,
+            { data: Record<string, unknown> }[],
+        ];
+        expect(items[0].data).not.toHaveProperty('mirrorDealId');
+    });
+
     it('настройка выключена → ни одного вызова', async () => {
         const { service, dispatch, portal } = makeDeps({ enabled: false });
 

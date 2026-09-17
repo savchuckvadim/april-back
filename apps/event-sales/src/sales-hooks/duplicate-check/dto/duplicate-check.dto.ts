@@ -128,6 +128,12 @@ export interface IDuplicateCheckItem {
     entityId: number;
     level: DuplicateCheckLevel;
     writeTimeline: 'Y' | 'N';
+    /**
+     * Сделка, в таймлайн которой итог пишется ВТОРЫМ комментарием. Заявку
+     * проверяем по лиду, а менеджер работает в сделке и в лид не заходит
+     * (решение владельца 17.09.2026: «инфа о дублях — её тоже в сделку»).
+     */
+    mirrorDealId?: number;
 }
 
 /** Сборка элемента с дефолтами. */
@@ -136,11 +142,16 @@ export function buildDuplicateCheckItem(input: {
     entityId: number;
     level?: DuplicateCheckLevel;
     writeTimeline?: 'Y' | 'N';
+    mirrorDealId?: number | null;
 }): IDuplicateCheckItem {
-    return {
+    const item: IDuplicateCheckItem = {
         entityType: input.entityType,
         entityId: input.entityId,
         level: input.level ?? 'deep',
         writeTimeline: input.writeTimeline ?? 'Y',
     };
+    if (input.mirrorDealId && input.mirrorDealId > 0) {
+        item.mirrorDealId = input.mirrorDealId;
+    }
+    return item;
 }
