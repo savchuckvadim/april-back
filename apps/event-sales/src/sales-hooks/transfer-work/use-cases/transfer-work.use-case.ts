@@ -19,11 +19,18 @@ import {
     stampDealAssignedAt,
 } from '../../../shared/lead-request/deal-work-timer.util';
 import { LEAD_REQUEST_HISTORY_TEXT } from '../../../shared/lead-request/lead-request-history.util';
+import { CrmRelationsReassignService } from '../../../shared/crm-relations';
 
 type BxRow = Record<string, unknown>;
 
 /** Префикс задач при передаче (идемпотентный). */
 const CALL_TASK_PREFIX = 'Звонок';
+
+/**
+ * Сколько контактов клиента переназначать: команды идут в группу передачи
+ * вместе со сделками и задачами, а группа обязана уместиться в один batch.
+ */
+const MAX_CONTACTS_REASSIGN = 10;
 
 /** Заголовок задачи, которую ставим новому ответственному при передаче. */
 const TRANSFER_TASK_TITLE = `${CALL_TASK_PREFIX} по переданной работе`;
@@ -101,10 +108,34 @@ export class TransferWorkUseCase
         ctx: SalesHookExecutionContext,
         item: ITransferWorkItem,
     ): Promise<string[]> {
+        /*
+         * Прошлые элементы пачки уже лежат в карте batch-команд (endGroup
+         * кладёт их туда, а отправляет flush). Чтение ниже тоже идёт batch'ем
+         * и увезло бы их с собой, мимо результатов буфера, — отправляем их
+         * сначала своим путём.
+         */
+        await ctx.buffer.flush();
         const scopeService = new SalesScopeService(ctx.bitrix, ctx.portal);
         const scope = await scopeService.collect({
             companyId: item.companyId,
             dealIds: item.dealIds,
+        });
+        /*
+         * Контакты клиента — тому же новому ответственному (решение
+         * владельца 17.09.2026: «ответственный новый везде», поверхностно:
+         * контакты основных сделок и компании). Читаем ДО первой записи.
+         */
+        const relations = new CrmRelationsReassignService(ctx.bitrix);
+        const contactIds = await relations.collectContactIds({
+            dealIds: scope.deals
+                .filter(
+                    scoped =>
+                        scoped.categoryCode ===
+                        PbxDealCategoryCodeEnum.sales_base,
+                )
+                .map(scoped => Number(scoped.deal.ID)),
+            leadIds: [],
+            companyIds: item.companyId ? [item.companyId] : [],
         });
         const warnings = [...scope.warnings, ...scope.foreign];
         const newResponsible = String(item.newResponsibleId);
@@ -183,6 +214,18 @@ export class TransferWorkUseCase
                         ASSIGNED_BY_ID: newResponsible,
                     } as never,
                 ),
+            );
+        }
+
+        relations.queueContactsResponsible(
+            ctx.buffer,
+            contactIds.slice(0, MAX_CONTACTS_REASSIGN),
+            item.newResponsibleId,
+            'tw_ct',
+        );
+        if (contactIds.length > MAX_CONTACTS_REASSIGN) {
+            warnings.push(
+                `Контактов клиента ${contactIds.length} — ответственный сменён у первых ${MAX_CONTACTS_REASSIGN}`,
             );
         }
 
