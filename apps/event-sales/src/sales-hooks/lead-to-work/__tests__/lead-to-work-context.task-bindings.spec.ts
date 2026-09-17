@@ -48,10 +48,11 @@ type QueueEnvironment = (
 
 const queueEnvironment = (
     service: LeadToWorkContextService,
-): QueueEnvironment =>
-    (
-        service as unknown as { queueEnvironment: QueueEnvironment }
-    ).queueEnvironment.bind(service);
+): QueueEnvironment => {
+    const target = service as unknown as { queueEnvironment: QueueEnvironment };
+    return (leadId, lead, anyTaskGroup) =>
+        target.queueEnvironment(leadId, lead, anyTaskGroup);
+};
 
 const bindingsOf = (filters: Row[]): string[] =>
     filters.flatMap(filter => (filter.UF_CRM_TASK as string[]) ?? []);
