@@ -55,7 +55,102 @@ const commentOf = (calls: ICallLog[]): string => {
     return fields.COMMENT ?? '';
 };
 
+/** Портал, где парные поля заявки на сделке УЖЕ установлены. */
+const INSTALLED: Record<string, string> = {
+    op_inn: 'OP_INN',
+    op_inn_pool: 'OP_INN_POOL',
+    lead_user_region: 'USER_REGION',
+    lead_order_number: 'ORDER_NUMBER',
+    lead_reg_number: 'REG_NUMBER',
+    op_lead_phones: 'OP_LEAD_PHONES',
+    op_lead_emails: 'OP_LEAD_EMAILS',
+};
+const portalWithFields = {
+    getEntityFieldByCode: (_entity: string, code: string) =>
+        INSTALLED[code] ? { bitrixId: INSTALLED[code] } : undefined,
+    getFieldBitrixId: (field: { bitrixId: string }) =>
+        `UF_CRM_${field.bitrixId}`,
+} as never;
+
 describe('LeadDataEnrichService', () => {
+    /*
+     * Решение владельца 17.09.2026: данные заявки нужны в ПОЛЯХ сделки, а не
+     * только в карточке таймлайна.
+     */
+    it('данные заявки копируются в поля сделки', async () => {
+        const { bitrix, calls } = makeBitrix({ 'crm.lead.get': LEAD });
+        const service = new LeadDataEnrichService(
+            bitrix,
+            portalWithFields,
+            'portal.bitrix24.ru',
+        );
+
+        await service.enrich(100, { ID: '100' }, [777]);
+
+        const update = calls.find(
+            c =>
+                c.method === 'crm.deal.update' &&
+                'UF_CRM_USER_REGION' in ((c.params.fields ?? {}) as Row),
+        );
+        const fields = (update?.params.fields ?? {}) as Row;
+        expect(fields.UF_CRM_USER_REGION).toBe('Воронежская область');
+        expect(fields.UF_CRM_ORDER_NUMBER).toBe('2184035');
+        expect(fields.UF_CRM_REG_NUMBER).toBe('36-07331');
+        expect(fields.UF_CRM_OP_LEAD_PHONES).toEqual(['+79102880648']);
+        expect(fields.UF_CRM_OP_LEAD_EMAILS).toEqual(['client@example.com']);
+    });
+
+    it('заполненное руками не перетирается, телефоны объединяются', async () => {
+        const { bitrix, calls } = makeBitrix({ 'crm.lead.get': LEAD });
+        const service = new LeadDataEnrichService(
+            bitrix,
+            portalWithFields,
+            'portal.bitrix24.ru',
+        );
+
+        await service.enrich(
+            100,
+            {
+                ID: '100',
+                UF_CRM_USER_REGION: 'Москва',
+                UF_CRM_OP_LEAD_PHONES: ['+70000000000'],
+            },
+            [777],
+        );
+
+        const update = calls.find(
+            c =>
+                c.method === 'crm.deal.update' &&
+                'UF_CRM_OP_LEAD_PHONES' in ((c.params.fields ?? {}) as Row),
+        );
+        const fields = (update?.params.fields ?? {}) as Row;
+        expect(fields.UF_CRM_USER_REGION).toBeUndefined();
+        expect(fields.UF_CRM_OP_LEAD_PHONES).toEqual([
+            '+70000000000',
+            '+79102880648',
+        ]);
+    });
+
+    it('поля не установлены — в поля ничего не пишется', async () => {
+        const { bitrix, calls } = makeBitrix({ 'crm.lead.get': LEAD });
+        const service = new LeadDataEnrichService(
+            bitrix,
+            portal,
+            'portal.bitrix24.ru',
+        );
+
+        await service.enrich(100, { ID: '100' }, [777]);
+
+        const leadDataWrite = calls.some(
+            c =>
+                c.method === 'crm.deal.update' &&
+                Object.keys((c.params.fields ?? {}) as Row).some(key =>
+                    key.startsWith('UF_CRM_USER_'),
+                ),
+        );
+        expect(leadDataWrite).toBe(false);
+    });
+
     /*
      * Главное требование владельца: телефоны и почты обязаны доезжать до
      * сделки хотя бы записью в таймлайн. Своих полей телефона и почты у

@@ -56,6 +56,24 @@ const TIMELINE_FIELDS: readonly { field: string; label: string }[] = [
     { field: 'UF_CRM_LEAD_PAGE_REFERRER', label: 'Откуда пришёл' },
 ];
 
+/**
+ * Поля заявки, которые копируются в ПОЛЯ сделки (решение владельца
+ * 17.09.2026: «всё, что писалось в карточку, хотят видеть в полях»).
+ *
+ * `from` — имя поля лида на портале; `to` — код парного поля сделки в
+ * реестре. Поле сделки не установлено — пропускаем молча: пока установщик не
+ * отработал, работает только карточка таймлайна.
+ */
+const DEAL_FIELD_COPY: readonly { from: string; to: string }[] = [
+    { from: 'UF_CRM_USER_REGION', to: 'lead_user_region' },
+    { from: 'UF_CRM_USER_CITY', to: 'lead_user_city' },
+    { from: 'UF_CRM_ORDER_NUMBER', to: 'lead_order_number' },
+    { from: 'UF_CRM_REG_NUMBER', to: 'lead_reg_number' },
+    { from: 'UF_CRM_LEAD_USER_ADVICE', to: 'lead_user_advice' },
+    { from: 'UF_CRM_LEAD_QUEST_URL', to: 'lead_quest_url' },
+    { from: 'UF_CRM_LEAD_PAGE_REFERRER', to: 'lead_page_referrer' },
+];
+
 /** Заголовок карточки — он же признак «уже писали» для идемпотентности. */
 const TIMELINE_MARKER = 'Данные заявки';
 
@@ -104,6 +122,8 @@ export class LeadDataEnrichService {
             const lead = await this.getRow('crm.lead.get', leadId);
             if (lead) leads.push(lead);
         }
+
+        await this.writeLeadFields(dealId, deal, leads, result.warnings);
 
         result.inns = await this.collectInns(deal, leads);
         if (result.inns.length) {
@@ -184,6 +204,58 @@ export class LeadDataEnrichService {
     }
 
     /** Пул пополняем объединением; `op_inn` — только если пуст. */
+    /**
+     * Данные заявки — в ПОЛЯ сделки. Пишем только в пустое: ручную правку
+     * менеджера не перетираем, повторный прогон ничего не меняет.
+     *
+     * Телефоны и почты у лида штатные (PHONE/EMAIL), а не UF, поэтому идут
+     * отдельно — в свои множественные поля сделки.
+     */
+    private async writeLeadFields(
+        dealId: number,
+        deal: Row,
+        leads: Row[],
+        warnings: string[],
+    ): Promise<void> {
+        if (!leads.length) return;
+        const fields: Row = {};
+
+        for (const { from, to } of DEAL_FIELD_COPY) {
+            const target = this.fieldName('deal', to);
+            if (!target || this.list(deal[target]).length) continue;
+            const value = leads
+                .map(lead => this.text(lead[from]))
+                .find(Boolean);
+            if (value) fields[target] = value;
+        }
+
+        const multi: readonly [string, 'PHONE' | 'EMAIL'][] = [
+            ['op_lead_phones', 'PHONE'],
+            ['op_lead_emails', 'EMAIL'],
+        ];
+        for (const [code, source] of multi) {
+            const target = this.fieldName('deal', code);
+            if (!target) continue;
+            const current = this.list(deal[target]);
+            const found = uniq(leads.flatMap(lead => this.multi(lead[source])));
+            const merged = uniq([...current, ...found]);
+            // Объединением: номер, добавленный руками, не теряется.
+            if (merged.length > current.length) fields[target] = merged;
+        }
+
+        if (!Object.keys(fields).length) return;
+        try {
+            await this.bitrix.api.call('crm.deal.update', {
+                id: dealId,
+                fields,
+            });
+        } catch (error) {
+            warnings.push(
+                `Поля заявки сделки ${dealId} не записаны: ${(error as Error).message}`,
+            );
+        }
+    }
+
     private async writeInns(
         dealId: number,
         deal: Row,
