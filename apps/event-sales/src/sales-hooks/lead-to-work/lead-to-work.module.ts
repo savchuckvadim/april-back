@@ -9,6 +9,8 @@ import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings/port
 import { PortalFieldsModule } from '../../shared/portal-fields';
 import { UserNameResolver } from '../../shared/lead-request/user-name.resolver';
 import { LeadToWorkDuplicateCheckService } from './services/lead-to-work-duplicate-check.service';
+import { PortalWorkingHoursService } from '../../shared/working-hours/portal-working-hours.service';
+import { PBXModule } from '@/modules/pbx/pbx.module';
 
 /**
  * Хук «лид → работа» (группа 1): конвертация лида в работу ОП и «ХО из
@@ -26,6 +28,9 @@ import { LeadToWorkDuplicateCheckService } from './services/lead-to-work-duplica
         // Лёгкий модуль настроек портала: автопроверка дублей на входе
         // включается только оттуда (по умолчанию выключена).
         PortalAppSettingsModule,
+        // PBXModule — для PortalWorkingHoursService: он читает календарь
+        // портала, чтобы срок задачи не попадал в ночь и выходные.
+        PBXModule,
     ],
     controllers: [LeadToWorkController],
     providers: [
@@ -34,6 +39,9 @@ import { LeadToWorkDuplicateCheckService } from './services/lead-to-work-duplica
         LeadToWorkDuplicateCheckService,
         // Имена сотрудников для читаемой истории и уведомлений (кэш на домен).
         UserNameResolver,
+        // График портала: срок задачи не должен попадать в ночь и выходные
+        // (роботы ставят его формулой «ровно через сутки»).
+        PortalWorkingHoursService,
     ],
 })
 export class LeadToWorkHookModule implements OnModuleInit {
