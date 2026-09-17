@@ -20,10 +20,29 @@ import {
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { PMeasureCode } from '@lib/portal-lib/portal/interfaces/portal.interface';
 
-/** Коды konstructor-полей сделки, которые принимает ручка. */
+/**
+ * Коды ИНН, которые ручка НЕ ПРИНИМАЕТ.
+ *
+ * `op_inn_pool` — множественное поле-накопитель: присланный массив заменил бы
+ * пул ЦЕЛИКОМ, а он копится из лида, компании и реквизитов и терять его
+ * нельзя. `op_inn` — решение человека о том, кто плательщик по договору;
+ * перетирать его чужой записью тем более нельзя.
+ *
+ * Менять ИНН можно только через свою ручку, которая умеет объединять пул и
+ * вести привязку реквизита (см. ai/tasks/2026-09-17-inn-strategy.md).
+ */
+export const INN_PROTECTED_CODES: readonly string[] = ['op_inn', 'op_inn_pool'];
+
+/**
+ * Коды konstructor-полей сделки, которые принимает ручка.
+ *
+ * Из канона вычтены поля ИНН: до 17.09.2026 они принимались наравне со
+ * всеми, а писатель делал обычный `deal.update` без слияния — то есть один
+ * запрос конструктора мог стереть весь пул ИНН сделки.
+ */
 export const DEAL_SEND_FIELD_CODES = Object.values(
     PBX_SALES_KONSTRUCTOR_FIELD_CODES,
-);
+).filter(code => !INN_PROTECTED_CODES.includes(code));
 
 /** Назначения полей канона: инфоблочное описание, продуктовое поле и т.д. */
 export const DEAL_SEND_FIELD_APP_TYPES = Object.values(
@@ -258,11 +277,14 @@ export class DealSendDto {
  * Почему значение поля не записано:
  * - `not_on_portal` — такого поля нет в схеме портала;
  * - `ambiguous_code` — коду соответствует несколько полей сделки, а `appType`
- *   не передан (так устроен `consalting`).
+ *   не передан (так устроен `consalting`);
+ * - `inn_protected` — поле ИНН, менять его этой ручкой нельзя
+ *   (см. {@link INN_PROTECTED_CODES}).
  */
 export const DEAL_FIELD_SKIP_REASONS = [
     'not_on_portal',
     'ambiguous_code',
+    'inn_protected',
 ] as const;
 
 export type DealFieldSkipReason = (typeof DEAL_FIELD_SKIP_REASONS)[number];

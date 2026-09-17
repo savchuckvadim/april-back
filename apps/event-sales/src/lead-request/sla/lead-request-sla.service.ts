@@ -127,6 +127,14 @@ export class LeadRequestSlaService {
 
         if (filter) {
             const select = ['ID', 'TITLE', 'ASSIGNED_BY_ID', 'DATE_MODIFY'];
+            const assignedAtField = portal.getEntityFieldByCode(
+                'lead',
+                EnumLeadRequestFieldCode.op_lead_assigned_at,
+            );
+            const assignedAtName = assignedAtField
+                ? portal.getFieldBitrixId(assignedAtField)
+                : null;
+            if (assignedAtName) select.push(assignedAtName);
             if (historyField)
                 select.push(portal.getFieldBitrixId(historyField));
             if (toBaseField) select.push(portal.getFieldBitrixId(toBaseField));
@@ -140,6 +148,32 @@ export class LeadRequestSlaService {
                 maxPerRun,
             ) as unknown as BxRow[];
             result.candidates = overdue.length;
+
+            /*
+             * ДИАГНОСТИКА КАРУСЕЛИ (17.09.2026).
+             *
+             * Два дня подряд одни и те же заявки передавались каждые десять
+             * минут при пороге 60. Проверено и отвергнуто: порог (в истории
+             * честные «за 60 мин»), часы портала, фильтр «<» по датам — он
+             * исправен и на лидах, и на сделках, — и обновление таймера (оно
+             * происходит). Объяснения не осталось, поэтому печатаем сырьё:
+             * кого именно выбрала выборка и какой у него таймер. Одна строка
+             * на проход, только когда кандидаты есть.
+             */
+            if (overdue.length && assignedAtName) {
+                const picked = overdue
+                    .slice(0, 5)
+                    .map(lead => {
+                        const raw = lead[assignedAtName];
+                        const stamp = typeof raw === 'string' ? raw : '(пусто)';
+                        return `${String(lead.ID)}@${stamp}`;
+                    })
+                    .join(', ');
+                this.logger.warn(
+                    `[sla-diag] ${domain}: порог ${minutes} мин, выбрано ` +
+                        `${overdue.length}; первые: ${picked}`,
+                );
+            }
 
             const newStageId = this.baseNewStageId(portal);
             const toBaseName = toBaseField

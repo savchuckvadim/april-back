@@ -6,6 +6,7 @@ import {
 } from '@lib/portal-lib/pbx-domain/field/type/sales/konstructor/pbx-sales-konstructor-field.type';
 import {
     DealFieldSkipReason,
+    INN_PROTECTED_CODES,
     DealSendFieldDto,
     DealSendProductRowDto,
 } from '../dto/deal-send.dto';
@@ -44,6 +45,15 @@ export class DealFieldResolverService {
         const skipped: SkippedDealField[] = [];
 
         for (const field of fields) {
+            /*
+             * Вторая линия обороны. Валидация DTO такие коды уже не пропускает,
+             * но резолвер зовут и из других мест, а цена ошибки — стёртый пул
+             * ИНН, который собирался из лида, компании и реквизитов.
+             */
+            if (INN_PROTECTED_CODES.includes(field.code)) {
+                skipped.push({ code: field.code, reason: 'inn_protected' });
+                continue;
+            }
             const lookup = this.resolveFieldId(field);
             if ('reason' in lookup) {
                 skipped.push({ code: field.code, reason: lookup.reason });
