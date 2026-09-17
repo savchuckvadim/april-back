@@ -35,6 +35,8 @@ import { UserNameResolver } from '../../../shared/lead-request/user-name.resolve
 import { LeadToWorkNotifyService } from '../services/lead-to-work-notify.service';
 import { LeadToWorkDuplicateCheckService } from '../services/lead-to-work-duplicate-check.service';
 import { LeadDataEnrichService } from '../../../shared/lead-enrich/lead-data-enrich.service';
+import { PortalWorkingHoursService } from '../../../shared/working-hours/portal-working-hours.service';
+import { nextWorkingMoment } from '../../../shared/working-hours/working-hours.model';
 import { LeadToWorkTimelineService } from '../services/lead-to-work-timeline.service';
 import {
     EnumPortalAppCode,
@@ -89,6 +91,8 @@ export class LeadToWorkUseCase
         private readonly userNames: UserNameResolver,
         private readonly duplicateCheck: LeadToWorkDuplicateCheckService,
         private readonly appSettings: PortalAppSettingsService,
+        /** График портала — чтобы срок задачи не попадал в ночь и выходные. */
+        private readonly workingHours: PortalWorkingHoursService,
     ) {}
 
     /**
@@ -292,6 +296,10 @@ export class LeadToWorkUseCase
                     ...item,
                     ...resolution.intent,
                     responsible: assignee.responsible,
+                    deadline: await this.workingDeadline(
+                        ctx.domain,
+                        item.deadline,
+                    ),
                 };
 
                 // 1.2 Считаем целевые стадии от ТЕКУЩЕГО статуса лида:
@@ -470,6 +478,43 @@ export class LeadToWorkUseCase
      * таймлайна). Настройками портала выключается целиком; ошибки уходят в
      * warnings — работа уже создана, и таймлайн её не отменяет.
      */
+    /**
+     * Срок задачи, приведённый к рабочему времени портала.
+     *
+     * Роботы Битрикса ставят срок формулой «ровно через сутки»
+     * (`dateadd(Now, "1d")`), и заявка, упавшая в четыре утра, давала задачу
+     * на четыре утра — наблюдалось 17.09.2026. Формула про календарь портала
+     * не знает, а мы знаем: срок в рабочем времени остаётся как есть, ночь и
+     * выходные переезжают на начало ближайшего рабочего дня.
+     *
+     * График не прочитан — возвращаем как пришло: своё расписание лучше
+     * чужого молчания, но падать из-за календаря конвертация не должна.
+     */
+    private async workingDeadline(
+        domain: string,
+        deadline: string | undefined,
+    ): Promise<string | undefined> {
+        if (!deadline) return deadline;
+        const parsed = new Date(deadline);
+        if (Number.isNaN(parsed.getTime())) return deadline;
+        try {
+            const { hours, timezone } = await this.workingHours.resolve(domain);
+            const moved = nextWorkingMoment(hours, parsed, timezone);
+            if (moved.getTime() === parsed.getTime()) return deadline;
+            this.logger.log(
+                `[deadline] ${domain}: срок ${deadline} вне рабочего времени — ` +
+                    `перенесён на ${moved.toISOString()}`,
+            );
+            return moved.toISOString();
+        } catch (error) {
+            this.logger.warn(
+                `[deadline] ${domain}: график не прочитан (${(error as Error).message}) — ` +
+                    'срок оставлен как есть',
+            );
+            return deadline;
+        }
+    }
+
     /**
      * Обогащение созданных сделок данными лида.
      *

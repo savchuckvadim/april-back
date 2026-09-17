@@ -182,3 +182,53 @@ export function workingHoursAgo(
     // Перелёт последнего шага возвращаем: бюджет мог кончиться посреди дня.
     return cursor.add(remaining < 0 ? -remaining : 0, 'hour').toDate();
 }
+
+/**
+ * Ближайший РАБОЧИЙ момент не раньше заданного.
+ *
+ * Зачем: сроки задач приходят из роботов Битрикса формулой вида
+ * `dateadd(Now, "1d")` — «ровно через сутки». Заявка упала в четыре утра, и
+ * задача встала на четыре утра (наблюдалось 17.09.2026). Формула про
+ * календарь портала не знает и знать не может, а мы знаем.
+ *
+ * Правило: момент в рабочем времени остаётся как есть — робот вправе решать.
+ * Ночь, выходной или праздник переносятся на НАЧАЛО ближайшего рабочего дня:
+ * предсказуемо, объяснимо и никогда не раньше исходного срока.
+ *
+ * Ограничитель в 366 шагов — страховка от портала, где выходными помечена
+ * вся неделя: лучше вернуть исходное, чем зациклиться.
+ */
+export function nextWorkingMoment(
+    hours: PortalWorkingHours,
+    moment: Date,
+    timezone: ETimeZone,
+): Date {
+    if (isWithinWorkingHours(hours, moment, timezone)) return moment;
+
+    const isWorkingDay = (day: dayjs.Dayjs): boolean =>
+        !hours.weekHolidays.includes(day.day()) &&
+        !hours.yearHolidays.has(`${day.date()}.${day.month() + 1}`);
+
+    const startOf = (day: dayjs.Dayjs): dayjs.Dayjs =>
+        day
+            .startOf('day')
+            .add(Math.floor(hours.startHour), 'hour')
+            .add(Math.round((hours.startHour % 1) * 60), 'minute');
+
+    let cursor = dayjs(moment).tz(timezone);
+
+    /*
+     * Раннее утро рабочего дня — это «сегодня к началу дня», а не «завтра»:
+     * заявка в 04:00 понедельника должна попасть на 09:00 понедельника.
+     */
+    const hourOfDay = cursor.hour() + cursor.minute() / 60;
+    if (isWorkingDay(cursor) && hourOfDay < hours.startHour) {
+        return startOf(cursor).toDate();
+    }
+
+    for (let guard = 0; guard < 366; guard += 1) {
+        cursor = cursor.add(1, 'day');
+        if (isWorkingDay(cursor)) return startOf(cursor).toDate();
+    }
+    return moment;
+}
