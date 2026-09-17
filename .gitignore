@@ -112,3 +112,7 @@ lead-migration-*.log
 # Журнал цепочки волн (scripts/migrate-waves.sh)
 migrate-waves.log
 migrate-waves.out
+
+# Журналы ночных прогонов догона данных
+backfill-*.out
+backfill-*.log

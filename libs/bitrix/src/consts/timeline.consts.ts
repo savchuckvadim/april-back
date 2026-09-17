@@ -68,3 +68,18 @@ export const timelineLinkLine = (
  */
 export const toTimelineComment = (lines: readonly string[]): string =>
     toBatchSafeText(lines.filter(line => line && line.trim()).join('\n'));
+
+/**
+ * Сборка комментария для ПРЯМОГО вызова `crm.timeline.comment.add`.
+ *
+ * Экранирование {@link toBatchSafeText} существует потому, что batch склеивает
+ * значения в строку запроса и Битрикс разбирает её как URL. При прямом вызове
+ * склейки нет, и декодировать `%0A` / `%2B` / `%23` некому — они остаются в
+ * тексте комментария буквально. Так и случилось 16.09.2026: в карточку уехало
+ * «Телефоны: %2B79102880648» и «Лид %23124063».
+ *
+ * Правило: идёт через `buffer.queue` / batch — {@link toTimelineComment};
+ * идёт через `api.call` — этот.
+ */
+export const toTimelineCommentDirect = (lines: readonly string[]): string =>
+    lines.filter(line => line && line.trim()).join('\n');

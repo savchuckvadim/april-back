@@ -229,6 +229,9 @@ export class TransferWorkUseCase
                     {
                         TITLE: `${CALL_TASK_PREFIX} по переданной работе`,
                         RESPONSIBLE_ID: item.newResponsibleId,
+                        // Постановщик = ответственный: иначе Битрикс ставит
+                        // владельца интеграции (админа портала).
+                        CREATED_BY: item.newResponsibleId,
                         UF_CRM_TASK: bindings,
                         ...(groupId ? { GROUP_ID: groupId } : {}),
                     } as never,

@@ -34,6 +34,7 @@ import { LeadUfDefinitionsService } from '../../../shared/portal-fields';
 import { UserNameResolver } from '../../../shared/lead-request/user-name.resolver';
 import { LeadToWorkNotifyService } from '../services/lead-to-work-notify.service';
 import { LeadToWorkDuplicateCheckService } from '../services/lead-to-work-duplicate-check.service';
+import { LeadDataEnrichService } from '../../../shared/lead-enrich/lead-data-enrich.service';
 import { LeadToWorkTimelineService } from '../services/lead-to-work-timeline.service';
 import {
     EnumPortalAppCode,
@@ -441,6 +442,16 @@ export class LeadToWorkUseCase
             results[0].warnings.push(...timelineWarnings);
         }
 
+        /*
+         * Шаг 4.6. Данные заявки — в сделку: ИНН в поля, остальное записью в
+         * таймлайн. Тем же сервисом, которым идёт ночной догон прошлого, —
+         * иначе конвертация у клиента и перегон давали бы разный результат.
+         */
+        const enrichWarnings = await this.enrichDeals(ctx, results);
+        if (enrichWarnings.length && results.length) {
+            results[0].warnings.push(...enrichWarnings);
+        }
+
         const created = results.filter(
             r => r.baseDealId && !r.reused && !r.warnings.includes('__failed'),
         ).length;
@@ -459,6 +470,46 @@ export class LeadToWorkUseCase
      * таймлайна). Настройками портала выключается целиком; ошибки уходят в
      * warnings — работа уже создана, и таймлайн её не отменяет.
      */
+    /**
+     * Обогащение созданных сделок данными лида.
+     *
+     * Ошибка обогащения НЕ роняет конвертацию: сделка уже создана, работа
+     * менеджеру передана, а недостающий ИНН — повод для предупреждения, а не
+     * для отката.
+     */
+    private async enrichDeals(
+        ctx: SalesHookExecutionContext,
+        results: readonly LeadToWorkItemResultDto[],
+    ): Promise<string[]> {
+        const warnings: string[] = [];
+        const enricher = new LeadDataEnrichService(
+            ctx.bitrix,
+            ctx.portal,
+            ctx.domain,
+        );
+        for (const result of results) {
+            const dealId = Number(result.baseDealId);
+            if (!Number.isFinite(dealId) || dealId <= 0) continue;
+            try {
+                const deal = (
+                    (await ctx.bitrix.api.call('crm.deal.get', {
+                        id: dealId,
+                    })) as { result?: Record<string, unknown> }
+                ).result;
+                if (!deal) continue;
+                const outcome = await enricher.enrich(dealId, deal, [
+                    result.leadId,
+                ]);
+                warnings.push(...outcome.warnings);
+            } catch (error) {
+                warnings.push(
+                    `Сделка ${dealId}: данные заявки не перенесены — ${(error as Error).message}`,
+                );
+            }
+        }
+        return warnings;
+    }
+
     private async transferTimeline(
         ctx: SalesHookExecutionContext,
         results: LeadToWorkItemResultDto[],
