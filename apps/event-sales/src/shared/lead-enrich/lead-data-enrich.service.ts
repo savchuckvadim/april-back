@@ -1,10 +1,12 @@
 import { Logger } from '@nestjs/common';
+import { uniq } from '@lib/portal-lib/pbx-duplicate';
 import {
-    extractInnFromTitle,
-    isValidInn,
-    normalizeInnList,
-    uniq,
-} from '@lib/portal-lib/pbx-duplicate';
+    IInnObservation,
+    IInnRequisiteCard,
+    InnFieldMap,
+    InnPoolService,
+    observeInnGraph,
+} from '@lib/portal-lib/pbx-inn';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import {
     crmCardUrl,
@@ -72,6 +74,8 @@ const DEAL_FIELD_COPY: readonly { from: string; to: string }[] = [
     { from: 'UF_CRM_LEAD_USER_ADVICE', to: 'lead_user_advice' },
     { from: 'UF_CRM_LEAD_QUEST_URL', to: 'lead_quest_url' },
     { from: 'UF_CRM_LEAD_PAGE_REFERRER', to: 'lead_page_referrer' },
+    // Отдел заведён и на лиде, и на сделке одним кодом — просто копируем.
+    { from: 'UF_CRM_DEPARTMENT_STRING', to: 'department_string' },
 ];
 
 /** Заголовок карточки — он же признак «уже писали» для идемпотентности. */
@@ -92,6 +96,17 @@ const TIMELINE_OWNER_DEAL = 2;
  */
 export class LeadDataEnrichService {
     private readonly logger = new Logger(LeadDataEnrichService.name);
+
+    /**
+     * Наблюдения последнего сбора. Ключ — ТОТ САМЫЙ массив, который вернул
+     * `collectInns`: так `writeInns` получает источники значений, не меняя
+     * публичный контракт `enrich`, и два параллельных обогащения не
+     * перепутают свои данные.
+     */
+    private readonly observed = new WeakMap<
+        readonly string[],
+        IInnObservation[]
+    >();
 
     constructor(
         private readonly bitrix: IEnrichBitrix,
@@ -137,73 +152,73 @@ export class LeadDataEnrichService {
 
     /* ------------------------------------------------------------------ */
 
-    /** ИНН отовсюду: поля сделки и лидов, компания, реквизиты контактов. */
+    /**
+     * ИНН отовсюду: поля сделки и лидов, компания, её реквизиты.
+     *
+     * Сам разбор — общий с ручками фрейма (`observeInnGraph` из
+     * `@lib/portal-lib/pbx-inn`): одни и те же правила «что слабое, что
+     * сильное» должны действовать и в хуке, и в карточке ИНН. Здесь
+     * остаётся только чтение карточек — связь сделка→лид кастомная, и
+     * знает о ней вызывающий.
+     */
     private async collectInns(deal: Row, leads: Row[]): Promise<string[]> {
-        const found: string[] = [];
-        const innFields = this.innFieldNames();
-
-        found.push(...this.scanRow(deal, innFields.deal));
-        for (const lead of leads) {
-            found.push(...this.scanRow(lead, innFields.lead));
-        }
-
+        const dealId = Number(deal.ID) || 0;
         const companyId = Number(deal.COMPANY_ID) || 0;
-        if (companyId) {
-            const company = await this.getRow('crm.company.get', companyId);
-            if (company) {
-                found.push(...this.scanRow(company, innFields.company));
-                found.push(
-                    ...(await this.requisiteInns(RQ_ENTITY.company, companyId)),
-                );
-            }
-        }
+        const company = companyId
+            ? await this.getRow('crm.company.get', companyId)
+            : null;
+        const requisites = company
+            ? await this.companyRequisites(companyId, this.text(company.TITLE))
+            : [];
 
-        return uniq(found.filter(value => isValidInn(value)));
+        const observations = observeInnGraph(
+            { dealId, deal, leads, company, requisites },
+            InnFieldMap.from(this.portal),
+        );
+        // Наблюдения нужны writeInns, чтобы отличить «слабый» ИНН из
+        // названия от реквизита. Ключ — сам массив результата: два
+        // обогащения подряд не перепутают свои данные.
+        const inns = uniq(observations.map(item => item.inn));
+        this.observed.set(inns, observations);
+        return inns;
     }
 
-    /** ИНН из строки: наши поля + название (без чисел в скобках). */
-    private scanRow(row: Row, fields: readonly string[]): string[] {
-        const found: string[] = [];
-        for (const field of fields) {
-            for (const value of this.list(row[field])) {
-                found.push(...normalizeInnList(value));
-            }
-        }
-        /*
-         * Название разбираем именно `extractInnFromTitle`: он выбрасывает
-         * числа В СКОБКАХ, а там лежит номер заявки («Заявка с сайта
-         * (123123213)»). Контрольной суммы против него мало — десятизначный
-         * номер проходит её примерно в одном случае из одиннадцати.
-         */
-        found.push(...extractInnFromTitle(this.text(row.TITLE)));
-        return found;
-    }
-
-    /** `RQ_INN` реквизитов сущности; недоступны — пусто, это не ошибка. */
-    private async requisiteInns(
-        entityTypeId: number,
-        entityId: number,
-    ): Promise<string[]> {
+    /** Реквизиты компании карточками; недоступны — пусто, это не ошибка. */
+    private async companyRequisites(
+        companyId: number,
+        companyTitle: string,
+    ): Promise<IInnRequisiteCard[]> {
         try {
             const response = (await this.bitrix.api.call('crm.requisite.list', {
-                filter: { ENTITY_TYPE_ID: entityTypeId, ENTITY_ID: entityId },
-                select: ['ID', 'RQ_INN'],
+                filter: {
+                    ENTITY_TYPE_ID: RQ_ENTITY.company,
+                    ENTITY_ID: companyId,
+                },
+                select: ['ID', 'RQ_INN', 'RQ_KPP', 'RQ_COMPANY_NAME', 'NAME'],
                 start: -1,
             })) as Row;
             const rows = Array.isArray(response.result)
                 ? (response.result as Row[])
                 : [];
-            const found: string[] = [];
-            for (const row of rows) {
-                found.push(...normalizeInnList(this.text(row.RQ_INN)));
-            }
-            return found;
+            return rows.map(row => ({
+                id: Number(row.ID) || 0,
+                ownerType: 'company' as const,
+                ownerId: companyId,
+                ownerTitle: companyTitle,
+                name: this.text(row.NAME),
+                presetId: Number(row.PRESET_ID) || 0,
+                presetName: '',
+                inn: this.text(row.RQ_INN),
+                kpp: this.text(row.RQ_KPP),
+                companyName: this.text(row.RQ_COMPANY_NAME),
+                linked: false,
+                otherDealIds: [],
+            }));
         } catch {
             return [];
         }
     }
 
-    /** Пул пополняем объединением; `op_inn` — только если пуст. */
     /**
      * Данные заявки — в ПОЛЯ сделки. Пишем только в пустое: ручную правку
      * менеджера не перетираем, повторный прогон ничего не меняет.
@@ -236,11 +251,19 @@ export class LeadDataEnrichService {
         for (const [code, source] of multi) {
             const target = this.fieldName('deal', code);
             if (!target) continue;
-            const current = this.list(deal[target]);
+            /*
+             * На портале эти поля установлены ОДИНОЧНОЙ строкой (проверено
+             * 17.09.2026 по `crm.deal.fields`), поэтому значения склеиваются
+             * через запятую. Массив Битрикс бы не принял, а прежние значения
+             * читаются тем же разбором — объединение работает и здесь.
+             */
+            const current = this.listValues(deal[target]);
             const found = uniq(leads.flatMap(lead => this.multi(lead[source])));
             const merged = uniq([...current, ...found]);
             // Объединением: номер, добавленный руками, не теряется.
-            if (merged.length > current.length) fields[target] = merged;
+            if (merged.length > current.length) {
+                fields[target] = merged.join(', ');
+            }
         }
 
         if (!Object.keys(fields).length) return;
@@ -256,27 +279,29 @@ export class LeadDataEnrichService {
         }
     }
 
+    /**
+     * Запись ИНН — ТОЛЬКО через `InnPoolService`, единственного писателя
+     * `op_inn` / `op_inn_pool` (постановка `ai/tasks/2026-09-17-inn-strategy.md`).
+     *
+     * Что изменилось для хука: пул по-прежнему пополняется объединением, а
+     * `op_inn` теперь ставится не «первым валидным из найденных», а только
+     * когда кандидат ровно ОДИН и он не «слабый» (слабый = найден лишь в
+     * названии). Именно «первый из многих» и породил четыре тысячи
+     * непроверенных догадок в ночном догоне. Заодно синхронизируется пул
+     * компании — раньше это умел только скрипт догона.
+     */
     private async writeInns(
         dealId: number,
         deal: Row,
         inns: string[],
         warnings: string[],
     ): Promise<void> {
-        const innName = this.fieldName('deal', 'op_inn');
-        const poolName = this.fieldName('deal', 'op_inn_pool');
-        if (!innName || !poolName) {
-            warnings.push('Поля op_inn / op_inn_pool не установлены на сделке');
-            return;
-        }
-        const currentPool = this.list(deal[poolName]);
-        const pool = uniq([...currentPool, ...inns]);
-        const currentInn = this.text(deal[innName]);
-        if (pool.length === currentPool.length && currentInn) return;
-
-        const fields: Row = { [poolName]: pool };
-        // Выбор человека не перетираем: пишем только в пустое.
-        if (!currentInn) fields[innName] = inns[0];
-        await this.bitrix.api.call('crm.deal.update', { id: dealId, fields });
+        const observations: IInnObservation[] = this.observed.get(inns) ?? [];
+        const pool = new InnPoolService(this.bitrix, this.portal, this.domain);
+        const result = await pool.absorb(dealId, deal, observations, {
+            companyId: Number(deal.COMPANY_ID) || 0,
+        });
+        warnings.push(...result.warnings);
     }
 
     /**
@@ -294,7 +319,17 @@ export class LeadDataEnrichService {
     ): Promise<boolean> {
         const lines = this.timelineLines(leads);
         if (!lines.length) return false;
-        if (await this.alreadyPosted(dealId)) return false;
+        /*
+         * Карточка уже есть — второй раз не пишем, но ЗАКРЕПЛЯЕМ: закрепление
+         * появилось позже самой карточки, и 8 тысяч записей от 16.09 остались
+         * в ленте (решение владельца 17.09.2026: «закреплять можно везде
+         * вчерашнюю запись»). Повторное закрепление Битрикс принимает молча.
+         */
+        const posted = await this.postedCommentId(dealId);
+        if (posted !== null) {
+            if (posted > 0) await this.pin(dealId, posted, warnings);
+            return false;
+        }
 
         try {
             const response = (await this.bitrix.api.call(
@@ -379,8 +414,12 @@ export class LeadDataEnrichService {
         return lines;
     }
 
-    /** Карточка уже писалась — второй раз не пишем. */
-    private async alreadyPosted(dealId: number): Promise<boolean> {
+    /**
+     * id уже записанной карточки; `null` — карточки нет и её надо писать.
+     * Чтение не удалось — возвращаем 0 («карточка есть, id неизвестен»):
+     * лучше не записать, чем задублировать.
+     */
+    private async postedCommentId(dealId: number): Promise<number | null> {
         try {
             const response = (await this.bitrix.api.call(
                 'crm.timeline.comment.list',
@@ -394,31 +433,14 @@ export class LeadDataEnrichService {
             const rows = Array.isArray(response.result)
                 ? (response.result as Row[])
                 : [];
-            return rows.some(row =>
+            const card = rows.find(row =>
                 this.text(row.COMMENT).includes(TIMELINE_MARKER),
             );
+            if (!card) return null;
+            return Number(card.ID) || 0;
         } catch {
-            // Не прочитали — лучше не записать, чем задублировать.
-            return true;
+            return 0;
         }
-    }
-
-    /** UF-имена ИНН-полей по сущностям (из реестра портала). */
-    private innFieldNames(): {
-        lead: string[];
-        deal: string[];
-        company: string[];
-    } {
-        const pick = (entity: 'lead' | 'deal' | 'company'): string[] =>
-            [
-                this.fieldName(entity, 'op_inn'),
-                this.fieldName(entity, 'op_inn_pool'),
-            ].filter((name): name is string => !!name);
-        return {
-            lead: pick('lead'),
-            deal: pick('deal'),
-            company: pick('company'),
-        };
     }
 
     private fieldName(
@@ -458,6 +480,20 @@ export class LeadDataEnrichService {
     private list(raw: unknown): string[] {
         const values = Array.isArray(raw) ? raw : [raw];
         return values.map(value => this.text(value)).filter(Boolean);
+    }
+
+    /**
+     * Значения поля-«списка в строке»: телефоны и почты заявки установлены
+     * одиночной строкой, где значения разделены запятой. Массив (если поле
+     * когда-то переустановят множественным) разбирается тем же методом.
+     */
+    private listValues(raw: unknown): string[] {
+        return this.list(raw).flatMap(value =>
+            value
+                .split(',')
+                .map(part => part.trim())
+                .filter(Boolean),
+        );
     }
 
     private text(raw: unknown): string {

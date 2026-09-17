@@ -23,6 +23,7 @@ const LEAD: Row = {
     PHONE: [{ VALUE: '+79102880648' }],
     EMAIL: [{ VALUE: 'client@example.com' }],
     UF_CRM_USER_REGION: 'Воронежская область',
+    UF_CRM_DEPARTMENT_STRING: 'ОП Воронеж',
     UF_CRM_ORDER_NUMBER: '2184035',
     UF_CRM_REG_NUMBER: '36-07331',
 };
@@ -59,9 +60,10 @@ const commentOf = (calls: ICallLog[]): string => {
 const INSTALLED: Record<string, string> = {
     op_inn: 'OP_INN',
     op_inn_pool: 'OP_INN_POOL',
-    lead_user_region: 'USER_REGION',
-    lead_order_number: 'ORDER_NUMBER',
-    lead_reg_number: 'REG_NUMBER',
+    lead_user_region: 'LEAD_USER_REGION',
+    lead_order_number: 'LEAD_ORDER_NUMBER',
+    lead_reg_number: 'LEAD_REG_NUMBER',
+    department_string: 'DEPARTMENT_STRING',
     op_lead_phones: 'OP_LEAD_PHONES',
     op_lead_emails: 'OP_LEAD_EMAILS',
 };
@@ -90,14 +92,16 @@ describe('LeadDataEnrichService', () => {
         const update = calls.find(
             c =>
                 c.method === 'crm.deal.update' &&
-                'UF_CRM_USER_REGION' in ((c.params.fields ?? {}) as Row),
+                'UF_CRM_LEAD_USER_REGION' in ((c.params.fields ?? {}) as Row),
         );
         const fields = (update?.params.fields ?? {}) as Row;
-        expect(fields.UF_CRM_USER_REGION).toBe('Воронежская область');
-        expect(fields.UF_CRM_ORDER_NUMBER).toBe('2184035');
-        expect(fields.UF_CRM_REG_NUMBER).toBe('36-07331');
-        expect(fields.UF_CRM_OP_LEAD_PHONES).toEqual(['+79102880648']);
-        expect(fields.UF_CRM_OP_LEAD_EMAILS).toEqual(['client@example.com']);
+        expect(fields.UF_CRM_LEAD_USER_REGION).toBe('Воронежская область');
+        expect(fields.UF_CRM_LEAD_ORDER_NUMBER).toBe('2184035');
+        expect(fields.UF_CRM_LEAD_REG_NUMBER).toBe('36-07331');
+        expect(fields.UF_CRM_DEPARTMENT_STRING).toBe('ОП Воронеж');
+        // Поля установлены ОДИНОЧНОЙ строкой — значения через запятую.
+        expect(fields.UF_CRM_OP_LEAD_PHONES).toBe('+79102880648');
+        expect(fields.UF_CRM_OP_LEAD_EMAILS).toBe('client@example.com');
     });
 
     it('заполненное руками не перетирается, телефоны объединяются', async () => {
@@ -112,8 +116,8 @@ describe('LeadDataEnrichService', () => {
             100,
             {
                 ID: '100',
-                UF_CRM_USER_REGION: 'Москва',
-                UF_CRM_OP_LEAD_PHONES: ['+70000000000'],
+                UF_CRM_LEAD_USER_REGION: 'Москва',
+                UF_CRM_OP_LEAD_PHONES: '+70000000000',
             },
             [777],
         );
@@ -124,11 +128,8 @@ describe('LeadDataEnrichService', () => {
                 'UF_CRM_OP_LEAD_PHONES' in ((c.params.fields ?? {}) as Row),
         );
         const fields = (update?.params.fields ?? {}) as Row;
-        expect(fields.UF_CRM_USER_REGION).toBeUndefined();
-        expect(fields.UF_CRM_OP_LEAD_PHONES).toEqual([
-            '+70000000000',
-            '+79102880648',
-        ]);
+        expect(fields.UF_CRM_LEAD_USER_REGION).toBeUndefined();
+        expect(fields.UF_CRM_OP_LEAD_PHONES).toBe('+70000000000, +79102880648');
     });
 
     it('поля не установлены — в поля ничего не пишется', async () => {
@@ -145,7 +146,7 @@ describe('LeadDataEnrichService', () => {
             c =>
                 c.method === 'crm.deal.update' &&
                 Object.keys((c.params.fields ?? {}) as Row).some(key =>
-                    key.startsWith('UF_CRM_USER_'),
+                    key.startsWith('UF_CRM_LEAD_USER_'),
                 ),
         );
         expect(leadDataWrite).toBe(false);
@@ -282,6 +283,10 @@ describe('LeadDataEnrichService', () => {
         expect(calls.some(c => c.method === 'crm.timeline.comment.add')).toBe(
             false,
         );
+        // Но закрепляем: закрепление появилось позже самой карточки,
+        // и записи от 16.09 остались висеть в ленте.
+        const pin = calls.find(c => c.method === 'crm.timeline.item.pin');
+        expect(pin?.params).toMatchObject({ id: 1, ownerId: 100 });
     });
 
     /*
@@ -307,6 +312,85 @@ describe('LeadDataEnrichService', () => {
             ownerTypeId: 2,
             ownerId: 100,
         });
+    });
+
+    /*
+     * ПРАВИЛА ЗАПИСИ ИНН ПЕРЕЕХАЛИ В `@lib/portal-lib/pbx-inn`
+     * (постановка ai/tasks/2026-09-17-inn-strategy.md, 17.09.2026).
+     *
+     * Что изменилось для хука: `op_inn` больше не заполняется «первым
+     * валидным из найденных». Автоматика ставит его сама, только когда
+     * кандидат ровно ОДИН и он не «слабый». Пул по-прежнему пополняется
+     * объединением, и теперь вместе с ним синхронизируется пул компании —
+     * раньше это умел только ночной скрипт догона.
+     */
+    it('кандидатов несколько — op_inn оставляем человеку', async () => {
+        const { bitrix, calls } = makeBitrix({
+            'crm.lead.get': { ...LEAD, UF_CRM_OP_INN: '500100732259' },
+            'crm.company.get': { ID: '55', TITLE: 'ООО «Ромашка»' },
+            'crm.requisite.list': [{ ID: '1', RQ_INN: '7812032055' }],
+        });
+        const service = new LeadDataEnrichService(
+            bitrix,
+            portal,
+            'portal.bitrix24.ru',
+        );
+
+        const result = await service.enrich(
+            100,
+            { ID: '100', COMPANY_ID: '55' },
+            [777],
+        );
+
+        expect(result.inns.sort()).toEqual(['500100732259', '7812032055']);
+        const update = calls.find(c => c.method === 'crm.deal.update');
+        const fields = (update?.params.fields ?? {}) as Row;
+        expect(fields.UF_CRM_OP_INN).toBeUndefined();
+        expect(fields.UF_CRM_OP_INN_POOL).toEqual([
+            '7812032055',
+            '500100732259',
+        ]);
+    });
+
+    it('единственный ИНН из названия — слишком слабо для автоподстановки', async () => {
+        const { bitrix, calls } = makeBitrix({
+            'crm.lead.get': {
+                ID: '777',
+                TITLE: 'ООО «Ромашка» ИНН 7707083893',
+            },
+        });
+        const service = new LeadDataEnrichService(
+            bitrix,
+            portal,
+            'portal.bitrix24.ru',
+        );
+
+        const result = await service.enrich(100, { ID: '100' }, [777]);
+
+        expect(result.inns).toEqual(['7707083893']);
+        const update = calls.find(c => c.method === 'crm.deal.update');
+        const fields = (update?.params.fields ?? {}) as Row;
+        expect(fields.UF_CRM_OP_INN).toBeUndefined();
+        expect(fields.UF_CRM_OP_INN_POOL).toEqual(['7707083893']);
+    });
+
+    it('пул компании синхронизируется прямо из хука', async () => {
+        const { bitrix, calls } = makeBitrix({
+            'crm.lead.get': LEAD,
+            'crm.company.get': { ID: '55', TITLE: 'ООО «Ромашка»' },
+            'crm.requisite.list': [{ ID: '1', RQ_INN: '7812032055' }],
+        });
+        const service = new LeadDataEnrichService(
+            bitrix,
+            portal,
+            'portal.bitrix24.ru',
+        );
+
+        await service.enrich(100, { ID: '100', COMPANY_ID: '55' }, [777]);
+
+        const update = calls.find(c => c.method === 'crm.company.update');
+        const fields = (update?.params.fields ?? {}) as Row;
+        expect(fields.UF_CRM_OP_INN_POOL).toEqual(['7812032055']);
     });
 
     /*

@@ -211,6 +211,7 @@
             "^@lib/portal-lib/konstructor(|/.*)$": "<rootDir>/libs/portal-lib/konstructor/src/$1",
             "^@lib/portal-lib/pbx-domain(|/.*)$": "<rootDir>/libs/portal-lib/pbx/domain/src/$1",
             "^@lib/portal-lib/pbx-duplicate(|/.*)$": "<rootDir>/libs/portal-lib/pbx/duplicate/src/$1",
+            "^@lib/portal-lib/pbx-inn(|/.*)$": "<rootDir>/libs/portal-lib/pbx/inn/src/$1",
             "^@lib/portal-lib/store(|/.*)$": "<rootDir>/libs/portal-lib/store/$1",
             "^@lib/portal-lib/builder(|/.*)$": "<rootDir>/libs/portal-lib/builder/src/$1",
             "^@lib/portal-lib(|/.*)$": "<rootDir>/libs/portal-lib/$1",

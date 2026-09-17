@@ -22,6 +22,7 @@ import { AppCacheServiceModule } from '@lib/app-cache';
 import { EventSalesAppSettingsModule } from './app-settings/app-settings.module';
 import { EventSalesQuestionnairesModule } from './questionnaires/questionnaires.module';
 import { DealAuditModule } from './deal-audit/deal-audit.module';
+import { InnModule } from './inn/inn.module';
 
 @Module({
     imports: [
@@ -58,6 +59,10 @@ import { DealAuditModule } from './deal-audit/deal-audit.module';
         AppCacheServiceModule,
         // Поиск дублей клиента для фрейма отдела продаж
         DuplicatesModule,
+        // Вкладка «ИНН» карточки сделки: снимок, выбор плательщика,
+        // скрытие лишних вариантов. Единственный писатель op_inn —
+        // библиотека @lib/portal-lib/pbx-inn.
+        InnModule,
         // Чтение настроек приложений фронтами (замена хардкода domain-config)
         EventSalesAppSettingsModule,
         // Портальный каталог анкет плана/отчёта — читается фреймом на старте

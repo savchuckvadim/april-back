@@ -85,6 +85,8 @@
       "@lib/portal-lib/pbx-duplicate/*": [
         "libs/portal-lib/pbx/duplicate/src/*"
       ],
+      "@lib/portal-lib/pbx-inn": ["libs/portal-lib/pbx/inn/src"],
+      "@lib/portal-lib/pbx-inn/*": ["libs/portal-lib/pbx/inn/src/*"],
       "@lib/portal-lib/store": ["libs/portal-lib/store"],
       "@lib/portal-lib/store/*": ["libs/portal-lib/store/*"],
       "@lib/portal-lib/builder": ["libs/portal-lib/builder/src"],
