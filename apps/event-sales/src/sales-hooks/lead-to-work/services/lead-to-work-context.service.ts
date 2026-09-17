@@ -260,6 +260,15 @@ export class LeadToWorkContextService {
         const taskGroupId = this.portal.getSalesTaskGroupId();
         const taskBindings = [`L_${leadId}`];
         if (companyId) taskBindings.push(`CO_${companyId}`);
+        /*
+         * Задачи ОСНОВНОЙ СДЕЛКИ тоже наши. Раньше ХО искал только по лиду и
+         * компании, и задача, привязанная к одной сделке, для него не
+         * существовала: не закрывалась и не переезжала, оставаясь на прежнем
+         * ответственном. Так висели задачи «Звонок по переданной работе» у
+         * сделок без компании (замечено 17.09.2026). Дубли, найденные через
+         * несколько привязок, ниже отсекаются по id.
+         */
+        if (ourDealId) taskBindings.push(`D_${ourDealId}`);
         for (const binding of taskBindings) {
             this.bitrix.batch.task.getList(
                 `ctx_tasks_${leadId}_${binding}`,
