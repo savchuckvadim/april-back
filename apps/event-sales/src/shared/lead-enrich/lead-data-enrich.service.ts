@@ -59,6 +59,9 @@ const TIMELINE_FIELDS: readonly { field: string; label: string }[] = [
 /** Заголовок карточки — он же признак «уже писали» для идемпотентности. */
 const TIMELINE_MARKER = 'Данные заявки';
 
+/** `ownerTypeId` сделки для `crm.timeline.item.pin`. */
+const TIMELINE_OWNER_DEAL = 2;
+
 /**
  * Перенос данных лида в сделку: ИНН — в поля, остальное — в таймлайн.
  *
@@ -222,22 +225,54 @@ export class LeadDataEnrichService {
         if (await this.alreadyPosted(dealId)) return false;
 
         try {
-            await this.bitrix.api.call('crm.timeline.comment.add', {
-                fields: {
-                    ENTITY_ID: dealId,
-                    ENTITY_TYPE: 'deal',
-                    COMMENT: toTimelineCommentDirect([
-                        timelineBold(TIMELINE_MARKER),
-                        ...lines,
-                    ]),
+            const response = (await this.bitrix.api.call(
+                'crm.timeline.comment.add',
+                {
+                    fields: {
+                        ENTITY_ID: dealId,
+                        ENTITY_TYPE: 'deal',
+                        COMMENT: toTimelineCommentDirect([
+                            timelineBold(TIMELINE_MARKER),
+                            ...lines,
+                        ]),
+                    },
                 },
-            });
+            )) as Row;
+            await this.pin(dealId, Number(response.result), warnings);
             return true;
         } catch (error) {
             warnings.push(
                 `Запись в таймлайн сделки ${dealId} не сделана: ${(error as Error).message}`,
             );
             return false;
+        }
+    }
+
+    /**
+     * Карточку закрепляем наверху таймлайна: смысл был в том, чтобы менеджер
+     * видел телефон сразу, а не листал ленту.
+     *
+     * Закрепить можно ТОЛЬКО ТРИ записи на сделку — так устроен Битрикс.
+     * Поэтому отказ («Только три события можно добавить в избранное») это не
+     * ошибка нашей работы: карточка уже записана и видна, просто не наверху.
+     * Предупреждение оставляем, обогащение не роняем.
+     */
+    private async pin(
+        dealId: number,
+        commentId: number,
+        warnings: string[],
+    ): Promise<void> {
+        if (!Number.isFinite(commentId) || commentId <= 0) return;
+        try {
+            await this.bitrix.api.call('crm.timeline.item.pin', {
+                id: commentId,
+                ownerTypeId: TIMELINE_OWNER_DEAL,
+                ownerId: dealId,
+            });
+        } catch (error) {
+            warnings.push(
+                `Карточка сделки ${dealId} не закреплена: ${(error as Error).message}`,
+            );
         }
     }
 

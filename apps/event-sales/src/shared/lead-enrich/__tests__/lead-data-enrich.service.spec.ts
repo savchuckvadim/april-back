@@ -51,8 +51,8 @@ function makeBitrix(rows: Record<string, Row | Row[]>): {
 
 const commentOf = (calls: ICallLog[]): string => {
     const add = calls.find(c => c.method === 'crm.timeline.comment.add');
-    const fields = (add?.params.fields ?? {}) as Row;
-    return String(fields.COMMENT ?? '');
+    const fields = (add?.params.fields ?? {}) as Record<string, string>;
+    return fields.COMMENT ?? '';
 };
 
 describe('LeadDataEnrichService', () => {
@@ -161,10 +161,7 @@ describe('LeadDataEnrichService', () => {
         const update = calls.find(c => c.method === 'crm.deal.update');
         const fields = (update?.params.fields ?? {}) as Row;
         expect(fields.UF_CRM_OP_INN).toBeUndefined();
-        expect(fields.UF_CRM_OP_INN_POOL).toEqual([
-            '7707083893',
-            '7812032055',
-        ]);
+        expect(fields.UF_CRM_OP_INN_POOL).toEqual(['7707083893', '7812032055']);
     });
 
     /*
@@ -187,9 +184,34 @@ describe('LeadDataEnrichService', () => {
         const result = await service.enrich(100, { ID: '100' }, [777]);
 
         expect(result.timelinePosted).toBe(false);
-        expect(
-            calls.some(c => c.method === 'crm.timeline.comment.add'),
-        ).toBe(false);
+        expect(calls.some(c => c.method === 'crm.timeline.comment.add')).toBe(
+            false,
+        );
+    });
+
+    /*
+     * Карточку закрепляем наверху таймлайна — ради этого всё и делалось:
+     * менеджер должен видеть телефон сразу, а не листать ленту.
+     */
+    it('карточка закрепляется в сделке', async () => {
+        const { bitrix, calls } = makeBitrix({
+            'crm.lead.get': LEAD,
+            'crm.timeline.comment.add': 8412 as never,
+        });
+        const service = new LeadDataEnrichService(
+            bitrix,
+            portal,
+            'portal.bitrix24.ru',
+        );
+
+        await service.enrich(100, { ID: '100' }, [777]);
+
+        const pin = calls.find(c => c.method === 'crm.timeline.item.pin');
+        expect(pin?.params).toMatchObject({
+            id: 8412,
+            ownerTypeId: 2,
+            ownerId: 100,
+        });
     });
 
     /*
