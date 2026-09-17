@@ -28,6 +28,20 @@ const CALL_TASK_PREFIX = 'Звонок';
 /** Заголовок задачи, которую ставим новому ответственному при передаче. */
 const TRANSFER_TASK_TITLE = `${CALL_TASK_PREFIX} по переданной работе`;
 
+/**
+ * ЗАДАЧА «ЗВОНОК ПО ПЕРЕДАННОЙ РАБОТЕ» ОТКЛЮЧЕНА.
+ *
+ * Решение владельца 17.09.2026: задача излишняя. Открытые задачи
+ * передаваемой работы и так переезжают к новому ответственному (цикл выше),
+ * а отдельная «Звонок по переданной работе» только дублировала их — и при
+ * карусели SLA 16–17.09 плодилась по штуке на каждый круг.
+ *
+ * Выключено здесь, а не дефолтом `createCallTask`: флаг может прислать
+ * фронт явно, и тогда смена дефолта ничего бы не остановила. Вернуть —
+ * поменять на true.
+ */
+const TRANSFER_CALL_TASK_ENABLED = false;
+
 /** Категории-«аналитические спутники»: при передаче закрываются в fail. */
 const SATELLITE_CATEGORIES = new Set<PbxDealCategoryCodeEnum>([
     PbxDealCategoryCodeEnum.sales_presentation,
@@ -237,12 +251,13 @@ export class TransferWorkUseCase
                         (task as unknown as BxRow).TITLE,
                 ) === TRANSFER_TASK_TITLE,
         );
-        if (alreadyAsked) {
+        if (TRANSFER_CALL_TASK_ENABLED && alreadyAsked) {
             warnings.push(
                 'Задача «по переданной работе» уже открыта — вторая не создаётся',
             );
         }
         if (
+            TRANSFER_CALL_TASK_ENABLED &&
             item.createCallTask &&
             !alreadyAsked &&
             (mainDealId || item.companyId)
