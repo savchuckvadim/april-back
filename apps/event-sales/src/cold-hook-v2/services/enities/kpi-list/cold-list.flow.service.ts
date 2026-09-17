@@ -21,8 +21,11 @@ export interface IColdListFlowData {
     responsibleId: string | number;
     /** Владелец работы: компания либо клиент без компании (сделка). */
     owner: ColdOwner;
-    /** ID базовой сделки (может быть `$result[...]` либо реальный ID) */
-    baseDealId: string;
+    /**
+     * ID базовой сделки (может быть `$result[...]` либо реальный ID);
+     * null — основной нет (стадия «Холодные» не сопоставлена).
+     */
+    baseDealId: string | null;
     /** ID xo-сделки (всегда `$result[...]`, создается в этом же батче) */
     xoDealId: string;
 }
@@ -101,7 +104,8 @@ export class ColdListFlowService {
         if (data.owner.kind === 'company') {
             refs.push(`CO_${data.owner.companyId}`);
         }
-        refs.push(`D_${data.baseDealId}`, `D_${data.xoDealId}`);
+        if (data.baseDealId) refs.push(`D_${data.baseDealId}`);
+        refs.push(`D_${data.xoDealId}`);
         if (data.owner.kind === 'deal' && data.owner.leadId) {
             refs.push(`L_${data.owner.leadId}`);
         }

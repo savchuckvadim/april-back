@@ -70,13 +70,19 @@ const portal = {
         list(code === 'sales_kpi' ? 'kpi' : 'history'),
 } as unknown as PortalModel;
 
+/** Элемент KPI/истории — то, что тест читает из lists.element.add. */
+interface ListItemDto {
+    ELEMENT_CODE: string;
+    FIELDS: Record<string, Record<string, string>>;
+}
+
 const makeBitrix = () => {
     const fns = {
-        companyUpdate: jest.fn(),
-        dealSet: jest.fn(),
-        dealUpdate: jest.fn(),
-        taskAdd: jest.fn(),
-        listAdd: jest.fn(),
+        companyUpdate: jest.fn<void, [string, string, Row]>(),
+        dealSet: jest.fn<void, [string, Row]>(),
+        dealUpdate: jest.fn<void, [string, number, Row]>(),
+        taskAdd: jest.fn<void, [string, Row & { UF_CRM_TASK: string[] }]>(),
+        listAdd: jest.fn<void, [string, ListItemDto]>(),
     };
     const bitrix = {
         batch: {
@@ -94,9 +100,10 @@ const makeBuffer = () => {
     const queued: Array<() => void> = [];
     return {
         queue: (fn: () => void) => queued.push(fn),
-        endGroup: async () => {
+        endGroup: () => {
             queued.forEach(fn => fn());
             queued.length = 0;
+            return Promise.resolve();
         },
     } as unknown as ColdHookBatchGroupBuffer;
 };
@@ -280,5 +287,144 @@ describe('ColdCallV2UseCase — корень сделка без компани�
             'new_cold_deal_deal_600',
             expect.objectContaining({ UF_CRM_TO_BASE_SALES: '77' }),
         );
+    });
+});
+
+describe('ColdCallV2UseCase — адресный ХО везде', () => {
+    /** Портал с полями принятия: таймер и «Кто принял» на сделке. */
+    const acceptPortal = (categories: typeof CATEGORIES) =>
+        ({
+            ...(portal as unknown as Record<string, unknown>),
+            getDealCategoryByCode: (code: string) =>
+                categories.find(c => c.code === code),
+            getDealCategories: () => categories,
+            getEntityFieldByCode: (_entity: string, code: string) =>
+                ({
+                    to_base_sales: { bitrixId: 'TO_BASE_SALES', items: [] },
+                    op_lead_assigned_at: {
+                        bitrixId: 'OP_LEAD_ASSIGNED_AT',
+                        items: [],
+                    },
+                    op_lead_accepted_by: {
+                        bitrixId: 'OP_LEAD_ACCEPTED_BY',
+                        items: [],
+                    },
+                    manager_op: { bitrixId: 'MANAGER_OP', items: [] },
+                })[code],
+            getFieldBitrixId: (field: { bitrixId: string }) =>
+                `UF_CRM_${field.bitrixId}`,
+        }) as unknown as PortalModel;
+
+    const runWith = async (
+        portalModel: PortalModel,
+        target: ResolvedColdTarget,
+        baseDeal: IBXDeal | null,
+    ) => {
+        const fake = makeBitrix();
+        await new ColdCallV2UseCase(portalModel, fake.bitrix).flow(
+            target,
+            baseDeal,
+            null,
+            makeBuffer(),
+        );
+        return fake;
+    };
+
+    it('компания-владелец получает нового ответственного', async () => {
+        const fake = await run(companyTarget, { ID: '500' } as never);
+        expect(fake.companyUpdate).toHaveBeenCalledWith(
+            'xo_hook_update_event_entity_company_7',
+            '7',
+            expect.objectContaining({ ASSIGNED_BY_ID: '447' }),
+        );
+    });
+
+    it('основная без таймера всё равно принимается: таймер снят, «Кто принял» записан', async () => {
+        const fake = await runWith(acceptPortal(CATEGORIES), companyTarget, {
+            ID: '500',
+        } as never);
+        expect(fake.dealUpdate).toHaveBeenCalledWith(
+            'update_base_deal_500',
+            500,
+            expect.objectContaining({
+                ASSIGNED_BY_ID: '447',
+                STAGE_ID: 'C17:PREPARATION',
+                UF_CRM_OP_LEAD_ASSIGNED_AT: '',
+                UF_CRM_OP_LEAD_ACCEPTED_BY: 447,
+            }),
+        );
+    });
+
+    it('стадия «Холодные» не сопоставлена — основная всё равно уходит новому ответственному, без смены стадии', async () => {
+        const noCold = [
+            { ...CATEGORIES[0], stages: [stage('sales_warm', 'WARM')] },
+            CATEGORIES[1],
+        ];
+        const fake = await runWith(acceptPortal(noCold), companyTarget, {
+            ID: '500',
+        } as never);
+        const [key, id, payload] = fake.dealUpdate.mock.calls[0];
+        expect([key, id]).toEqual(['update_base_deal_500', 500]);
+        expect(payload).toMatchObject({
+            ASSIGNED_BY_ID: '447',
+            UF_CRM_OP_LEAD_ACCEPTED_BY: 447,
+        });
+        expect(payload).not.toHaveProperty('STAGE_ID');
+        expect(payload).not.toHaveProperty('CATEGORY_ID');
+        expect(fake.dealSet).toHaveBeenCalledWith(
+            'new_cold_deal_7',
+            expect.objectContaining({ UF_CRM_TO_BASE_SALES: '500' }),
+        );
+    });
+
+    it('стадия не сопоставлена и основной нет — новая не создаётся и ссылок на неё нигде нет', async () => {
+        const noCold = [
+            { ...CATEGORIES[0], stages: [stage('sales_warm', 'WARM')] },
+            CATEGORIES[1],
+        ];
+        const fake = await runWith(acceptPortal(noCold), companyTarget, null);
+        expect(fake.dealSet.mock.calls.map(([key]) => key)).toEqual([
+            'new_cold_deal_7',
+        ]);
+        expect(fake.dealSet.mock.calls[0][1]).not.toHaveProperty(
+            'UF_CRM_TO_BASE_SALES',
+        );
+        const [, task] = fake.taskAdd.mock.calls[0];
+        expect(task.UF_CRM_TASK).toEqual([
+            'CO_7',
+            'D_$result[new_cold_deal_7]',
+        ]);
+        const [, dto] = fake.listAdd.mock.calls[0];
+        expect(Object.values(dto.FIELDS.PROPERTY_CRM)).toEqual([
+            'CO_7',
+            'D_$result[new_cold_deal_7]',
+        ]);
+    });
+
+    it('менеджер по продажам = новый ответственный на основной (update и set) и компании', async () => {
+        const updated = await runWith(acceptPortal(CATEGORIES), companyTarget, {
+            ID: '500',
+        } as never);
+        expect(updated.dealUpdate.mock.calls[0][2]).toMatchObject({
+            UF_CRM_MANAGER_OP: 447,
+        });
+        // Компанию пишет EventEntityModel — тот же сотрудник, без дубля.
+        expect(updated.companyUpdate.mock.calls[0][2]).toMatchObject({
+            ASSIGNED_BY_ID: '447',
+            UF_CRM_MANAGER_OP: '447',
+        });
+
+        // Новая основная: модель полей не отдаёт — менеджер ставится явно.
+        const created = await runWith(
+            acceptPortal(CATEGORIES),
+            companyTarget,
+            null,
+        );
+        const [key, payload] = created.dealSet.mock.calls[0];
+        expect(key).toBe('new_base_deal_7');
+        expect(payload).toMatchObject({
+            ASSIGNED_BY_ID: '447',
+            UF_CRM_MANAGER_OP: 447,
+        });
     });
 });

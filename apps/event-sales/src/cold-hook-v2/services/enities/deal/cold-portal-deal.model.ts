@@ -5,18 +5,20 @@ import {
     IPCategory,
     IStage,
 } from '@lib/portal-lib/portal/interfaces/portal.interface';
+import { PBX_DEAL_SALES_BASE_STAGE_CODE } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
 /**
  * Возвращает id полей в заисимости от категории и события
  * в данном случае событие одно - xo
  * категории которые интересуют две
- * для base - стадия Холодные
+ * для base - стадия Холодные ({@link PBX_DEAL_SALES_BASE_STAGE_CODE}.cold)
  * для cold - стадия запланирован
  * еще может появиться tmc
  * отдаем стадии в формате пригодном для битрикс C{categoryId}:{}
  *
+ * Код стадии основной — из канона portal-lib; локального `BASE` у v2 больше
+ * нет (v1 cold-hook заморожен и держит свою копию enum).
  */
 export enum XoTargeStageCodesEnum {
-    BASE = 'sales_cold',
     XO = 'cold_plan',
     TMC = 'sales_tmc_new',
 }
@@ -91,7 +93,7 @@ export class ColdPortalDealModel {
     private getBaseTargetStage(category: IPCategory): IStage | undefined {
         return category.stages.find(
             (stage: IStage) =>
-                stage.code === (XoTargeStageCodesEnum.BASE as string),
+                stage.code === PBX_DEAL_SALES_BASE_STAGE_CODE.cold,
         );
     }
 

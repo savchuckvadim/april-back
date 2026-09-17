@@ -11,8 +11,8 @@ import { zprUfKey } from '../../../zpr-flow/services/zpr-element-fields.builder'
 import { zprOpenStageIds } from '../../../zpr-flow/services/zpr-stage.resolver';
 import {
     DEAL_TO_DEAL_LINK_CODES,
-    DEAL_TO_LEAD_LINK_CODES,
-    dealLeadLinkKey,
+    dealLeadIds,
+    dealLeadLinkKeys,
     dealLinkKey,
     toLinkedIds,
 } from '../../lib/deal-link-fields';
@@ -70,7 +70,7 @@ export class ColdRelationsCollectorV2Service {
         target: ColdTarget,
         smarts: ColdSmartInfos,
     ): Promise<ColdRelations> {
-        const leadIds = this.collectLeadIds(target.entryDeal);
+        const leadIds = dealLeadIds(this.portal, target.entryDeal);
         const deals =
             target.kind === 'company'
                 ? await this.loadCompanyDeals(target.companyId as number)
@@ -182,6 +182,11 @@ export class ColdRelationsCollectorV2Service {
         return this.dedupeDeals(rows as unknown as IBXDeal[]);
     }
 
+    /**
+     * Ссылки на лиды читаются у КАЖДОЙ сделки: адресный ХО переназначает и
+     * лиды сохранённой основной — в том числе при входе-компании, где
+     * входной сделки нет и лиды иначе не нашлись бы.
+     */
     private dealSelect(): string[] {
         // Таймер подтверждения: адресный ХО снимает его с основной сделки.
         const assignedAt = dealAssignedAtName(this.portal);
@@ -195,6 +200,7 @@ export class ColdRelationsCollectorV2Service {
                 'ASSIGNED_BY_ID',
                 'CLOSED',
                 'LEAD_ID',
+                ...dealLeadLinkKeys(this.portal),
                 ...DEAL_TO_DEAL_LINK_CODES.map(code =>
                     dealLinkKey(this.portal, code),
                 ),
@@ -212,18 +218,6 @@ export class ColdRelationsCollectorV2Service {
                 toLinkedIds(raw[dealLinkKey(this.portal, code)], /^D_/i),
             ),
         );
-    }
-
-    /** Лиды входной сделки: `LEAD_ID` + поля-ссылки по слепку. */
-    private collectLeadIds(deal: IBXDeal | null): number[] {
-        if (!deal) return [];
-        const raw = deal as unknown as Row;
-        const ids = toLinkedIds(raw['LEAD_ID'], /^L_/i);
-        for (const code of DEAL_TO_LEAD_LINK_CODES) {
-            const key = dealLeadLinkKey(this.portal, code);
-            if (key) ids.push(...toLinkedIds(raw[key], /^L_/i));
-        }
-        return this.uniqueIds(ids);
     }
 
     // ---------- задачи ----------
@@ -265,7 +259,11 @@ export class ColdRelationsCollectorV2Service {
             )) {
                 const list = (value as { tasks?: unknown })?.tasks;
                 for (const row of this.rowsOf(list ?? value)) {
-                    const id = String(row['id'] ?? row['ID'] ?? '');
+                    const raw = row['id'] ?? row['ID'];
+                    const id =
+                        typeof raw === 'string' || typeof raw === 'number'
+                            ? String(raw)
+                            : '';
                     if (!id || seen.has(id)) continue;
                     seen.add(id);
                     tasks.push(row as unknown as IBXTask);

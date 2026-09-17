@@ -55,6 +55,29 @@ export const dealLeadLinkKey = (
     return field?.bitrixId ? `UF_CRM_${field.bitrixId}` : null;
 };
 
+/** UF-ключи установленных ссылок сделка → лид (для select). */
+export const dealLeadLinkKeys = (portal: PortalModel): string[] =>
+    DEAL_TO_LEAD_LINK_CODES.map(code => dealLeadLinkKey(portal, code)).filter(
+        (key): key is string => key !== null,
+    );
+
+/**
+ * Лиды сделки: штатный `LEAD_ID` + поля-ссылки по слепку, без дублей.
+ * Сделки нет — пусто. Строка должна быть прочитана с {@link dealLeadLinkKeys}.
+ */
+export const dealLeadIds = (
+    portal: PortalModel,
+    deal: object | null,
+): number[] => {
+    if (!deal) return [];
+    const raw = deal as Record<string, unknown>;
+    const ids = new Set(toLinkedIds(raw['LEAD_ID'], /^L_/i));
+    for (const key of dealLeadLinkKeys(portal)) {
+        for (const id of toLinkedIds(raw[key], /^L_/i)) ids.add(id);
+    }
+    return [...ids];
+};
+
 /** `D_123` / `123` / 123 / ['D_123'] → 123; пусто и мусор → null. */
 export const toLinkedDealId = (raw: unknown): number | null =>
     toLinkedId(raw, /^D_/i);
@@ -75,8 +98,12 @@ export const toLinkedIds = (raw: unknown, prefix: RegExp): number[] => {
 };
 
 const toLinkedId = (raw: unknown, prefix: RegExp): number | null => {
-    const value = Array.isArray(raw) ? raw[0] : raw;
-    const text = String(value ?? '').trim();
+    const value: unknown = Array.isArray(raw) ? (raw as unknown[])[0] : raw;
+    // Ссылка — строка или число; объект/мусор даёт пустоту, а не «[object Object]».
+    const text =
+        typeof value === 'string' || typeof value === 'number'
+            ? String(value).trim()
+            : '';
     if (!text) return null;
     const id = Number(prefix.test(text) ? text.replace(prefix, '') : text);
     return Number.isFinite(id) && id > 0 ? id : null;

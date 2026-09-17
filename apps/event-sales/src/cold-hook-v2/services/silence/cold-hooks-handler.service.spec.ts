@@ -49,7 +49,6 @@ const CATEGORIES = [
         ],
     },
 ];
-const OPEN_STAGES = ['C17:PREPARATION', 'C17:WARM', 'C48:PLAN', 'C32:PLAN'];
 
 const FIELDS: Record<string, string> = {
     to_base_sales: 'TO_BASE_SALES',
@@ -67,6 +66,8 @@ const FIELDS: Record<string, string> = {
     op_lead_assigned_at: 'OP_LEAD_ASSIGNED_AT',
     op_lead_accepted_by: 'OP_LEAD_ACCEPTED_BY',
     op_lead_firstprepare_history: 'OP_LEAD_FIRSTPREPARE_HISTORY',
+    // «Менеджер по продажам Гарант» идёт за ответственным ХО.
+    manager_op: 'MANAGER_OP',
 };
 
 const list = (type: string) => ({
@@ -107,6 +108,8 @@ const PortalModel = {
         list(code === 'sales_kpi' ? 'kpi' : 'history'),
     getLeadStatusIdByCode: (code: string) =>
         code === 'lead_taken_in_work' ? 'PBX_TAKEN_IN_WORK' : undefined,
+    getLeadStageCodeByStatusId: (statusId: string) =>
+        ({ UC_PRES: 'lead_pres' })[statusId],
 };
 
 const PRES_INFO = {
@@ -139,12 +142,18 @@ interface World {
     items: Record<string, Row[]>;
     /** Лиды клиента (для оси заявки); по умолчанию — нет. */
     leads?: Row[];
+    /** Привязки контактов: `deal_500` / `lead_12` / `company_7` → id. */
+    contacts?: Record<string, number[]>;
 }
 
 const matches = (row: Row, filter: Row): boolean =>
     Object.entries(filter).every(([key, value]) => {
         const field = key.replace(/^=/, '');
-        const raw = String(row[field] ?? '');
+        const cell = row[field];
+        const raw =
+            typeof cell === 'string' || typeof cell === 'number'
+                ? String(cell)
+                : '';
         const wanted = (Array.isArray(value) ? value : [value]).map(String);
         return wanted.some(w => raw === w || raw === `D_${w}`);
     });
@@ -159,27 +168,35 @@ const makeBitrix = (world: World) => {
             journal.push([name, key, ...args]);
             pending.push([key, () => answer(...args)]);
         };
-    const callBatchWithConcurrency = jest.fn(async () => {
+    const callBatchWithConcurrency = jest.fn(() => {
         const result: Row = {};
         for (const [key, answer] of pending) result[key] = answer();
         pending.length = 0;
-        return [{ result }];
+        return Promise.resolve([{ result }]);
     });
+    const contactItems = (entity: string) => (id: unknown) =>
+        (world.contacts?.[`${entity}_${String(id)}`] ?? []).map(contactId => ({
+            CONTACT_ID: contactId,
+        }));
     const bitrix = {
         api: { domain: 'd.b24.ru', callBatchWithConcurrency },
         deal: {
-            all: jest.fn(async (filter: Row) =>
-                world.deals.filter(d => matches(d, filter)),
+            all: jest.fn((filter: Row) =>
+                Promise.resolve(world.deals.filter(d => matches(d, filter))),
             ),
         },
         item: {
-            listAll: jest.fn(async (entityTypeId: string, filter: Row) =>
-                (world.items[entityTypeId] ?? []).filter(row =>
-                    (filter.stageId as string[]).includes(String(row.stageId)),
+            listAll: jest.fn((entityTypeId: string, filter: Row) =>
+                Promise.resolve(
+                    (world.items[entityTypeId] ?? []).filter(row =>
+                        (filter.stageId as string[]).includes(
+                            String(row.stageId),
+                        ),
+                    ),
                 ),
             ),
         },
-        imNotify: { systemAdd: jest.fn(async () => 1) },
+        imNotify: { systemAdd: jest.fn(() => Promise.resolve(1)) },
         lead: {
             getList: jest.fn((filter: Row) =>
                 Promise.resolve({
@@ -192,7 +209,26 @@ const makeBitrix = (world: World) => {
             ),
         },
         batch: {
-            lead: { update: rec('lead.update', () => ({})) },
+            lead: {
+                update: rec('lead.update', () => ({})),
+                getList: rec('lead.getList', filter =>
+                    (world.leads ?? [])
+                        .filter(row =>
+                            ((filter as Row).ID as number[])
+                                .map(String)
+                                .includes(String(row.ID)),
+                        )
+                        .map(row => ({
+                            ID: row.ID,
+                            CONTACT_ID: row.CONTACT_ID,
+                        })),
+                ),
+                contactItemsGet: rec(
+                    'lead.contactItemsGet',
+                    contactItems('lead'),
+                ),
+            },
+            contact: { update: rec('contact.update', () => ({})) },
             deal: {
                 get: rec(
                     'deal.get',
@@ -203,6 +239,10 @@ const makeBitrix = (world: World) => {
                 ),
                 update: rec('deal.update', () => ({})),
                 set: rec('deal.set', () => 999),
+                contactItemsGet: rec(
+                    'deal.contactItemsGet',
+                    contactItems('deal'),
+                ),
             },
             company: {
                 get: rec(
@@ -211,6 +251,10 @@ const makeBitrix = (world: World) => {
                         world.companies.find(c => c.ID === String(id)) ?? null,
                 ),
                 update: rec('company.update', () => ({})),
+                contactItemsGet: rec(
+                    'company.contactItemsGet',
+                    contactItems('company'),
+                ),
             },
             task: {
                 getList: rec('task.getList', filter => ({
@@ -234,23 +278,27 @@ const makeBitrix = (world: World) => {
 const makeHandler = (world: World) => {
     const { bitrix, journal } = makeBitrix(world);
     const pbx = {
-        init: jest.fn(async () => ({
-            bitrix,
-            portal: { domain: 'd.b24.ru' },
-            PortalModel,
-        })),
+        init: jest.fn(() =>
+            Promise.resolve({
+                bitrix,
+                portal: { domain: 'd.b24.ru' },
+                PortalModel,
+            }),
+        ),
     } as unknown as PBXService;
     const presSmart = {
-        resolveInfo: jest.fn(async () => PRES_INFO),
+        resolveInfo: jest.fn(() => Promise.resolve(PRES_INFO)),
     } as unknown as PbxPresentationSmartService;
     const zprSmart = {
-        resolveInfo: jest.fn(async () => ZPR_INFO),
+        resolveInfo: jest.fn(() => Promise.resolve(ZPR_INFO)),
     } as unknown as PbxZprSmartService;
     const names = {
-        resolve: jest.fn(async () => ({
-            447: 'Вадим Савчук',
-            448: 'Иван Петров',
-        })),
+        resolve: jest.fn(() =>
+            Promise.resolve({
+                447: 'Вадим Савчук',
+                448: 'Иван Петров',
+            }),
+        ),
     } as unknown as UserNameResolver;
     const handler = new ColdHooksHandlerV2Service(
         pbx,
@@ -313,6 +361,8 @@ describe('ColdHooksHandlerV2Service — компания, force=Y, клиент 
                 { id: 21, stageId: 'DT1038_9:PLAN', ufCrm8Company: 'CO_7' },
             ],
         },
+        // Контакт 91 — и у сделки, и у компании: обновится один раз.
+        contacts: { deal_500: [91], company_7: [91, 92] },
     };
 
     it('закрывает чужую работу, кроме свежей основной, и создаёт холодную на responsible', async () => {
@@ -374,6 +424,44 @@ describe('ColdHooksHandlerV2Service — компания, force=Y, клиент 
         expect(of(journal, 'listItem.add')).toHaveLength(2);
     });
 
+    it('адресный ХО: компания и контакты сделки и компании — новому ответственному', async () => {
+        const { handler, journal } = makeHandler(world);
+        await handler.handleHooks('d.b24.ru', {
+            h1: hook(EnumColdCallEntityType.COMPANY, '7', EnumColdCallForce.Y),
+        });
+
+        const [, , , companyFields] = of(journal, 'company.update')[0];
+        expect(companyFields).toMatchObject({
+            ASSIGNED_BY_ID: '447',
+            UF_CRM_MANAGER_OP: '447',
+        });
+        const baseFields = of(journal, 'deal.update').find(
+            ([, key]) => key === 'update_base_deal_500',
+        )?.[3];
+        expect(baseFields).toMatchObject({ UF_CRM_MANAGER_OP: 447 });
+        // Контакты читаются у сохранённой основной и у компании.
+        expect(
+            of(journal, 'deal.contactItemsGet').map(([, , id]) => id),
+        ).toEqual([500]);
+        expect(
+            of(journal, 'company.contactItemsGet').map(([, , id]) => id),
+        ).toEqual([7]);
+        expect(of(journal, 'contact.update')).toEqual([
+            [
+                'contact.update',
+                'xo2_h1_contact_91',
+                91,
+                { ASSIGNED_BY_ID: '447' },
+            ],
+            [
+                'contact.update',
+                'xo2_h1_contact_92',
+                92,
+                { ASSIGNED_BY_ID: '447' },
+            ],
+        ]);
+    });
+
     it('таймлайн: итог во входные сущности, «забрали» — владельцу основной; push ему же', async () => {
         const { handler, journal, bitrix } = makeHandler(world);
         await handler.handleHooks('d.b24.ru', {
@@ -402,7 +490,7 @@ describe('ColdHooksHandlerV2Service — компания, force=Y, клиент 
                 TAG: 'xo2_cold_start_co_7_448',
                 MESSAGE: expect.stringContaining(
                     '[B]У вас забрали компанию в работу[/B]',
-                ),
+                ) as string,
             }),
         );
     });
@@ -462,6 +550,11 @@ describe('ColdHooksHandlerV2Service — сделка без компании', (
         expect(of(journal, 'deal.set')).toHaveLength(0);
         expect(of(journal, 'task.add')).toHaveLength(0);
         expect(of(journal, 'listItem.add')).toHaveLength(0);
+        // Уступили — ни лидов, ни контактов не читаем и не переназначаем.
+        expect(bitrix.lead.getList).not.toHaveBeenCalled();
+        expect(of(journal, 'deal.contactItemsGet')).toHaveLength(0);
+        expect(of(journal, 'lead.update')).toHaveLength(0);
+        expect(of(journal, 'contact.update')).toHaveLength(0);
 
         const timeline = of(journal, 'timeline.add').map(([, key, data]) => [
             key,
@@ -482,7 +575,7 @@ describe('ColdHooksHandlerV2Service — сделка без компании', (
                 USER_ID: 448,
                 MESSAGE: expect.stringContaining(
                     '[B]У вас попытались забрать клиента в работу[/B]',
-                ),
+                ) as string,
             }),
         );
         // Записи таймлайна уехали: группа yield закрыта и отправлена.
@@ -505,6 +598,7 @@ describe('ColdHooksHandlerV2Service — сделка без компании', (
             ],
             tasks: [],
             items: {},
+            contacts: { deal_600: [9] },
         };
         const { handler, journal, bitrix } = makeHandler(world);
         await handler.handleHooks('d.b24.ru', {
@@ -539,6 +633,15 @@ describe('ColdHooksHandlerV2Service — сделка без компании', (
             }),
         ]);
         expect(of(journal, 'company.update')).toHaveLength(0);
+        // Контакт сделки — новому ответственному (компании нет).
+        expect(of(journal, 'contact.update')).toEqual([
+            [
+                'contact.update',
+                'xo2_h3_contact_9',
+                9,
+                { ASSIGNED_BY_ID: '447' },
+            ],
+        ]);
         expect(bitrix.imNotify.systemAdd).not.toHaveBeenCalled();
         expect(of(journal, 'timeline.add').map(([, key]) => key)).toEqual([
             'xo2_tl_h3_0_deal_600',
@@ -567,13 +670,16 @@ describe('ColdHooksHandlerV2Service — адресный ХО принимает
             {
                 ID: '12',
                 ASSIGNED_BY_ID: '448',
+                STATUS_ID: 'PBX_ASSIGNED',
                 STATUS_SEMANTIC_ID: 'P',
+                CONTACT_ID: '56',
                 UF_CRM_OP_LEAD_ASSIGNED_AT: '2026-09-16T16:20:47+03:00',
                 UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [
                     '16.09.2026 16:20 — ХО назначен: Иван Петров',
                 ],
             },
         ],
+        contacts: { lead_12: [55] },
     };
 
     it('лид уходит новому ответственному, таймеры лида и сделки сняты, в истории — передача и принятие', async () => {
@@ -601,6 +707,7 @@ describe('ColdHooksHandlerV2Service — адресный ХО принимает
             STATUS_ID: 'PBX_TAKEN_IN_WORK',
             UF_CRM_OP_LEAD_ASSIGNED_AT: '',
             UF_CRM_OP_LEAD_ACCEPTED_BY: 447,
+            UF_CRM_MANAGER_OP: 447,
         });
         const history = fields.UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
         expect(history[1]).toContain('ХО передан: Иван Петров → Вадим Савчук');
@@ -613,26 +720,119 @@ describe('ColdHooksHandlerV2Service — адресный ХО принимает
             UF_CRM_OP_LEAD_ASSIGNED_AT: '',
             UF_CRM_OP_LEAD_ACCEPTED_BY: 447,
         });
+
+        // Контакты лида: из contact.items и штатный CONTACT_ID.
+        expect(of(journal, 'contact.update').map(([, key]) => key)).toEqual([
+            'xo2_h4_contact_55',
+            'xo2_h4_contact_56',
+        ]);
     });
 
-    it('принятая и закрытая заявки не трогаются', async () => {
-        const quiet: World = {
+    it('принятая заявка получает нового ответственного, закрытая не трогается; основная принимается и без таймера', async () => {
+        const accepted: World = {
             ...world,
             deals: [{ ...world.deals[0], UF_CRM_OP_LEAD_ASSIGNED_AT: '' }],
             leads: [
-                { ...world.leads![0], UF_CRM_OP_LEAD_ASSIGNED_AT: '' },
+                {
+                    ...world.leads![0],
+                    UF_CRM_OP_LEAD_ASSIGNED_AT: '',
+                    UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [
+                        '16.09.2026 16:20 — ХО назначен: Иван Петров',
+                        '16.09.2026 16:30 — Заявка принята в работу: Иван Петров',
+                    ],
+                },
                 { ...world.leads![0], ID: '13', STATUS_SEMANTIC_ID: 'F' },
             ],
         };
-        const { handler, journal } = makeHandler(quiet);
+        const { handler, journal } = makeHandler(accepted);
         await handler.handleHooks('d.b24.ru', {
             h5: hook(EnumColdCallEntityType.DEAL, '600', EnumColdCallForce.N),
         });
 
-        expect(of(journal, 'lead.update')).toHaveLength(0);
+        const leadUpdates = of(journal, 'lead.update');
+        expect(leadUpdates.map(([, key]) => key)).toEqual(['xo2_lead_h5_12']);
+        const fields = leadUpdates[0][3] as Row;
+        // Заявка уже принята: полей принятия нет, только смена хозяина.
+        expect(Object.keys(fields).sort()).toEqual([
+            'ASSIGNED_BY_ID',
+            'UF_CRM_MANAGER_OP',
+            'UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY',
+        ]);
+        expect(fields.ASSIGNED_BY_ID).toBe('447');
+        expect(fields.UF_CRM_MANAGER_OP).toBe(447);
+        const history = fields.UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
+        expect(history[2]).toContain('ХО передан: Иван Петров → Вадим Савчук');
+
         const basePayload = of(journal, 'deal.update')[0][3];
-        expect(basePayload).not.toHaveProperty('UF_CRM_OP_LEAD_ASSIGNED_AT');
-        expect(basePayload).not.toHaveProperty('UF_CRM_OP_LEAD_ACCEPTED_BY');
+        expect(basePayload).toMatchObject({
+            ASSIGNED_BY_ID: '447',
+            STAGE_ID: 'C17:PREPARATION',
+            UF_CRM_OP_LEAD_ASSIGNED_AT: '',
+            UF_CRM_OP_LEAD_ACCEPTED_BY: 447,
+        });
+    });
+});
+
+describe('ColdHooksHandlerV2Service — вход-компания: лиды основной сделки', () => {
+    const world: World = {
+        companies: [{ ID: '7', TITLE: 'ООО Ромашка' }],
+        deals: [
+            {
+                ID: '500',
+                CATEGORY_ID: '17',
+                STAGE_ID: 'C17:WARM',
+                COMPANY_ID: '7',
+                ASSIGNED_BY_ID: '448',
+                LEAD_ID: '',
+                UF_CRM_DEAL_FROM_LEAD_ID: 'L_12',
+            },
+        ],
+        tasks: [],
+        items: {},
+        leads: [
+            {
+                ID: '12',
+                ASSIGNED_BY_ID: '448',
+                // Лид уже на презентации — статус назад не откатываем.
+                STATUS_ID: 'UC_PRES',
+                STATUS_SEMANTIC_ID: 'P',
+                UF_CRM_OP_LEAD_ASSIGNED_AT: '2026-09-16T16:20:47+03:00',
+                UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [
+                    '16.09.2026 16:20 — ХО назначен: Иван Петров',
+                ],
+            },
+        ],
+        contacts: { lead_12: [55], company_7: [70] },
+    };
+
+    it('лид сохранённой основной переназначается и принимается без отката статуса', async () => {
+        const { handler, journal, bitrix } = makeHandler(world);
+        await handler.handleHooks('d.b24.ru', {
+            h6: hook(EnumColdCallEntityType.COMPANY, '7', EnumColdCallForce.Y),
+        });
+
+        expect(bitrix.lead.getList).toHaveBeenCalledWith(
+            { ID: [12] },
+            expect.any(Array),
+        );
+        const [, key, leadId, fields] = of(journal, 'lead.update')[0] as [
+            string,
+            string,
+            number,
+            Row,
+        ];
+        expect([key, leadId]).toEqual(['xo2_lead_h6_12', 12]);
+        expect(fields).toMatchObject({
+            ASSIGNED_BY_ID: '447',
+            UF_CRM_OP_LEAD_ASSIGNED_AT: '',
+            UF_CRM_OP_LEAD_ACCEPTED_BY: 447,
+        });
+        expect(fields).not.toHaveProperty('STATUS_ID');
+        expect(
+            of(journal, 'contact.update').map(([, contactKey]) => contactKey),
+        ).toEqual(
+            expect.arrayContaining(['xo2_h6_contact_55', 'xo2_h6_contact_70']),
+        );
     });
 });
 
@@ -661,6 +861,7 @@ describe('ColdHooksHandlerV2Service — два хука в одном окне',
             ],
             tasks: [],
             items: {},
+            contacts: { company_7: [71], company_8: [81] },
         };
         const { handler, journal, bitrix } = makeHandler(world);
         await handler.handleHooks('d.b24.ru', {
@@ -675,6 +876,11 @@ describe('ColdHooksHandlerV2Service — два хука в одном окне',
             'company.get',
             'deal.getList',
             'task.getList',
+            // Контакты адресного ХО — тоже фаза чтения.
+            'deal.contactItemsGet',
+            'company.contactItemsGet',
+            'lead.contactItemsGet',
+            'lead.getList',
         ];
         const CREATES = [
             'company.update',
@@ -682,6 +888,7 @@ describe('ColdHooksHandlerV2Service — два хука в одном окне',
             'task.add',
             'listItem.add',
             'timeline.add',
+            'contact.update',
         ];
         const readIdx = names
             .map((n, i) => (READS.includes(n) ? i : -1))
@@ -700,6 +907,10 @@ describe('ColdHooksHandlerV2Service — два хука в одном окне',
         expect(of(journal, 'task.add').map(([, key]) => key)).toEqual([
             'bx_task_add_7',
             'bx_task_add_8',
+        ]);
+        expect(of(journal, 'contact.update').map(([, key]) => key)).toEqual([
+            'xo2_h1_contact_71',
+            'xo2_h2_contact_81',
         ]);
         // Между фазой чтения и итоговым flush чужие батчи группы не уносят:
         // после последней записи создания ровно один вызов батча.

@@ -62,9 +62,11 @@ describe('Таймер подтверждения на СДЕЛКЕ', () => {
                 deal: {
                     get: jest.fn(),
                     getList: jest.fn(),
+                    contactItemsGet: jest.fn(),
                     update: (cmd: string, ...args: unknown[]) =>
                         calls.push({ cmd, args }),
                 },
+                contact: { update: jest.fn() },
                 company: { update: jest.fn() },
                 task: { getList: jest.fn(), update: jest.fn(), add: jest.fn() },
             },

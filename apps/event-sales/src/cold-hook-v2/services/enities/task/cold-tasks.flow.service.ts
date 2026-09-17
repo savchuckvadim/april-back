@@ -10,7 +10,8 @@ export interface IColdTaskFlow {
     name: string;
     responsibleId: number;
     owner: ColdOwner;
-    baseDealId: string;
+    /** null — основной нет (стадия «Холодные» не сопоставлена). */
+    baseDealId: string | null;
     xoDealId: string;
 }
 const EVENT_TYPE_NAME = 'Холодный обзвон';
@@ -62,12 +63,12 @@ export class ColdTaskFlowService {
      */
     private getUfCrms(
         owner: ColdOwner,
-        baseDealId: string,
+        baseDealId: string | null,
         xoDealId: string,
     ): string[] {
         const crms: string[] = [];
         if (owner.kind === 'company') crms.push(`CO_${owner.companyId}`);
-        crms.push(`D_${baseDealId}`);
+        if (baseDealId) crms.push(`D_${baseDealId}`);
         crms.push(`D_${xoDealId}`);
         if (owner.kind === 'deal' && owner.leadId)
             crms.push(`L_${owner.leadId}`);

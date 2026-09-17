@@ -37,9 +37,10 @@ import { UserNameResolver } from '../../../shared/lead-request/user-name.resolve
 import { SalesBatchGroupBuffer as ColdHookBatchGroupBuffer } from '../../../shared/batch';
 import { LeadRequestAcceptService } from '../../../lead-request/services/lead-request-accept.service';
 import {
-    ColdLeadRequestV2Service,
-    ColdWaitingLead,
-} from '../lead-request/cold-lead-request.service';
+    ColdAddressedXoPlan,
+    ColdAddressedXoV2Service,
+    EMPTY_ADDRESSED_XO_PLAN,
+} from '../addressed-xo/cold-addressed-xo.service';
 
 /** Что решено по хуку в фазе чтения — вход фазы записи. */
 interface PreparedTarget {
@@ -47,8 +48,8 @@ interface PreparedTarget {
     decision: ColdStartDecision;
     closed: ColdCloseResult;
     noteInput: ColdStartTimelineInput;
-    /** Заявки клиента, ждущие подтверждения: адресный ХО их принимает. */
-    waitingLeads: ColdWaitingLead[];
+    /** Лиды и контакты клиента, которые адресный ХО переназначит. */
+    addressed: ColdAddressedXoPlan;
 }
 
 /**
@@ -123,9 +124,10 @@ export class ColdHooksHandlerV2Service {
             const timeline = new ColdStartTimelineV2Service(bitrix);
             const notify = new ColdStartNotifyV2Service(bitrix);
             const useCase = new ColdCallV2UseCase(PortalModel, bitrix);
-            // План принятия — чистый расчёт, его единственная зависимость
+            // Адресный ХО: лиды и контакты — новому ответственному. План
+            // принятия — чистый расчёт, его единственная зависимость
             // (PBXService) у обработчика уже есть: модуль заявок не нужен.
-            const leadRequests = new ColdLeadRequestV2Service(
+            const addressedXo = new ColdAddressedXoV2Service(
                 PortalModel,
                 bitrix,
                 new LeadRequestAcceptService(this.pbx),
@@ -211,14 +213,22 @@ export class ColdHooksHandlerV2Service {
                     relations,
                     decision,
                 );
-                // Уступили чужой работе — заявки не трогаем, читать незачем.
-                const waitingLeads =
+                /*
+                 * Адресный ХО: лиды и контакты клиента — новому ответственному.
+                 * Уступили чужой работе — ничего не трогаем, читать незачем.
+                 * Чтение здесь, в фазе 1: внутри уходит batch контактов.
+                 */
+                const addressed =
                     decision.mode === 'proceed'
-                        ? await leadRequests.loadWaiting(relations.leadIds)
-                        : [];
+                        ? await addressedXo.load(
+                              resolved,
+                              relations,
+                              closed.preservedBaseDeal,
+                          )
+                        : EMPTY_ADDRESSED_XO_PLAN;
                 const names = await this.userNames.resolve(domain, bitrix, [
                     responsibleId,
-                    ...ColdLeadRequestV2Service.responsibleIds(waitingLeads),
+                    ...ColdAddressedXoV2Service.responsibleIds(addressed),
                     ...decision.foreign.map(item => item.responsibleId),
                     ...(decision.takenEntry
                         ? [decision.takenEntry.responsibleId]
@@ -228,7 +238,7 @@ export class ColdHooksHandlerV2Service {
                     target: resolved,
                     decision,
                     closed,
-                    waitingLeads,
+                    addressed,
                     noteInput: {
                         domain,
                         target: resolved,
@@ -360,16 +370,16 @@ export class ColdHooksHandlerV2Service {
                 );
                 /*
                  * Строго ПОСЛЕ работы: flow() закрывает свою группу, и
-                 * отметка уезжает отдельной командой, не вклиниваясь в
-                 * цепочку $result[...] создания сделок и задачи.
+                 * лиды, контакты и отметка уезжают своими группами, не
+                 * вклиниваясь в цепочку $result[...] создания сделок и задачи.
                  *
                  * endGroup() здесь обязателен: buffer.queue() регистрирует
                  * ОТЛОЖЕННЫЙ enqueue, и группа без закрытия не уедет во
                  * flush вовсе — отметка просто потерялась бы.
                  */
-                leadRequests.queue(
+                await addressedXo.queue(
                     item.target.hookKey,
-                    item.waitingLeads,
+                    item.addressed,
                     item.noteInput.responsibleId,
                     item.noteInput.names,
                     buffer,

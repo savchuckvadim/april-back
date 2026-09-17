@@ -9,6 +9,7 @@ import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import { PbxSalesEventFieldCode } from '@lib/portal-lib/pbx-domain/field/type/sales/event/pbx-sales-event-field.type';
+import { PbxLeadStageCode } from '@lib/portal-lib/pbx-domain/portal-lead/stages/const/pbx-lead-stages.const';
 import {
     EnumLeadRequestFieldCode,
     EnumLeadSiteStatusCode,
@@ -25,6 +26,7 @@ import {
     dealAssignedAtName,
     setDealAcceptedBy,
 } from '../../shared/lead-request/deal-work-timer.util';
+import { setManagerOp } from '../../shared/lead-request/manager-op.util';
 import {
     LeadRequestAcceptDto,
     LeadRequestAcceptResultDto,
@@ -33,7 +35,8 @@ import {
 type BxRow = Record<string, unknown>;
 
 /** Целевая стадия лида при принятии (аксиома: назначение ≠ принятие). */
-const ACCEPT_LEAD_STAGE_CODE = 'lead_taken_in_work';
+export const ACCEPT_LEAD_STAGE_CODE =
+    'lead_taken_in_work' as const satisfies PbxLeadStageCode;
 
 /** Принятая сделка встаёт «окончательно в ХО» — стадия «Холодная». */
 const ACCEPT_DEAL_STAGE_CODE = 'sales_cold';
@@ -328,6 +331,8 @@ export class LeadRequestAcceptService {
         if (acceptedByField && acceptedBy) {
             fields[portal.getFieldBitrixId(acceptedByField)] = acceptedBy;
         }
+        // «Менеджер по продажам Гарант» — тот, кто принял (решение 17.09).
+        setManagerOp(portal, 'lead', fields, acceptedBy);
 
         return {
             already: false,
@@ -443,6 +448,7 @@ export class LeadRequestAcceptService {
     ): void {
         clearDealAssignedAt(portal, fields);
         setDealAcceptedBy(portal, fields, acceptedBy);
+        setManagerOp(portal, 'deal', fields, acceptedBy);
         appendDealHistory(
             portal,
             fields,

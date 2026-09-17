@@ -34,6 +34,7 @@ const FIELDS: Record<
     op_lead_accepted_by: { bitrixId: 'OP_LEAD_ACCEPTED_BY' },
     to_base_sales: { bitrixId: 'TO_BASE_SALES' },
     op_mhistory: { bitrixId: 'OP_MHISTORY' },
+    manager_op: { bitrixId: 'MANAGER_OP' },
 };
 
 const makePortal = () => ({
@@ -288,5 +289,100 @@ describe('LeadRequestAcceptService', () => {
         expect(result.firstprepareSeconds).toBeNull();
         const fields = update.mock.calls[0][1];
         expect(fields.UF_CRM_OP_LEAD_FIRSTPREPARE_LONG).toBeUndefined();
+    });
+});
+
+/*
+ * «Менеджер по продажам Гарант» (manager_op) идёт за принявшим: решение
+ * владельца 17.09 — менеджером в карточке стоит тот, кто работу взял.
+ */
+describe('LeadRequestAcceptService — менеджер по продажам', () => {
+    it('ставит manager_op = принявший на лиде и основной сделке', async () => {
+        const { pbx, update, dealUpdate } = makePbx(
+            {
+                ID: '42',
+                ASSIGNED_BY_ID: '5',
+                UF_CRM_TO_BASE_SALES: 'D_1024',
+                UF_CRM_OP_LEAD_ASSIGNED_AT: '01.08.2026 10:00:00',
+                UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
+            },
+            { ID: '1024' },
+        );
+        const service = new LeadRequestAcceptService(pbx as never);
+
+        await service.accept({ domain: 'd.b24.ru', leadId: 42, userId: 7 });
+
+        expect(update.mock.calls[0][1].UF_CRM_MANAGER_OP).toBe(7);
+        expect(dealUpdate.mock.calls[0][1].UF_CRM_MANAGER_OP).toBe(7);
+    });
+
+    it('без userId менеджером становится ответственный лида (вебхук робота)', () => {
+        const plan = new LeadRequestAcceptService(null as never).plan(
+            makePortal() as never,
+            {
+                ID: '42',
+                ASSIGNED_BY_ID: '5',
+                UF_CRM_TO_BASE_SALES: 'D_1024',
+                UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
+            },
+        );
+
+        expect(plan.fields.UF_CRM_MANAGER_OP).toBe(5);
+        expect(plan.dealUpdate?.fields.UF_CRM_MANAGER_OP).toBe(5);
+    });
+
+    it('принятие сделки без лида тоже ставит менеджера', () => {
+        const plan = new LeadRequestAcceptService(null as never).planDealOnly(
+            makePortal() as never,
+            1024,
+            {
+                ID: '1024',
+                ASSIGNED_BY_ID: '8',
+                UF_CRM_OP_LEAD_ASSIGNED_AT: '10.08.2026 10:00:00',
+            },
+            9,
+        );
+
+        expect(plan.dealUpdate?.fields.UF_CRM_MANAGER_OP).toBe(9);
+    });
+
+    it('поле не установлено на портале — молча пропуск', () => {
+        const portal = {
+            ...makePortal(),
+            getEntityFieldByCode: (entity: string, code: string) =>
+                code === 'manager_op'
+                    ? undefined
+                    : makePortal().getEntityFieldByCode(entity, code),
+        };
+        const plan = new LeadRequestAcceptService(null as never).plan(
+            portal as never,
+            {
+                ID: '42',
+                UF_CRM_TO_BASE_SALES: 'D_1024',
+                UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
+            },
+            7,
+        );
+
+        expect(plan.already).toBe(false);
+        expect(plan.fields).not.toHaveProperty('UF_CRM_MANAGER_OP');
+        expect(plan.dealUpdate?.fields).not.toHaveProperty('UF_CRM_MANAGER_OP');
+    });
+
+    it('повтор после принятия — менеджер не переписывается', () => {
+        const plan = new LeadRequestAcceptService(null as never).plan(
+            makePortal() as never,
+            {
+                ID: '42',
+                UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [
+                    ASSIGNED_ENTRY,
+                    ACCEPTED_ENTRY,
+                ],
+            },
+            7,
+        );
+
+        expect(plan.already).toBe(true);
+        expect(plan.fields).toEqual({});
     });
 });

@@ -11,12 +11,16 @@ import { dealLinkKey } from '../../../lib/deal-link-fields';
 import { ColdOwner, ownerKey } from '../cold-owner.type';
 import {
     clearDealAssignedAt,
-    dealAssignedAtName,
     setDealAcceptedBy,
 } from '../../../../shared/lead-request/deal-work-timer.util';
+import { setManagerOp } from '../../../../shared/lead-request/manager-op.util';
 
-interface IColdDealFlowResult {
-    baseDealId: string;
+export interface IColdDealFlowResult {
+    /**
+     * Основная: реальный id либо `$result[...]` её создания; null — основной
+     * нет и создать её нельзя (стадия «Холодные» не сопоставлена).
+     */
+    baseDealId: string | null;
     xoDealId: string;
 }
 
@@ -52,87 +56,95 @@ export class ColdDealFlowService {
         return { baseDealId, xoDealId };
     }
 
+    /**
+     * Основная сделка — в «Холодные» и новому ответственному.
+     *
+     * Стадия на портале не сопоставлена — существующая основная всё равно
+     * уходит новому ответственному (без смены воронки и стадии): адресный
+     * ХО обязан переназначить работу везде. Новую же основную в такой
+     * конфигурации не создаём и ссылку на неё не отдаём — `$result` на
+     * команду, которой нет в батче, превратился бы в мусор в полях
+     * ХО-сделки, задачи и KPI.
+     */
     private prepareBaseDeal(
         data: IColdCallEventData,
         owner: ColdOwner,
         baseDeal: IBXDeal | null,
         buffer: ColdHookBatchGroupBuffer,
-    ) {
+    ): string | null {
         const key = ownerKey(owner);
-        const setBaseDealKey = `new_base_deal_${key}`;
-        const updateBaseDealKey = `update_base_deal_${baseDeal?.ID}`;
         const { name, deadline, responsibleId, xoCreated } = data;
         const targetBase = this.portlDealModel.getTargetStageBitrixId(
             PbxDealCategoryCodeEnum.sales_base,
         );
-
-        if (targetBase) {
-            const baseDealEntity = new EventEntityModel(
-                this.portal,
-                baseDeal,
-                EnumColdCallEntityType.DEAL,
-                name,
-                deadline,
-                responsibleId,
-                xoCreated,
+        if (!targetBase) {
+            this.logger.warn(
+                `[deal] owner=${key}: стадия «Холодные» воронки ОП не сопоставлена — ` +
+                    (baseDeal
+                        ? `основная #${baseDeal.ID} переназначается без смены стадии`
+                        : 'новая основная не создаётся'),
             );
-            const baseDealEntityieldValues = baseDealEntity.getNextValues();
-
-            const baseUpdateDealData: Partial<IBXDeal> = {
-                CATEGORY_ID: targetBase.categoryId,
-                STAGE_ID: targetBase.stageId,
-                ASSIGNED_BY_ID: responsibleId.toString(),
-                ...this.ownerFields(owner, baseDeal === null),
-                ...baseDealEntityieldValues,
-            };
-
-            if (baseDeal) {
-                this.acceptWaitingWork(
-                    baseDeal,
-                    responsibleId,
-                    baseUpdateDealData as Record<string, unknown>,
-                );
-                this.logger.log(
-                    `[DEADLINE][deal][SEND] base deal.update owner=${key} ` +
-                        `cmdKey=${updateBaseDealKey} dealId=${baseDeal.ID} ` +
-                        `deadlineCrm="${deadline.toCrmDateTime()}" (локаль портала) ` +
-                        `payload=${JSON.stringify(baseUpdateDealData)}`,
-                );
-                buffer.queue(() =>
-                    this.bitrix.batch.deal.update(
-                        updateBaseDealKey,
-                        Number(baseDeal.ID),
-                        // Значения уже посчитаны в baseUpdateDealData —
-                        // повторный getNextValues() здесь и задваивал
-                        // историю, пока модель мутировала массив сущности.
-                        baseUpdateDealData,
-                    ),
-                );
-            } else {
-                this.logger.log(
-                    `[DEADLINE][deal][SEND] base deal.set owner=${key} ` +
-                        `cmdKey=${setBaseDealKey} ` +
-                        `deadlineCrm="${deadline.toCrmDateTime()}" (локаль портала) ` +
-                        `payload=${JSON.stringify(baseUpdateDealData)}`,
-                );
-                buffer.queue(() =>
-                    this.bitrix.batch.deal.set(
-                        setBaseDealKey,
-                        baseUpdateDealData,
-                    ),
-                );
-            }
+            if (!baseDeal) return null;
         }
 
-        return baseDeal
-            ? String(baseDeal.ID)
-            : this.getDealIdByBatchCommandKey(setBaseDealKey);
+        const baseDealEntity = new EventEntityModel(
+            this.portal,
+            baseDeal,
+            EnumColdCallEntityType.DEAL,
+            name,
+            deadline,
+            responsibleId,
+            xoCreated,
+        );
+        const fields: Partial<IBXDeal> = {
+            ...(targetBase
+                ? {
+                      CATEGORY_ID: targetBase.categoryId,
+                      STAGE_ID: targetBase.stageId,
+                  }
+                : {}),
+            ASSIGNED_BY_ID: responsibleId.toString(),
+            ...this.ownerFields(owner, baseDeal === null),
+            ...baseDealEntity.getNextValues(),
+        };
+        this.acceptWork(responsibleId, fields as Record<string, unknown>);
+
+        if (baseDeal) {
+            const updateBaseDealKey = `update_base_deal_${baseDeal.ID}`;
+            this.logger.log(
+                `[DEADLINE][deal][SEND] base deal.update owner=${key} ` +
+                    `cmdKey=${updateBaseDealKey} dealId=${baseDeal.ID} ` +
+                    `deadlineCrm="${deadline.toCrmDateTime()}" (локаль портала) ` +
+                    `payload=${JSON.stringify(fields)}`,
+            );
+            buffer.queue(() =>
+                this.bitrix.batch.deal.update(
+                    updateBaseDealKey,
+                    Number(baseDeal.ID),
+                    // Значения уже посчитаны в fields — повторный
+                    // getNextValues() здесь и задваивал историю, пока модель
+                    // мутировала массив сущности.
+                    fields,
+                ),
+            );
+            return String(baseDeal.ID);
+        }
+
+        const setBaseDealKey = `new_base_deal_${key}`;
+        this.logger.log(
+            `[DEADLINE][deal][SEND] base deal.set owner=${key} ` +
+                `cmdKey=${setBaseDealKey} ` +
+                `deadlineCrm="${deadline.toCrmDateTime()}" (локаль портала) ` +
+                `payload=${JSON.stringify(fields)}`,
+        );
+        buffer.queue(() => this.bitrix.batch.deal.set(setBaseDealKey, fields));
+        return this.getDealIdByBatchCommandKey(setBaseDealKey);
     }
 
     private createXoDeal(
         data: IColdCallEventData,
         owner: ColdOwner,
-        baseDealId: string,
+        baseDealId: string | null,
         buffer: ColdHookBatchGroupBuffer,
     ) {
         const key = ownerKey(owner);
@@ -162,7 +174,12 @@ export class ColdDealFlowService {
                 ...this.ownerFields(owner, true),
                 // Ссылка на основную: реальный id либо $result[new_base_deal_…]
                 // того же батча — Bitrix подставляет токен и в UF-поле.
-                [dealLinkKey(this.portal, 'to_base_sales')]: baseDealId,
+                ...(baseDealId
+                    ? {
+                          [dealLinkKey(this.portal, 'to_base_sales')]:
+                              baseDealId,
+                      }
+                    : {}),
                 ...coldDealEntityFieldValues,
             };
             this.logger.log(
@@ -180,22 +197,25 @@ export class ColdDealFlowService {
     }
 
     /**
-     * Адресный ХО = принятие работы (решение владельца 16.09): основная
-     * сделка ждала подтверждения — снимаем ожидание и пишем, кто принял.
-     * Иначе новый хозяин получал сделку с чужим таймером, и SLA забирал бы
-     * её по чужой просрочке. Сделка не ждала — ничего не трогаем.
+     * Адресный ХО = принятие работы (решения владельца 16.09 и 17.09):
+     * ожидание подтверждения снимается и «Кто принял» пишется ВСЕГДА, а не
+     * только когда таймер был заполнен. Иначе новый хозяин мог получить
+     * сделку с чужим таймером, и SLA забирал бы её по чужой просрочке.
+     *
+     * «Менеджер по продажам Гарант» — тот же сотрудник. EventEntityModel
+     * пишет его только у СУЩЕСТВУЮЩЕЙ сделки (у новой модель полей не
+     * отдаёт), поэтому ставим явно: у существующей это тот же ключ с тем же
+     * сотрудником, у новой — единственная запись.
+     * Поля нет в слепке — молча пропускается.
      */
-    private acceptWaitingWork(
-        baseDeal: IBXDeal,
+    private acceptWork(
         responsibleId: number | string,
         fields: Record<string, unknown>,
     ): void {
-        const assignedAt = dealAssignedAtName(this.portal);
-        const row = baseDeal as unknown as Record<string, unknown>;
-        const waitingSince = assignedAt ? row[assignedAt] : null;
-        if (typeof waitingSince !== 'string' || !waitingSince.trim()) return;
+        const userId = Number(responsibleId) || null;
         clearDealAssignedAt(this.portal, fields);
-        setDealAcceptedBy(this.portal, fields, Number(responsibleId) || null);
+        setDealAcceptedBy(this.portal, fields, userId);
+        setManagerOp(this.portal, 'deal', fields, userId);
     }
 
     /**

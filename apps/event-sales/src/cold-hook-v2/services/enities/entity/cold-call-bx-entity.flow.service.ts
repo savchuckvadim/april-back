@@ -41,7 +41,17 @@ export class ColdCallBxEntityFlowService {
             responsibleId,
             xoCreated,
         );
-        const nextValues = eventEntity.getNextValues();
+        /*
+         * Адресный ХО переназначает и владельца (решение 17.09 «новый
+         * ответственный везде»): до этого компания оставалась на прежнем
+         * сотруднике, хотя вся её работа уже уехала новому.
+         */
+        const nextValues = {
+            ...eventEntity.getNextValues(),
+            ...(Number(responsibleId) > 0
+                ? { ASSIGNED_BY_ID: String(responsibleId) }
+                : {}),
+        };
 
         this.logger.log(
             `[DEADLINE][entity][SEND] ${entityType}.update id=${entity.ID} ` +

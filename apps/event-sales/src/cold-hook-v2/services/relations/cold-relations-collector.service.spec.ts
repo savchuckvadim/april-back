@@ -122,11 +122,11 @@ const ZPR_INFO = {
 } as unknown as ZprSmartInfo;
 
 interface Fake {
-    dealAll: jest.Mock;
-    dealGetList: jest.Mock;
-    taskGetList: jest.Mock;
-    itemListAll: jest.Mock;
-    callBatch: jest.Mock;
+    dealAll: jest.Mock<Promise<Row[]>, [Row, string[]]>;
+    dealGetList: jest.Mock<void, [string, Row]>;
+    taskGetList: jest.Mock<void, [string, Row]>;
+    itemListAll: jest.Mock<Promise<Row[]>, [string]>;
+    callBatch: jest.Mock<Promise<Array<{ result: Row }>>, []>;
 }
 
 /**
@@ -139,23 +139,25 @@ const makeBitrix = (
     companyDeals: Row[] = [],
 ): Fake & { bitrix: BitrixService } => {
     const pending: Array<[string, Row]> = [];
-    const dealAll = jest.fn(async () => companyDeals);
-    const dealGetList = jest.fn((key: string, filter: Row) => {
-        pending.push([key, filter]);
-    });
-    const taskGetList = jest.fn((key: string, filter: Row) => {
-        pending.push([key, filter]);
-    });
-    const itemListAll = jest.fn(
-        async (entityTypeId: string) => itemRows[entityTypeId] ?? [],
+    const dealAll = jest.fn<Promise<Row[]>, [Row, string[]]>(() =>
+        Promise.resolve(companyDeals),
     );
-    const callBatch = jest.fn(async () => {
+    const dealGetList = jest.fn<void, [string, Row]>((key, filter) => {
+        pending.push([key, filter]);
+    });
+    const taskGetList = jest.fn<void, [string, Row]>((key, filter) => {
+        pending.push([key, filter]);
+    });
+    const itemListAll = jest.fn<Promise<Row[]>, [string]>(entityTypeId =>
+        Promise.resolve(itemRows[entityTypeId] ?? []),
+    );
+    const callBatch = jest.fn<Promise<Array<{ result: Row }>>, []>(() => {
         const result: Row = {};
         for (const [key, filter] of pending) {
             result[key] = answers(key, filter);
         }
         pending.length = 0;
-        return [{ result }];
+        return Promise.resolve([{ result }]);
     });
     const bitrix = {
         api: { domain: 'd.b24.ru', callBatchWithConcurrency: callBatch },
@@ -235,7 +237,7 @@ describe('ColdRelationsCollectorV2Service — корень компания', ()
         const fake = makeBitrix(tasksByKey, {}, deals);
         const relations = await collect(companyTarget(), fake);
         const bindings = fake.taskGetList.mock.calls.map(
-            ([, filter]) => (filter as Row).UF_CRM_TASK,
+            ([, filter]) => filter.UF_CRM_TASK,
         );
         expect(bindings).toEqual([['CO_7'], ['D_500'], ['D_510']]);
         expect(fake.taskGetList.mock.calls[0][1]).toMatchObject({
@@ -358,7 +360,7 @@ describe('ColdRelationsCollectorV2Service — корень сделка без �
         const fake = makeBitrix(answers);
         const relations = await collect(dealTarget(entry, 77), fake);
         const bindings = fake.taskGetList.mock.calls.map(
-            ([, filter]) => (filter as Row).UF_CRM_TASK,
+            ([, filter]) => filter.UF_CRM_TASK,
         );
         expect(bindings).toEqual([
             ['D_600'],
@@ -406,7 +408,42 @@ describe('ColdRelationsCollectorV2Service — корень сделка без �
         expect(relations.deals).toEqual([]);
         expect(relations.dealIds).toEqual([800]);
         expect(
-            fake.taskGetList.mock.calls.map(([, f]) => (f as Row).UF_CRM_TASK),
+            fake.taskGetList.mock.calls.map(([, f]) => f.UF_CRM_TASK),
         ).toEqual([['D_800']]);
+    });
+});
+
+describe('ColdRelationsCollectorV2Service — ссылки на лиды', () => {
+    it('select сделок включает LEAD_ID и поля-ссылки на лиды: адресный ХО берёт лиды основной и при входе-компании', async () => {
+        const fake = makeBitrix(() => []);
+        await collect(companyTarget(), fake, { pres: null, zpr: null });
+
+        const [, select] = fake.dealAll.mock.calls[0];
+        expect(select).toEqual(
+            expect.arrayContaining([
+                'LEAD_ID',
+                'UF_CRM_DEAL_FROM_LEAD_ID',
+                'UF_CRM_DEAL_JOINED_LEADS',
+            ]),
+        );
+    });
+
+    it('лиды входной сделки: LEAD_ID и множественная ссылка, без дублей', async () => {
+        const fake = makeBitrix(() => []);
+        const relations = await collect(
+            dealTarget(
+                {
+                    ID: '600',
+                    LEAD_ID: '12',
+                    UF_CRM_DEAL_FROM_LEAD_ID: 'L_12',
+                    UF_CRM_DEAL_JOINED_LEADS: ['L_13', 'L_14'],
+                },
+                null,
+            ),
+            fake,
+            { pres: null, zpr: null },
+        );
+
+        expect(relations.leadIds).toEqual([12, 13, 14]);
     });
 });
