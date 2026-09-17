@@ -35,6 +35,7 @@ const makeBitrix = () => {
                     update: record('deal.update'),
                 },
                 lead: { update: record('lead.update') },
+                contact: { update: record('contact.update') },
                 task: {
                     add: record('task.add'),
                     update: record('task.update'),
@@ -1065,6 +1066,95 @@ describe('LeadToWorkFlowService', () => {
         expect(history).toHaveLength(1);
         expect(history[0]).toContain(
             'Сотрудник Вадим Савчук сам передал заявку → Иван Петров',
+        );
+    });
+
+    /*
+     * Решение владельца 17.09.2026: «Менеджер по продажам Гарант» меняется
+     * при ХО сразу на того же сотрудника. Событийная модель пишет его
+     * только при сроке обзвона — без срока поле оставалось у прежнего.
+     */
+    it('ХО без срока: manager_op переходит к новому ответственному везде', () => {
+        const { bitrix, calls } = makeBitrix();
+        const fields = {
+            ...FIELDS,
+            'lead:manager_op': { bitrixId: 'MANAGER_OP' },
+            'deal:manager_op': { bitrixId: 'MANAGER_OP' },
+            'company:manager_op': { bitrixId: 'MANAGER_OP' },
+        };
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(fields) as never,
+        );
+
+        service.queue(
+            makeItem({ leadId: 42, responsible: 8, isXo: 'Y' }),
+            baseContext({
+                company: { ID: '7' } as never,
+                existingOurDeal: { ID: '1024' } as never,
+                existingXoDeal: { ID: '2048' } as never,
+            }),
+            basePlan({ xoCategoryId: '7', xoStageId: 'C7:PLAN' }),
+            makeBuffer() as never,
+        );
+
+        for (const cmd of [
+            'lw_deal_upd_42',
+            'lw_xo_upd_42',
+            'lw_company_upd_42',
+        ]) {
+            const written = calls.find(c => c.cmd === cmd)?.args[1] as Record<
+                string,
+                unknown
+            >;
+            expect(written.UF_CRM_MANAGER_OP).toBe('8');
+            expect(written.ASSIGNED_BY_ID).toBe('8');
+        }
+        const lead = calls.find(c => c.method === 'lead.update')
+            ?.args[1] as Record<string, unknown>;
+        expect(lead.UF_CRM_MANAGER_OP).toBe('8');
+    });
+
+    it('ХО: контакты лида переходят новому ответственному, конвертация их не трогает', () => {
+        const run = (isXo: 'Y' | 'N') => {
+            const { bitrix, calls } = makeBitrix();
+            new LeadToWorkFlowService(
+                bitrix as never,
+                makePortal(FIELDS) as never,
+            ).queue(
+                makeItem({ leadId: 42, responsible: 8, isXo }),
+                baseContext({ contactIds: [301, 302] }),
+                basePlan(),
+                makeBuffer() as never,
+            );
+            return calls.filter(c => c.method === 'contact.update');
+        };
+
+        const xo = run('Y');
+        expect(xo.map(c => c.args[0])).toEqual([301, 302]);
+        expect(xo[0].args[1]).toEqual({ ASSIGNED_BY_ID: '8' });
+        expect(run('N')).toEqual([]);
+    });
+
+    it('поле manager_op не установлено — пишется только ответственный', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(FIELDS) as never,
+        );
+
+        service.queue(
+            makeItem({ leadId: 42, responsible: 8, isXo: 'Y' }),
+            baseContext({ existingOurDeal: { ID: '1024' } as never }),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        const written = calls.find(c => c.cmd === 'lw_deal_upd_42')
+            ?.args[1] as Record<string, unknown>;
+        expect(written.ASSIGNED_BY_ID).toBe('8');
+        expect(Object.keys(written).some(key => key.includes('MANAGER'))).toBe(
+            false,
         );
     });
 

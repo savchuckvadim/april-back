@@ -33,7 +33,7 @@ export class CompanyFlowService extends LeadToWorkFlowBase {
             if (item.isXo === 'Y') {
                 const cmd = `lw_company_upd_${item.leadId}`;
                 const fields: BxRow = {
-                    ASSIGNED_BY_ID: String(item.responsible),
+                    ...this.responsibleFields('company', item.responsible),
                     ...this.eventFields(
                         eventCtx,
                         'company',
@@ -60,7 +60,7 @@ export class CompanyFlowService extends LeadToWorkFlowBase {
         buffer.queue(() =>
             this.bitrix.batch.company.set(cmd, {
                 TITLE: toBatchSafeText(title),
-                ASSIGNED_BY_ID: String(item.responsible),
+                ...this.responsibleFields('company', item.responsible),
                 LEAD_ID: String(item.leadId),
                 ...this.eventFields(eventCtx, 'company', null),
             } as never),

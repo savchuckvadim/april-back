@@ -52,7 +52,10 @@ export class LeadFlowService extends LeadToWorkFlowBase {
         if (plan.leadStatusId) fields.STATUS_ID = plan.leadStatusId;
         // ХО-ветка передаёт работу целиком — лид тоже новому ответственному.
         if (item.isXo === 'Y') {
-            fields.ASSIGNED_BY_ID = String(item.responsible);
+            Object.assign(
+                fields,
+                this.responsibleFields('lead', item.responsible),
+            );
         }
 
         const leadRow = ctx.lead as unknown as BxRow;

@@ -29,6 +29,7 @@ import { CompanyFlowService } from './flows/company-flow.service';
 import { DealFlowService } from './flows/deal-flow.service';
 import { LeadFlowService } from './flows/lead-flow.service';
 import { TaskFlowService } from './flows/task-flow.service';
+import { CrmRelationsReassignService } from '../../../shared/crm-relations';
 
 export { CALL_TASK_PREFIX, XO_TASK_PREFIX };
 
@@ -55,6 +56,12 @@ export interface LeadToWorkQueuedPlan {
 type BxRow = Record<string, unknown>;
 
 /**
+ * Сколько контактов лида переназначать в группе лида: команды уходят одним
+ * batch'ем вместе со сделками и задачами, а у лида контактов обычно 1–2.
+ */
+const MAX_CONTACTS_REASSIGN = 10;
+
+/**
  * ОРКЕСТРАТОР записи «лид → работа»: одна группа буфера, порядок
  * company → deal → xo → lead → задачи → KPI. Ссылки между командами —
  * `$result[cmd]`, поэтому вся группа обязана уехать одним batch'ем.
@@ -76,6 +83,7 @@ export class LeadToWorkFlowService {
     private readonly dealFlow: DealFlowService;
     private readonly leadFlow: LeadFlowService;
     private readonly taskFlow: TaskFlowService;
+    private readonly relations: CrmRelationsReassignService;
 
     constructor(
         private readonly bitrix: BitrixService,
@@ -95,6 +103,7 @@ export class LeadToWorkFlowService {
         this.dealFlow = new DealFlowService(bitrix, portal);
         this.leadFlow = new LeadFlowService(bitrix, portal, ufDefinitions);
         this.taskFlow = new TaskFlowService(bitrix, portal);
+        this.relations = new CrmRelationsReassignService(bitrix);
     }
 
     queue(
@@ -189,6 +198,22 @@ export class LeadToWorkFlowService {
             buffer,
         );
         result.warnings.push(...lead.warnings);
+
+        /*
+         * === Контакты лида — тому же ответственному. ХО передаёт работу
+         * целиком: клиент, у которого сделка и лид у нового менеджера, а
+         * контакт у прежнего, звонит «не тому» (решение владельца
+         * 17.09.2026). Контакты уже прочитаны контекстом — новых запросов
+         * нет; группа общая, поэтому число команд ограничено.
+         */
+        if (item.isXo === 'Y') {
+            this.relations.queueContactsResponsible(
+                buffer,
+                ctx.contactIds.slice(0, MAX_CONTACTS_REASSIGN),
+                item.responsible,
+                `lw_ct_${item.leadId}`,
+            );
+        }
 
         // === Задачи: перенос с префиксом «Звонок» либо закрытие + новая.
         const tasks = this.taskFlow.queue(

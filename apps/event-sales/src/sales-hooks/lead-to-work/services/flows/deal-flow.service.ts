@@ -72,7 +72,10 @@ export class DealFlowService extends LeadToWorkFlowBase {
              * сделку этим нельзя.
              */
             if (item.isXo === 'Y') {
-                fields.ASSIGNED_BY_ID = String(item.responsible);
+                Object.assign(
+                    fields,
+                    this.responsibleFields('deal', item.responsible),
+                );
                 if (plan.dealStageId) {
                     fields.STAGE_ID = plan.dealStageId;
                 }
@@ -108,7 +111,7 @@ export class DealFlowService extends LeadToWorkFlowBase {
         const fields: BxRow = {
             TITLE: toBatchSafeText(eventName),
             CATEGORY_ID: plan.dealCategoryId,
-            ASSIGNED_BY_ID: String(item.responsible),
+            ...this.responsibleFields('deal', item.responsible),
             ...this.dealLinkFields(item.leadId, null),
             ...this.eventFields(eventCtx, 'deal', null),
         };
@@ -200,7 +203,7 @@ export class DealFlowService extends LeadToWorkFlowBase {
             const xoId = String(row.ID);
             const cmd = `lw_xo_upd_${item.leadId}`;
             const fields: BxRow = {
-                ASSIGNED_BY_ID: String(item.responsible),
+                ...this.responsibleFields('deal', item.responsible),
                 ...this.dealLinkFields(item.leadId, row),
                 ...this.baseDealLink(baseDealRef),
                 ...this.eventFields(eventCtx, 'deal', row),
@@ -220,7 +223,7 @@ export class DealFlowService extends LeadToWorkFlowBase {
         const fields: BxRow = {
             TITLE: toBatchSafeText(xoTitle),
             CATEGORY_ID: plan.xoCategoryId,
-            ASSIGNED_BY_ID: String(item.responsible),
+            ...this.responsibleFields('deal', item.responsible),
             ...this.dealLinkFields(item.leadId, null),
             ...this.baseDealLink(baseDealRef),
             // Событийные поля обзвона — как у ХО-сделки классического хука.

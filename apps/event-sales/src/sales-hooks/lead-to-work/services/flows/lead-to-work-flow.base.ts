@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import { BitrixDateTime } from '@lib/shared/lib/date';
 import { LeadUfDefinitions } from '../../../../shared/portal-fields';
 import {
@@ -55,6 +56,30 @@ export abstract class LeadToWorkFlowBase {
             row,
             eventCtx,
         ).getFields();
+    }
+
+    /**
+     * Ответственный и «Менеджер по продажам Гарант» (`manager_op`) — вместе.
+     *
+     * Решение владельца 17.09.2026: при ХО и принятии заявки поле меняется
+     * сразу на того же сотрудника. Раньше его писала только событийная
+     * модель ХО — и только когда у обзвона есть срок, так что без срока
+     * поле оставалось на прежнем менеджере. Поле не установлено — только
+     * ответственный.
+     */
+    protected responsibleFields(
+        entity: 'lead' | 'company' | 'deal',
+        responsible: number,
+    ): BxRow {
+        const fields: BxRow = { ASSIGNED_BY_ID: String(responsible) };
+        const field = this.portal.getEntityFieldByCode(
+            entity,
+            PBX_SALES_EVENT_FIELD_CODES.manager_op,
+        );
+        if (field) {
+            fields[this.portal.getFieldBitrixId(field)] = String(responsible);
+        }
+        return fields;
     }
 
     /** UF-имя поля лида по pbx-коду; поле не установлено → null. */
