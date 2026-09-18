@@ -2,6 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AppCacheService } from '@lib/app-cache';
 import { BxDepartmentStructureService } from 'libs/bx-department/services/bx-department-structure.service';
 import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
+import {
+    EnumPortalAppCode,
+    PortalAppSettingsService,
+} from '@lib/portal-lib/store/app-settings';
 import { ILeadToWorkItem } from '../dto/lead-to-work.dto';
 
 /** Минимум, который нужен от сотрудника структуры (структурная типизация). */
@@ -77,6 +81,8 @@ export class LeadToWorkAssigneeService {
     constructor(
         private readonly structure: BxDepartmentStructureService,
         private readonly appCache: AppCacheService,
+        /** Соответствие «Отдел строка» → отдел продаж (настройка портала). */
+        private readonly appSettings: PortalAppSettingsService,
     ) {}
 
     async resolve(
@@ -125,7 +131,9 @@ export class LeadToWorkAssigneeService {
                 `департамент-намёк: "${item.department ?? ''}"`,
         );
 
-        const hint = this.parseDepartmentHint(item.department);
+        const hint = this.parseDepartmentHint(
+            await this.applyAlias(domain, item.department, warnings),
+        );
         const { candidates: allCandidates, departmentKey } =
             await this.collectCandidates(domain, hint, item, warnings);
 
@@ -233,6 +241,65 @@ export class LeadToWorkAssigneeService {
                 : { id: null, name: null };
         }
         return { id: null, name: this.normalizeName(text) };
+    }
+
+    /**
+     * Город из поля «Отдел строка» → отдел продаж, как задано настройкой
+     * портала (`lead_intake_department_aliases`).
+     *
+     * Зачем: бизнес-процесс пишет в лид короткое «Питер», а отдел на портале
+     * называется «ОП САНКТ-ПЕТЕРБУРГ (ОП)» — сравнение по вхождению их не
+     * связывает, и ночная заявка 18.09.2026 ушла в общий круг, то есть в
+     * Воронеж. На каждом портале названия свои, поэтому соответствие
+     * настраивается, а не зашито в код.
+     *
+     * Пусто в настройке или нет пары — возвращаем намёк как есть: прежнее
+     * поведение сохраняется.
+     */
+    private async applyAlias(
+        domain: string,
+        raw: string | undefined,
+        warnings: string[],
+    ): Promise<string | undefined> {
+        const hint = (raw ?? '').trim();
+        if (!hint) {
+            warnings.push(
+                'Отдел заявки не указан («Отдел строка» пусто) — выбор по кругу из всех ОП',
+            );
+            return raw;
+        }
+        try {
+            const settings = await this.appSettings.resolve(
+                domain,
+                EnumPortalAppCode.eventSales,
+            );
+            const alias = this.findAlias(
+                settings.leadIntakeDepartmentAliases,
+                hint,
+            );
+            if (!alias) return raw;
+            this.logger.log(
+                `[assignee] отдел «${hint}» по настройке портала → «${alias}»`,
+            );
+            return alias;
+        } catch (error) {
+            warnings.push(
+                `Соответствие отделов не прочитано (${(error as Error).message}) — намёк взят как есть`,
+            );
+            return raw;
+        }
+    }
+
+    /** Значение пары «город=отдел» из настройки; пары нет — null. */
+    private findAlias(raw: string, hint: string): string | null {
+        const wanted = this.normalizeName(hint);
+        for (const pair of raw.split(';')) {
+            const [key, ...rest] = pair.split('=');
+            const value = rest.join('=').trim();
+            if (!value) continue;
+            if (this.normalizeName(key) === wanted) return value;
+        }
+        return null;
     }
 
     /** Нормализация названия отдела для нестрогого сравнения. */

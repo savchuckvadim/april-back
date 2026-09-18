@@ -505,6 +505,21 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             type: 'boolean',
             default: false,
         }),
+        leadIntakeDepartmentAliases: setting({
+            code: 'lead_intake_department_aliases',
+            name: 'Отдел заявки: как читать «Отдел строка»',
+            description:
+                'Соответствие значения поля «Отдел строка» лида и отдела ' +
+                'продаж, между парами — точка с запятой: ' +
+                '«Питер=ОП САНКТ-ПЕТЕРБУРГ (ОП); Воронеж=ОП Воронеж (ОП); ' +
+                'Ростов=Отдел продаж Ростов (ОП)». Справа можно указать ' +
+                'Bitrix ID отдела вместо названия. Нужно, когда в лиде город ' +
+                'написан коротко («Питер»), а отдел называется иначе: без ' +
+                'соответствия заявка уходит в общий круг по всем ОП. Пусто — ' +
+                'прежнее поведение (сравнение по вхождению названия).',
+            type: 'string',
+            default: '',
+        }),
         leadIntakeRescueLookbackMinutes: setting({
             code: 'lead_intake_rescue_lookback_minutes',
             name: 'Страховка входа: глубина поиска (минут)',

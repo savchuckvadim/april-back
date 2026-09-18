@@ -61,6 +61,13 @@ const makeStructure = () => ({
     }),
 });
 
+/** Настройки портала: соответствие «Отдел строка» → отдел продаж. */
+const makeSettings = (aliases = '') => ({
+    resolve: jest
+        .fn()
+        .mockResolvedValue({ leadIntakeDepartmentAliases: aliases }),
+});
+
 const makeAppCache = () => {
     const store = new Map<string, unknown>();
     return {
@@ -90,6 +97,7 @@ describe('LeadToWorkAssigneeService', () => {
         const service = new LeadToWorkAssigneeService(
             structure as never,
             makeAppCache() as never,
+            makeSettings() as never,
         );
         const result = await service.resolve(
             'd.b24.ru',
@@ -110,6 +118,7 @@ describe('LeadToWorkAssigneeService', () => {
         const service = new LeadToWorkAssigneeService(
             structure as never,
             makeAppCache() as never,
+            makeSettings() as never,
         );
         const result = await service.resolve(
             'd.b24.ru',
@@ -134,6 +143,7 @@ describe('LeadToWorkAssigneeService', () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,
             makeAppCache() as never,
+            makeSettings() as never,
         );
         const result = await service.resolve(
             'd.b24.ru',
@@ -147,6 +157,7 @@ describe('LeadToWorkAssigneeService', () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,
             makeAppCache() as never,
+            makeSettings() as never,
         );
         const first = await service.resolve(
             'd.b24.ru',
@@ -172,6 +183,7 @@ describe('LeadToWorkAssigneeService', () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,
             makeAppCache() as never,
+            makeSettings() as never,
         );
         const result = await service.resolve(
             'd.b24.ru',
@@ -185,6 +197,7 @@ describe('LeadToWorkAssigneeService', () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,
             makeAppCache() as never,
+            makeSettings() as never,
         );
         const result = await service.resolve(
             'd.b24.ru',
@@ -197,6 +210,7 @@ describe('LeadToWorkAssigneeService', () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,
             makeAppCache() as never,
+            makeSettings() as never,
         );
         const result = await service.resolve(
             'd.b24.ru',
@@ -216,6 +230,7 @@ describe('LeadToWorkAssigneeService', () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,
             makeAppCache() as never,
+            makeSettings() as never,
         );
         const result = await service.resolve(
             'd.b24.ru',
@@ -230,6 +245,7 @@ describe('LeadToWorkAssigneeService', () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,
             makeAppCache() as never,
+            makeSettings() as never,
         );
         const result = await service.resolve(
             'd.b24.ru',
@@ -243,6 +259,7 @@ describe('LeadToWorkAssigneeService', () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,
             makeAppCache() as never,
+            makeSettings() as never,
         );
         const result = await service.resolve(
             'd.b24.ru',
@@ -257,6 +274,7 @@ describe('LeadToWorkAssigneeService', () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,
             makeAppCache() as never,
+            makeSettings() as never,
         );
         const result = await service.resolve(
             'd.b24.ru',
@@ -272,6 +290,7 @@ describe('LeadToWorkAssigneeService', () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,
             makeAppCache() as never,
+            makeSettings() as never,
         );
         // В ОП 15 кандидаты [3, 5]; исключаем 3 → всегда 5.
         const first = await service.resolve(
@@ -290,6 +309,7 @@ describe('LeadToWorkAssigneeService', () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,
             makeAppCache() as never,
+            makeSettings() as never,
         );
         // Пользователь 5 из ОП 15: без department отдел найден по нему,
         // а сам он исключён → достаётся 3.
@@ -312,6 +332,7 @@ describe('LeadToWorkAssigneeService', () => {
         const service = new LeadToWorkAssigneeService(
             structure as never,
             appCache as never,
+            makeSettings() as never,
         );
         const result = await service.resolve('d.b24.ru', item(), {
             leadResponsibleId: 77,
@@ -328,6 +349,7 @@ describe('LeadToWorkAssigneeService', () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,
             makeAppCache() as never,
+            makeSettings() as never,
         );
         const result = await service.resolve(
             'd.b24.ru',
@@ -344,6 +366,7 @@ describe('LeadToWorkAssigneeService', () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,
             makeAppCache() as never,
+            makeSettings() as never,
         );
         const result = await service.resolve(
             'd.b24.ru',
@@ -364,9 +387,78 @@ describe('LeadToWorkAssigneeService', () => {
         const service = new LeadToWorkAssigneeService(
             structure as never,
             makeAppCache() as never,
+            makeSettings() as never,
         );
         const result = await service.resolve('d.b24.ru', item());
         expect(result.responsible).toBeNull();
         expect(result.warnings.length).toBeGreaterThan(0);
+    });
+});
+
+/**
+ * Ночная заявка 18.09.2026: бизнес-процесс написал в лид «Питер», отдел на
+ * портале называется «ОП САНКТ-ПЕТЕРБУРГ (ОП)», сравнение по вхождению их не
+ * связало — заявка ушла в общий круг, то есть в Воронеж.
+ */
+describe('LeadToWorkAssigneeService — город из «Отдел строка»', () => {
+    it('город по настройке портала находит свой отдел', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+            makeSettings('Питер=ОП 1; Ростов=ОП 2') as never,
+        );
+
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ department: 'Питер' }),
+        );
+
+        expect(result).toMatchObject({
+            departmentKey: 'op_15',
+            source: 'round-robin',
+        });
+        expect([3, 5]).toContain(result.responsible);
+    });
+
+    it('справа можно указать id отдела', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+            makeSettings('Питер=15') as never,
+        );
+
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ department: 'питер ' }),
+        );
+
+        expect(result.departmentKey).toBe('op_15');
+    });
+
+    it('настройка пуста — прежнее поведение, круг по всем ОП', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+            makeSettings('') as never,
+        );
+
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ department: 'Питер' }),
+        );
+
+        expect(result.departmentKey).toBe('all');
+    });
+
+    it('отдел в лиде пустой — предупреждение, что выбор по всем ОП', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+            makeSettings('Питер=ОП 1') as never,
+        );
+
+        const result = await service.resolve('d.b24.ru', item());
+
+        expect(result.warnings.join(' ')).toContain('Отдел заявки не указан');
     });
 });
