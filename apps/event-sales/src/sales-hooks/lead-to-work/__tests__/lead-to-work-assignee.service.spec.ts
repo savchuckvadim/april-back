@@ -270,7 +270,13 @@ describe('LeadToWorkAssigneeService', () => {
         expect(result.warnings.join(' ')).toContain('Сектор Пустой');
     });
 
-    it('намёк не найден → warning + выбор по всем ОП (неактивные отфильтрованы)', async () => {
+    /*
+     * Требование владельца 18.09.2026: круг идёт ТОЛЬКО внутри целевого
+     * отдела. Раньше ненайденный отдел означал выбор по всем ОП, и заявка
+     * Питера могла уехать в Воронеж или Ростов. Неназначенную заявку видно
+     * и её разберут, уехавшую в чужой город замечают через сутки.
+     */
+    it('отдел не найден → никого не назначаем, а не круг по всем ОП', async () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,
             makeAppCache() as never,
@@ -281,9 +287,8 @@ describe('LeadToWorkAssigneeService', () => {
             item({ department: '999' }),
         );
         expect(result.warnings.join(' ')).toContain('999');
-        expect(result.departmentKey).toBe('all');
-        // 9 неактивен — только 3 и 5.
-        expect([3, 5]).toContain(result.responsible);
+        expect(result.departmentKey).toBe('none');
+        expect(result.responsible).toBeNull();
     });
 
     it('передача: excludeResponsible не выбирается (заявка не возвращается)', async () => {
@@ -435,7 +440,43 @@ describe('LeadToWorkAssigneeService — город из «Отдел строк�
         expect(result.departmentKey).toBe('op_15');
     });
 
-    it('настройка пуста — прежнее поведение, круг по всем ОП', async () => {
+    /*
+     * Без настройки город узнаётся справочником написаний: «Питер» и
+     * «ОП САНКТ-ПЕТЕРБУРГ (ОП)» — один город.
+     */
+    it('город узнаётся по справочнику написаний и без настройки', async () => {
+        const structure = makeStructure();
+        structure.getStructure.mockResolvedValue({
+            department: { childrenDepartments: [], allUsers: [] },
+            salesDepartments: [
+                {
+                    department: { ID: 37, NAME: 'ОП САНКТ-ПЕТЕРБУРГ (ОП)' },
+                    groups: [],
+                    allUsers: [{ ID: 11, ACTIVE: true }],
+                },
+                {
+                    department: { ID: 63, NAME: 'ОП Воронеж (ОП)' },
+                    groups: [],
+                    allUsers: [{ ID: 12, ACTIVE: true }],
+                },
+            ],
+        });
+        const service = new LeadToWorkAssigneeService(
+            structure as never,
+            makeAppCache() as never,
+            makeSettings('') as never,
+        );
+
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ department: 'Питер' }),
+        );
+
+        expect(result.departmentKey).toBe('op_37');
+        expect(result.responsible).toBe(11);
+    });
+
+    it('незнакомый город без настройки — никого не назначаем', async () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,
             makeAppCache() as never,
@@ -447,7 +488,8 @@ describe('LeadToWorkAssigneeService — город из «Отдел строк�
             item({ department: 'Питер' }),
         );
 
-        expect(result.departmentKey).toBe('all');
+        expect(result.departmentKey).toBe('none');
+        expect(result.responsible).toBeNull();
     });
 
     it('отдел в лиде пустой — предупреждение, что выбор по всем ОП', async () => {

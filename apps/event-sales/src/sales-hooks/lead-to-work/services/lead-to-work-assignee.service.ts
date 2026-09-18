@@ -6,6 +6,7 @@ import {
     EnumPortalAppCode,
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
+import { sameCity } from '@lib/shared/lib/cities';
 import { ILeadToWorkItem } from '../dto/lead-to-work.dto';
 
 /** Минимум, который нужен от сотрудника структуры (структурная типизация). */
@@ -307,11 +308,17 @@ export class LeadToWorkAssigneeService {
         return raw.trim().toLowerCase().replace(/\s+/g, ' ');
     }
 
-    /** Совпадение названий: равенство либо вхождение в любую сторону. */
+    /**
+     * Совпадение названий: равенство, вхождение в любую сторону либо ОДИН
+     * ГОРОД по справочнику написаний. Последнее и связывает «Питер» из лида
+     * с отделом «ОП САНКТ-ПЕТЕРБУРГ (ОП)» — сравнение строк их не связывало,
+     * и ночная заявка 18.09.2026 уехала в чужой город.
+     */
     private nameMatches(candidate: string | undefined, hint: string): boolean {
         const normalized = this.normalizeName(candidate ?? '');
         if (!normalized) return false;
-        return normalized.includes(hint) || hint.includes(normalized);
+        if (normalized.includes(hint) || hint.includes(normalized)) return true;
+        return sameCity(normalized, hint);
     }
 
     /**
@@ -412,13 +419,29 @@ export class LeadToWorkAssigneeService {
             }
             if (!users) {
                 warnings.push(
-                    `Отдел «${hint.id ?? hint.name}» из намёка не найден среди ОП — ответственный выбран по всем отделам продаж`,
+                    `Отдел «${hint.id ?? hint.name}» не найден среди ОП — ` +
+                        'назначать некому: круг идёт ТОЛЬКО внутри своего ' +
+                        'отдела. Проверьте соответствие городов и отделов в ' +
+                        'настройках портала.',
                 );
             }
         }
 
+        /*
+         * КРУГ ТОЛЬКО ВНУТРИ ЦЕЛЕВОГО ОТДЕЛА (требование владельца
+         * 18.09.2026). Раньше ненайденный отдел означал выбор по всем ОП
+         * сразу, и питерская заявка могла уехать в Воронеж или Ростов. Это
+         * хуже, чем неназначенная заявка: неназначенную видно и её разберут,
+         * а уехавшую в чужой город замечают через сутки.
+         */
         if (!users) {
-            users = data.department?.allUsers ?? [];
+            if (!hint.id && !hint.name) {
+                warnings.push(
+                    'Отдел заявки неизвестен — назначать некому: круг идёт ' +
+                        'только внутри своего отдела.',
+                );
+            }
+            return { candidates: [], departmentKey: 'none' };
         }
 
         const candidates = users
