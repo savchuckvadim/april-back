@@ -17,6 +17,8 @@ function makePortal(state: {
     contacts?: Record<number, Row>;
     companies?: Record<number, Row>;
     dealContacts?: number[];
+    /** Контакты лида: главный и привязанные к нему. */
+    leadContacts?: Record<number, number[]>;
     activities?: Record<number, number[]>;
     /** Имитация Битрикса: копировать телефоны лида при первой привязке. */
     copyOnBind?: boolean;
@@ -51,6 +53,10 @@ function makePortal(state: {
                     client.PHONE = lead.PHONE;
                 }
             }
+        } else if (method === 'crm.lead.contact.items.get') {
+            result = (state.leadContacts?.[id] ?? []).map(CONTACT_ID => ({
+                CONTACT_ID,
+            }));
         } else if (method === 'crm.deal.contact.items.get') {
             result = dealContacts.map(CONTACT_ID => ({ CONTACT_ID }));
         } else if (method === 'crm.deal.contact.add') {
@@ -213,6 +219,27 @@ describe('LeadClientLinkService', () => {
             { leadId: 42, type: 'contact', id: 500, reused: true },
         ]);
         expect(Object.keys(portal.contacts)).toEqual(['500', '501']);
+    });
+
+    /*
+     * У заявки бывает несколько человек (директор, бухгалтерия). При
+     * переводе в работу к сделке должны приехать ВСЕ контакты лида, а не
+     * только главный (решение владельца 18.09.2026).
+     */
+    it('все контакты лида прикрепляются к сделке', async () => {
+        const portal = makePortal({
+            leads: { 42: { ...BARE_LEAD, CONTACT_ID: '77' } },
+            leadContacts: { 42: [77, 78] },
+        });
+        const service = new LeadClientLinkService(portal.bitrix);
+
+        const result = await service.link(100, DEAL, [42], OPTIONS);
+
+        expect(portal.dealContacts).toEqual([77, 78]);
+        expect(result.dealContactsAdded).toEqual([77, 78]);
+        expect(portal.calls.some(c => c.method === 'crm.contact.add')).toBe(
+            false,
+        );
     });
 
     it('лид с контактом — контакт только привязывается к сделке', async () => {

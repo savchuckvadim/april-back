@@ -84,6 +84,19 @@ export class LeadClientLinkService {
                     kind,
                     result.created,
                 );
+                /*
+                 * К сделке едут ВСЕ контакты лида, а не только главный: у
+                 * заявки бывает несколько человек (директор, бухгалтерия), и
+                 * терять их при переезде в работу нельзя.
+                 */
+                for (const contactId of await this.leadContactIds(leadId)) {
+                    await this.linkToDeal(
+                        dealId,
+                        { contactId, companyId: 0, isNew: false },
+                        state,
+                        result,
+                    );
+                }
                 const linked = await this.linkToDeal(
                     dealId,
                     client,
@@ -162,6 +175,19 @@ export class LeadClientLinkService {
             });
         }
         return targets;
+    }
+
+    /** Все контакты лида: главный (`CONTACT_ID`) и привязанные к нему. */
+    private async leadContactIds(leadId: number): Promise<number[]> {
+        const rows = resultOf(
+            await this.bitrix.api.call('crm.lead.contact.items.get', {
+                id: leadId,
+            }),
+        );
+        if (!Array.isArray(rows)) return [];
+        return (rows as Row[])
+            .map(row => bxFieldId(row.CONTACT_ID))
+            .filter((id): id is number => id !== null);
     }
 
     private async dealContactIds(dealId: number): Promise<number[]> {

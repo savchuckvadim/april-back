@@ -35,6 +35,7 @@ import { UserNameResolver } from '../../../shared/lead-request/user-name.resolve
 import { LeadToWorkNotifyService } from '../services/lead-to-work-notify.service';
 import { LeadToWorkDuplicateCheckService } from '../services/lead-to-work-duplicate-check.service';
 import { LeadDealCompletion } from '../../../shared/lead-client/lead-deal-completion';
+import { LeadClientKind } from '../../../shared/lead-client';
 import { PortalWorkingHoursService } from '../../../shared/working-hours/portal-working-hours.service';
 import { nextWorkingMoment } from '../../../shared/working-hours/working-hours.model';
 import { LeadToWorkTimelineService } from '../services/lead-to-work-timeline.service';
@@ -461,7 +462,7 @@ export class LeadToWorkUseCase
          * кодом, которым идёт перегон прошлого, — иначе конвертация у
          * клиента и перегон давали бы разный результат.
          */
-        const enrichWarnings = await this.enrichDeals(ctx, results);
+        const enrichWarnings = await this.enrichDeals(ctx, results, items);
         if (enrichWarnings.length && results.length) {
             results[0].warnings.push(...enrichWarnings);
         }
@@ -532,6 +533,7 @@ export class LeadToWorkUseCase
     private async enrichDeals(
         ctx: SalesHookExecutionContext,
         results: readonly LeadToWorkItemResultDto[],
+        items: readonly ILeadToWorkItem[],
     ): Promise<string[]> {
         const warnings: string[] = [];
         const settings = await this.appSettings.resolve(
@@ -548,13 +550,34 @@ export class LeadToWorkUseCase
                 activitiesLimit: settings.leadWorkCopyActivitiesLimit,
             },
         );
+        /*
+         * КЛИЕНТ ИЗ ЛИДА ПО ФЛАГУ ВЫЗОВА.
+         *
+         * `needConvertTo`: company — компания, contact — человек, nothing —
+         * не создавать ничего даже при включённой настройке портала. Флага
+         * нет — решает портал (`createCompany=Y` старых роботов означает
+         * компанию). Клиент привязывается к лиду родной связью Битрикса:
+         * телефоны и почта уезжают в него сами. Второй такой же клиент не
+         * создаётся, а лид не закрывается — закрытие живёт в другом месте.
+         */
+        const kindOf = new Map<number, LeadClientKind | 'none' | undefined>(
+            items.map(item => [
+                item.leadId,
+                item.needConvertTo === 'nothing'
+                    ? 'none'
+                    : (item.needConvertTo ??
+                      (item.createCompany === 'Y' ? 'company' : undefined)),
+            ]),
+        );
         for (const result of results) {
             const dealId = Number(result.baseDealId);
             if (!Number.isFinite(dealId) || dealId <= 0) continue;
             try {
-                const outcome = await completion.complete(dealId, [
-                    result.leadId,
-                ]);
+                const outcome = await completion.complete(
+                    dealId,
+                    [result.leadId],
+                    { kind: kindOf.get(result.leadId) },
+                );
                 warnings.push(...outcome.warnings);
             } catch (error) {
                 warnings.push(

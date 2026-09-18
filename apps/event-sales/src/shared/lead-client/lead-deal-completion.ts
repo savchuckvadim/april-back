@@ -66,7 +66,12 @@ export class LeadDealCompletion {
     async complete(
         dealId: number,
         leadIds?: readonly number[],
-        options: { kind?: LeadClientKind } = {},
+        /**
+         * `kind` — во что превращать лид; `none` запрещает создавать клиента
+         * даже при включённой настройке портала (вызывающий сказал «не
+         * надо»). Не передан — решает настройка.
+         */
+        options: { kind?: LeadClientKind | 'none' } = {},
     ): Promise<ILeadDealCompletionResult> {
         const result: ILeadDealCompletionResult = {
             link: null,
@@ -81,11 +86,12 @@ export class LeadDealCompletion {
         const leads = leadIds ?? this.leadIdsOf(deal);
         if (!leads.length) return result;
 
-        if (this.settings.linkClient || options.kind) {
+        const kind = options.kind === 'none' ? null : (options.kind ?? null);
+        if (options.kind !== 'none' && (this.settings.linkClient || kind)) {
             const responsible = bxFieldId(deal.ASSIGNED_BY_ID);
             result.link = await this.linker.link(dealId, deal, leads, {
-                kind: options.kind ?? 'contact',
-                resolveKind: options.kind
+                kind: kind ?? 'contact',
+                resolveKind: kind
                     ? undefined
                     : lead => this.kinds.resolve(lead, responsible),
                 activitiesLimit: this.settings.activitiesLimit,

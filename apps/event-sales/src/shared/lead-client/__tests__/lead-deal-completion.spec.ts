@@ -112,6 +112,30 @@ describe('LeadDealCompletion', () => {
         expect(companyReads.length).toBeGreaterThan(1);
     });
 
+    /*
+     * `needConvertTo=nothing` из вызова сильнее настройки портала: бывает,
+     * что клиента заводить не надо (решение владельца 18.09.2026).
+     */
+    it('kind=none — клиента не создаём даже при включённой настройке', async () => {
+        const { bitrix, calls } = makeBitrix(
+            { ID: '100', LEAD_ID: '42' },
+            { 42: { ...BARE_LEAD } },
+        );
+        const completion = new LeadDealCompletion(
+            bitrix,
+            portal,
+            'p.ru',
+            SETTINGS,
+        );
+
+        const result = await completion.complete(100, undefined, {
+            kind: 'none',
+        });
+
+        expect(result.link).toBeNull();
+        expect(calls.some(c => c.method === 'crm.contact.add')).toBe(false);
+    });
+
     it('сделка не прочитана — предупреждение, без записи', async () => {
         const { bitrix, calls } = makeBitrix(undefined, {});
         const completion = new LeadDealCompletion(

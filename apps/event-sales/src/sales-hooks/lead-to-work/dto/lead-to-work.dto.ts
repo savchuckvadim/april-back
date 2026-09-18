@@ -80,6 +80,18 @@ export type LeadToWorkFlag = (typeof LEAD_TO_WORK_FLAG_VALUES)[number];
  * cold — «Холодная» (классический ХО), new — «Новая» (заявка, по которой
  * работа стартует с начала воронки, а не с холодного цикла).
  */
+/**
+ * Во что превращать лид: компания, человек или ничего не создавать.
+ * `nothing` перебивает настройку портала — иногда клиент не нужен.
+ */
+export const LEAD_TO_WORK_CONVERT_TARGETS = [
+    'company',
+    'contact',
+    'nothing',
+] as const;
+export type LeadToWorkConvertTarget =
+    (typeof LEAD_TO_WORK_CONVERT_TARGETS)[number];
+
 export const LEAD_TO_WORK_STAGE_MODES = ['from_lead', 'cold', 'new'] as const;
 export type LeadToWorkStageMode = (typeof LEAD_TO_WORK_STAGE_MODES)[number];
 
@@ -161,6 +173,18 @@ export class LeadToWorkWebhookQueryDto {
     @IsString()
     @IsIn(LEAD_TO_WORK_FLAG_VALUES as unknown as string[])
     createCompany?: LeadToWorkFlag;
+
+    @ApiPropertyOptional({
+        description:
+            'Во что превратить лид: company — компания, contact — человек, nothing — не создавать. Клиент привязывается к лиду родной связью Битрикса: телефоны и почта уезжают в него сами. Существующие контакты лида в любом случае прикрепляются к сделке, второй такой же клиент не создаётся, лид НЕ закрывается. Не передано — решают настройки портала.',
+        example: 'contact',
+        type: String,
+        enum: LEAD_TO_WORK_CONVERT_TARGETS,
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(LEAD_TO_WORK_CONVERT_TARGETS as unknown as string[])
+    needConvertTo?: LeadToWorkConvertTarget;
 
     @ApiPropertyOptional({
         description:
@@ -328,6 +352,18 @@ export class LeadToWorkRunDto extends SalesHookRunRequestBaseDto {
     createCompany?: LeadToWorkFlag;
 
     @ApiPropertyOptional({
+        description:
+            'Во что превратить лид: company — компания, contact — человек, nothing — не создавать. Клиент привязывается к лиду родной связью Битрикса: телефоны и почта уезжают в него сами. Существующие контакты лида в любом случае прикрепляются к сделке, второй такой же клиент не создаётся, лид НЕ закрывается. Не передано — решают настройки портала.',
+        example: 'contact',
+        type: String,
+        enum: LEAD_TO_WORK_CONVERT_TARGETS,
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(LEAD_TO_WORK_CONVERT_TARGETS as unknown as string[])
+    needConvertTo?: LeadToWorkConvertTarget;
+
+    @ApiPropertyOptional({
         description: 'Режим стадии сделки ОП.',
         example: 'from_lead',
         type: String,
@@ -433,6 +469,8 @@ export interface ILeadToWorkItem {
      * Дефолты применяет `resolveLeadToWorkIntent()` после чтения лида.
      */
     createCompany?: LeadToWorkFlag;
+    /** Во что превратить лид (см. описание в DTO). */
+    needConvertTo?: LeadToWorkConvertTarget;
     stageMode?: LeadToWorkStageMode;
     taskMode?: LeadToWorkTaskMode;
     isXo?: LeadToWorkFlag;
@@ -521,6 +559,7 @@ export function buildLeadToWorkItem(input: {
     excludeResponsible?: number;
     transferredBy?: number;
     createCompany?: LeadToWorkFlag;
+    needConvertTo?: LeadToWorkConvertTarget;
     stageMode?: LeadToWorkStageMode;
     taskMode?: LeadToWorkTaskMode;
     isXo?: LeadToWorkFlag;
@@ -549,6 +588,7 @@ export function buildLeadToWorkItem(input: {
         // Дефолты НЕ подставляем: см. комментарий у ILeadToWorkItem —
         // их применяет resolveLeadToWorkIntent() после чтения карточки.
         createCompany: input.createCompany,
+        needConvertTo: input.needConvertTo,
         stageMode: input.stageMode,
         taskMode: input.taskMode,
         isXo: input.isXo,
