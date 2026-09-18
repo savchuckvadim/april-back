@@ -159,9 +159,20 @@ export class LeadClientFactory {
         return { NAME: this.companyTitle(lead) };
     }
 
+    /**
+     * Название компании из лида.
+     *
+     * В поле «Компания» у части лидов лежит НЕ название, а ИНН (Ростов,
+     * лид 155867: `2310190443`). Компания с таким именем — мусор в списке,
+     * поэтому числовое значение пропускаем и берём название лида. Сам ИНН
+     * не теряется: его подбирает сбор ИНН по графу сделки.
+     */
     private companyTitle(lead: Row): string {
+        const companyTitle = bxFieldText(lead.COMPANY_TITLE);
+        const named =
+            companyTitle && !/^\d+$/.test(companyTitle.replace(/\s/g, ''));
         return (
-            bxFieldText(lead.COMPANY_TITLE) ??
+            (named ? companyTitle : null) ??
             bxFieldText(lead.TITLE) ??
             `Лид ${String(lead.ID)}`
         );

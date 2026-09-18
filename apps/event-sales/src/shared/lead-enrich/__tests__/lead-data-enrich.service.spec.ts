@@ -43,7 +43,11 @@ function makeBitrix(rows: Record<string, Row | Row[]>): {
         api: {
             call: (method: string, params: Row): Promise<unknown> => {
                 calls.push({ method, params });
-                return Promise.resolve({ result: rows[method] ?? [] });
+                return Promise.resolve({
+                    result:
+                        rows[method] ??
+                        (method === 'crm.deal.fields' ? MULTIPLE_FIELDS : []),
+                });
             },
         },
     };
@@ -54,6 +58,15 @@ const commentOf = (calls: ICallLog[]): string => {
     const add = calls.find(c => c.method === 'crm.timeline.comment.add');
     const fields = (add?.params.fields ?? {}) as Record<string, string>;
     return fields.COMMENT ?? '';
+};
+
+/**
+ * Описание полей сделки портала: телефоны и почты заявки установлены
+ * МНОЖЕСТВЕННЫМИ (так их переустановили 18.09.2026).
+ */
+const MULTIPLE_FIELDS: Row = {
+    UF_CRM_OP_LEAD_PHONES: { isMultiple: true },
+    UF_CRM_OP_LEAD_EMAILS: { isMultiple: true },
 };
 
 /** Портал, где парные поля заявки на сделке УЖЕ установлены. */
@@ -99,9 +112,9 @@ describe('LeadDataEnrichService', () => {
         expect(fields.UF_CRM_LEAD_ORDER_NUMBER).toBe('2184035');
         expect(fields.UF_CRM_LEAD_REG_NUMBER).toBe('36-07331');
         expect(fields.UF_CRM_DEPARTMENT_STRING).toBe('ОП Воронеж');
-        // Поля установлены ОДИНОЧНОЙ строкой — значения через запятую.
-        expect(fields.UF_CRM_OP_LEAD_PHONES).toBe('+79102880648');
-        expect(fields.UF_CRM_OP_LEAD_EMAILS).toBe('client@example.com');
+        // Поля множественные — массив; одиночные получили бы строку.
+        expect(fields.UF_CRM_OP_LEAD_PHONES).toEqual(['+79102880648']);
+        expect(fields.UF_CRM_OP_LEAD_EMAILS).toEqual(['client@example.com']);
     });
 
     it('заполненное руками не перетирается, телефоны объединяются', async () => {
@@ -117,7 +130,7 @@ describe('LeadDataEnrichService', () => {
             {
                 ID: '100',
                 UF_CRM_LEAD_USER_REGION: 'Москва',
-                UF_CRM_OP_LEAD_PHONES: '+70000000000',
+                UF_CRM_OP_LEAD_PHONES: ['+70000000000'],
             },
             [777],
         );
@@ -129,7 +142,39 @@ describe('LeadDataEnrichService', () => {
         );
         const fields = (update?.params.fields ?? {}) as Row;
         expect(fields.UF_CRM_LEAD_USER_REGION).toBeUndefined();
-        expect(fields.UF_CRM_OP_LEAD_PHONES).toBe('+70000000000, +79102880648');
+        expect(fields.UF_CRM_OP_LEAD_PHONES).toEqual([
+            '+70000000000',
+            '+79102880648',
+        ]);
+    });
+
+    /*
+     * Поля переустанавливают: 17.09.2026 телефоны были одиночной строкой,
+     * вечером стали множественными. Вид записи спрашиваем у портала.
+     */
+    it('одиночное поле получает строку через запятую', async () => {
+        const { bitrix, calls } = makeBitrix({
+            'crm.lead.get': {
+                ...LEAD,
+                PHONE: [{ VALUE: '+79102880648' }, { VALUE: '+79990001122' }],
+            },
+            'crm.deal.fields': { UF_CRM_OP_LEAD_PHONES: { isMultiple: false } },
+        });
+        const service = new LeadDataEnrichService(
+            bitrix,
+            portalWithFields,
+            'portal.bitrix24.ru',
+        );
+
+        await service.enrich(100, { ID: '100' }, [777]);
+
+        const update = calls.find(
+            c =>
+                c.method === 'crm.deal.update' &&
+                'UF_CRM_OP_LEAD_PHONES' in ((c.params.fields ?? {}) as Row),
+        );
+        const fields = (update?.params.fields ?? {}) as Row;
+        expect(fields.UF_CRM_OP_LEAD_PHONES).toBe('+79102880648, +79990001122');
     });
 
     it('поля не установлены — в поля ничего не пишется', async () => {

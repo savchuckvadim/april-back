@@ -2257,7 +2257,7 @@ export const PBX_SALES_EVENT_FIELDS = [
         order: 720,
         is_rewrite: '',
         isNeedUpdate: true,
-        isMultiple: false,
+        isMultiple: true,
     },
     {
         name: 'Почты заявки',
@@ -2274,7 +2274,7 @@ export const PBX_SALES_EVENT_FIELDS = [
         order: 721,
         is_rewrite: '',
         isNeedUpdate: true,
-        isMultiple: false,
+        isMultiple: true,
     },
     {
         name: 'История Обработки заяки',

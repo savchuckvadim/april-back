@@ -108,6 +108,9 @@ export class LeadDataEnrichService {
         IInnObservation[]
     >();
 
+    /** Описание полей сделки портала — читается один раз на инстанс. */
+    private dealFields: Promise<Row> | null = null;
+
     constructor(
         private readonly bitrix: IEnrichBitrix,
         private readonly portal: PortalModel,
@@ -252,17 +255,21 @@ export class LeadDataEnrichService {
             const target = this.fieldName('deal', code);
             if (!target) continue;
             /*
-             * На портале эти поля установлены ОДИНОЧНОЙ строкой (проверено
-             * 17.09.2026 по `crm.deal.fields`), поэтому значения склеиваются
-             * через запятую. Массив Битрикс бы не принял, а прежние значения
-             * читаются тем же разбором — объединение работает и здесь.
+             * Множественное поле принимает массив, одиночное — строку через
+             * запятую. Спрашиваем у портала, а не гадаем: 17.09.2026 эти поля
+             * стояли одиночными, в тот же вечер их переустановили
+             * множественными, и жёсткий выбор молча испортил бы запись.
+             * Прежние значения разбираются одинаково, поэтому объединение
+             * работает при любой установке.
              */
             const current = this.listValues(deal[target]);
             const found = uniq(leads.flatMap(lead => this.multi(lead[source])));
             const merged = uniq([...current, ...found]);
             // Объединением: номер, добавленный руками, не теряется.
             if (merged.length > current.length) {
-                fields[target] = merged.join(', ');
+                fields[target] = (await this.isMultiple(target))
+                    ? merged
+                    : merged.join(', ');
             }
         }
 
@@ -483,9 +490,25 @@ export class LeadDataEnrichService {
     }
 
     /**
-     * Значения поля-«списка в строке»: телефоны и почты заявки установлены
-     * одиночной строкой, где значения разделены запятой. Массив (если поле
-     * когда-то переустановят множественным) разбирается тем же методом.
+     * Множественное ли поле сделки. Описание полей портала читается ОДИН раз
+     * на инстанс: обогащение идёт по сделкам в цикле, и спрашивать портал на
+     * каждую было бы дороже самой записи. Не прочитали — считаем одиночным:
+     * строку примут оба вида поля, массив — только множественное.
+     */
+    private async isMultiple(fieldName: string): Promise<boolean> {
+        if (!this.dealFields) {
+            this.dealFields = this.bitrix.api
+                .call('crm.deal.fields', {})
+                .then(response => ((response as Row).result ?? {}) as Row)
+                .catch(() => ({}) as Row);
+        }
+        const field = (await this.dealFields)[fieldName] as Row | undefined;
+        return field?.isMultiple === true;
+    }
+
+    /**
+     * Значения поля-«списка в строке»: одиночное поле хранит значения через
+     * запятую, множественное — массивом. Разбираются одинаково.
      */
     private listValues(raw: unknown): string[] {
         return this.list(raw).flatMap(value =>

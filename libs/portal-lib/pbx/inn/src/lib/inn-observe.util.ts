@@ -119,6 +119,19 @@ export function observeInnGraph(
                 innText(lead.TITLE),
             ),
         );
+        /*
+         * Часть менеджеров пишет в поле «Компания» лида не название, а ИНН
+         * (Ростов, лид 155867: «2310190443»). Это не догадка из текста —
+         * человек ввёл ИНН руками, поэтому источник равен полю лида, а не
+         * «слабому» названию.
+         */
+        found.push(
+            ...observations(
+                normalizeInnList(innText(lead.COMPANY_TITLE)),
+                INN_SOURCE_KINDS.lead_field,
+                leadId,
+            ),
+        );
     }
 
     const company = rows.company;
