@@ -15,6 +15,12 @@ interface ICandidateUser {
     ACTIVE?: boolean;
 }
 
+/**
+ * Короче этого намёк по вхождению не ищется: «оп» входит в названия всех
+ * отделов продаж сразу, и выбор свёлся бы к порядку ответа Битрикса.
+ */
+const MIN_HINT_LENGTH = 3;
+
 /** app-cache приложение курсоров round-robin (домен добавляет сам слой). */
 const ASSIGNEE_CACHE_APP = 'event-sales-hooks';
 /** Курсор живёт месяц: потерялся — начнём с первого, это не ошибка. */
@@ -157,7 +163,7 @@ export class LeadToWorkAssigneeService {
          * руководителей), берём исходный список: назначить руководителю
          * лучше, чем не назначить никому.
          */
-        const heads = await this.headUserIds(domain);
+        const heads = await this.headUserIds(domain, departmentKey);
         const withoutHeads = withoutPrevious.filter(id => !heads.has(id));
         const candidates = withoutHeads.length ? withoutHeads : withoutPrevious;
         if (!withoutHeads.length && withoutPrevious.length) {
@@ -191,12 +197,22 @@ export class LeadToWorkAssigneeService {
     }
 
     /**
-     * Руководители отделов продаж (руководитель + заместители) — из HEADS
-     * структуры, с откатом на легаси `UF_HEAD`. Структура недоступна —
+     * Руководители ЦЕЛЕВОГО отдела продаж (руководитель + заместители) — из
+     * HEADS структуры, с откатом на легаси `UF_HEAD`. Структура недоступна —
      * пустое множество: круг тогда работает как раньше, без отсева.
+     *
+     * Почему только целевого: руководитель воронежского ОП бывает рядовым
+     * продавцом в питерском. Плоский набор «руководители всего портала»
+     * вычёркивал его и из питерского круга, а в маленьком отделе мог
+     * обнулить круг целиком. `departmentKey` приходит из
+     * {@link collectCandidates} в виде `op_15` / `group_16` / `dep_21`.
      */
-    private async headUserIds(domain: string): Promise<Set<number>> {
+    private async headUserIds(
+        domain: string,
+        departmentKey: string,
+    ): Promise<Set<number>> {
         const heads = new Set<number>();
+        const targetOpId = /^op_(\d+)$/.exec(departmentKey)?.[1];
         try {
             const data = await this.structure.getStructure(
                 domain,
@@ -204,6 +220,13 @@ export class LeadToWorkAssigneeService {
                 0,
             );
             for (const sales of data.salesDepartments ?? []) {
+                // Целевой ОП известен — чужих руководителей не трогаем.
+                if (
+                    targetOpId &&
+                    String(Number(sales.department?.ID)) !== targetOpId
+                ) {
+                    continue;
+                }
                 const department = sales.department as
                     | { HEADS?: number[]; UF_HEAD?: number | null }
                     | undefined;
@@ -317,8 +340,17 @@ export class LeadToWorkAssigneeService {
     private nameMatches(candidate: string | undefined, hint: string): boolean {
         const normalized = this.normalizeName(candidate ?? '');
         if (!normalized) return false;
-        if (normalized.includes(hint) || hint.includes(normalized)) return true;
-        return sameCity(normalized, hint);
+        // Город — самый сильный сигнал, поэтому спрашиваем справочник ПЕРВЫМ.
+        if (sameCity(normalized, hint)) return true;
+        if (normalized === hint) return true;
+        /*
+         * Вхождение — последняя и самая слабая проверка, и только для
+         * намёков длиннее трёх букв: короткое «оп» входит и в «ОП Воронеж»,
+         * и в «ОП Тест», и в «Отдел продаж Ростов» — побеждал бы первый по
+         * порядку, который отдал Битрикс, молча и без предупреждения.
+         */
+        if (hint.length <= MIN_HINT_LENGTH) return false;
+        return normalized.includes(hint) || hint.includes(normalized);
     }
 
     /**
@@ -343,17 +375,35 @@ export class LeadToWorkAssigneeService {
         let users: ICandidateUser[] | null = null;
         let departmentKey = 'all';
 
-        // Самопередача без явного намёка: отдел — у передающего сотрудника.
+        /*
+         * Самопередача без явного намёка: заявка остаётся в ОП передающего.
+         *
+         * Сотрудник бывает в НЕСКОЛЬКИХ отделах продаж сразу, и тогда он
+         * лежит в `allUsers` каждого из них. Раньше брался первый попавшийся
+         * — то есть отдел выбирал порядок ответа Битрикса, а не человек:
+         * заявка молча уезжала в чужой город и прокручивала там курсор
+         * очереди. Теперь несколько отделов — не угадываем: отдаём пустой
+         * список и предупреждение, как в ветке «отдел не найден».
+         */
         if (hint.id === null && hint.name === null && item.transferredBy) {
-            for (const sales of data.salesDepartments ?? []) {
-                const hasUser = (sales.allUsers ?? []).some(
+            const owned = (data.salesDepartments ?? []).filter(sales =>
+                (sales.allUsers ?? []).some(
                     user => Number(user?.ID) === item.transferredBy,
+                ),
+            );
+            if (owned.length === 1) {
+                users = owned[0].allUsers ?? [];
+                departmentKey = `op_${Number(owned[0].department?.ID)}`;
+            } else if (owned.length > 1) {
+                const names = owned
+                    .map(sales => String(sales.department?.NAME ?? '').trim())
+                    .filter(Boolean)
+                    .join(', ');
+                warnings.push(
+                    `Сотрудник ${item.transferredBy} состоит в нескольких отделах продаж (${names}) — ` +
+                        'отдел заявки не определён, назначать некому: круг идёт только внутри своего отдела.',
                 );
-                if (hasUser) {
-                    users = sales.allUsers ?? [];
-                    departmentKey = `op_${Number(sales.department?.ID)}`;
-                    break;
-                }
+                return { candidates: [], departmentKey: 'none' };
             }
         }
 

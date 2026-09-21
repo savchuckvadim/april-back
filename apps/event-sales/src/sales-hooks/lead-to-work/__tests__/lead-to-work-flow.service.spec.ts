@@ -1136,6 +1136,38 @@ describe('LeadToWorkFlowService', () => {
         expect(run('N')).toEqual([]);
     });
 
+    /*
+     * Решение владельца 18.09.2026: если сотрудника выбирает круг, срок тоже
+     * назначаем мы — иначе задача уходила вообще без срока и не попадала ни
+     * в «на сегодня», ни в просрочку. Проверяем на уровне задачи: дедлайн
+     * есть и он в рабочих часах.
+     */
+    it('ХО без срока: задача всё равно получает дедлайн', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(FIELDS) as never,
+        );
+
+        service.queue(
+            makeItem({
+                leadId: 42,
+                responsible: 8,
+                isXo: 'Y',
+                deadline: '2026-09-22T14:20:00+03:00',
+            }),
+            baseContext(),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        const task = calls.find(c => c.method === 'task.add')?.args[0] as Record<
+            string,
+            unknown
+        >;
+        expect(String(task.DEADLINE)).not.toBe('');
+    });
+
     it('поле manager_op не установлено — пишется только ответственный', () => {
         const { bitrix, calls } = makeBitrix();
         const service = new LeadToWorkFlowService(

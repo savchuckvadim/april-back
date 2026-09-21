@@ -47,6 +47,13 @@ import {
 type BxRow = Record<string, unknown>;
 
 /**
+ * Через сколько суток звонить, если срок не прислали. Столько же ставит
+ * формула роботов (`dateadd(Now,"1d")`) — держим одинаково, чтобы заявки с
+ * присланным сроком и без него вели себя одинаково.
+ */
+const AUTO_DEADLINE_DAYS = 1;
+
+/**
  * Хук «лид → работа» — не обнуляющее преобразование лида в работу ОП.
  *
  * ПОРЯДОК РАБОТЫ (по шагам, они же помечены в коде execute()):
@@ -299,7 +306,8 @@ export class LeadToWorkUseCase
                     responsible: assignee.responsible,
                     deadline: await this.workingDeadline(
                         ctx.domain,
-                        item.deadline,
+                        item.deadline ??
+                            this.autoDeadline(assignee.source, item),
                     ),
                 };
 
@@ -497,6 +505,28 @@ export class LeadToWorkUseCase
      * График не прочитан — возвращаем как пришло: своё расписание лучше
      * чужого молчания, но падать из-за календаря конвертация не должна.
      */
+    /**
+     * Срок, когда его не прислали.
+     *
+     * Решение владельца 18.09.2026: раз сотрудника выбирает круг, то и срок
+     * назначаем мы сами — «сутки от сейчас», а `workingDeadline` ниже
+     * подвинет его в рабочие часы портала. Раньше такая заявка уходила с
+     * задачей БЕЗ срока: её не видно ни в списке «на сегодня», ни в
+     * просрочке.
+     *
+     * Только для круга: если сотрудника назвали явно (кнопка, адресный ХО),
+     * человек сам решает, когда звонить, и выдумывать за него срок нельзя.
+     */
+    private autoDeadline(
+        source: LeadToWorkAssigneeSource,
+        item: ILeadToWorkItem,
+    ): string | undefined {
+        if (source !== 'round-robin' || item.isXo !== 'Y') return undefined;
+        const next = new Date();
+        next.setDate(next.getDate() + AUTO_DEADLINE_DAYS);
+        return next.toISOString();
+    }
+
     private async workingDeadline(
         domain: string,
         deadline: string | undefined,
