@@ -11,11 +11,15 @@
  * ночного конвейера и доля коротких в аудите Фазы 0 расходятся.
  *
  * Порядок источников (сверху вниз):
- * 1. ЯВНОЕ решение портала: карта `definitions.minDurationSecByType` либо
- *    код `min_duration_sec_by_type`, переопределённый в `model_params`;
- * 2. запасной скаляр `fallbackSec` — прежний `PortalAiSettings.minDurationSec`
- *    конвейера разбора;
- * 3. дефолт реестра (`min_duration_sec_by_type`, 300 с).
+ * 1. ЯВНОЕ решение портала ПО ТИПАМ: карта `definitions.minDurationSecByType`
+ *    либо код `min_duration_sec_by_type`, переопределённый в `model_params`;
+ * 2. ЯВНЫЙ общий скаляр портала: код реестра `min_duration_sec` в
+ *    `model_params` (проверяется реестром, как любой код: значение вне
+ *    диапазона решением не считается);
+ * 3. запасной скаляр `fallbackSec` — прежний `PortalAiSettings.minDurationSec`
+ *    конвейера разбора (принимается как есть: это решение старой админки,
+ *    и молча менять его реестром нельзя);
+ * 4. дефолт реестра (`min_duration_sec_by_type`, 300 с).
  *
  * ⚠ Старшинство даёт именно ЯВНО заданный порог, а не сам факт заведённых
  * настроек AI-аналитики. Иначе портал, который завёл `ai_analytics_definitions`
@@ -26,10 +30,17 @@
  * Чистые функции: без DI, Bitrix и Prisma.
  */
 import { minDurationByType, type MinDurationSecByType } from '../model/pulse';
-import { resolveNumberParam } from '../params';
+import { resolveNumberParam, resolveParam, type ParamContext } from '../params';
 import { parseAiDefinitions, parseAiModelParams } from './ai-settings.parse';
 import type { AiModelParams, AiPortalDefinitions } from './ai-settings.types';
-import { buildRegistryContext } from './registry-context.builder';
+import {
+    AI_DEFINITION_PARAM_CODES,
+    buildRegistryContext,
+} from './registry-context.builder';
+
+/** Поле карты порогов в JSON `ai_analytics_definitions`. */
+const DEFINITIONS_MIN_DURATION_KEY =
+    'minDurationSecByType' satisfies keyof AiPortalDefinitions;
 
 export interface PortalMinDurationInput {
     /** `ai_analytics_definitions` портала; undefined — ключ не заведён. */
@@ -39,16 +50,18 @@ export interface PortalMinDurationInput {
     /**
      * Прежний скаляр конвейера разбора (`PortalAiSettings.minDurationSec`).
      * Уступает только ЯВНО заданному порогу AI-аналитики (карта в
-     * `definitions` или переопределённый код в `model_params`); дефолт
-     * реестра его не вытесняет.
+     * `definitions`, код `min_duration_sec_by_type` или скаляр
+     * `min_duration_sec` в `model_params`); дефолт реестра его не вытесняет.
      */
     fallbackSec?: number | null;
     /**
-     * Задал ли портал порог явно. Определить это по разобранным настройкам
-     * нельзя: парсер подставляет дефолтную карту вместо отсутствующего
-     * ключа, поэтому признак приходит из сырого JSON
-     * (`minDurationByTypeOfSettings`). `false` означает «ключи настроек
-     * есть, но порога среди них нет» — тогда работает `fallbackSec`.
+     * Задал ли портал порог ПО ТИПАМ явно. Определить это по разобранным
+     * настройкам нельзя: парсер подставляет дефолтную карту вместо
+     * отсутствующего ключа, поэтому признак приходит из сырого JSON
+     * (`isMinDurationPortalDefined`). `false` означает «ключи настроек
+     * есть, но порога по типам среди них нет» — тогда работают скаляр
+     * `min_duration_sec` из `model_params` и `fallbackSec`. undefined —
+     * признак не считался: слой портала читается как есть.
      */
     portalDefined?: boolean;
 }
@@ -56,6 +69,22 @@ export interface PortalMinDurationInput {
 /** Дефолт реестра для кода `min_duration_sec_by_type` (без слоёв портала). */
 export function registryMinDurationSec(): number {
     return resolveNumberParam('min_duration_sec_by_type', {}) ?? 300;
+}
+
+/**
+ * Явный общий скаляр портала — код реестра `min_duration_sec` из
+ * `model_params`. Парсер дефолтов в `model_params` не подставляет, а слой
+ * определений этот код не заполняет (только `min_duration_sec_by_type`),
+ * поэтому источник `portal` у разрешённого значения — надёжный признак
+ * решения человека. Дефолт реестра (источник `default`, в том числе после
+ * отказа по диапазону или типу) решением портала не считается.
+ */
+function portalScalarSec(ctx: ParamContext): number | undefined {
+    const resolved = resolveParam('min_duration_sec', ctx);
+
+    return resolved.source === 'portal' && typeof resolved.value === 'number'
+        ? resolved.value
+        : undefined;
 }
 
 /**
@@ -69,22 +98,26 @@ export function resolveMinDurationByType(
 ): MinDurationSecByType {
     const hasSettings =
         input.definitions !== undefined || input.modelParams !== undefined;
-    // Слой портала читаем, только если порог в настройках действительно
-    // задан: иначе «дефолт реестра, подставленный парсером» вытеснил бы
-    // прежний скаляр разбора и молча поднял порог на живом портале.
-    const portalSec =
+    const ctx: ParamContext = hasSettings
+        ? buildRegistryContext({
+              definitions: input.definitions,
+              modelParams: input.modelParams,
+          })
+        : {};
+    // Слой портала ПО ТИПАМ читаем, только если порог в настройках
+    // действительно задан: иначе «дефолт реестра, подставленный парсером»
+    // вытеснил бы прежний скаляр разбора и молча поднял порог на живом
+    // портале.
+    const byTypeSec =
         hasSettings && input.portalDefined !== false
-            ? resolveNumberParam(
-                  'min_duration_sec_by_type',
-                  buildRegistryContext({
-                      definitions: input.definitions,
-                      modelParams: input.modelParams,
-                  }),
-              )
+            ? resolveNumberParam('min_duration_sec_by_type', ctx)
             : undefined;
 
     const defaultSec =
-        portalSec ?? input.fallbackSec ?? registryMinDurationSec();
+        byTypeSec ??
+        portalScalarSec(ctx) ??
+        input.fallbackSec ??
+        registryMinDurationSec();
 
     return minDurationByType(
         input.portalDefined === false
@@ -102,12 +135,6 @@ export interface PortalMinDurationSettings {
     aiAnalyticsModelParams?: string;
 }
 
-/**
- * Карта порогов по сырым настройкам портала: разбор JSON здесь, чтобы
- * приложения (event-sales, админ-ручка аудита) не повторяли связку
- * «парсер → контекст реестра → карта» каждое по-своему. Битый JSON даёт
- * дефолты кода (так устроены парсеры), пустой ключ — «портал не решал».
- */
 /** Есть ли ключ верхнего уровня в JSON настроек (без доверия его значению). */
 function hasTopLevelKey(json: string, key: string): boolean {
     if (!json) return false;
@@ -124,6 +151,34 @@ function hasTopLevelKey(json: string, key: string): boolean {
     }
 }
 
+/**
+ * Задал ли портал порог ПО ТИПАМ явно: ключ `minDurationSecByType` в
+ * `ai_analytics_definitions` или код `min_duration_sec_by_type` в
+ * `ai_analytics_model_params` стоит в сыром JSON. Парсеры подставляют
+ * дефолты, и по разобранным настройкам «портал задал 300» неотличимо от
+ * «портал не задавал ничего» — поэтому признак считается только здесь.
+ */
+export function isMinDurationPortalDefined(
+    settings: PortalMinDurationSettings | null | undefined,
+): boolean {
+    return (
+        hasTopLevelKey(
+            settings?.aiAnalyticsDefinitions?.trim() ?? '',
+            DEFINITIONS_MIN_DURATION_KEY,
+        ) ||
+        hasTopLevelKey(
+            settings?.aiAnalyticsModelParams?.trim() ?? '',
+            AI_DEFINITION_PARAM_CODES.minDurationSecByType,
+        )
+    );
+}
+
+/**
+ * Карта порогов по сырым настройкам портала: разбор JSON здесь, чтобы
+ * приложения (event-sales, CLI и админ-ручка аудита) не повторяли связку
+ * «парсер → контекст реестра → карта» каждое по-своему. Битый JSON даёт
+ * дефолты кода (так устроены парсеры), пустой ключ — «портал не решал».
+ */
 export function minDurationByTypeOfSettings(
     settings: PortalMinDurationSettings | null | undefined,
     fallbackSec?: number | null,
@@ -139,12 +194,7 @@ export function minDurationByTypeOfSettings(
             ? { modelParams: parseAiModelParams(modelParamsJson) }
             : {}),
         fallbackSec,
-        // Порог считается решением портала, только если ключ действительно
-        // стоит в его настройках: парсеры подставляют дефолты, и по ним
-        // «портал задал 300» неотличимо от «портал не задавал ничего».
-        portalDefined:
-            hasTopLevelKey(definitionsJson, 'minDurationSecByType') ||
-            hasTopLevelKey(modelParamsJson, 'min_duration_sec_by_type'),
+        portalDefined: isMinDurationPortalDefined(settings),
     });
 }
 

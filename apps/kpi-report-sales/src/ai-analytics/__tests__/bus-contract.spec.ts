@@ -53,6 +53,7 @@ import {
     stageHistoryItem,
     stageHistoryPortal,
 } from './fixtures/stage-history.fixture';
+import { portalSettings } from './fixtures/lite-row.fixture';
 
 const DOMAIN = 'a.bitrix24.ru';
 const NOW = new Date('2026-09-01T07:00:00Z');
@@ -172,11 +173,9 @@ function makeCtx(): AiPipelineStepContext {
         monthKey: '2026-09',
         timeZone: 'Europe/Moscow',
         calendar: DEFAULT_WORK_CALENDAR,
-        settings: {
-            targets: { byLevel: {}, overrides: {} },
-            modelParams: {},
-            definitions: { minDurationSecByType: {} },
-        },
+        // Полные настройки портала: санити-шаг собирает порог через общий
+        // резолвер, которому нужен весь набор определений.
+        settings: portalSettings(),
         // Порог наблюдений — минимум реестра: проверяется форма значений
         // шины, а не статистика.
         registry: { portal: { n_min_none: MIN_OBSERVATIONS } },

@@ -10,6 +10,7 @@ import {
 import { QueueDispatcherService } from '@lib/queue/dispatch/queue-dispatcher.service';
 import { QueueNames } from '@lib/queue/constants/queue-names.enum';
 import { JobNames } from '@lib/queue/constants/job-names.enum';
+import { registryMinDurationSec } from '@lib/sales-ai-analytics';
 import { BxDepartmentService } from 'libs/bx-department/services/bx-department.service';
 import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { VoximplantCallsService } from '../services/voximplant-calls.service';
@@ -19,7 +20,11 @@ import { CallReportJobPayload } from './call-report-pipeline.use-case';
 const APP_NAME = 'call-report';
 
 export interface CallReportScanOptions {
-    /** Минимальная длительность звонка, сек (default env CALL_REPORT_MIN_DURATION_SEC | 300). */
+    /**
+     * Минимальная длительность звонка, сек — минимум карты порогов портала
+     * (CallReportSettingsService.minDurationSec; тип звонка на скане ещё
+     * неизвестен). Не задано — дефолт реестра `min_duration_sec_by_type`.
+     */
     minDurationSec?: number;
     /** Окно поиска назад, часов (default env CALL_REPORT_WINDOW_HOURS | 25). */
     windowHours?: number;
@@ -153,8 +158,10 @@ export class CallReportScanUseCase {
         options?: CallReportScanOptions,
     ): Promise<CallReportScanResult> {
         // Дефолты кода: штатный вызов идёт из планировщика с настройками
-        // портала (админка); env-слоя нет.
-        const minDurationSec = options?.minDurationSec ?? 300;
+        // портала (админка); env-слоя нет. Порог без опции — дефолт реестра
+        // AI-аналитики, а не литерал: источник у всех контуров один (А.1).
+        const minDurationSec =
+            options?.minDurationSec ?? registryMinDurationSec();
         const windowHours = options?.windowHours ?? 25;
         const maxPerRun = options?.maxPerRun ?? 10;
         const jobTimeoutMs = this.envNumber(

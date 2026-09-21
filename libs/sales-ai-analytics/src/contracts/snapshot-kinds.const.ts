@@ -171,9 +171,6 @@ export interface AiAnalyticsSnapshotDescriptor {
     description: string;
 }
 
-/** Сколько версий одного ключа остаётся после замещения (план 5.2). */
-export const AI_ANALYTICS_SNAPSHOT_SUPERSEDED_KEEP = 2;
-
 /**
  * Окно поиска по created_at, когда ключи периодов заранее неизвестны
  * (latest / prune): дальше в прошлое снапшоты не ищем.

@@ -49,7 +49,9 @@ export class ReadinessDto {
         description:
             'Режим: calibration (< 3 мес. или < 60 презентаций) → descriptive → ' +
             'norms (≥ 3 мес., ≥ 100 презентаций) → hypothesis → forecast → ' +
-            'recommendations; kpi-only — аналитика включена, но разборов нет.',
+            'recommendations; kpi-only — аналитика включена, но разборов нет. ' +
+            'Без снапшота месячной модели портала режим не выше descriptive ' +
+            '(причина no-portal-model): норм без модели нет.',
         enum: AI_ANALYTICS_READINESS_MODES,
         example: 'calibration',
     })
@@ -57,7 +59,9 @@ export class ReadinessDto {
 
     @ApiProperty({
         description:
-            'Месяцев истории разборов (по первому разобранному звонку).',
+            'Месяцев истории: из окна модели портала (глубина истории стадий ' +
+            'за 12 месяцев), без модели — по первому разобранному звонку в ' +
+            'периоде.',
         type: Number,
         example: 2,
     })
@@ -90,7 +94,13 @@ export class ReadinessDto {
     comparableFrom: string;
 
     @ApiProperty({
-        description: 'Причины текущего режима (для баннера).',
+        description:
+            'Причины текущего режима (для баннера): коды гейтов с их ' +
+            'значением (history-months-below-3, presentations-below-60, ' +
+            'norms-presentations-below-100), календарь и состав ' +
+            '(calendar-not-imported, roster-not-confirmed), гипотеза ' +
+            '(hypothesis-not-set), кап без модели портала (no-portal-model) ' +
+            'и качество данных (data-quality-timestamp-leak).',
         type: [String],
         example: ['history-months-below-3', 'presentations-below-60'],
     })

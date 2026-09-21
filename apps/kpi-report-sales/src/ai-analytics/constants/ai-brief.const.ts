@@ -44,12 +44,26 @@ export const AI_ANALYTICS_BRIEF_JOB_OPTIONS = {
 /** TTL счётчика квоты: сутки с запасом на разницу TZ портала и контейнера. */
 export const AI_BRIEF_QUOTA_TTL_SECONDS = 26 * 60 * 60;
 
-/** Тип и адресация ais-записи резюме (ключ периода — packHash). */
+/**
+ * Тип и адресация ais-записи резюме. Ключ периода — период и
+ * нормализованный ростер (`buildBriefPeriodKey`), а не packHash: так
+ * `upsert` стора замещает прежние резюме того же периода и состава
+ * (`superseded`), и рост `ais` ограничен числом периодов, а не числом
+ * пересчётов; packHash остаётся в нагрузке (`BriefSnapshot.packHash`) и в
+ * `inputsHash` конверта — повтор с тем же пакетом записи не создаёт.
+ */
 export const AI_BRIEF_SNAPSHOT_RECORD = {
     TYPE: AI_ANALYTICS_SNAPSHOT_TYPE.brief,
     APP: AI_ANALYTICS_SNAPSHOT_APP,
     PROVIDER: AI_ANALYTICS_SNAPSHOT_PROVIDER,
 } as const;
+
+/**
+ * Потолок длины ключа периода резюме: форма зерна `portal-hash` стора
+ * (`AI_ANALYTICS_SNAPSHOT_KEY_PATTERNS`) — до 64 символов `[A-Za-z0-9_.:-]`;
+ * запись с более длинным ключом стор не прочитал бы обратно.
+ */
+export const AI_BRIEF_PERIOD_KEY_MAX_LENGTH = 64;
 
 /** Коды фактов пакета (плана §4 таблица состава evidence pack). */
 export const AI_BRIEF_FACT_CODES = {

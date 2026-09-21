@@ -1,3 +1,4 @@
+import { registryDefault } from '../params/registry.access';
 import { KAPPA_DEFAULTS, layerKappa } from './kappa';
 import { ShrinkPrior } from './shrink';
 
@@ -89,16 +90,31 @@ export const NORM_FLAG_EXPLANATIONS: Record<NormFlag, string> = {
         'нечестно — показываются оба разрыва, к норме полосы и к норме портала.',
 };
 
-/** Дефолты иерархии норм (план §4.2). */
+/**
+ * Дефолты иерархии норм (план §4.2). Величины реестра берутся из него
+ * (`lib-defaults.spec`), константы метода помечены явно.
+ */
 export const NORM_HIERARCHY_DEFAULTS = {
+    /**
+     * Не параметр реестра: минимум менеджеров полосы стажа для
+     * собственного слоя нормы — условие метода (план §4.2), а не
+     * настройка портала.
+     */
     minBandManagers: 3,
     /** kappa_portal_to_global: до пула 0 — глобальный слой не подмешивается. */
     portalToGlobal: KAPPA_DEFAULTS.portalToGlobal,
-    /** kappa_boot_ratio: доля медианной экспозиции в стартовой усадке. */
-    bootRatio: 0.2,
-    /** Новый портал — пока сравнимой истории ≤ 3 месяцев. */
+    /** `kappa_boot_ratio`: доля медианной экспозиции в стартовой усадке. */
+    bootRatio: registryDefault('kappa_boot_ratio'),
+    /**
+     * Не параметр реестра: новый портал — пока сравнимой истории ≤ 3
+     * месяцев; срок совпадает с калибровочным гейтом плана §4.2 и
+     * отдельной настройкой не является.
+     */
     bootMonths: 3,
-    /** Полоса занижена составом, если μ_lk ниже этой доли от μ_pk. */
+    /**
+     * Не параметр реестра: полоса занижена составом, если μ_lk ниже этой
+     * доли от μ_pk — порог флага `level_norm_understated` плана §4.2.
+     */
     levelUnderstatedRatio: 0.7,
 } as const;
 

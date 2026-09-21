@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { PortalSessionProtected } from '@lib/auth';
 import {
     AI_ANALYTICS_ROUTE_PREFIX,
     AI_ANALYTICS_SWAGGER_TAG,
@@ -34,6 +35,7 @@ export class AiAnalyticsPlanController {
         private readonly dailyPlan: DailyPlanUseCase,
     ) {}
 
+    @PortalSessionProtected()
     @Post(AI_DAILY_PLAN_ROUTE)
     @HttpCode(200)
     @ApiOperation({

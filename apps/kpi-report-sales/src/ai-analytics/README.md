@@ -6,6 +6,15 @@ Feature-модуль `apps/kpi-report-sales/src/ai-analytics/` по плану
 
 ## Ручки (все POST, тело содержит `domain` и `requesterUserId`)
 
+Подпись запроса (21.09.2026, вопрос владельцу A3): мутирующие ручки —
+`settings/save`, `feedback`, `cache/reset`, `push`, `rop-mark/save`,
+`plan/daily`, `brief`, `manager/style` — помечены `@PortalSessionProtected()`
+из `@lib/auth`: фронт обменивает AUTH_ID фрейма на JWT ручкой
+`POST auth/portal-session` и шлёт его `Authorization: Bearer`; guard сверяет
+`domain` и `requesterUserId` тела с сессией. Режим
+`PORTAL_SESSION_GUARD_MODE` (off | report | enforce, по умолчанию report —
+нарушения только в лог) — см. `libs/auth/README.md`.
+
 | Ручка | Кэш | Права | Ответ |
 |---|---|---|---|
 | `ai-analytics/settings/get` | 300 с на домен | все | `AiAnalyticsSettingsDto`: флаги, `pipelineEnabled` (разборы за 30 дней), `readiness`, `callTypes[]` из `AI_ANALYTICS_EVENT_KINDS`, `comparableFrom`, `ropUserIds`; настройки 07.09.2026 — `selfViewEnabled`, `dailyPlanEnabled`, `digestAllUserIds: string[]`, `poolOptIn`, `poolConsentAt: string \| null`, `experimentsEnabled` |
@@ -54,7 +63,14 @@ Feature-модуль `apps/kpi-report-sales/src/ai-analytics/` по плану
 ## Состав
 
 ```
-ai-analytics.module.ts / ai-analytics.controller.ts
+ai-analytics.module.ts                 — сборка фичи: ядро, конвейер registerPhase2(), срезы ручек
+ai-analytics.controller.ts             — Фаза 1a; ai-analytics-overview.controller.ts — Фаза 1b;
+                                         ai-analytics-plan / -brief / -rop-mark.controller.ts, style/ai-analytics-style.controller.ts,
+                                         about/ai-analytics-about.controller.ts — Фаза 2
+core/                                  — ядро общих провайдеров (без Битрикса) и его PBX-половина
+pipeline/, steps/                      — ночной конвейер: раннер, журнал, порядок 11 шагов, сами шаги
+snapshots/, passport/, stage-history/, rop-mark/, portal-model/, plan/, brief/, style/, about/ — модули срезов
+about/                                 — блок «Как считаем»: тексты по ручкам (const), билдер из реестра + снапшота модели, ручка `about`
 constants/ai-analytics.const.ts        — тег, префикс, TTL, WS-события, роли, as const-справочники
 cache/cache-key.util.ts                — ключи sales-ai-analytics:v1:{domain}:{section}:…, TTL повестки
 cache/ai-analytics-cache.service.ts    — адаптер AppCache (как sales-finance)
@@ -70,8 +86,8 @@ delivery/ai-analytics-delivery.service.ts — non-injectable транспорт 
 delivery/ai-analytics-message.util.ts  — чистые тексты повестки и дайджеста (BB-код)
 delivery/ai-analytics-digest-all-message.util.ts — группировка ростера по отделам и текст сводного дайджеста
 cron/ai-analytics-push.scheduler.ts    — крон: пн 08:30 МСК повестка, ежедневно 08:00 МСК дайджест + сводный дайджест
-queue/ai-analytics.processor.ts        — воркер JobNames.SALES_AI_ANALYTICS_PUSH (очередь SALES_KPI_REPORT)
-__tests__/*                            — юнит-тесты + DI-граф модуля
+queue/ai-analytics.processor.ts        — воркер очереди SALES_KPI_REPORT: PUSH, SNAPSHOT (аудит и ритмы конвейера), OVERVIEW, BRIEF
+__tests__/*                            — юнит-тесты + DI-граф сборки и срезов
 ```
 
 ## Push-контур (шаг 2)
@@ -266,10 +282,10 @@ lite-строкам без Bitrix.
 
 ## Снапшоты модели (Фаза 2, волна 1)
 
-Хранилище снапшотов Фазы 2 — **пока не подключено ни к одной ручке и ни к
-одному крону**: его будут читать и писать ETL-конвейер и витрина Фазы 2.
-Сейчас это только контракт плюс тесты, поведение существующих ручек не
-изменилось.
+Хранилище снапшотов Фазы 2 пишет ночной конвейер (см. раздел «Ночной
+конвейер снапшотов и его сборка»), читают ручки Фазы 2 (план дня, резюме,
+карточка стиля) и обзор. Провайдер объявлен один раз — в ядре
+`core/ai-analytics-core.module.ts`.
 
 | Файл | Что даёт |
 |---|---|
@@ -300,7 +316,8 @@ lite-строкам без Bitrix.
 
 Чистая математика Фазы 2 (реестр параметров и `paramsVersion`, нормы и κ,
 качество за период и надёжность) живёт в `@lib/sales-ai-analytics` — см. её
-README, раздел «Фаза 2, волна 1». Приложение её пока не вызывает.
+README, раздел «Фаза 2, волна 1». С волны C (18.09.2026) её зовут шаги
+ночного конвейера и ручки Фазы 2 (раздел «Ручки Фазы 2»).
 
 Тесты: `__tests__/snapshot-serialize.util.spec.ts` (round-trip по всем 10 типам
 и 6 зёрнам, битые записи → `null`, ключи периодов, хэш),
@@ -314,9 +331,9 @@ README, раздел «Фаза 2, волна 1». Приложение её п�
 `settings/save` вырос с одних уровней до **девяти блоков** настроек, которые
 хранятся ключами `[kpiSales]` схемы `portal-app-settings.schema.ts` (JSON-строки,
 разбор — чистые функции `@lib/sales-ai-analytics/settings/*`, битый JSON даёт
-дефолт кода, а не 500). Это **единственная ручка Фазы 2, уже подключённая
-к коду волны 2**; остальное (модель портала, план дня, резюме) появится
-в следующих волнах.
+дефолт кода, а не 500). В волне 2 это была единственная подключённая ручка
+Фазы 2; с волны C (18.09.2026) подключены и модель портала (ночной
+конвейер), и план дня, резюме, стиль, слепая проверка, «Как считаем».
 
 | Блок запроса | Ключ настроек | Что задаёт |
 |---|---|---|
@@ -342,7 +359,7 @@ README, раздел «Фаза 2, волна 1». Приложение её п�
 | Файл | Что даёт |
 |---|---|
 | `domain/loaders/settings.loader.ts` | к прежним флагам добавились десять разобранных блоков (`levels`, `targets`, `absences`, `modelParams`, `managerParams`, `definitions`, `events`, `scoring`, `hypothesis`, `rosterConfirmedAt`) |
-| `domain/loaders/params.loader.ts` | `@Injectable AiAnalyticsParamsLoader.load(domain, { managerId?, tenureBand?, model? })` → `{ ctx, paramsVersion, comparableFrom }` — раскладка настроек по слоям реестра (менеджер → полоса стажа → портал → дефолт). Провайдер зарегистрирован и экспортирован, **но ни одной ручкой пока не вызывается**: его потребители — портальная модель, план дня и резюме следующих волн |
+| `domain/loaders/params.loader.ts` | `@Injectable AiAnalyticsParamsLoader.load(domain, { managerId?, tenureBand?, model? })` → `{ ctx, paramsVersion, comparableFrom }` — раскладка настроек по слоям реестра (менеджер → полоса стажа → портал → дефолт). Провайдер объявлен в ядре `core/`; потребители — контекст прогона конвейера (`pipeline/run-context.factory.ts`), портальная модель (`portal-model.use-case.ts`), резюме (`brief-job.use-case.ts`) и блок «Как считаем» (`about/`) |
 | `domain/use-cases/settings-save.use-case.ts` + `settings-save.mapper.ts` | периметр (403), блокирующая проверка значений (400), запись изменившихся ключей, сброс кэшей, аудит |
 | `store/ai-analytics-settings.store.ts` | `savePortalSettings(domain, patch)` поверх `PortalAppSettingsService` (portalId — по `PortalService.getPortalByDomain`), `loadLevels` с fallback на старый снапшот |
 | `store/ai-analytics-settings-audit.store.ts` | `@Injectable AiAnalyticsSettingsAuditStore.save(...)` — запись `ai-analytics-settings-audit` в ais поверх `AiService` |
@@ -355,7 +372,107 @@ README, раздел «Фаза 2, волна 1». Приложение её п�
 `__tests__/ai-analytics-module-di.spec.ts` (оба новых провайдера разрешаются
 в графе модуля).
 
-## Ночной конвейер снапшотов и его сборка (Фаза 2, волны 3–4)
+## Ручки Фазы 2 (план дня, резюме, стиль, слепая проверка)
+
+Тот же тег и префикс `ai-analytics`, все POST с `domain` и `requesterUserId`;
+у каждого среза свой контроллер и свой модуль (§1.6 п. 2 плана), сборка
+`ai-analytics.module.ts` их импортирует. Поверхность API приложения — ровно
+семь контроллеров фичи (два корневых + пять срезов), чужих через
+транзитивные импорты нет — закреплено `__tests__/ai-analytics-module-di.spec.ts`
+и дампом схемы до/после (поток 19).
+
+| Ручка | Модуль | Режим | Права | Ответ |
+|---|---|---|---|---|
+| `ai-analytics/plan/daily` | `plan/` | sync по снапшотам `forecast` / `portal-model` / `manager-month`, кэш 180 с | периметр (`resolveViewer`); `ai_analytics_daily_plan_enabled = false` → 403 | `AiDailyPlanResponseDto {…, data: AiDailyPlanDto}` — G → Y₀ → λ_pipe → N_req → разворот → потолок, `ropOnly` руководителю |
+| `ai-analytics/brief` | `brief/` | очередь + WS + кэш 6 ч (джоба `SALES_AI_ANALYTICS_BRIEF`, `jobId = requestKey`, WS `ai-analytics:brief:done|error`); снапшот `ai-analytics-brief` с ключом периода `{from}_{to}_{ростер}` — см. ниже | периметр (`resolveViewer`) | `AiBriefResponseDto {…, data?: AiBriefDto}`; без ключа VibeCode / при исчерпанной квоте / провале факт-чека — `source = template` с причиной |
+| `ai-analytics/manager/style` | `style/` | sync по снапшоту `ai-analytics-style` | периметр; сам сотрудник — по себе; `ai_analytics_style_opt_out` → `status: opt_out` | `AiStyleCardDto {status: ready|few_data|opt_out, notable[], axes[], …}` |
+| `ai-analytics/rop-mark/pick` | `rop-mark/` | sync, лёгкая выборка недели | только руководители (`cup`/`op`/`group`), менеджеру 403 | `AiRopMarkWeekResponseDto {…, data: AiRopMarkWeekDto}` — до трёх звонков, слепой режим до метки |
+| `ai-analytics/rop-mark/list` | `rop-mark/` | sync | только руководители | тот же конверт: сохранённый подбор и метки, без подбора — пустой `calls` |
+| `ai-analytics/rop-mark/save` | `rop-mark/` | sync, запись в `ais` | только руководители; звонок вне периметра 403, вне подбора 400 | `AiRopMarkSaveResponseDto {…, data: {id, replaced, blind}}` |
+| `ai-analytics/about` | `about/` | sync: настройки портала + последняя модель портала из `ais`, без кэша | периметр (`resolveViewer`) | `AiAboutResponseDto {status: ready, requestKey, data: AiAboutDto}` — блок «Как считаем» ручки `endpoint: overview | plan/daily | brief | manager/style`: тексты, `params[]` (код, значение, слой, класс) из реестра, `paramsVersion`, `comparableFrom`, `model` (readiness с причинами, κ/φ/λ с источником `estimated|configured|hybrid`, `betaSource`, `estimand`, санити) либо `model: null` + `modelReason` |
+
+`requestKey` конвертов: план дня — `…:plan:{date}:{managerId}`, резюме —
+`…:brief:{packHash}`, проверка — `…:rop-mark:{weekKey}` (подбор и список)
+и `…:rop-mark:{transcriptionId}` (метка), блок «Как считаем» —
+`…:about:{endpoint}`; префикс общий `sales-ai-analytics:v1:{domain}`.
+
+**Снапшот резюме и его ретенция** (волна C, долг 40). Кэш и `jobId`
+резюме по-прежнему адресуются хэшем пакета фактов (`buildBriefKey`), но
+запись `ais` типа `ai-analytics-brief` пишется с ключом периода
+`{from}_{to}_{ростер}` (`buildBriefPeriodKey`, `brief/brief-cache-key.util.ts`;
+ростер — нормализованный `buildReportUsersKey`, длинный — его хэш, чтобы
+не выйти за потолок зерна), `managerId = null`, а `packHash` лежит в
+`inputsHash` конверта и в нагрузке `BriefSnapshot.packHash`. Поэтому новое
+резюме того же периода и состава замещает прежнее (`upsert` → `superseded`),
+повтор с тем же пакетом записи не создаёт, и рост `ais` ограничен числом
+периодов, а не числом запросов (дескриптор типа — ретенция 30 дней).
+Спека — `__tests__/brief-cache-key.util.spec.ts`, `brief-job.use-case.spec.ts`.
+
+**Готовность витрины** (`readiness` в `settings/get`, обзоре, плане дня и
+«Как считаем»). Режим и причины считает только библиотека
+(`buildReadiness` / `buildWindowedReadiness` в `@lib/sales-ai-analytics`),
+приложение подставляет счётчики окна модели портала через
+`modelReadinessOptions(model)` — одним адаптером `domain/presenter/readiness.util.ts`
+и для обзора, и для `settings/get` (`settings.use-case.ts`). Кап §5.4 плана:
+нет снапшота `ai-analytics-portal-model` → режим не выше `descriptive`
+с причиной `no-portal-model` (признак `portalModelPresent`, обёртка
+`readiness-window.ts` выводит его из наличия окна модели). `historyMonths`
+в `AiReadinessDto` — из окна модели портала (глубина истории стадий), без
+модели — по первому разобранному звонку в периоде.
+
+Блок «Как считаем» генерируется, а не пишется руками (§6): слова — в
+`about/ai-analytics-about.const.ts` (по ручке: назначение, источники, как
+читать, границы и перечень кодов реестра), числа — только из
+`resolveParam` по контексту портала и из нагрузки `ai-analytics-portal-model`.
+`__tests__/about.spec.ts` транзитивно сканирует исходники каждой ручки и
+требует, чтобы каждый найденный код параметра был в её перечне; новый
+код в ручке → дописать в const, иначе спека красная.
+
+## Ядро общих провайдеров (`core/`)
+
+Провайдеры без состояния, которые раньше дублировались в шести модулях
+(долг N8 аудита), объявлены один раз и экспортированы:
+
+| Модуль | Провайдеры | Импортирует |
+|---|---|---|
+| `core/ai-analytics-core.module.ts` — **без Битрикса** | `AiAnalyticsCacheService`, `SettingsLoader`, `AiAnalyticsParamsLoader`, `AiAnalyticsPortalsLoader`, `ManagersLoader`, `CallsLoader`, `AiAnalyticsSnapshotStore`, `RequesterAccessService` | все срезы, конвейер и корневой модуль |
+| `core/ai-analytics-core-pbx.module.ts` — с `PBXModule` | `KpiLoader`, `SalesFinanceUseCaseFactory`, `FinanceLoader`, `PlansLoader`, `AiAnalyticsSettingsStore` (нужен `PortalService`), `StyleCrmLoader` (телефония + лиды для жёстких осей стиля; нужен `PBXService`) | снапшоты, паспорт, модель портала, корневой модуль |
+
+Разделение по границе Битрикса намеренное: срезы плана дня и резюме не
+должны тянуть `PBXModule` даже транзитивно (это проверяют их DI-спеки), а
+поддерево `PBXModule` несёт чужие контроллеры. DI-спека сборки закрепляет,
+что ни один провайдер не объявлен дважды и ядро экспортирует ровно свой
+состав.
+
+## Порог длительности разбираемого звонка (решение владельца А.1)
+
+Единая цепочка источников у всех контуров — `resolveMinDurationByType`
+(`@lib/sales-ai-analytics`, `settings/min-duration.resolve.ts`):
+
+1. явный порог **по типам** портала — карта `minDurationSecByType` в
+   `ai_analytics_definitions` либо код `min_duration_sec_by_type` в
+   `ai_analytics_model_params`;
+2. явный общий **скаляр** портала — код реестра `min_duration_sec` в
+   `ai_analytics_model_params` (с волны C у кода есть потребитель);
+3. **прежний скаляр старой админки разбора** —
+   `portal_ai_settings.min_duration_sec` (`fallbackSec`);
+4. дефолт реестра `min_duration_sec_by_type` — 300 с (`registryMinDurationSec()`).
+
+В этом приложении цепочку собирает `domain/loaders/min-duration.util.ts`
+(`portalMinDurationByType(settings)`): `SettingsLoader` читает старую админку
+через `@Optional() PortalAiSettingsService` (`legacyMinDurationSec`; сервис не
+подключён или упал → `null`) и считает признак `minDurationDefined` по сырому
+JSON — иначе дефолт парсера был бы принят за решение портала. Карту берут
+пульс, шаги `calls` / `finance` / `sanity`, недельный и месячный снапшоты;
+CLI аудита Фазы 0 (`audit/run-ai-analytics-audit.ts`, `auditShortCallSecOf`)
+и админский `AiAnalyticsAuditService` идут той же цепочкой с тем же запасным
+скаляром. Разбор в event-sales (`call-report-settings.service.ts`), гейт
+порога типа после классификации и скан берут ту же функцию библиотеки —
+порог, заданный в любом из мест, одинаков для разбора, пульса, ночного
+расчёта и аудита. Спеки: `__tests__/min-duration.util.spec.ts`,
+`__tests__/settings.loader.spec.ts`, `__tests__/ai-analytics-audit.cli.spec.ts`.
+
+## Ночной конвейер снапшотов и его сборка (Фаза 2, волны 3–4, сборка — поток 19)
 
 Все тяжёлые расчёты Фазы 2 считает один ночной конвейер: раннер
 (`pipeline/snapshot-pipeline.service.ts`) берёт слот портала, собирает
@@ -374,14 +491,35 @@ README, раздел «Фаза 2, волна 1». Приложение её п�
 | № | Шаг | Ритмы | Читает из шины | Пишет в шину |
 |---|---|---|---|---|
 | 1 | `calls` | nightly, weekly, monthly, backfill | — | `calls.rows` |
-| 2 | `passport` | nightly, weekly, monthly | `calls.rows` (прокси `since`) | `passport` |
-| 3 | `stage-history` | nightly, monthly, backfill | `calls.rows` | `episodes`, `chain`, `stageTheta`, `cycleMedian`, `slaFacts`, `timestampLeak`, `historyMonths` |
+| 2 | `passport` | nightly, weekly, monthly, backfill | `calls.rows` (прокси `since`) | `passport` |
+| 3 | `stage-history` | nightly, weekly, monthly, backfill | `calls.rows` | `episodes`, `chain`, `stageTheta`, `cycleMedian`, `slaFacts`, `timestampLeak`, `historyMonths` |
 | 4 | `kpi` | nightly, monthly, backfill | — | `kpi.months` |
-| 5 | `style` | monthly | `calls.rows`, `passport` | `style` |
+| 5 | `style` | monthly | `calls.rows`, `passport`; жёсткие оси — `StyleCrmLoader` (не из шины) | `style` |
 | 6 | `plans` | monthly (тик 1-го числа) | — | `plans` |
-| 7 | `finance` | nightly, monthly, backfill | `kpi.months`, `calls.rows`, `passport`, `plans`, `style`, `chain` | `finance.result` |
+| 7 | `finance` | nightly, monthly, backfill | `kpi.months`, `calls.rows`, `passport`, `plans`, `style`, `chain` | `finance.result` (читателя нет, `@deprecated`) |
 | 8 | `rop-mark` | weekly | `calls.rows` | — |
-| 9 | `sanity` | weekly | шину целиком | — |
+| 9 | `sanity` | weekly, monthly | `calls.rows`, `slaFacts`, `timestampLeak` (месячные снапшоты — через стор) | `sanity` |
+| 10 | `portal-model` | monthly, backfill | `calls.rows`, `chain`, `stageTheta`, `episodes`, `cycleMedian`, `historyMonths`, `passport`, `sanity` | `portalModel` |
+| 11 | `forecast` | nightly | `portalModel` (нет в шине — последняя записанная модель), `historyMonths`, `chain`, `calls.rows`, `episodes` | — |
+
+Ритмы по факту констант срезов (`AI_*_RHYTHMS`), порядок внутри ритма —
+порядок массива:
+
+- **nightly** — `calls` → `passport` → `stage-history` → `kpi` → `finance` →
+  `forecast` (модель портала каждую ночь не пересчитывается, прогноз берёт
+  последнюю записанную);
+- **weekly** — `calls` → `passport` → `stage-history` → `rop-mark` →
+  `sanity` (история стадий нужна панели: `slaFacts` и метки времени пишет
+  только она);
+- **monthly** — `calls` → `passport` → `stage-history` → `kpi` → `style` →
+  `plans` → `finance` → `sanity` → `portal-model` (панель перед моделью:
+  её отчёт из шины `sanity` модель встраивает в поле `sanity` того же
+  прогона, а модель считается по закрытому месяцу — после финансов);
+- **backfill** — `calls` → `passport` → `stage-history` → `kpi` →
+  `finance` → `portal-model`: догон месяцев с паспортом из кэша `user.get`
+  (без него у догнанных месяцев `tenureBand: null`), без похода в портал
+  за планами; модель портала пересчитывается по догнанным месяцам, прогноз
+  про сегодняшний остаток месяца в догоне не нужен.
 
 Снимок планов шаг `plans` делает только тиком 1-го числа, поэтому финансы
 берут цели из двух источников: шина того же прогона, иначе — записанный
@@ -389,34 +527,60 @@ README, раздел «Фаза 2, волна 1». Приложение её п�
 второго источника поле `planSnapshot` месячной записи пустовало бы все дни,
 кроме первого.
 
-Финансы закрывают месяц последними (им нужны все шесть ключей),
-санити-панель — последняя в недельном ритме, а догон истории (`backfill`)
-выполняют четыре шага: `calls` → `stage-history` → `kpi` → `finance`, то
-есть месяцы восстанавливаются без похода в портал за паспортом и планами.
+**Маркер пустой недели.** Неделя без разборов пишется шагом `calls`
+записью `manager-week` портального зерна — `managerId: null`, `payload
+{empty: true, n: 0, reason: 'week-no-analysis'}` — а строк менеджеров не
+получает: без маркера догон истории считал бы такую неделю дырой каждую
+ночь и никогда не сходился бы (аудит M3). Читатели рядов `manager-week`
+обязаны фильтровать записи по `managerId` — маркер не строка менеджера.
+
+**Жёсткие оси стиля в ночном шаге** (волна C). `StyleStep` берёт CRM-оси
+`persistence` / `tempo` / `rhythm` из `StyleCrmLoader` (ядро
+`core/ai-analytics-core-pbx.module.ts`) за окно стиля и передаёт их в
+`buildManagerStylePayload` вместе с осями разбора. Падение телефонии профиль
+не роняет: оси разбора считаются, жёсткие молчат, а в результате шага стоит
+причина `style-crm-unavailable` (`AI_STYLE_CRM_UNAVAILABLE_REASON`).
+Медиана длительности разговора — `medianDurationByType` по типам
+**телефонии** (`style-crm.units.ts`, ключи `BX_VOX_CALL_TYPES`; стратум по
+типу разбора — Фаза 3); порог разброса по дням — код реестра
+`style_dispersion_min_days` (`styleCrmThresholdsOf(ctx.registry)`); сегменты
+месяцев объединяются рядами (`mergeManagerMonths`), а не «медианой медиан».
+Кэш загрузчика — секция `style-crm-v2` (`style-crm.cache.ts`: ключ
+`…:style-crm-v2:{yyyy-MM}:{usersKey}[:{from}_{to}]`, закрытый месяц 30 дней,
+текущий 10 мин, потолок 20 000 строк на сегмент); суффикс `v2` — версия
+формы сегмента с рядами длительностей, сегменты прежней формы не читаются.
 
 **Срезы шагов** — отдельные модули (§1.6 п. 2 плана: срез объявляет
-собственный `@Module`, корневой модуль фичи не растёт), контроллеров ни у
-одного нет:
+собственный `@Module`, корневой модуль фичи не растёт); контроллер есть
+только у среза слепой проверки:
 
 | Модуль | Шаги | Что ещё даёт |
 |---|---|---|
-| `snapshots/ai-analytics-snapshots.module.ts` | `calls`, `kpi`, `style`, `finance` | загрузчики разборов, KPI и финансов |
+| `snapshots/ai-analytics-snapshots.module.ts` | `calls`, `kpi`, `style`, `finance` | загрузчики — из ядра |
 | `passport/ai-analytics-passport.module.ts` | `passport`, `plans` | `ManagerPassportLoader`, `PlansSnapshotUseCase` |
 | `stage-history/ai-analytics-stage-history.module.ts` | `stage-history` | `StageHistoryLoader`, `CallEntityLoader` |
-| `rop-mark/ai-analytics-rop-mark.module.ts` | `rop-mark` | `RopMarkUseCase` и стор подбора (для будущей ручки) |
+| `rop-mark/ai-analytics-rop-mark.module.ts` | `rop-mark` | `RopMarkUseCase`, стор подбора и контроллер `rop-mark/pick|list|save` |
+| `portal-model/ai-analytics-portal-model.module.ts` | `portal-model`, `forecast` | `PortalModelUseCase`, `PortalModelLoader` |
 
 Готовая сборка — `AiAnalyticsPipelineModule.registerPhase2()`: динамический
-модуль со всеми срезами в `imports` и всеми шагами в порядке массива.
-Сборке приложения (`ai-analytics.module.ts`, поток `p2-wiring`) остаётся
-добавить его в `imports` — процессор берёт раннер по токену
-`AI_ANALYTICS_SNAPSHOT_RUNNER` и `@Optional()`, поэтому до подключения
-ритмовые джобы отвечают понятной ошибкой, а аудит и обзор работают.
+модуль со всеми срезами в `imports` и всеми одиннадцатью шагами в порядке
+массива. Сборка приложения (`ai-analytics.module.ts`) импортирует его вместе
+с ядром и срезами ручек; процессор очереди берёт раннер по токену
+`AI_ANALYTICS_SNAPSHOT_RUNNER`, а джобу резюме — через `BriefJobUseCase`
+(оба `@Optional()`: без подключения джобы отвечают понятной ошибкой, а DI-спека
+сборки закрепляет, что в собранном приложении оба есть).
 
 Тесты сборки: `__tests__/pipeline-wiring.spec.ts` (DI каждого среза, коды
-шагов уникальны, писатель ключа шины идёт раньше читателя, у каждого ритма
-есть шаги и у `backfill` их ровно четыре, `registerPhase2` собирает те же
-шаги в том же порядке), `__tests__/snapshot-pipeline.service.spec.ts`
-(сам раннер), `__tests__/snapshots-module-di.spec.ts` (срез снапшотов).
+шагов уникальны, писатель ключа шины идёт раньше читателя, состав каждого
+ритма выведен из констант срезов, `backfill ∋ portal-model`, `nightly ∋
+forecast`, `registerPhase2` собирает те же шаги в том же порядке),
+`__tests__/ai-analytics-module-di.spec.ts` (DI сборки, семь контроллеров,
+массив шагов из 11, белый список глобальных провайдеров, ядро без
+`PBXModule`, нет дублей провайдеров), `__tests__/ai-analytics.processor.spec.ts`
+(каждый обработчик зовёт свой use-case, ошибка — warn + rethrow),
+`__tests__/snapshot-pipeline.service.spec.ts` (сам раннер),
+`__tests__/snapshots-module-di.spec.ts` (срез снапшотов); всё — в
+`npm run test:di`.
 
 ## Слепая проверка «три звонка недели» (Фаза 2, волна 4)
 
@@ -447,9 +611,16 @@ README, раздел «Фаза 2, волна 1». Приложение её п�
 | `domain/presenter/rop-mark.presenter.ts` | слепой режим и периметр: колонки AI — только у звонков с меткой, чужие менеджеры вырезаются |
 | `dto/ai-rop-mark-request.dto.ts`, `dto/ai-rop-mark.dto.ts` | запросы и ответы с русскими описаниями (разделены, чтобы файлы остались ≤ 300 строк) |
 
+Ручки (`ai-analytics-rop-mark.controller.ts`, поток 19): `POST
+ai-analytics/rop-mark/pick` (подбор, `forceRefresh` пересобирает),
+`rop-mark/list` (подбор и метки, без подбора — пустой `calls`),
+`rop-mark/save` (метка) — конверты `AiRopMarkWeekResponseDto` /
+`AiRopMarkSaveResponseDto`, см. раздел «Ручки Фазы 2».
+
 Права: все три метода — только руководителям (`cup`/`op`/`group`,
-`assertLeader`), менеджеру 403; звонок вне периметра — 403; звонок вне
-подбора недели или подбор, которого ещё нет, — 400 с текстом причины.
+`assertLeader` в сценарии; периметр контроллер берёт через `resolveViewer`),
+менеджеру 403; звонок вне периметра — 403; звонок вне подбора недели или
+подбор, которого ещё нет, — 400 с текстом причины.
 
 Вид `rop_mark` добавлен в общий словарь `AI_ANALYTICS_FEEDBACK_KINDS`,
 поэтому формально его принимает и общая ручка `feedback` — но записанная

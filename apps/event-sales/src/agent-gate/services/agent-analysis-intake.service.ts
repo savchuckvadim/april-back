@@ -1,47 +1,34 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Prisma } from 'generated/prisma';
 import { PBXService } from '@lib/pbx/pbx.service';
-import { BitrixService } from '@lib/bitrix';
 import {
     AiService,
     TranscriptionPipelineView,
     TranscriptionStoreService,
 } from '@lib/call-lib';
-import {
-    CALL_REPORT_CALL_TYPE_ITEMS,
-    CALL_REPORT_SECTIONS,
-} from '@lib/call-lib';
-import { CallAnalysisBitrixService } from '@lib/call-lib/call-analysis/services/call-analysis-bitrix.service';
 import { CallReportSmartResolverService } from '@lib/call-lib/call-report/services/call-report-smart-resolver.service';
 import { CallReportSmartWriterService } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
-import {
-    CallReportDealFamily,
-    CallReportDealFamilyService,
-} from '@lib/call-lib/call-report/services/call-report-deal-family.service';
-import { resolveCallManagerId } from '@lib/call-lib/call-report/services/call-manager.util';
+import { CallReportDealFamilyService } from '@lib/call-lib/call-report/services/call-report-deal-family.service';
 import { CallReportDealVerifyService } from '@lib/call-lib/call-report/services/call-report-deal-verify.service';
-import {
-    AgentCallAnalysisDto,
-    AgentDialogTurnDto,
-    AgentSectionAnalysisDto,
-} from '../dto/agent-analysis-request.dto';
+import { AgentCallAnalysisDto } from '../dto/agent-analysis-request.dto';
 import { AgentAnalysisResponseDto } from '../dto/agent-response.dto';
 import {
     AGENT_ANALYSIS_TYPE,
     CALL_CLASSIFY_TYPE,
 } from './agent-call-package.service';
-import { computeSpeechMetrics } from './speech-metrics.util';
-import { sanitizeLatex } from './text-sanitize.util';
-
-/** Итог записи смарт-элемента + контекст для таймлайнов. */
-interface SmartItemWriteResult {
-    itemId: number;
-    managerId?: number;
-    /** Активность звонка (для binding записи и fallback-аудио). */
-    activity?: Awaited<
-        ReturnType<CallAnalysisBitrixService['getActivityById']>
-    >;
-}
+import {
+    AgentAnalysisCrmContextLoader,
+    callOwnerIds,
+} from './agent-analysis-crm-context.loader';
+import { SmartItemWriteResult } from './agent-analysis-intake.types';
+import { AgentAnalysisLinkResolver } from './agent-analysis-link.resolver';
+import { normalizeAgentAnalysis } from './agent-analysis-normalize.util';
+import {
+    buildAgentAnalysisRecord,
+    buildAgentSmartItemInput,
+    pickGigachatResults,
+    resolveCallDirection,
+} from './agent-analysis-smart-input.mapper';
+import { AgentAnalysisTimelineWriter } from './agent-analysis-timeline.writer';
 
 /**
  * Приём результата глубокого анализа от внешнего агента:
@@ -52,6 +39,10 @@ interface SmartItemWriteResult {
  *
  * Если смарт не установлен на портале — анализ сохраняется только в БД
  * (graceful: конвейер не падает, клиент ставит смарт позже).
+ *
+ * Оркестратор (лимит файла): нормализация — agent-analysis-normalize,
+ * CRM-контекст — crm-context.loader, связи — link.resolver, раскладка в
+ * ais/поля — smart-input.mapper, таймлайны — timeline.writer.
  */
 @Injectable()
 export class AgentAnalysisIntakeService {
@@ -72,13 +63,12 @@ export class AgentAnalysisIntakeService {
         dto: AgentCallAnalysisDto,
         allowedDomains: string[] | null = null,
     ): Promise<AgentAnalysisResponseDto> {
-        // Гигиена входа от LLM-агента: LaTeX-артефакты (\rightarrow → «→»)
-        // и литеральные "null"-строки (боевые кейсы 2026-07-30).
-        dto = this.sanitizeAgentStrings(dto);
-        this.warnStaleChecklistShape(transcriptionId, agentName, dto);
-        dto = this.applySpeechMetrics(transcriptionId, dto);
-        dto = this.enforceConsistency(transcriptionId, dto);
-        dto = this.fillMethodologyAnalysis(dto);
+        dto = normalizeAgentAnalysis(
+            transcriptionId,
+            agentName,
+            dto,
+            this.logger,
+        );
         const row =
             await this.transcriptionStore.findPipelineById(transcriptionId);
         if (!row.domain) {
@@ -122,52 +112,20 @@ export class AgentAnalysisIntakeService {
             );
         }
 
-        const aiRecord = await this.aiService.create({
-            provider: agentName,
-            model: agentName,
-            type: AGENT_ANALYSIS_TYPE,
-            status: 'done',
-            result: dto.summary,
-            // Черновик события (plan+report) для будущего /event-sales/flow —
-            // копится в БД, в endpoint сейчас не отправляется.
-            report_result: dto.flow ? JSON.stringify(dto.flow) : undefined,
-            user_result: JSON.parse(
-                JSON.stringify({
-                    ...dto,
-                    agentName,
-                    classifierCallType,
-                    classifierMismatch,
-                }),
-            ) as Prisma.JsonValue,
-            activity_id: row.activityId ?? undefined,
-            entity_type: row.entityType ?? undefined,
-            entity_id: row.entityId ? Number(row.entityId) : undefined,
-            domain: row.domain,
-            app: 'agent-gate',
-            transcription_id: row.id,
-        });
+        const aiRecord = await this.aiService.create(
+            buildAgentAnalysisRecord({
+                row,
+                agentName,
+                dto,
+                classifierCallType,
+                classifierMismatch,
+            }),
+        );
 
         const written = await this.writeSmartItem(row, agentName, dto);
-
         if (written) {
-            await this.aiService
-                .update(String(aiRecord.id), {
-                    report_item_id: String(written.itemId),
-                    in_report: true,
-                })
-                .catch(error =>
-                    this.logger.warn(
-                        `ais.report_item_id не обновлён: ${(error as Error).message}`,
-                    ),
-                );
-            await this.writeSmartElementTimeline(row, written, dto).catch(
-                error =>
-                    this.logger.warn(
-                        `Таймлайн смарт-элемента не записан: ${(error as Error).message}`,
-                    ),
-            );
+            await this.attachSmartItem(String(aiRecord.id), row, written, dto);
         }
-
         await this.duplicateToTimeline(row, dto, written?.managerId).catch(
             error =>
                 this.logger.warn(
@@ -180,245 +138,6 @@ export class AgentAnalysisIntakeService {
             smartItemId: written?.itemId ?? null,
             smartInstalled: written !== null,
         };
-    }
-
-    /**
-     * «Code computes numbers»: talkRatioPct и questionsCount считаются
-     * кодом по размеченному агентом диалогу и перекрывают значения LLM
-     * (LLM систематически ошибается в арифметике на длинных диалогах).
-     * Без диалога метрики остаются агентскими. Исходный dto не мутируем.
-     */
-    private applySpeechMetrics(
-        transcriptionId: string,
-        dto: AgentCallAnalysisDto,
-    ): AgentCallAnalysisDto {
-        const metrics = computeSpeechMetrics(dto.dialog);
-        if (!metrics) return dto;
-        if (
-            dto.talkRatioPct !== undefined &&
-            dto.talkRatioPct !== metrics.talkRatioPct
-        ) {
-            this.logger.log(
-                `talkRatioPct агента ${dto.talkRatioPct} → ${metrics.talkRatioPct} (пересчёт кодом, transcription ${transcriptionId})`,
-            );
-        }
-        if (
-            dto.questionsCount !== undefined &&
-            dto.questionsCount !== metrics.questionsCount
-        ) {
-            this.logger.log(
-                `questionsCount агента ${dto.questionsCount} → ${metrics.questionsCount} (пересчёт кодом, transcription ${transcriptionId})`,
-            );
-        }
-        return {
-            ...dto,
-            talkRatioPct: metrics.talkRatioPct,
-            questionsCount: metrics.questionsCount,
-        };
-    }
-
-    /**
-     * «Code fixes contradictions»: LLM иногда отдаёт внутренне
-     * противоречивый ответ — правим кодом, не переспрашивая модель
-     * (прод-кейсы 25.08.2026):
-     * - дата и описание следующего шага есть, а set=false («созвон завтра
-     *   в 14:00», но «шаг не назначен») → set=true;
-     * - hvostDone/fiveKDone=true, а в их же разборе есть пункты «✗»
-     *   (правило «частично = НЕ пройден») → false.
-     */
-    /**
-     * Агент прислал разбор, но чек-лист приехал ПУСТЫМ — предупредить.
-     *
-     * ПОЧЕМУ ЭТО НЕ ПАРАНОЙЯ. Валидация приложения настроена как
-     * `whitelist: true, forbidNonWhitelisted: false` (libs/core,
-     * bootstrap-app): неизвестные ключи тела ВЫРЕЗАЮТСЯ МОЛЧА, без ошибки и
-     * без 400. После переделки состава анкеты 01.09.2026 ключи
-     * `hvostSteps` и `fiveKItems` сменились целиком (было offer/complect/
-     * price/decisionDate/dateAgreed и clientWhat/clientReady/…, стало
-     * desire/offered/priceReaction/decisionProcess/decisionWay и
-     * client/company/colleagues/competitor/criteria).
-     *
-     * Внешний агент выкатывается ОТДЕЛЬНО от нас. Пока он на старом наборе,
-     * его ответ приходит, проходит валидацию, теряет весь чек-лист по
-     * дороге — и в карточке выглядит как «AI не смог разобрать звонок».
-     * Отличить это от настоящего «модель не ответила» без этой строки
-     * нечем.
-     *
-     * Симптом ловим по расхождению: итог (`hvostDone`/`fiveKDone`) или
-     * текст разбора есть, а гранулярной структуры нет ни одной.
-     */
-    private warnStaleChecklistShape(
-        transcriptionId: string,
-        agentName: string,
-        dto: AgentCallAnalysisDto,
-    ): void {
-        const answered = (
-            items: Record<string, unknown> | null | undefined,
-        ): boolean =>
-            Boolean(items) &&
-            Object.values(items as object).some(
-                value => typeof value === 'boolean',
-            );
-
-        const check = (
-            block: 'hvostSteps' | 'fiveKItems',
-            done: boolean | null | undefined,
-            analysis: string | null | undefined,
-        ): void => {
-            const claimed =
-                (done !== undefined && done !== null) ||
-                Boolean(analysis?.trim());
-            if (!claimed) return;
-            if (answered(dto[block] as Record<string, unknown> | undefined)) {
-                return;
-            }
-            this.logger.warn(
-                `Агент «${agentName}» прислал разбор, но ${block} пуст ` +
-                    `(transcription ${transcriptionId}). Вероятная причина — ` +
-                    `СТАРЫЙ набор ключей: с 01.09.2026 состав анкеты сменился, ` +
-                    `а неизвестные ключи вырезаются валидацией молча. ` +
-                    `Актуальные ключи — в CALL_DEEP_ANALYSIS_SCHEMA.`,
-            );
-        };
-
-        check('hvostSteps', dto.hvostDone, dto.hvostAnalysis);
-        check('fiveKItems', dto.fiveKDone, dto.fiveKAnalysis);
-    }
-
-    private enforceConsistency(
-        transcriptionId: string,
-        dto: AgentCallAnalysisDto,
-    ): AgentCallAnalysisDto {
-        const fixed = { ...dto };
-
-        if (
-            fixed.nextStep &&
-            !fixed.nextStep.set &&
-            fixed.nextStep.date &&
-            fixed.nextStep.description
-        ) {
-            this.logger.log(
-                `Консистентность: у шага есть дата (${fixed.nextStep.date}) и описание — ` +
-                    `set исправлен на true (transcription ${transcriptionId})`,
-            );
-            fixed.nextStep = { ...fixed.nextStep, set: true };
-        }
-
-        // Только явные крестики формата разбора («1. … — ✗ …»): текстовые
-        // обороты вроде «— не потребовалось» дают ложные срабатывания.
-        const hasFailMark = (text: string | null | undefined): boolean =>
-            typeof text === 'string' && /[✗✘]/.test(text);
-        if (fixed.hvostDone === true && hasFailMark(fixed.hvostAnalysis)) {
-            this.logger.log(
-                `Консистентность: hvostDone=true при «✗» в разборе хвоста — ` +
-                    `исправлен на false (частично ≠ пройден; transcription ${transcriptionId})`,
-            );
-            fixed.hvostDone = false;
-        }
-        if (fixed.fiveKDone === true && hasFailMark(fixed.fiveKAnalysis)) {
-            this.logger.log(
-                `Консистентность: fiveKDone=true при «✗» в разборе 5К — ` +
-                    `исправлен на false (transcription ${transcriptionId})`,
-            );
-            fixed.fiveKDone = false;
-        }
-
-        // Гранулярка главнее эвристик и мнения модели: если чеклист
-        // заполнен (есть хоть один boolean-ответ), итог = «все пункты true».
-        const recomputeDone = (
-            items:
-                | Record<string, boolean | null | undefined>
-                | null
-                | undefined,
-        ): boolean | undefined => {
-            if (!items) return undefined;
-            const values = Object.values(items);
-            if (!values.some(v => typeof v === 'boolean')) return undefined;
-            return values.every(v => v === true);
-        };
-        const hvostFromSteps = recomputeDone(
-            fixed.hvostSteps as Record<
-                string,
-                boolean | null | undefined
-            > | null,
-        );
-        if (
-            hvostFromSteps !== undefined &&
-            fixed.hvostDone !== hvostFromSteps
-        ) {
-            this.logger.log(
-                `Консистентность: hvostDone ${fixed.hvostDone} → ${hvostFromSteps} ` +
-                    `(пересчёт по гранулярному чеклисту; transcription ${transcriptionId})`,
-            );
-            fixed.hvostDone = hvostFromSteps;
-        }
-        const fiveKFromItems = recomputeDone(
-            fixed.fiveKItems as Record<
-                string,
-                boolean | null | undefined
-            > | null,
-        );
-        if (
-            fiveKFromItems !== undefined &&
-            fixed.fiveKDone !== fiveKFromItems
-        ) {
-            this.logger.log(
-                `Консистентность: fiveKDone ${fixed.fiveKDone} → ${fiveKFromItems} ` +
-                    `(пересчёт по гранулярному чеклисту; transcription ${transcriptionId})`,
-            );
-            fixed.fiveKDone = fiveKFromItems;
-        }
-        return fixed;
-    }
-
-    /**
-     * Достройка разборов хвоста и 5К КОДОМ.
-     *
-     * Модель иногда возвращает итог (hvostDone/fiveKDone) и гранулярный
-     * чеклист, но текст разбора оставляет пустым — в карточке появлялось
-     * «5К: разбор AI — не заполнено» при заполненном хвосте (прод
-     * 28.08.2026). Текст из чеклиста собирается детерминированно: он и так
-     * состоит из тех же пунктов, что менеджер видит в своём отчёте.
-     */
-    private fillMethodologyAnalysis(
-        dto: AgentCallAnalysisDto,
-    ): AgentCallAnalysisDto {
-        const mark = (value: boolean | null | undefined): string =>
-            value === true ? '✓' : value === false ? '✗' : '—';
-        const hasAnswer = (items: object | null | undefined): boolean =>
-            Boolean(items) &&
-            Object.values(items as object).some(
-                value => typeof value === 'boolean',
-            );
-
-        const fixed = { ...dto };
-        if (!fixed.hvostAnalysis?.trim() && hasAnswer(fixed.hvostSteps)) {
-            const steps = fixed.hvostSteps;
-            fixed.hvostAnalysis = [
-                `${mark(steps?.desire)} ЖЕЛАНИЕ РАБОТАТЬ С ГАРАНТОМ`,
-                `${mark(steps?.offered)} ЧТО ПРЕДЛОЖИЛИ`,
-                `${mark(steps?.priceReaction)} РЕАКЦИЯ НА ЦЕНУ`,
-                `${mark(steps?.decisionProcess)} ПРОЦЕСС ПРИНЯТИЯ РЕШЕНИЯ`,
-                `${mark(steps?.decisionWay)} ВЫХОД НА РЕШЕНИЕ`,
-            ].join('\n');
-            this.logger.log(
-                'Разбор хвоста собран кодом из чеклиста (модель текст не прислала)',
-            );
-        }
-        if (!fixed.fiveKAnalysis?.trim() && hasAnswer(fixed.fiveKItems)) {
-            const items = fixed.fiveKItems;
-            fixed.fiveKAnalysis = [
-                `${mark(items?.client)} КЛИЕНТ`,
-                `${mark(items?.company)} КОМПАНИЯ`,
-                `${mark(items?.colleagues)} КОЛЛЕГИ`,
-                `${mark(items?.competitor)} КОНКУРЕНТ`,
-                `${mark(items?.criteria)} КРИТЕРИИ ВЫБОРА`,
-            ].join('\n');
-            this.logger.log(
-                'Разбор 5К собран кодом из чеклиста (модель текст не прислала)',
-            );
-        }
-        return fixed;
     }
 
     /**
@@ -445,28 +164,37 @@ export class AgentAnalysisIntakeService {
 
         const written = await this.writeSmartItem(row, agentName, dto);
         if (written) {
-            await this.aiService
-                .update(String(existing.id), {
-                    report_item_id: String(written.itemId),
-                    in_report: true,
-                })
-                .catch(error =>
-                    this.logger.warn(
-                        `ais.report_item_id не обновлён: ${(error as Error).message}`,
-                    ),
-                );
-            await this.writeSmartElementTimeline(row, written, dto).catch(
-                error =>
-                    this.logger.warn(
-                        `Таймлайн смарт-элемента не записан: ${(error as Error).message}`,
-                    ),
-            );
+            await this.attachSmartItem(String(existing.id), row, written, dto);
         }
         return {
             aiId: String(existing.id),
             smartItemId: written?.itemId ?? null,
             smartInstalled: written !== null,
         };
+    }
+
+    /** Связка ais ↔ элемент и таймлайн элемента — общий хвост обеих веток. */
+    private async attachSmartItem(
+        aiId: string,
+        row: TranscriptionPipelineView,
+        written: SmartItemWriteResult,
+        dto: AgentCallAnalysisDto,
+    ): Promise<void> {
+        await this.aiService
+            .update(aiId, {
+                report_item_id: String(written.itemId),
+                in_report: true,
+            })
+            .catch(error =>
+                this.logger.warn(
+                    `ais.report_item_id не обновлён: ${(error as Error).message}`,
+                ),
+            );
+        await this.writeSmartElementTimeline(row, written, dto).catch(error =>
+            this.logger.warn(
+                `Таймлайн смарт-элемента не записан: ${(error as Error).message}`,
+            ),
+        );
     }
 
     /** Создание смарт-элемента; null — смарт не установлен на портале. */
@@ -486,85 +214,36 @@ export class AgentAnalysisIntakeService {
 
         const { bitrix } = await this.pbxService.init(domain);
         const writer = new CallReportSmartWriterService(bitrix, smartInfo);
+        const loader = new AgentAnalysisCrmContextLoader(bitrix, this.logger);
+        const links = new AgentAnalysisLinkResolver(
+            this.dealFamily,
+            this.dealVerify,
+        );
 
-        const gigachat = await this.loadGigachatResults(row.id);
-        // Звонок может быть по сделке ИЛИ по лиду — хотя бы одна из связей
-        // (сделка/лид/компания) должна встать на элемент.
-        const isLead = row.entityType === 'lead';
-        const rowDealId =
-            !isLead && row.entityId ? Number(row.entityId) : undefined;
-        const rowLeadId =
-            isLead && row.entityId ? Number(row.entityId) : undefined;
-        const context = isLead
-            ? await this.loadLeadContext(bitrix.api, row.entityId)
-            : await this.loadDealContext(bitrix.api, row.entityId);
-        const activity = await this.loadActivity(bitrix, row);
-        // Корневая сделка — из CRM-поля «Корневая сделка Продажи», а не
-        // владелец звонка: звонят из презентации, и без раскладки в поле
-        // «ОП: основная сделка» уезжала сделка-презентация (alfacentr,
-        // 28.08.2026). Сделку ЧУЖОЙ воронки раскладка в «основную» не
-        // пустит, а недостающую дотянет по компании/контакту звонка.
-        // Шаг 0 раскладки — элемент «ОП История» этого звонка (§4
-        // прод-фиксов): чтобы его найти, раскладке нужны лид-владелец,
-        // владелец звонка и тип звонка, а не только клиент.
-        const family: CallReportDealFamily = await this.dealFamily.resolve(
-            domain,
-            rowDealId,
-            {
-                companyId: context.companyId,
-                contactId: context.contactId,
-                callStartedAt: row.callStartedAt,
-                leadId: rowLeadId,
-                callerId: row.userId,
-                callType: dto.callType,
-            },
+        const gigachat = pickGigachatResults(
+            await this.aiService.findByTranscriptionIds([row.id]),
         );
-        // Ответственный карточки и автор записей — владелец звонка из
-        // телефонии; ответственный сущности только запасной вариант и
-        // только у «своей» сделки (иначе разбор уезжал чужому сотруднику).
-        const managerId = resolveCallManagerId({
-            callOwnerUserId: row.userId,
-            entityManagerId: context.managerId,
-            entityIsOwn: isLead || family.ownerCategoryCode !== undefined,
-        });
-        // Догадки агента принимаем ТОЛЬКО там, где раскладка по CRM молчит,
-        // и ТОЛЬКО после проверки воронки И КЛИЕНТА: DTO агента валидирует
-        // лишь «целое > 0», и без проверки в связи уезжала любая сделка
-        // портала (в том числе чужой воронки и чужого клиента).
-        const guess = await this.dealVerify.filterAgentDeals(
+        const context = await loader.loadEntityContext(row);
+        const activity = await loader.loadActivity(row);
+        const { family, managerId } = await links.resolve(
             domain,
-            {
-                mainDealId: family.mainDealId
-                    ? undefined
-                    : dto.relatedDeals?.mainDealId,
-                presentationDealId: family.presentationDealId
-                    ? undefined
-                    : dto.relatedDeals?.presentationDealId,
-                xoDealId: family.xoDealId
-                    ? undefined
-                    : dto.relatedDeals?.xoDealId,
-            },
-            { companyId: context.companyId, contactId: context.contactId },
+            row,
+            context,
+            dto,
         );
-        const links: CallReportDealFamily = {
-            ...family,
-            mainDealId: family.mainDealId ?? guess.mainDealId,
-            presentationDealId:
-                family.presentationDealId ?? guess.presentationDealId,
-            xoDealId: family.xoDealId ?? guess.xoDealId,
-        };
 
         try {
-            const itemId = await this.writeItem(
-                writer,
-                row,
-                rowLeadId,
-                links,
-                { ...context, managerId },
-                this.resolveCallDirection(activity),
-                gigachat,
-                agentName,
-                dto,
+            const itemId = await writer.addItem(
+                buildAgentSmartItemInput({
+                    row,
+                    rowLeadId: callOwnerIds(row).leadId,
+                    family,
+                    dealContext: { ...context, managerId },
+                    callDirection: resolveCallDirection(activity),
+                    gigachat,
+                    agentName,
+                    dto,
+                }),
             );
             return { itemId, managerId, activity };
         } catch (error) {
@@ -577,168 +256,7 @@ export class AgentAnalysisIntakeService {
         }
     }
 
-    private async writeItem(
-        writer: CallReportSmartWriterService,
-        row: TranscriptionPipelineView,
-        rowLeadId: number | undefined,
-        family: CallReportDealFamily,
-        dealContext: {
-            companyId?: number;
-            contactId?: number;
-            managerId?: number;
-        },
-        callDirection: 'incoming' | 'outgoing' | undefined,
-        gigachat: { resume?: string; recomendation?: string },
-        agentName: string,
-        dto: AgentCallAnalysisDto,
-    ): Promise<number> {
-        return writer.addItem({
-            activityId: row.activityId ?? '',
-            // Родитель-сделка элемента — только «ОП Основная» (writer
-            // ставит parentId{DEAL} из mainDealId): сделка-владелец звонка
-            // чужой воронки в связь не идёт (решение владельца 08.09.2026).
-            leadId: rowLeadId,
-            companyId: dealContext.companyId,
-            contactId: dealContext.contactId,
-            managerId: dealContext.managerId,
-            callId: row.callId ?? undefined,
-            callStartedAt: row.callStartedAt ?? undefined,
-            callDirection,
-            durationSec: row.durationSec ? Number(row.durationSec) : undefined,
-            callType: dto.callType,
-            productive: this.resolveProductive(dto),
-            interlocutorRole: dto.interlocutorRole,
-            specialist: dto.specialist ?? undefined,
-            sentiment: dto.sentiment,
-            nextStepSet: dto.nextStep?.set,
-            nextStep: dto.nextStep?.description,
-            nextStepDate: dto.nextStep?.date,
-            priceDiscussed: dto.priceDiscussed,
-            competitorMentioned: dto.competitors?.length
-                ? true
-                : dto.competitors !== undefined
-                  ? false
-                  : undefined,
-            competitors: dto.competitors,
-            objectionCategories: this.resolveObjectionCategories(dto),
-            riskFlags: dto.riskFlags,
-            refusalCategory: dto.refusalCategory,
-            // Причина отказа словами клиента: слой «AI» четвёрки полей
-            // (менеджер · расхождение · объяснение дописывает утренняя
-            // сверка причин отказа, CallRefusalAuditService).
-            refusalReasonAi: dto.refusalReason ?? undefined,
-            talkRatioPct: dto.talkRatioPct,
-            questionsCount: dto.questionsCount,
-            weightedScore: dto.weightedScore ?? this.computeWeightedScore(dto),
-            scriptCompliance: dto.scriptCompliance,
-            coachingPriority: dto.coachingPriority,
-            transcriptionId: row.id,
-            // Размеченный по ролям диалог (если агент прислал) информативнее
-            // сырого текста — он же уходит в поля TRANSCRIPT_N.
-            transcript:
-                this.renderDialogText(dto.dialog) ?? row.text ?? undefined,
-            // Диалог intake постит в таймлайн сам (renderDialogComments) —
-            // writer в этом случае не дублирует транскрипт в таймлайн.
-            transcriptInTimeline: Boolean(dto.dialog?.length),
-            summary: dto.summary,
-            resumeGigachat: gigachat.resume,
-            recomendationGigachat: gigachat.recomendation,
-            needsFound: dto.needsFound,
-            needs: dto.needs?.join('\n'),
-            presentationDone: dto.presentationDone,
-            hvostDone: dto.hvostDone ?? undefined,
-            hvostAnalysis: dto.hvostAnalysis ?? undefined,
-            hvostSteps: dto.hvostSteps ?? undefined,
-            fiveKAnalysis: dto.fiveKAnalysis ?? undefined,
-            fiveKDone: dto.fiveKDone ?? undefined,
-            fiveKItems: dto.fiveKItems ?? undefined,
-            productsOffered: dto.productsOffered?.join('\n'),
-            objections: dto.objections
-                ?.map(objection => objection.objection)
-                .join('\n'),
-            objectionsHandling: dto.objections
-                ?.filter(objection => objection.handling)
-                .map(
-                    objection =>
-                        `${objection.objection} → ${objection.handling}`,
-                )
-                .join('\n'),
-            recommendations: dto.recommendations?.join('\n'),
-            score: dto.score,
-            scoreExplanation: dto.scoreExplanation,
-            speechAnalysis: dto.speechAnalysis,
-            employeeRecommendations: dto.employeeRecommendations,
-            sections: dto.sections,
-            // Связи уже сведены в writeSmartItem: раскладка по CRM, а где
-            // она молчит — ПРОВЕРЕННАЯ по воронке догадка агента. Сделка-
-            // владелец в «основную» не подставляется никогда.
-            mainDealId: family.mainDealId,
-            presentationDealId: family.presentationDealId,
-            xoDealId: family.xoDealId,
-            kpiItem: dto.kpiItem,
-            historyItem: dto.historyItem,
-            relatedReports: dto.relatedReportIds?.join(', '),
-            agentName,
-            agentVersion: dto.agentVersion,
-        });
-    }
-
-    /** Категории возражений: явное поле, иначе собираем из objections[].category. */
-    private resolveObjectionCategories(
-        dto: AgentCallAnalysisDto,
-    ): string[] | undefined {
-        if (dto.objectionCategories?.length) return dto.objectionCategories;
-        const fromObjections = (dto.objections ?? [])
-            .map(objection => objection.category)
-            .filter((category): category is NonNullable<typeof category> =>
-                Boolean(category),
-            );
-        return fromObjections.length
-            ? Array.from(new Set(fromObjections))
-            : undefined;
-    }
-
-    /**
-     * Взвешенная оценка 0-100 по разделам с relevance>0
-     * (Σ score×relevance / Σ relevance × 10) — если агент не прислал свою.
-     * Неактуальные разделы исключаются, а не тянут оценку вниз.
-     */
-    private computeWeightedScore(
-        dto: AgentCallAnalysisDto,
-    ): number | undefined {
-        const scored = (dto.sections ?? []).filter(
-            section => section.relevance > 0 && section.score !== undefined,
-        );
-        if (!scored.length) return undefined;
-        const weightSum = scored.reduce(
-            (sum, section) => sum + section.relevance,
-            0,
-        );
-        if (!weightSum) return undefined;
-        const weighted = scored.reduce(
-            (sum, section) =>
-                sum + (section.score as number) * section.relevance,
-            0,
-        );
-        return Math.round((weighted / weightSum) * 10);
-    }
-
-    /** productive: явное поле агента, иначе выводим из flow-черновика. */
-    private resolveProductive(dto: AgentCallAnalysisDto): boolean | undefined {
-        if (dto.productive !== undefined) return dto.productive;
-        if (dto.flow?.report?.resultStatus) {
-            return dto.flow.report.resultStatus === 'result';
-        }
-        return undefined;
-    }
-
-    /**
-     * Таймлайн созданного смарт-элемента: по одной записи на каждый
-     * актуальный раздел разговора («как было / что не самое лучшее / как
-     * можно по-другому: 1..3»), а САМОЙ ВЕРХНЕЙ записью — запись разговора
-     * (аудио активности). Комменты в таймлайне сортируются новые-сверху,
-     * поэтому разделы постятся в обратном порядке, аудио — последним.
-     */
+    /** Таймлайн элемента — под тем же смартом и инстансом Битрикса домена. */
     private async writeSmartElementTimeline(
         row: TranscriptionPipelineView,
         written: SmartItemWriteResult,
@@ -748,317 +266,13 @@ export class AgentAnalysisIntakeService {
         const smartInfo = await this.smartResolver.resolve(domain);
         if (!smartInfo) return;
         const { bitrix } = await this.pbxService.init(domain);
-
-        const entityType = `DYNAMIC_${smartInfo.entityTypeId}`;
-        const authorId = this.resolveTimelineAuthorId(row, written.managerId);
-        const sections = (dto.sections ?? []).filter(
-            section => section.relevance > 0,
-        );
-
-        for (const section of [...sections].reverse()) {
-            const comment = this.renderSectionComment(section);
-            // Разделы-пустышки (REFUSAL без отказов и т.п.) не постим.
-            if (!comment) continue;
-            await bitrix.timeline.addTimelineComment({
-                ENTITY_ID: written.itemId,
-                ENTITY_TYPE: entityType,
-                COMMENT: comment,
-                AUTHOR_ID: authorId,
-            });
-        }
-
-        // «Хвост», «5К» и сверка с отчётом менеджера — ОТДЕЛЬНЫЕ записи
-        // (решение владельца 15.08.2026). Постятся после разделов —
-        // в ленте окажутся выше них, под диалогом и аудио.
-        for (const comment of this.renderMethodologyComments(dto).reverse()) {
-            await bitrix.timeline.addTimelineComment({
-                ENTITY_ID: written.itemId,
-                ENTITY_TYPE: entityType,
-                COMMENT: comment,
-                AUTHOR_ID: authorId,
-            });
-        }
-
-        // Диалог по ролям — между разделами и аудио (частями, в обратном
-        // порядке, чтобы часть 1 оказалась выше остальных).
-        const dialogParts = this.renderDialogComments(dto.dialog);
-        for (const part of [...dialogParts].reverse()) {
-            await bitrix.timeline.addTimelineComment({
-                ENTITY_ID: written.itemId,
-                ENTITY_TYPE: entityType,
-                COMMENT: part,
-                AUTHOR_ID: authorId,
-            });
-        }
-
-        // Оригинальная запись звонка с плеером: привязываем СУЩЕСТВУЮЩУЮ
-        // активность к смарт-элементу (crm.activity.binding.add) — в
-        // таймлайне элемента появляется родная запись телефонии.
-        // Fallback (binding не прошёл) — коммент со ссылкой на файл.
-        const bound = await this.bindCallActivity(bitrix, row, written);
-        if (!bound) {
-            const audioComment = await this.buildAudioComment(
-                bitrix,
-                row,
-                written,
-            );
-            if (audioComment) {
-                await bitrix.timeline.addTimelineComment({
-                    ENTITY_ID: written.itemId,
-                    ENTITY_TYPE: entityType,
-                    COMMENT: audioComment,
-                    AUTHOR_ID: authorId,
-                });
-            }
-        }
+        await new AgentAnalysisTimelineWriter(
+            bitrix,
+            this.logger,
+        ).writeSmartElement(smartInfo, row, written, dto);
     }
 
-    /** Привязка активности звонка к смарт-элементу; false — не удалось. */
-    private async bindCallActivity(
-        bitrix: BitrixService,
-        row: TranscriptionPipelineView,
-        written: SmartItemWriteResult,
-    ): Promise<boolean> {
-        if (!row.activityId) return false;
-        const smartInfo = await this.smartResolver.resolve(
-            row.domain as string,
-        );
-        if (!smartInfo) return false;
-        try {
-            await bitrix.activity.addBinding(
-                Number(row.activityId),
-                smartInfo.entityTypeId,
-                written.itemId,
-            );
-            return true;
-        } catch (error) {
-            // «Дело уже привязано» — это успех (повторный push-back):
-            // запись звонка уже в таймлайне элемента, fallback не нужен.
-            const raw =
-                (error as Error).message +
-                JSON.stringify(
-                    (error as { response?: { data?: unknown } }).response
-                        ?.data ?? '',
-                );
-            if (raw.includes('ALREADY_BOUND')) return true;
-            this.logger.warn(
-                `binding активности ${row.activityId} к смарту не выполнен: ${(error as Error).message}`,
-            );
-            return false;
-        }
-    }
-
-    /** Направление звонка из активности (DIRECTION: 1 — входящий, 2 — исходящий). */
-    private resolveCallDirection(
-        activity: SmartItemWriteResult['activity'],
-    ): 'incoming' | 'outgoing' | undefined {
-        const direction = Number(
-            (activity as { DIRECTION?: string | number } | null)?.DIRECTION,
-        );
-        if (direction === 2) return 'outgoing';
-        if (direction === 1) return 'incoming';
-        return undefined;
-    }
-
-    /** Активность звонка (для направления, binding и fallback-аудио). */
-    private async loadActivity(
-        bitrix: BitrixService,
-        row: TranscriptionPipelineView,
-    ): Promise<SmartItemWriteResult['activity']> {
-        if (!row.activityId) return null;
-        try {
-            const bx = new CallAnalysisBitrixService(bitrix);
-            return await bx.getActivityById(Number(row.activityId));
-        } catch (error) {
-            this.logger.warn(
-                `Активность ${row.activityId} не получена: ${(error as Error).message}`,
-            );
-            return null;
-        }
-    }
-
-    /** Диалог с ролями одной строкой (для полей TRANSCRIPT_N); null — нет разметки. */
-    private renderDialogText(
-        dialog: AgentDialogTurnDto[] | undefined,
-    ): string | null {
-        if (!dialog?.length) return null;
-        return dialog
-            .map(turn => `${this.dialogRoleLabel(turn.role)}: ${turn.text}`)
-            .join('\n');
-    }
-
-    /**
-     * Диалог для таймлайна: реплики «Менеджер/Клиент» с выделением ролей,
-     * разбитые на комменты по ~8к символов (лимиты таймлайна).
-     */
-    private renderDialogComments(
-        dialog: AgentDialogTurnDto[] | undefined,
-    ): string[] {
-        if (!dialog?.length) return [];
-        const lines = dialog.map(
-            turn => `[b]${this.dialogRoleLabel(turn.role)}:[/b] ${turn.text}`,
-        );
-        const chunks: string[] = [];
-        let current = '';
-        for (const line of lines) {
-            if (current && current.length + line.length + 2 > 8000) {
-                chunks.push(current);
-                current = '';
-            }
-            current += (current ? '\n\n' : '') + line;
-        }
-        if (current) chunks.push(current);
-        return chunks.map(
-            (chunk, index) =>
-                `💬 [b]Диалог${chunks.length > 1 ? ` (часть ${index + 1}/${chunks.length})` : ''}[/b]\n\n${chunk}`,
-        );
-    }
-
-    private dialogRoleLabel(role: AgentDialogTurnDto['role']): string {
-        if (role === 'manager') return 'Менеджер';
-        if (role === 'client') return 'Клиент';
-        return 'Другой участник';
-    }
-
-    /**
-     * Одна таймлайн-запись раздела: как было / слабые места / варианты.
-     * null — раздел-пустышка (агент прислал relevance>0 без содержимого,
-     * например REFUSAL при звонке без отказов) — коммент не постится.
-     */
-    private renderSectionComment(
-        section: AgentSectionAnalysisDto,
-    ): string | null {
-        const asWas = this.cleanText(section.asWas ?? section.analysis);
-        const weaknesses = this.cleanText(section.weaknesses);
-        const alternatives = (section.alternatives ?? [])
-            .map(variant => this.cleanText(variant))
-            .filter((variant): variant is string => Boolean(variant));
-        const advice = this.cleanText(section.advice);
-        if (!asWas && !weaknesses && !alternatives.length && !advice) {
-            return null;
-        }
-
-        const title =
-            CALL_REPORT_SECTIONS.find(item => item.code === section.section)
-                ?.title ?? section.section;
-        const score = Number.isFinite(Number(section.score))
-            ? ` — ${section.score}/10`
-            : '';
-        let text = `[b]${title}[/b]${score}\n`;
-
-        if (asWas) {
-            text += `\n[b]Как было:[/b]\n${asWas}\n`;
-        } else if (weaknesses || alternatives.length || advice) {
-            // Разбор есть, а описания «как было» нет — честная строка
-            // вместо прочерка (модель обязана иначе, но защищаемся).
-            text += `\n[b]Как было:[/b]\nЭтап в разговоре не прозвучал.\n`;
-        }
-        if (weaknesses) {
-            text += `\n[b]Что в таком подходе не самое лучшее:[/b]\n${weaknesses}\n`;
-        }
-        if (alternatives.length) {
-            text +=
-                `\n[b]Как можно было по-другому:[/b]\n` +
-                alternatives
-                    .map((variant, index) => `${index + 1}) ${variant}`)
-                    .join('\n');
-        } else if (advice) {
-            text += `\n[b]Как можно было по-другому:[/b]\n${advice}`;
-        }
-        return text;
-    }
-
-    /** Строка без LLM-мусора: null/'null'/'undefined'/пусто → undefined. */
-    private cleanText(value: string | null | undefined): string | undefined {
-        if (typeof value !== 'string') return undefined;
-        const trimmed = value.trim();
-        // Пустышки от LLM: literal null/N/A и прочерки любых видов
-        // («-», «—», «–», «−») — прод-кейс 18.08.2026: «Как было: —».
-        if (!trimmed || /^(null|undefined|n\/a|[-—–−.]+)$/i.test(trimmed)) {
-            return undefined;
-        }
-        return trimmed;
-    }
-
-    /**
-     * Рекурсивная гигиена строк от LLM-агента: LaTeX-стрелки
-     * (`$\rightarrow$`, в т.ч. с потерянным `\r` — « ightarrow») → «→».
-     */
-    private sanitizeAgentStrings<T>(value: T): T {
-        if (typeof value === 'string') {
-            return sanitizeLatex(value) as unknown as T;
-        }
-        if (Array.isArray(value)) {
-            return (value as unknown[]).map(item =>
-                this.sanitizeAgentStrings(item),
-            ) as unknown as T;
-        }
-        if (value && typeof value === 'object') {
-            const out: Record<string, unknown> = {};
-            for (const [key, item] of Object.entries(value)) {
-                out[key] = this.sanitizeAgentStrings(item);
-            }
-            return out as T;
-        }
-        return value;
-    }
-
-    /**
-     * Fallback: ссылка на аудио-файл разговора (когда binding активности
-     * не прошёл). Название ссылки — человеческое, как у записей телефонии.
-     */
-    private async buildAudioComment(
-        bitrix: BitrixService,
-        row: TranscriptionPipelineView,
-        written: SmartItemWriteResult,
-    ): Promise<string | null> {
-        const activity = written.activity;
-        if (!activity) return null;
-        try {
-            const bx = new CallAnalysisBitrixService(bitrix);
-            const audio = (await bx.getAudioFiles([activity]))[0];
-            if (!audio) return null;
-            const direction = this.resolveCallDirection(activity);
-            const label =
-                direction === 'outgoing'
-                    ? 'Исходящий звонок'
-                    : direction === 'incoming'
-                      ? 'Входящий звонок'
-                      : 'Запись разговора';
-            const startedAt = row.callStartedAt
-                ? new Date(row.callStartedAt).toLocaleString('ru-RU', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      timeZone: 'Europe/Moscow',
-                  })
-                : null;
-            const minutes = row.durationSec
-                ? `${Math.max(1, Math.round(Number(row.durationSec) / 60))} мин`
-                : null;
-            const title = [label, startedAt ? `от ${startedAt}` : null, minutes]
-                .filter(Boolean)
-                .join(' · ');
-            return `🎧 [b]${title}[/b]\n[url=${audio.downloadUrl}]${title}.mp3[/url]`;
-        } catch (error) {
-            this.logger.warn(
-                `Аудио для таймлайна не получено (activity ${row.activityId}): ${(error as Error).message}`,
-            );
-            return null;
-        }
-    }
-
-    /**
-     * Дубль анализа в таймлайн сделки (по требованию задачи): руководитель
-     * и менеджер видят разбор в привычной ленте, не открывая смарт.
-     *
-     * Автор записи — УЖЕ СВЕДЁННЫЙ ответственный разбора (владелец звонка из
-     * телефонии, у «своей» сущности — её ответственный). Перечитывать
-     * сущность ради ASSIGNED_BY_ID нельзя: у сделки чужой воронки это чужой
-     * сотрудник, и дубль разбора подписывался им (прод-баг 08.09.2026).
-     */
+    /** Дубль разбора в таймлайн сущности-владельца звонка (сделка/лид). */
     private async duplicateToTimeline(
         row: TranscriptionPipelineView,
         dto: AgentCallAnalysisDto,
@@ -1066,214 +280,9 @@ export class AgentAnalysisIntakeService {
     ): Promise<void> {
         if (!row.domain || !row.entityId) return;
         const { bitrix } = await this.pbxService.init(row.domain);
-        const isLead = row.entityType === 'lead';
-
-        // В таймлайне — ТОЛЬКО русские названия: внутренние коды (GREETING,
-        // cold, call-report-analyzer) читателю ничего не говорят.
-        const sectionLines = (dto.sections ?? [])
-            .filter(section => section.relevance > 0)
-            .map(section => {
-                const score =
-                    section.score !== undefined ? `${section.score}/10` : '—';
-                const title =
-                    CALL_REPORT_SECTIONS.find(
-                        item => item.code === section.section,
-                    )?.title ?? section.section;
-                return `• ${title}: ${score} (актуальность ${section.relevance}%)`;
-            })
-            .join('\n');
-        const callTypeLabel =
-            CALL_REPORT_CALL_TYPE_ITEMS.find(item => item.CODE === dto.callType)
-                ?.VALUE ?? dto.callType;
-
-        const comment =
-            `🤖 [b]Глубокий AI-анализ звонка[/b] (активность #${row.activityId ?? '?'})\n\n` +
-            `[b]Тип:[/b] ${callTypeLabel}\n` +
-            (dto.score !== undefined
-                ? `[b]Оценка:[/b] ${dto.score}/10${dto.scoreExplanation ? ` — ${dto.scoreExplanation.slice(0, 500)}` : ''}\n`
-                : '') +
-            `\n[b]Резюме:[/b]\n${dto.summary.slice(0, 1500)}\n` +
-            (sectionLines ? `\n[b]Разделы:[/b]\n${sectionLines}\n` : '') +
-            (dto.recommendations?.length
-                ? `\n[b]Рекомендации:[/b]\n${dto.recommendations
-                      .map(r => `• ${r}`)
-                      .join('\n')
-                      .slice(0, 1000)}\n`
-                : '') +
-            (dto.employeeRecommendations
-                ? `\n[b]Сотруднику:[/b] ${dto.employeeRecommendations.slice(0, 500)}`
-                : '');
-
-        await bitrix.timeline.addTimelineComment({
-            ENTITY_ID: Number(row.entityId),
-            ENTITY_TYPE: isLead ? 'lead' : 'deal',
-            COMMENT: comment,
-            AUTHOR_ID: this.resolveTimelineAuthorId(row, managerId),
-        });
-    }
-
-    /**
-     * Автор записи таймлайна: владелец звонка из телефонии, иначе
-     * ответственный сущности, иначе администратор (#1) — но с логом:
-     * записи «от администратора» это сигнал, что владелец не определился.
-     */
-    private resolveTimelineAuthorId(
-        row: TranscriptionPipelineView,
-        fallbackManagerId: number | undefined,
-    ): string {
-        const author = resolveCallManagerId({
-            callOwnerUserId: row.userId,
-            entityManagerId: fallbackManagerId,
-            entityIsOwn: true,
-        });
-        if (author) return String(author);
-        this.logger.warn(
-            `Автор записи таймлайна не определён (transcription ${row.id}, ` +
-                `${row.domain ?? '—'}) — пишем от администратора #1`,
-        );
-        return '1';
-    }
-
-    /**
-     * Отдельные методологические записи таймлайна: «хвост», «5К» и сверка
-     * с отчётом менеджера (порядок в массиве = порядок в ленте сверху вниз).
-     * null/пустые — не постятся.
-     */
-    private renderMethodologyComments(dto: AgentCallAnalysisDto): string[] {
-        const comments: string[] = [];
-        const mark = (value: boolean | null | undefined): string =>
-            value === true ? '✓' : value === false ? '✗' : '—';
-        const hvost = this.cleanText(dto.hvostAnalysis ?? undefined);
-        if (dto.hvostDone !== undefined && dto.hvostDone !== null && hvost) {
-            const steps = dto.hvostSteps
-                ? '\n\nЧеклист (как в отчёте менеджера):\n' +
-                  [
-                      `${mark(dto.hvostSteps.desire)} ЖЕЛАНИЕ РАБОТАТЬ С ГАРАНТОМ`,
-                      `${mark(dto.hvostSteps.offered)} ЧТО ПРЕДЛОЖИЛИ`,
-                      `${mark(dto.hvostSteps.priceReaction)} РЕАКЦИЯ НА ЦЕНУ`,
-                      `${mark(dto.hvostSteps.decisionProcess)} ПРОЦЕСС ПРИНЯТИЯ РЕШЕНИЯ`,
-                      `${mark(dto.hvostSteps.decisionWay)} ВЫХОД НА РЕШЕНИЕ`,
-                  ].join('\n')
-                : '';
-            comments.push(
-                `🏁 [b]Хвост (завершение презентации): ${
-                    dto.hvostDone ? 'ПРОЙДЕН' : 'НЕ ПРОЙДЕН'
-                }[/b]\n\n${hvost}${steps}`,
-            );
-        }
-        const fiveK = this.cleanText(dto.fiveKAnalysis ?? undefined);
-        if (dto.fiveKDone !== undefined && dto.fiveKDone !== null && fiveK) {
-            const items = dto.fiveKItems
-                ? '\n\nЧеклист (как в отчёте менеджера):\n' +
-                  [
-                      `${mark(dto.fiveKItems.client)} КЛИЕНТ`,
-                      `${mark(dto.fiveKItems.company)} КОМПАНИЯ`,
-                      `${mark(dto.fiveKItems.colleagues)} КОЛЛЕГИ`,
-                      `${mark(dto.fiveKItems.competitor)} КОНКУРЕНТ`,
-                      `${mark(dto.fiveKItems.criteria)} КРИТЕРИИ ВЫБОРА`,
-                  ].join('\n')
-                : '';
-            comments.push(
-                `🎯 [b]5К (контроль после встречи): ${
-                    dto.fiveKDone ? 'ЗАКРЫТО' : 'НЕ ЗАКРЫТО'
-                }[/b]\n\n${fiveK}${items}`,
-            );
-        }
-        const comparison = this.cleanText(dto.reportComparison ?? undefined);
-        if (comparison) {
-            comments.push(
-                `⚖️ [b]Сверка с отчётом менеджера[/b]\n\n${comparison}`,
-            );
-        }
-        return comments;
-    }
-
-    /** Компания/контакт/ответственный лида (звонок по лиду). */
-    private async loadLeadContext(
-        api: {
-            call(
-                method: string,
-                data: Record<string, unknown>,
-            ): Promise<unknown>;
-        },
-        leadId: string | null,
-    ): Promise<{ companyId?: number; contactId?: number; managerId?: number }> {
-        if (!leadId) return {};
-        try {
-            const response = (await api.call('crm.lead.get', {
-                id: leadId,
-            })) as {
-                result?: {
-                    COMPANY_ID?: string | number;
-                    CONTACT_ID?: string | number;
-                    ASSIGNED_BY_ID?: string | number;
-                };
-            };
-            const lead = response?.result;
-            if (!lead) return {};
-            return {
-                companyId: Number(lead.COMPANY_ID) || undefined,
-                contactId: Number(lead.CONTACT_ID) || undefined,
-                managerId: Number(lead.ASSIGNED_BY_ID) || undefined,
-            };
-        } catch (error) {
-            this.logger.warn(
-                `crm.lead.get для контекста не выполнен: ${(error as Error).message}`,
-            );
-            return {};
-        }
-    }
-
-    private async loadGigachatResults(transcriptionId: string): Promise<{
-        resume?: string;
-        recomendation?: string;
-    }> {
-        const records = await this.aiService.findByTranscriptionIds([
-            transcriptionId,
-        ]);
-        return {
-            resume:
-                records.find(record => record.type === 'call-resume')?.result ??
-                undefined,
-            recomendation:
-                records.find(record => record.type === 'call-recomendation')
-                    ?.result ?? undefined,
-        };
-    }
-
-    /** Компания/контакт/ответственный сделки для связей смарт-элемента. */
-    private async loadDealContext(
-        api: {
-            call(
-                method: string,
-                data: Record<string, unknown>,
-            ): Promise<unknown>;
-        },
-        dealId: string | null,
-    ): Promise<{ companyId?: number; contactId?: number; managerId?: number }> {
-        if (!dealId) return {};
-        try {
-            const response = (await api.call('crm.deal.get', {
-                id: dealId,
-            })) as {
-                result?: {
-                    COMPANY_ID?: string | number;
-                    CONTACT_ID?: string | number;
-                    ASSIGNED_BY_ID?: string | number;
-                };
-            };
-            const deal = response?.result;
-            if (!deal) return {};
-            return {
-                companyId: Number(deal.COMPANY_ID) || undefined,
-                contactId: Number(deal.CONTACT_ID) || undefined,
-                managerId: Number(deal.ASSIGNED_BY_ID) || undefined,
-            };
-        } catch (error) {
-            this.logger.warn(
-                `crm.deal.get для контекста не выполнен: ${(error as Error).message}`,
-            );
-            return {};
-        }
+        await new AgentAnalysisTimelineWriter(
+            bitrix,
+            this.logger,
+        ).duplicateToEntity(row, dto, managerId);
     }
 }

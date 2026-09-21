@@ -143,6 +143,17 @@ export class CallReportProcessor {
                 );
                 return;
             }
+            // Гейт порога ТИПА (решение А.1): звонок короче порога своего
+            // типа остановлен конвейером после классификации — дорогой
+            // глубокий разбор (три вызова модели и синтез) и смарт-элемент
+            // для него не делаем, иначе пилот порога на портале ничего не
+            // экономил бы.
+            if (result.shortCall) {
+                this.logger.log(
+                    `Звонок ${result.transcriptionId} короче порога своего типа (${result.callType ?? '—'}) — смарт-элемент и глубокий разбор пропущены`,
+                );
+                return;
+            }
             if (job.data.createSmartItem) {
                 await this.createSmartItem(
                     result.transcriptionId,

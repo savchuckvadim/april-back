@@ -8,6 +8,7 @@ import { CallRevisionService } from '../services/call-revision.service';
 import { PresentationAuditService } from '../services/presentation-audit.service';
 import { PresentationPlanFactService } from '../services/presentation-plan-fact.service';
 import { CallTypeStatsService } from '../services/call-type-stats.service';
+import { CallReportSettingsService } from '../services/call-report-settings.service';
 import {
     AnalyzeCallDto,
     CallReportWeeklyRequestDto,
@@ -48,6 +49,7 @@ export class CallReportController {
         private readonly planFact: PresentationPlanFactService,
         private readonly sendWeekly: SendCallReportWeeklyUseCase,
         private readonly typeStats: CallTypeStatsService,
+        private readonly settingsService: CallReportSettingsService,
     ) {}
 
     @Post('install-smart')
@@ -89,8 +91,13 @@ export class CallReportController {
         description: 'Статистика скана: найдено/в очередь/пропущено.',
     })
     async scan(@Body() dto: ScanCallsDto): Promise<CallReportScanResponseDto> {
+        // Без явного порога ручной скан берёт тот же порог, что и крон:
+        // минимум карты портала (решение А.1), а не дефолт реестра.
+        const minDurationSec =
+            dto.minDurationSec ??
+            (await this.settingsService.minDurationFor(dto.domain));
         return this.scanUseCase.execute(dto.domain, {
-            minDurationSec: dto.minDurationSec,
+            minDurationSec,
             windowHours: dto.windowHours,
             maxPerRun: dto.maxPerRun,
             allowedUserIds: dto.userIds,

@@ -11,8 +11,12 @@ import {
     comparableFromVersions,
     versionDate,
 } from '../contracts/versions.types';
-import { SkillSnapshot } from '../contracts/snapshot.types';
-import { SalesAiAnalyticsModule } from '../sales-ai-analytics.module';
+import {
+    SkillSnapshot,
+    SnapshotEnvelope,
+    SnapshotUsage,
+} from '../contracts/snapshot.types';
+import { AI_ANALYTICS_SNAPSHOT_TYPE } from '../contracts/snapshot-kinds.const';
 import * as publicApi from '../index';
 
 describe('versions.types', () => {
@@ -104,8 +108,31 @@ describe('snapshot.types и публичный API', () => {
         expect(snapshot.metrics['section:needs'].n).toBe(20);
     });
 
-    it('index.ts реэкспортирует модуль, модель и контракты', () => {
-        expect(publicApi.SalesAiAnalyticsModule).toBe(SalesAiAnalyticsModule);
+    it('SnapshotEnvelope принимает необязательный usage — колонки расхода ais', () => {
+        const plain: SnapshotEnvelope<{ n: number }> = {
+            domain: 'gsirk.bitrix24.ru',
+            type: AI_ANALYTICS_SNAPSHOT_TYPE.brief,
+            periodKey: '2026-09-01_2026-09-07_10_20',
+            managerId: null,
+            calcVersion: 'sam-1.0.0',
+            paramsVersion: 'params-1',
+            inputsHash: 'a1b2c3d4',
+            generatedAt: '2026-09-07T01:45:00.000Z',
+            payload: { n: 7 },
+        };
+        const usage: SnapshotUsage = { tokensCount: 1500, price: 3 };
+        const withUsage: SnapshotEnvelope<{ n: number }> = { ...plain, usage };
+
+        expect(plain.usage).toBeUndefined();
+        expect(withUsage.usage).toEqual(usage);
+        // Модель не вызывали — обе колонки остаются NULL; модель
+        // провайдера в usage не входит (она в нагрузке резюме).
+        const idle: SnapshotUsage = { tokensCount: null, price: null };
+        expect(Object.keys(idle)).toEqual(['tokensCount', 'price']);
+        expect(Object.values(idle)).toEqual([null, null]);
+    });
+
+    it('index.ts реэкспортирует модель и контракты', () => {
         expect(typeof publicApi.wilsonInterval).toBe('function');
         expect(typeof publicApi.confidenceFor).toBe('function');
         expect(typeof publicApi.rateMetric).toBe('function');

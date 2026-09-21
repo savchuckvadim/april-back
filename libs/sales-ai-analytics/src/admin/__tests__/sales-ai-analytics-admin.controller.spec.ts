@@ -1,11 +1,17 @@
 import 'reflect-metadata';
-import { NotFoundException } from '@nestjs/common';
-import { GUARDS_METADATA } from '@nestjs/common/constants';
+import { NotFoundException, RequestMethod } from '@nestjs/common';
+import {
+    GUARDS_METADATA,
+    METHOD_METADATA,
+    PATH_METADATA,
+} from '@nestjs/common/constants';
 import { JwtAuthGuard, Role, RolesGuard } from '@lib/auth';
 import { ROLES_KEY } from '@lib/auth/config/auth.constants';
 import { SalesAiAnalyticsAdminController } from '../sales-ai-analytics-admin.controller';
 import { SalesAiAnalyticsAdminModule } from '../sales-ai-analytics-admin.module';
 import { SalesAiAnalyticsAuditModule } from '../sales-ai-analytics-audit.module';
+import { SalesAiAnalyticsProbeModule } from '../sales-ai-analytics-probe.module';
+import type { StageHistoryProbeResult } from '../stage-history-probe.service';
 import { auditReportFixture } from './audit-report.fixture';
 
 function makeController() {
@@ -19,11 +25,37 @@ function makeController() {
             lastSnapshotAt: null,
         }),
     };
+    const probe = { probe: jest.fn() };
     return {
-        controller: new SalesAiAnalyticsAdminController(audit as never),
+        controller: new SalesAiAnalyticsAdminController(
+            audit as never,
+            probe as never,
+        ),
         audit,
+        probe,
     };
 }
+
+/** Известный ответ пробы: доступна, глубина 27 мес., 1234 перехода за 12 мес. */
+function probeResultFixture(domain: string): StageHistoryProbeResult {
+    return {
+        domain,
+        checkedAt: '2026-09-21T09:00:00.000Z',
+        available: true,
+        error: null,
+        categoryBitrixId: 4,
+        earliestAt: '2024-06-15T10:00:00+03:00',
+        historyMonths: 27,
+        transitionsInWindow: 1234,
+        countIsLowerBound: false,
+        windowMonths: 12,
+        enough: true,
+        hint: 'история доступна, глубина 27 мес., переходов за окно 12 мес. — 1234',
+    };
+}
+
+const metadataOf = (key: string, module: unknown): unknown[] =>
+    (Reflect.getMetadata(key, module as object) as unknown[] | undefined) ?? [];
 
 describe('SalesAiAnalyticsAdminController', () => {
     it('защищён гардами JwtAuthGuard + RolesGuard и ролью SUPER_USER', () => {
@@ -98,18 +130,26 @@ describe('SalesAiAnalyticsAdminController', () => {
         );
     });
 
-    it('раскол Module/AdminModule: контроллер только в admin-модуле, сервисный — без контроллеров', () => {
-        const controllersOf = (module: unknown): unknown[] =>
-            (Reflect.getMetadata('controllers', module as object) as
-                | unknown[]
-                | undefined) ?? [];
-        expect(controllersOf(SalesAiAnalyticsAuditModule)).toEqual([]);
-        expect(controllersOf(SalesAiAnalyticsAdminModule)).toEqual([
+    it('раскол Module/AdminModule: контроллер только в admin-модуле, сервисные — без контроллеров', () => {
+        expect(metadataOf('controllers', SalesAiAnalyticsAuditModule)).toEqual(
+            [],
+        );
+        expect(metadataOf('controllers', SalesAiAnalyticsProbeModule)).toEqual(
+            [],
+        );
+        expect(metadataOf('controllers', SalesAiAnalyticsAdminModule)).toEqual([
             SalesAiAnalyticsAdminController,
         ]);
+        expect(metadataOf('imports', SalesAiAnalyticsAdminModule)).toEqual([
+            SalesAiAnalyticsAuditModule,
+            SalesAiAnalyticsProbeModule,
+        ]);
+    });
+
+    it('модуль пробы (PBXModule) не подключён к сервисному модулю аудита — в kpi-report-sales он не течёт', () => {
         expect(
-            Reflect.getMetadata('imports', SalesAiAnalyticsAdminModule),
-        ).toEqual([SalesAiAnalyticsAuditModule]);
+            metadataOf('imports', SalesAiAnalyticsAuditModule),
+        ).not.toContain(SalesAiAnalyticsProbeModule);
     });
 
     it('GET audit/about: самоописание всегда, состояние портала — только с domain', async () => {
@@ -128,5 +168,38 @@ describe('SalesAiAnalyticsAdminController', () => {
             auditEnabled: true,
             lastSnapshotAt: null,
         });
+    });
+
+    it('GET stage-history/probe: роут и метод', () => {
+        // Nest вешает метаданные роута на саму функцию метода; дескриптор —
+        // чтобы не ссылаться на несвязанный метод (unbound-method).
+        const handler = Object.getOwnPropertyDescriptor(
+            SalesAiAnalyticsAdminController.prototype,
+            'probeStageHistory',
+        )?.value as object;
+        expect(Reflect.getMetadata(PATH_METADATA, handler)).toBe(
+            'stage-history/probe',
+        );
+        expect(Reflect.getMetadata(METHOD_METADATA, handler)).toBe(
+            RequestMethod.GET,
+        );
+    });
+
+    it('GET stage-history/probe: делегирует сервису пробы, months по умолчанию 12, явный — как есть', async () => {
+        const { controller, probe } = makeController();
+        const fixture = probeResultFixture('april.bitrix24.ru');
+        probe.probe.mockResolvedValue(fixture);
+
+        const byDefault = await controller.probeStageHistory({
+            domain: 'april.bitrix24.ru',
+        });
+        expect(probe.probe).toHaveBeenCalledWith('april.bitrix24.ru', 12);
+        expect(byDefault).toBe(fixture);
+
+        await controller.probeStageHistory({
+            domain: 'april.bitrix24.ru',
+            months: 24,
+        });
+        expect(probe.probe).toHaveBeenLastCalledWith('april.bitrix24.ru', 24);
     });
 });

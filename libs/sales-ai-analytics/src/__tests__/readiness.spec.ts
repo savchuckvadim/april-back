@@ -162,6 +162,77 @@ describe('buildReadiness: подъём до norms', () => {
     });
 });
 
+describe('buildReadiness: кап §5.4 — без снапшота модели портала', () => {
+    it('гейты норм пройдены, модели нет → descriptive с причиной no-portal-model', () => {
+        const result = buildReadiness(input({ portalModelPresent: false }));
+
+        expect(result.mode).toBe('descriptive');
+        expect(result.reasons).toEqual([
+            AI_READINESS_REASON_CODES.modelMissing,
+        ]);
+        expect(AI_READINESS_REASON_CODES.modelMissing).toBe('no-portal-model');
+        expect(result.betaSource).toBe('none');
+    });
+
+    it('модель есть (true) или признак не передан — прежняя лестница до norms', () => {
+        expect(buildReadiness(input({ portalModelPresent: true })).mode).toBe(
+            'norms',
+        );
+        expect(buildReadiness(input()).mode).toBe('norms');
+    });
+
+    it('кап не отменяет гипотезу выше norms: без модели hypothesis недостижим', () => {
+        const result = buildReadiness(
+            input({
+                portalModelPresent: false,
+                betaSource: 'hypothesis',
+                hypothesisPairs: 2,
+            }),
+        );
+
+        expect(result.mode).toBe('descriptive');
+        expect(result.betaSource).toBe('none');
+        expect(result.reasons).toEqual([
+            AI_READINESS_REASON_CODES.modelMissing,
+        ]);
+    });
+
+    it('причины гейтов идут первыми, кап — последним', () => {
+        const result = buildReadiness(
+            input({ portalModelPresent: false, presentations: 80 }),
+        );
+
+        expect(result.mode).toBe('descriptive');
+        expect(result.reasons).toEqual([
+            readinessReason(
+                AI_READINESS_REASON_CODES.normsPresentationsFew,
+                100,
+            ),
+            AI_READINESS_REASON_CODES.modelMissing,
+        ]);
+    });
+
+    it('ниже descriptive кап не виден: calibration остаётся со своими причинами', () => {
+        const result = buildReadiness(
+            input({ portalModelPresent: false, historyMonths: 2 }),
+        );
+
+        expect(result.mode).toBe('calibration');
+        expect(result.reasons).toEqual([
+            readinessReason(AI_READINESS_REASON_CODES.historyShort, 3),
+        ]);
+    });
+
+    it('счётчик до гейта β при капе не гаснет', () => {
+        const result = buildReadiness(
+            input({ portalModelPresent: false, betaCountdown: COUNTDOWN }),
+        );
+
+        expect(result.mode).toBe('descriptive');
+        expect(result.betaCountdown).toEqual(COUNTDOWN);
+    });
+});
+
 describe('buildReadiness: режим hypothesis', () => {
     it('гипотеза с двумя парами при norms — hypothesis', () => {
         const result = buildReadiness(

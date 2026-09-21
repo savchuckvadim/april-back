@@ -1,7 +1,8 @@
 /**
  * Чистые функции стора снапшотов (план Фазы 2 §3.2): порядок по
  * возрасту, верхняя граница выборки, фильтр в памяти, «одна запись на
- * ключ», сигнатура расчёта и ретенция. Без DI, Bitrix и Prisma —
+ * ключ», сигнатура расчёта, колонки без null и ретенция. Без DI, Bitrix
+ * и Prisma —
  * вынесены из стора по лимиту 300 строк и покрываются его спекой.
  */
 import {
@@ -58,6 +59,22 @@ export function capNewest<T extends AgedRow>(
 
 export function isPositiveInteger(value: unknown): value is number {
     return typeof value === 'number' && Number.isInteger(value) && value > 0;
+}
+
+/**
+ * Колонки записи без null и undefined: поля AiCreateDto необязательные, а
+ * новая строка ais и так получает NULL — так user_id портальной записи и
+ * расход без вызова модели не тащат null через DTO.
+ */
+export function withoutNullColumns<T extends object>(
+    columns: T,
+): { [K in keyof T]?: NonNullable<T[K]> } {
+    const entries = Object.entries(columns as Record<string, unknown>).filter(
+        ([, value]) => value !== null && value !== undefined,
+    );
+    return Object.fromEntries(entries) as {
+        [K in keyof T]?: NonNullable<T[K]>;
+    };
 }
 
 /** Фильтр статуса и менеджеров (в памяти: репозиторий ais не умеет user_id). */

@@ -155,6 +155,43 @@ describe('buildWindowedReadiness: правила режимов не дубли�
         ]);
     });
 
+    it('кап §5.4: период прошёл гейты, модели нет → descriptive с no-portal-model', () => {
+        const ready: ReadinessWindowCounters = {
+            historyMonths: 3,
+            presentations: 100,
+            months: 4,
+        };
+        const withoutModel = buildWindowedReadiness(input({ period: ready }));
+        const withModel = buildWindowedReadiness(
+            input({ period: ready, model: MODEL }),
+        );
+
+        expect(withoutModel.mode).toBe('descriptive');
+        expect(withoutModel.reasons).toEqual([
+            AI_READINESS_REASON_CODES.modelMissing,
+        ]);
+        expect(withoutModel.window.source).toBe('period');
+        expect(withModel.mode).toBe('norms');
+        expect(withModel.reasons).toEqual([]);
+    });
+
+    it('явный portalModelPresent в правилах старше вывода из model', () => {
+        const ready: ReadinessWindowCounters = {
+            historyMonths: 3,
+            presentations: 100,
+            months: 4,
+        };
+        const explicit = buildWindowedReadiness(
+            input({
+                period: ready,
+                rules: rules({ portalModelPresent: true }),
+            }),
+        );
+
+        expect(explicit.mode).toBe('norms');
+        expect(explicit.window.source).toBe('period');
+    });
+
     it('гейты приходят параметром: свой гейт норм поднимает планку', () => {
         const result = buildWindowedReadiness(input({ model: MODEL }), {
             ...AI_READINESS_GATE_DEFAULTS,

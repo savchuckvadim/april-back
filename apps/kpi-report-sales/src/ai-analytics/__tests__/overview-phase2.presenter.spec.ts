@@ -2,6 +2,7 @@ import type { PortalModelView } from '../domain/assembler/overview-model.types';
 import {
     buildOverviewReadiness,
     modelDataQualityFlagged,
+    modelReadinessOptions,
     modelReadinessWindow,
 } from '../domain/presenter/overview-phase2.presenter';
 import { READINESS_REASONS } from '../domain/presenter/readiness.util';
@@ -185,5 +186,79 @@ describe('buildOverviewReadiness: период витрины против ок�
 
         expect(readiness.mode).toBe('norms');
         expect(readiness.reasons).toEqual([READINESS_REASONS.timestampLeak]);
+    });
+});
+
+/**
+ * Кап §5.4 (долг 42 волны C): без снапшота модели портала режим обзора не
+ * поднимается выше descriptive, даже если период сам прошёл гейты норм;
+ * признак модели и всё остальное из неё собирает `modelReadinessOptions`
+ * — та же функция, что у `/settings`.
+ */
+describe('buildOverviewReadiness: кап §5.4 без модели портала', () => {
+    /** Период, прошедший гейты норм сам: 100 презентаций за 95 дней. */
+    const readyRows = () =>
+        Array.from({ length: 100 }, (_, index) => index).flatMap(index =>
+            callsOf(String(MANAGER_ID), 1, {
+                transcriptionId: `ready-${index}`,
+                callStartedAt: new Date(
+                    OVERVIEW_NOW.getTime() - (95 - (index % 5)) * 86_400_000,
+                ),
+            }),
+        );
+
+    it('период прошёл гейты, модели нет → descriptive с no-portal-model', () => {
+        const readiness = buildOverviewReadiness(
+            sources({ rows: readyRows() }),
+            OVERVIEW_NOW,
+        );
+
+        expect(readiness.historyMonths).toBeGreaterThanOrEqual(3);
+        expect(readiness.presentations).toBe(100);
+        expect(readiness.mode).toBe('descriptive');
+        expect(readiness.reasons).toEqual([READINESS_REASONS.modelMissing]);
+    });
+
+    it('та же витрина с моделью → norms', () => {
+        const readiness = buildOverviewReadiness(
+            sources({
+                rows: readyRows(),
+                snapshots: {
+                    model: modelWith({ historyMonths: 6, presentations: 420 }),
+                },
+            }),
+            OVERVIEW_NOW,
+        );
+
+        expect(readiness.mode).toBe('norms');
+        expect(readiness.reasons).toEqual([]);
+    });
+
+    it('modelReadinessOptions: без модели признак false и окна нет, с моделью — всё из неё', () => {
+        expect(modelReadinessOptions(null)).toEqual({
+            betaCountdown: null,
+            modelWindow: null,
+            dataQualityFlagged: false,
+            portalModelPresent: false,
+        });
+        const model = {
+            ...modelWith({ historyMonths: 6, presentations: 420 }, true),
+            betaSource: 'hypothesis' as const,
+            betaCountdown: {
+                seNow: 0.2,
+                presentationsLeft: 100,
+                monthsLeft: 3,
+                presentationsForSe: 500,
+                holdMonths: 1,
+            },
+        };
+
+        expect(modelReadinessOptions(model)).toEqual({
+            betaSource: 'hypothesis',
+            betaCountdown: model.betaCountdown,
+            modelWindow: { historyMonths: 6, presentations: 420, months: 12 },
+            dataQualityFlagged: true,
+            portalModelPresent: true,
+        });
     });
 });

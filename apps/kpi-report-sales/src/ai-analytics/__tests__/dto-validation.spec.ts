@@ -1,10 +1,18 @@
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { AiAboutRequestDto } from '../dto/ai-about.dto';
+import { AiBriefRequestDto } from '../dto/ai-brief.dto';
 import { AiByTypeRequestDto } from '../dto/ai-by-type.dto';
 import { AiCacheResetRequestDto } from '../dto/ai-cache-reset.dto';
+import { AiDailyPlanRequestDto } from '../dto/ai-daily-plan.dto';
 import { AiFeedbackListRequestDto } from '../dto/ai-feedback-list.dto';
 import { AiFeedbackRequestDto } from '../dto/ai-feedback.dto';
 import { AiPulseRequestDto } from '../dto/ai-pulse.dto';
 import { AiPushRequestDto } from '../dto/ai-push.dto';
+import {
+    AiRopMarkPickRequestDto,
+    AiRopMarkSaveRequestDto,
+} from '../dto/ai-rop-mark-request.dto';
+import { AiStyleProfileRequestDto } from '../dto/ai-style-card.dto';
 
 const pipe = new ValidationPipe({ whitelist: true, transform: true });
 
@@ -175,5 +183,198 @@ describe('DTO валидация ai-analytics (ValidationPipe, whitelist)', () =
                 layout: 'grid',
             }),
         ).toContain('layout');
+    });
+});
+
+describe('DTO валидация ручек Фазы 2 (поток 19)', () => {
+    it('brief: период обязателен, from ≤ to и не длиннее 3 месяцев, managerIds — целые ≥ 1', async () => {
+        const period = { ...base, from: '2026-09-01', to: '2026-09-07' };
+        const ok = await run(AiBriefRequestDto, {
+            ...period,
+            managerIds: [447, 512],
+            forceRefresh: true,
+        });
+        expect(ok).toEqual({
+            ...period,
+            managerIds: [447, 512],
+            forceRefresh: true,
+        });
+        expect(
+            (await run(AiBriefRequestDto, period)).managerIds,
+        ).toBeUndefined();
+        expect(await failsOn(AiBriefRequestDto, base)).toContain('from');
+        expect(
+            await failsOn(AiBriefRequestDto, { ...base, from: '2026-09-01' }),
+        ).toContain('to');
+        expect(
+            await failsOn(AiBriefRequestDto, {
+                ...base,
+                from: '2026-09-07',
+                to: '2026-09-01',
+            }),
+        ).toContain('to');
+        // 1 сентября + 3 месяца − 1 день = 30 ноября; 1 декабря уже длиннее.
+        expect(
+            await failsOn(AiBriefRequestDto, {
+                ...base,
+                from: '2026-09-01',
+                to: '2026-12-01',
+            }),
+        ).toContain('to');
+        expect(
+            await failsOn(AiBriefRequestDto, {
+                ...period,
+                managerIds: ['447'],
+            }),
+        ).toContain('managerIds');
+        expect(
+            await failsOn(AiBriefRequestDto, { ...period, managerIds: [0] }),
+        ).toContain('managerIds');
+        expect(
+            await failsOn(AiBriefRequestDto, {
+                ...period,
+                forceRefresh: 'yes',
+            }),
+        ).toContain('forceRefresh');
+    });
+
+    it('plan/daily: managerId и date необязательны, date только YYYY-MM-DD', async () => {
+        expect(await run(AiDailyPlanRequestDto, base)).toEqual(base);
+        const ok = await run(AiDailyPlanRequestDto, {
+            ...base,
+            managerId: '11',
+            date: '2026-09-08',
+        });
+        expect(ok.managerId).toBe('11');
+        expect(ok.date).toBe('2026-09-08');
+        expect(
+            await failsOn(AiDailyPlanRequestDto, {
+                ...base,
+                date: '08.09.2026',
+            }),
+        ).toContain('date');
+        expect(
+            await failsOn(AiDailyPlanRequestDto, { ...base, managerId: 11 }),
+        ).toContain('managerId');
+        expect(
+            await failsOn(AiDailyPlanRequestDto, {
+                ...base,
+                managerId: '1'.repeat(33),
+            }),
+        ).toContain('managerId');
+    });
+
+    it('manager/style: managerId обязателен и непуст, monthKey только YYYY-MM', async () => {
+        const ok = await run(AiStyleProfileRequestDto, {
+            ...base,
+            managerId: '512',
+            monthKey: '2026-08',
+        });
+        expect(ok.monthKey).toBe('2026-08');
+        expect(
+            (await run(AiStyleProfileRequestDto, { ...base, managerId: '512' }))
+                .monthKey,
+        ).toBeUndefined();
+        expect(await failsOn(AiStyleProfileRequestDto, base)).toContain(
+            'managerId',
+        );
+        expect(
+            await failsOn(AiStyleProfileRequestDto, { ...base, managerId: '' }),
+        ).toContain('managerId');
+        expect(
+            await failsOn(AiStyleProfileRequestDto, {
+                ...base,
+                managerId: '512',
+                monthKey: '2026-08-01',
+            }),
+        ).toContain('monthKey');
+    });
+
+    it('rop-mark/pick: weekKey только YYYY-Www, date только YYYY-MM-DD, forceRefresh — boolean', async () => {
+        const ok = await run(AiRopMarkPickRequestDto, {
+            ...base,
+            weekKey: '2026-W36',
+            forceRefresh: false,
+        });
+        expect(ok).toEqual({
+            ...base,
+            weekKey: '2026-W36',
+            forceRefresh: false,
+        });
+        expect(await run(AiRopMarkPickRequestDto, base)).toEqual(base);
+        expect(
+            await failsOn(AiRopMarkPickRequestDto, {
+                ...base,
+                weekKey: '2026-36',
+            }),
+        ).toContain('weekKey');
+        expect(
+            await failsOn(AiRopMarkPickRequestDto, {
+                ...base,
+                date: '3 сентября',
+            }),
+        ).toContain('date');
+        expect(
+            await failsOn(AiRopMarkPickRequestDto, {
+                ...base,
+                forceRefresh: 'да',
+            }),
+        ).toContain('forceRefresh');
+    });
+
+    it('rop-mark/save: звонок и согласие обязательны, оценка 1–10, разделы из рубрики, тексты ≤ 2000', async () => {
+        const mark = { ...base, transcriptionId: '103', agree: false };
+        const ok = await run(AiRopMarkSaveRequestDto, {
+            ...mark,
+            ropScore: 6,
+            sections: ['NEEDS', 'CLOSING'],
+            why: 'Потребность не выявлена',
+            howTo: 'Два вопроса про процесс до предложения',
+        });
+        expect(ok.ropScore).toBe(6);
+        expect(ok.sections).toEqual(['NEEDS', 'CLOSING']);
+        expect(await run(AiRopMarkSaveRequestDto, mark)).toEqual(mark);
+        expect(
+            await failsOn(AiRopMarkSaveRequestDto, { ...base, agree: true }),
+        ).toContain('transcriptionId');
+        expect(
+            await failsOn(AiRopMarkSaveRequestDto, {
+                ...base,
+                transcriptionId: '103',
+            }),
+        ).toContain('agree');
+        expect(
+            await failsOn(AiRopMarkSaveRequestDto, { ...mark, ropScore: 0 }),
+        ).toContain('ropScore');
+        expect(
+            await failsOn(AiRopMarkSaveRequestDto, { ...mark, ropScore: 11 }),
+        ).toContain('ropScore');
+        expect(
+            await failsOn(AiRopMarkSaveRequestDto, { ...mark, ropScore: 6.5 }),
+        ).toContain('ropScore');
+        expect(
+            await failsOn(AiRopMarkSaveRequestDto, {
+                ...mark,
+                sections: ['NEEDS', 'FOO'],
+            }),
+        ).toContain('sections');
+        expect(
+            await failsOn(AiRopMarkSaveRequestDto, {
+                ...mark,
+                why: 'x'.repeat(2001),
+            }),
+        ).toContain('why');
+    });
+
+    it('about: endpoint обязателен и только из справочника ручек', async () => {
+        const ok = await run(AiAboutRequestDto, {
+            ...base,
+            endpoint: 'plan/daily',
+        });
+        expect(ok.endpoint).toBe('plan/daily');
+        expect(await failsOn(AiAboutRequestDto, base)).toContain('endpoint');
+        expect(
+            await failsOn(AiAboutRequestDto, { ...base, endpoint: 'dossier' }),
+        ).toContain('endpoint');
     });
 });

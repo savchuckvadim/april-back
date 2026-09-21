@@ -2,28 +2,21 @@ import { Module } from '@nestjs/common';
 import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { QueueModule } from 'src/modules/queue/queue.module';
 import { WsModule } from '@/core/ws/ws.module';
-import { AiModule, CallReportAnalyticsCoreModule } from '@lib/call-lib';
+import { AiModule } from '@lib/call-lib';
+import { PortalSessionModule } from '@lib/auth';
 import { BxDepartmentModule } from '@lib/bx-department';
 import { PbxAicallSmartModule } from '@lib/portal-lib/pbx/pbx-aicall-smart';
-import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
 import { SalesAiAnalyticsAuditModule } from '@lib/sales-ai-analytics';
+import { AiAnalyticsAboutModule } from './about/ai-analytics-about.module';
 import { AiAnalyticsOverviewController } from './ai-analytics-overview.controller';
 import { AiAnalyticsController } from './ai-analytics.controller';
-import { AiAnalyticsCacheService } from './cache/ai-analytics-cache.service';
+import { AiAnalyticsBriefModule } from './brief/ai-analytics-brief.module';
+import { AiAnalyticsCorePbxModule } from './core/ai-analytics-core-pbx.module';
+import { AiAnalyticsCoreModule } from './core/ai-analytics-core.module';
 import { AiAnalyticsAuditScheduler } from './cron/ai-analytics-audit.scheduler';
 import { AiAnalyticsOverviewPrewarmScheduler } from './cron/ai-analytics-overview-prewarm.scheduler';
 import { AiAnalyticsPushScheduler } from './cron/ai-analytics-push.scheduler';
-import { RequesterAccessService } from './domain/access/requester-access.service';
-import { CallsLoader } from './domain/loaders/calls.loader';
-import { FinanceLoader } from './domain/loaders/finance.loader';
-import { KpiLoader } from './domain/loaders/kpi.loader';
 import { ManagerOrgLoader } from './domain/loaders/manager-org.loader';
-import { ManagersLoader } from './domain/loaders/managers.loader';
-import { AiAnalyticsParamsLoader } from './domain/loaders/params.loader';
-import { PlansLoader } from './domain/loaders/plans.loader';
-import { AiAnalyticsPortalsLoader } from './domain/loaders/portals.loader';
-import { SalesFinanceUseCaseFactory } from './domain/loaders/sales-finance-use-case.factory';
-import { SettingsLoader } from './domain/loaders/settings.loader';
 import { SmartLinkLoader } from './domain/loaders/smart-link.loader';
 import { AgendaUseCase } from './domain/use-cases/agenda.use-case';
 import { AttentionUseCase } from './domain/use-cases/attention.use-case';
@@ -41,111 +34,92 @@ import { PushDigestUseCase } from './domain/use-cases/push-digest.use-case';
 import { AiAnalyticsPushUseCase } from './domain/use-cases/push.use-case';
 import { SettingsSaveUseCase } from './domain/use-cases/settings-save.use-case';
 import { SettingsUseCase } from './domain/use-cases/settings.use-case';
+import { AiAnalyticsPipelineModule } from './pipeline/ai-analytics-pipeline.module';
+import { AiAnalyticsPlanModule } from './plan/ai-analytics-plan.module';
 import { AiAnalyticsQueueProcessor } from './queue/ai-analytics.processor';
+import { AiAnalyticsRopMarkModule } from './rop-mark/ai-analytics-rop-mark.module';
 import { AiAnalyticsFeedbackStore } from './store/ai-analytics-feedback.store';
 import { AiAnalyticsPushLogStore } from './store/ai-analytics-push-log.store';
 import { AiAnalyticsSettingsAuditStore } from './store/ai-analytics-settings-audit.store';
-import { AiAnalyticsSettingsStore } from './store/ai-analytics-settings.store';
-import { AiAnalyticsSnapshotStore } from './store/ai-analytics-snapshot.store';
+import { AiAnalyticsStyleModule } from './style/ai-analytics-style.module';
 
 /**
- * AI-аналитика отдела продаж (Фаза 1a плана ai/tasks/ai-sales-analytics-plan.md).
+ * AI-аналитика отдела продаж — сборка фичи (планы
+ * ai/tasks/ai-sales-analytics-plan.md и ai-sales-analytics-phase2-plan.md,
+ * поток 19 «p2-wiring»). Тег Swagger «Sales AI Analytics», префикс
+ * `ai-analytics`; состав и контракты — в README модуля.
  *
- * Импорты — только сервисные модули без контроллеров (правило
- * app-api-surface: чужие роуты не должны утечь в Swagger kpi-report-sales):
- * CallReportAnalyticsCoreModule (loadLite, без контроллера аналитики
- * event-sales), PortalAppSettingsModule (resolve настроек kpiSales),
- * AiModule (ais-записи обратной связи), PbxAicallSmartModule (entityTypeId
- * смарта для ссылок на разборы). BxDepartmentModule (права по структуре)
- * и QueueModule/WsModule уже подключены в приложении. AppCacheService —
- * глобальный (AppCacheModule в корне).
+ * Устройство (правило владения общими файлами §1.6 п. 2): каждый срез
+ * Фазы 2 объявляет собственный @Module, здесь они только импортируются —
+ * корневой модуль остаётся коротким, а потоки не конфликтуют за один файл.
+ *
+ * - `core/` — ядро общих провайдеров без состояния (кэш, настройки,
+ *   параметры реестра, ростер, порталы, разборы, стор снапшотов, периметр)
+ *   и его PBX-половина (KPI, финансы, планы руководителя, стор настроек).
+ *   Каждый объявлен один раз; здесь и в срезах — только импорт ядра.
+ * - `AiAnalyticsPipelineModule.registerPhase2()` — ночной конвейер: все
+ *   модули срезов шагов (снапшоты, паспорт и планы, история стадий, три
+ *   звонка недели, модель портала и прогноз) и массив
+ *   AI_ANALYTICS_PIPELINE_STEPS в порядке AI_ANALYTICS_PIPELINE_STEP_ORDER;
+ *   раннер отдаётся процессору по токену AI_ANALYTICS_SNAPSHOT_RUNNER.
+ * - Срезы ручек: план дня (`plan/daily`), AI-резюме (`brief`, очередь +
+ *   WS + кэш; джобу выполняет процессор через BriefJobUseCase из среза),
+ *   карточка стиля (`manager/style`), слепая проверка руководителя
+ *   (`rop-mark/pick|list|save`), блок «Как считаем» (`about`) из реестра
+ *   параметров и снапшота модели портала.
+ *
+ * Собственные провайдеры модуля — контур Фазы 1: ручки настроек, пульса,
+ * повестки, обратной связи и обзора менеджер × тип (очередь + WS + кэш,
+ * прогрев 05:30 МСК), push-контур (крон → джобы SALES_AI_ANALYTICS_PUSH →
+ * тот же процессор → AiAnalyticsPushUseCase; доставка — non-injectable
+ * AiAnalyticsDeliveryService(bitrix)) и месячный снапшот аудита данных
+ * Фазы 0 (AiAnalyticsAuditScheduler → AuditSnapshotUseCase →
+ * AiAnalyticsAuditService из сервисного SalesAiAnalyticsAuditModule).
+ *
+ * Импорты — только сервисные модули без контроллеров
+ * (ai/rules/app-api-surface.md): PBXModule (push и обзор ходят в портал),
+ * QueueModule/WsModule, AiModule (ais-записи обратной связи и аудита
+ * настроек), PbxAicallSmartModule (entityTypeId смарта для ссылок на
+ * разборы), SalesAiAnalyticsAuditModule (ручки аудита — в apps/admin).
+ * BxDepartmentModule публикует роуты структуры, которые приложение
+ * подключает и само. Контроллеров в поверхности приложения ровно семь:
+ * два здесь и по одному у срезов плана, резюме, стиля, проверки и блока
+ * «Как считаем» — закреплено `__tests__/ai-analytics-module-di.spec.ts`.
  *
  * Все провайдеры — @Injectable без bitrix-состояния (см. CLAUDE.md про
  * race condition c this.bitrix): портал приходит параметром domain.
- *
- * Push-контур (шаг 2): AiAnalyticsPushScheduler (крон → джобы
- * SALES_AI_ANALYTICS_PUSH в SALES_KPI_REPORT), AiAnalyticsQueueProcessor
- * (воркер) и AiAnalyticsPushUseCase (общий код крона и ручки push:
- * PushAgendaUseCase / PushDigestUseCase / PushDigestAllUseCase — сводный
- * дайджест по всем менеджерам адресатам из настроек);
- * доставка — non-injectable AiAnalyticsDeliveryService(bitrix).
- *
- * Снапшот аудита данных (Фаза 0): AiAnalyticsAuditScheduler (1-го числа
- * 04:10 МСК → джобы SALES_AI_ANALYTICS_SNAPSHOT) → тот же процессор →
- * AuditSnapshotUseCase → AiAnalyticsAuditService из сервисного
- * SalesAiAnalyticsAuditModule (lib; без контроллеров — ручки живут в
- * SalesAiAnalyticsAdminModule и подключаются только в apps/admin).
- *
- * KPI-слой (Фаза 1b, шаг 1): ManagersLoader (ростер ОП по BxDepartment),
- * KpiLoader (kpi-report + per-type батч, помесячный кэш), FinanceLoader
- * (закрытые продажи и пайплайн через use-case'ы sales-finance, созданные
- * SalesFinanceUseCaseFactory поверх глобального AppCache — SalesFinanceModule
- * с контроллером не импортируется), PlansLoader (планы руководителя).
- * Новых imports не нужно: PBXModule и BxDepartmentModule уже подключены.
- *
- * Обзор (Фаза 1b, шаг 3): AiAnalyticsOverviewController (overview /
- * attention / by-type / settings/save — тот же префикс и тег, отдельный
- * файл ради ≤ 300 строк), OverviewLookupUseCase (кэш → processing →
- * dispatch, общий для ручек и прогрева), OverviewUseCase (оркестрация
- * loader'ов → presenter), OverviewJobUseCase (процессор: write-through +
- * WS), AttentionUseCase / ByTypeUseCase (срезы над кэшем обзора),
- * SettingsSaveUseCase + AiAnalyticsSettingsStore (уровни в ais),
- * ManagerOrgLoader (отделы/группы строк), AiAnalyticsOverviewPrewarmScheduler
- * (05:30 МСК прогрев за 4 недели).
- *
- * Снапшоты модели (Фаза 2, волна 1): AiAnalyticsSnapshotStore — конверты
- * SnapshotEnvelope в ais поверх AiService (тот же AiModule, что и у
- * обратной связи). Пока ни к одной ручке не подключён: его читает и пишет
- * будущий ETL-конвейер Фазы 2; экспортируется для соседних модулей.
- *
- * Настройки и параметры (Фаза 2, волна 2): SettingsSaveUseCase вырос до
- * десяти ключей схемы `[kpiSales]` (уровни, цели, отсутствия, параметры
- * менеджеров, определения событий, журнал, гиперпараметры, потолки
- * оценивания, гипотеза, подтверждение ростера) и пишет аудит каждой правки
- * через AiAnalyticsSettingsAuditStore (обычный провайдер поверх AiService,
- * ais type `ai-analytics-settings-audit`). AiAnalyticsParamsLoader
- * раскладывает эти ключи по слоям реестра (менеджер → полоса стажа →
- * портал → дефолт) и отдаёт `{ ctx, paramsVersion, comparableFrom }`;
- * он экспортируется и **к ручкам пока не подключён** — его потребители
- * (портальная модель, план дня, резюме) появятся в следующих волнах.
  */
 @Module({
     imports: [
         PBXModule,
         QueueModule,
         WsModule,
-        CallReportAnalyticsCoreModule,
-        PortalAppSettingsModule,
         AiModule,
         BxDepartmentModule,
         PbxAicallSmartModule,
+        PortalSessionModule,
         SalesAiAnalyticsAuditModule,
+        AiAnalyticsCoreModule,
+        AiAnalyticsCorePbxModule,
+        AiAnalyticsPipelineModule.registerPhase2(),
+        AiAnalyticsPlanModule,
+        AiAnalyticsBriefModule,
+        AiAnalyticsStyleModule,
+        AiAnalyticsRopMarkModule,
+        AiAnalyticsAboutModule,
     ],
     controllers: [AiAnalyticsController, AiAnalyticsOverviewController],
     providers: [
-        AiAnalyticsCacheService,
-        RequesterAccessService,
-        CallsLoader,
-        AiAnalyticsPortalsLoader,
-        SettingsLoader,
         SmartLinkLoader,
-        ManagersLoader,
         ManagerOrgLoader,
-        KpiLoader,
-        AiAnalyticsParamsLoader,
-        SalesFinanceUseCaseFactory,
-        FinanceLoader,
-        PlansLoader,
         AiAnalyticsFeedbackStore,
-        AiAnalyticsSettingsStore,
         AiAnalyticsSettingsAuditStore,
-        AiAnalyticsSnapshotStore,
+        AiAnalyticsPushLogStore,
         SettingsUseCase,
         PulseUseCase,
         AgendaUseCase,
         MorningDigestUseCase,
         FeedbackUseCase,
-        AiAnalyticsPushLogStore,
         PushAgendaUseCase,
         PushDigestUseCase,
         PushDigestAllUseCase,
@@ -162,10 +136,11 @@ import { AiAnalyticsSnapshotStore } from './store/ai-analytics-snapshot.store';
         AiAnalyticsOverviewPrewarmScheduler,
         AiAnalyticsQueueProcessor,
     ],
-    // Кэш, use-case'ы и push экспортируются для инвалидации и запуска
-    // рассылки из соседних модулей.
+    // Ядро (кэш, стор снапшотов, параметры реестра и остальные общие
+    // провайдеры), use-case'ы и push экспортируются для инвалидации и
+    // запуска рассылки из соседних модулей приложения.
     exports: [
-        AiAnalyticsCacheService,
+        AiAnalyticsCoreModule,
         PulseUseCase,
         AgendaUseCase,
         MorningDigestUseCase,
@@ -173,8 +148,6 @@ import { AiAnalyticsSnapshotStore } from './store/ai-analytics-snapshot.store';
         AiAnalyticsPushUseCase,
         OverviewUseCase,
         OverviewLookupUseCase,
-        AiAnalyticsSnapshotStore,
-        AiAnalyticsParamsLoader,
     ],
 })
 export class AiAnalyticsModule {}

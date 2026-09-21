@@ -15,6 +15,7 @@ const buildOptions = (
     jwt: { secret: 'test-secret', expiresIn: '1h' },
     superUser: { login: 'superuser', passwordHash: hashSync(PASSWORD, 10) },
     publicPaths: [],
+    portalSession: { guardMode: 'report' },
     ...over,
 });
 

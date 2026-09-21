@@ -55,7 +55,7 @@ export const AI_ANALYTICS_DEFINITION_PARAMS = [
         phase: 0,
         breaksSeries: true,
         description:
-            'Порог конвейера разбора (PortalAiSettings.minDurationSec): звонок короче в разбор не идёт и остаётся вне слоя качества. Общий порог для всех типов; порог по типу задаёт min_duration_sec_by_type.',
+            'Общий порог конвейера разбора для всех типов: звонок короче в разбор не идёт и остаётся вне слоя качества. Читает resolveMinDurationByType: явное значение в ai_analytics_model_params старше прежнего скаляра PortalAiSettings.minDurationSec, а порог по типу (min_duration_sec_by_type) старше обоих.',
     },
     {
         code: 'min_duration_sec_by_type',

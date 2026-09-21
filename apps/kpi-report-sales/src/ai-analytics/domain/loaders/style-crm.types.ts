@@ -9,6 +9,7 @@
  * только агрегаты для «Основания», но и сами ряды единиц — усадку,
  * LOO-норму и подписи по ним делает библиотека.
  */
+import type { BX_VOX_CALL_TYPES } from '@lib/bitrix/domain/telephony';
 
 /** Лид портала для скорости ответа (ось 7, под-ось «лиды»). */
 export interface StyleCrmLead {
@@ -43,9 +44,20 @@ export interface StyleCrmThresholds {
     giveUpWorkdays: number;
     /** Обещание считается выполненным при звонке в ±столько дней. */
     promiseWindowDays: number;
-    /** Ниже стольких рабочих дней индекс дисперсии не считается. */
+    /**
+     * Ниже стольких рабочих дней индекс дисперсии не считается
+     * (код реестра `style_dispersion_min_days`).
+     */
     dispersionMinDays: number;
 }
+
+/**
+ * Тип звонка телефонии по имени кода `BX_VOX_CALL_TYPES` (исходящий,
+ * входящий, входящий с перенаправлением, обратный). Разбор звонка тип
+ * (cold / presentation …) знает, а строка телефонии — нет, поэтому
+ * «по типам» для жёстких счётчиков — это типы телефонии.
+ */
+export type StyleCrmCallTypeKey = keyof typeof BX_VOX_CALL_TYPES;
 
 /** Ряды единиц наблюдения одного менеджера — вход осей стиля. */
 export interface StyleCrmUnits {
@@ -60,6 +72,17 @@ export interface StyleCrmUnits {
      * дисперсии, а больше (ближе к нулю) значит ровнее (ось 8).
      */
     rhythmPerWorkday: number[];
+    /**
+     * Единица «звонок»: длительности состоявшихся разговоров, сек, по
+     * типам телефонии (под-ось «звонки» оси 7, `medianDurationByType`).
+     * Ряды хранятся ради точной медианы окна: медиана склейки сегментов
+     * считается по объединённой выборке, а не как среднее медиан.
+     * В строки осей (`crmStyleRows`) не идут — под-оси со своей единицей
+     * и гейтом `n_a = min` по под-осям в модели стиля ещё не собраны.
+     */
+    conversationSecByType: Record<StyleCrmCallTypeKey, number[]>;
+    /** Единица «лид»: скорость ответа на лид в рабочих минутах (ось 7). */
+    leadResponseMin: number[];
 }
 
 /** Агрегаты для «Основания» подписи и карточки (родные единицы). */
@@ -82,6 +105,11 @@ export interface StyleCrmAggregates {
     leadResponseMinMedian: number | null;
     /** Медиана длительности состоявшихся разговоров, сек; null — разговоров нет. */
     conversationSecMedian: number | null;
+    /**
+     * Та же медиана по типам телефонии (`medianDurationByType`, документ
+     * §7.2 п. 1); null — разговоров этого типа нет.
+     */
+    conversationSecMedianByType: Record<StyleCrmCallTypeKey, number | null>;
     /** Var/mean − 1 дневных объёмов; null — рабочих дней мало. */
     dispersionIndex: number | null;
     /** Доля входящих среди звонков; null — звонков нет. */

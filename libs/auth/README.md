@@ -153,3 +153,37 @@ pnpm jest libs/auth
 Вывод: пока — проще (общая библиотека + общий секрет); выделенный auth-app — это
 следующий этап, к которому архитектура уже подготовлена.
 ```
+
+
+## Portal-context сессия фрейма Bitrix24 (`portal-session/`)
+
+Для приложений, которые живут во фрейме Bitrix24 и принимают `domain` и
+`requesterUserId` в теле запроса (kpi-report-sales → ai-analytics): подписи
+запроса раньше не было, тело можно было подменить. Теперь фронт обменивает
+`access_token` + `domain` из `BX24.getAuth()` на JWT библиотеки, а guard
+сверяет тело с сессией.
+
+- `PortalSessionApiModule` — ручка `POST auth/portal-session` (тело
+  `PortalSessionOpenDto`: `domain`, `accessToken`, `memberId?`). Сервер
+  проверяет токен живым REST-вызовом `profile` на портале
+  (`BitrixProfileClient`, без зависимости от libs/bitrix) и выпускает JWT
+  `role=CLIENT` с claim-ами `domain`, `bitrixUserId`, `isAdmin`
+  (`PortalSessionService`). Подключается один раз в корневом модуле
+  приложения.
+- `PortalSessionModule` — сервисная половина (сервис + `PortalSessionGuard`);
+  импортируется feature-модулями, чьи ручки помечены
+  `@PortalSessionProtected()` (guard + описания 401/403 в Swagger).
+- Guard требует `Authorization: Bearer <jwt>` роли CLIENT и сверяет
+  `body.domain` с `domain` токена, `body.requesterUserId` — с `bitrixUserId`.
+  Токен без claim-а домена к ручкам с доменом в теле не допускается.
+- Режим `PORTAL_SESSION_GUARD_MODE` (`AuthModuleOptions.portalSession.guardMode`):
+  `off` — проверок нет; `report` (по умолчанию) — нарушения в лог, запрос
+  проходит (выкатка бэка раньше фронта); `enforce` — 401 / 403. Не зависит
+  от `AUTH_ENABLED`.
+- Секрет подписи общий (`AUTH_JWT_SECRET` / `APP_SECRET_KEY`), поэтому
+  сессия, открытая одним приложением, валидна в другом; срок —
+  `AUTH_JWT_EXPIRES_IN`.
+
+Отличие от сессии маркетплейса (`apps/pbx`): одноразовый код не нужен —
+фронт получает AUTH_ID от SDK фрейма сам, а не через redirect-URL роутера.
+Тесты: `libs/auth/src/portal-session/__tests__/`.

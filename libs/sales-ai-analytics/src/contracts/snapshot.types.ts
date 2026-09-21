@@ -38,10 +38,27 @@ export * from './snapshot.parse';
 export * from './brief-snapshot.types';
 
 /**
+ * Расход вызова языковой модели у снапшота (решение владельца 21.09.2026,
+ * вопрос B2) — колонки той же записи ais: tokensCount → `ais.tokens_count`,
+ * price → `ais.price`, чтобы расход по всем порталам считался одним
+ * запросом. Модель провайдера в колонку не едет: `ais.model` у всех типов
+ * несёт calcVersion, а модель остаётся в нагрузке (BriefSnapshot.model).
+ * null — модель не вызывали (колонка NULL). В сигнатуру идемпотентности
+ * стора (inputsHash + paramsVersion + calcVersion) расход не входит.
+ */
+export interface SnapshotUsage {
+    /** Токенов вызова модели (`ais.tokens_count`). */
+    tokensCount: number | null;
+    /** Стоимость вызова, ₽ (`ais.price`). */
+    price: number | null;
+}
+
+/**
  * Конверт снапшота. Раскладка по ais: domain → domain, type → type,
- * periodKey → activity_id, managerId → user_id, calcVersion → model;
- * paramsVersion, inputsHash, generatedAt и payload едут в user_result.
- * Версии в нагрузках не дублируются — источник истины здесь.
+ * periodKey → activity_id, managerId → user_id, calcVersion → model,
+ * usage (если задан) → tokens_count и price; paramsVersion, inputsHash,
+ * generatedAt и payload едут в user_result. Версии в нагрузках не
+ * дублируются — источник истины здесь.
  */
 export interface SnapshotEnvelope<T> {
     domain: string;
@@ -59,6 +76,8 @@ export interface SnapshotEnvelope<T> {
     /** Момент формирования, ISO (UTC). */
     generatedAt: string;
     payload: T;
+    /** Расход вызова модели → колонки ais; не задан — колонок расхода нет. */
+    usage?: SnapshotUsage;
 }
 
 /**

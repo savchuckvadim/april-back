@@ -42,6 +42,8 @@ const makeDeps = (options?: {
     ownOrgNames?: string[];
     /** Настройки портала недоступны — паспорт без имён (fail-open). */
     settingsError?: boolean;
+    /** Тип звонка из уже сделанной записи классификатора этой строки. */
+    classifiedType?: string;
 }) => {
     const api = {
         call: jest.fn((method: string, data?: Record<string, unknown>) => {
@@ -162,15 +164,24 @@ const makeDeps = (options?: {
         findRecentByEntity: jest.fn().mockResolvedValue(options?.history ?? []),
     };
     const aiService = {
-        findByTranscriptionIds: jest.fn().mockResolvedValue(
-            Object.entries(options?.resumeByTranscription ?? {}).map(
+        findByTranscriptionIds: jest.fn().mockResolvedValue([
+            ...(options?.classifiedType
+                ? [
+                      {
+                          transcription_id: '115',
+                          type: 'call-classify',
+                          result: options.classifiedType,
+                      },
+                  ]
+                : []),
+            ...Object.entries(options?.resumeByTranscription ?? {}).map(
                 ([transcriptionId, resume]) => ({
                     transcription_id: transcriptionId,
                     type: 'call-resume',
                     result: resume,
                 }),
             ),
-        ),
+        ]),
     };
     // Раскладка связей: даёт правильную сделку «ОП Основная» для приора.
     const dealFamily = {
@@ -323,6 +334,63 @@ describe('CallContextBuilderService', () => {
             expect.objectContaining({ callType: 'cold', strength: 'weak' }),
         );
         expect(service.renderClassifyHint(passport)).toContain("'cold'");
+    });
+
+    // Долг 29 волны C: шаг 0 раскладки («ОП История» этого звонка) для
+    // звонков по лиду недостижим без лида-владельца, владельца и типа.
+    it('звонок по лиду: раскладка получает лид, владельца, момент и тип; коды — от основной сделки из записи', async () => {
+        const { service, dealFamily, api } = makeDeps({
+            mainDealId: 232,
+            mainDealCategory: 0,
+            mainDealStage: 'PREPARATION',
+            classifiedType: 'presentation',
+        });
+
+        const passport = await service.build(
+            row({ entityType: 'lead', entityId: '77', userId: '222' }) as never,
+        );
+
+        expect(dealFamily.resolve).toHaveBeenCalledWith(
+            'test.bitrix24.ru',
+            undefined,
+            {
+                companyId: undefined,
+                contactId: undefined,
+                callStartedAt: new Date('2026-07-30T10:00:00Z'),
+                leadId: 77,
+                callerId: '222',
+                callType: 'presentation',
+            },
+        );
+        // Семья пришла из записи списка: основная сделка дочитывается по
+        // id, дотяжка по клиенту (crm.deal.list) не вызывается.
+        expect(api.call).toHaveBeenCalledWith('crm.deal.get', { id: 232 });
+        expect(api.call).not.toHaveBeenCalledWith(
+            'crm.deal.list',
+            expect.anything(),
+        );
+        expect(passport.certainty).toBe('lead');
+        expect(passport.dealCategoryCode).toBe('sales_base');
+        expect(passport.dealStageCode).toBe('sales_pres');
+        // Приор лида — по виду работы лида; коды сделки его не переписывают.
+        expect(passport.callTypePrior).toEqual(
+            expect.objectContaining({ callType: 'cold', strength: 'weak' }),
+        );
+    });
+
+    it('до классификации тип неизвестен — раскладка получает лид и момент без типа', async () => {
+        const { service, dealFamily } = makeDeps();
+        const passport = await service.build(
+            row({ entityType: 'lead', entityId: '77' }) as never,
+        );
+        expect(dealFamily.resolve).toHaveBeenCalledWith(
+            'test.bitrix24.ru',
+            undefined,
+            expect.objectContaining({ leadId: 77, callType: undefined }),
+        );
+        // Основной сделки в записи нет — коды пусты, паспорт лидовый.
+        expect(passport.dealCategoryCode).toBeNull();
+        expect(passport.certainty).toBe('lead');
     });
 
     it('персона контакта сделки (имя, должность, заметки) попадает в паспорт', async () => {

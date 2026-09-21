@@ -1,3 +1,9 @@
+import {
+    parsePortalSessionGuardMode,
+    PORTAL_SESSION_GUARD_MODE_ENV,
+    PortalSessionGuardMode,
+} from '../portal-session/portal-session.const';
+
 /**
  * Конфигурация auth-библиотеки. Собирается из переменных окружения
  * приложения-потребителя ({@link buildAuthOptions}) с возможностью точечного
@@ -23,6 +29,14 @@ export interface AuthModuleOptions {
      * эндпоинтов из общих библиотек (напр. health-check из `@lib/core`).
      */
     publicPaths: string[];
+    /**
+     * Portal-context сессия фрейма Bitrix24: режим guard'а мутирующих
+     * ручек (`PORTAL_SESSION_GUARD_MODE`: off | report | enforce, по
+     * умолчанию report — см. portal-session/portal-session.const).
+     */
+    portalSession: {
+        guardMode: PortalSessionGuardMode;
+    };
 }
 
 /** Частичное переопределение опций, принимаемое {@link AuthModule.forRoot}. */
@@ -31,6 +45,7 @@ export interface AuthForRootOptions {
     jwt?: Partial<AuthModuleOptions['jwt']>;
     superUser?: Partial<AuthModuleOptions['superUser']>;
     publicPaths?: string[];
+    portalSession?: Partial<AuthModuleOptions['portalSession']>;
 }
 
 /**
@@ -68,5 +83,12 @@ export function buildAuthOptions(
                 '',
         },
         publicPaths: override.publicPaths ?? ['/api/health'],
+        portalSession: {
+            guardMode:
+                override.portalSession?.guardMode ??
+                parsePortalSessionGuardMode(
+                    process.env[PORTAL_SESSION_GUARD_MODE_ENV],
+                ),
+        },
     };
 }

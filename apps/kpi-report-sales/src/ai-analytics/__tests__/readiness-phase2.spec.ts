@@ -48,18 +48,23 @@ const countdownDto = {
     monthsLeft: 7,
 };
 
-/** Портал, прошедший калибровку: состав задан, календарь импортирован. */
+/**
+ * Портал, прошедший калибровку: состав задан, календарь импортирован,
+ * модель портала посчитана (кап §5.4 снимается явным признаком; окно
+ * счётчиков при этом остаётся периодом — см. блок «окно готовности»).
+ */
 const ready = (extra: Partial<ReadinessOptions> = {}): ReadinessOptions => ({
     now: NOW,
     enabled: true,
     pipelineEnabled: true,
     calendarImported: true,
     rosterLevels: 2,
+    portalModelPresent: true,
     ...extra,
 });
 
 describe('готовность витрины Фазы 2', () => {
-    it('3 месяца и 100 презентаций → режим norms', () => {
+    it('3 месяца и 100 презентаций при посчитанной модели → режим norms', () => {
         const rows = presentations(100, 95);
         const readiness = buildReadiness(rows, ready());
 
@@ -67,6 +72,17 @@ describe('готовность витрины Фазы 2', () => {
         expect(readiness.presentations).toBe(100);
         expect(readiness.mode).toBe('norms');
         expect(readiness.reasons).toEqual([]);
+    });
+
+    it('те же 3 месяца и 100 презентаций без модели → descriptive с no-portal-model (§5.4)', () => {
+        const readiness = buildReadiness(
+            presentations(100, 95),
+            ready({ portalModelPresent: false }),
+        );
+
+        expect(readiness.mode).toBe('descriptive');
+        expect(readiness.reasons).toEqual([READINESS_REASONS.modelMissing]);
+        expect(READINESS_REASONS.modelMissing).toBe('no-portal-model');
     });
 
     it('презентаций меньше гейта норм → descriptive с причиной', () => {
@@ -162,14 +178,33 @@ describe('окно готовности: модель портала проти�
     });
 
     it('без модели и период 1 месяц → режим по гейту периода', () => {
-        const readiness = buildReadiness(monthRows, ready());
+        const readiness = buildReadiness(
+            monthRows,
+            ready({ portalModelPresent: false }),
+        );
 
         // Гейт истории (3 мес.) не пройден: режим ниже norms, причина —
-        // код гейта библиотеки, а не своя строка адаптера.
+        // код гейта библиотеки, а не своя строка адаптера; кап §5.4 ниже
+        // descriptive не показывается.
         expect(readiness.mode).toBe('calibration');
         expect(readiness.reasons).toEqual([READINESS_REASONS.historyShort]);
         expect(readiness.historyMonths).toBe(0);
         expect(readiness.presentations).toBe(100);
+    });
+
+    it('признак модели не задан — выводится из окна: без окна режим капится (§5.4)', () => {
+        const readiness = buildReadiness(
+            presentations(100, 95),
+            ready({ portalModelPresent: undefined }),
+        );
+        const withWindow = buildReadiness(
+            presentations(100, 95),
+            ready({ portalModelPresent: undefined, modelWindow }),
+        );
+
+        expect(readiness.mode).toBe('descriptive');
+        expect(readiness.reasons).toEqual([READINESS_REASONS.modelMissing]);
+        expect(withWindow.mode).toBe('norms');
     });
 
     it('модель отстала от периода → счётчики не пропадают', () => {
@@ -296,6 +331,11 @@ describe('адаптер приложения не держит своих пр�
         },
         { name: 'norms', rows: presentations(100, 95), options: ready() },
         {
+            name: 'descriptive: кап без модели портала (§5.4)',
+            rows: presentations(100, 95),
+            options: ready({ portalModelPresent: false }),
+        },
+        {
             name: 'hypothesis',
             rows: presentations(100, 95),
             options: ready({
@@ -338,6 +378,10 @@ describe('адаптер приложения не держит своих пр�
                 hypothesisPairs: options.hypothesisPairs ?? 0,
                 betaSource: options.betaSource ?? 'none',
                 betaCountdown: options.betaCountdown ?? null,
+                portalModelPresent:
+                    options.portalModelPresent ??
+                    (options.modelWindow !== null &&
+                        options.modelWindow !== undefined),
             };
             const app = buildReadiness(rows, options);
             const lib = buildReadinessRules(input);

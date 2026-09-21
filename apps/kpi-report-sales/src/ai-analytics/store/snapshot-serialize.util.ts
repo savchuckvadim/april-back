@@ -4,6 +4,10 @@
  * Prisma. Ключ периода (activity_id) зависит от зерна типа: 'YYYY-MM',
  * 'YYYY-Www' (ISO-неделя), 'YYYY-MM-DD' или хэш входов.
  *
+ * Расход вызова модели (SnapshotEnvelope.usage) едет в колонки
+ * tokens_count / price и только на запись — обратно в конверт колонки не
+ * читаются. Колонка model у всех типов несёт calcVersion.
+ *
  * Типы снапшотов, зёрна, дескрипторы ретенции и разбор `user_result`
  * (parseSnapshotUserResult) берутся из публичного API библиотеки
  * (@lib/sales-ai-analytics), глубоких путей нет.
@@ -29,7 +33,10 @@ import { isoWeekKey } from '../domain/loaders/period.util';
 /** user_result записи снапшота: метаданные конверта и нагрузка (форма lib). */
 export type AiSnapshotUserResult<T = unknown> = SnapshotUserResult<T>;
 
-/** Колонки ais одной записи снапшота (вход AiService.create). */
+/**
+ * Колонки ais одной записи снапшота (вход AiService.create); null-колонки
+ * стор опускает — новая строка получает NULL.
+ */
 export interface AiSnapshotAisRecord<T = unknown> {
     provider: string;
     app: string;
@@ -40,6 +47,10 @@ export interface AiSnapshotAisRecord<T = unknown> {
     activity_id: string;
     /** calcVersion. */
     model: string;
+    /** Токенов вызова модели; ключ есть только при заданном usage. */
+    tokens_count?: number | null;
+    /** Стоимость вызова, ₽; ключ есть только при заданном usage. */
+    price?: number | null;
     user_result: AiSnapshotUserResult<T>;
     status: AiAnalyticsSnapshotStatus;
     domain: string;
@@ -153,12 +164,16 @@ export function parseSnapshotStatus(
     return isAiAnalyticsSnapshotStatus(value) ? value : null;
 }
 
-/** Конверт → колонки ais. Менеджер портального зерна отбрасывается. */
+/**
+ * Конверт → колонки ais. Менеджер портального зерна отбрасывается; с
+ * usage — колонки tokens_count / price, без него колонок расхода нет.
+ */
 export function toAisRecord<T>(
     envelope: SnapshotEnvelope<T>,
     status: AiAnalyticsSnapshotStatus = AI_ANALYTICS_SNAPSHOT_STATUS.done,
 ): AiSnapshotAisRecord<T> {
     const managerId = snapshotManagerId(envelope.type, envelope.managerId);
+    const usage = envelope.usage;
     return {
         provider: AI_ANALYTICS_SNAPSHOT_PROVIDER,
         app: AI_ANALYTICS_SNAPSHOT_APP,
@@ -166,6 +181,9 @@ export function toAisRecord<T>(
         user_id: toManagerUserId(managerId),
         activity_id: envelope.periodKey,
         model: envelope.calcVersion,
+        ...(usage === undefined
+            ? {}
+            : { tokens_count: usage.tokensCount, price: usage.price }),
         user_result: {
             managerId,
             paramsVersion: envelope.paramsVersion,
@@ -181,7 +199,8 @@ export function toAisRecord<T>(
 /**
  * Запись ais → конверт снапшота; любая невалидная запись (чужой тип,
  * ключ не по зерну, битый user_result, менеджерский снапшот без
- * менеджера) → null, без исключений.
+ * менеджера) → null, без исключений. Колонки расхода (tokens_count,
+ * price) в конверт не возвращаются — usage только на запись.
  */
 export function fromAisRecord(
     record: AiSnapshotRawRecord,

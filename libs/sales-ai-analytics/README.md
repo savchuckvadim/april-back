@@ -9,7 +9,7 @@
 
 | Файл | Что даёт |
 |---|---|
-| `model/thresholds.const.ts` | `AI_ANALYTICS_THRESHOLDS` — пороги n, σ XmR, длина серии, z90, короткий звонок |
+| `model/thresholds.const.ts` | `AI_ANALYTICS_THRESHOLDS` — пороги n, σ XmR, длина серии, z90, короткий звонок; с волны C (18.09.2026) значения берутся `registryDefault(...)` из реестра (`n_min_none`, `n_min_ok_score`, `n_min_ok_rate`, `n_min_rating`, `trend_window_calls`, `xmr_sigma`, `xmr_run_length`, `z_compare`, `min_duration_sec_by_type`), проверяется `lib-defaults.spec.ts` |
 | `model/wilson.ts` | `wilsonInterval(successes, n, z?)` — интервал доли |
 | `model/metric.ts` | `MetricValue`, `confidenceFor`, `rateMetric`, `scoreMetric`, `METRIC_CONFIDENCE_REASONS` |
 | `model/xmr.ts` | `xmrLimits(points)` — центр, `±2,66·MR̄`, состояние последней точки |
@@ -22,8 +22,10 @@
 | `contracts/snapshot.types.ts` | `SnapshotEnvelope<T>`, нагрузки снапшотов Фазы 2, `SkillSnapshot` |
 | `contracts/snapshot-kinds.const.ts` | реестр 10 типов ais-снапшотов: зерно, ключ, ретенция, статусы (Фаза 2) |
 | `params/` | реестр параметров модели (~190 кодов, покрытие 84 кодов анкеты Ж), послойный `resolveParam`, `registryDefault`, `paramsVersion` / `nextComparableFrom` (Фаза 2) |
-| `model/norms.index.ts` | экспозиция, κ, leave-one-out нормы, апостериоры рёбер (Фаза 2) |
-| `model/quality.index.ts` | качество за период, усадка разделов, форма/содержание, надёжность (Фаза 2) |
+| `model/norms.index.ts` | экспозиция, κ, leave-one-out нормы, апостериоры рёбер, а с волны C — `model/overdispersion.ts` (сверхдисперсия φ квази-Пуассона) и `model/activity-rate.ts` (`forgetWithGaps`, `resolveActivityPhi`, `shrinkActivityRate` — усадка темпа активности с забыванием по разрывам) (Фаза 2) |
+| `model/norms-backtest.ts` | rolling-origin бэктест норм для гейта L2: нормы месяцев ≤ t против t+1, нижняя граница 90 %-интервала разности долей (спека `norms-backtest.spec.ts`) (Фаза 2) |
+| `model/quality.index.ts` | качество за период, усадка разделов, форма/содержание, надёжность, а с волны C — `scoring-caps` и `applicability` (Фаза 2) |
+| `settings/min-duration.resolve.ts` | единая цепочка порога длительности разбираемого звонка: `resolveMinDurationByType` (явный порог по типам → явный скаляр `min_duration_sec` → `fallbackSec` старой админки → дефолт реестра 300), `registryMinDurationSec`, `isMinDurationPortalDefined`, `minDurationByTypeOfSettings`, `minDurationFloorSec`; её читают event-sales, kpi-report-sales и аудит (Фаза 2, решение А.1) |
 | `contracts/quality-link.types.ts` | `QualityLink`, `AI_BETA_SOURCES` — режимы связи качества с исходом (Фаза 2) |
 | `contracts/ai-brief.contract.ts` | схема, лимиты и стоп-слова AI-резюме (Фаза 2) |
 | `settings/` | десять ключей `[kpiSales]`: типы, дефолты из реестра, парсеры, проверка, сдвиг сравнимой истории, контекст реестра (Фаза 2) |
@@ -32,7 +34,9 @@
 | `model/episode*.ts`, `model/stage-theta.ts`, `model/edge-estimand.ts`, `model/timestamp-audit.ts` | эпизоды сделки, сцепка звонков, стадийные θ, трактовка ребра, плацебо-тест меток времени (Фаза 2) |
 | `model/{lag-cdf,forecast,capacity,target,ramp,daily-plan}.ts` | лаг F(d), прогноз, потолок полосы, каскад цели, ramp, план дня (Фаза 2) |
 
-`SalesAiAnalyticsModule` — пустая обёртка под будущие провайдеры.
+Библиотека не объявляет Nest-модулей, кроме `SalesAiAnalyticsAuditModule`/`SalesAiAnalyticsAdminModule` (аудит Фазы 0): провайдеры приложения живут в `apps/kpi-report-sales/src/ai-analytics` (ядро `core/`). Пустой `SalesAiAnalyticsModule` удалён 18.09.2026.
+
+**Подключение (волна C, 18.09.2026).** Пометки «к ручкам пока не подключено» в разделах волн ниже — исторические, оставлены как хроника: с волны C всё перечисленное зовут ночной конвейер `AiAnalyticsPipelineModule.registerPhase2()` (11 шагов) и ручки Фазы 2 (`plan/daily`, `brief`, `manager/style`, `rop-mark/*`, `about`) в kpi-report-sales — см. README модуля `apps/kpi-report-sales/src/ai-analytics/README.md`. Приёмочные спеки библиотеки: `__tests__/phase2-invariants.spec.ts` (каждый строковый код параметра из `model/`, `settings/` и приложения есть в `AI_ANALYTICS_PARAM_CODES`; слова «значимо» нет в текстах пользователю), `__tests__/lib-defaults.spec.ts` (дефолты модели — из реестра, включая `AI_ANALYTICS_THRESHOLDS` и `NORM_HIERARCHY_DEFAULTS.bootRatio` → `kappa_boot_ratio`).
 
 ## Матрица и Внимание (Фаза 1b, план §4.2–4.3, §4.5, §6.3)
 
@@ -125,6 +129,10 @@ magic string), `kappa_portal_to_global` = 0 (А.3, пула нет).
 - `edge-rate.ts` — апостериоры рёбер (`edgePosterior`) и интенсивностей
   (`activityPosterior`, забывание λ), разрыв по Ньюкомбу / отношению гамм
   (`edgeGap` → `significant`, `direction`) вместо одновыборочного Уилсона.
+- `overdispersion.ts`, `activity-rate.ts` (добор волны A, в барели с волны C) —
+  сверхдисперсия φ квази-Пуассона и усадка темпа активности с забыванием по
+  разрывам (`forgetWithGaps`, `resolveActivityPhi`, `shrinkActivityRate`);
+  `norms-backtest.ts` — rolling-origin бэктест норм (гейт L2).
 
 ### Качество за период (`model/quality.index.ts`, план §4.3)
 
@@ -360,6 +368,7 @@ npx jest libs/sales-ai-analytics
 Nest-слой (`src/admin`):
 
 - `SalesAiAnalyticsAuditModule` — сервисный, без контроллеров: `AiAnalyticsAuditService` (расчёт по живой БД через Prisma, снапшот в ais, проверка признака портала) и `AiAnalyticsAuditSnapshotStore`. Импортируется в kpi-report-sales (месячный снапшот по крону).
+- `SalesAiAnalyticsProbeModule` — сервисный, без контроллеров: `StageHistoryProbeService` (проба `crm.stagehistory.list` через `PBXService.init(domain)`, инстанс bitrix только внутри метода). Импортируется ТОЛЬКО в `SalesAiAnalyticsAdminModule` — в kpi-report-sales поддерево `PBXModule` не течёт.
 - `SalesAiAnalyticsAdminModule` — контроллер `admin/ai-analytics/*`, подключается ТОЛЬКО в apps/admin (JWT + роль SUPER_USER).
 
 | Ручка | Что делает |
@@ -367,6 +376,7 @@ Nest-слой (`src/admin`):
 | `POST admin/ai-analytics/audit` `{domain, months?, timeZone?, save?}` | считает аудит по живой БД, при `save` пишет снапшот (ais type `ai-analytics-audit`, source admin); 403 без признака портала |
 | `GET admin/ai-analytics/audit/latest?domain=` | последний снапшот (ручка или крон), 404 если нет |
 | `GET admin/ai-analytics/audit/about?domain=` | самоописание + признак `ai_analytics_audit_enabled` и дата последнего снапшота портала |
+| `GET admin/ai-analytics/stage-history/probe?domain=&months=12` | проба истории стадий сделок (вопрос владельцу A6): доступен ли `crm.stagehistory.list`, самая ранняя запись (`earliestAt`), глубина в полных месяцах (`historyMonths`), переходов за окно `months` (1–36, `transitionsInWindow`, `countIsLowerBound` если Bitrix не отдал total), `enough` = доступен и глубина ≥ окна; категория `sales_base` не настроена — проба по всем воронкам; ошибка Bitrix — `available=false` с текстом в `error`, не 500; признаком аудита не ограничена |
 
 Признак портала — ключ `ai_analytics_audit_enabled` приложения kpi-sales (настройки портала в админке); он не зависит от `ai_analytics_enabled`, аудит делается до включения витрины. Крон — 1-го числа 04:10 МСК (`AiAnalyticsAuditScheduler` в kpi-report-sales). CLI на сервере: `npm run audit:ai-analytics -- --domain <домен> [--months 6]`.
 

@@ -93,6 +93,60 @@ describe('snapshot-serialize.util (ais ↔ конверт снапшота)', ()
         });
     });
 
+    it('usage раскладывается в tokens_count/price, model остаётся calcVersion', () => {
+        const base = envelopeOf(AI_ANALYTICS_SNAPSHOT_TYPE.brief);
+        const record = toAisRecord({
+            ...base,
+            usage: { tokensCount: 1500, price: 3 },
+        });
+        expect(record).toEqual({
+            provider: AI_ANALYTICS_SNAPSHOT_PROVIDER,
+            app: AI_ANALYTICS_SNAPSHOT_APP,
+            type: AI_ANALYTICS_SNAPSHOT_TYPE.brief,
+            user_id: null,
+            activity_id: base.periodKey,
+            model: 'sam-1.0.0',
+            tokens_count: 1500,
+            price: 3,
+            status: AI_ANALYTICS_SNAPSHOT_STATUS.done,
+            domain: 'd.bitrix24.ru',
+            user_result: {
+                managerId: null,
+                paramsVersion: 'params-1',
+                inputsHash: 'a1b2c3d4',
+                generatedAt: '2026-09-07T01:45:00.000Z',
+                payload: { n: 7 },
+            },
+        });
+
+        // Модель не вызывали: колонки расхода null (стор их опустит → NULL).
+        const idle = toAisRecord({
+            ...base,
+            usage: { tokensCount: null, price: null },
+        });
+        expect(idle.tokens_count).toBeNull();
+        expect(idle.price).toBeNull();
+        expect(idle.model).toBe('sam-1.0.0');
+
+        // Без usage — как раньше: колонок расхода нет.
+        const plain = toAisRecord(base);
+        expect(plain).not.toHaveProperty('tokens_count');
+        expect(plain).not.toHaveProperty('price');
+        expect(plain.model).toBe('sam-1.0.0');
+    });
+
+    it('конверт с usage читается обратно без колонок расхода', () => {
+        const base = envelopeOf(AI_ANALYTICS_SNAPSHOT_TYPE.brief);
+        const record = toAisRecord({
+            ...base,
+            usage: { tokensCount: 1500, price: 3 },
+        });
+        // Строка ais несёт tokens_count/price, но конверт их не возвращает:
+        // usage — только на запись, user_result — как без usage.
+        expect(fromAisRecord(toRow(record))).toEqual(base);
+        expect(record.user_result).toEqual(toAisRecord(base).user_result);
+    });
+
     it('портальное зерно теряет менеджера, нечисловой id не едет в user_id', () => {
         const portal = toAisRecord({
             ...envelopeOf(AI_ANALYTICS_SNAPSHOT_TYPE.portalModel),

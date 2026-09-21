@@ -238,6 +238,32 @@ describe('CallReportProcessor (стадии)', () => {
         expect(deepAnalysis.run).not.toHaveBeenCalled();
     });
 
+    it('звонок короче порога своего типа (гейт А.1) — без смарт-элемента и глубокого разбора', async () => {
+        // Конвейер останавливает такой звонок после классификации
+        // (shortCall), но раньше процессор смотрел только на irrelevant —
+        // и дорогой глубокий разбор для короткого звонка всё равно шёл.
+        const { processor, pipeline, baseItem, deepAnalysis, focusAnalysis } =
+            makeDeps();
+        pipeline.executeAnalyze.mockResolvedValue({
+            transcriptionId: '42',
+            provider: 'yandex',
+            resumeSaved: false,
+            recomendationSaved: false,
+            callType: 'presentation',
+            shortCall: true,
+        });
+        await processor.handleAnalyze(
+            makeJob({
+                ...PAYLOAD,
+                transcriptionId: '42',
+                createSmartItem: true,
+            }),
+        );
+        expect(baseItem.createBaseItem).not.toHaveBeenCalled();
+        expect(focusAnalysis.run).not.toHaveBeenCalled();
+        expect(deepAnalysis.run).not.toHaveBeenCalled();
+    });
+
     it('deepAnalysisEnabled=false в настройках портала пропускает разбор', async () => {
         const {
             processor,

@@ -113,6 +113,14 @@ describe('buildStyleRows', () => {
             attemptsPerLead: [2, 3],
             callsPerWorkday: [10, 14],
             rhythmPerWorkday: [-1.6, -1.6],
+            // Ряды под-осей «звонки» и «лиды» в строки осей не идут.
+            conversationSecByType: {
+                outgoing: [120, 300],
+                incoming: [90],
+                incomingRedirect: [],
+                callback: [],
+            },
+            leadResponseMin: [60],
         },
         attemptsMedian: 2.5,
         giveUpEvents: 2,
@@ -123,6 +131,12 @@ describe('buildStyleRows', () => {
         promiseKeptRate: null,
         leadResponseMinMedian: null,
         conversationSecMedian: null,
+        conversationSecMedianByType: {
+            outgoing: null,
+            incoming: null,
+            incomingRedirect: null,
+            callback: null,
+        },
         dispersionIndex: null,
         incomingShare: null,
         callsPerWorkdayMean: 12,

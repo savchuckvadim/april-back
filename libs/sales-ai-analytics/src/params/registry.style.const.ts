@@ -99,6 +99,19 @@ export const AI_ANALYTICS_STYLE_PARAMS = [
             'В профиле стиля везде один уровень интервалов — 80 % (z = 1,282): при n = 40 и доле 0,5 полуширина Уилсона составляет около 10 п.п. Частотный пол подписи задаёт style_z_raw.',
     },
     {
+        code: 'style_dispersion_min_days',
+        title: 'Минимум рабочих дней для индекса дисперсии',
+        scope: 'portal',
+        source: 'configured',
+        unit: 'рабочих дней',
+        defaultValue: 15,
+        range: [10, 40],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Ось rhythm (документ ai/tasks/ai-analytics-manager-style.md, §2.1 ось 8): индекс избыточной дисперсии дневных объёмов Var/mean − 1 считается только при стольких рабочих днях в окне; ниже — null, подписи по ритму нет. Читает style-crm.units.ts (жёсткие счётчики телефонии).',
+    },
+    {
         code: 'style_tenure_kappa',
         title: 'Сила усадки оффсета полосы стажа',
         scope: 'global',

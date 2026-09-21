@@ -34,6 +34,7 @@ import {
     matchesFilter,
     pickLatestPerKey,
     sameSignature,
+    withoutNullColumns,
 } from './snapshot-store.util';
 
 export * from './ai-analytics-snapshot.types';
@@ -52,7 +53,9 @@ export * from './ai-analytics-snapshot.types';
  * Транзакции нет (AiService умеет только create / update(id)); защита от
  * гонки — детерминированный jobId конвейера плюс идемпотентный upsert:
  * повтор с той же сигнатурой inputsHash + paramsVersion + calcVersion
- * копию не создаёт (written: 0), force — принудительный пересчёт.
+ * копию не создаёт (written: 0), force — принудительный пересчёт. Расход
+ * вызова модели (usage конверта) едет в колонки tokens_count / price и в
+ * сигнатуру не входит (решение B2 от 21.09.2026).
  *
  * prune не удаляет строки физически (в AiRepository нет delete): он
  * выводит просроченные записи из актуальных тем же статусом и видит
@@ -76,7 +79,8 @@ export class AiAnalyticsSnapshotStore {
      * Пишет новую версию снапшота; прошлые актуальные записи того же
      * ключа помечает superseded. Идемпотентен: если актуальная запись
      * ключа уже несёт ту же сигнатуру расчёта, ничего не пишет и отдаёт
-     * её id (written: 0); force пишет всегда.
+     * её id (written: 0); force пишет всегда. Null-колонки опускает —
+     * новая строка ais получает NULL.
      */
     async upsert<T>(
         envelope: SnapshotEnvelope<T>,
@@ -99,17 +103,12 @@ export class AiAnalyticsSnapshotStore {
             await this.markSuperseded(record.id);
             supersededIds.push(record.id);
         }
-        const {
-            user_id: userId,
-            user_result: userResult,
-            ...columns
-        } = toAisRecord(envelope);
+        const { user_result: userResult, ...columns } = toAisRecord(envelope);
         const created = await this.aiService.create({
-            ...columns,
+            ...withoutNullColumns(columns),
             user_result: JSON.parse(
                 JSON.stringify(userResult),
             ) as Prisma.JsonValue,
-            ...(userId === null ? {} : { user_id: userId }),
         });
         return { id: created.id, supersededIds, written: 1 };
     }

@@ -21,6 +21,10 @@ import {
     CallContextBuilderService,
     CallPassport,
 } from '../services/call-context-builder.service';
+import {
+    callDurationSecOf,
+    resolveAnalysisStop,
+} from '../services/call-duration-gate.util';
 import { CallReportSettingsService } from '../services/call-report-settings.service';
 
 /** Задача конвейера: один звонок (по сделке или лиду) на обработку. */
@@ -84,12 +88,11 @@ export interface CallReportPipelineResult {
      * классификации, процессор не создаёт смарт и не делает глубокий разбор.
      */
     irrelevant?: boolean;
+    /** Порог ТИПА (А.1) сработал: звонок короче порога своего типа — остановлен после классификации, как irrelevant. */
+    shortCall?: boolean;
 }
 
 const APP_NAME = 'call-report';
-
-/** Код типа-гейта из конфига смарта: «не наш разговор». */
-const IRRELEVANT_CALL_TYPE = 'irrelevant';
 
 /**
  * Конвейер обработки одного звонка, ДВЕ стадии:
@@ -286,27 +289,30 @@ export class CallReportPipelineUseCase {
             passport?.callTypePrior ?? null,
         );
 
-        // ГЕЙТ НЕРЕЛЕВАНТНОСТИ: сотрудник сам звонил в стороннюю
-        // организацию / личный / ошибочный разговор — техника продаж не
-        // оценивается, дорогие шаги (GigaChat, глубокий разбор,
-        // смарт-элемент) не тратятся. Классификация уже в ais — звонок
-        // виден в отчётах с типом irrelevant. Ложное срабатывание чинится
-        // порогом уверенности: сомнительные случаи идут полным путём.
-        if (
-            classification?.callType === IRRELEVANT_CALL_TYPE &&
-            classification.confidence >= settings.irrelevantConfidence
-        ) {
+        // ГЕЙТЫ ПОСЛЕ КЛАССИФИКАЦИИ (call-duration-gate.util): нерелевантный
+        // разговор и звонок короче порога СВОЕГО типа (А.1; скан режет лишь
+        // по минимуму карты) останавливают разбор штатно — дорогие шаги не
+        // тратятся, классификация уже в ais.
+        const stop = resolveAnalysisStop({
+            classification,
+            durationSec: callDurationSecOf(
+                payload.durationSec,
+                row.durationSec,
+            ),
+            settings,
+        });
+        if (stop) {
             this.logger.log(
-                `Звонок нерелевантен (activity ${payload.activityId}, ` +
-                    `confidence ${classification.confidence}): ${classification.reason} — анализ остановлен`,
+                `${stop.message} (activity ${payload.activityId}) — анализ остановлен`,
             );
             return {
                 transcriptionId: payload.transcriptionId,
                 provider,
                 resumeSaved: false,
                 recomendationSaved: false,
-                callType: classification.callType,
-                irrelevant: true,
+                callType: classification?.callType ?? null,
+                classifyConfidence: classification?.confidence ?? null,
+                ...stop.result,
             };
         }
 
@@ -372,10 +378,10 @@ export class CallReportPipelineUseCase {
     }
 
     /**
-     * Резюме + рекомендации: по умолчанию ОДНИМ объединённым вызовом LLM
-     * (провайдер сам откатывается на два вызова при непарсибельном ответе);
-     * kill-switch CALL_REPORT_COMBINED_ANALYSIS=0 возвращает раздельный путь.
-     * Ошибка анализа не роняет конвейер — транскрипт уже сохранён.
+     * Резюме + рекомендации ОДНИМ объединённым вызовом LLM (провайдер сам
+     * откатывается на два вызова при непарсибельном ответе; отдельного
+     * kill-switch больше нет). Ошибка анализа не роняет конвейер —
+     * транскрипт уже сохранён.
      */
     private async runLlmAnalysis(
         text: string,
@@ -383,9 +389,6 @@ export class CallReportPipelineUseCase {
         model: LlmModel,
     ): Promise<{ resume: string | null; recomendation: string | null }> {
         try {
-            // Резюме + рекомендации всегда одним объединённым вызовом
-            // (провайдер сам откатывается на два вызова при непарсибельном
-            // ответе) — отдельного kill-switch больше нет.
             return await this.llmOrchestrator.analyzeCall(
                 model,
                 text,
@@ -399,10 +402,7 @@ export class CallReportPipelineUseCase {
         }
     }
 
-    /**
-     * Модель первичного анализа: значение из настроек портала, если оно
-     * из списка поддерживаемых; иначе — дефолт кода (gigachat).
-     */
+    /** Модель первичного анализа: из настроек портала, если поддерживается; иначе gigachat. */
     private resolveLlmModel(override?: string): LlmModel {
         return override && LLM_MODELS.includes(override as LlmModel)
             ? (override as LlmModel)

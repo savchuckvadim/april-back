@@ -27,7 +27,14 @@ import {
     CallContextBuilderService,
     CallPassport,
 } from './call-context-builder.service';
+import {
+    callTypeOfRecords,
+    familyResolveArgsOf,
+} from './call-family-context.util';
 import { RevisionListCandidatesService } from './revision-list-candidates.service';
+
+/** Записи ais строк сущности — как их отдаёт AiService. */
+type AiRecords = Awaited<ReturnType<AiService['findByTranscriptionIds']>>;
 
 /** Итог ревизии одного домена. */
 export interface CallRevisionDomainResult {
@@ -159,7 +166,11 @@ export class CallRevisionService {
         const last = fresh[fresh.length - 1];
 
         const passport = await this.contextBuilder.build(last);
-        const freshDigests = await this.buildDigests(fresh);
+        // Одно чтение ais: выжимки разборов и тип последнего звонка для раскладки.
+        const records = await this.aiService.findByTranscriptionIds(
+            fresh.map(row => row.id),
+        );
+        const freshDigests = this.buildDigests(fresh, records);
         const historyDigests: RevisionCallDigest[] = passport.history.map(
             item => ({
                 startedAt: item.startedAt,
@@ -196,6 +207,7 @@ export class CallRevisionService {
             this.sanitizeListLinks(verdict, listCandidates),
             passport,
             bitrix,
+            callTypeOfRecords(records, last.id),
         );
     }
 
@@ -248,12 +260,10 @@ export class CallRevisionService {
     }
 
     /** Выжимки свежих разборов: agent-analysis (полный dto) или gigachat-резюме. */
-    private async buildDigests(
+    private buildDigests(
         rows: TranscriptionPipelineView[],
-    ): Promise<RevisionCallDigest[]> {
-        const records = await this.aiService.findByTranscriptionIds(
-            rows.map(row => row.id),
-        );
+        records: AiRecords,
+    ): RevisionCallDigest[] {
         return rows.map(row => {
             const forRow = records.filter(
                 record => String(record.transcription_id) === row.id,
@@ -305,6 +315,7 @@ export class CallRevisionService {
         verdict: RevisionVerdict,
         passport: CallPassport,
         bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        callType: string | null,
     ): Promise<void> {
         const last = fresh[fresh.length - 1];
 
@@ -316,18 +327,13 @@ export class CallRevisionService {
             // сделка-презентация, и класть её в «ОП: основная сделка» —
             // ошибка (alfacentr, 05.09.2026); ночной долив связей раньше
             // перетирал этим правильное значение intake.
-            // Клиент звонка (компания/контакт) — вход для дотяжки основной
-            // сделки, если владелец звонка её не даёт (чужая воронка, лид).
+            // Полный контекст раскладки (лид, владелец звонка, тип, момент —
+            // эталон: приём разбора): иначе шаг 0 «ОП История» недостижим для лида.
+            const args = familyResolveArgsOf(passport, last, callType);
             const family = await this.dealFamily.resolve(
                 domain,
-                passport.entityType === 'deal'
-                    ? (passport.entityId ?? undefined)
-                    : undefined,
-                {
-                    companyId: passport.crmCompanyId ?? undefined,
-                    contactId: passport.crmContactId ?? undefined,
-                    callStartedAt: last?.callStartedAt ?? undefined,
-                },
+                args.dealId,
+                args.context,
             );
             // Желаемые связи элемента. РОДИТЕЛЬ-СДЕЛКА — только «ОП
             // Основная» из раскладки (решение владельца 08.09.2026):

@@ -66,8 +66,10 @@ export const AI_ANALYTICS_SNAPSHOT_DESCRIPTORS = {
         keyFormat: KEY_FORMAT.hash,
         retention: { unit: 'days', value: 30 },
         description:
-            'Резюме витрины (LLM) по запросу: текст, tokens_count, price. ' +
-            'Ключ — хэш входов, повтор запроса переиспользует запись.',
+            'Резюме витрины (LLM) по запросу: текст и модель провайдера ' +
+            'в нагрузке, расход вызова — в колонках tokens_count и price ' +
+            '(usage конверта). ' +
+            'Ключ — период и нормализованный состав менеджеров (`{from}_{to}_{ростер}`), новое резюме того же периода и состава замещает прежнее (superseded); хэш пакета фактов живёт в `inputsHash`, повтор с тем же пакетом переиспользует запись.',
     },
     [AI_ANALYTICS_SNAPSHOT_TYPE.etlRun]: {
         type: AI_ANALYTICS_SNAPSHOT_TYPE.etlRun,

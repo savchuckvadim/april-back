@@ -1,5 +1,6 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '@lib/core/prisma';
+import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
 import {
     EnumPortalAppCode,
     PortalAppSettingsService,
@@ -63,8 +64,13 @@ type AuditPortalSettings = PortalMinDurationSettings & {
  * разбора. Настроек [kpiSales] нет — дефолт реестра (300 с), поведение
  * Фазы 0 прежнее.
  */
-function portalShortCallSec(settings: PortalMinDurationSettings): number {
-    return minDurationFloorSec(minDurationByTypeOfSettings(settings));
+function portalShortCallSec(
+    settings: PortalMinDurationSettings,
+    legacyMinDurationSec: number | null,
+): number {
+    return minDurationFloorSec(
+        minDurationByTypeOfSettings(settings, legacyMinDurationSec),
+    );
 }
 
 /** Состояние признака аудита на портале + дата последнего снапшота. */
@@ -94,7 +100,25 @@ export class AiAnalyticsAuditService {
         private readonly prisma: PrismaService,
         private readonly snapshots: AiAnalyticsAuditSnapshotStore,
         private readonly appSettings: PortalAppSettingsService,
+        /**
+         * Старая админка разбора — запасной скаляр порога, тот же, что у
+         * конвейера event-sales и CLI аудита; без неё порог считается только
+         * по настройкам AI-аналитики и реестру.
+         */
+        @Optional()
+        private readonly portalAiSettings?: PortalAiSettingsService,
     ) {}
+
+    /** Прежний скаляр порога старой админки; ошибка чтения — null. */
+    private async legacyMinDurationSec(domain: string): Promise<number | null> {
+        if (!this.portalAiSettings) return null;
+        try {
+            const record = await this.portalAiSettings.getByDomain(domain);
+            return record?.minDurationSec ?? null;
+        } catch {
+            return null;
+        }
+    }
 
     async run(
         domain: string,
@@ -103,7 +127,11 @@ export class AiAnalyticsAuditService {
         const settings = await this.assertAllowed(domain);
         const { months, timeZone, source } = options;
         const shortCallSec =
-            options.shortCallSec ?? portalShortCallSec(settings);
+            options.shortCallSec ??
+            portalShortCallSec(
+                settings,
+                await this.legacyMinDurationSec(domain),
+            );
         const { report, markdown, generatedAt } = await runAiAnalyticsAudit(
             new PrismaAuditDb(this.prisma),
             {

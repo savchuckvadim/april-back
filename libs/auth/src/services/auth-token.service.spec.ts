@@ -8,6 +8,7 @@ const options: AuthModuleOptions = {
     jwt: { secret: 'test-secret', expiresIn: '1h' },
     superUser: { login: 'su', passwordHash: 'x' },
     publicPaths: [],
+    portalSession: { guardMode: 'report' },
 };
 
 describe('AuthTokenService', () => {

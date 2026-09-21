@@ -120,3 +120,29 @@ export type {
     BuildPassportInput,
     ManagerUserFacts,
 } from './manager-passport.util';
+
+// Фаза 2, волны 3–6 (сборка барели — поток 19): единый порог длительности
+// разбора (реестр + определения портала — им обязаны фильтровать и пульс, и
+// шаги конвейера), производственный календарь портала (calendar.settings.get
+// с откатом на календарь РФ), счётчики телефонии и CRM для осей стиля,
+// чтение модели портала и месяцев менеджеров из `ais`, снапшоты для обзора.
+export { portalMinDurationByType } from './min-duration.util';
+export {
+    AI_CALENDAR_ERROR_TTL_SECONDS,
+    AI_CALENDAR_TTL_SECONDS,
+    AiAnalyticsCalendarLoader,
+    buildCalendarKey,
+} from './calendar.loader';
+export type {
+    AiCalendarLoadOptions,
+    AiCalendarResult,
+    AiCalendarSource,
+} from './calendar.loader';
+export { StyleCrmLoader } from './style-crm.loader';
+export { PortalModelLoader, toPortalManagerMonth } from './portal-model.loader';
+export type { PortalModelRecord } from './portal-model.loader';
+export {
+    monthKeyOf,
+    OverviewSnapshotsLoader,
+    previousMonthKey,
+} from './overview-snapshots.loader';

@@ -13,6 +13,7 @@ const buildOptions = (
     jwt: { secret: 's', expiresIn: '1h' },
     superUser: { login: 'su', passwordHash: 'x' },
     publicPaths: [],
+    portalSession: { guardMode: 'report' },
     ...over,
 });
 

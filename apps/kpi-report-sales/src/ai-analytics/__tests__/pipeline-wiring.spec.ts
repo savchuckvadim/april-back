@@ -1,23 +1,58 @@
 import 'reflect-metadata';
 import type { FactoryProvider, Type } from '@nestjs/common';
 import { AppCacheService } from '@lib/app-cache';
+import { AiAnalyticsRopMarkController } from '../ai-analytics-rop-mark.controller';
+import {
+    AI_CALLS_STEP_RHYTHMS,
+    AI_FINANCE_STEP_RHYTHMS,
+    AI_KPI_STEP_RHYTHMS,
+    AI_STYLE_STEP_RHYTHMS,
+} from '../constants/ai-manager-snapshot.const';
+import { AI_PASSPORT_STEP_RHYTHMS } from '../constants/ai-passport.const';
+import {
+    AI_FORECAST_RHYTHMS,
+    AI_FORECAST_STEP_CODE,
+    AI_PORTAL_MODEL_RHYTHMS,
+    AI_PORTAL_MODEL_STEP_CODE,
+} from '../constants/ai-portal-model.const';
+import {
+    AI_ROP_MARK_STEP_CODE,
+    AI_ROP_MARK_STEP_RHYTHMS,
+} from '../constants/ai-rop-mark.const';
 import {
     AI_PIPELINE_RHYTHMS,
     type AiPipelineRhythm,
 } from '../constants/ai-snapshot.const';
+import { AI_STAGE_HISTORY_RHYTHMS } from '../constants/ai-stage-history.const';
 import { AiAnalyticsPassportModule } from '../passport/ai-analytics-passport.module';
 import {
     AI_ANALYTICS_PIPELINE_STEP_MODULES,
     AI_ANALYTICS_PIPELINE_STEP_ORDER,
     AiAnalyticsPipelineModule,
 } from '../pipeline/ai-analytics-pipeline.module';
+import { AiAnalyticsPortalModelModule } from '../portal-model/ai-analytics-portal-model.module';
 import { AiAnalyticsRopMarkModule } from '../rop-mark/ai-analytics-rop-mark.module';
 import { AiAnalyticsSnapshotsModule } from '../snapshots/ai-analytics-snapshots.module';
 import { AiAnalyticsStageHistoryModule } from '../stage-history/ai-analytics-stage-history.module';
+import { CallsStep } from '../steps/calls.step';
+import { FinanceStep } from '../steps/finance.step';
+import { ForecastStep } from '../steps/forecast.step';
+import { KpiStep } from '../steps/kpi.step';
+import { PassportStep } from '../steps/passport.step';
+import { AI_PLANS_STEP_RHYTHMS, PlansStep } from '../steps/plans.step';
+import { PortalModelStep } from '../steps/portal-model.step';
+import { RopMarkStep } from '../steps/rop-mark.step';
+import { SanityStep } from '../steps/sanity.step';
+import {
+    AI_SANITY_STEP_CODE,
+    AI_SANITY_STEP_RHYTHMS,
+} from '../steps/sanity.types';
+import { StageHistoryStep } from '../steps/stage-history.step';
 import {
     AI_ANALYTICS_PIPELINE_STEPS,
     type AiAnalyticsPipelineStep,
 } from '../steps/step.types';
+import { StyleStep } from '../steps/style.step';
 import {
     exportsOf,
     metadataList,
@@ -26,12 +61,16 @@ import {
 } from './fixtures/module-di.util';
 
 /**
- * Сборка ночного конвейера Фазы 2 (волна 4). Проверяется то, чего не
- * видно в тесте отдельного шага: срезы закрывают свои зависимости сами,
- * все шаги достижимы в графе конвейера, порядок массива согласован с
- * шиной значений, и каждый ритм — включая догон истории — действительно
+ * Сборка ночного конвейера Фазы 2 (волна 4 + поток 19). Проверяется то,
+ * чего не видно в тесте отдельного шага: срезы закрывают свои зависимости
+ * сами, все шаги достижимы в графе конвейера, порядок массива согласован
+ * с шиной значений, и каждый ритм — включая догон истории — действительно
  * выполняет шаги (приёмка волны 3 зафиксировала обратное: у `backfill`
  * не было ни одного шага, потому что шаги ещё не были зарегистрированы).
+ *
+ * Ожидания по ритмам НЕ вписаны руками: они выводятся из констант
+ * `AI_*_RHYTHMS` срезов (источник ритма каждого шага) и порядка массива.
+ * Руками закреплены только решения о порядке внутри ритма (кто за кем).
  *
  * Сам фильтр раннера (`steps.filter(step.rhythms.includes(rhythm))` плюс
  * белый список джобы) покрыт `snapshot-pipeline.service.spec.ts`; здесь
@@ -47,6 +86,36 @@ const STEPS: AiAnalyticsPipelineStep[] = AI_ANALYTICS_PIPELINE_STEP_ORDER.map(
 
 const CODES = STEPS.map(step => step.code);
 
+/**
+ * Ритмы каждого шага по константам его среза — второй, независимый от
+ * экземпляра источник: если у шага поменяют поле `rhythms`, не тронув
+ * константу (или наоборот), спек это увидит.
+ */
+const RHYTHMS_BY_STEP = new Map<
+    Type<AiAnalyticsPipelineStep>,
+    readonly AiPipelineRhythm[]
+>([
+    [CallsStep, AI_CALLS_STEP_RHYTHMS],
+    [PassportStep, AI_PASSPORT_STEP_RHYTHMS],
+    [StageHistoryStep, AI_STAGE_HISTORY_RHYTHMS],
+    [KpiStep, AI_KPI_STEP_RHYTHMS],
+    [StyleStep, AI_STYLE_STEP_RHYTHMS],
+    [PlansStep, AI_PLANS_STEP_RHYTHMS],
+    [FinanceStep, AI_FINANCE_STEP_RHYTHMS],
+    [RopMarkStep, AI_ROP_MARK_STEP_RHYTHMS],
+    [SanityStep, AI_SANITY_STEP_RHYTHMS],
+    [PortalModelStep, AI_PORTAL_MODEL_RHYTHMS],
+    [ForecastStep, AI_FORECAST_RHYTHMS],
+]);
+
+/** Коды шагов ритма по константам срезов в порядке массива. */
+function expectedCodesOfRhythm(rhythm: AiPipelineRhythm): string[] {
+    return AI_ANALYTICS_PIPELINE_STEP_ORDER.filter(step =>
+        (RHYTHMS_BY_STEP.get(step) ?? []).includes(rhythm),
+    ).map(step => new (step as StepCtor)().code);
+}
+
+/** Коды шагов ритма по полю `rhythms` экземпляров (как фильтрует раннер). */
 function codesOfRhythm(rhythm: AiPipelineRhythm): string[] {
     return STEPS.filter(step => step.rhythms.includes(rhythm)).map(
         step => step.code,
@@ -57,14 +126,24 @@ function indexOfCode(code: string): number {
     return CODES.indexOf(code);
 }
 
+function last(codes: readonly string[]): string | undefined {
+    return codes[codes.length - 1];
+}
+
 const SLICE_MODULES: Ctor[] = [
     AiAnalyticsSnapshotsModule,
     AiAnalyticsPassportModule,
     AiAnalyticsStageHistoryModule,
     AiAnalyticsRopMarkModule,
+    AiAnalyticsPortalModelModule,
 ];
 
-describe('Срезы шагов конвейера (волна 4)', () => {
+/** Единственный срез шагов с ручками — слепая проверка руководителя. */
+const SLICE_CONTROLLERS = new Map<Ctor, Ctor[]>([
+    [AiAnalyticsRopMarkModule, [AiAnalyticsRopMarkController]],
+]);
+
+describe('Срезы шагов конвейера', () => {
     it.each(SLICE_MODULES)(
         '%p: зависимости провайдеров доступны в модуле',
         module => {
@@ -73,9 +152,11 @@ describe('Срезы шагов конвейера (волна 4)', () => {
     );
 
     it.each(SLICE_MODULES)(
-        '%p: срез не публикует контроллеров — поверхность API не растёт',
+        '%p: срез публикует только свои ручки — чужие контроллеры не текут',
         module => {
-            expect(metadataList(module, 'controllers')).toEqual([]);
+            expect(metadataList(module, 'controllers')).toEqual(
+                SLICE_CONTROLLERS.get(module) ?? [],
+            );
             const leaking = metadataList(module, 'imports')
                 .filter(imported => imported.name !== 'BxDepartmentModule')
                 .filter(
@@ -93,8 +174,17 @@ describe('Срезы шагов конвейера (волна 4)', () => {
 });
 
 describe('Порядок шагов ночного конвейера', () => {
-    it('коды шагов уникальны', () => {
+    it('одиннадцать шагов с уникальными кодами, у каждого известны ритмы', () => {
+        expect(CODES).toHaveLength(11);
         expect(new Set(CODES).size).toBe(CODES.length);
+        expect(
+            AI_ANALYTICS_PIPELINE_STEP_ORDER.filter(
+                step => !RHYTHMS_BY_STEP.has(step),
+            ),
+        ).toEqual([]);
+        expect(RHYTHMS_BY_STEP.size).toBe(
+            AI_ANALYTICS_PIPELINE_STEP_ORDER.length,
+        );
     });
 
     it('порядок соответствует зависимостям по шине', () => {
@@ -106,8 +196,10 @@ describe('Порядок шагов ночного конвейера', () => {
             'style',
             'plans',
             'finance',
-            'rop-mark',
-            'sanity',
+            AI_ROP_MARK_STEP_CODE,
+            AI_SANITY_STEP_CODE,
+            AI_PORTAL_MODEL_STEP_CODE,
+            AI_FORECAST_STEP_CODE,
         ]);
     });
 
@@ -119,13 +211,20 @@ describe('Порядок шагов ночного конвейера', () => {
         ['calls', 'style'],
         ['calls', 'rop-mark'],
         ['calls', 'sanity'],
+        ['calls', 'portal-model'],
+        ['calls', 'forecast'],
         ['passport', 'style'],
         ['passport', 'finance'],
+        ['passport', 'portal-model'],
         ['stage-history', 'finance'],
         ['stage-history', 'sanity'],
+        ['stage-history', 'portal-model'],
+        ['stage-history', 'forecast'],
         ['kpi', 'finance'],
         ['style', 'finance'],
         ['plans', 'finance'],
+        ['sanity', 'portal-model'],
+        ['portal-model', 'forecast'],
     ])('шаг «%s» идёт раньше читающего его «%s»', (writer, reader) => {
         expect(indexOfCode(writer)).toBeGreaterThanOrEqual(0);
         expect(indexOfCode(writer)).toBeLessThan(indexOfCode(reader));
@@ -147,34 +246,40 @@ describe('Порядок шагов ночного конвейера', () => {
 
 describe('Ритмы прогона', () => {
     it.each(AI_PIPELINE_RHYTHMS)(
-        'ритм «%s» выполняет хотя бы один шаг',
+        'ритм «%s»: состав шагов выводится из констант срезов и непуст',
         rhythm => {
-            expect(codesOfRhythm(rhythm).length).toBeGreaterThan(0);
+            const codes = codesOfRhythm(rhythm);
+            expect(codes.length).toBeGreaterThan(0);
+            expect(codes).toEqual(expectedCodesOfRhythm(rhythm));
         },
     );
 
-    it('догон истории считает месяцы с паспортом из кэша, но без снимка планов', () => {
+    it('догон истории: паспорт из кэша, без снимка планов, модель портала пересчитывается последней', () => {
         // Паспорт нужен и в догоне: без него у догнанных месяцев
         // `tenureBand: null`, и полосы стажа не собираются. В этом ритме он
-        // берётся из кэша `user.get`, в портал за ним не ходим.
-        expect(codesOfRhythm('backfill')).toEqual([
-            'calls',
-            'passport',
-            'stage-history',
-            'kpi',
-            'finance',
-        ]);
-        expect(codesOfRhythm('backfill')).not.toContain('plans');
+        // берётся из кэша `user.get`, в портал за ним не ходим. Модель
+        // портала считается по догнанным месяцам, поэтому идёт после
+        // финансов; прогноз про сегодняшний остаток месяца в догоне не нужен.
+        const backfill = codesOfRhythm('backfill');
+        expect(backfill).toContain('passport');
+        expect(backfill).not.toContain('plans');
+        expect(backfill).not.toContain(AI_FORECAST_STEP_CODE);
+        expect(backfill).toContain(AI_PORTAL_MODEL_STEP_CODE);
+        expect(last(backfill)).toBe(AI_PORTAL_MODEL_STEP_CODE);
+        expect(backfill.indexOf('finance')).toBeLessThan(
+            backfill.indexOf(AI_PORTAL_MODEL_STEP_CODE),
+        );
     });
 
-    it('ночной ритм: разборы, паспорт, эпизоды, KPI и финансы', () => {
-        expect(codesOfRhythm('nightly')).toEqual([
-            'calls',
-            'passport',
-            'stage-history',
-            'kpi',
-            'finance',
-        ]);
+    it('ночной ритм: прогноз последний, модель портала каждую ночь не пересчитывается', () => {
+        const nightly = codesOfRhythm('nightly');
+        expect(nightly).toContain(AI_FORECAST_STEP_CODE);
+        expect(last(nightly)).toBe(AI_FORECAST_STEP_CODE);
+        expect(nightly).not.toContain(AI_PORTAL_MODEL_STEP_CODE);
+        expect(nightly).not.toContain(AI_SANITY_STEP_CODE);
+        expect(nightly.indexOf('stage-history')).toBeLessThan(
+            nightly.indexOf(AI_FORECAST_STEP_CODE),
+        );
     });
 
     it('недельный ритм: три звонка недели есть, санити-панель последняя', () => {
@@ -182,36 +287,31 @@ describe('Ритмы прогона', () => {
         // шины `slaFacts` и метки времени, которые пишет только этот шаг —
         // без него два правила панели из шести молчали бы в проде.
         const weekly = codesOfRhythm('weekly');
-        expect(weekly).toEqual([
-            'calls',
-            'passport',
-            'stage-history',
-            'rop-mark',
-            'sanity',
-        ]);
-        expect(weekly[weekly.length - 1]).toBe('sanity');
+        expect(weekly).toContain('stage-history');
+        expect(weekly).toContain(AI_ROP_MARK_STEP_CODE);
+        expect(last(weekly)).toBe(AI_SANITY_STEP_CODE);
+        expect(weekly).not.toContain(AI_PORTAL_MODEL_STEP_CODE);
+        expect(weekly).not.toContain(AI_FORECAST_STEP_CODE);
     });
 
-    it('месячный ритм: стиль и снимок планов есть, финансы закрывают месяц', () => {
-        const monthly = codesOfRhythm('monthly');
+    it('месячный ритм: финансы закрывают месяц, панель перед моделью, модель портала последняя', () => {
         // Санити-панель идёт и в месяце: её структурный отчёт забирает
-        // модель портала (`portal-model.sanity`), а модель считается по
-        // закрытому месяцу — иначе в модель попадала бы панель за другой
-        // период либо не попадала вовсе.
-        expect(monthly).toEqual([
-            'calls',
-            'passport',
-            'stage-history',
-            'kpi',
-            'style',
-            'plans',
-            'finance',
-            'sanity',
-        ]);
+        // модель портала (`portal-model.sanity`) из шины ТОГО ЖЕ прогона,
+        // а модель считается по закрытому месяцу — значит после финансов.
+        const monthly = codesOfRhythm('monthly');
+        expect(monthly).toContain('style');
+        expect(monthly).toContain('plans');
         expect(monthly.indexOf('finance')).toBeGreaterThan(
             monthly.indexOf('kpi'),
         );
-        expect(monthly[monthly.length - 1]).toBe('sanity');
+        expect(monthly.indexOf(AI_SANITY_STEP_CODE)).toBeGreaterThan(
+            monthly.indexOf('finance'),
+        );
+        expect(monthly.indexOf(AI_PORTAL_MODEL_STEP_CODE)).toBeGreaterThan(
+            monthly.indexOf(AI_SANITY_STEP_CODE),
+        );
+        expect(last(monthly)).toBe(AI_PORTAL_MODEL_STEP_CODE);
+        expect(monthly).not.toContain(AI_FORECAST_STEP_CODE);
     });
 });
 

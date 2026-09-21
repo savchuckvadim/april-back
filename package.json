@@ -58,7 +58,7 @@
         "prisma:generate": "prisma generate",
         "prisma:studio": "prisma studio",
         "typecheck": "tsc --noEmit -p tsconfig.json",
-        "test:di": "jest apps/event-sales/src/call-report/__tests__/call-report-module-di.spec.ts libs/call-lib/src/call-report/__tests__/call-report-modules-di.spec.ts --silent",
+        "test:di": "jest apps/event-sales/src/call-report/__tests__/call-report-module-di.spec.ts libs/call-lib/src/call-report/__tests__/call-report-modules-di.spec.ts apps/kpi-report-sales/src/ai-analytics/__tests__/ai-analytics-module-di.spec.ts apps/kpi-report-sales/src/ai-analytics/__tests__/snapshots-module-di.spec.ts apps/kpi-report-sales/src/ai-analytics/__tests__/brief-module-di.spec.ts apps/kpi-report-sales/src/ai-analytics/__tests__/plan-module-di.spec.ts apps/kpi-report-sales/src/ai-analytics/style/__tests__/style-module-di.spec.ts --silent",
         "check:preflight": "npm run typecheck && npm run test:di",
         "hooks:install": "git config core.hooksPath .githooks",
         "typecheck:build": "tsc --noEmit -p tsconfig.build.json",

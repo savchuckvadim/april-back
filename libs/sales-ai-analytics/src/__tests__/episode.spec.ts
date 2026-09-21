@@ -131,6 +131,34 @@ describe('buildEpisodes: эпизоды сделки и три вида конц
         },
     );
 
+    it('«Не Беспокоить» (семантика F, кода в списке отказов нет) — тоже отказ, без хвоста цензуры', () => {
+        // Стадия добавлена на портале 15.09.2026 в обход списка отказных
+        // кодов модели: клиент просил не звонить, продажи не будет. Эпизод
+        // обязан закрыться по семантике стадии, а не остаться «открытым»
+        // навсегда — иначе такая сделка сидела бы в ожидании от пайплайна.
+        expect(AI_EPISODE_FAIL_STAGE_CODES).not.toContain(STAGE.notCall);
+        const built = buildEpisodes(
+            [
+                transition('N1', STAGE.presentation, 1),
+                {
+                    entityId: 'N1',
+                    stageCode: STAGE.notCall,
+                    order: getSalesBaseStageOrder(STAGE.notCall),
+                    semantic: 'F',
+                    at: day(9),
+                },
+            ],
+            { now: NOW },
+        );
+        expect(built).toHaveLength(1);
+        expect(built[0]).toMatchObject({
+            end: 'fail',
+            endReason: 'fail-stage',
+            durationDays: 8,
+            success: false,
+        });
+    });
+
     it('открытый эпизод даёт цензуру и пустую длительность', () => {
         const censored = episodes.find(episode => episode.end === 'censored');
         expect(censored).toMatchObject({

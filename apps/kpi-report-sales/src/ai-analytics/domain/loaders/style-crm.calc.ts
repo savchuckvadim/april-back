@@ -3,12 +3,16 @@
  * сегментов окна (документ `ai/tasks/ai-analytics-manager-style.md`,
  * §2.1 оси 4/7/8). Математика единиц наблюдения — в `style-crm.units.ts`.
  *
+ * Агрегаты всегда выводятся из рядов единиц одной функцией
+ * (`aggregatesOf`) — и для сегмента, и для склейки окна: медианы окна
+ * считаются по объединённым выборкам (ряды хранятся в `units`), а не как
+ * среднее медиан сегментов; индекс дисперсии — по дням всего окна с
+ * порогом, переданным вызывающим (`style_dispersion_min_days`).
+ *
  * Чистые функции: без DI, Bitrix и `new Date()`.
  */
 import {
-    isVoxConversation,
     isVoxIncoming,
-    voxCallDurationSec,
     type BxVoximplantStatisticRow,
 } from '@lib/bitrix/domain/telephony';
 import type {
@@ -21,13 +25,17 @@ import type {
 } from './style-crm.types';
 import {
     attemptsPerLead,
+    byCallType,
     callsPerWorkday,
+    conversationDurationsByType,
     dispersionIndex,
     giveUpCounts,
     leadResponseMinutes,
     median,
+    medianDurationByType,
     promiseCounts,
     rhythmContributions,
+    STYLE_CRM_CALL_TYPE_KEYS,
     STYLE_CRM_THRESHOLDS,
 } from './style-crm.units';
 
@@ -40,8 +48,61 @@ export interface StyleCrmCalcInput {
     thresholds: StyleCrmThresholds;
 }
 
+/** Аддитивные счётчики сегмента — складываются при склейке окна. */
+interface StyleCrmCounts {
+    giveUpEvents: number;
+    giveUps: number;
+    promises: number;
+    promisesKept: number;
+    calls: number;
+    /** Доля входящих; null — звонков нет. */
+    incomingShare: number | null;
+    workdays: number;
+}
+
 const managerOf = (row: BxVoximplantStatisticRow): string =>
     String(row.PORTAL_USER_ID ?? '');
+
+const emptyUnits = (): StyleCrmUnits => ({
+    attemptsPerLead: [],
+    callsPerWorkday: [],
+    rhythmPerWorkday: [],
+    conversationSecByType: byCallType<number[]>(() => []),
+    leadResponseMin: [],
+});
+
+/** Агрегаты «Основания» из рядов единиц и аддитивных счётчиков. */
+export function aggregatesOf(
+    units: StyleCrmUnits,
+    counts: StyleCrmCounts,
+    thresholds: StyleCrmThresholds,
+): StyleCrmAggregates {
+    const durations = medianDurationByType(units.conversationSecByType);
+    const daily = units.callsPerWorkday;
+    return {
+        attemptsMedian: median(units.attemptsPerLead),
+        giveUpEvents: counts.giveUpEvents,
+        giveUps: counts.giveUps,
+        giveUpRate: counts.giveUpEvents
+            ? counts.giveUps / counts.giveUpEvents
+            : null,
+        promises: counts.promises,
+        promisesKept: counts.promisesKept,
+        promiseKeptRate: counts.promises
+            ? counts.promisesKept / counts.promises
+            : null,
+        leadResponseMinMedian: median(units.leadResponseMin),
+        conversationSecMedian: durations.all,
+        conversationSecMedianByType: durations.byType,
+        dispersionIndex: dispersionIndex(daily, thresholds.dispersionMinDays),
+        incomingShare: counts.incomingShare,
+        callsPerWorkdayMean: daily.length
+            ? daily.reduce((sum, value) => sum + value, 0) / daily.length
+            : null,
+        calls: counts.calls,
+        workdays: counts.workdays,
+    };
+}
 
 /** Счётчики одного менеджера за сегмент по его строкам телефонии. */
 export function buildManagerCounters(
@@ -51,42 +112,30 @@ export function buildManagerCounters(
 ): StyleCrmManagerMonth {
     const { workdays, leads, promises, thresholds } = input;
     const daily = callsPerWorkday(rows, workdays, thresholds.tempoMinSec);
-    const attempts = attemptsPerLead(rows, thresholds.conversationMinSec);
     const giveUp = giveUpCounts(rows, workdays, thresholds);
     const promise = promiseCounts(promises, rows, thresholds.promiseWindowDays);
-    const durations = rows
-        .filter(row => isVoxConversation(row, thresholds.conversationMinSec))
-        .map(voxCallDurationSec);
     const units: StyleCrmUnits = {
-        attemptsPerLead: attempts,
+        attemptsPerLead: attemptsPerLead(rows, thresholds.conversationMinSec),
         callsPerWorkday: daily,
         rhythmPerWorkday: rhythmContributions(daily),
+        conversationSecByType: conversationDurationsByType(
+            rows,
+            thresholds.conversationMinSec,
+        ),
+        leadResponseMin: leadResponseMinutes(leads, rows, workdays),
     };
-    const aggregates: StyleCrmAggregates = {
-        attemptsMedian: median(attempts),
+    const counts: StyleCrmCounts = {
         giveUpEvents: giveUp.events,
         giveUps: giveUp.giveUps,
-        giveUpRate: giveUp.events ? giveUp.giveUps / giveUp.events : null,
         promises: promise.promises,
         promisesKept: promise.kept,
-        promiseKeptRate: promise.promises
-            ? promise.kept / promise.promises
-            : null,
-        leadResponseMinMedian: median(
-            leadResponseMinutes(leads, rows, workdays),
-        ),
-        conversationSecMedian: median(durations),
-        dispersionIndex: dispersionIndex(daily, thresholds.dispersionMinDays),
+        calls: rows.length,
         incomingShare: rows.length
             ? rows.filter(isVoxIncoming).length / rows.length
             : null,
-        callsPerWorkdayMean: daily.length
-            ? daily.reduce((sum, value) => sum + value, 0) / daily.length
-            : null,
-        calls: rows.length,
         workdays: workdays.length,
     };
-    return { managerId, units, ...aggregates };
+    return { managerId, units, ...aggregatesOf(units, counts, thresholds) };
 }
 
 /** Счётчики всех менеджеров сегмента (менеджер без звонков — нулевая строка). */
@@ -114,97 +163,82 @@ export function buildMonthCounters(
     );
 }
 
-/** Склейка сегментов окна в один набор рядов на менеджера. */
+/**
+ * Склейка сегментов окна в один набор рядов на менеджера. Агрегаты
+ * пересчитываются из объединённых рядов с ПЕРЕДАННЫМИ порогами — так
+ * сегмент из кэша, посчитанный при другом `style_dispersion_min_days`,
+ * не протаскивает старый индекс дисперсии в окно.
+ */
 export function mergeManagerMonths(
     months: readonly StyleCrmManagerMonth[][],
+    thresholds: StyleCrmThresholds = STYLE_CRM_THRESHOLDS,
 ): StyleCrmManagerMonth[] {
-    const merged = new Map<string, StyleCrmManagerMonth>();
+    const byManager = new Map<string, StyleCrmManagerMonth[]>();
     for (const month of months) {
         for (const item of month) {
-            const current = merged.get(item.managerId);
-            merged.set(
-                item.managerId,
-                current === undefined ? item : mergeTwo(current, item),
-            );
+            byManager.set(item.managerId, [
+                ...(byManager.get(item.managerId) ?? []),
+                item,
+            ]);
         }
     }
-    return [...merged.values()];
-}
-
-function mergeTwo(
-    a: StyleCrmManagerMonth,
-    b: StyleCrmManagerMonth,
-): StyleCrmManagerMonth {
-    const units: StyleCrmUnits = {
-        attemptsPerLead: [
-            ...a.units.attemptsPerLead,
-            ...b.units.attemptsPerLead,
-        ],
-        callsPerWorkday: [
-            ...a.units.callsPerWorkday,
-            ...b.units.callsPerWorkday,
-        ],
-        rhythmPerWorkday: [
-            ...a.units.rhythmPerWorkday,
-            ...b.units.rhythmPerWorkday,
-        ],
-    };
-    const giveUpEvents = a.giveUpEvents + b.giveUpEvents;
-    const giveUps = a.giveUps + b.giveUps;
-    const promises = a.promises + b.promises;
-    const promisesKept = a.promisesKept + b.promisesKept;
-    const calls = a.calls + b.calls;
-    const workdays = a.workdays + b.workdays;
-    const callsSum = units.callsPerWorkday.reduce(
-        (sum, value) => sum + value,
-        0,
+    return [...byManager.entries()].map(([managerId, items]) =>
+        foldManager(managerId, items, thresholds),
     );
-    return {
-        managerId: a.managerId,
-        units,
-        attemptsMedian: median(units.attemptsPerLead),
-        giveUpEvents,
-        giveUps,
-        giveUpRate: giveUpEvents ? giveUps / giveUpEvents : null,
-        promises,
-        promisesKept,
-        promiseKeptRate: promises ? promisesKept / promises : null,
-        leadResponseMinMedian: mergeMedian(
-            a.leadResponseMinMedian,
-            b.leadResponseMinMedian,
-        ),
-        conversationSecMedian: mergeMedian(
-            a.conversationSecMedian,
-            b.conversationSecMedian,
-        ),
-        dispersionIndex: dispersionIndex(
-            units.callsPerWorkday,
-            STYLE_CRM_THRESHOLDS.dispersionMinDays,
-        ),
-        incomingShare: mergeShare(a, b, calls),
-        callsPerWorkdayMean: units.callsPerWorkday.length
-            ? callsSum / units.callsPerWorkday.length
-            : null,
+}
+
+/** Сегменты одного менеджера → ряды окна и агрегаты по ним. */
+function foldManager(
+    managerId: string,
+    items: readonly StyleCrmManagerMonth[],
+    thresholds: StyleCrmThresholds,
+): StyleCrmManagerMonth {
+    const units = items.reduce<StyleCrmUnits>(
+        (acc, item) => mergeUnits(acc, item.units),
+        emptyUnits(),
+    );
+    const calls = items.reduce((sum, item) => sum + item.calls, 0);
+    const counts: StyleCrmCounts = {
+        giveUpEvents: items.reduce((sum, item) => sum + item.giveUpEvents, 0),
+        giveUps: items.reduce((sum, item) => sum + item.giveUps, 0),
+        promises: items.reduce((sum, item) => sum + item.promises, 0),
+        promisesKept: items.reduce((sum, item) => sum + item.promisesKept, 0),
         calls,
-        workdays,
+        incomingShare: mergeShare(items, calls),
+        workdays: items.reduce((sum, item) => sum + item.workdays, 0),
+    };
+    return { managerId, units, ...aggregatesOf(units, counts, thresholds) };
+}
+
+/** Объединение рядов единиц двух сегментов (порядок — по сегментам). */
+function mergeUnits(a: StyleCrmUnits, b: StyleCrmUnits): StyleCrmUnits {
+    return {
+        attemptsPerLead: [...a.attemptsPerLead, ...b.attemptsPerLead],
+        callsPerWorkday: [...a.callsPerWorkday, ...b.callsPerWorkday],
+        rhythmPerWorkday: [...a.rhythmPerWorkday, ...b.rhythmPerWorkday],
+        conversationSecByType: Object.fromEntries(
+            STYLE_CRM_CALL_TYPE_KEYS.map(key => [
+                key,
+                [
+                    ...a.conversationSecByType[key],
+                    ...b.conversationSecByType[key],
+                ],
+            ]),
+        ) as StyleCrmUnits['conversationSecByType'],
+        leadResponseMin: [...a.leadResponseMin, ...b.leadResponseMin],
     };
 }
 
-/** Медианы сегментов усредняются: сырых рядов длительностей не храним. */
-function mergeMedian(a: number | null, b: number | null): number | null {
-    if (a === null) return b;
-    if (b === null) return a;
-    return (a + b) / 2;
-}
-
+/** Доля входящих окна: взвешенная по звонкам сегментов; null — звонков нет. */
 function mergeShare(
-    a: StyleCrmManagerMonth,
-    b: StyleCrmManagerMonth,
+    items: readonly StyleCrmManagerMonth[],
     calls: number,
 ): number | null {
     if (calls === 0) return null;
     return (
-        ((a.incomingShare ?? 0) * a.calls + (b.incomingShare ?? 0) * b.calls) /
-        calls
+        items.reduce(
+            (sum, item) => sum + (item.incomingShare ?? 0) * item.calls,
+            0,
+        ) / calls
     );
 }

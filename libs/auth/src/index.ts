@@ -29,6 +29,49 @@ export type {
     AuthForRootOptions,
 } from './config/auth.config';
 
+// Portal-context сессия фрейма Bitrix24: обмен AUTH_ID на JWT и guard
+// мутирующих ручек (kpi-report-sales и другие витрины во фрейме).
+export {
+    PortalSessionModule,
+    PortalSessionApiModule,
+} from './portal-session/portal-session.module';
+export { PortalSessionService } from './portal-session/portal-session.service';
+export {
+    PortalSessionGuard,
+    type PortalSessionRequest,
+} from './portal-session/portal-session.guard';
+export {
+    PortalSessionProtected,
+    PORTAL_SESSION_UNAUTHORIZED_DESCRIPTION,
+    PORTAL_SESSION_FORBIDDEN_DESCRIPTION,
+} from './portal-session/portal-session.decorator';
+export { BitrixProfileClient } from './portal-session/bitrix-profile.client';
+export {
+    PortalSessionOpenDto,
+    PortalSessionDto,
+    PortalSessionUserDto,
+} from './portal-session/dto/portal-session.dto';
+export {
+    PORTAL_SESSION_GUARD_MODES,
+    PORTAL_SESSION_GUARD_MODE_DEFAULT,
+    PORTAL_SESSION_GUARD_MODE_ENV,
+    PORTAL_SESSION_ROUTE,
+    PORTAL_SESSION_SWAGGER_TAG,
+    PORTAL_SESSION_REJECT_REASONS,
+    PORTAL_SESSION_OPEN_FAILURES,
+    parsePortalSessionGuardMode,
+    normalizePortalDomain,
+    type PortalSessionGuardMode,
+    type PortalSessionRejectReason,
+    type PortalSessionOpenFailure,
+} from './portal-session/portal-session.const';
+export type {
+    PortalSession,
+    PortalSessionUser,
+    PortalSessionOpenInput,
+    PortalSessionOpenResult,
+} from './portal-session/portal-session.types';
+
 // DTO
 export { LoginDto } from './dto/login.dto';
 export { AuthResponseDto, AuthUserDto } from './dto/auth-response.dto';

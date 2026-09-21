@@ -9,6 +9,8 @@ import {
 import { PBX_DEAL_SALES_BASE_STAGE_CODE } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
 import { AI_PIPELINE_BUS_KEYS } from '../constants/ai-snapshot.const';
 import { ruWorkCalendar } from '../domain/loaders/calendar.util';
+import { portalSettings } from './fixtures/lite-row.fixture';
+import { CALL_REPORT_CALL_TYPE_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-smart.type';
 import { createStepBus } from '../steps/step.types';
 import {
     agreedSla,
@@ -467,6 +469,17 @@ describe('Разбор шины, стора и настроек', () => {
     });
 });
 
+/** Одинаковый порог у всех типов звонка — «одно решение» портала. */
+function uniformMinDuration(
+    sec: number,
+): ReturnType<typeof portalSettings>['definitions']['minDurationSecByType'] {
+    return Object.fromEntries(
+        CALL_REPORT_CALL_TYPE_CODES.map(code => [code, sec]),
+    ) as ReturnType<
+        typeof portalSettings
+    >['definitions']['minDurationSecByType'];
+}
+
 /** Контекст прогона в объёме, который читает панель. */
 function makeContext(
     overrides: Partial<AiPipelineStepContext> = {},
@@ -479,11 +492,12 @@ function makeContext(
         monthKey: '2026-09',
         timeZone: 'Europe/Moscow',
         calendar: ruWorkCalendar(2026),
-        settings: {
+        // Полные настройки портала: правило порога теперь идёт через общий
+        // резолвер, который собирает контекст реестра из ВСЕХ определений.
+        settings: portalSettings({
             targets: targets(12),
             modelParams: { sla_refine_days: 14 },
-            definitions: { minDurationSecByType: { presentation: 300 } },
-        },
+        }),
         registry: {},
         paramsVersion: 'pv-1',
         calcVersion: 'sam-1.0.0',
@@ -624,11 +638,7 @@ describe('SanityStep — шаг конвейера', () => {
 
         const result = await step.run(
             makeContext({
-                settings: {
-                    targets: targets(null),
-                    modelParams: {},
-                    definitions: { minDurationSecByType: {} },
-                } as never,
+                settings: portalSettings({ targets: targets(null) }),
             }),
             bus,
         );
@@ -694,9 +704,22 @@ describe('Порог длительности: один источник у пу
             })),
         );
 
+        // Порог портала 60 задан тем же путём, каким его читают пульс и
+        // шаги конвейера (общий резолвер, решение А.1): единая карта на
+        // все типы — «одно решение», и код реестра в model_params.
         const result = await step.run(
             makeContext({
-                registry: { portal: { min_duration_sec_by_type: 60 } },
+                settings: portalSettings({
+                    targets: targets(12),
+                    modelParams: {
+                        sla_refine_days: 14,
+                        min_duration_sec_by_type: 60,
+                    },
+                    definitions: {
+                        ...portalSettings().definitions,
+                        minDurationSecByType: uniformMinDuration(60),
+                    },
+                }),
             }),
             bus,
         );

@@ -5,8 +5,10 @@ import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { AI_ANALYTICS_SNAPSHOT_KINDS } from '../constants/ai-analytics.const';
 import { AuditSnapshotUseCase } from '../domain/use-cases/audit-snapshot.use-case';
+import { BriefJobUseCase } from '../domain/use-cases/brief-job.use-case';
 import { OverviewJobUseCase } from '../domain/use-cases/overview-job.use-case';
 import { AiAnalyticsPushUseCase } from '../domain/use-cases/push.use-case';
+import { AiBriefDto, AiBriefJobData } from '../dto/ai-brief.dto';
 import { AiOverviewJobData } from '../dto/ai-overview-request.dto';
 import { AiPushJobData } from '../dto/ai-push.dto';
 import {
@@ -20,19 +22,33 @@ import {
 } from '../steps/step.types';
 import { AiPushResult } from '../domain/use-cases/push.types';
 
+/** Тексты ошибок процессора, когда срез не подключён сборкой приложения. */
+export const AI_ANALYTICS_PROCESSOR_ERRORS = {
+    pipelineMissing:
+        'Конвейер снапшотов не подключён: нет провайдера AI_ANALYTICS_SNAPSHOT_RUNNER',
+    briefMissing: 'Срез AI-резюме не подключён: нет провайдера BriefJobUseCase',
+} as const;
+
 /**
  * Воркер AI-аналитики на очереди SALES_KPI_REPORT (рядом с
  * SalesFinanceQueueProcessor и остальными процессорами приложения).
  * Только dispatch по job name: расчёт и доставка push — в
  * AiAnalyticsPushUseCase (тот же код зовёт ручная ручка POST
  * ai-analytics/push), месячный снапшот аудита — в AuditSnapshotUseCase,
- * обзор (Фаза 1b) — в OverviewJobUseCase (расчёт, write-through в кэш,
- * WS done/error). Ошибка — warn + rethrow: джоба помечается failed,
- * ретраев нет (attempts: 1), повтор — следующим тиком или вручную.
+ * обзор (Фаза 1b) — в OverviewJobUseCase, AI-резюме (Фаза 2) — в
+ * BriefJobUseCase (оба: расчёт, write-through в кэш, WS done/error).
+ * Ошибка — warn + rethrow: джоба помечается failed, ретраев нет
+ * (attempts: 1), повтор — следующим тиком или вручную.
  *
  * Снапшот-джоба диспетчеризуется по виду (план §5.3): `audit` — месячный
  * аудит Фазы 0, остальные виды — ритмы ночного конвейера Фазы 2
  * (у них свои опции: две попытки и таймаут 15 минут).
+ *
+ * Раннер конвейера и джоба резюме приходят из срезов, которые сборка
+ * приложения (`ai-analytics.module.ts`) подключает отдельно, поэтому оба
+ * помечены @Optional(): не подключены — джобы отвечают понятной ошибкой,
+ * а не падают на старте приложения. В собранном приложении оба есть —
+ * закреплено `__tests__/ai-analytics-module-di.spec.ts`.
  */
 @Processor(QueueNames.SALES_KPI_REPORT)
 export class AiAnalyticsQueueProcessor {
@@ -42,12 +58,8 @@ export class AiAnalyticsQueueProcessor {
         private readonly push: AiAnalyticsPushUseCase,
         private readonly auditSnapshot: AuditSnapshotUseCase,
         private readonly overviewJob: OverviewJobUseCase,
-        /**
-         * Раннер конвейера — по токену и опционально: срез конвейера
-         * (AiAnalyticsPipelineModule) подключается сборкой приложения
-         * отдельно, а процессор живёт в модуле фичи. Не подключён —
-         * ритмовые джобы отвечают понятной ошибкой, аудит работает.
-         */
+        @Optional()
+        private readonly briefJob?: BriefJobUseCase,
         @Optional()
         @Inject(AI_ANALYTICS_SNAPSHOT_RUNNER)
         private readonly pipeline?: AiSnapshotRunner,
@@ -70,6 +82,30 @@ export class AiAnalyticsQueueProcessor {
         } catch (error) {
             this.logger.warn(
                 `Обзор ${requestKey} упал: ${(error as Error).message}`,
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * AI-резюме периода (план §5.3): пакет фактов → модель или шаблон →
+     * снапшот → кэш (6 ч) → WS done. Штатная деградация (нет ключа,
+     * квота, факт-чек) — успех с шаблоном внутри use-case; ошибка модели
+     * там же уходит error-конвертом и :error, здесь — warn + rethrow,
+     * чтобы Bull пометил джобу failed.
+     */
+    @Process(JobNames.SALES_AI_ANALYTICS_BRIEF)
+    async handleBrief(job: Job<AiBriefJobData>): Promise<AiBriefDto> {
+        const { domain, from, to, requestKey } = job.data;
+        this.logger.log(`SALES_AI_ANALYTICS_BRIEF: ${domain} ${from}..${to}`);
+        try {
+            if (!this.briefJob) {
+                throw new Error(AI_ANALYTICS_PROCESSOR_ERRORS.briefMissing);
+            }
+            return await this.briefJob.execute(job.data);
+        } catch (error) {
+            this.logger.warn(
+                `Резюме ${requestKey} упало: ${(error as Error).message}`,
             );
             throw error;
         }
@@ -139,9 +175,7 @@ export class AiAnalyticsQueueProcessor {
         job: Job<AiSnapshotJobData>,
     ): Promise<AiPipelineRunSummary> {
         if (!this.pipeline) {
-            throw new Error(
-                'Конвейер снапшотов не подключён: нет провайдера AI_ANALYTICS_SNAPSHOT_RUNNER',
-            );
+            throw new Error(AI_ANALYTICS_PROCESSOR_ERRORS.pipelineMissing);
         }
         const result = await this.pipeline.run(job);
         this.logger.log(

@@ -1,6 +1,8 @@
 import { CALL_REPORT_CALL_TYPE_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-smart.type';
 import { MIN_DURATION_DEFAULT_TYPE, minDurationSecOf } from '../model/pulse';
+import { findParam } from '../params/registry.const';
 import {
+    isMinDurationPortalDefined,
     minDurationByTypeOfSettings,
     minDurationFloorSec,
     registryMinDurationSec,
@@ -126,5 +128,93 @@ describe('min-duration.resolve — единый порог разбора пор
 
     it('пустая карта не даёт Infinity: минимум падает на дефолт реестра', () => {
         expect(minDurationFloorSec({})).toBe(300);
+    });
+});
+
+// Долг 10 волны C: у кода реестра `min_duration_sec` появился потребитель —
+// явный общий скаляр портала в цепочке между порогом по типам и прежним
+// скаляром конвейера. Дескриптор не менялся: registryVersion прежний.
+describe('min-duration.resolve — скаляр min_duration_sec из model_params', () => {
+    const scalarJson = (sec: number): string =>
+        JSON.stringify({ min_duration_sec: sec });
+
+    it('явный скаляр — решение портала: старше прежнего скаляра конвейера', () => {
+        const byType = minDurationByTypeOfSettings(
+            { aiAnalyticsModelParams: scalarJson(90) },
+            60,
+        );
+
+        expect(byType).toEqual({ [MIN_DURATION_DEFAULT_TYPE]: 90 });
+        expect(minDurationSecOf('presentation', byType)).toBe(90);
+    });
+
+    it('порог по типам старше скаляра', () => {
+        const uniform = Object.fromEntries(
+            CALL_REPORT_CALL_TYPE_CODES.map(code => [code, 120]),
+        );
+        const byType = minDurationByTypeOfSettings(
+            {
+                aiAnalyticsDefinitions: definitionsJson(uniform),
+                aiAnalyticsModelParams: scalarJson(90),
+            },
+            60,
+        );
+
+        expect(byType).toEqual({ [MIN_DURATION_DEFAULT_TYPE]: 120 });
+    });
+
+    it('скаляр вне диапазона реестра решением не считается — держится прежний скаляр', () => {
+        const [rangeMin] = findParam('min_duration_sec')?.range ?? [60, 600];
+        const byType = minDurationByTypeOfSettings(
+            { aiAnalyticsModelParams: scalarJson(rangeMin - 30) },
+            45,
+        );
+
+        // Прежний скаляр реестром не проверяется: 45 принимается как есть.
+        expect(byType).toEqual({ [MIN_DURATION_DEFAULT_TYPE]: 45 });
+    });
+
+    it('дефолт реестра min_duration_sec решением портала не считается', () => {
+        // Настройки заведены ради другого кода, порога среди них нет —
+        // работает прежний скаляр конвейера, а не 300 реестра.
+        const byType = resolveMinDurationByType({
+            modelParams: { forget_lambda: 0.85 },
+            fallbackSec: 60,
+            portalDefined: false,
+        });
+
+        expect(byType).toEqual({ [MIN_DURATION_DEFAULT_TYPE]: 60 });
+    });
+
+    it('признак явного порога по типам — только ключи карты и кода by_type', () => {
+        expect(isMinDurationPortalDefined(null)).toBe(false);
+        expect(
+            isMinDurationPortalDefined({
+                aiAnalyticsDefinitions: JSON.stringify({
+                    hotClientColors: ['green'],
+                }),
+            }),
+        ).toBe(false);
+        expect(
+            isMinDurationPortalDefined({
+                aiAnalyticsDefinitions: definitionsJson({ cold: 60 }),
+            }),
+        ).toBe(true);
+        expect(
+            isMinDurationPortalDefined({
+                aiAnalyticsModelParams: JSON.stringify({
+                    min_duration_sec_by_type: 90,
+                }),
+            }),
+        ).toBe(true);
+        // Скаляр — отдельный источник цепочки: признак по типам не поднимает.
+        expect(
+            isMinDurationPortalDefined({
+                aiAnalyticsModelParams: scalarJson(90),
+            }),
+        ).toBe(false);
+        expect(
+            isMinDurationPortalDefined({ aiAnalyticsDefinitions: '{не json' }),
+        ).toBe(false);
     });
 });

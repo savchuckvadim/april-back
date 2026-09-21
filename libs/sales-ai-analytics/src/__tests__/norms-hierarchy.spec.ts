@@ -10,6 +10,7 @@ import {
     toShrinkPrior,
 } from '../model/norms-hierarchy';
 import { shrinkRate } from '../model/shrink';
+import { AI_ANALYTICS_PARAM_DEFAULTS } from '../params/registry.const';
 
 /** Портал: полоса junior (0–6 мес.) из 4 менеджеров и senior из 2. */
 const CELLS: NormCell[] = [
@@ -240,6 +241,11 @@ describe('leaveOneOutNorm — κ_boot нового портала (план §4.
             boot: { months: 2 },
         });
 
+        // Доля стартовой усадки — дефолт реестра kappa_boot_ratio (0,2),
+        // а не литерал модели (долг 36 волны C).
+        expect(NORM_HIERARCHY_DEFAULTS.bootRatio).toBe(
+            AI_ANALYTICS_PARAM_DEFAULTS.kappa_boot_ratio,
+        );
         expect(NORM_HIERARCHY_DEFAULTS.bootRatio).toBe(0.2);
         expect(NORM_HIERARCHY_DEFAULTS.bootMonths).toBe(3);
         // Пул портала без m1: пять ячеек по 100 → median 100, κ_boot = 20.

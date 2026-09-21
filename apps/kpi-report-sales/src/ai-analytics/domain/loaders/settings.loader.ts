@@ -1,10 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
 import {
     EnumPortalAppCode,
     parseUserIds,
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
-import { parseWorkCalendar, WorkCalendar } from '@lib/sales-ai-analytics';
+import {
+    isMinDurationPortalDefined,
+    parseWorkCalendar,
+    WorkCalendar,
+} from '@lib/sales-ai-analytics';
 import {
     parseAiAbsences,
     parseAiDefinitions,
@@ -75,6 +80,26 @@ export interface AiAnalyticsPortalSettings {
     hypothesis: AiQualityHypothesis | null;
     /** Дата подтверждения ростера (ai_analytics_roster_confirmed_at); '' — нет. */
     rosterConfirmedAt: string;
+    /**
+     * Портал задал порог длительности ПО ТИПАМ явно (ключ
+     * `minDurationSecByType` в ai_analytics_definitions или код
+     * `min_duration_sec_by_type` в ai_analytics_model_params). По разобранным
+     * блокам этого не определить: парсер подставляет дефолт реестра вместо
+     * отсутствующего ключа, и «портал задал 300» неотличимо от «не задавал».
+     * Признак читает `portalMinDurationByType` (решение владельца А.1).
+     * undefined — признак не считался (ручные фикстуры): слой портала
+     * читается как есть.
+     */
+    minDurationDefined?: boolean;
+    /**
+     * Прежний скаляр конвейера разбора — `portal_ai_settings.min_duration_sec`
+     * старой админки. Запасной источник порога после явного решения в
+     * настройках AI-аналитики: без него портал, где пилот 60 с задан только
+     * в старой админке, считался бы пульсом и ночным расчётом по 300, а
+     * разбором — по 60. null — не задан; undefined — сервис не подключён
+     * (ручные фикстуры).
+     */
+    legacyMinDurationSec?: number | null;
 }
 
 /**
@@ -86,7 +111,23 @@ export interface AiAnalyticsPortalSettings {
  */
 @Injectable()
 export class SettingsLoader {
-    constructor(private readonly appSettings: PortalAppSettingsService) {}
+    constructor(
+        private readonly appSettings: PortalAppSettingsService,
+        /** Старая админка разбора; без неё запасного скаляра просто нет. */
+        @Optional()
+        private readonly portalAiSettings?: PortalAiSettingsService,
+    ) {}
+
+    /** Прежний скаляр порога из старой админки; ошибка чтения — null. */
+    private async legacyMinDurationSec(domain: string): Promise<number | null> {
+        if (!this.portalAiSettings) return null;
+        try {
+            const record = await this.portalAiSettings.getByDomain(domain);
+            return record?.minDurationSec ?? null;
+        } catch {
+            return null;
+        }
+    }
 
     async load(domain: string): Promise<AiAnalyticsPortalSettings> {
         const settings = await this.appSettings.resolve(
@@ -94,6 +135,7 @@ export class SettingsLoader {
             EnumPortalAppCode.kpiSales,
         );
         const poolConsentAt = settings.aiAnalyticsPoolConsentAt.trim();
+        const legacyMinDurationSec = await this.legacyMinDurationSec(domain);
         return {
             enabled: settings.aiAnalyticsEnabled,
             auditEnabled: settings.aiAnalyticsAuditEnabled,
@@ -123,6 +165,12 @@ export class SettingsLoader {
             rosterConfirmedAt: parseRosterConfirmedAt(
                 settings.aiAnalyticsRosterConfirmedAt,
             ),
+            // По сырым строкам: после парсера дефолт неотличим от решения.
+            minDurationDefined: isMinDurationPortalDefined({
+                aiAnalyticsDefinitions: settings.aiAnalyticsDefinitions,
+                aiAnalyticsModelParams: settings.aiAnalyticsModelParams,
+            }),
+            legacyMinDurationSec,
         };
     }
 }

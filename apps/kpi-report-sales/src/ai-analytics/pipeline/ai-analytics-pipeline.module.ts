@@ -1,25 +1,21 @@
 import { DynamicModule, Module, ModuleMetadata, Type } from '@nestjs/common';
 import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { QueueModule } from 'src/modules/queue/queue.module';
-import { AiModule } from '@lib/call-lib';
-import { BxDepartmentModule } from '@lib/bx-department';
-import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
-import { AiAnalyticsCacheService } from '../cache/ai-analytics-cache.service';
+import { AiAnalyticsCoreModule } from '../core/ai-analytics-core.module';
 import { AiAnalyticsSnapshotScheduler } from '../cron/ai-analytics-snapshot.scheduler';
 import { AiAnalyticsCalendarLoader } from '../domain/loaders/calendar.loader';
-import { ManagersLoader } from '../domain/loaders/managers.loader';
-import { AiAnalyticsParamsLoader } from '../domain/loaders/params.loader';
-import { AiAnalyticsPortalsLoader } from '../domain/loaders/portals.loader';
-import { SettingsLoader } from '../domain/loaders/settings.loader';
 import { AiAnalyticsPassportModule } from '../passport/ai-analytics-passport.module';
+import { AiAnalyticsPortalModelModule } from '../portal-model/ai-analytics-portal-model.module';
 import { AiAnalyticsRopMarkModule } from '../rop-mark/ai-analytics-rop-mark.module';
 import { AiAnalyticsSnapshotsModule } from '../snapshots/ai-analytics-snapshots.module';
 import { AiAnalyticsStageHistoryModule } from '../stage-history/ai-analytics-stage-history.module';
 import { CallsStep } from '../steps/calls.step';
 import { FinanceStep } from '../steps/finance.step';
+import { ForecastStep } from '../steps/forecast.step';
 import { KpiStep } from '../steps/kpi.step';
 import { PassportStep } from '../steps/passport.step';
 import { PlansStep } from '../steps/plans.step';
+import { PortalModelStep } from '../steps/portal-model.step';
 import { RopMarkStep } from '../steps/rop-mark.step';
 import { StageHistoryStep } from '../steps/stage-history.step';
 import { StyleStep } from '../steps/style.step';
@@ -29,7 +25,6 @@ import {
     AI_ANALYTICS_SNAPSHOT_RUNNER,
     AiAnalyticsPipelineStep,
 } from '../steps/step.types';
-import { AiAnalyticsSnapshotStore } from '../store/ai-analytics-snapshot.store';
 import { AI_ANALYTICS_PIPELINE_METRIC_PROVIDERS } from './ai-analytics.metrics';
 import { AiAnalyticsPipelineMetrics } from './ai-analytics.metrics';
 import { AiAnalyticsBackfillService } from './backfill.service';
@@ -46,35 +41,50 @@ export interface AiAnalyticsPipelineOptions {
 }
 
 /**
- * Порядок шагов ночного конвейера Фазы 2 (волна 4, сборка) — он же
- * порядок массива под токеном AI_ANALYTICS_PIPELINE_STEPS. Прямых
- * зависимостей между шагами нет: они общаются через шину, поэтому
+ * Порядок шагов ночного конвейера Фазы 2 — он же порядок массива под
+ * токеном AI_ANALYTICS_PIPELINE_STEPS. Прямых зависимостей между шагами
+ * нет: они общаются через шину (ключи — AI_PIPELINE_BUS_KEYS), поэтому
  * порядок здесь — единственная гарантия того, что читающий шаг увидит
- * значение писавшего.
+ * значение писавшего. Закреплено `__tests__/pipeline-wiring.spec.ts`.
  *
  * Обоснование порядка (стрелка — ключ шины, кто пишет → кто читает):
- * 1. `calls` — источник строк разборов (`calls.rows`), сам из шины
- *    ничего не читает, поэтому идёт первым;
- * 2. `passport` — паспорт менеджера; из `calls.rows` берёт прокси-дату
- *    первого события для каскада `since`, публикует `passport`;
- * 3. `stage-history` — эпизоды сделок из `calls.rows` и истории стадий;
- *    публикует `episodes`, `chain`, `stageTheta`, `cycleMedian`,
- *    `slaFacts`, `timestampLeak`, `historyMonths` — их ждут финансы и
- *    будущая модель портала с прогнозом;
- * 4. `kpi` — KPI-месяцы (`kpi.months`) для месячного снапшота;
- * 5. `style` — профиль стиля: читает `calls.rows` и полосы стажа из
- *    `passport`, публикует `style`;
- * 6. `plans` — снимок целей руководителя 1-го числа, публикует `plans`;
- * 7. `finance` — закрывает месяц: читает `kpi.months`, `calls.rows`,
- *    `passport`, `plans`, `style` и `chain`, поэтому идёт после всех;
- * 8. `rop-mark` — недельный подбор трёх звонков из `calls.rows`; на
- *    месячную цепочку не влияет;
- * 9. `sanity` — недельная санити-панель, читает шину целиком, поэтому
- *    последняя (правило потока 12).
+ *  1. `calls` — источник строк разборов: пишет `calls.rows`, из шины
+ *     ничего не читает, поэтому первый;
+ *  2. `passport` — паспорт менеджера: читает `calls.rows` (прокси-дата
+ *     первого события для каскада `since`), пишет `passport`;
+ *  3. `stage-history` — эпизоды сделок: читает `calls.rows`; пишет
+ *     `episodes`, `chain`, `stageTheta`, `cycleMedian`, `slaFacts`,
+ *     `timestampLeak`, `historyMonths`;
+ *  4. `kpi` — KPI-месяцы: пишет `kpi.months`;
+ *  5. `style` — профиль стиля: читает `calls.rows` и полосы стажа из
+ *     `passport`, пишет `style`;
+ *  6. `plans` — снимок целей руководителя (тик 1-го числа): пишет `plans`;
+ *  7. `finance` — закрывает месяц: читает `kpi.months`, `calls.rows`,
+ *     `passport`, `plans`, `style`, `chain` — поэтому после всех
+ *     источников месяца; пишет `finance.result` (читателя нет,
+ *     @deprecated в словаре ключей);
+ *  8. `rop-mark` — три звонка недели: читает `calls.rows`, в шину не
+ *     пишет;
+ *  9. `sanity` — санити-панель: читает `calls.rows`, `slaFacts`,
+ *     `timestampLeak` (месячные снапшоты — через стор), пишет `sanity`;
+ * 10. `portal-model` — модель портала: читает `calls.rows`, `chain`,
+ *     `stageTheta`, `episodes`, `cycleMedian`, `historyMonths`,
+ *     `passport` и отчёт панели `sanity` того же прогона — поэтому ПОСЛЕ
+ *     панели; пишет `portalModel`;
+ * 11. `forecast` — прогноз дня: читает `portalModel` (в ночном ритме,
+ *     где модели в шине нет, — последнюю записанную), `historyMonths`,
+ *     `chain`, `calls.rows`, `episodes`; в шину не пишет — последний.
  *
- * Ритмы объявляет сам шаг, раннер фильтрует массив по ритму прогона:
- * `backfill` выполняют `calls`, `stage-history`, `kpi` и `finance` —
- * догон месяцев без похода в портал за паспортом и планами.
+ * Ритмы объявляет сам шаг (константы `AI_*_RHYTHMS` срезов), раннер
+ * фильтрует массив по ритму прогона, порядок внутри ритма — порядок
+ * массива:
+ * - nightly — calls, passport, stage-history, kpi, finance, forecast;
+ * - weekly — calls, passport, stage-history, rop-mark, sanity;
+ * - monthly — calls, passport, stage-history, kpi, style, plans, finance,
+ *   sanity, portal-model;
+ * - backfill — calls, passport, stage-history, kpi, finance, portal-model:
+ *   догон месяцев с паспортом из кэша, без похода в портал за планами;
+ *   модель портала пересчитывается по догнанным месяцам.
  */
 export const AI_ANALYTICS_PIPELINE_STEP_ORDER: Type<AiAnalyticsPipelineStep>[] =
     [
@@ -87,6 +97,8 @@ export const AI_ANALYTICS_PIPELINE_STEP_ORDER: Type<AiAnalyticsPipelineStep>[] =
         FinanceStep,
         RopMarkStep,
         SanityStep,
+        PortalModelStep,
+        ForecastStep,
     ];
 
 /**
@@ -98,6 +110,7 @@ export const AI_ANALYTICS_PIPELINE_STEP_MODULES: Type<unknown>[] = [
     AiAnalyticsPassportModule,
     AiAnalyticsStageHistoryModule,
     AiAnalyticsRopMarkModule,
+    AiAnalyticsPortalModelModule,
 ];
 
 /**
@@ -105,37 +118,25 @@ export const AI_ANALYTICS_PIPELINE_STEP_MODULES: Type<unknown>[] = [
  * п. 2: срез объявляет собственный @Module, сборка приложения его
  * импортирует — так корневой модуль фичи не растёт).
  *
- * Срез самодостаточен (планировщик ритмов, раннер, журнал, метрики и все
- * нужные им загрузчики): они объявлены здесь, а не взяты из
- * AiAnalyticsModule — иначе получилась бы циклическая связь (сборка
- * импортирует конвейер, а конвейер — сборку). Загрузчики без состояния,
- * второй экземпляр безопасен: кэш у них общий (AppCache/Redis).
+ * Срез содержит планировщик ритмов, раннер, журнал, метрики и загрузчик
+ * производственного календаря; общие загрузчики (настройки, параметры,
+ * ростер, порталы, стор снапшотов) приходят из ядра
+ * (`AiAnalyticsCoreModule`), которое конвейер не импортирует обратно —
+ * циклов нет.
  *
- * Порядок шагов задаёт `register()` потока сборки; собственный шаг среза
- * (недельная санити-панель) объявлен здесь и экспортируется, чтобы сборке
- * осталось только поставить его последним в недельном ритме — панель
- * читает шину, значит должна идти после наполнивших её шагов.
+ * Порядок шагов задаёт `register()`; собственный шаг среза (санити-панель)
+ * объявлен здесь и экспортируется, чтобы сборке осталось поставить его
+ * после наполнивших шину шагов и перед моделью портала, которая читает
+ * его отчёт.
  *
- * Шаги в @Module не перечислены: их приносит `register()` из потока
- * сборки. По умолчанию массив шагов пуст — конвейер отрабатывает вхолостую
- * и пишет журнал с нулём шагов, а не падает.
+ * Шаги в @Module не перечислены: их приносит `register()`. По умолчанию
+ * массив шагов пуст — конвейер отрабатывает вхолостую и пишет журнал с
+ * нулём шагов, а не падает.
  */
 @Module({
-    imports: [
-        PBXModule,
-        QueueModule,
-        PortalAppSettingsModule,
-        BxDepartmentModule,
-        AiModule,
-    ],
+    imports: [PBXModule, QueueModule, AiAnalyticsCoreModule],
     providers: [
-        AiAnalyticsCacheService,
-        SettingsLoader,
-        AiAnalyticsParamsLoader,
-        ManagersLoader,
-        AiAnalyticsPortalsLoader,
         AiAnalyticsCalendarLoader,
-        AiAnalyticsSnapshotStore,
         ...AI_ANALYTICS_PIPELINE_METRIC_PROVIDERS,
         AiAnalyticsPipelineMetrics,
         EtlRunWriter,
@@ -182,10 +183,11 @@ export class AiAnalyticsPipelineModule {
     }
 
     /**
-     * Конвейер Фазы 2 «как в проде»: все модули срезов волны 4 и все их
-     * шаги в порядке AI_ANALYTICS_PIPELINE_STEP_ORDER. Сборке приложения
-     * остаётся импортировать `AiAnalyticsPipelineModule.registerPhase2()`
-     * — состав и порядок шагов живут здесь, а не в корневом модуле фичи.
+     * Конвейер Фазы 2 «как в проде»: все модули срезов и все их шаги в
+     * порядке AI_ANALYTICS_PIPELINE_STEP_ORDER. Сборка приложения
+     * (`ai-analytics.module.ts`) импортирует
+     * `AiAnalyticsPipelineModule.registerPhase2()` — состав и порядок
+     * шагов живут здесь, а не в корневом модуле фичи.
      */
     static registerPhase2(): DynamicModule {
         return AiAnalyticsPipelineModule.register({

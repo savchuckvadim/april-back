@@ -68,6 +68,13 @@ export class StyleCrmLoader {
         const period = normalizeReportPeriod(from, to);
         const ids = await this.managers.resolve(domain, managerIds);
         const usersKey = buildReportUsersKey(ids);
+        // Пороги единиц — определения документа и в ключ кэша не входят;
+        // порог дисперсии портала влияет только на агрегат, а его склейка
+        // окна пересчитывает из рядов с этими же порогами.
+        const thresholds: StyleCrmThresholds = {
+            ...STYLE_CRM_THRESHOLDS,
+            ...(options.thresholds ?? {}),
+        };
         const segments = splitIntoMonthSegments(
             period.fromIso,
             period.toIsoInclusive,
@@ -76,7 +83,10 @@ export class StyleCrmLoader {
         const months: StyleCrmMonth[] = [];
         for (const segment of segments) {
             months.push(
-                await this.loadMonth(domain, segment, ids, usersKey, options),
+                await this.loadMonth(domain, segment, ids, usersKey, {
+                    ...options,
+                    thresholds,
+                }),
             );
         }
         return {
@@ -84,7 +94,10 @@ export class StyleCrmLoader {
             to: period.toIsoInclusive,
             managerIds: ids,
             months,
-            managers: mergeManagerMonths(months.map(month => month.managers)),
+            managers: mergeManagerMonths(
+                months.map(month => month.managers),
+                thresholds,
+            ),
             truncated: months.some(month => month.truncated),
         };
     }
@@ -95,7 +108,7 @@ export class StyleCrmLoader {
         segment: MonthSegment,
         ids: number[],
         usersKey: string,
-        options: StyleCrmLoadOptions,
+        options: StyleCrmLoadOptions & { thresholds: StyleCrmThresholds },
     ): Promise<StyleCrmMonth> {
         const key = buildStyleCrmMonthKey(domain, segment, usersKey);
         const cached = options.forceRefresh
@@ -112,7 +125,7 @@ export class StyleCrmLoader {
         domain: string,
         segment: MonthSegment,
         ids: number[],
-        options: StyleCrmLoadOptions,
+        options: StyleCrmLoadOptions & { thresholds: StyleCrmThresholds },
     ): Promise<CachedMonth> {
         const calendar: WorkCalendar = {
             ...DEFAULT_WORK_CALENDAR,
@@ -121,10 +134,7 @@ export class StyleCrmLoader {
         const workdays = daysRange(segment.from, segment.to).filter(day =>
             isWorkday(day, calendar),
         );
-        const thresholds: StyleCrmThresholds = {
-            ...STYLE_CRM_THRESHOLDS,
-            ...(options.thresholds ?? {}),
-        };
+        const { thresholds } = options;
         if (ids.length === 0) {
             return {
                 month: segment.month,

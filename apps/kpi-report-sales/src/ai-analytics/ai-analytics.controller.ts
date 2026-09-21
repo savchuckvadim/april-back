@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { PortalSessionProtected } from '@lib/auth';
 import { AiAnalyticsCacheService } from './cache/ai-analytics-cache.service';
 import {
     agendaTtlSeconds,
@@ -171,6 +172,7 @@ export class AiAnalyticsController {
         };
     }
 
+    @PortalSessionProtected()
     @Post('feedback')
     @HttpCode(200)
     @ApiOperation({
@@ -225,6 +227,7 @@ export class AiAnalyticsController {
         };
     }
 
+    @PortalSessionProtected()
     @Post('cache/reset')
     @HttpCode(200)
     @ApiOperation({
@@ -250,6 +253,7 @@ export class AiAnalyticsController {
         return { deletedCount, pattern };
     }
 
+    @PortalSessionProtected()
     @Post('push')
     @HttpCode(200)
     @ApiOperation({

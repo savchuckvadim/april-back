@@ -13,8 +13,13 @@
 import { AI_ANALYTICS_CACHE_PREFIX } from '../../constants/ai-analytics.const';
 import type { MonthSegment } from '../../../shared/lib/month-segments.util';
 
-/** Секция кэша загрузчика (сброс — паттерном `…:style-crm:*`). */
-export const STYLE_CRM_CACHE_SECTION = 'style-crm' as const;
+/**
+ * Секция кэша загрузчика (сброс — паттерном `…:style-crm-v2:*`). Суффикс —
+ * версия ФОРМЫ кэшируемого сегмента: v2 хранит ряды длительностей
+ * разговоров по типам и скорости ответа на лид (точная медиана окна), и
+ * сегмент прежней формы читать нельзя — он лёг бы в склейку без рядов.
+ */
+export const STYLE_CRM_CACHE_SECTION = 'style-crm-v2' as const;
 
 /** Закрытый месяц: телефония прошлого месяца уже не меняется. */
 export const STYLE_CRM_CLOSED_TTL_SECONDS = 60 * 60 * 24 * 30;

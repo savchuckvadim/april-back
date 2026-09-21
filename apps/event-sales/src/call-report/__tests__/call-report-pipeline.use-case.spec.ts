@@ -23,6 +23,8 @@ const makeDeps = (overrides?: {
     portalLlmModel?: string;
     /** Ответ классификатора вместо дефолтного CLASSIFICATION. */
     classification?: Record<string, unknown>;
+    /** Карта порогов портала; нет — гейт порога типа не применяется. */
+    minDurationSecByType?: Record<string, number>;
 }) => {
     const bitrix = {
         activity: {
@@ -111,6 +113,9 @@ const makeDeps = (overrides?: {
             classifyEnabled: true,
             llmModel: overrides?.portalLlmModel ?? 'gigachat',
             irrelevantConfidence: 0.7,
+            ...(overrides?.minDurationSecByType
+                ? { minDurationSecByType: overrides.minDurationSecByType }
+                : {}),
         }),
     };
     global.fetch = jest.fn().mockResolvedValue({
@@ -248,6 +253,82 @@ describe('CallReportPipelineUseCase', () => {
 
         expect(result.irrelevant).toBeUndefined();
         expect(llm.analyzeCall).toHaveBeenCalledTimes(1);
+    });
+
+    // Долг 7 волны C (решение владельца А.1): скан режет по МИНИМУМУ карты
+    // (тип ещё неизвестен), а порог СВОЕГО типа применяется здесь — после
+    // классификации, штатной остановкой как у гейта нерелевантности.
+    const PILOT_MAP = { cold: 60, presentation: 300, default: 300 };
+
+    it('порог типа: 120 с холодного при карте {cold: 60, presentation: 300} проходит', async () => {
+        const { useCase, llm, aiService } = makeDeps({
+            minDurationSecByType: PILOT_MAP,
+        });
+        const result = await useCase.execute({ ...PAYLOAD, durationSec: 120 });
+        expect(result.shortCall).toBeUndefined();
+        expect(result.resumeSaved).toBe(true);
+        expect(llm.analyzeCall).toHaveBeenCalledTimes(1);
+        expect(aiService.create).toHaveBeenCalledTimes(2);
+    });
+
+    it('порог типа: 120 с презентации останавливает разбор после классификации с причиной', async () => {
+        const { useCase, llm, aiService, bitrix, classifyStep } = makeDeps({
+            minDurationSecByType: PILOT_MAP,
+            classification: { ...CLASSIFICATION, callType: 'presentation' },
+        });
+        const result = await useCase.execute({ ...PAYLOAD, durationSec: 120 });
+        // Классификация была (тип нужен, чтобы знать порог), дальше — стоп.
+        expect(classifyStep.run).toHaveBeenCalledTimes(1);
+        expect(result).toEqual({
+            transcriptionId: '42',
+            provider: 'yandex',
+            resumeSaved: false,
+            recomendationSaved: false,
+            callType: 'presentation',
+            classifyConfidence: 0.9,
+            shortCall: true,
+        });
+        expect(llm.analyzeCall).not.toHaveBeenCalled();
+        expect(aiService.create).not.toHaveBeenCalled();
+        expect(bitrix.timeline.addTimelineComment).not.toHaveBeenCalled();
+    });
+
+    it('равномерная карта — поведение прежнее: 700 с идёт полным путём, 120 с — нет', async () => {
+        const full = makeDeps({ minDurationSecByType: { default: 300 } });
+        await expect(full.useCase.execute(PAYLOAD)).resolves.toMatchObject({
+            resumeSaved: true,
+        });
+        expect(full.llm.analyzeCall).toHaveBeenCalledTimes(1);
+
+        const short = makeDeps({ minDurationSecByType: { default: 300 } });
+        await expect(
+            short.useCase.execute({ ...PAYLOAD, durationSec: 120 }),
+        ).resolves.toMatchObject({ shortCall: true });
+        expect(short.llm.analyzeCall).not.toHaveBeenCalled();
+    });
+
+    it('длительность берётся из строки конвейера, если в задаче её нет; неизвестна — гейт не применяется', async () => {
+        const fromRow = makeDeps({ minDurationSecByType: { default: 300 } });
+        fromRow.store.findPipelineById.mockResolvedValue({
+            id: '42',
+            text: 'текст',
+            provider: 'yandex',
+            durationSec: '120',
+        });
+        await expect(
+            fromRow.useCase.execute({ ...PAYLOAD, durationSec: undefined }),
+        ).resolves.toMatchObject({ shortCall: true });
+
+        const unknown = makeDeps({ minDurationSecByType: { default: 300 } });
+        unknown.store.findPipelineById.mockResolvedValue({
+            id: '42',
+            text: 'текст',
+            provider: 'yandex',
+            durationSec: null,
+        });
+        await expect(
+            unknown.useCase.execute({ ...PAYLOAD, durationSec: undefined }),
+        ).resolves.toMatchObject({ resumeSaved: true });
     });
 
     it('llmModel из настроек портала уезжает в объединённый вызов', async () => {

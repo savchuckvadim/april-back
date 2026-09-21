@@ -8,32 +8,23 @@
  * под неё. Очереди и WS здесь нет: ответ синхронный, потому что все
  * входы уже лежат в `ais` (прогноз дня, модель портала, месяц
  * менеджера), а Битрикс не вызывается вовсе — отсюда и отсутствие
- * `PBXModule` в импортах.
+ * `PBXModule` в импортах (и в транзитивных импортах ядра тоже: ядро без
+ * Битрикса намеренно).
  *
  * Контроллер публикует единственный роут своей фичи: поверхность API
- * растёт ровно на него (ai/rules/app-api-surface.md).
+ * растёт ровно на него (ai/rules/app-api-surface.md). Настройки, кэш,
+ * периметр и стор снапшотов — из ядра.
  */
 import { Module } from '@nestjs/common';
-import { AiModule } from '@lib/call-lib';
-import { BxDepartmentModule } from '@lib/bx-department';
-import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
+import { PortalSessionModule } from '@lib/auth';
 import { AiAnalyticsPlanController } from '../ai-analytics-plan.controller';
-import { AiAnalyticsCacheService } from '../cache/ai-analytics-cache.service';
-import { RequesterAccessService } from '../domain/access/requester-access.service';
-import { SettingsLoader } from '../domain/loaders/settings.loader';
+import { AiAnalyticsCoreModule } from '../core/ai-analytics-core.module';
 import { DailyPlanUseCase } from '../domain/use-cases/daily-plan.use-case';
-import { AiAnalyticsSnapshotStore } from '../store/ai-analytics-snapshot.store';
 
 @Module({
-    imports: [PortalAppSettingsModule, BxDepartmentModule, AiModule],
+    imports: [AiAnalyticsCoreModule, PortalSessionModule],
     controllers: [AiAnalyticsPlanController],
-    providers: [
-        AiAnalyticsCacheService,
-        SettingsLoader,
-        RequesterAccessService,
-        AiAnalyticsSnapshotStore,
-        DailyPlanUseCase,
-    ],
+    providers: [DailyPlanUseCase],
     exports: [DailyPlanUseCase],
 })
 export class AiAnalyticsPlanModule {}

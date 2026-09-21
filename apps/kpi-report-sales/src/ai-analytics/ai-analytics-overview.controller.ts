@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { PortalSessionProtected } from '@lib/auth';
 import {
     AI_ANALYTICS_ADMIN_ROLES,
     AI_ANALYTICS_ROUTE_PREFIX,
@@ -137,6 +138,7 @@ export class AiAnalyticsOverviewController {
         return this.byTypeUseCase.execute(dto, access);
     }
 
+    @PortalSessionProtected()
     @Post('settings/save')
     @HttpCode(200)
     @ApiOperation({

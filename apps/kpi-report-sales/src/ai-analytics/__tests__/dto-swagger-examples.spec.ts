@@ -2,18 +2,27 @@ import 'reflect-metadata';
 
 import * as agendaDto from '../dto/ai-agenda.dto';
 import * as attentionDto from '../dto/ai-attention.dto';
+import * as aboutModelDto from '../dto/ai-about-model.dto';
+import * as aboutDto from '../dto/ai-about.dto';
+import * as briefDto from '../dto/ai-brief.dto';
+import * as dailyPlanPartsDto from '../dto/ai-daily-plan-parts.dto';
+import * as dailyPlanDto from '../dto/ai-daily-plan.dto';
 import * as feedbackListDto from '../dto/ai-feedback-list.dto';
 import * as managerRowDto from '../dto/ai-manager-row.dto';
 import * as managerSignalsDto from '../dto/ai-manager-signals.dto';
 import * as objectionsDto from '../dto/ai-objections.dto';
 import * as pulseDto from '../dto/ai-pulse.dto';
 import * as pushDto from '../dto/ai-push.dto';
+import * as ropMarkRequestDto from '../dto/ai-rop-mark-request.dto';
+import * as ropMarkDto from '../dto/ai-rop-mark.dto';
+import * as styleCardDto from '../dto/ai-style-card.dto';
 
 /**
  * Находка N11 аудита (ai-phase2-audit-2026-09-14): у скалярных и enum-свойств
  * DTO вкладки не было `example`. Спек читает метаданные @nestjs/swagger у
  * реальных классов (а не текст файлов), поэтому примеры не могут тихо
- * пропасть при следующей правке декораторов.
+ * пропасть при следующей правке декораторов. С волны C (поток 19) в списке
+ * и DTO Фазы 2: резюме, план дня, карточка стиля, слепая проверка.
  */
 
 const SWAGGER_PROPS_ARRAY = 'swagger/apiModelPropertiesArray';
@@ -47,6 +56,14 @@ const MODULES: ReadonlyArray<readonly [string, DtoModule]> = [
     ['ai-objections.dto', objectionsDto],
     ['ai-pulse.dto', pulseDto],
     ['ai-push.dto', pushDto],
+    ['ai-brief.dto', briefDto],
+    ['ai-daily-plan.dto', dailyPlanDto],
+    ['ai-daily-plan-parts.dto', dailyPlanPartsDto],
+    ['ai-style-card.dto', styleCardDto],
+    ['ai-rop-mark.dto', ropMarkDto],
+    ['ai-rop-mark-request.dto', ropMarkRequestDto],
+    ['ai-about.dto', aboutDto],
+    ['ai-about-model.dto', aboutModelDto],
 ];
 
 const SCALAR_CTORS: readonly unknown[] = [String, Number, Boolean];
@@ -109,11 +126,26 @@ function collectScalarProps(): ScalarProp[] {
     return collected;
 }
 
+/** Значения примера: у массивного свойства — каждый элемент, иначе само. */
+function exampleItems(meta: ApiPropertyMeta): unknown[] {
+    if (meta.isArray === true && Array.isArray(meta.example)) {
+        return meta.example as unknown[];
+    }
+    return [meta.example];
+}
+
 describe('Swagger-примеры DTO вкладки ai-analytics (находка N11)', () => {
     const scalars = collectScalarProps();
 
     it('метаданные swagger читаются: скаляров не меньше порога', () => {
         expect(scalars.length).toBeGreaterThanOrEqual(MIN_SCALAR_PROPS);
+    });
+
+    it('каждый файл из списка даёт хотя бы одно скалярное или enum-свойство', () => {
+        const silent = MODULES.map(([file]) => file).filter(
+            file => !scalars.some(({ path }) => path.startsWith(`${file} `)),
+        );
+        expect(silent).toEqual([]);
     });
 
     it('у каждого скалярного и enum-свойства есть example', () => {
@@ -161,15 +193,17 @@ describe('Swagger-примеры DTO вкладки ai-analytics (находка
         expect(mismatched).toEqual([]);
     });
 
-    it('значения example у enum-свойств входят в свой перечень', () => {
+    it('значения example у enum-свойств входят в свой перечень (у массивов — каждый элемент)', () => {
         const outside = scalars
             .filter(({ meta }) => {
                 if (meta.example === undefined || !Array.isArray(meta.enum)) {
                     return false;
                 }
-                return !(meta.enum as readonly unknown[]).includes(
-                    meta.example,
-                );
+                if (meta.example === null) {
+                    return meta.nullable !== true;
+                }
+                const allowed = meta.enum as readonly unknown[];
+                return exampleItems(meta).some(item => !allowed.includes(item));
             })
             .map(({ path }) => path);
         expect(outside).toEqual([]);

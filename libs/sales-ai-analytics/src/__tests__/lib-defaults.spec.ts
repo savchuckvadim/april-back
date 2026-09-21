@@ -16,6 +16,7 @@ import { EXPOSURE_DEFAULTS } from '../model/exposure';
 import { FUNNEL_GAP_DEFAULTS } from '../model/funnel-gap';
 import { KAPPA_DEFAULTS } from '../model/kappa';
 import { LAG_CDF_DEFAULTS, LAG_CDF_PARAM_CODE } from '../model/lag-cdf';
+import { NORM_HIERARCHY_DEFAULTS } from '../model/norms-hierarchy';
 import { QAV_DEFAULTS } from '../model/qav';
 import { RAMP_DEFAULTS } from '../model/ramp';
 import { AI_READINESS_GATE_DEFAULTS } from '../model/readiness';
@@ -24,6 +25,7 @@ import { RELIABILITY_DEFAULTS } from '../model/reliability';
 import { SECTION_SHRINK_DEFAULTS } from '../model/section-shrink';
 import { SHRINK_DEFAULTS } from '../model/shrink';
 import { STAGE_THETA_DEFAULTS } from '../model/stage-theta.types';
+import { AI_ANALYTICS_THRESHOLDS } from '../model/thresholds.const';
 import { TIMESTAMP_LEAK_MAX } from '../model/timestamp-audit';
 import { registryEnumDefault } from '../params/registry.access';
 import {
@@ -93,6 +95,14 @@ const OBJECTS: Readonly<
         values: FUNNEL_GAP_DEFAULTS,
         file: 'funnel-gap.ts',
     },
+    AI_ANALYTICS_THRESHOLDS: {
+        values: AI_ANALYTICS_THRESHOLDS,
+        file: 'thresholds.const.ts',
+    },
+    NORM_HIERARCHY_DEFAULTS: {
+        values: NORM_HIERARCHY_DEFAULTS,
+        file: 'norms-hierarchy.ts',
+    },
 };
 
 /**
@@ -155,6 +165,17 @@ const REGISTRY_FIELDS = [
     ['CAPACITY_DEFAULTS.dayHours', 'day_hours'],
     ['FUNNEL_GAP_DEFAULTS.samples', 'lever_samples'],
     ['FUNNEL_GAP_DEFAULTS.minN', 'n_min_none'],
+    ['AI_ANALYTICS_THRESHOLDS.scoreNone', 'n_min_none'],
+    ['AI_ANALYTICS_THRESHOLDS.scoreLow', 'n_min_ok_score'],
+    ['AI_ANALYTICS_THRESHOLDS.rateOk', 'n_min_ok_rate'],
+    ['AI_ANALYTICS_THRESHOLDS.ratingMin', 'n_min_rating'],
+    ['AI_ANALYTICS_THRESHOLDS.trendWindowCalls', 'trend_window_calls'],
+    ['AI_ANALYTICS_THRESHOLDS.xmrSigma', 'xmr_sigma'],
+    ['AI_ANALYTICS_THRESHOLDS.runLength', 'xmr_run_length'],
+    ['AI_ANALYTICS_THRESHOLDS.z90', 'z_compare'],
+    ['AI_ANALYTICS_THRESHOLDS.shortCallSec', 'min_duration_sec_by_type'],
+    ['NORM_HIERARCHY_DEFAULTS.portalToGlobal', 'kappa_portal_to_global'],
+    ['NORM_HIERARCHY_DEFAULTS.bootRatio', 'kappa_boot_ratio'],
 ] as const satisfies readonly (readonly [string, string])[];
 
 /**
@@ -191,6 +212,11 @@ const LOCAL_FIELDS: Readonly<Record<string, readonly string[]>> = {
         'permutationSamples',
         'lowQuantile',
         'highQuantile',
+    ],
+    NORM_HIERARCHY_DEFAULTS: [
+        'minBandManagers',
+        'bootMonths',
+        'levelUnderstatedRatio',
     ],
 };
 

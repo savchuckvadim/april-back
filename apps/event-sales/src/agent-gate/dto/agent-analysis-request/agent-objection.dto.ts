@@ -1,0 +1,81 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+    IsBoolean,
+    IsIn,
+    IsNotEmpty,
+    IsOptional,
+    IsString,
+} from 'class-validator';
+import {
+    CALL_REPORT_OBJECTION_CODES,
+    CallReportObjectionCode,
+} from '@lib/call-lib';
+
+/**
+ * Возражение клиента и его отработка — вынесено из общего файла контракта
+ * агента (лимит файла); имена и декораторы прежние, реэкспорт через барель.
+ */
+
+/** Возражение клиента и как менеджер его отработал. */
+export class AgentObjectionDto {
+    @ApiProperty({
+        description: 'Формулировка возражения клиента из разговора.',
+        example: 'Дорого, у нас уже есть КонсультантПлюс',
+        type: String,
+    })
+    @IsString()
+    @IsNotEmpty()
+    objection: string;
+
+    @ApiPropertyOptional({
+        description: 'Как менеджер отработал возражение (если отработал).',
+        example: 'Предложил сравнение тарифов и демо-доступ',
+        type: String,
+    })
+    @IsOptional()
+    @IsString()
+    handling?: string;
+
+    @ApiPropertyOptional({
+        description: 'Оценка агента: возражение отработано успешно.',
+        example: true,
+        type: Boolean,
+    })
+    @IsOptional()
+    @IsBoolean()
+    handled?: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Категория возражения по закрытому справочнику (для трендов).',
+        enum: CALL_REPORT_OBJECTION_CODES,
+        example: 'price',
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(CALL_REPORT_OBJECTION_CODES as unknown as string[])
+    category?: CallReportObjectionCode;
+
+    @ApiPropertyOptional({
+        description:
+            'Цитата-доказательство из транскрипта (дословная фраза клиента).',
+        example: 'Да у нас Консультант стоит, зачем нам второй',
+        type: String,
+    })
+    @IsOptional()
+    @IsString()
+    quote?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Исход после ответа менеджера: разговор продолжился конструктивно / ' +
+            'клиент согласился / разговор свернулся. Замыкает петлю ' +
+            '«ответ → исход» для библиотеки лучших ответов.',
+        enum: ['continued', 'converted', 'disengaged'],
+        example: 'continued',
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(['continued', 'converted', 'disengaged'])
+    outcome?: 'continued' | 'converted' | 'disengaged';
+}

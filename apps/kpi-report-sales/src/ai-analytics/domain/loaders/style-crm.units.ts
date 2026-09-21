@@ -8,27 +8,101 @@
  * каждый счётчик проверяется формулой в спеке.
  */
 import {
+    BX_VOX_CALL_TYPES,
     isVoxConversation,
     isVoxIncoming,
     voxCallDurationSec,
+    voxCallType,
     voxEntityKey,
     type BxVoximplantStatisticRow,
 } from '@lib/bitrix/domain/telephony';
+import { registryDefault } from '@lib/sales-ai-analytics';
 import { daysBetween, workingMinutesBetween } from './style-crm.dates.util';
 import type {
+    StyleCrmCallTypeKey,
     StyleCrmLead,
     StyleCrmPromise,
     StyleCrmThresholds,
 } from './style-crm.types';
 
-/** Пороги счётчиков по умолчанию (документ §2.1). */
+/**
+ * Пороги счётчиков по умолчанию (документ §2.1). Порог дисперсии — код
+ * реестра `style_dispersion_min_days` (портал переопределяет его через
+ * `resolveNumberParam`, шаг стиля передаёт значение в опциях загрузчика);
+ * остальные — определения единиц из документа, не параметры реестра:
+ * разговор ≥ 30 с и код 200, звонок дня ≥ 60 с, вторая попытка в 3
+ * рабочих дня, обещание ±2 дня.
+ */
 export const STYLE_CRM_THRESHOLDS: StyleCrmThresholds = {
     conversationMinSec: 30,
     tempoMinSec: 60,
     giveUpWorkdays: 3,
     promiseWindowDays: 2,
-    dispersionMinDays: 15,
+    dispersionMinDays: registryDefault('style_dispersion_min_days'),
 };
+
+/**
+ * Имена типов звонка телефонии — ключи `BX_VOX_CALL_TYPES` библиотеки
+ * (переименование кода в библиотеке ломает сборку здесь, а не молчит).
+ */
+export const STYLE_CRM_CALL_TYPE_KEYS = [
+    'outgoing',
+    'incoming',
+    'incomingRedirect',
+    'callback',
+] as const satisfies readonly StyleCrmCallTypeKey[];
+
+/** Имя типа звонка строки телефонии; null — Битрикс отдал чужой код. */
+export function voxCallTypeKey(
+    row: BxVoximplantStatisticRow,
+): StyleCrmCallTypeKey | null {
+    const code = voxCallType(row);
+    return (
+        STYLE_CRM_CALL_TYPE_KEYS.find(key => BX_VOX_CALL_TYPES[key] === code) ??
+        null
+    );
+}
+
+/** Пустой словарь по типам телефонии с одним значением. */
+export function byCallType<T>(value: () => T): Record<StyleCrmCallTypeKey, T> {
+    return Object.fromEntries(
+        STYLE_CRM_CALL_TYPE_KEYS.map(key => [key, value()]),
+    ) as Record<StyleCrmCallTypeKey, T>;
+}
+
+/**
+ * Длительности состоявшихся разговоров (код 200, не короче порога) по
+ * типам телефонии — единица «звонок» под-оси «звонки» оси 7. Порог —
+ * определение разговора (30 с), а не порог разбора `min_duration_sec`:
+ * документ §2.1 требует все звонки телефонии без усечения транскрипцией.
+ */
+export function conversationDurationsByType(
+    rows: readonly BxVoximplantStatisticRow[],
+    conversationMinSec: number,
+): Record<StyleCrmCallTypeKey, number[]> {
+    const durations = byCallType<number[]>(() => []);
+    for (const row of rows) {
+        if (!isVoxConversation(row, conversationMinSec)) continue;
+        const key = voxCallTypeKey(row);
+        if (key !== null) durations[key].push(voxCallDurationSec(row));
+    }
+    return durations;
+}
+
+/** Медиана длительности разговоров по типам телефонии и общая (§7.2 п. 1). */
+export function medianDurationByType(
+    durations: Record<StyleCrmCallTypeKey, readonly number[]>,
+): {
+    all: number | null;
+    byType: Record<StyleCrmCallTypeKey, number | null>;
+} {
+    return {
+        all: median(STYLE_CRM_CALL_TYPE_KEYS.flatMap(key => durations[key])),
+        byType: Object.fromEntries(
+            STYLE_CRM_CALL_TYPE_KEYS.map(key => [key, median(durations[key])]),
+        ) as Record<StyleCrmCallTypeKey, number | null>,
+    };
+}
 
 /** День звонка 'YYYY-MM-DD' в TZ портала (CALL_START_DATE идёт с оффсетом). */
 export const voxCallDay = (row: BxVoximplantStatisticRow): string =>

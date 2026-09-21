@@ -1,5 +1,3 @@
-export * from './sales-ai-analytics.module';
-
 export * from './model/thresholds.const';
 export * from './model/wilson';
 export * from './model/metric';
@@ -66,6 +64,12 @@ export type {
     AiAnalyticsAuditResult,
     AiAnalyticsAuditRunOptions,
 } from './admin/ai-analytics-audit.service';
+// Проба истории стадий портала (вопрос владельцу A6): сервисный модуль
+// поверх PBXModule — подключать ТОЛЬКО через SalesAiAnalyticsAdminModule
+// (apps/admin), в kpi-report-sales не импортировать.
+export { SalesAiAnalyticsProbeModule } from './admin/sales-ai-analytics-probe.module';
+export { StageHistoryProbeService } from './admin/stage-history-probe.service';
+export type { StageHistoryProbeResult } from './admin/stage-history-probe.service';
 export type {
     AiAnalyticsAuditSnapshotInput,
     AiAnalyticsAuditSnapshotRecord,
@@ -73,8 +77,9 @@ export type {
 
 // Фаза 2 «модель»: реестр параметров и послойный resolve (params/),
 // типы и реестр снапшотов ais, нормы (экспозиция, κ, leave-one-out,
-// апостериоры рёбер) и качество за период (усадка разделов, надёжность).
-// Пока к ручкам не подключено — чистая математика и контракты.
+// апостериоры рёбер, сверхдисперсия φ и темп активности) и качество за
+// период (усадка разделов, надёжность, потолки оценивания, применимость).
+// Потребители — ночной конвейер и ручки Фазы 2 в apps/kpi-report-sales.
 export * from './params';
 export * from './contracts/snapshot-kinds.const';
 export * from './contracts/snapshot-descriptors.const';
@@ -126,12 +131,10 @@ export * from './settings/registry-context.builder';
 export * from './settings/min-duration.resolve';
 
 // Фаза 2, волна 1 (добор) «потолки, применимость и стиль»: потолки оценок
-// и стоп-фразы правил `ai_analytics_scoring` (балл режется, стоп-слово только
-// возвращается списком), таблица применимости «тип звонка × раздел рубрики»
-// из профилей рубрики и профиль стиля менеджера (оси, leave-one-out норма
+// и стоп-фразы правил `ai_analytics_scoring` и таблица применимости «тип
+// звонка × раздел рубрики» едут через барель качества (model/quality.index
+// выше); здесь — профиль стиля менеджера (оси, leave-one-out норма
 // коллег, усадка к τ, подписи с гистерезисом — вместо ярлыков).
-export * from './model/scoring-caps';
-export * from './model/applicability';
 export * from './model/style-axes.const';
 export * from './model/style-tags.const';
 export * from './model/style-profile.types';

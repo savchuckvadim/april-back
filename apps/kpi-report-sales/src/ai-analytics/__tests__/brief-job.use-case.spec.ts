@@ -6,15 +6,21 @@ import {
     type AiEvidencePack,
 } from '@lib/sales-ai-analytics';
 import type { AiBriefLlmResult } from '../brief/ai-brief-llm.port';
+import { buildBriefPeriodKey } from '../brief/brief-cache-key.util';
+import { AI_BRIEF_FACT_CODES } from '../constants/ai-brief.const';
+import { AI_ANALYTICS_CALC_VERSION } from '../constants/ai-overview.const';
 import {
     AI_BRIEF_TEMPLATE_REASON_TEXTS,
     AI_BRIEF_TTL_SECONDS,
 } from '../constants/ai-brief.const';
+import { briefFact } from '../brief/evidence-pack.types';
 import { BriefJobUseCase } from '../domain/use-cases/brief-job.use-case';
+import { AiAnalyticsSnapshotStore } from '../store/ai-analytics-snapshot.store';
 import type { BriefSnapshot } from '@lib/sales-ai-analytics';
 import {
     BRIEF_DOMAIN,
     BRIEF_NOW,
+    briefFacts,
     briefJobData,
     briefPack,
 } from './fixtures/brief.fixture';
@@ -22,6 +28,59 @@ import { settingsLoaderWith } from './fixtures/lite-row.fixture';
 
 const PACK = briefPack();
 const DATA = briefJobData();
+
+/** Строка `ais` в памяти: колонки записи и статус. */
+interface AisRow extends Record<string, unknown> {
+    id: string;
+    createdAt: Date;
+    status: string;
+    activity_id?: string | null;
+    type?: string | null;
+    domain?: string | null;
+}
+
+/**
+ * Стор снапшотов над `ais` в памяти: create/update/findByDomainTypeKeys
+ * ведут себя как AiService, поэтому ретенция проверяется реальным
+ * `AiAnalyticsSnapshotStore.upsert`, а не моком upsert.
+ */
+function inMemoryStore(): { store: AiAnalyticsSnapshotStore; rows: AisRow[] } {
+    const rows: AisRow[] = [];
+    let tick = 0;
+    const aiService = {
+        create: (input: { status?: string } & Record<string, unknown>) => {
+            tick += 1;
+            const row: AisRow = {
+                ...input,
+                id: String(tick),
+                createdAt: new Date(BRIEF_NOW.getTime() + tick * 1000),
+                status: input.status ?? 'done',
+            };
+            rows.push(row);
+            return Promise.resolve(row);
+        },
+        update: (id: string, patch: Record<string, unknown>) => {
+            const row = rows.find(item => item.id === id);
+            if (row) Object.assign(row, patch);
+            return Promise.resolve(row ?? { id });
+        },
+        findByDomainTypeKeys: (
+            domain: string,
+            type: string,
+            keys: { activityIds?: string[] },
+        ) =>
+            Promise.resolve(
+                rows.filter(
+                    row =>
+                        row.domain === domain &&
+                        row.type === type &&
+                        keys.activityIds?.includes(String(row.activity_id)),
+                ),
+            ),
+        findByDomainTypesInPeriod: () => Promise.resolve(rows),
+    };
+    return { store: new AiAnalyticsSnapshotStore(aiService as never), rows };
+}
 
 /** Ответ модели: по буллету на факт пакета, числа — из фраз фактов. */
 function llmAnswer(
@@ -62,6 +121,8 @@ interface Harness {
     quotaLimit?: number;
     answer?: AiBriefLlmResult | (() => AiBriefLlmResult);
     llmError?: Error;
+    /** Реальный стор над `ais` в памяти вместо мока upsert (ретенция). */
+    store?: AiAnalyticsSnapshotStore;
 }
 
 function makeJob({
@@ -72,6 +133,7 @@ function makeJob({
     quotaLimit = 5,
     answer,
     llmError,
+    store,
 }: Harness = {}) {
     const build = jest.fn().mockResolvedValue(pack);
     const load = jest.fn().mockResolvedValue({
@@ -108,7 +170,7 @@ function makeJob({
         settingsLoaderWith({}),
         { consume } as never,
         { resolveKey, complete },
-        { upsert } as never,
+        (store ?? { upsert }) as never,
         { setJson } as never,
         { sendToClient } as never,
     );
@@ -159,15 +221,25 @@ describe('BriefJobUseCase: джоба резюме', () => {
                 generatedAt: BRIEF_NOW.toISOString(),
             },
         });
+        // Ключ периода — период и ростер, а не packHash: packHash живёт
+        // в inputsHash и нагрузке (ретенция, долг 40 волны C).
         expect(upsert).toHaveBeenCalledWith(
             expect.objectContaining({
                 type: 'ai-analytics-brief',
-                periodKey: PACK.hash,
+                periodKey: buildBriefPeriodKey(
+                    DATA.from,
+                    DATA.to,
+                    DATA.managerIds,
+                ),
                 managerId: null,
                 inputsHash: PACK.hash,
                 paramsVersion: 'pv-1',
             }),
         );
+        expect(buildBriefPeriodKey(DATA.from, DATA.to, DATA.managerIds)).toBe(
+            '2026-09-01_2026-09-07_10_20',
+        );
+        expect(snapshotOf(upsert).packHash).toBe(PACK.hash);
     });
 
     it('снапшот несёт tokens_count и price по формуле токены/1000 × цена', async () => {
@@ -181,6 +253,47 @@ describe('BriefJobUseCase: джоба резюме', () => {
         expect(snapshot.model).toBe('bitrix/bitrixgpt-5.5');
         expect(snapshot.factCodes).toEqual(PACK.facts.map(fact => fact.code));
         expect(dto.usage).toEqual({ tokens: 1500, price: 3, estimated: false });
+    });
+
+    it('расход вызова едет в usage конверта, а стор кладёт его в колонки ais', async () => {
+        const { job, upsert } = makeJob({ pricePerThousand: 2 });
+        await job.execute(DATA, BRIEF_NOW);
+        expect(upsert).toHaveBeenCalledWith(
+            expect.objectContaining({
+                calcVersion: AI_ANALYTICS_CALC_VERSION,
+                usage: { tokensCount: 1500, price: 3 },
+            }),
+        );
+
+        // Шаблон без вызова модели: usage из null — колонки останутся NULL.
+        const idle = makeJob({ apiKey: null });
+        await idle.job.execute(DATA, BRIEF_NOW);
+        expect(idle.upsert).toHaveBeenCalledWith(
+            expect.objectContaining({
+                usage: { tokensCount: null, price: null },
+            }),
+        );
+
+        // Сквозь реальный стор над ais в памяти: расход — в колонках
+        // строки, model — по-прежнему calcVersion, модель провайдера —
+        // только в нагрузке.
+        const { store, rows } = inMemoryStore();
+        await makeJob({ store, pricePerThousand: 2 }).job.execute(
+            DATA,
+            BRIEF_NOW,
+        );
+        expect(rows).toHaveLength(1);
+        expect(rows[0]).toEqual(
+            expect.objectContaining({
+                type: 'ai-analytics-brief',
+                tokens_count: 1500,
+                price: 3,
+                model: AI_ANALYTICS_CALC_VERSION,
+            }),
+        );
+        expect(
+            (rows[0].user_result as { payload: BriefSnapshot }).payload.model,
+        ).toBe('bitrix/bitrixgpt-5.5');
     });
 
     it('usage не пришёл: токены — оценка по длине, пометка estimated', async () => {
@@ -353,5 +466,78 @@ describe('BriefJobUseCase: джоба резюме', () => {
         expect(rates).toHaveLength(runs);
         expect((passed / total) * 100).toBeGreaterThanOrEqual(95);
         expect(rates.filter(rate => rate < 100)).toHaveLength(1);
+    });
+});
+
+/**
+ * Ретенция снапшота резюме (долг 40 волны C): ключ периода — период и
+ * ростер, поэтому второе резюме того же периода и состава замещает первое
+ * (`superseded`), а другой состав — отдельная запись. Проверяется
+ * реальным стором над `ais` в памяти.
+ */
+describe('BriefJobUseCase: ретенция снапшота ai-analytics-brief', () => {
+    /** Пакет с другими фактами — другой packHash за тот же период. */
+    const otherPack = () =>
+        briefPack([
+            ...briefFacts(),
+            briefFact(AI_BRIEF_FACT_CODES.airtime, 5400, { n: 40 }),
+        ]);
+
+    it('второе резюме того же периода и ростера помечает первое superseded', async () => {
+        const { store, rows } = inMemoryStore();
+        const first = makeJob({ store });
+        const second = makeJob({ store, pack: otherPack() });
+
+        await first.job.execute(DATA, BRIEF_NOW);
+        await second.job.execute(
+            briefJobData({ packHash: otherPack().hash }),
+            BRIEF_NOW,
+        );
+
+        expect(otherPack().hash).not.toBe(PACK.hash);
+        expect(rows).toHaveLength(2);
+        expect(rows.map(row => row.activity_id)).toEqual([
+            '2026-09-01_2026-09-07_10_20',
+            '2026-09-01_2026-09-07_10_20',
+        ]);
+        expect(rows.map(row => row.status)).toEqual(['superseded', 'done']);
+        const active = await store.findByKeys(
+            BRIEF_DOMAIN,
+            'ai-analytics-brief',
+            { periodKeys: ['2026-09-01_2026-09-07_10_20'] },
+        );
+        expect(active).toHaveLength(1);
+        expect((active[0].payload as BriefSnapshot).packHash).toBe(
+            otherPack().hash,
+        );
+    });
+
+    it('тот же пакет повторно — записи не добавляет (идемпотентный upsert)', async () => {
+        const { store, rows } = inMemoryStore();
+        const job = makeJob({ store });
+
+        await job.job.execute(DATA, BRIEF_NOW);
+        await job.job.execute(DATA, BRIEF_NOW);
+
+        expect(rows).toHaveLength(1);
+        expect(rows[0].status).toBe('done');
+    });
+
+    it('другой ростер того же периода — отдельная запись, первая не замещается', async () => {
+        const { store, rows } = inMemoryStore();
+        const department = makeJob({ store });
+        const single = makeJob({ store, pack: otherPack() });
+
+        await department.job.execute(DATA, BRIEF_NOW);
+        await single.job.execute(
+            briefJobData({ managerIds: [10], packHash: otherPack().hash }),
+            BRIEF_NOW,
+        );
+
+        expect(rows.map(row => row.activity_id)).toEqual([
+            '2026-09-01_2026-09-07_10_20',
+            '2026-09-01_2026-09-07_10',
+        ]);
+        expect(rows.map(row => row.status)).toEqual(['done', 'done']);
     });
 });

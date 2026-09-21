@@ -1,4 +1,8 @@
-import type { BxVoximplantStatisticRow } from '@lib/bitrix/domain/telephony';
+import {
+    BX_VOX_CALL_TYPES,
+    type BxVoximplantStatisticRow,
+} from '@lib/bitrix/domain/telephony';
+import { AI_ANALYTICS_PARAM_DEFAULTS } from '@lib/sales-ai-analytics';
 import {
     daysRange,
     workingMinutesBetween,
@@ -6,13 +10,17 @@ import {
 import {
     attemptsPerLead,
     callsPerWorkday,
+    conversationDurationsByType,
     dispersionIndex,
     giveUpCounts,
     leadResponseMinutes,
     median,
+    medianDurationByType,
     promiseCounts,
     rhythmContributions,
+    STYLE_CRM_CALL_TYPE_KEYS,
     STYLE_CRM_THRESHOLDS,
+    voxCallTypeKey,
     workdayDeadline,
 } from '../domain/loaders/style-crm.units';
 
@@ -259,5 +267,75 @@ describe('daysRange', () => {
             '2026-09-01',
         ]);
         expect(daysRange('2026-09-01', '2026-08-30')).toEqual([]);
+    });
+});
+
+describe('medianDurationByType — медиана разговоров по типам телефонии (§7.2 п. 1)', () => {
+    it('порог дисперсии — дефолт реестра style_dispersion_min_days', () => {
+        expect(STYLE_CRM_THRESHOLDS.dispersionMinDays).toBe(
+            AI_ANALYTICS_PARAM_DEFAULTS.style_dispersion_min_days,
+        );
+        expect(STYLE_CRM_THRESHOLDS.dispersionMinDays).toBe(15);
+    });
+
+    it('имена типов — ровно ключи BX_VOX_CALL_TYPES библиотеки', () => {
+        expect([...STYLE_CRM_CALL_TYPE_KEYS].sort()).toEqual(
+            Object.keys(BX_VOX_CALL_TYPES).sort(),
+        );
+        expect(voxCallTypeKey(call({ CALL_TYPE: '1' }))).toBe('outgoing');
+        expect(voxCallTypeKey(call({ CALL_TYPE: '2' }))).toBe('incoming');
+        expect(voxCallTypeKey(call({ CALL_TYPE: 3 }))).toBe('incomingRedirect');
+        expect(voxCallTypeKey(call({ CALL_TYPE: '4' }))).toBe('callback');
+        expect(voxCallTypeKey(call({ CALL_TYPE: '9' }))).toBeNull();
+    });
+
+    it('в ряды идут только состоявшиеся разговоры не короче порога, по своему типу', () => {
+        const rows = [
+            talk({ CALL_DURATION: '120' }),
+            talk({ CALL_DURATION: '300' }),
+            talk({ CALL_DURATION: '12' }),
+            call({ CALL_DURATION: '500', CALL_FAILED_CODE: '486' }),
+            talk({ CALL_TYPE: '2', CALL_DURATION: '90' }),
+            talk({ CALL_TYPE: '2', CALL_DURATION: '30' }),
+            talk({ CALL_TYPE: '4', CALL_DURATION: '45' }),
+        ];
+
+        const durations = conversationDurationsByType(
+            rows,
+            STYLE_CRM_THRESHOLDS.conversationMinSec,
+        );
+
+        expect(durations).toEqual({
+            outgoing: [120, 300],
+            incoming: [90, 30],
+            incomingRedirect: [],
+            callback: [45],
+        });
+    });
+
+    it('медианы по типам и общая — по формуле медианы, пустой тип → null', () => {
+        const result = medianDurationByType({
+            outgoing: [120, 300],
+            incoming: [90, 30],
+            incomingRedirect: [],
+            callback: [45],
+        });
+
+        expect(result.byType).toEqual({
+            outgoing: (120 + 300) / 2,
+            incoming: (90 + 30) / 2,
+            incomingRedirect: null,
+            callback: 45,
+        });
+        // Общая — медиана объединённой выборки [30, 45, 90, 120, 300].
+        expect(result.all).toBe(90);
+        expect(
+            medianDurationByType({
+                outgoing: [],
+                incoming: [],
+                incomingRedirect: [],
+                callback: [],
+            }).all,
+        ).toBeNull();
     });
 });

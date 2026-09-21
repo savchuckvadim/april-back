@@ -13,6 +13,9 @@
  * Окно готовности выбирает библиотека (`resolveReadinessWindow`): период
  * витрины ограничен тремя месяцами, и по нему режим `norms` недостижим,
  * поэтому при живой модели портала счётчики берутся из её окна (12 мес.).
+ * Без модели действует кап §5.4: режим не выше `descriptive` с причиной
+ * `no-portal-model` — его тоже считает библиотека, адаптер лишь передаёт
+ * признак модели.
  *
  * Чистые функции: «сейчас» приходит параметром.
  */
@@ -59,6 +62,8 @@ export const READINESS_REASONS = {
     calendarMissing: AI_READINESS_REASON_CODES.calendarMissing,
     rosterNotConfirmed: AI_READINESS_REASON_CODES.rosterNotConfirmed,
     hypothesisMissing: AI_READINESS_REASON_CODES.hypothesisMissing,
+    /** Кап §5.4: снапшота модели портала нет — режим не выше descriptive. */
+    modelMissing: AI_READINESS_REASON_CODES.modelMissing,
     /** Санити-панель модели: продажи закрыты раньше активностей. */
     timestampLeak: AI_READINESS_QUALITY_REASON_CODES.timestampLeak,
 } as const;
@@ -136,6 +141,12 @@ export interface ReadinessOptions {
      * нет, и окном остаётся период витрины (штатная деградация §5.4).
      */
     modelWindow?: ReadinessWindowCounters | null;
+    /**
+     * Снапшот модели портала посчитан. Не задан — библиотека выводит
+     * признак из `modelWindow` (нет окна → нет модели → кап §5.4: режим не
+     * выше `descriptive` с причиной `no-portal-model`).
+     */
+    portalModelPresent?: boolean;
     /** Санити-панель модели пометила качество данных (`flagged`). */
     dataQualityFlagged?: boolean;
     /** Гейты режимов; по умолчанию — дефолты библиотеки. */
@@ -166,6 +177,9 @@ export function buildReadiness(
                 hypothesisPairs: options.hypothesisPairs ?? 0,
                 betaSource: options.betaSource ?? 'none',
                 betaCountdown: options.betaCountdown ?? null,
+                ...(options.portalModelPresent === undefined
+                    ? {}
+                    : { portalModelPresent: options.portalModelPresent }),
             },
             period: readinessCounters(rows, options.now),
             model: options.modelWindow ?? null,

@@ -21,6 +21,8 @@ function makePrisma() {
 function makeService(
     auditEnabled = true,
     aiSettings: Record<string, string> = {},
+    /** `portal_ai_settings.min_duration_sec` старой админки; null — не задан. */
+    legacyMinDurationSec: number | null = null,
 ) {
     const prisma = makePrisma();
     const snapshots = {
@@ -43,6 +45,15 @@ function makeService(
             prisma as never,
             snapshots as never,
             appSettings as never,
+            {
+                getByDomain: jest
+                    .fn()
+                    .mockResolvedValue(
+                        legacyMinDurationSec === null
+                            ? null
+                            : { minDurationSec: legacyMinDurationSec },
+                    ),
+            } as never,
         ),
         prisma,
         snapshots,
@@ -234,5 +245,42 @@ describe('AiAnalyticsAuditService', () => {
         expect((await service.status('april.bitrix24.ru')).lastSnapshotAt).toBe(
             '2026-09-01T01:10:00.000Z',
         );
+    });
+    // Один порог у всех контуров (решение А.1): старая админка разбора —
+    // запасной источник, тот же, что у конвейера event-sales и CLI аудита.
+    it('пилот задан только в старой админке (60 с) — аудит считает по нему', async () => {
+        const { service } = makeService(true, {}, 60);
+
+        const result = await service.run('april.bitrix24.ru', {
+            months: 1,
+            timeZone: 'Europe/Moscow',
+            save: false,
+            source: 'admin',
+            now: NOW,
+        });
+
+        expect(result.report.rules.shortCallSec).toBe(60);
+    });
+
+    it('явный порог в настройках AI-аналитики старше старой админки', async () => {
+        const { service } = makeService(
+            true,
+            {
+                aiAnalyticsModelParams: JSON.stringify({
+                    min_duration_sec_by_type: 90,
+                }),
+            },
+            60,
+        );
+
+        const result = await service.run('april.bitrix24.ru', {
+            months: 1,
+            timeZone: 'Europe/Moscow',
+            save: false,
+            source: 'admin',
+            now: NOW,
+        });
+
+        expect(result.report.rules.shortCallSec).toBe(90);
     });
 });

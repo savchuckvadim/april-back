@@ -41,6 +41,12 @@ export const AI_READINESS_REASON_CODES = {
     rosterNotConfirmed: 'roster-not-confirmed',
     /** Гипотеза портала «качество → объём» не задана (нужно ≥ 2 пар). */
     hypothesisMissing: 'hypothesis-not-set',
+    /**
+     * Снапшота месячной модели портала нет (план §5.4): нормы пустые,
+     * `priorSource: 'none'`, поэтому режим не поднимается выше
+     * `descriptive` — «нормы» без норм показывать нельзя.
+     */
+    modelMissing: 'no-portal-model',
 } as const;
 export type AiReadinessReasonCode =
     (typeof AI_READINESS_REASON_CODES)[keyof typeof AI_READINESS_REASON_CODES];
@@ -96,7 +102,14 @@ export interface ReadinessInput {
     enabled: boolean;
     /** Есть разборы в окне конвейера; иначе режим `kpi-only`. */
     pipelineEnabled: boolean;
-    /** Месяцев истории разборов (по первому разобранному звонку). */
+    /**
+     * Месяцев истории в окне готовности. Окно выбирает
+     * `readiness-window.ts`: при живой модели портала это глубина истории
+     * стадий её окна (`SnapshotReadiness.historyMonths`, до 12 месяцев),
+     * без модели — месяцы от первого разобранного звонка периода.
+     * Величины разнородны, но обе отвечают на один вопрос гейта: «сколько
+     * месяцев портал уже наблюдается».
+     */
     historyMonths: number;
     /** Разобранных подтверждённых презентаций за окно готовности. */
     presentations: number;
@@ -116,6 +129,13 @@ export interface ReadinessInput {
     betaSource: AiBetaSource;
     /** Счётчик до гейта β; null — считать не из чего. */
     betaCountdown?: BetaCountdown | null;
+    /**
+     * Снапшот месячной модели портала посчитан (план §5.4). `false` —
+     * кап: режим не выше `descriptive` с причиной `no-portal-model`;
+     * `undefined` — кап не применяется (прежнее поведение для вызывающих,
+     * которые про модель не знают, и для сборки самой модели).
+     */
+    portalModelPresent?: boolean;
 }
 
 /** Результат правил режимов; адаптер раскладывает его в `ReadinessDto`. */
@@ -196,6 +216,11 @@ function normsReasons(input: ReadinessInput, gates: ReadinessGates): string[] {
     if (!isRosterConfirmed(input, gates)) {
         reasons.push(AI_READINESS_REASON_CODES.rosterNotConfirmed);
     }
+    // Кап §5.4 — после гейтов: гейты руководитель закрывает сам, а
+    // модель считает ночной конвейер, и ждать её остаётся в конце списка.
+    if (input.portalModelPresent === false) {
+        reasons.push(AI_READINESS_REASON_CODES.modelMissing);
+    }
 
     return reasons;
 }
@@ -217,6 +242,11 @@ function outputBetaSource(
  * `kpi-only` → `calibration` → `descriptive` → `norms` → `hypothesis`.
  * Режимы `forecast` (L4) и `recommendations` (L5) объявлены в союзе, но в
  * Фазе 2 недостижимы: их гейты считаются в Фазе 4.
+ *
+ * Кап §5.4: при `portalModelPresent: false` подъём выше `descriptive`
+ * закрыт причиной `no-portal-model` даже при пройденных гейтах норм.
+ * Режимы ниже (`kpi-only`, `calibration`) кап не трогает — они и так
+ * ниже потолка, а их причины важнее.
  */
 export function buildReadiness(
     input: ReadinessInput,

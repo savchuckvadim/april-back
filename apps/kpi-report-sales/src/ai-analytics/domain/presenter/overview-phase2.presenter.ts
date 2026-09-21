@@ -33,7 +33,7 @@ import type {
     PortalModelView,
 } from '../assembler/overview-model.types';
 import { toRecommendations } from './levers.presenter';
-import { buildReadiness } from './readiness.util';
+import { buildReadiness, type ReadinessOptions } from './readiness.util';
 import { toStyleProfile } from './style.presenter';
 
 /** Всё, что нужно проходу Фазы 2 сверх самих строк. */
@@ -99,6 +99,35 @@ export function modelDataQualityFlagged(
     );
 }
 
+/**
+ * Всё, что готовность берёт из модели портала: режим β и счётчик до его
+ * гейта, окно счётчиков (12 месяцев), вердикт санити-панели и сам факт
+ * наличия модели (кап §5.4). Одна функция на обзор и `/settings`, чтобы
+ * в одном интерфейсе не было двух разных режимов готовности.
+ */
+export function modelReadinessOptions(
+    model: PortalModelView | null | undefined,
+): Pick<
+    ReadinessOptions,
+    | 'betaSource'
+    | 'betaCountdown'
+    | 'modelWindow'
+    | 'dataQualityFlagged'
+    | 'portalModelPresent'
+> {
+    const betaSource = AI_BETA_SOURCES.find(
+        source => source === model?.betaSource,
+    );
+
+    return {
+        ...(betaSource === undefined ? {} : { betaSource }),
+        betaCountdown: model?.betaCountdown ?? null,
+        modelWindow: modelReadinessWindow(model),
+        dataQualityFlagged: modelDataQualityFlagged(model),
+        portalModelPresent: model !== null && model !== undefined,
+    };
+}
+
 /** Нормы строки: полоса стажа берётся по стажу самой строки. */
 export function normsForRow(
     row: AiManagerRowDto,
@@ -152,11 +181,6 @@ export function buildOverviewReadiness(
     sources: OverviewSources,
     now: Date,
 ): ReadinessDto {
-    const model = sources.snapshots?.model ?? null;
-    const betaSource = AI_BETA_SOURCES.find(
-        source => source === model?.betaSource,
-    );
-
     return buildReadiness(sources.rows, {
         now,
         enabled: sources.enabled,
@@ -172,9 +196,6 @@ export function buildOverviewReadiness(
         rosterLevels: sources.levels.size,
         rosterConfirmedAt: sources.rosterConfirmedAt ?? '',
         hypothesisPairs: sources.hypothesisPairs ?? 0,
-        ...(betaSource === undefined ? {} : { betaSource }),
-        betaCountdown: model?.betaCountdown ?? null,
-        modelWindow: modelReadinessWindow(model),
-        dataQualityFlagged: modelDataQualityFlagged(model),
+        ...modelReadinessOptions(sources.snapshots?.model ?? null),
     });
 }

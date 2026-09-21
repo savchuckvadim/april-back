@@ -32,6 +32,12 @@ export interface AuthUser {
      * человеком на портале (`users.bitrix_id`) и пишется в журнал действий.
      */
     bitrixUserId?: string;
+    /**
+     * Домен портала Bitrix (portal-context сессия фрейма, выпуск —
+     * PortalSessionService). Guard мутирующих ручек сверяет с ним
+     * `domain` тела запроса.
+     */
+    domain?: string;
 }
 
 /** Полезная нагрузка JWT — совпадает с {@link AuthUser} плюс стандартные claim-ы. */

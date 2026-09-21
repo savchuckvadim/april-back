@@ -15,15 +15,15 @@ import { CallReportDealFamilyService } from '@lib/call-lib/call-report/services/
 import { LeadRequestDetectorService } from '../../sales-hooks/lead-to-work/services/lead-request-detector.service';
 import { LeadWorkKind } from '../../shared/event-title';
 import {
-    renderOwnOrgNamesBlock,
-    renderOwnOrgNamesHint,
-} from '../contracts/own-org-names.contract';
-import { CallReportSettingsService } from './call-report-settings.service';
+    renderPassportClassifyHint,
+    renderPassportForPrompt,
+} from './call-context-render.util';
 import {
-    CallTypePrior,
-    renderCallTypePrior,
-    resolveCallTypePrior,
-} from './call-type-prior.util';
+    callTypeOfRecords,
+    familyResolveArgsOf,
+} from './call-family-context.util';
+import { CallReportSettingsService } from './call-report-settings.service';
+import { CallTypePrior, resolveCallTypePrior } from './call-type-prior.util';
 
 /** Кандидат identity, найденный по номеру телефона. НИКОГДА не факт. */
 export interface CallPassportIdentity {
@@ -202,12 +202,19 @@ export class CallContextBuilderService {
         };
         if (!row.domain) return passport;
         passport.ownOrgNames = await this.readOwnOrgNames(row.domain);
+        const callType = await this.readCallType(row);
 
         try {
             const { bitrix, PortalModel } = await this.pbxService.init(
                 row.domain,
             );
-            await this.fillCrmContext(bitrix, PortalModel, row, passport);
+            await this.fillCrmContext(
+                bitrix,
+                PortalModel,
+                row,
+                passport,
+                callType,
+            );
             await this.fillDirectionAndIdentity(bitrix, row, passport);
         } catch (error) {
             this.logger.warn(
@@ -232,6 +239,25 @@ export class CallContextBuilderService {
                 `Паспорт: названия своих организаций не прочитаны (${domain}): ${(error as Error).message}`,
             );
             return [];
+        }
+    }
+
+    /**
+     * Тип звонка по уже сделанным ais-записям строки (классификатор,
+     * глубокий разбор) — ранжирование записи отчётности в раскладке связей.
+     * До классификации записей нет — тип неизвестен; ошибка БД паспорт не
+     * ломает.
+     */
+    private async readCallType(
+        row: TranscriptionPipelineView,
+    ): Promise<string | null> {
+        try {
+            return callTypeOfRecords(
+                await this.aiService.findByTranscriptionIds([row.id]),
+                row.id,
+            );
+        } catch {
+            return null;
         }
     }
 
@@ -273,149 +299,15 @@ export class CallContextBuilderService {
 
     /** Текстовый блок паспорта для user-части промпта разбора. */
     renderForPrompt(passport: CallPassport): string {
-        const lines: string[] = ['', 'КОНТЕКСТ ИЗ CRM (паспорт звонка):'];
-        if (passport.certainty === 'rich') {
-            lines.push(
-                `- Звонок по СДЕЛКЕ #${passport.entityId}, стадия ${passport.stageId ?? '—'}` +
-                    (passport.categoryId
-                        ? `, воронка ${passport.categoryId}`
-                        : '') +
-                    '. Этап переговоров известен ДОСТОВЕРНО — оценивай уместность разделов относительно него.',
-            );
-        } else if (passport.certainty === 'lead') {
-            lines.push(
-                `- Звонок по ЛИДУ #${passport.entityId}, статус ${passport.leadStatusId ?? '—'}. ` +
-                    'Стадии переговоров нет — этап определяй по содержанию разговора, уместность оценивай мягко.',
-            );
-            if (passport.leadWorkKind === 'request') {
-                lines.push(
-                    '- Лид создан ВХОДЯЩЕЙ ЗАЯВКОЙ (клиент сам оставил контакты на сайте: прайс, демо-доступ, документ, семинар). ' +
-                        'Клиент ждёт звонка, но может оказаться не-ЦА — оценивай по регламенту заявок: легализация, фильтр ЦА, предложение зайти в систему.',
-                );
-            } else if (passport.leadWorkKind === 'lead') {
-                lines.push(
-                    '- Лид создан ВХОДЯЩИМ ОБРАЩЕНИЕМ клиента (звонок/письмо/чат) — это не холодный выход менеджера.',
-                );
-            }
-        } else {
-            lines.push(
-                '- CRM-контекст НЕИЗВЕСТЕН (сырой лид или звонок без привязки). ' +
-                    'ВАЖНО: это может быть действующий клиент с незнакомого номера — ' +
-                    'этап определяй только по содержанию разговора и НЕ штрафуй за «неуместность» этапов.',
-            );
-        }
-        const persona: string[] = [];
-        if (passport.contactName) persona.push(passport.contactName);
-        if (passport.contactPosition) {
-            persona.push(`должность «${passport.contactPosition}»`);
-        }
-        if (persona.length) {
-            lines.push(
-                `- Собеседник по данным CRM: ${persona.join(', ')}. ` +
-                    'Подсказка для специализации показа (бухгалтер/юрист/кадровик) и восстановления искажённых распознаванием имён; лексика разговора важнее.',
-            );
-        }
-        if (passport.crmNotes) {
-            lines.push(
-                `- Заметки менеджера из CRM: «${passport.crmNotes}». Фон для разбора; могут быть устаревшими.`,
-            );
-        }
-        if (passport.companyTitle) {
-            lines.push(
-                `- Компания клиента по данным CRM: «${passport.companyTitle}». ` +
-                    'Используй для восстановления искажённого распознаванием названия.',
-            );
-        }
-        if (passport.companyNotes) {
-            lines.push(
-                `- Заметки менеджера о компании: «${passport.companyNotes}». Могут быть устаревшими.`,
-            );
-        }
-        if (passport.opHistory.length) {
-            lines.push(
-                '- «ОП История» из CRM — последние записи менеджера о касаниях клиента:',
-            );
-            for (const entry of passport.opHistory) {
-                lines.push(`  • ${entry}`);
-            }
-            lines.push(
-                '  Сверь разговор с этими записями: прошлые договорённости и обещания — фон для оценки; записи могут быть неполными.',
-            );
-        }
-        if (passport.direction) {
-            lines.push(
-                passport.direction === 'outgoing'
-                    ? '- Звонок ИСХОДЯЩИЙ: инициатор — менеджер. Приветствие оценивай как вход менеджера: представление, цель звонка в первые секунды, опора на прошлую договорённость.'
-                    : '- Звонок ВХОДЯЩИЙ (редкий случай): оценивай скорость включения менеджера в запрос клиента.',
-            );
-        }
-        if (passport.identity.length) {
-            const found = passport.identity
-                .map(item => `${item.entityType} #${item.entityId}`)
-                .join(', ');
-            lines.push(
-                `- По номеру телефона ПРЕДПОЛОЖИТЕЛЬНО найдены: ${found}. Это догадка (suspected), не факт — не выдавай её за установленную связь.`,
-            );
-        }
-        if (passport.history.length) {
-            lines.push(
-                '- История прошлых звонков этой сущности (новые первыми):',
-            );
-            for (const item of passport.history) {
-                const date = item.startedAt
-                    ? new Date(item.startedAt).toLocaleDateString('ru-RU')
-                    : 'дата неизвестна';
-                lines.push(
-                    `  • [${date}] ${this.trim(item.resume ?? 'резюме отсутствует', 400)}`,
-                );
-            }
-            lines.push(
-                '  Сверь этот разговор с историей: невыполненные обещания и потерянные договорённости — обязательный флаг в разборе.',
-            );
-        }
-        // Названия наших организаций — отдельным блоком в конце: это не
-        // факт о клиенте, а правило разбора (представление своим именем —
-        // норма, снижать за это оценку нельзя). Список пуст — блока нет.
-        return lines.join('\n') + renderOwnOrgNamesBlock(passport.ownOrgNames);
+        return renderPassportForPrompt(passport);
     }
 
     /**
-     * Короткая CRM-подсказка для дешёвого классификатора типа звонка:
-     * только факты, влияющие на выбор типа (заявка/обращение/сделка).
-     * null — подсказать нечего, инструкция классификатора не меняется.
+     * Короткая CRM-подсказка для дешёвого классификатора типа звонка;
+     * null — подсказать нечего (рендер — call-context-render.util).
      */
     renderClassifyHint(passport: CallPassport): string | null {
-        const facts: string[] = [];
-        if (passport.leadWorkKind === 'request') {
-            facts.push(
-                'звонок идёт по лиду, созданному ВХОДЯЩЕЙ ЗАЯВКОЙ с сайта ' +
-                    '(клиент сам оставил контакты) — если менеджер ссылается ' +
-                    "на заявку/оставленные контакты, это тип 'site_lead'",
-            );
-        } else if (passport.leadWorkKind === 'lead') {
-            facts.push(
-                'звонок идёт по лиду из входящего обращения клиента ' +
-                    '(звонок/письмо/чат) — это НЕ холодный выход менеджера',
-            );
-        }
-        if (passport.certainty === 'rich') {
-            facts.push(
-                'звонок привязан к сделке — переговоры уже идут, первый ' +
-                    'холодный контакт маловероятен',
-            );
-        }
-        // Наши собственные названия: без них классификатор читает реплику
-        // «вас беспокоит Альфа-центр» как разговор о чужой организации.
-        const ownOrgHint = renderOwnOrgNamesHint(passport.ownOrgNames);
-        if (ownOrgHint) facts.push(ownOrgHint);
-        // Приор по стадии/лиду — отдельным блоком: он называет ожидаемый
-        // тип прямо, тогда как факты выше лишь сужают выбор.
-        const prior = renderCallTypePrior(passport.callTypePrior);
-        if (!facts.length) return prior || null;
-        return (
-            `\n\nКОНТЕКСТ ИЗ CRM (подсказка, не приговор — решает содержание разговора):\n- ${facts.join('\n- ')}` +
-            prior
-        );
+        return renderPassportClassifyHint(passport);
     }
 
     /**
@@ -452,30 +344,37 @@ export class CallContextBuilderService {
     }
 
     /**
-     * Коды воронки/стадии для приора — от ПРАВИЛЬНОЙ сделки «ОП Основная»
-     * (раскладка связей: корневая сделка или дотяжка по компании/контакту).
-     * Сырые stageId/categoryId паспорта остаются от владельца звонка — это
-     * факт CRM; коды же нужны классификатору, и брать их у сделки чужой
-     * воронки бессмысленно. Fail-open: не нашли — приора просто не будет.
+     * Коды воронки/стадии — от ПРАВИЛЬНОЙ сделки «ОП Основная» из раскладки
+     * связей (запись «ОП История»/«ОП KPI» этого звонка, корневая сделка,
+     * дотяжка по компании/контакту). Сырые stageId/categoryId паспорта
+     * остаются от владельца звонка — это факт CRM; коды же нужны
+     * классификатору, и брать их у сделки чужой воронки бессмысленно. Для
+     * звонка по лиду коды дают семью его записи; приор лида остаётся
+     * лидовым. Fail-open: не нашли — приора просто не будет.
      */
     private async fillCodesFromMainDeal(
         bitrix: BitrixService,
         portal: PortalModel,
         row: TranscriptionPipelineView,
         passport: CallPassport,
+        callType: string | null,
     ): Promise<void> {
         if (!row.domain) return;
         try {
+            // Полный контекст раскладки (лид-владелец, владелец звонка из
+            // телефонии, тип): без них шаг 0 «ОП История» недостижим для
+            // звонков по лиду — семья дотягивалась догадкой по клиенту.
+            const args = familyResolveArgsOf(passport, row, callType);
             const family = await this.dealFamily.resolve(
                 row.domain,
-                passport.entityId ?? undefined,
-                {
-                    companyId: passport.crmCompanyId ?? undefined,
-                    contactId: passport.crmContactId ?? undefined,
-                    callStartedAt: row.callStartedAt,
-                },
+                args.dealId,
+                args.context,
             );
-            if (!family.mainDealId || family.mainDealId === passport.entityId) {
+            if (
+                !family.mainDealId ||
+                (passport.entityType === 'deal' &&
+                    family.mainDealId === passport.entityId)
+            ) {
                 return;
             }
             const response = (await bitrix.api.call('crm.deal.get', {
@@ -492,9 +391,9 @@ export class CallContextBuilderService {
                 main.STAGE_ID ?? null,
             );
             this.logger.log(
-                `Паспорт: приор считаем по основной сделке ${family.mainDealId} ` +
+                `Паспорт: коды воронки/стадии — от основной сделки ${family.mainDealId} ` +
                     `(воронка ${passport.dealCategoryCode ?? '—'}, стадия ` +
-                    `${passport.dealStageCode ?? '—'})`,
+                    `${passport.dealStageCode ?? '—'}, источник ${family.source ?? '—'})`,
             );
         } catch (error) {
             this.logger.warn(
@@ -509,6 +408,7 @@ export class CallContextBuilderService {
         portal: PortalModel,
         row: TranscriptionPipelineView,
         passport: CallPassport,
+        callType: string | null,
     ): Promise<void> {
         if (!row.entityId) return;
         const entityId = Number(row.entityId);
@@ -545,6 +445,7 @@ export class CallContextBuilderService {
                         portal,
                         row,
                         passport,
+                        callType,
                     );
                 }
                 passport.callTypePrior = resolveCallTypePrior({
@@ -601,6 +502,16 @@ export class CallContextBuilderService {
                 );
                 this.appendOpHistory(portal, 'lead', response.result, passport);
                 this.applyPersona(response.result, passport);
+                // Звонок по лиду: семья сделок — из записи «ОП История»/
+                // «ОП KPI» этого звонка (шаг 0 раскладки, доступен только
+                // с лидом-владельцем); коды основной сделки — в паспорт.
+                await this.fillCodesFromMainDeal(
+                    bitrix,
+                    portal,
+                    row,
+                    passport,
+                    callType,
+                );
             }
         }
     }
@@ -825,9 +736,5 @@ export class CallContextBuilderService {
                 `Паспорт: история не собрана (${row.domain}): ${(error as Error).message}`,
             );
         }
-    }
-
-    private trim(value: string, max: number): string {
-        return value.length > max ? `${value.slice(0, max)}…` : value;
     }
 }

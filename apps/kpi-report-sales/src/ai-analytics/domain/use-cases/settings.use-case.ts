@@ -1,15 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
     AI_ANALYTICS_EVENT_KINDS,
     CALL_REPORT_CALL_TYPE_CODES,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
+import { toPortalDate } from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_WINDOWS } from '../../constants/ai-analytics.const';
 import {
     AiAnalyticsSettingsDto,
     AiCallTypeDto,
 } from '../../dto/ai-settings.dto';
+import { AiAnalyticsSnapshotStore } from '../../store/ai-analytics-snapshot.store';
+import type { OverviewSnapshots } from '../assembler/overview-model.types';
 import { CallsLoader } from '../loaders/calls.loader';
-import { SettingsLoader } from '../loaders/settings.loader';
+import { OverviewSnapshotsLoader } from '../loaders/overview-snapshots.loader';
+import {
+    AiAnalyticsPortalSettings,
+    SettingsLoader,
+} from '../loaders/settings.loader';
+import {
+    episodeSalesOf,
+    modelReadinessOptions,
+} from '../presenter/overview-phase2.presenter';
 import {
     buildReadiness,
     resolveComparableFrom,
@@ -37,15 +48,25 @@ export interface SettingsUseCaseOptions {
 
 /**
  * Настройки витрины + готовность (план, 6.2): флаги портала, pipelineEnabled
- * (есть ли разборы за 30 дней), readiness по окну 120 дней, типы звонков из
- * карты алфавитов, comparableFrom по версиям разборов, РОПы.
- * Одна lite-выборка на оба окна. Кэшируется контроллером на 300 с.
+ * (есть ли разборы за 30 дней), типы звонков из карты алфавитов,
+ * comparableFrom по версиям разборов, РОПы.
+ *
+ * Готовность — тем же адаптером, что и обзор (`readiness.util` +
+ * `modelReadinessOptions`): окно счётчиков из месячной модели портала
+ * (без неё — период 120 дней), календарь, состав и гипотеза из настроек,
+ * продажи — из окна модели (при пустых — из эпизодов прогноза), кап §5.4
+ * без модели. Иначе `/settings` и обзор показывали бы два разных режима
+ * в одном интерфейсе (долг 11 волны C). Одна lite-выборка на оба окна.
+ * Кэшируется контроллером на 300 с.
  */
 @Injectable()
 export class SettingsUseCase {
+    private readonly logger = new Logger(SettingsUseCase.name);
+
     constructor(
         private readonly calls: CallsLoader,
         private readonly settings: SettingsLoader,
+        private readonly snapshots: AiAnalyticsSnapshotStore,
     ) {}
 
     async execute(
@@ -69,6 +90,10 @@ export class SettingsUseCase {
                 row.analysisPresent &&
                 row.callStartedAt.getTime() >= pipelineFrom,
         );
+        const snapshots = await this.loadSnapshots(
+            domain,
+            toPortalDate(now, settings.calendar.timeZone),
+        );
 
         return {
             enabled: settings.enabled,
@@ -80,6 +105,10 @@ export class SettingsUseCase {
                 now,
                 enabled: settings.enabled,
                 pipelineEnabled,
+                ...portalReadinessOptions(settings),
+                ...modelReadinessOptions(snapshots.model ?? null),
+                financeSales: modelSalesOf(snapshots.model),
+                episodeSales: episodeSalesOf(snapshots.forecasts),
             }),
             callTypes: buildCallTypes(),
             comparableFrom: resolveComparableFrom(rows),
@@ -92,4 +121,60 @@ export class SettingsUseCase {
             experimentsEnabled: settings.experimentsEnabled,
         };
     }
+
+    /**
+     * Снапшоты Фазы 2 на сегодня: модель портала и прогнозы. `ais` не
+     * ответила — настройки не гаснут, готовность считается без модели
+     * (кап §5.4), как и в обзоре.
+     */
+    private async loadSnapshots(
+        domain: string,
+        day: string,
+    ): Promise<OverviewSnapshots> {
+        try {
+            return await new OverviewSnapshotsLoader(this.snapshots).load(
+                domain,
+                day,
+            );
+        } catch (error) {
+            this.logger.warn(
+                `Снапшоты Фазы 2 недоступны (${domain}): ${String(error)}`,
+            );
+            return {};
+        }
+    }
+}
+
+/**
+ * Решения портала для гейтов норм — те же источники, что у сборки модели
+ * портала: праздники в календаре, уровни, дата подтверждения состава и
+ * пары гипотезы из настроек.
+ */
+function portalReadinessOptions(
+    settings: AiAnalyticsPortalSettings,
+): Pick<
+    Parameters<typeof buildReadiness>[1],
+    | 'calendarImported'
+    | 'rosterLevels'
+    | 'rosterConfirmedAt'
+    | 'hypothesisPairs'
+> {
+    return {
+        calendarImported: settings.calendar.holidays.length > 0,
+        rosterLevels: settings.levels.length,
+        rosterConfirmedAt: settings.rosterConfirmedAt,
+        hypothesisPairs: settings.hypothesis?.pairs.length ?? 0,
+    };
+}
+
+/**
+ * Продажи окна модели портала (`readiness.sales` — закрытые сделки
+ * финансов за её окно): у `/settings` нет периода и финансов, поэтому
+ * окном продаж служит окно модели. Нагрузка чужая — читается структурно.
+ */
+function modelSalesOf(model: OverviewSnapshots['model']): number {
+    const sales = model?.readiness?.sales;
+    return typeof sales === 'number' && Number.isFinite(sales) && sales > 0
+        ? Math.floor(sales)
+        : 0;
 }

@@ -109,11 +109,18 @@ export function resolveReadinessWindow(
 
 /** Вход готовности по окну: правила режимов + два окна + качество данных. */
 export interface WindowedReadinessInput {
-    /** Всё, что не зависит от окна: флаги портала, продажи, состав, β. */
+    /**
+     * Всё, что не зависит от окна: флаги портала, продажи, состав, β.
+     * `portalModelPresent` здесь можно не задавать — обёртка выводит его
+     * из `model` (null → кап §5.4); явное значение старше вывода.
+     */
     readonly rules: Omit<ReadinessInput, 'historyMonths' | 'presentations'>;
     /** Счётчики запрошенного периода витрины. */
     readonly period: ReadinessWindowCounters;
-    /** Счётчики окна модели портала; null — снапшота модели нет. */
+    /**
+     * Счётчики окна модели портала; null либо нет — снапшота модели нет,
+     * и режим капится на `descriptive` (план §5.4, `no-portal-model`).
+     */
     readonly model?: ReadinessWindowCounters | null;
     /** Санити-панель модели пометила качество данных (`flagged`). */
     readonly dataQualityFlagged?: boolean;
@@ -127,7 +134,8 @@ export interface WindowedReadinessResult extends ReadinessResult {
 /**
  * Готовность по окну: выбирает окно, зовёт правила режимов библиотеки и
  * дописывает причину качества данных. Своих гейтов не добавляет — режим
- * и его причины целиком остаются за `buildReadiness`.
+ * и его причины целиком остаются за `buildReadiness`; кап §5.4 тоже
+ * считает `buildReadiness`, обёртка лишь сообщает ему, есть ли модель.
  */
 export function buildWindowedReadiness(
     input: WindowedReadinessInput,
@@ -138,6 +146,9 @@ export function buildWindowedReadiness(
         ...input.rules,
         historyMonths: window.historyMonths,
         presentations: window.presentations,
+        portalModelPresent:
+            input.rules.portalModelPresent ??
+            (input.model !== null && input.model !== undefined),
     };
     const result = buildReadiness(rules, gates);
 

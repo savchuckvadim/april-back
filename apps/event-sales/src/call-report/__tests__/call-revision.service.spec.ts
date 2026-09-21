@@ -51,6 +51,12 @@ const makeDeps = (options?: {
      * элемента связей нет вовсе (карточка-сирота).
      */
     smartItem?: Record<string, unknown> | null;
+    /** Паспорт последнего звонка вместо сделки 555 по умолчанию. */
+    passport?: Record<string, unknown>;
+    /** Записи ais по строкам вместо набора по умолчанию. */
+    records?: Record<string, unknown>[];
+    /** Раскладка сделок вместо «владелец 555 — корневая сделка». */
+    family?: Record<string, unknown>;
 }) => {
     const timeline = { addTimelineComment: jest.fn().mockResolvedValue({}) };
     const listItemGet = jest
@@ -109,38 +115,42 @@ const makeDeps = (options?: {
         ),
     };
     const aiService = {
-        findByTranscriptionIds: jest.fn().mockResolvedValue([
-            {
-                transcription_id: '2',
-                type: 'agent-analysis',
-                user_result: {
-                    summary: 'Разбор второго звонка',
-                    score: 7,
-                    nextStep: { description: 'Отправить КП' },
-                },
-            },
-            {
-                transcription_id: '1',
-                type: 'call-resume',
-                result: 'Гигачат-резюме первого звонка',
-            },
-        ]),
-    };
-    const contextBuilder = {
-        build: jest.fn().mockResolvedValue({
-            certainty: 'rich',
-            entityType: 'deal',
-            entityId: 555,
-            crmCompanyId: 33,
-            crmContactId: 44,
-            history: [
+        findByTranscriptionIds: jest.fn().mockResolvedValue(
+            options?.records ?? [
                 {
-                    startedAt: '2026-07-30T09:00:00Z',
-                    resume: 'Историческое резюме',
+                    transcription_id: '2',
+                    type: 'agent-analysis',
+                    user_result: {
+                        summary: 'Разбор второго звонка',
+                        score: 7,
+                        nextStep: { description: 'Отправить КП' },
+                    },
+                },
+                {
+                    transcription_id: '1',
+                    type: 'call-resume',
+                    result: 'Гигачат-резюме первого звонка',
                 },
             ],
-            identity: [],
-        }),
+        ),
+    };
+    const contextBuilder = {
+        build: jest.fn().mockResolvedValue(
+            options?.passport ?? {
+                certainty: 'rich',
+                entityType: 'deal',
+                entityId: 555,
+                crmCompanyId: 33,
+                crmContactId: 44,
+                history: [
+                    {
+                        startedAt: '2026-07-30T09:00:00Z',
+                        resume: 'Историческое резюме',
+                    },
+                ],
+                identity: [],
+            },
+        ),
         renderForPrompt: jest.fn().mockReturnValue('ПАСПОРТ ЗВОНКА: тест'),
     };
     const smartResolver = {
@@ -168,7 +178,9 @@ const makeDeps = (options?: {
 
     // Раскладка сделок: владелец 555 — корневая сделка продажи.
     const dealFamily = {
-        resolve: jest.fn().mockResolvedValue({ mainDealId: 555 }),
+        resolve: jest
+            .fn()
+            .mockResolvedValue(options?.family ?? { mainDealId: 555 }),
     };
     const service = new CallRevisionService(
         pbxService as never,
@@ -190,6 +202,7 @@ const makeDeps = (options?: {
         updateExisting,
         timeline,
         itemList,
+        dealFamily,
     };
 };
 
@@ -244,6 +257,76 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
                 ENTITY_TYPE: 'deal',
                 COMMENT: expect.stringContaining('Ночная ревизия') as string,
             }),
+        );
+    });
+
+    // Долг 29 волны C: без лида-владельца, владельца звонка и типа шаг 0
+    // раскладки («ОП История» этого звонка) для звонков по лиду недостижим —
+    // семья дотягивалась догадкой по клиенту, которого у лида часто нет.
+    it('звонок по лиду: раскладка получает лид, владельца, момент и тип; семья — из записи списка', async () => {
+        const startedAt = new Date('2026-08-01T15:00:00Z');
+        const { service, dealFamily, updateExisting } = makeDeps({
+            rows: [
+                row({
+                    id: '1',
+                    activityId: '101',
+                    entityType: 'lead',
+                    entityId: '77',
+                }),
+                row({
+                    id: '2',
+                    activityId: '102',
+                    entityType: 'lead',
+                    entityId: '77',
+                    callStartedAt: startedAt,
+                }),
+            ],
+            passport: {
+                certainty: 'lead',
+                entityType: 'lead',
+                entityId: 77,
+                crmCompanyId: null,
+                crmContactId: null,
+                history: [],
+                identity: [],
+            },
+            records: [
+                {
+                    transcription_id: '2',
+                    type: 'agent-analysis',
+                    user_result: {
+                        summary: 'Показ системы',
+                        callType: 'presentation',
+                    },
+                },
+            ],
+            family: {
+                mainDealId: 900,
+                mainConfidence: 'exact',
+                source: 'list',
+                listRecordId: '15',
+            },
+        });
+
+        await service.runForDomain(
+            DOMAIN,
+            new Date('2026-08-01T00:00:00Z'),
+            new Date('2026-08-02T00:00:00Z'),
+        );
+
+        // Сделки-владельца нет; в контексте — лид, владелец звонка из
+        // телефонии, тип из разбора и момент ПОСЛЕДНЕГО звонка. Клиента у
+        // лида нет — дотягивать по нему нечего, семья приходит из записи.
+        expect(dealFamily.resolve).toHaveBeenCalledWith(DOMAIN, undefined, {
+            companyId: undefined,
+            contactId: undefined,
+            callStartedAt: startedAt,
+            leadId: 77,
+            callerId: '222',
+            callType: 'presentation',
+        });
+        expect(updateExisting).toHaveBeenCalledWith(
+            expect.objectContaining({ mainDealId: 900, leadId: 77 }),
         );
     });
 

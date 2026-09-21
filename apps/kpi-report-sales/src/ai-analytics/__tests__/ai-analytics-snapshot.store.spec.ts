@@ -215,6 +215,82 @@ describe('AiAnalyticsSnapshotStore (снапшоты Фазы 2 в ais)', () => 
         expect(aiService.create).toHaveBeenCalledTimes(1);
     });
 
+    it('usage уходит в колонки tokens_count/price, без usage колонок нет', async () => {
+        const brief = envelope(
+            AI_ANALYTICS_SNAPSHOT_TYPE.brief,
+            '2026-09-01_2026-09-07_10_20',
+            null,
+        );
+        const { store, aiService } = makeStore([]);
+
+        await store.upsert({
+            ...brief,
+            usage: { tokensCount: 1500, price: 3 },
+        });
+        expect(aiService.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                tokens_count: 1500,
+                price: 3,
+                model: 'sam-1.0.0',
+            }),
+        );
+
+        // Модель не вызывали: колонки расхода остаются NULL — в create
+        // ключи не едут; model по-прежнему calcVersion.
+        aiService.create.mockClear();
+        await store.upsert({
+            ...brief,
+            usage: { tokensCount: null, price: null },
+        });
+        const [idle] = aiService.create.mock.calls[0];
+        expect(idle).not.toHaveProperty('tokens_count');
+        expect(idle).not.toHaveProperty('price');
+        expect(idle.model).toBe('sam-1.0.0');
+
+        // Без usage — как раньше: колонок расхода нет.
+        aiService.create.mockClear();
+        await store.upsert(brief);
+        const [plain] = aiService.create.mock.calls[0];
+        expect(plain).not.toHaveProperty('tokens_count');
+        expect(plain).not.toHaveProperty('price');
+        expect(plain.model).toBe('sam-1.0.0');
+    });
+
+    it('usage не влияет на идемпотентность: та же сигнатура → written: 0', async () => {
+        const brief = envelope(
+            AI_ANALYTICS_SNAPSHOT_TYPE.brief,
+            '2026-09-01_2026-09-07_10_20',
+            null,
+        );
+        const usage = { tokensCount: 1500, price: 3 };
+        const { store, aiService } = makeStore([
+            row('1', new Date('2026-09-06T03:45:00.000Z'), { ...brief, usage }),
+        ]);
+
+        const sameUsage = await store.upsert({ ...brief, usage });
+        expect(sameUsage).toEqual({ id: '1', supersededIds: [], written: 0 });
+        const otherUsage = await store.upsert({
+            ...brief,
+            usage: { tokensCount: 900, price: 1.8 },
+        });
+        expect(otherUsage).toEqual({ id: '1', supersededIds: [], written: 0 });
+        const noUsage = await store.upsert(brief);
+        expect(noUsage).toEqual({ id: '1', supersededIds: [], written: 0 });
+        expect(aiService.create).not.toHaveBeenCalled();
+
+        // Смена сигнатуры пишет заново — расход тут ни при чём.
+        const changed = await store.upsert({
+            ...brief,
+            inputsHash: 'hash-2',
+            usage,
+        });
+        expect(changed).toEqual({
+            id: '9001',
+            supersededIds: ['1'],
+            written: 1,
+        });
+    });
+
     it('findByKeys фильтрует по менеджеру, ключу и статусу', async () => {
         const first = envelope(
             AI_ANALYTICS_SNAPSHOT_TYPE.managerMonth,

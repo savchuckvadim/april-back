@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '@lib/core/prisma/prisma.module';
 import { AiModule } from '@lib/call-lib';
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
+import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { AiAnalyticsAuditSnapshotStore } from './ai-analytics-audit-snapshot.store';
 import { AiAnalyticsAuditService } from './ai-analytics-audit.service';
 
@@ -14,7 +15,14 @@ import { AiAnalyticsAuditService } from './ai-analytics-audit.service';
 @Module({
     // PortalAppSettingsModule — сервисный (без контроллеров): признак
     // ai_analytics_audit_enabled портала.
-    imports: [PrismaModule, AiModule, PortalAppSettingsModule],
+    // PortalStoreModule — старая админка разбора (запасной скаляр порога);
+    // модуль без контроллеров, поверхность API админки не растёт.
+    imports: [
+        PrismaModule,
+        AiModule,
+        PortalAppSettingsModule,
+        PortalStoreModule,
+    ],
     providers: [AiAnalyticsAuditSnapshotStore, AiAnalyticsAuditService],
     exports: [AiAnalyticsAuditSnapshotStore, AiAnalyticsAuditService],
 })

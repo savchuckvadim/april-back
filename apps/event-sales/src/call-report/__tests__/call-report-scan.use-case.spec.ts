@@ -1,3 +1,4 @@
+import { findParam, registryMinDurationSec } from '@lib/sales-ai-analytics';
 import { CallReportScanUseCase } from '../use-cases/call-report-scan.use-case';
 import { VoximplantCallsService } from '../services/voximplant-calls.service';
 
@@ -109,6 +110,29 @@ describe('CallReportScanUseCase', () => {
     };
 
     afterEach(() => jest.clearAllMocks());
+
+    // Долг 9 волны C: порог без опции — дефолт реестра AI-аналитики, а не
+    // литерал 300 в коде скана (источник порога у всех контуров один, А.1).
+    it('порог длительности без опции — дефолт реестра min_duration_sec_by_type', async () => {
+        const { useCase, findRecentCalls } = makeDeps({ rows: [] });
+        await useCase.execute(DOMAIN);
+        expect(findRecentCalls).toHaveBeenCalledWith(
+            expect.objectContaining({
+                minDurationSec: registryMinDurationSec(),
+            }),
+        );
+        expect(registryMinDurationSec()).toBe(
+            findParam('min_duration_sec_by_type')?.defaultValue,
+        );
+    });
+
+    it('минимум карты портала из опций уходит в запрос Битрикса как есть', async () => {
+        const { useCase, findRecentCalls } = makeDeps({ rows: [] });
+        await useCase.execute(DOMAIN, { minDurationSec: 60 });
+        expect(findRecentCalls).toHaveBeenCalledWith(
+            expect.objectContaining({ minDurationSec: 60 }),
+        );
+    });
 
     it('фильтр сотрудников уходит В ЗАПРОС Битрикса (пересечение ОП и белого списка)', async () => {
         const { useCase, findRecentCalls } = makeDeps({

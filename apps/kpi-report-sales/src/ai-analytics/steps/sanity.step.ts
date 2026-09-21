@@ -25,13 +25,13 @@
 import { Injectable } from '@nestjs/common';
 import {
     AI_ANALYTICS_SNAPSHOT_TYPE,
-    minDurationByType,
     resolveNumberParam,
 } from '@lib/sales-ai-analytics';
 import {
     AI_PIPELINE_BUS_KEYS,
     previousMonthKey,
 } from '../constants/ai-snapshot.const';
+import { portalMinDurationByType } from '../domain/loaders/min-duration.util';
 import { AiAnalyticsSnapshotStore } from '../store/ai-analytics-snapshot.store';
 import { agreedSla, callFacts, slaFacts } from './sanity.facts';
 import {
@@ -106,16 +106,11 @@ export class SanityStep implements AiAnalyticsPipelineStep {
                 minN,
             ),
             durationRule(
-                // Один вход порога у пульса и конвейера (решение А.1,
-                // P2-56): карта определений портала плюс код реестра
-                // min_duration_sec_by_type из слоёв прогона.
-                minDurationByType(
-                    ctx.settings.definitions.minDurationSecByType,
-                    resolveNumberParam(
-                        'min_duration_sec_by_type',
-                        ctx.registry,
-                    ),
-                ),
+                // Один вход порога у пульса, конвейера и панели (решение
+                // А.1, P2-56): общий резолвер учитывает и явный скаляр
+                // min_duration_sec, и признак сырого ключа настроек —
+                // своя сборка карты здесь разошлась бы с остальными.
+                portalMinDurationByType(ctx.settings),
                 rows,
                 minN,
             ),

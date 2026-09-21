@@ -29,6 +29,7 @@ export class AuthTokenService {
             ...(user.bitrixUserId !== undefined && {
                 bitrixUserId: user.bitrixUserId,
             }),
+            ...(user.domain !== undefined && { domain: user.domain }),
         };
         return this.jwtService.sign(payload, {
             secret: this.options.jwt.secret,

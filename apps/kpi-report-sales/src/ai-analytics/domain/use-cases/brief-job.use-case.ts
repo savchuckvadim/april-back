@@ -25,6 +25,7 @@ import {
     type AiBriefLlmPort,
     type AiBriefLlmUsage,
 } from '../../brief/ai-brief-llm.port';
+import { buildBriefPeriodKey } from '../../brief/brief-cache-key.util';
 import { BriefQuotaStore } from '../../brief/brief-quota.store';
 import { EvidencePackBuilder } from '../../brief/evidence-pack.builder';
 import {
@@ -172,7 +173,16 @@ export class BriefJobUseCase {
         };
     }
 
-    /** Снапшот `ai-analytics-brief`: ключ периода — packHash, менеджера нет. */
+    /**
+     * Снапшот `ai-analytics-brief`: ключ периода — период и ростер
+     * (`buildBriefPeriodKey`), менеджера нет. Прежние резюме того же
+     * периода и состава `upsert` помечает superseded — ретенция ограничена
+     * числом периодов (долг 40 волны C); packHash остаётся в `inputsHash`
+     * и нагрузке, поэтому повтор с тем же пакетом записи не создаёт.
+     * Расход вызова едет ещё и в `usage` конверта — стор кладёт его в
+     * колонки tokens_count / price (решение B2 от 21.09.2026); модель
+     * провайдера остаётся в нагрузке.
+     */
     private async write(
         data: AiBriefJobData,
         payload: BriefSnapshot,
@@ -183,13 +193,14 @@ export class BriefJobUseCase {
         await this.snapshots.upsert<BriefSnapshot>({
             domain: data.domain,
             type: AI_BRIEF_SNAPSHOT_RECORD.TYPE,
-            periodKey: pack.hash,
+            periodKey: buildBriefPeriodKey(data.from, data.to, data.managerIds),
             managerId: null,
             calcVersion: AI_ANALYTICS_CALC_VERSION,
             paramsVersion,
             inputsHash: pack.hash,
             generatedAt: now.toISOString(),
             payload,
+            usage: { tokensCount: payload.tokensCount, price: payload.price },
         });
     }
 

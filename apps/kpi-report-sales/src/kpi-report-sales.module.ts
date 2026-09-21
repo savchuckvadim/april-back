@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from '@lib/logger';
+import { PortalSessionApiModule } from '@lib/auth';
 import { MetricsModule } from '@lib/metrics';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -87,6 +88,9 @@ import { AiAnalyticsModule } from './ai-analytics';
         PbxFieldsModule,
         PlansModule,
         AiAnalyticsModule,
+        // Обмен AUTH_ID фрейма на portal-context JWT (POST auth/portal-session)
+        // для guard'а мутирующих ручек ai-analytics (PORTAL_SESSION_GUARD_MODE).
+        PortalSessionApiModule,
 
         // from shared: эндпоинты отделов/команд Bitrix наружу
         BxDepartmentModule,
