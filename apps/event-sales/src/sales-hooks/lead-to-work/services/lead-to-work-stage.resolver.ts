@@ -107,6 +107,13 @@ export class LeadToWorkStageResolver {
          * стадию волны заранее и не зависит от сопоставления зеркал.
          */
         if (item.dealStageCode) return item.dealStageCode;
+        /*
+         * АДРЕСНЫЙ ХО = ПРИНЯТАЯ ЗАЯВКА (решение владельца 18–21.09.2026).
+         * Сотрудника назвали явно — он и ведёт работу, подтверждать нечего:
+         * сделка сразу в «Холодные», а не в «Новую», откуда её ждали бы
+         * подтверждения. «Новая» как сигнал остаётся только для круга.
+         */
+        if (item.addressed) return COLD_BASE_STAGE;
         if (item.stageMode === 'cold') return COLD_BASE_STAGE;
         if (item.stageMode === 'new') return NEW_BASE_STAGE;
 
@@ -169,6 +176,21 @@ export class LeadToWorkStageResolver {
          */
         if (item.dealStageCode) return;
 
+        /*
+         * Адресный ХО — заявка принята: лид сразу «Взята в работу» (или
+         * «Работа с компанией»), минуя «Назначена менеджеру». Раньше зеркала
+         * from_lead: у заявки из «Новой» зеркало есть, и лид остался бы в
+         * «Новой», хотя работа уже у названного сотрудника.
+         */
+        if (item.isXo === 'Y' && item.addressed) {
+            this.applyLeadStatus(
+                [hasCompany ? 'lead_company_work' : 'lead_taken_in_work'],
+                plan,
+                warnings,
+            );
+            return;
+        }
+
         // from_lead с зеркалом: лид остаётся в своей стадии (решение ТЗ).
         if (item.stageMode === 'from_lead') {
             const leadStageCode = this.portal.getLeadStageCodeByStatusId(
@@ -194,7 +216,15 @@ export class LeadToWorkStageResolver {
                       hasCompany ? 'lead_company_work' : 'lead_taken_in_work',
                   ]
                 : [hasCompany ? 'lead_company_work' : 'lead_taken_in_work'];
+        this.applyLeadStatus(targetCodes, plan, warnings);
+    }
 
+    /** Первая установленная на портале стадия из списка — в план. */
+    private applyLeadStatus(
+        targetCodes: string[],
+        plan: LeadToWorkStagePlan,
+        warnings: string[],
+    ): void {
         for (const targetCode of targetCodes) {
             const statusId = this.portal.getLeadStatusIdByCode(targetCode);
             if (statusId) {

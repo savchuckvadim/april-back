@@ -304,6 +304,10 @@ export class LeadToWorkUseCase
                     ...item,
                     ...resolution.intent,
                     responsible: assignee.responsible,
+                    // Названный явно сотрудник = адресный ХО = заявка принята.
+                    addressed:
+                        resolution.intent.isXo === 'Y' &&
+                        assignee.source === 'explicit',
                     deadline: await this.workingDeadline(
                         ctx.domain,
                         item.deadline ??

@@ -56,6 +56,12 @@ export interface ILeadEntityContext {
     transferredById: number | null;
     responsibleId: number;
     /**
+     * Адресный ХО — заявка считается принятой названным сотрудником:
+     * таймер подтверждения снимается, пишутся «кто принял», метка «взята»
+     * и запись принятия в историю (решение владельца 18–21.09.2026).
+     */
+    addressed?: boolean;
+    /**
      * Имена сотрудников (id → «Имя Фамилия») для читаемой истории.
      * Имени нет — в запись уйдёт id (страховка, а не пустое место).
      */
@@ -98,8 +104,57 @@ export class LeadXoEventEntityModel extends XoEventEntityModel {
             this.appendWorkKind(fields);
             this.appendAssignedAt(fields);
             this.appendRequestHistory(fields);
+            if (this.leadCtx.addressed) this.appendAccepted(fields);
         }
         return fields;
+    }
+
+    /**
+     * Принятие при адресном ХО — те же поля, что ставит кнопка «принять»
+     * (`LeadRequestAcceptService.plan`): таймер снят, «кто принял», метка
+     * «взята», запись принятия следом за записью назначения. Порядок
+     * записей важен: сначала «назначен», потом «принята» — так историю
+     * читают люди и так её разбирает `getLeadRequestAcceptState`.
+     */
+    private appendAccepted(fields: XoEventRow): void {
+        const assignedAt = this.fieldName(
+            EnumLeadRequestFieldCode.op_lead_assigned_at,
+        );
+        if (assignedAt) fields[assignedAt] = '';
+
+        const acceptedBy = this.fieldName(
+            EnumLeadRequestFieldCode.op_lead_accepted_by,
+        );
+        if (acceptedBy) fields[acceptedBy] = this.leadCtx.responsibleId;
+
+        const siteStatus = EnumLeadRequestFieldCode.op_lead_site_status;
+        const siteName = this.fieldName(siteStatus);
+        if (siteName) {
+            const taken = this.leadItemBitrixId(
+                siteStatus,
+                EnumLeadSiteStatusCode.taken,
+            );
+            if (taken !== undefined) fields[siteName] = taken;
+        }
+
+        const history = this.fieldName(
+            EnumLeadRequestFieldCode.op_lead_firstprepare_history,
+        );
+        if (!history) return;
+        const actor =
+            this.leadCtx.userNames?.[this.leadCtx.responsibleId] ??
+            this.leadCtx.responsibleId;
+        // Дописываем к уже собранной записи назначения, не к значению карточки.
+        fields[history] = appendLeadRequestHistory(
+            fields[history] ??
+                this.currentValue(
+                    EnumLeadRequestFieldCode.op_lead_firstprepare_history,
+                ),
+            buildLeadRequestHistoryEntry(
+                `${LEAD_REQUEST_HISTORY_TEXT.accepted(actor)} (адресный ХО)`,
+                this.leadCtx.timezone,
+            ),
+        );
     }
 
     /**

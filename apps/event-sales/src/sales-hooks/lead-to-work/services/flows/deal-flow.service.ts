@@ -1,7 +1,11 @@
 import { toBatchSafeText } from '@lib/bitrix/consts/batch.consts';
 import { mergeTaskCrmBindings } from '@/modules/bitrix/domain/tasks/task/lib/task-crm-binding.util';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
-import { stampDealAssignedAt } from '../../../../shared/lead-request/deal-work-timer.util';
+import {
+    clearDealAssignedAt,
+    setDealAcceptedBy,
+    stampDealAssignedAt,
+} from '../../../../shared/lead-request/deal-work-timer.util';
 import { IBatchGroupBuffer } from '../../../../shared/batch/batch-group-buffer.interface';
 import { ResolvedLeadToWorkItem } from '../../dto/lead-to-work.dto';
 import { LeadToWorkContext } from '../lead-to-work-context.service';
@@ -79,11 +83,7 @@ export class DealFlowService extends LeadToWorkFlowBase {
                 if (plan.dealStageId) {
                     fields.STAGE_ID = plan.dealStageId;
                 }
-                stampDealAssignedAt(
-                    this.portal,
-                    fields,
-                    this.portal.getTimezone(),
-                );
+                this.stampWaiting(item, fields);
             } else if (item.stageMode !== 'from_lead' && plan.dealStageId) {
                 /*
                  * Переезд стадию не трогает — но если робот явно просил
@@ -117,11 +117,10 @@ export class DealFlowService extends LeadToWorkFlowBase {
         };
         if (plan.dealStageId) fields.STAGE_ID = plan.dealStageId;
         if (companyRef) fields.COMPANY_ID = companyRef;
-        // Новая сделка из ХО-лида сразу ждёт подтверждения ответственным —
-        // тот же таймер, что при передаче работы (todo2508).
-        if (item.isXo === 'Y') {
-            stampDealAssignedAt(this.portal, fields, this.portal.getTimezone());
-        }
+        // Новая сделка из ХО-лида ждёт подтверждения ответственным —
+        // тот же таймер, что при передаче работы (todo2508); адресный ХО
+        // подтверждения не ждёт (см. stampWaiting).
+        if (item.isXo === 'Y') this.stampWaiting(item, fields);
         /*
          * Контакты лида переезжают на сделку целиком: главный — в
          * CONTACT_ID (по нему Битрикс показывает «контакт сделки»),
@@ -168,6 +167,23 @@ export class DealFlowService extends LeadToWorkFlowBase {
         const currency = this.text(lead?.CURRENCY_ID);
         if (currency) fields.CURRENCY_ID = currency;
         return fields;
+    }
+
+    /**
+     * Ожидание подтверждения на сделке — или его отсутствие.
+     *
+     * Круг: сотрудник обязан подтвердить, что берёт заявку, — ставим таймер
+     * (SLA считает от него). Адресный ХО: сотрудника назвали явно, заявка
+     * считается принятой им сразу — таймер снимаем и пишем «кто принял»,
+     * ровно как делает кнопка «принять» (решение владельца 18–21.09.2026).
+     */
+    private stampWaiting(item: ResolvedLeadToWorkItem, fields: BxRow): void {
+        if (item.addressed) {
+            clearDealAssignedAt(this.portal, fields);
+            setDealAcceptedBy(this.portal, fields, item.responsible);
+            return;
+        }
+        stampDealAssignedAt(this.portal, fields, this.portal.getTimezone());
     }
 
     /** Union контактов с сохранением порядка (главный лида — первым). */

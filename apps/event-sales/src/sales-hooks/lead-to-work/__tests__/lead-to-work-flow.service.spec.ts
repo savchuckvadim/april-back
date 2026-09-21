@@ -1161,11 +1161,78 @@ describe('LeadToWorkFlowService', () => {
             makeBuffer() as never,
         );
 
-        const task = calls.find(c => c.method === 'task.add')?.args[0] as Record<
-            string,
-            unknown
-        >;
+        const task = calls.find(c => c.method === 'task.add')
+            ?.args[0] as Record<string, unknown>;
         expect(String(task.DEADLINE)).not.toBe('');
+    });
+
+    /*
+     * Адресный ХО = заявка принята названным сотрудником: таймер ожидания
+     * на сделке и лиде снимается, пишется «кто принял», в истории лида —
+     * запись принятия следом за назначением.
+     */
+    it('адресный ХО: таймер не ставится, «кто принял» и запись принятия есть', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal({
+                ...REQUEST_FIELDS,
+                'lead:op_lead_accepted_by': { bitrixId: 'OP_LEAD_ACCEPTED_BY' },
+                'deal:op_lead_accepted_by': { bitrixId: 'OP_LEAD_ACCEPTED_BY' },
+            }) as never,
+            {},
+            { 8: 'Иван Петров' },
+        );
+
+        service.queue(
+            {
+                ...makeItem({
+                    leadId: 42,
+                    responsible: 8,
+                    isXo: 'Y',
+                    isRequest: 'Y',
+                }),
+                addressed: true,
+            },
+            baseContext({ existingOurDeal: { ID: '1024' } as never }),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        const deal = calls.find(c => c.cmd === 'lw_deal_upd_42')
+            ?.args[1] as Record<string, unknown>;
+        expect(deal.UF_CRM_OP_LEAD_ASSIGNED_AT).toBe('');
+        expect(deal.UF_CRM_OP_LEAD_ACCEPTED_BY).toBe(8);
+
+        const lead = calls.find(c => c.method === 'lead.update')
+            ?.args[1] as Record<string, unknown>;
+        expect(lead.UF_CRM_OP_LEAD_ASSIGNED_AT).toBe('');
+        expect(lead.UF_CRM_OP_LEAD_ACCEPTED_BY).toBe(8);
+        const history = lead.UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
+        expect(history).toHaveLength(2);
+        expect(history[0]).toContain('ХО назначен: Иван Петров');
+        expect(history[1]).toContain('Заявка принята в работу: Иван Петров');
+    });
+
+    it('круг (не адресно): таймер ожидания ставится, как раньше', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(REQUEST_FIELDS) as never,
+        );
+
+        service.queue(
+            makeItem({ leadId: 42, responsible: 8, isXo: 'Y', isRequest: 'Y' }),
+            baseContext({ existingOurDeal: { ID: '1024' } as never }),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        const lead = calls.find(c => c.method === 'lead.update')
+            ?.args[1] as Record<string, unknown>;
+        expect(String(lead.UF_CRM_OP_LEAD_ASSIGNED_AT)).toMatch(
+            /^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}:\d{2}$/,
+        );
     });
 
     it('поле manager_op не установлено — пишется только ответственный', () => {

@@ -83,6 +83,7 @@ export class LeadFlowService extends LeadToWorkFlowBase {
             transferredById: item.transferredBy ?? null,
             timezone: this.portal.getTimezone(),
             responsibleId: item.responsible,
+            addressed: item.addressed === true,
             /*
              * Событийные поля ХО (xo_date, история обзвона, op_work_status…)
              * пишутся ТОЛЬКО в ХО-ветке: конвертация лида в работу холодным

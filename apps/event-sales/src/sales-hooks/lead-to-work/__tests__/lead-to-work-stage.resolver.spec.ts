@@ -164,6 +164,46 @@ describe('LeadToWorkStageResolver — graceful degradation', () => {
         expect(plan.leadStatusId).toBe('PBX_ASSIGNED');
     });
 
+    /*
+     * Решение владельца 18–21.09.2026: адресный ХО (сотрудник назван явно)
+     * = заявка принята. Сделка в «Холодные», а не в «Новую»; лид — сразу
+     * «Взята в работу», минуя «Назначена менеджеру». Даже если робот
+     * прислал stageMode=new: «Новая» как сигнал остаётся только для круга.
+     */
+    it('адресный ХО: сделка в «Холодные», лид «Взята в работу»', () => {
+        const resolver = new LeadToWorkStageResolver(
+            makePortal({
+                salesBase: {
+                    stages: [
+                        { code: 'sales_cold', bitrixId: 'COLD' },
+                        { code: 'sales_new', bitrixId: 'NEW' },
+                    ],
+                },
+                leadStatusByCode: {
+                    lead_assigned: 'PBX_ASSIGNED',
+                    lead_taken_in_work: 'PBX_TAKEN_IN_WORK',
+                },
+            }) as never,
+        ).withCurrentLeadStatus('NEW');
+
+        const plan = resolver.resolve(
+            {
+                ...item({
+                    leadId: 1,
+                    responsible: 5,
+                    isXo: 'Y',
+                    stageMode: 'new',
+                }),
+                addressed: true,
+            },
+            false,
+            false,
+        );
+
+        expect(plan.dealStageId).toBe('C3:COLD');
+        expect(plan.leadStatusId).toBe('PBX_TAKEN_IN_WORK');
+    });
+
     it('isXo=Y без стадии «Назначена»: graceful откат на «Взята в работу»', () => {
         const resolver = new LeadToWorkStageResolver(
             makePortal({
