@@ -154,7 +154,7 @@ export class AiAnalyticsOverviewController {
             'гипотеза качества и дата подтверждения ростера. Значения вне ' +
             'диапазонов реестра — 400, чужой менеджер — 403. Запись идёт в ' +
             'ключи настроек портала [kpiSales], сбрасываются кэши ' +
-            'overview/attention/model/plan домена, каждое сохранение пишет ' +
+            'overview/attention/model/plan/settings домена, каждое сохранение пишет ' +
             'снапшот ai-analytics-settings-audit. Правка поля с breaksSeries ' +
             'двигает comparableFrom вперёд (список кодов — в ответе).',
     })

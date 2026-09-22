@@ -162,6 +162,45 @@ export function withSignals(
 }
 
 /** «Внимание» из обзора, уже отфильтрованного по периметру. */
+/** Уникальные id транскрипций риск-звонков всех карточек (для ссылок на разборы). */
+export function attentionTranscriptionIds(data: AiAttentionDto): string[] {
+    return [
+        ...new Set(
+            data.items.flatMap(item => item.link.transcriptionIds ?? []),
+        ),
+    ];
+}
+
+/**
+ * Ссылки на разборы риск-звонков: id из link.transcriptionIds → карточка
+ * смарт-элемента (null — элемента нет). Карточки без риск-звонков не
+ * меняются.
+ */
+export function withAttentionCallLinks(
+    data: AiAttentionDto,
+    links: ReadonlyMap<string, string | null>,
+): AiAttentionDto {
+    return {
+        ...data,
+        items: data.items.map(item =>
+            item.link.transcriptionIds?.length
+                ? {
+                      ...item,
+                      link: {
+                          ...item.link,
+                          calls: item.link.transcriptionIds.map(
+                              transcriptionId => ({
+                                  transcriptionId,
+                                  link: links.get(transcriptionId) ?? null,
+                              }),
+                          ),
+                      },
+                  }
+                : item,
+        ),
+    };
+}
+
 export function toAttentionDto(overview: AiOverviewDto): AiAttentionDto {
     return {
         from: overview.period.from,

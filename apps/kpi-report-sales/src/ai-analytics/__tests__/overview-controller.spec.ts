@@ -16,6 +16,16 @@ import {
 } from './fixtures/overview.fixture';
 import { settingsLoaderWith } from './fixtures/lite-row.fixture';
 import { AI_ANALYTICS_SELF_VIEW_FORBIDDEN_MESSAGE } from '../constants/ai-analytics.const';
+import type { SmartLinkLoader } from '../domain/loaders/smart-link.loader';
+
+/** Ссылки на разборы карточек «Внимания» здесь не проверяются — пустая карта. */
+function smartLinksStub(): SmartLinkLoader {
+    return {
+        resolveLinks: jest
+            .fn()
+            .mockResolvedValue(new Map<string, string | null>()),
+    } as unknown as SmartLinkLoader;
+}
 
 const KEY = buildOverviewKey(
     OVERVIEW_DOMAIN,
@@ -78,7 +88,7 @@ function makeController({
     const controller = new AiAnalyticsOverviewController(
         accessService,
         lookup,
-        new AttentionUseCase(lookup),
+        new AttentionUseCase(lookup, smartLinksStub()),
         new ByTypeUseCase(lookup),
         settingsSave as never,
     );

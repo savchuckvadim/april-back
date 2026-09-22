@@ -18,6 +18,11 @@ import {
     SettingsLoader,
 } from '../loaders/settings.loader';
 import {
+    toAbsencesDto,
+    toRosterConfirmedAt,
+    toTargetsDto,
+} from '../presenter/settings-blocks.presenter';
+import {
     episodeSalesOf,
     modelReadinessOptions,
 } from '../presenter/overview-phase2.presenter';
@@ -119,6 +124,9 @@ export class SettingsUseCase {
             poolOptIn: settings.poolOptIn,
             poolConsentAt: settings.poolConsentAt,
             experimentsEnabled: settings.experimentsEnabled,
+            targets: toTargetsDto(settings.targets),
+            absences: toAbsencesDto(settings.absences),
+            rosterConfirmedAt: toRosterConfirmedAt(settings.rosterConfirmedAt),
         };
     }
 

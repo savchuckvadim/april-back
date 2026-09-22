@@ -8,6 +8,7 @@ import {
     CallReportCallTypeCode,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import { AiRequestBaseDto } from './ai-request-base.dto';
+import { AiManagerAbsencesDto, AiTargetsDto } from './ai-settings-blocks.dto';
 import { AiAnalyticsEnvelopeDto } from './ai-response-envelope.dto';
 import { ReadinessDto } from './readiness.dto';
 
@@ -182,6 +183,35 @@ export class AiAnalyticsSettingsDto {
         example: false,
     })
     experimentsEnabled: boolean;
+
+    @ApiProperty({
+        description:
+            'Текущие цели по уровням и личные цели менеджеров ' +
+            '(ai_analytics_targets) в форме блока settings/save — для ' +
+            'предзаполнения формы настроек; sales = null у уровня — медиана ' +
+            'полосы стажа.',
+        type: AiTargetsDto,
+    })
+    targets: AiTargetsDto;
+
+    @ApiProperty({
+        description:
+            'Текущие отсутствия менеджеров (ai_analytics_absences), только ' +
+            'менеджеры с отрезками, в форме блока settings/save.',
+        type: [AiManagerAbsencesDto],
+    })
+    absences: AiManagerAbsencesDto[];
+
+    @ApiProperty({
+        description:
+            'Дата подтверждения состава руководителем ' +
+            '(ai_analytics_roster_confirmed_at, YYYY-MM-DD); null — состав не ' +
+            'подтверждён (причина готовности roster-not-confirmed).',
+        type: String,
+        nullable: true,
+        example: '2026-09-01',
+    })
+    rosterConfirmedAt: string | null;
 }
 
 export class AiSettingsResponseDto extends AiAnalyticsEnvelopeDto {

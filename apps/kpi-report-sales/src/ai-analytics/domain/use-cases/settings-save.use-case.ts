@@ -184,7 +184,7 @@ export class SettingsSaveUseCase {
         });
     }
 
-    /** Сброс обзора, «Внимания», модели и плана; ошибка кэша не отменяет запись. */
+    /** Сброс обзора, «Внимания», модели, плана и настроек; ошибка кэша не отменяет запись. */
     private async invalidate(domain: string): Promise<number> {
         let total = 0;
         for (const scope of AI_ANALYTICS_SETTINGS_RESET_SCOPES) {

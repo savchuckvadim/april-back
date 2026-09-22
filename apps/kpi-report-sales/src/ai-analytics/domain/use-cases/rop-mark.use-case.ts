@@ -25,6 +25,7 @@ import type { RequesterAccess } from '../access/perimeter.util';
 import { RequesterAccessService } from '../access/requester-access.service';
 import { CallsLoader } from '../loaders/calls.loader';
 import { isoWeekKey, portalRangeUtc } from '../loaders/period.util';
+import { SmartLinkLoader } from '../loaders/smart-link.loader';
 import { SettingsLoader } from '../loaders/settings.loader';
 import {
     presentRopMarkWeek,
@@ -67,6 +68,7 @@ export class RopMarkUseCase {
         private readonly access: RequesterAccessService,
         private readonly settings: SettingsLoader,
         private readonly calls: CallsLoader,
+        private readonly smartLinks: SmartLinkLoader,
     ) {}
 
     /**
@@ -211,7 +213,7 @@ export class RopMarkUseCase {
         const marks = calls.length
             ? await this.store.listMarks(domain, week.weekKey)
             : [];
-        return presentRopMarkWeek({
+        const presented = presentRopMarkWeek({
             weekKey: week.weekKey,
             from: week.from,
             to: week.to,
@@ -220,5 +222,18 @@ export class RopMarkUseCase {
             marks,
             access,
         });
+        // Ссылки на карточки разборов (как в повестке): без элемента в
+        // смарте — null; ошибка загрузчика не роняет ответ.
+        const links = await this.smartLinks.resolveLinks(
+            domain,
+            presented.calls.map(call => call.transcriptionId),
+        );
+        return {
+            ...presented,
+            calls: presented.calls.map(call => ({
+                ...call,
+                link: links.get(call.transcriptionId) ?? null,
+            })),
+        };
     }
 }

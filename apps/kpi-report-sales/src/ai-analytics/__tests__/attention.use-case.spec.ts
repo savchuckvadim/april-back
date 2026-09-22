@@ -48,7 +48,20 @@ function makeUseCase(overview: AiOverviewDto | null) {
                 ),
         ),
     };
-    return { useCase: new AttentionUseCase(lookup as never), lookup };
+    const smartLinks = {
+        resolveLinks: jest.fn((_domain: string, ids: readonly string[]) =>
+            Promise.resolve(
+                new Map(
+                    ids.map(id => [id, `https://portal/type/9/details/${id}/`]),
+                ),
+            ),
+        ),
+    };
+    return {
+        useCase: new AttentionUseCase(lookup as never, smartLinks as never),
+        lookup,
+        smartLinks,
+    };
 }
 
 describe('AttentionUseCase', () => {
@@ -76,6 +89,35 @@ describe('AttentionUseCase', () => {
             to: OVERVIEW_TO,
             managersConsidered: 10,
         });
+    });
+
+    it('риск-звонки карточек получают ссылки на разборы, остальные карточки — нет', async () => {
+        const { useCase, smartLinks } = makeUseCase(noisyOverview());
+        const response = await useCase.execute(request, leader);
+        const items = response.data?.items ?? [];
+        const withCalls = items.filter(
+            item => item.link.transcriptionIds?.length,
+        );
+        expect(withCalls.length).toBeGreaterThan(0);
+        for (const item of withCalls) {
+            expect(item.link.calls).toEqual(
+                item.link.transcriptionIds?.map(transcriptionId => ({
+                    transcriptionId,
+                    link: `https://portal/type/9/details/${transcriptionId}/`,
+                })),
+            );
+        }
+        for (const item of items.filter(
+            item => !item.link.transcriptionIds?.length,
+        )) {
+            expect(item.link.calls).toBeUndefined();
+        }
+        const [domain, ids] = smartLinks.resolveLinks.mock.calls[0] as [
+            string,
+            string[],
+        ];
+        expect(domain).toBe(OVERVIEW_DOMAIN);
+        expect(new Set(ids).size).toBe(ids.length);
     });
 
     it('периметр: менеджер получает только свои карточки', async () => {

@@ -198,6 +198,7 @@ describe('AiAnalyticsRopMarkController: менеджеру 403', () => {
                     access,
                     settingsLoaderWith(),
                     {} as never,
+                    {} as never,
                 ),
             );
 

@@ -94,6 +94,17 @@ export class AiRopMarkCallDto {
     })
     managerId: string;
 
+    @ApiPropertyOptional({
+        description:
+            'Ссылка на карточку разбора звонка в смарт-процессе «AI-анализ ' +
+            'звонков» портала; null — элемента разбора ещё нет или смарт не ' +
+            'установлен. Тип и оценку разбора до метки не раскрывает.',
+        type: String,
+        nullable: true,
+        example: 'https://april.bitrix24.ru/crm/type/1036/details/128/',
+    })
+    link?: string | null;
+
     @ApiProperty({
         description:
             'Почему звонок попал в подбор: uncertain_type — тип определён ' +

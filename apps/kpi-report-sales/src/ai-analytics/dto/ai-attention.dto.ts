@@ -49,6 +49,26 @@ export class AiAttentionBasisDto implements AttentionBasis {
     ci90?: [number, number];
 }
 
+/** Риск-звонок карточки со ссылкой на его разбор. */
+export class AiAttentionCallLinkDto {
+    @ApiProperty({
+        description: 'Id транскрипции риск-звонка.',
+        type: String,
+        example: '10245',
+    })
+    transcriptionId: string;
+
+    @ApiProperty({
+        description:
+            'Ссылка на карточку разбора в смарт-процессе «AI-анализ звонков» ' +
+            'портала; null — элемента разбора ещё нет или смарт не установлен.',
+        type: String,
+        nullable: true,
+        example: 'https://april.bitrix24.ru/crm/type/1036/details/128/',
+    })
+    link: string | null;
+}
+
 /** Куда ведёт карточка: менеджер, тип, звонки. */
 export class AiAttentionLinkDto implements AttentionLink {
     @ApiProperty({
@@ -71,6 +91,14 @@ export class AiAttentionLinkDto implements AttentionLink {
         example: ['10245', '10301'],
     })
     transcriptionIds?: string[];
+
+    @ApiPropertyOptional({
+        description:
+            'Риск-звонки со ссылками на разборы (те же id, что в transcriptionIds) — ' +
+            'кнопка «Открыть разбор» на карточке. Только у сигнала risk.',
+        type: [AiAttentionCallLinkDto],
+    })
+    calls?: AiAttentionCallLinkDto[];
 }
 
 /** Карточка «Внимания» (план 6.3, ТЗ FR-12). */

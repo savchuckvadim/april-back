@@ -14,7 +14,7 @@ const op: RequesterAccess = { role: 'op', visibleManagerIds: ['10', '20'] };
 const base = { domain: DOMAIN, requesterUserId: '447' };
 
 describe('SettingsSaveUseCase: уровни (переезд на ключ схемы)', () => {
-    it('пишет уровни в ключ схемы и сбрасывает overview/attention/model/plan', async () => {
+    it('пишет уровни в ключ схемы и сбрасывает overview/attention/model/plan/settings', async () => {
         const { useCase, savePortalSettings, resetByPattern } =
             settingsSaveHarness();
 
@@ -45,7 +45,13 @@ describe('SettingsSaveUseCase: уровни (переезд на ключ схе
             },
             { managerId: 20, level: 'junior', since: null, source: 'manual' },
         ]);
-        for (const scope of ['overview', 'attention', 'model', 'plan']) {
+        for (const scope of [
+            'overview',
+            'attention',
+            'model',
+            'plan',
+            'settings',
+        ]) {
             expect(resetByPattern).toHaveBeenCalledWith(
                 `sales-ai-analytics:v1:${DOMAIN}:${scope}:*`,
             );
@@ -57,7 +63,7 @@ describe('SettingsSaveUseCase: уровни (переезд на ключ схе
                 { managerId: 20, level: 'junior' },
             ],
             savedAt: NOW.toISOString(),
-            resetCount: 8,
+            resetCount: 10,
             breaksSeries: [],
         });
         expect(result.paramsVersion).toMatch(/^[0-9a-f]{64}$/);

@@ -102,6 +102,9 @@ export const AI_ANALYTICS_SETTINGS_RESET_SCOPES = [
     'attention',
     'model',
     'plan',
+    // settings/get кэшируется на 300 с и отдаёт блоки targets/absences/
+    // rosterConfirmedAt — после сохранения форма должна видеть новые.
+    'settings',
 ] as const satisfies readonly AiAnalyticsCacheScope[];
 
 /** Роли requester'а по структуре продаж (план, 6.5). */

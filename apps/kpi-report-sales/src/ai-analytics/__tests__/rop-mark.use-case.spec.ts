@@ -106,15 +106,26 @@ function makeUseCase(
         {} as never,
         {} as never,
     );
+    const smartLinks = {
+        resolveLinks: jest.fn((_domain: string, ids: readonly string[]) =>
+            Promise.resolve(
+                new Map(
+                    ids.map(id => [id, `https://portal/type/9/details/${id}/`]),
+                ),
+            ),
+        ),
+    };
     return {
         useCase: new RopMarkUseCase(
             store as never,
             access,
             settingsLoaderWith(),
             loader,
+            smartLinks as never,
         ),
         store,
         loadLite,
+        smartLinks,
     };
 }
 
@@ -143,6 +154,26 @@ describe('RopMarkUseCase.pick', () => {
                 seed: ropMarkSeed(DOMAIN, WEEK),
             }),
         );
+    });
+
+    it('звонки подбора получают ссылки на карточки разборов', async () => {
+        const { useCase, smartLinks } = makeUseCase();
+
+        const result = await useCase.pick(
+            { domain: DOMAIN, requesterUserId: '447', date: DAY },
+            leader,
+            NOW,
+        );
+
+        expect(smartLinks.resolveLinks).toHaveBeenCalledWith(
+            DOMAIN,
+            result.calls.map(call => call.transcriptionId),
+        );
+        for (const call of result.calls) {
+            expect(call.link).toBe(
+                `https://portal/type/9/details/${call.transcriptionId}/`,
+            );
+        }
     });
 
     it('до сохранения метки колонки оценки AI не отдаются (слепой режим)', async () => {

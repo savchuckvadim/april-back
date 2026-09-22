@@ -17,13 +17,21 @@ import { Module } from '@nestjs/common';
 import { PortalSessionModule } from '@lib/auth';
 import { AiModule } from '@lib/call-lib';
 import { AiAnalyticsRopMarkController } from '../ai-analytics-rop-mark.controller';
+import { AiAnalyticsCorePbxModule } from '../core/ai-analytics-core-pbx.module';
 import { AiAnalyticsCoreModule } from '../core/ai-analytics-core.module';
 import { RopMarkUseCase } from '../domain/use-cases/rop-mark.use-case';
 import { RopMarkStep } from '../steps/rop-mark.step';
 import { AiAnalyticsRopMarkStore } from '../store/ai-analytics-rop-mark.store';
 
 @Module({
-    imports: [AiModule, AiAnalyticsCoreModule, PortalSessionModule],
+    // AiAnalyticsCorePbxModule — SmartLinkLoader для ссылок на карточки
+    // разборов в подборе (тот же провайдер, что у повестки и «Внимания»).
+    imports: [
+        AiModule,
+        AiAnalyticsCoreModule,
+        AiAnalyticsCorePbxModule,
+        PortalSessionModule,
+    ],
     controllers: [AiAnalyticsRopMarkController],
     providers: [AiAnalyticsRopMarkStore, RopMarkUseCase, RopMarkStep],
     exports: [RopMarkStep, RopMarkUseCase, AiAnalyticsRopMarkStore],

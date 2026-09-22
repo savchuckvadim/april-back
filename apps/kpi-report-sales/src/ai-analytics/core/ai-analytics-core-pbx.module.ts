@@ -23,10 +23,12 @@
 import { Module, Type } from '@nestjs/common';
 import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { AiModule } from '@lib/call-lib';
+import { PbxAicallSmartModule } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
 import { FinanceLoader } from '../domain/loaders/finance.loader';
 import { KpiLoader } from '../domain/loaders/kpi.loader';
 import { PlansLoader } from '../domain/loaders/plans.loader';
+import { SmartLinkLoader } from '../domain/loaders/smart-link.loader';
 import { SalesFinanceUseCaseFactory } from '../domain/loaders/sales-finance-use-case.factory';
 import { StyleCrmLoader } from '../domain/loaders/style-crm.loader';
 import { AiAnalyticsSettingsStore } from '../store/ai-analytics-settings.store';
@@ -40,6 +42,9 @@ export const AI_ANALYTICS_CORE_PBX_PROVIDERS: Type<unknown>[] = [
     PlansLoader,
     AiAnalyticsSettingsStore,
     StyleCrmLoader,
+    // Ссылки на карточки разборов (entityTypeId смарта портала +
+    // report_item_id из ais): повестка, «Внимание», слепая оценка.
+    SmartLinkLoader,
 ];
 
 @Module({
@@ -47,6 +52,7 @@ export const AI_ANALYTICS_CORE_PBX_PROVIDERS: Type<unknown>[] = [
         PBXModule,
         AiModule,
         PortalAppSettingsModule,
+        PbxAicallSmartModule,
         AiAnalyticsCoreModule,
     ],
     providers: AI_ANALYTICS_CORE_PBX_PROVIDERS,
