@@ -49,6 +49,13 @@ export interface ILeadToWorkAssigneeContext {
      * следующему по кругу менеджеру).
      */
     keepLeadResponsible?: boolean;
+    /**
+     * Живая проверка «кто из кандидатов ещё работает» — по свежему
+     * `user.get`, минуя суточный кеш структуры отделов. Уволенный утром
+     * сотрудник иначе получал бы заявки до следующего дня. Не передан —
+     * верим структуре (тесты, вызовы без Битрикса).
+     */
+    activeUserIds?: (ids: number[]) => Promise<Set<number>>;
 }
 
 /** Итог резолва ответственного. */
@@ -165,12 +172,25 @@ export class LeadToWorkAssigneeService {
          */
         const heads = await this.headUserIds(domain, departmentKey);
         const withoutHeads = withoutPrevious.filter(id => !heads.has(id));
-        const candidates = withoutHeads.length ? withoutHeads : withoutPrevious;
+        const withHeadsFallback = withoutHeads.length
+            ? withoutHeads
+            : withoutPrevious;
         if (!withoutHeads.length && withoutPrevious.length) {
             warnings.push(
                 'В отделе не осталось кандидатов кроме руководителей — назначаем руководителю',
             );
         }
+        /*
+         * УВОЛЕННЫЕ В КРУГЕ НЕ УЧАСТВУЮТ (требование владельца 22.09.2026).
+         * Структура читает только активных, но кешируется на сутки: 16.09 две
+         * заявки ушли Юлии Юрцевич уже после увольнения и так и висят
+         * «Назначена». Поэтому перед выбором спрашиваем портал заново.
+         */
+        const candidates = await this.keepActive(
+            withHeadsFallback,
+            context.activeUserIds,
+            warnings,
+        );
 
         if (candidates.length === 0) {
             warnings.push(
@@ -194,6 +214,40 @@ export class LeadToWorkAssigneeService {
                 `user ${responsible} (кандидатов: ${candidates.length})`,
         );
         return { responsible, source: 'round-robin', departmentKey, warnings };
+    }
+
+    /**
+     * Только работающие сейчас кандидаты. Проверка не удалась — оставляем
+     * список как есть с предупреждением: не назначить заявку хуже, чем
+     * назначить по вчерашней структуре. Все уволены — пусто.
+     */
+    private async keepActive(
+        candidates: number[],
+        activeUserIds: ILeadToWorkAssigneeContext['activeUserIds'],
+        warnings: string[],
+    ): Promise<number[]> {
+        if (!activeUserIds || !candidates.length) return candidates;
+        try {
+            const active = await activeUserIds(candidates);
+            const alive = candidates.filter(id => active.has(id));
+            const dismissed = candidates.length - alive.length;
+            if (dismissed > 0) {
+                this.logger.log(
+                    `[assignee] из круга исключены уволенные: ${dismissed}`,
+                );
+            }
+            if (!alive.length) {
+                warnings.push(
+                    'Все кандидаты отдела уволены — назначать некому.',
+                );
+            }
+            return alive;
+        } catch (error) {
+            warnings.push(
+                `Не удалось проверить, кто из кандидатов работает (${(error as Error).message}) — круг по структуре отделов`,
+            );
+            return candidates;
+        }
     }
 
     /**

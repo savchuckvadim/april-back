@@ -492,6 +492,62 @@ describe('LeadToWorkAssigneeService — город из «Отдел строк�
         expect(result.responsible).toBeNull();
     });
 
+    /*
+     * Требование владельца 22.09.2026: уволенные в круге не участвуют.
+     * Структура отделов кешируется на сутки, поэтому перед выбором
+     * спрашиваем портал заново, кто из кандидатов ещё работает.
+     */
+    it('уволенный кандидат исключается по живой проверке', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+            makeSettings() as never,
+        );
+
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ department: '15' }),
+            { activeUserIds: () => Promise.resolve(new Set([5])) },
+        );
+
+        // Кандидаты ОП 15 — 3 и 5; работает только 5.
+        expect(result.responsible).toBe(5);
+    });
+
+    it('все кандидаты уволены — никого не назначаем', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+            makeSettings() as never,
+        );
+
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ department: '15' }),
+            { activeUserIds: () => Promise.resolve(new Set<number>()) },
+        );
+
+        expect(result.responsible).toBeNull();
+        expect(result.warnings.join(' ')).toContain('уволены');
+    });
+
+    it('проверка не удалась — круг по структуре и предупреждение', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+            makeSettings() as never,
+        );
+
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ department: '15' }),
+            { activeUserIds: () => Promise.reject(new Error('portal down')) },
+        );
+
+        expect([3, 5]).toContain(result.responsible);
+        expect(result.warnings.join(' ')).toContain('portal down');
+    });
+
     it('отдел в лиде пустой — предупреждение, что выбор по всем ОП', async () => {
         const service = new LeadToWorkAssigneeService(
             makeStructure() as never,

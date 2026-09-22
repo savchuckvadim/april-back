@@ -219,6 +219,9 @@ export class LeadToWorkUseCase
                         // ХО распределяет заявку по кругу, конвертация —
                         // переносит работу как есть, за текущим менеджером.
                         keepLeadResponsible: resolution.intent.isXo !== 'Y',
+                        // Уволенные в круге не участвуют — свежий user.get,
+                        // а не суточный кеш структуры.
+                        activeUserIds: ids => this.activeUserIds(ctx, ids),
                     },
                 );
                 prepared.push({
@@ -509,6 +512,29 @@ export class LeadToWorkUseCase
      * График не прочитан — возвращаем как пришло: своё расписание лучше
      * чужого молчания, но падать из-за календаря конвертация не должна.
      */
+    /**
+     * Кто из сотрудников работает прямо сейчас — свежим `user.get` портала.
+     * Инстанс Битрикса берётся из контекста вызова, а не хранится в сервисе
+     * (правило CLAUDE.md про race condition между доменами).
+     */
+    private async activeUserIds(
+        ctx: SalesHookExecutionContext,
+        ids: number[],
+    ): Promise<Set<number>> {
+        const active = new Set<number>();
+        for (let start = 0; start < ids.length + 50; start += 50) {
+            const response = (await ctx.bitrix.api.call('user.get', {
+                FILTER: { ID: ids, ACTIVE: true },
+                SELECT: ['ID'],
+                start,
+            })) as { result?: { ID?: unknown }[] };
+            const rows = response.result ?? [];
+            for (const row of rows) active.add(Number(row.ID));
+            if (rows.length < 50) break;
+        }
+        return active;
+    }
+
     /**
      * Срок, когда его не прислали.
      *
