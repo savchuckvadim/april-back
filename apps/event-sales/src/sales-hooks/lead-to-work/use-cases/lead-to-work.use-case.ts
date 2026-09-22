@@ -37,7 +37,7 @@ import { LeadToWorkDuplicateCheckService } from '../services/lead-to-work-duplic
 import { LeadDealCompletion } from '../../../shared/lead-client/lead-deal-completion';
 import { LeadClientKind } from '../../../shared/lead-client';
 import { PortalWorkingHoursService } from '../../../shared/working-hours/portal-working-hours.service';
-import { nextWorkingMoment } from '../../../shared/working-hours/working-hours.model';
+import { shiftDeadlineToWorkingHours } from '../../../shared/working-hours/working-hours.model';
 import { LeadToWorkTimelineService } from '../services/lead-to-work-timeline.service';
 import {
     EnumPortalAppCode,
@@ -309,7 +309,7 @@ export class LeadToWorkUseCase
                         resolution.intent.isXo === 'Y' &&
                         assignee.source === 'explicit',
                     deadline: await this.workingDeadline(
-                        ctx.domain,
+                        ctx,
                         item.deadline ??
                             this.autoDeadline(assignee.source, item),
                     ),
@@ -532,21 +532,36 @@ export class LeadToWorkUseCase
     }
 
     private async workingDeadline(
-        domain: string,
+        ctx: SalesHookExecutionContext,
         deadline: string | undefined,
     ): Promise<string | undefined> {
         if (!deadline) return deadline;
-        const parsed = new Date(deadline);
-        if (Number.isNaN(parsed.getTime())) return deadline;
+        const { domain } = ctx;
         try {
-            const { hours, timezone } = await this.workingHours.resolve(domain);
-            const moved = nextWorkingMoment(hours, parsed, timezone);
-            if (moved.getTime() === parsed.getTime()) return deadline;
-            this.logger.log(
-                `[deadline] ${domain}: срок ${deadline} вне рабочего времени — ` +
-                    `перенесён на ${moved.toISOString()}`,
+            const { hours } = await this.workingHours.resolve(domain);
+            /*
+             * Срок разбирается в ОБЕИХ формах — ISO из запроса и
+             * «23.09.2026 05:41:32» из карточки лида. Раньше здесь стоял
+             * `new Date`, который вторую форму не читает и молча оставлял
+             * ночной срок ночным (сделка 84763, 22.09.2026).
+             */
+            const moved = shiftDeadlineToWorkingHours(
+                deadline,
+                hours,
+                ctx.portal.getTimezone(),
             );
-            return moved.toISOString();
+            if (moved === null) {
+                this.logger.warn(
+                    `[deadline] ${domain}: срок «${deadline}» не распознан — оставлен как есть`,
+                );
+                return deadline;
+            }
+            if (moved !== deadline) {
+                this.logger.log(
+                    `[deadline] ${domain}: срок ${deadline} вне рабочего времени — перенесён на ${moved}`,
+                );
+            }
+            return moved;
         } catch (error) {
             this.logger.warn(
                 `[deadline] ${domain}: график не прочитан (${(error as Error).message}) — ` +

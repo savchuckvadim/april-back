@@ -6,7 +6,7 @@ import {
     BxCalendarWeekDayCode,
 } from '@lib/bitrix/domain/calendar/consts/bx-calendar.const';
 import { IBXCalendarSettings } from '@lib/bitrix/domain/calendar/interface/bx-calendar.interface';
-import { ETimeZone } from '@lib/shared/lib/date';
+import { BitrixDateTime, ETimeZone } from '@lib/shared/lib/date';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -198,6 +198,31 @@ export function workingHoursAgo(
  * Ограничитель в 366 шагов — страховка от портала, где выходными помечена
  * вся неделя: лучше вернуть исходное, чем зациклиться.
  */
+/**
+ * Срок из поля или запроса — в рабочее время портала, строкой того же вида,
+ * что понимают роботы и поля CRM.
+ *
+ * Разбор идёт через {@link BitrixDateTime.fromBitrixField}: срок приходит в
+ * ДВУХ формах — ISO из запроса и «23.09.2026 05:41:32» из карточки лида
+ * (робот пишет в `xo_date`, интент кладёт в `deadline` как есть). До
+ * 22.09.2026 здесь стоял `new Date(raw)`, который вторую форму не понимает
+ * и МОЛЧА оставлял ночной срок ночным — сделка 84763 ушла с задачей на
+ * 05:41 при графике портала с 09:00.
+ *
+ * @returns null — строка не распознана (вызывающий решает, что делать);
+ *   иначе срок в локали портала, уже внутри рабочих часов.
+ */
+export function shiftDeadlineToWorkingHours(
+    raw: string,
+    hours: PortalWorkingHours,
+    timezone: ETimeZone,
+): string | null {
+    const parsed = BitrixDateTime.fromBitrixField(raw, timezone);
+    if (!parsed) return null;
+    const moved = nextWorkingMoment(hours, parsed.toDayjs().toDate(), timezone);
+    return BitrixDateTime.fromInstant(moved, timezone).toCrmDateTime();
+}
+
 export function nextWorkingMoment(
     hours: PortalWorkingHours,
     moment: Date,
