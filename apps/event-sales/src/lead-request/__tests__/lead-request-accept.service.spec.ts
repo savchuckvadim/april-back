@@ -33,6 +33,7 @@ const FIELDS: Record<
     op_lead_assigned_at: { bitrixId: 'OP_LEAD_ASSIGNED_AT' },
     op_lead_accepted_by: { bitrixId: 'OP_LEAD_ACCEPTED_BY' },
     to_base_sales: { bitrixId: 'TO_BASE_SALES' },
+    to_xo_sales: { bitrixId: 'TO_XO_SALES' },
     op_mhistory: { bitrixId: 'OP_MHISTORY' },
     manager_op: { bitrixId: 'MANAGER_OP' },
 };
@@ -60,9 +61,16 @@ type LeadUpdateMock = jest.Mock<
     [number, Record<string, unknown>]
 >;
 
+/** Открытые задачи/дела портала для перехвата (tasks.task.list / crm.activity.list). */
+interface IOpenWork {
+    tasks?: Record<string, unknown>[];
+    activities?: Record<string, unknown>[];
+}
+
 const makePbx = (
     leadRow: Record<string, unknown>,
     dealRow: Record<string, unknown> | null = null,
+    openWork: IOpenWork = {},
 ) => {
     const update: LeadUpdateMock = jest
         .fn<Promise<unknown>, [number, Record<string, unknown>]>()
@@ -73,10 +81,26 @@ const makePbx = (
     const dealGet = jest
         .fn()
         .mockResolvedValue({ result: dealRow ?? undefined });
+    const apiCall = jest.fn((method: string) =>
+        Promise.resolve(
+            method === 'tasks.task.list'
+                ? { result: { tasks: openWork.tasks ?? [] } }
+                : { result: openWork.activities ?? [] },
+        ),
+    );
+    const taskUpdate: LeadUpdateMock = jest
+        .fn<Promise<unknown>, [number, Record<string, unknown>]>()
+        .mockResolvedValue({});
+    const activityUpdate: LeadUpdateMock = jest
+        .fn<Promise<unknown>, [number, Record<string, unknown>]>()
+        .mockResolvedValue({});
     return {
         update,
         dealUpdate,
         dealGet,
+        apiCall,
+        taskUpdate,
+        activityUpdate,
         pbx: {
             init: jest.fn().mockResolvedValue({
                 bitrix: {
@@ -85,6 +109,9 @@ const makePbx = (
                         update,
                     },
                     deal: { get: dealGet, update: dealUpdate },
+                    api: { call: apiCall },
+                    task: { update: taskUpdate },
+                    activity: { update: activityUpdate },
                 },
                 PortalModel: makePortal(),
             }),

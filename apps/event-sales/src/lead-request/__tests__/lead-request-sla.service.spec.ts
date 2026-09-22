@@ -140,6 +140,8 @@ const makeDeps = (input: {
         structure as never,
         assignee as never,
         redisService as never,
+        // Круг замокан целиком — проверка «кто работает» не вызывается.
+        { activeUserIds: jest.fn() } as never,
     );
     return {
         service,

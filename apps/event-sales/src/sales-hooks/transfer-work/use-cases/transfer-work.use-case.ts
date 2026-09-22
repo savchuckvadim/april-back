@@ -20,6 +20,12 @@ import {
 } from '../../../shared/lead-request/deal-work-timer.util';
 import { LEAD_REQUEST_HISTORY_TEXT } from '../../../shared/lead-request/lead-request-history.util';
 import { CrmRelationsReassignService } from '../../../shared/crm-relations';
+import {
+    EMPTY_WORK_TAKEOVER_PLAN,
+    WorkTakeoverService,
+} from '../../../shared/work-takeover';
+import { setManagerOp } from '../../../shared/lead-request/manager-op.util';
+import { dealLeadIds } from '../../../cold-hook-v2/lib/deal-link-fields';
 
 type BxRow = Record<string, unknown>;
 
@@ -125,19 +131,42 @@ export class TransferWorkUseCase
          * владельца 17.09.2026: «ответственный новый везде», поверхностно:
          * контакты основных сделок и компании). Читаем ДО первой записи.
          */
+        const baseDeals = scope.deals.filter(
+            scoped =>
+                scoped.categoryCode === PbxDealCategoryCodeEnum.sales_base,
+        );
+        const baseDealIds = baseDeals.map(scoped => Number(scoped.deal.ID));
         const relations = new CrmRelationsReassignService(ctx.bitrix);
         const contactIds = await relations.collectContactIds({
-            dealIds: scope.deals
-                .filter(
-                    scoped =>
-                        scoped.categoryCode ===
-                        PbxDealCategoryCodeEnum.sales_base,
-                )
-                .map(scoped => Number(scoped.deal.ID)),
+            dealIds: baseDealIds,
             leadIds: [],
             companyIds: item.companyId ? [item.companyId] : [],
         });
-        const warnings = [...scope.warnings, ...scope.foreign];
+        /*
+         * Лиды основных сделок и открытые дела CRM — тоже новому
+         * ответственному: ответственный — одно синхронное поле, а дела
+         * (напоминания роботов) иначе висят на прежнем (сделка 84879,
+         * 22.09.2026). Задачи переезжают циклом ниже. Читаем ДО записи.
+         */
+        const leadIds = [
+            ...new Set(
+                baseDeals.flatMap(scoped =>
+                    dealLeadIds(ctx.portal, scoped.deal),
+                ),
+            ),
+        ];
+        const openLeadIds = await this.openLeadIds(ctx, leadIds);
+        const takeover = new WorkTakeoverService(ctx.bitrix);
+        const [takeoverPlan = EMPTY_WORK_TAKEOVER_PLAN] =
+            await takeover.collect(
+                [{ leadIds: openLeadIds, dealIds: baseDealIds }],
+                'batch',
+            );
+        const warnings = [
+            ...scope.warnings,
+            ...scope.foreign,
+            ...takeoverPlan.warnings,
+        ];
         const newResponsible = String(item.newResponsibleId);
         const groupId = ctx.portal.getSalesTaskGroupId();
 
@@ -326,10 +355,64 @@ export class TransferWorkUseCase
         }
 
         await ctx.buffer.endGroup();
+
+        /*
+         * Лиды и дела — своей группой: команды независимы, а основная группа
+         * (сделки, компания, контакты, задачи) и так подходит к лимиту 50.
+         */
+        for (const leadId of openLeadIds) {
+            const fields: BxRow = { ASSIGNED_BY_ID: newResponsible };
+            setManagerOp(ctx.portal, 'lead', fields, item.newResponsibleId);
+            ctx.buffer.queue(() =>
+                ctx.bitrix.batch.lead.update(
+                    `tw_lead_${leadId}`,
+                    leadId,
+                    fields as never,
+                ),
+            );
+        }
+        const taken = takeover.queue(
+            ctx.buffer,
+            { ...takeoverPlan, tasks: [] },
+            item.newResponsibleId,
+            'tw_act',
+        );
+        await ctx.buffer.endGroup();
+
         this.logger.log(
-            `transfer-work: сделок ${scope.deals.length}, задач ${movedTasks}, сателлитов закрыто ${closedSatellites.length}`,
+            `transfer-work: сделок ${scope.deals.length}, задач ${movedTasks}, ` +
+                `лидов ${openLeadIds.length}, дел ${taken.activitiesMoved}, ` +
+                `сателлитов закрыто ${closedSatellites.length}`,
         );
         return warnings;
+    }
+
+    /**
+     * Открытые лиды сделок — только их переводим: закрытый лид (продажа,
+     * отказ) — история, ответственного там не трогаем. Один прямой вызов;
+     * сбой — лиды пропускаем, передача идёт дальше.
+     */
+    private async openLeadIds(
+        ctx: SalesHookExecutionContext,
+        leadIds: number[],
+    ): Promise<number[]> {
+        if (!leadIds.length) return [];
+        try {
+            const response = (await ctx.bitrix.api.call('crm.lead.list', {
+                filter: { ID: leadIds, STATUS_SEMANTIC_ID: 'P' },
+                select: ['ID'],
+            })) as { result?: BxRow[] } | undefined;
+            return (response?.result ?? [])
+                .map(row => Number(row.ID))
+                .filter(id => Number.isInteger(id) && id > 0);
+        } catch (error) {
+            this.logger.warn(
+                `transfer-work: лиды не прочитаны, ответственный на них не сменён: ${
+                    error instanceof Error ? error.message : String(error)
+                }`,
+            );
+            return [];
+        }
     }
 
     /**

@@ -45,6 +45,11 @@ export class ActivityService {
         return this.repo.update(id, activity);
     }
 
+    /** Частичное обновление (`crm.activity.update`): например, только RESPONSIBLE_ID. */
+    async update(id: number | string, fields: Partial<IBXActivity>) {
+        return this.repo.update(id, fields);
+    }
+
     async deleteActivity(id: number | string) {
         return this.repo.delete(id);
     }

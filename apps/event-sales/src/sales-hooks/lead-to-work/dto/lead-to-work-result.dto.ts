@@ -84,6 +84,16 @@ export class LeadToWorkItemResultDto {
     tasksClosed: number;
 
     @ApiProperty({
+        description:
+            'Сколько открытых дел CRM лида и сделки (напоминания роботов, ' +
+            'звонки, встречи) передано новому ответственному.',
+        example: 1,
+        type: Number,
+    })
+    @IsInt()
+    activitiesMoved: number;
+
+    @ApiProperty({
         description: 'Создана ли новая задача «Звонок»/«Холодный обзвон».',
         example: true,
         type: Boolean,

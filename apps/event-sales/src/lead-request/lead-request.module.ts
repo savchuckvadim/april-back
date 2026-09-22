@@ -14,6 +14,7 @@ import { LeadRequestSlaScheduler } from './sla/lead-request-sla.scheduler';
 import { LeadIntakeRescueService } from './intake/lead-intake-rescue.service';
 import { LeadIntakeRescueScheduler } from './intake/lead-intake-rescue.scheduler';
 import { LeadToWorkAssigneeService } from '../sales-hooks/lead-to-work/services/lead-to-work-assignee.service';
+import { ActiveStaffModule } from '../shared/active-staff';
 
 /**
  * Карточка заявки/лида для приложения «Звонки» + механика принятия
@@ -38,6 +39,8 @@ import { LeadToWorkAssigneeService } from '../sales-hooks/lead-to-work/services/
         // Живые названия вариантов полей лида «как на портале» (общий кэш
         // с sales-хуками — одно чтение определений на домен).
         PortalFieldsModule,
+        // SLA передаёт просроченную сделку только работающему сотруднику.
+        ActiveStaffModule,
     ],
     controllers: [LeadRequestController],
     providers: [

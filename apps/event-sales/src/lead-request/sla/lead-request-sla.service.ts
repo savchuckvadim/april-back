@@ -16,6 +16,7 @@ import { SalesHookIdempotencyService } from '../../sales-hooks/core/services/sal
 import { buildLeadToWorkItem } from '../../sales-hooks/lead-to-work/dto/lead-to-work.dto';
 import { buildTransferWorkItem } from '../../sales-hooks/transfer-work/dto/transfer-work.dto';
 import { LeadToWorkAssigneeService } from '../../sales-hooks/lead-to-work/services/lead-to-work-assignee.service';
+import { ActiveStaffService } from '../../shared/active-staff';
 import { dealAssignedAtName } from '../../shared/lead-request/deal-work-timer.util';
 import {
     appendLeadRequestHistory,
@@ -94,6 +95,8 @@ export class LeadRequestSlaService {
         private readonly assignee: LeadToWorkAssigneeService,
         /** Счётчик передач одной работы — защита от бесконечной карусели. */
         private readonly redisService: RedisService,
+        /** Кто работает сейчас — уволенным SLA работу не передаёт. */
+        private readonly activeStaff: ActiveStaffService,
     ) {}
 
     async runForDomain(
@@ -424,19 +427,26 @@ export class LeadRequestSlaService {
             return;
         }
 
-        const assignee = await this.assignee.resolve(domain, {
-            // leadId у синтетического элемента используется только в логах
-            // распределителя — передаём id сделки, чтобы строка читалась.
-            leadId: dealId,
-            department: department?.departmentId
-                ? String(department.departmentId)
-                : undefined,
-            excludeResponsible: previous ?? undefined,
-            createCompany: 'N',
-            stageMode: 'from_lead',
-            taskMode: 'move',
-            isXo: 'N',
-        });
+        const assignee = await this.assignee.resolve(
+            domain,
+            {
+                // leadId у синтетического элемента используется только в логах
+                // распределителя — передаём id сделки, чтобы строка читалась.
+                leadId: dealId,
+                department: department?.departmentId
+                    ? String(department.departmentId)
+                    : undefined,
+                excludeResponsible: previous ?? undefined,
+                createCompany: 'N',
+                stageMode: 'from_lead',
+                taskMode: 'move',
+                isXo: 'N',
+            },
+            {
+                activeUserIds: ids =>
+                    this.activeStaff.activeUserIds(domain, bitrix, ids),
+            },
+        );
         if (!assignee.responsible) {
             result.warnings.push(
                 `Сделка ${dealId}: некому передать (${assignee.warnings.join('; ') || 'кандидатов нет'})`,

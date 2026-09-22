@@ -4,6 +4,10 @@ import { IBXTask } from '@/modules/bitrix/domain/tasks/task/interface/task.inter
 import { EBXTaskStatus } from '@/modules/bitrix/domain/tasks/task/interface/task.interface';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
+import {
+    IWorkTakeoverActivity,
+    WorkTakeoverService,
+} from '../../../shared/work-takeover';
 
 /** Снимок всего, что нужно флоу по одному лиду. */
 export interface LeadToWorkContext {
@@ -23,6 +27,12 @@ export interface LeadToWorkContext {
      */
     fromLeadDeals: IBXDeal[];
     openTasks: IBXTask[];
+    /**
+     * Открытые дела CRM лида и нашей сделки (звонки, встречи, напоминания
+     * роботов) без зеркал задач — переезжают к ответственному вместе с
+     * задачами: иначе «Поставить оценку заявке» висит на прежнем.
+     */
+    openActivities: IWorkTakeoverActivity[];
     /**
      * ВСЕ контакты лида (`crm.lead.contact.items.get` + штатный CONTACT_ID).
      * Переезжают на создаваемую сделку: у лида контактов бывает несколько,
@@ -46,6 +56,11 @@ type BxRow = Record<string, unknown>;
  * начинает рвать соединения (socket hang up). Менять только с новым замером.
  */
 const READ_CONCURRENCY = 1;
+
+/** OWNER_TYPE_ID дел CRM: лид и сделка. */
+const ACTIVITY_OWNER_LEAD = 1;
+const ACTIVITY_OWNER_DEAL = 2;
+const ACTIVITY_SELECT = ['ID', 'SUBJECT', 'RESPONSIBLE_ID', 'PROVIDER_ID'];
 
 /** Что нужно знать о лиде, чтобы прочитать его ответы из общего батча. */
 interface IEnvMeta {
@@ -283,6 +298,28 @@ export class LeadToWorkContextService {
             );
         }
 
+        // Открытые дела лида и нашей сделки — тем же проводом.
+        this.bitrix.batch.activity.getList(
+            `ctx_acts_lead_${leadId}`,
+            {
+                OWNER_TYPE_ID: ACTIVITY_OWNER_LEAD,
+                OWNER_ID: leadId,
+                COMPLETED: 'N',
+            },
+            ACTIVITY_SELECT,
+        );
+        if (ourDealId) {
+            this.bitrix.batch.activity.getList(
+                `ctx_acts_deal_${leadId}`,
+                {
+                    OWNER_TYPE_ID: ACTIVITY_OWNER_DEAL,
+                    OWNER_ID: ourDealId,
+                    COMPLETED: 'N',
+                },
+                ACTIVITY_SELECT,
+            );
+        }
+
         return {
             leadId,
             companyId,
@@ -291,6 +328,28 @@ export class LeadToWorkContextService {
             taskBindings,
             warnings,
         };
+    }
+
+    /** Дела лида и сделки из ответов провода, без дублей и зеркал задач. */
+    private collectActivities(
+        leadId: number,
+        flat: Map<string, unknown>,
+    ): IWorkTakeoverActivity[] {
+        const seen = new Set<number>();
+        const result: IWorkTakeoverActivity[] = [];
+        for (const key of [
+            `ctx_acts_lead_${leadId}`,
+            `ctx_acts_deal_${leadId}`,
+        ]) {
+            for (const activity of WorkTakeoverService.parseActivities(
+                flat.get(key),
+            )) {
+                if (seen.has(activity.id)) continue;
+                seen.add(activity.id);
+                result.push(activity);
+            }
+        }
+        return result;
     }
 
     /** Отправляет накопленный буфер и раскладывает ответы в плоскую карту. */
@@ -371,6 +430,7 @@ export class LeadToWorkContextService {
             convertedDeals,
             fromLeadDeals,
             openTasks,
+            openActivities: this.collectActivities(leadId, flat),
             contactIds: this.collectContactIds(
                 lead as BxRow,
                 flat.get(`ctx_lead_contacts_${leadId}`),

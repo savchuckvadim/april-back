@@ -104,12 +104,16 @@ export class LeadToWorkAssigneeService {
         item: ILeadToWorkItem,
         context: ILeadToWorkAssigneeContext = {},
     ): Promise<ILeadToWorkAssignee> {
-        if (item.responsible) {
+        const warnings: string[] = [];
+        if (
+            item.responsible &&
+            (await this.isWorking(item.responsible, context, warnings))
+        ) {
             return {
                 responsible: item.responsible,
                 source: 'explicit',
                 departmentKey: null,
-                warnings: [],
+                warnings,
             };
         }
 
@@ -120,21 +124,22 @@ export class LeadToWorkAssigneeService {
          * его только там, где распределение — суть операции (ХО).
          */
         const leadResponsibleId = Number(context.leadResponsibleId ?? 0);
+        const hasLeadResponsible =
+            Number.isFinite(leadResponsibleId) && leadResponsibleId > 0;
         if (
             context.keepLeadResponsible &&
-            Number.isFinite(leadResponsibleId) &&
-            leadResponsibleId > 0
+            hasLeadResponsible &&
+            (await this.isWorking(leadResponsibleId, context, warnings))
         ) {
             return {
                 responsible: leadResponsibleId,
                 source: 'lead',
                 departmentKey: null,
-                warnings: [],
+                warnings,
             };
         }
 
-        const warnings: string[] = [];
-        if (context.keepLeadResponsible) {
+        if (context.keepLeadResponsible && !hasLeadResponsible) {
             warnings.push(
                 'У лида не задан ответственный — выбран по кругу из отдела продаж',
             );
@@ -214,6 +219,37 @@ export class LeadToWorkAssigneeService {
                 `user ${responsible} (кандидатов: ${candidates.length})`,
         );
         return { responsible, source: 'round-robin', departmentKey, warnings };
+    }
+
+    /**
+     * Названный явно (кнопка, адресный ХО) или унаследованный от лида
+     * ответственный обязан работать. 22.09.2026 лид с сайта создался на
+     * сотрудника из «Не работающих», робот адресного ХО передал его хуку
+     * явно — и заявка ушла уволенной (сделка 84879). Не работает — падаем в
+     * круг с предупреждением; проверка не удалась — верим вызывающему.
+     */
+    private async isWorking(
+        userId: number,
+        context: ILeadToWorkAssigneeContext,
+        warnings: string[],
+    ): Promise<boolean> {
+        if (!context.activeUserIds) return true;
+        try {
+            const active = await context.activeUserIds([userId]);
+            if (active.has(userId)) return true;
+            this.logger.warn(
+                `[assignee] ответственный ${userId} не работает — заявка уходит в круг`,
+            );
+            warnings.push(
+                `Ответственный ${userId} не работает (уволен или в отделе неработающих) — заявка распределена по кругу`,
+            );
+            return false;
+        } catch (error) {
+            warnings.push(
+                `Не удалось проверить, работает ли ${userId} (${(error as Error).message}) — оставлен как есть`,
+            );
+            return true;
+        }
     }
 
     /**

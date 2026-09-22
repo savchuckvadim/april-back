@@ -520,6 +520,19 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             type: 'string',
             default: '',
         }),
+        leadIntakeInactiveDepartmentIds: setting({
+            code: 'lead_intake_inactive_department_ids',
+            name: 'Отделы неработающих сотрудников',
+            description:
+                'Bitrix ID отделов через запятую, где числятся уволенные с ' +
+                'ещё живым аккаунтом («Не работающие сотрудники»). Их ' +
+                'сотрудники не получают заявок ни по кругу, ни адресно: ' +
+                'явный ответственный из такого отдела заменяется кругом ' +
+                'своего отдела. Отделы с «не работающие»/«уволен» в ' +
+                'названии находятся сами, здесь — дополнение.',
+            type: 'string',
+            default: '',
+        }),
         leadIntakeRescueLookbackMinutes: setting({
             code: 'lead_intake_rescue_lookback_minutes',
             name: 'Страховка входа: глубина поиска (минут)',

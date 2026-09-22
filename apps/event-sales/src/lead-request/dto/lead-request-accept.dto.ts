@@ -105,4 +105,26 @@ export class LeadRequestAcceptResultDto {
     @IsArray()
     @IsString({ each: true })
     warnings: string[];
+
+    @ApiPropertyOptional({
+        description:
+            'Сколько открытых задач лида и сделок перешло принявшему ' +
+            '(перехват работы: кто принял, тот и ведёт все задачи).',
+        example: 1,
+        type: Number,
+    })
+    @IsOptional()
+    @IsInt()
+    tasksMoved?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Сколько открытых дел CRM (звонки, встречи, напоминания) ' +
+            'лида и сделок перешло принявшему.',
+        example: 0,
+        type: Number,
+    })
+    @IsOptional()
+    @IsInt()
+    activitiesMoved?: number;
 }

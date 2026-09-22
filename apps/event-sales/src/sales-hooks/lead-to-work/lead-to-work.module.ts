@@ -11,6 +11,7 @@ import { UserNameResolver } from '../../shared/lead-request/user-name.resolver';
 import { LeadToWorkDuplicateCheckService } from './services/lead-to-work-duplicate-check.service';
 import { PortalWorkingHoursService } from '../../shared/working-hours/portal-working-hours.service';
 import { PBXModule } from '@/modules/pbx/pbx.module';
+import { ActiveStaffModule } from '../../shared/active-staff';
 
 /**
  * Хук «лид → работа» (группа 1): конвертация лида в работу ОП и «ХО из
@@ -31,6 +32,9 @@ import { PBXModule } from '@/modules/pbx/pbx.module';
         // PBXModule — для PortalWorkingHoursService: он читает календарь
         // портала, чтобы срок задачи не попадал в ночь и выходные.
         PBXModule,
+        // Живая проверка «кто работает»: уволенные и отдел неработающих не
+        // получают заявок ни по кругу, ни адресно.
+        ActiveStaffModule,
     ],
     controllers: [LeadToWorkController],
     providers: [

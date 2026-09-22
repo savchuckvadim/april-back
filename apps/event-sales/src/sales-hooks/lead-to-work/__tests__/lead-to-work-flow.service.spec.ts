@@ -137,6 +137,7 @@ const baseContext = (
     convertedDeals: [],
     fromLeadDeals: [],
     openTasks: [],
+    openActivities: [],
     contactIds: [],
     isConverted: false,
     warnings: [],
@@ -862,6 +863,7 @@ describe('LeadToWorkFlowService', () => {
             makeItem({ leadId: 42, responsible: 5, isXo: 'Y' }),
             baseContext({
                 openTasks: [{ id: 900, title: 'Старая' } as never],
+                openActivities: [],
             }),
             basePlan({ xoCategoryId: '9', xoStageId: 'C9:PLAN' }),
             makeBuffer() as never,

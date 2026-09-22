@@ -38,6 +38,7 @@ import { LeadDealCompletion } from '../../../shared/lead-client/lead-deal-comple
 import { LeadClientKind } from '../../../shared/lead-client';
 import { PortalWorkingHoursService } from '../../../shared/working-hours/portal-working-hours.service';
 import { shiftDeadlineToWorkingHours } from '../../../shared/working-hours/working-hours.model';
+import { ActiveStaffService } from '../../../shared/active-staff';
 import { LeadToWorkTimelineService } from '../services/lead-to-work-timeline.service';
 import {
     EnumPortalAppCode,
@@ -101,6 +102,8 @@ export class LeadToWorkUseCase
         private readonly appSettings: PortalAppSettingsService,
         /** График портала — чтобы срок задачи не попадал в ночь и выходные. */
         private readonly workingHours: PortalWorkingHoursService,
+        /** Кто работает сейчас: уволенные и «не работающие» не получают заявок. */
+        private readonly activeStaff: ActiveStaffService,
     ) {}
 
     /**
@@ -513,26 +516,16 @@ export class LeadToWorkUseCase
      * чужого молчания, но падать из-за календаря конвертация не должна.
      */
     /**
-     * Кто из сотрудников работает прямо сейчас — свежим `user.get` портала.
-     * Инстанс Битрикса берётся из контекста вызова, а не хранится в сервисе
-     * (правило CLAUDE.md про race condition между доменами).
+     * Кто из сотрудников работает прямо сейчас — свежим `user.get` портала
+     * плюс отсев отделов неработающих. Инстанс Битрикса берётся из
+     * контекста вызова, а не хранится в сервисе (правило CLAUDE.md про race
+     * condition между доменами).
      */
-    private async activeUserIds(
+    private activeUserIds(
         ctx: SalesHookExecutionContext,
         ids: number[],
     ): Promise<Set<number>> {
-        const active = new Set<number>();
-        for (let start = 0; start < ids.length + 50; start += 50) {
-            const response = (await ctx.bitrix.api.call('user.get', {
-                FILTER: { ID: ids, ACTIVE: true },
-                SELECT: ['ID'],
-                start,
-            })) as { result?: { ID?: unknown }[] };
-            const rows = response.result ?? [];
-            for (const row of rows) active.add(Number(row.ID));
-            if (rows.length < 50) break;
-        }
-        return active;
+        return this.activeStaff.activeUserIds(ctx.domain, ctx.bitrix, ids);
     }
 
     /**
@@ -763,6 +756,7 @@ export class LeadToWorkUseCase
             companyId: entry.companyId ?? idOf(plan?.companyCmd),
             tasksMoved: plan?.tasksMoved ?? 0,
             tasksClosed: plan?.tasksClosed ?? 0,
+            activitiesMoved: plan?.activitiesMoved ?? 0,
             taskCreated: !!plan?.taskAddCmd,
             responsible: entry.responsible ?? null,
             assigneeSource: entry.assigneeSource ?? null,

@@ -5,10 +5,24 @@ import {
     ISalesHookUseCase,
     SalesHookExecutionContext,
 } from '../../core/contracts/sales-hook-use-case.contract';
-import { LeadRequestAcceptService } from '../../../lead-request/services/lead-request-accept.service';
+import {
+    LeadAcceptPlan,
+    LeadRequestAcceptService,
+} from '../../../lead-request/services/lead-request-accept.service';
 import { LeadRequestAcceptResultDto } from '../../../lead-request/dto/lead-request-accept.dto';
+import {
+    IWorkTakeoverOutcome,
+    WorkTakeoverService,
+} from '../../../shared/work-takeover';
 
 type BxRow = Record<string, unknown>;
+
+/** Элемент пачки с рассчитанным планом — между расчётом и записью. */
+interface IPlannedAccept {
+    item: ILeadAcceptItem;
+    leadId: number;
+    plan: LeadAcceptPlan;
+}
 
 /** Элемент пачки принятия (робот шлёт leadId ЛИБО dealId). */
 export interface ILeadAcceptItem {
@@ -106,8 +120,8 @@ export class LeadAcceptUseCase
             dealsById.set(dealId, row);
         }
 
-        // === Расчёт планов (чисто) + batch-запись через буфер каркаса.
-        let accepted = 0;
+        // === Расчёт планов — чисто, ноль вызовов.
+        const planned: IPlannedAccept[] = [];
         for (const { item, leadId } of resolved) {
             if (!leadId) {
                 results.push(
@@ -125,7 +139,6 @@ export class LeadAcceptUseCase
                 );
                 continue;
             }
-
             try {
                 const baseDealId = this.acceptService.baseDealIdOf(
                     ctx.portal,
@@ -139,7 +152,43 @@ export class LeadAcceptUseCase
                     item.dealId,
                     baseDealId ? (dealsById.get(baseDealId) ?? null) : null,
                 );
-                if (!plan.already && Object.keys(plan.fields).length > 0) {
+                planned.push({ item, leadId, plan });
+            } catch (error) {
+                const { message } = getErrorDetails(error);
+                this.logger.warn(`lead-accept: лид ${leadId} — ${message}`);
+                results.push(this.failure(item, message, leadId));
+            }
+        }
+
+        /*
+         * === Волна 4: открытые задачи и дела принимаемых заявок — одним
+         * batch'ем ДО первой записи (ai/rules/bitrix-batch-grouping.md).
+         * Принявший забирает работу целиком: задача ХО и задачи роботов не
+         * должны остаться на прежних (решение владельца 22.09.2026).
+         */
+        const writes = planned.filter(
+            entry =>
+                !entry.plan.already &&
+                Object.keys(entry.plan.fields).length > 0,
+        );
+        const takeover = new WorkTakeoverService(ctx.bitrix);
+        const takeoverPlans = await takeover.collect(
+            writes.map(entry => entry.plan.takeover),
+            'batch',
+        );
+
+        // === Запись группами через буфер каркаса.
+        let accepted = 0;
+        for (const entry of planned) {
+            const { item, leadId, plan } = entry;
+            const warnings = [...plan.warnings];
+            let taken: IWorkTakeoverOutcome = {
+                tasksMoved: 0,
+                activitiesMoved: 0,
+            };
+            try {
+                const index = writes.indexOf(entry);
+                if (index >= 0) {
                     ctx.buffer.queue(() =>
                         ctx.bitrix.batch.lead.update(
                             `la_lead_${leadId}`,
@@ -147,8 +196,8 @@ export class LeadAcceptUseCase
                             plan.fields as never,
                         ),
                     );
-                    if (plan.dealUpdate) {
-                        const update = plan.dealUpdate;
+                    for (const update of [plan.dealUpdate, plan.xoDealUpdate]) {
+                        if (!update) continue;
                         ctx.buffer.queue(() =>
                             ctx.bitrix.batch.deal.update(
                                 `la_deal_${update.dealId}`,
@@ -158,6 +207,20 @@ export class LeadAcceptUseCase
                         );
                     }
                     await ctx.buffer.endGroup();
+
+                    // Перехват — своей группой: команды независимы, а
+                    // задач с делами может быть до 60 — в одну не влезут.
+                    const found = takeoverPlans[index];
+                    if (found && plan.acceptedBy) {
+                        warnings.push(...found.warnings);
+                        taken = takeover.queue(
+                            ctx.buffer,
+                            found,
+                            plan.acceptedBy,
+                            `la_to_${leadId}`,
+                        );
+                        await ctx.buffer.endGroup();
+                    }
                     accepted += 1;
                 }
                 results.push({
@@ -165,7 +228,8 @@ export class LeadAcceptUseCase
                     success: true,
                     already: plan.already,
                     firstprepareSeconds: plan.firstprepareSeconds,
-                    warnings: plan.warnings,
+                    warnings,
+                    ...taken,
                 });
             } catch (error) {
                 const { message } = getErrorDetails(error);

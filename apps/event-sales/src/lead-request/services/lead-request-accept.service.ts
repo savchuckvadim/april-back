@@ -28,11 +28,17 @@ import {
 } from '../../shared/lead-request/deal-work-timer.util';
 import { setManagerOp } from '../../shared/lead-request/manager-op.util';
 import {
+    IWorkTakeoverOutcome,
+    IWorkTakeoverScope,
+    WorkTakeoverService,
+} from '../../shared/work-takeover';
+import {
     LeadRequestAcceptDto,
     LeadRequestAcceptResultDto,
 } from '../dto/lead-request-accept.dto';
 
 type BxRow = Record<string, unknown>;
+type Bitrix = Awaited<ReturnType<PBXService['init']>>['bitrix'];
 
 /** Целевая стадия лида при принятии (аксиома: назначение ≠ принятие). */
 export const ACCEPT_LEAD_STAGE_CODE =
@@ -59,7 +65,19 @@ export interface LeadAcceptPlan {
      * истории. null — сделки нет либо писать нечего.
      */
     dealUpdate: { dealId: number; fields: BxRow } | null;
+    /** ХО-сделка заявки (to_xo_sales) — тоже принявшему. */
+    xoDealUpdate: { dealId: number; fields: BxRow } | null;
+    /** Кто принял — ему уходят задачи и дела. null — некому/нечего. */
+    acceptedBy: number | null;
+    /** Чьи открытые задачи и дела перехватывает принявший. */
+    takeover: IWorkTakeoverScope;
 }
+
+const EMPTY_TAKEOVER: IWorkTakeoverScope = { leadIds: [], dealIds: [] };
+const NOTHING_TAKEN: IWorkTakeoverOutcome = {
+    tasksMoved: 0,
+    activitiesMoved: 0,
+};
 
 /**
  * Принятие заявки менеджером — вторая точка пути
@@ -175,22 +193,31 @@ export class LeadRequestAcceptService {
                 plan.dealUpdate.fields as never,
             );
         }
+        if (plan.xoDealUpdate) {
+            await bitrix.deal.update(
+                plan.xoDealUpdate.dealId,
+                plan.xoDealUpdate.fields as never,
+            );
+        }
+        const taken = await this.takeOverWork(bitrix, plan);
 
         this.logger.log(
             `[accept] lead=${leadId} принята (user=${dto.userId ?? '—'}, ` +
-                `firstprepare=${plan.firstprepareSeconds ?? '—'}с)`,
+                `firstprepare=${plan.firstprepareSeconds ?? '—'}с, ` +
+                `перехвачено задач ${taken.tasksMoved}, дел ${taken.activitiesMoved})`,
         );
         return {
             success: true,
             already: false,
             firstprepareSeconds: plan.firstprepareSeconds,
             warnings: plan.warnings,
+            ...taken,
         };
     }
 
     /** Принятие СДЕЛКИ без лида: снять таймер ожидания + история. */
     private async acceptDealOnly(
-        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        bitrix: Bitrix,
         portal: PortalModel,
         dealId: number,
         dealRow: BxRow,
@@ -206,14 +233,17 @@ export class LeadRequestAcceptService {
             };
         }
         await bitrix.deal.update(dealId, plan.dealUpdate.fields as never);
+        const taken = await this.takeOverWork(bitrix, plan);
         this.logger.log(
-            `[accept] deal=${dealId} подтверждена (user=${userId ?? '—'})`,
+            `[accept] deal=${dealId} подтверждена (user=${userId ?? '—'}, ` +
+                `перехвачено задач ${taken.tasksMoved}, дел ${taken.activitiesMoved})`,
         );
         return {
             success: true,
             already: false,
             firstprepareSeconds: null,
             warnings: plan.warnings,
+            ...taken,
         };
     }
 
@@ -256,6 +286,9 @@ export class LeadRequestAcceptService {
                 firstprepareSeconds: null,
                 warnings,
                 dealUpdate: null,
+                xoDealUpdate: null,
+                acceptedBy: null,
+                takeover: EMPTY_TAKEOVER,
             };
         }
 
@@ -303,11 +336,17 @@ export class LeadRequestAcceptService {
             fields[portal.getFieldBitrixId(assignedAtField)] = '';
         }
 
-        // История: запись принятия (append-only от текущего значения).
-        // Кто принял: явный userId (кнопка UI), иначе ответственный лида —
-        // вебхук робота userId не шлёт, а принять обязан именно назначенный
-        // (ХО-хук при назначении/передаче ставит его в ASSIGNED_BY_ID).
-        const acceptedBy = userId ?? this.parsePositiveInt(lead.ASSIGNED_BY_ID);
+        /*
+         * История: запись принятия (append-only от текущего значения).
+         * Кто принял: явный userId (кнопка UI); иначе ответственный СДЕЛКИ —
+         * робот срабатывает на смену стадии сделки, а двигает её тот, кто
+         * работает; лида — если сделки нет (ХО-хук при назначении/передаче
+         * ставит назначенного в ASSIGNED_BY_ID).
+         */
+        const acceptedBy =
+            userId ??
+            this.parsePositiveInt(dealRow?.ASSIGNED_BY_ID) ??
+            this.parsePositiveInt(lead.ASSIGNED_BY_ID);
         const historyField = portal.getEntityFieldByCode(
             'lead',
             EnumLeadRequestFieldCode.op_lead_firstprepare_history,
@@ -333,7 +372,28 @@ export class LeadRequestAcceptService {
         }
         // «Менеджер по продажам Гарант» — тот, кто принял (решение 17.09).
         setManagerOp(portal, 'lead', fields, acceptedBy);
+        /*
+         * ОТВЕТСТВЕННЫЙ — ОДНО СИНХРОННОЕ ПОЛЕ (решение владельца 17.09).
+         * Принял другой (перехват из «Звонков») — лид переходит ему, иначе
+         * лид остаётся на прежнем, а сделка у принявшего (сделка 84879,
+         * 22.09.2026: лид на уволенной, сделка у принявшей).
+         */
+        if (
+            acceptedBy &&
+            this.parsePositiveInt(lead.ASSIGNED_BY_ID) !== acceptedBy
+        ) {
+            fields.ASSIGNED_BY_ID = acceptedBy;
+        }
 
+        const baseDealId = this.baseDealIdOf(portal, lead, explicitDealId);
+        const xoDealId = this.parseDealRef(
+            this.fieldRaw(
+                portal,
+                lead,
+                PBX_SALES_EVENT_FIELD_CODES.to_xo_sales,
+            ),
+        );
+        const leadId = this.parsePositiveInt(lead.ID);
         return {
             already: false,
             fields,
@@ -347,6 +407,20 @@ export class LeadRequestAcceptService {
                 dealRow,
                 warnings,
             ),
+            xoDealUpdate:
+                xoDealId && acceptedBy
+                    ? {
+                          dealId: xoDealId,
+                          fields: { ASSIGNED_BY_ID: acceptedBy },
+                      }
+                    : null,
+            acceptedBy,
+            takeover: {
+                leadIds: leadId ? [leadId] : [],
+                dealIds: [baseDealId, xoDealId].filter(
+                    (id): id is number => !!id,
+                ),
+            },
         };
     }
 
@@ -449,6 +523,13 @@ export class LeadRequestAcceptService {
         clearDealAssignedAt(portal, fields);
         setDealAcceptedBy(portal, fields, acceptedBy);
         setManagerOp(portal, 'deal', fields, acceptedBy);
+        // Принял другой — сделка его (одно синхронное поле ответственного).
+        if (
+            acceptedBy &&
+            this.parsePositiveInt(dealRow?.ASSIGNED_BY_ID) !== acceptedBy
+        ) {
+            fields.ASSIGNED_BY_ID = acceptedBy;
+        }
         appendDealHistory(
             portal,
             fields,
@@ -486,6 +567,9 @@ export class LeadRequestAcceptService {
                 firstprepareSeconds: null,
                 warnings,
                 dealUpdate: null,
+                xoDealUpdate: null,
+                acceptedBy: null,
+                takeover: EMPTY_TAKEOVER,
             };
         }
         const waiting = this.text(dealRow[assignedAtName]);
@@ -496,6 +580,9 @@ export class LeadRequestAcceptService {
                 firstprepareSeconds: null,
                 warnings,
                 dealUpdate: null,
+                xoDealUpdate: null,
+                acceptedBy: null,
+                takeover: EMPTY_TAKEOVER,
             };
         }
 
@@ -510,7 +597,44 @@ export class LeadRequestAcceptService {
             firstprepareSeconds: null,
             warnings,
             dealUpdate: { dealId, fields },
+            xoDealUpdate: null,
+            acceptedBy,
+            takeover: { leadIds: [], dealIds: [dealId] },
         };
+    }
+
+    /**
+     * ПЕРЕХВАТ РАБОТЫ: открытые задачи и дела лида, основной и ХО-сделок —
+     * принявшему. Сделка 84879 (22.09.2026): задача ХО висела на уволенной,
+     * задачи роботов — на третьем сотруднике, а принявшая их не видела в
+     * «Звонках». Решение владельца: кто принял, тот забирает всё.
+     *
+     * Прямые вызовы, не batch: ручка одиночная, инстанс Битрикса делят
+     * параллельные запросы, а общая карта batch-команд — одна на домен.
+     * Сбой перехвата не отменяет принятие — предупреждение в ответ.
+     */
+    private async takeOverWork(
+        bitrix: Bitrix,
+        plan: LeadAcceptPlan,
+    ): Promise<IWorkTakeoverOutcome> {
+        const { acceptedBy, takeover } = plan;
+        if (!acceptedBy) return NOTHING_TAKEN;
+        if (!takeover.leadIds.length && !takeover.dealIds.length) {
+            return NOTHING_TAKEN;
+        }
+        const service = new WorkTakeoverService(bitrix);
+        try {
+            const [found] = await service.collect([takeover], 'direct');
+            plan.warnings.push(...found.warnings);
+            return await service.apply(found, acceptedBy);
+        } catch (error) {
+            plan.warnings.push(
+                `Задачи и дела не перехвачены: ${
+                    error instanceof Error ? error.message : String(error)
+                }`,
+            );
+            return NOTHING_TAKEN;
+        }
     }
 
     private text(raw: unknown): string {

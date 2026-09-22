@@ -30,6 +30,7 @@ import { DealFlowService } from './flows/deal-flow.service';
 import { LeadFlowService } from './flows/lead-flow.service';
 import { TaskFlowService } from './flows/task-flow.service';
 import { CrmRelationsReassignService } from '../../../shared/crm-relations';
+import { WorkTakeoverService } from '../../../shared/work-takeover';
 
 export { CALL_TASK_PREFIX, XO_TASK_PREFIX };
 
@@ -42,6 +43,8 @@ export interface LeadToWorkQueuedPlan {
     reused: boolean;
     tasksMoved: number;
     tasksClosed: number;
+    /** Открытые дела CRM лида/сделки, переданные новому ответственному. */
+    activitiesMoved: number;
     /** Лишние ОТКРЫТЫЕ сделки лида, закрытые в fail (пары не плодятся). */
     extraDealsClosed: number;
     /** Лид распознан как заявка (лидоген/сайт) — см. LeadRequestDetector. */
@@ -84,6 +87,7 @@ export class LeadToWorkFlowService {
     private readonly leadFlow: LeadFlowService;
     private readonly taskFlow: TaskFlowService;
     private readonly relations: CrmRelationsReassignService;
+    private readonly takeover: WorkTakeoverService;
 
     constructor(
         private readonly bitrix: BitrixService,
@@ -104,6 +108,7 @@ export class LeadToWorkFlowService {
         this.leadFlow = new LeadFlowService(bitrix, portal, ufDefinitions);
         this.taskFlow = new TaskFlowService(bitrix, portal);
         this.relations = new CrmRelationsReassignService(bitrix);
+        this.takeover = new WorkTakeoverService(bitrix);
     }
 
     queue(
@@ -132,6 +137,7 @@ export class LeadToWorkFlowService {
             reused: !!ctx.existingOurDeal,
             tasksMoved: 0,
             tasksClosed: 0,
+            activitiesMoved: 0,
             extraDealsClosed: consolidated.closed,
             isRequest: detection.isRequest,
             kpiPlanned: false,
@@ -232,6 +238,25 @@ export class LeadToWorkFlowService {
         result.tasksClosed = tasks.tasksClosed;
         result.taskAddCmd = tasks.addCmd;
         result.warnings.push(...tasks.warnings);
+
+        /*
+         * === Дела CRM (напоминания роботов, звонки, встречи) — тому же
+         * ответственному, что и задачи. Сделка 84879 (22.09.2026): «Поставить
+         * оценку заявке» роботы повесили на одного, вела заявку другая.
+         * Дела уже прочитаны контекстом; taskMode=none — работу не трогаем.
+         */
+        if (item.taskMode !== 'none') {
+            result.activitiesMoved = this.takeover.queue(
+                buffer,
+                {
+                    tasks: [],
+                    activities: ctx.openActivities ?? [],
+                    warnings: [],
+                },
+                item.responsible,
+                `lw_act_${item.leadId}`,
+            ).activitiesMoved;
+        }
 
         // === KPI/History (только ХО-ветка) — в ТУ ЖЕ группу, до endGroup().
         this.queueKpi(
