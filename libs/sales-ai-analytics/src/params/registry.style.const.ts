@@ -111,6 +111,61 @@ export const AI_ANALYTICS_STYLE_PARAMS = [
         description:
             'Ось rhythm (документ ai/tasks/ai-analytics-manager-style.md, §2.1 ось 8): индекс избыточной дисперсии дневных объёмов Var/mean − 1 считается только при стольких рабочих днях в окне; ниже — null, подписи по ритму нет. Читает style-crm.units.ts (жёсткие счётчики телефонии).',
     },
+    // Пороги счётчиков телефонии и CRM (STYLE_CRM_THRESHOLDS, П11 Фазы 3,
+    // 22.09.2026): определения единиц документа §2.1, scope global — портал
+    // их не переопределяет и в ключ кэша style-crm-v2 они не входят.
+    {
+        code: 'style_conversation_min_sec',
+        title: 'Минимальная длительность состоявшегося разговора',
+        scope: 'global',
+        source: 'configured',
+        unit: 'секунд',
+        defaultValue: 30,
+        range: [10, 120],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Оси persistence и tempo (документ ai/tasks/ai-analytics-manager-style.md, §2.1 оси 4 и 7): звонок телефонии с кодом 200 считается разговором от стольких секунд — попытки дозвона короче лид не «связывают» и в ряды длительностей не входят. Определение единицы, а не порог разбора min_duration_sec. Читает style-crm.units.ts (STYLE_CRM_THRESHOLDS.conversationMinSec).',
+    },
+    {
+        code: 'style_tempo_min_sec',
+        title: 'Минимальная длительность звонка в объёме рабочего дня',
+        scope: 'global',
+        source: 'configured',
+        unit: 'секунд',
+        defaultValue: 60,
+        range: [30, 300],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Ось tempo (документ ai/tasks/ai-analytics-manager-style.md, §2.1 ось 7, под-ось «дни»): в объём рабочего дня callsPerWorkday входят исходящие звонки длиннее стольких секунд — короткие недозвоны темп не создают. Читает style-crm.units.ts (STYLE_CRM_THRESHOLDS.tempoMinSec).',
+    },
+    {
+        code: 'style_give_up_workdays',
+        title: 'Срок второй попытки дозвона',
+        scope: 'global',
+        source: 'configured',
+        unit: 'рабочих дней',
+        defaultValue: 3,
+        range: [1, 10],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Ось persistence (документ ai/tasks/ai-analytics-manager-style.md, §2.1 ось 4): giveUpRate — доля лидов, у которых после первой попытки без разговора не было второй в столько рабочих дней по календарю портала; позже — лид считается брошенным. Читает style-crm.units.ts (STYLE_CRM_THRESHOLDS.giveUpWorkdays).',
+    },
+    {
+        code: 'style_promise_window_days',
+        title: 'Окно выполнения обещанной даты',
+        scope: 'global',
+        source: 'configured',
+        unit: 'календарных дней',
+        defaultValue: 2,
+        range: [0, 7],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Ось rhythm (документ ai/tasks/ai-analytics-manager-style.md, §2.1 ось 8): promiseKept — обещанная дата следующего шага считается выполненной, если звонок тому же клиенту состоялся в ±столько дней от неё. Читает style-crm.units.ts (STYLE_CRM_THRESHOLDS.promiseWindowDays).',
+    },
     {
         code: 'style_tenure_kappa',
         title: 'Сила усадки оффсета полосы стажа',

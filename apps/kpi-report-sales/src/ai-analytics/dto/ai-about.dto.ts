@@ -195,6 +195,17 @@ export class AiAboutDto {
         example: null,
     })
     modelReason: string | null;
+
+    @ApiProperty({
+        description:
+            'Запрос от менеджера в режиме self_view (роль manager при ' +
+            'включённой ai_analytics_self_view_enabled). Блок менеджеру ' +
+            'отдаётся целиком (решение 22.09.2026, B13); по этому признаку ' +
+            'фронт сворачивает детали параметров. false — руководитель.',
+        type: Boolean,
+        example: false,
+    })
+    selfView: boolean;
 }
 
 /** Конверт ответа ручки about: всегда ready, данные в data. */

@@ -43,6 +43,12 @@ export interface CallReportScanOptions {
      */
     createSmartItem?: boolean;
     /**
+     * Смоук (B12): не останавливать звонок порогом длительности своего
+     * типа после классификации — едет в payload джоба, применяется
+     * конвейером (call-duration-gate.util). Крон флаг не ставит.
+     */
+    ignoreDurationGate?: boolean;
+    /**
      * Фильтр «только отдел продаж» из настроек портала (склейка портал →
      * env уже сделана CallReportSettingsService); без него — глобальный
      * env CALL_REPORT_SALES_ONLY.
@@ -296,6 +302,7 @@ export class CallReportScanUseCase {
                         ? callerUserId
                         : undefined,
                 createSmartItem: options?.createSmartItem,
+                ignoreDurationGate: options?.ignoreDurationGate,
             };
 
             // БРОНЬ ДО ПОСТАНОВКИ: строка 'queued' делает звонок видимым

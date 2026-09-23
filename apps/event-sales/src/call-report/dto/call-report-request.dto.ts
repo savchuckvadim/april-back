@@ -132,6 +132,22 @@ export class ScanCallsDto {
     @IsOptional()
     @IsBoolean()
     createSmartItem?: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Смоук по образцу /analyze: не останавливать короткие звонки ' +
+            'порогом длительности своего ТИПА после классификации (гейт ' +
+            'А.1). Звонок, прошедший minDurationSec скана, идёт в полный ' +
+            'разбор, смарт-элемент и глубокий разбор, даже если короче ' +
+            'порога типа. Гейт нерелевантности остаётся. По умолчанию ' +
+            'false; крон флаг не ставит (B12, решение 22.09.2026).',
+        example: true,
+        type: Boolean,
+        default: false,
+    })
+    @IsOptional()
+    @IsBoolean()
+    ignoreDurationGate?: boolean;
 }
 
 /**

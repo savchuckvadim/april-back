@@ -41,6 +41,11 @@ export interface AnalysisStopInput {
     /** Длительность звонка, с; null — неизвестна (гейт порога не применяется). */
     durationSec: number | null;
     settings: GateSettings;
+    /**
+     * Смоук (B12): порог длительности типа не применять — короткий звонок
+     * идёт полным путём. Гейт нерелевантности от флага не зависит.
+     */
+    ignoreDurationGate?: boolean;
 }
 
 /** Остановка разбора: флаг результата конвейера и причина для лога. */
@@ -117,19 +122,21 @@ export function shortCallStop(
     };
 }
 
-/** Первый сработавший гейт: нерелевантность старше порога длительности. */
+/**
+ * Первый сработавший гейт: нерелевантность старше порога длительности.
+ * `ignoreDurationGate` (смоук ручного скана) снимает только порог типа.
+ */
 export function resolveAnalysisStop(
     input: AnalysisStopInput,
 ): AnalysisStop | null {
-    return (
-        irrelevantStop(
-            input.classification,
-            input.settings.irrelevantConfidence,
-        ) ??
-        shortCallStop(
-            input.classification,
-            input.durationSec,
-            input.settings.minDurationSecByType,
-        )
+    const irrelevant = irrelevantStop(
+        input.classification,
+        input.settings.irrelevantConfidence,
+    );
+    if (irrelevant || input.ignoreDurationGate === true) return irrelevant;
+    return shortCallStop(
+        input.classification,
+        input.durationSec,
+        input.settings.minDurationSecByType,
     );
 }

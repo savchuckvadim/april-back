@@ -18,6 +18,8 @@ import { AiManagerTypeCellDto } from './ai-manager-type-cell.dto';
 import { AiNextStepRateDto, AiRiskCallDto } from './ai-manager-signals.dto';
 import { AiRecommendationDto } from './ai-recommendation.dto';
 import { AiStyleProfileDto } from './ai-style-profile.dto';
+import { AiManagerTrendsDto } from './ai-trend.dto';
+import { AiYoyDto } from './ai-yoy.dto';
 import { MetricDto } from './metric.dto';
 
 // Финансовый хвост вынесен в ai-finance-tail.dto.ts (v2, «≤ 300 строк»);
@@ -37,6 +39,8 @@ export { AiFunnelEdgeDto } from './ai-funnel-edge.dto';
 export { AiNextStepRateDto, AiRiskCallDto } from './ai-manager-signals.dto';
 export { AiRecommendationDto } from './ai-recommendation.dto';
 export { AiStyleProfileDto, AiStyleTagDto } from './ai-style-profile.dto';
+export { AiManagerTrendsDto, AiTrendSignalDto } from './ai-trend.dto';
+export { AiYoyDto, AiYoyMetricDto } from './ai-yoy.dto';
 
 /** Оценка корзины за период (контакт / презентация / закрытие). */
 export class AiBucketScoreDto {
@@ -242,6 +246,30 @@ export class AiManagerRowDto {
         nullable: true,
     })
     style?: AiStyleProfileDto | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Тренды рядов менеджера из недельного снапшота ' +
+            'ai-analytics-trends (Фаза 3): сдвиг уровня, дрейф и выброс по ' +
+            'оценке, объёму, корзинам и рёбрам воронки; null — снапшота ' +
+            'нет, разборов за период меньше n_min_none либо сравнимых ' +
+            'недель меньше минимума ряда.',
+        type: AiManagerTrendsDto,
+        nullable: true,
+    })
+    trends?: AiManagerTrendsDto | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Тот же месяц год назад из снапшота ai-analytics-manager-month ' +
+            'M−12 (Фаза 3): объёмы, качество и финансы двух периодов рядом ' +
+            'плюс флаг сопоставимости с причинами. Только описательно, без ' +
+            'оценок. null — период обзора не месяц, истории меньше 13 ' +
+            'месяцев либо в обоих периодах разборов меньше n_min_none (8).',
+        type: AiYoyDto,
+        nullable: true,
+    })
+    yoy?: AiYoyDto | null;
 
     @ApiPropertyOptional({
         description:

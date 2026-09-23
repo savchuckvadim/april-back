@@ -20,24 +20,24 @@ import { JwtAuthGuard, Role, Roles, RolesGuard } from '@lib/auth';
 import {
     AI_ANALYTICS_AUDIT_ABOUT,
     renderAuditAboutSummary,
-} from '../audit/ai-analytics-audit.about';
-import { AiAnalyticsAuditService } from './ai-analytics-audit.service';
+} from '../../audit/ai-analytics-audit.about';
+import { AiAnalyticsAuditService } from '../ai-analytics-audit.service';
 import {
     AiAnalyticsAuditAboutQueryDto,
     AiAnalyticsAuditAboutResponseDto,
-} from './dto/ai-analytics-audit-about.dto';
-import { AiAnalyticsAuditLatestQueryDto } from './dto/ai-analytics-audit-latest-query.dto';
-import { AiAnalyticsAuditResultDto } from './dto/ai-analytics-audit-result.dto';
+} from '../dto/ai-analytics-audit-about.dto';
+import { AiAnalyticsAuditLatestQueryDto } from '../dto/ai-analytics-audit-latest-query.dto';
+import { AiAnalyticsAuditResultDto } from '../dto/ai-analytics-audit-result.dto';
 import {
     AI_ANALYTICS_AUDIT_RUN_DEFAULTS,
     AiAnalyticsAuditRunDto,
-} from './dto/ai-analytics-audit-run.dto';
+} from '../dto/ai-analytics-audit-run.dto';
 import {
     AI_ANALYTICS_STAGE_HISTORY_PROBE_DEFAULTS,
     AiAnalyticsStageHistoryProbeQueryDto,
     AiAnalyticsStageHistoryProbeResponseDto,
-} from './dto/ai-analytics-stage-history-probe.dto';
-import { StageHistoryProbeService } from './stage-history-probe.service';
+} from '../dto/ai-analytics-stage-history-probe.dto';
+import { StageHistoryProbeService } from '../stage-history-probe.service';
 
 const FORBIDDEN_DESCRIPTION =
     'На портале выключен признак ai_analytics_audit_enabled («Аудит и ' +
@@ -57,7 +57,7 @@ const FORBIDDEN_DESCRIPTION =
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.SUPER_USER)
 @Controller('admin/ai-analytics')
-export class SalesAiAnalyticsAdminController {
+export class AiAnalyticsAuditAdminController {
     constructor(
         private readonly audit: AiAnalyticsAuditService,
         private readonly stageHistoryProbe: StageHistoryProbeService,

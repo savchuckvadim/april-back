@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common/constants';
 import { JwtAuthGuard, Role, RolesGuard } from '@lib/auth';
 import { ROLES_KEY } from '@lib/auth/config/auth.constants';
-import { SalesAiAnalyticsAdminController } from '../sales-ai-analytics-admin.controller';
+import { AiAnalyticsAuditAdminController } from '../controllers/audit.admin.controller';
 import { SalesAiAnalyticsAdminModule } from '../sales-ai-analytics-admin.module';
 import { SalesAiAnalyticsAuditModule } from '../sales-ai-analytics-audit.module';
 import { SalesAiAnalyticsProbeModule } from '../sales-ai-analytics-probe.module';
@@ -27,7 +27,7 @@ function makeController() {
     };
     const probe = { probe: jest.fn() };
     return {
-        controller: new SalesAiAnalyticsAdminController(
+        controller: new AiAnalyticsAuditAdminController(
             audit as never,
             probe as never,
         ),
@@ -57,15 +57,15 @@ function probeResultFixture(domain: string): StageHistoryProbeResult {
 const metadataOf = (key: string, module: unknown): unknown[] =>
     (Reflect.getMetadata(key, module as object) as unknown[] | undefined) ?? [];
 
-describe('SalesAiAnalyticsAdminController', () => {
+describe('AiAnalyticsAuditAdminController', () => {
     it('защищён гардами JwtAuthGuard + RolesGuard и ролью SUPER_USER', () => {
         const guards = Reflect.getMetadata(
             GUARDS_METADATA,
-            SalesAiAnalyticsAdminController,
+            AiAnalyticsAuditAdminController,
         ) as unknown[];
         expect(guards).toEqual([JwtAuthGuard, RolesGuard]);
         expect(
-            Reflect.getMetadata(ROLES_KEY, SalesAiAnalyticsAdminController),
+            Reflect.getMetadata(ROLES_KEY, AiAnalyticsAuditAdminController),
         ).toEqual([Role.SUPER_USER]);
     });
 
@@ -130,20 +130,22 @@ describe('SalesAiAnalyticsAdminController', () => {
         );
     });
 
-    it('раскол Module/AdminModule: контроллер только в admin-модуле, сервисные — без контроллеров', () => {
+    it('раскол Module/AdminModule: контроллер аудита только в admin-модуле, сервисные — без контроллеров', () => {
         expect(metadataOf('controllers', SalesAiAnalyticsAuditModule)).toEqual(
             [],
         );
         expect(metadataOf('controllers', SalesAiAnalyticsProbeModule)).toEqual(
             [],
         );
-        expect(metadataOf('controllers', SalesAiAnalyticsAdminModule)).toEqual([
-            SalesAiAnalyticsAdminController,
-        ]);
-        expect(metadataOf('imports', SalesAiAnalyticsAdminModule)).toEqual([
+        expect(
+            metadataOf('controllers', SalesAiAnalyticsAdminModule),
+        ).toContain(AiAnalyticsAuditAdminController);
+        expect(metadataOf('imports', SalesAiAnalyticsAdminModule)).toContain(
             SalesAiAnalyticsAuditModule,
+        );
+        expect(metadataOf('imports', SalesAiAnalyticsAdminModule)).toContain(
             SalesAiAnalyticsProbeModule,
-        ]);
+        );
     });
 
     it('модуль пробы (PBXModule) не подключён к сервисному модулю аудита — в kpi-report-sales он не течёт', () => {
@@ -174,7 +176,7 @@ describe('SalesAiAnalyticsAdminController', () => {
         // Nest вешает метаданные роута на саму функцию метода; дескриптор —
         // чтобы не ссылаться на несвязанный метод (unbound-method).
         const handler = Object.getOwnPropertyDescriptor(
-            SalesAiAnalyticsAdminController.prototype,
+            AiAnalyticsAuditAdminController.prototype,
             'probeStageHistory',
         )?.value as object;
         expect(Reflect.getMetadata(PATH_METADATA, handler)).toBe(

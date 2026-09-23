@@ -21,6 +21,7 @@ Feature-модуль `apps/kpi-report-sales/src/ai-analytics/` по плану
 | `ai-analytics/pulse` | 1 ч на домен, ключ по `endDate` | периметр; менеджер — только при `self_view` | `AiPulseDto`: окно 5 рабочих дней до вчерашнего рабочего дня, XmR, `byManager` (n ≥ 20), `alerts` |
 | `ai-analytics/agenda` | до следующего понедельника | периметр; менеджер — только при `self_view` | `AiAgendaDto`: 3 звонка ISO-недели, `link` на карточку смарта, `disagreements` |
 | `ai-analytics/feedback` | — | менеджер только за себя | запись в `ais` (контракт 4) |
+| `ai-analytics/review` | — | открытая (с сайта продукта, без сессии фрейма): ссылка на карточку разбора сверяется со смартом портала, лимит 10 отправок за 10 минут с адреса | отзыв руководителя на разбор → запись `ai-analytics-feedback` (useful / disagree, object `site-review:{itemId}`, детали в payload) + сообщение в чат; `AiReviewResultDto` |
 | `ai-analytics/feedback/list` | — | по всем — только руководители; менеджер — только при `self_view` | `items` + `disagreementSharePct` |
 | `ai-analytics/cache/reset` | — | только `cup`/`op` | `{deletedCount, pattern}` |
 | `ai-analytics/push` | — | руководители | ручной запуск рассылки: `kind: agenda|digest|digest_all`, `date?` (день запуска, TZ портала), `recipients?` (тест «отправить себе») → `AiPushResultDto {kind, date, status: sent|skipped|failed, reason, delivered[]}` |

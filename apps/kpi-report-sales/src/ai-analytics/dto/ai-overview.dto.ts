@@ -3,6 +3,7 @@ import { AiManagerRowDto } from './ai-manager-row.dto';
 import { AiManagerTypeCellDto } from './ai-manager-type-cell.dto';
 import { AiObjectionsDto } from './ai-objections.dto';
 import { AiAnalyticsEnvelopeDto } from './ai-response-envelope.dto';
+import { AiYoyDto } from './ai-yoy.dto';
 import { ReadinessDto } from './readiness.dto';
 
 /** Период обзора в TZ портала. */
@@ -236,6 +237,18 @@ export class AiOverviewDto {
         type: AiObjectionsDto,
     })
     objections: AiObjectionsDto;
+
+    @ApiPropertyOptional({
+        description:
+            'Тот же месяц год назад по всему периметру обзора (Фаза 3, П3): ' +
+            'величины двух периодов рядом и флаг сопоставимости с ' +
+            'причинами. Только описательно, без оценок. null — период ' +
+            'обзора не месяц, истории меньше 13 месяцев либо разборов в ' +
+            'обоих периодах меньше n_min_none (8).',
+        type: AiYoyDto,
+        nullable: true,
+    })
+    yoy?: AiYoyDto | null;
 
     @ApiProperty({ description: 'Служебная сводка.', type: AiOverviewMetaDto })
     meta: AiOverviewMetaDto;

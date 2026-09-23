@@ -18,6 +18,8 @@ import { AiAnalyticsAboutUseCase } from './ai-analytics-about.use-case';
  *
  * Права — как у читающих ручек витрины: руководитель по периметру,
  * менеджер — только при ai_analytics_self_view_enabled, иначе 403.
+ * Менеджеру в self_view блок отдаётся целиком с признаком `selfView`
+ * (B13, решение 22.09.2026) — фронт по нему сворачивает детали параметров.
  */
 @ApiTags(AI_ANALYTICS_SWAGGER_TAG)
 @Controller(AI_ANALYTICS_ROUTE_PREFIX)
@@ -49,7 +51,10 @@ export class AiAnalyticsAboutController {
     async getAbout(
         @Body() dto: AiAboutRequestDto,
     ): Promise<AiAboutResponseDto> {
-        await this.access.resolveViewer(dto.domain, dto.requesterUserId);
-        return this.about.execute(dto);
+        const access = await this.access.resolveViewer(
+            dto.domain,
+            dto.requesterUserId,
+        );
+        return this.about.execute(dto, access);
     }
 }

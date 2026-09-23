@@ -291,6 +291,11 @@ describe('AI_ANALYTICS_PARAMS: обязательные параметры пл�
         'style_p_in',
         'style_p_out',
         'style_z_raw',
+        // П11 Фазы 3 (22.09.2026): пороги счётчиков STYLE_CRM_THRESHOLDS
+        'style_conversation_min_sec',
+        'style_tempo_min_sec',
+        'style_give_up_workdays',
+        'style_promise_window_days',
         // §2.2 «добавить»
         'norm_stratum',
         'roster_confirm_required',
@@ -380,6 +385,25 @@ describe('AI_ANALYTICS_PARAMS: обязательные параметры пл�
         expect(findParam('style_p_in')?.defaultValue).toBe(0.8);
         expect(findParam('style_p_out')?.defaultValue).toBe(0.6);
         expect(findParam('style_z_raw')?.defaultValue).toBe(2.33);
+    });
+
+    it('пороги счётчиков стиля (П11, 22.09.2026): глобальные определения единиц документа §2.1', () => {
+        const expected = {
+            style_conversation_min_sec: 30,
+            style_tempo_min_sec: 60,
+            style_give_up_workdays: 3,
+            style_promise_window_days: 2,
+        } as const;
+        for (const [code, value] of Object.entries(expected)) {
+            const descriptor = findParam(code);
+            expect({ code, ...descriptor }).toMatchObject({
+                code,
+                defaultValue: value,
+                scope: 'global',
+                source: 'configured',
+                breaksSeries: false,
+            });
+        }
     });
 
     it('дефолты и диапазоны новых кодов §2.2 совпадают с планом', () => {

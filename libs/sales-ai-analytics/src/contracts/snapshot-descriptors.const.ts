@@ -100,6 +100,25 @@ export const AI_ANALYTICS_SNAPSHOT_DESCRIPTORS = {
             '«план = пожелание». Снимается раз в месяц, чтобы копилась ' +
             'история планов и цель месяца не переезжала задним числом.',
     },
+    [AI_ANALYTICS_SNAPSHOT_TYPE.trends]: {
+        type: AI_ANALYTICS_SNAPSHOT_TYPE.trends,
+        grain: 'manager-week',
+        keyFormat: KEY_FORMAT.week,
+        retention: { unit: 'records', value: 104 },
+        description:
+            'Тренды рядов менеджера (Фаза 3, П1): сдвиг уровня, дрейф и выброс ' +
+            'по метрикам недели; считает еженедельный шаг trends, читает обзор.',
+    },
+    [AI_ANALYTICS_SNAPSHOT_TYPE.goldenReport]: {
+        type: AI_ANALYTICS_SNAPSHOT_TYPE.goldenReport,
+        grain: 'portal-hash',
+        keyFormat: KEY_FORMAT.hash,
+        retention: { unit: 'forever', value: null },
+        description:
+            'Отчёт согласия оценщика (Фаза 3, П7): test-retest разборов одной ' +
+            'версией промпта — каппа, ICC, TOST, F1, измеренная σ_llm; одна ' +
+            'запись на версию, хранится бессрочно.',
+    },
     [AI_ANALYTICS_SNAPSHOT_TYPE.settingsAudit]: {
         type: AI_ANALYTICS_SNAPSHOT_TYPE.settingsAudit,
         grain: 'portal-day',

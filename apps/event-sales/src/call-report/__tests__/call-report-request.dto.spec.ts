@@ -56,4 +56,18 @@ describe('ScanCallsDto', () => {
 
         expect(errors.length).toBeGreaterThan(0);
     });
+
+    it('ignoreDurationGate (смоук B12): необязательный boolean, строка отклоняется', async () => {
+        expect(await validateDto(validPlain)).toHaveLength(0);
+        expect(
+            await validateDto({ ...validPlain, ignoreDurationGate: true }),
+        ).toHaveLength(0);
+        const errors = await validateDto({
+            ...validPlain,
+            ignoreDurationGate: 'yes',
+        });
+        expect(errors.map(error => error.property)).toEqual([
+            'ignoreDurationGate',
+        ]);
+    });
 });

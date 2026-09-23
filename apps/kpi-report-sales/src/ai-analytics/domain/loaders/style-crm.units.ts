@@ -26,18 +26,19 @@ import type {
 } from './style-crm.types';
 
 /**
- * Пороги счётчиков по умолчанию (документ §2.1). Порог дисперсии — код
- * реестра `style_dispersion_min_days` (портал переопределяет его через
- * `resolveNumberParam`, шаг стиля передаёт значение в опциях загрузчика);
- * остальные — определения единиц из документа, не параметры реестра:
- * разговор ≥ 30 с и код 200, звонок дня ≥ 60 с, вторая попытка в 3
- * рабочих дня, обещание ±2 дня.
+ * Пороги счётчиков по умолчанию (документ §2.1) — все из реестра
+ * параметров, литералов нет (П11 Фазы 3, 22.09.2026). Порог дисперсии
+ * `style_dispersion_min_days` портал переопределяет (шаг стиля передаёт
+ * `resolveNumberParam` в опциях загрузчика); остальные четыре — определения
+ * единиц документа со scope `global`: разговор ≥ 30 с и код 200, звонок
+ * дня ≥ 60 с, вторая попытка в 3 рабочих дня, обещание ±2 дня — в ключ
+ * кэша `style-crm-v2` не входят.
  */
 export const STYLE_CRM_THRESHOLDS: StyleCrmThresholds = {
-    conversationMinSec: 30,
-    tempoMinSec: 60,
-    giveUpWorkdays: 3,
-    promiseWindowDays: 2,
+    conversationMinSec: registryDefault('style_conversation_min_sec'),
+    tempoMinSec: registryDefault('style_tempo_min_sec'),
+    giveUpWorkdays: registryDefault('style_give_up_workdays'),
+    promiseWindowDays: registryDefault('style_promise_window_days'),
     dispersionMinDays: registryDefault('style_dispersion_min_days'),
 };
 

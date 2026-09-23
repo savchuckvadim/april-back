@@ -20,6 +20,7 @@ import { RopMarkStep } from '../steps/rop-mark.step';
 import { StageHistoryStep } from '../steps/stage-history.step';
 import { StyleStep } from '../steps/style.step';
 import { SanityStep } from '../steps/sanity.step';
+import { TrendsStep } from '../steps/trends.step';
 import {
     AI_ANALYTICS_PIPELINE_STEPS,
     AI_ANALYTICS_SNAPSHOT_RUNNER,
@@ -92,6 +93,7 @@ export const AI_ANALYTICS_PIPELINE_STEP_ORDER: Type<AiAnalyticsPipelineStep>[] =
         PassportStep,
         StageHistoryStep,
         KpiStep,
+        TrendsStep,
         StyleStep,
         PlansStep,
         FinanceStep,
@@ -102,8 +104,9 @@ export const AI_ANALYTICS_PIPELINE_STEP_ORDER: Type<AiAnalyticsPipelineStep>[] =
     ];
 
 /**
- * Модули срезов, экспортирующие шаги из порядка выше. `SanityStep` в
- * списке нет намеренно: он объявлен провайдером самого конвейера.
+ * Модули срезов, экспортирующие шаги из порядка выше. `SanityStep` и
+ * `TrendsStep` в списке нет намеренно: обоим нужен только стор снапшотов
+ * из ядра, поэтому они объявлены провайдерами самого конвейера.
  */
 export const AI_ANALYTICS_PIPELINE_STEP_MODULES: Type<unknown>[] = [
     AiAnalyticsSnapshotsModule,
@@ -145,6 +148,7 @@ export const AI_ANALYTICS_PIPELINE_STEP_MODULES: Type<unknown>[] = [
         AiAnalyticsBackfillService,
         AiAnalyticsSnapshotScheduler,
         SanityStep,
+        TrendsStep,
         { provide: AI_ANALYTICS_PIPELINE_STEPS, useValue: [] },
         {
             provide: AI_ANALYTICS_SNAPSHOT_RUNNER,
@@ -155,6 +159,7 @@ export const AI_ANALYTICS_PIPELINE_STEP_MODULES: Type<unknown>[] = [
         SnapshotPipelineService,
         AiAnalyticsBackfillService,
         SanityStep,
+        TrendsStep,
         AI_ANALYTICS_SNAPSHOT_RUNNER,
     ],
 })

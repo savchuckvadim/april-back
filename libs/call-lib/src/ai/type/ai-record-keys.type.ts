@@ -13,6 +13,8 @@ export interface AiRecordKeys {
     transcriptionIds?: string[];
     /** entity_id — id CRM-сущности (сделка / лид). */
     entityIds?: number[];
+    /** report_item_id — id элемента смарт-процесса «AI-анализ звонков», куда записан разбор. */
+    reportItemIds?: string[];
 }
 
 export interface AiFindByKeysOptions {
@@ -27,4 +29,5 @@ export interface AiFindByKeysOptions {
 export type AiRecordKeyColumn =
     | 'activity_id'
     | 'transcription_id'
-    | 'entity_id';
+    | 'entity_id'
+    | 'report_item_id';

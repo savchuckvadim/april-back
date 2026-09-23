@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AI_ANALYTICS_CACHE_PREFIX } from '../constants/ai-analytics.const';
+import type { RequesterAccess } from '../domain/access/perimeter.util';
 import type { PortalModelPayload } from '../domain/assembler/portal-model.types';
 import { AiAnalyticsParamsLoader } from '../domain/loaders/params.loader';
 import type {
@@ -33,6 +34,11 @@ export const buildAboutKey = (
  * Хранилище не ответило — блок собирается по реестру с причиной (§5.4):
  * объяснение расчёта не должно гаснуть из-за недоступной `ais`.
  *
+ * Менеджеру в self_view (B13, решение владельца 22.09.2026) блок отдаётся
+ * целиком — тот же состав, что руководителю; периметр уже проверен
+ * контроллером (`resolveViewer`), здесь роль лишь помечает ответ
+ * признаком `selfView`, по которому фронт сворачивает детали параметров.
+ *
  * `@Injectable` без bitrix-состояния.
  */
 @Injectable()
@@ -44,7 +50,10 @@ export class AiAnalyticsAboutUseCase {
         private readonly snapshots: AiAnalyticsSnapshotStore,
     ) {}
 
-    async execute(dto: AiAboutRequestDto): Promise<AiAboutResponseDto> {
+    async execute(
+        dto: AiAboutRequestDto,
+        access: RequesterAccess,
+    ): Promise<AiAboutResponseDto> {
         const [params, model] = await Promise.all([
             this.params.load(dto.domain),
             this.loadModel(dto.domain),
@@ -59,6 +68,7 @@ export class AiAnalyticsAboutUseCase {
                 comparableFrom: params.comparableFrom,
                 model: model.source,
                 ...(model.reason === null ? {} : { modelReason: model.reason }),
+                selfView: access.role === 'manager',
             }),
         };
     }

@@ -32,9 +32,15 @@ import type {
     OverviewSources,
     PortalModelView,
 } from '../assembler/overview-model.types';
+import type { OverviewYoySnapshots } from '../loaders/overview-snapshots.loader';
 import { toRecommendations } from './levers.presenter';
 import { buildReadiness, type ReadinessOptions } from './readiness.util';
 import { toStyleProfile } from './style.presenter';
+import { yoyForRow } from './yoy-rows.presenter';
+
+// Блок «год назад» (Фаза 3, П3) целиком в `yoy-rows.presenter`: здесь
+// только его вызов на строке — файл обязан оставаться ≤ 300 строк.
+export { buildOverviewYoy, yoyForRow } from './yoy-rows.presenter';
 
 /** Всё, что нужно проходу Фазы 2 сверх самих строк. */
 export interface Phase2Context extends OverviewSnapshots {
@@ -42,6 +48,13 @@ export interface Phase2Context extends OverviewSnapshots {
     kpi: ReadonlyMap<number, ManagerKpiPeriod>;
     /** Уровни менеджеров: из них берётся дата начала стажа. */
     levels: ReadonlyMap<number, AiManagerLevelRecord>;
+    /**
+     * Месяцы менеджеров для сравнения «год назад» (Фаза 3, П3); нет —
+     * блок `yoy` строки остаётся `null`, витрина как в Фазе 2.
+     */
+    yoy?: OverviewYoySnapshots;
+    /** Граница сравнимой истории периода — оговорка пары периодов. */
+    comparableFrom?: string | null;
 }
 
 /** Продажи по эпизодам сделок из дневных прогнозов менеджеров. */
@@ -154,6 +167,7 @@ function applyRow(row: AiManagerRowDto, ctx: Phase2Context): AiManagerRowDto {
             n: row.analyzedCalls,
         }),
         style: toStyleProfile(ctx.styles?.get(row.managerId)),
+        yoy: yoyForRow(row, ctx),
         ...(since === null ? {} : { since }),
     };
 }

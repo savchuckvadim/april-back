@@ -60,11 +60,13 @@ const pipelineSummary = () => ({
 
 interface HarnessOptions {
     withBrief?: boolean;
+    withDossier?: boolean;
     withPipeline?: boolean;
 }
 
 function makeProcessor({
     withBrief = true,
+    withDossier = true,
     withPipeline = true,
 }: HarnessOptions = {}) {
     const push = {
@@ -79,19 +81,30 @@ function makeProcessor({
     };
     const overview = { execute: jest.fn().mockResolvedValue(undefined) };
     const briefUseCase = { execute: jest.fn().mockResolvedValue(brief()) };
+    const dossierUseCase = { execute: jest.fn().mockResolvedValue({}) };
     const pipeline = { run: jest.fn().mockResolvedValue(pipelineSummary()) };
     const processor = new AiAnalyticsQueueProcessor(
         push as never,
         audit as never,
         overview as never,
         withBrief ? (briefUseCase as never) : undefined,
+        withDossier ? (dossierUseCase as never) : undefined,
         withPipeline ? pipeline : undefined,
     );
     const warn = jest
         .spyOn(Logger.prototype, 'warn')
         .mockImplementation(() => undefined);
 
-    return { processor, push, audit, overview, briefUseCase, pipeline, warn };
+    return {
+        processor,
+        push,
+        audit,
+        overview,
+        briefUseCase,
+        dossierUseCase,
+        pipeline,
+        warn,
+    };
 }
 
 afterEach(() => {

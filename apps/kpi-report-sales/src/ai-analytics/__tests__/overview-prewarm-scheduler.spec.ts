@@ -1,9 +1,10 @@
 import { DEFAULT_WORK_CALENDAR } from '@lib/sales-ai-analytics';
 import { buildOverviewKey } from '../cache/cache-key.util';
 import {
+    AI_ANALYTICS_LOCAL_HOURS,
     AI_ANALYTICS_PREWARM_CRON,
-    AI_ANALYTICS_PREWARM_JOB_OPTIONS,
-} from '../constants/ai-overview.const';
+} from '../constants/ai-cron.const';
+import { AI_ANALYTICS_PREWARM_JOB_OPTIONS } from '../constants/ai-overview.const';
 import { AiAnalyticsOverviewPrewarmScheduler } from '../cron/ai-analytics-overview-prewarm.scheduler';
 import { AiAnalyticsPortalsLoader } from '../domain/loaders/portals.loader';
 import { OverviewLookupUseCase } from '../domain/use-cases/overview-lookup.use-case';
@@ -66,12 +67,18 @@ function makeScheduler(portals: Record<string, PortalFlags>) {
 
 /** 07.09.2026 02:30 UTC = 05:30 МСК. */
 const NOW = new Date('2026-09-07T02:30:00Z');
+/** 06.09.2026 19:30 UTC = 07.09 05:30 во Владивостоке (UTC+10). */
+const NOW_VLADIVOSTOK = new Date('2026-09-06T19:30:00Z');
 const expectedKey = (domain: string) =>
     buildOverviewKey(domain, '2026-08-10', '2026-09-06', '10_20', false);
 
 describe('AiAnalyticsOverviewPrewarmScheduler', () => {
-    it('расписание: ежедневно 05:30 МСК (UTC 02:30); приоритет ниже пользовательских', () => {
-        expect(AI_ANALYTICS_PREWARM_CRON).toBe('30 2 * * *');
+    it('тик ежечасный на :30, слот — 05:30 локально; приоритет ниже пользовательских', () => {
+        expect(AI_ANALYTICS_PREWARM_CRON).toBe('30 * * * *');
+        expect(AI_ANALYTICS_LOCAL_HOURS.PREWARM).toEqual({
+            hour: 5,
+            minute: 30,
+        });
         expect(AI_ANALYTICS_PREWARM_JOB_OPTIONS).toMatchObject({
             priority: 10,
             attempts: 1,
@@ -104,18 +111,24 @@ describe('AiAnalyticsOverviewPrewarmScheduler', () => {
         );
     });
 
-    it('день считается в TZ портала: во Владивостоке 05:30 МСК — ещё 07.09, ключ тот же', async () => {
-        const { scheduler } = makeScheduler({
+    it('два портала в разных поясах: каждый получает джобу в свои 05:30, т.е. в разные часы UTC', async () => {
+        const { scheduler, dispatcher } = makeScheduler({
+            'msk.bitrix24.ru': { enabled: true },
             'vl.bitrix24.ru': { enabled: true, timeZone: 'Asia/Vladivostok' },
         });
-        // 07.09 02:30Z во Владивостоке (UTC+10) — 07.09 12:30 → вчера = 06.09.
-        expect(await scheduler.dispatchAll(NOW)).toEqual([
+        // 19:30Z: Владивосток 05:30 (вчера там — 06.09), Москва 22:30 предыдущего дня.
+        expect(await scheduler.dispatchAll(NOW_VLADIVOSTOK)).toEqual([
             expectedKey('vl.bitrix24.ru'),
         ]);
+        // 02:30Z: Москва 05:30, Владивосток 12:30 — слот прошёл.
+        expect(await scheduler.dispatchAll(NOW)).toEqual([
+            expectedKey('msk.bitrix24.ru'),
+        ]);
+        expect(dispatcher.dispatch).toHaveBeenCalledTimes(2);
     });
 
-    it('повторный тик того же дня даёт тот же jobId (дедуп)', async () => {
-        const { scheduler } = makeScheduler({
+    it('повторный тик того же часа даёт тот же jobId (дедуп); тик в другой час — 0 джоб', async () => {
+        const { scheduler, dispatcher } = makeScheduler({
             'on.bitrix24.ru': { enabled: true },
         });
         const first = await scheduler.dispatchAll(NOW);
@@ -123,6 +136,10 @@ describe('AiAnalyticsOverviewPrewarmScheduler', () => {
             new Date(NOW.getTime() + 60_000),
         );
         expect(second).toEqual(first);
+        expect(
+            await scheduler.dispatchAll(new Date(NOW.getTime() + 3_600_000)),
+        ).toEqual([]);
+        expect(dispatcher.dispatch).toHaveBeenCalledTimes(2);
     });
 
     it('ошибка настроек одного портала и ошибка ростера не роняют тик', async () => {

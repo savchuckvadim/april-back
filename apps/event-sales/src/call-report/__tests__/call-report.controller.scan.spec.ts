@@ -50,4 +50,22 @@ describe('CallReportController.scan — порог длительности', ()
             expect.objectContaining({ minDurationSec: 120 }),
         );
     });
+
+    it('ignoreDurationGate (смоук B12) пробрасывается в опции скана как есть', async () => {
+        const { controller, scanUseCase } = makeController();
+
+        await controller.scan({
+            domain: DOMAIN,
+            minDurationSec: 60,
+            ignoreDurationGate: true,
+        } as never);
+
+        expect(scanUseCase.execute).toHaveBeenCalledWith(
+            DOMAIN,
+            expect.objectContaining({
+                minDurationSec: 60,
+                ignoreDurationGate: true,
+            }),
+        );
+    });
 });

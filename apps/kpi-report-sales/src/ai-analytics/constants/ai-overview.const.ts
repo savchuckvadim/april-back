@@ -233,9 +233,6 @@ export type AiAnalyticsByTypeIndicatorKind =
 /** Окно доли «шаг с датой» для сигнала next_step_drop: две недели (дней). */
 export const AI_ANALYTICS_ATTENTION_WINDOW_DAYS = 14;
 
-/** Крон прогрева обзора в UTC: ежедневно 05:30 МСК (после ночных KPI). */
-export const AI_ANALYTICS_PREWARM_CRON = '30 2 * * *' as const;
-
 /**
  * Ais-запись настроек витрины (временное решение Фазы 1b до ключей
  * ai_analytics_levels/targets/absences в схеме app-settings, план 5.1):

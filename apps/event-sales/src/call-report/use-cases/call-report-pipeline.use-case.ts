@@ -56,6 +56,13 @@ export interface CallReportJobPayload {
      * джобах → false.
      */
     createSmartItem?: boolean;
+    /**
+     * Смоук (B12, решение 22.09.2026): не останавливать звонок порогом
+     * длительности своего типа после классификации — звонок короче порога
+     * идёт полным путём. Гейт нерелевантности при этом остаётся. Ставит
+     * только ручной скан; отсутствует в старых джобах и у крона → false.
+     */
+    ignoreDurationGate?: boolean;
 }
 
 /**
@@ -292,7 +299,8 @@ export class CallReportPipelineUseCase {
         // ГЕЙТЫ ПОСЛЕ КЛАССИФИКАЦИИ (call-duration-gate.util): нерелевантный
         // разговор и звонок короче порога СВОЕГО типа (А.1; скан режет лишь
         // по минимуму карты) останавливают разбор штатно — дорогие шаги не
-        // тратятся, классификация уже в ais.
+        // тратятся, классификация уже в ais. Смоук ручного скана (B12)
+        // выключает только порог типа — флагом задачи.
         const stop = resolveAnalysisStop({
             classification,
             durationSec: callDurationSecOf(
@@ -300,6 +308,7 @@ export class CallReportPipelineUseCase {
                 row.durationSec,
             ),
             settings,
+            ignoreDurationGate: payload.ignoreDurationGate === true,
         });
         if (stop) {
             this.logger.log(

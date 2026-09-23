@@ -214,6 +214,25 @@ describe('overview ↔ /call-report/analytics на одной фикстуре (
             }
         }
     });
+
+    it('тренды строки — nullable: без снапшота ai-analytics-trends поля нет либо null, при n < n_min_none — никогда не блок', async () => {
+        const { managers } = await legacy.managers();
+        for (const stat of managers) {
+            const row = rowOf(overview, stat.managerId);
+            expect(row?.trends ?? null).toBeNull();
+            if (stat.analyzed < N_MIN_NONE) {
+                expect(row?.trends ?? null).toBeNull();
+            }
+        }
+    });
+
+    it('«год назад» — nullable: без снапшотов manager-month M−12 ни у строк, ни у обзора чисел нет (приёмка П3)', async () => {
+        const { managers } = await legacy.managers();
+        expect(overview.yoy ?? null).toBeNull();
+        for (const stat of managers) {
+            expect(rowOf(overview, stat.managerId)?.yoy ?? null).toBeNull();
+        }
+    });
 });
 
 describe('overview ↔ /kpi-report/get на одном PBX-моке (M18)', () => {

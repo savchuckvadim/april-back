@@ -264,6 +264,38 @@ describe('CallReportProcessor (стадии)', () => {
         expect(deepAnalysis.run).not.toHaveBeenCalled();
     });
 
+    it('ignoreDurationGate (смоук B12) едет из TRANSCRIBE в джоб ANALYZE и дальше в конвейер', async () => {
+        // Флаг применяет конвейер (call-duration-gate.util), процессор лишь
+        // обязан донести его через обе стадии без потерь.
+        const { processor, pipeline, dispatcher, focusAnalysis } = makeDeps();
+        await processor.handleTranscribe(
+            makeJob({ ...PAYLOAD, ignoreDurationGate: true }),
+        );
+        expect(dispatcher.dispatch).toHaveBeenCalledWith(
+            'call-report',
+            'call-report-analyze',
+            expect.objectContaining({
+                ignoreDurationGate: true,
+                transcriptionId: '42',
+            }),
+            'test.bitrix24.ru:101:analyze',
+            expect.anything(),
+        );
+
+        await processor.handleAnalyze(
+            makeJob({
+                ...PAYLOAD,
+                transcriptionId: '42',
+                ignoreDurationGate: true,
+            }),
+        );
+        expect(pipeline.executeAnalyze).toHaveBeenCalledWith(
+            expect.objectContaining({ ignoreDurationGate: true }),
+        );
+        // Конвейер не поставил shortCall — глубокий разбор идёт как обычно.
+        expect(focusAnalysis.run).toHaveBeenCalledTimes(1);
+    });
+
     it('deepAnalysisEnabled=false в настройках портала пропускает разбор', async () => {
         const {
             processor,

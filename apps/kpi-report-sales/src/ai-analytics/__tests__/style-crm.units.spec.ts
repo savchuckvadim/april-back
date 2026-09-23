@@ -271,11 +271,25 @@ describe('daysRange', () => {
 });
 
 describe('medianDurationByType — медиана разговоров по типам телефонии (§7.2 п. 1)', () => {
-    it('порог дисперсии — дефолт реестра style_dispersion_min_days', () => {
-        expect(STYLE_CRM_THRESHOLDS.dispersionMinDays).toBe(
-            AI_ANALYTICS_PARAM_DEFAULTS.style_dispersion_min_days,
-        );
-        expect(STYLE_CRM_THRESHOLDS.dispersionMinDays).toBe(15);
+    it('пороги счётчиков — дефолты реестра style_*, литералов нет (П11, 22.09.2026)', () => {
+        expect(STYLE_CRM_THRESHOLDS).toEqual({
+            conversationMinSec:
+                AI_ANALYTICS_PARAM_DEFAULTS.style_conversation_min_sec,
+            tempoMinSec: AI_ANALYTICS_PARAM_DEFAULTS.style_tempo_min_sec,
+            giveUpWorkdays: AI_ANALYTICS_PARAM_DEFAULTS.style_give_up_workdays,
+            promiseWindowDays:
+                AI_ANALYTICS_PARAM_DEFAULTS.style_promise_window_days,
+            dispersionMinDays:
+                AI_ANALYTICS_PARAM_DEFAULTS.style_dispersion_min_days,
+        });
+        // Численные значения документа §2.1 при переводе не изменились.
+        expect(STYLE_CRM_THRESHOLDS).toEqual({
+            conversationMinSec: 30,
+            tempoMinSec: 60,
+            giveUpWorkdays: 3,
+            promiseWindowDays: 2,
+            dispersionMinDays: 15,
+        });
     });
 
     it('имена типов — ровно ключи BX_VOX_CALL_TYPES библиотеки', () => {

@@ -37,6 +37,7 @@ import type { DatedLiteRow } from '../loaders/lite-row.mapper';
 import { withSignals } from './attention.presenter';
 import { buildManagerRow } from './manager-row.presenter';
 import {
+    buildOverviewYoy,
     applyPhase2,
     buildOverviewReadiness,
     type Phase2Context,
@@ -207,6 +208,8 @@ export function buildOverviewDto(
         kpi: kpiByManager,
         levels: sources.levels,
         ...(sources.snapshots ?? {}),
+        ...(sources.yoy === undefined ? {} : { yoy: sources.yoy }),
+        ...(comparableFrom ? { comparableFrom } : {}),
     };
     const managers = withSignals(
         applyPhase2(buildRows(teamMediansOf(buildRows(new Map()))), phase2),
@@ -244,6 +247,8 @@ export function buildOverviewDto(
         totals: toTotals(matrix.totals, managers),
         departmentTotals,
         objections,
+        // Блок «год назад» по отделу (П3): null — месяцев M−12 нет либо период не месяц.
+        yoy: buildOverviewYoy(managers, phase2),
         meta: {
             totalCalls: rows.length,
             analyzedCalls: matrix.analyzed,

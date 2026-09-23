@@ -7,13 +7,17 @@ import * as aboutDto from '../dto/ai-about.dto';
 import * as briefDto from '../dto/ai-brief.dto';
 import * as dailyPlanPartsDto from '../dto/ai-daily-plan-parts.dto';
 import * as dailyPlanDto from '../dto/ai-daily-plan.dto';
+import * as dossierPartsDto from '../dto/ai-dossier-parts.dto';
+import * as dossierDto from '../dto/ai-dossier.dto';
 import * as feedbackListDto from '../dto/ai-feedback-list.dto';
 import * as managerRowDto from '../dto/ai-manager-row.dto';
 import * as managerSignalsDto from '../dto/ai-manager-signals.dto';
 import * as objectionsDto from '../dto/ai-objections.dto';
+import * as planFactDto from '../dto/ai-plan-fact.dto';
 import * as pulseDto from '../dto/ai-pulse.dto';
 import * as pushDto from '../dto/ai-push.dto';
 import * as ropMarkRequestDto from '../dto/ai-rop-mark-request.dto';
+import * as reviewDto from '../dto/ai-review.dto';
 import * as ropMarkDto from '../dto/ai-rop-mark.dto';
 import * as styleCardDto from '../dto/ai-style-card.dto';
 
@@ -60,10 +64,16 @@ const MODULES: ReadonlyArray<readonly [string, DtoModule]> = [
     ['ai-daily-plan.dto', dailyPlanDto],
     ['ai-daily-plan-parts.dto', dailyPlanPartsDto],
     ['ai-style-card.dto', styleCardDto],
+    ['ai-review', reviewDto],
     ['ai-rop-mark.dto', ropMarkDto],
     ['ai-rop-mark-request.dto', ropMarkRequestDto],
     ['ai-about.dto', aboutDto],
     ['ai-about-model.dto', aboutModelDto],
+    // Фаза 3, поток П2 «реконсиляция план-факт».
+    ['ai-plan-fact.dto', planFactDto],
+    // Фаза 3, поток П4 «досье менеджера».
+    ['ai-dossier.dto', dossierDto],
+    ['ai-dossier-parts.dto', dossierPartsDto],
 ];
 
 const SCALAR_CTORS: readonly unknown[] = [String, Number, Boolean];

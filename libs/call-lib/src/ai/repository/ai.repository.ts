@@ -32,6 +32,12 @@ export abstract class AiRepository {
      * снапшотов и сцепки звонок-сделка. Каждый набор — порциями по 500;
      * latestOnly — на каждый ключ запись с максимальным id.
      */
+    /**
+     * Физическое удаление записей по id — ретенция снапшотов
+     * (админ-ручка `retention/run`). Возвращает число удалённых строк;
+     * несуществующие id просто не попадают в счёт.
+     */
+    abstract deleteByIds(ids: readonly string[]): Promise<number>;
     abstract findByDomainTypeKeys(
         domain: string,
         type: string,

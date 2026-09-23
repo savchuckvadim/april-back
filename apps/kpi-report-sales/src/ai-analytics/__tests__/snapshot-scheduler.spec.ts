@@ -1,8 +1,11 @@
 import { Logger } from '@nestjs/common';
 import { DEFAULT_WORK_CALENDAR } from '@lib/sales-ai-analytics';
+import {
+    AI_ANALYTICS_LOCAL_HOURS,
+    AI_PIPELINE_CRON,
+} from '../constants/ai-cron.const';
 import { AI_ANALYTICS_OVERVIEW_JOB_OPTIONS } from '../constants/ai-overview.const';
 import {
-    AI_PIPELINE_CRON,
     AI_PIPELINE_JOB_OPTIONS,
     AI_PIPELINE_METRICS,
     AI_PIPELINE_RETRY_DELAY_MS,
@@ -11,6 +14,7 @@ import {
     type AiPipelineRhythm,
 } from '../constants/ai-snapshot.const';
 import {
+    AI_PIPELINE_TICK_SLOTS,
     AiAnalyticsSnapshotScheduler,
     freezeTickSteps,
 } from '../cron/ai-analytics-snapshot.scheduler';
@@ -118,13 +122,22 @@ const THIRD = new Date('2026-10-03T01:00:00Z');
 const FIRST = new Date('2026-09-01T01:00:00Z');
 
 describe('AiAnalyticsSnapshotScheduler — ритмы ночного конвейера', () => {
-    it('расписания в UTC: 03:45 / пн 03:15 / 3-е 04:00 / 1-е 04:00 МСК', () => {
+    it('тики ежечасные на минуте слота; слоты — локальные 03:45 / пн 03:15 / 3-е 04:00 / 1-е 04:00', () => {
         expect(AI_PIPELINE_CRON).toEqual({
-            NIGHTLY: '45 0 * * *',
-            WEEKLY: '15 0 * * 1',
-            MONTHLY: '0 1 3 * *',
-            PLANS: '0 1 1 * *',
+            NIGHTLY: '45 * * * *',
+            WEEKLY: '15 * * * *',
+            MONTHLY: '0 * * * *',
+            PLANS: '0 * * * *',
         });
+        expect(AI_PIPELINE_TICK_SLOTS).toEqual({
+            nightly: { hour: 3, minute: 45 },
+            weekly: { hour: 3, minute: 15, weekday: 1 },
+            monthly: { hour: 4, minute: 0, dayOfMonth: 3 },
+            plans: { hour: 4, minute: 0, dayOfMonth: 1 },
+        });
+        expect(AI_PIPELINE_TICK_SLOTS.nightly).toBe(
+            AI_ANALYTICS_LOCAL_HOURS.NIGHTLY,
+        );
     });
 
     it('три ритма ставят по одной джобе на портал с ai_analytics_enabled', async () => {
@@ -144,6 +157,34 @@ describe('AiAnalyticsSnapshotScheduler — ритмы ночного конве�
         for (const run of [nightly, weekly, monthly]) {
             expect(run.dispatcher.dispatch).toHaveBeenCalledTimes(1);
         }
+    });
+
+    it('два портала в разных поясах: ночной пересчёт уходит в свои 03:45, т.е. в разные часы UTC', async () => {
+        const { scheduler, dispatcher } = makeScheduler({
+            'msk.bitrix24.ru': { enabled: true },
+            'nsk.bitrix24.ru': { enabled: true, timeZone: 'Asia/Novosibirsk' },
+        });
+        // 07.09 20:45Z: в Новосибирске (UTC+7) уже 08.09 03:45, в Москве 23:45.
+        expect(
+            await scheduler.dispatchAll(
+                'nightly',
+                new Date('2026-09-07T20:45:00Z'),
+            ),
+        ).toEqual(['ai-analytics:snapshot:nightly:nsk.bitrix24.ru:2026-09-08']);
+        // 08.09 00:45Z: в Москве 03:45, в Новосибирске 07:45 — слот прошёл.
+        expect(await scheduler.dispatchAll('nightly', NIGHT)).toEqual([
+            'ai-analytics:snapshot:nightly:msk.bitrix24.ru:2026-09-08',
+        ]);
+        // Тик в час, когда ни у кого не 03:45, — джоб нет.
+        expect(
+            await scheduler.dispatchAll(
+                'nightly',
+                new Date('2026-09-08T03:45:00Z'),
+            ),
+        ).toEqual([]);
+        expect(dispatcher.dispatch).toHaveBeenCalledTimes(2);
+        expect(jobData(dispatcher, 0).day).toBe('2026-09-08');
+        expect(jobData(dispatcher, 1).day).toBe('2026-09-08');
     });
 
     it('ключи периода: недельный ритм считает закончившуюся неделю, месячный — закрытый месяц', async () => {
@@ -169,17 +210,25 @@ describe('AiAnalyticsSnapshotScheduler — ритмы ночного конве�
         );
     });
 
-    it('повторный тик за ту же дату даёт тот же jobId (Bull дедуплицирует)', async () => {
+    it('повторный тик того же часа даёт тот же jobId (Bull дедуплицирует); тик в другой час — 0 новых джоб', async () => {
         const { scheduler, dispatcher } = makeScheduler(ENABLED);
         const first = await scheduler.dispatchAll('nightly', NIGHT);
         const again = await scheduler.dispatchAll(
             'nightly',
-            new Date('2026-09-08T03:00:00Z'),
+            new Date(NIGHT.getTime() + 60_000),
         );
         expect(again).toEqual(first);
         expect(dispatcher.dispatch.mock.calls[0][3]).toBe(
             dispatcher.dispatch.mock.calls[1][3],
         );
+        // 06:00 МСК той же даты — слот 03:45 уже прошёл.
+        expect(
+            await scheduler.dispatchAll(
+                'nightly',
+                new Date('2026-09-08T03:00:00Z'),
+            ),
+        ).toEqual([]);
+        expect(dispatcher.dispatch).toHaveBeenCalledTimes(2);
     });
 
     it('снимок планов 1-го числа: ритм monthly, свой ключ и только шаг планов', async () => {
@@ -199,6 +248,8 @@ describe('AiAnalyticsSnapshotScheduler — ритмы ночного конве�
         expect(
             buildPipelineJobId('monthly', 'a.bitrix24.ru', '2026-09'),
         ).not.toBe(dispatcher.dispatch.mock.calls[0][3]);
+        // тот же час 3-го числа — это тик заморозки, а не планов
+        expect(await scheduler.dispatchAll('plans', THIRD)).toEqual([]);
     });
 
     it('тик заморозки 3-го числа: белый список всех месячных шагов без снимка планов', async () => {
@@ -297,6 +348,26 @@ describe('AiAnalyticsSnapshotScheduler — ритмы ночного конве�
             { telegram: true, domain: 'broken.bitrix24.ru' },
         );
         error.mockRestore();
+    });
+
+    it('в логах тика — по одной строке на портал с локальным временем и поясом', async () => {
+        const log = jest
+            .spyOn(Logger.prototype, 'log')
+            .mockImplementation(() => undefined);
+        const { scheduler } = makeScheduler({
+            'msk.bitrix24.ru': { enabled: true },
+            'nsk.bitrix24.ru': { enabled: true, timeZone: 'Asia/Novosibirsk' },
+        });
+
+        await scheduler.dispatchAll('nightly', NIGHT);
+
+        const perPortal = log.mock.calls
+            .map(([message]) => String(message))
+            .filter(message => message.includes('локально'));
+        expect(perPortal).toEqual([
+            'Конвейер (nightly) msk.bitrix24.ru: локально 03:45 Europe/Moscow → ai-analytics:snapshot:nightly:msk.bitrix24.ru:2026-09-08',
+        ]);
+        log.mockRestore();
     });
 
     it('ночной тик запускает догон истории; недельный и месячный — нет', async () => {

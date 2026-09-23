@@ -196,6 +196,31 @@ export class AiPrismaRepository implements AiRepository {
      * (один IN-список на запрос), без окна created_at. latestOnly оставляет
      * на каждый ключ запись с максимальным id. Результат — без дублей, по id.
      */
+    /**
+     * Удаление записей по id порциями (тот же размер порции, что у выборок
+     * по ключам): один `deleteMany` на порцию, нечисловые id отбрасываются
+     * заранее — BigInt() на них бросает.
+     */
+    async deleteByIds(ids: readonly string[]): Promise<number> {
+        const numeric = [...new Set(ids)].filter(id => /^\d+$/.test(id));
+        if (!numeric.length) return 0;
+        let deleted = 0;
+        try {
+            for (const chunk of chunkArray(
+                numeric,
+                AI_RECORD_KEYS_CHUNK_SIZE,
+            )) {
+                const result = await this.prisma.ai.deleteMany({
+                    where: { id: { in: chunk.map(id => BigInt(id)) } },
+                });
+                deleted += result.count;
+            }
+        } catch (error) {
+            console.error('Error deleting AI records:', error);
+        }
+        return deleted;
+    }
+
     async findByDomainTypeKeys(
         domain: string,
         type: string,
@@ -260,6 +285,8 @@ export class AiPrismaRepository implements AiRepository {
                 };
             case 'entity_id':
                 return { entity_id: { in: values.map(Number) } };
+            case 'report_item_id':
+                return { report_item_id: { in: values.map(String) } };
         }
     }
 }

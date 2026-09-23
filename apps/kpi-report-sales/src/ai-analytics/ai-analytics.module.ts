@@ -6,8 +6,12 @@ import { AiModule } from '@lib/call-lib';
 import { PortalSessionModule } from '@lib/auth';
 import { BxDepartmentModule } from '@lib/bx-department';
 import { PbxAicallSmartModule } from '@lib/portal-lib/pbx/pbx-aicall-smart';
-import { SalesAiAnalyticsAuditModule } from '@lib/sales-ai-analytics';
+import {
+    SalesAiAnalyticsAuditModule,
+    SalesAiAnalyticsRetentionCronModule,
+} from '@lib/sales-ai-analytics';
 import { AiAnalyticsAboutModule } from './about/ai-analytics-about.module';
+import { AiAnalyticsReviewModule } from './review/ai-analytics-review.module';
 import { AiAnalyticsOverviewController } from './ai-analytics-overview.controller';
 import { AiAnalyticsController } from './ai-analytics.controller';
 import { AiAnalyticsBriefModule } from './brief/ai-analytics-brief.module';
@@ -34,10 +38,11 @@ import { AiAnalyticsPushUseCase } from './domain/use-cases/push.use-case';
 import { SettingsSaveUseCase } from './domain/use-cases/settings-save.use-case';
 import { SettingsUseCase } from './domain/use-cases/settings.use-case';
 import { AiAnalyticsPipelineModule } from './pipeline/ai-analytics-pipeline.module';
+import { AiAnalyticsDossierModule } from './dossier/ai-analytics-dossier.module';
+import { AiAnalyticsPlanFactModule } from './plan-fact/ai-analytics-plan-fact.module';
 import { AiAnalyticsPlanModule } from './plan/ai-analytics-plan.module';
 import { AiAnalyticsQueueProcessor } from './queue/ai-analytics.processor';
 import { AiAnalyticsRopMarkModule } from './rop-mark/ai-analytics-rop-mark.module';
-import { AiAnalyticsFeedbackStore } from './store/ai-analytics-feedback.store';
 import { AiAnalyticsPushLogStore } from './store/ai-analytics-push-log.store';
 import { AiAnalyticsSettingsAuditStore } from './store/ai-analytics-settings-audit.store';
 import { AiAnalyticsStyleModule } from './style/ai-analytics-style.module';
@@ -98,19 +103,24 @@ import { AiAnalyticsStyleModule } from './style/ai-analytics-style.module';
         PbxAicallSmartModule,
         PortalSessionModule,
         SalesAiAnalyticsAuditModule,
+        // Крон ретенции снапшотов (Фаза 3, П5): планировщик поднят здесь, а
+        // не в админке; по умолчанию только считает, без удаления.
+        SalesAiAnalyticsRetentionCronModule,
         AiAnalyticsCoreModule,
         AiAnalyticsCorePbxModule,
         AiAnalyticsPipelineModule.registerPhase2(),
         AiAnalyticsPlanModule,
+        AiAnalyticsPlanFactModule,
         AiAnalyticsBriefModule,
+        AiAnalyticsDossierModule,
         AiAnalyticsStyleModule,
         AiAnalyticsRopMarkModule,
         AiAnalyticsAboutModule,
+        AiAnalyticsReviewModule,
     ],
     controllers: [AiAnalyticsController, AiAnalyticsOverviewController],
     providers: [
         ManagerOrgLoader,
-        AiAnalyticsFeedbackStore,
         AiAnalyticsSettingsAuditStore,
         AiAnalyticsPushLogStore,
         SettingsUseCase,
@@ -142,7 +152,6 @@ import { AiAnalyticsStyleModule } from './style/ai-analytics-style.module';
         PulseUseCase,
         AgendaUseCase,
         MorningDigestUseCase,
-        AiAnalyticsFeedbackStore,
         AiAnalyticsPushUseCase,
         OverviewUseCase,
         OverviewLookupUseCase,

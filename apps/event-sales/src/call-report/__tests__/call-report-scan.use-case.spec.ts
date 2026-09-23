@@ -204,6 +204,28 @@ describe('CallReportScanUseCase', () => {
         );
     });
 
+    it('ignoreDurationGate (смоук B12) едет в payload джоба; без опции — не ставится', async () => {
+        const smoke = makeDeps({ rows: [row(101)] });
+        await smoke.useCase.execute(DOMAIN, { ignoreDurationGate: true });
+        expect(smoke.dispatcher.dispatch).toHaveBeenCalledWith(
+            'call-report',
+            'call-report-transcribe',
+            expect.objectContaining({ ignoreDurationGate: true }),
+            expect.any(String),
+            expect.anything(),
+        );
+
+        const cron = makeDeps({ rows: [row(101)] });
+        await cron.useCase.execute(DOMAIN, { createSmartItem: true });
+        expect(cron.dispatcher.dispatch).toHaveBeenCalledWith(
+            'call-report',
+            'call-report-transcribe',
+            expect.not.objectContaining({ ignoreDurationGate: true }),
+            expect.any(String),
+            expect.anything(),
+        );
+    });
+
     it('новый звонок сделки ставится в очередь с dedup-ключом как jobId', async () => {
         const { useCase, dispatcher } = makeDeps({ rows: [row(101)] });
         const result = await useCase.execute(DOMAIN);

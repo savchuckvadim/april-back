@@ -24,8 +24,10 @@ export const AI_ABOUT_KEY_SECTION = 'about' as const;
 export const AI_ABOUT_ENDPOINTS = [
     'overview',
     'plan/daily',
+    'plan-fact',
     'brief',
     'manager/style',
+    'dossier',
 ] as const;
 export type AiAboutEndpoint = (typeof AI_ABOUT_ENDPOINTS)[number];
 
@@ -232,6 +234,52 @@ export const AI_ABOUT_ENDPOINT_TEXTS: Readonly<
         ],
         params: [...SHARED_PARAMS, 'brief_quota_per_day', 'llm_price_per_1k'],
     },
+    'plan-fact': {
+        endpoint: 'plan-fact',
+        title: 'Реконсиляция план-факт',
+        purpose:
+            'Цели руководителя за месяц против факта на дату: темп по ' +
+            'рабочим дням, прогноз закрытия, разрыв и «сколько надо в день».',
+        sources: [
+            'снимок целей руководителя за месяц (ais, тип plan)',
+            'месяцы менеджеров (ais, тип manager-month): KPI-вектор и финансовый хвост',
+            'рабочий календарь портала',
+        ],
+        howToRead: [
+            'темп 1 — идём ровно по плану; полоса вокруг единицы задана delta_prac_pct',
+            'прогноз срезан потолком дня plan_day_ceiling — догонять месяц рывком нельзя',
+            'плана нет — строка no-plan без единого числа, причина в reasons',
+        ],
+        notDoing: [
+            'не сверяет денежный план: источник плана — только снимок целей руководителя',
+            'не назначает цели и не меняет их задним числом',
+        ],
+        params: [...SHARED_PARAMS, 'plan_day_ceiling', 'delta_prac_pct'],
+    },
+    dossier: {
+        endpoint: 'dossier',
+        title: 'Досье менеджера',
+        purpose:
+            'Всё, что витрина знает о менеджере за окно: паспорт, ряды ' +
+            'недель и месяцев, тренды, план-факт, год назад, стиль, ' +
+            'возражения, обратная связь, метки руководителя и готовность.',
+        sources: [
+            'снапшоты менеджера за окно: недели и месяцы',
+            'снапшот стиля и настройка отказа сотрудника от профиля',
+            'модель портала последнего месяца окна (готовность)',
+            'записи обратной связи и метки руководителя',
+        ],
+        howToRead: [
+            'раздел пуст — он не собрался; код и подпись причины лежат в reasons',
+            'разделы соседних ручек приходят из них же, досье их только собирает',
+            'окно с текущим месяцем живёт в кэше 10 минут, окно закрытых месяцев — 30 дней',
+        ],
+        notDoing: [
+            'не считает ничего сам: только читает снапшоты и записи, в Битрикс не ходит',
+            'не сравнивает людей между собой и не ставит рейтинг',
+        ],
+        params: [...SHARED_PARAMS],
+    },
     'manager/style': {
         endpoint: 'manager/style',
         title: 'Карточка стиля менеджера',
@@ -262,6 +310,10 @@ export const AI_ABOUT_ENDPOINT_TEXTS: Readonly<
             'style_z_raw',
             'style_interval_z',
             'style_dispersion_min_days',
+            'style_conversation_min_sec',
+            'style_tempo_min_sec',
+            'style_give_up_workdays',
+            'style_promise_window_days',
         ],
     },
 };

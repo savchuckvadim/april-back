@@ -25,6 +25,7 @@ import { RELIABILITY_DEFAULTS } from '../model/reliability';
 import { SECTION_SHRINK_DEFAULTS } from '../model/section-shrink';
 import { SHRINK_DEFAULTS } from '../model/shrink';
 import { STAGE_THETA_DEFAULTS } from '../model/stage-theta.types';
+import { AGREEMENT_DEFAULTS } from '../model/agreement/agreement.types';
 import { AI_ANALYTICS_THRESHOLDS } from '../model/thresholds.const';
 import { TIMESTAMP_LEAK_MAX } from '../model/timestamp-audit';
 import { registryEnumDefault } from '../params/registry.access';
@@ -84,6 +85,10 @@ const OBJECTS: Readonly<
         values: STAGE_THETA_DEFAULTS,
         file: 'stage-theta.types.ts',
     },
+    AGREEMENT_DEFAULTS: {
+        values: AGREEMENT_DEFAULTS,
+        file: 'agreement/agreement.types.ts',
+    },
     AI_READINESS_GATE_DEFAULTS: {
         // `ReadinessGates` — интерфейс без индексной сигнатуры, поэтому
         // в таблицу кладётся его копия (анонимный тип литерала).
@@ -110,6 +115,10 @@ const OBJECTS: Readonly<
  * `as const`, чтобы соответствие «поле → код» искалось grep'ом.
  */
 const REGISTRY_FIELDS = [
+    ['AGREEMENT_DEFAULTS.retestBudgetCalls', 'retest_budget_calls'],
+    ['AGREEMENT_DEFAULTS.sigmaLlmConfigured', 'sigma_llm_default'],
+    ['AGREEMENT_DEFAULTS.tostBound', 'delta_prac_score'],
+    ['AGREEMENT_DEFAULTS.z', 'z_compare'],
     ['EXPOSURE_DEFAULTS.absenceProxyMinRun', 'absence_proxy_min_run'],
     ['EXPOSURE_DEFAULTS.minWorkdaysMonth', 'min_workdays_month'],
     ['EXPOSURE_DEFAULTS.fte', 'fte_share_default'],
@@ -183,6 +192,8 @@ const REGISTRY_FIELDS = [
  * дескриптора): проверяются отдельно — равенства с `defaultValue` тут нет.
  */
 const DERIVED_FIELDS: Readonly<Record<string, readonly string[]>> = {
+    // minN дескриптора sigma_llm_default — ценз «σ_llm измерена».
+    AGREEMENT_DEFAULTS: ['minPairs'],
     LAG_CDF_DEFAULTS: ['minSales'],
     EDGE_GAP_PRACTICAL: ['prob'],
     FUNNEL_GAP_DEFAULTS: ['practicalDelta'],
@@ -323,6 +334,13 @@ describe('Поля, выведенные из реестра формулой', 
 
         expect(descriptor?.minN).toBeGreaterThan(0);
         expect(LAG_CDF_DEFAULTS.minSales).toBe(descriptor?.minN);
+    });
+
+    it('AGREEMENT_DEFAULTS.minPairs — гейт minN дескриптора sigma_llm_default', () => {
+        const descriptor = findParam('sigma_llm_default');
+
+        expect(descriptor?.minN).toBeGreaterThan(0);
+        expect(AGREEMENT_DEFAULTS.minPairs).toBe(descriptor?.minN);
     });
 
     it('EDGE_GAP_PRACTICAL.prob — delta_prac_pct реестра в доле', () => {

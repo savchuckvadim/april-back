@@ -49,6 +49,8 @@ export interface AiAboutBuildInput {
     readonly model: AiAboutModelSource | null;
     /** Почему модели нет; без него — «ещё не рассчитана». */
     readonly modelReason?: string;
+    /** Запрос менеджера в self_view (B13); не задан — руководитель. */
+    readonly selfView?: boolean;
 }
 
 const KLEINMAN_SOURCE = 'kleinman';
@@ -208,5 +210,6 @@ export function buildAiAnalyticsAbout(input: AiAboutBuildInput): AiAboutDto {
             input.model === null
                 ? (input.modelReason ?? AI_ABOUT_MODEL_REASONS.missing)
                 : null,
+        selfView: input.selfView === true,
     };
 }

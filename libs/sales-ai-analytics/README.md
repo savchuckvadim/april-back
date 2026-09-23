@@ -369,7 +369,7 @@ Nest-слой (`src/admin`):
 
 - `SalesAiAnalyticsAuditModule` — сервисный, без контроллеров: `AiAnalyticsAuditService` (расчёт по живой БД через Prisma, снапшот в ais, проверка признака портала) и `AiAnalyticsAuditSnapshotStore`. Импортируется в kpi-report-sales (месячный снапшот по крону).
 - `SalesAiAnalyticsProbeModule` — сервисный, без контроллеров: `StageHistoryProbeService` (проба `crm.stagehistory.list` через `PBXService.init(domain)`, инстанс bitrix только внутри метода). Импортируется ТОЛЬКО в `SalesAiAnalyticsAdminModule` — в kpi-report-sales поддерево `PBXModule` не течёт.
-- `SalesAiAnalyticsAdminModule` — контроллер `admin/ai-analytics/*`, подключается ТОЛЬКО в apps/admin (JWT + роль SUPER_USER).
+- `SalesAiAnalyticsAdminModule` — контроллеры `admin/ai-analytics/*` (по одному на тему, каталог `admin/controllers/`), подключается ТОЛЬКО в apps/admin (JWT + роль SUPER_USER). Полный список ручек — раздел «Админ-слой эксплуатации» ниже.
 
 | Ручка | Что делает |
 |---|---|
@@ -385,3 +385,29 @@ Nest-слой (`src/admin`):
 ```bash
 curl -X POST "$ADMIN_API/api/admin/ai-analytics/audit" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"domain":"april.bitrix24.ru","months":6}'
 ```
+
+## Админ-слой эксплуатации (Фаза 3, поток П5)
+
+Каталог `src/admin` расширен ручками эксплуатации. Контроллеры разрезаны по темам (`admin/controllers/*.admin.controller.ts`, правило «файл ≤ 300 строк»); путь `admin/ai-analytics`, тег Swagger и роль `SUPER_USER` — общие, в `controllers/admin-controller.const.ts`.
+
+Модули:
+
+- `SalesAiAnalyticsOpsModule` — сервисный, **без контроллеров**: read-only стор снапшотов (`AiAnalyticsAdminSnapshotStore`), постановка джоб (`AiAnalyticsPipelineAdminService`), состояние конвейера (`AiAnalyticsEtlStatusService`), ретенция (`AiAnalyticsRetentionService`), расход модели (`AiAnalyticsCostService`), обратная связь (`AiAnalyticsFeedbackSummaryService`), золотой набор (`AiAnalyticsGoldenSetService`). Импортирует `QueueModule` — решение владельца В2 от 22.09.2026: очередь `QueueNames.SALES_KPI_REPORT` та же, **расчёт остаётся в воркере kpi-report-sales**, админка только ставит джобы.
+- `SalesAiAnalyticsRetentionCronModule` — крон ретенции отдельным модулем. Подключать ТОЛЬКО там, где поднят `ScheduleModule.forRoot()`: в `apps/admin` его нет, поэтому админ-модуль этот модуль не импортирует, и ручка `retention/run` работает без крона.
+
+| Ручка | Форма | Что делает |
+|---|---|---|
+| `POST admin/ai-analytics/recompute` | `{domain, rhythm, monthKey, day?, weekKey?, steps?}` | одна джоба `SALES_AI_ANALYTICS_SNAPSHOT` с `forceRefresh: true`; `jobId` несёт метку момента (иначе Bull проглотил бы повтор). Ответ `{domain, job: {jobId, key, rhythm}, forceRefresh}` |
+| `POST admin/ai-analytics/backfill` | `{domain, from, to, steps?}` | по джобе ритма `backfill` на каждый месяц диапазона (включительно); ответ — оценка объёма `{monthKeys, jobs, reason}`. `reason`: `backfill-empty-range` (перевёрнут/битый) или `backfill-range-too-wide` (> 24 месяцев) |
+| `GET admin/ai-analytics/etl-status?domain=&days=7` | `days` 1–90 | журналы `ai-analytics-etl-run` за окно: шаги, `skipped`/`failed` списками, предупреждения, `inputsDrift`, метрики прогона, плюс сводка окна `ok/partial/failed` |
+| `POST admin/ai-analytics/retention/run` | `{domain, dryRun?=true, sampleLimit?=20}` | план удаления по дескрипторам типов (`snapshotRetention*`, решения B7/B10); `dryRun=false` шлёт одну строку сводки в чат админов (решение В8). **Физического удаления пока нет** — у `AiRepository` (@lib/call-lib) нет `delete`, поэтому статус `delete-not-available`, `deleted: 0` |
+| `GET admin/ai-analytics/feedback?domain=&from=&to=` | даты `YYYY-MM-DD` | сводка записей `ai-analytics-feedback` за период: счётчики по видам и по менеджерам, `usefulRatePct`, `skipped` для записей чужой формы |
+| `GET admin/ai-analytics/cost?domain=&month=` | `month` `YYYY-MM` | расход LLM по колонкам `ais.tokens_count`/`ais.price` (решение B2) за месяц, всего и по типам; рядом оценка по цене реестра `llm_price_per_1k`. Цена реестра 0 («не задана») или нулевой `price` → `estimated: true` и `estimatedPrice: null` |
+| `GET admin/ai-analytics/golden-set?domain=` | — | состав отчётов согласия `ai-analytics-golden-report`: версия промпта, пары, квота, σ_llm и её источник |
+| `POST admin/ai-analytics/golden-set/run` | `{domain}` | **заглушка**: `dispatched: false`, `jobId: null`, причина «прогон подключается потоком П7» — отбор выборки и повторный разбор живут в `apps/event-sales`, своего значения `JobNames` у них ещё нет |
+
+Политика ретенции — чистая функция `admin/ai-analytics-retention.policy.ts` (`planRetention`): `forever` не трогается вовсе; ключ периода просрочен, если все его записи старше срока (`days`) либо ключ вне N самых свежих на менеджера (`records`); просроченный ключ уходит целиком, живой отдаёт версии сверх последних двух (`AI_ANALYTICS_RETENTION_KEEP_VERSIONS`, решение B10), а актуальную (`status = done`) запись живого ключа не трогает никогда. Сроки берутся из `contracts/snapshot-descriptors.const.ts` и здесь не дублируются.
+
+Контракт очереди (`admin/ai-analytics-admin.const.ts`) продублирован из `apps/kpi-report-sales/src/ai-analytics/constants/` — библиотека приложение не импортирует. Разъезд литералов ловит `__tests__/ai-analytics-admin.const.spec.ts`: он читает файлы приложения текстом и сверяет префикс `jobId`, набор ритмов и опции джобы.
+
+**Крон ретенции идёт по UTC** (`AI_ANALYTICS_RETENTION_CRON = '30 4 * * *'`), а не по локальному часу портала: `dueLocalClock` живёт в `apps/kpi-report-sales/src/ai-analytics/cron/local-hour.util.ts`, и библиотека его импортировать не может. Ретенция не привязана к рабочему дню портала, поэтому дублировать разбор поясов ради служебной чистки не стали; если локальный час понадобится — утилиту надо поднять в библиотеку (она уже импортирует отсюда `DEFAULT_WORK_CALENDAR`).

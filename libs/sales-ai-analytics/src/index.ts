@@ -59,6 +59,12 @@ export type {
 // (только для apps/admin). Сервисы — через модули, не напрямую.
 export { SalesAiAnalyticsAuditModule } from './admin/sales-ai-analytics-audit.module';
 export { SalesAiAnalyticsAdminModule } from './admin/sales-ai-analytics-admin.module';
+// Эксплуатация AI-аналитики (Фаза 3, П5): сервисный модуль без
+// контроллеров (очередь конвейера, состояние прогонов, ретенция, расход
+// модели, обратная связь, золотой набор) и отдельный модуль крона
+// ретенции — его подключают ТОЛЬКО там, где поднят ScheduleModule.
+export { SalesAiAnalyticsOpsModule } from './admin/sales-ai-analytics-ops.module';
+export { SalesAiAnalyticsRetentionCronModule } from './admin/sales-ai-analytics-retention-cron.module';
 export type {
     AiAnalyticsAuditPortalStatus,
     AiAnalyticsAuditResult,
@@ -176,3 +182,164 @@ export * from './model/daily-plan';
 export * from './model/tenure-bands';
 export * from './model/norms-backtest';
 export * from './model/rop-mark';
+
+// Фаза 3, поток П7 «test-retest языковой модели»: каппа Коэна (номинальная,
+// взвешенная, PABAK), ICC(2,1)/(3,1) по двухфакторной ANOVA, TOST на
+// эквивалентность средних, F1 по множествам возражений и сводка пар
+// разборов → GoldenReport (контракт снапшота `goldenReport`). Только
+// математика: отбор выборки, повторный прогон и запись в ais — в приложении.
+export {
+    AGREEMENT_DEFAULTS,
+    KAPPA_WEIGHTINGS,
+    buildGoldenReport,
+    categoryPairsOf,
+    cohenKappa,
+    confusionTable,
+    differenceStats,
+    disagreementWeight,
+    f1FromCounts,
+    iccOfPairs,
+    iccTwoWay,
+    isBalancedMatrix,
+    kappaLevels,
+    pabakOf,
+    pairDifferences,
+    scalePairsOf,
+    setCounts,
+    setF1,
+    setF1ByCode,
+    sigmaOfPairs,
+    sumCounts,
+    tost,
+    tostOfPairs,
+} from './model/agreement';
+export type {
+    AgreementPair,
+    AgreementReportInput,
+    AgreementRun,
+    CategoryPair,
+    CohenKappaOptions,
+    CohenKappaResult,
+    ConfusionTable,
+    DifferenceStats,
+    F1CodeResult,
+    F1Counts,
+    F1Result,
+    IccAnovaResult,
+    KappaWeighting,
+    ScalePair,
+    SetPair,
+    TostOptions,
+    TostResult,
+} from './model/agreement';
+export { isGoldenReportLike } from './contracts/golden-report.types';
+export type {
+    GoldenCategoryAgreement,
+    GoldenObjectionsAgreement,
+    GoldenReport,
+    GoldenScaleAgreement,
+    GoldenSigmaLlm,
+} from './contracts/golden-report.types';
+
+// Фаза 3, поток П1 «тренды рядов менеджера»: нормализация ряда по
+// разрывам (comparableFrom, версии разбора), EWMA и дрейф, CUSUM и сдвиг
+// уровня, циркулярная блочная калибровка порогов step-down max-T по
+// семейству и сборка сигналов ряда с доверием. Только математика: ряды
+// из снапшотов, семейство портала и запись `ai-analytics-trends` — в
+// приложении (шаг `trends`).
+export {
+    MOVING_RANGE_D2,
+    TREND_CONFIDENCE_REASONS,
+    TREND_DEFAULTS,
+    TREND_DIRECTIONS,
+    TREND_SIGNAL_KINDS,
+    calibrateFamilyThresholds,
+    circularBlockBootstrap,
+    circularBlockShuffle,
+    cusumExcursion,
+    cusumStatistic,
+    cusumTrajectory,
+    defaultBlockLength,
+    detectDrift,
+    detectOutlier,
+    detectShift,
+    detectTrendSignals,
+    driftStatistic,
+    driftStatistics,
+    ewma,
+    meanOf,
+    normalizeTrendSeries,
+    personalSigma,
+    runningMin,
+    versionBreakIndex,
+} from './model/trend/index';
+// Фаза 3, поток П3 «сравнение год назад»: выбор пары периодов M и M−12 и
+// флаг сопоставимости с причинами (решение владельца В9 от 22.09.2026 —
+// другой отдел или уровень год назад не подменяют менеджера, а делают
+// пару несопоставимой). Чтение снапшотов и витрина — в приложении.
+export {
+    SAME_PERIOD_LAG_MONTHS,
+    SAME_PERIOD_REASONS,
+    isMonthKey,
+    monthFirstDay,
+    monthLastDay,
+    samePeriodKey,
+    selectSamePeriod,
+    shiftMonthKey,
+} from './model/trend/index';
+export type {
+    SamePeriodComposition,
+    SamePeriodInput,
+    SamePeriodPair,
+    SamePeriodReason,
+} from './model/trend/index';
+export type {
+    CusumOptions,
+    CusumTrajectory,
+    DriftDetection,
+    DriftOptions,
+    FamilyCalibration,
+    FamilyCalibrationOptions,
+    NormalizeTrendOptions,
+    SeriesStatistic,
+    ShiftDetection,
+    TrendConfidenceReason,
+    TrendDetectOptions,
+    TrendDetection,
+    TrendDirection,
+    TrendPoint,
+    TrendSeries,
+    TrendSeriesCut,
+    TrendSeriesPoint,
+    TrendSignal,
+    TrendSignalKind,
+    TrendThresholds,
+} from './model/trend/index';
+
+// Фаза 3, поток П2 «реконсиляция план-факт»: сверка целей руководителя со
+// фактом на дату — темп по рабочим дням, описательный прогноз закрытия под
+// потолком дня, разрыв и «сколько надо в день». Источник плана — только
+// снимок целей `plan` (решение владельца В6 от 22.09.2026).
+export {
+    PLAN_FACT_INDICATORS,
+    PLAN_FACT_REASONS,
+    PLAN_FACT_STATUSES,
+    expectedShare,
+    forecastAtPace,
+    paceStatus,
+    perDayNeeded,
+    reconcile,
+    reconcileIndicator,
+    reconcileTeam,
+    workdaysLeft,
+} from './model/plan-fact';
+export type {
+    PlanFactExposure,
+    PlanFactIndicator,
+    PlanFactInput,
+    PlanFactReason,
+    PlanFactRow,
+    PlanFactStatus,
+    PlanFactTargets,
+    PlanFactValues,
+} from './model/plan-fact';

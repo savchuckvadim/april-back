@@ -42,6 +42,19 @@ export const AI_ANALYTICS_SETTINGS_AUDIT_TYPE = 'ai-analytics-settings-audit';
 export const AI_ANALYTICS_ROP_MARK_TYPE = 'ai-analytics-rop-mark';
 
 /**
+ * Тренды рядов менеджера (Фаза 3, поток П1): сдвиг уровня (CUSUM), дрейф
+ * (двойная EWMA) и выброс по неделям; ключ — ISO-неделя расчёта.
+ */
+export const AI_ANALYTICS_TRENDS_TYPE = 'ai-analytics-trends';
+
+/**
+ * Отчёт согласия оценщика (Фаза 3, поток П7): test-retest разборов одной
+ * версией промпта — каппа, ICC, TOST, F1 и измеренная σ_llm; одна запись
+ * на версию (ключ — хэш версии).
+ */
+export const AI_ANALYTICS_GOLDEN_REPORT_TYPE = 'ai-analytics-golden-report';
+
+/**
  * Типы снапшотов по именам (значения — колонка type в ais).
  *
  * `plan` — тип потока 14a «снимок планов 1-го числа» (цели месяца по всем
@@ -58,6 +71,8 @@ export const AI_ANALYTICS_SNAPSHOT_TYPE = {
     etlRun: 'ai-analytics-etl-run',
     style: 'ai-analytics-style',
     plan: 'ai-analytics-plan',
+    trends: AI_ANALYTICS_TRENDS_TYPE,
+    goldenReport: AI_ANALYTICS_GOLDEN_REPORT_TYPE,
     settingsAudit: AI_ANALYTICS_SETTINGS_AUDIT_TYPE,
     ropMark: AI_ANALYTICS_ROP_MARK_TYPE,
     feedback: AI_ANALYTICS_FEEDBACK_TYPE,
@@ -75,6 +90,8 @@ export const AI_ANALYTICS_SNAPSHOT_TYPES = [
     AI_ANALYTICS_SNAPSHOT_TYPE.etlRun,
     AI_ANALYTICS_SNAPSHOT_TYPE.style,
     AI_ANALYTICS_SNAPSHOT_TYPE.plan,
+    AI_ANALYTICS_SNAPSHOT_TYPE.trends,
+    AI_ANALYTICS_SNAPSHOT_TYPE.goldenReport,
     AI_ANALYTICS_SNAPSHOT_TYPE.settingsAudit,
     AI_ANALYTICS_SNAPSHOT_TYPE.ropMark,
     AI_ANALYTICS_SNAPSHOT_TYPE.feedback,

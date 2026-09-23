@@ -85,6 +85,15 @@ export class AiService {
     }
 
     /**
+     * Физическое удаление записей по id (ретенция снапшотов): число
+     * удалённых строк. Ошибка репозитория не бросается наружу — вернётся
+     * то, что успело удалиться.
+     */
+    async deleteByIds(ids: readonly string[]): Promise<number> {
+        return this.aiRepository.deleteByIds(ids);
+    }
+
+    /**
      * AI-записи домена и типа по наборам ключей (ИЛИ между наборами, порции
      * по 500, без окна created_at); latestOnly — последняя запись на ключ.
      */

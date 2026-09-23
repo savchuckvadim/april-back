@@ -293,6 +293,41 @@ describe('CallReportPipelineUseCase', () => {
         expect(bitrix.timeline.addTimelineComment).not.toHaveBeenCalled();
     });
 
+    it('ignoreDurationGate (смоук B12): 120 с презентации идёт полным путём, нерелевантный всё равно стоп', async () => {
+        const passed = makeDeps({
+            minDurationSecByType: PILOT_MAP,
+            classification: { ...CLASSIFICATION, callType: 'presentation' },
+        });
+        const result = await passed.useCase.execute({
+            ...PAYLOAD,
+            durationSec: 120,
+            ignoreDurationGate: true,
+        });
+        expect(result.shortCall).toBeUndefined();
+        expect(result.callType).toBe('presentation');
+        expect(result.resumeSaved).toBe(true);
+        expect(passed.llm.analyzeCall).toHaveBeenCalledTimes(1);
+        expect(passed.aiService.create).toHaveBeenCalledTimes(2);
+
+        const irrelevant = makeDeps({
+            minDurationSecByType: PILOT_MAP,
+            classification: {
+                callType: 'irrelevant',
+                interlocutorRole: 'other',
+                confidence: 0.95,
+                reason: 'Звонок в стороннюю организацию',
+            },
+        });
+        await expect(
+            irrelevant.useCase.execute({
+                ...PAYLOAD,
+                durationSec: 120,
+                ignoreDurationGate: true,
+            }),
+        ).resolves.toMatchObject({ irrelevant: true });
+        expect(irrelevant.llm.analyzeCall).not.toHaveBeenCalled();
+    });
+
     it('равномерная карта — поведение прежнее: 700 с идёт полным путём, 120 с — нет', async () => {
         const full = makeDeps({ minDurationSecByType: { default: 300 } });
         await expect(full.useCase.execute(PAYLOAD)).resolves.toMatchObject({

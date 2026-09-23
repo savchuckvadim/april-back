@@ -6,12 +6,17 @@ import { AiCacheResetRequestDto } from '../dto/ai-cache-reset.dto';
 import { AiDailyPlanRequestDto } from '../dto/ai-daily-plan.dto';
 import { AiFeedbackListRequestDto } from '../dto/ai-feedback-list.dto';
 import { AiFeedbackRequestDto } from '../dto/ai-feedback.dto';
+import { AI_DOSSIER_MONTHS } from '../constants/ai-dossier.const';
+import { AiDossierRequestDto } from '../dto/ai-dossier.dto';
+import { AI_PLAN_FACT_MANAGERS_MAX } from '../constants/ai-plan-fact.const';
+import { AiPlanFactRequestDto } from '../dto/ai-plan-fact.dto';
 import { AiPulseRequestDto } from '../dto/ai-pulse.dto';
 import { AiPushRequestDto } from '../dto/ai-push.dto';
 import {
     AiRopMarkPickRequestDto,
     AiRopMarkSaveRequestDto,
 } from '../dto/ai-rop-mark-request.dto';
+import { AiReviewRequestDto } from '../dto/ai-review.dto';
 import { AiStyleProfileRequestDto } from '../dto/ai-style-card.dto';
 
 const pipe = new ValidationPipe({ whitelist: true, transform: true });
@@ -373,8 +378,206 @@ describe('DTO валидация ручек Фазы 2 (поток 19)', () => {
         });
         expect(ok.endpoint).toBe('plan/daily');
         expect(await failsOn(AiAboutRequestDto, base)).toContain('endpoint');
+        // Досье и план-факт появились в справочнике волной 2 Фазы 3.
+        const dossier = await run(AiAboutRequestDto, {
+            ...base,
+            endpoint: 'dossier',
+        });
+        expect(dossier.endpoint).toBe('dossier');
         expect(
-            await failsOn(AiAboutRequestDto, { ...base, endpoint: 'dossier' }),
+            await failsOn(AiAboutRequestDto, { ...base, endpoint: 'nope' }),
         ).toContain('endpoint');
+    });
+});
+
+describe('DTO валидация отзыва с сайта (AiReviewRequestDto)', () => {
+    const review = {
+        link: 'https://april.bitrix24.ru/crm/type/1036/details/128/',
+        authorName: 'Иван',
+        authorRole: 'rop',
+        verdict: 'disagree',
+        issues: ['score'],
+        comment: 'оценка завышена',
+    };
+
+    it('валидный отзыв проходит, неизвестные поля вырезаются', async () => {
+        const dto = await run(AiReviewRequestDto, { ...review, hack: 1 });
+        expect(dto).toEqual(review);
+    });
+
+    it('ссылка только на карточку элемента смарта', async () => {
+        expect(
+            await failsOn(AiReviewRequestDto, {
+                ...review,
+                link: 'https://april.bitrix24.ru/crm/deal/details/1/',
+            }),
+        ).toContain('карточку разбора');
+    });
+
+    it('роль, вердикт и пункты — только из справочников', async () => {
+        expect(
+            await failsOn(AiReviewRequestDto, {
+                ...review,
+                authorRole: 'boss',
+            }),
+        ).toContain('authorRole');
+        expect(
+            await failsOn(AiReviewRequestDto, { ...review, verdict: 'maybe' }),
+        ).toContain('verdict');
+        expect(
+            await failsOn(AiReviewRequestDto, { ...review, issues: ['tone'] }),
+        ).toContain('issues');
+    });
+
+    it('комментарий обязателен при частичном согласии и несогласии, при согласии — нет', async () => {
+        expect(
+            await failsOn(AiReviewRequestDto, { ...review, comment: '' }),
+        ).toContain('что именно не так');
+        const agreed = await run(AiReviewRequestDto, {
+            ...review,
+            verdict: 'agree',
+            issues: [],
+            comment: undefined,
+        });
+        expect(agreed.verdict).toBe('agree');
+        // При согласии переданный комментарий всё равно должен быть строкой.
+        expect(
+            await failsOn(AiReviewRequestDto, {
+                ...review,
+                verdict: 'agree',
+                comment: 123,
+            }),
+        ).toContain('comment');
+    });
+});
+
+// --- Фаза 3, поток П2 «реконсиляция план-факт» ---
+
+describe('DTO валидация реконсиляции план-факт (AiPlanFactRequestDto)', () => {
+    it('monthKey обязателен и строго в формате YYYY-MM', async () => {
+        expect(await failsOn(AiPlanFactRequestDto, base)).toContain('monthKey');
+        expect(
+            await failsOn(AiPlanFactRequestDto, {
+                ...base,
+                monthKey: '2026-9',
+            }),
+        ).toContain('YYYY-MM');
+        expect(
+            await failsOn(AiPlanFactRequestDto, {
+                ...base,
+                monthKey: '2026-09-01',
+            }),
+        ).toContain('YYYY-MM');
+        // Номер месяца вне 01..12 тоже не проходит.
+        expect(
+            await failsOn(AiPlanFactRequestDto, {
+                ...base,
+                monthKey: '2026-13',
+            }),
+        ).toContain('YYYY-MM');
+    });
+
+    it('валидный запрос проходит, неизвестные поля вырезаются', async () => {
+        const dto = await run(AiPlanFactRequestDto, {
+            ...base,
+            monthKey: '2026-09',
+            hack: true,
+        });
+        expect(dto).toEqual({ ...base, monthKey: '2026-09' });
+    });
+
+    it('managerIds необязателен, но только массив строк и не длиннее лимита', async () => {
+        const dto = await run(AiPlanFactRequestDto, {
+            ...base,
+            monthKey: '2026-09',
+            managerIds: ['447', '512'],
+        });
+        expect(dto.managerIds).toEqual(['447', '512']);
+        expect(
+            await failsOn(AiPlanFactRequestDto, {
+                ...base,
+                monthKey: '2026-09',
+                managerIds: [447],
+            }),
+        ).toContain('managerIds');
+        expect(
+            await failsOn(AiPlanFactRequestDto, {
+                ...base,
+                monthKey: '2026-09',
+                managerIds: Array.from(
+                    { length: AI_PLAN_FACT_MANAGERS_MAX + 1 },
+                    (_, index) => String(index),
+                ),
+            }),
+        ).toContain('не больше');
+    });
+});
+
+// --- Фаза 3, поток П4 «досье менеджера» ---
+
+describe('DTO валидация досье менеджера (AiDossierRequestDto)', () => {
+    const dossier = { ...base, managerId: '512' };
+
+    it('managerId обязателен и непустой', async () => {
+        expect(await failsOn(AiDossierRequestDto, base)).toContain('managerId');
+        expect(
+            await failsOn(AiDossierRequestDto, { ...base, managerId: '' }),
+        ).toContain('managerId');
+    });
+
+    it('months необязателен; вне 1..12 и дробный не проходят', async () => {
+        const dto = await run(AiDossierRequestDto, dossier);
+        expect(dto.months).toBeUndefined();
+
+        expect(
+            await failsOn(AiDossierRequestDto, {
+                ...dossier,
+                months: AI_DOSSIER_MONTHS.min - 1,
+            }),
+        ).toContain('не меньше');
+        expect(
+            await failsOn(AiDossierRequestDto, {
+                ...dossier,
+                months: AI_DOSSIER_MONTHS.max + 1,
+            }),
+        ).toContain('не больше');
+        expect(
+            await failsOn(AiDossierRequestDto, { ...dossier, months: 2.5 }),
+        ).toContain('months');
+    });
+
+    it('границы окна проходят как есть', async () => {
+        for (const months of [AI_DOSSIER_MONTHS.min, AI_DOSSIER_MONTHS.max]) {
+            const dto = await run(AiDossierRequestDto, { ...dossier, months });
+            expect(dto.months).toBe(months);
+        }
+    });
+
+    it('валидный запрос проходит, неизвестные поля вырезаются', async () => {
+        const dto = await run(AiDossierRequestDto, {
+            ...dossier,
+            months: AI_DOSSIER_MONTHS.default,
+            socketId: 'sock',
+            forceRefresh: true,
+            hack: true,
+        });
+        expect(dto).toEqual({
+            ...dossier,
+            months: AI_DOSSIER_MONTHS.default,
+            socketId: 'sock',
+            forceRefresh: true,
+        });
+    });
+
+    it('forceRefresh — только boolean, socketId — только строка', async () => {
+        expect(
+            await failsOn(AiDossierRequestDto, {
+                ...dossier,
+                forceRefresh: 'да',
+            }),
+        ).toContain('forceRefresh');
+        expect(
+            await failsOn(AiDossierRequestDto, { ...dossier, socketId: 7 }),
+        ).toContain('socketId');
     });
 });

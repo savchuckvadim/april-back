@@ -3,10 +3,13 @@ import { Cron } from '@nestjs/schedule';
 import { QueueDispatcherService } from '@/modules/queue';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
-import { toPortalDate } from '@lib/sales-ai-analytics';
+import {
+    AI_ANALYTICS_LOCAL_HOURS,
+    AI_PIPELINE_CRON,
+    AiLocalSlot,
+} from '../constants/ai-cron.const';
 import {
     AI_PIPELINE_CORE_STEP_CODES,
-    AI_PIPELINE_CRON,
     AI_PIPELINE_JOB_OPTIONS,
     AI_PIPELINE_PLANS_KEY_PREFIX,
     AI_PIPELINE_PLANS_STEPS,
@@ -24,6 +27,7 @@ import {
     AI_ANALYTICS_PIPELINE_STEPS,
     AiAnalyticsPipelineStep,
 } from '../steps/step.types';
+import { dueLocalClock } from './local-hour.util';
 
 /**
  * Тик планировщика: три ритма пересчёта плюс снимок планов 1-го числа.
@@ -35,6 +39,16 @@ import {
  * Фазы 2, N4).
  */
 export type AiPipelineTick = 'nightly' | 'weekly' | 'monthly' | 'plans';
+
+/** Слот локального времени портала по тику планировщика (П10). */
+export const AI_PIPELINE_TICK_SLOTS: Readonly<
+    Record<AiPipelineTick, AiLocalSlot>
+> = {
+    nightly: AI_ANALYTICS_LOCAL_HOURS.NIGHTLY,
+    weekly: AI_ANALYTICS_LOCAL_HOURS.WEEKLY,
+    monthly: AI_ANALYTICS_LOCAL_HOURS.MONTHLY,
+    plans: AI_ANALYTICS_LOCAL_HOURS.PLANS,
+};
 
 /**
  * Белый список тика заморозки: коды шагов ритма `monthly` без шага планов,
@@ -62,17 +76,20 @@ interface TickPlan {
 }
 
 /**
- * Планировщик ночного конвейера снапшотов (план §5.3, поток 12):
- * ежедневно 03:45 МСК, по понедельникам 03:15 МСК (закончившаяся неделя),
- * 3-го числа 04:00 МСК (заморозка закрытого месяца) и 1-го числа 04:00 МСК
- * (снимок планов руководителя). По каждому порталу с ai_analytics_enabled
- * ставится ОДНА джоба SALES_AI_ANALYTICS_SNAPSHOT в очередь
- * SALES_KPI_REPORT; сам расчёт — в процессоре (SnapshotPipelineService),
- * чтобы тяжёлые выборки не жили в cron-тике.
+ * Планировщик ночного конвейера снапшотов (план §5.3, поток 12): по
+ * ЛОКАЛЬНОМУ времени портала (Фаза 3, П10) ежедневно 03:45, по
+ * понедельникам 03:15 (закончившаяся неделя), 3-го числа 04:00 (заморозка
+ * закрытого месяца) и 1-го числа 04:00 (снимок планов руководителя).
+ * Контейнер живёт в UTC, поэтому тики ежечасные на минуте слота (:45,
+ * :15, :00), а по каждому порталу с ai_analytics_enabled проверяется,
+ * наступил ли его локальный час (cron/local-hour.util.ts); тогда ставится
+ * ОДНА джоба SALES_AI_ANALYTICS_SNAPSHOT в очередь SALES_KPI_REPORT; сам
+ * расчёт — в процессоре (SnapshotPipelineService), чтобы тяжёлые выборки
+ * не жили в cron-тике.
  *
- * jobId детерминирован (`ai-analytics:snapshot:{rhythm}:{domain}:{key}`) —
- * повторный тик за ту же дату джобу не дублирует. Ошибка одного портала
- * логируется с телеграмом и не прерывает обход остальных.
+ * jobId детерминирован (`ai-analytics:snapshot:{rhythm}:{domain}:{key}`)
+ * по дате портала — повторный тик за ту же дату джобу не дублирует.
+ * Ошибка одного портала логируется с телеграмом и не прерывает обход.
  */
 @Injectable()
 export class AiAnalyticsSnapshotScheduler {
@@ -107,7 +124,7 @@ export class AiAnalyticsSnapshotScheduler {
         await this.dispatchAll('plans');
     }
 
-    /** Ставит джобы по всем подходящим порталам; возвращает jobId'ы. */
+    /** Ставит джобы порталам, у которых наступил локальный час тика; возвращает jobId'ы. */
     async dispatchAll(
         tick: AiPipelineTick,
         now: Date = new Date(),
@@ -130,7 +147,7 @@ export class AiAnalyticsSnapshotScheduler {
         return jobIds;
     }
 
-    /** Один портал: флаг → ключи периода в TZ портала → dispatch. */
+    /** Один портал: локальный час → флаг → ключи периода по дню портала → dispatch. */
     private async dispatchDomain(
         domain: string,
         tick: AiPipelineTick,
@@ -138,9 +155,18 @@ export class AiAnalyticsSnapshotScheduler {
     ): Promise<string | null> {
         try {
             const settings = await this.settings.load(domain);
-            if (!settings.enabled) return null;
-            const day = toPortalDate(now, settings.calendar.timeZone);
-            const plan = buildTickPlan(tick, day, freezeTickSteps(this.steps));
+            const timeZone = settings.calendar.timeZone;
+            const clock = dueLocalClock(
+                now,
+                timeZone,
+                AI_PIPELINE_TICK_SLOTS[tick],
+            );
+            if (!clock || !settings.enabled) return null;
+            const plan = buildTickPlan(
+                tick,
+                clock.date,
+                freezeTickSteps(this.steps),
+            );
             const jobId = buildPipelineJobId(plan.rhythm, domain, plan.key);
             await this.dispatcher.dispatch<AiSnapshotJobData>(
                 QueueNames.SALES_KPI_REPORT,
@@ -153,6 +179,9 @@ export class AiAnalyticsSnapshotScheduler {
                 } satisfies AiSnapshotJobData,
                 jobId,
                 AI_PIPELINE_JOB_OPTIONS,
+            );
+            this.logger.log(
+                `Конвейер (${tick}) ${domain}: локально ${clock.time} ${timeZone} → ${jobId}`,
             );
             return jobId;
         } catch (error) {

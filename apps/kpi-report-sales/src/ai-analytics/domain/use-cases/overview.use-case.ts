@@ -19,7 +19,10 @@ import { FinanceLoader } from '../loaders/finance.loader';
 import { KpiLoader } from '../loaders/kpi.loader';
 import { ManagerOrgLoader } from '../loaders/manager-org.loader';
 import { ManagersLoader } from '../loaders/managers.loader';
-import { OverviewSnapshotsLoader } from '../loaders/overview-snapshots.loader';
+import {
+    OverviewSnapshotsLoader,
+    type OverviewYoySnapshots,
+} from '../loaders/overview-snapshots.loader';
 import { portalRangeUtc } from '../loaders/period.util';
 import { PlansLoader } from '../loaders/plans.loader';
 import { SettingsLoader } from '../loaders/settings.loader';
@@ -127,6 +130,7 @@ export class OverviewUseCase {
             levels,
             disagreementsCount,
             snapshots: await this.loadSnapshots(domain, to),
+            ...(await this.loadYoy(domain, to)),
             rosterConfirmedAt: settings.rosterConfirmedAt,
             hypothesisPairs: settings.hypothesis?.pairs.length ?? 0,
         };
@@ -144,6 +148,30 @@ export class OverviewUseCase {
      * витрина остаётся в поведении Фазы 1b: обзор не должен гаснуть из-за
      * ночного конвейера (§5.4).
      */
+    /**
+     * Месяцы года назад для блока «год назад» (П3). Стора нет либо `ais`
+     * не ответила — блок просто не появится: обзор не гаснет.
+     */
+    private async loadYoy(
+        domain: string,
+        to: string,
+    ): Promise<{ yoy?: OverviewYoySnapshots }> {
+        if (!this.snapshots) return {};
+        try {
+            return {
+                yoy: await new OverviewSnapshotsLoader(this.snapshots).loadYoy(
+                    domain,
+                    to,
+                ),
+            };
+        } catch (error) {
+            this.logger.warn(
+                `Месяцы года назад недоступны (${domain}): ${String(error)}`,
+            );
+            return {};
+        }
+    }
+
     private async loadSnapshots(
         domain: string,
         to: string,

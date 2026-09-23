@@ -3,16 +3,20 @@ import { Cron } from '@nestjs/schedule';
 import { QueueDispatcherService } from '@/modules/queue';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
-import { toPortalDate } from '@lib/sales-ai-analytics';
 import {
     AI_ANALYTICS_MORNING_PUSH_KINDS,
-    AI_ANALYTICS_PUSH_CRON,
     AI_ANALYTICS_PUSH_JOB_ID_PREFIX,
     AiAnalyticsPushKind,
 } from '../constants/ai-analytics.const';
+import {
+    AI_ANALYTICS_LOCAL_HOURS,
+    AI_ANALYTICS_PUSH_CRON,
+    AiLocalSlot,
+} from '../constants/ai-cron.const';
 import { AiAnalyticsPortalsLoader } from '../domain/loaders/portals.loader';
 import { SettingsLoader } from '../domain/loaders/settings.loader';
 import { AiPushJobData } from '../dto/ai-push.dto';
+import { dueLocalClock } from './local-hour.util';
 
 /** jobId push-джобы: дедуп по виду, домену и дню запуска. */
 export function buildPushJobId(
@@ -23,19 +27,31 @@ export function buildPushJobId(
     return `${AI_ANALYTICS_PUSH_JOB_ID_PREFIX}:${kind}:${domain}:${date}`;
 }
 
+/** Слот локального времени по виду рассылки: утренние виды делят слот дайджеста. */
+export const AI_ANALYTICS_PUSH_SLOTS: Readonly<
+    Record<AiAnalyticsPushKind, AiLocalSlot>
+> = {
+    agenda: AI_ANALYTICS_LOCAL_HOURS.AGENDA,
+    digest: AI_ANALYTICS_LOCAL_HOURS.DIGEST,
+    digest_all: AI_ANALYTICS_LOCAL_HOURS.DIGEST,
+};
+
 /**
- * Планировщик push-контура AI-аналитики: пн 08:30 МСК — повестка РОПам,
- * ежедневно 08:00 МСК — утренний разбор менеджерам (digest) и сводный
- * дайджест адресатам из ai_analytics_digest_all_user_ids (digest_all).
- * Обходит порталы со строкой настроек kpiSales (AiAnalyticsPortalsLoader)
- * и ставит джобу SALES_AI_ANALYTICS_PUSH на каждый портал с
- * ai_analytics_enabled: для digest — и ai_analytics_digest_enabled, для
- * digest_all — непустой список адресатов (от digest_enabled не зависит).
+ * Планировщик push-контура AI-аналитики: повестка РОПам — понедельник
+ * 08:30, утренний разбор менеджерам (digest) и сводный дайджест адресатам
+ * из ai_analytics_digest_all_user_ids (digest_all) — ежедневно 08:00, всё
+ * по ЛОКАЛЬНОМУ времени портала (Фаза 3, П10). Контейнер живёт в UTC,
+ * поэтому тик ежечасный на минуте слота (:30 повестка, :00 дайджесты), а
+ * по каждому порталу со строкой настроек kpiSales (AiAnalyticsPortalsLoader)
+ * проверяется, наступил ли его локальный час (cron/local-hour.util.ts).
+ * Джоба SALES_AI_ANALYTICS_PUSH ставится порталу с ai_analytics_enabled:
+ * для digest — и ai_analytics_digest_enabled, для digest_all — непустой
+ * список адресатов (от digest_enabled не зависит).
  *
  * Сам расчёт и доставка — в процессоре (AiAnalyticsQueueProcessor), чтобы
  * Bitrix-вызовы не жили в cron-тике. jobId = ai-analytics:push:{kind}:
- * {domain}:{date} — повторный тик за тот же день джобу не задублирует;
- * второй рубеж идемпотентности — записи *_sent в ais.
+ * {domain}:{date} по дате портала — повторный тик за тот же день джобу не
+ * задублирует; второй рубеж идемпотентности — записи *_sent в ais.
  */
 @Injectable()
 export class AiAnalyticsPushScheduler {
@@ -60,7 +76,7 @@ export class AiAnalyticsPushScheduler {
         }
     }
 
-    /** Ставит джобы по всем подходящим порталам; возвращает jobId'ы. */
+    /** Ставит джобы порталам, у которых наступил локальный час вида; возвращает jobId'ы. */
     async dispatchAll(
         kind: AiAnalyticsPushKind,
         now = new Date(),
@@ -79,7 +95,7 @@ export class AiAnalyticsPushScheduler {
         return jobIds;
     }
 
-    /** Один портал: флаги → jobId по дню в TZ портала → dispatch. Ошибка не прерывает обход. */
+    /** Один портал: локальный час → флаги → jobId по дню портала → dispatch. Ошибка не прерывает обход. */
     private async dispatchDomain(
         kind: AiAnalyticsPushKind,
         domain: string,
@@ -87,7 +103,13 @@ export class AiAnalyticsPushScheduler {
     ): Promise<string | null> {
         try {
             const settings = await this.settings.load(domain);
-            if (!settings.enabled) return null;
+            const timeZone = settings.calendar.timeZone;
+            const clock = dueLocalClock(
+                now,
+                timeZone,
+                AI_ANALYTICS_PUSH_SLOTS[kind],
+            );
+            if (!clock || !settings.enabled) return null;
             if (kind === 'digest' && !settings.digestEnabled) return null;
             if (kind === 'digest_all' && !settings.digestAllUserIds.length) {
                 return null;
@@ -98,14 +120,16 @@ export class AiAnalyticsPushScheduler {
                 );
                 return null;
             }
-            const date = toPortalDate(now, settings.calendar.timeZone);
-            const jobId = buildPushJobId(kind, domain, date);
+            const jobId = buildPushJobId(kind, domain, clock.date);
             await this.dispatcher.dispatch<AiPushJobData>(
                 QueueNames.SALES_KPI_REPORT,
                 JobNames.SALES_AI_ANALYTICS_PUSH,
-                { domain, kind, date } satisfies AiPushJobData,
+                { domain, kind, date: clock.date } satisfies AiPushJobData,
                 jobId,
                 { attempts: 1, removeOnComplete: 500, removeOnFail: 500 },
+            );
+            this.logger.log(
+                `Push ${kind} ${domain}: локально ${clock.time} ${timeZone} → ${jobId}`,
             );
             return jobId;
         } catch (error) {

@@ -21,12 +21,16 @@ import {
     AiSnapshotRunner,
 } from '../steps/step.types';
 import { AiPushResult } from '../domain/use-cases/push.types';
+import { DossierJobUseCase } from '../domain/use-cases/dossier-job.use-case';
+import { AiDossierDto, AiDossierJobData } from '../dto/ai-dossier.dto';
 
 /** Тексты ошибок процессора, когда срез не подключён сборкой приложения. */
 export const AI_ANALYTICS_PROCESSOR_ERRORS = {
     pipelineMissing:
         'Конвейер снапшотов не подключён: нет провайдера AI_ANALYTICS_SNAPSHOT_RUNNER',
     briefMissing: 'Срез AI-резюме не подключён: нет провайдера BriefJobUseCase',
+    dossierMissing:
+        'Срез досье менеджера не подключён: нет провайдера DossierJobUseCase',
 } as const;
 
 /**
@@ -60,6 +64,8 @@ export class AiAnalyticsQueueProcessor {
         private readonly overviewJob: OverviewJobUseCase,
         @Optional()
         private readonly briefJob?: BriefJobUseCase,
+        @Optional()
+        private readonly dossierJob?: DossierJobUseCase,
         @Optional()
         @Inject(AI_ANALYTICS_SNAPSHOT_RUNNER)
         private readonly pipeline?: AiSnapshotRunner,
@@ -106,6 +112,28 @@ export class AiAnalyticsQueueProcessor {
         } catch (error) {
             this.logger.warn(
                 `Резюме ${requestKey} упало: ${(error as Error).message}`,
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Досье менеджера (план Фазы 3, П4): окно месяцев → снапшоты и записи
+     * ais → сборка → кэш → WS done. Пустой раздел — штатная деградация
+     * внутри сценария; сюда доходит только провал всей джобы.
+     */
+    @Process(JobNames.SALES_AI_ANALYTICS_DOSSIER)
+    async handleDossier(job: Job<AiDossierJobData>): Promise<AiDossierDto> {
+        const { domain, managerId, requestKey } = job.data;
+        this.logger.log(`SALES_AI_ANALYTICS_DOSSIER: ${domain} ${managerId}`);
+        try {
+            if (!this.dossierJob) {
+                throw new Error(AI_ANALYTICS_PROCESSOR_ERRORS.dossierMissing);
+            }
+            return await this.dossierJob.execute(job.data);
+        } catch (error) {
+            this.logger.warn(
+                `Досье ${requestKey} упало: ${(error as Error).message}`,
             );
             throw error;
         }

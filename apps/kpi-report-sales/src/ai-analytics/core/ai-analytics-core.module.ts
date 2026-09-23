@@ -39,6 +39,7 @@ import { ManagersLoader } from '../domain/loaders/managers.loader';
 import { AiAnalyticsParamsLoader } from '../domain/loaders/params.loader';
 import { AiAnalyticsPortalsLoader } from '../domain/loaders/portals.loader';
 import { SettingsLoader } from '../domain/loaders/settings.loader';
+import { AiAnalyticsFeedbackStore } from '../store/ai-analytics-feedback.store';
 import { AiAnalyticsSnapshotStore } from '../store/ai-analytics-snapshot.store';
 
 /**
@@ -53,6 +54,8 @@ export const AI_ANALYTICS_CORE_PROVIDERS: Type<unknown>[] = [
     ManagersLoader,
     CallsLoader,
     AiAnalyticsSnapshotStore,
+    // Обратная связь (ais, без Битрикса): витрина, push-контур и отзыв с сайта.
+    AiAnalyticsFeedbackStore,
     RequesterAccessService,
 ];
 

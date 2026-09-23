@@ -20,6 +20,10 @@ import {
     AI_ROP_MARK_STEP_RHYTHMS,
 } from '../constants/ai-rop-mark.const';
 import {
+    AI_TREND_STEP_CODE,
+    AI_TREND_STEP_RHYTHMS,
+} from '../constants/ai-trend.const';
+import {
     AI_PIPELINE_RHYTHMS,
     type AiPipelineRhythm,
 } from '../constants/ai-snapshot.const';
@@ -43,6 +47,7 @@ import { AI_PLANS_STEP_RHYTHMS, PlansStep } from '../steps/plans.step';
 import { PortalModelStep } from '../steps/portal-model.step';
 import { RopMarkStep } from '../steps/rop-mark.step';
 import { SanityStep } from '../steps/sanity.step';
+import { TrendsStep } from '../steps/trends.step';
 import {
     AI_SANITY_STEP_CODE,
     AI_SANITY_STEP_RHYTHMS,
@@ -99,6 +104,7 @@ const RHYTHMS_BY_STEP = new Map<
     [PassportStep, AI_PASSPORT_STEP_RHYTHMS],
     [StageHistoryStep, AI_STAGE_HISTORY_RHYTHMS],
     [KpiStep, AI_KPI_STEP_RHYTHMS],
+    [TrendsStep, AI_TREND_STEP_RHYTHMS],
     [StyleStep, AI_STYLE_STEP_RHYTHMS],
     [PlansStep, AI_PLANS_STEP_RHYTHMS],
     [FinanceStep, AI_FINANCE_STEP_RHYTHMS],
@@ -174,8 +180,8 @@ describe('Срезы шагов конвейера', () => {
 });
 
 describe('Порядок шагов ночного конвейера', () => {
-    it('одиннадцать шагов с уникальными кодами, у каждого известны ритмы', () => {
-        expect(CODES).toHaveLength(11);
+    it('двенадцать шагов с уникальными кодами, у каждого известны ритмы', () => {
+        expect(CODES).toHaveLength(12);
         expect(new Set(CODES).size).toBe(CODES.length);
         expect(
             AI_ANALYTICS_PIPELINE_STEP_ORDER.filter(
@@ -193,6 +199,7 @@ describe('Порядок шагов ночного конвейера', () => {
             'passport',
             'stage-history',
             'kpi',
+            AI_TREND_STEP_CODE,
             'style',
             'plans',
             'finance',
@@ -289,6 +296,8 @@ describe('Ритмы прогона', () => {
         const weekly = codesOfRhythm('weekly');
         expect(weekly).toContain('stage-history');
         expect(weekly).toContain(AI_ROP_MARK_STEP_CODE);
+        // Тренды считаются по недельным снапшотам — ритм только weekly.
+        expect(weekly).toContain(AI_TREND_STEP_CODE);
         expect(last(weekly)).toBe(AI_SANITY_STEP_CODE);
         expect(weekly).not.toContain(AI_PORTAL_MODEL_STEP_CODE);
         expect(weekly).not.toContain(AI_FORECAST_STEP_CODE);

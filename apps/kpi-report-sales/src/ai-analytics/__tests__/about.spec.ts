@@ -43,6 +43,13 @@ import { recomputeModel } from './fixtures/recompute.fixture';
 const DOMAIN = 'april.bitrix24.ru';
 const MODEL_ID = 'ais-model-about';
 
+/** Периметры: руководитель отдела и менеджер (self_view). */
+const LEADER: RequesterAccess = { role: 'op', visibleManagerIds: ['10'] };
+const MANAGER: RequesterAccess = {
+    role: 'manager',
+    visibleManagerIds: ['10'],
+};
+
 /** Файлы, с которых начинается каждая ручка (контроллер, use-case, шаг). */
 const ENDPOINT_ENTRIES: Readonly<Record<AiAboutEndpoint, readonly string[]>> = {
     overview: [
@@ -56,6 +63,18 @@ const ENDPOINT_ENTRIES: Readonly<Record<AiAboutEndpoint, readonly string[]>> = {
         'ai-analytics-plan.controller.ts',
         'domain/use-cases/daily-plan.use-case.ts',
         'steps/forecast.step.ts',
+    ],
+    'plan-fact': [
+        'plan-fact/ai-analytics-plan-fact.controller.ts',
+        'plan-fact/plan-fact.use-case.ts',
+        'domain/assembler/plan-fact.assembler.ts',
+        'domain/presenter/plan-fact.presenter.ts',
+    ],
+    dossier: [
+        'dossier/ai-analytics-dossier.controller.ts',
+        'domain/use-cases/dossier.use-case.ts',
+        'domain/use-cases/dossier-job.use-case.ts',
+        'domain/loaders/dossier-sources.loader.ts',
     ],
     brief: [
         'ai-analytics-brief.controller.ts',
@@ -159,6 +178,13 @@ describe('about: блок генерируется из реестра и сна
         } finally {
             descriptor.defaultValue = original;
         }
+    });
+
+    it('selfView: без входа — false (руководитель), из входа — как передан', () => {
+        expect(buildAiAnalyticsAbout(buildInput()).selfView).toBe(false);
+        expect(
+            buildAiAnalyticsAbout(buildInput({ selfView: true })).selfView,
+        ).toBe(true);
     });
 
     it('значение слоя вне диапазона откатывается к дефолту с причиной', () => {
@@ -288,12 +314,13 @@ describe('AiAnalyticsAboutUseCase', () => {
             snapshots as never,
         );
 
-        const response = await useCase.execute(request());
+        const response = await useCase.execute(request(), LEADER);
 
         expect(response.status).toBe('ready');
         expect(response.requestKey).toBe(buildAboutKey(DOMAIN, 'brief'));
         expect(response.data.model?.modelSnapshotId).toBe(MODEL_ID);
         expect(response.data.comparableFrom).toBe('2026-06-01');
+        expect(response.data.selfView).toBe(false);
         expect(
             response.data.params.find(
                 item => item.code === 'brief_quota_per_day',
@@ -310,7 +337,7 @@ describe('AiAnalyticsAboutUseCase', () => {
             } as never,
         );
 
-        const response = await useCase.execute(request('overview'));
+        const response = await useCase.execute(request('overview'), LEADER);
 
         expect(response.data.model).toBeNull();
         expect(response.data.modelReason).toBe(
@@ -318,15 +345,37 @@ describe('AiAnalyticsAboutUseCase', () => {
         );
         expect(response.data.endpoint).toBe('overview');
     });
+
+    it('менеджеру в self_view (B13, решение 22.09.2026) блок отдаётся целиком с selfView = true', async () => {
+        const snapshots = {
+            latestModel: jest
+                .fn()
+                .mockResolvedValue({ id: MODEL_ID, payload: recomputeModel() }),
+        };
+        const useCase = new AiAnalyticsAboutUseCase(
+            params as never,
+            snapshots as never,
+        );
+
+        const asManager = await useCase.execute(
+            request('manager/style'),
+            MANAGER,
+        );
+        const asLeader = await useCase.execute(
+            request('manager/style'),
+            LEADER,
+        );
+
+        // Состав блока тот же, что руководителю: отличается только признак.
+        expect(asManager.data.selfView).toBe(true);
+        expect(asLeader.data.selfView).toBe(false);
+        expect({ ...asManager.data, selfView: false }).toEqual(asLeader.data);
+        expect(asManager.data.params.length).toBeGreaterThan(0);
+        expect(asManager.data.model?.modelSnapshotId).toBe(MODEL_ID);
+    });
 });
 
 describe('AiAnalyticsAboutController: POST /ai-analytics/about', () => {
-    const leader: RequesterAccess = { role: 'op', visibleManagerIds: ['10'] };
-    const manager: RequesterAccess = {
-        role: 'manager',
-        visibleManagerIds: ['10'],
-    };
-
     function makeController(access: RequesterAccess, selfViewEnabled = false) {
         const accessService = new RequesterAccessService(
             {} as never,
@@ -352,28 +401,29 @@ describe('AiAnalyticsAboutController: POST /ai-analytics/about', () => {
         endpoint: 'overview',
     } as AiAboutRequestDto;
 
-    it('руководителю отдаётся конверт use-case’а', async () => {
-        const { controller, execute } = makeController(leader);
+    it('руководителю отдаётся конверт use-case’а с его периметром', async () => {
+        const { controller, execute } = makeController(LEADER);
         await expect(controller.getAbout(dto)).resolves.toMatchObject({
             status: 'ready',
             data: { endpoint: 'overview' },
         });
-        expect(execute).toHaveBeenCalledWith(dto);
+        expect(execute).toHaveBeenCalledWith(dto, LEADER);
     });
 
     it('менеджеру без ai_analytics_self_view_enabled — 403', async () => {
-        const { controller, execute } = makeController(manager, false);
+        const { controller, execute } = makeController(MANAGER, false);
         await expect(controller.getAbout(dto)).rejects.toThrow(
             new ForbiddenException(AI_ANALYTICS_SELF_VIEW_FORBIDDEN_MESSAGE),
         );
         expect(execute).not.toHaveBeenCalled();
     });
 
-    it('менеджеру при включённой настройке ручка доступна', async () => {
-        const { controller, execute } = makeController(manager, true);
+    it('менеджеру при включённой настройке ручка доступна, периметр менеджера уходит в use-case', async () => {
+        const { controller, execute } = makeController(MANAGER, true);
         await expect(controller.getAbout(dto)).resolves.toMatchObject({
             status: 'ready',
         });
         expect(execute).toHaveBeenCalledTimes(1);
+        expect(execute).toHaveBeenCalledWith(dto, MANAGER);
     });
 });

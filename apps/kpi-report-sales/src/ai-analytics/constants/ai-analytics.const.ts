@@ -190,20 +190,14 @@ export const AI_ANALYTICS_PUSH_KINDS = [
     'digest_all',
 ] as const;
 export type AiAnalyticsPushKind = (typeof AI_ANALYTICS_PUSH_KINDS)[number];
-/** Виды, которые ставит утренний тик крона (08:00 МСК). */
+/**
+ * Виды, которые ставит утренний тик крона (локально 08:00 по TZ портала;
+ * слоты и тики — constants/ai-cron.const.ts).
+ */
 export const AI_ANALYTICS_MORNING_PUSH_KINDS = [
     'digest',
     'digest_all',
 ] as const satisfies readonly AiAnalyticsPushKind[];
-
-/**
- * Расписания крона в UTC (контейнер живёт в UTC, как остальные кроны):
- * повестка — понедельник 08:30 МСК, дайджест — ежедневно 08:00 МСК.
- */
-export const AI_ANALYTICS_PUSH_CRON = {
-    AGENDA: '30 5 * * 1',
-    DIGEST: '0 5 * * *',
-} as const;
 
 /** Префикс jobId push-джобы: ai-analytics:push:{kind}:{domain}:{date}. */
 export const AI_ANALYTICS_PUSH_JOB_ID_PREFIX = 'ai-analytics:push' as const;
@@ -280,9 +274,6 @@ export const AI_ANALYTICS_SETTINGS_AUDIT_RECORD = {
     APP: AI_ANALYTICS_SNAPSHOT_APP,
     PROVIDER: AI_ANALYTICS_SNAPSHOT_PROVIDER,
 } as const;
-
-/** Крон аудита в UTC: 1-е число 04:10 МСК (после ночных KPI-пересчётов). */
-export const AI_ANALYTICS_AUDIT_CRON = '10 1 1 * *' as const;
 
 /** Префикс jobId снапшот-джобы: ai-analytics:snapshot:{kind}:{domain}:{YYYY-MM}. */
 export const AI_ANALYTICS_SNAPSHOT_JOB_ID_PREFIX =

@@ -103,6 +103,7 @@ export class CallReportController {
             allowedUserIds: dto.userIds,
             maxRows: dto.maxRows,
             createSmartItem: dto.createSmartItem,
+            ignoreDurationGate: dto.ignoreDurationGate,
         });
     }
 

@@ -1,3 +1,4 @@
+import type { OverviewYoySnapshots } from '../loaders/overview-snapshots.loader';
 /**
  * Внутренняя модель шага overview (между loader'ами, assembler'ами и
  * presenter'ом). В DTO не уезжает — presenter переводит её в
@@ -74,6 +75,8 @@ export interface OverviewSources {
     disagreementsCount: number;
     /** Снапшоты Фазы 2: модель портала, прогнозы, профили стиля. */
     snapshots?: OverviewSnapshots;
+    /** Месяцы года назад для блока «год назад» (П3); undefined — не читались. */
+    yoy?: OverviewYoySnapshots;
     /** `ai_analytics_roster_confirmed_at`; '' — состав не подтверждали. */
     rosterConfirmedAt?: string;
     /** Пар в `ai_analytics_hypothesis` (режим `hypothesis` требует ≥ 2). */

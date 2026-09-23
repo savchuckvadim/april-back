@@ -4,6 +4,7 @@ import { AppCacheService } from '@lib/app-cache';
 import { BxDepartmentModule } from '@lib/bx-department';
 import { WsService } from '@/core/ws';
 import { TelegramModule } from '@lib/telegram/telegram.module';
+import { TelegramService } from '@lib/telegram/telegram.service';
 import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { AiAnalyticsAboutModule } from '../about/ai-analytics-about.module';
 import { AiAnalyticsModule } from '../ai-analytics.module';
@@ -25,6 +26,9 @@ import {
 } from '../pipeline/ai-analytics-pipeline.module';
 import { AiAnalyticsPlanModule } from '../plan/ai-analytics-plan.module';
 import { AiAnalyticsPortalModelModule } from '../portal-model/ai-analytics-portal-model.module';
+import { AiAnalyticsDossierModule } from '../dossier/ai-analytics-dossier.module';
+import { AiAnalyticsPlanFactModule } from '../plan-fact/ai-analytics-plan-fact.module';
+import { AiAnalyticsReviewModule } from '../review/ai-analytics-review.module';
 import { AiAnalyticsRopMarkModule } from '../rop-mark/ai-analytics-rop-mark.module';
 import { AiAnalyticsSnapshotsModule } from '../snapshots/ai-analytics-snapshots.module';
 import { AiAnalyticsStageHistoryModule } from '../stage-history/ai-analytics-stage-history.module';
@@ -57,10 +61,12 @@ import {
 
 /**
  * Глобальные провайдеры приложения — белый список: AppCacheService
- * (AppCacheModule — @Global) и WsService (WsModule — @Global; срез резюме
- * шлёт WS done/error, не импортируя WsModule).
+ * (AppCacheModule — @Global), WsService (WsModule — @Global; срез резюме
+ * шлёт WS done/error, не импортируя WsModule) и TelegramService
+ * (TelegramModule — @Global, импортирует корень приложения; срез отзыва с
+ * сайта шлёт сообщение в чат, не импортируя модуль с контроллером).
  */
-const GLOBAL_PROVIDERS: Ctor[] = [AppCacheService, WsService];
+const GLOBAL_PROVIDERS: Ctor[] = [AppCacheService, WsService, TelegramService];
 
 /**
  * Поддеревья, чьи роуты приложение публикует и без AI-аналитики: их
@@ -79,8 +85,11 @@ const EXPECTED_CONTROLLERS = [
     'AiAnalyticsAboutController',
     'AiAnalyticsBriefController',
     'AiAnalyticsController',
+    'AiAnalyticsDossierController',
     'AiAnalyticsOverviewController',
     'AiAnalyticsPlanController',
+    'AiAnalyticsPlanFactController',
+    'AiAnalyticsReviewController',
     'AiAnalyticsRopMarkController',
     'AiAnalyticsStyleController',
 ];
@@ -97,9 +106,12 @@ const FEATURE_MODULES: Ctor[] = [
     AiAnalyticsRopMarkModule,
     AiAnalyticsPortalModelModule,
     AiAnalyticsPlanModule,
+    AiAnalyticsPlanFactModule,
     AiAnalyticsBriefModule,
+    AiAnalyticsDossierModule,
     AiAnalyticsStyleModule,
     AiAnalyticsAboutModule,
+    AiAnalyticsReviewModule,
 ];
 
 type StepCtor = new (...args: never[]) => AiAnalyticsPipelineStep;
@@ -236,7 +248,7 @@ describe('DI-граф AiAnalyticsModule (kpi-report-sales)', () => {
         expect(names).toContain('AiAnalyticsPortalModelModule');
     });
 
-    it('конвейер собран: массив шагов непуст и содержит все 11 шагов в порядке STEP_ORDER', () => {
+    it('конвейер собран: массив шагов непуст и содержит все 12 шагов в порядке STEP_ORDER', () => {
         const dynamic = pipelineDynamicModule();
         expect(dynamic.imports).toEqual(AI_ANALYTICS_PIPELINE_STEP_MODULES);
         const provider = (dynamic.providers ?? [])[0] as FactoryProvider<
@@ -244,14 +256,14 @@ describe('DI-граф AiAnalyticsModule (kpi-report-sales)', () => {
         >;
         expect(provider.provide).toBe(AI_ANALYTICS_PIPELINE_STEPS);
         expect(provider.inject).toEqual(AI_ANALYTICS_PIPELINE_STEP_ORDER);
-        expect(provider.inject).toHaveLength(11);
+        expect(provider.inject).toHaveLength(12);
         const steps = AI_ANALYTICS_PIPELINE_STEP_ORDER.map(
             step => new (step as StepCtor)(),
         );
         const factory = provider.useFactory as (
             ...items: AiAnalyticsPipelineStep[]
         ) => AiAnalyticsPipelineStep[];
-        expect(factory(...steps)).toHaveLength(11);
+        expect(factory(...steps)).toHaveLength(12);
         expect(factory(...steps).map(step => step.code)).toEqual(
             steps.map(step => step.code),
         );

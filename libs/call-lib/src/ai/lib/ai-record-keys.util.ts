@@ -44,6 +44,10 @@ export function buildAiRecordKeySelectors(
     if (entityIds.length) {
         selectors.push({ column: 'entity_id', values: entityIds });
     }
+    const reportItemIds = uniqueStrings(keys.reportItemIds);
+    if (reportItemIds.length) {
+        selectors.push({ column: 'report_item_id', values: reportItemIds });
+    }
     return selectors;
 }
 

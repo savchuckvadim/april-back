@@ -6,9 +6,9 @@ import {
 import type { PlanSnapshot, SnapshotEnvelope } from '@lib/sales-ai-analytics';
 import {
     AI_PIPELINE_BUS_KEYS,
-    AI_PIPELINE_CRON,
     AI_PIPELINE_PLANS_STEPS,
 } from '../constants/ai-snapshot.const';
+import { AI_PIPELINE_CRON } from '../constants/ai-cron.const';
 import {
     AI_PLANS_SKIP_REASONS,
     AI_PLANS_WISH,
@@ -154,8 +154,8 @@ const snapshotOf = (bus: StepBus): PlanSnapshot | undefined =>
     bus.get<PlanSnapshot>(AI_PIPELINE_BUS_KEYS.plans);
 
 describe('Снимок планов 1-го числа', () => {
-    it('крон 1-го числа ставит только шаг планов', () => {
-        expect(AI_PIPELINE_CRON.PLANS).toBe('0 1 1 * *');
+    it('тик планов ежечасный на :00 (локально 1-го 04:00) и ставит только шаг планов', () => {
+        expect(AI_PIPELINE_CRON.PLANS).toBe('0 * * * *');
         expect([...AI_PIPELINE_PLANS_STEPS]).toEqual(['plans']);
     });
 

@@ -103,4 +103,36 @@ describe('call-duration-gate: нерелевантность', () => {
             }),
         ).toBeNull();
     });
+
+    it('ignoreDurationGate (смоук B12) снимает только порог типа, нерелевантность остаётся', () => {
+        const settings = {
+            irrelevantConfidence: 0.7,
+            minDurationSecByType: BY_TYPE,
+        };
+        // 120 с презентации при пороге 300 — без флага стоп, с флагом идёт.
+        expect(
+            resolveAnalysisStop({
+                classification: classified('presentation'),
+                durationSec: 120,
+                settings,
+                ignoreDurationGate: true,
+            }),
+        ).toBeNull();
+        expect(
+            resolveAnalysisStop({
+                classification: classified('presentation'),
+                durationSec: 120,
+                settings,
+                ignoreDurationGate: false,
+            })?.result,
+        ).toEqual({ shortCall: true });
+        expect(
+            resolveAnalysisStop({
+                classification: classified('irrelevant', 0.9),
+                durationSec: 30,
+                settings,
+                ignoreDurationGate: true,
+            })?.result,
+        ).toEqual({ irrelevant: true });
+    });
 });

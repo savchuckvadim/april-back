@@ -43,6 +43,16 @@ describe('ai-record-keys.util', () => {
         });
     });
 
+    describe('buildAiRecordKeySelectors: report_item_id', () => {
+        it('id элементов смарта — отдельный селектор, пустые и повторы отброшены', () => {
+            expect(
+                buildAiRecordKeySelectors({
+                    reportItemIds: ['128', '', '128', '129'],
+                }),
+            ).toEqual([{ column: 'report_item_id', values: ['128', '129'] }]);
+        });
+    });
+
     describe('chunkArray', () => {
         it('режет по size, последняя порция короче', () => {
             expect(chunkArray([1, 2, 3, 4, 5], 2)).toEqual([

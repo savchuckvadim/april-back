@@ -37,6 +37,7 @@ import {
     buildPipelineJobId,
     previousMonthKey,
 } from '../constants/ai-snapshot.const';
+import { portalHour } from '../cron/local-hour.util';
 import { isoWeekKey, weekMondayOf } from '../domain/loaders/period.util';
 import { SettingsLoader } from '../domain/loaders/settings.loader';
 import {
@@ -80,15 +81,8 @@ const emptyPlan = (reason: AiBackfillReason): AiSnapshotBackfillPlan => ({
     reason,
 });
 
-/** Час суток в TZ портала (0–23). */
-export function portalHour(now: Date, timeZone: string): number {
-    const hour = new Intl.DateTimeFormat('en-US', {
-        timeZone,
-        hourCycle: 'h23',
-        hour: '2-digit',
-    }).format(now);
-    return Number(hour);
-}
+/** Час суток в TZ портала (0–23): единые часы портала с кронами (П10). */
+export { portalHour };
 
 /** Ночное окно портала: с 22:00 до 06:00 (границы из констант ритмов). */
 export function isBackfillWindow(now: Date, timeZone: string): boolean {
