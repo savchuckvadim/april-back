@@ -199,8 +199,41 @@ describe('WorkTakeoverService', () => {
                 ],
             }),
         ).toEqual([
-            { id: 1, title: 'a', responsibleId: 7 },
-            { id: 2, title: 'b', responsibleId: 8 },
+            { id: 1, title: 'a', responsibleId: 7, bindings: [] },
+            { id: 2, title: 'b', responsibleId: 8, bindings: [] },
         ]);
+    });
+
+    it('addTaskBindings: задача получает привязку к основной сделке, даже если ответственный тот же', () => {
+        const { bitrix, batchTaskUpdate } = makeBitrix();
+        const service = new WorkTakeoverService(bitrix as never);
+        const buffer = makeBuffer();
+        const plan = {
+            tasks: [
+                {
+                    id: 1,
+                    title: 'a',
+                    responsibleId: 323,
+                    bindings: ['D_87955'],
+                },
+                {
+                    id: 2,
+                    title: 'b',
+                    responsibleId: 323,
+                    bindings: ['D_42423', 'D_87955'],
+                },
+            ],
+            activities: [],
+            warnings: [],
+        };
+        const outcome = service.queue(buffer, plan, 323, 'jm', {
+            addTaskBindings: ['D_42423'],
+        });
+        // Вторая уже привязана и на том же человеке — не трогаем.
+        expect(outcome.tasksMoved).toBe(1);
+        expect(batchTaskUpdate).toHaveBeenCalledWith('jm_task_1', 1, {
+            RESPONSIBLE_ID: 323,
+            UF_CRM_TASK: ['D_87955', 'D_42423'],
+        });
     });
 });

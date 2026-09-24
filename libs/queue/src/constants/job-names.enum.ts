@@ -27,6 +27,8 @@ export enum JobNames {
     SALES_HOOK_LEAD_ACCEPT = 'sales-hook-lead-accept',
     //клиент из лида: голый лид → контакт/компания, привязка к сделке
     SALES_HOOK_LEAD_CLIENT = 'sales-hook-lead-client',
+    //присоединить сделку-дубль к основной/компании клиента без удаления
+    SALES_HOOK_JOIN_TO_MAIN = 'sales-hook-join-to-main',
 
     //mail
     MAIL_SEND_AUTH = 'mail-send-auth',

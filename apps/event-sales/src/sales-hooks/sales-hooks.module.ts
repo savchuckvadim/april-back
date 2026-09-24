@@ -9,6 +9,7 @@ import { ConvertNormalizerHookModule } from './convert-normalizer/convert-normal
 import { DuplicateCheckHookModule } from './duplicate-check/duplicate-check.module';
 import { LeadAcceptHookModule } from './lead-accept/lead-accept.module';
 import { LeadClientHookModule } from './lead-client/lead-client.module';
+import { JoinToMainHookModule } from './join-to-main/join-to-main.module';
 
 /**
  * Семейство sales-хуков: ядро (silence + очередь операций + статусы + WS)
@@ -26,6 +27,7 @@ import { LeadClientHookModule } from './lead-client/lead-client.module';
         DuplicateCheckHookModule,
         LeadAcceptHookModule,
         LeadClientHookModule,
+        JoinToMainHookModule,
     ],
 })
 export class SalesHooksModule {}

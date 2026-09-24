@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
 import { EBXTaskStatus } from '@/modules/bitrix/domain/tasks/task';
+import { mergeTaskCrmBindings } from '@/modules/bitrix/domain/tasks/task/lib/task-crm-binding.util';
 import { IBatchGroupBuffer } from '../batch/batch-group-buffer.interface';
 
 type BxRow = Record<string, unknown>;
@@ -15,6 +16,17 @@ export interface IWorkTakeoverTask {
     id: number;
     title: string;
     responsibleId: number | null;
+    /** Текущие CRM-привязки задачи (`UF_CRM_TASK`: `D_12`, `L_5`, `CO_7`). */
+    bindings: string[];
+}
+
+/** Что ещё сделать с задачами при перехвате. */
+export interface IWorkTakeoverQueueOptions {
+    /**
+     * Привязки, которые задачи ДОЛЖНЫ получить (union с текущими) — при
+     * присоединении сделки-дубля её задачи должны быть видны из основной.
+     */
+    addTaskBindings?: string[];
 }
 
 export interface IWorkTakeoverActivity {
@@ -135,6 +147,7 @@ export class WorkTakeoverService {
         plan: IWorkTakeoverPlan,
         responsibleId: number,
         keyPrefix: string,
+        options: IWorkTakeoverQueueOptions = {},
     ): IWorkTakeoverOutcome {
         const outcome: IWorkTakeoverOutcome = {
             tasksMoved: 0,
@@ -142,12 +155,20 @@ export class WorkTakeoverService {
         };
         if (!isId(responsibleId)) return outcome;
 
-        for (const task of this.pending(plan.tasks, responsibleId)) {
+        const addBindings = options.addTaskBindings ?? [];
+        for (const task of plan.tasks) {
+            const bindings = mergeTaskCrmBindings(task.bindings, addBindings);
+            const needsBindings = bindings.length !== task.bindings.length;
+            if (task.responsibleId === responsibleId && !needsBindings) {
+                continue;
+            }
+            const fields: BxRow = { RESPONSIBLE_ID: responsibleId };
+            if (needsBindings) fields.UF_CRM_TASK = bindings;
             buffer.queue(() =>
                 this.bitrix.batch.task.update(
                     `${keyPrefix}_task_${task.id}`,
                     task.id,
-                    { RESPONSIBLE_ID: responsibleId },
+                    fields,
                 ),
             );
             outcome.tasksMoved += 1;
@@ -320,6 +341,7 @@ export class WorkTakeoverService {
                 id,
                 title: text(row.title ?? row.TITLE),
                 responsibleId: toId(row.responsibleId ?? row.RESPONSIBLE_ID),
+                bindings: refList(row.ufCrmTask ?? row.UF_CRM_TASK),
             });
         }
         return tasks;
@@ -363,6 +385,19 @@ const uniqueIds = (ids: readonly unknown[]): number[] => [
 
 const text = (raw: unknown): string =>
     typeof raw === 'string' ? raw.trim() : '';
+
+/** Множественное строковое поле Битрикса → массив непустых строк. */
+const refList = (raw: unknown): string[] => {
+    if (raw == null || raw === false) return [];
+    const items = Array.isArray(raw) ? raw : [raw];
+    return items
+        .map(value =>
+            typeof value === 'string' || typeof value === 'number'
+                ? String(value).trim()
+                : '',
+        )
+        .filter(Boolean);
+};
 
 const rowsOf = (value: unknown): BxRow[] => {
     if (Array.isArray(value)) {
