@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AppCacheService } from '@lib/app-cache';
+import {
+    excludeFromRoundRobin,
+    parseUserIds,
+} from '../lib/round-robin-exclusion.util';
 import { BxDepartmentStructureService } from 'libs/bx-department/services/bx-department-structure.service';
 import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import {
@@ -191,11 +195,13 @@ export class LeadToWorkAssigneeService {
          * заявки ушли Юлии Юрцевич уже после увольнения и так и висят
          * «Назначена». Поэтому перед выбором спрашиваем портал заново.
          */
-        const candidates = await this.keepActive(
+        const active = await this.keepActive(
             withHeadsFallback,
             context.activeUserIds,
             warnings,
         );
+        // Исключённые настройкой портала круг не получают (адресно — можно).
+        const candidates = await this.withoutExcluded(domain, active, warnings);
 
         if (candidates.length === 0) {
             warnings.push(
@@ -250,6 +256,46 @@ export class LeadToWorkAssigneeService {
             );
             return true;
         }
+    }
+
+    /**
+     * Минус сотрудники из настройки «Распределение по кругу: исключить
+     * сотрудников». Настройка не прочиталась — круг как есть: не назначить
+     * заявку хуже, чем назначить исключённому.
+     */
+    private async withoutExcluded(
+        domain: string,
+        candidates: number[],
+        warnings: string[],
+    ): Promise<number[]> {
+        if (!candidates.length) return candidates;
+        let excluded: number[];
+        try {
+            const settings = await this.appSettings.resolve(
+                domain,
+                EnumPortalAppCode.eventSales,
+            );
+            excluded = parseUserIds(
+                settings.leadIntakeRoundRobinExcludedUserIds,
+            );
+        } catch (error) {
+            warnings.push(
+                `Настройка исключений круга не прочитана (${(error as Error).message}) — круг без исключений`,
+            );
+            return candidates;
+        }
+        const result = excludeFromRoundRobin(candidates, excluded);
+        if (result.removed.length) {
+            this.logger.log(
+                `[assignee] из круга исключены настройкой: ${result.removed.join(', ')}`,
+            );
+        }
+        if (result.fellBack) {
+            warnings.push(
+                'Все кандидаты отдела исключены из круга настройкой портала — распределено среди них',
+            );
+        }
+        return result.candidates;
     }
 
     /**

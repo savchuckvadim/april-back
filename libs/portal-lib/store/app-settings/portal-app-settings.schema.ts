@@ -533,6 +533,19 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             type: 'string',
             default: '',
         }),
+        leadIntakeRoundRobinExcludedUserIds: setting({
+            code: 'lead_intake_round_robin_excluded_user_ids',
+            name: 'Распределение по кругу: исключить сотрудников',
+            description:
+                'Bitrix ID сотрудников через запятую, которым круг не ' +
+                'раздаёт заявки (стажёры, отпуск, особая роль). Касается ' +
+                'только случайного распределения и передачи по SLA: ' +
+                'адресно назначить такому сотруднику по-прежнему можно. ' +
+                'Если исключены все кандидаты отдела — заявка всё равно ' +
+                'уходит по кругу среди них, с предупреждением в истории.',
+            type: 'string',
+            default: '',
+        }),
         leadIntakeRescueLookbackMinutes: setting({
             code: 'lead_intake_rescue_lookback_minutes',
             name: 'Страховка входа: глубина поиска (минут)',

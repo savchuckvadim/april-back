@@ -560,3 +560,59 @@ describe('LeadToWorkAssigneeService — город из «Отдел строк�
         expect(result.warnings.join(' ')).toContain('Отдел заявки не указан');
     });
 });
+
+/*
+ * ИСКЛЮЧЕНИЯ ИЗ КРУГА (настройка портала, 25.09.2026): стажёры, отпуск —
+ * круг им заявки не раздаёт, адресно назначить можно.
+ */
+describe('LeadToWorkAssigneeService — исключения из круга', () => {
+    const settingsWith = (excluded: string) => ({
+        resolve: jest.fn().mockResolvedValue({
+            leadIntakeDepartmentAliases: '',
+            leadIntakeRoundRobinExcludedUserIds: excluded,
+        }),
+    });
+
+    it('исключённый сотрудник не получает заявку по кругу', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+            settingsWith('5') as never,
+        );
+        for (let i = 0; i < 4; i += 1) {
+            const result = await service.resolve(
+                'd.b24.ru',
+                item({ department: '15' }),
+            );
+            expect(result.source).toBe('round-robin');
+            expect(result.responsible).toBe(3);
+        }
+    });
+
+    it('адресное назначение исключённому работает', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+            settingsWith('5') as never,
+        );
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ responsible: 5 }),
+        );
+        expect(result).toMatchObject({ responsible: 5, source: 'explicit' });
+    });
+
+    it('исключены все — распределяем среди них с предупреждением', async () => {
+        const service = new LeadToWorkAssigneeService(
+            makeStructure() as never,
+            makeAppCache() as never,
+            settingsWith('3, 5') as never,
+        );
+        const result = await service.resolve(
+            'd.b24.ru',
+            item({ department: '15' }),
+        );
+        expect([3, 5]).toContain(result.responsible);
+        expect(result.warnings.join(' ')).toContain('исключены из круга');
+    });
+});
