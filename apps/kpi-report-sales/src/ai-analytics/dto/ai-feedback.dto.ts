@@ -8,26 +8,36 @@ import {
     MaxLength,
 } from 'class-validator';
 import {
-    AI_ANALYTICS_FEEDBACK_KINDS,
-    AiAnalyticsFeedbackKind,
-} from '@lib/sales-ai-analytics';
+    AI_ANALYTICS_USER_FEEDBACK_KINDS,
+    type AiAnalyticsUserFeedbackKind,
+} from '../constants/ai-feedback.const';
 import { AiRequestBaseDto } from './ai-request-base.dto';
 import { AiAnalyticsEnvelopeDto } from './ai-response-envelope.dto';
 
 /**
  * Обратная связь по витрине (план, контракт 4): реакция пользователя на
  * пульс/повестку/звонок пишется в ais записью type = ai-analytics-feedback.
+ * Служебные виды (alert_sent, digest_sent, agenda_sent, rop_mark) ручка не
+ * принимает — их пишут только push-контур, алерты и слепая проверка.
  */
 export class AiFeedbackRequestDto extends AiRequestBaseDto {
     @ApiProperty({
         description:
-            'Вид реакции: view, useful, not_useful, disagree, alert_handled ' +
-            '(остальные виды — служебные, пишет push-контур).',
-        enum: AI_ANALYTICS_FEEDBACK_KINDS,
+            'Вид реакции пользователя: view, useful, not_useful, disagree, ' +
+            'alert_handled. Служебные виды (alert_sent, digest_sent, ' +
+            'agenda_sent, rop_mark) отклоняются валидацией с 400. ' +
+            'alert_handled — только руководителям (менеджеру — 403). ' +
+            'useful / not_useful — одна оценка на автора, объект и день ' +
+            'портала: та же оценка возвращает id прежней записи, смена ' +
+            'оценки пишет новую, прежняя уходит в superseded. Повтор ' +
+            'alert_handled за день возвращает id прежней записи.',
+        type: String,
+        enum: AI_ANALYTICS_USER_FEEDBACK_KINDS,
         example: 'disagree',
     })
-    @IsIn(AI_ANALYTICS_FEEDBACK_KINDS)
-    kind: AiAnalyticsFeedbackKind;
+    @IsString()
+    @IsIn(AI_ANALYTICS_USER_FEEDBACK_KINDS)
+    kind: AiAnalyticsUserFeedbackKind;
 
     @ApiProperty({
         description:
@@ -81,7 +91,9 @@ export class AiFeedbackRequestDto extends AiRequestBaseDto {
 
 export class AiFeedbackResultDto {
     @ApiProperty({
-        description: 'Id записи ais.',
+        description:
+            'Id записи ais; для повторной реакции того же дня — id уже ' +
+            'существующей записи (дубль не пишется).',
         type: String,
         example: '9001',
     })

@@ -17,6 +17,7 @@ import {
     AI_ROP_MARK_OBJECT,
     AI_ROP_MARK_RECORD,
 } from '../constants/ai-rop-mark.const';
+import { supersedeAisRecords } from './ais-supersede.util';
 
 /** Подбор недели, прочитанный из ais. */
 export interface AiRopMarkPickRecord extends AiAnalyticsRopMarkPickPayload {
@@ -260,15 +261,11 @@ export class AiAnalyticsRopMarkStore {
     }
 
     /** Переводит записи в superseded; возвращает их id. */
-    private async supersede(records: AiEntityDto[]): Promise<string[]> {
-        const ids: string[] = [];
-        for (const record of records) {
-            await this.aiService.update(record.id, {
-                status: AI_ANALYTICS_SNAPSHOT_STATUS.superseded,
-            });
-            ids.push(record.id);
-        }
-        return ids;
+    private supersede(records: AiEntityDto[]): Promise<string[]> {
+        return supersedeAisRecords(
+            this.aiService,
+            records.map(record => record.id),
+        );
     }
 
     private toMark(record: AiEntityDto): AiRopMarkRecord[] {

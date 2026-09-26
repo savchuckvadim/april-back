@@ -14,6 +14,7 @@ import {
 import { AiAttentionItemDto } from './ai-attention.dto';
 import { AiFinanceTailDto } from './ai-finance-tail.dto';
 import { AiFunnelEdgeDto } from './ai-funnel-edge.dto';
+import { AiManagerRowTenureDto } from './ai-manager-row-tenure.dto';
 import { AiManagerTypeCellDto } from './ai-manager-type-cell.dto';
 import { AiNextStepRateDto, AiRiskCallDto } from './ai-manager-signals.dto';
 import { AiRecommendationDto } from './ai-recommendation.dto';
@@ -36,6 +37,7 @@ export {
 // в своих файлах (Фаза 2 их расширила, «≤ 300 строк»); реэкспорт
 // сохраняет прежние импорты соседей.
 export { AiFunnelEdgeDto } from './ai-funnel-edge.dto';
+export { AiManagerRowTenureDto } from './ai-manager-row-tenure.dto';
 export { AiNextStepRateDto, AiRiskCallDto } from './ai-manager-signals.dto';
 export { AiRecommendationDto } from './ai-recommendation.dto';
 export { AiStyleProfileDto, AiStyleTagDto } from './ai-style-profile.dto';
@@ -96,8 +98,11 @@ export class AiDisciplineDto {
     presentationDone: number;
 }
 
-/** Строка менеджера в обзоре (план 6.3, ТЗ FR-13/14). */
-export class AiManagerRowDto {
+/**
+ * Строка менеджера в обзоре (план 6.3, ТЗ FR-13/14). Дата начала стажа и
+ * её источник — в базовом AiManagerRowTenureDto (лимит 300 строк).
+ */
+export class AiManagerRowDto extends AiManagerRowTenureDto {
     @ApiProperty({
         description: 'Bitrix-id менеджера.',
         type: String,
@@ -123,24 +128,31 @@ export class AiManagerRowDto {
 
     @ApiProperty({
         description:
-            'Уровень: manual — назначен РОПом (settings/save), default — ' +
-            'по стажу (< 6 мес. junior, иначе middle).',
+            'Уровень менеджера; откуда взят — в levelSource. Тот же, что ' +
+            'у ночного конвейера в месячном снапшоте.',
         enum: AI_ANALYTICS_MANAGER_LEVELS,
         example: 'middle',
     })
     level: AiAnalyticsManagerLevel;
 
     @ApiProperty({
-        description: 'Источник уровня.',
+        description:
+            'Источник уровня: manual — назначен РОПом (settings/save), ' +
+            'всегда главнее; passport — подсказка паспорта из месячного ' +
+            'снапшота по полосе стажа (tenure_gates, по умолчанию < 6 ' +
+            'мес. junior, 6–18 middle, 18+ senior); default — ни ' +
+            'записи, ни паспорта: по стажу ' +
+            '(< 6 мес. junior, иначе middle).',
         enum: AI_ANALYTICS_LEVEL_SOURCES,
-        example: 'default',
+        example: 'passport',
     })
     levelSource: AiAnalyticsLevelSource;
 
     @ApiProperty({
         description:
-            'Стаж, месяцев, от since уровня; null — дата стажа не задана ' +
-            '(DATE_REGISTER Bitrix — Фаза 2).',
+            'Стаж, полных месяцев: при записи РОПа — от since до конца ' +
+            'периода; без записи — стаж из паспорта месяца; null — даты ' +
+            'стажа нет (откуда дата — sinceSource).',
         type: Number,
         nullable: true,
         example: 14,
@@ -270,14 +282,4 @@ export class AiManagerRowDto {
         nullable: true,
     })
     yoy?: AiYoyDto | null;
-
-    @ApiPropertyOptional({
-        description:
-            'Дата начала стажа YYYY-MM-DD (since уровня; каскад ' +
-            'UF_EMPLOYMENT_DATE → DATE_REGISTER приезжает из паспорта ' +
-            'конвейера); нет — дата не задана.',
-        type: String,
-        example: '2025-04-01',
-    })
-    since?: string;
 }

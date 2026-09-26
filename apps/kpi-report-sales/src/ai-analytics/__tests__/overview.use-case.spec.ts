@@ -105,6 +105,8 @@ describe('OverviewUseCase', () => {
             totalCalls: 18,
             analyzedCalls: 18,
             skippedNoManager: 0,
+            // Версий в фикстуре нет — граница сопоставимости не режет.
+            excludedBeforeComparable: 0,
             disagreementsCount: 0,
             fromCache: false,
             confirmedOnly: false,
@@ -131,7 +133,7 @@ describe('OverviewUseCase', () => {
         expect(enough?.score.value).not.toBeNull();
     });
 
-    it('уровень из стора → manual, без записи → default', async () => {
+    it('уровень из стора → manual, без записи и снапшотов → default', async () => {
         const { useCase } = makeUseCase();
         const dto = await useCase.execute(input, { now: OVERVIEW_NOW });
         expect(dto.managers[0]).toMatchObject({

@@ -4,5 +4,7 @@ export * from './services/bx-team.service';
 export * from './services/bx-department-structure.service';
 export * from './services/bx-department-cache.service';
 export * from './services/bx-department-heads.service';
+export * from './services/bx-super-user.service';
 export * from './lib/department-heads.util';
+export * from './lib/super-user.util';
 export * from './bx-department.module';

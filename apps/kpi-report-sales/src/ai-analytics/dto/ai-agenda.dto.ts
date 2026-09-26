@@ -113,20 +113,25 @@ export class AiAgendaDisagreementDto {
     reason: string | null;
 }
 
-/** Повестка РОПа: 3 звонка недели и несогласия (план, 6.3). */
+/** Повестка РОПа: 3 звонка прошлой недели и несогласия (план, 6.3). */
 export class AiAgendaDto {
     @ApiProperty({
-        description: 'Ключ ISO-недели (YYYY-Www).',
+        description: 'Ключ текущей ISO-недели планёрки (YYYY-Www).',
         type: String,
         example: '2026-W36',
     })
     weekKey: string;
 
-    @ApiProperty({ description: 'Звонки повестки.', type: [AiAgendaItemDto] })
+    @ApiProperty({
+        description:
+            'Звонки повестки: прошлая полная ISO-неделя (пн–вс, TZ портала).',
+        type: [AiAgendaItemDto],
+    })
     items: AiAgendaItemDto[];
 
     @ApiProperty({
-        description: 'Несогласия с разбором за неделю.',
+        description:
+            'Несогласия с разбором: с понедельника прошлой недели по момент запроса.',
         type: [AiAgendaDisagreementDto],
     })
     disagreements: AiAgendaDisagreementDto[];

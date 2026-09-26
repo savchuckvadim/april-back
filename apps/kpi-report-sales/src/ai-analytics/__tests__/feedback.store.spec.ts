@@ -125,6 +125,7 @@ describe('AiAnalyticsFeedbackStore (ais, контракт 4)', () => {
         expect(all[0]).toEqual({
             id: '1',
             createdAt: created,
+            status: 'done',
             kind: 'useful',
             object: 'agenda',
             managerId: '10',
@@ -135,6 +136,43 @@ describe('AiAnalyticsFeedbackStore (ais, контракт 4)', () => {
 
         const forManager = await store.listInPeriod('d', from, to, '20');
         expect(forManager.map(record => record.id)).toEqual(['2']);
+    });
+
+    it('listInPeriod: замещённые (superseded) записи по умолчанию отсекаются, по опции — отдаются', async () => {
+        const rows = [
+            {
+                id: '1',
+                createdAt: created,
+                status: 'done',
+                user_result: { kind: 'rop_mark', object: 'call:5' },
+            },
+            {
+                id: '2',
+                createdAt: created,
+                status: 'superseded',
+                user_result: { kind: 'rop_mark', object: 'call:5' },
+            },
+            {
+                id: '3',
+                createdAt: created,
+                status: '',
+                user_result: { kind: 'useful', object: 'agenda' },
+            },
+        ];
+        const { store } = makeStore(rows);
+        const from = new Date('2026-09-01T00:00:00Z');
+        const to = new Date('2026-09-30T00:00:00Z');
+
+        const actual = await store.listInPeriod('d', from, to);
+        expect(actual.map(record => [record.id, record.status])).toEqual([
+            ['1', 'done'],
+            ['3', 'done'],
+        ]);
+
+        const withHistory = await store.listInPeriod('d', from, to, undefined, {
+            includeSuperseded: true,
+        });
+        expect(withHistory.map(record => record.id)).toEqual(['1', '2', '3']);
     });
 
     it('parseFeedbackPayload: kind только из as const-справочника', () => {

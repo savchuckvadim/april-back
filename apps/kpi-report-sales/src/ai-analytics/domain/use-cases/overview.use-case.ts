@@ -10,23 +10,19 @@ import { isOverviewPeriodValid } from '../../dto/validators/overview-period.vali
 import { AiAnalyticsFeedbackStore } from '../../store/ai-analytics-feedback.store';
 import { AiAnalyticsSettingsStore } from '../../store/ai-analytics-settings.store';
 import { AiAnalyticsSnapshotStore } from '../../store/ai-analytics-snapshot.store';
-import type {
-    OverviewSnapshots,
-    OverviewSources,
-} from '../assembler/overview-model.types';
 import { CallsLoader } from '../loaders/calls.loader';
 import { FinanceLoader } from '../loaders/finance.loader';
 import { KpiLoader } from '../loaders/kpi.loader';
 import { ManagerOrgLoader } from '../loaders/manager-org.loader';
 import { ManagersLoader } from '../loaders/managers.loader';
-import {
-    OverviewSnapshotsLoader,
-    type OverviewYoySnapshots,
-} from '../loaders/overview-snapshots.loader';
+import { OverviewSnapshotsLoader } from '../loaders/overview-snapshots.loader';
 import { portalRangeUtc } from '../loaders/period.util';
 import { PlansLoader } from '../loaders/plans.loader';
 import { SettingsLoader } from '../loaders/settings.loader';
-import { buildOverviewDto } from '../presenter/overview.presenter';
+import {
+    buildOverviewDto,
+    type OverviewPresenterSources,
+} from '../presenter/overview.presenter';
 
 /** Вход расчёта обзора: период в TZ портала, ростер (пусто — структура). */
 export interface OverviewInput {
@@ -50,9 +46,11 @@ const DISAGREE_KIND = 'disagree';
  * Оркестрация обзора менеджер × тип (план 6.4, ТЗ FR-13): период
  * (≤ 3 мес., иначе 400) → ростер → параллельно звонки (loadLite за UTC-окно
  * периода), KPI-месяцы, финансы, планы руководителя, раскладка по отделам,
- * уровни из стора и несогласия → assembler/presenter → AiOverviewDto на весь
- * домен. Периметр requester'а применяется при отдаче
- * (applyOverviewPerimeter), результат кэшируется процессором.
+ * уровни из стора, несогласия и снапшоты `ais` (Фаза 2, «год назад»,
+ * паспорта месяца — уровень и стаж строки без ручной записи) →
+ * assembler/presenter → AiOverviewDto на весь домен. Периметр requester'а
+ * применяется при отдаче (applyOverviewPerimeter), результат кэшируется
+ * процессором.
  *
  * Сам ничего не считает и не ходит в Bitrix напрямую: всё — в loader'ах
  * (PBXService.init(domain) внутри них), поэтому @Injectable без
@@ -97,6 +95,20 @@ export class OverviewUseCase {
         ]);
         const range = portalRangeUtc(from, to, settings.calendar.timeZone);
 
+        // Снапшоты `ais` (Фаза 2, «год назад», паспорта месяца) идут
+        // параллельно с загрузчиками Bitrix; чтение не бросает (деградирует
+        // до undefined), поэтому ожидается после них.
+        const snapshotReads = Promise.all([
+            this.fromSnapshots(domain, 'Снапшоты Фазы 2', loader =>
+                loader.load(domain, to),
+            ),
+            this.fromSnapshots(domain, 'Месяцы года назад', loader =>
+                loader.loadYoy(domain, to),
+            ),
+            this.fromSnapshots(domain, 'Паспорта менеджеров', loader =>
+                loader.loadPassports(domain, to),
+            ),
+        ]);
         const [rows, kpi, finance, plans, org, levels, disagreementsCount] =
             await Promise.all([
                 this.calls.loadLite(domain, range.from, range.to),
@@ -114,7 +126,8 @@ export class OverviewUseCase {
                 this.countDisagreements(domain, range.from, range.to),
             ]);
 
-        const sources: OverviewSources = {
+        const [snapshots, yoy, passports] = await snapshotReads;
+        const sources: OverviewPresenterSources = {
             domain,
             from,
             to,
@@ -129,8 +142,9 @@ export class OverviewUseCase {
             org,
             levels,
             disagreementsCount,
-            snapshots: await this.loadSnapshots(domain, to),
-            ...(await this.loadYoy(domain, to)),
+            snapshots: snapshots ?? {},
+            ...(yoy === undefined ? {} : { yoy }),
+            ...(passports === undefined ? {} : { passports }),
             rosterConfirmedAt: settings.rosterConfirmedAt,
             hypothesisPairs: settings.hypothesis?.pairs.length ?? 0,
         };
@@ -144,49 +158,25 @@ export class OverviewUseCase {
     }
 
     /**
-     * Снапшоты Фазы 2 на конец периода. Стора нет либо `ais` не ответила —
-     * витрина остаётся в поведении Фазы 1b: обзор не должен гаснуть из-за
-     * ночного конвейера (§5.4).
+     * Чтение снапшотов `ais` для витрины: снапшоты Фазы 2 на конец
+     * периода, месяцы «год назад» (П3), паспорта месяца (уровень и стаж
+     * строки). Стора нет либо `ais` не ответила — undefined, и витрина
+     * остаётся в прежнем поведении: обзор не гаснет из-за ночного
+     * конвейера (§5.4).
      */
-    /**
-     * Месяцы года назад для блока «год назад» (П3). Стора нет либо `ais`
-     * не ответила — блок просто не появится: обзор не гаснет.
-     */
-    private async loadYoy(
+    private async fromSnapshots<T>(
         domain: string,
-        to: string,
-    ): Promise<{ yoy?: OverviewYoySnapshots }> {
-        if (!this.snapshots) return {};
+        what: string,
+        read: (loader: OverviewSnapshotsLoader) => Promise<T>,
+    ): Promise<T | undefined> {
+        if (!this.snapshots) return undefined;
         try {
-            return {
-                yoy: await new OverviewSnapshotsLoader(this.snapshots).loadYoy(
-                    domain,
-                    to,
-                ),
-            };
+            return await read(new OverviewSnapshotsLoader(this.snapshots));
         } catch (error) {
             this.logger.warn(
-                `Месяцы года назад недоступны (${domain}): ${String(error)}`,
+                `${what} недоступны (${domain}): ${String(error)}`,
             );
-            return {};
-        }
-    }
-
-    private async loadSnapshots(
-        domain: string,
-        to: string,
-    ): Promise<OverviewSnapshots> {
-        if (!this.snapshots) return {};
-        try {
-            return await new OverviewSnapshotsLoader(this.snapshots).load(
-                domain,
-                to,
-            );
-        } catch (error) {
-            this.logger.warn(
-                `Снапшоты Фазы 2 недоступны (${domain}): ${String(error)}`,
-            );
-            return {};
+            return undefined;
         }
     }
 

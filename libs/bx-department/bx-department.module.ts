@@ -14,6 +14,7 @@ import { BxDepartmentStructureService } from './services/bx-department-structure
 import { BxDepartmentCacheController } from './controllers/bx-department-cache.controller';
 import { BxDepartmentCacheService } from './services/bx-department-cache.service';
 import { BxDepartmentHeadsService } from './services/bx-department-heads.service';
+import { BxSuperUserService } from './services/bx-super-user.service';
 
 @Module({
     imports: [PBXModule, RedisModule, BitrixV3Module, PortalAppSettingsModule],
@@ -25,6 +26,9 @@ import { BxDepartmentHeadsService } from './services/bx-department-heads.service
         BxDepartmentCacheController,
     ],
     providers: [
+        // ConfigService — из глобального ConfigModule приложения-хоста
+        // (kpi-report-sales, pbx, event-sales: isGlobal: true).
+        BxSuperUserService,
         BxDepartmentHeadsService,
         BxDepartmentService,
         BxAllDepartmentsService,
@@ -33,6 +37,7 @@ import { BxDepartmentHeadsService } from './services/bx-department-heads.service
         BxDepartmentCacheService,
     ],
     exports: [
+        BxSuperUserService,
         BxDepartmentHeadsService,
         BxDepartmentService,
         BxTeamService,

@@ -162,8 +162,9 @@ export class AiDossierFeedbackSummaryDto {
 
     @ApiProperty({
         description:
-            'Счётчики по видам реакции (useful, not_useful, disagree, ' +
-            'view, alert_handled …): код вида → число.',
+            'Счётчики по видам реакции: только useful, not_useful, disagree ' +
+            'и alert_handled в актуальном статусе (просмотры, служебные ' +
+            'записи и замещённые метки не считаются): код вида → число.',
         type: Object,
         example: { useful: 7, not_useful: 2, disagree: 3 },
     })

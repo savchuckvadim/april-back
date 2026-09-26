@@ -1,46 +1,13 @@
 import { ForbiddenException } from '@nestjs/common';
-import { RequesterAccessService } from '../domain/access/requester-access.service';
+import { disagreementSharePct } from '../domain/use-cases/feedback.use-case';
 import {
-    disagreementSharePct,
-    FeedbackUseCase,
-} from '../domain/use-cases/feedback.use-case';
-import { settingsLoaderWith } from './fixtures/lite-row.fixture';
+    FEEDBACK_CUP,
+    FEEDBACK_LEADER,
+    FEEDBACK_MANAGER,
+    makeFeedbackUseCase as makeUseCase,
+} from './fixtures/feedback-use-case.fixture';
 
 const created = new Date('2026-09-03T10:00:00Z');
-
-function makeUseCase(
-    records: object[] = [],
-    styleSnapshot: object | null = null,
-) {
-    const store = {
-        add: jest.fn().mockResolvedValue('9001'),
-        listInPeriod: jest.fn().mockResolvedValue(records),
-    };
-    const snapshots = {
-        latest: jest.fn().mockResolvedValue(styleSnapshot),
-        upsert: jest.fn().mockResolvedValue({
-            id: '1',
-            supersededIds: [],
-            written: 1,
-        }),
-    };
-    // Реальный сервис доступа ради assertVisible; структура и кэш не нужны.
-    const access = new RequesterAccessService(
-        {} as never,
-        {} as never,
-        {} as never,
-    );
-    return {
-        useCase: new FeedbackUseCase(
-            store as never,
-            access,
-            settingsLoaderWith(),
-            snapshots as never,
-        ),
-        store,
-        snapshots,
-    };
-}
 
 /** Матчер вложенного объекта: без него nested objectContaining даёт any. */
 const objectWith = (fields: Record<string, unknown>): unknown =>
@@ -63,8 +30,8 @@ const styleSnapshotOf = (disputedTags?: string[]) => ({
     },
 });
 
-const leader = { role: 'op' as const, visibleManagerIds: ['10', '20', '447'] };
-const manager = { role: 'manager' as const, visibleManagerIds: ['512'] };
+const leader = FEEDBACK_LEADER;
+const manager = FEEDBACK_MANAGER;
 
 describe('FeedbackUseCase', () => {
     it('add: менеджер пишет только за себя (managerId подменяется), requesterUserId сохраняется', async () => {
@@ -120,7 +87,7 @@ describe('FeedbackUseCase', () => {
         ).rejects.toBeInstanceOf(ForbiddenException);
     });
 
-    it('list: даты периода в TZ портала, доля несогласий по реакциям', async () => {
+    it('list (cup): даты периода в TZ портала, доля несогласий по реакциям', async () => {
         const { useCase, store } = makeUseCase([
             {
                 id: '1',
@@ -170,7 +137,7 @@ describe('FeedbackUseCase', () => {
                 from: '2026-09-01',
                 to: '2026-09-30',
             },
-            leader,
+            FEEDBACK_CUP,
         );
         expect(store.listInPeriod).toHaveBeenCalledWith(
             'd',

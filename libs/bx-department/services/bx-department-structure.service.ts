@@ -9,70 +9,27 @@ import {
     parseUserIds,
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
-import {
-    IBXDepartment,
-    IBXUser,
-} from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 import { DepartmentBitrixService } from '@/modules/bitrix/domain/department/services/department-bitrxi.service';
 import { BxDepartmentService } from './bx-department.service';
 import { BxDepartmentHeadsService } from './bx-department-heads.service';
+import { BxSuperUserService } from './bx-super-user.service';
+import { withHeads } from '../lib/department-heads.util';
 import {
-    legacyHeadsOf,
-    toPositiveInt,
-    withHeads,
-} from '../lib/department-heads.util';
-import {
-    applyForcedVisibility,
     EMPTY_FORCED_VISIBILITY,
-    forcedLevelFor,
     ForcedVisibilityLists,
 } from '../lib/forced-visibility.util';
 import {
-    BxCurrentUserDto,
-    BxDepartmentStructureResponseDto,
-    EBxDepartmentHeadType,
-} from '../dto/bx-department-structure.dto';
-
-/** Разбивка по одному отделу продаж (внутренний тип, структурно равен BxSalesDepartmentDto). */
-interface ISalesDepartment {
-    department: IBXDepartment;
-    groups: IBXDepartment[];
-    allUsers: IBXUser[];
-}
-
-/** Кешируемая часть структуры (без данных текущего пользователя). */
-interface IStructureData {
-    department: {
-        department: number;
-        generalDepartment: IBXDepartment[];
-        childrenDepartments: IBXDepartment[];
-        allUsers: IBXUser[];
-    };
-    salesDepartments: ISalesDepartment[];
-    /** Родительские отделы найденных ОП — для определения руководителя уровня cup. */
-    cupDepartments: IBXDepartment[];
-}
-
-/** Шаблоны названий отделов по группе для поиска по всей структуре. */
-const DEPARTMENT_NAME_PATTERNS: Record<EDepartamentGroup, RegExp[]> = {
-    [EDepartamentGroup.sales]: [/^оп(\s|$)/i, /отдел\s+продаж/i],
-    [EDepartamentGroup.service]: [/^ос(\s|$)/i, /отдел\s+сервиса/i],
-    [EDepartamentGroup.tmc]: [],
-};
+    collectUsers,
+    isGroupName,
+    matchesName,
+    resolvePatterns,
+    tagCacheKey,
+} from '../lib/department-match.util';
+import { buildCurrentUser } from '../lib/current-user.util';
+import { ISalesDepartment, IStructureData } from '../lib/structure-data.types';
+import { BxDepartmentStructureResponseDto } from '../dto/bx-department-structure.dto';
 
 const CACHE_TTL_SECONDS = 86400;
-
-/**
- * Признак группы внутри ОП — подотдел с названием «Группа …».
- * Прочие подотделы группами не считаются, но их сотрудники
- * остаются в allUsers отдела (в некоторых ОП сотрудники лежат
- * напрямую или в негрупповых подотделах).
- */
-const GROUP_NAME_PATTERN = /группа/i;
-
-/** Экранирование пользовательского тэга перед вставкой в RegExp. */
-const escapeRegExp = (value: string): string =>
-    value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** Результат PBXService.init и тип инстанса bitrix из него (без импорта класса). */
 type PbxInitResult = Awaited<ReturnType<PBXService['init']>>;
@@ -82,7 +39,8 @@ type BitrixInstance = PbxInitResult['bitrix'];
  * Структура отделов продаж на старом API (department.get).
  * В мультирежиме находит все ОП по всей структуре портала,
  * мерджит их в прежний формат ответа и отдаёт разбивку по ОП,
- * плюс роль текущего пользователя и его коллег.
+ * плюс роль текущего пользователя и его коллег (суперпользователь
+ * вендора из BX_SUPER_USER_IDS получает видимость all).
  */
 @Injectable()
 export class BxDepartmentStructureService {
@@ -95,6 +53,7 @@ export class BxDepartmentStructureService {
         private readonly departmentService: BxDepartmentService,
         private readonly heads: BxDepartmentHeadsService,
         private readonly appSettings: PortalAppSettingsService,
+        private readonly superUsers: BxSuperUserService,
     ) {
         this.redis = this.redisService.getClient();
     }
@@ -125,7 +84,10 @@ export class BxDepartmentStructureService {
             resetCache,
         );
         const forced = await this.resolveForcedVisibility(domain, group);
-        const currentUser = this.buildCurrentUser(structure, userId, forced);
+        const currentUser = buildCurrentUser(structure, userId, {
+            forced,
+            isSuperUser: this.superUsers.isSuperUser(domain, Number(userId)),
+        });
         return {
             isMultiple,
             multipleTag,
@@ -146,7 +108,7 @@ export class BxDepartmentStructureService {
     ): Promise<IStructureData> {
         const day = dayjs().format('MMDD');
         const mode = isMultiple
-            ? `multi_${this.tagCacheKey(multipleTag)}`
+            ? `multi_${tagCacheKey(multipleTag)}`
             : 'single';
         // v2: группы фильтруются по названию «Группа…»; v3: список HEADS
         // (структура v3 + UF_HEAD). Менять синхронно с BxDepartmentCacheService.
@@ -172,14 +134,6 @@ export class BxDepartmentStructureService {
         return structure;
     }
 
-    /** Часть ключа кеша по тэгу (разные тэги — разные наборы отделов). */
-    private tagCacheKey(multipleTag: string | null): string {
-        return (
-            (multipleTag ?? '').trim().replace(/\s+/g, '-').toLowerCase() ||
-            'default'
-        );
-    }
-
     /** Прежнее поведение: один базовый отдел из конфига портала. */
     private async buildSingle(
         domain: string,
@@ -198,9 +152,7 @@ export class BxDepartmentStructureService {
             department: base.department,
             salesDepartments: generalDepartment.map(department => ({
                 department,
-                groups: childrenDepartments.filter(d =>
-                    this.isGroupName(d.NAME),
-                ),
+                groups: childrenDepartments.filter(d => isGroupName(d.NAME)),
                 allUsers,
             })),
             cupDepartments: [],
@@ -215,10 +167,10 @@ export class BxDepartmentStructureService {
         multipleTag: string | null,
     ): Promise<IStructureData> {
         const bxDepartments = new DepartmentBitrixService(bitrix);
-        const patterns = this.resolvePatterns(group, multipleTag);
+        const patterns = resolvePatterns(group, multipleTag);
 
         const all = await bxDepartments.getDepartmentsAll();
-        const opsRaw = all.filter(d => this.matchesName(d.NAME, patterns));
+        const opsRaw = all.filter(d => matchesName(d.NAME, patterns));
         if (opsRaw.length === 0) {
             throw new NotFoundException(
                 `На портале ${domain} не найдено отделов группы ${group} по названию/тэгу`,
@@ -255,8 +207,8 @@ export class BxDepartmentStructureService {
                 department: op,
                 // группами считаются только «Группа…», но сотрудники
                 // прочих подотделов остаются в allUsers отдела
-                groups: opChildren.filter(d => this.isGroupName(d.NAME)),
-                allUsers: this.collectUsers([op, ...opChildren]),
+                groups: opChildren.filter(d => isGroupName(d.NAME)),
+                allUsers: collectUsers([op, ...opChildren]),
             };
         });
 
@@ -266,71 +218,11 @@ export class BxDepartmentStructureService {
                 department: 0,
                 generalDepartment: ops,
                 childrenDepartments: children,
-                allUsers: this.collectUsers([...ops, ...children]),
+                allUsers: collectUsers([...ops, ...children]),
             },
             salesDepartments,
             cupDepartments,
         };
-    }
-
-    /**
-     * Шаблоны поиска отделов: если у отдела задан multiple_tag — ищем по нему
-     * (список префиксов через пробел/запятую, напр. «ОП ОС»); иначе — прежние
-     * захардкоженные шаблоны группы.
-     */
-    private resolvePatterns(
-        group: EDepartamentGroup,
-        multipleTag: string | null,
-    ): RegExp[] {
-        const tag = multipleTag?.trim();
-        if (tag) {
-            return this.tagToPatterns(tag);
-        }
-        return DEPARTMENT_NAME_PATTERNS[group] ?? [];
-    }
-
-    /** «ОП ОС» → [/^ОП(\s|$)/i, /^ОС(\s|$)/i]; «(ОП)» → [/\(ОП\)/i]. */
-    private tagToPatterns(tag: string): RegExp[] {
-        return tag
-            .split(/[\s,;]+/)
-            .map(token => token.trim())
-            .filter(Boolean)
-            .map(token => this.tokenToPattern(token));
-    }
-
-    /**
-     * Токен в скобках — маркер вида «(ОП)»: ищется как подстрока в любом
-     * месте названия (скобки сами отсекают ложные совпадения вроде «ОПТ»).
-     * Прочий токен — префикс названия со словограницей.
-     */
-    private tokenToPattern(token: string): RegExp {
-        if (token.startsWith('(') && token.endsWith(')')) {
-            return new RegExp(escapeRegExp(token), 'i');
-        }
-        return new RegExp(`^${escapeRegExp(token)}(\\s|$)`, 'i');
-    }
-
-    private isGroupName(name: string): boolean {
-        return GROUP_NAME_PATTERN.test((name ?? '').trim());
-    }
-
-    private matchesName(name: string, patterns: RegExp[]): boolean {
-        const normalized = (name ?? '').trim();
-        return patterns.some(pattern => pattern.test(normalized));
-    }
-
-    /** Уникальные (по ID) сотрудники набора отделов. */
-    private collectUsers(departments: IBXDepartment[]): IBXUser[] {
-        const byId = new Map<number, IBXUser>();
-        for (const department of departments) {
-            for (const user of department.USERS ?? []) {
-                const id = Number(user?.ID);
-                if (user && !Number.isNaN(id) && !byId.has(id)) {
-                    byId.set(id, user);
-                }
-            }
-        }
-        return [...byId.values()];
     }
 
     /**
@@ -361,82 +253,5 @@ export class BxDepartmentStructureService {
             );
             return EMPTY_FORCED_VISIBILITY;
         }
-    }
-
-    /** Роль текущего пользователя (структура + настройки) и его коллеги. */
-    private buildCurrentUser(
-        structure: IStructureData,
-        userId: number,
-        forced: ForcedVisibilityLists = EMPTY_FORCED_VISIBILITY,
-    ): BxCurrentUserDto {
-        const uid = Number(userId);
-        // Руководитель — по списку HEADS (структура v3 + UF_HEAD): второй
-        // руководитель и заместители тоже. Сырой UF_HEAD — страховка для
-        // отдела без списка.
-        const isHeadOf = (d: IBXDepartment) =>
-            (d.HEADS ?? legacyHeadsOf(d)).includes(uid);
-        const hasUser = (d: IBXDepartment) =>
-            (d.USERS ?? []).some(u => Number(u?.ID) === uid);
-        const withoutUser = (users: IBXUser[]) =>
-            users.filter(u => Number(u?.ID) !== uid);
-
-        const cupHeaded = structure.cupDepartments.filter(isHeadOf);
-        const opHeaded = structure.salesDepartments.filter(s =>
-            isHeadOf(s.department),
-        );
-        const groupHeaded = structure.salesDepartments
-            .flatMap(s => s.groups)
-            .filter(isHeadOf);
-
-        let headOf: EBxDepartmentHeadType | null = null;
-        let headOfDepartmentIds: number[] = [];
-        if (cupHeaded.length > 0) {
-            headOf = EBxDepartmentHeadType.cup;
-            headOfDepartmentIds = cupHeaded.map(d => Number(d.ID));
-        } else if (opHeaded.length > 0) {
-            headOf = EBxDepartmentHeadType.op;
-            headOfDepartmentIds = opHeaded.map(s => Number(s.department.ID));
-        } else if (groupHeaded.length > 0) {
-            headOf = EBxDepartmentHeadType.group;
-            headOfDepartmentIds = groupHeaded.map(d => Number(d.ID));
-        }
-
-        // Группа пользователя: где он числится, либо которой руководит
-        const myGroup =
-            structure.salesDepartments.flatMap(s => s.groups).find(hasUser) ??
-            groupHeaded[0];
-
-        // ОП пользователя: где числится напрямую, через свою группу или
-        // негрупповой подотдел (allUsers), либо которым руководит
-        const inOp = (s: ISalesDepartment) =>
-            hasUser(s.department) ||
-            (myGroup !== undefined && s.groups.includes(myGroup)) ||
-            (s.allUsers ?? []).some(u => Number(u?.ID) === uid);
-        const myOp = structure.salesDepartments.find(inOp) ?? opHeaded[0];
-
-        const role = applyForcedVisibility(
-            { headOf, headOfDepartmentIds },
-            forcedLevelFor(uid, forced),
-            {
-                myGroupId: toPositiveInt(myGroup?.ID),
-                myOpId: toPositiveInt(myOp?.department.ID),
-                allOpIds: structure.salesDepartments.map(s =>
-                    Number(s.department.ID),
-                ),
-            },
-        );
-
-        return {
-            userId: uid,
-            isHead: role.headOf !== null,
-            headOf: role.headOf,
-            headOfDepartmentIds: role.headOfDepartmentIds,
-            visibility: role.visibility,
-            headOfSource: role.headOfSource,
-            colleagues: {
-                group: withoutUser(myGroup?.USERS ?? []),
-                department: withoutUser(myOp?.allUsers ?? []),
-            },
-        } as BxCurrentUserDto;
     }
 }

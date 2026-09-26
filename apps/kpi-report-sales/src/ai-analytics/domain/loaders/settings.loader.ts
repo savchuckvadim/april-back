@@ -1,5 +1,6 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
+import type { PortalAiSettingsRecord } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.types';
 import {
     EnumPortalAppCode,
     parseUserIds,
@@ -33,6 +34,44 @@ import type {
     AiScoringSettings,
     AiTargets,
 } from '@lib/sales-ai-analytics/settings/ai-settings.types';
+
+/**
+ * Конвейер разбора звонков обрабатывает портал только при явном включении
+ * в админке (дефолт `enabled` резолвера call-report в event-sales).
+ */
+const CALL_REPORT_ENABLED_DEFAULT = false;
+
+/**
+ * Конвейер разбора звонков портала (portal_ai_settings) глазами витрины:
+ * витрина объясняет «пилот на одном сотруднике», а не «поломка».
+ */
+export interface AiCallReportStatus {
+    /** Портал обрабатывается конвейером (null в записи → дефолт false). */
+    enabled: boolean;
+    /** Демо/пилот: разбираются только эти сотрудники; null — весь ОП. */
+    pilotUserIds: number[] | null;
+    /** Только отдел продаж; null — не задано (дефолт конвейера — да). */
+    salesOnly: boolean | null;
+    /** Прежний скаляр порога длительности, с; null — не задан. */
+    minDurationSec: number | null;
+}
+
+/**
+ * Запись portal_ai_settings → статус конвейера. Записи нет — портал не
+ * включали (enabled = false); пустой список пилота — ограничения нет
+ * (конвейер фильтрует только по непустому списку).
+ */
+export function toCallReportStatus(
+    record: PortalAiSettingsRecord | null,
+): AiCallReportStatus {
+    const pilot = record?.allowedUserIds ?? [];
+    return {
+        enabled: record?.enabled ?? CALL_REPORT_ENABLED_DEFAULT,
+        pilotUserIds: pilot.length > 0 ? [...pilot] : null,
+        salesOnly: record?.salesOnly ?? null,
+        minDurationSec: record?.minDurationSec ?? null,
+    };
+}
 
 /** Настройки AI-аналитики портала (kpiSales, контракт 1) в разобранном виде. */
 export interface AiAnalyticsPortalSettings {
@@ -100,13 +139,21 @@ export interface AiAnalyticsPortalSettings {
      * (ручные фикстуры).
      */
     legacyMinDurationSec?: number | null;
+    /**
+     * Конвейер разбора звонков из той же записи portal_ai_settings;
+     * undefined — сервис не подключён либо запись не прочитана (статус
+     * неизвестен — витрина не должна выдавать его за «выключено»).
+     */
+    callReport?: AiCallReportStatus;
 }
 
 /**
  * Загрузчик настроек: PortalAppSettingsService.resolve(domain, kpiSales)
  * → флаги, списки id (parseUserIds), календарь рабочих дней
  * (parseWorkCalendar) и десять блоков Фазы 2 (парсеры lib: пустой или
- * битый JSON → дефолт кода). Одно чтение настроек на запрос — сервис
+ * битый JSON → дефолт кода). Параллельно — одна запись portal_ai_settings
+ * старой админки разбора: запасной порог длительности и статус конвейера
+ * (включён, пилот, только ОП). Одно чтение настроек на запрос — сервис
  * кэширует их в Redis сам.
  */
 @Injectable()
@@ -118,24 +165,28 @@ export class SettingsLoader {
         private readonly portalAiSettings?: PortalAiSettingsService,
     ) {}
 
-    /** Прежний скаляр порога из старой админки; ошибка чтения — null. */
-    private async legacyMinDurationSec(domain: string): Promise<number | null> {
-        if (!this.portalAiSettings) return null;
+    /**
+     * Запись старой админки разбора (порог и статус конвейера): null —
+     * записи нет; undefined — сервис не подключён либо чтение упало
+     * (fail-open: настройки витрины не гаснут).
+     */
+    private async callReportRecord(
+        domain: string,
+    ): Promise<PortalAiSettingsRecord | null | undefined> {
+        if (!this.portalAiSettings) return undefined;
         try {
-            const record = await this.portalAiSettings.getByDomain(domain);
-            return record?.minDurationSec ?? null;
+            return await this.portalAiSettings.getByDomain(domain);
         } catch {
-            return null;
+            return undefined;
         }
     }
 
     async load(domain: string): Promise<AiAnalyticsPortalSettings> {
-        const settings = await this.appSettings.resolve(
-            domain,
-            EnumPortalAppCode.kpiSales,
-        );
+        const [settings, record] = await Promise.all([
+            this.appSettings.resolve(domain, EnumPortalAppCode.kpiSales),
+            this.callReportRecord(domain),
+        ]);
         const poolConsentAt = settings.aiAnalyticsPoolConsentAt.trim();
-        const legacyMinDurationSec = await this.legacyMinDurationSec(domain);
         return {
             enabled: settings.aiAnalyticsEnabled,
             auditEnabled: settings.aiAnalyticsAuditEnabled,
@@ -170,7 +221,10 @@ export class SettingsLoader {
                 aiAnalyticsDefinitions: settings.aiAnalyticsDefinitions,
                 aiAnalyticsModelParams: settings.aiAnalyticsModelParams,
             }),
-            legacyMinDurationSec,
+            legacyMinDurationSec: record?.minDurationSec ?? null,
+            ...(record === undefined
+                ? {}
+                : { callReport: toCallReportStatus(record) }),
         };
     }
 }

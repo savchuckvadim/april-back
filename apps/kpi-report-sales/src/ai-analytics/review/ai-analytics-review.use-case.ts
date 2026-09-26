@@ -4,9 +4,11 @@ import {
     AiEntityDto,
     AiService,
     CALL_RESUME_TYPE,
+    TranscriptionStoreService,
 } from '@lib/call-lib';
 import { PbxAicallSmartService } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import { TelegramService } from '@lib/telegram';
+import { AiAnalyticsCacheService } from '../cache/ai-analytics-cache.service';
 import {
     AI_REVIEW_AUTHOR_ROLE_LABELS,
     AI_REVIEW_FEEDBACK_OBJECT_PREFIX,
@@ -16,6 +18,7 @@ import {
     AI_REVIEW_VERDICT_LABELS,
 } from '../constants/ai-review.const';
 import { AiReviewRequestDto, AiReviewResultDto } from '../dto/ai-review.dto';
+import { resetFeedbackCaches } from '../domain/use-cases/feedback-cache-reset.util';
 import { AiAnalyticsFeedbackStore } from '../store/ai-analytics-feedback.store';
 import { parseSmartItemLink, SmartItemLinkParts } from './review-link.util';
 
@@ -35,6 +38,13 @@ interface ReviewAnalysisRef {
  * ложится записью обратной связи (kind useful / disagree, object
  * `site-review:{itemId}`, детали в payload) и уходит в чат админов;
  * сбой чата отзыв не отменяет.
+ *
+ * Менеджер звонка: `ais.user_id` записи разбора, а если он пуст (конвейер
+ * его не пишет) — `transcriptions.user_id` звонка через стор транскрипций
+ * call-lib (только чтение). Не нашёлся — managerId = null, как раньше.
+ * Несогласие попадает в повестку планёрки, поэтому после записи кэш
+ * повестки домена сбрасывается (карта «вид → секции кэша» общая с
+ * витриной).
  */
 @Injectable()
 export class AiAnalyticsReviewUseCase {
@@ -45,6 +55,8 @@ export class AiAnalyticsReviewUseCase {
         private readonly aiService: AiService,
         private readonly feedback: AiAnalyticsFeedbackStore,
         private readonly telegram: TelegramService,
+        private readonly transcriptions: TranscriptionStoreService,
+        private readonly cache: AiAnalyticsCacheService,
     ) {}
 
     async execute(dto: AiReviewRequestDto): Promise<AiReviewResultDto> {
@@ -54,9 +66,10 @@ export class AiAnalyticsReviewUseCase {
 
         const analysis = await this.findAnalysis(parts);
         const comment = dto.comment?.trim() ?? '';
+        const kind = dto.verdict === 'agree' ? 'useful' : 'disagree';
         const id = await this.feedback.add({
             domain: parts.domain,
-            kind: dto.verdict === 'agree' ? 'useful' : 'disagree',
+            kind,
             object: `${AI_REVIEW_FEEDBACK_OBJECT_PREFIX}:${parts.itemId}`,
             managerId: analysis.managerId,
             transcriptionId: analysis.transcriptionId,
@@ -76,6 +89,7 @@ export class AiAnalyticsReviewUseCase {
                 analysisFound: analysis.transcriptionId !== null,
             },
         });
+        await resetFeedbackCaches(this.cache, parts.domain, kind, this.logger);
 
         const result: AiReviewResultDto = {
             id,
@@ -119,7 +133,9 @@ export class AiAnalyticsReviewUseCase {
                     { latestOnly: true },
                 );
                 const row = rows[rows.length - 1];
-                if (row) return toAnalysisRef(row);
+                if (row) {
+                    return await this.withManager(parts, toAnalysisRef(row));
+                }
             }
         } catch (error) {
             this.logger.warn(
@@ -127,6 +143,30 @@ export class AiAnalyticsReviewUseCase {
             );
         }
         return empty;
+    }
+
+    /**
+     * ais.user_id разбора пуст → менеджер из транскрипции звонка того же
+     * домена; не нашлась или без менеджера — ссылка как есть.
+     */
+    private async withManager(
+        parts: SmartItemLinkParts,
+        ref: ReviewAnalysisRef,
+    ): Promise<ReviewAnalysisRef> {
+        if (ref.managerId !== null || ref.transcriptionId === null) return ref;
+        try {
+            const call = await this.transcriptions.findById(
+                ref.transcriptionId,
+            );
+            if (call.domain && call.domain !== parts.domain) return ref;
+            return { ...ref, managerId: toManagerId(call.userId) };
+        } catch (error) {
+            this.logger.warn(
+                `Отзыв ${parts.domain}#${parts.itemId}: менеджер транскрипции ` +
+                    `${ref.transcriptionId} не прочитан — ${(error as Error).message}`,
+            );
+            return ref;
+        }
     }
 
     /** Сообщение в чат админов; сбой канала только в лог. */
@@ -156,11 +196,17 @@ export class AiAnalyticsReviewUseCase {
     }
 }
 
+/** Bitrix-id менеджера: положительное целое, иначе null. */
+function toManagerId(value: unknown): string | null {
+    const id = Number(value);
+    return Number.isInteger(id) && id > 0 ? String(id) : null;
+}
+
 function toAnalysisRef(row: AiEntityDto): ReviewAnalysisRef {
     return {
         transcriptionId: row.transcription_id
             ? String(row.transcription_id)
             : null,
-        managerId: row.user_id > 0 ? String(row.user_id) : null,
+        managerId: toManagerId(row.user_id),
     };
 }

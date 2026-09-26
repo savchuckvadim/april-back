@@ -20,7 +20,6 @@ import {
 import { AiManagerRowDto } from '../../dto/ai-manager-row.dto';
 import { ReadinessDto } from '../../dto/readiness.dto';
 import { AI_SANITY_DATA_QUALITY } from '../../steps/sanity.types';
-import type { AiManagerLevelRecord } from '../../store/ai-analytics-settings.store';
 import { toFunnelWithNorms } from '../assembler/funnel-edges.assembler';
 import {
     buildManagerNorms,
@@ -49,8 +48,6 @@ export { buildOverviewYoy, yoyForRow } from './yoy-rows.presenter';
 export interface Phase2Context extends OverviewSnapshots {
     /** KPI-факты периода по менеджеру — из них строятся рёбра воронки. */
     kpi: ReadonlyMap<number, ManagerKpiPeriod>;
-    /** Уровни менеджеров: из них берётся дата начала стажа. */
-    levels: ReadonlyMap<number, AiManagerLevelRecord>;
     /**
      * Месяцы менеджеров для сравнения «год назад» (Фаза 3, П3); нет —
      * блок `yoy` строки остаётся `null`, витрина как в Фазе 2.
@@ -172,10 +169,13 @@ export function normsForRow(
     );
 }
 
-/** Строка с нормами рёбер, рекомендациями, стилем и датой начала стажа. */
+/**
+ * Строка с нормами рёбер, рекомендациями, стилем, трендами и «год назад».
+ * Дата начала стажа ставится раньше — при сборке строки (level.util), по
+ * тому же правилу, что уровень.
+ */
 function applyRow(row: AiManagerRowDto, ctx: Phase2Context): AiManagerRowDto {
     const norms = normsForRow(row, ctx.model);
-    const since = ctx.levels.get(Number(row.managerId))?.since ?? null;
 
     return {
         ...row,
@@ -192,7 +192,6 @@ function applyRow(row: AiManagerRowDto, ctx: Phase2Context): AiManagerRowDto {
             n: row.analyzedCalls,
         }),
         yoy: yoyForRow(row, ctx),
-        ...(since === null ? {} : { since }),
     };
 }
 

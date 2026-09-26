@@ -10,7 +10,11 @@ import {
     settingsLoaderWith,
 } from './fixtures/lite-row.fixture';
 
-/** Четверг 03.09.2026 15:00 MSK → неделя пн 31.08 — чт 03.09. */
+/**
+ * Четверг 03.09.2026 15:00 MSK: планёрка недели 2026-W36 (пн 31.08) —
+ * звонки прошлой полной недели пн 24.08 — вс 30.08, несогласия с пн 24.08
+ * по «сейчас».
+ */
 const NOW = new Date('2026-09-03T12:00:00Z');
 
 function weekRows(): AnalyticsCallLiteRow[] {
@@ -74,6 +78,11 @@ function feedbackWith(records: object[]): AiAnalyticsFeedbackStore {
     return { listInPeriod: jest.fn().mockResolvedValue(records) } as never;
 }
 
+/** Мок listInPeriod стора (для проверки окна несогласий). */
+function listInPeriodOf(store: AiAnalyticsFeedbackStore): jest.Mock {
+    return (store as unknown as { listInPeriod: jest.Mock }).listInPeriod;
+}
+
 function smartLinksWith(
     entityTypeId: number | null,
     itemByCall: Record<string, string>,
@@ -101,37 +110,44 @@ function smartLinksWith(
 }
 
 describe('AgendaUseCase', () => {
-    it('повестка недели: пн — сегодня, 3 звонка по приоритету, ссылка на элемент смарта', async () => {
+    it('повестка планёрки: звонки прошлой полной недели, 3 по приоритету, ссылка на элемент смарта', async () => {
         const { loader, loadLite } = callsLoaderWith(weekRows());
         const links = smartLinksWith(1054, { r1: '77', o1: '78', s1: '0' });
+        const feedback = feedbackWith([
+            {
+                kind: 'disagree',
+                managerId: '20',
+                object: 'call:o1',
+                reason: 'отработано',
+            },
+            {
+                kind: 'view',
+                managerId: '20',
+                object: 'agenda',
+                reason: null,
+            },
+        ]);
         const useCase = new AgendaUseCase(
             loader,
             settingsLoaderWith(),
-            feedbackWith([
-                {
-                    kind: 'disagree',
-                    managerId: '20',
-                    object: 'call:o1',
-                    reason: 'отработано',
-                },
-                {
-                    kind: 'view',
-                    managerId: '20',
-                    object: 'agenda',
-                    reason: null,
-                },
-            ]),
+            feedback,
             links.loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
 
         expect(dto.weekKey).toBe('2026-W36');
+        // пн 24.08 00:00 MSK — вс 30.08 23:59:59.999 MSK
         expect(loadLite).toHaveBeenCalledWith(
             expect.objectContaining({
-                from: '2026-08-30T21:00:00.000Z',
-                to: '2026-09-03T20:59:59.999Z',
+                from: '2026-08-23T21:00:00.000Z',
+                to: '2026-08-30T20:59:59.999Z',
             }),
+        );
+        expect(listInPeriodOf(feedback)).toHaveBeenCalledWith(
+            'd',
+            new Date('2026-08-23T21:00:00.000Z'),
+            NOW,
         );
         expect(
             dto.items.map(item => [item.transcriptionId, item.kind]),

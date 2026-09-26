@@ -1,9 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, Matches } from 'class-validator';
-import {
-    AI_ANALYTICS_FEEDBACK_KINDS,
-    AiAnalyticsFeedbackKind,
-} from '@lib/sales-ai-analytics';
+import { AiAnalyticsFeedbackKind } from '@lib/sales-ai-analytics';
+import { AI_ANALYTICS_USER_FEEDBACK_KINDS } from '../constants/ai-feedback.const';
 import { AiRequestBaseDto } from './ai-request-base.dto';
 import { AiAnalyticsEnvelopeDto } from './ai-response-envelope.dto';
 
@@ -50,8 +48,10 @@ export class AiFeedbackItemDto {
     id: string;
 
     @ApiProperty({
-        description: 'Вид реакции.',
-        enum: AI_ANALYTICS_FEEDBACK_KINDS,
+        description:
+            'Вид реакции (только пользовательские: служебные виды доставки, ' +
+            'алертов и меток руководителя в список не попадают).',
+        enum: AI_ANALYTICS_USER_FEEDBACK_KINDS,
         example: 'disagree',
     })
     kind: AiAnalyticsFeedbackKind;
@@ -105,7 +105,10 @@ export class AiFeedbackItemDto {
 
 export class AiFeedbackListDto {
     @ApiProperty({
-        description: 'Записи за период.',
+        description:
+            'Пользовательские реакции за период. Без managerId — только ' +
+            'менеджеры периметра руководителя; записи без менеджера видит ' +
+            'только cup.',
         type: [AiFeedbackItemDto],
     })
     items: AiFeedbackItemDto[];

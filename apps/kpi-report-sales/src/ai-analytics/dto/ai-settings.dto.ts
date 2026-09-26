@@ -9,6 +9,7 @@ import {
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import { AiRequestBaseDto } from './ai-request-base.dto';
 import { AiManagerAbsencesDto, AiTargetsDto } from './ai-settings-blocks.dto';
+import { AiCallReportStatusDto } from './ai-settings-call-report.dto';
 import { AiAnalyticsEnvelopeDto } from './ai-response-envelope.dto';
 import { ReadinessDto } from './readiness.dto';
 
@@ -212,6 +213,16 @@ export class AiAnalyticsSettingsDto {
         example: '2026-09-01',
     })
     rosterConfirmedAt: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Конвейер разбора звонков портала (portal_ai_settings): ' +
+            'включён ли, пилотный список сотрудников, только ОП, порог ' +
+            'длительности. Поля нет — статус не прочитан (не путать с ' +
+            '«выключено»).',
+        type: AiCallReportStatusDto,
+    })
+    callReport?: AiCallReportStatusDto;
 }
 
 export class AiSettingsResponseDto extends AiAnalyticsEnvelopeDto {

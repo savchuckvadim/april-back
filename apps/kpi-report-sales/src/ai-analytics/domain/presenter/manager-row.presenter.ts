@@ -2,7 +2,8 @@
  * Строка менеджера обзора (AiManagerRowDto) из ячеек матрицы, KPI-фактов,
  * финансов, планов, раскладки по отделам и уровня. Сигнал «Внимания»
  * проставляется отдельно (attention.presenter) — он считается по всем
- * строкам сразу. Чистые функции.
+ * строкам сразу. Уровень и стаж — единым правилом с конвейером
+ * (level.util: ручной → паспорт месяца → дефолт). Чистые функции.
  */
 import {
     aggregateBucketScores,
@@ -29,7 +30,7 @@ import type {
 import type { AiFinanceManagerSummary } from '../loaders/finance.types';
 import type { ManagerOrg } from '../loaders/manager-org.loader';
 import type { AiPlanManagerTargets } from '../loaders/plans.types';
-import { resolveLevel } from './level.util';
+import { resolveLevel, type LevelPassport } from './level.util';
 import {
     emptyCellCore,
     orderedCallTypes,
@@ -47,6 +48,11 @@ export interface ManagerRowInput {
     finance: AiFinanceManagerSummary | undefined;
     org: ManagerOrg | undefined;
     level: AiManagerLevelRecord | undefined;
+    /**
+     * Паспорт из месячного снапшота менеджера (месяц конца периода либо
+     * прошлый); нет — уровень ручной либо дефолт по стажу.
+     */
+    passport?: LevelPassport | null;
     callFacts: ManagerCallFacts;
     /** Рабочих дней периода по календарю портала. */
     workdays: number;
@@ -82,10 +88,8 @@ export function buildManagerCells(
 
 /** Строка без сигнала «Внимания» (signal = null, ставится позже). */
 export function buildManagerRow(input: ManagerRowInput): AiManagerRowDto {
-    const { level, levelSource, tenureMonths } = resolveLevel(
-        input.level,
-        input.periodTo,
-    );
+    const { level, levelSource, tenureMonths, since, sinceSource } =
+        resolveLevel(input.level, input.periodTo, input.passport ?? null);
     return {
         managerId: input.managerId,
         departmentId: input.org?.departmentId ?? null,
@@ -107,5 +111,7 @@ export function buildManagerRow(input: ManagerRowInput): AiManagerRowDto {
         nextStepRate: input.callFacts.nextStepRate,
         riskCalls: input.callFacts.riskCalls,
         recommendations: [],
+        ...(since === null ? {} : { since }),
+        ...(sinceSource === null ? {} : { sinceSource }),
     };
 }

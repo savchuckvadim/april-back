@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+    BadRequestException,
+    ForbiddenException,
+    Injectable,
+} from '@nestjs/common';
 import { shiftDate, toPortalDate } from '@lib/sales-ai-analytics';
 import {
     pickRopMarkCalls,
@@ -32,6 +36,14 @@ import {
     toRopMarkCandidate,
 } from '../presenter/rop-mark.presenter';
 
+/**
+ * Отказ суперпользователю вендора в записи слепой калибровки: метки и
+ * пересборку подбора делают только руководители портала, иначе вендор
+ * засоряет калибровку РОПов. Смотреть подбор и метки ему можно.
+ */
+export const AI_ROP_MARK_SUPER_USER_FORBIDDEN_MESSAGE =
+    AI_ROP_MARK_MESSAGES.superUserReadOnly;
+
 /** Границы недели проверки в TZ портала. */
 interface RopMarkWeek {
     weekKey: string;
@@ -56,7 +68,12 @@ interface RopMarkWeek {
  * вырезаются (`presentRopMarkWeek`). Гарантия действует ТОЛЬКО на этой
  * ручке — карточку разбора в Битрикс руководитель может открыть и увидеть
  * оценку. Метка руководителя — не для менеджеров: все три метода
- * доступны только ролям cup/op/group, менеджеру — 403.
+ * доступны только ролям cup/op/group, менеджеру — 403. Суперпользователь
+ * вендора (access.isSuperUser) в ais ничего не пишет: save и pick с
+ * forceRefresh — 403, list — только чтение, pick без пересборки отдаёт
+ * сохранённый подбор, а если его ещё нет — тот же детерминированный
+ * подбор как предпросмотр, без записи (его сохранит первый руководитель
+ * портала или ночной шаг конвейера).
  *
  * Bitrix здесь не инжектится: звонки приходят из лёгкой выборки call-lib,
  * портал — параметром `domain`.
@@ -74,7 +91,8 @@ export class RopMarkUseCase {
     /**
      * Подбор трёх звонков недели. Сохранённый подбор переиспользуется
      * (тот же набор и то же зерно), `forceRefresh` пересобирает его по
-     * текущим звонкам недели.
+     * текущим звонкам недели (суперпользователю вендора — 403). Вендору
+     * без сохранённого подбора отдаётся предпросмотр без записи.
      */
     async pick(
         dto: AiRopMarkPickRequestDto,
@@ -82,6 +100,7 @@ export class RopMarkUseCase {
         now: Date = new Date(),
     ): Promise<AiRopMarkWeekDto> {
         this.access.assertLeader(access);
+        if (dto.forceRefresh) this.assertNotSuperUser(access);
         const week = await this.weekOf(dto, now);
         const saved = await this.store.loadPick(dto.domain, week.weekKey);
         if (saved && !dto.forceRefresh) {
@@ -102,13 +121,17 @@ export class RopMarkUseCase {
             },
         );
         const generatedAt = now.toISOString();
-        await this.store.savePick({
-            domain: dto.domain,
-            weekKey: week.weekKey,
-            seed,
-            generatedAt,
-            calls,
-        });
+        // Вендор видит тот же детерминированный подбор, но не фиксирует
+        // его: подбор недели сохраняют только руководители портала.
+        if (!access.isSuperUser) {
+            await this.store.savePick({
+                domain: dto.domain,
+                weekKey: week.weekKey,
+                seed,
+                generatedAt,
+                calls,
+            });
+        }
         return this.present(dto.domain, week, calls, generatedAt, access);
     }
 
@@ -133,7 +156,7 @@ export class RopMarkUseCase {
     /**
      * Метка по одному звонку подбора. Повторная метка заменяет прежнюю
      * (та уходит в superseded) и слепой уже не считается: к этому моменту
-     * ручка оценку AI по звонку раскрыла.
+     * ручка оценку AI по звонку раскрыла. Суперпользователю вендора — 403.
      */
     async save(
         dto: AiRopMarkSaveRequestDto,
@@ -141,6 +164,7 @@ export class RopMarkUseCase {
         now: Date = new Date(),
     ): Promise<AiRopMarkSaveResultDto> {
         this.access.assertLeader(access);
+        this.assertNotSuperUser(access);
         const week = await this.weekOf(dto, now);
         const saved = await this.store.loadPick(dto.domain, week.weekKey);
         if (!saved) {
@@ -176,6 +200,15 @@ export class RopMarkUseCase {
             replaced: replaced || replacedIds.length > 0,
             blind: !replaced,
         };
+    }
+
+    /** Вендор калибровку РОПов не пишет — только читает. */
+    private assertNotSuperUser(access: RequesterAccess): void {
+        if (access.isSuperUser) {
+            throw new ForbiddenException(
+                AI_ROP_MARK_SUPER_USER_FORBIDDEN_MESSAGE,
+            );
+        }
     }
 
     /** Неделя запроса: ключ, дата или текущая неделя портала. */

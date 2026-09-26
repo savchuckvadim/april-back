@@ -25,6 +25,12 @@ export const AI_ANALYTICS_PULSE_TTL_SECONDS = 3600;
 export const AI_ANALYTICS_ACCESS_TTL_SECONDS = 300;
 /** Нижняя граница TTL повестки (до следующего понедельника, но не меньше). */
 export const AI_ANALYTICS_AGENDA_MIN_TTL_SECONDS = 60;
+/**
+ * Потолок TTL повестки, 15 минут: звонки — статичная прошлая неделя, но
+ * несогласия открыты по «сейчас», а сброс кэша при новом несогласии может
+ * разминуться с идущим расчётом (тот допишет в кэш старый набор).
+ */
+export const AI_ANALYTICS_AGENDA_MAX_TTL_SECONDS = 900;
 
 /** Сегменты ключей кэша (между prefix/domain и деталями). */
 export const AI_ANALYTICS_CACHE_SECTIONS = {

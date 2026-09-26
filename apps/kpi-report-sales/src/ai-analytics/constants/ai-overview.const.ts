@@ -76,22 +76,18 @@ export const AI_ANALYTICS_JOB_RUNNING_STATES = [
     'paused',
 ] as const;
 
-/** Уровни менеджера (план 2.2); назначает РОП, дефолт — по стажу. */
-export const AI_ANALYTICS_MANAGER_LEVELS = [
-    'junior',
-    'middle',
-    'senior',
-] as const;
-export type AiAnalyticsManagerLevel =
-    (typeof AI_ANALYTICS_MANAGER_LEVELS)[number];
-
-export const AI_ANALYTICS_LEVEL_SOURCES = ['manual', 'default'] as const;
-export type AiAnalyticsLevelSource =
-    (typeof AI_ANALYTICS_LEVEL_SOURCES)[number];
-
-/** Стаж короче — junior по умолчанию; без даты стажа — middle. */
-export const AI_ANALYTICS_JUNIOR_TENURE_MONTHS = 6;
-export const AI_ANALYTICS_DEFAULT_LEVEL: AiAnalyticsManagerLevel = 'middle';
+// Уровень, источник уровня и источник стажа — в ai-level.const.ts (лимит
+// 300 строк); реэкспорт сохраняет прежние импорты.
+export {
+    AI_ANALYTICS_DEFAULT_LEVEL,
+    AI_ANALYTICS_JUNIOR_TENURE_MONTHS,
+    AI_ANALYTICS_LEVEL_SOURCES,
+    AI_ANALYTICS_MANAGER_LEVELS,
+    AI_ANALYTICS_SINCE_SOURCES,
+    type AiAnalyticsLevelSource,
+    type AiAnalyticsManagerLevel,
+    type AiAnalyticsSinceSource,
+} from './ai-level.const';
 
 /** Форма воронки менеджера по доле счетов без презентации (план 6.3). */
 export const AI_ANALYTICS_FUNNEL_SHAPES = [

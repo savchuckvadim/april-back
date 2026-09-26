@@ -24,6 +24,10 @@ import { toPulseDto } from '../presenter/pulse.presenter';
  */
 export { portalMinDurationByType } from '../loaders/min-duration.util';
 
+/** Более поздний из двух моментов. */
+const laterOf = (left: Date, right: Date): Date =>
+    left.getTime() >= right.getTime() ? left : right;
+
 export interface PulseUseCaseOptions {
     /** «Сейчас» (для тестов и крона); по умолчанию — текущее время. */
     now?: Date;
@@ -33,6 +37,11 @@ export interface PulseUseCaseOptions {
  * Пульс дисциплины «следующий шаг с датой» (план, 6.2/6.3): окно из 5
  * рабочих дней до вчерашнего рабочего дня в TZ портала, история 25
  * рабочих дней для XmR, сигналы руководителю по звонкам окна.
+ *
+ * Отметки алертов (alert_sent / alert_handled) читаются до момента запроса,
+ * а не до конца окна: «Отработано», поставленное сегодня по звонку окна,
+ * видно сразу. Запись alert_handled сбрасывает кэш пульса домена
+ * (FeedbackUseCase), поэтому следующий запрос пересчитывает отметки.
  *
  * Результат — на весь домен (кэшируется контроллером); периметр
  * requester'а применяется presenter'ом при отдаче.
@@ -75,7 +84,9 @@ export class PulseUseCase {
 
         const [rows, marks] = await Promise.all([
             this.calls.loadLite(domain, from, to),
-            this.loadAlertMarks(domain, from, to),
+            // Окно звонков — до конца вчерашнего рабочего дня, отметки — до
+            // «сейчас» (с тем же началом: отметка не старше звонка).
+            this.loadAlertMarks(domain, from, laterOf(to, now)),
         ]);
         const result = computePulse(rows.map(toPulseRow), {
             endDate,

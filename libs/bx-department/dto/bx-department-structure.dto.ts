@@ -51,6 +51,11 @@ export enum EBxHeadOfSource {
     structure = 'structure',
     /** Уровень поднят настройкой портала «Отдел продаж» (visibility_*_user_ids). */
     settings = 'settings',
+    /**
+     * Суперпользователь вендора (сотрудник April из env BX_SUPER_USER_IDS):
+     * видимость all поверх структуры и настроек.
+     */
+    superuser = 'superuser',
 }
 
 export class BxDepartmentStructureRequestDto {
@@ -204,11 +209,28 @@ export class BxCurrentUserDto {
         description:
             'Источник роли: structure — руководитель по структуре Битрикса ' +
             '(HEADS отдела); settings — уровень поднят настройкой портала ' +
-            '«Отдел продаж» (visibility_*_user_ids).',
+            '«Отдел продаж» (visibility_*_user_ids); superuser — ' +
+            'суперпользователь вендора из env BX_SUPER_USER_IDS: видимость ' +
+            'all, headOf = cup, headOfDepartmentIds — все ОП, независимо от ' +
+            'структуры и настроек.',
         example: EBxHeadOfSource.structure,
     })
     @IsEnum(EBxHeadOfSource)
     headOfSource: EBxHeadOfSource;
+
+    @ApiProperty({
+        description:
+            'Суперпользователь вендора — сотрудник April, заданный для ' +
+            'портала в env BX_SUPER_USER_IDS (domain:id). true — видимость ' +
+            'all в отчётах продаж/сервиса и AI-аналитике (headOfSource = ' +
+            'superuser), доступ к «Смотреть как…» и служебным ссылкам; ' +
+            'isHead и коллеги остаются по структуре. Единый источник правды ' +
+            'для фронтов вместо проверки по фамилии.',
+        type: Boolean,
+        example: false,
+    })
+    @IsBoolean()
+    isSuperUser: boolean;
 
     @ApiProperty({
         description: 'Коллеги текущего пользователя.',

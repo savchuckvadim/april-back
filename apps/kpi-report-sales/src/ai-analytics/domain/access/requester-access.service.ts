@@ -1,5 +1,8 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
-import { BxDepartmentStructureService } from '@lib/bx-department';
+import {
+    BxDepartmentStructureService,
+    BxSuperUserService,
+} from '@lib/bx-department';
 import { EBxVisibilityLevel } from '@lib/bx-department/dto/bx-department-structure.dto';
 import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { AiAnalyticsCacheService } from '../../cache/ai-analytics-cache.service';
@@ -27,17 +30,22 @@ const ROLE_BY_VISIBILITY: Record<EBxVisibilityLevel, AiAnalyticsRequesterRole> =
 /**
  * Права ai-analytics по структуре отделов продаж (libs/bx-department):
  * уровень видимости currentUser.visibility (учитывает и HEADS структуры,
- * и поднятие уровня настройками портала) даёт роль и периметр —
- * all → все менеджеры, department → ОП, group → группа, own → только себя.
+ * и поднятие уровня настройками портала «Отдел продаж») даёт роль и
+ * периметр — all → cup, все менеджеры; department → op, ОП; group →
+ * group, группа; own → manager, только себя.
+ *
+ * Суперпользователь вендора (env BX_SUPER_USER_IDS, BxSuperUserService)
+ * проверяется ДО чтения структуры: роль cup, все менеджеры, isSuperUser —
+ * сломанная структура не понижает его до менеджера.
  *
  * Результат кэшируется на 5 минут в AppCache. Ошибка структуры —
  * fail-closed: requester считается менеджером и видит только себя.
  *
  * Витрина только руководителям (решение владельца 07.09.2026): читающие
- * ручки берут периметр через resolveViewer — менеджер без headOf (роль
- * manager; суперпользователь и принудительная видимость дают cup) при
- * ai_analytics_self_view_enabled = false получает 403, при true — прежнее
- * «только свои строки». Push-контур менеджеру от настройки не зависит.
+ * ручки берут периметр через resolveViewer — роль manager (visibility own
+ * и сбой структуры) при ai_analytics_self_view_enabled = false получает
+ * 403, при true — прежнее «только свои строки». Push-контур менеджеру от
+ * настройки не зависит.
  */
 @Injectable()
 export class RequesterAccessService {
@@ -47,6 +55,13 @@ export class RequesterAccessService {
         private readonly structure: BxDepartmentStructureService,
         private readonly cache: AiAnalyticsCacheService,
         private readonly settings: SettingsLoader,
+        /**
+         * В DI внедряется всегда (экспорт BxDepartmentModule). Необязателен
+         * в сигнатуре только ради прямых `new RequesterAccessService(a, b, c)`
+         * в тестах соседних срезов; без него суперпользователей нет —
+         * отказ в безопасную сторону.
+         */
+        private readonly superUsers?: BxSuperUserService,
     ) {}
 
     async resolve(
@@ -107,6 +122,9 @@ export class RequesterAccessService {
         requesterUserId: string,
     ): Promise<RequesterAccess> {
         const self = String(Number(requesterUserId));
+        if (this.superUsers?.isSuperUser(domain, Number(requesterUserId))) {
+            return { role: 'cup', visibleManagerIds: null, isSuperUser: true };
+        }
         try {
             const { currentUser } = await this.structure.getStructure(
                 domain,

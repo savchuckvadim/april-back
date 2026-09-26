@@ -139,11 +139,13 @@ export class AiAnalyticsController {
     @ApiOperation({
         summary: 'Повестка РОПа на неделю',
         description:
-            '3 звонка текущей ISO-недели по приоритету риск-флаг → спорное ' +
-            'возражение → слабый раздел, с цитатой и ссылкой на карточку разбора; ' +
-            "несогласия недели. В периметре requester'а; менеджер без роли " +
-            'руководителя — 403, если не включена ai_analytics_self_view_enabled. ' +
-            'Кэш до следующего понедельника.',
+            '3 звонка прошлой полной ISO-недели (пн–вс, TZ портала) по приоритету ' +
+            'риск-флаг → спорное возражение → слабый раздел, с цитатой и ссылкой ' +
+            'на карточку разбора; несогласия с понедельника прошлой недели по ' +
+            "момент запроса. weekKey — текущая неделя планёрки. В периметре requester'а; " +
+            'менеджер без роли руководителя — 403, если не включена ' +
+            'ai_analytics_self_view_enabled. Кэш — не дольше 15 минут; новое ' +
+            'несогласие (disagree или отзыв с сайта) сбрасывает его сразу.',
     })
     @ApiBody({ type: AiAgendaRequestDto })
     @ApiOkResponse({ type: AiAgendaResponseDto })
@@ -180,7 +182,9 @@ export class AiAnalyticsController {
         description:
             'Пишет реакцию (view/useful/not_useful/disagree/alert_handled) в ais ' +
             'от имени requesterUserId. Менеджер без роли руководителя пишет только ' +
-            'за себя; руководитель — за менеджера своего периметра.',
+            'за себя; руководитель — за менеджера своего периметра; alert_handled ' +
+            '— только руководителям. useful/not_useful — одна оценка на автора, ' +
+            'объект и день портала (смена оценки замещает прежнюю).',
     })
     @ApiBody({ type: AiFeedbackRequestDto })
     @ApiOkResponse({ type: AiFeedbackResponseDto })
@@ -205,9 +209,12 @@ export class AiAnalyticsController {
         summary: 'Список обратной связи за период',
         description:
             'Записи ais типа ai-analytics-feedback по домену и периоду (даты в TZ ' +
-            'портала), опционально по менеджеру, плюс доля несогласий. Список по ' +
-            'всем менеджерам — только руководителям; менеджер видит только свои ' +
-            'строки и лишь при ai_analytics_self_view_enabled (иначе 403).',
+            'портала), опционально по менеджеру, плюс доля несогласий. Только ' +
+            'пользовательские реакции: служебные alert_sent, digest_sent, ' +
+            'agenda_sent и rop_mark не отдаются. Список по всем менеджерам — ' +
+            'только руководителям и в их периметре (записи без менеджера — ' +
+            'только cup); менеджер видит только свои строки и лишь при ' +
+            'ai_analytics_self_view_enabled (иначе 403).',
     })
     @ApiBody({ type: AiFeedbackListRequestDto })
     @ApiOkResponse({ type: AiFeedbackListResponseDto })

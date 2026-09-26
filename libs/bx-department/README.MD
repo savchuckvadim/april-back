@@ -14,6 +14,15 @@ PBX
 `UF_HEAD` в ответе = `HEADS[0] ?? null`. Без скоупа `humanresources` на вебхуке
 остаётся только `UF_HEAD` (warn в лог, ответ не падает).
 
+Суперпользователь вендора (сотрудник April) — `BxSuperUserService`, env
+`BX_SUPER_USER_IDS` в формате `domain:id[,domain:id...]` (домен без учёта регистра,
+мусорные записи — один warn). В `bx/department/structure` он получает
+`currentUser.isSuperUser = true`, `visibility = all`, `headOf = cup`,
+`headOfDepartmentIds` — все ОП, `headOfSource = superuser`; `isHead` и коллеги — по
+структуре. У остальных `isSuperUser = false`, userId ≤ 0 — никогда. Фронты больше не
+угадывают его по фамилии. ai-analytics (kpi-report-sales) даёт ему роль cup без чтения
+структуры, но слепую калибровку РОПов (rop-mark) — только на чтение.
+
 Сброс кэша:
 - каждый эндпоинт принимает необязательный `resetCache: boolean` — кэш игнорируется
   и перезаписывается свежими данными из Битрикс

@@ -11,6 +11,7 @@
  * Чистые функции: без DI, Bitrix и Prisma. Всё, что нужно для сборки,
  * приходит параметрами — читают источники use-case'ы.
  */
+import { AI_ANALYTICS_SNAPSHOT_STATUS } from '@lib/sales-ai-analytics';
 import {
     AI_DOSSIER_REASONS,
     AI_DOSSIER_REASON_TEXTS,
@@ -18,6 +19,7 @@ import {
     type AiDossierReason,
     type AiDossierSection,
 } from '../../constants/ai-dossier.const';
+import { AI_ANALYTICS_REACTION_KINDS } from '../../constants/ai-feedback.const';
 import { AI_ANALYTICS_CALC_VERSION } from '../../constants/ai-overview.const';
 import type {
     AiDossierFeedbackSummaryDto,
@@ -112,9 +114,23 @@ export function toSeries(
 export interface DossierFeedbackView {
     kind: string;
     managerId: string | null;
+    /**
+     * Статус ais-записи; не передан — запись актуальная (стор по
+     * умолчанию уже отсекает замещённые).
+     */
+    status?: string;
 }
 
-/** Свод обратной связи; null — реакций по менеджеру за окно не было. */
+/** Реакция пользователя, а не просмотр и не служебная запись доставки/метки. */
+const isReactionKind = (kind: string): boolean =>
+    (AI_ANALYTICS_REACTION_KINDS as readonly string[]).includes(kind);
+
+/**
+ * Свод обратной связи: только реакции useful / not_useful / disagree /
+ * alert_handled в актуальном статусе (без view, служебных alert_sent /
+ * digest_sent / agenda_sent / rop_mark и замещённых записей); null —
+ * реакций по менеджеру за окно не было.
+ */
 export function toFeedbackSummary(
     records: readonly DossierFeedbackView[],
     managerId: string,
@@ -122,7 +138,10 @@ export function toFeedbackSummary(
     const own = records.filter(
         record =>
             record.managerId !== null &&
-            String(Number(record.managerId)) === managerId,
+            String(Number(record.managerId)) === managerId &&
+            isReactionKind(record.kind) &&
+            (record.status ?? AI_ANALYTICS_SNAPSHOT_STATUS.done) ===
+                AI_ANALYTICS_SNAPSHOT_STATUS.done,
     );
     if (own.length === 0) return null;
     const byKind: Record<string, number> = {};

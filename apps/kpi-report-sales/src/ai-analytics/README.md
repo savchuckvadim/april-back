@@ -19,10 +19,10 @@ Feature-модуль `apps/kpi-report-sales/src/ai-analytics/` по плану
 |---|---|---|---|
 | `ai-analytics/settings/get` | 300 с на домен | все | `AiAnalyticsSettingsDto`: флаги, `pipelineEnabled` (разборы за 30 дней), `readiness`, `callTypes[]` из `AI_ANALYTICS_EVENT_KINDS`, `comparableFrom`, `ropUserIds`; настройки 07.09.2026 — `selfViewEnabled`, `dailyPlanEnabled`, `digestAllUserIds: string[]`, `poolOptIn`, `poolConsentAt: string \| null`, `experimentsEnabled` |
 | `ai-analytics/pulse` | 1 ч на домен, ключ по `endDate` | периметр; менеджер — только при `self_view` | `AiPulseDto`: окно 5 рабочих дней до вчерашнего рабочего дня, XmR, `byManager` (n ≥ 20), `alerts` |
-| `ai-analytics/agenda` | до следующего понедельника | периметр; менеджер — только при `self_view` | `AiAgendaDto`: 3 звонка ISO-недели, `link` на карточку смарта, `disagreements` |
-| `ai-analytics/feedback` | — | менеджер только за себя | запись в `ais` (контракт 4) |
+| `ai-analytics/agenda` | до 15 минут (и не дольше, чем до следующего понедельника); новое несогласие сбрасывает | периметр; менеджер — только при `self_view` | `AiAgendaDto`: 3 звонка прошлой полной ISO-недели, `link` на карточку смарта, `disagreements` |
+| `ai-analytics/feedback` | — | менеджер только за себя; `alert_handled` — только руководители | запись в `ais` (контракт 4); `useful`/`not_useful` — одна оценка на автора, объект и день портала (смена оценки переводит прежнюю в `superseded`) |
 | `ai-analytics/review` | — | открытая (с сайта продукта, без сессии фрейма): ссылка на карточку разбора сверяется со смартом портала, лимит 10 отправок за 10 минут с адреса | отзыв руководителя на разбор → запись `ai-analytics-feedback` (useful / disagree, object `site-review:{itemId}`, детали в payload) + сообщение в чат; `AiReviewResultDto` |
-| `ai-analytics/feedback/list` | — | по всем — только руководители; менеджер — только при `self_view` | `items` + `disagreementSharePct` |
+| `ai-analytics/feedback/list` | — | по всем — только руководители и в их периметре (записи без менеджера — только `cup`); менеджер — только при `self_view` | `items` (без служебных `alert_sent`/`digest_sent`/`agenda_sent`/`rop_mark`) + `disagreementSharePct` |
 | `ai-analytics/cache/reset` | — | только `cup`/`op` | `{deletedCount, pattern}` |
 | `ai-analytics/push` | — | руководители | ручной запуск рассылки: `kind: agenda|digest|digest_all`, `date?` (день запуска, TZ портала), `recipients?` (тест «отправить себе») → `AiPushResultDto {kind, date, status: sent|skipped|failed, reason, delivered[]}` |
 
@@ -387,9 +387,9 @@ README, раздел «Фаза 2, волна 1». С волны C (18.09.2026) 
 | `ai-analytics/plan/daily` | `plan/` | sync по снапшотам `forecast` / `portal-model` / `manager-month`, кэш 180 с | периметр (`resolveViewer`); `ai_analytics_daily_plan_enabled = false` → 403 | `AiDailyPlanResponseDto {…, data: AiDailyPlanDto}` — G → Y₀ → λ_pipe → N_req → разворот → потолок, `ropOnly` руководителю |
 | `ai-analytics/brief` | `brief/` | очередь + WS + кэш 6 ч (джоба `SALES_AI_ANALYTICS_BRIEF`, `jobId = requestKey`, WS `ai-analytics:brief:done|error`); снапшот `ai-analytics-brief` с ключом периода `{from}_{to}_{ростер}` — см. ниже | периметр (`resolveViewer`) | `AiBriefResponseDto {…, data?: AiBriefDto}`; без ключа VibeCode / при исчерпанной квоте / провале факт-чека — `source = template` с причиной |
 | `ai-analytics/manager/style` | `style/` | sync по снапшоту `ai-analytics-style` | периметр; сам сотрудник — по себе; `ai_analytics_style_opt_out` → `status: opt_out` | `AiStyleCardDto {status: ready|few_data|opt_out, notable[], axes[], …}` |
-| `ai-analytics/rop-mark/pick` | `rop-mark/` | sync, лёгкая выборка недели | только руководители (`cup`/`op`/`group`), менеджеру 403 | `AiRopMarkWeekResponseDto {…, data: AiRopMarkWeekDto}` — до трёх звонков, слепой режим до метки |
+| `ai-analytics/rop-mark/pick` | `rop-mark/` | sync, лёгкая выборка недели | только руководители (`cup`/`op`/`group`), менеджеру 403; суперпользователю вендора `forceRefresh` — 403, без сохранённого подбора — предпросмотр без записи | `AiRopMarkWeekResponseDto {…, data: AiRopMarkWeekDto}` — до трёх звонков, слепой режим до метки |
 | `ai-analytics/rop-mark/list` | `rop-mark/` | sync | только руководители | тот же конверт: сохранённый подбор и метки, без подбора — пустой `calls` |
-| `ai-analytics/rop-mark/save` | `rop-mark/` | sync, запись в `ais` | только руководители; звонок вне периметра 403, вне подбора 400 | `AiRopMarkSaveResponseDto {…, data: {id, replaced, blind}}` |
+| `ai-analytics/rop-mark/save` | `rop-mark/` | sync, запись в `ais` | только руководители, суперпользователю вендора 403; звонок вне периметра 403, вне подбора 400 | `AiRopMarkSaveResponseDto {…, data: {id, replaced, blind}}` |
 | `ai-analytics/about` | `about/` | sync: настройки портала + последняя модель портала из `ais`, без кэша | периметр (`resolveViewer`) | `AiAboutResponseDto {status: ready, requestKey, data: AiAboutDto}` — блок «Как считаем» ручки `endpoint: overview | plan/daily | brief | manager/style`: тексты, `params[]` (код, значение, слой, класс) из реестра, `paramsVersion`, `comparableFrom`, `model` (readiness с причинами, κ/φ/λ с источником `estimated|configured|hybrid`, `betaSource`, `estimand`, санити) либо `model: null` + `modelReason` |
 
 `requestKey` конвертов: план дня — `…:plan:{date}:{managerId}`, резюме —
@@ -621,12 +621,16 @@ ai-analytics/rop-mark/pick` (подбор, `forceRefresh` пересобирае
 Права: все три метода — только руководителям (`cup`/`op`/`group`,
 `assertLeader` в сценарии; периметр контроллер берёт через `resolveViewer`),
 менеджеру 403; звонок вне периметра — 403; звонок вне подбора недели или
-подбор, которого ещё нет, — 400 с текстом причины.
+подбор, которого ещё нет, — 400 с текстом причины. Суперпользователь
+вендора (`isSuperUser`) в `ais` ничего не пишет: `save` и `pick` с
+`forceRefresh` — 403; `pick` без сохранённого подбора отдаёт тот же
+детерминированный подбор как предпросмотр, не сохраняя его.
 
-Вид `rop_mark` добавлен в общий словарь `AI_ANALYTICS_FEEDBACK_KINDS`,
-поэтому формально его принимает и общая ручка `feedback` — но записанная
-там строка уходит без `activity_id`, в подбор недели не попадает и меткой
-проверки не считается. Метки читаются только по ключу недели.
+Вид `rop_mark` есть в общем словаре `AI_ANALYTICS_FEEDBACK_KINDS`, но
+общая ручка `feedback` его не принимает (400): она пропускает только
+пользовательские виды `AI_ANALYTICS_USER_FEEDBACK_KINDS`. Метки пишет
+только `rop-mark/save` и читает только по ключу недели; в
+`feedback/list` они не попадают.
 
 Тесты: `libs/sales-ai-analytics/src/__tests__/rop-mark.spec.ts` (состав
 набора, воспроизводимость по зерну, пять менеджеров → три разных, меньше

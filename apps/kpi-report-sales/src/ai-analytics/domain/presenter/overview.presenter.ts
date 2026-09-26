@@ -35,6 +35,7 @@ import {
 import type { OverviewSources } from '../assembler/overview-model.types';
 import type { DatedLiteRow } from '../loaders/lite-row.mapper';
 import { withSignals } from './attention.presenter';
+import type { LevelPassport } from './level.util';
 import { buildManagerRow } from './manager-row.presenter';
 import {
     buildOverviewYoy,
@@ -148,8 +149,17 @@ function toTotals(
     });
 }
 
+/**
+ * Источники презентера: контракт обзора плюс паспорта месячных снапшотов
+ * (уровень и стаж строки). Поле не в `OverviewSources`: тот контракт
+ * правит соседний поток (приём `OverviewYoySnapshots`).
+ */
+export interface OverviewPresenterSources extends OverviewSources {
+    passports?: ReadonlyMap<string, LevelPassport>;
+}
+
 export function buildOverviewDto(
-    sources: OverviewSources,
+    sources: OverviewPresenterSources,
     now: Date,
 ): AiOverviewDto {
     const { calendar, rows } = sources;
@@ -194,6 +204,7 @@ export function buildOverviewDto(
                 finance: financeByManager.get(Number(managerId)),
                 org: sources.org.get(Number(managerId)),
                 level: sources.levels.get(Number(managerId)),
+                passport: sources.passports?.get(managerId) ?? null,
                 callFacts:
                     callFacts.get(managerId) ?? emptyCallFacts(managerId),
                 workdays,
@@ -206,7 +217,6 @@ export function buildOverviewDto(
     // сигналы: разрыв плана считается по норме, попавшей в строку.
     const phase2: Phase2Context = {
         kpi: kpiByManager,
-        levels: sources.levels,
         ...(sources.snapshots ?? {}),
         ...(sources.yoy === undefined ? {} : { yoy: sources.yoy }),
         ...(comparableFrom ? { comparableFrom } : {}),
@@ -253,6 +263,7 @@ export function buildOverviewDto(
             totalCalls: rows.length,
             analyzedCalls: matrix.analyzed,
             skippedNoManager: matrix.excluded.noManager,
+            excludedBeforeComparable: matrix.excluded.beforeComparable,
             otherSharePct,
             disagreementsCount: sources.disagreementsCount,
             fromCache: false,

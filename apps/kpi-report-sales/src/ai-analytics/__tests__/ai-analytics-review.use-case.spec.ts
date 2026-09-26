@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { AGENT_ANALYSIS_TYPE, CALL_RESUME_TYPE } from '@lib/call-lib';
 import { AiReviewRequestDto } from '../dto/ai-review.dto';
 import { AiAnalyticsReviewUseCase } from '../review/ai-analytics-review.use-case';
@@ -27,12 +27,16 @@ interface Harness {
     findByDomainTypeKeys: FindByKeys;
     add: jest.Mock;
     sendMessage: SendMessage;
+    findById: jest.Mock;
+    resetByPattern: jest.Mock;
 }
 
 function makeUseCase(
     options: {
         entityTypeId?: number | null;
         rows?: Record<string, unknown[]>;
+        /** Строка транскрипции; null — не найдена (NotFoundException). */
+        transcription?: { domain: string; userId?: string } | null;
     } = {},
 ): Harness {
     const resolveInfo = jest
@@ -50,16 +54,35 @@ function makeUseCase(
     const sendMessage: SendMessage = jest
         .fn<Promise<void>, [string]>()
         .mockResolvedValue(undefined);
+    const findById = jest.fn(() =>
+        options.transcription
+            ? Promise.resolve(options.transcription)
+            : Promise.reject(new NotFoundException('Transcription not found')),
+    );
+    const resetByPattern = jest.fn().mockResolvedValue(1);
     const useCase = new AiAnalyticsReviewUseCase(
         { resolveInfo } as never,
         { findByDomainTypeKeys } as never,
         { add } as never,
         { sendMessage } as never,
+        { findById } as never,
+        { resetByPattern } as never,
     );
-    return { useCase, resolveInfo, findByDomainTypeKeys, add, sendMessage };
+    return {
+        useCase,
+        resolveInfo,
+        findByDomainTypeKeys,
+        add,
+        sendMessage,
+        findById,
+        resetByPattern,
+    };
 }
 
 const analysisRow = { transcription_id: '10245', user_id: 512 };
+/** Конвейер разбора ais.user_id не пишет — в записи 0. */
+const analysisRowNoUser = { transcription_id: '10245', user_id: 0 };
+const AGENDA_PATTERN = 'sales-ai-analytics:v1:april.bitrix24.ru:agenda:*';
 
 describe('AiAnalyticsReviewUseCase', () => {
     it('несогласие: запись disagree с деталями в payload, звонок и менеджер из глубокого разбора, сообщение в чат', async () => {
@@ -176,5 +199,81 @@ describe('AiAnalyticsReviewUseCase', () => {
 
         expect(result.id).toBe('90211');
         expect(add).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('AiAnalyticsReviewUseCase: менеджер из транскрипции и кэш повестки', () => {
+    it('ais.user_id пуст → менеджер из transcriptions.user_id звонка', async () => {
+        const { useCase, add, findById } = makeUseCase({
+            rows: { [AGENT_ANALYSIS_TYPE]: [analysisRowNoUser] },
+            transcription: { domain: 'april.bitrix24.ru', userId: '512' },
+        });
+
+        const result = await useCase.execute(request());
+
+        expect(findById).toHaveBeenCalledWith('10245');
+        expect(result.managerId).toBe('512');
+        expect(add).toHaveBeenCalledWith(
+            expect.objectContaining({
+                managerId: '512',
+                transcriptionId: '10245',
+            }),
+        );
+    });
+
+    it('ais.user_id есть → транскрипция не читается', async () => {
+        const { useCase, findById } = makeUseCase({
+            rows: { [AGENT_ANALYSIS_TYPE]: [analysisRow] },
+        });
+
+        await useCase.execute(request());
+
+        expect(findById).not.toHaveBeenCalled();
+    });
+
+    it('транскрипции нет, она чужого домена или без менеджера → managerId null, отзыв записан', async () => {
+        const cases = [
+            null,
+            { domain: 'other.bitrix24.ru', userId: '512' },
+            { domain: 'april.bitrix24.ru' },
+        ];
+        for (const transcription of cases) {
+            const { useCase, add } = makeUseCase({
+                rows: { [AGENT_ANALYSIS_TYPE]: [analysisRowNoUser] },
+                transcription,
+            });
+
+            const result = await useCase.execute(request());
+
+            expect(result.managerId).toBeNull();
+            expect(result.analysisFound).toBe(true);
+            expect(add).toHaveBeenCalledWith(
+                expect.objectContaining({ managerId: null }),
+            );
+        }
+    });
+
+    it('несогласие с сайта сбрасывает кэш повестки домена', async () => {
+        const { useCase, resetByPattern } = makeUseCase({
+            rows: { [AGENT_ANALYSIS_TYPE]: [analysisRow] },
+        });
+
+        await useCase.execute(request());
+
+        expect(resetByPattern).toHaveBeenCalledTimes(1);
+        expect(resetByPattern).toHaveBeenCalledWith(AGENDA_PATTERN);
+    });
+
+    it('согласие повестку не меняет — кэш не трогается; сбой кэша отзыв не отменяет', async () => {
+        const agree = makeUseCase({
+            rows: { [AGENT_ANALYSIS_TYPE]: [analysisRow] },
+        });
+        await agree.useCase.execute(request({ verdict: 'agree', issues: [] }));
+        expect(agree.resetByPattern).not.toHaveBeenCalled();
+
+        const broken = makeUseCase();
+        broken.resetByPattern.mockRejectedValue(new Error('redis down'));
+        const result = await broken.useCase.execute(request());
+        expect(result.id).toBe('90211');
     });
 });

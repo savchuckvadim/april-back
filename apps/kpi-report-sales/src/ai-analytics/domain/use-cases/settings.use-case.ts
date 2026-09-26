@@ -5,6 +5,7 @@ import {
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import { toPortalDate } from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_WINDOWS } from '../../constants/ai-analytics.const';
+import { AiCallReportStatusDto } from '../../dto/ai-settings-call-report.dto';
 import {
     AiAnalyticsSettingsDto,
     AiCallTypeDto,
@@ -15,6 +16,7 @@ import { CallsLoader } from '../loaders/calls.loader';
 import { OverviewSnapshotsLoader } from '../loaders/overview-snapshots.loader';
 import {
     AiAnalyticsPortalSettings,
+    AiCallReportStatus,
     SettingsLoader,
 } from '../loaders/settings.loader';
 import {
@@ -25,6 +27,7 @@ import {
 import {
     episodeSalesOf,
     modelReadinessOptions,
+    sigmaLlmSourceOf,
 } from '../presenter/overview-phase2.presenter';
 import {
     buildReadiness,
@@ -60,9 +63,11 @@ export interface SettingsUseCaseOptions {
  * `modelReadinessOptions`): окно счётчиков из месячной модели портала
  * (без неё — период 120 дней), календарь, состав и гипотеза из настроек,
  * продажи — из окна модели (при пустых — из эпизодов прогноза), кап §5.4
- * без модели. Иначе `/settings` и обзор показывали бы два разных режима
+ * без модели, источник σ_llm — из последнего отчёта согласия (как у
+ * обзора). Иначе `/settings` и обзор показывали бы два разных режима
  * в одном интерфейсе (долг 11 волны C). Одна lite-выборка на оба окна.
- * Кэшируется контроллером на 300 с.
+ * Статус конвейера разбора (callReport) — чтобы витрина отличала пилот
+ * от поломки. Кэшируется контроллером на 300 с.
  */
 @Injectable()
 export class SettingsUseCase {
@@ -99,6 +104,7 @@ export class SettingsUseCase {
             domain,
             toPortalDate(now, settings.calendar.timeZone),
         );
+        const sigmaLlmSource = sigmaLlmSourceOf(snapshots.goldenReport);
 
         return {
             enabled: settings.enabled,
@@ -114,6 +120,7 @@ export class SettingsUseCase {
                 ...modelReadinessOptions(snapshots.model ?? null),
                 financeSales: modelSalesOf(snapshots.model),
                 episodeSales: episodeSalesOf(snapshots.forecasts),
+                ...(sigmaLlmSource === undefined ? {} : { sigmaLlmSource }),
             }),
             callTypes: buildCallTypes(),
             comparableFrom: resolveComparableFrom(rows),
@@ -127,13 +134,16 @@ export class SettingsUseCase {
             targets: toTargetsDto(settings.targets),
             absences: toAbsencesDto(settings.absences),
             rosterConfirmedAt: toRosterConfirmedAt(settings.rosterConfirmedAt),
+            ...(settings.callReport === undefined
+                ? {}
+                : { callReport: toCallReportDto(settings.callReport) }),
         };
     }
 
     /**
-     * Снапшоты Фазы 2 на сегодня: модель портала и прогнозы. `ais` не
-     * ответила — настройки не гаснут, готовность считается без модели
-     * (кап §5.4), как и в обзоре.
+     * Снапшоты Фазы 2 на сегодня: модель портала, прогнозы и отчёт
+     * согласия (σ_llm). `ais` не ответила — настройки не гаснут,
+     * готовность считается без модели (кап §5.4), как и в обзоре.
      */
     private async loadSnapshots(
         domain: string,
@@ -185,4 +195,16 @@ function modelSalesOf(model: OverviewSnapshots['model']): number {
     return typeof sales === 'number' && Number.isFinite(sales) && sales > 0
         ? Math.floor(sales)
         : 0;
+}
+
+/** Статус конвейера разбора → DTO: id пилота строками, как у остальных списков. */
+export function toCallReportDto(
+    status: AiCallReportStatus,
+): AiCallReportStatusDto {
+    return {
+        enabled: status.enabled,
+        pilotUserIds: status.pilotUserIds?.map(String) ?? null,
+        salesOnly: status.salesOnly,
+        minDurationSec: status.minDurationSec,
+    };
 }

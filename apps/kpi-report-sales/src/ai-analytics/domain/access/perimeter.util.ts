@@ -5,6 +5,12 @@ export interface RequesterAccess {
     role: AiAnalyticsRequesterRole;
     /** Bitrix-id менеджеров, чьи строки видны; null — все. */
     visibleManagerIds: string[] | null;
+    /**
+     * Суперпользователь вендора (env BX_SUPER_USER_IDS): роль cup и все
+     * менеджеры, но слепую калибровку РОПов не пишет (rop-mark — 403 на
+     * запись). Отсутствие поля = false.
+     */
+    isSuperUser?: boolean;
 }
 
 /**

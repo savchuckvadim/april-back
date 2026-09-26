@@ -1,7 +1,8 @@
 /**
  * Снапшоты Фазы 2 для витрины обзора (поток 16b): месячная модель
  * портала, дневные прогнозы менеджеров и месячные профили стиля; с Фазы 3
- * (П1) — ещё и недельные тренды рядов менеджеров.
+ * (П1) — ещё и недельные тренды рядов менеджеров; паспорта месячных
+ * снапшотов менеджеров — источник уровня и стажа строки обзора.
  *
  * Загрузчик НЕ инжектируемый: он создаётся поверх уже существующего
  * `AiAnalyticsSnapshotStore` (`new OverviewSnapshotsLoader(store)`), чтобы
@@ -16,6 +17,8 @@ import {
     samePeriodKey,
     shiftDate,
 } from '@lib/sales-ai-analytics';
+import { readPassports } from '../assembler/bus-facts.util';
+import type { ManagerPassportFacts } from '../assembler/manager-snapshot.types';
 import type {
     ForecastView,
     GoldenReportView,
@@ -80,6 +83,22 @@ function byManager<T>(
 }
 
 /**
+ * Паспорт из нагрузки `ai-analytics-manager-month` с id менеджера записи
+ * (форма чужая — читается структурно, без паспорта записи нет).
+ */
+function passportEntryOf(
+    record: AiAnalyticsSnapshotRecord,
+): Record<string, unknown>[] {
+    const payload: unknown = record.payload;
+    if (typeof payload !== 'object' || payload === null) return [];
+    const passport = (payload as { passport?: unknown }).passport;
+
+    return typeof passport === 'object' && passport !== null
+        ? [{ ...passport, managerId: record.managerId }]
+        : [];
+}
+
+/**
  * Месяцы менеджеров для сравнения «год назад» (план Фазы 3, П3): месяц
  * окончания периода и тот же месяц годом ранее. Отдельный интерфейс,
  * а не поле `OverviewSnapshots`: контракт снапшотов Фазы 2 правит
@@ -131,6 +150,33 @@ export class OverviewSnapshotsLoader {
                           ),
                       ),
         };
+    }
+
+    /**
+     * Паспорта менеджеров на конец периода — тот же источник уровня и
+     * стажа, что у ночного конвейера (`buildLevelFacts`): месячный
+     * снапшот месяца окончания периода, а без него — прошлого месяца
+     * (текущий месяц 1-го числа ещё не записан). При обоих побеждает
+     * месяц окончания. Разбор паспорта — читателем шины `readPassports`,
+     * чтобы правило чтения было одно. Битрикс не зовётся.
+     */
+    async loadPassports(
+        domain: string,
+        to: string,
+    ): Promise<Map<string, ManagerPassportFacts>> {
+        const monthKey = monthKeyOf(to);
+        const keys = [previousMonthKey(monthKey), monthKey];
+        const records = await this.snapshots.findManagerMonths(domain, keys, {
+            limit: YOY_MONTHS_LIMIT * keys.length,
+        });
+
+        return readPassports(
+            [...records]
+                .sort((left, right) =>
+                    left.periodKey.localeCompare(right.periodKey),
+                )
+                .flatMap(passportEntryOf),
+        );
     }
 
     /**
