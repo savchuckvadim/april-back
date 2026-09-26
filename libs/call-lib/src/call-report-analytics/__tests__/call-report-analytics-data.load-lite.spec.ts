@@ -171,12 +171,16 @@ describe('CallReportAnalyticsDataService.loadLite', () => {
                         quote: 'Дорого у вас',
                         handled: false,
                         outcome: 'disengaged',
+                        at: null,
+                        reaction: null,
                     },
                     {
                         category: null,
                         quote: null,
                         handled: null,
                         outcome: null,
+                        at: null,
+                        reaction: null,
                     },
                 ],
                 versions: {

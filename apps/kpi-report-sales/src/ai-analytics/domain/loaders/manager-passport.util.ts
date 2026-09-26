@@ -137,6 +137,8 @@ export interface BuildPassportInput {
     /** Дата расчёта стажа 'YYYY-MM-DD'. */
     until: string;
     gates: TenureGates;
+    /** Отдел продаж по раскладке ростера; нет — null (не «сменился»). */
+    departmentId?: number | null;
 }
 
 /** Паспорт менеджера из фактов портала, настроек и прокси-события. */
@@ -163,5 +165,6 @@ export function buildPassport(input: BuildPassportInput): ManagerPassport {
         levelSource: input.level ? 'manual' : 'default',
         tenureMonths,
         tenureBand,
+        departmentId: input.departmentId ?? null,
     };
 }

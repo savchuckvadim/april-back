@@ -26,6 +26,7 @@ import { AiAttentionDto, AiAttentionItemDto } from '../../dto/ai-attention.dto';
 import { AiFunnelEdgeDto } from '../../dto/ai-funnel-edge.dto';
 import { AiManagerRowDto } from '../../dto/ai-manager-row.dto';
 import { AiOverviewDto } from '../../dto/ai-overview.dto';
+import { goodhartOf, trendSignalsOf } from './attention-trends.presenter';
 
 export function toAttentionInput(row: AiManagerRowDto): AttentionManagerInput {
     return {
@@ -112,7 +113,9 @@ function planGapOf(row: AiManagerRowDto): AttentionPlanGap | undefined {
 /**
  * Вход «Внимания» Фазы 2: к сигналам Фазы 1 добавляются разрыв плана,
  * исходы и нормы уровня. Норм в строке нет (модели портала нет) — вход
- * совпадает с Фазой 1, новых карточек не появляется.
+ * совпадает с Фазой 1, новых карточек не появляется. С Фазы 3 — сигналы
+ * трендов и флаги детектора Гудхарта из блока `trends` строки (П1, П9);
+ * блока нет — карточек Фазы 3 нет.
  */
 export function toAttentionInputPhase2(
     row: AiManagerRowDto,
@@ -123,12 +126,16 @@ export function toAttentionInputPhase2(
     // это исход не ниже нормы), поэтому без норм они не отдаются и вход
     // совпадает с Фазой 1.
     const outcomes = levelNorms === undefined ? undefined : outcomesOf(row);
+    const trendSignals = trendSignalsOf(row.trends);
+    const goodhart = goodhartOf(row.trends);
 
     return {
         ...toAttentionInput(row),
         ...(planGap === undefined ? {} : { planGap }),
         ...(outcomes === undefined ? {} : { outcomes }),
         ...(levelNorms === undefined ? {} : { levelNorms }),
+        ...(trendSignals === undefined ? {} : { trendSignals }),
+        ...(goodhart === undefined ? {} : { goodhart }),
     };
 }
 

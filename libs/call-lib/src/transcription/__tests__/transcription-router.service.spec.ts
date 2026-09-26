@@ -7,7 +7,9 @@ const makeConfig = (values: Record<string, string>): ConfigStub => ({
 });
 
 const makeVibecode = () => ({
-    transcribeAudio: jest.fn().mockResolvedValue('vibecode text'),
+    transcribeAudioDetailed: jest
+        .fn()
+        .mockResolvedValue({ text: 'vibecode text', segments: null }),
 });
 
 const makeKeyResolver = () => ({
@@ -16,7 +18,9 @@ const makeKeyResolver = () => ({
 
 const makeYandex = () => ({
     transcribeAudio: jest.fn().mockResolvedValue('op-1'),
-    getTranscriptionResult: jest.fn().mockResolvedValue('yandex text'),
+    getTranscriptionDetailed: jest
+        .fn()
+        .mockResolvedValue({ text: 'yandex text', segments: [] }),
 });
 
 const makeStorage = () => ({
@@ -57,11 +61,15 @@ describe('TranscriptionRouterService', () => {
             TRANSCRIPTION_YANDEX_MIN_SEC: '600',
         });
         const result = await router.transcribe({ ...input, durationSec: 700 });
-        expect(result).toEqual({ text: 'yandex text', provider: 'yandex' });
+        expect(result).toEqual({
+            text: 'yandex text',
+            provider: 'yandex',
+            segments: null,
+        });
         expect(yandex.transcribeAudio).toHaveBeenCalledWith(
             'https://s3/audio.mp3',
         );
-        expect(vibecode.transcribeAudio).not.toHaveBeenCalled();
+        expect(vibecode.transcribeAudioDetailed).not.toHaveBeenCalled();
     });
 
     it('короткий звонок в auto-режиме уходит в Vibecode', async () => {
@@ -72,10 +80,11 @@ describe('TranscriptionRouterService', () => {
         expect(result).toEqual({
             text: 'vibecode text',
             provider: 'bitrix-vibecode',
+            segments: null,
         });
         expect(yandex.transcribeAudio).not.toHaveBeenCalled();
         // Ключ VibeCode — пер-портальный, из резолвера (vibeKey БД → env).
-        expect(vibecode.transcribeAudio).toHaveBeenCalledWith(
+        expect(vibecode.transcribeAudioDetailed).toHaveBeenCalledWith(
             input.buffer,
             input.fileName,
             'portal-vibe-key',
@@ -86,7 +95,7 @@ describe('TranscriptionRouterService', () => {
         const { router, vibecode } = makeRouter({});
         const result = await router.transcribe(input);
         expect(result.provider).toBe('bitrix-vibecode');
-        expect(vibecode.transcribeAudio).toHaveBeenCalled();
+        expect(vibecode.transcribeAudioDetailed).toHaveBeenCalled();
     });
 
     it('TRANSCRIPTION_PROVIDER=yandex форсирует Yandex даже для короткого', async () => {
@@ -100,10 +109,16 @@ describe('TranscriptionRouterService', () => {
 
     it('при ошибке Vibecode выполняется fallback на Yandex', async () => {
         const vibecode = makeVibecode();
-        vibecode.transcribeAudio.mockRejectedValue(new Error('timeout'));
+        vibecode.transcribeAudioDetailed.mockRejectedValue(
+            new Error('timeout'),
+        );
         const { router, yandex } = makeRouter({}, { vibecode });
         const result = await router.transcribe({ ...input, durationSec: 60 });
-        expect(result).toEqual({ text: 'yandex text', provider: 'yandex' });
+        expect(result).toEqual({
+            text: 'yandex text',
+            provider: 'yandex',
+            segments: null,
+        });
         expect(yandex.transcribeAudio).toHaveBeenCalled();
     });
 });

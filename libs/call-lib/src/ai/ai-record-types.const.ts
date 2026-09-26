@@ -11,6 +11,8 @@ export const CALL_CLASSIFY_TYPE = 'call-classify';
 export const CALL_RESUME_TYPE = 'call-resume';
 export const CALL_RECOMENDATION_TYPE = 'call-recomendation';
 export const AGENT_ANALYSIS_TYPE = 'agent-analysis';
+/** Повторный разбор того же звонка для test-retest оценщика (Фаза 3, П7); в смарт не пишется. */
+export const AGENT_ANALYSIS_RETEST_TYPE = 'agent-analysis-retest';
 /**
  * Проверка звонка по документам компании (Фаза 3 плана
  * ai/tasks/rag-driven-analysis-plan.md). Запись служит и результатом,

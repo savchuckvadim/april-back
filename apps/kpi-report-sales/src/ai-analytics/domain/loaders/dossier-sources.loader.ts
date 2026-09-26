@@ -7,6 +7,10 @@ import { AiAnalyticsFeedbackStore } from '../../store/ai-analytics-feedback.stor
 import { AiAnalyticsRopMarkStore } from '../../store/ai-analytics-rop-mark.store';
 import { AiAnalyticsSnapshotStore } from '../../store/ai-analytics-snapshot.store';
 import { StyleSettingsLoader } from '../../style/style-settings.loader';
+import {
+    DossierNeighboursLoader,
+    type DossierNeighbourSources,
+} from './dossier-neighbours.loader';
 import type { StyleSnapshotPayload } from '../../style/style-card.presenter';
 import type {
     DossierFeedbackView,
@@ -41,6 +45,8 @@ export interface DossierSources {
     readiness: ReadinessDto | null;
     feedback: DossierFeedbackView[];
     ropMarks: DossierRopMarkView[];
+    /** Источники разделов соседних ручек: тренды, план-факт, год назад. */
+    neighbours: DossierNeighbourSources;
     /** Идентификаторы всех прочитанных записей ais (для meta досье). */
     snapshotIds: string[];
 }
@@ -65,17 +71,19 @@ export class DossierSourcesLoader {
         private readonly feedback: AiAnalyticsFeedbackStore,
         private readonly ropMarks: AiAnalyticsRopMarkStore,
         private readonly styleSettings: StyleSettingsLoader,
+        private readonly neighbours: DossierNeighboursLoader,
     ) {}
 
     async load(data: AiDossierJobData): Promise<DossierSources> {
         const { domain, managerId, months } = data;
-        const [monthRecords, weekRecords, style, readiness, marks] =
+        const [monthRecords, weekRecords, style, readiness, marks, neighbours] =
             await Promise.all([
                 this.monthSnapshots(domain, managerId, months),
                 this.weekSnapshots(domain, managerId, months),
                 this.styleSnapshot(domain, managerId, months),
                 this.readiness(domain, months),
                 this.marks(domain, managerId, months),
+                this.neighbours.load(data),
             ]);
         const feedback = await this.feedbackOf(domain, managerId, months);
 
@@ -87,9 +95,11 @@ export class DossierSourcesLoader {
             readiness,
             feedback,
             ropMarks: marks,
+            neighbours,
             snapshotIds: [
                 ...monthRecords.map(record => record.id),
                 ...weekRecords.map(record => record.id),
+                ...neighbours.snapshotIds,
             ],
         };
     }

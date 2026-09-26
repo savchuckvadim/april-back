@@ -5,7 +5,9 @@
  * растёт и потоки не конфликтуют).
  *
  * Содержит ручку `POST /ai-analytics/dossier`, два use-case'а (конверт
- * ручки и выполнение джобы) и загрузчик источников.
+ * ручки и выполнение джобы) и два загрузчика источников: свои снапшоты
+ * менеджера и источники разделов соседних ручек (тренды, план-факт,
+ * год назад).
  *
  * Поверхность API: `QueueModule` (постановка джобы) и
  * `AiAnalyticsCoreModule` (кэш, настройки, ростер, стор снапшотов, стор
@@ -29,6 +31,7 @@ import { Module } from '@nestjs/common';
 import { QueueModule } from 'src/modules/queue/queue.module';
 import { PortalSessionModule } from '@lib/auth';
 import { AiAnalyticsCoreModule } from '../core/ai-analytics-core.module';
+import { DossierNeighboursLoader } from '../domain/loaders/dossier-neighbours.loader';
 import { DossierSourcesLoader } from '../domain/loaders/dossier-sources.loader';
 import { DossierJobUseCase } from '../domain/use-cases/dossier-job.use-case';
 import { DossierUseCase } from '../domain/use-cases/dossier.use-case';
@@ -45,7 +48,12 @@ import { AiAnalyticsDossierController } from './ai-analytics-dossier.controller'
         PortalSessionModule,
     ],
     controllers: [AiAnalyticsDossierController],
-    providers: [DossierSourcesLoader, DossierUseCase, DossierJobUseCase],
+    providers: [
+        DossierSourcesLoader,
+        DossierNeighboursLoader,
+        DossierUseCase,
+        DossierJobUseCase,
+    ],
     // Джоба досье нужна процессору очереди (поток сборки), конверт ручки —
     // соседним срезам.
     exports: [DossierUseCase, DossierJobUseCase],

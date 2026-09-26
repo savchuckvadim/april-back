@@ -23,6 +23,7 @@ const passport: ManagerPassport = {
     levelSource: 'default',
     tenureMonths: 8,
     tenureBand: '6-18',
+    departmentId: 91,
 };
 
 const planSnapshot: PlanSnapshot = {
@@ -53,6 +54,13 @@ describe('Чтение паспорта из шины', () => {
         expect(readPassports([{ ...passport, managerId: 10 }]).has('10')).toBe(
             true,
         );
+    });
+
+    it('паспорт до Фазы 3 без отдела читается: departmentId = null', () => {
+        const { departmentId: unused, ...legacy } = passport;
+        void unused;
+
+        expect(readPassports([legacy]).get('10')?.departmentId).toBeNull();
     });
 
     it('чужая форма и пустая шина дают пустую карту', () => {

@@ -6,6 +6,7 @@ export * from './transcription/services/transcription.store.service';
 export * from './transcription/provider/transcription-provider.module';
 export * from './transcription/provider/transcription-router.service';
 export * from './transcription/types/transcription-pipeline.types';
+export * from './transcription/types/transcript-segment.types';
 export * from './ai/services/ai.service';
 export * from './ai/dto/ai-entity.dto';
 export * from './ai/ai-record-types.const';

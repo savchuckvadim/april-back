@@ -13,16 +13,11 @@
  * правило владения общими файлами): здесь только слоты и тики.
  */
 
-/**
- * Слот локального времени портала: час и минута, при необходимости день
- * недели ISO (1 — понедельник … 7 — воскресенье) и число месяца.
- */
-export interface AiLocalSlot {
-    hour: number;
-    minute: number;
-    weekday?: number;
-    dayOfMonth?: number;
-}
+import { hourlyTickCron, type AiLocalSlot } from '@lib/sales-ai-analytics';
+
+// Слот локального времени и тик — из библиотеки (`model/local-clock.ts`,
+// 25.09.2026): те же правила у крона ретенции админ-модуля.
+export { hourlyTickCron, type AiLocalSlot };
 
 /**
  * Целевые локальные часы кронов. Ночной пересчёт идёт после ночных KPI и
@@ -47,11 +42,6 @@ export const AI_ANALYTICS_LOCAL_HOURS = {
     AUDIT: { hour: 4, minute: 10, dayOfMonth: 1 },
 } as const satisfies Record<string, AiLocalSlot>;
 export type AiAnalyticsLocalHourKey = keyof typeof AI_ANALYTICS_LOCAL_HOURS;
-
-/** Ежечасный тик крона на минуте слота; локальный час проверяет планировщик. */
-export function hourlyTickCron(slot: AiLocalSlot): string {
-    return `${slot.minute} * * * *`;
-}
 
 /** Тики push-контура: повестка — на :30, дайджесты — на :00 каждого часа. */
 export const AI_ANALYTICS_PUSH_CRON = {

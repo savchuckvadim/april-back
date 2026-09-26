@@ -126,8 +126,8 @@ export class AiDossierDto {
 
     @ApiProperty({
         description:
-            'Тренды метрик менеджера (поток П1); null — раздел не ' +
-            'подключён или данных мало, см. reasons.',
+            'Тренды метрик менеджера за последнюю неделю окна (поток П1); ' +
+            'null — снапшота трендов нет или данных мало, см. reasons.',
         type: AiManagerTrendsDto,
         nullable: true,
     })
@@ -135,8 +135,9 @@ export class AiDossierDto {
 
     @ApiProperty({
         description:
-            'Реконсиляция «план — факт» последнего месяца окна (поток П2); ' +
-            'null — раздел не подключён, см. reasons.',
+            'Реконсиляция «план — факт» последнего месяца окна (поток П2) ' +
+            'по одному менеджеру; null — настройки портала не прочитаны, ' +
+            'см. reasons.',
         type: AiPlanFactDto,
         nullable: true,
     })
@@ -144,8 +145,9 @@ export class AiDossierDto {
 
     @ApiProperty({
         description:
-            'Сравнение с тем же периодом год назад (поток П3); null — ' +
-            'раздел не подключён или сравнивать не с чем, см. reasons.',
+            'Сравнение последнего месяца окна с тем же месяцем год назад ' +
+            '(поток П3); null — истории год назад нет или данных мало, ' +
+            'см. reasons.',
         type: AiYoyDto,
         nullable: true,
     })

@@ -2,6 +2,7 @@ import {
     monthKeyOf,
     OverviewSnapshotsLoader,
     previousMonthKey,
+    trendWeekKeys,
 } from '../domain/loaders/overview-snapshots.loader';
 import type {
     AiAnalyticsSnapshotRecord,
@@ -10,8 +11,9 @@ import type {
 
 /**
  * Загрузчик снапшотов Фазы 2 для витрины обзора (поток 16b): по каким
- * ключам периодов читаются модель портала, дневные прогнозы и профили
- * стиля и что происходит, когда записей нет.
+ * ключам периодов читаются модель портала, дневные прогнозы, профили
+ * стиля и (Фаза 3, П1) недельные тренды, и что происходит, когда записей
+ * нет.
  */
 const DOMAIN = 'a.bitrix24.ru';
 const TO = '2026-09-09';
@@ -72,6 +74,11 @@ describe('ключи периодов', () => {
         expect(previousMonthKey('2026-01')).toBe('2025-12');
         expect(previousMonthKey('нет')).toBe('нет');
     });
+
+    it('тренды ищутся под прошлой и текущей ISO-неделей дня окончания', () => {
+        // 09.09.2026 — среда 37-й недели; неделей раньше — 36-я.
+        expect(trendWeekKeys(TO)).toEqual(['2026-W36', '2026-W37']);
+    });
 });
 
 describe('OverviewSnapshotsLoader — что читается из ais', () => {
@@ -108,10 +115,54 @@ describe('OverviewSnapshotsLoader — что читается из ais', () => {
                 type: 'ai-analytics-style',
                 periodKeys: ['2026-08', '2026-09'],
             },
+            {
+                type: 'ai-analytics-trends',
+                periodKeys: ['2026-W36', '2026-W37'],
+            },
         ]);
         expect(result.model).toEqual({ edges: [] });
         expect(result.forecasts?.get('10')).toEqual({ doneSales: 4 });
         expect(result.styles?.get('10')).toEqual({ calls: 62 });
+        expect(result.trends?.size).toBe(0);
+    });
+
+    it('тренды: из двух недель побеждает более поздняя, даже если записана раньше', async () => {
+        const { store } = storeWith({
+            'ai-analytics-trends': [
+                record(
+                    'ai-analytics-trends',
+                    '2026-W37',
+                    '10',
+                    { weekKey: '2026-W37', calls: 41 },
+                    '2026-09-07T01:00:00Z',
+                ),
+                record(
+                    'ai-analytics-trends',
+                    '2026-W36',
+                    '10',
+                    { weekKey: '2026-W36', calls: 38 },
+                    '2026-09-08T01:00:00Z',
+                ),
+                record('ai-analytics-trends', '2026-W36', '20', {
+                    weekKey: '2026-W36',
+                    calls: 12,
+                }),
+            ],
+        });
+
+        const result = await new OverviewSnapshotsLoader(store).load(
+            DOMAIN,
+            TO,
+        );
+
+        expect(result.trends?.get('10')).toEqual({
+            weekKey: '2026-W37',
+            calls: 41,
+        });
+        expect(result.trends?.get('20')).toEqual({
+            weekKey: '2026-W36',
+            calls: 12,
+        });
     });
 
     it('модель своего месяца выигрывает у записи прошлого месяца, созданной позже', async () => {

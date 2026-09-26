@@ -1,3 +1,4 @@
+import { isTimecodeWithinDuration } from '@lib/call-lib';
 import { Logger } from '@nestjs/common';
 import { AgentCallAnalysisDto } from '../dto/agent-analysis-request.dto';
 import {
@@ -63,6 +64,44 @@ export function applySpeechMetrics(
         talkRatioPct: metrics.talkRatioPct,
         questionsCount: metrics.questionsCount,
     };
+}
+
+/**
+ * Таймкоды цитат возражений (П6) сверяются с длительностью записи:
+ * секунда за пределами записи (с запасом в секунду) обнуляется с
+ * предупреждением — разбор принимается, ссылка на запись не ставится.
+ * Длительность неизвестна — проверять нечем, таймкоды остаются.
+ */
+export function clampObjectionTimecodes(
+    transcriptionId: string,
+    dto: AgentCallAnalysisDto,
+    durationSec: number | null,
+    logger: Logger,
+): AgentCallAnalysisDto {
+    if (!dto.objections?.length) return dto;
+    let dropped = 0;
+    const objections = dto.objections.map(objection => {
+        const start = objection.startSec ?? null;
+        const end = objection.endSec ?? null;
+        const startOk =
+            start === null || isTimecodeWithinDuration(start, durationSec);
+        const endOk =
+            end === null ||
+            (isTimecodeWithinDuration(end, durationSec) &&
+                (start === null || end >= start));
+        if (startOk && endOk) return objection;
+        dropped += 1;
+
+        return { ...objection, startSec: null, endSec: null };
+    });
+    if (dropped > 0) {
+        logger.warn(
+            `Таймкоды ${dropped} возражений вне записи ` +
+                `(${durationSec ?? '?'} с) обнулены (transcription ${transcriptionId})`,
+        );
+    }
+
+    return { ...dto, objections };
 }
 
 /**

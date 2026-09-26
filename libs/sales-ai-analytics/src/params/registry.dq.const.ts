@@ -254,4 +254,17 @@ export const AI_ANALYTICS_DQ_PARAMS = [
         description:
             'На сколько должна упасть нижняя граница апостериора следующего ребра при росте балла, чтобы детектор Goodhart поставил сигнал «балл делают, а не зарабатывают» (расщепление goodhart_detector).',
     },
+    {
+        code: 'golden_kappa_min',
+        title: 'Минимальная каппа надёжного поля разбора',
+        scope: 'global',
+        source: 'configured',
+        unit: 'каппа',
+        defaultValue: 0.4,
+        range: [0.2, 0.8],
+        phase: 3,
+        breaksSeries: false,
+        description:
+            'Каппа Коэна между двумя прогонами одной версии промпта (test-retest, отчёт согласия), ниже которой категориальное поле разбора (тип звонка, исход, приоритет) помечается «ненадёжно» в блоке «Как считаем» — число по нему скрывается по правилу n_min, а не подаётся как «значимо».',
+    },
 ] as const satisfies readonly ParamDescriptor[];

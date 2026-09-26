@@ -1,3 +1,10 @@
+import type { ReliabilitySource } from '@lib/sales-ai-analytics';
+
+/** Источники σ_llm (те же коды, что у отчёта согласия). */
+export const AI_READINESS_SIGMA_SOURCES = [
+    'measured',
+    'configured',
+] as const satisfies readonly ReliabilitySource[];
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AI_BETA_SOURCES, AiBetaSource } from '@lib/sales-ai-analytics';
 import {
@@ -124,4 +131,14 @@ export class ReadinessDto {
         nullable: true,
     })
     betaCountdown?: AiBetaCountdownDto | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Источник σ_llm (Фаза 3, П7): measured — отчёт согласия ' +
+            'test-retest прошёл ценз пар, configured — дефолт реестра ' +
+            'sigma_llm_default. Нет поля — отчёта согласия у портала нет.',
+        enum: AI_READINESS_SIGMA_SOURCES,
+        example: 'configured',
+    })
+    sigmaLlmSource?: ReliabilitySource;
 }

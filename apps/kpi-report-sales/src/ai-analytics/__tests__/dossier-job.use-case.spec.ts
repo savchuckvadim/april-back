@@ -5,6 +5,8 @@ import {
     AI_DOSSIER_TTL_SECONDS,
 } from '../constants/ai-dossier.const';
 import { AI_ANALYTICS_CALC_VERSION } from '../constants/ai-overview.const';
+import { DEFAULT_WORK_CALENDAR } from '@lib/sales-ai-analytics';
+import type { DossierNeighbourSources } from '../domain/loaders/dossier-neighbours.loader';
 import type { DossierSources } from '../domain/loaders/dossier-sources.loader';
 import { DossierJobUseCase } from '../domain/use-cases/dossier-job.use-case';
 import type { AiDossierJobData } from '../dto/ai-dossier.dto';
@@ -24,6 +26,84 @@ const job = (overrides: Partial<AiDossierJobData> = {}): AiDossierJobData => ({
     ...overrides,
 });
 
+/** Соседних источников нет: трендов, месяца год назад и настроек. */
+const emptyNeighbours = (): DossierNeighbourSources => ({
+    trends: null,
+    baseMonth: null,
+    planFact: null,
+    snapshotIds: [],
+});
+
+/** Соседние источники «всё на месте»: тренды, M−12, снимок целей. */
+const fullNeighbours = (): DossierNeighbourSources => ({
+    trends: {
+        id: 't-1',
+        periodKey: '2026-W38',
+        managerId: MANAGER,
+        generatedAt: '2026-09-21T00:00:00.000Z',
+        payload: {
+            weekKey: '2026-W38',
+            calls: 214,
+            confidence: 'ok',
+            metrics: [{ metric: 'quality', points: 21 }],
+            signals: [
+                {
+                    metric: 'quality',
+                    grain: 'week',
+                    kind: 'shift',
+                    direction: 'down',
+                    sinceWeek: '2026-W31',
+                    magnitude: -0.8,
+                    confidence: 'ok',
+                },
+            ],
+        },
+    },
+    baseMonth: {
+        id: 'm-0',
+        periodKey: '2025-09',
+        managerId: MANAGER,
+        generatedAt: '2025-10-01T00:00:00.000Z',
+        payload: {
+            n: 30,
+            byType: [
+                {
+                    callType: 'presentation',
+                    n: 30,
+                    score: { value: 6.9, n: 30, confidence: { level: 'ok' } },
+                },
+            ],
+            finance: { salesSum: 300000, salesCount: 3, averageCheck: 100000 },
+            passport: { departmentId: 91 },
+        },
+    },
+    planFact: {
+        monthKey: '2026-09',
+        plan: {
+            monthKey: '2026-09',
+            takenOn: '2026-09-01',
+            managers: [
+                {
+                    managerId: MANAGER,
+                    sales: 5,
+                    calls: 400,
+                    presentations: 30,
+                    targets: {},
+                },
+            ],
+            achieversShare: null,
+            factMonths: [],
+            factManagers: 0,
+            planIsWish: false,
+            reason: null,
+        },
+        calendar: DEFAULT_WORK_CALENDAR,
+        timeZone: 'Europe/Moscow',
+        dailyPlanEnabled: true,
+    },
+    snapshotIds: ['t-1', 'm-0'],
+});
+
 /** Пустые источники: ни одного снапшота, ни меток, ни реакций. */
 const emptySources = (): DossierSources => ({
     months: [],
@@ -33,6 +113,7 @@ const emptySources = (): DossierSources => ({
     readiness: null,
     feedback: [],
     ropMarks: [],
+    neighbours: emptyNeighbours(),
     snapshotIds: [],
 });
 
@@ -121,7 +202,8 @@ const fullSources = (): DossierSources => ({
             sections: ['needs'],
         },
     ],
-    snapshotIds: ['w-1', 'm-1'],
+    neighbours: fullNeighbours(),
+    snapshotIds: ['w-1', 'm-1', 't-1', 'm-0'],
 });
 
 function makeJob(sources: DossierSources, loadFails = false) {
@@ -196,31 +278,91 @@ describe('DossierJobUseCase: сборка досье в воркере', () => {
         expect(dto.readiness?.mode).toBe('norms');
         expect(dto.meta).toEqual({
             calcVersion: AI_ANALYTICS_CALC_VERSION,
-            snapshotIds: ['m-1', 'w-1'],
+            snapshotIds: ['m-0', 'm-1', 't-1', 'w-1'],
             generatedAt: NOW.toISOString(),
             months: ['2026-07', '2026-08', '2026-09'],
         });
     });
 
-    it('разделы соседних потоков пусты с причиной section-not-available', async () => {
+    it('разделы соседних ручек собраны: тренды, план-факт по менеджеру, год назад', async () => {
         const { useCase } = makeJob(fullSources());
+        const dto = await useCase.execute(job(), NOW);
+
+        expect(dto.trends).toMatchObject({
+            weekKey: '2026-W38',
+            calls: 214,
+            weeks: 21,
+            confidence: 'ok',
+        });
+        expect(dto.trends?.signals).toHaveLength(1);
+        expect(dto.planFact?.period).toMatchObject({
+            monthKey: '2026-09',
+            today: '2026-09-22',
+            closed: false,
+        });
+        expect(dto.planFact?.rows).toEqual([
+            expect.objectContaining({ managerId: MANAGER }),
+        ]);
+        expect(dto.yoy).toMatchObject({
+            periodKey: '2026-09',
+            basePeriodKey: '2025-09',
+        });
+        expect(dto.yoy?.metrics.length).toBeGreaterThan(0);
+        const codes = reasonsOf(dto.reasons);
+        expect(codes[AI_DOSSIER_SECTIONS.trends]).toBeUndefined();
+        expect(codes[AI_DOSSIER_SECTIONS.planFact]).toBeUndefined();
+        expect(codes[AI_DOSSIER_SECTIONS.yoy]).toBeUndefined();
+    });
+
+    it('соседних источников нет: причины различают «нет снапшота», «нет истории» и «источник упал»', async () => {
+        const { useCase } = makeJob({
+            ...fullSources(),
+            neighbours: emptyNeighbours(),
+        });
         const dto = await useCase.execute(job(), NOW);
 
         expect(dto.trends).toBeNull();
         expect(dto.planFact).toBeNull();
         expect(dto.yoy).toBeNull();
         const codes = reasonsOf(dto.reasons);
-        for (const code of [
-            AI_DOSSIER_SECTIONS.trends,
-            AI_DOSSIER_SECTIONS.planFact,
-            AI_DOSSIER_SECTIONS.yoy,
-        ]) {
-            expect(codes[code]).toBe(AI_DOSSIER_REASONS.sectionNotAvailable);
-        }
+        expect(codes[AI_DOSSIER_SECTIONS.trends]).toBe(
+            AI_DOSSIER_REASONS.noSnapshots,
+        );
+        expect(codes[AI_DOSSIER_SECTIONS.yoy]).toBe(
+            AI_DOSSIER_REASONS.noHistory,
+        );
+        expect(codes[AI_DOSSIER_SECTIONS.planFact]).toBe(
+            AI_DOSSIER_REASONS.sectionFailed,
+        );
         // У каждой причины есть человеческая подпись.
         for (const reason of dto.reasons) {
             expect(reason.text.length).toBeGreaterThan(0);
         }
+    });
+
+    it('снапшот трендов с доверием none — раздел пуст с причиной too-few-data', async () => {
+        const neighbours = fullNeighbours();
+        const trends = neighbours.trends;
+        if (trends === null) throw new Error('фикстура без трендов');
+        const { useCase } = makeJob({
+            ...fullSources(),
+            neighbours: {
+                ...neighbours,
+                trends: {
+                    ...trends,
+                    payload: {
+                        ...(trends.payload as object),
+                        confidence: 'none',
+                    },
+                },
+            },
+        });
+        const dto = await useCase.execute(job(), NOW);
+
+        expect(dto.trends).toBeNull();
+        expect(reasonsOf(dto.reasons)[AI_DOSSIER_SECTIONS.trends]).toBe(
+            AI_DOSSIER_REASONS.tooFewData,
+        );
     });
 
     it('снапшотов нет: досье собирается целиком, каждый раздел — null с причиной', async () => {

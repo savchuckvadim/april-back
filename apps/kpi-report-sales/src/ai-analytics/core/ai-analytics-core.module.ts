@@ -35,6 +35,7 @@ import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
 import { AiAnalyticsCacheService } from '../cache/ai-analytics-cache.service';
 import { RequesterAccessService } from '../domain/access/requester-access.service';
 import { CallsLoader } from '../domain/loaders/calls.loader';
+import { ManagerOrgLoader } from '../domain/loaders/manager-org.loader';
 import { ManagersLoader } from '../domain/loaders/managers.loader';
 import { AiAnalyticsParamsLoader } from '../domain/loaders/params.loader';
 import { AiAnalyticsPortalsLoader } from '../domain/loaders/portals.loader';
@@ -52,6 +53,9 @@ export const AI_ANALYTICS_CORE_PROVIDERS: Type<unknown>[] = [
     AiAnalyticsParamsLoader,
     AiAnalyticsPortalsLoader,
     ManagersLoader,
+    // Раскладка ростера по отделам: строки обзора, сводный дайджест и
+    // отдел в паспорте менеджера (Фаза 3, П3).
+    ManagerOrgLoader,
     CallsLoader,
     AiAnalyticsSnapshotStore,
     // Обратная связь (ais, без Битрикса): витрина, push-контур и отзыв с сайта.

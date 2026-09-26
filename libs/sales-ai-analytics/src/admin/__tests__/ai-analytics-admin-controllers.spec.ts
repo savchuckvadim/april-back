@@ -235,22 +235,24 @@ describe('делегирование контроллеров в сервисы'
         });
     });
 
-    it('golden-set/run отвечает отказом с текстом «подключается потоком П7»', () => {
+    it('golden-set/run передаёт домен и квоту сервису и отдаёт его ответ', async () => {
         const goldenSet = {
             list: jest.fn(),
-            run: jest.fn().mockReturnValue({
+            run: jest.fn().mockResolvedValue({
                 domain: 'd',
                 dispatched: false,
                 jobId: null,
                 reason: GOLDEN_SET_MESSAGES.runNotWired,
+                quota: 300,
             }),
         };
         const controller = new AiAnalyticsGoldenSetAdminController(
             goldenSet as never,
         );
-        const result = controller.run({ domain: 'd' });
+        const result = await controller.run({ domain: 'd', quota: 50 });
+        expect(goldenSet.run).toHaveBeenCalledWith({ domain: 'd', quota: 50 });
         expect(result.dispatched).toBe(false);
         expect(result.jobId).toBeNull();
-        expect(result.reason).toContain('П7');
+        expect(result.reason).toContain('не подключён');
     });
 });

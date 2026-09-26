@@ -16,6 +16,8 @@ import {
     AI_TREND_WEEK_METRIC,
     isAiTrendMetric,
 } from '../../constants/ai-trend.const';
+import { isAiGoodhartPairCode } from '../../constants/ai-goodhart.const';
+import type { AiGoodhartFlagDto } from '../../dto/ai-goodhart.dto';
 import { AiManagerTrendsDto, AiTrendSignalDto } from '../../dto/ai-trend.dto';
 
 /** Нагрузка трендов глазами витрины: форма чужая, читается структурно. */
@@ -25,6 +27,7 @@ export interface TrendsView {
     confidence?: unknown;
     signals?: unknown;
     metrics?: unknown;
+    goodhart?: unknown;
 }
 
 /** Опции показа: объём данных менеджера и пороги (по умолчанию — из реестра). */
@@ -79,6 +82,47 @@ function toSignal(value: unknown): AiTrendSignalDto[] {
     ];
 }
 
+/** Флаг детектора нагрузки → DTO; чужая или неполная форма отбрасывается. */
+function toGoodhartFlag(value: unknown): AiGoodhartFlagDto[] {
+    const item = (value ?? {}) as Record<string, unknown>;
+    if (
+        !isAiGoodhartPairCode(item.pair) ||
+        !isAiTrendMetric(item.pressure) ||
+        !isAiTrendMetric(item.counter) ||
+        typeof item.fromKey !== 'string' ||
+        typeof item.toKey !== 'string' ||
+        !isNumber(item.pressureChange) ||
+        !isNumber(item.counterChange) ||
+        !isNumber(item.points)
+    ) {
+        return [];
+    }
+
+    return [
+        {
+            pair: item.pair,
+            pressure: item.pressure,
+            counter: item.counter,
+            fromKey: item.fromKey,
+            toKey: item.toKey,
+            pressureChange: item.pressureChange,
+            counterChange: item.counterChange,
+            points: item.points,
+        },
+    ];
+}
+
+/**
+ * Флаги детектора Гудхарта из нагрузки: null — детектор молчал (окна
+ * нет) либо форма чужая; иначе список (возможно пустой).
+ */
+function toGoodhartFlags(value: unknown): AiGoodhartFlagDto[] | null {
+    if (typeof value !== 'object' || value === null) return null;
+    const flags = (value as Record<string, unknown>).flags;
+
+    return Array.isArray(flags) ? flags.flatMap(toGoodhartFlag) : null;
+}
+
 /** Сравнимых точек ряда качества; чужая форма → 0. */
 function qualityPointsOf(metrics: unknown): number {
     const list = Array.isArray(metrics) ? metrics : [];
@@ -118,5 +162,6 @@ export function toTrendsBlock(
         weeks: qualityPointsOf(view.metrics),
         confidence: view.confidence,
         signals,
+        goodhart: toGoodhartFlags(view.goodhart),
     };
 }

@@ -12,6 +12,7 @@
 import type { AiBetaSource } from '../contracts/quality-link.types';
 import { registryDefault } from '../params/registry.access';
 import type { BetaGateCountdown } from './beta-power';
+import type { ReliabilitySource } from './reliability';
 
 /** Режимы готовности витрины (план §4.11). */
 export const AI_READINESS_MODES = [
@@ -136,6 +137,12 @@ export interface ReadinessInput {
      * которые про модель не знают, и для сборки самой модели).
      */
     portalModelPresent?: boolean;
+    /**
+     * Источник σ_llm (Фаза 3, П7): measured — отчёт согласия test-retest
+     * прошёл ценз пар, configured — дефолт реестра; не задан — вызывающий
+     * про отчёт не знает, поле в результате не появляется.
+     */
+    sigmaLlmSource?: ReliabilitySource;
 }
 
 /** Результат правил режимов; адаптер раскладывает его в `ReadinessDto`. */
@@ -149,6 +156,8 @@ export interface ReadinessResult {
     betaSource: AiBetaSource;
     /** null при `betaSource: 'data'` (гейт пройден) и в режиме `kpi-only`. */
     betaCountdown: BetaCountdown | null;
+    /** Источник σ_llm, если вызывающий его передал (П7). */
+    sigmaLlmSource?: ReliabilitySource;
 }
 
 /**
@@ -262,10 +271,15 @@ export function buildReadiness(
     // когда гейт уже пройден и β считается по данным.
     const countdown =
         input.betaSource === 'data' ? null : (input.betaCountdown ?? null);
+    const sigma =
+        input.sigmaLlmSource === undefined
+            ? {}
+            : { sigmaLlmSource: input.sigmaLlmSource };
 
     if (input.enabled && !input.pipelineEnabled) {
         return {
             ...base,
+            ...sigma,
             mode: 'kpi-only',
             reasons: [AI_READINESS_REASON_CODES.kpiOnly],
             betaSource: outputBetaSource(input, false),
@@ -277,6 +291,7 @@ export function buildReadiness(
     if (calibration.length) {
         return {
             ...base,
+            ...sigma,
             mode: 'calibration',
             reasons: calibration,
             betaSource: outputBetaSource(input, false),
@@ -288,6 +303,7 @@ export function buildReadiness(
     if (blocked.length) {
         return {
             ...base,
+            ...sigma,
             mode: 'descriptive',
             reasons: blocked,
             betaSource: outputBetaSource(input, false),

@@ -75,6 +75,8 @@ describe('trendParamsOf — параметры трендов из реестр�
             xmrSigma: TREND_DEFAULTS.xmrSigma,
             comparableWeeks: TREND_DEFAULTS.comparableWeeks,
             minN: 8,
+            goodhartWindowMonths: 3,
+            goodhartDrop: 0.3,
         });
         expect(
             trendParamsOf({

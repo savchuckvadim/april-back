@@ -31,6 +31,7 @@ import {
     type BetaCountdown,
     type ReadinessGates,
     type ReadinessWindowCounters,
+    type ReliabilitySource,
 } from '@lib/sales-ai-analytics';
 import { AiAnalyticsReadinessMode } from '../../constants/ai-analytics.const';
 import { AiBetaCountdownDto, ReadinessDto } from '../../dto/readiness.dto';
@@ -149,6 +150,8 @@ export interface ReadinessOptions {
     portalModelPresent?: boolean;
     /** Санити-панель модели пометила качество данных (`flagged`). */
     dataQualityFlagged?: boolean;
+    /** Источник σ_llm из отчёта согласия (П7); нет отчёта — поле не отдаётся. */
+    sigmaLlmSource?: ReliabilitySource;
     /** Гейты режимов; по умолчанию — дефолты библиотеки. */
     gates?: ReadinessGates;
 }
@@ -180,6 +183,9 @@ export function buildReadiness(
                 ...(options.portalModelPresent === undefined
                     ? {}
                     : { portalModelPresent: options.portalModelPresent }),
+                ...(options.sigmaLlmSource === undefined
+                    ? {}
+                    : { sigmaLlmSource: options.sigmaLlmSource }),
             },
             period: readinessCounters(rows, options.now),
             model: options.modelWindow ?? null,
@@ -198,6 +204,9 @@ export function buildReadiness(
         reasons: result.reasons,
         betaSource: result.betaSource,
         betaCountdown: toCountdownDto(result.betaCountdown),
+        ...(result.sigmaLlmSource === undefined
+            ? {}
+            : { sigmaLlmSource: result.sigmaLlmSource }),
     };
 }
 

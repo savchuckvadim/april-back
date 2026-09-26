@@ -1379,6 +1379,9 @@ model Ai {
   portal_id        BigInt?
   transcription_id BigInt?
 
+  @@index([transcription_id], map: "ais_transcription_id_index")
+  @@index([domain, type, activity_id], map: "ais_domain_type_activity_id_index")
+  @@index([domain, type, created_at], map: "ais_domain_type_created_at_index")
   @@map("ais")
 }
 
@@ -1529,6 +1532,22 @@ model BxDocumentDeal {
   ltOther            String?   @db.LongText
   iskraConfig        String?   @db.LongText
 
+  // Акции и видимость заготовок (миграция 2026_09_15_100000).
+  // kind: deal | variant | favorite | promotion — раньше вид выводился из
+  // комбинации isFavorite + dealId + smartId, что не давало ни читаемости,
+  // ни индекса. Старые строки — NULL, их по-прежнему различает isFavorite.
+  kind            String?   @db.VarChar(32)
+  // visibility: user | portal | all (акция на все порталы — portalId IS NULL)
+  visibility      String?   @db.VarChar(32)
+  isActive        Boolean   @default(true)
+  isArchived      Boolean   @default(false)
+  archivedAt      DateTime? @db.Timestamp(0)
+  // набор вариантов акции: ссылка на родительскую строку этой же таблицы
+  parentId        BigInt?   @db.UnsignedBigInt
+  creatorBxUserId Int?
+
+  @@index([portalId, kind, isArchived], map: "bx_document_deals_kind_index")
+  @@index([parentId], map: "bx_document_deals_parent_id_index")
   @@map("bx_document_deals")
 }
 
@@ -1723,6 +1742,12 @@ model OfferTemplate {
   creator_bitrix_user_id BigInt?                    @db.UnsignedBigInt
   is_archived            Boolean                    @default(false)
   archived_at            DateTime?                  @db.Timestamp(0)
+  // Привязки шаблона (миграция 2026_09_15_100300). NULL = годится любому.
+  // Скалярное поле без relation: обратная связь в agents не нужна, выбор
+  // шаблона делается запросом по agent_id.
+  agent_id               BigInt?                    @db.UnsignedBigInt
+  // JSON-массив кодов ClientTypeEnum: ["org_state","org","ip","fiz"]
+  client_types           String?                    @db.LongText
 
   offerTemplateFonts    OfferTemplateFont[]
   offerTemplatePages    OfferTemplatePage[]
@@ -1849,6 +1874,8 @@ model Transcription {
   in_comment      Boolean   @default(false)
   status          String?   @db.VarChar(255)
   text            String?   @db.LongText
+  // Сегменты транскрипции с таймкодами [{ startSec, endSec, speaker, text }] (Фаза 3, П6)
+  segments        Json?
   symbols_count   String?   @db.VarChar(255)
   price           String?   @db.VarChar(255)
   duration        String?   @db.VarChar(255)
@@ -2082,6 +2109,8 @@ model InvoiceTemplate {
   portal_id              BigInt?                      @db.UnsignedBigInt
   agent_id               BigInt?                      @db.UnsignedBigInt
   creator_bitrix_user_id BigInt?                      @db.UnsignedBigInt
+  // JSON-массив кодов ClientTypeEnum; NULL = для любого типа клиента
+  client_types           String?                      @db.LongText
   agent                  agents?                      @relation(fields: [agent_id], references: [id], onUpdate: NoAction, map: "invoice_templates_agent_id_foreign")
   portal                 Portal?                      @relation(fields: [portal_id], references: [id], onUpdate: NoAction, map: "invoice_templates_portal_id_foreign")
 
@@ -2345,4 +2374,71 @@ model ShareLink {
   @@index([isRefreshable, status, nextRefreshAt], map: "share_link_is_refreshable_status_next_refresh_at_index")
   @@index([portalId], map: "share_link_portal_id_foreign")
   @@map("share_link")
+}
+
+/// Шаблон договора (миграция 2026_09_15_100100).
+/// У КП и счёта шаблоны лежат в базе, у договора был один файл из storage на
+/// все порталы. Привязка к типу договора — главное отличие от остальных
+/// документов: договор оформляется по своему типу (service | abon | lic | key).
+/// Выбор: портал → поставщик (или NULL) → тип договора → тип клиента (или
+/// NULL) → is_default.
+model ContractTemplate {
+  id                     BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at             DateTime? @db.Timestamp(0)
+  updated_at             DateTime? @db.Timestamp(0)
+  portal_id              BigInt?   @db.UnsignedBigInt
+  /// Поставщик (agents.id); NULL — шаблон для любого поставщика
+  agent_id               BigInt?   @db.UnsignedBigInt
+  /// CONTRACT_LTYPE: service | abon | lic | key
+  contract_type          String    @db.VarChar(64)
+  /// JSON-массив кодов ClientTypeEnum; NULL — для любого типа клиента
+  client_types           String?   @db.LongText
+  name                   String    @db.VarChar(255)
+  code                   String    @db.VarChar(255)
+  file_path              String    @db.LongText
+  demo_path              String?   @db.LongText
+  description            String?   @db.Text
+  is_default             Boolean   @default(false)
+  is_active              Boolean   @default(true)
+  is_archived            Boolean   @default(false)
+  archived_at            DateTime? @db.Timestamp(0)
+  creator_bitrix_user_id BigInt?   @db.UnsignedBigInt
+
+  @@index([portal_id, contract_type, is_active], map: "contract_templates_lookup_index")
+  @@index([agent_id], map: "contract_templates_agent_id_index")
+  @@map("contract_templates")
+}
+
+/// Шаблон отчёта о поставке (миграция 2026_09_15_100200).
+/// Кроме привязок (портал, поставщик, тип клиента) хранит портальную
+/// настройку состава формы отчёта: какие из 15 полей обязательны, какие
+/// показывать необязательными. Обе колонки NULL — состав берётся из кода,
+/// как сегодня.
+model SupplyReportTemplate {
+  id                     BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at             DateTime? @db.Timestamp(0)
+  updated_at             DateTime? @db.Timestamp(0)
+  portal_id              BigInt?   @db.UnsignedBigInt
+  /// Поставщик (agents.id); NULL — для любого поставщика
+  agent_id               BigInt?   @db.UnsignedBigInt
+  /// JSON-массив кодов ClientTypeEnum; NULL — для любого типа клиента
+  client_types           String?   @db.LongText
+  name                   String    @db.VarChar(255)
+  code                   String    @db.VarChar(255)
+  file_path              String    @db.LongText
+  demo_path              String?   @db.LongText
+  description            String?   @db.Text
+  /// JSON-массив кодов обязательных полей формы отчёта
+  required_fields        String?   @db.LongText
+  /// JSON-массив кодов необязательных полей формы отчёта
+  optional_fields        String?   @db.LongText
+  is_default             Boolean   @default(false)
+  is_active              Boolean   @default(true)
+  is_archived            Boolean   @default(false)
+  archived_at            DateTime? @db.Timestamp(0)
+  creator_bitrix_user_id BigInt?   @db.UnsignedBigInt
+
+  @@index([portal_id, is_active], map: "supply_report_templates_lookup_index")
+  @@index([agent_id], map: "supply_report_templates_agent_id_index")
+  @@map("supply_report_templates")
 }

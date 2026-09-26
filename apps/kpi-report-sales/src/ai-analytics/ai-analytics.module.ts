@@ -20,7 +20,6 @@ import { AiAnalyticsCoreModule } from './core/ai-analytics-core.module';
 import { AiAnalyticsAuditScheduler } from './cron/ai-analytics-audit.scheduler';
 import { AiAnalyticsOverviewPrewarmScheduler } from './cron/ai-analytics-overview-prewarm.scheduler';
 import { AiAnalyticsPushScheduler } from './cron/ai-analytics-push.scheduler';
-import { ManagerOrgLoader } from './domain/loaders/manager-org.loader';
 import { AgendaUseCase } from './domain/use-cases/agenda.use-case';
 import { AttentionUseCase } from './domain/use-cases/attention.use-case';
 import { AuditSnapshotUseCase } from './domain/use-cases/audit-snapshot.use-case';
@@ -120,7 +119,6 @@ import { AiAnalyticsStyleModule } from './style/ai-analytics-style.module';
     ],
     controllers: [AiAnalyticsController, AiAnalyticsOverviewController],
     providers: [
-        ManagerOrgLoader,
         AiAnalyticsSettingsAuditStore,
         AiAnalyticsPushLogStore,
         SettingsUseCase,

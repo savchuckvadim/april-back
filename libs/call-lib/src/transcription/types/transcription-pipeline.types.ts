@@ -6,6 +6,8 @@
  * (в БД легитимные дубликаты по (domain, activity_id) от повторных запусков).
  */
 
+import type { TranscriptSegment } from './transcript-segment.types';
+
 /**
  * Статусы строки транскрибации, используемые конвейером.
  *
@@ -73,6 +75,8 @@ export interface TranscriptionPipelineUpdateInput {
     durationSec?: number;
     /** Bitrix-id менеджера (ответственный сделки) — для фильтров отчётов. */
     userId?: string;
+    /** Сегменты с таймкодами (П6); null — провайдер их не дал. */
+    segments?: TranscriptSegment[] | null;
 }
 
 /** Представление строки транскрибации для конвейера и Agent API. */
@@ -86,6 +90,8 @@ export interface TranscriptionPipelineView {
     provider: string | null;
     status: string | null;
     text: string | null;
+    /** Сегменты с таймкодами (П6); null — строка без сегментов. */
+    segments: TranscriptSegment[] | null;
     durationSec: string | null;
     entityType: string | null;
     entityId: string | null;

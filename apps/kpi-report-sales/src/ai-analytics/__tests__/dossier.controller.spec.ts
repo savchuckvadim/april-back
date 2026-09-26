@@ -110,6 +110,7 @@ describe('AiAnalyticsDossierModule: периметр среза', () => {
     it('стор меток и загрузчик стиля не объявлены повторно — берутся у владельцев', () => {
         expect(names('providers')).toEqual([
             'DossierSourcesLoader',
+            'DossierNeighboursLoader',
             'DossierUseCase',
             'DossierJobUseCase',
         ]);

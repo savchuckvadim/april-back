@@ -1164,7 +1164,14 @@ exports.Prisma.BxDocumentDealScalarFieldEnum = {
   smartId: 'smartId',
   offerSmartId: 'offerSmartId',
   ltOther: 'ltOther',
-  iskraConfig: 'iskraConfig'
+  iskraConfig: 'iskraConfig',
+  kind: 'kind',
+  visibility: 'visibility',
+  isActive: 'isActive',
+  isArchived: 'isArchived',
+  archivedAt: 'archivedAt',
+  parentId: 'parentId',
+  creatorBxUserId: 'creatorBxUserId'
 };
 
 exports.Prisma.Bx_rqsScalarFieldEnum = {
@@ -1318,7 +1325,9 @@ exports.Prisma.OfferTemplateScalarFieldEnum = {
   updated_at: 'updated_at',
   creator_bitrix_user_id: 'creator_bitrix_user_id',
   is_archived: 'is_archived',
-  archived_at: 'archived_at'
+  archived_at: 'archived_at',
+  agent_id: 'agent_id',
+  client_types: 'client_types'
 };
 
 exports.Prisma.Offer_zakupki_settingsScalarFieldEnum = {
@@ -1431,6 +1440,7 @@ exports.Prisma.TranscriptionScalarFieldEnum = {
   in_comment: 'in_comment',
   status: 'status',
   text: 'text',
+  segments: 'segments',
   symbols_count: 'symbols_count',
   price: 'price',
   duration: 'duration',
@@ -1615,7 +1625,8 @@ exports.Prisma.InvoiceTemplateScalarFieldEnum = {
   archived_at: 'archived_at',
   portal_id: 'portal_id',
   agent_id: 'agent_id',
-  creator_bitrix_user_id: 'creator_bitrix_user_id'
+  creator_bitrix_user_id: 'creator_bitrix_user_id',
+  client_types: 'client_types'
 };
 
 exports.Prisma.Marketplace_installsScalarFieldEnum = {
@@ -1742,6 +1753,47 @@ exports.Prisma.ShareLinkScalarFieldEnum = {
   status: 'status',
   viewCount: 'viewCount',
   lastViewedAt: 'lastViewedAt'
+};
+
+exports.Prisma.ContractTemplateScalarFieldEnum = {
+  id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  portal_id: 'portal_id',
+  agent_id: 'agent_id',
+  contract_type: 'contract_type',
+  client_types: 'client_types',
+  name: 'name',
+  code: 'code',
+  file_path: 'file_path',
+  demo_path: 'demo_path',
+  description: 'description',
+  is_default: 'is_default',
+  is_active: 'is_active',
+  is_archived: 'is_archived',
+  archived_at: 'archived_at',
+  creator_bitrix_user_id: 'creator_bitrix_user_id'
+};
+
+exports.Prisma.SupplyReportTemplateScalarFieldEnum = {
+  id: 'id',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  portal_id: 'portal_id',
+  agent_id: 'agent_id',
+  client_types: 'client_types',
+  name: 'name',
+  code: 'code',
+  file_path: 'file_path',
+  demo_path: 'demo_path',
+  description: 'description',
+  required_fields: 'required_fields',
+  optional_fields: 'optional_fields',
+  is_default: 'is_default',
+  is_active: 'is_active',
+  is_archived: 'is_archived',
+  archived_at: 'archived_at',
+  creator_bitrix_user_id: 'creator_bitrix_user_id'
 };
 
 exports.Prisma.SortOrder = {
@@ -2414,7 +2466,9 @@ exports.Prisma.BxDocumentDealOrderByRelevanceFieldEnum = {
   contractDocument: 'contractDocument',
   act: 'act',
   ltOther: 'ltOther',
-  iskraConfig: 'iskraConfig'
+  iskraConfig: 'iskraConfig',
+  kind: 'kind',
+  visibility: 'visibility'
 };
 
 exports.Prisma.bx_rqsOrderByRelevanceFieldEnum = {
@@ -2482,7 +2536,8 @@ exports.Prisma.OfferTemplateOrderByRelevanceFieldEnum = {
   style: 'style',
   color: 'color',
   code: 'code',
-  tags: 'tags'
+  tags: 'tags',
+  client_types: 'client_types'
 };
 
 exports.Prisma.offer_zakupki_settingsOrderByRelevanceFieldEnum = {
@@ -2668,7 +2723,8 @@ exports.Prisma.InvoiceTemplateOrderByRelevanceFieldEnum = {
   demo_path: 'demo_path',
   name: 'name',
   code: 'code',
-  description: 'description'
+  description: 'description',
+  client_types: 'client_types'
 };
 
 exports.Prisma.marketplace_installsOrderByRelevanceFieldEnum = {
@@ -2745,6 +2801,27 @@ exports.Prisma.ShareLinkOrderByRelevanceFieldEnum = {
   title: 'title',
   filterSnapshot: 'filterSnapshot',
   status: 'status'
+};
+
+exports.Prisma.ContractTemplateOrderByRelevanceFieldEnum = {
+  contract_type: 'contract_type',
+  client_types: 'client_types',
+  name: 'name',
+  code: 'code',
+  file_path: 'file_path',
+  demo_path: 'demo_path',
+  description: 'description'
+};
+
+exports.Prisma.SupplyReportTemplateOrderByRelevanceFieldEnum = {
+  client_types: 'client_types',
+  name: 'name',
+  code: 'code',
+  file_path: 'file_path',
+  demo_path: 'demo_path',
+  description: 'description',
+  required_fields: 'required_fields',
+  optional_fields: 'optional_fields'
 };
 exports.offer_templates_visibility = exports.$Enums.offer_templates_visibility = {
   public: 'public',
@@ -2912,7 +2989,9 @@ exports.Prisma.ModelName = {
   bitrix_app_events: 'bitrix_app_events',
   portal_invites: 'portal_invites',
   AppCache: 'AppCache',
-  ShareLink: 'ShareLink'
+  ShareLink: 'ShareLink',
+  ContractTemplate: 'ContractTemplate',
+  SupplyReportTemplate: 'SupplyReportTemplate'
 };
 
 /**

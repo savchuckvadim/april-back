@@ -1,4 +1,5 @@
 import { ATTENTION_PHASE1_RULES } from './attention.rules';
+import { ATTENTION_PHASE3_RULES } from './attention.rules.phase3';
 import {
     ATTENTION_DEFAULT_RULES,
     ATTENTION_SIGNALS,
@@ -40,9 +41,12 @@ const toItem = (
  * «Внимание» РОПу (план §3, ТЗ FR-12): ≤ maxItems карточек, ≤ maxPerManager
  * на менеджера, порядок «сигнал → тяжесть → managerId», rank с 1.
  * Правила Фазы 1 — attention.rules.ts: risk, no_data, discipline
- * (не ставится «закрывателю»), next_step_drop, plan_gap. Каждая карточка
- * несёт headline и basis с числами, по которым она поставлена.
+ * (не ставится «закрывателю»), next_step_drop, plan_gap; Фазы 3 —
+ * attention.rules.phase3.ts: goodhart, trend_shift, trend_drift. Каждая
+ * карточка несёт headline и basis с числами, по которым она поставлена.
  */
+const ATTENTION_RULES = [...ATTENTION_PHASE1_RULES, ...ATTENTION_PHASE3_RULES];
+
 export function buildAttention(
     input: AttentionInput,
     rules: Partial<AttentionRules> = {},
@@ -50,7 +54,7 @@ export function buildAttention(
     const resolved: AttentionRules = { ...ATTENTION_DEFAULT_RULES, ...rules };
     const candidates = input.managers
         .flatMap(manager =>
-            ATTENTION_PHASE1_RULES.map(rule => rule(manager, resolved)),
+            ATTENTION_RULES.map(rule => rule(manager, resolved)),
         )
         .filter((item): item is AttentionCandidate => item !== null)
         .sort(compareCandidates);

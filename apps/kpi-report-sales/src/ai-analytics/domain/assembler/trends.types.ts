@@ -18,6 +18,7 @@ import type {
     AiTrendGrain,
     AiTrendMetric,
 } from '../../constants/ai-trend.const';
+import type { ManagerGoodhartFacts } from './goodhart.series';
 
 /** Сигнал ряда с адресом метрики и ISO-неделей начала (для обзора). */
 export interface ManagerTrendSignalFacts extends TrendSignal {
@@ -73,6 +74,11 @@ export interface ManagerTrendsPayload {
     metrics: ManagerTrendMetricFacts[];
     /** Все сигналы менеджера: сдвиги, затем дрейфы, затем выбросы. */
     signals: ManagerTrendSignalFacts[];
+    /**
+     * Детектор Гудхарта (П9) на месячных рядах; null — ни одна пара не
+     * набрала окна `goodhart_window_months`.
+     */
+    goodhart: ManagerGoodhartFacts | null;
     calibration: {
         seed: number;
         iterations: number;

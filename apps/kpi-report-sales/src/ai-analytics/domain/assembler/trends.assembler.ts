@@ -58,6 +58,7 @@ import type {
     ManagerTrendsPayload,
     TrendFamilyCalibrationFacts,
 } from './trends.types';
+import { buildGoodhartFacts } from './goodhart.series';
 
 /** Параметры трендов после разрешения по слоям реестра портала. */
 export interface TrendsParams {
@@ -70,6 +71,10 @@ export interface TrendsParams {
     comparableWeeks: number;
     /** `n_min_none` — ниже знаменателя доля ребра не считается. */
     minN: number;
+    /** `goodhart_window_months` — окно детектора Гудхарта (П9). */
+    goodhartWindowMonths: number;
+    /** `goodhart_drop` — падение противовеса для флага. */
+    goodhartDrop: number;
 }
 
 export interface TrendsAssemblyInput {
@@ -138,6 +143,11 @@ export function trendParamsOf(registry: ParamContext): TrendsParams {
             TREND_DEFAULTS.comparableWeeks,
         ),
         minN: number('n_min_none', registryDefault('n_min_none')),
+        goodhartWindowMonths: number(
+            'goodhart_window_months',
+            registryDefault('goodhart_window_months'),
+        ),
+        goodhartDrop: number('goodhart_drop', registryDefault('goodhart_drop')),
     };
 }
 
@@ -391,6 +401,16 @@ export function buildTrendsPayload(input: TrendsAssemblyInput): TrendsAssembly {
                     : null,
             metrics,
             signals: orderedSignals(metrics),
+            goodhart: buildGoodhartFacts(
+                recordsOf(input.months, managerId),
+                {
+                    minN: input.params.minN,
+                    windowMonths: input.params.goodhartWindowMonths,
+                    drop: input.params.goodhartDrop,
+                    alpha: input.params.alphaLong,
+                },
+                comparableKeyOf(input.comparableFrom, 'month'),
+            ),
             calibration: {
                 seed: input.seed,
                 iterations: TREND_DEFAULTS.iterations,

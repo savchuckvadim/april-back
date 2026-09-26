@@ -8,6 +8,12 @@ import {
     AI_DOSSIER_TTL_SECONDS,
 } from '../../constants/ai-dossier.const';
 import {
+    dossierPlanFact,
+    dossierTrends,
+    dossierYoy,
+    windowAnalyzed,
+} from '../assembler/dossier-sections';
+import {
     AiDossierCacheEntry,
     AiDossierDto,
     AiDossierJobData,
@@ -39,11 +45,11 @@ import type { DossierSources } from '../loaders/dossier-sources.loader';
  *
  * Штатная деградация (§5.4): любой пустой или упавший раздел даёт `null`
  * и запись в `reasons[]`, а досье собирается целиком. Разделы `trends`,
- * `planFact` и `yoy` делают соседние потоки — пока их презентеры не
- * подключены сборкой, они приходят `null` с причиной
- * `section-not-available`. Провал ВСЕЙ джобы (не раздела) — это уже
- * ошибка: error-конверт на 120 с, WS `:error` и rethrow, чтобы Bull
- * пометил джобу failed.
+ * `planFact` и `yoy` собираются презентерами соседних ручек на тех же
+ * снапшотах (`dossier-sections.ts`), чтобы досье и обзор не расходились
+ * в числах. Провал ВСЕЙ джобы (не раздела) — это уже ошибка:
+ * error-конверт на 120 с, WS `:error` и rethrow, чтобы Bull пометил
+ * джобу failed.
  *
  * `@Injectable` без bitrix-состояния (CLAUDE.md): домен — параметр джобы.
  */
@@ -92,7 +98,29 @@ export class DossierJobUseCase {
     ): AiDossierDto {
         const reasons = new DossierReasons();
         const { managerId } = data;
-        const lastMonth = sources.months[sources.months.length - 1] ?? null;
+        const lastMonthKey = data.months[data.months.length - 1] ?? '';
+        // Месяц окончания окна по ключу (стор отдаёт записи по возрасту, а не
+        // по ключу); ключа нет — последняя прочитанная запись.
+        const lastMonth =
+            sources.months.find(month => month.periodKey === lastMonthKey) ??
+            sources.months[sources.months.length - 1] ??
+            null;
+        const trends = dossierTrends(
+            sources.neighbours.trends,
+            windowAnalyzed(sources.months),
+        );
+        const planFact = dossierPlanFact(
+            sources.neighbours.planFact,
+            lastMonth,
+            managerId,
+            now,
+        );
+        const yoy = dossierYoy(
+            lastMonth,
+            sources.neighbours.baseMonth,
+            lastMonthKey,
+            sources.readiness?.comparableFrom || null,
+        );
         const dossier = buildDossier(
             managerId,
             {
@@ -102,20 +130,23 @@ export class DossierJobUseCase {
                 series: section(reasons, AI_DOSSIER_SECTIONS.series, () =>
                     toSeries(sources.weeks, sources.months),
                 ),
-                // Тренды, план-факт и год назад делают соседние потоки
-                // (П1, П2, П3): пока их презентеры не подключены сборкой,
-                // разделы честно пусты с причиной, а не выдуманы здесь.
-                trends: reasons.add(
+                trends: section(
+                    reasons,
                     AI_DOSSIER_SECTIONS.trends,
-                    AI_DOSSIER_REASONS.sectionNotAvailable,
+                    () => trends.block,
+                    trends.missing,
                 ),
-                planFact: reasons.add(
+                planFact: section(
+                    reasons,
                     AI_DOSSIER_SECTIONS.planFact,
-                    AI_DOSSIER_REASONS.sectionNotAvailable,
+                    () => planFact.block,
+                    planFact.missing,
                 ),
-                yoy: reasons.add(
+                yoy: section(
+                    reasons,
                     AI_DOSSIER_SECTIONS.yoy,
-                    AI_DOSSIER_REASONS.sectionNotAvailable,
+                    () => yoy.block,
+                    yoy.missing,
                 ),
                 style: this.styleOf(sources, data, reasons, now),
                 objections: section(

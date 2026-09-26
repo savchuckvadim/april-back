@@ -1,3 +1,4 @@
+import { renderTranscriptWithTimecodes } from '@lib/call-lib/transcription/types/transcript-segment.types';
 import {
     ForbiddenException,
     Injectable,
@@ -215,7 +216,10 @@ export class AgentCallPackageService {
                 hasAgentAnalysis,
                 callType ?? undefined,
             ),
-            transcript: row.text ?? '',
+            // Внешнему агенту — расшифровка с таймкодами (П6), если есть.
+            transcript:
+                renderTranscriptWithTimecodes(row.segments ?? []) ||
+                (row.text ?? ''),
             aiResults: aiRecords.map(record => this.toAiResultDto(record)),
             classification: this.toClassification(classifyRecord),
             typeProfile: callType ? (typeProfiles[callType] ?? null) : null,

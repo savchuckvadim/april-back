@@ -28,6 +28,10 @@ export interface AnalyticsLiteObjection {
     handled: boolean | null;
     /** continued / converted / disengaged (строкой — справочник агента). */
     outcome: string | null;
+    /** Секунда начала цитаты в записи (П6); null — таймкода нет. */
+    at?: number | null;
+    /** Первая реакция менеджера: answer / clarify / other (П8); null — нет. */
+    reaction?: string | null;
 }
 
 /** Следующий шаг: назначен ли и на какую дату (YYYY-MM-DD). */

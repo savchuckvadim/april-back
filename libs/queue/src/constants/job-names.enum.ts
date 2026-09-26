@@ -96,6 +96,8 @@ export enum JobNames {
     //звонка N+1 шла параллельно с анализом звонка N
     CALL_REPORT_TRANSCRIBE = 'call-report-transcribe',
     CALL_REPORT_ANALYZE = 'call-report-analyze',
+    /** Test-retest оценщика (Фаза 3 AI-аналитики, П7): повтор выборки той же версией промпта */
+    CALL_REPORT_RETEST = 'call-report-retest',
 
     /** Импорт СКАП: один run-джоб на домен (скан Диска + обработка файлов с тайм-бюджетом) */
     SKAP_IMPORT_RUN = 'skap-import-run',

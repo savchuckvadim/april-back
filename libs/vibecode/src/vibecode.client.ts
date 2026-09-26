@@ -15,7 +15,19 @@ import {
 
 interface VibecodeTranscriptionResponse {
     text?: string;
+    /** Сегменты `verbose_json` (start/end/text); нет — обычный ответ. */
+    segments?: unknown;
 }
+
+/** Текст и сырые сегменты Whisper; segments null — провайдер их не дал. */
+export interface VibecodeTranscriptionDetailed {
+    text: string;
+    segments: unknown;
+}
+
+/** Ответ 4xx на `verbose_json` — формат не поддержан, повторяем без него. */
+const isClientError = (error: unknown): boolean =>
+    /\[4\d\d\]/.test((error as Error)?.message ?? '');
 
 interface VibecodeChatCompletionsResponse {
     choices?: { message?: { content?: string } }[];
@@ -90,12 +102,52 @@ export class VibeCodeClient {
         fileName: string,
         apiKey: string,
     ): Promise<string> {
+        return (await this.transcribeAudioDetailed(buffer, fileName, apiKey))
+            .text;
+    }
+
+    /**
+     * Транскрибация с сегментами (`response_format=verbose_json`, П6).
+     * Прокси, не знающий формата, отвечает 4xx — тогда один повтор без
+     * него; таймауты и 5xx наружу (fallback на Yandex решает роутер).
+     */
+    async transcribeAudioDetailed(
+        buffer: Buffer,
+        fileName: string,
+        apiKey: string,
+    ): Promise<VibecodeTranscriptionDetailed> {
+        try {
+            return await this.postTranscription(
+                buffer,
+                fileName,
+                apiKey,
+                'verbose_json',
+            );
+        } catch (error) {
+            if (!isClientError(error)) throw error;
+            this.logger.warn(
+                `verbose_json не принят (${(error as Error).message}) — повтор без сегментов`,
+            );
+
+            return this.postTranscription(buffer, fileName, apiKey, null);
+        }
+    }
+
+    private async postTranscription(
+        buffer: Buffer,
+        fileName: string,
+        apiKey: string,
+        responseFormat: 'verbose_json' | null,
+    ): Promise<VibecodeTranscriptionDetailed> {
         this.logger.log(
             `Transcribing audio: ${fileName} (${buffer.length} bytes)`,
         );
 
         const formData = new FormData();
         formData.append('model', TRANSCRIPTION_MODEL);
+        if (responseFormat !== null) {
+            formData.append('response_format', responseFormat);
+        }
         formData.append(
             'file',
             new Blob([buffer], { type: 'audio/mpeg' }),
@@ -127,7 +179,7 @@ export class VibeCodeClient {
         this.logger.log(
             `Transcription done, length: ${data.text.length} chars`,
         );
-        return data.text;
+        return { text: data.text, segments: data.segments ?? null };
     }
 
     async analyzeTranscript(

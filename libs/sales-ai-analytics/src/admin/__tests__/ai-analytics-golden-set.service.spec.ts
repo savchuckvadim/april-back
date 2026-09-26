@@ -131,13 +131,44 @@ describe('AiAnalyticsGoldenSetService', () => {
         expect(result.hint).toBe(GOLDEN_SET_MESSAGES.hint);
     });
 
-    it('run: джоба не ставится, причина названа', () => {
+    it('run без очереди: джоба не ставится, причина названа', async () => {
         const service = makeService([]);
-        expect(service.run(DOMAIN)).toEqual({
+        await expect(service.run({ domain: DOMAIN })).resolves.toEqual({
             domain: DOMAIN,
             dispatched: false,
             jobId: null,
             reason: GOLDEN_SET_MESSAGES.runNotWired,
+            quota: 300,
         });
+    });
+
+    it('run с очередью: джоба CALL_REPORT_RETEST с квотой, jobId по дате', async () => {
+        const dispatch = jest.fn().mockResolvedValue({
+            id: 'call-report-retest:april.bitrix24.ru:2026-09-25',
+        });
+        const service = new AiAnalyticsGoldenSetService(
+            {} as never,
+            { dispatch } as never,
+        );
+        const result = await service.run(
+            { domain: DOMAIN, quota: 50, requestedBy: 'admin' },
+            new Date('2026-09-25T10:00:00.000Z'),
+        );
+
+        expect(dispatch).toHaveBeenCalledWith(
+            'call-report',
+            'call-report-retest',
+            { domain: DOMAIN, quota: 50, requestedBy: 'admin' },
+            'call-report-retest:april.bitrix24.ru:2026-09-25',
+            expect.objectContaining({ attempts: 1, removeOnComplete: true }),
+        );
+        expect(result).toEqual({
+            domain: DOMAIN,
+            dispatched: true,
+            jobId: 'call-report-retest:april.bitrix24.ru:2026-09-25',
+            reason: null,
+            quota: 50,
+        });
+        expect((await service.run({ domain: DOMAIN })).quota).toBe(300);
     });
 });

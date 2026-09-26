@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
     ATTENTION_SIGNALS,
+    AttentionAvailableFrom,
     AttentionBasis,
     AttentionItem,
     AttentionLink,
@@ -122,18 +123,24 @@ export class AiAttentionItemDto implements AttentionItem {
             'Сигнал Фазы 1: risk — риск-звонки; no_data — n < 8 при звонках; ' +
             'discipline — < 50 % плана CRM при плане ≥ 10; next_step_drop — ' +
             'падение доли «шаг с датой» при n ≥ 20 в обоих окнах; plan_gap — ' +
-            'план руководителя vs норма (с Фазы 2).',
+            'план руководителя vs норма (с Фазы 2). Фаза 3: goodhart — ' +
+            'метрика давления растёт, противовес падает (goodhart_drop за ' +
+            'goodhart_window_months); trend_shift / trend_drift — сдвиг ' +
+            'уровня или дрейф ряда вниз.',
         enum: ATTENTION_SIGNALS,
         example: 'discipline',
     })
     signal: AttentionSignal;
 
     @ApiProperty({
-        description: 'С какой фазы доступен сигнал (все правила — Фаза 1).',
+        description:
+            'С какой фазы доступен сигнал: 1 — правила Фазы 1, 3 — тренды ' +
+            'и детектор Гудхарта.',
         type: Number,
+        enum: [1, 3],
         example: 1,
     })
-    availableFrom: 1;
+    availableFrom: AttentionAvailableFrom;
 
     @ApiProperty({
         description: 'Заголовок карточки с числами.',

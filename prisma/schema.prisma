@@ -1874,6 +1874,8 @@ model Transcription {
   in_comment      Boolean   @default(false)
   status          String?   @db.VarChar(255)
   text            String?   @db.LongText
+  // Сегменты транскрипции с таймкодами [{ startSec, endSec, speaker, text }] (Фаза 3, П6)
+  segments        Json?
   symbols_count   String?   @db.VarChar(255)
   price           String?   @db.VarChar(255)
   duration        String?   @db.VarChar(255)

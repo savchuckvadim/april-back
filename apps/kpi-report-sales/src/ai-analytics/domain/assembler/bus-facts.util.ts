@@ -65,6 +65,7 @@ export function readPassports(
             levelSource: asString(item.levelSource),
             tenureMonths: asNumber(item.tenureMonths),
             tenureBand: asString(item.tenureBand),
+            departmentId: asNumber(item.departmentId),
         });
     }
     return found;

@@ -2,9 +2,9 @@
  * Админ-ручки золотого набора test-retest (план Фазы 3, П5 ↔ П7):
  * состав отчётов согласия оценщика и запуск повторного прогона.
  *
- * Запуск пока отвечает отказом с объяснением: отбор выборки и повторный
- * разбор живут в `apps/event-sales`, и своего значения `JobNames` у них
- * ещё нет — ставить в очередь нечего. Подключается потоком П7.
+ * Запуск ставит джобу `CALL_REPORT_RETEST` в очередь `CALL_REPORT` —
+ * воркер в `apps/event-sales` повторяет выборку тем же разбором и пишет
+ * отчёт согласия (Фаза 3, П7). Без очереди в сборке — честный отказ.
  */
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import {
@@ -58,25 +58,29 @@ export class AiAnalyticsGoldenSetAdminController {
     }
 
     @ApiOperation({
-        summary: 'Запустить повторный прогон test-retest (пока не подключён)',
+        summary: 'Запустить повторный прогон test-retest',
         description:
-            'Ручка-заглушка на время Фазы 3: отбор выборки и повторный ' +
-            'разбор той же версией промпта живут в контуре разбора ' +
-            'apps/event-sales, и отдельного значения JobNames у них ещё ' +
-            'нет — ставить в очередь нечего. Ответ честный: dispatched = ' +
-            'false, jobId = null и причина «прогон подключается потоком ' +
-            'П7». Ошибку ручка не бросает, чтобы UI админки показал ' +
-            'состояние, а не красный экран.',
+            'Ставит джобу CALL_REPORT_RETEST (очередь CALL_REPORT, воркер ' +
+            'apps/event-sales): разборы текущей версии промпта за 90 дней ' +
+            '(не больше квоты) повторяются тем же фокус-разбором, пары ' +
+            'сводятся в отчёт согласия ai-analytics-golden-report — по ' +
+            'одной актуальной записи на версию. Один запуск на домен в ' +
+            'сутки (jobId по дате); бюджет времени прогона 45 минут. Без ' +
+            'очереди в сборке ответ честный: dispatched = false с причиной, ' +
+            'ошибка не бросается.',
     })
     @ApiBody({ type: AiAnalyticsGoldenSetRunDto })
     @ApiOkResponse({
-        description: 'Отказ с объяснением: джоба не поставлена.',
+        description: 'Джоба поставлена либо отказ с причиной.',
         type: AiAnalyticsGoldenSetRunResultDto,
     })
     @Post('golden-set/run')
-    run(
+    async run(
         @Body() dto: AiAnalyticsGoldenSetRunDto,
-    ): AiAnalyticsGoldenSetRunResultDto {
-        return this.goldenSet.run(dto.domain);
+    ): Promise<AiAnalyticsGoldenSetRunResultDto> {
+        return this.goldenSet.run({
+            domain: dto.domain,
+            ...(dto.quota === undefined ? {} : { quota: dto.quota }),
+        });
     }
 }

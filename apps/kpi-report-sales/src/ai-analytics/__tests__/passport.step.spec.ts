@@ -63,11 +63,13 @@ function makeStep(options: StepCase = {}) {
     const snapshots = {
         findByKeys: jest.fn().mockResolvedValue(options.months ?? []),
     };
+    const org = { load: jest.fn().mockResolvedValue(new Map()) };
     const loader = new ManagerPassportLoader(
         pbx as never,
         settings as never,
         cache as never,
         managers as never,
+        org as never,
     );
 
     return {

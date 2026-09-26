@@ -541,6 +541,25 @@ export type AppCache = $Result.DefaultSelection<Prisma.$AppCachePayload>
  * 
  */
 export type ShareLink = $Result.DefaultSelection<Prisma.$ShareLinkPayload>
+/**
+ * Model ContractTemplate
+ * Шаблон договора (миграция 2026_09_15_100100).
+ * У КП и счёта шаблоны лежат в базе, у договора был один файл из storage на
+ * все порталы. Привязка к типу договора — главное отличие от остальных
+ * документов: договор оформляется по своему типу (service | abon | lic | key).
+ * Выбор: портал → поставщик (или NULL) → тип договора → тип клиента (или
+ * NULL) → is_default.
+ */
+export type ContractTemplate = $Result.DefaultSelection<Prisma.$ContractTemplatePayload>
+/**
+ * Model SupplyReportTemplate
+ * Шаблон отчёта о поставке (миграция 2026_09_15_100200).
+ * Кроме привязок (портал, поставщик, тип клиента) хранит портальную
+ * настройку состава формы отчёта: какие из 15 полей обязательны, какие
+ * показывать необязательными. Обе колонки NULL — состав берётся из кода,
+ * как сегодня.
+ */
+export type SupplyReportTemplate = $Result.DefaultSelection<Prisma.$SupplyReportTemplatePayload>
 
 /**
  * Enums
@@ -1781,6 +1800,26 @@ export class PrismaClient<
     * ```
     */
   get shareLink(): Prisma.ShareLinkDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.contractTemplate`: Exposes CRUD operations for the **ContractTemplate** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ContractTemplates
+    * const contractTemplates = await prisma.contractTemplate.findMany()
+    * ```
+    */
+  get contractTemplate(): Prisma.ContractTemplateDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.supplyReportTemplate`: Exposes CRUD operations for the **SupplyReportTemplate** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SupplyReportTemplates
+    * const supplyReportTemplates = await prisma.supplyReportTemplate.findMany()
+    * ```
+    */
+  get supplyReportTemplate(): Prisma.SupplyReportTemplateDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -2318,7 +2357,9 @@ export namespace Prisma {
     bitrix_app_events: 'bitrix_app_events',
     portal_invites: 'portal_invites',
     AppCache: 'AppCache',
-    ShareLink: 'ShareLink'
+    ShareLink: 'ShareLink',
+    ContractTemplate: 'ContractTemplate',
+    SupplyReportTemplate: 'SupplyReportTemplate'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -2337,7 +2378,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalAiSettings" | "portalAppSettings" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink"
+      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalAiSettings" | "portalAppSettings" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink" | "contractTemplate" | "supplyReportTemplate"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -8809,6 +8850,138 @@ export namespace Prisma {
           }
         }
       }
+      ContractTemplate: {
+        payload: Prisma.$ContractTemplatePayload<ExtArgs>
+        fields: Prisma.ContractTemplateFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ContractTemplateFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContractTemplatePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ContractTemplateFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContractTemplatePayload>
+          }
+          findFirst: {
+            args: Prisma.ContractTemplateFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContractTemplatePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ContractTemplateFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContractTemplatePayload>
+          }
+          findMany: {
+            args: Prisma.ContractTemplateFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContractTemplatePayload>[]
+          }
+          create: {
+            args: Prisma.ContractTemplateCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContractTemplatePayload>
+          }
+          createMany: {
+            args: Prisma.ContractTemplateCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.ContractTemplateDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContractTemplatePayload>
+          }
+          update: {
+            args: Prisma.ContractTemplateUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContractTemplatePayload>
+          }
+          deleteMany: {
+            args: Prisma.ContractTemplateDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ContractTemplateUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ContractTemplateUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContractTemplatePayload>
+          }
+          aggregate: {
+            args: Prisma.ContractTemplateAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateContractTemplate>
+          }
+          groupBy: {
+            args: Prisma.ContractTemplateGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ContractTemplateGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ContractTemplateCountArgs<ExtArgs>
+            result: $Utils.Optional<ContractTemplateCountAggregateOutputType> | number
+          }
+        }
+      }
+      SupplyReportTemplate: {
+        payload: Prisma.$SupplyReportTemplatePayload<ExtArgs>
+        fields: Prisma.SupplyReportTemplateFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SupplyReportTemplateFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupplyReportTemplatePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SupplyReportTemplateFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupplyReportTemplatePayload>
+          }
+          findFirst: {
+            args: Prisma.SupplyReportTemplateFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupplyReportTemplatePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SupplyReportTemplateFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupplyReportTemplatePayload>
+          }
+          findMany: {
+            args: Prisma.SupplyReportTemplateFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupplyReportTemplatePayload>[]
+          }
+          create: {
+            args: Prisma.SupplyReportTemplateCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupplyReportTemplatePayload>
+          }
+          createMany: {
+            args: Prisma.SupplyReportTemplateCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SupplyReportTemplateDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupplyReportTemplatePayload>
+          }
+          update: {
+            args: Prisma.SupplyReportTemplateUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupplyReportTemplatePayload>
+          }
+          deleteMany: {
+            args: Prisma.SupplyReportTemplateDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SupplyReportTemplateUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SupplyReportTemplateUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupplyReportTemplatePayload>
+          }
+          aggregate: {
+            args: Prisma.SupplyReportTemplateAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSupplyReportTemplate>
+          }
+          groupBy: {
+            args: Prisma.SupplyReportTemplateGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SupplyReportTemplateGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SupplyReportTemplateCountArgs<ExtArgs>
+            result: $Utils.Optional<SupplyReportTemplateCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -9003,6 +9176,8 @@ export namespace Prisma {
     portal_invites?: portal_invitesOmit
     appCache?: AppCacheOmit
     shareLink?: ShareLinkOmit
+    contractTemplate?: ContractTemplateOmit
+    supplyReportTemplate?: SupplyReportTemplateOmit
   }
 
   /* Types for Logging */
@@ -79678,6 +79853,8 @@ export namespace Prisma {
     serviceSmartId: number | null
     smartId: number | null
     offerSmartId: number | null
+    parentId: number | null
+    creatorBxUserId: number | null
   }
 
   export type BxDocumentDealSumAggregateOutputType = {
@@ -79698,6 +79875,8 @@ export namespace Prisma {
     serviceSmartId: number | null
     smartId: number | null
     offerSmartId: bigint | null
+    parentId: bigint | null
+    creatorBxUserId: number | null
   }
 
   export type BxDocumentDealMinAggregateOutputType = {
@@ -79757,6 +79936,13 @@ export namespace Prisma {
     offerSmartId: bigint | null
     ltOther: string | null
     iskraConfig: string | null
+    kind: string | null
+    visibility: string | null
+    isActive: boolean | null
+    isArchived: boolean | null
+    archivedAt: Date | null
+    parentId: bigint | null
+    creatorBxUserId: number | null
   }
 
   export type BxDocumentDealMaxAggregateOutputType = {
@@ -79816,6 +80002,13 @@ export namespace Prisma {
     offerSmartId: bigint | null
     ltOther: string | null
     iskraConfig: string | null
+    kind: string | null
+    visibility: string | null
+    isActive: boolean | null
+    isArchived: boolean | null
+    archivedAt: Date | null
+    parentId: bigint | null
+    creatorBxUserId: number | null
   }
 
   export type BxDocumentDealCountAggregateOutputType = {
@@ -79875,6 +80068,13 @@ export namespace Prisma {
     offerSmartId: number
     ltOther: number
     iskraConfig: number
+    kind: number
+    visibility: number
+    isActive: number
+    isArchived: number
+    archivedAt: number
+    parentId: number
+    creatorBxUserId: number
     _all: number
   }
 
@@ -79897,6 +80097,8 @@ export namespace Prisma {
     serviceSmartId?: true
     smartId?: true
     offerSmartId?: true
+    parentId?: true
+    creatorBxUserId?: true
   }
 
   export type BxDocumentDealSumAggregateInputType = {
@@ -79917,6 +80119,8 @@ export namespace Prisma {
     serviceSmartId?: true
     smartId?: true
     offerSmartId?: true
+    parentId?: true
+    creatorBxUserId?: true
   }
 
   export type BxDocumentDealMinAggregateInputType = {
@@ -79976,6 +80180,13 @@ export namespace Prisma {
     offerSmartId?: true
     ltOther?: true
     iskraConfig?: true
+    kind?: true
+    visibility?: true
+    isActive?: true
+    isArchived?: true
+    archivedAt?: true
+    parentId?: true
+    creatorBxUserId?: true
   }
 
   export type BxDocumentDealMaxAggregateInputType = {
@@ -80035,6 +80246,13 @@ export namespace Prisma {
     offerSmartId?: true
     ltOther?: true
     iskraConfig?: true
+    kind?: true
+    visibility?: true
+    isActive?: true
+    isArchived?: true
+    archivedAt?: true
+    parentId?: true
+    creatorBxUserId?: true
   }
 
   export type BxDocumentDealCountAggregateInputType = {
@@ -80094,6 +80312,13 @@ export namespace Prisma {
     offerSmartId?: true
     ltOther?: true
     iskraConfig?: true
+    kind?: true
+    visibility?: true
+    isActive?: true
+    isArchived?: true
+    archivedAt?: true
+    parentId?: true
+    creatorBxUserId?: true
     _all?: true
   }
 
@@ -80240,6 +80465,13 @@ export namespace Prisma {
     offerSmartId: bigint | null
     ltOther: string | null
     iskraConfig: string | null
+    kind: string | null
+    visibility: string | null
+    isActive: boolean
+    isArchived: boolean
+    archivedAt: Date | null
+    parentId: bigint | null
+    creatorBxUserId: number | null
     _count: BxDocumentDealCountAggregateOutputType | null
     _avg: BxDocumentDealAvgAggregateOutputType | null
     _sum: BxDocumentDealSumAggregateOutputType | null
@@ -80318,6 +80550,13 @@ export namespace Prisma {
     offerSmartId?: boolean
     ltOther?: boolean
     iskraConfig?: boolean
+    kind?: boolean
+    visibility?: boolean
+    isActive?: boolean
+    isArchived?: boolean
+    archivedAt?: boolean
+    parentId?: boolean
+    creatorBxUserId?: boolean
   }, ExtArgs["result"]["bxDocumentDeal"]>
 
 
@@ -80379,9 +80618,16 @@ export namespace Prisma {
     offerSmartId?: boolean
     ltOther?: boolean
     iskraConfig?: boolean
+    kind?: boolean
+    visibility?: boolean
+    isActive?: boolean
+    isArchived?: boolean
+    archivedAt?: boolean
+    parentId?: boolean
+    creatorBxUserId?: boolean
   }
 
-  export type BxDocumentDealOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "portalId" | "dealId" | "userId" | "infoblockId" | "supplyId" | "contractId" | "complectId" | "actionId" | "regionId" | "favoriteId" | "templateId" | "title" | "domain" | "dealName" | "app" | "global" | "currentComplect" | "od" | "result" | "contract" | "product" | "rows" | "regions" | "tags" | "department" | "target" | "promotionName" | "promotion" | "code" | "order" | "group" | "clientGroup" | "clientType" | "clientCompanyName" | "clientName" | "clientPosition" | "clientNameCase" | "clientPositionCase" | "settings" | "saleText" | "letterText" | "options" | "offer" | "invoice" | "contractDocument" | "act" | "isFavorite" | "shadowDealId" | "serviceSmartId" | "smartId" | "offerSmartId" | "ltOther" | "iskraConfig", ExtArgs["result"]["bxDocumentDeal"]>
+  export type BxDocumentDealOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "portalId" | "dealId" | "userId" | "infoblockId" | "supplyId" | "contractId" | "complectId" | "actionId" | "regionId" | "favoriteId" | "templateId" | "title" | "domain" | "dealName" | "app" | "global" | "currentComplect" | "od" | "result" | "contract" | "product" | "rows" | "regions" | "tags" | "department" | "target" | "promotionName" | "promotion" | "code" | "order" | "group" | "clientGroup" | "clientType" | "clientCompanyName" | "clientName" | "clientPosition" | "clientNameCase" | "clientPositionCase" | "settings" | "saleText" | "letterText" | "options" | "offer" | "invoice" | "contractDocument" | "act" | "isFavorite" | "shadowDealId" | "serviceSmartId" | "smartId" | "offerSmartId" | "ltOther" | "iskraConfig" | "kind" | "visibility" | "isActive" | "isArchived" | "archivedAt" | "parentId" | "creatorBxUserId", ExtArgs["result"]["bxDocumentDeal"]>
 
   export type $BxDocumentDealPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "BxDocumentDeal"
@@ -80443,6 +80689,13 @@ export namespace Prisma {
       offerSmartId: bigint | null
       ltOther: string | null
       iskraConfig: string | null
+      kind: string | null
+      visibility: string | null
+      isActive: boolean
+      isArchived: boolean
+      archivedAt: Date | null
+      parentId: bigint | null
+      creatorBxUserId: number | null
     }, ExtArgs["result"]["bxDocumentDeal"]>
     composites: {}
   }
@@ -80868,6 +81121,13 @@ export namespace Prisma {
     readonly offerSmartId: FieldRef<"BxDocumentDeal", 'BigInt'>
     readonly ltOther: FieldRef<"BxDocumentDeal", 'String'>
     readonly iskraConfig: FieldRef<"BxDocumentDeal", 'String'>
+    readonly kind: FieldRef<"BxDocumentDeal", 'String'>
+    readonly visibility: FieldRef<"BxDocumentDeal", 'String'>
+    readonly isActive: FieldRef<"BxDocumentDeal", 'Boolean'>
+    readonly isArchived: FieldRef<"BxDocumentDeal", 'Boolean'>
+    readonly archivedAt: FieldRef<"BxDocumentDeal", 'DateTime'>
+    readonly parentId: FieldRef<"BxDocumentDeal", 'BigInt'>
+    readonly creatorBxUserId: FieldRef<"BxDocumentDeal", 'Int'>
   }
     
 
@@ -90704,12 +90964,14 @@ export namespace Prisma {
     id: number | null
     counter: number | null
     creator_bitrix_user_id: number | null
+    agent_id: number | null
   }
 
   export type OfferTemplateSumAggregateOutputType = {
     id: bigint | null
     counter: number | null
     creator_bitrix_user_id: bigint | null
+    agent_id: bigint | null
   }
 
   export type OfferTemplateMinAggregateOutputType = {
@@ -90741,6 +91003,8 @@ export namespace Prisma {
     creator_bitrix_user_id: bigint | null
     is_archived: boolean | null
     archived_at: Date | null
+    agent_id: bigint | null
+    client_types: string | null
   }
 
   export type OfferTemplateMaxAggregateOutputType = {
@@ -90772,6 +91036,8 @@ export namespace Prisma {
     creator_bitrix_user_id: bigint | null
     is_archived: boolean | null
     archived_at: Date | null
+    agent_id: bigint | null
+    client_types: string | null
   }
 
   export type OfferTemplateCountAggregateOutputType = {
@@ -90803,6 +91069,8 @@ export namespace Prisma {
     creator_bitrix_user_id: number
     is_archived: number
     archived_at: number
+    agent_id: number
+    client_types: number
     _all: number
   }
 
@@ -90811,12 +91079,14 @@ export namespace Prisma {
     id?: true
     counter?: true
     creator_bitrix_user_id?: true
+    agent_id?: true
   }
 
   export type OfferTemplateSumAggregateInputType = {
     id?: true
     counter?: true
     creator_bitrix_user_id?: true
+    agent_id?: true
   }
 
   export type OfferTemplateMinAggregateInputType = {
@@ -90848,6 +91118,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: true
     is_archived?: true
     archived_at?: true
+    agent_id?: true
+    client_types?: true
   }
 
   export type OfferTemplateMaxAggregateInputType = {
@@ -90879,6 +91151,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: true
     is_archived?: true
     archived_at?: true
+    agent_id?: true
+    client_types?: true
   }
 
   export type OfferTemplateCountAggregateInputType = {
@@ -90910,6 +91184,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: true
     is_archived?: true
     archived_at?: true
+    agent_id?: true
+    client_types?: true
     _all?: true
   }
 
@@ -91028,6 +91304,8 @@ export namespace Prisma {
     creator_bitrix_user_id: bigint | null
     is_archived: boolean
     archived_at: Date | null
+    agent_id: bigint | null
+    client_types: string | null
     _count: OfferTemplateCountAggregateOutputType | null
     _avg: OfferTemplateAvgAggregateOutputType | null
     _sum: OfferTemplateSumAggregateOutputType | null
@@ -91078,6 +91356,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: boolean
     is_archived?: boolean
     archived_at?: boolean
+    agent_id?: boolean
+    client_types?: boolean
     offerTemplateFonts?: boolean | OfferTemplate$offerTemplateFontsArgs<ExtArgs>
     offerTemplatePages?: boolean | OfferTemplate$offerTemplatePagesArgs<ExtArgs>
     offerTemplatePortal?: boolean | OfferTemplate$offerTemplatePortalArgs<ExtArgs>
@@ -91116,9 +91396,11 @@ export namespace Prisma {
     creator_bitrix_user_id?: boolean
     is_archived?: boolean
     archived_at?: boolean
+    agent_id?: boolean
+    client_types?: boolean
   }
 
-  export type OfferTemplateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "visibility" | "is_default" | "file_path" | "demo_path" | "type" | "rules" | "price_settings" | "infoblock_settings" | "letter_text" | "sale_text_1" | "sale_text_2" | "sale_text_3" | "sale_text_4" | "sale_text_5" | "field_codes" | "style" | "color" | "code" | "tags" | "is_active" | "counter" | "created_at" | "updated_at" | "creator_bitrix_user_id" | "is_archived" | "archived_at", ExtArgs["result"]["offerTemplate"]>
+  export type OfferTemplateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "visibility" | "is_default" | "file_path" | "demo_path" | "type" | "rules" | "price_settings" | "infoblock_settings" | "letter_text" | "sale_text_1" | "sale_text_2" | "sale_text_3" | "sale_text_4" | "sale_text_5" | "field_codes" | "style" | "color" | "code" | "tags" | "is_active" | "counter" | "created_at" | "updated_at" | "creator_bitrix_user_id" | "is_archived" | "archived_at" | "agent_id" | "client_types", ExtArgs["result"]["offerTemplate"]>
   export type OfferTemplateInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     offerTemplateFonts?: boolean | OfferTemplate$offerTemplateFontsArgs<ExtArgs>
     offerTemplatePages?: boolean | OfferTemplate$offerTemplatePagesArgs<ExtArgs>
@@ -91164,6 +91446,8 @@ export namespace Prisma {
       creator_bitrix_user_id: bigint | null
       is_archived: boolean
       archived_at: Date | null
+      agent_id: bigint | null
+      client_types: string | null
     }, ExtArgs["result"]["offerTemplate"]>
     composites: {}
   }
@@ -91565,6 +91849,8 @@ export namespace Prisma {
     readonly creator_bitrix_user_id: FieldRef<"OfferTemplate", 'BigInt'>
     readonly is_archived: FieldRef<"OfferTemplate", 'Boolean'>
     readonly archived_at: FieldRef<"OfferTemplate", 'DateTime'>
+    readonly agent_id: FieldRef<"OfferTemplate", 'BigInt'>
+    readonly client_types: FieldRef<"OfferTemplate", 'String'>
   }
     
 
@@ -96682,6 +96968,7 @@ export namespace Prisma {
     in_comment: number
     status: number
     text: number
+    segments: number
     symbols_count: number
     price: number
     duration: number
@@ -96795,6 +97082,7 @@ export namespace Prisma {
     in_comment?: true
     status?: true
     text?: true
+    segments?: true
     symbols_count?: true
     price?: true
     duration?: true
@@ -96917,6 +97205,7 @@ export namespace Prisma {
     in_comment: boolean
     status: string | null
     text: string | null
+    segments: JsonValue | null
     symbols_count: string | null
     price: string | null
     duration: string | null
@@ -96971,6 +97260,7 @@ export namespace Prisma {
     in_comment?: boolean
     status?: boolean
     text?: boolean
+    segments?: boolean
     symbols_count?: boolean
     price?: boolean
     duration?: boolean
@@ -97008,6 +97298,7 @@ export namespace Prisma {
     in_comment?: boolean
     status?: boolean
     text?: boolean
+    segments?: boolean
     symbols_count?: boolean
     price?: boolean
     duration?: boolean
@@ -97030,7 +97321,7 @@ export namespace Prisma {
     portal_id?: boolean
   }
 
-  export type TranscriptionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "provider" | "activity_id" | "dedup_key" | "call_id" | "call_started_at" | "file_id" | "in_comment" | "status" | "text" | "symbols_count" | "price" | "duration" | "domain" | "user_id" | "user_name" | "entity_type" | "entity_id" | "entity_name" | "app" | "department" | "user_comment" | "owner_comment" | "user_mark" | "owner_mark" | "user_result" | "report_result" | "in_report" | "report_item_id" | "portal_id", ExtArgs["result"]["transcription"]>
+  export type TranscriptionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "provider" | "activity_id" | "dedup_key" | "call_id" | "call_started_at" | "file_id" | "in_comment" | "status" | "text" | "segments" | "symbols_count" | "price" | "duration" | "domain" | "user_id" | "user_name" | "entity_type" | "entity_id" | "entity_name" | "app" | "department" | "user_comment" | "owner_comment" | "user_mark" | "owner_mark" | "user_result" | "report_result" | "in_report" | "report_item_id" | "portal_id", ExtArgs["result"]["transcription"]>
 
   export type $TranscriptionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Transcription"
@@ -97048,6 +97339,7 @@ export namespace Prisma {
       in_comment: boolean
       status: string | null
       text: string | null
+      segments: Prisma.JsonValue | null
       symbols_count: string | null
       price: string | null
       duration: string | null
@@ -97449,6 +97741,7 @@ export namespace Prisma {
     readonly in_comment: FieldRef<"Transcription", 'Boolean'>
     readonly status: FieldRef<"Transcription", 'String'>
     readonly text: FieldRef<"Transcription", 'String'>
+    readonly segments: FieldRef<"Transcription", 'Json'>
     readonly symbols_count: FieldRef<"Transcription", 'String'>
     readonly price: FieldRef<"Transcription", 'String'>
     readonly duration: FieldRef<"Transcription", 'String'>
@@ -108425,6 +108718,7 @@ export namespace Prisma {
     portal_id: bigint | null
     agent_id: bigint | null
     creator_bitrix_user_id: bigint | null
+    client_types: string | null
   }
 
   export type InvoiceTemplateMaxAggregateOutputType = {
@@ -108446,6 +108740,7 @@ export namespace Prisma {
     portal_id: bigint | null
     agent_id: bigint | null
     creator_bitrix_user_id: bigint | null
+    client_types: string | null
   }
 
   export type InvoiceTemplateCountAggregateOutputType = {
@@ -108467,6 +108762,7 @@ export namespace Prisma {
     portal_id: number
     agent_id: number
     creator_bitrix_user_id: number
+    client_types: number
     _all: number
   }
 
@@ -108504,6 +108800,7 @@ export namespace Prisma {
     portal_id?: true
     agent_id?: true
     creator_bitrix_user_id?: true
+    client_types?: true
   }
 
   export type InvoiceTemplateMaxAggregateInputType = {
@@ -108525,6 +108822,7 @@ export namespace Prisma {
     portal_id?: true
     agent_id?: true
     creator_bitrix_user_id?: true
+    client_types?: true
   }
 
   export type InvoiceTemplateCountAggregateInputType = {
@@ -108546,6 +108844,7 @@ export namespace Prisma {
     portal_id?: true
     agent_id?: true
     creator_bitrix_user_id?: true
+    client_types?: true
     _all?: true
   }
 
@@ -108654,6 +108953,7 @@ export namespace Prisma {
     portal_id: bigint | null
     agent_id: bigint | null
     creator_bitrix_user_id: bigint | null
+    client_types: string | null
     _count: InvoiceTemplateCountAggregateOutputType | null
     _avg: InvoiceTemplateAvgAggregateOutputType | null
     _sum: InvoiceTemplateSumAggregateOutputType | null
@@ -108694,6 +108994,7 @@ export namespace Prisma {
     portal_id?: boolean
     agent_id?: boolean
     creator_bitrix_user_id?: boolean
+    client_types?: boolean
     agent?: boolean | InvoiceTemplate$agentArgs<ExtArgs>
     portal?: boolean | InvoiceTemplate$portalArgs<ExtArgs>
   }, ExtArgs["result"]["invoiceTemplate"]>
@@ -108719,9 +109020,10 @@ export namespace Prisma {
     portal_id?: boolean
     agent_id?: boolean
     creator_bitrix_user_id?: boolean
+    client_types?: boolean
   }
 
-  export type InvoiceTemplateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "visibility" | "file_path" | "demo_path" | "type" | "name" | "code" | "counter" | "description" | "is_default" | "is_active" | "is_archived" | "archived_at" | "portal_id" | "agent_id" | "creator_bitrix_user_id", ExtArgs["result"]["invoiceTemplate"]>
+  export type InvoiceTemplateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "visibility" | "file_path" | "demo_path" | "type" | "name" | "code" | "counter" | "description" | "is_default" | "is_active" | "is_archived" | "archived_at" | "portal_id" | "agent_id" | "creator_bitrix_user_id" | "client_types", ExtArgs["result"]["invoiceTemplate"]>
   export type InvoiceTemplateInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     agent?: boolean | InvoiceTemplate$agentArgs<ExtArgs>
     portal?: boolean | InvoiceTemplate$portalArgs<ExtArgs>
@@ -108752,6 +109054,7 @@ export namespace Prisma {
       portal_id: bigint | null
       agent_id: bigint | null
       creator_bitrix_user_id: bigint | null
+      client_types: string | null
     }, ExtArgs["result"]["invoiceTemplate"]>
     composites: {}
   }
@@ -109141,6 +109444,7 @@ export namespace Prisma {
     readonly portal_id: FieldRef<"InvoiceTemplate", 'BigInt'>
     readonly agent_id: FieldRef<"InvoiceTemplate", 'BigInt'>
     readonly creator_bitrix_user_id: FieldRef<"InvoiceTemplate", 'BigInt'>
+    readonly client_types: FieldRef<"InvoiceTemplate", 'String'>
   }
     
 
@@ -117090,6 +117394,2158 @@ export namespace Prisma {
 
 
   /**
+   * Model ContractTemplate
+   */
+
+  export type AggregateContractTemplate = {
+    _count: ContractTemplateCountAggregateOutputType | null
+    _avg: ContractTemplateAvgAggregateOutputType | null
+    _sum: ContractTemplateSumAggregateOutputType | null
+    _min: ContractTemplateMinAggregateOutputType | null
+    _max: ContractTemplateMaxAggregateOutputType | null
+  }
+
+  export type ContractTemplateAvgAggregateOutputType = {
+    id: number | null
+    portal_id: number | null
+    agent_id: number | null
+    creator_bitrix_user_id: number | null
+  }
+
+  export type ContractTemplateSumAggregateOutputType = {
+    id: bigint | null
+    portal_id: bigint | null
+    agent_id: bigint | null
+    creator_bitrix_user_id: bigint | null
+  }
+
+  export type ContractTemplateMinAggregateOutputType = {
+    id: bigint | null
+    created_at: Date | null
+    updated_at: Date | null
+    portal_id: bigint | null
+    agent_id: bigint | null
+    contract_type: string | null
+    client_types: string | null
+    name: string | null
+    code: string | null
+    file_path: string | null
+    demo_path: string | null
+    description: string | null
+    is_default: boolean | null
+    is_active: boolean | null
+    is_archived: boolean | null
+    archived_at: Date | null
+    creator_bitrix_user_id: bigint | null
+  }
+
+  export type ContractTemplateMaxAggregateOutputType = {
+    id: bigint | null
+    created_at: Date | null
+    updated_at: Date | null
+    portal_id: bigint | null
+    agent_id: bigint | null
+    contract_type: string | null
+    client_types: string | null
+    name: string | null
+    code: string | null
+    file_path: string | null
+    demo_path: string | null
+    description: string | null
+    is_default: boolean | null
+    is_active: boolean | null
+    is_archived: boolean | null
+    archived_at: Date | null
+    creator_bitrix_user_id: bigint | null
+  }
+
+  export type ContractTemplateCountAggregateOutputType = {
+    id: number
+    created_at: number
+    updated_at: number
+    portal_id: number
+    agent_id: number
+    contract_type: number
+    client_types: number
+    name: number
+    code: number
+    file_path: number
+    demo_path: number
+    description: number
+    is_default: number
+    is_active: number
+    is_archived: number
+    archived_at: number
+    creator_bitrix_user_id: number
+    _all: number
+  }
+
+
+  export type ContractTemplateAvgAggregateInputType = {
+    id?: true
+    portal_id?: true
+    agent_id?: true
+    creator_bitrix_user_id?: true
+  }
+
+  export type ContractTemplateSumAggregateInputType = {
+    id?: true
+    portal_id?: true
+    agent_id?: true
+    creator_bitrix_user_id?: true
+  }
+
+  export type ContractTemplateMinAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    portal_id?: true
+    agent_id?: true
+    contract_type?: true
+    client_types?: true
+    name?: true
+    code?: true
+    file_path?: true
+    demo_path?: true
+    description?: true
+    is_default?: true
+    is_active?: true
+    is_archived?: true
+    archived_at?: true
+    creator_bitrix_user_id?: true
+  }
+
+  export type ContractTemplateMaxAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    portal_id?: true
+    agent_id?: true
+    contract_type?: true
+    client_types?: true
+    name?: true
+    code?: true
+    file_path?: true
+    demo_path?: true
+    description?: true
+    is_default?: true
+    is_active?: true
+    is_archived?: true
+    archived_at?: true
+    creator_bitrix_user_id?: true
+  }
+
+  export type ContractTemplateCountAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    portal_id?: true
+    agent_id?: true
+    contract_type?: true
+    client_types?: true
+    name?: true
+    code?: true
+    file_path?: true
+    demo_path?: true
+    description?: true
+    is_default?: true
+    is_active?: true
+    is_archived?: true
+    archived_at?: true
+    creator_bitrix_user_id?: true
+    _all?: true
+  }
+
+  export type ContractTemplateAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ContractTemplate to aggregate.
+     */
+    where?: ContractTemplateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ContractTemplates to fetch.
+     */
+    orderBy?: ContractTemplateOrderByWithRelationInput | ContractTemplateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ContractTemplateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ContractTemplates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ContractTemplates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ContractTemplates
+    **/
+    _count?: true | ContractTemplateCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ContractTemplateAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ContractTemplateSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ContractTemplateMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ContractTemplateMaxAggregateInputType
+  }
+
+  export type GetContractTemplateAggregateType<T extends ContractTemplateAggregateArgs> = {
+        [P in keyof T & keyof AggregateContractTemplate]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateContractTemplate[P]>
+      : GetScalarType<T[P], AggregateContractTemplate[P]>
+  }
+
+
+
+
+  export type ContractTemplateGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ContractTemplateWhereInput
+    orderBy?: ContractTemplateOrderByWithAggregationInput | ContractTemplateOrderByWithAggregationInput[]
+    by: ContractTemplateScalarFieldEnum[] | ContractTemplateScalarFieldEnum
+    having?: ContractTemplateScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ContractTemplateCountAggregateInputType | true
+    _avg?: ContractTemplateAvgAggregateInputType
+    _sum?: ContractTemplateSumAggregateInputType
+    _min?: ContractTemplateMinAggregateInputType
+    _max?: ContractTemplateMaxAggregateInputType
+  }
+
+  export type ContractTemplateGroupByOutputType = {
+    id: bigint
+    created_at: Date | null
+    updated_at: Date | null
+    portal_id: bigint | null
+    agent_id: bigint | null
+    contract_type: string
+    client_types: string | null
+    name: string
+    code: string
+    file_path: string
+    demo_path: string | null
+    description: string | null
+    is_default: boolean
+    is_active: boolean
+    is_archived: boolean
+    archived_at: Date | null
+    creator_bitrix_user_id: bigint | null
+    _count: ContractTemplateCountAggregateOutputType | null
+    _avg: ContractTemplateAvgAggregateOutputType | null
+    _sum: ContractTemplateSumAggregateOutputType | null
+    _min: ContractTemplateMinAggregateOutputType | null
+    _max: ContractTemplateMaxAggregateOutputType | null
+  }
+
+  type GetContractTemplateGroupByPayload<T extends ContractTemplateGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ContractTemplateGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ContractTemplateGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ContractTemplateGroupByOutputType[P]>
+            : GetScalarType<T[P], ContractTemplateGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ContractTemplateSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    portal_id?: boolean
+    agent_id?: boolean
+    contract_type?: boolean
+    client_types?: boolean
+    name?: boolean
+    code?: boolean
+    file_path?: boolean
+    demo_path?: boolean
+    description?: boolean
+    is_default?: boolean
+    is_active?: boolean
+    is_archived?: boolean
+    archived_at?: boolean
+    creator_bitrix_user_id?: boolean
+  }, ExtArgs["result"]["contractTemplate"]>
+
+
+
+  export type ContractTemplateSelectScalar = {
+    id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    portal_id?: boolean
+    agent_id?: boolean
+    contract_type?: boolean
+    client_types?: boolean
+    name?: boolean
+    code?: boolean
+    file_path?: boolean
+    demo_path?: boolean
+    description?: boolean
+    is_default?: boolean
+    is_active?: boolean
+    is_archived?: boolean
+    archived_at?: boolean
+    creator_bitrix_user_id?: boolean
+  }
+
+  export type ContractTemplateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "portal_id" | "agent_id" | "contract_type" | "client_types" | "name" | "code" | "file_path" | "demo_path" | "description" | "is_default" | "is_active" | "is_archived" | "archived_at" | "creator_bitrix_user_id", ExtArgs["result"]["contractTemplate"]>
+
+  export type $ContractTemplatePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ContractTemplate"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: bigint
+      created_at: Date | null
+      updated_at: Date | null
+      portal_id: bigint | null
+      /**
+       * Поставщик (agents.id); NULL — шаблон для любого поставщика
+       */
+      agent_id: bigint | null
+      /**
+       * CONTRACT_LTYPE: service | abon | lic | key
+       */
+      contract_type: string
+      /**
+       * JSON-массив кодов ClientTypeEnum; NULL — для любого типа клиента
+       */
+      client_types: string | null
+      name: string
+      code: string
+      file_path: string
+      demo_path: string | null
+      description: string | null
+      is_default: boolean
+      is_active: boolean
+      is_archived: boolean
+      archived_at: Date | null
+      creator_bitrix_user_id: bigint | null
+    }, ExtArgs["result"]["contractTemplate"]>
+    composites: {}
+  }
+
+  type ContractTemplateGetPayload<S extends boolean | null | undefined | ContractTemplateDefaultArgs> = $Result.GetResult<Prisma.$ContractTemplatePayload, S>
+
+  type ContractTemplateCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ContractTemplateFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: ContractTemplateCountAggregateInputType | true
+    }
+
+  export interface ContractTemplateDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ContractTemplate'], meta: { name: 'ContractTemplate' } }
+    /**
+     * Find zero or one ContractTemplate that matches the filter.
+     * @param {ContractTemplateFindUniqueArgs} args - Arguments to find a ContractTemplate
+     * @example
+     * // Get one ContractTemplate
+     * const contractTemplate = await prisma.contractTemplate.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ContractTemplateFindUniqueArgs>(args: SelectSubset<T, ContractTemplateFindUniqueArgs<ExtArgs>>): Prisma__ContractTemplateClient<$Result.GetResult<Prisma.$ContractTemplatePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one ContractTemplate that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ContractTemplateFindUniqueOrThrowArgs} args - Arguments to find a ContractTemplate
+     * @example
+     * // Get one ContractTemplate
+     * const contractTemplate = await prisma.contractTemplate.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ContractTemplateFindUniqueOrThrowArgs>(args: SelectSubset<T, ContractTemplateFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ContractTemplateClient<$Result.GetResult<Prisma.$ContractTemplatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ContractTemplate that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ContractTemplateFindFirstArgs} args - Arguments to find a ContractTemplate
+     * @example
+     * // Get one ContractTemplate
+     * const contractTemplate = await prisma.contractTemplate.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ContractTemplateFindFirstArgs>(args?: SelectSubset<T, ContractTemplateFindFirstArgs<ExtArgs>>): Prisma__ContractTemplateClient<$Result.GetResult<Prisma.$ContractTemplatePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ContractTemplate that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ContractTemplateFindFirstOrThrowArgs} args - Arguments to find a ContractTemplate
+     * @example
+     * // Get one ContractTemplate
+     * const contractTemplate = await prisma.contractTemplate.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ContractTemplateFindFirstOrThrowArgs>(args?: SelectSubset<T, ContractTemplateFindFirstOrThrowArgs<ExtArgs>>): Prisma__ContractTemplateClient<$Result.GetResult<Prisma.$ContractTemplatePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more ContractTemplates that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ContractTemplateFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ContractTemplates
+     * const contractTemplates = await prisma.contractTemplate.findMany()
+     * 
+     * // Get first 10 ContractTemplates
+     * const contractTemplates = await prisma.contractTemplate.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const contractTemplateWithIdOnly = await prisma.contractTemplate.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ContractTemplateFindManyArgs>(args?: SelectSubset<T, ContractTemplateFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ContractTemplatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a ContractTemplate.
+     * @param {ContractTemplateCreateArgs} args - Arguments to create a ContractTemplate.
+     * @example
+     * // Create one ContractTemplate
+     * const ContractTemplate = await prisma.contractTemplate.create({
+     *   data: {
+     *     // ... data to create a ContractTemplate
+     *   }
+     * })
+     * 
+     */
+    create<T extends ContractTemplateCreateArgs>(args: SelectSubset<T, ContractTemplateCreateArgs<ExtArgs>>): Prisma__ContractTemplateClient<$Result.GetResult<Prisma.$ContractTemplatePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many ContractTemplates.
+     * @param {ContractTemplateCreateManyArgs} args - Arguments to create many ContractTemplates.
+     * @example
+     * // Create many ContractTemplates
+     * const contractTemplate = await prisma.contractTemplate.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ContractTemplateCreateManyArgs>(args?: SelectSubset<T, ContractTemplateCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a ContractTemplate.
+     * @param {ContractTemplateDeleteArgs} args - Arguments to delete one ContractTemplate.
+     * @example
+     * // Delete one ContractTemplate
+     * const ContractTemplate = await prisma.contractTemplate.delete({
+     *   where: {
+     *     // ... filter to delete one ContractTemplate
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ContractTemplateDeleteArgs>(args: SelectSubset<T, ContractTemplateDeleteArgs<ExtArgs>>): Prisma__ContractTemplateClient<$Result.GetResult<Prisma.$ContractTemplatePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one ContractTemplate.
+     * @param {ContractTemplateUpdateArgs} args - Arguments to update one ContractTemplate.
+     * @example
+     * // Update one ContractTemplate
+     * const contractTemplate = await prisma.contractTemplate.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ContractTemplateUpdateArgs>(args: SelectSubset<T, ContractTemplateUpdateArgs<ExtArgs>>): Prisma__ContractTemplateClient<$Result.GetResult<Prisma.$ContractTemplatePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more ContractTemplates.
+     * @param {ContractTemplateDeleteManyArgs} args - Arguments to filter ContractTemplates to delete.
+     * @example
+     * // Delete a few ContractTemplates
+     * const { count } = await prisma.contractTemplate.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ContractTemplateDeleteManyArgs>(args?: SelectSubset<T, ContractTemplateDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ContractTemplates.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ContractTemplateUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ContractTemplates
+     * const contractTemplate = await prisma.contractTemplate.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ContractTemplateUpdateManyArgs>(args: SelectSubset<T, ContractTemplateUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ContractTemplate.
+     * @param {ContractTemplateUpsertArgs} args - Arguments to update or create a ContractTemplate.
+     * @example
+     * // Update or create a ContractTemplate
+     * const contractTemplate = await prisma.contractTemplate.upsert({
+     *   create: {
+     *     // ... data to create a ContractTemplate
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ContractTemplate we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ContractTemplateUpsertArgs>(args: SelectSubset<T, ContractTemplateUpsertArgs<ExtArgs>>): Prisma__ContractTemplateClient<$Result.GetResult<Prisma.$ContractTemplatePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of ContractTemplates.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ContractTemplateCountArgs} args - Arguments to filter ContractTemplates to count.
+     * @example
+     * // Count the number of ContractTemplates
+     * const count = await prisma.contractTemplate.count({
+     *   where: {
+     *     // ... the filter for the ContractTemplates we want to count
+     *   }
+     * })
+    **/
+    count<T extends ContractTemplateCountArgs>(
+      args?: Subset<T, ContractTemplateCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ContractTemplateCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ContractTemplate.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ContractTemplateAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ContractTemplateAggregateArgs>(args: Subset<T, ContractTemplateAggregateArgs>): Prisma.PrismaPromise<GetContractTemplateAggregateType<T>>
+
+    /**
+     * Group by ContractTemplate.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ContractTemplateGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ContractTemplateGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ContractTemplateGroupByArgs['orderBy'] }
+        : { orderBy?: ContractTemplateGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ContractTemplateGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetContractTemplateGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ContractTemplate model
+   */
+  readonly fields: ContractTemplateFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ContractTemplate.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ContractTemplateClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ContractTemplate model
+   */
+  interface ContractTemplateFieldRefs {
+    readonly id: FieldRef<"ContractTemplate", 'BigInt'>
+    readonly created_at: FieldRef<"ContractTemplate", 'DateTime'>
+    readonly updated_at: FieldRef<"ContractTemplate", 'DateTime'>
+    readonly portal_id: FieldRef<"ContractTemplate", 'BigInt'>
+    readonly agent_id: FieldRef<"ContractTemplate", 'BigInt'>
+    readonly contract_type: FieldRef<"ContractTemplate", 'String'>
+    readonly client_types: FieldRef<"ContractTemplate", 'String'>
+    readonly name: FieldRef<"ContractTemplate", 'String'>
+    readonly code: FieldRef<"ContractTemplate", 'String'>
+    readonly file_path: FieldRef<"ContractTemplate", 'String'>
+    readonly demo_path: FieldRef<"ContractTemplate", 'String'>
+    readonly description: FieldRef<"ContractTemplate", 'String'>
+    readonly is_default: FieldRef<"ContractTemplate", 'Boolean'>
+    readonly is_active: FieldRef<"ContractTemplate", 'Boolean'>
+    readonly is_archived: FieldRef<"ContractTemplate", 'Boolean'>
+    readonly archived_at: FieldRef<"ContractTemplate", 'DateTime'>
+    readonly creator_bitrix_user_id: FieldRef<"ContractTemplate", 'BigInt'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ContractTemplate findUnique
+   */
+  export type ContractTemplateFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ContractTemplate
+     */
+    select?: ContractTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ContractTemplate
+     */
+    omit?: ContractTemplateOmit<ExtArgs> | null
+    /**
+     * Filter, which ContractTemplate to fetch.
+     */
+    where: ContractTemplateWhereUniqueInput
+  }
+
+  /**
+   * ContractTemplate findUniqueOrThrow
+   */
+  export type ContractTemplateFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ContractTemplate
+     */
+    select?: ContractTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ContractTemplate
+     */
+    omit?: ContractTemplateOmit<ExtArgs> | null
+    /**
+     * Filter, which ContractTemplate to fetch.
+     */
+    where: ContractTemplateWhereUniqueInput
+  }
+
+  /**
+   * ContractTemplate findFirst
+   */
+  export type ContractTemplateFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ContractTemplate
+     */
+    select?: ContractTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ContractTemplate
+     */
+    omit?: ContractTemplateOmit<ExtArgs> | null
+    /**
+     * Filter, which ContractTemplate to fetch.
+     */
+    where?: ContractTemplateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ContractTemplates to fetch.
+     */
+    orderBy?: ContractTemplateOrderByWithRelationInput | ContractTemplateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ContractTemplates.
+     */
+    cursor?: ContractTemplateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ContractTemplates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ContractTemplates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ContractTemplates.
+     */
+    distinct?: ContractTemplateScalarFieldEnum | ContractTemplateScalarFieldEnum[]
+  }
+
+  /**
+   * ContractTemplate findFirstOrThrow
+   */
+  export type ContractTemplateFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ContractTemplate
+     */
+    select?: ContractTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ContractTemplate
+     */
+    omit?: ContractTemplateOmit<ExtArgs> | null
+    /**
+     * Filter, which ContractTemplate to fetch.
+     */
+    where?: ContractTemplateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ContractTemplates to fetch.
+     */
+    orderBy?: ContractTemplateOrderByWithRelationInput | ContractTemplateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ContractTemplates.
+     */
+    cursor?: ContractTemplateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ContractTemplates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ContractTemplates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ContractTemplates.
+     */
+    distinct?: ContractTemplateScalarFieldEnum | ContractTemplateScalarFieldEnum[]
+  }
+
+  /**
+   * ContractTemplate findMany
+   */
+  export type ContractTemplateFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ContractTemplate
+     */
+    select?: ContractTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ContractTemplate
+     */
+    omit?: ContractTemplateOmit<ExtArgs> | null
+    /**
+     * Filter, which ContractTemplates to fetch.
+     */
+    where?: ContractTemplateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ContractTemplates to fetch.
+     */
+    orderBy?: ContractTemplateOrderByWithRelationInput | ContractTemplateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ContractTemplates.
+     */
+    cursor?: ContractTemplateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ContractTemplates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ContractTemplates.
+     */
+    skip?: number
+    distinct?: ContractTemplateScalarFieldEnum | ContractTemplateScalarFieldEnum[]
+  }
+
+  /**
+   * ContractTemplate create
+   */
+  export type ContractTemplateCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ContractTemplate
+     */
+    select?: ContractTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ContractTemplate
+     */
+    omit?: ContractTemplateOmit<ExtArgs> | null
+    /**
+     * The data needed to create a ContractTemplate.
+     */
+    data: XOR<ContractTemplateCreateInput, ContractTemplateUncheckedCreateInput>
+  }
+
+  /**
+   * ContractTemplate createMany
+   */
+  export type ContractTemplateCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ContractTemplates.
+     */
+    data: ContractTemplateCreateManyInput | ContractTemplateCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ContractTemplate update
+   */
+  export type ContractTemplateUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ContractTemplate
+     */
+    select?: ContractTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ContractTemplate
+     */
+    omit?: ContractTemplateOmit<ExtArgs> | null
+    /**
+     * The data needed to update a ContractTemplate.
+     */
+    data: XOR<ContractTemplateUpdateInput, ContractTemplateUncheckedUpdateInput>
+    /**
+     * Choose, which ContractTemplate to update.
+     */
+    where: ContractTemplateWhereUniqueInput
+  }
+
+  /**
+   * ContractTemplate updateMany
+   */
+  export type ContractTemplateUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ContractTemplates.
+     */
+    data: XOR<ContractTemplateUpdateManyMutationInput, ContractTemplateUncheckedUpdateManyInput>
+    /**
+     * Filter which ContractTemplates to update
+     */
+    where?: ContractTemplateWhereInput
+    /**
+     * Limit how many ContractTemplates to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ContractTemplate upsert
+   */
+  export type ContractTemplateUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ContractTemplate
+     */
+    select?: ContractTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ContractTemplate
+     */
+    omit?: ContractTemplateOmit<ExtArgs> | null
+    /**
+     * The filter to search for the ContractTemplate to update in case it exists.
+     */
+    where: ContractTemplateWhereUniqueInput
+    /**
+     * In case the ContractTemplate found by the `where` argument doesn't exist, create a new ContractTemplate with this data.
+     */
+    create: XOR<ContractTemplateCreateInput, ContractTemplateUncheckedCreateInput>
+    /**
+     * In case the ContractTemplate was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ContractTemplateUpdateInput, ContractTemplateUncheckedUpdateInput>
+  }
+
+  /**
+   * ContractTemplate delete
+   */
+  export type ContractTemplateDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ContractTemplate
+     */
+    select?: ContractTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ContractTemplate
+     */
+    omit?: ContractTemplateOmit<ExtArgs> | null
+    /**
+     * Filter which ContractTemplate to delete.
+     */
+    where: ContractTemplateWhereUniqueInput
+  }
+
+  /**
+   * ContractTemplate deleteMany
+   */
+  export type ContractTemplateDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ContractTemplates to delete
+     */
+    where?: ContractTemplateWhereInput
+    /**
+     * Limit how many ContractTemplates to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * ContractTemplate without action
+   */
+  export type ContractTemplateDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ContractTemplate
+     */
+    select?: ContractTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ContractTemplate
+     */
+    omit?: ContractTemplateOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SupplyReportTemplate
+   */
+
+  export type AggregateSupplyReportTemplate = {
+    _count: SupplyReportTemplateCountAggregateOutputType | null
+    _avg: SupplyReportTemplateAvgAggregateOutputType | null
+    _sum: SupplyReportTemplateSumAggregateOutputType | null
+    _min: SupplyReportTemplateMinAggregateOutputType | null
+    _max: SupplyReportTemplateMaxAggregateOutputType | null
+  }
+
+  export type SupplyReportTemplateAvgAggregateOutputType = {
+    id: number | null
+    portal_id: number | null
+    agent_id: number | null
+    creator_bitrix_user_id: number | null
+  }
+
+  export type SupplyReportTemplateSumAggregateOutputType = {
+    id: bigint | null
+    portal_id: bigint | null
+    agent_id: bigint | null
+    creator_bitrix_user_id: bigint | null
+  }
+
+  export type SupplyReportTemplateMinAggregateOutputType = {
+    id: bigint | null
+    created_at: Date | null
+    updated_at: Date | null
+    portal_id: bigint | null
+    agent_id: bigint | null
+    client_types: string | null
+    name: string | null
+    code: string | null
+    file_path: string | null
+    demo_path: string | null
+    description: string | null
+    required_fields: string | null
+    optional_fields: string | null
+    is_default: boolean | null
+    is_active: boolean | null
+    is_archived: boolean | null
+    archived_at: Date | null
+    creator_bitrix_user_id: bigint | null
+  }
+
+  export type SupplyReportTemplateMaxAggregateOutputType = {
+    id: bigint | null
+    created_at: Date | null
+    updated_at: Date | null
+    portal_id: bigint | null
+    agent_id: bigint | null
+    client_types: string | null
+    name: string | null
+    code: string | null
+    file_path: string | null
+    demo_path: string | null
+    description: string | null
+    required_fields: string | null
+    optional_fields: string | null
+    is_default: boolean | null
+    is_active: boolean | null
+    is_archived: boolean | null
+    archived_at: Date | null
+    creator_bitrix_user_id: bigint | null
+  }
+
+  export type SupplyReportTemplateCountAggregateOutputType = {
+    id: number
+    created_at: number
+    updated_at: number
+    portal_id: number
+    agent_id: number
+    client_types: number
+    name: number
+    code: number
+    file_path: number
+    demo_path: number
+    description: number
+    required_fields: number
+    optional_fields: number
+    is_default: number
+    is_active: number
+    is_archived: number
+    archived_at: number
+    creator_bitrix_user_id: number
+    _all: number
+  }
+
+
+  export type SupplyReportTemplateAvgAggregateInputType = {
+    id?: true
+    portal_id?: true
+    agent_id?: true
+    creator_bitrix_user_id?: true
+  }
+
+  export type SupplyReportTemplateSumAggregateInputType = {
+    id?: true
+    portal_id?: true
+    agent_id?: true
+    creator_bitrix_user_id?: true
+  }
+
+  export type SupplyReportTemplateMinAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    portal_id?: true
+    agent_id?: true
+    client_types?: true
+    name?: true
+    code?: true
+    file_path?: true
+    demo_path?: true
+    description?: true
+    required_fields?: true
+    optional_fields?: true
+    is_default?: true
+    is_active?: true
+    is_archived?: true
+    archived_at?: true
+    creator_bitrix_user_id?: true
+  }
+
+  export type SupplyReportTemplateMaxAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    portal_id?: true
+    agent_id?: true
+    client_types?: true
+    name?: true
+    code?: true
+    file_path?: true
+    demo_path?: true
+    description?: true
+    required_fields?: true
+    optional_fields?: true
+    is_default?: true
+    is_active?: true
+    is_archived?: true
+    archived_at?: true
+    creator_bitrix_user_id?: true
+  }
+
+  export type SupplyReportTemplateCountAggregateInputType = {
+    id?: true
+    created_at?: true
+    updated_at?: true
+    portal_id?: true
+    agent_id?: true
+    client_types?: true
+    name?: true
+    code?: true
+    file_path?: true
+    demo_path?: true
+    description?: true
+    required_fields?: true
+    optional_fields?: true
+    is_default?: true
+    is_active?: true
+    is_archived?: true
+    archived_at?: true
+    creator_bitrix_user_id?: true
+    _all?: true
+  }
+
+  export type SupplyReportTemplateAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SupplyReportTemplate to aggregate.
+     */
+    where?: SupplyReportTemplateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SupplyReportTemplates to fetch.
+     */
+    orderBy?: SupplyReportTemplateOrderByWithRelationInput | SupplyReportTemplateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SupplyReportTemplateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SupplyReportTemplates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SupplyReportTemplates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SupplyReportTemplates
+    **/
+    _count?: true | SupplyReportTemplateCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SupplyReportTemplateAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SupplyReportTemplateSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SupplyReportTemplateMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SupplyReportTemplateMaxAggregateInputType
+  }
+
+  export type GetSupplyReportTemplateAggregateType<T extends SupplyReportTemplateAggregateArgs> = {
+        [P in keyof T & keyof AggregateSupplyReportTemplate]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSupplyReportTemplate[P]>
+      : GetScalarType<T[P], AggregateSupplyReportTemplate[P]>
+  }
+
+
+
+
+  export type SupplyReportTemplateGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SupplyReportTemplateWhereInput
+    orderBy?: SupplyReportTemplateOrderByWithAggregationInput | SupplyReportTemplateOrderByWithAggregationInput[]
+    by: SupplyReportTemplateScalarFieldEnum[] | SupplyReportTemplateScalarFieldEnum
+    having?: SupplyReportTemplateScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SupplyReportTemplateCountAggregateInputType | true
+    _avg?: SupplyReportTemplateAvgAggregateInputType
+    _sum?: SupplyReportTemplateSumAggregateInputType
+    _min?: SupplyReportTemplateMinAggregateInputType
+    _max?: SupplyReportTemplateMaxAggregateInputType
+  }
+
+  export type SupplyReportTemplateGroupByOutputType = {
+    id: bigint
+    created_at: Date | null
+    updated_at: Date | null
+    portal_id: bigint | null
+    agent_id: bigint | null
+    client_types: string | null
+    name: string
+    code: string
+    file_path: string
+    demo_path: string | null
+    description: string | null
+    required_fields: string | null
+    optional_fields: string | null
+    is_default: boolean
+    is_active: boolean
+    is_archived: boolean
+    archived_at: Date | null
+    creator_bitrix_user_id: bigint | null
+    _count: SupplyReportTemplateCountAggregateOutputType | null
+    _avg: SupplyReportTemplateAvgAggregateOutputType | null
+    _sum: SupplyReportTemplateSumAggregateOutputType | null
+    _min: SupplyReportTemplateMinAggregateOutputType | null
+    _max: SupplyReportTemplateMaxAggregateOutputType | null
+  }
+
+  type GetSupplyReportTemplateGroupByPayload<T extends SupplyReportTemplateGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SupplyReportTemplateGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SupplyReportTemplateGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SupplyReportTemplateGroupByOutputType[P]>
+            : GetScalarType<T[P], SupplyReportTemplateGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SupplyReportTemplateSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    portal_id?: boolean
+    agent_id?: boolean
+    client_types?: boolean
+    name?: boolean
+    code?: boolean
+    file_path?: boolean
+    demo_path?: boolean
+    description?: boolean
+    required_fields?: boolean
+    optional_fields?: boolean
+    is_default?: boolean
+    is_active?: boolean
+    is_archived?: boolean
+    archived_at?: boolean
+    creator_bitrix_user_id?: boolean
+  }, ExtArgs["result"]["supplyReportTemplate"]>
+
+
+
+  export type SupplyReportTemplateSelectScalar = {
+    id?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+    portal_id?: boolean
+    agent_id?: boolean
+    client_types?: boolean
+    name?: boolean
+    code?: boolean
+    file_path?: boolean
+    demo_path?: boolean
+    description?: boolean
+    required_fields?: boolean
+    optional_fields?: boolean
+    is_default?: boolean
+    is_active?: boolean
+    is_archived?: boolean
+    archived_at?: boolean
+    creator_bitrix_user_id?: boolean
+  }
+
+  export type SupplyReportTemplateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "portal_id" | "agent_id" | "client_types" | "name" | "code" | "file_path" | "demo_path" | "description" | "required_fields" | "optional_fields" | "is_default" | "is_active" | "is_archived" | "archived_at" | "creator_bitrix_user_id", ExtArgs["result"]["supplyReportTemplate"]>
+
+  export type $SupplyReportTemplatePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SupplyReportTemplate"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: bigint
+      created_at: Date | null
+      updated_at: Date | null
+      portal_id: bigint | null
+      /**
+       * Поставщик (agents.id); NULL — для любого поставщика
+       */
+      agent_id: bigint | null
+      /**
+       * JSON-массив кодов ClientTypeEnum; NULL — для любого типа клиента
+       */
+      client_types: string | null
+      name: string
+      code: string
+      file_path: string
+      demo_path: string | null
+      description: string | null
+      /**
+       * JSON-массив кодов обязательных полей формы отчёта
+       */
+      required_fields: string | null
+      /**
+       * JSON-массив кодов необязательных полей формы отчёта
+       */
+      optional_fields: string | null
+      is_default: boolean
+      is_active: boolean
+      is_archived: boolean
+      archived_at: Date | null
+      creator_bitrix_user_id: bigint | null
+    }, ExtArgs["result"]["supplyReportTemplate"]>
+    composites: {}
+  }
+
+  type SupplyReportTemplateGetPayload<S extends boolean | null | undefined | SupplyReportTemplateDefaultArgs> = $Result.GetResult<Prisma.$SupplyReportTemplatePayload, S>
+
+  type SupplyReportTemplateCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SupplyReportTemplateFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SupplyReportTemplateCountAggregateInputType | true
+    }
+
+  export interface SupplyReportTemplateDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SupplyReportTemplate'], meta: { name: 'SupplyReportTemplate' } }
+    /**
+     * Find zero or one SupplyReportTemplate that matches the filter.
+     * @param {SupplyReportTemplateFindUniqueArgs} args - Arguments to find a SupplyReportTemplate
+     * @example
+     * // Get one SupplyReportTemplate
+     * const supplyReportTemplate = await prisma.supplyReportTemplate.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SupplyReportTemplateFindUniqueArgs>(args: SelectSubset<T, SupplyReportTemplateFindUniqueArgs<ExtArgs>>): Prisma__SupplyReportTemplateClient<$Result.GetResult<Prisma.$SupplyReportTemplatePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SupplyReportTemplate that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SupplyReportTemplateFindUniqueOrThrowArgs} args - Arguments to find a SupplyReportTemplate
+     * @example
+     * // Get one SupplyReportTemplate
+     * const supplyReportTemplate = await prisma.supplyReportTemplate.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SupplyReportTemplateFindUniqueOrThrowArgs>(args: SelectSubset<T, SupplyReportTemplateFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SupplyReportTemplateClient<$Result.GetResult<Prisma.$SupplyReportTemplatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SupplyReportTemplate that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SupplyReportTemplateFindFirstArgs} args - Arguments to find a SupplyReportTemplate
+     * @example
+     * // Get one SupplyReportTemplate
+     * const supplyReportTemplate = await prisma.supplyReportTemplate.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SupplyReportTemplateFindFirstArgs>(args?: SelectSubset<T, SupplyReportTemplateFindFirstArgs<ExtArgs>>): Prisma__SupplyReportTemplateClient<$Result.GetResult<Prisma.$SupplyReportTemplatePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SupplyReportTemplate that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SupplyReportTemplateFindFirstOrThrowArgs} args - Arguments to find a SupplyReportTemplate
+     * @example
+     * // Get one SupplyReportTemplate
+     * const supplyReportTemplate = await prisma.supplyReportTemplate.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SupplyReportTemplateFindFirstOrThrowArgs>(args?: SelectSubset<T, SupplyReportTemplateFindFirstOrThrowArgs<ExtArgs>>): Prisma__SupplyReportTemplateClient<$Result.GetResult<Prisma.$SupplyReportTemplatePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SupplyReportTemplates that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SupplyReportTemplateFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SupplyReportTemplates
+     * const supplyReportTemplates = await prisma.supplyReportTemplate.findMany()
+     * 
+     * // Get first 10 SupplyReportTemplates
+     * const supplyReportTemplates = await prisma.supplyReportTemplate.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const supplyReportTemplateWithIdOnly = await prisma.supplyReportTemplate.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SupplyReportTemplateFindManyArgs>(args?: SelectSubset<T, SupplyReportTemplateFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SupplyReportTemplatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SupplyReportTemplate.
+     * @param {SupplyReportTemplateCreateArgs} args - Arguments to create a SupplyReportTemplate.
+     * @example
+     * // Create one SupplyReportTemplate
+     * const SupplyReportTemplate = await prisma.supplyReportTemplate.create({
+     *   data: {
+     *     // ... data to create a SupplyReportTemplate
+     *   }
+     * })
+     * 
+     */
+    create<T extends SupplyReportTemplateCreateArgs>(args: SelectSubset<T, SupplyReportTemplateCreateArgs<ExtArgs>>): Prisma__SupplyReportTemplateClient<$Result.GetResult<Prisma.$SupplyReportTemplatePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SupplyReportTemplates.
+     * @param {SupplyReportTemplateCreateManyArgs} args - Arguments to create many SupplyReportTemplates.
+     * @example
+     * // Create many SupplyReportTemplates
+     * const supplyReportTemplate = await prisma.supplyReportTemplate.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SupplyReportTemplateCreateManyArgs>(args?: SelectSubset<T, SupplyReportTemplateCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a SupplyReportTemplate.
+     * @param {SupplyReportTemplateDeleteArgs} args - Arguments to delete one SupplyReportTemplate.
+     * @example
+     * // Delete one SupplyReportTemplate
+     * const SupplyReportTemplate = await prisma.supplyReportTemplate.delete({
+     *   where: {
+     *     // ... filter to delete one SupplyReportTemplate
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SupplyReportTemplateDeleteArgs>(args: SelectSubset<T, SupplyReportTemplateDeleteArgs<ExtArgs>>): Prisma__SupplyReportTemplateClient<$Result.GetResult<Prisma.$SupplyReportTemplatePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SupplyReportTemplate.
+     * @param {SupplyReportTemplateUpdateArgs} args - Arguments to update one SupplyReportTemplate.
+     * @example
+     * // Update one SupplyReportTemplate
+     * const supplyReportTemplate = await prisma.supplyReportTemplate.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SupplyReportTemplateUpdateArgs>(args: SelectSubset<T, SupplyReportTemplateUpdateArgs<ExtArgs>>): Prisma__SupplyReportTemplateClient<$Result.GetResult<Prisma.$SupplyReportTemplatePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SupplyReportTemplates.
+     * @param {SupplyReportTemplateDeleteManyArgs} args - Arguments to filter SupplyReportTemplates to delete.
+     * @example
+     * // Delete a few SupplyReportTemplates
+     * const { count } = await prisma.supplyReportTemplate.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SupplyReportTemplateDeleteManyArgs>(args?: SelectSubset<T, SupplyReportTemplateDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SupplyReportTemplates.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SupplyReportTemplateUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SupplyReportTemplates
+     * const supplyReportTemplate = await prisma.supplyReportTemplate.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SupplyReportTemplateUpdateManyArgs>(args: SelectSubset<T, SupplyReportTemplateUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SupplyReportTemplate.
+     * @param {SupplyReportTemplateUpsertArgs} args - Arguments to update or create a SupplyReportTemplate.
+     * @example
+     * // Update or create a SupplyReportTemplate
+     * const supplyReportTemplate = await prisma.supplyReportTemplate.upsert({
+     *   create: {
+     *     // ... data to create a SupplyReportTemplate
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SupplyReportTemplate we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SupplyReportTemplateUpsertArgs>(args: SelectSubset<T, SupplyReportTemplateUpsertArgs<ExtArgs>>): Prisma__SupplyReportTemplateClient<$Result.GetResult<Prisma.$SupplyReportTemplatePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SupplyReportTemplates.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SupplyReportTemplateCountArgs} args - Arguments to filter SupplyReportTemplates to count.
+     * @example
+     * // Count the number of SupplyReportTemplates
+     * const count = await prisma.supplyReportTemplate.count({
+     *   where: {
+     *     // ... the filter for the SupplyReportTemplates we want to count
+     *   }
+     * })
+    **/
+    count<T extends SupplyReportTemplateCountArgs>(
+      args?: Subset<T, SupplyReportTemplateCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SupplyReportTemplateCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SupplyReportTemplate.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SupplyReportTemplateAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SupplyReportTemplateAggregateArgs>(args: Subset<T, SupplyReportTemplateAggregateArgs>): Prisma.PrismaPromise<GetSupplyReportTemplateAggregateType<T>>
+
+    /**
+     * Group by SupplyReportTemplate.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SupplyReportTemplateGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SupplyReportTemplateGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SupplyReportTemplateGroupByArgs['orderBy'] }
+        : { orderBy?: SupplyReportTemplateGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SupplyReportTemplateGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSupplyReportTemplateGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SupplyReportTemplate model
+   */
+  readonly fields: SupplyReportTemplateFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SupplyReportTemplate.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SupplyReportTemplateClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SupplyReportTemplate model
+   */
+  interface SupplyReportTemplateFieldRefs {
+    readonly id: FieldRef<"SupplyReportTemplate", 'BigInt'>
+    readonly created_at: FieldRef<"SupplyReportTemplate", 'DateTime'>
+    readonly updated_at: FieldRef<"SupplyReportTemplate", 'DateTime'>
+    readonly portal_id: FieldRef<"SupplyReportTemplate", 'BigInt'>
+    readonly agent_id: FieldRef<"SupplyReportTemplate", 'BigInt'>
+    readonly client_types: FieldRef<"SupplyReportTemplate", 'String'>
+    readonly name: FieldRef<"SupplyReportTemplate", 'String'>
+    readonly code: FieldRef<"SupplyReportTemplate", 'String'>
+    readonly file_path: FieldRef<"SupplyReportTemplate", 'String'>
+    readonly demo_path: FieldRef<"SupplyReportTemplate", 'String'>
+    readonly description: FieldRef<"SupplyReportTemplate", 'String'>
+    readonly required_fields: FieldRef<"SupplyReportTemplate", 'String'>
+    readonly optional_fields: FieldRef<"SupplyReportTemplate", 'String'>
+    readonly is_default: FieldRef<"SupplyReportTemplate", 'Boolean'>
+    readonly is_active: FieldRef<"SupplyReportTemplate", 'Boolean'>
+    readonly is_archived: FieldRef<"SupplyReportTemplate", 'Boolean'>
+    readonly archived_at: FieldRef<"SupplyReportTemplate", 'DateTime'>
+    readonly creator_bitrix_user_id: FieldRef<"SupplyReportTemplate", 'BigInt'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SupplyReportTemplate findUnique
+   */
+  export type SupplyReportTemplateFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupplyReportTemplate
+     */
+    select?: SupplyReportTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupplyReportTemplate
+     */
+    omit?: SupplyReportTemplateOmit<ExtArgs> | null
+    /**
+     * Filter, which SupplyReportTemplate to fetch.
+     */
+    where: SupplyReportTemplateWhereUniqueInput
+  }
+
+  /**
+   * SupplyReportTemplate findUniqueOrThrow
+   */
+  export type SupplyReportTemplateFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupplyReportTemplate
+     */
+    select?: SupplyReportTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupplyReportTemplate
+     */
+    omit?: SupplyReportTemplateOmit<ExtArgs> | null
+    /**
+     * Filter, which SupplyReportTemplate to fetch.
+     */
+    where: SupplyReportTemplateWhereUniqueInput
+  }
+
+  /**
+   * SupplyReportTemplate findFirst
+   */
+  export type SupplyReportTemplateFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupplyReportTemplate
+     */
+    select?: SupplyReportTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupplyReportTemplate
+     */
+    omit?: SupplyReportTemplateOmit<ExtArgs> | null
+    /**
+     * Filter, which SupplyReportTemplate to fetch.
+     */
+    where?: SupplyReportTemplateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SupplyReportTemplates to fetch.
+     */
+    orderBy?: SupplyReportTemplateOrderByWithRelationInput | SupplyReportTemplateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SupplyReportTemplates.
+     */
+    cursor?: SupplyReportTemplateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SupplyReportTemplates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SupplyReportTemplates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SupplyReportTemplates.
+     */
+    distinct?: SupplyReportTemplateScalarFieldEnum | SupplyReportTemplateScalarFieldEnum[]
+  }
+
+  /**
+   * SupplyReportTemplate findFirstOrThrow
+   */
+  export type SupplyReportTemplateFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupplyReportTemplate
+     */
+    select?: SupplyReportTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupplyReportTemplate
+     */
+    omit?: SupplyReportTemplateOmit<ExtArgs> | null
+    /**
+     * Filter, which SupplyReportTemplate to fetch.
+     */
+    where?: SupplyReportTemplateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SupplyReportTemplates to fetch.
+     */
+    orderBy?: SupplyReportTemplateOrderByWithRelationInput | SupplyReportTemplateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SupplyReportTemplates.
+     */
+    cursor?: SupplyReportTemplateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SupplyReportTemplates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SupplyReportTemplates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SupplyReportTemplates.
+     */
+    distinct?: SupplyReportTemplateScalarFieldEnum | SupplyReportTemplateScalarFieldEnum[]
+  }
+
+  /**
+   * SupplyReportTemplate findMany
+   */
+  export type SupplyReportTemplateFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupplyReportTemplate
+     */
+    select?: SupplyReportTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupplyReportTemplate
+     */
+    omit?: SupplyReportTemplateOmit<ExtArgs> | null
+    /**
+     * Filter, which SupplyReportTemplates to fetch.
+     */
+    where?: SupplyReportTemplateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SupplyReportTemplates to fetch.
+     */
+    orderBy?: SupplyReportTemplateOrderByWithRelationInput | SupplyReportTemplateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SupplyReportTemplates.
+     */
+    cursor?: SupplyReportTemplateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SupplyReportTemplates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SupplyReportTemplates.
+     */
+    skip?: number
+    distinct?: SupplyReportTemplateScalarFieldEnum | SupplyReportTemplateScalarFieldEnum[]
+  }
+
+  /**
+   * SupplyReportTemplate create
+   */
+  export type SupplyReportTemplateCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupplyReportTemplate
+     */
+    select?: SupplyReportTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupplyReportTemplate
+     */
+    omit?: SupplyReportTemplateOmit<ExtArgs> | null
+    /**
+     * The data needed to create a SupplyReportTemplate.
+     */
+    data: XOR<SupplyReportTemplateCreateInput, SupplyReportTemplateUncheckedCreateInput>
+  }
+
+  /**
+   * SupplyReportTemplate createMany
+   */
+  export type SupplyReportTemplateCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SupplyReportTemplates.
+     */
+    data: SupplyReportTemplateCreateManyInput | SupplyReportTemplateCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SupplyReportTemplate update
+   */
+  export type SupplyReportTemplateUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupplyReportTemplate
+     */
+    select?: SupplyReportTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupplyReportTemplate
+     */
+    omit?: SupplyReportTemplateOmit<ExtArgs> | null
+    /**
+     * The data needed to update a SupplyReportTemplate.
+     */
+    data: XOR<SupplyReportTemplateUpdateInput, SupplyReportTemplateUncheckedUpdateInput>
+    /**
+     * Choose, which SupplyReportTemplate to update.
+     */
+    where: SupplyReportTemplateWhereUniqueInput
+  }
+
+  /**
+   * SupplyReportTemplate updateMany
+   */
+  export type SupplyReportTemplateUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SupplyReportTemplates.
+     */
+    data: XOR<SupplyReportTemplateUpdateManyMutationInput, SupplyReportTemplateUncheckedUpdateManyInput>
+    /**
+     * Filter which SupplyReportTemplates to update
+     */
+    where?: SupplyReportTemplateWhereInput
+    /**
+     * Limit how many SupplyReportTemplates to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SupplyReportTemplate upsert
+   */
+  export type SupplyReportTemplateUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupplyReportTemplate
+     */
+    select?: SupplyReportTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupplyReportTemplate
+     */
+    omit?: SupplyReportTemplateOmit<ExtArgs> | null
+    /**
+     * The filter to search for the SupplyReportTemplate to update in case it exists.
+     */
+    where: SupplyReportTemplateWhereUniqueInput
+    /**
+     * In case the SupplyReportTemplate found by the `where` argument doesn't exist, create a new SupplyReportTemplate with this data.
+     */
+    create: XOR<SupplyReportTemplateCreateInput, SupplyReportTemplateUncheckedCreateInput>
+    /**
+     * In case the SupplyReportTemplate was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SupplyReportTemplateUpdateInput, SupplyReportTemplateUncheckedUpdateInput>
+  }
+
+  /**
+   * SupplyReportTemplate delete
+   */
+  export type SupplyReportTemplateDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupplyReportTemplate
+     */
+    select?: SupplyReportTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupplyReportTemplate
+     */
+    omit?: SupplyReportTemplateOmit<ExtArgs> | null
+    /**
+     * Filter which SupplyReportTemplate to delete.
+     */
+    where: SupplyReportTemplateWhereUniqueInput
+  }
+
+  /**
+   * SupplyReportTemplate deleteMany
+   */
+  export type SupplyReportTemplateDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SupplyReportTemplates to delete
+     */
+    where?: SupplyReportTemplateWhereInput
+    /**
+     * Limit how many SupplyReportTemplates to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SupplyReportTemplate without action
+   */
+  export type SupplyReportTemplateDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupplyReportTemplate
+     */
+    select?: SupplyReportTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupplyReportTemplate
+     */
+    omit?: SupplyReportTemplateOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -118339,7 +120795,14 @@ export namespace Prisma {
     smartId: 'smartId',
     offerSmartId: 'offerSmartId',
     ltOther: 'ltOther',
-    iskraConfig: 'iskraConfig'
+    iskraConfig: 'iskraConfig',
+    kind: 'kind',
+    visibility: 'visibility',
+    isActive: 'isActive',
+    isArchived: 'isArchived',
+    archivedAt: 'archivedAt',
+    parentId: 'parentId',
+    creatorBxUserId: 'creatorBxUserId'
   };
 
   export type BxDocumentDealScalarFieldEnum = (typeof BxDocumentDealScalarFieldEnum)[keyof typeof BxDocumentDealScalarFieldEnum]
@@ -118523,7 +120986,9 @@ export namespace Prisma {
     updated_at: 'updated_at',
     creator_bitrix_user_id: 'creator_bitrix_user_id',
     is_archived: 'is_archived',
-    archived_at: 'archived_at'
+    archived_at: 'archived_at',
+    agent_id: 'agent_id',
+    client_types: 'client_types'
   };
 
   export type OfferTemplateScalarFieldEnum = (typeof OfferTemplateScalarFieldEnum)[keyof typeof OfferTemplateScalarFieldEnum]
@@ -118651,6 +121116,7 @@ export namespace Prisma {
     in_comment: 'in_comment',
     status: 'status',
     text: 'text',
+    segments: 'segments',
     symbols_count: 'symbols_count',
     price: 'price',
     duration: 'duration',
@@ -118868,7 +121334,8 @@ export namespace Prisma {
     archived_at: 'archived_at',
     portal_id: 'portal_id',
     agent_id: 'agent_id',
-    creator_bitrix_user_id: 'creator_bitrix_user_id'
+    creator_bitrix_user_id: 'creator_bitrix_user_id',
+    client_types: 'client_types'
   };
 
   export type InvoiceTemplateScalarFieldEnum = (typeof InvoiceTemplateScalarFieldEnum)[keyof typeof InvoiceTemplateScalarFieldEnum]
@@ -119019,6 +121486,53 @@ export namespace Prisma {
   };
 
   export type ShareLinkScalarFieldEnum = (typeof ShareLinkScalarFieldEnum)[keyof typeof ShareLinkScalarFieldEnum]
+
+
+  export const ContractTemplateScalarFieldEnum: {
+    id: 'id',
+    created_at: 'created_at',
+    updated_at: 'updated_at',
+    portal_id: 'portal_id',
+    agent_id: 'agent_id',
+    contract_type: 'contract_type',
+    client_types: 'client_types',
+    name: 'name',
+    code: 'code',
+    file_path: 'file_path',
+    demo_path: 'demo_path',
+    description: 'description',
+    is_default: 'is_default',
+    is_active: 'is_active',
+    is_archived: 'is_archived',
+    archived_at: 'archived_at',
+    creator_bitrix_user_id: 'creator_bitrix_user_id'
+  };
+
+  export type ContractTemplateScalarFieldEnum = (typeof ContractTemplateScalarFieldEnum)[keyof typeof ContractTemplateScalarFieldEnum]
+
+
+  export const SupplyReportTemplateScalarFieldEnum: {
+    id: 'id',
+    created_at: 'created_at',
+    updated_at: 'updated_at',
+    portal_id: 'portal_id',
+    agent_id: 'agent_id',
+    client_types: 'client_types',
+    name: 'name',
+    code: 'code',
+    file_path: 'file_path',
+    demo_path: 'demo_path',
+    description: 'description',
+    required_fields: 'required_fields',
+    optional_fields: 'optional_fields',
+    is_default: 'is_default',
+    is_active: 'is_active',
+    is_archived: 'is_archived',
+    archived_at: 'archived_at',
+    creator_bitrix_user_id: 'creator_bitrix_user_id'
+  };
+
+  export type SupplyReportTemplateScalarFieldEnum = (typeof SupplyReportTemplateScalarFieldEnum)[keyof typeof SupplyReportTemplateScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -119892,7 +122406,9 @@ export namespace Prisma {
     contractDocument: 'contractDocument',
     act: 'act',
     ltOther: 'ltOther',
-    iskraConfig: 'iskraConfig'
+    iskraConfig: 'iskraConfig',
+    kind: 'kind',
+    visibility: 'visibility'
   };
 
   export type BxDocumentDealOrderByRelevanceFieldEnum = (typeof BxDocumentDealOrderByRelevanceFieldEnum)[keyof typeof BxDocumentDealOrderByRelevanceFieldEnum]
@@ -119978,7 +122494,8 @@ export namespace Prisma {
     style: 'style',
     color: 'color',
     code: 'code',
-    tags: 'tags'
+    tags: 'tags',
+    client_types: 'client_types'
   };
 
   export type OfferTemplateOrderByRelevanceFieldEnum = (typeof OfferTemplateOrderByRelevanceFieldEnum)[keyof typeof OfferTemplateOrderByRelevanceFieldEnum]
@@ -120209,7 +122726,8 @@ export namespace Prisma {
     demo_path: 'demo_path',
     name: 'name',
     code: 'code',
-    description: 'description'
+    description: 'description',
+    client_types: 'client_types'
   };
 
   export type InvoiceTemplateOrderByRelevanceFieldEnum = (typeof InvoiceTemplateOrderByRelevanceFieldEnum)[keyof typeof InvoiceTemplateOrderByRelevanceFieldEnum]
@@ -120310,6 +122828,33 @@ export namespace Prisma {
   };
 
   export type ShareLinkOrderByRelevanceFieldEnum = (typeof ShareLinkOrderByRelevanceFieldEnum)[keyof typeof ShareLinkOrderByRelevanceFieldEnum]
+
+
+  export const ContractTemplateOrderByRelevanceFieldEnum: {
+    contract_type: 'contract_type',
+    client_types: 'client_types',
+    name: 'name',
+    code: 'code',
+    file_path: 'file_path',
+    demo_path: 'demo_path',
+    description: 'description'
+  };
+
+  export type ContractTemplateOrderByRelevanceFieldEnum = (typeof ContractTemplateOrderByRelevanceFieldEnum)[keyof typeof ContractTemplateOrderByRelevanceFieldEnum]
+
+
+  export const SupplyReportTemplateOrderByRelevanceFieldEnum: {
+    client_types: 'client_types',
+    name: 'name',
+    code: 'code',
+    file_path: 'file_path',
+    demo_path: 'demo_path',
+    description: 'description',
+    required_fields: 'required_fields',
+    optional_fields: 'optional_fields'
+  };
+
+  export type SupplyReportTemplateOrderByRelevanceFieldEnum = (typeof SupplyReportTemplateOrderByRelevanceFieldEnum)[keyof typeof SupplyReportTemplateOrderByRelevanceFieldEnum]
 
 
   /**
@@ -126783,6 +129328,13 @@ export namespace Prisma {
     offerSmartId?: BigIntNullableFilter<"BxDocumentDeal"> | bigint | number | null
     ltOther?: StringNullableFilter<"BxDocumentDeal"> | string | null
     iskraConfig?: StringNullableFilter<"BxDocumentDeal"> | string | null
+    kind?: StringNullableFilter<"BxDocumentDeal"> | string | null
+    visibility?: StringNullableFilter<"BxDocumentDeal"> | string | null
+    isActive?: BoolFilter<"BxDocumentDeal"> | boolean
+    isArchived?: BoolFilter<"BxDocumentDeal"> | boolean
+    archivedAt?: DateTimeNullableFilter<"BxDocumentDeal"> | Date | string | null
+    parentId?: BigIntNullableFilter<"BxDocumentDeal"> | bigint | number | null
+    creatorBxUserId?: IntNullableFilter<"BxDocumentDeal"> | number | null
   }
 
   export type BxDocumentDealOrderByWithRelationInput = {
@@ -126842,6 +129394,13 @@ export namespace Prisma {
     offerSmartId?: SortOrderInput | SortOrder
     ltOther?: SortOrderInput | SortOrder
     iskraConfig?: SortOrderInput | SortOrder
+    kind?: SortOrderInput | SortOrder
+    visibility?: SortOrderInput | SortOrder
+    isActive?: SortOrder
+    isArchived?: SortOrder
+    archivedAt?: SortOrderInput | SortOrder
+    parentId?: SortOrderInput | SortOrder
+    creatorBxUserId?: SortOrderInput | SortOrder
     _relevance?: BxDocumentDealOrderByRelevanceInput
   }
 
@@ -126905,6 +129464,13 @@ export namespace Prisma {
     offerSmartId?: BigIntNullableFilter<"BxDocumentDeal"> | bigint | number | null
     ltOther?: StringNullableFilter<"BxDocumentDeal"> | string | null
     iskraConfig?: StringNullableFilter<"BxDocumentDeal"> | string | null
+    kind?: StringNullableFilter<"BxDocumentDeal"> | string | null
+    visibility?: StringNullableFilter<"BxDocumentDeal"> | string | null
+    isActive?: BoolFilter<"BxDocumentDeal"> | boolean
+    isArchived?: BoolFilter<"BxDocumentDeal"> | boolean
+    archivedAt?: DateTimeNullableFilter<"BxDocumentDeal"> | Date | string | null
+    parentId?: BigIntNullableFilter<"BxDocumentDeal"> | bigint | number | null
+    creatorBxUserId?: IntNullableFilter<"BxDocumentDeal"> | number | null
   }, "id">
 
   export type BxDocumentDealOrderByWithAggregationInput = {
@@ -126964,6 +129530,13 @@ export namespace Prisma {
     offerSmartId?: SortOrderInput | SortOrder
     ltOther?: SortOrderInput | SortOrder
     iskraConfig?: SortOrderInput | SortOrder
+    kind?: SortOrderInput | SortOrder
+    visibility?: SortOrderInput | SortOrder
+    isActive?: SortOrder
+    isArchived?: SortOrder
+    archivedAt?: SortOrderInput | SortOrder
+    parentId?: SortOrderInput | SortOrder
+    creatorBxUserId?: SortOrderInput | SortOrder
     _count?: BxDocumentDealCountOrderByAggregateInput
     _avg?: BxDocumentDealAvgOrderByAggregateInput
     _max?: BxDocumentDealMaxOrderByAggregateInput
@@ -127031,6 +129604,13 @@ export namespace Prisma {
     offerSmartId?: BigIntNullableWithAggregatesFilter<"BxDocumentDeal"> | bigint | number | null
     ltOther?: StringNullableWithAggregatesFilter<"BxDocumentDeal"> | string | null
     iskraConfig?: StringNullableWithAggregatesFilter<"BxDocumentDeal"> | string | null
+    kind?: StringNullableWithAggregatesFilter<"BxDocumentDeal"> | string | null
+    visibility?: StringNullableWithAggregatesFilter<"BxDocumentDeal"> | string | null
+    isActive?: BoolWithAggregatesFilter<"BxDocumentDeal"> | boolean
+    isArchived?: BoolWithAggregatesFilter<"BxDocumentDeal"> | boolean
+    archivedAt?: DateTimeNullableWithAggregatesFilter<"BxDocumentDeal"> | Date | string | null
+    parentId?: BigIntNullableWithAggregatesFilter<"BxDocumentDeal"> | bigint | number | null
+    creatorBxUserId?: IntNullableWithAggregatesFilter<"BxDocumentDeal"> | number | null
   }
 
   export type bx_rqsWhereInput = {
@@ -127863,6 +130443,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: BigIntNullableFilter<"OfferTemplate"> | bigint | number | null
     is_archived?: BoolFilter<"OfferTemplate"> | boolean
     archived_at?: DateTimeNullableFilter<"OfferTemplate"> | Date | string | null
+    agent_id?: BigIntNullableFilter<"OfferTemplate"> | bigint | number | null
+    client_types?: StringNullableFilter<"OfferTemplate"> | string | null
     offerTemplateFonts?: OfferTemplateFontListRelationFilter
     offerTemplatePages?: OfferTemplatePageListRelationFilter
     offerTemplatePortal?: OfferTemplatePortalListRelationFilter
@@ -127898,6 +130480,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: SortOrderInput | SortOrder
     is_archived?: SortOrder
     archived_at?: SortOrderInput | SortOrder
+    agent_id?: SortOrderInput | SortOrder
+    client_types?: SortOrderInput | SortOrder
     offerTemplateFonts?: OfferTemplateFontOrderByRelationAggregateInput
     offerTemplatePages?: OfferTemplatePageOrderByRelationAggregateInput
     offerTemplatePortal?: OfferTemplatePortalOrderByRelationAggregateInput
@@ -127937,6 +130521,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: BigIntNullableFilter<"OfferTemplate"> | bigint | number | null
     is_archived?: BoolFilter<"OfferTemplate"> | boolean
     archived_at?: DateTimeNullableFilter<"OfferTemplate"> | Date | string | null
+    agent_id?: BigIntNullableFilter<"OfferTemplate"> | bigint | number | null
+    client_types?: StringNullableFilter<"OfferTemplate"> | string | null
     offerTemplateFonts?: OfferTemplateFontListRelationFilter
     offerTemplatePages?: OfferTemplatePageListRelationFilter
     offerTemplatePortal?: OfferTemplatePortalListRelationFilter
@@ -127972,6 +130558,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: SortOrderInput | SortOrder
     is_archived?: SortOrder
     archived_at?: SortOrderInput | SortOrder
+    agent_id?: SortOrderInput | SortOrder
+    client_types?: SortOrderInput | SortOrder
     _count?: OfferTemplateCountOrderByAggregateInput
     _avg?: OfferTemplateAvgOrderByAggregateInput
     _max?: OfferTemplateMaxOrderByAggregateInput
@@ -128011,6 +130599,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: BigIntNullableWithAggregatesFilter<"OfferTemplate"> | bigint | number | null
     is_archived?: BoolWithAggregatesFilter<"OfferTemplate"> | boolean
     archived_at?: DateTimeNullableWithAggregatesFilter<"OfferTemplate"> | Date | string | null
+    agent_id?: BigIntNullableWithAggregatesFilter<"OfferTemplate"> | bigint | number | null
+    client_types?: StringNullableWithAggregatesFilter<"OfferTemplate"> | string | null
   }
 
   export type offer_zakupki_settingsWhereInput = {
@@ -128580,6 +131170,7 @@ export namespace Prisma {
     in_comment?: BoolFilter<"Transcription"> | boolean
     status?: StringNullableFilter<"Transcription"> | string | null
     text?: StringNullableFilter<"Transcription"> | string | null
+    segments?: JsonNullableFilter<"Transcription">
     symbols_count?: StringNullableFilter<"Transcription"> | string | null
     price?: StringNullableFilter<"Transcription"> | string | null
     duration?: StringNullableFilter<"Transcription"> | string | null
@@ -128615,6 +131206,7 @@ export namespace Prisma {
     in_comment?: SortOrder
     status?: SortOrderInput | SortOrder
     text?: SortOrderInput | SortOrder
+    segments?: SortOrderInput | SortOrder
     symbols_count?: SortOrderInput | SortOrder
     price?: SortOrderInput | SortOrder
     duration?: SortOrderInput | SortOrder
@@ -128654,6 +131246,7 @@ export namespace Prisma {
     in_comment?: BoolFilter<"Transcription"> | boolean
     status?: StringNullableFilter<"Transcription"> | string | null
     text?: StringNullableFilter<"Transcription"> | string | null
+    segments?: JsonNullableFilter<"Transcription">
     symbols_count?: StringNullableFilter<"Transcription"> | string | null
     price?: StringNullableFilter<"Transcription"> | string | null
     duration?: StringNullableFilter<"Transcription"> | string | null
@@ -128689,6 +131282,7 @@ export namespace Prisma {
     in_comment?: SortOrder
     status?: SortOrderInput | SortOrder
     text?: SortOrderInput | SortOrder
+    segments?: SortOrderInput | SortOrder
     symbols_count?: SortOrderInput | SortOrder
     price?: SortOrderInput | SortOrder
     duration?: SortOrderInput | SortOrder
@@ -128732,6 +131326,7 @@ export namespace Prisma {
     in_comment?: BoolWithAggregatesFilter<"Transcription"> | boolean
     status?: StringNullableWithAggregatesFilter<"Transcription"> | string | null
     text?: StringNullableWithAggregatesFilter<"Transcription"> | string | null
+    segments?: JsonNullableWithAggregatesFilter<"Transcription">
     symbols_count?: StringNullableWithAggregatesFilter<"Transcription"> | string | null
     price?: StringNullableWithAggregatesFilter<"Transcription"> | string | null
     duration?: StringNullableWithAggregatesFilter<"Transcription"> | string | null
@@ -129697,6 +132292,7 @@ export namespace Prisma {
     portal_id?: BigIntNullableFilter<"InvoiceTemplate"> | bigint | number | null
     agent_id?: BigIntNullableFilter<"InvoiceTemplate"> | bigint | number | null
     creator_bitrix_user_id?: BigIntNullableFilter<"InvoiceTemplate"> | bigint | number | null
+    client_types?: StringNullableFilter<"InvoiceTemplate"> | string | null
     agent?: XOR<AgentsNullableScalarRelationFilter, agentsWhereInput> | null
     portal?: XOR<PortalNullableScalarRelationFilter, PortalWhereInput> | null
   }
@@ -129720,6 +132316,7 @@ export namespace Prisma {
     portal_id?: SortOrderInput | SortOrder
     agent_id?: SortOrderInput | SortOrder
     creator_bitrix_user_id?: SortOrderInput | SortOrder
+    client_types?: SortOrderInput | SortOrder
     agent?: agentsOrderByWithRelationInput
     portal?: PortalOrderByWithRelationInput
     _relevance?: InvoiceTemplateOrderByRelevanceInput
@@ -129747,6 +132344,7 @@ export namespace Prisma {
     portal_id?: BigIntNullableFilter<"InvoiceTemplate"> | bigint | number | null
     agent_id?: BigIntNullableFilter<"InvoiceTemplate"> | bigint | number | null
     creator_bitrix_user_id?: BigIntNullableFilter<"InvoiceTemplate"> | bigint | number | null
+    client_types?: StringNullableFilter<"InvoiceTemplate"> | string | null
     agent?: XOR<AgentsNullableScalarRelationFilter, agentsWhereInput> | null
     portal?: XOR<PortalNullableScalarRelationFilter, PortalWhereInput> | null
   }, "id">
@@ -129770,6 +132368,7 @@ export namespace Prisma {
     portal_id?: SortOrderInput | SortOrder
     agent_id?: SortOrderInput | SortOrder
     creator_bitrix_user_id?: SortOrderInput | SortOrder
+    client_types?: SortOrderInput | SortOrder
     _count?: InvoiceTemplateCountOrderByAggregateInput
     _avg?: InvoiceTemplateAvgOrderByAggregateInput
     _max?: InvoiceTemplateMaxOrderByAggregateInput
@@ -129799,6 +132398,7 @@ export namespace Prisma {
     portal_id?: BigIntNullableWithAggregatesFilter<"InvoiceTemplate"> | bigint | number | null
     agent_id?: BigIntNullableWithAggregatesFilter<"InvoiceTemplate"> | bigint | number | null
     creator_bitrix_user_id?: BigIntNullableWithAggregatesFilter<"InvoiceTemplate"> | bigint | number | null
+    client_types?: StringNullableWithAggregatesFilter<"InvoiceTemplate"> | string | null
   }
 
   export type marketplace_installsWhereInput = {
@@ -130566,6 +133166,241 @@ export namespace Prisma {
     status?: StringWithAggregatesFilter<"ShareLink"> | string
     viewCount?: IntWithAggregatesFilter<"ShareLink"> | number
     lastViewedAt?: DateTimeNullableWithAggregatesFilter<"ShareLink"> | Date | string | null
+  }
+
+  export type ContractTemplateWhereInput = {
+    AND?: ContractTemplateWhereInput | ContractTemplateWhereInput[]
+    OR?: ContractTemplateWhereInput[]
+    NOT?: ContractTemplateWhereInput | ContractTemplateWhereInput[]
+    id?: BigIntFilter<"ContractTemplate"> | bigint | number
+    created_at?: DateTimeNullableFilter<"ContractTemplate"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"ContractTemplate"> | Date | string | null
+    portal_id?: BigIntNullableFilter<"ContractTemplate"> | bigint | number | null
+    agent_id?: BigIntNullableFilter<"ContractTemplate"> | bigint | number | null
+    contract_type?: StringFilter<"ContractTemplate"> | string
+    client_types?: StringNullableFilter<"ContractTemplate"> | string | null
+    name?: StringFilter<"ContractTemplate"> | string
+    code?: StringFilter<"ContractTemplate"> | string
+    file_path?: StringFilter<"ContractTemplate"> | string
+    demo_path?: StringNullableFilter<"ContractTemplate"> | string | null
+    description?: StringNullableFilter<"ContractTemplate"> | string | null
+    is_default?: BoolFilter<"ContractTemplate"> | boolean
+    is_active?: BoolFilter<"ContractTemplate"> | boolean
+    is_archived?: BoolFilter<"ContractTemplate"> | boolean
+    archived_at?: DateTimeNullableFilter<"ContractTemplate"> | Date | string | null
+    creator_bitrix_user_id?: BigIntNullableFilter<"ContractTemplate"> | bigint | number | null
+  }
+
+  export type ContractTemplateOrderByWithRelationInput = {
+    id?: SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+    portal_id?: SortOrderInput | SortOrder
+    agent_id?: SortOrderInput | SortOrder
+    contract_type?: SortOrder
+    client_types?: SortOrderInput | SortOrder
+    name?: SortOrder
+    code?: SortOrder
+    file_path?: SortOrder
+    demo_path?: SortOrderInput | SortOrder
+    description?: SortOrderInput | SortOrder
+    is_default?: SortOrder
+    is_active?: SortOrder
+    is_archived?: SortOrder
+    archived_at?: SortOrderInput | SortOrder
+    creator_bitrix_user_id?: SortOrderInput | SortOrder
+    _relevance?: ContractTemplateOrderByRelevanceInput
+  }
+
+  export type ContractTemplateWhereUniqueInput = Prisma.AtLeast<{
+    id?: bigint | number
+    AND?: ContractTemplateWhereInput | ContractTemplateWhereInput[]
+    OR?: ContractTemplateWhereInput[]
+    NOT?: ContractTemplateWhereInput | ContractTemplateWhereInput[]
+    created_at?: DateTimeNullableFilter<"ContractTemplate"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"ContractTemplate"> | Date | string | null
+    portal_id?: BigIntNullableFilter<"ContractTemplate"> | bigint | number | null
+    agent_id?: BigIntNullableFilter<"ContractTemplate"> | bigint | number | null
+    contract_type?: StringFilter<"ContractTemplate"> | string
+    client_types?: StringNullableFilter<"ContractTemplate"> | string | null
+    name?: StringFilter<"ContractTemplate"> | string
+    code?: StringFilter<"ContractTemplate"> | string
+    file_path?: StringFilter<"ContractTemplate"> | string
+    demo_path?: StringNullableFilter<"ContractTemplate"> | string | null
+    description?: StringNullableFilter<"ContractTemplate"> | string | null
+    is_default?: BoolFilter<"ContractTemplate"> | boolean
+    is_active?: BoolFilter<"ContractTemplate"> | boolean
+    is_archived?: BoolFilter<"ContractTemplate"> | boolean
+    archived_at?: DateTimeNullableFilter<"ContractTemplate"> | Date | string | null
+    creator_bitrix_user_id?: BigIntNullableFilter<"ContractTemplate"> | bigint | number | null
+  }, "id">
+
+  export type ContractTemplateOrderByWithAggregationInput = {
+    id?: SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+    portal_id?: SortOrderInput | SortOrder
+    agent_id?: SortOrderInput | SortOrder
+    contract_type?: SortOrder
+    client_types?: SortOrderInput | SortOrder
+    name?: SortOrder
+    code?: SortOrder
+    file_path?: SortOrder
+    demo_path?: SortOrderInput | SortOrder
+    description?: SortOrderInput | SortOrder
+    is_default?: SortOrder
+    is_active?: SortOrder
+    is_archived?: SortOrder
+    archived_at?: SortOrderInput | SortOrder
+    creator_bitrix_user_id?: SortOrderInput | SortOrder
+    _count?: ContractTemplateCountOrderByAggregateInput
+    _avg?: ContractTemplateAvgOrderByAggregateInput
+    _max?: ContractTemplateMaxOrderByAggregateInput
+    _min?: ContractTemplateMinOrderByAggregateInput
+    _sum?: ContractTemplateSumOrderByAggregateInput
+  }
+
+  export type ContractTemplateScalarWhereWithAggregatesInput = {
+    AND?: ContractTemplateScalarWhereWithAggregatesInput | ContractTemplateScalarWhereWithAggregatesInput[]
+    OR?: ContractTemplateScalarWhereWithAggregatesInput[]
+    NOT?: ContractTemplateScalarWhereWithAggregatesInput | ContractTemplateScalarWhereWithAggregatesInput[]
+    id?: BigIntWithAggregatesFilter<"ContractTemplate"> | bigint | number
+    created_at?: DateTimeNullableWithAggregatesFilter<"ContractTemplate"> | Date | string | null
+    updated_at?: DateTimeNullableWithAggregatesFilter<"ContractTemplate"> | Date | string | null
+    portal_id?: BigIntNullableWithAggregatesFilter<"ContractTemplate"> | bigint | number | null
+    agent_id?: BigIntNullableWithAggregatesFilter<"ContractTemplate"> | bigint | number | null
+    contract_type?: StringWithAggregatesFilter<"ContractTemplate"> | string
+    client_types?: StringNullableWithAggregatesFilter<"ContractTemplate"> | string | null
+    name?: StringWithAggregatesFilter<"ContractTemplate"> | string
+    code?: StringWithAggregatesFilter<"ContractTemplate"> | string
+    file_path?: StringWithAggregatesFilter<"ContractTemplate"> | string
+    demo_path?: StringNullableWithAggregatesFilter<"ContractTemplate"> | string | null
+    description?: StringNullableWithAggregatesFilter<"ContractTemplate"> | string | null
+    is_default?: BoolWithAggregatesFilter<"ContractTemplate"> | boolean
+    is_active?: BoolWithAggregatesFilter<"ContractTemplate"> | boolean
+    is_archived?: BoolWithAggregatesFilter<"ContractTemplate"> | boolean
+    archived_at?: DateTimeNullableWithAggregatesFilter<"ContractTemplate"> | Date | string | null
+    creator_bitrix_user_id?: BigIntNullableWithAggregatesFilter<"ContractTemplate"> | bigint | number | null
+  }
+
+  export type SupplyReportTemplateWhereInput = {
+    AND?: SupplyReportTemplateWhereInput | SupplyReportTemplateWhereInput[]
+    OR?: SupplyReportTemplateWhereInput[]
+    NOT?: SupplyReportTemplateWhereInput | SupplyReportTemplateWhereInput[]
+    id?: BigIntFilter<"SupplyReportTemplate"> | bigint | number
+    created_at?: DateTimeNullableFilter<"SupplyReportTemplate"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"SupplyReportTemplate"> | Date | string | null
+    portal_id?: BigIntNullableFilter<"SupplyReportTemplate"> | bigint | number | null
+    agent_id?: BigIntNullableFilter<"SupplyReportTemplate"> | bigint | number | null
+    client_types?: StringNullableFilter<"SupplyReportTemplate"> | string | null
+    name?: StringFilter<"SupplyReportTemplate"> | string
+    code?: StringFilter<"SupplyReportTemplate"> | string
+    file_path?: StringFilter<"SupplyReportTemplate"> | string
+    demo_path?: StringNullableFilter<"SupplyReportTemplate"> | string | null
+    description?: StringNullableFilter<"SupplyReportTemplate"> | string | null
+    required_fields?: StringNullableFilter<"SupplyReportTemplate"> | string | null
+    optional_fields?: StringNullableFilter<"SupplyReportTemplate"> | string | null
+    is_default?: BoolFilter<"SupplyReportTemplate"> | boolean
+    is_active?: BoolFilter<"SupplyReportTemplate"> | boolean
+    is_archived?: BoolFilter<"SupplyReportTemplate"> | boolean
+    archived_at?: DateTimeNullableFilter<"SupplyReportTemplate"> | Date | string | null
+    creator_bitrix_user_id?: BigIntNullableFilter<"SupplyReportTemplate"> | bigint | number | null
+  }
+
+  export type SupplyReportTemplateOrderByWithRelationInput = {
+    id?: SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+    portal_id?: SortOrderInput | SortOrder
+    agent_id?: SortOrderInput | SortOrder
+    client_types?: SortOrderInput | SortOrder
+    name?: SortOrder
+    code?: SortOrder
+    file_path?: SortOrder
+    demo_path?: SortOrderInput | SortOrder
+    description?: SortOrderInput | SortOrder
+    required_fields?: SortOrderInput | SortOrder
+    optional_fields?: SortOrderInput | SortOrder
+    is_default?: SortOrder
+    is_active?: SortOrder
+    is_archived?: SortOrder
+    archived_at?: SortOrderInput | SortOrder
+    creator_bitrix_user_id?: SortOrderInput | SortOrder
+    _relevance?: SupplyReportTemplateOrderByRelevanceInput
+  }
+
+  export type SupplyReportTemplateWhereUniqueInput = Prisma.AtLeast<{
+    id?: bigint | number
+    AND?: SupplyReportTemplateWhereInput | SupplyReportTemplateWhereInput[]
+    OR?: SupplyReportTemplateWhereInput[]
+    NOT?: SupplyReportTemplateWhereInput | SupplyReportTemplateWhereInput[]
+    created_at?: DateTimeNullableFilter<"SupplyReportTemplate"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"SupplyReportTemplate"> | Date | string | null
+    portal_id?: BigIntNullableFilter<"SupplyReportTemplate"> | bigint | number | null
+    agent_id?: BigIntNullableFilter<"SupplyReportTemplate"> | bigint | number | null
+    client_types?: StringNullableFilter<"SupplyReportTemplate"> | string | null
+    name?: StringFilter<"SupplyReportTemplate"> | string
+    code?: StringFilter<"SupplyReportTemplate"> | string
+    file_path?: StringFilter<"SupplyReportTemplate"> | string
+    demo_path?: StringNullableFilter<"SupplyReportTemplate"> | string | null
+    description?: StringNullableFilter<"SupplyReportTemplate"> | string | null
+    required_fields?: StringNullableFilter<"SupplyReportTemplate"> | string | null
+    optional_fields?: StringNullableFilter<"SupplyReportTemplate"> | string | null
+    is_default?: BoolFilter<"SupplyReportTemplate"> | boolean
+    is_active?: BoolFilter<"SupplyReportTemplate"> | boolean
+    is_archived?: BoolFilter<"SupplyReportTemplate"> | boolean
+    archived_at?: DateTimeNullableFilter<"SupplyReportTemplate"> | Date | string | null
+    creator_bitrix_user_id?: BigIntNullableFilter<"SupplyReportTemplate"> | bigint | number | null
+  }, "id">
+
+  export type SupplyReportTemplateOrderByWithAggregationInput = {
+    id?: SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+    portal_id?: SortOrderInput | SortOrder
+    agent_id?: SortOrderInput | SortOrder
+    client_types?: SortOrderInput | SortOrder
+    name?: SortOrder
+    code?: SortOrder
+    file_path?: SortOrder
+    demo_path?: SortOrderInput | SortOrder
+    description?: SortOrderInput | SortOrder
+    required_fields?: SortOrderInput | SortOrder
+    optional_fields?: SortOrderInput | SortOrder
+    is_default?: SortOrder
+    is_active?: SortOrder
+    is_archived?: SortOrder
+    archived_at?: SortOrderInput | SortOrder
+    creator_bitrix_user_id?: SortOrderInput | SortOrder
+    _count?: SupplyReportTemplateCountOrderByAggregateInput
+    _avg?: SupplyReportTemplateAvgOrderByAggregateInput
+    _max?: SupplyReportTemplateMaxOrderByAggregateInput
+    _min?: SupplyReportTemplateMinOrderByAggregateInput
+    _sum?: SupplyReportTemplateSumOrderByAggregateInput
+  }
+
+  export type SupplyReportTemplateScalarWhereWithAggregatesInput = {
+    AND?: SupplyReportTemplateScalarWhereWithAggregatesInput | SupplyReportTemplateScalarWhereWithAggregatesInput[]
+    OR?: SupplyReportTemplateScalarWhereWithAggregatesInput[]
+    NOT?: SupplyReportTemplateScalarWhereWithAggregatesInput | SupplyReportTemplateScalarWhereWithAggregatesInput[]
+    id?: BigIntWithAggregatesFilter<"SupplyReportTemplate"> | bigint | number
+    created_at?: DateTimeNullableWithAggregatesFilter<"SupplyReportTemplate"> | Date | string | null
+    updated_at?: DateTimeNullableWithAggregatesFilter<"SupplyReportTemplate"> | Date | string | null
+    portal_id?: BigIntNullableWithAggregatesFilter<"SupplyReportTemplate"> | bigint | number | null
+    agent_id?: BigIntNullableWithAggregatesFilter<"SupplyReportTemplate"> | bigint | number | null
+    client_types?: StringNullableWithAggregatesFilter<"SupplyReportTemplate"> | string | null
+    name?: StringWithAggregatesFilter<"SupplyReportTemplate"> | string
+    code?: StringWithAggregatesFilter<"SupplyReportTemplate"> | string
+    file_path?: StringWithAggregatesFilter<"SupplyReportTemplate"> | string
+    demo_path?: StringNullableWithAggregatesFilter<"SupplyReportTemplate"> | string | null
+    description?: StringNullableWithAggregatesFilter<"SupplyReportTemplate"> | string | null
+    required_fields?: StringNullableWithAggregatesFilter<"SupplyReportTemplate"> | string | null
+    optional_fields?: StringNullableWithAggregatesFilter<"SupplyReportTemplate"> | string | null
+    is_default?: BoolWithAggregatesFilter<"SupplyReportTemplate"> | boolean
+    is_active?: BoolWithAggregatesFilter<"SupplyReportTemplate"> | boolean
+    is_archived?: BoolWithAggregatesFilter<"SupplyReportTemplate"> | boolean
+    archived_at?: DateTimeNullableWithAggregatesFilter<"SupplyReportTemplate"> | Date | string | null
+    creator_bitrix_user_id?: BigIntNullableWithAggregatesFilter<"SupplyReportTemplate"> | bigint | number | null
   }
 
   export type agentsCreateInput = {
@@ -137798,6 +140633,13 @@ export namespace Prisma {
     offerSmartId?: bigint | number | null
     ltOther?: string | null
     iskraConfig?: string | null
+    kind?: string | null
+    visibility?: string | null
+    isActive?: boolean
+    isArchived?: boolean
+    archivedAt?: Date | string | null
+    parentId?: bigint | number | null
+    creatorBxUserId?: number | null
   }
 
   export type BxDocumentDealUncheckedCreateInput = {
@@ -137857,6 +140699,13 @@ export namespace Prisma {
     offerSmartId?: bigint | number | null
     ltOther?: string | null
     iskraConfig?: string | null
+    kind?: string | null
+    visibility?: string | null
+    isActive?: boolean
+    isArchived?: boolean
+    archivedAt?: Date | string | null
+    parentId?: bigint | number | null
+    creatorBxUserId?: number | null
   }
 
   export type BxDocumentDealUpdateInput = {
@@ -137916,6 +140765,13 @@ export namespace Prisma {
     offerSmartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     ltOther?: NullableStringFieldUpdateOperationsInput | string | null
     iskraConfig?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: NullableStringFieldUpdateOperationsInput | string | null
+    visibility?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    parentId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    creatorBxUserId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type BxDocumentDealUncheckedUpdateInput = {
@@ -137975,6 +140831,13 @@ export namespace Prisma {
     offerSmartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     ltOther?: NullableStringFieldUpdateOperationsInput | string | null
     iskraConfig?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: NullableStringFieldUpdateOperationsInput | string | null
+    visibility?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    parentId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    creatorBxUserId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type BxDocumentDealCreateManyInput = {
@@ -138034,6 +140897,13 @@ export namespace Prisma {
     offerSmartId?: bigint | number | null
     ltOther?: string | null
     iskraConfig?: string | null
+    kind?: string | null
+    visibility?: string | null
+    isActive?: boolean
+    isArchived?: boolean
+    archivedAt?: Date | string | null
+    parentId?: bigint | number | null
+    creatorBxUserId?: number | null
   }
 
   export type BxDocumentDealUpdateManyMutationInput = {
@@ -138093,6 +140963,13 @@ export namespace Prisma {
     offerSmartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     ltOther?: NullableStringFieldUpdateOperationsInput | string | null
     iskraConfig?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: NullableStringFieldUpdateOperationsInput | string | null
+    visibility?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    parentId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    creatorBxUserId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type BxDocumentDealUncheckedUpdateManyInput = {
@@ -138152,6 +141029,13 @@ export namespace Prisma {
     offerSmartId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     ltOther?: NullableStringFieldUpdateOperationsInput | string | null
     iskraConfig?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: NullableStringFieldUpdateOperationsInput | string | null
+    visibility?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    parentId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    creatorBxUserId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type bx_rqsCreateInput = {
@@ -139042,6 +141926,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: bigint | number | null
     is_archived?: boolean
     archived_at?: Date | string | null
+    agent_id?: bigint | number | null
+    client_types?: string | null
     offerTemplateFonts?: OfferTemplateFontCreateNestedManyWithoutOffer_templatesInput
     offerTemplatePages?: OfferTemplatePageCreateNestedManyWithoutOfferTemplateInput
     offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutOffer_templatesInput
@@ -139077,6 +141963,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: bigint | number | null
     is_archived?: boolean
     archived_at?: Date | string | null
+    agent_id?: bigint | number | null
+    client_types?: string | null
     offerTemplateFonts?: OfferTemplateFontUncheckedCreateNestedManyWithoutOffer_templatesInput
     offerTemplatePages?: OfferTemplatePageUncheckedCreateNestedManyWithoutOfferTemplateInput
     offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutOffer_templatesInput
@@ -139112,6 +142000,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     is_archived?: BoolFieldUpdateOperationsInput | boolean
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplateFonts?: OfferTemplateFontUpdateManyWithoutOffer_templatesNestedInput
     offerTemplatePages?: OfferTemplatePageUpdateManyWithoutOfferTemplateNestedInput
     offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutOffer_templatesNestedInput
@@ -139147,6 +142037,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     is_archived?: BoolFieldUpdateOperationsInput | boolean
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplateFonts?: OfferTemplateFontUncheckedUpdateManyWithoutOffer_templatesNestedInput
     offerTemplatePages?: OfferTemplatePageUncheckedUpdateManyWithoutOfferTemplateNestedInput
     offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutOffer_templatesNestedInput
@@ -139182,6 +142074,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: bigint | number | null
     is_archived?: boolean
     archived_at?: Date | string | null
+    agent_id?: bigint | number | null
+    client_types?: string | null
   }
 
   export type OfferTemplateUpdateManyMutationInput = {
@@ -139213,6 +142107,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     is_archived?: BoolFieldUpdateOperationsInput | boolean
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type OfferTemplateUncheckedUpdateManyInput = {
@@ -139244,6 +142140,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     is_archived?: BoolFieldUpdateOperationsInput | boolean
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type offer_zakupki_settingsCreateInput = {
@@ -139941,6 +142839,7 @@ export namespace Prisma {
     in_comment?: boolean
     status?: string | null
     text?: string | null
+    segments?: NullableJsonNullValueInput | InputJsonValue
     symbols_count?: string | null
     price?: string | null
     duration?: string | null
@@ -139976,6 +142875,7 @@ export namespace Prisma {
     in_comment?: boolean
     status?: string | null
     text?: string | null
+    segments?: NullableJsonNullValueInput | InputJsonValue
     symbols_count?: string | null
     price?: string | null
     duration?: string | null
@@ -140011,6 +142911,7 @@ export namespace Prisma {
     in_comment?: BoolFieldUpdateOperationsInput | boolean
     status?: NullableStringFieldUpdateOperationsInput | string | null
     text?: NullableStringFieldUpdateOperationsInput | string | null
+    segments?: NullableJsonNullValueInput | InputJsonValue
     symbols_count?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableStringFieldUpdateOperationsInput | string | null
     duration?: NullableStringFieldUpdateOperationsInput | string | null
@@ -140046,6 +142947,7 @@ export namespace Prisma {
     in_comment?: BoolFieldUpdateOperationsInput | boolean
     status?: NullableStringFieldUpdateOperationsInput | string | null
     text?: NullableStringFieldUpdateOperationsInput | string | null
+    segments?: NullableJsonNullValueInput | InputJsonValue
     symbols_count?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableStringFieldUpdateOperationsInput | string | null
     duration?: NullableStringFieldUpdateOperationsInput | string | null
@@ -140081,6 +142983,7 @@ export namespace Prisma {
     in_comment?: boolean
     status?: string | null
     text?: string | null
+    segments?: NullableJsonNullValueInput | InputJsonValue
     symbols_count?: string | null
     price?: string | null
     duration?: string | null
@@ -140116,6 +143019,7 @@ export namespace Prisma {
     in_comment?: BoolFieldUpdateOperationsInput | boolean
     status?: NullableStringFieldUpdateOperationsInput | string | null
     text?: NullableStringFieldUpdateOperationsInput | string | null
+    segments?: NullableJsonNullValueInput | InputJsonValue
     symbols_count?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableStringFieldUpdateOperationsInput | string | null
     duration?: NullableStringFieldUpdateOperationsInput | string | null
@@ -140151,6 +143055,7 @@ export namespace Prisma {
     in_comment?: BoolFieldUpdateOperationsInput | boolean
     status?: NullableStringFieldUpdateOperationsInput | string | null
     text?: NullableStringFieldUpdateOperationsInput | string | null
+    segments?: NullableJsonNullValueInput | InputJsonValue
     symbols_count?: NullableStringFieldUpdateOperationsInput | string | null
     price?: NullableStringFieldUpdateOperationsInput | string | null
     duration?: NullableStringFieldUpdateOperationsInput | string | null
@@ -141206,6 +144111,7 @@ export namespace Prisma {
     is_archived?: boolean
     archived_at?: Date | string | null
     creator_bitrix_user_id?: bigint | number | null
+    client_types?: string | null
     agent?: agentsCreateNestedOneWithoutInvoiceTemplatesInput
     portal?: PortalCreateNestedOneWithoutInvoiceTemplatesInput
   }
@@ -141229,6 +144135,7 @@ export namespace Prisma {
     portal_id?: bigint | number | null
     agent_id?: bigint | number | null
     creator_bitrix_user_id?: bigint | number | null
+    client_types?: string | null
   }
 
   export type InvoiceTemplateUpdateInput = {
@@ -141248,6 +144155,7 @@ export namespace Prisma {
     is_archived?: BoolFieldUpdateOperationsInput | boolean
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
     agent?: agentsUpdateOneWithoutInvoiceTemplatesNestedInput
     portal?: PortalUpdateOneWithoutInvoiceTemplatesNestedInput
   }
@@ -141271,6 +144179,7 @@ export namespace Prisma {
     portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type InvoiceTemplateCreateManyInput = {
@@ -141292,6 +144201,7 @@ export namespace Prisma {
     portal_id?: bigint | number | null
     agent_id?: bigint | number | null
     creator_bitrix_user_id?: bigint | number | null
+    client_types?: string | null
   }
 
   export type InvoiceTemplateUpdateManyMutationInput = {
@@ -141311,6 +144221,7 @@ export namespace Prisma {
     is_archived?: BoolFieldUpdateOperationsInput | boolean
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type InvoiceTemplateUncheckedUpdateManyInput = {
@@ -141332,6 +144243,7 @@ export namespace Prisma {
     portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type marketplace_installsCreateInput = {
@@ -142209,6 +145121,293 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     viewCount?: IntFieldUpdateOperationsInput | number
     lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ContractTemplateCreateInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    portal_id?: bigint | number | null
+    agent_id?: bigint | number | null
+    contract_type: string
+    client_types?: string | null
+    name: string
+    code: string
+    file_path: string
+    demo_path?: string | null
+    description?: string | null
+    is_default?: boolean
+    is_active?: boolean
+    is_archived?: boolean
+    archived_at?: Date | string | null
+    creator_bitrix_user_id?: bigint | number | null
+  }
+
+  export type ContractTemplateUncheckedCreateInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    portal_id?: bigint | number | null
+    agent_id?: bigint | number | null
+    contract_type: string
+    client_types?: string | null
+    name: string
+    code: string
+    file_path: string
+    demo_path?: string | null
+    description?: string | null
+    is_default?: boolean
+    is_active?: boolean
+    is_archived?: boolean
+    archived_at?: Date | string | null
+    creator_bitrix_user_id?: bigint | number | null
+  }
+
+  export type ContractTemplateUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    contract_type?: StringFieldUpdateOperationsInput | string
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    name?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    file_path?: StringFieldUpdateOperationsInput | string
+    demo_path?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    is_default?: BoolFieldUpdateOperationsInput | boolean
+    is_active?: BoolFieldUpdateOperationsInput | boolean
+    is_archived?: BoolFieldUpdateOperationsInput | boolean
+    archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  }
+
+  export type ContractTemplateUncheckedUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    contract_type?: StringFieldUpdateOperationsInput | string
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    name?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    file_path?: StringFieldUpdateOperationsInput | string
+    demo_path?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    is_default?: BoolFieldUpdateOperationsInput | boolean
+    is_active?: BoolFieldUpdateOperationsInput | boolean
+    is_archived?: BoolFieldUpdateOperationsInput | boolean
+    archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  }
+
+  export type ContractTemplateCreateManyInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    portal_id?: bigint | number | null
+    agent_id?: bigint | number | null
+    contract_type: string
+    client_types?: string | null
+    name: string
+    code: string
+    file_path: string
+    demo_path?: string | null
+    description?: string | null
+    is_default?: boolean
+    is_active?: boolean
+    is_archived?: boolean
+    archived_at?: Date | string | null
+    creator_bitrix_user_id?: bigint | number | null
+  }
+
+  export type ContractTemplateUpdateManyMutationInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    contract_type?: StringFieldUpdateOperationsInput | string
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    name?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    file_path?: StringFieldUpdateOperationsInput | string
+    demo_path?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    is_default?: BoolFieldUpdateOperationsInput | boolean
+    is_active?: BoolFieldUpdateOperationsInput | boolean
+    is_archived?: BoolFieldUpdateOperationsInput | boolean
+    archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  }
+
+  export type ContractTemplateUncheckedUpdateManyInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    contract_type?: StringFieldUpdateOperationsInput | string
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    name?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    file_path?: StringFieldUpdateOperationsInput | string
+    demo_path?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    is_default?: BoolFieldUpdateOperationsInput | boolean
+    is_active?: BoolFieldUpdateOperationsInput | boolean
+    is_archived?: BoolFieldUpdateOperationsInput | boolean
+    archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  }
+
+  export type SupplyReportTemplateCreateInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    portal_id?: bigint | number | null
+    agent_id?: bigint | number | null
+    client_types?: string | null
+    name: string
+    code: string
+    file_path: string
+    demo_path?: string | null
+    description?: string | null
+    required_fields?: string | null
+    optional_fields?: string | null
+    is_default?: boolean
+    is_active?: boolean
+    is_archived?: boolean
+    archived_at?: Date | string | null
+    creator_bitrix_user_id?: bigint | number | null
+  }
+
+  export type SupplyReportTemplateUncheckedCreateInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    portal_id?: bigint | number | null
+    agent_id?: bigint | number | null
+    client_types?: string | null
+    name: string
+    code: string
+    file_path: string
+    demo_path?: string | null
+    description?: string | null
+    required_fields?: string | null
+    optional_fields?: string | null
+    is_default?: boolean
+    is_active?: boolean
+    is_archived?: boolean
+    archived_at?: Date | string | null
+    creator_bitrix_user_id?: bigint | number | null
+  }
+
+  export type SupplyReportTemplateUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    name?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    file_path?: StringFieldUpdateOperationsInput | string
+    demo_path?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    required_fields?: NullableStringFieldUpdateOperationsInput | string | null
+    optional_fields?: NullableStringFieldUpdateOperationsInput | string | null
+    is_default?: BoolFieldUpdateOperationsInput | boolean
+    is_active?: BoolFieldUpdateOperationsInput | boolean
+    is_archived?: BoolFieldUpdateOperationsInput | boolean
+    archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  }
+
+  export type SupplyReportTemplateUncheckedUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    name?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    file_path?: StringFieldUpdateOperationsInput | string
+    demo_path?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    required_fields?: NullableStringFieldUpdateOperationsInput | string | null
+    optional_fields?: NullableStringFieldUpdateOperationsInput | string | null
+    is_default?: BoolFieldUpdateOperationsInput | boolean
+    is_active?: BoolFieldUpdateOperationsInput | boolean
+    is_archived?: BoolFieldUpdateOperationsInput | boolean
+    archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  }
+
+  export type SupplyReportTemplateCreateManyInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    portal_id?: bigint | number | null
+    agent_id?: bigint | number | null
+    client_types?: string | null
+    name: string
+    code: string
+    file_path: string
+    demo_path?: string | null
+    description?: string | null
+    required_fields?: string | null
+    optional_fields?: string | null
+    is_default?: boolean
+    is_active?: boolean
+    is_archived?: boolean
+    archived_at?: Date | string | null
+    creator_bitrix_user_id?: bigint | number | null
+  }
+
+  export type SupplyReportTemplateUpdateManyMutationInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    name?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    file_path?: StringFieldUpdateOperationsInput | string
+    demo_path?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    required_fields?: NullableStringFieldUpdateOperationsInput | string | null
+    optional_fields?: NullableStringFieldUpdateOperationsInput | string | null
+    is_default?: BoolFieldUpdateOperationsInput | boolean
+    is_active?: BoolFieldUpdateOperationsInput | boolean
+    is_archived?: BoolFieldUpdateOperationsInput | boolean
+    archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  }
+
+  export type SupplyReportTemplateUncheckedUpdateManyInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    name?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    file_path?: StringFieldUpdateOperationsInput | string
+    demo_path?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    required_fields?: NullableStringFieldUpdateOperationsInput | string | null
+    optional_fields?: NullableStringFieldUpdateOperationsInput | string | null
+    is_default?: BoolFieldUpdateOperationsInput | boolean
+    is_active?: BoolFieldUpdateOperationsInput | boolean
+    is_archived?: BoolFieldUpdateOperationsInput | boolean
+    archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   }
 
   export type BigIntFilter<$PrismaModel = never> = {
@@ -147410,6 +150609,13 @@ export namespace Prisma {
     offerSmartId?: SortOrder
     ltOther?: SortOrder
     iskraConfig?: SortOrder
+    kind?: SortOrder
+    visibility?: SortOrder
+    isActive?: SortOrder
+    isArchived?: SortOrder
+    archivedAt?: SortOrder
+    parentId?: SortOrder
+    creatorBxUserId?: SortOrder
   }
 
   export type BxDocumentDealAvgOrderByAggregateInput = {
@@ -147430,6 +150636,8 @@ export namespace Prisma {
     serviceSmartId?: SortOrder
     smartId?: SortOrder
     offerSmartId?: SortOrder
+    parentId?: SortOrder
+    creatorBxUserId?: SortOrder
   }
 
   export type BxDocumentDealMaxOrderByAggregateInput = {
@@ -147489,6 +150697,13 @@ export namespace Prisma {
     offerSmartId?: SortOrder
     ltOther?: SortOrder
     iskraConfig?: SortOrder
+    kind?: SortOrder
+    visibility?: SortOrder
+    isActive?: SortOrder
+    isArchived?: SortOrder
+    archivedAt?: SortOrder
+    parentId?: SortOrder
+    creatorBxUserId?: SortOrder
   }
 
   export type BxDocumentDealMinOrderByAggregateInput = {
@@ -147548,6 +150763,13 @@ export namespace Prisma {
     offerSmartId?: SortOrder
     ltOther?: SortOrder
     iskraConfig?: SortOrder
+    kind?: SortOrder
+    visibility?: SortOrder
+    isActive?: SortOrder
+    isArchived?: SortOrder
+    archivedAt?: SortOrder
+    parentId?: SortOrder
+    creatorBxUserId?: SortOrder
   }
 
   export type BxDocumentDealSumOrderByAggregateInput = {
@@ -147568,6 +150790,8 @@ export namespace Prisma {
     serviceSmartId?: SortOrder
     smartId?: SortOrder
     offerSmartId?: SortOrder
+    parentId?: SortOrder
+    creatorBxUserId?: SortOrder
   }
 
   export type PortalNullableScalarRelationFilter = {
@@ -148204,12 +151428,15 @@ export namespace Prisma {
     creator_bitrix_user_id?: SortOrder
     is_archived?: SortOrder
     archived_at?: SortOrder
+    agent_id?: SortOrder
+    client_types?: SortOrder
   }
 
   export type OfferTemplateAvgOrderByAggregateInput = {
     id?: SortOrder
     counter?: SortOrder
     creator_bitrix_user_id?: SortOrder
+    agent_id?: SortOrder
   }
 
   export type OfferTemplateMaxOrderByAggregateInput = {
@@ -148241,6 +151468,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: SortOrder
     is_archived?: SortOrder
     archived_at?: SortOrder
+    agent_id?: SortOrder
+    client_types?: SortOrder
   }
 
   export type OfferTemplateMinOrderByAggregateInput = {
@@ -148272,12 +151501,15 @@ export namespace Prisma {
     creator_bitrix_user_id?: SortOrder
     is_archived?: SortOrder
     archived_at?: SortOrder
+    agent_id?: SortOrder
+    client_types?: SortOrder
   }
 
   export type OfferTemplateSumOrderByAggregateInput = {
     id?: SortOrder
     counter?: SortOrder
     creator_bitrix_user_id?: SortOrder
+    agent_id?: SortOrder
   }
 
   export type Enumoffer_templates_visibilityWithAggregatesFilter<$PrismaModel = never> = {
@@ -148686,6 +151918,7 @@ export namespace Prisma {
     in_comment?: SortOrder
     status?: SortOrder
     text?: SortOrder
+    segments?: SortOrder
     symbols_count?: SortOrder
     price?: SortOrder
     duration?: SortOrder
@@ -149600,6 +152833,7 @@ export namespace Prisma {
     portal_id?: SortOrder
     agent_id?: SortOrder
     creator_bitrix_user_id?: SortOrder
+    client_types?: SortOrder
   }
 
   export type InvoiceTemplateAvgOrderByAggregateInput = {
@@ -149628,6 +152862,7 @@ export namespace Prisma {
     portal_id?: SortOrder
     agent_id?: SortOrder
     creator_bitrix_user_id?: SortOrder
+    client_types?: SortOrder
   }
 
   export type InvoiceTemplateMinOrderByAggregateInput = {
@@ -149649,6 +152884,7 @@ export namespace Prisma {
     portal_id?: SortOrder
     agent_id?: SortOrder
     creator_bitrix_user_id?: SortOrder
+    client_types?: SortOrder
   }
 
   export type InvoiceTemplateSumOrderByAggregateInput = {
@@ -150237,6 +153473,169 @@ export namespace Prisma {
     creatorBxUserId?: SortOrder
     refreshIntervalSec?: SortOrder
     viewCount?: SortOrder
+  }
+
+  export type ContractTemplateOrderByRelevanceInput = {
+    fields: ContractTemplateOrderByRelevanceFieldEnum | ContractTemplateOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type ContractTemplateCountOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    portal_id?: SortOrder
+    agent_id?: SortOrder
+    contract_type?: SortOrder
+    client_types?: SortOrder
+    name?: SortOrder
+    code?: SortOrder
+    file_path?: SortOrder
+    demo_path?: SortOrder
+    description?: SortOrder
+    is_default?: SortOrder
+    is_active?: SortOrder
+    is_archived?: SortOrder
+    archived_at?: SortOrder
+    creator_bitrix_user_id?: SortOrder
+  }
+
+  export type ContractTemplateAvgOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    agent_id?: SortOrder
+    creator_bitrix_user_id?: SortOrder
+  }
+
+  export type ContractTemplateMaxOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    portal_id?: SortOrder
+    agent_id?: SortOrder
+    contract_type?: SortOrder
+    client_types?: SortOrder
+    name?: SortOrder
+    code?: SortOrder
+    file_path?: SortOrder
+    demo_path?: SortOrder
+    description?: SortOrder
+    is_default?: SortOrder
+    is_active?: SortOrder
+    is_archived?: SortOrder
+    archived_at?: SortOrder
+    creator_bitrix_user_id?: SortOrder
+  }
+
+  export type ContractTemplateMinOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    portal_id?: SortOrder
+    agent_id?: SortOrder
+    contract_type?: SortOrder
+    client_types?: SortOrder
+    name?: SortOrder
+    code?: SortOrder
+    file_path?: SortOrder
+    demo_path?: SortOrder
+    description?: SortOrder
+    is_default?: SortOrder
+    is_active?: SortOrder
+    is_archived?: SortOrder
+    archived_at?: SortOrder
+    creator_bitrix_user_id?: SortOrder
+  }
+
+  export type ContractTemplateSumOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    agent_id?: SortOrder
+    creator_bitrix_user_id?: SortOrder
+  }
+
+  export type SupplyReportTemplateOrderByRelevanceInput = {
+    fields: SupplyReportTemplateOrderByRelevanceFieldEnum | SupplyReportTemplateOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type SupplyReportTemplateCountOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    portal_id?: SortOrder
+    agent_id?: SortOrder
+    client_types?: SortOrder
+    name?: SortOrder
+    code?: SortOrder
+    file_path?: SortOrder
+    demo_path?: SortOrder
+    description?: SortOrder
+    required_fields?: SortOrder
+    optional_fields?: SortOrder
+    is_default?: SortOrder
+    is_active?: SortOrder
+    is_archived?: SortOrder
+    archived_at?: SortOrder
+    creator_bitrix_user_id?: SortOrder
+  }
+
+  export type SupplyReportTemplateAvgOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    agent_id?: SortOrder
+    creator_bitrix_user_id?: SortOrder
+  }
+
+  export type SupplyReportTemplateMaxOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    portal_id?: SortOrder
+    agent_id?: SortOrder
+    client_types?: SortOrder
+    name?: SortOrder
+    code?: SortOrder
+    file_path?: SortOrder
+    demo_path?: SortOrder
+    description?: SortOrder
+    required_fields?: SortOrder
+    optional_fields?: SortOrder
+    is_default?: SortOrder
+    is_active?: SortOrder
+    is_archived?: SortOrder
+    archived_at?: SortOrder
+    creator_bitrix_user_id?: SortOrder
+  }
+
+  export type SupplyReportTemplateMinOrderByAggregateInput = {
+    id?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+    portal_id?: SortOrder
+    agent_id?: SortOrder
+    client_types?: SortOrder
+    name?: SortOrder
+    code?: SortOrder
+    file_path?: SortOrder
+    demo_path?: SortOrder
+    description?: SortOrder
+    required_fields?: SortOrder
+    optional_fields?: SortOrder
+    is_default?: SortOrder
+    is_active?: SortOrder
+    is_archived?: SortOrder
+    archived_at?: SortOrder
+    creator_bitrix_user_id?: SortOrder
+  }
+
+  export type SupplyReportTemplateSumOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    agent_id?: SortOrder
+    creator_bitrix_user_id?: SortOrder
   }
 
   export type PortalCreateNestedOneWithoutAgentsInput = {
@@ -156287,6 +159686,7 @@ export namespace Prisma {
     is_archived?: boolean
     archived_at?: Date | string | null
     creator_bitrix_user_id?: bigint | number | null
+    client_types?: string | null
     portal?: PortalCreateNestedOneWithoutInvoiceTemplatesInput
   }
 
@@ -156308,6 +159708,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     portal_id?: bigint | number | null
     creator_bitrix_user_id?: bigint | number | null
+    client_types?: string | null
   }
 
   export type InvoiceTemplateCreateOrConnectWithoutAgentInput = {
@@ -156602,6 +160003,7 @@ export namespace Prisma {
     portal_id?: BigIntNullableFilter<"InvoiceTemplate"> | bigint | number | null
     agent_id?: BigIntNullableFilter<"InvoiceTemplate"> | bigint | number | null
     creator_bitrix_user_id?: BigIntNullableFilter<"InvoiceTemplate"> | bigint | number | null
+    client_types?: StringNullableFilter<"InvoiceTemplate"> | string | null
   }
 
   export type bitrixfieldsCreateWithoutBitrixfield_itemsInput = {
@@ -163207,6 +166609,7 @@ export namespace Prisma {
     is_archived?: boolean
     archived_at?: Date | string | null
     creator_bitrix_user_id?: bigint | number | null
+    client_types?: string | null
     agent?: agentsCreateNestedOneWithoutInvoiceTemplatesInput
   }
 
@@ -163228,6 +166631,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     agent_id?: bigint | number | null
     creator_bitrix_user_id?: bigint | number | null
+    client_types?: string | null
   }
 
   export type InvoiceTemplateCreateOrConnectWithoutPortalInput = {
@@ -173398,6 +176802,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: bigint | number | null
     is_archived?: boolean
     archived_at?: Date | string | null
+    agent_id?: bigint | number | null
+    client_types?: string | null
     offerTemplateFonts?: OfferTemplateFontCreateNestedManyWithoutOffer_templatesInput
     offerTemplatePages?: OfferTemplatePageCreateNestedManyWithoutOfferTemplateInput
     userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutOfferTemplateInput
@@ -173432,6 +176838,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: bigint | number | null
     is_archived?: boolean
     archived_at?: Date | string | null
+    agent_id?: bigint | number | null
+    client_types?: string | null
     offerTemplateFonts?: OfferTemplateFontUncheckedCreateNestedManyWithoutOffer_templatesInput
     offerTemplatePages?: OfferTemplatePageUncheckedCreateNestedManyWithoutOfferTemplateInput
     userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutOfferTemplateInput
@@ -173619,6 +177027,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     is_archived?: BoolFieldUpdateOperationsInput | boolean
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplateFonts?: OfferTemplateFontUpdateManyWithoutOffer_templatesNestedInput
     offerTemplatePages?: OfferTemplatePageUpdateManyWithoutOfferTemplateNestedInput
     userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutOfferTemplateNestedInput
@@ -173653,6 +177063,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     is_archived?: BoolFieldUpdateOperationsInput | boolean
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplateFonts?: OfferTemplateFontUncheckedUpdateManyWithoutOffer_templatesNestedInput
     offerTemplatePages?: OfferTemplatePageUncheckedUpdateManyWithoutOfferTemplateNestedInput
     userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutOfferTemplateNestedInput
@@ -174428,6 +177840,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: bigint | number | null
     is_archived?: boolean
     archived_at?: Date | string | null
+    agent_id?: bigint | number | null
+    client_types?: string | null
     offerTemplateFonts?: OfferTemplateFontCreateNestedManyWithoutOffer_templatesInput
     offerTemplatePages?: OfferTemplatePageCreateNestedManyWithoutOfferTemplateInput
     offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutOffer_templatesInput
@@ -174462,6 +177876,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: bigint | number | null
     is_archived?: boolean
     archived_at?: Date | string | null
+    agent_id?: bigint | number | null
+    client_types?: string | null
     offerTemplateFonts?: OfferTemplateFontUncheckedCreateNestedManyWithoutOffer_templatesInput
     offerTemplatePages?: OfferTemplatePageUncheckedCreateNestedManyWithoutOfferTemplateInput
     offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutOffer_templatesInput
@@ -174649,6 +178065,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     is_archived?: BoolFieldUpdateOperationsInput | boolean
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplateFonts?: OfferTemplateFontUpdateManyWithoutOffer_templatesNestedInput
     offerTemplatePages?: OfferTemplatePageUpdateManyWithoutOfferTemplateNestedInput
     offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutOffer_templatesNestedInput
@@ -174683,6 +178101,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     is_archived?: BoolFieldUpdateOperationsInput | boolean
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplateFonts?: OfferTemplateFontUncheckedUpdateManyWithoutOffer_templatesNestedInput
     offerTemplatePages?: OfferTemplatePageUncheckedUpdateManyWithoutOfferTemplateNestedInput
     offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutOffer_templatesNestedInput
@@ -175248,6 +178668,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: bigint | number | null
     is_archived?: boolean
     archived_at?: Date | string | null
+    agent_id?: bigint | number | null
+    client_types?: string | null
     offerTemplatePages?: OfferTemplatePageCreateNestedManyWithoutOfferTemplateInput
     offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutOffer_templatesInput
     userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutOfferTemplateInput
@@ -175282,6 +178704,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: bigint | number | null
     is_archived?: boolean
     archived_at?: Date | string | null
+    agent_id?: bigint | number | null
+    client_types?: string | null
     offerTemplatePages?: OfferTemplatePageUncheckedCreateNestedManyWithoutOfferTemplateInput
     offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutOffer_templatesInput
     userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutOfferTemplateInput
@@ -175332,6 +178756,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     is_archived?: BoolFieldUpdateOperationsInput | boolean
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplatePages?: OfferTemplatePageUpdateManyWithoutOfferTemplateNestedInput
     offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutOffer_templatesNestedInput
     userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutOfferTemplateNestedInput
@@ -175366,6 +178792,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     is_archived?: BoolFieldUpdateOperationsInput | boolean
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplatePages?: OfferTemplatePageUncheckedUpdateManyWithoutOfferTemplateNestedInput
     offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutOffer_templatesNestedInput
     userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutOfferTemplateNestedInput
@@ -176314,6 +179742,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: bigint | number | null
     is_archived?: boolean
     archived_at?: Date | string | null
+    agent_id?: bigint | number | null
+    client_types?: string | null
     offerTemplateFonts?: OfferTemplateFontCreateNestedManyWithoutOffer_templatesInput
     offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutOffer_templatesInput
     userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutOfferTemplateInput
@@ -176348,6 +179778,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: bigint | number | null
     is_archived?: boolean
     archived_at?: Date | string | null
+    agent_id?: bigint | number | null
+    client_types?: string | null
     offerTemplateFonts?: OfferTemplateFontUncheckedCreateNestedManyWithoutOffer_templatesInput
     offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutOffer_templatesInput
     userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutOfferTemplateInput
@@ -176430,6 +179862,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     is_archived?: BoolFieldUpdateOperationsInput | boolean
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplateFonts?: OfferTemplateFontUpdateManyWithoutOffer_templatesNestedInput
     offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutOffer_templatesNestedInput
     userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutOfferTemplateNestedInput
@@ -176464,6 +179898,8 @@ export namespace Prisma {
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     is_archived?: BoolFieldUpdateOperationsInput | boolean
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplateFonts?: OfferTemplateFontUncheckedUpdateManyWithoutOffer_templatesNestedInput
     offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutOffer_templatesNestedInput
     userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutOfferTemplateNestedInput
@@ -179103,6 +182539,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     portal_id?: bigint | number | null
     creator_bitrix_user_id?: bigint | number | null
+    client_types?: string | null
   }
 
   export type InvoiceTemplateUpdateWithoutAgentInput = {
@@ -179122,6 +182559,7 @@ export namespace Prisma {
     is_archived?: BoolFieldUpdateOperationsInput | boolean
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
     portal?: PortalUpdateOneWithoutInvoiceTemplatesNestedInput
   }
 
@@ -179143,6 +182581,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type InvoiceTemplateUncheckedUpdateManyWithoutAgentInput = {
@@ -179163,6 +182602,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type portal_contractsCreateManyBitrixfield_itemsInput = {
@@ -181393,6 +184833,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     agent_id?: bigint | number | null
     creator_bitrix_user_id?: bigint | number | null
+    client_types?: string | null
   }
 
   export type bx_rqsCreateManyPortalInput = {
@@ -182527,6 +185968,7 @@ export namespace Prisma {
     is_archived?: BoolFieldUpdateOperationsInput | boolean
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
     agent?: agentsUpdateOneWithoutInvoiceTemplatesNestedInput
   }
 
@@ -182548,6 +185990,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type InvoiceTemplateUncheckedUpdateManyWithoutPortalInput = {
@@ -182568,6 +186011,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    client_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type bx_rqsUpdateWithoutPortalInput = {

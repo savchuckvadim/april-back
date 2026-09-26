@@ -18,6 +18,7 @@ import {
     HVOST_STEPS_SCHEMA,
     NEXT_STEP_SCHEMA,
     OBJECTION_SCHEMA,
+    OBJECTION_TIMECODE_SPEC,
     SECTION_FIELDS_SPEC,
     SECTION_ITEM_SCHEMA,
 } from './call-deep-analysis.contract';
@@ -252,6 +253,7 @@ ${SECTION_FIELDS_SPEC}
 - objections — каждое возражение: формулировка, отработка, удалось ли, дословная
   цитата, категория. Считай возражением и СКРЫТОЕ сопротивление: «у нас уже есть
   Консультант», «пришлите на почту», «надо посоветоваться».
+  ${OBJECTION_TIMECODE_SPEC}
 - priceDiscussed — обсуждалась ли цена фактически.
 - competitors — конкуренты, упомянутые клиентом (коды справочника).
 - refusalCategory — при отказе: РЫНОЧНАЯ причина или ИСПОЛНИТЕЛЬСКАЯ; null без отказа.

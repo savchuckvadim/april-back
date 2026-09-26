@@ -1,3 +1,4 @@
+import { AiAboutReliabilityDto } from './ai-about-reliability.dto';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn } from 'class-validator';
 import type {
@@ -195,6 +196,17 @@ export class AiAboutDto {
         example: null,
     })
     modelReason: string | null;
+
+    @ApiProperty({
+        description:
+            'Надёжность оценщика по последнему отчёту согласия test-retest ' +
+            '(Фаза 3, П7): σ_llm с источником, каппа по полям разбора ' +
+            'против golden_kappa_min, F1 по возражениям; null — прогона ' +
+            'на портале ещё не было.',
+        type: AiAboutReliabilityDto,
+        nullable: true,
+    })
+    reliability: AiAboutReliabilityDto | null;
 
     @ApiProperty({
         description:

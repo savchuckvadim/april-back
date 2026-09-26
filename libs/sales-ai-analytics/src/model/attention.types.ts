@@ -1,15 +1,56 @@
-import { MetricValue } from './metric';
+import { ConfidenceLevel, MetricValue } from './metric';
 import { AI_ANALYTICS_THRESHOLDS } from './thresholds.const';
+import type { TrendDirection, TrendSignalKind } from './trend/trend.types';
 
-/** Сигналы «Внимания» Фазы 1 (план §3, ТЗ FR-12) в порядке приоритета. */
+/**
+ * Сигналы «Внимания» в порядке приоритета: Фаза 1 (план §3, ТЗ FR-12),
+ * затем Фаза 3 — расхождение «метрика ↔ противовес» (П9) и сдвиг /
+ * дрейф ряда вниз (П1).
+ */
 export const ATTENTION_SIGNALS = [
     'risk',
     'no_data',
     'discipline',
     'next_step_drop',
     'plan_gap',
+    'goodhart',
+    'trend_shift',
+    'trend_drift',
 ] as const;
 export type AttentionSignal = (typeof ATTENTION_SIGNALS)[number];
+
+/** С какой фазы доступен сигнал: правила Фазы 1 либо Фазы 3. */
+export type AttentionAvailableFrom = 1 | 3;
+
+/** Сигнал тренда ряда менеджера с подписью метрики для заголовка. */
+export interface AttentionTrendSignal {
+    metric: string;
+    /** Подпись метрики для человека («оценка», «звонок → презентация»). */
+    title: string;
+    kind: TrendSignalKind;
+    direction: TrendDirection;
+    sinceWeek: string;
+    /** Величина в единицах метрики. */
+    magnitude: number;
+    confidence: ConfidenceLevel;
+}
+
+/** Флаг детектора Гудхарта с подписями обеих метрик. */
+export interface AttentionGoodhartFlag {
+    pair: string;
+    pressure: string;
+    pressureTitle: string;
+    counter: string;
+    counterTitle: string;
+    fromKey: string;
+    toKey: string;
+    /** Относительное изменение сглаженного давления, доля (> 0). */
+    pressureChange: number;
+    /** Относительное изменение сглаженного противовеса, доля (< 0). */
+    counterChange: number;
+    /** Общих месяцев окна. */
+    points: number;
+}
 
 export interface AttentionRiskCall {
     transcriptionId: string;
@@ -54,6 +95,10 @@ export interface AttentionManagerInput {
     planGap?: AttentionPlanGap;
     outcomes?: AttentionOutcomes;
     levelNorms?: AttentionLevelNorms;
+    /** Сигналы трендов строки (Фаза 3, П1); нет снапшота — undefined. */
+    trendSignals?: AttentionTrendSignal[];
+    /** Флаги детектора Гудхарта, худший противовес первым (Фаза 3, П9). */
+    goodhart?: AttentionGoodhartFlag[];
 }
 
 export interface AttentionInput {
@@ -79,8 +124,8 @@ export interface AttentionItem {
     managerId: string;
     rank: number;
     signal: AttentionSignal;
-    /** С какой фазы доступен сигнал (все правила — Фаза 1). */
-    availableFrom: 1;
+    /** С какой фазы доступен сигнал: 1 — правила Фазы 1, 3 — тренды и Гудхарт. */
+    availableFrom: AttentionAvailableFrom;
     headline: string;
     basis: AttentionBasis[];
     link: AttentionLink;

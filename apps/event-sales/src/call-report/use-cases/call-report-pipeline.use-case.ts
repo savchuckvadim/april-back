@@ -1,3 +1,4 @@
+import { renderTranscriptWithTimecodes } from '@lib/call-lib/transcription/types/transcript-segment.types';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from 'generated/prisma';
 import { PBXService } from '@lib/pbx/pbx.service';
@@ -193,7 +194,7 @@ export class CallReportPipelineUseCase {
             const audioFile = audioFiles[0];
             const buffer = await bx.downloadAudioBuffer(audioFile.downloadUrl);
 
-            const { text, provider } =
+            const { text, provider, segments } =
                 await this.transcriptionRouter.transcribe({
                     buffer,
                     fileName: audioFile.fileName,
@@ -220,6 +221,7 @@ export class CallReportPipelineUseCase {
                 status: 'done',
                 provider,
                 text,
+                segments,
                 symbolsCount: String(text.length),
                 durationSec: payload.durationSec,
                 userId:
@@ -261,6 +263,9 @@ export class CallReportPipelineUseCase {
             );
         }
         const provider = row.provider ?? 'unknown';
+        // Расшифровка с таймкодами для LLM (П6); без сегментов — текст.
+        const transcript =
+            renderTranscriptWithTimecodes(row.segments ?? []) || text;
 
         // Настройки портала (склейка портал → env → дефолт): классификация
         // и модель первичного анализа управляются из админки без деплоя.
@@ -332,7 +337,7 @@ export class CallReportPipelineUseCase {
             : null;
         const llmModel = this.resolveLlmModel(settings.llmModel);
         const { resume, recomendation } = await this.runLlmAnalysis(
-            passportBlock ? `${passportBlock}\n\n${text}` : text,
+            passportBlock ? `${passportBlock}\n\n${transcript}` : transcript,
             payload,
             llmModel,
         );

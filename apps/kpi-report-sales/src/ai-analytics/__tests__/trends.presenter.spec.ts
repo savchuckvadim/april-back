@@ -52,7 +52,40 @@ describe('toTrendsBlock — тренды строки менеджера', () =>
                     confidence: 'ok',
                 },
             ],
+            goodhart: null,
         });
+    });
+
+    it('флаги детектора Гудхарта читаются структурно, чужая форма отбрасывается', () => {
+        const flag = {
+            pair: 'volume_vs_quality',
+            pressure: 'volume',
+            counter: 'quality',
+            fromKey: '2026-06',
+            toKey: '2026-08',
+            pressureChange: 0.5,
+            counterChange: -0.36,
+            points: 3,
+        };
+        const block = toTrendsBlock(
+            view({
+                goodhart: {
+                    windowMonths: 3,
+                    drop: 0.3,
+                    flags: [flag, { pair: 'чужая' }, null],
+                },
+            }),
+            { n: 40 },
+        );
+
+        expect(block?.goodhart).toEqual([flag]);
+        expect(
+            toTrendsBlock(view({ goodhart: { flags: [] } }), { n: 40 })
+                ?.goodhart,
+        ).toEqual([]);
+        expect(
+            toTrendsBlock(view({ goodhart: 'нет' }), { n: 40 })?.goodhart,
+        ).toBeNull();
     });
 
     it('n < n_min_none — блока нет, ни одного числа наружу', () => {
@@ -138,6 +171,7 @@ describe('toTrendsBlock — тренды строки менеджера', () =>
             weeks: 0,
             confidence: 'ok',
             signals: [],
+            goodhart: null,
         });
     });
 });

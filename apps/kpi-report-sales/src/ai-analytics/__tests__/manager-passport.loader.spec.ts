@@ -45,6 +45,10 @@ interface LoaderCase {
     /** user.get падает (нет прав, портал недоступен). */
     fails?: boolean;
     cached?: ManagerUserFacts[] | null;
+    /** Раскладка ростера: менеджер → отдел продаж. */
+    org?: Map<number, { departmentId: number | null }>;
+    /** Раскладка недоступна (кэш/структура упали). */
+    orgFails?: boolean;
 }
 
 function makeLoader(options: LoaderCase = {}) {
@@ -68,11 +72,19 @@ function makeLoader(options: LoaderCase = {}) {
     const managers = {
         resolve: jest.fn().mockResolvedValue(options.ids ?? [10]),
     };
+    const org = {
+        load: jest.fn(() =>
+            options.orgFails
+                ? Promise.reject(new Error('структура недоступна'))
+                : Promise.resolve(options.org ?? new Map()),
+        ),
+    };
     const loader = new ManagerPassportLoader(
         pbx as never,
         settings as never,
         cache as never,
         managers as never,
+        org as never,
     );
 
     return { loader, userGet, pbx, cache };
@@ -322,6 +334,43 @@ describe('Разбор ответа портала и работа с инста
         expect(toPassportDate('01.04.2026')).toBe('2026-04-01');
         expect(toPassportDate('')).toBeNull();
         expect(toPassportDate(42)).toBeNull();
+    });
+
+    it('отдел продаж приходит из раскладки ростера; нет в раскладке — null', async () => {
+        const { loader } = makeLoader({
+            users: [userRow({ UF_EMPLOYMENT_DATE: '2026-04-01' })],
+            ids: [10, 11],
+            org: new Map([[10, { departmentId: 91 }]]),
+        });
+
+        const { passports } = await loader.load(DOMAIN, [10, 11], {
+            until: UNTIL,
+        });
+
+        expect(passports[0]).toMatchObject({
+            managerId: '10',
+            departmentId: 91,
+        });
+        expect(passports[1]).toMatchObject({
+            managerId: '11',
+            departmentId: null,
+        });
+    });
+
+    it('раскладка недоступна: паспорт без отдела, а не без паспорта', async () => {
+        const { loader } = makeLoader({
+            users: [userRow({ UF_EMPLOYMENT_DATE: '2026-04-01' })],
+            orgFails: true,
+        });
+
+        const { passports } = await loader.load(DOMAIN, [10], {
+            until: UNTIL,
+        });
+
+        expect(passports[0]).toMatchObject({
+            since: '2026-04-01',
+            departmentId: null,
+        });
     });
 
     it('toUserFacts отбрасывает запись без id', () => {

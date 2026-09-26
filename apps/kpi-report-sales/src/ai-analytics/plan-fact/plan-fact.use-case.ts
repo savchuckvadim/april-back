@@ -22,8 +22,6 @@
 import { Injectable } from '@nestjs/common';
 import {
     AI_ANALYTICS_SNAPSHOT_TYPE,
-    buildRegistryContext,
-    resolveNumberParam,
     toPortalDate,
     type PlanSnapshot,
 } from '@lib/sales-ai-analytics';
@@ -40,6 +38,7 @@ import type { RequesterAccess } from '../domain/access/perimeter.util';
 import type { ManagerMonthPayload } from '../domain/assembler/manager-snapshot.types';
 import {
     buildPlanFactView,
+    planDayCeilingOf,
     type PlanFactView,
 } from '../domain/assembler/plan-fact.assembler';
 import {
@@ -194,21 +193,4 @@ function normalizeIds(raw: readonly string[]): string[] {
     return [...new Set(raw.map(id => String(Number(id))))]
         .filter(id => id !== 'NaN' && id !== '0')
         .sort((left, right) => Number(left) - Number(right));
-}
-
-/**
- * `plan_day_ceiling` реестра со слоями портала — тот же множитель, что
- * берёт план дня. Портал ничего не решал — undefined, и библиотека
- * подставит свой дефолт.
- */
-function planDayCeilingOf(
-    settings: AiAnalyticsPortalSettings,
-): number | undefined {
-    return resolveNumberParam(
-        'plan_day_ceiling',
-        buildRegistryContext({
-            modelParams: settings.modelParams,
-            definitions: settings.definitions,
-        }),
-    );
 }

@@ -117,6 +117,32 @@ export function axesOf(
     return axes;
 }
 
+/** Значение оси 5 по реакции: по существу — 0, уточнил вопросом — 1. */
+export const STYLE_OBJECTION_REACTION_VALUES: Readonly<Record<string, number>> =
+    { answer: 0, clarify: 1 };
+
+/**
+ * Ось 5 «отвечает по существу ↔ уточняет вопросом» (единица —
+ * возражение): первая реакция менеджера из разбора (`objections[].reaction`,
+ * П6/П8). Реакции other или без поля единицей не являются — старые
+ * разборы до v2.3 промпта ось не кормят.
+ */
+export function objectionStyleRows(rows: readonly DatedLiteRow[]): StyleRow[] {
+    return rows.flatMap(row => {
+        const managerId = row.managerId;
+        if (managerId === null || !row.analysisPresent) return [];
+
+        return row.objections.flatMap(objection => {
+            const value =
+                STYLE_OBJECTION_REACTION_VALUES[objection.reaction ?? ''];
+
+            return value === undefined
+                ? []
+                : [{ managerId, axes: { objection_response: value } }];
+        });
+    });
+}
+
 /**
  * Строки жёстких осей из счётчиков телефонии (§2.1 оси 4, 7, 8). Единицы
  * разные — лид, рабочий день — поэтому каждая единица идёт своей строкой

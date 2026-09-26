@@ -2,7 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Semaphore, parseConcurrency } from '@lib/shared';
 import { YandexStorageService } from '@lib/call-lib/yandex/yandex-storage.service';
-import { StreamingTranscriptionService } from '../services/streaming-transcription.service';
+import { whisperSegmentsOf } from '../lib/segments.mapper';
+import {
+    StreamingTranscriptionService,
+    type YandexTranscriptionDetailed,
+} from '../services/streaming-transcription.service';
+import type { TranscriptSegment } from '../types/transcript-segment.types';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 
 export const TRANSCRIPTION_PROVIDERS = ['yandex', 'bitrix-vibecode'] as const;
@@ -28,7 +33,14 @@ export interface TranscribeCallInput {
 export interface TranscribeCallResult {
     text: string;
     provider: TranscriptionProvider;
+    /** Сегменты с таймкодами (П6); null — провайдер их не дал. */
+    segments: TranscriptSegment[] | null;
 }
+
+/** Пустой список сегментов в БД не пишем — null, как у старых строк. */
+const nonEmpty = (
+    segments: readonly TranscriptSegment[],
+): TranscriptSegment[] | null => (segments.length ? [...segments] : null);
 
 /**
  * Маршрутизатор транскрибации: длинные звонки → Yandex SpeechKit
@@ -97,32 +109,40 @@ export class TranscriptionRouterService {
         );
 
         if (provider === 'yandex') {
-            return {
-                text: await this.transcribeYandex(input),
-                provider: 'yandex',
-            };
+            return this.yandexResult(await this.transcribeYandex(input));
         }
 
         try {
             // Ключ VibeCode — пер-портальный (vibeKey из БД, env — fallback).
             const apiKey = await this.vibeKeyResolver.resolve(input.domain);
-            const text = await this.vibecodeLimiter.run(() =>
-                this.vibecode.transcribeAudio(
+            const detailed = await this.vibecodeLimiter.run(() =>
+                this.vibecode.transcribeAudioDetailed(
                     input.buffer,
                     input.fileName,
                     apiKey,
                 ),
             );
-            return { text, provider: 'bitrix-vibecode' };
+            return {
+                text: detailed.text,
+                provider: 'bitrix-vibecode',
+                segments: nonEmpty(whisperSegmentsOf(detailed.segments)),
+            };
         } catch (error) {
             this.logger.warn(
                 `Vibecode не справился (${(error as Error).message}), fallback на Yandex`,
             );
-            return {
-                text: await this.transcribeYandex(input),
-                provider: 'yandex',
-            };
+            return this.yandexResult(await this.transcribeYandex(input));
         }
+    }
+
+    private yandexResult(
+        detailed: YandexTranscriptionDetailed,
+    ): TranscribeCallResult {
+        return {
+            text: detailed.text,
+            provider: 'yandex',
+            segments: nonEmpty(detailed.segments),
+        };
     }
 
     private resolveProvider(durationSec?: number): TranscriptionProvider {
@@ -137,7 +157,7 @@ export class TranscriptionRouterService {
     /** Yandex-путь: буфер → S3 → longRunningRecognize → поллинг результата. */
     private async transcribeYandex(
         input: TranscribeCallInput,
-    ): Promise<string> {
+    ): Promise<YandexTranscriptionDetailed> {
         return this.yandexLimiter.run(async () => {
             const s3Key = `transcription/audio/${input.domain}/call-report/${input.fileName}`;
             const fileUri = await this.yandexStorage.uploadFile(
@@ -147,7 +167,9 @@ export class TranscriptionRouterService {
             );
             const operationId =
                 await this.yandexTranscription.transcribeAudio(fileUri);
-            return this.yandexTranscription.getTranscriptionResult(operationId);
+            return this.yandexTranscription.getTranscriptionDetailed(
+                operationId,
+            );
         });
     }
 }

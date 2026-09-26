@@ -15,6 +15,7 @@ import {
     tenureBandOf,
     type ReadinessWindowCounters,
     type SnapshotReadiness,
+    type ReliabilitySource,
 } from '@lib/sales-ai-analytics';
 import { AiManagerRowDto } from '../../dto/ai-manager-row.dto';
 import { ReadinessDto } from '../../dto/readiness.dto';
@@ -27,6 +28,7 @@ import {
 } from '../assembler/norms.assembler';
 import type {
     ForecastView,
+    GoldenReportView,
     ManagerKpiPeriod,
     OverviewSnapshots,
     OverviewSources,
@@ -36,6 +38,7 @@ import type { OverviewYoySnapshots } from '../loaders/overview-snapshots.loader'
 import { toRecommendations } from './levers.presenter';
 import { buildReadiness, type ReadinessOptions } from './readiness.util';
 import { toStyleProfile } from './style.presenter';
+import { toTrendsBlock } from './trends.presenter';
 import { yoyForRow } from './yoy-rows.presenter';
 
 // Блок «год назад» (Фаза 3, П3) целиком в `yoy-rows.presenter`: здесь
@@ -141,6 +144,22 @@ export function modelReadinessOptions(
     };
 }
 
+/**
+ * Источник σ_llm по отчёту согласия (П7): measured — ценз пар пройден;
+ * отчёта нет или форма чужая — поле не отдаётся (undefined).
+ */
+export function sigmaLlmSourceOf(
+    report: GoldenReportView | null | undefined,
+): ReliabilitySource | undefined {
+    const sigma = report?.sigmaLlm;
+    if (typeof sigma !== 'object' || sigma === null) return undefined;
+    const source = (sigma as { source?: unknown }).source;
+
+    return source === 'measured' || source === 'configured'
+        ? source
+        : undefined;
+}
+
 /** Нормы строки: полоса стажа берётся по стажу самой строки. */
 export function normsForRow(
     row: AiManagerRowDto,
@@ -167,6 +186,11 @@ function applyRow(row: AiManagerRowDto, ctx: Phase2Context): AiManagerRowDto {
             n: row.analyzedCalls,
         }),
         style: toStyleProfile(ctx.styles?.get(row.managerId)),
+        // Тренды (Фаза 3, П1): null — снапшота нет, разборов меньше
+        // n_min_none либо доверие рядов none.
+        trends: toTrendsBlock(ctx.trends?.get(row.managerId), {
+            n: row.analyzedCalls,
+        }),
         yoy: yoyForRow(row, ctx),
         ...(since === null ? {} : { since }),
     };
@@ -211,5 +235,12 @@ export function buildOverviewReadiness(
         rosterConfirmedAt: sources.rosterConfirmedAt ?? '',
         hypothesisPairs: sources.hypothesisPairs ?? 0,
         ...modelReadinessOptions(sources.snapshots?.model ?? null),
+        ...(sigmaLlmSourceOf(sources.snapshots?.goldenReport) === undefined
+            ? {}
+            : {
+                  sigmaLlmSource: sigmaLlmSourceOf(
+                      sources.snapshots?.goldenReport,
+                  ),
+              }),
     });
 }

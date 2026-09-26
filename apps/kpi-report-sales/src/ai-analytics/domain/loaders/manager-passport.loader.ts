@@ -7,7 +7,10 @@
  *
  * и источник остаётся в паспорте (`sinceSource`), чтобы витрина не выдавала
  * прокси-дату за дату трудоустройства. Ушедший сотрудник определяется по
- * `ACTIVE = N`, дата ухода — по последнему событию.
+ * `ACTIVE = N`, дата ухода — по последнему событию. Отдел продаж берётся
+ * из раскладки ростера (`ManagerOrgLoader`, кэш 5 минут) на день прогона:
+ * истории структуры у портала нет, поэтому догон старых месяцев кладёт в
+ * паспорт сегодняшний отдел.
  *
  * ⚠ Деградация обязательна (§5.4): поля `UF_EMPLOYMENT_DATE` на портале
  * может не быть, и `user.get` может отказать целиком — каскад обязан дойти
@@ -35,6 +38,7 @@ import {
     buildPassportKey,
 } from '../../constants/ai-passport.const';
 import { buildReportUsersKey } from '../../../report';
+import { ManagerOrgLoader } from './manager-org.loader';
 import { ManagersLoader } from './managers.loader';
 import {
     buildPassport,
@@ -87,6 +91,7 @@ export class ManagerPassportLoader {
         private readonly settings: SettingsLoader,
         private readonly cache: AiAnalyticsCacheService,
         private readonly managers: ManagersLoader,
+        private readonly org: ManagerOrgLoader,
     ) {}
 
     /** Паспорта ростера: факты портала → каскад → статус, стаж, уровень. */
@@ -109,6 +114,7 @@ export class ManagerPassportLoader {
             options.forceRefresh ?? false,
         );
         const byId = new Map(facts.map(row => [row.managerId, row]));
+        const departments = await this.departments(domain);
         const levels = new Map(
             settings.levels.map(level => [String(level.managerId), level]),
         );
@@ -128,9 +134,33 @@ export class ManagerPassportLoader {
                     absences: settings.absences[managerId] ?? [],
                     until,
                     gates,
+                    departmentId: departments.get(Number(managerId)) ?? null,
                 });
             }),
         };
+    }
+
+    /**
+     * Отдел продаж каждого менеджера по раскладке ростера. Раскладка
+     * недоступна — пустая карта: паспорт без отдела, а не без паспорта.
+     */
+    private async departments(
+        domain: string,
+    ): Promise<Map<number, number | null>> {
+        try {
+            const org = await this.org.load(domain);
+
+            return new Map(
+                [...org.entries()].map(([id, row]) => [id, row.departmentId]),
+            );
+        } catch (error) {
+            this.logger.warn(
+                `Раскладка ОП (${domain}) для паспортов не прочитана, отделы ` +
+                    `останутся пустыми: ${(error as Error).message}`,
+            );
+
+            return new Map();
+        }
     }
 
     /** Факты пользователей: кэш на час, отказ портала — пустой список. */

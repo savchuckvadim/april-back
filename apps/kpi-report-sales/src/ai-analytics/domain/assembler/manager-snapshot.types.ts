@@ -56,6 +56,8 @@ export interface ManagerPassportFacts {
     levelSource: string | null;
     tenureMonths: number | null;
     tenureBand: string | null;
+    /** Отдел продаж на день прогона; null/нет — неизвестен (Фаза 3). */
+    departmentId?: number | null;
 }
 
 /** Ребро воронки месяца с трактовкой и признаком смешанных источников. */

@@ -12,9 +12,11 @@
  * Чистые функции: без DI, Bitrix и Prisma, без `new Date()` внутри.
  */
 import {
+    buildRegistryContext,
     isWorkday,
     reconcile,
     reconcileTeam,
+    resolveNumberParam,
     shiftDate,
     type ManagerPlanTarget,
     type PlanFactExposure,
@@ -26,7 +28,25 @@ import {
     type WorkCalendar,
 } from '@lib/sales-ai-analytics';
 import { workdaysInMonth } from '../loaders/calendar.util';
+import type { AiAnalyticsPortalSettings } from '../loaders/settings.loader';
 import type { ManagerMonthPayload } from './manager-snapshot.types';
+
+/**
+ * `plan_day_ceiling` реестра со слоями портала — тот же множитель, что
+ * берёт план дня. Портал ничего не решал — undefined, и библиотека
+ * подставит свой дефолт. Одна функция на ручку план-факта и досье.
+ */
+export function planDayCeilingOf(
+    settings: Pick<AiAnalyticsPortalSettings, 'modelParams' | 'definitions'>,
+): number | undefined {
+    return resolveNumberParam(
+        'plan_day_ceiling',
+        buildRegistryContext({
+            modelParams: settings.modelParams,
+            definitions: settings.definitions,
+        }),
+    );
+}
 
 /** Максимум дней перебора месяца (страховка от кривого monthKey). */
 const MAX_MONTH_DAYS = 31;

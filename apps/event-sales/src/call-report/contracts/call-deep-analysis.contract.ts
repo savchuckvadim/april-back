@@ -1,3 +1,4 @@
+import { CALL_REPORT_OBJECTION_REACTIONS } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import {
     FIVE_K_TEMPLATES,
     XVOST_TEMPLATES,
@@ -127,10 +128,34 @@ export const OBJECTION_SCHEMA = {
             type: ['string', 'null'],
             enum: [...CALL_REPORT_OBJECTION_CODES, null],
         },
+        // П6: секунды цитаты по меткам [mm:ss] расшифровки; П8: первая
+        // реакция менеджера — ось стиля objection_response.
+        startSec: { type: ['number', 'null'] },
+        endSec: { type: ['number', 'null'] },
+        reaction: {
+            type: ['string', 'null'],
+            enum: [...CALL_REPORT_OBJECTION_REACTIONS, null],
+        },
     },
-    required: ['objection', 'handling', 'handled', 'quote', 'category'],
+    required: [
+        'objection',
+        'handling',
+        'handled',
+        'quote',
+        'category',
+        'startSec',
+        'endSec',
+        'reaction',
+    ],
     additionalProperties: false,
 } as const;
+
+/** Подсказка модели по таймкодам и реакции — одна на все проходы разбора. */
+export const OBJECTION_TIMECODE_SPEC =
+    'startSec/endSec — секунды начала и конца цитаты по меткам [mm:ss] в\n' +
+    '  расшифровке (null, если меток нет); reaction — ПЕРВАЯ реакция менеджера\n' +
+    '  на возражение: answer — ответил по существу, clarify — уточнил вопросом,\n' +
+    '  other — иное или не отреагировал.';
 
 /**
  * Гранулярный «Хвост» — ЗЕРКАЛО анкеты менеджера (поля op_xvost_*): пять
@@ -620,6 +645,7 @@ ${FIVE_K_CHECKLIST_SPEC}
   удалось ли, дословная цитата, категория из справочника. Считай возражением и
   СКРЫТОЕ сопротивление: «у нас уже есть Консультант», «пришлите на почту»,
   «надо посоветоваться» — это возражения, а не информация.
+  ${OBJECTION_TIMECODE_SPEC}
 - competitors — какие конкурирующие системы упомянул клиент (только коды из
   справочника, пустой массив если не упоминал).
 - riskFlags — что должно попасть на стол руководителю: данное клиенту обещание,

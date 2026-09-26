@@ -432,6 +432,18 @@ export const CALL_REPORT_OBJECTION_CODES = [
 ] as const;
 export type CallReportObjectionCode =
     (typeof CALL_REPORT_OBJECTION_CODES)[number];
+
+/**
+ * Первая реакция менеджера на возражение (Фаза 3, П8 — ось стиля
+ * `objection_response`): ответил по существу, уточнил вопросом, иное.
+ */
+export const CALL_REPORT_OBJECTION_REACTIONS = [
+    'answer',
+    'clarify',
+    'other',
+] as const;
+export type CallReportObjectionReaction =
+    (typeof CALL_REPORT_OBJECTION_REACTIONS)[number];
 export const CALL_REPORT_OBJECTION_ITEMS = [
     { CODE: 'price', VALUE: 'Цена', SORT: 100 },
     { CODE: 'timing', VALUE: 'Сроки / не сейчас', SORT: 200 },

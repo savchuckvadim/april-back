@@ -56,6 +56,7 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
             where: { id: BigInt(id) },
             data: {
                 ...transcription,
+                segments: toJsonColumn(transcription.segments),
                 user_result: transcription.user_result
                     ? (JSON.parse(
                           transcription.user_result as string,
@@ -155,6 +156,12 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
         };
         if (input.provider !== undefined) data.provider = input.provider;
         if (input.text !== undefined) data.text = input.text;
+        if (input.segments !== undefined) {
+            data.segments =
+                input.segments === null
+                    ? Prisma.DbNull
+                    : (input.segments as unknown as Prisma.InputJsonValue);
+        }
         if (input.symbolsCount !== undefined) {
             data.symbols_count = input.symbolsCount;
         }
@@ -371,4 +378,12 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
             ],
         };
     }
+}
+
+/** JSON-колонка из значения строки: null → DbNull, undefined — не трогать. */
+function toJsonColumn(
+    value: Prisma.JsonValue | null | undefined,
+): Prisma.InputJsonValue | typeof Prisma.DbNull | undefined {
+    if (value === undefined) return undefined;
+    return value === null ? Prisma.DbNull : (value as Prisma.InputJsonValue);
 }

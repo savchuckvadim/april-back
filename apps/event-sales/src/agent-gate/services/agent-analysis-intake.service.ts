@@ -21,7 +21,10 @@ import {
 } from './agent-analysis-crm-context.loader';
 import { SmartItemWriteResult } from './agent-analysis-intake.types';
 import { AgentAnalysisLinkResolver } from './agent-analysis-link.resolver';
-import { normalizeAgentAnalysis } from './agent-analysis-normalize.util';
+import {
+    clampObjectionTimecodes,
+    normalizeAgentAnalysis,
+} from './agent-analysis-normalize.util';
 import {
     buildAgentAnalysisRecord,
     buildAgentSmartItemInput,
@@ -85,6 +88,14 @@ export class AgentAnalysisIntakeService {
                 `Транскрипция ${transcriptionId} не найдена`,
             );
         }
+
+        // Таймкоды цитат (П6) — только внутри длительности записи.
+        dto = clampObjectionTimecodes(
+            transcriptionId,
+            dto,
+            row.durationSec === null ? null : Number(row.durationSec),
+            this.logger,
+        );
 
         // Идемпотентность: ретрай push-back (потерянный ответ, повтор скилла)
         // не должен плодить дубликаты ais-записей и смарт-элементов.

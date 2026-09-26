@@ -3,13 +3,19 @@ import {
     IsBoolean,
     IsIn,
     IsNotEmpty,
+    IsNumber,
     IsOptional,
     IsString,
+    Min,
 } from 'class-validator';
 import {
     CALL_REPORT_OBJECTION_CODES,
     CallReportObjectionCode,
 } from '@lib/call-lib';
+import {
+    CALL_REPORT_OBJECTION_REACTIONS,
+    type CallReportObjectionReaction,
+} from '@lib/portal-lib/pbx/pbx-aicall-smart';
 
 /**
  * Возражение клиента и его отработка — вынесено из общего файла контракта
@@ -78,4 +84,42 @@ export class AgentObjectionDto {
     @IsString()
     @IsIn(['continued', 'converted', 'disengaged'])
     outcome?: 'continued' | 'converted' | 'disengaged';
+
+    @ApiPropertyOptional({
+        description:
+            'Секунда начала цитаты по расшифровке с таймкодами (Фаза 3, ' +
+            'П6); null — меток в расшифровке не было.',
+        type: Number,
+        nullable: true,
+        example: 134,
+    })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    startSec?: number | null;
+
+    @ApiPropertyOptional({
+        description: 'Секунда конца цитаты; null — меток не было.',
+        type: Number,
+        nullable: true,
+        example: 141,
+    })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    endSec?: number | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Первая реакция менеджера на возражение (ось стиля, П8): ' +
+            'answer — ответил по существу, clarify — уточнил вопросом, ' +
+            'other — иное или не отреагировал.',
+        enum: CALL_REPORT_OBJECTION_REACTIONS,
+        nullable: true,
+        example: 'clarify',
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(CALL_REPORT_OBJECTION_REACTIONS as unknown as string[])
+    reaction?: CallReportObjectionReaction | null;
 }

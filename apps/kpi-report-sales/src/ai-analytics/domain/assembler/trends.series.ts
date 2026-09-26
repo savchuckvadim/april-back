@@ -87,7 +87,7 @@ function bucketScoreOf(
 }
 
 /** Счётчики ребра месяца по коду ребра: доля s / n при n ≥ minN. */
-function edgeRateOf(
+export function edgeRateOf(
     payload: Unknown,
     edge: string,
     minN: number,

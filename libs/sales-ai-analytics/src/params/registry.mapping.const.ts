@@ -168,7 +168,7 @@ export const AI_ANALYTICS_PARAM_MAPPING: Readonly<
     ],
     rate_manager_activity: ['rate_manager_activity', 'overdispersion_default'],
     m_score_pseudo_n: ['m_s_default', 'm_s_max'],
-    sigma_llm: ['sigma_llm_default', 'retest_budget_calls'],
+    sigma_llm: ['sigma_llm_default', 'retest_budget_calls', 'golden_kappa_min'],
     icc_quality: ['icc_quality', 'icc_form'],
     s_ref: ['s_ref'],
     portal_quality_hypothesis: ['portal_quality_hypothesis'],

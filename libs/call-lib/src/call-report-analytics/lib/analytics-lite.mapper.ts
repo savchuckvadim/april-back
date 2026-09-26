@@ -102,5 +102,7 @@ function mapObjections(value: unknown): AnalyticsLiteObjection[] {
         quote: asString(item.quote),
         handled: asBoolean(item.handled),
         outcome: asString(item.outcome),
+        at: asNumber(item.startSec),
+        reaction: asString(item.reaction),
     }));
 }

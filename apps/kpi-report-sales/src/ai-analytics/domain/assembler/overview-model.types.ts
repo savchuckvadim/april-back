@@ -19,6 +19,7 @@ import type {
 import type { DatedLiteRow } from '../loaders/lite-row.mapper';
 import type { ManagerOrg } from '../loaders/manager-org.loader';
 import type { AiPlansResult } from '../loaders/plans.types';
+import type { TrendsView } from '../presenter/trends.presenter';
 import type { PortalModelPayload } from './portal-model.types';
 
 /**
@@ -44,6 +45,11 @@ export interface StyleView {
     confidence?: unknown;
 }
 
+/** Отчёт согласия оценщика (`ai-analytics-golden-report`, П7) глазами витрины. */
+export interface GoldenReportView {
+    sigmaLlm?: unknown;
+}
+
 /** Снапшоты Фазы 2, которые читает витрина обзора. */
 export interface OverviewSnapshots {
     /** Месячная модель портала; null — норм нет. */
@@ -52,6 +58,10 @@ export interface OverviewSnapshots {
     forecasts?: ReadonlyMap<string, ForecastView>;
     /** Профиль стиля по менеджеру. */
     styles?: ReadonlyMap<string, StyleView>;
+    /** Тренды рядов по менеджеру (`ai-analytics-trends`, Фаза 3 П1). */
+    trends?: ReadonlyMap<string, TrendsView>;
+    /** Последний отчёт согласия портала (П7); null — прогона не было. */
+    goldenReport?: GoldenReportView | null;
 }
 
 /** Всё, что нужно presenter'у обзора, собранное loader'ами параллельно. */

@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { AiGoodhartFlagDto } from './ai-goodhart.dto';
 import type {
     ConfidenceLevel,
     TrendDirection,
@@ -130,4 +131,13 @@ export class AiManagerTrendsDto {
         type: [AiTrendSignalDto],
     })
     signals: AiTrendSignalDto[];
+
+    @ApiProperty({
+        description:
+            'Флаги детектора Гудхарта (П9), худший противовес первым; пусто — ' +
+            'расхождений нет; null — окна goodhart_window_months ещё нет.',
+        type: [AiGoodhartFlagDto],
+        nullable: true,
+    })
+    goodhart: AiGoodhartFlagDto[] | null;
 }

@@ -66,8 +66,10 @@ export const AI_DOSSIER_WEEKS_PER_MONTH = 6;
 export const AI_DOSSIER_REASONS = {
     /** Снапшотов этого вида за окно нет. */
     noSnapshots: 'no-snapshots',
-    /** Секцию делает соседний поток, её модуль ещё не подключён сборкой. */
-    sectionNotAvailable: 'section-not-available',
+    /** Снапшота за тот же месяц год назад нет — сравнивать не с чем. */
+    noHistory: 'no-history',
+    /** Снапшот есть, но разборов меньше порога либо доверие рядов none. */
+    tooFewData: 'too-few-data',
     /** Источник секции ответил ошибкой — остальное досье собрано. */
     sectionFailed: 'section-failed',
     /** Сотрудник отказался от профилирования (`ai_analytics_style_opt_out`). */
@@ -82,9 +84,11 @@ export const AI_DOSSIER_REASON_TEXTS: Record<AiDossierReason, string> = {
     [AI_DOSSIER_REASONS.noSnapshots]:
         'За окно досье нет рассчитанных снапшотов этого раздела: ночной ' +
         'конвейер их ещё не сделал',
-    [AI_DOSSIER_REASONS.sectionNotAvailable]:
-        'Раздел собирается отдельной ручкой, которая в этой сборке ещё не ' +
-        'подключена: числа появятся после её включения',
+    [AI_DOSSIER_REASONS.noHistory]:
+        'За тот же месяц год назад снапшота нет: сравнивать пока не с чем',
+    [AI_DOSSIER_REASONS.tooFewData]:
+        'Данных за окно меньше порога, при котором числа можно показывать: ' +
+        'раздел появится, когда разборов накопится больше',
     [AI_DOSSIER_REASONS.sectionFailed]:
         'Источник раздела ответил ошибкой; остальные разделы досье на месте',
     [AI_DOSSIER_REASONS.styleOptOut]:

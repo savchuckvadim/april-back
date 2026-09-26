@@ -1,9 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { YandexAuthService } from '@lib/call-lib/yandex/yandex-auth.service';
+import { wordsToSegments, yandexWordsOf } from '../lib/segments.mapper';
+import type { TranscriptSegment } from '../types/transcript-segment.types';
 
 export interface IYAChanks {
-    alternatives?: { text?: string }[];
+    /** Номер канала записи ('1', '2'); моно — один канал. */
+    channelTag?: string;
+    alternatives?: { text?: string; words?: unknown[] }[];
+}
+
+/** Текст и сегменты с таймкодами из слов Yandex (П6). */
+export interface YandexTranscriptionDetailed {
+    text: string;
+    segments: TranscriptSegment[];
 }
 
 export interface IYAResponse {
@@ -89,6 +99,13 @@ export class StreamingTranscriptionService {
     }
 
     async getTranscriptionResult(operationId: string): Promise<string> {
+        return (await this.getTranscriptionDetailed(operationId)).text;
+    }
+
+    /** Текст и сегменты: слова с временем режутся по паузе и каналу. */
+    async getTranscriptionDetailed(
+        operationId: string,
+    ): Promise<YandexTranscriptionDetailed> {
         try {
             const iamToken = await this.yandexAuthService.getIamToken();
             const maxAttempts = 700;
@@ -144,7 +161,12 @@ export class StreamingTranscriptionService {
                         throw new Error('Empty transcription result');
                     }
 
-                    return transcription;
+                    return {
+                        text: transcription,
+                        segments: wordsToSegments(
+                            yandexWordsOf(data.response.chunks),
+                        ),
+                    };
                 }
 
                 await new Promise(resolve => setTimeout(resolve, delayMs));

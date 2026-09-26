@@ -1,5 +1,6 @@
+import { renderTranscriptWithTimecodes } from '@lib/call-lib/transcription/types/transcript-segment.types';
 import { Process, Processor } from '@nestjs/bull';
-import { Logger } from '@nestjs/common';
+import { Logger, Optional } from '@nestjs/common';
 import { Job } from 'bull';
 import { QueueNames } from '@lib/queue/constants/queue-names.enum';
 import { JobNames } from '@lib/queue/constants/job-names.enum';
@@ -12,6 +13,11 @@ import {
     TranscriptionPipelineView,
 } from '@lib/call-lib';
 import { AgentAnalysisIntakeService } from '../../agent-gate/services/agent-analysis-intake.service';
+import {
+    CallReportRetestUseCase,
+    type CallReportRetestJobData,
+    type CallReportRetestResult,
+} from '../use-cases/call-report-retest.use-case';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 import {
     buildAnalysisVersions,
@@ -89,7 +95,27 @@ export class CallReportProcessor {
         private readonly listLinker: CallReportListLinkService,
         private readonly callTypeRegistry: CallTypeRegistryService,
         private readonly alerts: CallReportAlertService,
+        @Optional() private readonly retest?: CallReportRetestUseCase,
     ) {}
+
+    /**
+     * Test-retest оценщика (Фаза 3 AI-аналитики, П7): повторный разбор
+     * выборки той же версией промпта и отчёт согласия — по ручке админки
+     * golden-set/run. Без провайдера джоба падает с понятной причиной.
+     */
+    @Process(JobNames.CALL_REPORT_RETEST)
+    async handleRetest(
+        job: Job<CallReportRetestJobData>,
+    ): Promise<CallReportRetestResult> {
+        if (!this.retest) {
+            throw new Error(
+                'Срез test-retest не подключён: нет провайдера CallReportRetestUseCase',
+            );
+        }
+        this.logger.log(`CALL_REPORT_RETEST: ${job.data.domain}`);
+
+        return this.retest.execute(job.data);
+    }
 
     /** Имя аналитика в ais-записях и в поле смарта «Имя агента-аналитика». */
     private static readonly ANALYZER_NAME = 'call-report-analyzer';
@@ -226,6 +252,10 @@ export class CallReportProcessor {
                     `история=${passport.history.length}, identity=${passport.identity.length}`,
             );
             const passportBlock = this.contextBuilder.renderForPrompt(passport);
+            // Расшифровка с таймкодами (П6): модель ссылается на метки
+            // [mm:ss] в startSec/endSec цитат; без сегментов — текст.
+            const transcript =
+                renderTranscriptWithTimecodes(row.segments ?? []) || row.text;
             // Режим разбора: focus — три фокус-вызова + синтез (Фаза 2 плана
             // v2, глубже и точнее, ×1.5 вызовов); иначе — цельный разбор.
             const model = settings.deepAnalysisModel ?? undefined;
@@ -236,14 +266,14 @@ export class CallReportProcessor {
             const analysis =
                 (await this.focusAnalysis.run(
                     payload.domain,
-                    row.text,
+                    transcript,
                     callType,
                     passportBlock,
                     { model },
                 )) ??
                 (await this.deepAnalysis.run(
                     payload.domain,
-                    row.text,
+                    transcript,
                     callType,
                     passportBlock,
                     { model },

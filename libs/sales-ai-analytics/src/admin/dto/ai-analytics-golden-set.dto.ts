@@ -3,9 +3,16 @@
  * `POST admin/ai-analytics/golden-set/run` (план Фазы 3, П5 ↔ П7):
  * состав отчётов согласия оценщика и запуск повторного прогона.
  */
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsString } from 'class-validator';
+import {
+    IsInt,
+    IsNotEmpty,
+    IsOptional,
+    IsString,
+    Max,
+    Min,
+} from 'class-validator';
 import type {
     GoldenSetEntry,
     GoldenSetResult,
@@ -39,6 +46,21 @@ export class AiAnalyticsGoldenSetRunDto {
     @IsNotEmpty({ message: 'domain обязателен' })
     @Transform(trimLower)
     domain: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Квота пар test-retest (10..1000); не задана — ' +
+            'retest_budget_calls реестра.',
+        example: 300,
+        type: Number,
+        minimum: 10,
+        maximum: 1000,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(10)
+    @Max(1000)
+    quota?: number;
 }
 
 /** Отчёт согласия в составе набора. */
@@ -140,15 +162,15 @@ export class AiAnalyticsGoldenSetResultDto implements GoldenSetResult {
 
     @ApiProperty({
         description:
-            'Подключён ли запуск повторного прогона. Сейчас false: ' +
-            'прогон живёт в apps/event-sales и подключается потоком П7.',
-        example: false,
+            'Подключён ли запуск повторного прогона (очередь CALL_REPORT ' +
+            'доступна этой сборке).',
+        example: true,
         type: Boolean,
     })
     runAvailable: boolean;
 
     @ApiProperty({
-        description: 'Что делать, если запуск ещё не подключён.',
+        description: 'Как читать состав и что делает запуск.',
         example:
             'Ручка отдаёт состав уже посчитанных отчётов согласия ' +
             '(ai-analytics-golden-report).',
@@ -167,26 +189,33 @@ export class AiAnalyticsGoldenSetRunResultDto implements GoldenSetRunResult {
     domain: string;
 
     @ApiProperty({
-        description: 'Поставлена ли джоба прогона. Сейчас всегда false.',
-        example: false,
+        description: 'Поставлена ли джоба прогона в очередь CALL_REPORT.',
+        example: true,
         type: Boolean,
     })
-    dispatched: false;
+    dispatched: boolean;
 
     @ApiProperty({
-        description: 'Идентификатор джобы; сейчас всегда null.',
+        description:
+            'Идентификатор джобы (один на домен в сутки); null — не поставлена.',
+        example: 'call-report-retest:april.bitrix24.ru:2026-09-25',
+        type: String,
+        nullable: true,
+    })
+    jobId: string | null;
+
+    @ApiProperty({
+        description: 'Почему прогон не запущен; null — запущен.',
         example: null,
         type: String,
         nullable: true,
     })
-    jobId: null;
+    reason: string | null;
 
     @ApiProperty({
-        description: 'Почему прогон не запущен.',
-        example:
-            'Прогон test-retest подключается потоком П7: отбор выборки и ' +
-            'повторный разбор живут в apps/event-sales.',
-        type: String,
+        description: 'Квота пар, с которой уйдёт прогон.',
+        example: 300,
+        type: Number,
     })
-    reason: string;
+    quota: number;
 }

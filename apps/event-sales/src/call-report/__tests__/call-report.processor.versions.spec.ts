@@ -234,24 +234,25 @@ describe('buildRegistryHash / buildAnalysisVersions', () => {
 });
 
 /**
- * ГРАНИЦА СРАВНИМОЙ ИСТОРИИ. Правки промпта 08.09.2026 (свои названия
- * организаций + причина отказа словами клиента) меняют оценки, поэтому
- * ряды до и после смешивать нельзя: comparableFrom обязан сдвинуться.
+ * ГРАНИЦА СРАВНИМОЙ ИСТОРИИ. Правки промпта 25.09.2026 (расшифровка с
+ * метками [mm:ss], таймкоды и реакция у возражений — Фаза 3, П6/П8)
+ * меняют вход и схему ответа модели, поэтому ряды до и после смешивать
+ * нельзя: comparableFrom обязан сдвинуться.
  */
-describe('версия промпта 08.09.2026 (свои названия + причина отказа)', () => {
-    /** Граница до правок — версия промпта focus-v2.1 от 05.09.2026. */
-    const PREVIOUS_BOUNDARY = '2026-09-05';
+describe('версия промпта 25.09.2026 (таймкоды + реакция на возражение)', () => {
+    /** Граница до правок — версия промпта focus-v2.2 от 08.09.2026. */
+    const PREVIOUS_BOUNDARY = '2026-09-08';
 
     it('версия промпта поднята и несёт дату разрыва', () => {
-        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v2.2-2026-09-08');
-        expect(versionDate(CALL_REPORT_PROMPT_VERSION)).toBe('2026-09-08');
+        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v2.3-2026-09-25');
+        expect(versionDate(CALL_REPORT_PROMPT_VERSION)).toBe('2026-09-25');
     });
 
     it('граница сравнимой истории сдвинулась вперёд', () => {
         const boundary = comparableFromVersions(
             buildAnalysisVersions('deadbeef'),
         );
-        expect(boundary).toBe('2026-09-08');
+        expect(boundary).toBe('2026-09-25');
         expect(boundary > PREVIOUS_BOUNDARY).toBe(true);
     });
 });

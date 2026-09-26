@@ -3,6 +3,8 @@ export * from './model/wilson';
 export * from './model/metric';
 export * from './model/xmr';
 export * from './model/workdays.util';
+// Фаза 3, П10: локальный час портала для кронов (тик ежечасный, слот — по поясу).
+export * from './model/local-clock';
 export * from './model/sections.util';
 export * from './model/pulse';
 export * from './model/agenda';
@@ -21,7 +23,12 @@ export * from './model/objections';
 export * from './model/explanation-template';
 export * from './model/attention.types';
 export * from './model/attention.rules';
+export * from './model/attention.rules.phase3';
 export * from './model/attention';
+// Фаза 3, П9: детектор Гудхарта — пары «метрика ↔ противовес» на
+// сглаженных месячных рядах; коды пар и подписи метрик — приложения.
+export * from './model/goodhart.types';
+export * from './model/goodhart';
 
 export * from './contracts/versions.types';
 export * from './contracts/feedback.types';

@@ -129,16 +129,6 @@ export const AI_TREND_REASONS = {
 export type AiTrendReason =
     (typeof AI_TREND_REASONS)[keyof typeof AI_TREND_REASONS];
 
-/**
- * Причины карточки «Внимания» по трендам (план П1: сигналы входят в
- * `POST attention`); сами правила «Внимания» подключает поток, владеющий
- * `model/attention.*` — здесь только коды, чтобы не разошлись.
- */
-export const AI_TREND_ATTENTION_REASONS = {
-    shift: 'trend-shift',
-    drift: 'trend-drift',
-} as const;
-
 /** Сколько сигналов отдаём в строке обзора (старшие — первыми). */
 export const AI_TREND_MAX_SIGNALS = 3;
 

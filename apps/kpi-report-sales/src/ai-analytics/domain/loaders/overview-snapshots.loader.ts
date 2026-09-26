@@ -1,6 +1,7 @@
 /**
  * Снапшоты Фазы 2 для витрины обзора (поток 16b): месячная модель
- * портала, дневные прогнозы менеджеров и месячные профили стиля.
+ * портала, дневные прогнозы менеджеров и месячные профили стиля; с Фазы 3
+ * (П1) — ещё и недельные тренды рядов менеджеров.
  *
  * Загрузчик НЕ инжектируемый: он создаётся поверх уже существующего
  * `AiAnalyticsSnapshotStore` (`new OverviewSnapshotsLoader(store)`), чтобы
@@ -17,11 +18,14 @@ import {
 } from '@lib/sales-ai-analytics';
 import type {
     ForecastView,
+    GoldenReportView,
     OverviewSnapshots,
     PortalModelView,
     StyleView,
 } from '../assembler/overview-model.types';
+import type { TrendsView } from '../presenter/trends.presenter';
 import type { YoyMonthView } from '../presenter/yoy.presenter';
+import { isoWeekKey } from './period.util';
 import {
     AiAnalyticsSnapshotStore,
     type AiAnalyticsSnapshotRecord,
@@ -43,6 +47,11 @@ export const monthKeyOf = (date: string): string => date.slice(0, 7);
  */
 export function yearAgoMonthKey(monthKey: string): string | null {
     return samePeriodKey(monthKey);
+}
+
+/** Ключи ISO-недель, под которыми ищется снапшот трендов: прошлая и текущая. */
+export function trendWeekKeys(day: string): string[] {
+    return [isoWeekKey(shiftDate(day, -7)), isoWeekKey(day)];
 }
 
 /** Предыдущий месяц ключа 'YYYY-MM'. */
@@ -131,13 +140,53 @@ export class OverviewSnapshotsLoader {
      */
     async load(domain: string, to: string): Promise<OverviewSnapshots> {
         const monthKey = monthKeyOf(to);
-        const [model, forecasts, styles] = await Promise.all([
-            this.loadModel(domain, monthKey),
-            this.loadForecasts(domain, to),
-            this.loadStyles(domain, monthKey),
-        ]);
+        const [model, forecasts, styles, trends, goldenReport] =
+            await Promise.all([
+                this.loadModel(domain, monthKey),
+                this.loadForecasts(domain, to),
+                this.loadStyles(domain, monthKey),
+                this.loadTrends(domain, to),
+                this.loadGoldenReport(domain),
+            ]);
 
-        return { model, forecasts, styles };
+        return { model, forecasts, styles, trends, goldenReport };
+    }
+
+    /** Последний отчёт согласия портала (П7): источник σ_llm для готовности. */
+    private async loadGoldenReport(
+        domain: string,
+    ): Promise<GoldenReportView | null> {
+        const record = await this.snapshots.latest(
+            domain,
+            AI_ANALYTICS_SNAPSHOT_TYPE.goldenReport,
+            null,
+        );
+
+        return record === null ? null : (record.payload as GoldenReportView);
+    }
+
+    /**
+     * Тренды менеджеров (Фаза 3, П1): снапшот `ai-analytics-trends` за
+     * ISO-неделю окончания периода либо за предыдущую. Шаг трендов пишет
+     * его раз в неделю по закрытой неделе, поэтому для периода «по
+     * сегодня» свежая запись лежит под ключом прошлой недели; при двух
+     * записях побеждает более поздняя неделя.
+     */
+    private async loadTrends(
+        domain: string,
+        day: string,
+    ): Promise<Map<string, TrendsView>> {
+        const records = await this.snapshots.findByKeys(
+            domain,
+            AI_ANALYTICS_SNAPSHOT_TYPE.trends,
+            { periodKeys: trendWeekKeys(day), latestOnly: true },
+        );
+
+        return byManager<TrendsView>(
+            [...records].sort((left, right) =>
+                left.periodKey.localeCompare(right.periodKey),
+            ),
+        );
     }
 
     /** Модель портала за месяц; нет за месяц — последняя записанная. */

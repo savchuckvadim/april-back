@@ -1,3 +1,4 @@
+import { parseTranscriptSegments } from '../types/transcript-segment.types';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Transcription } from 'generated/prisma';
 import {
@@ -272,6 +273,7 @@ export class TranscriptionStoreService {
             provider: row.provider,
             status: row.status,
             text: row.text,
+            segments: parseTranscriptSegments(row.segments),
             durationSec: row.duration,
             entityType: row.entity_type,
             entityId: row.entity_id,

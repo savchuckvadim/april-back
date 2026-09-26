@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { AI_ANALYTICS_SNAPSHOT_TYPE } from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_CACHE_PREFIX } from '../constants/ai-analytics.const';
 import type { RequesterAccess } from '../domain/access/perimeter.util';
 import type { PortalModelPayload } from '../domain/assembler/portal-model.types';
@@ -12,6 +13,7 @@ import {
     buildAiAnalyticsAbout,
     type AiAboutModelSource,
 } from './ai-analytics-about.builder';
+import type { AiAboutGoldenSource } from './ai-analytics-about-reliability.builder';
 import {
     AI_ABOUT_KEY_SECTION,
     AI_ABOUT_MODEL_REASONS,
@@ -54,9 +56,10 @@ export class AiAnalyticsAboutUseCase {
         dto: AiAboutRequestDto,
         access: RequesterAccess,
     ): Promise<AiAboutResponseDto> {
-        const [params, model] = await Promise.all([
+        const [params, model, goldenReport] = await Promise.all([
             this.params.load(dto.domain),
             this.loadModel(dto.domain),
+            this.loadGoldenReport(dto.domain),
         ]);
         return {
             status: 'ready',
@@ -68,9 +71,33 @@ export class AiAnalyticsAboutUseCase {
                 comparableFrom: params.comparableFrom,
                 model: model.source,
                 ...(model.reason === null ? {} : { modelReason: model.reason }),
+                goldenReport,
                 selfView: access.role === 'manager',
             }),
         };
+    }
+
+    /** Последний отчёт согласия оценщика (П7); нет или ошибка стора — null. */
+    private async loadGoldenReport(
+        domain: string,
+    ): Promise<AiAboutGoldenSource | null> {
+        try {
+            const record = await this.snapshots.latest(
+                domain,
+                AI_ANALYTICS_SNAPSHOT_TYPE.goldenReport,
+                null,
+            );
+
+            return record === null
+                ? null
+                : { payload: record.payload, generatedAt: record.generatedAt };
+        } catch (error) {
+            this.logger.warn(
+                `Отчёт согласия ${domain} для блока «Как считаем» не прочитан: ${String(error)}`,
+            );
+
+            return null;
+        }
     }
 
     /** Последняя модель портала; ошибка стора — null с причиной. */

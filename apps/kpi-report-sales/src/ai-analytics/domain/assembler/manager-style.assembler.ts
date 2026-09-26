@@ -11,10 +11,10 @@
  * разбор звонка даёт оси `inquiry`, `initiative`, `price_position`,
  * `funnel_focus` (единица — звонок), жёсткие счётчики телефонии и CRM —
  * `persistence`, `tempo`, `rhythm` (единицы — лид и рабочий день).
- * Ось `objection_response` ждёт поля `objections[].reaction` из strict-схем
- * (поток S3, Фаза 3) и до него молчит: половина осей «на глазок» была бы
- * хуже честного «данных пока мало» — подпись стиля человек читает как
- * факт о себе.
+ * Ось `objection_response` (единица — возражение) кормится полем
+ * `objections[].reaction` разборов с промпта v2.3 (Фаза 3, П6/П8); у
+ * старых разборов поля нет, и ось для них молчит: половина осей «на
+ * глазок» была бы хуже честного «данных пока мало».
  *
  * Чистые функции: без DI, Bitrix и `new Date()`.
  */
@@ -28,7 +28,7 @@ import {
 } from '@lib/sales-ai-analytics';
 import type { DatedLiteRow } from '../loaders/lite-row.mapper';
 import type { StyleCrmManagerMonth } from '../loaders/style-crm.types';
-import { axesOf, crmStyleRows } from './manager-style.axes';
+import { axesOf, crmStyleRows, objectionStyleRows } from './manager-style.axes';
 import type {
     AiSnapshotMeta,
     ManagerSnapshotRow,
@@ -88,7 +88,7 @@ export function buildStyleRows(
             ? []
             : [{ managerId: row.managerId, axes }];
     });
-    return [...callRows, ...crmStyleRows(crm)];
+    return [...callRows, ...objectionStyleRows(rows), ...crmStyleRows(crm)];
 }
 
 /**

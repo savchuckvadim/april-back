@@ -20,6 +20,10 @@ import {
     AI_ABOUT_MODEL_REASONS,
     type AiAboutEndpoint,
 } from './ai-analytics-about.const';
+import {
+    buildAboutReliability,
+    type AiAboutGoldenSource,
+} from './ai-analytics-about-reliability.builder';
 
 /**
  * Билдер блока «Как считаем» (план Фазы 2 §6, долг 26): реестр параметров
@@ -51,6 +55,8 @@ export interface AiAboutBuildInput {
     readonly modelReason?: string;
     /** Запрос менеджера в self_view (B13); не задан — руководитель. */
     readonly selfView?: boolean;
+    /** Последний отчёт согласия оценщика (П7); нет — секции нет. */
+    readonly goldenReport?: AiAboutGoldenSource | null;
 }
 
 const KLEINMAN_SOURCE = 'kleinman';
@@ -210,6 +216,7 @@ export function buildAiAnalyticsAbout(input: AiAboutBuildInput): AiAboutDto {
             input.model === null
                 ? (input.modelReason ?? AI_ABOUT_MODEL_REASONS.missing)
                 : null,
+        reliability: buildAboutReliability(input.goldenReport, input.registry),
         selfView: input.selfView === true,
     };
 }

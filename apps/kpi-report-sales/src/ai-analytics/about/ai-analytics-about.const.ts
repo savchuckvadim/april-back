@@ -109,6 +109,7 @@ export interface AiAboutEndpointText {
  * доверия (`AI_ANALYTICS_THRESHOLDS`), XmR, гейт совета, сцепка.
  */
 const SHARED_PARAMS = [
+    'golden_kappa_min',
     'min_duration_sec',
     'min_duration_sec_by_type',
     'n_min_none',
@@ -161,6 +162,7 @@ export const AI_ABOUT_ENDPOINT_TEXTS: Readonly<
             'ребро воронки: своя доля, норма портала и вес данных w ∈ [0; 1]',
             'разрыв к норме меньше практического порога — направления нет',
             'режим готовности с причинами — в баннере; без модели портала не выше descriptive',
+            'карточка goodhart во «Внимании»: за goodhart_window_months сглаженное давление (объём, оценка, доля ребра) выросло, а противовес упал не меньше goodhart_drop — «метрика растёт, результат — нет»',
         ],
         notDoing: [
             'не ставит менеджерам рейтинг и не сравнивает людей по стилю',
@@ -173,6 +175,8 @@ export const AI_ABOUT_ENDPOINT_TEXTS: Readonly<
             'calibration_min_months',
             'calibration_min_presentations',
             'roster_confirm_required',
+            'goodhart_window_months',
+            'goodhart_drop',
         ],
     },
     'plan/daily': {
@@ -266,19 +270,21 @@ export const AI_ABOUT_ENDPOINT_TEXTS: Readonly<
         sources: [
             'снапшоты менеджера за окно: недели и месяцы',
             'снапшот стиля и настройка отказа сотрудника от профиля',
+            'снапшот трендов за последнюю неделю окна',
+            'снимок целей руководителя за последний месяц окна и месяц год назад (M−12)',
             'модель портала последнего месяца окна (готовность)',
             'записи обратной связи и метки руководителя',
         ],
         howToRead: [
             'раздел пуст — он не собрался; код и подпись причины лежат в reasons',
-            'разделы соседних ручек приходят из них же, досье их только собирает',
+            'разделы соседних ручек считаются их же презентерами на тех же снапшотах: тренды — как в строке обзора, план-факт — как в ручке plan-fact (те же plan_day_ceiling и delta_prac_pct), год назад — как блок yoy обзора',
             'окно с текущим месяцем живёт в кэше 10 минут, окно закрытых месяцев — 30 дней',
         ],
         notDoing: [
             'не считает ничего сам: только читает снапшоты и записи, в Битрикс не ходит',
             'не сравнивает людей между собой и не ставит рейтинг',
         ],
-        params: [...SHARED_PARAMS],
+        params: [...SHARED_PARAMS, 'plan_day_ceiling', 'delta_prac_pct'],
     },
     'manager/style': {
         endpoint: 'manager/style',

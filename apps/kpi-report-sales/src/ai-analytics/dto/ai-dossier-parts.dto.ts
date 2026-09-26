@@ -24,10 +24,12 @@ export class AiDossierReasonDto {
 
     @ApiProperty({
         description:
-            'Код причины: no-snapshots, section-not-available, ' +
-            'section-failed, style-opt-out.',
+            'Код причины: no-snapshots — снапшотов раздела за окно нет; ' +
+            'no-history — месяца год назад нет; too-few-data — данных ' +
+            'меньше порога показа; section-failed — источник ответил ' +
+            'ошибкой; style-opt-out — сотрудник отказался от профиля.',
         type: String,
-        example: 'section-not-available',
+        example: 'no-history',
     })
     reason: string;
 

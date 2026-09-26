@@ -1,3 +1,4 @@
+import { CallReportRetestUseCase } from './use-cases/call-report-retest.use-case';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PBXModule } from '@lib/pbx/pbx.module';
@@ -102,6 +103,8 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         CallComplianceReviewService,
         CallReportAnalyzeUseCase,
         CallReportPipelineUseCase,
+        // Test-retest оценщика (Фаза 3 AI-аналитики, П7): джоба CALL_REPORT_RETEST
+        CallReportRetestUseCase,
         CallReportScanUseCase,
         CallReportProcessor,
         CallReportDomainRosterService,
