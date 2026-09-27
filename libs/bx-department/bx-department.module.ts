@@ -15,6 +15,8 @@ import { BxDepartmentCacheController } from './controllers/bx-department-cache.c
 import { BxDepartmentCacheService } from './services/bx-department-cache.service';
 import { BxDepartmentHeadsService } from './services/bx-department-heads.service';
 import { BxSuperUserService } from './services/bx-super-user.service';
+import { VendorSuperUserRepository } from './repositories/vendor-super-user.repository';
+import { VendorSuperUserPrismaRepository } from './repositories/vendor-super-user.prisma.repository';
 
 @Module({
     imports: [PBXModule, RedisModule, BitrixV3Module, PortalAppSettingsModule],
@@ -26,8 +28,12 @@ import { BxSuperUserService } from './services/bx-super-user.service';
         BxDepartmentCacheController,
     ],
     providers: [
-        // ConfigService — из глобального ConfigModule приложения-хоста
-        // (kpi-report-sales, pbx, event-sales: isGlobal: true).
+        // Суперпользователи вендора живут в БД (vendor_super_users), пишет
+        // их админка April. Раньше список приходил из env BX_SUPER_USER_IDS.
+        {
+            provide: VendorSuperUserRepository,
+            useClass: VendorSuperUserPrismaRepository,
+        },
         BxSuperUserService,
         BxDepartmentHeadsService,
         BxDepartmentService,
@@ -38,6 +44,7 @@ import { BxSuperUserService } from './services/bx-super-user.service';
     ],
     exports: [
         BxSuperUserService,
+        VendorSuperUserRepository,
         BxDepartmentHeadsService,
         BxDepartmentService,
         BxTeamService,

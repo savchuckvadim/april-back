@@ -122,7 +122,7 @@ export class RequesterAccessService {
         requesterUserId: string,
     ): Promise<RequesterAccess> {
         const self = String(Number(requesterUserId));
-        if (this.superUsers?.isSuperUser(domain, Number(requesterUserId))) {
+        if (await this.superUsers?.isSuperUser(domain, Number(requesterUserId))) {
             return { role: 'cup', visibleManagerIds: null, isSuperUser: true };
         }
         try {

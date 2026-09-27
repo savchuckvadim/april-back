@@ -40,7 +40,7 @@ type BitrixInstance = PbxInitResult['bitrix'];
  * В мультирежиме находит все ОП по всей структуре портала,
  * мерджит их в прежний формат ответа и отдаёт разбивку по ОП,
  * плюс роль текущего пользователя и его коллег (суперпользователь
- * вендора из BX_SUPER_USER_IDS получает видимость all).
+ * вендора, заведённый в админке, получает видимость all).
  */
 @Injectable()
 export class BxDepartmentStructureService {
@@ -86,7 +86,10 @@ export class BxDepartmentStructureService {
         const forced = await this.resolveForcedVisibility(domain, group);
         const currentUser = buildCurrentUser(structure, userId, {
             forced,
-            isSuperUser: this.superUsers.isSuperUser(domain, Number(userId)),
+            isSuperUser: await this.superUsers.isSuperUser(
+                domain,
+                Number(userId),
+            ),
         });
         return {
             isMultiple,

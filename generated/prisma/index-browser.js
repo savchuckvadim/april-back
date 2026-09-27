@@ -649,6 +649,17 @@ exports.Prisma.PortalAppSettingsScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.VendorSuperUserScalarFieldEnum = {
+  id: 'id',
+  portal_id: 'portal_id',
+  domain: 'domain',
+  bitrixId: 'bitrixId',
+  comment: 'comment',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.PortalQuestionnaireScalarFieldEnum = {
   id: 'id',
   portal_id: 'portal_id',
@@ -2138,6 +2149,12 @@ exports.Prisma.PortalAppSettingsOrderByRelevanceFieldEnum = {
   appCode: 'appCode'
 };
 
+exports.Prisma.VendorSuperUserOrderByRelevanceFieldEnum = {
+  id: 'id',
+  domain: 'domain',
+  comment: 'comment'
+};
+
 exports.Prisma.PortalQuestionnaireOrderByRelevanceFieldEnum = {
   id: 'id',
   domain: 'domain',
@@ -2928,6 +2945,7 @@ exports.Prisma.ModelName = {
   Portal: 'Portal',
   PortalAiSettings: 'PortalAiSettings',
   PortalAppSettings: 'PortalAppSettings',
+  VendorSuperUser: 'VendorSuperUser',
   PortalQuestionnaire: 'PortalQuestionnaire',
   PortalQuestionnaireItem: 'PortalQuestionnaireItem',
   PortalQuestionnaireItemOption: 'PortalQuestionnaireItemOption',

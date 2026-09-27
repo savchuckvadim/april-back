@@ -202,6 +202,24 @@ export type PortalAiSettings = $Result.DefaultSelection<Prisma.$PortalAiSettings
  */
 export type PortalAppSettings = $Result.DefaultSelection<Prisma.$PortalAppSettingsPayload>
 /**
+ * Model VendorSuperUser
+ * Суперпользователи ВЕНДОРА (сотрудники April) на порталах клиентов.
+ * Единственный источник правды — раньше список задавался env
+ * `BX_SUPER_USER_IDS` (`domain:id`), переменная снята.
+ * 
+ * Отдельная таблица, а не ключ в PortalAppSettings, сознательно: там
+ * настройки, которыми владеет КЛИЕНТ, а этими записями распоряжается только
+ * April — владелец портала не должен управлять доступом вендора к своему
+ * порталу. Не путать с `visibility_all_user_ids` (app_code sales): тот
+ * поднимает сотрудника клиента внутри структуры продаж.
+ * 
+ * Что даёт признак: видимость all (headOfSource = superuser), «Смотреть
+ * как…», служебные ссылки. Метки слепой калибровки РОПов не ставит.
+ * Читает Nest (BxSuperUserService), пишет админка (apps/admin).
+ * `domain` — дубль домена портала для поиска без join.
+ */
+export type VendorSuperUser = $Result.DefaultSelection<Prisma.$VendorSuperUserPayload>
+/**
  * Model PortalQuestionnaire
  * Портальный каталог АНКЕТ: сама анкета (чек-лист) placement-приложения —
  * назначение, где и как показываем, условия показа. Состав вопросов живёт
@@ -1180,6 +1198,16 @@ export class PrismaClient<
     * ```
     */
   get portalAppSettings(): Prisma.PortalAppSettingsDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.vendorSuperUser`: Exposes CRUD operations for the **VendorSuperUser** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more VendorSuperUsers
+    * const vendorSuperUsers = await prisma.vendorSuperUser.findMany()
+    * ```
+    */
+  get vendorSuperUser(): Prisma.VendorSuperUserDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.portalQuestionnaire`: Exposes CRUD operations for the **PortalQuestionnaire** model.
@@ -2296,6 +2324,7 @@ export namespace Prisma {
     Portal: 'Portal',
     PortalAiSettings: 'PortalAiSettings',
     PortalAppSettings: 'PortalAppSettings',
+    VendorSuperUser: 'VendorSuperUser',
     PortalQuestionnaire: 'PortalQuestionnaire',
     PortalQuestionnaireItem: 'PortalQuestionnaireItem',
     PortalQuestionnaireItemOption: 'PortalQuestionnaireItemOption',
@@ -2378,7 +2407,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalAiSettings" | "portalAppSettings" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink" | "contractTemplate" | "supplyReportTemplate"
+      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalAiSettings" | "portalAppSettings" | "vendorSuperUser" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink" | "contractTemplate" | "supplyReportTemplate"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -4755,6 +4784,72 @@ export namespace Prisma {
           count: {
             args: Prisma.PortalAppSettingsCountArgs<ExtArgs>
             result: $Utils.Optional<PortalAppSettingsCountAggregateOutputType> | number
+          }
+        }
+      }
+      VendorSuperUser: {
+        payload: Prisma.$VendorSuperUserPayload<ExtArgs>
+        fields: Prisma.VendorSuperUserFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.VendorSuperUserFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VendorSuperUserPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.VendorSuperUserFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VendorSuperUserPayload>
+          }
+          findFirst: {
+            args: Prisma.VendorSuperUserFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VendorSuperUserPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.VendorSuperUserFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VendorSuperUserPayload>
+          }
+          findMany: {
+            args: Prisma.VendorSuperUserFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VendorSuperUserPayload>[]
+          }
+          create: {
+            args: Prisma.VendorSuperUserCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VendorSuperUserPayload>
+          }
+          createMany: {
+            args: Prisma.VendorSuperUserCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.VendorSuperUserDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VendorSuperUserPayload>
+          }
+          update: {
+            args: Prisma.VendorSuperUserUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VendorSuperUserPayload>
+          }
+          deleteMany: {
+            args: Prisma.VendorSuperUserDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.VendorSuperUserUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.VendorSuperUserUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VendorSuperUserPayload>
+          }
+          aggregate: {
+            args: Prisma.VendorSuperUserAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateVendorSuperUser>
+          }
+          groupBy: {
+            args: Prisma.VendorSuperUserGroupByArgs<ExtArgs>
+            result: $Utils.Optional<VendorSuperUserGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.VendorSuperUserCountArgs<ExtArgs>
+            result: $Utils.Optional<VendorSuperUserCountAggregateOutputType> | number
           }
         }
       }
@@ -9114,6 +9209,7 @@ export namespace Prisma {
     portal?: PortalOmit
     portalAiSettings?: PortalAiSettingsOmit
     portalAppSettings?: PortalAppSettingsOmit
+    vendorSuperUser?: VendorSuperUserOmit
     portalQuestionnaire?: PortalQuestionnaireOmit
     portalQuestionnaireItem?: PortalQuestionnaireItemOmit
     portalQuestionnaireItemOption?: PortalQuestionnaireItemOptionOmit
@@ -9802,6 +9898,7 @@ export namespace Prisma {
     skapImportRuns: number
     questionnaires: number
     questionnaireItems: number
+    vendorSuperUsers: number
   }
 
   export type PortalCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -9842,6 +9939,7 @@ export namespace Prisma {
     skapImportRuns?: boolean | PortalCountOutputTypeCountSkapImportRunsArgs
     questionnaires?: boolean | PortalCountOutputTypeCountQuestionnairesArgs
     questionnaireItems?: boolean | PortalCountOutputTypeCountQuestionnaireItemsArgs
+    vendorSuperUsers?: boolean | PortalCountOutputTypeCountVendorSuperUsersArgs
   }
 
   // Custom InputTypes
@@ -10112,6 +10210,13 @@ export namespace Prisma {
    */
   export type PortalCountOutputTypeCountQuestionnaireItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: PortalQuestionnaireItemWhereInput
+  }
+
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountVendorSuperUsersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VendorSuperUserWhereInput
   }
 
 
@@ -45736,6 +45841,7 @@ export namespace Prisma {
     skapImportRuns?: boolean | Portal$skapImportRunsArgs<ExtArgs>
     questionnaires?: boolean | Portal$questionnairesArgs<ExtArgs>
     questionnaireItems?: boolean | Portal$questionnaireItemsArgs<ExtArgs>
+    vendorSuperUsers?: boolean | Portal$vendorSuperUsersArgs<ExtArgs>
     _count?: boolean | PortalCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["portal"]>
 
@@ -45811,6 +45917,7 @@ export namespace Prisma {
     skapImportRuns?: boolean | Portal$skapImportRunsArgs<ExtArgs>
     questionnaires?: boolean | Portal$questionnairesArgs<ExtArgs>
     questionnaireItems?: boolean | Portal$questionnaireItemsArgs<ExtArgs>
+    vendorSuperUsers?: boolean | Portal$vendorSuperUsersArgs<ExtArgs>
     _count?: boolean | PortalCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -45856,6 +45963,7 @@ export namespace Prisma {
       skapImportRuns: Prisma.$SkapImportRunPayload<ExtArgs>[]
       questionnaires: Prisma.$PortalQuestionnairePayload<ExtArgs>[]
       questionnaireItems: Prisma.$PortalQuestionnaireItemPayload<ExtArgs>[]
+      vendorSuperUsers: Prisma.$VendorSuperUserPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
@@ -46263,6 +46371,7 @@ export namespace Prisma {
     skapImportRuns<T extends Portal$skapImportRunsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$skapImportRunsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapImportRunPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     questionnaires<T extends Portal$questionnairesArgs<ExtArgs> = {}>(args?: Subset<T, Portal$questionnairesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalQuestionnairePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     questionnaireItems<T extends Portal$questionnaireItemsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$questionnaireItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalQuestionnaireItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    vendorSuperUsers<T extends Portal$vendorSuperUsersArgs<ExtArgs> = {}>(args?: Subset<T, Portal$vendorSuperUsersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VendorSuperUserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -47584,6 +47693,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: PortalQuestionnaireItemScalarFieldEnum | PortalQuestionnaireItemScalarFieldEnum[]
+  }
+
+  /**
+   * Portal.vendorSuperUsers
+   */
+  export type Portal$vendorSuperUsersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VendorSuperUser
+     */
+    select?: VendorSuperUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VendorSuperUser
+     */
+    omit?: VendorSuperUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VendorSuperUserInclude<ExtArgs> | null
+    where?: VendorSuperUserWhereInput
+    orderBy?: VendorSuperUserOrderByWithRelationInput | VendorSuperUserOrderByWithRelationInput[]
+    cursor?: VendorSuperUserWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: VendorSuperUserScalarFieldEnum | VendorSuperUserScalarFieldEnum[]
   }
 
   /**
@@ -49774,6 +49907,1015 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: PortalAppSettingsInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model VendorSuperUser
+   */
+
+  export type AggregateVendorSuperUser = {
+    _count: VendorSuperUserCountAggregateOutputType | null
+    _avg: VendorSuperUserAvgAggregateOutputType | null
+    _sum: VendorSuperUserSumAggregateOutputType | null
+    _min: VendorSuperUserMinAggregateOutputType | null
+    _max: VendorSuperUserMaxAggregateOutputType | null
+  }
+
+  export type VendorSuperUserAvgAggregateOutputType = {
+    portal_id: number | null
+    bitrixId: number | null
+  }
+
+  export type VendorSuperUserSumAggregateOutputType = {
+    portal_id: bigint | null
+    bitrixId: number | null
+  }
+
+  export type VendorSuperUserMinAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    bitrixId: number | null
+    comment: string | null
+    isActive: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type VendorSuperUserMaxAggregateOutputType = {
+    id: string | null
+    portal_id: bigint | null
+    domain: string | null
+    bitrixId: number | null
+    comment: string | null
+    isActive: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type VendorSuperUserCountAggregateOutputType = {
+    id: number
+    portal_id: number
+    domain: number
+    bitrixId: number
+    comment: number
+    isActive: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type VendorSuperUserAvgAggregateInputType = {
+    portal_id?: true
+    bitrixId?: true
+  }
+
+  export type VendorSuperUserSumAggregateInputType = {
+    portal_id?: true
+    bitrixId?: true
+  }
+
+  export type VendorSuperUserMinAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    bitrixId?: true
+    comment?: true
+    isActive?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type VendorSuperUserMaxAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    bitrixId?: true
+    comment?: true
+    isActive?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type VendorSuperUserCountAggregateInputType = {
+    id?: true
+    portal_id?: true
+    domain?: true
+    bitrixId?: true
+    comment?: true
+    isActive?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type VendorSuperUserAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VendorSuperUser to aggregate.
+     */
+    where?: VendorSuperUserWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VendorSuperUsers to fetch.
+     */
+    orderBy?: VendorSuperUserOrderByWithRelationInput | VendorSuperUserOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: VendorSuperUserWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VendorSuperUsers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VendorSuperUsers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned VendorSuperUsers
+    **/
+    _count?: true | VendorSuperUserCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: VendorSuperUserAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: VendorSuperUserSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: VendorSuperUserMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: VendorSuperUserMaxAggregateInputType
+  }
+
+  export type GetVendorSuperUserAggregateType<T extends VendorSuperUserAggregateArgs> = {
+        [P in keyof T & keyof AggregateVendorSuperUser]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateVendorSuperUser[P]>
+      : GetScalarType<T[P], AggregateVendorSuperUser[P]>
+  }
+
+
+
+
+  export type VendorSuperUserGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VendorSuperUserWhereInput
+    orderBy?: VendorSuperUserOrderByWithAggregationInput | VendorSuperUserOrderByWithAggregationInput[]
+    by: VendorSuperUserScalarFieldEnum[] | VendorSuperUserScalarFieldEnum
+    having?: VendorSuperUserScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: VendorSuperUserCountAggregateInputType | true
+    _avg?: VendorSuperUserAvgAggregateInputType
+    _sum?: VendorSuperUserSumAggregateInputType
+    _min?: VendorSuperUserMinAggregateInputType
+    _max?: VendorSuperUserMaxAggregateInputType
+  }
+
+  export type VendorSuperUserGroupByOutputType = {
+    id: string
+    portal_id: bigint
+    domain: string
+    bitrixId: number
+    comment: string | null
+    isActive: boolean
+    createdAt: Date | null
+    updatedAt: Date | null
+    _count: VendorSuperUserCountAggregateOutputType | null
+    _avg: VendorSuperUserAvgAggregateOutputType | null
+    _sum: VendorSuperUserSumAggregateOutputType | null
+    _min: VendorSuperUserMinAggregateOutputType | null
+    _max: VendorSuperUserMaxAggregateOutputType | null
+  }
+
+  type GetVendorSuperUserGroupByPayload<T extends VendorSuperUserGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<VendorSuperUserGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof VendorSuperUserGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], VendorSuperUserGroupByOutputType[P]>
+            : GetScalarType<T[P], VendorSuperUserGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type VendorSuperUserSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    bitrixId?: boolean
+    comment?: boolean
+    isActive?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["vendorSuperUser"]>
+
+
+
+  export type VendorSuperUserSelectScalar = {
+    id?: boolean
+    portal_id?: boolean
+    domain?: boolean
+    bitrixId?: boolean
+    comment?: boolean
+    isActive?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type VendorSuperUserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "portal_id" | "domain" | "bitrixId" | "comment" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["vendorSuperUser"]>
+  export type VendorSuperUserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+  }
+
+  export type $VendorSuperUserPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "VendorSuperUser"
+    objects: {
+      portal: Prisma.$PortalPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      portal_id: bigint
+      domain: string
+      /**
+       * Bitrix-id сотрудника April на этом портале.
+       */
+      bitrixId: number
+      /**
+       * Кто это — для людей в админке («Иванов, внедрение»).
+       */
+      comment: string | null
+      /**
+       * Снять доступ, не теряя запись.
+       */
+      isActive: boolean
+      createdAt: Date | null
+      updatedAt: Date | null
+    }, ExtArgs["result"]["vendorSuperUser"]>
+    composites: {}
+  }
+
+  type VendorSuperUserGetPayload<S extends boolean | null | undefined | VendorSuperUserDefaultArgs> = $Result.GetResult<Prisma.$VendorSuperUserPayload, S>
+
+  type VendorSuperUserCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<VendorSuperUserFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: VendorSuperUserCountAggregateInputType | true
+    }
+
+  export interface VendorSuperUserDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['VendorSuperUser'], meta: { name: 'VendorSuperUser' } }
+    /**
+     * Find zero or one VendorSuperUser that matches the filter.
+     * @param {VendorSuperUserFindUniqueArgs} args - Arguments to find a VendorSuperUser
+     * @example
+     * // Get one VendorSuperUser
+     * const vendorSuperUser = await prisma.vendorSuperUser.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends VendorSuperUserFindUniqueArgs>(args: SelectSubset<T, VendorSuperUserFindUniqueArgs<ExtArgs>>): Prisma__VendorSuperUserClient<$Result.GetResult<Prisma.$VendorSuperUserPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one VendorSuperUser that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {VendorSuperUserFindUniqueOrThrowArgs} args - Arguments to find a VendorSuperUser
+     * @example
+     * // Get one VendorSuperUser
+     * const vendorSuperUser = await prisma.vendorSuperUser.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends VendorSuperUserFindUniqueOrThrowArgs>(args: SelectSubset<T, VendorSuperUserFindUniqueOrThrowArgs<ExtArgs>>): Prisma__VendorSuperUserClient<$Result.GetResult<Prisma.$VendorSuperUserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first VendorSuperUser that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VendorSuperUserFindFirstArgs} args - Arguments to find a VendorSuperUser
+     * @example
+     * // Get one VendorSuperUser
+     * const vendorSuperUser = await prisma.vendorSuperUser.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends VendorSuperUserFindFirstArgs>(args?: SelectSubset<T, VendorSuperUserFindFirstArgs<ExtArgs>>): Prisma__VendorSuperUserClient<$Result.GetResult<Prisma.$VendorSuperUserPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first VendorSuperUser that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VendorSuperUserFindFirstOrThrowArgs} args - Arguments to find a VendorSuperUser
+     * @example
+     * // Get one VendorSuperUser
+     * const vendorSuperUser = await prisma.vendorSuperUser.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends VendorSuperUserFindFirstOrThrowArgs>(args?: SelectSubset<T, VendorSuperUserFindFirstOrThrowArgs<ExtArgs>>): Prisma__VendorSuperUserClient<$Result.GetResult<Prisma.$VendorSuperUserPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more VendorSuperUsers that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VendorSuperUserFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all VendorSuperUsers
+     * const vendorSuperUsers = await prisma.vendorSuperUser.findMany()
+     * 
+     * // Get first 10 VendorSuperUsers
+     * const vendorSuperUsers = await prisma.vendorSuperUser.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const vendorSuperUserWithIdOnly = await prisma.vendorSuperUser.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends VendorSuperUserFindManyArgs>(args?: SelectSubset<T, VendorSuperUserFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VendorSuperUserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a VendorSuperUser.
+     * @param {VendorSuperUserCreateArgs} args - Arguments to create a VendorSuperUser.
+     * @example
+     * // Create one VendorSuperUser
+     * const VendorSuperUser = await prisma.vendorSuperUser.create({
+     *   data: {
+     *     // ... data to create a VendorSuperUser
+     *   }
+     * })
+     * 
+     */
+    create<T extends VendorSuperUserCreateArgs>(args: SelectSubset<T, VendorSuperUserCreateArgs<ExtArgs>>): Prisma__VendorSuperUserClient<$Result.GetResult<Prisma.$VendorSuperUserPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many VendorSuperUsers.
+     * @param {VendorSuperUserCreateManyArgs} args - Arguments to create many VendorSuperUsers.
+     * @example
+     * // Create many VendorSuperUsers
+     * const vendorSuperUser = await prisma.vendorSuperUser.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends VendorSuperUserCreateManyArgs>(args?: SelectSubset<T, VendorSuperUserCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a VendorSuperUser.
+     * @param {VendorSuperUserDeleteArgs} args - Arguments to delete one VendorSuperUser.
+     * @example
+     * // Delete one VendorSuperUser
+     * const VendorSuperUser = await prisma.vendorSuperUser.delete({
+     *   where: {
+     *     // ... filter to delete one VendorSuperUser
+     *   }
+     * })
+     * 
+     */
+    delete<T extends VendorSuperUserDeleteArgs>(args: SelectSubset<T, VendorSuperUserDeleteArgs<ExtArgs>>): Prisma__VendorSuperUserClient<$Result.GetResult<Prisma.$VendorSuperUserPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one VendorSuperUser.
+     * @param {VendorSuperUserUpdateArgs} args - Arguments to update one VendorSuperUser.
+     * @example
+     * // Update one VendorSuperUser
+     * const vendorSuperUser = await prisma.vendorSuperUser.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends VendorSuperUserUpdateArgs>(args: SelectSubset<T, VendorSuperUserUpdateArgs<ExtArgs>>): Prisma__VendorSuperUserClient<$Result.GetResult<Prisma.$VendorSuperUserPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more VendorSuperUsers.
+     * @param {VendorSuperUserDeleteManyArgs} args - Arguments to filter VendorSuperUsers to delete.
+     * @example
+     * // Delete a few VendorSuperUsers
+     * const { count } = await prisma.vendorSuperUser.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends VendorSuperUserDeleteManyArgs>(args?: SelectSubset<T, VendorSuperUserDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more VendorSuperUsers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VendorSuperUserUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many VendorSuperUsers
+     * const vendorSuperUser = await prisma.vendorSuperUser.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends VendorSuperUserUpdateManyArgs>(args: SelectSubset<T, VendorSuperUserUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one VendorSuperUser.
+     * @param {VendorSuperUserUpsertArgs} args - Arguments to update or create a VendorSuperUser.
+     * @example
+     * // Update or create a VendorSuperUser
+     * const vendorSuperUser = await prisma.vendorSuperUser.upsert({
+     *   create: {
+     *     // ... data to create a VendorSuperUser
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the VendorSuperUser we want to update
+     *   }
+     * })
+     */
+    upsert<T extends VendorSuperUserUpsertArgs>(args: SelectSubset<T, VendorSuperUserUpsertArgs<ExtArgs>>): Prisma__VendorSuperUserClient<$Result.GetResult<Prisma.$VendorSuperUserPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of VendorSuperUsers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VendorSuperUserCountArgs} args - Arguments to filter VendorSuperUsers to count.
+     * @example
+     * // Count the number of VendorSuperUsers
+     * const count = await prisma.vendorSuperUser.count({
+     *   where: {
+     *     // ... the filter for the VendorSuperUsers we want to count
+     *   }
+     * })
+    **/
+    count<T extends VendorSuperUserCountArgs>(
+      args?: Subset<T, VendorSuperUserCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], VendorSuperUserCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a VendorSuperUser.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VendorSuperUserAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends VendorSuperUserAggregateArgs>(args: Subset<T, VendorSuperUserAggregateArgs>): Prisma.PrismaPromise<GetVendorSuperUserAggregateType<T>>
+
+    /**
+     * Group by VendorSuperUser.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VendorSuperUserGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends VendorSuperUserGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: VendorSuperUserGroupByArgs['orderBy'] }
+        : { orderBy?: VendorSuperUserGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, VendorSuperUserGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetVendorSuperUserGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the VendorSuperUser model
+   */
+  readonly fields: VendorSuperUserFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for VendorSuperUser.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__VendorSuperUserClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    portal<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the VendorSuperUser model
+   */
+  interface VendorSuperUserFieldRefs {
+    readonly id: FieldRef<"VendorSuperUser", 'String'>
+    readonly portal_id: FieldRef<"VendorSuperUser", 'BigInt'>
+    readonly domain: FieldRef<"VendorSuperUser", 'String'>
+    readonly bitrixId: FieldRef<"VendorSuperUser", 'Int'>
+    readonly comment: FieldRef<"VendorSuperUser", 'String'>
+    readonly isActive: FieldRef<"VendorSuperUser", 'Boolean'>
+    readonly createdAt: FieldRef<"VendorSuperUser", 'DateTime'>
+    readonly updatedAt: FieldRef<"VendorSuperUser", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * VendorSuperUser findUnique
+   */
+  export type VendorSuperUserFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VendorSuperUser
+     */
+    select?: VendorSuperUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VendorSuperUser
+     */
+    omit?: VendorSuperUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VendorSuperUserInclude<ExtArgs> | null
+    /**
+     * Filter, which VendorSuperUser to fetch.
+     */
+    where: VendorSuperUserWhereUniqueInput
+  }
+
+  /**
+   * VendorSuperUser findUniqueOrThrow
+   */
+  export type VendorSuperUserFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VendorSuperUser
+     */
+    select?: VendorSuperUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VendorSuperUser
+     */
+    omit?: VendorSuperUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VendorSuperUserInclude<ExtArgs> | null
+    /**
+     * Filter, which VendorSuperUser to fetch.
+     */
+    where: VendorSuperUserWhereUniqueInput
+  }
+
+  /**
+   * VendorSuperUser findFirst
+   */
+  export type VendorSuperUserFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VendorSuperUser
+     */
+    select?: VendorSuperUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VendorSuperUser
+     */
+    omit?: VendorSuperUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VendorSuperUserInclude<ExtArgs> | null
+    /**
+     * Filter, which VendorSuperUser to fetch.
+     */
+    where?: VendorSuperUserWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VendorSuperUsers to fetch.
+     */
+    orderBy?: VendorSuperUserOrderByWithRelationInput | VendorSuperUserOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VendorSuperUsers.
+     */
+    cursor?: VendorSuperUserWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VendorSuperUsers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VendorSuperUsers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VendorSuperUsers.
+     */
+    distinct?: VendorSuperUserScalarFieldEnum | VendorSuperUserScalarFieldEnum[]
+  }
+
+  /**
+   * VendorSuperUser findFirstOrThrow
+   */
+  export type VendorSuperUserFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VendorSuperUser
+     */
+    select?: VendorSuperUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VendorSuperUser
+     */
+    omit?: VendorSuperUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VendorSuperUserInclude<ExtArgs> | null
+    /**
+     * Filter, which VendorSuperUser to fetch.
+     */
+    where?: VendorSuperUserWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VendorSuperUsers to fetch.
+     */
+    orderBy?: VendorSuperUserOrderByWithRelationInput | VendorSuperUserOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VendorSuperUsers.
+     */
+    cursor?: VendorSuperUserWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VendorSuperUsers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VendorSuperUsers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VendorSuperUsers.
+     */
+    distinct?: VendorSuperUserScalarFieldEnum | VendorSuperUserScalarFieldEnum[]
+  }
+
+  /**
+   * VendorSuperUser findMany
+   */
+  export type VendorSuperUserFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VendorSuperUser
+     */
+    select?: VendorSuperUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VendorSuperUser
+     */
+    omit?: VendorSuperUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VendorSuperUserInclude<ExtArgs> | null
+    /**
+     * Filter, which VendorSuperUsers to fetch.
+     */
+    where?: VendorSuperUserWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VendorSuperUsers to fetch.
+     */
+    orderBy?: VendorSuperUserOrderByWithRelationInput | VendorSuperUserOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing VendorSuperUsers.
+     */
+    cursor?: VendorSuperUserWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VendorSuperUsers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VendorSuperUsers.
+     */
+    skip?: number
+    distinct?: VendorSuperUserScalarFieldEnum | VendorSuperUserScalarFieldEnum[]
+  }
+
+  /**
+   * VendorSuperUser create
+   */
+  export type VendorSuperUserCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VendorSuperUser
+     */
+    select?: VendorSuperUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VendorSuperUser
+     */
+    omit?: VendorSuperUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VendorSuperUserInclude<ExtArgs> | null
+    /**
+     * The data needed to create a VendorSuperUser.
+     */
+    data: XOR<VendorSuperUserCreateInput, VendorSuperUserUncheckedCreateInput>
+  }
+
+  /**
+   * VendorSuperUser createMany
+   */
+  export type VendorSuperUserCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many VendorSuperUsers.
+     */
+    data: VendorSuperUserCreateManyInput | VendorSuperUserCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * VendorSuperUser update
+   */
+  export type VendorSuperUserUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VendorSuperUser
+     */
+    select?: VendorSuperUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VendorSuperUser
+     */
+    omit?: VendorSuperUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VendorSuperUserInclude<ExtArgs> | null
+    /**
+     * The data needed to update a VendorSuperUser.
+     */
+    data: XOR<VendorSuperUserUpdateInput, VendorSuperUserUncheckedUpdateInput>
+    /**
+     * Choose, which VendorSuperUser to update.
+     */
+    where: VendorSuperUserWhereUniqueInput
+  }
+
+  /**
+   * VendorSuperUser updateMany
+   */
+  export type VendorSuperUserUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update VendorSuperUsers.
+     */
+    data: XOR<VendorSuperUserUpdateManyMutationInput, VendorSuperUserUncheckedUpdateManyInput>
+    /**
+     * Filter which VendorSuperUsers to update
+     */
+    where?: VendorSuperUserWhereInput
+    /**
+     * Limit how many VendorSuperUsers to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * VendorSuperUser upsert
+   */
+  export type VendorSuperUserUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VendorSuperUser
+     */
+    select?: VendorSuperUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VendorSuperUser
+     */
+    omit?: VendorSuperUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VendorSuperUserInclude<ExtArgs> | null
+    /**
+     * The filter to search for the VendorSuperUser to update in case it exists.
+     */
+    where: VendorSuperUserWhereUniqueInput
+    /**
+     * In case the VendorSuperUser found by the `where` argument doesn't exist, create a new VendorSuperUser with this data.
+     */
+    create: XOR<VendorSuperUserCreateInput, VendorSuperUserUncheckedCreateInput>
+    /**
+     * In case the VendorSuperUser was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<VendorSuperUserUpdateInput, VendorSuperUserUncheckedUpdateInput>
+  }
+
+  /**
+   * VendorSuperUser delete
+   */
+  export type VendorSuperUserDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VendorSuperUser
+     */
+    select?: VendorSuperUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VendorSuperUser
+     */
+    omit?: VendorSuperUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VendorSuperUserInclude<ExtArgs> | null
+    /**
+     * Filter which VendorSuperUser to delete.
+     */
+    where: VendorSuperUserWhereUniqueInput
+  }
+
+  /**
+   * VendorSuperUser deleteMany
+   */
+  export type VendorSuperUserDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VendorSuperUsers to delete
+     */
+    where?: VendorSuperUserWhereInput
+    /**
+     * Limit how many VendorSuperUsers to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * VendorSuperUser without action
+   */
+  export type VendorSuperUserDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VendorSuperUser
+     */
+    select?: VendorSuperUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VendorSuperUser
+     */
+    omit?: VendorSuperUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VendorSuperUserInclude<ExtArgs> | null
   }
 
 
@@ -120196,6 +121338,20 @@ export namespace Prisma {
   export type PortalAppSettingsScalarFieldEnum = (typeof PortalAppSettingsScalarFieldEnum)[keyof typeof PortalAppSettingsScalarFieldEnum]
 
 
+  export const VendorSuperUserScalarFieldEnum: {
+    id: 'id',
+    portal_id: 'portal_id',
+    domain: 'domain',
+    bitrixId: 'bitrixId',
+    comment: 'comment',
+    isActive: 'isActive',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type VendorSuperUserScalarFieldEnum = (typeof VendorSuperUserScalarFieldEnum)[keyof typeof VendorSuperUserScalarFieldEnum]
+
+
   export const PortalQuestionnaireScalarFieldEnum: {
     id: 'id',
     portal_id: 'portal_id',
@@ -121995,6 +123151,15 @@ export namespace Prisma {
   };
 
   export type PortalAppSettingsOrderByRelevanceFieldEnum = (typeof PortalAppSettingsOrderByRelevanceFieldEnum)[keyof typeof PortalAppSettingsOrderByRelevanceFieldEnum]
+
+
+  export const VendorSuperUserOrderByRelevanceFieldEnum: {
+    id: 'id',
+    domain: 'domain',
+    comment: 'comment'
+  };
+
+  export type VendorSuperUserOrderByRelevanceFieldEnum = (typeof VendorSuperUserOrderByRelevanceFieldEnum)[keyof typeof VendorSuperUserOrderByRelevanceFieldEnum]
 
 
   export const PortalQuestionnaireOrderByRelevanceFieldEnum: {
@@ -126006,6 +127171,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunListRelationFilter
     questionnaires?: PortalQuestionnaireListRelationFilter
     questionnaireItems?: PortalQuestionnaireItemListRelationFilter
+    vendorSuperUsers?: VendorSuperUserListRelationFilter
   }
 
   export type PortalOrderByWithRelationInput = {
@@ -126074,6 +127240,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunOrderByRelationAggregateInput
     questionnaires?: PortalQuestionnaireOrderByRelationAggregateInput
     questionnaireItems?: PortalQuestionnaireItemOrderByRelationAggregateInput
+    vendorSuperUsers?: VendorSuperUserOrderByRelationAggregateInput
     _relevance?: PortalOrderByRelevanceInput
   }
 
@@ -126146,6 +127313,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunListRelationFilter
     questionnaires?: PortalQuestionnaireListRelationFilter
     questionnaireItems?: PortalQuestionnaireItemListRelationFilter
+    vendorSuperUsers?: VendorSuperUserListRelationFilter
   }, "id" | "member_id">
 
   export type PortalOrderByWithAggregationInput = {
@@ -126429,6 +127597,80 @@ export namespace Prisma {
     settings?: JsonNullableWithAggregatesFilter<"PortalAppSettings">
     createdAt?: DateTimeNullableWithAggregatesFilter<"PortalAppSettings"> | Date | string | null
     updatedAt?: DateTimeNullableWithAggregatesFilter<"PortalAppSettings"> | Date | string | null
+  }
+
+  export type VendorSuperUserWhereInput = {
+    AND?: VendorSuperUserWhereInput | VendorSuperUserWhereInput[]
+    OR?: VendorSuperUserWhereInput[]
+    NOT?: VendorSuperUserWhereInput | VendorSuperUserWhereInput[]
+    id?: StringFilter<"VendorSuperUser"> | string
+    portal_id?: BigIntFilter<"VendorSuperUser"> | bigint | number
+    domain?: StringFilter<"VendorSuperUser"> | string
+    bitrixId?: IntFilter<"VendorSuperUser"> | number
+    comment?: StringNullableFilter<"VendorSuperUser"> | string | null
+    isActive?: BoolFilter<"VendorSuperUser"> | boolean
+    createdAt?: DateTimeNullableFilter<"VendorSuperUser"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"VendorSuperUser"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }
+
+  export type VendorSuperUserOrderByWithRelationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    bitrixId?: SortOrder
+    comment?: SortOrderInput | SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    portal?: PortalOrderByWithRelationInput
+    _relevance?: VendorSuperUserOrderByRelevanceInput
+  }
+
+  export type VendorSuperUserWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    portal_id_bitrixId?: VendorSuperUserPortal_idBitrixIdCompoundUniqueInput
+    AND?: VendorSuperUserWhereInput | VendorSuperUserWhereInput[]
+    OR?: VendorSuperUserWhereInput[]
+    NOT?: VendorSuperUserWhereInput | VendorSuperUserWhereInput[]
+    portal_id?: BigIntFilter<"VendorSuperUser"> | bigint | number
+    domain?: StringFilter<"VendorSuperUser"> | string
+    bitrixId?: IntFilter<"VendorSuperUser"> | number
+    comment?: StringNullableFilter<"VendorSuperUser"> | string | null
+    isActive?: BoolFilter<"VendorSuperUser"> | boolean
+    createdAt?: DateTimeNullableFilter<"VendorSuperUser"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"VendorSuperUser"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }, "id" | "portal_id_bitrixId">
+
+  export type VendorSuperUserOrderByWithAggregationInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    bitrixId?: SortOrder
+    comment?: SortOrderInput | SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _count?: VendorSuperUserCountOrderByAggregateInput
+    _avg?: VendorSuperUserAvgOrderByAggregateInput
+    _max?: VendorSuperUserMaxOrderByAggregateInput
+    _min?: VendorSuperUserMinOrderByAggregateInput
+    _sum?: VendorSuperUserSumOrderByAggregateInput
+  }
+
+  export type VendorSuperUserScalarWhereWithAggregatesInput = {
+    AND?: VendorSuperUserScalarWhereWithAggregatesInput | VendorSuperUserScalarWhereWithAggregatesInput[]
+    OR?: VendorSuperUserScalarWhereWithAggregatesInput[]
+    NOT?: VendorSuperUserScalarWhereWithAggregatesInput | VendorSuperUserScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"VendorSuperUser"> | string
+    portal_id?: BigIntWithAggregatesFilter<"VendorSuperUser"> | bigint | number
+    domain?: StringWithAggregatesFilter<"VendorSuperUser"> | string
+    bitrixId?: IntWithAggregatesFilter<"VendorSuperUser"> | number
+    comment?: StringNullableWithAggregatesFilter<"VendorSuperUser"> | string | null
+    isActive?: BoolWithAggregatesFilter<"VendorSuperUser"> | boolean
+    createdAt?: DateTimeNullableWithAggregatesFilter<"VendorSuperUser"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"VendorSuperUser"> | Date | string | null
   }
 
   export type PortalQuestionnaireWhereInput = {
@@ -136799,6 +138041,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateInput = {
@@ -136866,6 +138109,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUpdateInput = {
@@ -136933,6 +138177,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateInput = {
@@ -137000,6 +138245,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateManyInput = {
@@ -137334,6 +138580,82 @@ export namespace Prisma {
     domain?: StringFieldUpdateOperationsInput | string
     appCode?: StringFieldUpdateOperationsInput | string
     settings?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type VendorSuperUserCreateInput = {
+    id: string
+    domain: string
+    bitrixId: number
+    comment?: string | null
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutVendorSuperUsersInput
+  }
+
+  export type VendorSuperUserUncheckedCreateInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    bitrixId: number
+    comment?: string | null
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type VendorSuperUserUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    bitrixId?: IntFieldUpdateOperationsInput | number
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutVendorSuperUsersNestedInput
+  }
+
+  export type VendorSuperUserUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    bitrixId?: IntFieldUpdateOperationsInput | number
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type VendorSuperUserCreateManyInput = {
+    id: string
+    portal_id: bigint | number
+    domain: string
+    bitrixId: number
+    comment?: string | null
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type VendorSuperUserUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    bitrixId?: IntFieldUpdateOperationsInput | number
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type VendorSuperUserUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    domain?: StringFieldUpdateOperationsInput | string
+    bitrixId?: IntFieldUpdateOperationsInput | number
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
@@ -148100,6 +149422,12 @@ export namespace Prisma {
     none?: PortalQuestionnaireItemWhereInput
   }
 
+  export type VendorSuperUserListRelationFilter = {
+    every?: VendorSuperUserWhereInput
+    some?: VendorSuperUserWhereInput
+    none?: VendorSuperUserWhereInput
+  }
+
   export type bitrix_appsOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -148229,6 +149557,10 @@ export namespace Prisma {
   }
 
   export type PortalQuestionnaireItemOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type VendorSuperUserOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -148535,6 +149867,60 @@ export namespace Prisma {
 
   export type PortalAppSettingsSumOrderByAggregateInput = {
     portal_id?: SortOrder
+  }
+
+  export type VendorSuperUserOrderByRelevanceInput = {
+    fields: VendorSuperUserOrderByRelevanceFieldEnum | VendorSuperUserOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type VendorSuperUserPortal_idBitrixIdCompoundUniqueInput = {
+    portal_id: bigint | number
+    bitrixId: number
+  }
+
+  export type VendorSuperUserCountOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    bitrixId?: SortOrder
+    comment?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type VendorSuperUserAvgOrderByAggregateInput = {
+    portal_id?: SortOrder
+    bitrixId?: SortOrder
+  }
+
+  export type VendorSuperUserMaxOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    bitrixId?: SortOrder
+    comment?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type VendorSuperUserMinOrderByAggregateInput = {
+    id?: SortOrder
+    portal_id?: SortOrder
+    domain?: SortOrder
+    bitrixId?: SortOrder
+    comment?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type VendorSuperUserSumOrderByAggregateInput = {
+    portal_id?: SortOrder
+    bitrixId?: SortOrder
   }
 
   export type PortalQuestionnaireOrderByRelevanceInput = {
@@ -155419,6 +156805,13 @@ export namespace Prisma {
     connect?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
   }
 
+  export type VendorSuperUserCreateNestedManyWithoutPortalInput = {
+    create?: XOR<VendorSuperUserCreateWithoutPortalInput, VendorSuperUserUncheckedCreateWithoutPortalInput> | VendorSuperUserCreateWithoutPortalInput[] | VendorSuperUserUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: VendorSuperUserCreateOrConnectWithoutPortalInput | VendorSuperUserCreateOrConnectWithoutPortalInput[]
+    createMany?: VendorSuperUserCreateManyPortalInputEnvelope
+    connect?: VendorSuperUserWhereUniqueInput | VendorSuperUserWhereUniqueInput[]
+  }
+
   export type bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput = {
     create?: XOR<bitrix_appsCreateWithoutPortalsInput, bitrix_appsUncheckedCreateWithoutPortalsInput> | bitrix_appsCreateWithoutPortalsInput[] | bitrix_appsUncheckedCreateWithoutPortalsInput[]
     connectOrCreate?: bitrix_appsCreateOrConnectWithoutPortalsInput | bitrix_appsCreateOrConnectWithoutPortalsInput[]
@@ -155682,6 +157075,13 @@ export namespace Prisma {
     connectOrCreate?: PortalQuestionnaireItemCreateOrConnectWithoutPortalInput | PortalQuestionnaireItemCreateOrConnectWithoutPortalInput[]
     createMany?: PortalQuestionnaireItemCreateManyPortalInputEnvelope
     connect?: PortalQuestionnaireItemWhereUniqueInput | PortalQuestionnaireItemWhereUniqueInput[]
+  }
+
+  export type VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput = {
+    create?: XOR<VendorSuperUserCreateWithoutPortalInput, VendorSuperUserUncheckedCreateWithoutPortalInput> | VendorSuperUserCreateWithoutPortalInput[] | VendorSuperUserUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: VendorSuperUserCreateOrConnectWithoutPortalInput | VendorSuperUserCreateOrConnectWithoutPortalInput[]
+    createMany?: VendorSuperUserCreateManyPortalInputEnvelope
+    connect?: VendorSuperUserWhereUniqueInput | VendorSuperUserWhereUniqueInput[]
   }
 
   export type bitrix_appsUpdateManyWithoutPortalsNestedInput = {
@@ -156222,6 +157622,20 @@ export namespace Prisma {
     deleteMany?: PortalQuestionnaireItemScalarWhereInput | PortalQuestionnaireItemScalarWhereInput[]
   }
 
+  export type VendorSuperUserUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<VendorSuperUserCreateWithoutPortalInput, VendorSuperUserUncheckedCreateWithoutPortalInput> | VendorSuperUserCreateWithoutPortalInput[] | VendorSuperUserUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: VendorSuperUserCreateOrConnectWithoutPortalInput | VendorSuperUserCreateOrConnectWithoutPortalInput[]
+    upsert?: VendorSuperUserUpsertWithWhereUniqueWithoutPortalInput | VendorSuperUserUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: VendorSuperUserCreateManyPortalInputEnvelope
+    set?: VendorSuperUserWhereUniqueInput | VendorSuperUserWhereUniqueInput[]
+    disconnect?: VendorSuperUserWhereUniqueInput | VendorSuperUserWhereUniqueInput[]
+    delete?: VendorSuperUserWhereUniqueInput | VendorSuperUserWhereUniqueInput[]
+    connect?: VendorSuperUserWhereUniqueInput | VendorSuperUserWhereUniqueInput[]
+    update?: VendorSuperUserUpdateWithWhereUniqueWithoutPortalInput | VendorSuperUserUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: VendorSuperUserUpdateManyWithWhereWithoutPortalInput | VendorSuperUserUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: VendorSuperUserScalarWhereInput | VendorSuperUserScalarWhereInput[]
+  }
+
   export type bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput = {
     create?: XOR<bitrix_appsCreateWithoutPortalsInput, bitrix_appsUncheckedCreateWithoutPortalsInput> | bitrix_appsCreateWithoutPortalsInput[] | bitrix_appsUncheckedCreateWithoutPortalsInput[]
     connectOrCreate?: bitrix_appsCreateOrConnectWithoutPortalsInput | bitrix_appsCreateOrConnectWithoutPortalsInput[]
@@ -156750,6 +158164,20 @@ export namespace Prisma {
     deleteMany?: PortalQuestionnaireItemScalarWhereInput | PortalQuestionnaireItemScalarWhereInput[]
   }
 
+  export type VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<VendorSuperUserCreateWithoutPortalInput, VendorSuperUserUncheckedCreateWithoutPortalInput> | VendorSuperUserCreateWithoutPortalInput[] | VendorSuperUserUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: VendorSuperUserCreateOrConnectWithoutPortalInput | VendorSuperUserCreateOrConnectWithoutPortalInput[]
+    upsert?: VendorSuperUserUpsertWithWhereUniqueWithoutPortalInput | VendorSuperUserUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: VendorSuperUserCreateManyPortalInputEnvelope
+    set?: VendorSuperUserWhereUniqueInput | VendorSuperUserWhereUniqueInput[]
+    disconnect?: VendorSuperUserWhereUniqueInput | VendorSuperUserWhereUniqueInput[]
+    delete?: VendorSuperUserWhereUniqueInput | VendorSuperUserWhereUniqueInput[]
+    connect?: VendorSuperUserWhereUniqueInput | VendorSuperUserWhereUniqueInput[]
+    update?: VendorSuperUserUpdateWithWhereUniqueWithoutPortalInput | VendorSuperUserUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: VendorSuperUserUpdateManyWithWhereWithoutPortalInput | VendorSuperUserUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: VendorSuperUserScalarWhereInput | VendorSuperUserScalarWhereInput[]
+  }
+
   export type PortalCreateNestedOneWithoutAiSettingsInput = {
     create?: XOR<PortalCreateWithoutAiSettingsInput, PortalUncheckedCreateWithoutAiSettingsInput>
     connectOrCreate?: PortalCreateOrConnectWithoutAiSettingsInput
@@ -156776,6 +158204,20 @@ export namespace Prisma {
     upsert?: PortalUpsertWithoutAppSettingsInput
     connect?: PortalWhereUniqueInput
     update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutAppSettingsInput, PortalUpdateWithoutAppSettingsInput>, PortalUncheckedUpdateWithoutAppSettingsInput>
+  }
+
+  export type PortalCreateNestedOneWithoutVendorSuperUsersInput = {
+    create?: XOR<PortalCreateWithoutVendorSuperUsersInput, PortalUncheckedCreateWithoutVendorSuperUsersInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutVendorSuperUsersInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type PortalUpdateOneRequiredWithoutVendorSuperUsersNestedInput = {
+    create?: XOR<PortalCreateWithoutVendorSuperUsersInput, PortalUncheckedCreateWithoutVendorSuperUsersInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutVendorSuperUsersInput
+    upsert?: PortalUpsertWithoutVendorSuperUsersInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutVendorSuperUsersInput, PortalUpdateWithoutVendorSuperUsersInput>, PortalUncheckedUpdateWithoutVendorSuperUsersInput>
   }
 
   export type PortalCreateNestedOneWithoutQuestionnairesInput = {
@@ -159501,6 +160943,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAgentsInput = {
@@ -159567,6 +161010,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAgentsInput = {
@@ -159796,6 +161240,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAgentsInput = {
@@ -159862,6 +161307,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type rqsUpsertWithoutAgentsInput = {
@@ -160280,6 +161726,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBitrixlistsInput = {
@@ -160346,6 +161793,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBitrixlistsInput = {
@@ -160428,6 +161876,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBitrixlistsInput = {
@@ -160494,6 +161943,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type btx_stagesCreateWithoutBtx_categoriesInput = {
@@ -160626,6 +162076,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_companiesInput = {
@@ -160692,6 +162143,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_companiesInput = {
@@ -160774,6 +162226,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_companiesInput = {
@@ -160840,6 +162293,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_dealsInput = {
@@ -160906,6 +162360,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_dealsInput = {
@@ -160972,6 +162427,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_dealsInput = {
@@ -161054,6 +162510,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_dealsInput = {
@@ -161120,6 +162577,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_leadsInput = {
@@ -161186,6 +162644,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_leadsInput = {
@@ -161252,6 +162711,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_leadsInput = {
@@ -161334,6 +162794,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_leadsInput = {
@@ -161400,6 +162861,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_rpasInput = {
@@ -161466,6 +162928,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_rpasInput = {
@@ -161532,6 +162995,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_rpasInput = {
@@ -161614,6 +163078,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_rpasInput = {
@@ -161680,6 +163145,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type btx_categoriesCreateWithoutBtx_stagesInput = {
@@ -161830,6 +163296,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutCallingsInput = {
@@ -161896,6 +163363,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutCallingsInput = {
@@ -161978,6 +163446,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutCallingsInput = {
@@ -162044,6 +163513,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutClientsInput = {
@@ -162110,6 +163580,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutClientsInput = {
@@ -162176,6 +163647,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutClientsInput = {
@@ -162660,6 +164132,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutDepartamentsInput = {
@@ -162726,6 +164199,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutDepartamentsInput = {
@@ -162808,6 +164282,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutDepartamentsInput = {
@@ -162874,6 +164349,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type TemplateFieldCreateWithoutFieldsInput = {
@@ -165025,6 +166501,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_contractsInput = {
@@ -165091,6 +166568,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_contractsInput = {
@@ -165294,6 +166772,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_contractsInput = {
@@ -165360,6 +166839,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type portal_measureUpsertWithoutPortal_contractsInput = {
@@ -165526,6 +167006,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_measureInput = {
@@ -165592,6 +167073,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_measureInput = {
@@ -165723,6 +167205,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_measureInput = {
@@ -165789,6 +167272,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type bitrix_appsCreateWithoutPortalsInput = {
@@ -167423,6 +168907,36 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type VendorSuperUserCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    bitrixId: number
+    comment?: string | null
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type VendorSuperUserUncheckedCreateWithoutPortalInput = {
+    id: string
+    domain: string
+    bitrixId: number
+    comment?: string | null
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type VendorSuperUserCreateOrConnectWithoutPortalInput = {
+    where: VendorSuperUserWhereUniqueInput
+    create: XOR<VendorSuperUserCreateWithoutPortalInput, VendorSuperUserUncheckedCreateWithoutPortalInput>
+  }
+
+  export type VendorSuperUserCreateManyPortalInputEnvelope = {
+    data: VendorSuperUserCreateManyPortalInput | VendorSuperUserCreateManyPortalInput[]
+    skipDuplicates?: boolean
+  }
+
   export type bitrix_appsUpsertWithWhereUniqueWithoutPortalsInput = {
     where: bitrix_appsWhereUniqueInput
     update: XOR<bitrix_appsUpdateWithoutPortalsInput, bitrix_appsUncheckedUpdateWithoutPortalsInput>
@@ -168750,6 +170264,36 @@ export namespace Prisma {
     updatedAt?: DateTimeNullableFilter<"PortalQuestionnaireItem"> | Date | string | null
   }
 
+  export type VendorSuperUserUpsertWithWhereUniqueWithoutPortalInput = {
+    where: VendorSuperUserWhereUniqueInput
+    update: XOR<VendorSuperUserUpdateWithoutPortalInput, VendorSuperUserUncheckedUpdateWithoutPortalInput>
+    create: XOR<VendorSuperUserCreateWithoutPortalInput, VendorSuperUserUncheckedCreateWithoutPortalInput>
+  }
+
+  export type VendorSuperUserUpdateWithWhereUniqueWithoutPortalInput = {
+    where: VendorSuperUserWhereUniqueInput
+    data: XOR<VendorSuperUserUpdateWithoutPortalInput, VendorSuperUserUncheckedUpdateWithoutPortalInput>
+  }
+
+  export type VendorSuperUserUpdateManyWithWhereWithoutPortalInput = {
+    where: VendorSuperUserScalarWhereInput
+    data: XOR<VendorSuperUserUpdateManyMutationInput, VendorSuperUserUncheckedUpdateManyWithoutPortalInput>
+  }
+
+  export type VendorSuperUserScalarWhereInput = {
+    AND?: VendorSuperUserScalarWhereInput | VendorSuperUserScalarWhereInput[]
+    OR?: VendorSuperUserScalarWhereInput[]
+    NOT?: VendorSuperUserScalarWhereInput | VendorSuperUserScalarWhereInput[]
+    id?: StringFilter<"VendorSuperUser"> | string
+    portal_id?: BigIntFilter<"VendorSuperUser"> | bigint | number
+    domain?: StringFilter<"VendorSuperUser"> | string
+    bitrixId?: IntFilter<"VendorSuperUser"> | number
+    comment?: StringNullableFilter<"VendorSuperUser"> | string | null
+    isActive?: BoolFilter<"VendorSuperUser"> | boolean
+    createdAt?: DateTimeNullableFilter<"VendorSuperUser"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"VendorSuperUser"> | Date | string | null
+  }
+
   export type PortalCreateWithoutAiSettingsInput = {
     id?: bigint | number
     created_at?: Date | string | null
@@ -168814,6 +170358,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAiSettingsInput = {
@@ -168880,6 +170425,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAiSettingsInput = {
@@ -168962,6 +170508,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAiSettingsInput = {
@@ -169028,6 +170575,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutAppSettingsInput = {
@@ -169094,6 +170642,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAppSettingsInput = {
@@ -169160,6 +170709,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAppSettingsInput = {
@@ -169242,6 +170792,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAppSettingsInput = {
@@ -169301,6 +170852,291 @@ export namespace Prisma {
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalCreateWithoutVendorSuperUsersInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalUncheckedCreateWithoutVendorSuperUsersInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalCreateOrConnectWithoutVendorSuperUsersInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutVendorSuperUsersInput, PortalUncheckedCreateWithoutVendorSuperUsersInput>
+  }
+
+  export type PortalUpsertWithoutVendorSuperUsersInput = {
+    update: XOR<PortalUpdateWithoutVendorSuperUsersInput, PortalUncheckedUpdateWithoutVendorSuperUsersInput>
+    create: XOR<PortalCreateWithoutVendorSuperUsersInput, PortalUncheckedCreateWithoutVendorSuperUsersInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutVendorSuperUsersInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutVendorSuperUsersInput, PortalUncheckedUpdateWithoutVendorSuperUsersInput>
+  }
+
+  export type PortalUpdateWithoutVendorSuperUsersInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutVendorSuperUsersInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
     skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
     skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
@@ -169374,6 +171210,7 @@ export namespace Prisma {
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutQuestionnairesInput = {
@@ -169440,6 +171277,7 @@ export namespace Prisma {
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutQuestionnairesInput = {
@@ -169602,6 +171440,7 @@ export namespace Prisma {
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutQuestionnairesInput = {
@@ -169668,6 +171507,7 @@ export namespace Prisma {
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalQuestionnaireItemUpsertWithWhereUniqueWithoutQuestionnaireInput = {
@@ -169801,6 +171641,7 @@ export namespace Prisma {
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutQuestionnaireItemsInput = {
@@ -169867,6 +171708,7 @@ export namespace Prisma {
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutQuestionnaireItemsInput = {
@@ -170042,6 +171884,7 @@ export namespace Prisma {
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutQuestionnaireItemsInput = {
@@ -170108,6 +171951,7 @@ export namespace Prisma {
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalQuestionnaireItemOptionUpsertWithWhereUniqueWithoutItemInput = {
@@ -170363,6 +172207,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSkapImportFilesInput = {
@@ -170429,6 +172274,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSkapImportFilesInput = {
@@ -170569,6 +172415,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSkapImportFilesInput = {
@@ -170635,6 +172482,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type SkapImportItemUpsertWithWhereUniqueWithoutFileInput = {
@@ -170717,6 +172565,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSkapImportItemsInput = {
@@ -170783,6 +172632,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSkapImportItemsInput = {
@@ -171010,6 +172860,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSkapImportItemsInput = {
@@ -171076,6 +172927,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type SkapImportFileUpsertWithoutItemsInput = {
@@ -171221,6 +173073,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSkapSessionsInput = {
@@ -171287,6 +173140,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSkapSessionsInput = {
@@ -171422,6 +173276,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSkapSessionsInput = {
@@ -171488,6 +173343,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type SkapImportItemUpsertWithoutSessionsInput = {
@@ -171613,6 +173469,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSkapSubscriptionsInput = {
@@ -171679,6 +173536,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSkapSubscriptionsInput = {
@@ -171814,6 +173672,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSkapSubscriptionsInput = {
@@ -171880,6 +173739,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type SkapImportItemUpsertWithoutSubscriptionsInput = {
@@ -172005,6 +173865,7 @@ export namespace Prisma {
     skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSkapImportRunsInput = {
@@ -172071,6 +173932,7 @@ export namespace Prisma {
     skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSkapImportRunsInput = {
@@ -172153,6 +174015,7 @@ export namespace Prisma {
     skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSkapImportRunsInput = {
@@ -172219,6 +174082,7 @@ export namespace Prisma {
     skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type countersCreateWithoutRq_counterInput = {
@@ -172637,6 +174501,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSmartsInput = {
@@ -172703,6 +174568,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSmartsInput = {
@@ -172785,6 +174651,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSmartsInput = {
@@ -172851,6 +174718,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type telescope_entries_tagsCreateWithoutTelescope_entriesInput = {
@@ -173351,6 +175219,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutTemplatesInput = {
@@ -173417,6 +175286,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutTemplatesInput = {
@@ -173531,6 +175401,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutTemplatesInput = {
@@ -173597,6 +175468,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutTimezonesInput = {
@@ -173663,6 +175535,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutTimezonesInput = {
@@ -173729,6 +175602,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutTimezonesInput = {
@@ -173811,6 +175685,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutTimezonesInput = {
@@ -173877,6 +175752,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type ClientCreateWithoutUsersInput = {
@@ -174111,6 +175987,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBitrix_appsInput = {
@@ -174177,6 +176054,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBitrix_appsInput = {
@@ -174390,6 +176268,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBitrix_appsInput = {
@@ -174456,6 +176335,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type bitrix_tokensUpsertWithWhereUniqueWithoutBitrix_appsInput = {
@@ -174639,6 +176519,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_contactsInput = {
@@ -174705,6 +176586,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_contactsInput = {
@@ -174787,6 +176669,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_contactsInput = {
@@ -174853,6 +176736,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBxRqsInput = {
@@ -174919,6 +176803,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBxRqsInput = {
@@ -174985,6 +176870,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBxRqsInput = {
@@ -175067,6 +176953,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBxRqsInput = {
@@ -175133,6 +177020,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type complectsCreateWithoutComplect_infoblockInput = {
@@ -176914,6 +178802,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOfferTemplatePortalInput = {
@@ -176980,6 +178869,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOfferTemplatePortalInput = {
@@ -177145,6 +179035,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOfferTemplatePortalInput = {
@@ -177211,6 +179102,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type OfferTemplateFontCreateWithoutOffer_templatesInput = {
@@ -177533,6 +179425,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOffer_zakupki_settingsInput = {
@@ -177599,6 +179492,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOffer_zakupki_settingsInput = {
@@ -177681,6 +179575,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOffer_zakupki_settingsInput = {
@@ -177747,6 +179642,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type garant_prof_pricesCreateWithoutSuppliesInput = {
@@ -177952,6 +179848,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutUserSelectedTemplatesInput = {
@@ -178018,6 +179915,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutUserSelectedTemplatesInput = {
@@ -178183,6 +180081,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutUserSelectedTemplatesInput = {
@@ -178249,6 +180148,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutPortal_regionInput = {
@@ -178315,6 +180215,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_regionInput = {
@@ -178381,6 +180282,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_regionInput = {
@@ -178494,6 +180396,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_regionInput = {
@@ -178560,6 +180463,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type regionsUpsertWithoutPortal_regionInput = {
@@ -178863,6 +180767,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOfferTemplateImagesInput = {
@@ -178929,6 +180834,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOfferTemplateImagesInput = {
@@ -179099,6 +181005,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOfferTemplateImagesInput = {
@@ -179165,6 +181072,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type OfferTemplatePageBlockUpsertWithWhereUniqueWithoutOfferTemplateImageInput = {
@@ -179969,6 +181877,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_usersInput = {
@@ -180035,6 +181944,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_usersInput = {
@@ -180117,6 +182027,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_usersInput = {
@@ -180183,6 +182094,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type agentsCreateWithoutInvoiceTemplatesInput = {
@@ -180280,6 +182192,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutInvoiceTemplatesInput = {
@@ -180346,6 +182259,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutInvoiceTemplatesInput = {
@@ -180465,6 +182379,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutInvoiceTemplatesInput = {
@@ -180531,6 +182446,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type marketplace_install_componentsCreateWithoutMarketplace_installsInput = {
@@ -180668,6 +182584,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutMarketplace_installsInput = {
@@ -180734,6 +182651,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutMarketplace_installsInput = {
@@ -180869,6 +182787,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutMarketplace_installsInput = {
@@ -180935,6 +182854,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutPortal_productsInput = {
@@ -181001,6 +182921,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_productsInput = {
@@ -181067,6 +182988,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_productsInput = {
@@ -181149,6 +183071,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_productsInput = {
@@ -181215,6 +183138,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type marketplace_installsCreateWithoutMarketplace_install_componentsInput = {
@@ -181338,6 +183262,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutMarketplace_install_componentsInput = {
@@ -181404,6 +183329,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutMarketplace_install_componentsInput = {
@@ -181549,6 +183475,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutMarketplace_install_componentsInput = {
@@ -181615,6 +183542,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type ClientCreateWithoutPortal_invitesInput = {
@@ -181710,6 +183638,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_invitesInput = {
@@ -181776,6 +183705,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_invitesInput = {
@@ -181893,6 +183823,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_invitesInput = {
@@ -181959,6 +183890,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutAppCachesInput = {
@@ -182025,6 +183957,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAppCachesInput = {
@@ -182091,6 +184024,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAppCachesInput = {
@@ -182173,6 +184107,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAppCachesInput = {
@@ -182239,6 +184174,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutShareLinksInput = {
@@ -182305,6 +184241,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutShareLinksInput = {
@@ -182371,6 +184308,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutShareLinksInput = {
@@ -182453,6 +184391,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutShareLinksInput = {
@@ -182519,6 +184458,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type InvoiceTemplateCreateManyAgentInput = {
@@ -182881,6 +184821,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutClientsInput = {
@@ -182947,6 +184888,7 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateManyWithoutClientsInput = {
@@ -185117,6 +187059,16 @@ export namespace Prisma {
     updatedAt?: Date | string | null
   }
 
+  export type VendorSuperUserCreateManyPortalInput = {
+    id: string
+    domain: string
+    bitrixId: number
+    comment?: string | null
+    isActive?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
   export type bitrix_appsUpdateWithoutPortalsInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -186864,6 +188816,36 @@ export namespace Prisma {
     fieldStatus?: StringFieldUpdateOperationsInput | string
     fieldCheckedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     meta?: NullableJsonNullValueInput | InputJsonValue
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type VendorSuperUserUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    bitrixId?: IntFieldUpdateOperationsInput | number
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type VendorSuperUserUncheckedUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    bitrixId?: IntFieldUpdateOperationsInput | number
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type VendorSuperUserUncheckedUpdateManyWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    domain?: StringFieldUpdateOperationsInput | string
+    bitrixId?: IntFieldUpdateOperationsInput | number
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null

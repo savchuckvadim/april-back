@@ -133,7 +133,7 @@ export function makeStructureStand(): StructureStand {
     );
     const headsResolve = jest.fn().mockResolvedValue(new Map());
     const settingsResolve = jest.fn().mockResolvedValue({});
-    const isSuperUser = jest.fn().mockReturnValue(false);
+    const isSuperUser = jest.fn().mockResolvedValue(false);
 
     const service = new BxDepartmentStructureService(
         {

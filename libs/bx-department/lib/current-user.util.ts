@@ -28,7 +28,7 @@ import { ISalesDepartment, IStructureData } from './structure-data.types';
 export interface CurrentUserContext {
     /** Списки принудительной видимости настроек «Отдел продаж». */
     forced: ForcedVisibilityLists;
-    /** Суперпользователь вендора (env BX_SUPER_USER_IDS, BxSuperUserService). */
+    /** Суперпользователь вендора (таблица vendor_super_users, BxSuperUserService). */
     isSuperUser: boolean;
 }
 

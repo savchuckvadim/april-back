@@ -702,6 +702,7 @@ model Portal {
   skapImportRuns                 SkapImportRun[]
   questionnaires                 PortalQuestionnaire[]
   questionnaireItems             PortalQuestionnaireItem[]
+  vendorSuperUsers               VendorSuperUser[]
 
   @@index([client_id], map: "portals_client_id_foreign")
   @@map("portals")
@@ -773,6 +774,40 @@ model PortalAppSettings {
   @@unique([portal_id, appCode], map: "portal_app_settings_portal_app_unique")
   @@index([domain, appCode], map: "portal_app_settings_domain_app_index")
   @@map("portal_app_settings")
+}
+
+/// Суперпользователи ВЕНДОРА (сотрудники April) на порталах клиентов.
+/// Единственный источник правды — раньше список задавался env
+/// `BX_SUPER_USER_IDS` (`domain:id`), переменная снята.
+///
+/// Отдельная таблица, а не ключ в PortalAppSettings, сознательно: там
+/// настройки, которыми владеет КЛИЕНТ, а этими записями распоряжается только
+/// April — владелец портала не должен управлять доступом вендора к своему
+/// порталу. Не путать с `visibility_all_user_ids` (app_code sales): тот
+/// поднимает сотрудника клиента внутри структуры продаж.
+///
+/// Что даёт признак: видимость all (headOfSource = superuser), «Смотреть
+/// как…», служебные ссылки. Метки слепой калибровки РОПов не ставит.
+/// Читает Nest (BxSuperUserService), пишет админка (apps/admin).
+/// `domain` — дубль домена портала для поиска без join.
+model VendorSuperUser {
+  id        String    @id @db.Char(36)
+  portal_id BigInt    @db.UnsignedBigInt
+  domain    String    @db.VarChar(255)
+  /// Bitrix-id сотрудника April на этом портале.
+  bitrixId  Int       @map("bitrix_id") @db.UnsignedInt
+  /// Кто это — для людей в админке («Иванов, внедрение»).
+  comment   String?   @db.VarChar(255)
+  /// Снять доступ, не теряя запись.
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime? @map("updated_at") @db.Timestamp(0)
+
+  portal Portal @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "vendor_super_users_portal_id_foreign")
+
+  @@unique([portal_id, bitrixId], map: "vendor_super_users_portal_bitrix_unique")
+  @@index([domain, isActive], map: "vendor_super_users_domain_active_index")
+  @@map("vendor_super_users")
 }
 
 /// Портальный каталог АНКЕТ: сама анкета (чек-лист) placement-приложения —

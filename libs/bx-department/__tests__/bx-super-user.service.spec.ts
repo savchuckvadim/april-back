@@ -1,58 +1,152 @@
 import { Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { RedisService } from '@lib/core/redis/redis.service';
 import { BxSuperUserService } from '../services/bx-super-user.service';
-import { BX_SUPER_USER_IDS_ENV } from '../lib/super-user.util';
+import {
+    VendorSuperUserRecord,
+    VendorSuperUserRepository,
+} from '../repositories/vendor-super-user.repository';
 
-/** ConfigService-заглушка: отдаёт только BX_SUPER_USER_IDS. */
-const configWith = (value: string | undefined) => {
+/** Redis-заглушка с живой картой ключей — проверяем и запись, и сброс. */
+const makeRedis = () => {
+    const store = new Map<string, string>();
     const get = jest.fn((key: string) =>
-        key === BX_SUPER_USER_IDS_ENV ? value : undefined,
+        Promise.resolve(store.get(key) ?? null),
     );
-    return { config: { get } as unknown as ConfigService, get };
+    const set = jest.fn((key: string, value: string) => {
+        store.set(key, value);
+        return Promise.resolve('OK');
+    });
+    const del = jest.fn((key: string) => {
+        store.delete(key);
+        return Promise.resolve(1);
+    });
+    const service = {
+        getClient: () => ({ get, set, del }),
+    } as unknown as RedisService;
+    return { service, get, set, del, store };
+};
+
+/** Redis, который всегда падает — проверяем, что это не роняет проверку. */
+const makeBrokenRedis = () => {
+    const fail = () => Promise.reject(new Error('redis down'));
+    return {
+        getClient: () => ({ get: fail, set: fail, del: fail }),
+    } as unknown as RedisService;
+};
+
+const makeRepository = (ids: number[]) => {
+    const findActiveBitrixIdsByDomain = jest.fn(() => Promise.resolve(ids));
+    const repository = {
+        findActiveBitrixIdsByDomain,
+        findByPortalId: jest.fn(() =>
+            Promise.resolve([] as VendorSuperUserRecord[]),
+        ),
+        upsert: jest.fn(),
+        remove: jest.fn(),
+    } as unknown as VendorSuperUserRepository;
+    return { repository, findActiveBitrixIdsByDomain };
 };
 
 describe('BxSuperUserService', () => {
-    let warn: jest.SpyInstance;
+    it('узнаёт суперпользователя портала по записям БД', async () => {
+        const { repository } = makeRepository([123, 456]);
+        const service = new BxSuperUserService(repository, makeRedis().service);
 
-    beforeEach(() => {
-        warn = jest
-            .spyOn(Logger.prototype, 'warn')
+        await expect(
+            service.isSuperUser('example.bitrix24.ru', 123),
+        ).resolves.toBe(true);
+        await expect(
+            service.isSuperUser('example.bitrix24.ru', 999),
+        ).resolves.toBe(false);
+    });
+
+    it('сравнивает домен без учёта регистра и пробелов по краям', async () => {
+        const { repository, findActiveBitrixIdsByDomain } = makeRepository([7]);
+        const service = new BxSuperUserService(repository, makeRedis().service);
+
+        await expect(
+            service.isSuperUser('  Example.Bitrix24.RU  ', 7),
+        ).resolves.toBe(true);
+        expect(findActiveBitrixIdsByDomain).toHaveBeenCalledWith(
+            'example.bitrix24.ru',
+        );
+    });
+
+    it('не ходит в БД для нечисловых и неположительных id', async () => {
+        const { repository, findActiveBitrixIdsByDomain } = makeRepository([1]);
+        const service = new BxSuperUserService(repository, makeRedis().service);
+
+        await expect(service.isSuperUser('example.ru', 0)).resolves.toBe(false);
+        await expect(service.isSuperUser('example.ru', -5)).resolves.toBe(false);
+        await expect(service.isSuperUser('example.ru', 1.5)).resolves.toBe(
+            false,
+        );
+        expect(findActiveBitrixIdsByDomain).not.toHaveBeenCalled();
+    });
+
+    it('пустой домен — не суперпользователь, без запроса в БД', async () => {
+        const { repository, findActiveBitrixIdsByDomain } = makeRepository([1]);
+        const service = new BxSuperUserService(repository, makeRedis().service);
+
+        await expect(service.isSuperUser('   ', 1)).resolves.toBe(false);
+        expect(findActiveBitrixIdsByDomain).not.toHaveBeenCalled();
+    });
+
+    it('второй вызов берёт список из кэша, а не из БД', async () => {
+        const { repository, findActiveBitrixIdsByDomain } = makeRepository([42]);
+        const redis = makeRedis();
+        const service = new BxSuperUserService(repository, redis.service);
+
+        await service.isSuperUser('example.ru', 42);
+        await service.isSuperUser('example.ru', 42);
+
+        expect(findActiveBitrixIdsByDomain).toHaveBeenCalledTimes(1);
+        expect(redis.set).toHaveBeenCalledTimes(1);
+    });
+
+    it('invalidate убирает ключ, следующий вызов снова читает БД', async () => {
+        const { repository, findActiveBitrixIdsByDomain } = makeRepository([42]);
+        const redis = makeRedis();
+        const service = new BxSuperUserService(repository, redis.service);
+
+        await service.isSuperUser('example.ru', 42);
+        await service.invalidate('Example.RU');
+        await service.isSuperUser('example.ru', 42);
+
+        expect(redis.del).toHaveBeenCalledWith('vendor-super-users:example.ru');
+        expect(findActiveBitrixIdsByDomain).toHaveBeenCalledTimes(2);
+    });
+
+    it('мусор в кэше не ломает проверку — читает БД', async () => {
+        const { repository, findActiveBitrixIdsByDomain } = makeRepository([5]);
+        const redis = makeRedis();
+        redis.store.set('vendor-super-users:example.ru', 'не json');
+        const service = new BxSuperUserService(repository, redis.service);
+
+        await expect(service.isSuperUser('example.ru', 5)).resolves.toBe(true);
+        expect(findActiveBitrixIdsByDomain).toHaveBeenCalled();
+    });
+
+    it('сбой Redis не роняет проверку — читает БД напрямую', async () => {
+        const { repository } = makeRepository([8]);
+        const service = new BxSuperUserService(repository, makeBrokenRedis());
+
+        await expect(service.isSuperUser('example.ru', 8)).resolves.toBe(true);
+    });
+
+    it('сбой БД — отказ в безопасную сторону, с логом ошибки', async () => {
+        const error = jest
+            .spyOn(Logger.prototype, 'error')
             .mockImplementation(() => undefined);
-    });
+        const repository = {
+            findActiveBitrixIdsByDomain: jest.fn(() =>
+                Promise.reject(new Error('db down')),
+            ),
+        } as unknown as VendorSuperUserRepository;
+        const service = new BxSuperUserService(repository, makeRedis().service);
 
-    afterEach(() => warn.mockRestore());
-
-    it('читает BX_SUPER_USER_IDS один раз и узнаёт суперпользователя портала', () => {
-        const { config, get } = configWith(
-            'example.bitrix24.ru:123,other.bitrix24.ru:456',
-        );
-        const service = new BxSuperUserService(config);
-
-        expect(service.isSuperUser('example.bitrix24.ru', 123)).toBe(true);
-        expect(service.isSuperUser('OTHER.bitrix24.ru', 456)).toBe(true);
-        expect(service.isSuperUser('other.bitrix24.ru', 123)).toBe(false);
-        expect(service.isSuperUser('example.bitrix24.ru', 0)).toBe(false);
-        expect(get).toHaveBeenCalledTimes(1);
-        expect(get).toHaveBeenCalledWith(BX_SUPER_USER_IDS_ENV);
-        expect(warn).not.toHaveBeenCalled();
-    });
-
-    it('переменная не задана — суперпользователей нет, без warn', () => {
-        const service = new BxSuperUserService(configWith(undefined).config);
-
-        expect(service.isSuperUser('example.bitrix24.ru', 123)).toBe(false);
-        expect(warn).not.toHaveBeenCalled();
-    });
-
-    it('мусорные записи — один warn со списком, валидные работают', () => {
-        const service = new BxSuperUserService(
-            configWith('a.ru:447,oops,b.ru:x').config,
-        );
-
-        expect(service.isSuperUser('a.ru', 447)).toBe(true);
-        expect(warn).toHaveBeenCalledTimes(1);
-        const [message] = warn.mock.calls[0] as [string];
-        expect(message).toContain(BX_SUPER_USER_IDS_ENV);
-        expect(message).toContain('oops, b.ru:x');
+        await expect(service.isSuperUser('example.ru', 1)).resolves.toBe(false);
+        expect(error).toHaveBeenCalled();
+        error.mockRestore();
     });
 });

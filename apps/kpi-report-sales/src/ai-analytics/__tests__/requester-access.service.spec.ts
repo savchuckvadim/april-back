@@ -39,7 +39,7 @@ function makeService(
         .fn()
         .mockResolvedValue(portalSettings({ selfViewEnabled }));
     const isSuperUser = jest.fn((_domain: string, userId: number) =>
-        superUserIds.includes(userId),
+        Promise.resolve(superUserIds.includes(userId)),
     );
     const service = new RequesterAccessService(
         { getStructure } as never,

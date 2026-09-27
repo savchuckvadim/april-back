@@ -10,7 +10,7 @@ import {
     type StructureStand,
 } from './fixtures/structure-service.fixture';
 
-describe('BxDepartmentStructureService: суперпользователь вендора (BX_SUPER_USER_IDS)', () => {
+describe('BxDepartmentStructureService: суперпользователь вендора (vendor_super_users)', () => {
     let stand: StructureStand;
     let isSuperUser: jest.Mock;
     let settingsResolve: jest.Mock;
@@ -25,8 +25,8 @@ describe('BxDepartmentStructureService: суперпользователь ве�
         service().getStructure(DOMAIN, group, userId);
 
     it('сотрудник-суперпользователь: all, cup, все ОП, source=superuser, isHead и коллеги по структуре', async () => {
-        isSuperUser.mockImplementation(
-            (_domain: string, id: number) => id === 204,
+        isSuperUser.mockImplementation((_domain: string, id: number) =>
+            Promise.resolve(id === 204),
         );
 
         const { currentUser } = await get(204);
@@ -46,7 +46,7 @@ describe('BxDepartmentStructureService: суперпользователь ве�
     });
 
     it('суперпользователь сильнее настроек видимости', async () => {
-        isSuperUser.mockReturnValue(true);
+        isSuperUser.mockResolvedValue(true);
         settingsResolve.mockResolvedValue({
             visibilityGroupUserIds: '204',
         });
@@ -58,7 +58,7 @@ describe('BxDepartmentStructureService: суперпользователь ве�
     });
 
     it('группа service: суперпользователь тоже видит всё', async () => {
-        isSuperUser.mockReturnValue(true);
+        isSuperUser.mockResolvedValue(true);
 
         const { currentUser } = await get(204, EDepartamentGroup.service);
 
@@ -75,7 +75,7 @@ describe('BxDepartmentStructureService: суперпользователь ве�
     });
 
     it('userId 0 никогда не суперпользователь', async () => {
-        isSuperUser.mockReturnValue(true);
+        isSuperUser.mockResolvedValue(true);
 
         const { currentUser } = await get(0);
 

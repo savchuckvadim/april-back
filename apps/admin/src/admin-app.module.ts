@@ -44,6 +44,7 @@ import { PortalKeysAdminModule } from '@lib/portal-lib/store/keys/portal-keys.ad
 import { PortalAiSettingsAdminModule } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.admin.module';
 import { PortalAppSettingsAdminModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.admin.module';
 import { PortalQuestionnairesAdminModule } from '@lib/portal-lib/store/questionnaires/portal-questionnaires.admin.module';
+import { VendorSuperUserAdminModule } from '@lib/bx-department/vendor-super-user.admin.module';
 import { AdminQuestionnairesModule } from './portal/questionnaires/questionnaires.module';
 import { MarketplaceModerationModule } from './marketplace-moderation/marketplace-moderation.module';
 import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.module';
@@ -105,6 +106,10 @@ import { MaintenanceModule } from './maintenance';
         // Незаданные значения падают в глобальные env приложения.
         PortalAiSettingsAdminModule,
         PortalAppSettingsAdminModule,
+        // Суперпользователи April на порталах клиентов: видимость all,
+        // «Смотреть как…», служебные ссылки. Раньше задавались env
+        // BX_SUPER_USER_IDS без возможности править из интерфейса.
+        VendorSuperUserAdminModule,
         // Портальный каталог анкет: состав вопросов плана и отчёта
         // задаётся из полей, которые владелец завёл в Битриксе руками.
         // CRUD и реестр — в сторе портала, источник полей и сверка
