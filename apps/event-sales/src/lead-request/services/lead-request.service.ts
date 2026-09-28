@@ -28,6 +28,7 @@ import {
     LeadUfDefinitionsService,
 } from '../../shared/portal-fields';
 import { isBxTrue } from '@lib/shared/lib/utils';
+import { LeadRequestRepeatInfoService } from './lead-request-repeat-info.service';
 
 type BxRow = Record<string, unknown>;
 
@@ -55,6 +56,8 @@ export class LeadRequestService {
     constructor(
         private readonly pbx: PBXService,
         private readonly ufDefinitions: LeadUfDefinitionsService,
+        /** Блок «повторное обращение»: работа клиента уже велась. */
+        private readonly repeatInfo: LeadRequestRepeatInfoService,
     ) {}
 
     async card(domain: string, leadId: number): Promise<LeadRequestCardDto> {
@@ -148,8 +151,16 @@ export class LeadRequestService {
                 ),
             ),
             saleReadiness: { ready: false, missing: [] },
+            repeat: null,
             warnings,
         };
+        card.repeat = await this.repeatInfo.build(
+            domain,
+            bitrix,
+            portal,
+            leadId,
+            card.baseDealId,
+        );
         card.isAccepted = this.isAccepted(portal, lead, card);
         card.saleReadiness = this.saleReadiness(card);
         return card;

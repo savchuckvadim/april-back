@@ -6,7 +6,10 @@ import {
     IsOptional,
     IsString,
     Min,
+    ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { LeadRequestRepeatDto } from './lead-request-repeat.dto';
 import {
     EnumLeadNotCaTypeCode,
     EnumLeadSiteStatusCode,
@@ -244,6 +247,19 @@ export class LeadRequestCardDto {
     @IsOptional()
     @IsInt()
     xoDealId: number | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Повторное обращение: заявка присоединена к уже существующей ' +
+            'работе клиента (есть основная сделка ОП из другого лида). ' +
+            'null — заявка первичная либо сделка не прочитана.',
+        type: LeadRequestRepeatDto,
+        nullable: true,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => LeadRequestRepeatDto)
+    repeat: LeadRequestRepeatDto | null;
 
     @ApiProperty({
         description:

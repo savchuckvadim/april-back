@@ -15,6 +15,8 @@ import { LeadIntakeRescueService } from './intake/lead-intake-rescue.service';
 import { LeadIntakeRescueScheduler } from './intake/lead-intake-rescue.scheduler';
 import { LeadToWorkAssigneeService } from '../sales-hooks/lead-to-work/services/lead-to-work-assignee.service';
 import { ActiveStaffModule } from '../shared/active-staff';
+import { UserNameResolver } from '../shared/lead-request/user-name.resolver';
+import { LeadRequestRepeatInfoService } from './services/lead-request-repeat-info.service';
 
 /**
  * Карточка заявки/лида для приложения «Звонки» + механика принятия
@@ -46,6 +48,9 @@ import { ActiveStaffModule } from '../shared/active-staff';
     providers: [
         LeadRequestService,
         LeadRequestAcceptService,
+        // Блок «повторное обращение» карточки заявки.
+        LeadRequestRepeatInfoService,
+        UserNameResolver,
         LeadRequestSlaService,
         LeadRequestSlaScheduler,
         LeadIntakeRescueService,
