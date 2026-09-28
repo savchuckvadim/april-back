@@ -60,6 +60,7 @@ export class DealAuditController {
             written: result.written,
             flagged: result.flagged,
             dryRun: result.dryRun,
+            digestSent: result.digestSent,
             byStatus: result.byStatus,
             deals: result.verdicts as DealAuditVerdictDto[],
             warnings: [...result.warnings],

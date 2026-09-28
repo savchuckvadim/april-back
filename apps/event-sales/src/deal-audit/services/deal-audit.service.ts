@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
 import { DEAL_AUDIT_STATUS } from '../constants/deal-audit.const';
 import { evaluateDeal, isForgotten } from '../lib/deal-audit-rules';
+import { resolveDealAuditRunMode } from '../lib/deal-audit-run-mode';
 import {
     DealAuditRunResult,
     DealAuditThresholds,
@@ -58,11 +59,11 @@ export class DealAuditService {
         const warnings: string[] = [];
         const { bitrix, PortalModel: portal } = await this.pbx.init(domain);
         const fields = new DealAuditFields(portal);
-        if (!fields.isInstalled && !options.dryRun) {
-            warnings.push(
-                'поля аудита не установлены — прогон выполнен как холостой',
-            );
-        }
+        const mode = resolveDealAuditRunMode(
+            options.dryRun,
+            fields.isInstalled,
+        );
+        if (mode.warning) warnings.push(mode.warning);
 
         const tasks = await new DealAuditTasksReader(
             bitrix,
@@ -92,7 +93,7 @@ export class DealAuditService {
          * при тысяче забытых читается как успех.
          */
         const writable = pairs.slice(0, Math.max(0, options.maxPerRun));
-        const canWrite = !options.dryRun && fields.isInstalled;
+        const { canWrite } = mode;
         const written = canWrite
             ? await new DealAuditWriterService(
                   bitrix,
@@ -101,13 +102,19 @@ export class DealAuditService {
               ).write(writable, warnings)
             : 0;
 
-        if (canWrite) {
-            await this.digest.send(domain, forgotten, options.digest, warnings);
-        }
+        // Сводка — из вердиктов прогона, поля карточки ей не нужны.
+        const digestSent = mode.canNotify
+            ? await this.digest.send(
+                  domain,
+                  forgotten,
+                  options.digest,
+                  warnings,
+              )
+            : 0;
 
         this.logger.log(
             `[deal-audit] ${domain}: сделок ${snapshots.length}, забытых ` +
-                `${forgotten.length}, размечено ${written}` +
+                `${forgotten.length}, размечено ${written}, сводок ${digestSent}` +
                 (options.dryRun ? ' (холостой ход)' : '') +
                 (warnings.length ? `, warnings ${warnings.length}` : ''),
         );
@@ -120,6 +127,7 @@ export class DealAuditService {
             byStatus,
             verdicts: forgotten,
             dryRun: !canWrite,
+            digestSent,
             warnings,
         };
     }

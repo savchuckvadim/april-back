@@ -79,5 +79,7 @@ export interface DealAuditRunResult {
     /** Вердикты забытых сделок (для ответа ручки и дайджеста). */
     readonly verdicts: readonly DealAuditVerdict[];
     readonly dryRun: boolean;
+    /** Сколько сводок о забытых сделках доставлено уведомлениями. */
+    readonly digestSent: number;
     readonly warnings: readonly string[];
 }
