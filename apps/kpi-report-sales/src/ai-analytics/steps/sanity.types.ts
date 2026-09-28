@@ -66,6 +66,17 @@ export const AI_SANITY_SLA_STAGES = {
 } as const;
 
 /**
+ * Названия стадий SLA для текстов руководителю — как в воронке «ОП
+ * Основная» (`pbx-deal-sales-base.type.ts`, у runtime-лестницы названий
+ * нет). Стадия вне карты в тексте зовётся «одной из стадий».
+ */
+export const AI_SANITY_SLA_STAGE_TITLES: Readonly<Record<string, string>> = {
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.refine]: 'Доработка',
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.inProgress]: 'В решении',
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.moneyAwait]: 'В оплате',
+};
+
+/**
  * Причины пропуска правил (штатная деградация §5.4): при нехватке
  * наблюдений правило молчит с причиной, а не выдаёт ложную тревогу.
  */

@@ -2,7 +2,10 @@ import { ForbiddenException } from '@nestjs/common';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { buildBriefKey } from '../brief/brief-cache-key.util';
-import { AI_ANALYTICS_BRIEF_JOB_OPTIONS } from '../constants/ai-brief.const';
+import {
+    AI_ANALYTICS_BRIEF_JOB_OPTIONS,
+    AI_BRIEF_EMPTY_PERIMETER_MESSAGE,
+} from '../constants/ai-brief.const';
 import { RequesterAccess } from '../domain/access/perimeter.util';
 import { RequesterAccessService } from '../domain/access/requester-access.service';
 import { BriefUseCase } from '../domain/use-cases/brief.use-case';
@@ -73,8 +76,10 @@ describe('BriefUseCase: конверт ручки резюме', () => {
             tone: 'calm' as const,
             source: 'llm' as const,
             packHash: PACK.hash,
+            comparable: false,
+            previousPeriod: null,
             generatedAt: '2026-09-08T06:00:00.000Z',
-            promptVersion: 'brief-1.0.0',
+            promptVersion: 'brief-2.0.0',
         };
         const { useCase, dispatch } = makeUseCase({
             cached: { status: 'ready', data },
@@ -167,8 +172,10 @@ describe('BriefUseCase: конверт ручки резюме', () => {
                     tone: 'calm',
                     source: 'template',
                     packHash: PACK.hash,
+                    comparable: false,
+                    previousPeriod: null,
                     generatedAt: '2026-09-07T06:00:00.000Z',
-                    promptVersion: 'brief-1.0.0',
+                    promptVersion: 'brief-2.0.0',
                 },
             },
         });
@@ -178,6 +185,15 @@ describe('BriefUseCase: конверт ручки резюме', () => {
         ).resolves.toMatchObject({ status: 'queued' });
         expect(getJson).not.toHaveBeenCalled();
         expect(dispatch).toHaveBeenCalledTimes(1);
+        // Джоба узнаёт о пересчёте: готовое резюме такого же пакета из
+        // кэша она не возьмёт.
+        expect(dispatch).toHaveBeenCalledWith(
+            QueueNames.SALES_KPI_REPORT,
+            JobNames.SALES_AI_ANALYTICS_BRIEF,
+            expect.objectContaining({ forceRefresh: true }),
+            KEY,
+            AI_ANALYTICS_BRIEF_JOB_OPTIONS,
+        );
     });
 
     it('без списка менеджеров берётся периметр requester’а, у cup — весь портал', async () => {
@@ -205,5 +221,22 @@ describe('BriefUseCase: конверт ручки резюме', () => {
             ),
         ).rejects.toBeInstanceOf(ForbiddenException);
         expect(build).not.toHaveBeenCalled();
+    });
+
+    it('периметр без единого менеджера — отказ, а не резюме по всему порталу', async () => {
+        const empties: RequesterAccess[] = [
+            { role: 'group', visibleManagerIds: [] },
+            // Битый id пользователя нормализацией отбрасывается.
+            { role: 'manager', visibleManagerIds: ['NaN'] },
+        ];
+        for (const access of empties) {
+            const { useCase, build, dispatch } = makeUseCase();
+
+            await expect(
+                useCase.lookup(request(), access, BRIEF_NOW),
+            ).rejects.toThrow(AI_BRIEF_EMPTY_PERIMETER_MESSAGE);
+            expect(build).not.toHaveBeenCalled();
+            expect(dispatch).not.toHaveBeenCalled();
+        }
     });
 });

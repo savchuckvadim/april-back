@@ -14,9 +14,12 @@ import type {
     AttentionManagerInput,
     AttentionTrendSignal,
 } from './attention.types';
+import { formatRuWeekSince } from './iso-week.util';
+import { RU_FORMS, ruCount } from './ru-text.util';
 
-const pct = (share: number): string =>
-    `${share > 0 ? '+' : '−'}${Math.round(Math.abs(share) * 100)} %`;
+/** Величина изменения без знака: направление называет текст словами. */
+const pctAbs = (share: number): string =>
+    `${Math.round(Math.abs(share) * 100)} %`;
 
 /** Величина сигнала в единицах метрики, до одного знака, с запятой. */
 const magnitude = (value: number): string =>
@@ -39,9 +42,10 @@ export const goodhartRule: AttentionRule = manager => {
         availableFrom: 3,
         severity: flag.counterChange,
         headline:
-            `${flag.pressureTitle} ${pct(flag.pressureChange)}, ` +
-            `${flag.counterTitle} ${pct(flag.counterChange)} за ${flag.points} мес.: ` +
-            'метрика растёт, результат — нет',
+            `За ${ruCount(flag.points, RU_FORMS.months)} ${flag.pressureTitle} — ` +
+            `больше на ${pctAbs(flag.pressureChange)}, а ${flag.counterTitle} — ` +
+            `меньше на ${pctAbs(flag.counterChange)}: показатель растёт, ` +
+            'а результат — нет',
         basis: [
             {
                 code: 'goodhart_pressure_change',
@@ -86,7 +90,7 @@ function trendCandidate(
         severity: CONFIDENCE_SEVERITY[signal.confidence],
         headline:
             `${label}: ${signal.title} ${magnitude(signal.magnitude)} ` +
-            `с недели ${signal.sinceWeek}`,
+            formatRuWeekSince(signal.sinceWeek),
         basis: [
             {
                 code: `trend_${kind}_magnitude`,

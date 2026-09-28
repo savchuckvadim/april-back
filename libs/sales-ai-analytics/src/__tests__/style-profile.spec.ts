@@ -63,7 +63,16 @@ describe('buildStyleProfile — подписи «по данным»', () => {
         expect(profile.tags[0].title).toBe('дожимает');
         expect(profile.tags[0].tier).toBe('data');
         expect(profile.tags[0].label).toContain('чаще коллег возвращается');
-        expect(profile.tags[0].basis).toContain('n = 84');
+        // Ось настойчивости считается по лидам — объём в единицах оси, словами.
+        expect(profile.tags[0].label).toContain('(84 лида, коллег в норме 11)');
+        expect(profile.tags[0].basis).toContain(
+            '84 лида, в сравнении с 11 коллегами',
+        );
+        expect(profile.tags[0].basis).toMatch(
+            /^заметнее, чем у коллег \(отклонение \d+,\d+, скорее всего от /,
+        );
+        expect(profile.tags[0].basis).toMatch(/уверенность \d+ %$/);
+        expect(profile.tags[0].basis).not.toMatch(/n = |p = /);
         expect(profile.vector.persistence).toBeGreaterThan(0.5);
     });
 

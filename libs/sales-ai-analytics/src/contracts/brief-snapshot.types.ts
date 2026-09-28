@@ -21,12 +21,22 @@
 /** Буллет резюме в снапшоте: `undefined` полей нет — нагрузка JSON-канонична. */
 export interface BriefSnapshotBullet {
     text: string;
+    /** Группа буллета (AI_BRIEF_BULLET_GROUPS): change | focus | action. */
+    group: string;
     /** Bitrix-id менеджера буллета; null — буллет про отдел. */
     managerId: string | null;
     /** Код типа звонка; null — буллет не про тип. */
     callType: string | null;
+    /** Ссылка на карточку разбора или раздел витрины; null — ссылки нет. */
+    link: string | null;
     /** Коды фактов пакета, на которых стоит буллет. */
     factRefs: string[];
+}
+
+/** Прошлый период сравнения той же длины, 'YYYY-MM-DD' в TZ портала. */
+export interface BriefSnapshotPeriod {
+    from: string;
+    to: string;
 }
 
 /** Снапшот AI-резюме за период: текст, источник и расход вызова. */
@@ -37,6 +47,10 @@ export interface BriefSnapshot {
     to: string;
     /** sha256 пакета фактов — он же ключ периода и ключ кэша резюме. */
     packHash: string;
+    /** Есть сравнение с прошлым периодом той же длины. */
+    comparable: boolean;
+    /** Прошлый период сравнения; null — сравнения нет. */
+    previousPeriod: BriefSnapshotPeriod | null;
     headline: string;
     bullets: BriefSnapshotBullet[];
     /** Тон резюме (AI_BRIEF_TONES). */

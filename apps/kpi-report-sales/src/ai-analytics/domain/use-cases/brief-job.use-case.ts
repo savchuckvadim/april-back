@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { WsService } from '@/core/ws';
+import { QueueDispatcherService } from '@/modules/queue/dispatch/queue-dispatcher.service';
 import { AlertThrottle } from '@lib/logger';
 import {
     AI_BRIEF_TEMPLATE_REASONS,
@@ -15,17 +16,15 @@ import {
 import { AiAnalyticsCacheService } from '../../cache/ai-analytics-cache.service';
 import {
     AI_BRIEF_ALERT_KEY_PREFIX,
-    AI_BRIEF_SNAPSHOT_RECORD,
     AI_BRIEF_TTL_SECONDS,
 } from '../../constants/ai-brief.const';
 import { AI_ANALYTICS_WS_EVENTS } from '../../constants/ai-analytics.const';
-import { AI_ANALYTICS_CALC_VERSION } from '../../constants/ai-overview.const';
 import {
     AI_BRIEF_LLM_PORT,
     type AiBriefLlmPort,
     type AiBriefLlmUsage,
 } from '../../brief/ai-brief-llm.port';
-import { buildBriefPeriodKey } from '../../brief/brief-cache-key.util';
+import { buildBriefKey } from '../../brief/brief-cache-key.util';
 import { BriefQuotaStore } from '../../brief/brief-quota.store';
 import { EvidencePackBuilder } from '../../brief/evidence-pack.builder';
 import {
@@ -38,17 +37,32 @@ import {
 import { AiAnalyticsParamsLoader } from '../loaders/params.loader';
 import { SettingsLoader } from '../loaders/settings.loader';
 import { AiAnalyticsSnapshotStore } from '../../store/ai-analytics-snapshot.store';
-import { briefUsage, toBriefDto, toBriefSnapshot } from './brief-job.util';
+import { BriefPrevEnsurer } from './brief-job.prev';
+import {
+    briefUsage,
+    toBriefDto,
+    toBriefEnvelope,
+    toBriefSnapshot,
+} from './brief-job.util';
 import type { BriefUsageFacts } from './brief-job.util';
 
 /**
- * Выполнение джобы SALES_AI_ANALYTICS_BRIEF (план §5.3, поток 18):
+ * Выполнение джобы SALES_AI_ANALYTICS_BRIEF (план §5.3, поток 18, версия
+ * 2 «что изменилось и что делать»): обзоры периода и прошлого периода →
  * пакет фактов → квота → модель или шаблон → факт-чек → снапшот
  * `ai-analytics-brief` с расходом вызова → write-through в кэш (6 ч) →
  * WS `ai-analytics:brief:done`.
  *
+ * Перед сборкой пакета джоба добивается обоих обзоров
+ * (`BriefPrevEnsurer`: кэш либо джоба обзора с ожиданием); не дождалась
+ * — резюме без сравнения. Пакет джобы даёт другой хэш, чем пакет ручки
+ * до неё, поэтому готовое резюме кладётся под оба ключа: `requestKey`
+ * джобы и ключ нового хэша — повторный POST фронта попадает в кэш сразу.
+ * Если резюме такого же пакета уже лежит в кэше, оно берётся оттуда:
+ * нейросеть второй раз по тем же фактам не зовётся.
+ *
  * Штатная деградация (§5.4): нет ключа VibeCode, исчерпана дневная квота
- * `brief_quota_per_day` или после факт-чета осталось меньше двух буллетов
+ * `brief_quota_per_day` или после факт-чека осталось меньше двух буллетов
  * — резюме собирается шаблоном с подписью причины, джоба завершается
  * успешно. А вот ОШИБКА вызова модели успехом не считается: error-конверт
  * на 120 с, WS `:error`, Telegram-оповещение (с подавлением повторов по
@@ -58,6 +72,7 @@ import type { BriefUsageFacts } from './brief-job.util';
 export class BriefJobUseCase {
     private readonly logger = new Logger(BriefJobUseCase.name);
     private readonly alerts = new AlertThrottle();
+    private readonly prev: BriefPrevEnsurer;
 
     constructor(
         private readonly pack: EvidencePackBuilder,
@@ -68,16 +83,24 @@ export class BriefJobUseCase {
         private readonly snapshots: AiAnalyticsSnapshotStore,
         private readonly cache: AiAnalyticsCacheService,
         private readonly ws: WsService,
-    ) {}
+        queue: QueueDispatcherService,
+    ) {
+        this.prev = new BriefPrevEnsurer(queue, cache, this.logger);
+    }
 
     async execute(data: AiBriefJobData, now = new Date()): Promise<AiBriefDto> {
         try {
-            const dto = await this.build(data, now);
+            const { dto, packHash, reused } = await this.build(data, now);
+            const entry: AiBriefCacheEntry = { status: 'ready', data: dto };
             await this.store(
                 data.requestKey,
-                { status: 'ready', data: dto },
+                entry,
                 AI_BRIEF_TTL_SECONDS.ready,
             );
+            const packKey = buildBriefKey(data.domain, packHash);
+            if (!reused && packKey !== data.requestKey) {
+                await this.store(packKey, entry, AI_BRIEF_TTL_SECONDS.ready);
+            }
             this.notify<AiBriefWsDonePayload>(
                 data.socketId,
                 AI_ANALYTICS_WS_EVENTS.BRIEF_DONE,
@@ -91,8 +114,15 @@ export class BriefJobUseCase {
         }
     }
 
-    /** Пакет → резюме (модель либо шаблон) → снапшот → DTO. */
-    private async build(data: AiBriefJobData, now: Date): Promise<AiBriefDto> {
+    /** Обзоры → пакет → резюме (кэш, модель либо шаблон) → снапшот → DTO. */
+    private async build(
+        data: AiBriefJobData,
+        now: Date,
+    ): Promise<{ dto: AiBriefDto; packHash: string; reused: boolean }> {
+        const prevOutcome = await this.prev.ensure(data);
+        this.logger.debug(
+            `Резюме ${data.requestKey}: прошлый период — ${prevOutcome}`,
+        );
         const pack = await this.pack.build({
             domain: data.domain,
             from: data.from,
@@ -100,6 +130,10 @@ export class BriefJobUseCase {
             managerIds: data.managerIds,
             now,
         });
+        const ready = await this.reuse(data, pack.hash);
+        if (ready !== null) {
+            return { dto: ready, packHash: pack.hash, reused: true };
+        }
         const { ctx, paramsVersion } = await this.params.load(data.domain);
         const ctxBrief: BriefContext = {
             from: data.from,
@@ -121,9 +155,34 @@ export class BriefJobUseCase {
             usage,
             passRatePct: composed.passRatePct,
         });
-        await this.write(data, snapshot, pack, now, paramsVersion);
+        await this.snapshots.upsert<BriefSnapshot>(
+            toBriefEnvelope(data, snapshot, {
+                generatedAt: ctxBrief.generatedAt,
+                paramsVersion,
+            }),
+        );
 
-        return toBriefDto(composed.brief, usage);
+        return {
+            dto: toBriefDto(composed.brief, usage, pack.compare),
+            packHash: pack.hash,
+            reused: false,
+        };
+    }
+
+    /**
+     * Готовое резюме того же пакета из кэша (ключ по хэшу пакета джобы);
+     * null — такого нет, ключ совпал с ключом запроса (ручка его уже
+     * проверила) либо просили пересчитать заново.
+     */
+    private async reuse(
+        data: AiBriefJobData,
+        packHash: string,
+    ): Promise<AiBriefDto | null> {
+        const key = buildBriefKey(data.domain, packHash);
+        if (data.forceRefresh === true || key === data.requestKey) return null;
+        const entry = await this.cache.getJson<AiBriefCacheEntry>(key);
+
+        return entry && entry.status === 'ready' ? entry.data : null;
     }
 
     /**
@@ -171,37 +230,6 @@ export class BriefJobUseCase {
             usage: answer.usage,
             passRatePct: outcome.passRatePct,
         };
-    }
-
-    /**
-     * Снапшот `ai-analytics-brief`: ключ периода — период и ростер
-     * (`buildBriefPeriodKey`), менеджера нет. Прежние резюме того же
-     * периода и состава `upsert` помечает superseded — ретенция ограничена
-     * числом периодов (долг 40 волны C); packHash остаётся в `inputsHash`
-     * и нагрузке, поэтому повтор с тем же пакетом записи не создаёт.
-     * Расход вызова едет ещё и в `usage` конверта — стор кладёт его в
-     * колонки tokens_count / price (решение B2 от 21.09.2026); модель
-     * провайдера остаётся в нагрузке.
-     */
-    private async write(
-        data: AiBriefJobData,
-        payload: BriefSnapshot,
-        pack: AiEvidencePack,
-        now: Date,
-        paramsVersion: string,
-    ): Promise<void> {
-        await this.snapshots.upsert<BriefSnapshot>({
-            domain: data.domain,
-            type: AI_BRIEF_SNAPSHOT_RECORD.TYPE,
-            periodKey: buildBriefPeriodKey(data.from, data.to, data.managerIds),
-            managerId: null,
-            calcVersion: AI_ANALYTICS_CALC_VERSION,
-            paramsVersion,
-            inputsHash: pack.hash,
-            generatedAt: now.toISOString(),
-            payload,
-            usage: { tokensCount: payload.tokensCount, price: payload.price },
-        });
     }
 
     /** Ошибка джобы: error-конверт 120 с, WS :error и Telegram-оповещение. */

@@ -13,8 +13,9 @@ import {
     AI_ANALYTICS_SNAPSHOT_APP,
     AI_ANALYTICS_SNAPSHOT_PROVIDER,
     AI_ANALYTICS_SNAPSHOT_TYPE,
-    isoWeekday,
-    shiftDate,
+    ISO_WEEK_KEY_PATTERN,
+    isIsoWeekKey,
+    mondayOfIsoWeek,
 } from '@lib/sales-ai-analytics';
 import {
     ROP_MARK_WEEK_LIMIT,
@@ -85,8 +86,8 @@ export const AI_ROP_MARK_LIMITS = {
  * средствами это не закрывается, это договорённость.
  */
 export const AI_ROP_MARK_BLIND_NOTE =
-    'Слепой режим: до сохранения метки оценка AI по звонку не отдаётся ' +
-    'этой ручкой. Гарантия действует только здесь — карточку разбора в ' +
+    'Слепой режим: до сохранения метки оценка AI по звонку не показывается ' +
+    'на этом экране. Гарантия действует только здесь — карточку разбора в ' +
     'Битрикс руководитель может открыть и увидеть оценку.';
 
 /** Сообщения отказов ручки (по-русски, как в остальных сценариях среза). */
@@ -107,17 +108,15 @@ export const AI_ROP_MARK_MESSAGES = {
         'портала',
 } as const;
 
-/** Понедельник ISO-недели по её ключу 'YYYY-Www' (4 января всегда в W01). */
-export function mondayOfIsoWeek(weekKey: string): string {
-    const [year, week] = weekKey.split('-W');
-    const anchor = `${year}-01-04`;
-    const firstMonday = shiftDate(anchor, -(isoWeekday(anchor) - 1));
-    return shiftDate(firstMonday, (Number(week) - 1) * 7);
-}
+/**
+ * Понедельник ISO-недели по её ключу и форма ключа — общие помощники
+ * библиотеки (`iso-week.util`); здесь реэкспорт под прежними именами.
+ */
+export { mondayOfIsoWeek };
 
 /** Форма ключа недели: 'YYYY-Www'. */
-export const AI_ROP_MARK_WEEK_KEY_PATTERN = /^\d{4}-W\d{2}$/;
+export const AI_ROP_MARK_WEEK_KEY_PATTERN = ISO_WEEK_KEY_PATTERN;
 
 export function isRopMarkWeekKey(value: string): boolean {
-    return AI_ROP_MARK_WEEK_KEY_PATTERN.test(value);
+    return isIsoWeekKey(value);
 }

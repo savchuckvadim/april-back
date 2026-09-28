@@ -48,7 +48,7 @@ export class AiAgendaItemDto {
     @ApiProperty({
         description: 'Причина попадания в повестку (текст для РОПа).',
         type: String,
-        example: 'Спорное возражение (price): не отработано',
+        example: 'Спорное возражение «Цена»: не отработано',
     })
     reason: string;
 

@@ -1,32 +1,45 @@
 /**
- * Константы ручки AI-резюме (план Фазы 2, поток 18 `p2-api-brief`): TTL
- * кэша, опции джобы, состав пакета фактов, тексты причин шаблона и
- * правила учёта расхода вызова модели.
+ * Константы ручки AI-резюме (план Фазы 2, поток 18 `p2-api-brief`,
+ * версия 2 «что изменилось и что делать»): TTL кэша, опции джобы, состав
+ * пакета фактов, ожидание прошлого периода и правила учёта расхода.
  *
  * Магических строк в коде резюме нет (ai/rules/pbx-typing.md): коды
- * фактов, виды и единицы приходят из контракта библиотеки
- * (`AI_BRIEF_FACT_KINDS`, `AI_BRIEF_FACT_UNITS`), типы снапшота — из
- * реестра снапшотов.
+ * фактов, по которым шаблон строит действия и фокус, приходят из
+ * библиотеки (`AI_BRIEF_ACTION_CODES`, `AI_BRIEF_FOCUS_CODES`), виды и
+ * единицы — из контракта, типы снапшота — из реестра снапшотов. Тексты
+ * (промпт, подписи причин и сравнений) — в `ai-brief-texts.const.ts`.
  */
 import {
     AI_ANALYTICS_SNAPSHOT_APP,
     AI_ANALYTICS_SNAPSHOT_PROVIDER,
     AI_ANALYTICS_SNAPSHOT_TYPE,
-    AI_BRIEF_TEMPLATE_REASONS,
+    AI_BRIEF_ACTION_CODES,
+    AI_BRIEF_FOCUS_CODES,
     type AiBriefFactKind,
     type AiBriefFactUnit,
-    type AiBriefTemplateReason,
 } from '@lib/sales-ai-analytics';
+import { AI_SANITY_RULES } from '../steps/sanity.types';
 import type { AiAnalyticsReadinessMode } from './ai-analytics.const';
+import { AI_ANALYTICS_OVERVIEW_JOB_OPTIONS } from './ai-overview.const';
+
+export {
+    AI_BRIEF_BASIS_TEXTS,
+    AI_BRIEF_EMPTY_PERIMETER_MESSAGE,
+    AI_BRIEF_SYSTEM_PROMPT,
+    AI_BRIEF_TEMPLATE_FALLBACK_TEXT,
+    AI_BRIEF_TEMPLATE_REASON_TEXTS,
+} from './ai-brief-texts.const';
 
 /**
  * TTL кэша резюме, секунды: ready — 6 часов (план §3.4), error — конверт
  * ошибки процессора на 120 с (промах не ставит джобу заново сразу после
- * падения — как у обзора).
+ * падения — как у обзора), prev — факты прошлого периода сутки (прошлый
+ * период закрыт, его числа не меняются).
  */
 export const AI_BRIEF_TTL_SECONDS = {
     ready: 6 * 60 * 60,
     error: 120,
+    prev: 24 * 60 * 60,
 } as const;
 
 /**
@@ -40,6 +53,21 @@ export const AI_ANALYTICS_BRIEF_JOB_OPTIONS = {
     removeOnComplete: true,
     removeOnFail: true,
 } as const;
+
+/**
+ * Сколько джоба резюме ждёт обзоры периода и прошлого периода (та же
+ * очередь, оба ожидания идут разом): меньше половины своего таймаута,
+ * чтобы после ожидания осталось время на модель. Не дождалась — резюме
+ * собирается без сравнения (fail-open).
+ */
+export const AI_BRIEF_OVERVIEW_WAIT_MS = 45_000;
+
+/**
+ * Опции джоб обзора, которые ставит джоба резюме: приоритет
+ * пользовательской джобы — резюме ждёт их результата, и низкий приоритет
+ * прогрева оставил бы его без сравнения при занятой очереди.
+ */
+export const AI_BRIEF_OVERVIEW_JOB_OPTIONS = AI_ANALYTICS_OVERVIEW_JOB_OPTIONS;
 
 /** TTL счётчика квоты: сутки с запасом на разницу TZ портала и контейнера. */
 export const AI_BRIEF_QUOTA_TTL_SECONDS = 26 * 60 * 60;
@@ -65,18 +93,23 @@ export const AI_BRIEF_SNAPSHOT_RECORD = {
  */
 export const AI_BRIEF_PERIOD_KEY_MAX_LENGTH = 64;
 
-/** Коды фактов пакета (плана §4 таблица состава evidence pack). */
+/** Коды фактов пакета (плана §4 таблица состава evidence pack, версия 2). */
 export const AI_BRIEF_FACT_CODES = {
-    alerts: 'alerts',
+    alerts: AI_BRIEF_ACTION_CODES.alerts,
+    alertsUnhandled: AI_BRIEF_ACTION_CODES.alertsUnhandled,
     attention: 'attention',
-    funnelGap: 'funnel_gap',
+    focus1: AI_BRIEF_FOCUS_CODES[0],
+    focus2: AI_BRIEF_FOCUS_CODES[1],
+    focus3: AI_BRIEF_FOCUS_CODES[2],
+    funnelGap: AI_BRIEF_ACTION_CODES.funnelGap,
     planVsFactSales: 'plan_vs_fact_sales',
     pipelineFromStage: 'pipeline_from_stage',
-    disciplineNextStep: 'discipline_next_step',
+    disciplineNextStep: AI_BRIEF_ACTION_CODES.disciplineNextStep,
+    agenda: AI_BRIEF_ACTION_CODES.agenda,
     callsOverThreshold: 'calls_over_threshold',
     airtime: 'airtime',
     forecastP50: 'forecast_p50',
-    dataQuality: 'data_quality',
+    dataQuality: AI_BRIEF_ACTION_CODES.dataQuality,
 } as const;
 export type AiBriefFactCode =
     (typeof AI_BRIEF_FACT_CODES)[keyof typeof AI_BRIEF_FACT_CODES];
@@ -91,8 +124,15 @@ export interface AiBriefFactSpec {
     priority: number;
 }
 
+/** Подпись фактов фокуса: фраза факта — «{сигнал}: {заголовок карточки}». */
+const FOCUS_SPEC: Omit<AiBriefFactSpec, 'priority'> = {
+    kind: 'deviation',
+    unit: 'count',
+    title: 'Фокус внимания',
+};
+
 /**
- * Состав пакета: ровно десять кодов таблицы плана в её порядке.
+ * Состав пакета: коды таблицы плана в её порядке.
  *
  * ⚠ Обрезка `trimEvidencePack` сортирует по ВИДУ факта
  * (`AI_BRIEF_FACT_PRIORITY`: alert → deviation → finance → discipline →
@@ -100,8 +140,8 @@ export interface AiBriefFactSpec {
  * Порядок этой таблицы совпадает с порядком видов везде, кроме
  * `forecast_p50`: по смыслу он финансовый (`finance`), поэтому при
  * обрезке по байтам выживает вместе с продажами, хотя в таблице стоит
- * девятым. Числа фактов это не меняет — меняется только то, что
- * отбрасывается первым при переполнении 4 КБ.
+ * позже. Числа фактов это не меняет — меняется только то, что
+ * отбрасывается первым при переполнении 8 КБ.
  */
 export const AI_BRIEF_FACT_SPECS: Record<AiBriefFactCode, AiBriefFactSpec> = {
     [AI_BRIEF_FACT_CODES.alerts]: {
@@ -110,6 +150,12 @@ export const AI_BRIEF_FACT_SPECS: Record<AiBriefFactCode, AiBriefFactSpec> = {
         title: 'Сигналов риска за период',
         priority: 1,
     },
+    [AI_BRIEF_FACT_CODES.alertsUnhandled]: {
+        kind: 'alert',
+        unit: 'count',
+        title: 'Неотработанных сигналов риска в пульсе',
+        priority: 2,
+    },
     [AI_BRIEF_FACT_CODES.attention]: {
         kind: 'deviation',
         unit: 'count',
@@ -117,55 +163,66 @@ export const AI_BRIEF_FACT_SPECS: Record<AiBriefFactCode, AiBriefFactSpec> = {
         // старшая карточка менеджера), поэтому подпись — про менеджеров,
         // а не про карточки: число резюме обязано сходиться с вкладкой.
         title: 'Менеджеров с сигналом «Внимание»',
-        priority: 2,
+        priority: 3,
     },
+    [AI_BRIEF_FACT_CODES.focus1]: { ...FOCUS_SPEC, priority: 4 },
+    [AI_BRIEF_FACT_CODES.focus2]: { ...FOCUS_SPEC, priority: 5 },
+    [AI_BRIEF_FACT_CODES.focus3]: { ...FOCUS_SPEC, priority: 6 },
     [AI_BRIEF_FACT_CODES.funnelGap]: {
         kind: 'deviation',
         unit: 'share',
-        title: 'Наибольший разрыв к норме по воронке',
-        priority: 3,
+        // Сборщик дописывает шаг воронки словами: «… на шаге «звонок →
+        // презентация»».
+        title: 'Сильнее всего отстаём от нормы на шаге',
+        priority: 7,
     },
     [AI_BRIEF_FACT_CODES.planVsFactSales]: {
         kind: 'finance',
         unit: 'count',
-        title: 'Продаж закрыто',
-        priority: 4,
+        title: 'Продаж за период',
+        priority: 8,
     },
     [AI_BRIEF_FACT_CODES.pipelineFromStage]: {
         kind: 'finance',
         unit: 'count',
-        title: 'Ожидание продаж из пайплайна',
-        priority: 5,
+        title: 'Ожидаем продаж из сделок в работе',
+        priority: 9,
     },
     [AI_BRIEF_FACT_CODES.disciplineNextStep]: {
         kind: 'discipline',
         unit: 'share',
         title: 'Доля звонков с назначенным шагом и датой',
-        priority: 6,
+        priority: 10,
+    },
+    [AI_BRIEF_FACT_CODES.agenda]: {
+        kind: 'discipline',
+        unit: 'count',
+        title: 'Звонков в повестке планёрки',
+        priority: 11,
     },
     [AI_BRIEF_FACT_CODES.callsOverThreshold]: {
         kind: 'telephony',
         unit: 'count',
-        title: 'Разобрано звонков длиннее порога',
-        priority: 7,
+        title: 'Разобрано звонков за период',
+        priority: 12,
     },
     [AI_BRIEF_FACT_CODES.airtime]: {
         kind: 'telephony',
         unit: 'sec',
-        title: 'Эфирное время отдела',
-        priority: 8,
+        title: 'Эфирное время отдела за месяц',
+        priority: 13,
     },
     [AI_BRIEF_FACT_CODES.forecastP50]: {
         kind: 'finance',
         unit: 'count',
-        title: 'Прогноз продаж месяца (P50)',
-        priority: 9,
+        title: 'Прогноз продаж на месяц (средний сценарий)',
+        priority: 14,
     },
     [AI_BRIEF_FACT_CODES.dataQuality]: {
         kind: 'data-quality',
         unit: 'count',
         title: 'Замечаний к качеству данных',
-        priority: 10,
+        priority: 15,
     },
 };
 
@@ -174,7 +231,22 @@ export const AI_BRIEF_FACT_SPECS: Record<AiBriefFactCode, AiBriefFactSpec> = {
  * утечки рёбер снапшота прогноза, а не карточки вкладки, и подпись
  * говорит об этом прямо (числа резюме проверяются по вкладке).
  */
-export const AI_BRIEF_ATTENTION_LEAKS_TITLE = 'Утечек воронки в прогнозе';
+export const AI_BRIEF_ATTENTION_LEAKS_TITLE =
+    'Шагов воронки с потерями по прогнозу';
+
+/**
+ * Подписи фактов при промахе кэша обзора: число берётся из запасного
+ * источника с другим окном, и подпись честно называет это окно — месяц
+ * конца периода (месячные снапшоты), последние рабочие дни (пульс) или
+ * неделю (недельные снапшоты). С прошлым периодом такие факты не
+ * сравниваются: окна разные.
+ */
+export const AI_BRIEF_FALLBACK_TITLES = {
+    planVsFactSales: 'Продаж за месяц',
+    callsOverThreshold: 'Разобрано звонков за месяц',
+    alertsPulse: 'Сигналов риска за последние рабочие дни',
+    alertsWeek: 'Сигналов риска за неделю',
+} as const;
 
 /** Порядок сборки фактов — порядок таблицы состава пакета. */
 export const AI_BRIEF_PACK_ORDER: readonly AiBriefFactCode[] = Object.keys(
@@ -196,41 +268,18 @@ export const AI_BRIEF_FORECAST_MODES = [
     'recommendations',
 ] as const satisfies readonly AiAnalyticsReadinessMode[];
 
+/**
+ * Коды замечаний про даты в сделках: продажи, «закрытые» раньше
+ * активности по ним. Их наличие даёт действие «Проверить даты в сделках»
+ * вместо общего «Проверить качество данных». Замечания о рабочем
+ * календаре сюда не входят — они не про сделки.
+ */
+export const AI_BRIEF_DATE_QUALITY_CODES: readonly string[] = [
+    AI_SANITY_RULES.timestampLeak,
+];
+
 /** Верхняя граница строк выборок снапшотов сборщиком пакета. */
 export const AI_BRIEF_SNAPSHOT_LIMIT = 500;
-
-/** Тексты причин шаблонного резюме (подпись под резюме на витрине). */
-export const AI_BRIEF_TEMPLATE_REASON_TEXTS: Record<
-    AiBriefTemplateReason,
-    string
-> = {
-    [AI_BRIEF_TEMPLATE_REASONS.noLlmKey]:
-        'Резюме собрано по шаблону: у портала не заведён ключ VibeCode.',
-    [AI_BRIEF_TEMPLATE_REASONS.quotaExceeded]:
-        'Резюме собрано по шаблону: исчерпана дневная квота вызовов модели ' +
-        '(brief_quota_per_day).',
-    [AI_BRIEF_TEMPLATE_REASONS.invalidPayload]:
-        'Резюме собрано по шаблону: ответ модели не разобрался по строгой схеме.',
-    [AI_BRIEF_TEMPLATE_REASONS.factcheckFailed]:
-        'Резюме собрано по шаблону: после проверки фактов осталось меньше двух ' +
-        'буллетов.',
-    [AI_BRIEF_TEMPLATE_REASONS.llmUnavailable]:
-        'Резюме собрано по шаблону: модель не ответила.',
-};
-
-/**
- * Системный промпт резюме. Правила совпадают с факт-чеком
- * (`factCheckBullets`): числа только из пакета, ссылки только на его
- * коды, без причинности и слова «значимо».
- */
-export const AI_BRIEF_SYSTEM_PROMPT =
-    'Ты помощник руководителя отдела продаж. По пакету фактов собери ' +
-    'короткое резюме периода строго по JSON-схеме. Правила: каждое число ' +
-    'в тексте обязано присутствовать в пакете фактов; каждый буллет ' +
-    'ссылается на коды фактов пакета в factRefs; не больше 30 слов в ' +
-    'буллете; не утверждай причин и следствий («из-за», «привело», ' +
-    '«поэтому»); не используй слова «значимо», «статистически», ' +
-    '«достоверно»; пиши по-русски, по делу, без вводных.';
 
 /**
  * Символов на токен в оценке расхода по длине (usage провайдера не

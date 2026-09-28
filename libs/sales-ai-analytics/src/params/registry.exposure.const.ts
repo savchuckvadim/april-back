@@ -96,6 +96,9 @@ export const AI_ANALYTICS_EXPOSURE_PARAMS = [
         breaksSeries: false,
         description:
             'Значение fte_share, пока в карточке менеджера ставка не задана: полная ставка. Слой менеджера кладёт сюда ту же величину, что и в fte_share.',
+        userTitle: 'Ставка по умолчанию',
+        userDescription:
+            'Пока в карточке менеджера ставка не задана, считаем, что он работает на полную ставку.',
     },
     {
         code: 'day_hours',
@@ -109,6 +112,9 @@ export const AI_ANALYTICS_EXPOSURE_PARAMS = [
         breaksSeries: false,
         description:
             'Бюджет времени плана дня и санити capacity: сумма длительностей активностей плана не должна превышать эти часы. Выводится из work_time_start/end портала, иначе 6.',
+        userTitle: 'Часов на звонки в день',
+        userDescription:
+            'Сколько часов в день менеджер реально на телефоне: план дня не может требовать больше активности, чем помещается в это время.',
     },
     {
         code: 'level',
@@ -173,6 +179,9 @@ export const AI_ANALYTICS_EXPOSURE_PARAMS = [
         breaksSeries: false,
         description:
             'Гейт готовности «состав подтверждён»: при false хватает непустых уровней в ai_analytics_levels, при true нужна дата ai_analytics_roster_confirmed_at, иначе витрина остаётся в режиме descriptive с причиной roster-not-confirmed.',
+        userTitle: 'Нужно ли подтверждать состав отдела',
+        userDescription:
+            'Если включено, витрина ждёт даты подтверждения состава отдела руководителем, а до этого показывает только описательные цифры.',
     },
     {
         code: 'exclude_from_norms',

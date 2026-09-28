@@ -18,7 +18,7 @@ Feature-модуль `apps/kpi-report-sales/src/ai-analytics/` по плану
 | Ручка | Кэш | Права | Ответ |
 |---|---|---|---|
 | `ai-analytics/settings/get` | 300 с на домен | все | `AiAnalyticsSettingsDto`: флаги, `pipelineEnabled` (разборы за 30 дней), `readiness`, `callTypes[]` из `AI_ANALYTICS_EVENT_KINDS`, `comparableFrom`, `ropUserIds`; настройки 07.09.2026 — `selfViewEnabled`, `dailyPlanEnabled`, `digestAllUserIds: string[]`, `poolOptIn`, `poolConsentAt: string \| null`, `experimentsEnabled` |
-| `ai-analytics/pulse` | 1 ч на домен, ключ по `endDate` | периметр; менеджер — только при `self_view` | `AiPulseDto`: окно 5 рабочих дней до вчерашнего рабочего дня, XmR, `byManager` (n ≥ 20), `alerts` |
+| `ai-analytics/pulse` | 1 ч на домен, ключ по `endDate` | периметр; менеджер — только при `self_view` | `AiPulseDto`: окно 5 рабочих дней до вчерашнего рабочего дня, XmR, `byManager` (n ≥ 20), `alerts` (каждый — с `link` на карточку разбора в смарте, null — элемента нет) |
 | `ai-analytics/agenda` | до 15 минут (и не дольше, чем до следующего понедельника); новое несогласие сбрасывает | периметр; менеджер — только при `self_view` | `AiAgendaDto`: 3 звонка прошлой полной ISO-недели, `link` на карточку смарта, `disagreements` |
 | `ai-analytics/feedback` | — | менеджер только за себя; `alert_handled` — только руководители | запись в `ais` (контракт 4); `useful`/`not_useful` — одна оценка на автора, объект и день портала (смена оценки переводит прежнюю в `superseded`) |
 | `ai-analytics/review` | — | открытая (с сайта продукта, без сессии фрейма): ссылка на карточку разбора сверяется со смартом портала, лимит 10 отправок за 10 минут с адреса | отзыв руководителя на разбор → запись `ai-analytics-feedback` (useful / disagree, object `site-review:{itemId}`, детали в payload) + сообщение в чат; `AiReviewResultDto` |
@@ -153,9 +153,11 @@ TZ портала, `from ≤ to`, не длиннее 3 мес. — валида
 | `ai-analytics/settings/save` | sync | только `cup`/`op` | `AiSettingsSaveResponseDto {status: ready, requestKey, data: {id, levels[], savedAt, resetCount, comparableFrom, paramsVersion, breaksSeries[], warnings[]}}` |
 
 **Конверт обзора.** `requestKey` = ключ кэша = `jobId`:
-`sales-ai-analytics:v1:{domain}:overview:{from}_{to}:{usersKey}:{0|1}`, где
+`sales-ai-analytics:v1:{domain}:overview:v3:{from}_{to}:{usersKey}:{0|1}`, где
 `usersKey` — нормализованный ростер (`buildReportUsersKey`: дедуп, сортировка,
-`10_20`), последний сегмент — `confirmedOnly`. Поток
+`10_20`), последний сегмент — `confirmedOnly`; `v3` — версия формы кэша
+(`OVERVIEW_KEY_VERSION`, меняется вместе с формой строки: v3 —
+`riskCalls[].link`), она же уезжает в `jobId` и `requestKey` WS-событий. Поток
 (`domain/use-cases/overview-lookup.use-case.ts`): попадание → `ready` (строки уже
 в периметре requester'а, `meta.fromCache = true`); в кэше error-конверт → `error`
 с `message` (живёт 120 с); джоба с таким id ждёт/идёт → `processing`; промах →
@@ -170,7 +172,9 @@ TZ портала, `from ≤ to`, не длиннее 3 мес. — валида
 периода, `KpiLoader.loadKpiMonths`, `FinanceLoader.loadFinance`,
 `PlansLoader.loadPlans`, `ManagerOrgLoader`, уровни из
 `AiAnalyticsSettingsStore`, несогласия из `AiAnalyticsFeedbackStore` →
-assembler → `buildOverviewDto`) → write-through `{status: 'ready', data}` c TTL
+assembler → `buildOverviewDto` → ссылки риск-звонков строк на карточки разборов
+одним вызовом `SmartLinkLoader` на весь обзор, fail-open: `link = null`) →
+write-through `{status: 'ready', data}` c TTL
 по положению периода (`overviewTtlSeconds`: целиком в закрытых месяцах — 30 дней,
 закончился до сегодня — 1 ч, включает сегодня — 180 с) → WS
 `ai-analytics:overview:done` `{requestKey, generatedAt}` на `socketId`. Сам
@@ -185,7 +189,8 @@ timeZone, days, workdays}`, `readiness`, `calcVersion` (`sam-1.0.0`), `versions
 `managers: AiManagerRowDto[]` (`managerId, departmentId, groupId, level,
 levelSource, tenureMonths, workdays, signal, keyMetric, funnelShape, buckets[],
 byType: AiManagerTypeCellDto[], funnel[], finance, discipline, callsTotal,
-analyzedCalls, nextStepRate, riskCalls[], recommendations[]`), `totals:
+analyzedCalls, nextStepRate, riskCalls[] {transcriptionId, kind, callStartedAt,
+link — карточка разбора в смарте, null — элемента нет}, recommendations[]`), `totals:
 AiTypeTotalsDto[]` (ячейка типа + `managers`), `departmentTotals[]
 {departmentId, managerIds, totals}`, `objections {byManager[], totals[], n}`,
 `meta {totalCalls, analyzedCalls, skippedNoManager, otherSharePct,
@@ -254,7 +259,7 @@ round2(monthlyAmount × месяцы)`, для `none` — `null`. Закрыты
 Тесты: `finance-pipeline.assembler.spec.ts` (фикстура
 `__tests__/fixtures/hot-clients.fixture.ts`), `finance.loader.spec.ts`.
 
-**Кэш и сброс.** Ключи модуля: `overview:{from}_{to}:{usersKey}:{c}`,
+**Кэш и сброс.** Ключи модуля: `overview:v3:{from}_{to}:{usersKey}:{c}`,
 `kpi-month:{yyyy-MM}:{usersKey}[:{from}_{to}]`, `finance-month:…`,
 `finance-pipeline:{pipelineThreshold}-{hotStageCode}:{usersKey}`, `plans:{usersKey}`, `managers`,
 `managers:org`. `POST ai-analytics/cache/reset {scope}`:
@@ -393,9 +398,26 @@ README, раздел «Фаза 2, волна 1». С волны C (18.09.2026) 
 | `ai-analytics/about` | `about/` | sync: настройки портала + последняя модель портала из `ais`, без кэша | периметр (`resolveViewer`) | `AiAboutResponseDto {status: ready, requestKey, data: AiAboutDto}` — блок «Как считаем» ручки `endpoint: overview | plan/daily | brief | manager/style`: тексты, `params[]` (код, значение, слой, класс) из реестра, `paramsVersion`, `comparableFrom`, `model` (readiness с причинами, κ/φ/λ с источником `estimated|configured|hybrid`, `betaSource`, `estimand`, санити) либо `model: null` + `modelReason` |
 
 `requestKey` конвертов: план дня — `…:plan:{date}:{managerId}`, резюме —
-`…:brief:{packHash}`, проверка — `…:rop-mark:{weekKey}` (подбор и список)
-и `…:rop-mark:{transcriptionId}` (метка), блок «Как считаем» —
-`…:about:{endpoint}`; префикс общий `sales-ai-analytics:v1:{domain}`.
+`…:brief:{promptVersion}:{packHash}`, проверка — `…:rop-mark:{weekKey}`
+(подбор и список) и `…:rop-mark:{transcriptionId}` (метка), блок «Как
+считаем» — `…:about:{endpoint}`; префикс общий
+`sales-ai-analytics:v1:{domain}`.
+
+**Резюме версии 2 «что изменилось и что делать»** (`brief-2.0.0`).
+Пункты трёх групп: `change` — факт против прошлого периода той же длины,
+`focus` — старшая карточка «Внимания» менеджера (до трёх разных людей),
+`action` — действия недели. Сравнение одно и то же везде: период против
+примыкающего прошлого периода той же длины, обе стороны — по обзору
+своего окна; числа запасных источников (пульс, недельные и месячные
+снапшоты) несут в подписи своё окно и с прошлым периодом не
+сравниваются. Джоба резюме перед сборкой пакета добивается обоих обзоров
+в кэше (`domain/use-cases/brief-job.prev.ts`: кэш по периметру или по
+всему ростеру, иначе джоба обзора с ожиданием до 45 с); не дождалась —
+резюме без сравнения, первым пунктом фраза о причине. Действия всегда
+выводят правила из фактов пакета (`libs/sales-ai-analytics`
+`model/brief-actions.ts`) — нейросеть пишет только заголовок, изменения
+и фокус, и каждое её число сверяется с пакетом. Готовое резюме такого же
+пакета берётся из кэша без повторного вызова нейросети.
 
 **Снапшот резюме и его ретенция** (волна C, долг 40). Кэш и `jobId`
 резюме по-прежнему адресуются хэшем пакета фактов (`buildBriefKey`), но

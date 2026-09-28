@@ -1,18 +1,25 @@
 /**
  * Пакет фактов AI-резюме (план §8): сборка, приоритетная обрезка и хэш.
  *
- * В модель уходит не отчёт, а короткий пакет: ≤ 10 фактов и ≤ 4 КБ.
+ * В модель уходит не отчёт, а короткий пакет: ≤ 16 фактов и ≤ 8 КБ.
  * Приоритет при обрезке — алерты → отклонения → финансы против плана →
  * дисциплина → телефония → качество данных. Хэш пакета детерминирован и не
  * зависит от порядка ключей в объектах фактов (канонический JSON), поэтому
  * годится как ключ кэша и `activity_id` снапшота `ai-analytics-brief`.
+ *
+ * С версии 2 в канонический JSON входят прошлый период факта, изменение,
+ * норма, план, ссылка и сигнал, а также состояние сравнения пакета:
+ * появление данных за прошлый период меняет хэш — и резюме собирается
+ * заново, уже со сравнениями.
  */
 import { createHash } from 'node:crypto';
 import {
+    AI_BRIEF_COMPARE_REASONS,
     AI_BRIEF_FACT_PRIORITY,
     AI_BRIEF_LIMITS,
     type AiBriefFact,
     type AiEvidencePack,
+    type BriefCompareStatus,
 } from '../contracts/ai-brief.contract';
 import { canonicalJson, type JsonObject } from '../params/params-version';
 import { formatFactValue } from './brief-numbers';
@@ -23,7 +30,15 @@ export interface EvidencePackOptions {
     maxFacts?: number;
     /** Максимум байт канонического JSON пакета. */
     maxBytes?: number;
+    /** Состояние сравнения с прошлым периодом; по умолчанию — данных нет. */
+    compare?: BriefCompareStatus;
 }
+
+/** Сравнение по умолчанию: прошлого периода нет, причина — нет данных. */
+export const NO_COMPARE: BriefCompareStatus = {
+    previousPeriod: null,
+    reason: AI_BRIEF_COMPARE_REASONS.noData,
+};
 
 /** Факт в каноническом JSON: поля в фиксированном составе, без undefined. */
 export function factToJson(fact: AiBriefFact): JsonObject {
@@ -37,29 +52,68 @@ export function factToJson(fact: AiBriefFact): JsonObject {
         n: fact.n ?? null,
         managerId: fact.managerId ?? null,
         callType: fact.callType ?? null,
+        prev: fact.prev ?? null,
+        delta: fact.delta ?? null,
+        deltaPct: fact.deltaPct ?? null,
+        comparable: fact.comparable,
+        basis: fact.basis ?? null,
+        norm: fact.norm ?? null,
+        plan: fact.plan ?? null,
+        link: fact.link ?? null,
+        signal: fact.signal ?? null,
+    };
+}
+
+/** Состояние сравнения в каноническом JSON. */
+function compareToJson(compare: BriefCompareStatus): JsonObject {
+    return {
+        previousPeriod: compare.previousPeriod
+            ? {
+                  from: compare.previousPeriod.from,
+                  to: compare.previousPeriod.to,
+              }
+            : null,
+        reason: compare.reason,
     };
 }
 
 /** Канонический JSON пакета — вход хэша и меры размера. */
-export function packJson(facts: readonly AiBriefFact[]): string {
-    return canonicalJson(facts.map(factToJson));
+export function packJson(
+    facts: readonly AiBriefFact[],
+    compare: BriefCompareStatus = NO_COMPARE,
+): string {
+    return canonicalJson({
+        facts: facts.map(factToJson),
+        compare: compareToJson(compare),
+    });
 }
 
 /** Размер пакета в байтах UTF-8. */
-export function packBytes(facts: readonly AiBriefFact[]): number {
-    return Buffer.byteLength(packJson(facts), 'utf8');
+export function packBytes(
+    facts: readonly AiBriefFact[],
+    compare: BriefCompareStatus = NO_COMPARE,
+): number {
+    return Buffer.byteLength(packJson(facts, compare), 'utf8');
 }
 
 /**
- * `packHash`: sha256 канонического JSON фактов. Перестановка ключей внутри
- * факта хэш не меняет — иначе кэш резюме промахивался бы на ровном месте.
+ * `packHash`: sha256 канонического JSON фактов и состояния сравнения.
+ * Перестановка ключей внутри факта хэш не меняет — иначе кэш резюме
+ * промахивался бы на ровном месте.
  */
-export function packHash(facts: readonly AiBriefFact[]): string {
-    return createHash('sha256').update(packJson(facts), 'utf8').digest('hex');
+export function packHash(
+    facts: readonly AiBriefFact[],
+    compare: BriefCompareStatus = NO_COMPARE,
+): string {
+    return createHash('sha256')
+        .update(packJson(facts, compare), 'utf8')
+        .digest('hex');
 }
 
 /** Готовая фраза факта: подпись и число, отформатированное общим правилом. */
-export function buildFactText(fact: Omit<AiBriefFact, 'text'>): string {
+export function buildFactText(
+    fact: Pick<AiBriefFact, 'title' | 'value' | 'unit'>,
+): string {
     return `${fact.title}: ${formatFactValue(fact.value, fact.unit)}`;
 }
 
@@ -91,19 +145,21 @@ export function trimEvidencePack(
 ): AiEvidencePack {
     const maxFacts = opts.maxFacts ?? AI_BRIEF_LIMITS.packFacts;
     const maxBytes = opts.maxBytes ?? AI_BRIEF_LIMITS.packBytes;
+    const compare = opts.compare ?? NO_COMPARE;
     const ordered = byPriority(facts);
     const kept = ordered.slice(0, Math.max(maxFacts, 0));
-    while (kept.length > 0 && packBytes(kept) > maxBytes) {
+    while (kept.length > 0 && packBytes(kept, compare) > maxBytes) {
         kept.pop();
     }
     const keptCodes = new Set(kept.map(fact => fact.code));
 
     return {
         facts: kept,
-        hash: packHash(kept),
+        hash: packHash(kept, compare),
         droppedCodes: ordered
             .filter(fact => !keptCodes.has(fact.code))
             .map(fact => fact.code),
+        compare,
     };
 }
 

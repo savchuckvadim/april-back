@@ -17,7 +17,8 @@ import {
     MatrixSectionAggregate,
     MetricValue,
     renderCellExplanation,
-    sectionTitle,
+    RU_FORMS,
+    ruCount,
 } from '@lib/sales-ai-analytics';
 import {
     AiCellSectionDto,
@@ -62,23 +63,28 @@ export function median(values: readonly number[]): number | null {
 }
 
 /**
- * Объяснение раздела по шаблону: «Раздел «работа по цене»: 4,2/10 (n = 11,
- * применимость 72 %).»; при n < 8 — «мало данных (n = …)». Каждое число
- * продублировано в basis. Опорных звонков на раздел в Фазе 1b нет.
+ * Объяснение раздела словами: «Работа по цене: 4,2 из 10 по 11 разборам
+ * (для этого типа звонка раздел важен на 72 %).»; при n < 8 — «мало
+ * данных: 5 разборов». Каждое число продублировано в basis (машинная
+ * строка, на витрине не показывается). Опорных звонков на раздел в
+ * Фазе 1b нет.
  */
 export function renderSectionExplanation(
     section: MatrixSectionAggregate,
 ): AiSectionExplanationDto {
     if (section.avgScore === null) {
         return {
-            text: `мало данных (n = ${section.n})`,
+            text: `мало данных: ${ruCount(section.n, RU_FORMS.reviews)}`,
             basis: [`n=${section.n}`],
             evidenceCallIds: [],
         };
     }
     const relevance = Math.round(section.avgRelevance);
     return {
-        text: `Раздел «${sectionTitle(section.section)}»: ${ru1(section.avgScore)}/10 (n = ${section.n}, применимость ${relevance} %).`,
+        text:
+            `${sectionTitleOf(section.section)}: ${ru1(section.avgScore)} из 10 ` +
+            `по ${ruCount(section.n, RU_FORMS.reviewsDative)} ` +
+            `(для этого типа звонка раздел важен на ${relevance} %).`,
         basis: [
             `section=${section.section}:${en1(section.avgScore)}:n=${section.n}`,
             `relevance=${relevance}`,

@@ -1,26 +1,44 @@
 /**
- * Факты пакета AI-резюме по таблице состава (план Фазы 2, поток 18):
- * чистые функции «источник → факт или ничего». Первый источник — кэш
- * витрины, второй — снапшот; промах обоих означает пропуск факта.
+ * Факты пакета AI-резюме, у которых есть прошлый период (версия 2 «что
+ * изменилось»): сигналы риска, «Внимание», продажи, дисциплина, звонки.
+ * Чистые функции «источник → факт или ничего». Первый источник — кэш
+ * обзора периода (у него же и прошлый период — из `prevFacts`), второй —
+ * пульс и снапшоты; промах всех означает пропуск факта.
+ *
+ * Сравнение одно — период против прошлого периода той же длины, и только
+ * когда обе стороны посчитаны одинаково (по обзору своего окна). Факты
+ * запасных источников (пульс, недельные и месячные снапшоты) несут число
+ * за другое окно, поэтому с прошлым периодом не сравниваются.
  *
  * Здесь нет ни DI, ни Bitrix, ни времени: числа приходят готовыми, а
- * форматирует их `buildFactText` / `formatFactValue` библиотеки — той же
- * функцией, которой факт-чек разбирает числа буллетов. Формы источников и
- * конструктор факта — в `evidence-pack.types.ts`, чтение источников — в
- * `evidence-pack.builder.ts` (лимит 300 строк на файл, ai/rules).
+ * форматирует их `briefFact` библиотечным правилом — тем же, которым
+ * факт-чек разбирает числа буллетов. Остальные факты — в
+ * `evidence-pack.facts.extra.ts` и `evidence-pack.focus.ts`.
  */
 import { formatFactValue, type AiBriefFact } from '@lib/sales-ai-analytics';
 import {
     AI_BRIEF_ATTENTION_LEAKS_TITLE,
+    AI_BRIEF_BASIS_TEXTS,
     AI_BRIEF_FACT_CODES,
     AI_BRIEF_FACT_SPECS,
-    AI_BRIEF_FORECAST_MODES,
+    AI_BRIEF_FALLBACK_TITLES,
 } from '../constants/ai-brief.const';
 import type { ManagerMonthPayload } from '../domain/assembler/manager-snapshot.types';
-import type { PortalModelPayload } from '../domain/assembler/portal-model.types';
-import type { AiOverviewDto } from '../dto/ai-overview.dto';
+import type { AiManagerRowDto } from '../dto/ai-manager-row.dto';
+import {
+    countSignals,
+    inScope,
+    nextStepShare,
+    rowsInScope,
+    sumAnalyzed,
+    sumRiskCalls,
+    sumSales,
+    weightedRate,
+} from './evidence-pack.overview';
+import type { BriefPrevFacts } from './evidence-pack.prev';
 import {
     briefFact,
+    type BriefFactOptions,
     type BriefManagerRow,
     type BriefPackSources,
 } from './evidence-pack.types';
@@ -28,20 +46,60 @@ import {
 const sum = (values: readonly number[]): number =>
     values.reduce((acc, value) => acc + value, 0);
 
-/** Менеджеры строки обзора в периметре пакета (пусто — все). */
-function inScope(managerId: string, managerIds: readonly string[]): boolean {
-    return managerIds.length === 0 || managerIds.includes(managerId);
+const PERCENT = 100;
+
+/**
+ * Сравнение с прошлым периодом: число из `prevFacts`, снятое, если
+ * прошлый период раньше сравнимой истории.
+ */
+function periodPrev(
+    sources: BriefPackSources,
+    pick: (prev: BriefPrevFacts) => number | null,
+): BriefFactOptions {
+    const prev = sources.prevFacts ? pick(sources.prevFacts) : null;
+
+    return {
+        prev,
+        comparable: prev !== null && !sources.beforeComparable,
+        basis: AI_BRIEF_BASIS_TEXTS.period,
+    };
 }
 
 /**
- * 1. `alerts` — алерты пульса; при промахе кэша считаются флаги разборов
- * недельных снапшотов (эквивалент: алерт витрины — тот же риск-флаг).
+ * Сравнение факта, который считается по разборам звонков: если за период
+ * не разобрано ни одного звонка, ноль значит «не разбирали», а не «не
+ * было», и сравнение снимается.
+ */
+function analysisPrev(
+    sources: BriefPackSources,
+    rows: readonly AiManagerRowDto[],
+    pick: (prev: BriefPrevFacts) => number | null,
+): BriefFactOptions {
+    const options = periodPrev(sources, pick);
+
+    return sumAnalyzed(rows) > 0
+        ? options
+        : { ...options, prev: null, comparable: false };
+}
+
+/**
+ * 1. `alerts` — риск-звонки периода по кэшу обзора (с прошлым периодом);
+ * при промахе — алерты пульса за последние рабочие дни, затем флаги
+ * разборов недельных снапшотов (оба — со своей подписью и без сравнения).
  */
 export function alertsFact(
     sources: BriefPackSources,
     managerIds: readonly string[],
 ): AiBriefFact | null {
-    const { pulse, weeks } = sources;
+    const { overview, pulse, weeks } = sources;
+    if (overview) {
+        const rows = rowsInScope(overview, managerIds);
+
+        return briefFact(AI_BRIEF_FACT_CODES.alerts, sumRiskCalls(rows), {
+            n: rows.length,
+            ...analysisPrev(sources, rows, prev => prev.alerts),
+        });
+    }
     if (pulse) {
         const alerts = pulse.alerts.filter(
             alert =>
@@ -50,32 +108,37 @@ export function alertsFact(
         );
 
         return briefFact(AI_BRIEF_FACT_CODES.alerts, alerts.length, {
+            title: AI_BRIEF_FALLBACK_TITLES.alertsPulse,
             n: alerts.length,
         });
     }
     if (weeks.length === 0) return null;
     const flags = sum(weeks.map(week => week.payload.flags.length));
 
-    return briefFact(AI_BRIEF_FACT_CODES.alerts, flags, { n: weeks.length });
+    return briefFact(AI_BRIEF_FACT_CODES.alerts, flags, {
+        title: AI_BRIEF_FALLBACK_TITLES.alertsWeek,
+        n: weeks.length,
+    });
 }
 
 /**
  * 2. `attention` — «Внимание» РОПу. Отдельного кэша у среза нет: он
  * считается синхронно над обзором, а в строке лежит только СТАРШАЯ
  * карточка менеджера (`AiManagerRowDto.signal`, `topSignalByManager`),
- * поэтому по кэшу обзора считаются менеджеры с сигналом, а не карточки
- * (их на менеджера бывает до трёх, на отдел — до семи). Подпись факта
- * названа по тому, что реально посчитано: иначе число резюме расходилось
- * бы с вкладкой «Внимание». Второй источник — утечки рёбер из снапшота
- * прогноза, у него по той же причине своя подпись.
+ * поэтому по кэшу обзора считаются менеджеры с сигналом, а не карточки.
+ * Второй источник — утечки рёбер из снапшота прогноза со своей подписью.
  */
-export function attentionFact(sources: BriefPackSources): AiBriefFact | null {
+export function attentionFact(
+    sources: BriefPackSources,
+    managerIds: readonly string[],
+): AiBriefFact | null {
     const { overview, forecasts } = sources;
     if (overview) {
-        const flagged = overview.managers.filter(row => row.signal !== null);
+        const rows = rowsInScope(overview, managerIds);
 
-        return briefFact(AI_BRIEF_FACT_CODES.attention, flagged.length, {
-            n: overview.managers.length,
+        return briefFact(AI_BRIEF_FACT_CODES.attention, countSignals(rows), {
+            n: rows.length,
+            ...analysisPrev(sources, rows, prev => prev.attention),
         });
     }
     if (forecasts.length === 0) return null;
@@ -87,119 +150,68 @@ export function attentionFact(sources: BriefPackSources): AiBriefFact | null {
     });
 }
 
-/** Наибольший разрыв ниже нормы: минимальный Δ и его ребро. */
-interface WorstGap {
-    gap: number;
-    edge: string;
-    managerId: string;
-}
-
-function worstOverviewGap(overview: AiOverviewDto): WorstGap | null {
-    let worst: WorstGap | null = null;
-    for (const row of overview.managers) {
-        for (const edge of row.funnel) {
-            if (edge.gap === undefined) continue;
-            if (worst === null || edge.gap < worst.gap) {
-                worst = {
-                    gap: edge.gap,
-                    edge: edge.title,
-                    managerId: row.managerId,
-                };
-            }
-        }
-    }
-
-    return worst;
-}
-
-function worstSnapshotGap(
-    months: readonly BriefManagerRow<ManagerMonthPayload>[],
-    model: PortalModelPayload,
-): WorstGap | null {
-    const norms = new Map(model.edges.map(edge => [edge.edge, edge.mu]));
-    let worst: WorstGap | null = null;
-    for (const row of months) {
-        for (const edge of row.payload.edges) {
-            const mu = norms.get(edge.edge);
-            if (mu === undefined || edge.n <= 0) continue;
-            const gap = edge.s / edge.n - mu;
-            if (worst === null || gap < worst.gap) {
-                worst = { gap, edge: edge.edge, managerId: row.managerId };
-            }
-        }
-    }
-
-    return worst;
-}
-
-/** 3. `funnel_gap` — худший разрыв к норме: кэш обзора, затем снапшоты. */
-export function funnelGapFact(sources: BriefPackSources): AiBriefFact | null {
-    const { overview, months, model } = sources;
-    const worst = overview
-        ? worstOverviewGap(overview)
-        : model
-          ? worstSnapshotGap(months, model)
-          : null;
-    if (worst === null) return null;
-    const spec = AI_BRIEF_FACT_SPECS[AI_BRIEF_FACT_CODES.funnelGap];
-
-    return briefFact(AI_BRIEF_FACT_CODES.funnelGap, worst.gap, {
-        title: `${spec.title}: ${worst.edge}`,
-        managerId: worst.managerId,
-    });
-}
-
 /**
- * 4. `plan_vs_fact_sales` — закрытые продажи периода; при промахе кэша
- * берётся финансовый хвост месячных снапшотов вместе со снимком плана
- * руководителя (тогда план попадает в фразу факта).
+ * 3. `plan_vs_fact_sales` — закрытые продажи периода (с прошлым периодом);
+ * при промахе кэша — финансовый хвост месячных снапшотов «за месяц»
+ * вместе со снимком плана руководителя (план попадает в фразу факта).
  */
 export function planVsFactSalesFact(
     sources: BriefPackSources,
+    managerIds: readonly string[],
 ): AiBriefFact | null {
     const { overview, months } = sources;
     if (overview) {
-        const sales = sum(overview.managers.map(row => row.finance.salesCount));
+        const rows = rowsInScope(overview, managerIds);
 
-        return briefFact(AI_BRIEF_FACT_CODES.planVsFactSales, sales, {
-            n: overview.managers.length,
+        return briefFact(AI_BRIEF_FACT_CODES.planVsFactSales, sumSales(rows), {
+            n: rows.length,
+            ...periodPrev(sources, prev => prev.sales),
         });
     }
     if (months.length === 0) return null;
     const sales = sum(months.map(row => row.payload.finance.salesCount));
     const plan = sum(months.map(row => row.payload.planSnapshot?.sales ?? 0));
     const spec = AI_BRIEF_FACT_SPECS[AI_BRIEF_FACT_CODES.planVsFactSales];
-    const text =
-        plan > 0
-            ? `${spec.title}: ${formatFactValue(sales, spec.unit)} из ` +
-              `${formatFactValue(plan, spec.unit)}`
-            : undefined;
+    const title = AI_BRIEF_FALLBACK_TITLES.planVsFactSales;
 
     return briefFact(AI_BRIEF_FACT_CODES.planVsFactSales, sales, {
+        title,
         n: months.length,
-        ...(text === undefined ? {} : { text }),
-    });
-}
-
-/** 5. `pipeline_from_stage` — λ_pipe снапшота прогноза; null — истории стадий нет. */
-export function pipelineFact(sources: BriefPackSources): AiBriefFact | null {
-    const values = sources.forecasts
-        .map(row => row.payload.pipelineExpected)
-        .filter((value): value is number => value !== null);
-    if (values.length === 0) return null;
-
-    return briefFact(AI_BRIEF_FACT_CODES.pipelineFromStage, sum(values), {
-        n: values.length,
+        ...(plan > 0
+            ? {
+                  plan,
+                  text:
+                      `${title}: ${formatFactValue(sales, spec.unit)} из ` +
+                      formatFactValue(plan, spec.unit),
+              }
+            : {}),
     });
 }
 
 /**
- * 6. `discipline_next_step` — доля «шаг с датой»: пульс, при промахе —
- * чек-листы недельных снапшотов (взвешенное по объёму среднее, проценты
- * переводятся в долю).
+ * 4. `discipline_next_step` — доля «шаг с датой» за весь период по
+ * ячейкам обзора (с прошлым периодом, посчитанным так же); при промахе —
+ * пульс, затем чек-листы недельных снапшотов (проценты переводятся в
+ * долю), оба без сравнения.
  */
-export function disciplineFact(sources: BriefPackSources): AiBriefFact | null {
-    const { pulse, weeks } = sources;
+export function disciplineFact(
+    sources: BriefPackSources,
+    managerIds: readonly string[],
+): AiBriefFact | null {
+    const { overview, pulse, weeks } = sources;
+    if (overview) {
+        const share = nextStepShare(rowsInScope(overview, managerIds));
+        if (share !== null) {
+            return briefFact(
+                AI_BRIEF_FACT_CODES.disciplineNextStep,
+                share.value,
+                {
+                    n: share.n,
+                    ...periodPrev(sources, prev => prev.nextStep),
+                },
+            );
+        }
+    }
     if (pulse) {
         const rate = pulse.nextStepDateRate;
 
@@ -207,83 +219,54 @@ export function disciplineFact(sources: BriefPackSources): AiBriefFact | null {
             n: rate.n,
         });
     }
-    let weighted = 0;
-    let total = 0;
-    for (const week of weeks) {
-        for (const cell of week.payload.byType) {
-            const metric = cell.checklists.nextStepDateRatePct;
-            if (metric.value === null || metric.n <= 0) continue;
-            weighted += metric.value * metric.n;
-            total += metric.n;
-        }
-    }
-    if (total === 0) return null;
+    const rate = weightedRate(
+        weeks.flatMap(week =>
+            week.payload.byType.map(
+                cell => cell.checklists.nextStepDateRatePct,
+            ),
+        ),
+    );
+    if (rate === null) return null;
 
     return briefFact(
         AI_BRIEF_FACT_CODES.disciplineNextStep,
-        weighted / total / 100,
-        { n: total },
+        rate.value / PERCENT,
+        { n: rate.n },
     );
 }
 
 /**
- * 7. `calls_over_threshold` — разобранные звонки длиннее порога из
- * месячных снапшотов (эквивалент вкладки calling-statistic: она живёт в
- * другом приложении и в пакет не входит).
+ * 5. `calls_over_threshold` — разобранные звонки периода по кэшу обзора
+ * (с прошлым периодом); при промахе — звонки длиннее порога из месячных
+ * снапшотов «за месяц» (эквивалент вкладки calling-statistic).
  */
-export function callsFact(sources: BriefPackSources): AiBriefFact | null {
-    const { months } = sources;
+export function callsFact(
+    sources: BriefPackSources,
+    managerIds: readonly string[],
+): AiBriefFact | null {
+    const { overview, months } = sources;
+    if (overview) {
+        const rows = rowsInScope(overview, managerIds);
+
+        return briefFact(
+            AI_BRIEF_FACT_CODES.callsOverThreshold,
+            sumAnalyzed(rows),
+            {
+                n: rows.length,
+                ...periodPrev(sources, prev => prev.analyzedCalls),
+            },
+        );
+    }
     if (months.length === 0) return null;
-    const calls = sum(
-        months.map(row => sum(row.payload.byType.map(type => type.n))),
-    );
-
-    return briefFact(AI_BRIEF_FACT_CODES.callsOverThreshold, calls, {
-        n: months.length,
-    });
-}
-
-/** 8. `airtime` — эфирное время отдела из кэша модуля airtime. */
-export function airtimeFact(sources: BriefPackSources): AiBriefFact | null {
-    const { airtime } = sources;
-    if (airtime === null || airtime.cells === 0) return null;
-
-    return briefFact(AI_BRIEF_FACT_CODES.airtime, airtime.totalSeconds, {
-        n: airtime.cells,
-    });
-}
-
-/** 9. `forecast_p50` — прогноз месяца; только при готовности не ниже forecast. */
-export function forecastFact(sources: BriefPackSources): AiBriefFact | null {
-    const { forecasts, model } = sources;
-    const mode = model?.readiness.mode;
-    const ready = (AI_BRIEF_FORECAST_MODES as readonly string[]).includes(
-        mode ?? '',
-    );
-    if (!ready || forecasts.length === 0) return null;
+    const callsOf = (row: BriefManagerRow<ManagerMonthPayload>): number =>
+        sum(row.payload.byType.map(type => type.n));
 
     return briefFact(
-        AI_BRIEF_FACT_CODES.forecastP50,
-        sum(forecasts.map(row => row.payload.p50)),
-        { n: forecasts.length },
-    );
-}
-
-/**
- * 10. `data_quality` — причины готовности плюс предупреждения недельной
- * санити-панели модели; при отсутствии модели берётся готовность обзора.
- */
-export function dataQualityFact(sources: BriefPackSources): AiBriefFact | null {
-    const { model, overview } = sources;
-    const reasons = model
-        ? model.readiness.reasons
-        : (overview?.readiness.reasons ?? null);
-    if (reasons === null) return null;
-    const warnings = model?.sanity?.warnings.length ?? 0;
-
-    return briefFact(
-        AI_BRIEF_FACT_CODES.dataQuality,
-        reasons.length + warnings,
-        { n: reasons.length + warnings },
+        AI_BRIEF_FACT_CODES.callsOverThreshold,
+        sum(months.map(callsOf)),
+        {
+            title: AI_BRIEF_FALLBACK_TITLES.callsOverThreshold,
+            n: months.length,
+        },
     );
 }

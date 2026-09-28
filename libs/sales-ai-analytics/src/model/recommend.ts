@@ -6,6 +6,13 @@ import {
     evidenceLevelFor,
     type AiEvidenceLevel,
 } from './evidence';
+import {
+    checklistBasis,
+    objectionBasis,
+    pipelineBasis,
+    qualityBasis,
+    volumeBasis,
+} from './lever-basis.util';
 import type {
     BuildLeversInput,
     ChecklistLeverInput,
@@ -96,10 +103,7 @@ function volumeCandidate(
         cost: input.addedUnits * input.costMinutes,
         evidence: ctx.level,
         adviceAllowed: adviceAllowed(ctx.level, ctx.gate),
-        basis: [
-            `+${input.addedUnits} ${input.callType}`,
-            `продаж на активность ${input.salesPerUnit}`,
-        ],
+        basis: volumeBasis(input),
     };
 }
 
@@ -137,10 +141,7 @@ function qualityCandidate(
         cost: input.coachingHours,
         evidence: ctx.level,
         adviceAllowed: adviceAllowed(ctx.level, ctx.gate),
-        basis: [
-            `S=${input.score} → ${input.score + input.delta}`,
-            `разборов ${input.sectionCalls}`,
-        ],
+        basis: qualityBasis(input),
     };
 }
 
@@ -168,10 +169,7 @@ function checklistCandidate(
         cost: item.costHours ?? 0,
         evidence: chainLinked ? ctx.level : 'E0',
         adviceAllowed: chainLinked ? adviceAllowed(ctx.level, ctx.gate) : false,
-        basis: [
-            `${item.code}: ${item.withItem.s}/${item.withItem.n} против ${item.withoutItem.s}/${item.withoutItem.n}`,
-            chainLinked ? 'сцепка со сделкой есть' : 'до сцепки со сделкой',
-        ],
+        basis: checklistBasis(item, chainLinked),
     };
 }
 
@@ -189,7 +187,7 @@ function pipelineCandidate(
         cost: input.costHours ?? 0,
         evidence: ctx.level,
         adviceAllowed: adviceAllowed(ctx.level, ctx.gate),
-        basis: [`открытых сделок ${input.openDeals}`],
+        basis: pipelineBasis(input),
     };
 }
 
@@ -219,10 +217,7 @@ function objectionCandidate(
         cost: item.costHours ?? 0,
         evidence: chainLinked ? ctx.level : 'E0',
         adviceAllowed: chainLinked ? adviceAllowed(ctx.level, ctx.gate) : false,
-        basis: [
-            `${item.category}: исход из CRM-эпизода`,
-            `обработано ${item.crm.handled.s}/${item.crm.handled.n}`,
-        ],
+        basis: objectionBasis(item),
     };
 }
 

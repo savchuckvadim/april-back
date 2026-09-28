@@ -3,6 +3,11 @@ export * from './model/wilson';
 export * from './model/metric';
 export * from './model/xmr';
 export * from './model/workdays.util';
+// Тексты витрины словами: склонение при числах, даты недель, названия кодов.
+export * from './model/ru-text.util';
+export * from './model/iso-week.util';
+export * from './model/dictionary-titles.util';
+export * from './model/lever-basis.util';
 // Фаза 3, П10: локальный час портала для кронов (тик ежечасный, слот — по поясу).
 export * from './model/local-clock';
 export * from './model/sections.util';
@@ -125,10 +130,15 @@ export * from './model/readiness';
 export * from './model/readiness-confidence';
 export * from './model/readiness-window';
 export * from './contracts/ai-brief.contract';
+export * from './contracts/ai-brief.schema';
+export * from './contracts/ai-brief.rules';
 export * from './model/brief-pack';
 export * from './model/brief-numbers';
+export * from './model/brief-delta';
 export * from './model/brief-factcheck';
+export * from './model/brief-payload';
 export * from './model/brief-template';
+export * from './model/brief-template.groups';
 
 // Фаза 2, волна 2 «настройки портала»: типы и лимиты десяти ключей
 // [kpiSales], дефолты из реестра параметров, парсеры «битый JSON → дефолт»,
@@ -139,6 +149,7 @@ export * from './settings/ai-settings.types';
 export * from './settings/ai-settings.defaults';
 export * from './settings/ai-settings.parse';
 export * from './settings/ai-settings.sanity';
+export * from './settings/ai-settings.labels';
 export * from './settings/ai-settings.series';
 export * from './settings/registry-context.builder';
 export * from './settings/min-duration.resolve';

@@ -15,6 +15,7 @@ import {
     OVERVIEW_TO,
     twoManagersRows,
 } from './fixtures/overview.fixture';
+import { smartLinksWith } from './fixtures/smart-links.fixture';
 
 function makeUseCase(
     rows = twoManagersRows(),
@@ -66,6 +67,7 @@ function makeUseCase(
         org as never,
         levels as never,
         feedback as never,
+        smartLinksWith().loader,
     );
     return { useCase, calls, managers, kpi, finance, plans, feedback };
 }

@@ -65,6 +65,34 @@ export const AI_CALENDAR_YEARS_AROUND = 1;
 
 const MONTHS_IN_YEAR = 12;
 const MAX_MONTH_DAYS = 31;
+
+/** Месяцы в предложном падеже — «в феврале 2026». */
+const RU_MONTHS_PREPOSITIONAL = [
+    'январе',
+    'феврале',
+    'марте',
+    'апреле',
+    'мае',
+    'июне',
+    'июле',
+    'августе',
+    'сентябре',
+    'октябре',
+    'ноябре',
+    'декабре',
+] as const;
+
+/** «в феврале 2026» из ключа 'YYYY-MM'; не ключ месяца — «в месяце <как есть>». */
+export function inRuMonth(monthKey: string): string {
+    const [year, month] = monthKey.split('-').map(Number);
+    const name =
+        Number.isInteger(month) && month >= 1 && month <= MONTHS_IN_YEAR
+            ? RU_MONTHS_PREPOSITIONAL[month - 1]
+            : undefined;
+    return name === undefined || !Number.isInteger(year)
+        ? `в месяце ${monthKey}`
+        : `в ${name} ${year}`;
+}
 const ISO_WEEK_DAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 const SUNDAY_ISO = 7;
 const MAX_DAY_HOURS = 24;
@@ -187,7 +215,7 @@ export function calendarWarnings(
         const workdays = workdaysInMonth(monthKey, calendar);
         if (workdays > AI_CALENDAR_MAX_WORKDAYS_MONTH) {
             warnings.push(
-                `Производственный календарь: в месяце ${monthKey} ` +
+                `Производственный календарь: ${inRuMonth(monthKey)} ` +
                     `${workdays} рабочих дней — больше ` +
                     `${AI_CALENDAR_MAX_WORKDAYS_MONTH}, ` +
                     'праздники месяца не заведены',

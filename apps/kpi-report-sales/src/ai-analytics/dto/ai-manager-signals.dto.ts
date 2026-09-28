@@ -11,7 +11,11 @@ import { MetricDto } from './metric.dto';
  * два окна. Реэкспорт из `ai-manager-row.dto` сохраняет прежние импорты.
  */
 
-/** Риск-звонок периода (риск-флаг разбора или срочный коучинг). */
+/**
+ * Риск-звонок периода (риск-флаг разбора или срочный коучинг) со ссылкой
+ * на карточку разбора: ссылки проставляет OverviewUseCase после сборки
+ * строк одним вызовом SmartLinkLoader (withOverviewRiskCallLinks).
+ */
 export class AiRiskCallDto {
     @ApiProperty({
         description: 'Id транскрипции.',
@@ -33,6 +37,17 @@ export class AiRiskCallDto {
         example: '2026-09-03T10:15:00.000Z',
     })
     callStartedAt: string;
+
+    @ApiProperty({
+        description:
+            'Ссылка на карточку разбора звонка в Битрикс24 (смарт-процесс ' +
+            '«AI-анализ звонков»); null — элемент разбора ещё не создан или ' +
+            'смарт не установлен.',
+        type: String,
+        nullable: true,
+        example: 'https://april.bitrix24.ru/crm/type/1036/details/128/',
+    })
+    link: string | null;
 }
 
 /** Доля «шаг с датой» за два последних окна периода (сигнал next_step_drop). */

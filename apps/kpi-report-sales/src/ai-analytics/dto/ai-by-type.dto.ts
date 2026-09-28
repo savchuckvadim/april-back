@@ -151,7 +151,9 @@ export class AiByTypeLongRowDto {
     @ApiProperty({
         description: 'Объяснение показателя (шаблон кода).',
         type: String,
-        example: 'Раздел «работа по цене»: 4,2/10 (n = 11, применимость 72 %).',
+        example:
+            'Работа по цене: 4,2 из 10 по 11 разборам (для этого типа звонка ' +
+            'раздел важен на 72 %).',
     })
     explanation: string;
 }

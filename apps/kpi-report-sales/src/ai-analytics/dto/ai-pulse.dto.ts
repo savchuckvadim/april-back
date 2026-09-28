@@ -139,6 +139,17 @@ export class AiPulseAlertDto {
         example: false,
     })
     handled: boolean;
+
+    @ApiProperty({
+        description:
+            'Ссылка на карточку разбора звонка в Битрикс24 (смарт-процесс ' +
+            '«AI-анализ звонков»); null — элемент разбора ещё не создан ' +
+            'или смарт не установлен.',
+        type: String,
+        nullable: true,
+        example: 'https://april.bitrix24.ru/crm/type/1036/details/128/',
+    })
+    link: string | null;
 }
 
 /** Пульс дисциплины «следующий шаг с датой» за 5 рабочих дней (план, 6.3). */

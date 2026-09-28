@@ -5,6 +5,7 @@ import {
     liteRow,
     settingsLoaderWith,
 } from './fixtures/lite-row.fixture';
+import { smartLinksWith } from './fixtures/smart-links.fixture';
 
 /**
  * «Отработано» в тот же день: окно пульса заканчивается вчерашним рабочим
@@ -62,6 +63,7 @@ describe('PulseUseCase: отметки алертов до момента зап
             callsLoaderWith([riskyCall]).loader,
             settingsLoaderWith(),
             feedback.store,
+            smartLinksWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -80,6 +82,7 @@ describe('PulseUseCase: отметки алертов до момента зап
             loader,
             settingsLoaderWith(),
             feedbackByPeriod([]).store,
+            smartLinksWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -99,6 +102,7 @@ describe('PulseUseCase: отметки алертов до момента зап
             callsLoaderWith([riskyCall]).loader,
             settingsLoaderWith(),
             feedback.store,
+            smartLinksWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });

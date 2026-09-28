@@ -1,6 +1,7 @@
 /**
  * Чистые преобразования джобы резюме: расход вызова модели, нагрузка
- * снапшота `ai-analytics-brief` и DTO ответа.
+ * снапшота `ai-analytics-brief` и DTO ответа (версия 2: группа, ссылка и
+ * изменение буллета, сравнение с прошлым периодом).
  *
  * Вынесено из `brief-job.use-case.ts` по лимиту 300 строк: здесь нет ни
  * DI, ни времени, ни случайности — всё считается из аргументов, поэтому
@@ -10,16 +11,26 @@ import type {
     AiBriefBullet,
     AiBriefResult,
     AiEvidencePack,
+    BriefCompareStatus,
     BriefSnapshot,
     BriefSnapshotBullet,
+    SnapshotEnvelope,
 } from '@lib/sales-ai-analytics';
 import {
     AI_BRIEF_CHARS_PER_TOKEN,
     AI_BRIEF_PRICE_DECIMALS,
+    AI_BRIEF_SNAPSHOT_RECORD,
+    AI_BRIEF_TEMPLATE_FALLBACK_TEXT,
     AI_BRIEF_TEMPLATE_REASON_TEXTS,
 } from '../../constants/ai-brief.const';
+import { AI_ANALYTICS_CALC_VERSION } from '../../constants/ai-overview.const';
 import type { AiBriefLlmUsage } from '../../brief/ai-brief-llm.port';
-import type { AiBriefDto, AiBriefJobData } from '../../dto/ai-brief.dto';
+import { buildBriefPeriodKey } from '../../brief/brief-cache-key.util';
+import type {
+    AiBriefBulletDto,
+    AiBriefDto,
+    AiBriefJobData,
+} from '../../dto/ai-brief.dto';
 
 /** Расход вызова в том виде, в каком он едет в снапшот и в DTO. */
 export interface BriefUsageFacts {
@@ -75,8 +86,10 @@ export function briefUsage(
 function toSnapshotBullet(bullet: AiBriefBullet): BriefSnapshotBullet {
     return {
         text: bullet.text,
+        group: bullet.group,
         managerId: bullet.managerId ?? null,
         callType: bullet.callType ?? null,
+        link: bullet.link ?? null,
         factRefs: [...bullet.factRefs],
     };
 }
@@ -92,6 +105,10 @@ export function toBriefSnapshot(
         from: data.from,
         to: data.to,
         packHash: pack.hash,
+        comparable: pack.compare.reason === null,
+        previousPeriod: pack.compare.previousPeriod
+            ? { ...pack.compare.previousPeriod }
+            : null,
         headline: brief.headline,
         bullets: brief.bullets.map(toSnapshotBullet),
         tone: brief.tone,
@@ -109,37 +126,80 @@ export function toBriefSnapshot(
     };
 }
 
-/** Подпись причины шаблона для витрины; null — резюме собрала модель. */
+/**
+ * Конверт снапшота `ai-analytics-brief`: ключ периода — период и ростер
+ * (`buildBriefPeriodKey`), менеджера нет. Прежние резюме того же периода
+ * и состава `upsert` помечает superseded — ретенция ограничена числом
+ * периодов (долг 40 волны C); packHash остаётся в `inputsHash` и
+ * нагрузке, поэтому повтор с тем же пакетом записи не создаёт. Расход
+ * вызова едет ещё и в `usage` конверта — стор кладёт его в колонки
+ * tokens_count / price (решение B2 от 21.09.2026); модель провайдера
+ * остаётся в нагрузке.
+ */
+export function toBriefEnvelope(
+    data: AiBriefJobData,
+    payload: BriefSnapshot,
+    versions: { generatedAt: string; paramsVersion: string },
+): SnapshotEnvelope<BriefSnapshot> {
+    return {
+        domain: data.domain,
+        type: AI_BRIEF_SNAPSHOT_RECORD.TYPE,
+        periodKey: buildBriefPeriodKey(data.from, data.to, data.managerIds),
+        managerId: null,
+        calcVersion: AI_ANALYTICS_CALC_VERSION,
+        paramsVersion: versions.paramsVersion,
+        inputsHash: payload.packHash,
+        generatedAt: versions.generatedAt,
+        payload,
+        usage: { tokensCount: payload.tokensCount, price: payload.price },
+    };
+}
+
+/**
+ * Подпись причины шаблона для витрины; null — резюме собрала модель.
+ * Незнакомый код (старая запись в кэше) наружу не ходит — подпись общая.
+ */
 export function briefReasonText(reason: string | null): string | null {
     if (reason === null) return null;
 
     return (
         AI_BRIEF_TEMPLATE_REASON_TEXTS[
             reason as keyof typeof AI_BRIEF_TEMPLATE_REASON_TEXTS
-        ] ?? reason
+        ] ?? AI_BRIEF_TEMPLATE_FALLBACK_TEXT
     );
 }
 
-/** Резюме и расход вызова → DTO ответа ручки. */
+/** Буллет резюме → буллет ответа: ссылка и изменение всегда на месте. */
+function toBulletDto(bullet: AiBriefBullet): AiBriefBulletDto {
+    return {
+        text: bullet.text,
+        group: bullet.group,
+        ...(bullet.managerId === undefined
+            ? {}
+            : { managerId: bullet.managerId }),
+        ...(bullet.callType === undefined ? {} : { callType: bullet.callType }),
+        link: bullet.link ?? null,
+        delta: bullet.delta ?? null,
+        factRefs: [...bullet.factRefs],
+    };
+}
+
+/** Резюме, расход вызова и сравнение пакета → DTO ответа ручки. */
 export function toBriefDto(
     brief: AiBriefResult,
     usage: BriefUsageFacts,
+    compare: BriefCompareStatus,
 ): AiBriefDto {
     return {
         headline: brief.headline,
-        bullets: brief.bullets.map(bullet => ({
-            text: bullet.text,
-            ...(bullet.managerId === undefined
-                ? {}
-                : { managerId: bullet.managerId }),
-            ...(bullet.callType === undefined
-                ? {}
-                : { callType: bullet.callType }),
-            factRefs: [...bullet.factRefs],
-        })),
+        bullets: brief.bullets.map(toBulletDto),
         tone: brief.tone,
         source: brief.source,
         packHash: brief.packHash,
+        comparable: compare.reason === null,
+        previousPeriod: compare.previousPeriod
+            ? { ...compare.previousPeriod }
+            : null,
         generatedAt: brief.generatedAt,
         promptVersion: brief.promptVersion,
         reason: briefReasonText(brief.reason),

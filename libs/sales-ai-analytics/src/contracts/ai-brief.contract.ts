@@ -1,6 +1,10 @@
 /**
- * Контракт AI-резюме отчёта (план §8): пакет фактов (evidence pack),
- * строгая схема ответа модели, лимиты, стоп-слова и каузальные обороты.
+ * Контракт AI-резюме отчёта (план §8, версия 2 «что изменилось и что
+ * делать»): пакет фактов (evidence pack) с прошлым периодом, буллеты трёх
+ * групп, лимиты, стоп-слова и каузальные обороты.
+ *
+ * Строгая JSON-схема ответа модели — в `ai-brief.schema.ts`, правила
+ * действий и фокуса шаблона — в `ai-brief.rules.ts` (лимит 300 строк).
  * Только типы и константы — без DI и без обращений к LLM.
  */
 
@@ -42,17 +46,20 @@ export const AI_BRIEF_FACT_UNITS = [
 ] as const;
 export type AiBriefFactUnit = (typeof AI_BRIEF_FACT_UNITS)[number];
 
-/** Один факт пакета: число со своим кодом, подписью и готовой фразой. */
+/**
+ * Один факт пакета: число со своим кодом, подписью, готовой фразой и — с
+ * версии 2 — значением за прошлый период той же длины (или нормой/планом).
+ */
 export interface AiBriefFact {
     /** Уникальный код факта — на него ссылается `AiBriefBullet.factRefs`. */
     code: string;
     kind: AiBriefFactKind;
-    /** Короткая подпись факта для модели («Продажи против плана»). */
+    /** Короткая подпись факта для модели («Продаж за период»). */
     title: string;
     /** Значение факта; null — значение скрыто «честным мало данных». */
     value: number | null;
     unit: AiBriefFactUnit;
-    /** Объём данных за факом (n); попадает в допустимые числа буллета. */
+    /** Объём данных за фактом (n); попадает в допустимые числа буллета. */
     n?: number;
     /** Bitrix-id менеджера, к которому относится факт. */
     managerId?: string;
@@ -60,6 +67,53 @@ export interface AiBriefFact {
     callType?: string;
     /** Готовая фраза факта: числа в ней уже отформатированы. */
     text: string;
+    /** Значение за прошлый период той же длины; null — данных нет. */
+    prev?: number | null;
+    /** Изменение к прошлому периоду (value − prev) в единицах факта. */
+    delta?: number | null;
+    /** Изменение к прошлому периоду в процентах; null — prev ноль или нет. */
+    deltaPct?: number | null;
+    /** Есть сравнение с прошлым периодом (prev и delta заполнены). */
+    comparable: boolean;
+    /** С чем сравниваем, словами («за прошлый период», «месяц к месяцу»). */
+    basis?: string;
+    /** Норма (доля или число), если факт сравнивается с нормой. */
+    norm?: number | null;
+    /** План руководителя, если факт сравнивается с планом. */
+    plan?: number | null;
+    /** Ссылка на карточку разбора или раздел витрины; null — ссылки нет. */
+    link?: string | null;
+    /** Сигнал факта: код карточки «Внимания» или признак качества данных. */
+    signal?: string;
+}
+
+/** Причины, по которым у пакета нет сравнения с прошлым периодом. */
+export const AI_BRIEF_COMPARE_REASONS = {
+    /** Прошлый период начинается раньше сравнимой истории портала. */
+    beforeComparable: 'before-comparable',
+    /** Данных за прошлый период нет ни в кэше, ни в снапшотах. */
+    noData: 'no-data',
+    /**
+     * Расчёт не готов: джоба не дождалась обзора прошлого периода либо
+     * обзора самого периода — сравнивать пока нечего.
+     */
+    prevNotReady: 'prev-not-ready',
+} as const;
+export type AiBriefCompareReason =
+    (typeof AI_BRIEF_COMPARE_REASONS)[keyof typeof AI_BRIEF_COMPARE_REASONS];
+
+/** Прошлый период сравнения той же длины, 'YYYY-MM-DD' в TZ портала. */
+export interface BriefPeriod {
+    from: string;
+    to: string;
+}
+
+/** Состояние сравнения пакета с прошлым периодом — входит в хэш пакета. */
+export interface BriefCompareStatus {
+    /** Прошлый период сравнения; null — сравнения нет. */
+    previousPeriod: BriefPeriod | null;
+    /** Почему сравнения нет; null — сравнение есть. */
+    reason: AiBriefCompareReason | null;
 }
 
 /** Пакет фактов после обрезки: то, что уходит в модель и в факт-чек. */
@@ -69,14 +123,43 @@ export interface AiEvidencePack {
     readonly hash: string;
     /** Коды фактов, не попавших в пакет из-за лимитов. */
     readonly droppedCodes: readonly string[];
+    /** Сравнение с прошлым периодом: период и причина его отсутствия. */
+    readonly compare: BriefCompareStatus;
 }
 
-/** Буллет резюме: текст, адресат и ссылки на факты пакета. */
+/**
+ * Группы буллетов резюме: что изменилось, на кого смотреть, что сделать.
+ * Порядок — порядок вывода на витрине.
+ */
+export const AI_BRIEF_BULLET_GROUPS = ['change', 'focus', 'action'] as const;
+export type AiBriefBulletGroup = (typeof AI_BRIEF_BULLET_GROUPS)[number];
+
+/**
+ * Группы, которые пишет нейросеть. Действия в её ответ не входят: они
+ * всегда выводятся правилами из пакета фактов (`actionBullets`), чтобы
+ * ни одно действие не появилось без факта за ним.
+ */
+export const AI_BRIEF_MODEL_GROUPS = [
+    'change',
+    'focus',
+] as const satisfies readonly AiBriefBulletGroup[];
+export type AiBriefModelGroup = (typeof AI_BRIEF_MODEL_GROUPS)[number];
+
+/** Буллет резюме: группа, текст, адресат, ссылка и ссылки на факты пакета. */
 export interface AiBriefBullet {
     text: string;
+    group: AiBriefBulletGroup;
     managerId?: string;
     callType?: string;
+    /**
+     * Коды фактов пакета; пусто только у служебных пунктов без чисел —
+     * «сравнения с прошлым периодом нет» и «действий не требуется».
+     */
     factRefs: readonly string[];
+    /** Ссылка на карточку разбора или раздел витрины; null — ссылки нет. */
+    link?: string | null;
+    /** Изменение к прошлому периоду в единицах факта; null — сравнения нет. */
+    delta?: number | null;
 }
 
 /** Тон резюме: спокойный, требующий внимания, тревожный. */
@@ -106,25 +189,33 @@ export interface AiBriefResult extends AiBriefPayload {
     reason: string | null;
 }
 
-/** Лимиты резюме и пакета (план §8). */
+/** Лимиты резюме и пакета (план §8, версия 2). */
 export const AI_BRIEF_LIMITS = {
     /** Символов в заголовке. */
     headline: 140,
     /** Слов в буллете. */
     bulletWords: 30,
-    /** Буллетов в резюме. */
-    bullets: 5,
-    /** Байт в пакете фактов. */
-    packBytes: 4096,
+    /** Буллетов в резюме (сумма по группам). */
+    bullets: 10,
+    /** Буллетов на группу. */
+    groups: { change: 4, focus: 3, action: 3 } satisfies Record<
+        AiBriefBulletGroup,
+        number
+    >,
+    /** Байт в пакете фактов (факты фокуса несут заголовок и ссылку). */
+    packBytes: 8192,
     /** Фактов в пакете. */
-    packFacts: 10,
+    packFacts: 16,
     /** Меньше — резюме заменяется шаблоном. */
     minBullets: 2,
 } as const;
 export type AiBriefLimits = typeof AI_BRIEF_LIMITS;
 
-/** Версия промпта резюме; смена рвёт сравнимость резюме между периодами. */
-export const AI_BRIEF_PROMPT_VERSION = 'brief-1.0.0';
+/**
+ * Версия промпта резюме; входит в ключ кэша, смена рвёт сравнимость
+ * резюме между периодами. 2.0.0 — группы буллетов и прошлый период.
+ */
+export const AI_BRIEF_PROMPT_VERSION = 'brief-2.0.0';
 
 /**
  * Стоп-слова резюме: сравниваются по корню в нижнем регистре.
@@ -154,7 +245,6 @@ export const AI_BRIEF_CAUSAL = [
     'в результате',
     'следствие',
     'поэтому',
-    '因',
 ] as const;
 
 /** Причины отбраковки буллета факт-чеком. */
@@ -163,7 +253,10 @@ export const AI_BRIEF_DROP_REASONS = {
     empty: 'empty-text',
     /** Буллет длиннее лимита слов. */
     tooManyWords: 'bullet-too-long',
-    /** Буллетов больше лимита — лишние отбрасываются. */
+    /**
+     * Буллетов больше общего лимита. С версии 2 лимиты групп срабатывают
+     * раньше; код остаётся ради записей снапшотов прежней версии.
+     */
     overLimit: 'bullets-over-limit',
     /** Нет ни одной ссылки на факт. */
     noFactRefs: 'no-fact-refs',
@@ -177,6 +270,14 @@ export const AI_BRIEF_DROP_REASONS = {
     causal: 'causal-claim',
     /** Битая форма буллета в ответе модели. */
     malformed: 'malformed-bullet',
+    /** Группа не задана, неизвестна или не входит в группы нейросети. */
+    groupUnknown: 'group-unknown',
+    /** Буллетов группы больше лимита группы. */
+    groupOverLimit: 'group-over-limit',
+    /** Ссылка буллета не совпадает ни с одной ссылкой фактов пакета. */
+    unknownLink: 'unknown-link',
+    /** Менеджер буллета фокуса не принадлежит ни одному факту из factRefs. */
+    managerNotInRefs: 'manager-not-in-refs',
 } as const;
 export type AiBriefDropReason =
     (typeof AI_BRIEF_DROP_REASONS)[keyof typeof AI_BRIEF_DROP_REASONS];
@@ -196,61 +297,3 @@ export const AI_BRIEF_TEMPLATE_REASONS = {
 } as const;
 export type AiBriefTemplateReason =
     (typeof AI_BRIEF_TEMPLATE_REASONS)[keyof typeof AI_BRIEF_TEMPLATE_REASONS];
-
-/**
- * Строгая JSON-схема ответа модели для
- * `VibeCodeClient.structuredCompletionWithUsage` (`Record<string, unknown>`).
- * Дополнительные поля запрещены — всё, что не описано, отбрасывается
- * `validateBriefPayload`.
- */
-export const AI_BRIEF_JSON_SCHEMA: Record<string, unknown> = {
-    type: 'object',
-    additionalProperties: false,
-    required: ['headline', 'bullets', 'tone'],
-    properties: {
-        headline: {
-            type: 'string',
-            maxLength: AI_BRIEF_LIMITS.headline,
-            description: 'Заголовок резюме, до 140 символов, без причинности.',
-        },
-        tone: {
-            type: 'string',
-            enum: [...AI_BRIEF_TONES],
-            description: 'Тон резюме: calm | attention | alarm.',
-        },
-        bullets: {
-            type: 'array',
-            minItems: 1,
-            maxItems: AI_BRIEF_LIMITS.bullets,
-            items: {
-                type: 'object',
-                additionalProperties: false,
-                required: ['text', 'factRefs'],
-                properties: {
-                    text: {
-                        type: 'string',
-                        description:
-                            'Буллет до 30 слов; каждое число — из пакета фактов.',
-                    },
-                    managerId: {
-                        type: 'string',
-                        description: 'Bitrix-id менеджера факта, если он один.',
-                    },
-                    callType: {
-                        type: 'string',
-                        description: 'Код типа звонка, если буллет про тип.',
-                    },
-                    factRefs: {
-                        type: 'array',
-                        minItems: 1,
-                        items: { type: 'string' },
-                        description: 'Коды фактов пакета, на которых буллет.',
-                    },
-                },
-            },
-        },
-    },
-};
-
-/** Имя схемы для strict-JSON вызова модели. */
-export const AI_BRIEF_SCHEMA_NAME = 'ai_analytics_brief';

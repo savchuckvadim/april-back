@@ -1,9 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { QueueDispatcherService } from '@/modules/queue/dispatch/queue-dispatcher.service';
 import { AiAnalyticsCacheService } from '../../cache/ai-analytics-cache.service';
-import { AI_ANALYTICS_BRIEF_JOB_OPTIONS } from '../../constants/ai-brief.const';
+import {
+    AI_ANALYTICS_BRIEF_JOB_OPTIONS,
+    AI_BRIEF_EMPTY_PERIMETER_MESSAGE,
+} from '../../constants/ai-brief.const';
 import { AI_ANALYTICS_JOB_RUNNING_STATES } from '../../constants/ai-overview.const';
 import { buildBriefKey } from '../../brief/brief-cache-key.util';
 import { EvidencePackBuilder } from '../../brief/evidence-pack.builder';
@@ -30,11 +33,13 @@ export type BriefLookup =
 /**
  * Поиск AI-резюме по паттерну «кэш → очередь» (ai/rules/heavy-endpoint-queue.md).
  *
- * Ключ результата — `sales-ai-analytics:v1:{domain}:brief:{packHash}`: он
+ * Ключ результата —
+ * `sales-ai-analytics:v1:{domain}:brief:{promptVersion}:{packHash}`: он
  * считается по ПАКЕТУ ФАКТОВ, а не по фильтрам, поэтому два одинаковых
  * по сути периода (факты не изменились) делят один расчёт и одно резюме.
- * Пакет собирается синхронно — он читает только кэш витрины и снапшоты,
- * в Bitrix не ходит.
+ * Версия промпта в ключе: резюме прежней версии (без групп и сравнений)
+ * из кэша не отдаётся. Пакет собирается синхронно — он читает только кэш
+ * витрины и снапшоты, в Bitrix не ходит.
  *
  * Периметр: список менеджеров запроса проверяется на видимость
  * (чужой — 403), пустой список означает периметр requester'а.
@@ -80,6 +85,7 @@ export class BriefUseCase {
             managerIds,
             requestKey,
             packHash: pack.hash,
+            ...(forceRefresh ? { forceRefresh } : {}),
             ...(dto.socketId ? { socketId: dto.socketId } : {}),
             ...(dto.requesterUserId
                 ? { requesterUserId: dto.requesterUserId }
@@ -111,6 +117,9 @@ export class BriefUseCase {
      * 403 тем же правилом, что у остальных ручек), без списка берётся
      * периметр requester'а; у роли cup периметра нет
      * (visibleManagerIds = null) — пакет собирается по всему порталу.
+     * Пустой список для сборщика значит «весь портал», поэтому периметр,
+     * в котором не осталось ни одного менеджера, — отказ, а не весь
+     * портал (fail-closed).
      */
     private resolveManagerIds(
         dto: AiBriefRequestDto,
@@ -124,8 +133,13 @@ export class BriefUseCase {
 
             return explicit;
         }
+        if (access.visibleManagerIds === null) return [];
+        const perimeter = normalizeManagerIds(access.visibleManagerIds);
+        if (perimeter.length === 0) {
+            throw new ForbiddenException(AI_BRIEF_EMPTY_PERIMETER_MESSAGE);
+        }
 
-        return normalizeManagerIds(access.visibleManagerIds ?? []);
+        return perimeter;
     }
 
     /** Запись кэша → конверт; резюме общее на домен, периметр уже в пакете. */

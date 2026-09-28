@@ -2,6 +2,7 @@ import {
     agendaTtlSeconds,
     buildAccessKey,
     buildAgendaKey,
+    buildOverviewKey,
     buildPulseKey,
     buildResetPattern,
     buildSettingsKey,
@@ -19,13 +20,32 @@ describe('cache-key.util (ai-analytics)', () => {
             'sales-ai-analytics:v1:april.bitrix24.ru:settings',
         );
         expect(buildPulseKey(DOMAIN, '2026-09-04')).toBe(
-            'sales-ai-analytics:v1:april.bitrix24.ru:pulse:2026-09-04',
+            'sales-ai-analytics:v1:april.bitrix24.ru:pulse:v2:2026-09-04',
         );
         expect(buildAgendaKey(DOMAIN, '2026-W36')).toBe(
             'sales-ai-analytics:v1:april.bitrix24.ru:agenda:2026-W36',
         );
         expect(buildAccessKey(DOMAIN, '447')).toBe(
             'sales-ai-analytics:v1:april.bitrix24.ru:access:v2:447',
+        );
+    });
+
+    it('ключ обзора (= jobId = requestKey): версия формы v3 (riskCalls[].link), период, ростер, confirmedOnly', () => {
+        expect(
+            buildOverviewKey(
+                DOMAIN,
+                '2026-08-10',
+                '2026-09-06',
+                '10_20',
+                false,
+            ),
+        ).toBe(
+            'sales-ai-analytics:v1:april.bitrix24.ru:overview:v3:2026-08-10_2026-09-06:10_20:0',
+        );
+        expect(
+            buildOverviewKey(DOMAIN, '2026-08-10', '2026-09-06', '10_20', true),
+        ).toBe(
+            'sales-ai-analytics:v1:april.bitrix24.ru:overview:v3:2026-08-10_2026-09-06:10_20:1',
         );
     });
 

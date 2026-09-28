@@ -1,4 +1,10 @@
 import {
+    objectionTitleOf,
+    riskTitleOf,
+    sectionTitleOf,
+} from './dictionary-titles.util';
+import { RU_FORMS, ruCount } from './ru-text.util';
+import {
     AnalysisSection,
     ScoredSection,
     nonEmptyText,
@@ -75,15 +81,40 @@ const firstQuote = (objections: readonly AgendaObjection[]): string | null =>
         .map(objection => nonEmptyText(objection.quote))
         .find(quote => quote !== null) ?? null;
 
+/** «Слабее всего — «Работа по цене»: 3 из 10» — раздел названием, не кодом. */
 function sectionReason(section: ScoredSection): string {
-    return `Слабый раздел «${section.section}»: ${section.score}/10`;
+    return `Слабее всего — «${sectionTitleOf(section.section)}»: ${section.score} из 10`;
 }
 
+/** «Спорное возражение «Цена»: не отработано» — категория названием. */
 function objectionReason(objection: AgendaObjection): string {
-    const category = objection.category ? ` (${objection.category})` : '';
+    const category = objection.category
+        ? ` «${objectionTitleOf(objection.category)}»`
+        : '';
     const detail =
         objection.handled === false ? 'не отработано' : 'клиент отстранился';
     return `Спорное возражение${category}: ${detail}`;
+}
+
+/**
+ * «Сигналы риска: конфликт / грубость; сильный негатив клиента (2 раза)»:
+ * коды переводятся в подписи справочника, повторы одного флага в разборе
+ * (на проде встречалось «client_negative, client_negative») схлопываются
+ * в один пункт со счётчиком словами — знак «×» в текстах запрещён.
+ */
+function riskReason(riskFlags: readonly string[]): string {
+    const counts = new Map<string, number>();
+    for (const flag of riskFlags) {
+        counts.set(flag, (counts.get(flag) ?? 0) + 1);
+    }
+    const titles = [...counts.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([flag, count]) =>
+            count > 1
+                ? `${riskTitleOf(flag)} (${ruCount(count, RU_FORMS.times)})`
+                : riskTitleOf(flag),
+        );
+    return `Сигналы риска: ${titles.join('; ')}`;
 }
 
 function toCandidate(row: AgendaCallRow): AgendaCandidate | null {
@@ -95,7 +126,7 @@ function toCandidate(row: AgendaCallRow): AgendaCandidate | null {
             row,
             kind: 'risk',
             severity: -row.riskFlags.length,
-            reason: `Риск-флаги: ${[...row.riskFlags].sort().join(', ')}`,
+            reason: riskReason(row.riskFlags),
             quote: firstQuote(row.objections) ?? fallbackQuote ?? '',
         };
     }

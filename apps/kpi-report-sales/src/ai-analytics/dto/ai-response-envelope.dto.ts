@@ -25,7 +25,7 @@ export class AiAnalyticsEnvelopeDto {
             'Ключ запроса/результата (ключ кэша). Одинаковые запросы дают ' +
             'один ключ — по нему дедуплицируются повторы.',
         type: String,
-        example: 'sales-ai-analytics:v1:april.bitrix24.ru:pulse:2026-09-04',
+        example: 'sales-ai-analytics:v1:april.bitrix24.ru:pulse:v2:2026-09-04',
     })
     requestKey: string;
 

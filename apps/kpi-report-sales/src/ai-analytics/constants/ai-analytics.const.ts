@@ -52,7 +52,7 @@ export const AI_ANALYTICS_CACHE_SECTIONS = {
     PLAN: 'plan',
     /** AI-резюме дня/недели по ключу пакета фактов. */
     BRIEF: 'brief',
-    /** Счётчик вызовов LLM на менеджера в день (квота brief). */
+    /** Счётчик вызовов LLM на портал в день (квота brief, ключ по домену и дате). */
     BRIEF_QUOTA: 'brief-quota',
     /** История стадий сделок (crm.stagehistory) — эпизоды воронки. */
     STAGE_HISTORY: 'stage-history',
@@ -132,8 +132,9 @@ export const AI_ANALYTICS_ADMIN_ROLES = ['cup', 'op'] as const;
  * получает 403 на читающих ручках с этим сообщением.
  */
 export const AI_ANALYTICS_SELF_VIEW_FORBIDDEN_MESSAGE =
-    'Витрина AI-аналитики доступна руководителям; включите ' +
-    'ai_analytics_self_view_enabled, чтобы менеджеры видели свои данные';
+    'Витрина AI-аналитики доступна руководителям; чтобы менеджеры видели ' +
+    'свои данные, попросите разработчика включить настройку «Менеджер ' +
+    'видит свою аналитику»';
 
 /** Виды алерта пульса: риск-флаг разбора либо срочный приоритет коучинга. */
 export const AI_ANALYTICS_ALERT_KINDS = [

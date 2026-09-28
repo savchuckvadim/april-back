@@ -29,7 +29,8 @@ export class AiAboutRequestDto extends AiRequestBaseDto {
     @ApiProperty({
         description:
             'Ручка витрины, для которой нужен блок: overview — обзор ' +
-            'менеджер × тип, plan/daily — план дня, brief — AI-резюме, ' +
+            'менеджеров и типов звонков, plan/daily — план дня, brief — ' +
+            'краткое резюме, plan-fact — план и факт, dossier — досье, ' +
             'manager/style — карточка стиля.',
         enum: AI_ABOUT_ENDPOINTS,
         example: 'overview',
@@ -48,9 +49,10 @@ export class AiAboutParamDto {
     code: string;
 
     @ApiProperty({
-        description: 'Название параметра по-русски из реестра.',
+        description:
+            'Название параметра для руководителя простыми словами (из реестра).',
         type: String,
-        example: 'Минимум наблюдений, ниже которого чисел нет',
+        example: 'Сколько наблюдений нужно, чтобы показать число',
     })
     title: string;
 
@@ -89,9 +91,11 @@ export class AiAboutParamDto {
     kind: ParamSource;
 
     @ApiProperty({
-        description: 'Описание из реестра — что параметр делает в расчёте.',
+        description:
+            'Описание для руководителя простыми словами — что параметр делает в расчёте.',
         type: String,
-        example: 'Ниже этого числа разборов оценка ячейки не показывается.',
+        example:
+            'Если наблюдений меньше, вместо числа пишем «мало данных»: одна презентация из двух — это ещё не половина.',
     })
     description: string;
 
@@ -125,7 +129,7 @@ export class AiAboutDto {
     @ApiProperty({
         description: 'Заголовок блока.',
         type: String,
-        example: 'Обзор менеджер × тип',
+        example: 'Обзор: менеджеры и типы звонков',
     })
     title: string;
 
@@ -133,21 +137,23 @@ export class AiAboutDto {
         description: 'Что считает ручка и зачем.',
         type: String,
         example:
-            'Оценки разборов по типам звонков, рёбра воронки с нормой портала.',
+            'Оценки разборов по типам звонков, конверсия шагов воронки в сравнении с нормой по порталу.',
     })
     purpose: string;
 
     @ApiProperty({
         description: 'Источники данных.',
         type: [String],
-        example: ['разборы звонков (ais, agent-analysis) за период'],
+        example: ['разборы звонков за период'],
     })
     sources: string[];
 
     @ApiProperty({
-        description: 'Как читать результат.',
+        description: 'Как читать результат (числа подставлены из реестра).',
         type: [String],
-        example: ['n меньше порога n_min_none — числа нет'],
+        example: [
+            'если разборов меньше 8, число не показываем — пишем «мало данных»',
+        ],
     })
     howToRead: string[];
 

@@ -3,13 +3,24 @@ import {
     AI_BRIEF_PROMPT_VERSION,
     AI_BRIEF_SCHEMA_NAME,
     packJson,
+    trimEvidencePack,
 } from '@lib/sales-ai-analytics';
 import {
     buildUserContent,
     VibeCodeBriefAdapter,
 } from '../brief/vibecode-brief.adapter';
-import { AI_BRIEF_SYSTEM_PROMPT } from '../constants/ai-brief.const';
-import { BRIEF_DOMAIN, briefPack } from './fixtures/brief.fixture';
+import { briefFact } from '../brief/evidence-pack.types';
+import {
+    AI_BRIEF_BASIS_TEXTS,
+    AI_BRIEF_FACT_CODES,
+    AI_BRIEF_SYSTEM_PROMPT,
+} from '../constants/ai-brief.const';
+import {
+    BRIEF_DOMAIN,
+    BRIEF_PREV_FROM,
+    BRIEF_PREV_TO,
+    briefPack,
+} from './fixtures/brief.fixture';
 
 const PACK = briefPack();
 
@@ -88,14 +99,61 @@ describe('VibeCodeBriefAdapter: порт модели резюме', () => {
         );
     });
 
-    it('в модель уходят версия промпта, коды фактов и канонический JSON пакета', () => {
+    it('в модель уходят версия промпта, группы, коды фактов и канонический JSON пакета', () => {
         const content = buildUserContent(PACK);
 
         expect(content).toContain(AI_BRIEF_PROMPT_VERSION);
         expect(content).toContain(PACK.hash);
-        expect(content).toContain(packJson(PACK.facts));
+        // Действия нейросеть не пишет — их выводят правила пакета.
+        expect(content).toContain('Группы буллетов: change, focus.');
+        expect(content).toContain(packJson(PACK.facts, PACK.compare));
         for (const fact of PACK.facts) {
             expect(content).toContain(`[${fact.code}] ${fact.text}`);
         }
+        // Сравнения нет — модели сказано об этом словами, без дат.
+        expect(content).toContain('Сравнения с прошлым периодом нет');
+    });
+
+    it('промпт: действия не просим, числа заголовка — из пакета, без причинности в правилах', () => {
+        expect(AI_BRIEF_SYSTEM_PROMPT).toContain('Действий и советов не пиши');
+        expect(AI_BRIEF_SYSTEM_PROMPT).toContain(
+            'каждое число в тексте и в заголовке',
+        );
+        expect(AI_BRIEF_SYSTEM_PROMPT).toContain(
+            'менеджера указывай полем managerId',
+        );
+        expect(AI_BRIEF_SYSTEM_PROMPT).not.toContain('action');
+    });
+
+    it('факт с прошлым периодом уходит строкой с основанием, прошлым значением, изменением и ссылкой', () => {
+        const link = 'https://april.bitrix24.ru/crm/type/1036/details/128/';
+        const pack = trimEvidencePack(
+            [
+                briefFact(AI_BRIEF_FACT_CODES.alerts, 68, {
+                    n: 68,
+                    prev: 31,
+                    basis: AI_BRIEF_BASIS_TEXTS.period,
+                    link,
+                }),
+                briefFact(AI_BRIEF_FACT_CODES.funnelGap, -0.06, { norm: 0.2 }),
+            ],
+            {
+                compare: {
+                    previousPeriod: {
+                        from: BRIEF_PREV_FROM,
+                        to: BRIEF_PREV_TO,
+                    },
+                    reason: null,
+                },
+            },
+        );
+        const content = buildUserContent(pack);
+
+        expect(content).toContain('Прошлый период: 25–31 августа 2026.');
+        expect(content).toContain(
+            `- [alerts] Сигналов риска за период: 68 (было 31); сравнение: ${AI_BRIEF_BASIS_TEXTS.period}; ` +
+                `прошлый период: 31; изменение: 37 (119,4 %); ссылка: ${link}`,
+        );
+        expect(content).toContain('норма: 20 %');
     });
 });

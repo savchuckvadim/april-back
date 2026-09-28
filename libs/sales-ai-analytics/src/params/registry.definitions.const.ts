@@ -56,6 +56,9 @@ export const AI_ANALYTICS_DEFINITION_PARAMS = [
         breaksSeries: true,
         description:
             'Общий порог конвейера разбора для всех типов: звонок короче в разбор не идёт и остаётся вне слоя качества. Читает resolveMinDurationByType: явное значение в ai_analytics_model_params старше прежнего скаляра PortalAiSettings.minDurationSec, а порог по типу (min_duration_sec_by_type) старше обоих.',
+        userTitle: 'Минимальная длительность звонка для разбора',
+        userDescription:
+            'Звонок короче этого не разбирается и в оценку качества не попадает.',
     },
     {
         code: 'min_duration_sec_by_type',
@@ -69,6 +72,9 @@ export const AI_ANALYTICS_DEFINITION_PARAMS = [
         breaksSeries: true,
         description:
             'Решение владельца А.1: порог только отсекает звонки, которые идут в разбор, и никогда не назначает тип — тип даёт классификатор с приором CRM (холодный бывает длиннее презентации). Один и тот же параметр читают конвейер и пульс; смена порога рвёт сравнимость рядов качества.',
+        userTitle: 'Минимальная длительность звонка по типу',
+        userDescription:
+            'Для каждого типа звонка свой порог длительности: короче — в разбор не идёт; тип звонка порог не назначает.',
     },
     {
         code: 'productive_call_definition',
@@ -204,7 +210,7 @@ export const AI_ANALYTICS_DEFINITION_PARAMS = [
     },
     {
         code: 'brief_quota_per_day',
-        title: 'Квота AI-резюме на менеджера в день',
+        title: 'Квота AI-резюме на портал в день',
         scope: 'portal',
         source: 'configured',
         unit: 'резюме в день',
@@ -213,7 +219,10 @@ export const AI_ANALYTICS_DEFINITION_PARAMS = [
         phase: 2,
         breaksSeries: false,
         description:
-            'Верхняя граница вызовов LLM для блока brief: расход считается по фактическим токенам и пишется в ais.tokens_count/price на 100 % вызовов.',
+            'Верхняя граница вызовов LLM для блока brief на портал в день (BriefQuotaStore считает по домену и дате): расход считается по фактическим токенам и пишется в ais.tokens_count/price на 100 % вызовов.',
+        userTitle: 'Обращений к нейросети в день на портал',
+        userDescription:
+            'Больше этого числа резюме в день на портал не заказываем; дальше текст собирается по шаблону.',
     },
     {
         code: 'llm_price_per_1k',
@@ -227,6 +236,9 @@ export const AI_ANALYTICS_DEFINITION_PARAMS = [
         breaksSeries: false,
         description:
             'Решение владельца А.6: стоимость контура считается по факту, цена берётся из настроек портала или провайдера; ноль означает «цена не задана» и в отчёте показывается только расход токенов.',
+        userTitle: 'Цена тысячи единиц текста нейросети',
+        userDescription:
+            'По ней считаем стоимость резюме; ноль — цена не задана, показываем только расход.',
     },
     {
         code: 'retest_budget_calls',

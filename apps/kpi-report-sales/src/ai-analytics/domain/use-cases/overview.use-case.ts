@@ -5,6 +5,7 @@ import {
     Optional,
 } from '@nestjs/common';
 import { AI_ANALYTICS_OVERVIEW_MAX_MONTHS } from '../../constants/ai-overview.const';
+import { AiManagerRowDto } from '../../dto/ai-manager-row.dto';
 import { AiOverviewDto } from '../../dto/ai-overview.dto';
 import { isOverviewPeriodValid } from '../../dto/validators/overview-period.validator';
 import { AiAnalyticsFeedbackStore } from '../../store/ai-analytics-feedback.store';
@@ -19,6 +20,11 @@ import { OverviewSnapshotsLoader } from '../loaders/overview-snapshots.loader';
 import { portalRangeUtc } from '../loaders/period.util';
 import { PlansLoader } from '../loaders/plans.loader';
 import { SettingsLoader } from '../loaders/settings.loader';
+import { SmartLinkLoader } from '../loaders/smart-link.loader';
+import {
+    overviewRiskCallIds,
+    withOverviewRiskCallLinks,
+} from '../presenter/overview-links.presenter';
 import {
     buildOverviewDto,
     type OverviewPresenterSources,
@@ -48,9 +54,11 @@ const DISAGREE_KIND = 'disagree';
  * периода), KPI-месяцы, финансы, планы руководителя, раскладка по отделам,
  * уровни из стора, несогласия и снапшоты `ais` (Фаза 2, «год назад»,
  * паспорта месяца — уровень и стаж строки без ручной записи) →
- * assembler/presenter → AiOverviewDto на весь домен. Периметр requester'а
- * применяется при отдаче (applyOverviewPerimeter), результат кэшируется
- * процессором.
+ * assembler/presenter → AiOverviewDto на весь домен → ссылки риск-звонков
+ * строк на карточки разборов одним вызовом SmartLinkLoader (как у сигналов
+ * пульса; fail-open — при ошибке загрузчика link = null и один warn).
+ * Периметр requester'а применяется при отдаче (applyOverviewPerimeter),
+ * результат кэшируется процессором.
  *
  * Сам ничего не считает и не ходит в Bitrix напрямую: всё — в loader'ах
  * (PBXService.init(domain) внутри них), поэтому @Injectable без
@@ -70,6 +78,8 @@ export class OverviewUseCase {
         private readonly org: ManagerOrgLoader,
         private readonly levels: AiAnalyticsSettingsStore,
         private readonly feedback: AiAnalyticsFeedbackStore,
+        /** Ссылки риск-звонков строк на карточки разборов в смарте портала. */
+        private readonly smartLinks: SmartLinkLoader,
         /**
          * Стор снапшотов Фазы 2 (модель портала, прогнозы, стиль).
          * Необязателен: без него витрина отдаёт то же, что в Фазе 1b —
@@ -148,13 +158,39 @@ export class OverviewUseCase {
             rosterConfirmedAt: settings.rosterConfirmedAt,
             hypothesisPairs: settings.hypothesis?.pairs.length ?? 0,
         };
-        const dto = buildOverviewDto(sources, now);
+        const built = buildOverviewDto(sources, now);
+        const dto = withOverviewRiskCallLinks(
+            built,
+            await this.resolveRiskCallLinks(domain, built.managers),
+        );
         this.logger.log(
             `Обзор ${domain} ${from}..${to}: менеджеров ${dto.managers.length}, ` +
                 `звонков ${dto.meta.totalCalls}, разборов ${dto.meta.analyzedCalls}, ` +
                 `${Date.now() - startedAt} мс`,
         );
         return dto;
+    }
+
+    /**
+     * Ссылки на карточки разборов всех риск-звонков обзора одним вызовом
+     * загрузчика (он сам ходит в смарт и ais пачкой по всем id). Fail-open:
+     * ошибка загрузчика → один warn и пустая карта, у всех риск-звонков
+     * link = null — обзор не гаснет из-за ссылок.
+     */
+    private async resolveRiskCallLinks(
+        domain: string,
+        managers: readonly AiManagerRowDto[],
+    ): Promise<ReadonlyMap<string, string | null>> {
+        const ids = overviewRiskCallIds(managers);
+        if (!ids.length) return new Map();
+        try {
+            return await this.smartLinks.resolveLinks(domain, ids);
+        } catch (error) {
+            this.logger.warn(
+                `Ссылки на разборы риск-звонков обзора (${domain}) не построены: ${(error as Error).message}`,
+            );
+            return new Map();
+        }
     }
 
     /**

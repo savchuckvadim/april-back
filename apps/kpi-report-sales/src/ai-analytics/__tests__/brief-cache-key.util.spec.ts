@@ -1,6 +1,8 @@
+import { AI_BRIEF_PROMPT_VERSION } from '@lib/sales-ai-analytics';
 import {
     buildBriefKey,
     buildBriefPeriodKey,
+    buildBriefPrevKey,
     buildBriefQuotaKey,
     buildBriefRosterKey,
 } from '../brief/brief-cache-key.util';
@@ -18,13 +20,38 @@ const FROM = '2026-09-01';
 const TO = '2026-09-07';
 
 describe('ключи кэша резюме', () => {
-    it('ключ результата и квоты — по схеме секций кэша', () => {
+    it('ключ результата несёт версию промпта, ключ квоты — по схеме секций кэша', () => {
+        expect(AI_BRIEF_PROMPT_VERSION).toBe('brief-2.0.0');
         expect(buildBriefKey('a.bitrix24.ru', 'abc123')).toBe(
-            'sales-ai-analytics:v1:a.bitrix24.ru:brief:abc123',
+            'sales-ai-analytics:v1:a.bitrix24.ru:brief:brief-2.0.0:abc123',
         );
         expect(buildBriefQuotaKey('a.bitrix24.ru', '2026-09-08')).toBe(
             'sales-ai-analytics:v1:a.bitrix24.ru:brief-quota:2026-09-08',
         );
+    });
+
+    it('ключ фактов прошлого периода — в секции brief с нормализованным ростером', () => {
+        expect(
+            buildBriefPrevKey(
+                'a.bitrix24.ru',
+                '2026-08-25',
+                '2026-08-31',
+                [20, 10],
+            ),
+        ).toBe(
+            'sales-ai-analytics:v1:a.bitrix24.ru:brief:prev:2026-08-25_2026-08-31:10_20',
+        );
+        expect(
+            buildBriefPrevKey('a.bitrix24.ru', '2026-08-25', '2026-08-31', []),
+        ).toBe(
+            'sales-ai-analytics:v1:a.bitrix24.ru:brief:prev:2026-08-25_2026-08-31:all',
+        );
+        // Сброс по паттерну секции захватывает и резюме, и прошлый период.
+        expect(
+            buildBriefPrevKey('a.bitrix24.ru', '2026-08-25', '2026-08-31', [
+                10,
+            ]),
+        ).toMatch(/^sales-ai-analytics:v1:a\.bitrix24\.ru:brief:/);
     });
 });
 

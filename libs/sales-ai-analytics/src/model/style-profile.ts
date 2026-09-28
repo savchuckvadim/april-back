@@ -1,4 +1,5 @@
-import { STYLE_AXES, findStyleAxis } from './style-axes.const';
+import { RU_FORMS, ruCount } from './ru-text.util';
+import { STYLE_AXES, StyleAxisUnit, findStyleAxis } from './style-axes.const';
 import { StyleAxisContext, estimateStyleAxis } from './style-axis';
 import {
     STYLE_CONFIDENCE_REASONS,
@@ -11,6 +12,7 @@ import {
     StyleTag,
 } from './style-profile.types';
 import {
+    STYLE_UNIT_FORMS,
     StyleTagTier,
     styleNumber,
     styleTagFor,
@@ -96,10 +98,26 @@ function tierOf(
     return likely ? 'likely' : null;
 }
 
-const basisOf = (axis: StyleAxisEstimate): string =>
-    `отклонение ${styleNumber(axis.dTilde)} разброса звонков ` +
-    `(80 %-интервал ${styleNumber(axis.ci80[0])}…${styleNumber(axis.ci80[1])}), ` +
-    `n = ${axis.n}, коллег ${axis.peers}, p = ${styleNumber(axis.pRope)}`;
+/**
+ * Опора подписи словами — её читает руководитель в карточке: отклонение и
+ * интервал приводятся к полюсу подписи (для нижнего полюса знак
+ * переворачивается), объём — в единицах оси, уверенность — p_ROPE в %.
+ */
+function basisOf(axis: StyleAxisEstimate, unit: StyleAxisUnit): string {
+    const sign = axis.dTilde < 0 ? -1 : 1;
+    const [low, high] = [axis.ci80[0] * sign, axis.ci80[1] * sign].sort(
+        (a, b) => a - b,
+    );
+    const interval = `скорее всего от ${styleNumber(low)} до ${styleNumber(high)}`;
+    const volume = ruCount(axis.n, STYLE_UNIT_FORMS[unit]);
+    const peers = ruCount(axis.peers, RU_FORMS.colleaguesInstrumental);
+
+    return (
+        `заметнее, чем у коллег (отклонение ${styleNumber(Math.abs(axis.dTilde))}, ` +
+        `${interval}); ${volume}, в сравнении с ${peers}; ` +
+        `уверенность ${Math.round(axis.pRope * 100)} %`
+    );
+}
 
 function toTag(
     axis: StyleAxisEstimate,
@@ -119,6 +137,7 @@ function toTag(
     if (tier === null) {
         return null;
     }
+    const unit = findStyleAxis(axis.code)?.unit ?? 'calls';
     return {
         code: descriptor.code,
         title: descriptor.title,
@@ -129,9 +148,9 @@ function toTag(
             n: axis.n,
             minN: context.minCalls,
             peers: axis.peers,
-            unit: findStyleAxis(axis.code)?.unit ?? 'calls',
+            unit,
         }),
-        basis: basisOf(axis),
+        basis: basisOf(axis, unit),
         n: axis.n,
         pRope: axis.pRope,
         d: axis.dTilde,

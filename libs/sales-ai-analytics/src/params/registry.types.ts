@@ -82,6 +82,14 @@ export interface ParamDescriptor<T extends ParamPrimitive = ParamPrimitive> {
     readonly breaksSeries: boolean;
     /** Описание по-русски для блока «Как считаем». */
     readonly description: string;
+    /**
+     * Название для руководителя — простыми словами, без формул, символов и
+     * кодов; витрина показывает его вместо `title`. Обязателен у кодов,
+     * которые попадают в блок «Как считаем» (проверяет спека приложения).
+     */
+    readonly userTitle?: string;
+    /** Описание для руководителя в одно предложение — те же правила. */
+    readonly userDescription?: string;
     /** Для оцениваемых: как считается из данных. */
     readonly estimator?: string;
     /** Для оцениваемых: минимальный объём данных для оценки. */

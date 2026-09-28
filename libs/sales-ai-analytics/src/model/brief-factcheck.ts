@@ -1,26 +1,37 @@
 /**
- * Факт-чек AI-резюме (план §8): разбор ответа модели по строгой схеме и
- * проверка каждого буллета.
+ * Факт-чек AI-резюме (план §8, версия 2): проверка каждого буллета.
  *
- * Правила: каждое число буллета обязано быть в пакете фактов, каждая
- * ссылка `factRefs` — существовать, буллет не длиннее 30 слов, без
- * стоп-слов («значимо» — до Фазы 3) и без каузальных формулировок.
+ * Правила: каждое число буллета обязано быть в пакете фактов (значение,
+ * прошлый период, изменение, норма, план, объём или число готовой фразы),
+ * каждая ссылка `factRefs` — существовать, буллет не длиннее 30 слов, без
+ * стоп-слов («значимо» — до Фазы 3) и без каузальных формулировок; группа
+ * буллета известна; ссылка `link` совпадает со ссылкой факта пакета;
+ * менеджер буллета фокуса принадлежит одному из его фактов. Без ссылок на
+ * факты проходят только служебные пункты шаблона — «сравнения с прошлым
+ * периодом нет» и «действий не требуется»: придуманное действие без
+ * факта за ним не проходит.
+ *
  * Числа сверяются нормализованными ключами `model/brief-numbers.ts` —
- * той же функцией, которой presenter печатает числа в пакет.
+ * той же функцией, которой presenter печатает числа в пакет. Разбор
+ * ответа модели по строгой схеме — в `brief-payload.ts`.
  */
 import {
+    AI_BRIEF_BULLET_GROUPS,
     AI_BRIEF_CAUSAL,
     AI_BRIEF_DROP_REASONS,
     AI_BRIEF_FORBIDDEN,
     AI_BRIEF_LIMITS,
-    AI_BRIEF_TONES,
     type AiBriefBullet,
+    type AiBriefBulletGroup,
     type AiBriefDropReason,
     type AiBriefFact,
-    type AiBriefPayload,
-    type AiBriefTone,
+    type AiBriefFactUnit,
     type AiEvidencePack,
 } from '../contracts/ai-brief.contract';
+import {
+    AI_BRIEF_COMPARE_TEXTS,
+    AI_BRIEF_NO_ACTIONS_TEXT,
+} from '../contracts/ai-brief.rules';
 import {
     extractNumbers,
     factValueKeys,
@@ -45,21 +56,13 @@ export interface BriefFactCheckResult {
     passRatePct: number;
 }
 
-/** Итог разбора ответа модели по строгой схеме. */
-export interface BriefPayloadValidation {
-    /** null — ответ негоден целиком, нужен шаблон. */
-    payload: AiBriefPayload | null;
-    /** Коды нарушений схемы и лимитов. */
-    errors: string[];
-    dropped: BriefDroppedBullet[];
+/** Группа буллета из перечня контракта. */
+export function isBulletGroup(value: unknown): value is AiBriefBulletGroup {
+    return (
+        typeof value === 'string' &&
+        (AI_BRIEF_BULLET_GROUPS as readonly string[]).includes(value)
+    );
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-    typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const isTone = (value: unknown): value is AiBriefTone =>
-    typeof value === 'string' &&
-    (AI_BRIEF_TONES as readonly string[]).includes(value);
 
 /** Слов в тексте (лимит буллета — 30). */
 export function wordCount(text: string): number {
@@ -82,14 +85,54 @@ export function findCausal(text: string): string | null {
     return AI_BRIEF_CAUSAL.find(word => normalized.includes(word)) ?? null;
 }
 
-/** Допустимые числовые ключи одного факта: значение, n и числа фразы. */
+/** Служебные пункты шаблона по группам — единственные без ссылок на факты. */
+const SERVICE_TEXTS: Readonly<Record<AiBriefBulletGroup, ReadonlySet<string>>> =
+    {
+        change: new Set(
+            Object.values(AI_BRIEF_COMPARE_TEXTS).map(normalizeBriefText),
+        ),
+        focus: new Set<string>(),
+        action: new Set([normalizeBriefText(AI_BRIEF_NO_ACTIONS_TEXT)]),
+    };
+
+/** Служебный пункт своей группы: «сравнения нет», «действий не требуется». */
+export function isServiceBullet(bullet: AiBriefBullet): boolean {
+    return (
+        isBulletGroup(bullet.group) &&
+        SERVICE_TEXTS[bullet.group].has(normalizeBriefText(bullet.text))
+    );
+}
+
+/**
+ * Ключи числа факта с единицей и знаком: «отстаём на 6 %» пишется без
+ * минуса, поэтому модуль значения тоже считается числом пакета.
+ */
+function unitKeys(
+    value: number | null | undefined,
+    unit: AiBriefFactUnit,
+): string[] {
+    if (value === null || value === undefined) return [];
+
+    return [...factValueKeys(value, unit), ...factValueKeys(-value, unit)];
+}
+
+/**
+ * Допустимые числовые ключи одного факта: значение, прошлый период,
+ * изменение (и в процентах), норма, план, объём n и числа готовой фразы.
+ */
 export function factNumberKeys(fact: AiBriefFact): string[] {
-    const keys: string[] = [];
-    if (fact.value !== null) {
-        keys.push(...factValueKeys(fact.value, fact.unit));
-    }
+    const keys: string[] = [
+        ...unitKeys(fact.value, fact.unit),
+        ...unitKeys(fact.prev, fact.unit),
+        ...unitKeys(fact.delta, fact.unit),
+        ...unitKeys(fact.norm, fact.unit),
+        ...unitKeys(fact.plan, fact.unit),
+    ];
     if (typeof fact.n === 'number') {
         keys.push(...numberKeys(fact.n));
+    }
+    if (typeof fact.deltaPct === 'number') {
+        keys.push(...numberKeys(fact.deltaPct), ...numberKeys(-fact.deltaPct));
     }
     for (const value of extractNumbers(fact.text)) {
         keys.push(...numberKeys(value));
@@ -110,59 +153,114 @@ export function packNumberKeys(pack: AiEvidencePack): Set<string> {
     return keys;
 }
 
-/** Первая причина, по которой буллет не проходит проверку; null — прошёл. */
-function checkBullet(
-    bullet: AiBriefBullet,
-    codes: ReadonlySet<string>,
+/**
+ * Первое число текста, которого нет среди допустимых (ключом для лога);
+ * null — все числа текста из пакета. Им же проверяется заголовок модели.
+ */
+export function findAlienNumber(
+    text: string,
     allowed: ReadonlySet<string>,
-): BriefDroppedBullet | null {
-    if (bullet.text.trim() === '') {
-        return { text: bullet.text, reason: AI_BRIEF_DROP_REASONS.empty };
-    }
-    if (wordCount(bullet.text) > AI_BRIEF_LIMITS.bulletWords) {
-        return {
-            text: bullet.text,
-            reason: AI_BRIEF_DROP_REASONS.tooManyWords,
-        };
-    }
-    if (bullet.factRefs.length === 0) {
-        return { text: bullet.text, reason: AI_BRIEF_DROP_REASONS.noFactRefs };
-    }
-    const unknownRef = bullet.factRefs.find(ref => !codes.has(ref));
-    if (unknownRef !== undefined) {
-        return {
-            text: bullet.text,
-            reason: AI_BRIEF_DROP_REASONS.unknownFactRef,
-            detail: unknownRef,
-        };
-    }
-    const forbidden = findForbidden(bullet.text);
-    if (forbidden !== null) {
-        return {
-            text: bullet.text,
-            reason: AI_BRIEF_DROP_REASONS.forbiddenWord,
-            detail: forbidden,
-        };
-    }
-    const causal = findCausal(bullet.text);
-    if (causal !== null) {
-        return {
-            text: bullet.text,
-            reason: AI_BRIEF_DROP_REASONS.causal,
-            detail: causal,
-        };
-    }
-    const alien = extractNumbers(bullet.text).find(
+): string | null {
+    const alien = extractNumbers(text).find(
         value => !allowed.has(numberKey(value)),
     );
 
-    return alien === undefined
+    return alien === undefined ? null : numberKey(alien);
+}
+
+/** Ссылки фактов пакета — единственные, которые вправе нести буллет. */
+export function packLinks(pack: AiEvidencePack): Set<string> {
+    const links = new Set<string>();
+    for (const fact of pack.facts) {
+        if (typeof fact.link === 'string' && fact.link !== '') {
+            links.add(fact.link);
+        }
+    }
+
+    return links;
+}
+
+/** Всё, с чем сверяется буллет: коды, числа, ссылки и менеджеры фактов. */
+interface CheckContext {
+    codes: ReadonlySet<string>;
+    allowed: ReadonlySet<string>;
+    links: ReadonlySet<string>;
+    managerOf: ReadonlyMap<string, string | undefined>;
+}
+
+function contextOf(pack: AiEvidencePack): CheckContext {
+    return {
+        codes: new Set(pack.facts.map(fact => fact.code)),
+        allowed: packNumberKeys(pack),
+        links: packLinks(pack),
+        managerOf: new Map(pack.facts.map(fact => [fact.code, fact.managerId])),
+    };
+}
+
+const drop = (
+    bullet: AiBriefBullet,
+    reason: AiBriefDropReason,
+    detail?: string,
+): BriefDroppedBullet => ({
+    text: bullet.text,
+    reason,
+    ...(detail === undefined ? {} : { detail }),
+});
+
+/** Первая причина, по которой буллет не проходит проверку; null — прошёл. */
+function checkBullet(
+    bullet: AiBriefBullet,
+    ctx: CheckContext,
+): BriefDroppedBullet | null {
+    if (bullet.text.trim() === '') {
+        return drop(bullet, AI_BRIEF_DROP_REASONS.empty);
+    }
+    if (wordCount(bullet.text) > AI_BRIEF_LIMITS.bulletWords) {
+        return drop(bullet, AI_BRIEF_DROP_REASONS.tooManyWords);
+    }
+    if (!isBulletGroup(bullet.group)) {
+        return drop(bullet, AI_BRIEF_DROP_REASONS.groupUnknown);
+    }
+    if (bullet.factRefs.length === 0 && !isServiceBullet(bullet)) {
+        return drop(bullet, AI_BRIEF_DROP_REASONS.noFactRefs);
+    }
+    const unknownRef = bullet.factRefs.find(ref => !ctx.codes.has(ref));
+    if (unknownRef !== undefined) {
+        return drop(bullet, AI_BRIEF_DROP_REASONS.unknownFactRef, unknownRef);
+    }
+    const forbidden = findForbidden(bullet.text);
+    if (forbidden !== null) {
+        return drop(bullet, AI_BRIEF_DROP_REASONS.forbiddenWord, forbidden);
+    }
+    const causal = findCausal(bullet.text);
+    if (causal !== null) {
+        return drop(bullet, AI_BRIEF_DROP_REASONS.causal, causal);
+    }
+    if (
+        typeof bullet.link === 'string' &&
+        bullet.link !== '' &&
+        !ctx.links.has(bullet.link)
+    ) {
+        return drop(bullet, AI_BRIEF_DROP_REASONS.unknownLink, bullet.link);
+    }
+    if (
+        bullet.group === 'focus' &&
+        bullet.managerId !== undefined &&
+        !bullet.factRefs.some(
+            ref => ctx.managerOf.get(ref) === bullet.managerId,
+        )
+    ) {
+        return drop(
+            bullet,
+            AI_BRIEF_DROP_REASONS.managerNotInRefs,
+            bullet.managerId,
+        );
+    }
+    const alien = findAlienNumber(bullet.text, ctx.allowed);
+
+    return alien === null
         ? null
-        : {
-              text: bullet.text,
-              reason: AI_BRIEF_DROP_REASONS.numberNotInPack,
-              detail: numberKey(alien),
-          };
+        : drop(bullet, AI_BRIEF_DROP_REASONS.numberNotInPack, alien);
 }
 
 /**
@@ -173,12 +271,11 @@ export function factCheckBullets(
     bullets: readonly AiBriefBullet[],
     pack: AiEvidencePack,
 ): BriefFactCheckResult {
-    const allowed = packNumberKeys(pack);
-    const codes = new Set(pack.facts.map(fact => fact.code));
+    const ctx = contextOf(pack);
     const kept: AiBriefBullet[] = [];
     const dropped: BriefDroppedBullet[] = [];
     for (const bullet of bullets) {
-        const failure = checkBullet(bullet, codes, allowed);
+        const failure = checkBullet(bullet, ctx);
         if (failure === null) {
             kept.push(bullet);
         } else {
@@ -193,103 +290,4 @@ export function factCheckBullets(
         passRatePct:
             total === 0 ? 0 : Math.round((kept.length / total) * 1000) / 10,
     };
-}
-
-/** Буллет ответа модели в типизированном виде; null — форма битая. */
-function parseBullet(raw: unknown): AiBriefBullet | null {
-    if (!isRecord(raw) || typeof raw.text !== 'string') {
-        return null;
-    }
-    const refs = Array.isArray(raw.factRefs)
-        ? raw.factRefs.filter(
-              (ref): ref is string => typeof ref === 'string' && ref !== '',
-          )
-        : [];
-
-    return {
-        text: raw.text,
-        factRefs: refs,
-        ...(typeof raw.managerId === 'string'
-            ? { managerId: raw.managerId }
-            : {}),
-        ...(typeof raw.callType === 'string' ? { callType: raw.callType } : {}),
-    };
-}
-
-/** Заголовок: непустой, в лимите символов и без запрещённых оборотов. */
-function headlineError(raw: unknown): string | null {
-    if (typeof raw !== 'string' || raw.trim() === '') {
-        return 'headline-missing';
-    }
-    if (raw.length > AI_BRIEF_LIMITS.headline) {
-        return 'headline-too-long';
-    }
-    if (findForbidden(raw) !== null) {
-        return 'headline-forbidden-word';
-    }
-
-    return findCausal(raw) === null ? null : 'headline-causal-claim';
-}
-
-/**
- * Разбор ответа модели по строгой схеме: заголовок ≤ 140 символов,
- * ≤ 5 буллетов, буллет ≤ 30 слов. Лишние и битые буллеты отбрасываются,
- * негодный заголовок делает ответ непригодным целиком (тогда — шаблон).
- */
-export function validateBriefPayload(
-    raw: unknown,
-    pack: AiEvidencePack,
-): BriefPayloadValidation {
-    const errors: string[] = [];
-    const dropped: BriefDroppedBullet[] = [];
-    if (!isRecord(raw)) {
-        return { payload: null, errors: ['payload-not-object'], dropped };
-    }
-    if (pack.facts.length === 0) {
-        // Пустой пакет: сверять числа не с чем — резюме собирает шаблон.
-        return { payload: null, errors: ['empty-pack'], dropped };
-    }
-    const headlineIssue = headlineError(raw.headline);
-    if (headlineIssue !== null) {
-        return { payload: null, errors: [headlineIssue], dropped };
-    }
-    const tone: AiBriefTone = isTone(raw.tone) ? raw.tone : 'calm';
-    if (!isTone(raw.tone)) {
-        errors.push('tone-unknown');
-    }
-    const rawBullets = Array.isArray(raw.bullets) ? raw.bullets : [];
-    if (!Array.isArray(raw.bullets)) {
-        errors.push('bullets-not-array');
-    }
-    const bullets: AiBriefBullet[] = [];
-    for (const item of rawBullets) {
-        const bullet = parseBullet(item);
-        if (bullet === null) {
-            dropped.push({ text: '', reason: AI_BRIEF_DROP_REASONS.malformed });
-            continue;
-        }
-        if (bullets.length >= AI_BRIEF_LIMITS.bullets) {
-            dropped.push({
-                text: bullet.text,
-                reason: AI_BRIEF_DROP_REASONS.overLimit,
-            });
-            continue;
-        }
-        if (wordCount(bullet.text) > AI_BRIEF_LIMITS.bulletWords) {
-            dropped.push({
-                text: bullet.text,
-                reason: AI_BRIEF_DROP_REASONS.tooManyWords,
-            });
-            continue;
-        }
-        bullets.push(bullet);
-    }
-    if (bullets.length === 0) {
-        errors.push('bullets-empty');
-
-        return { payload: null, errors, dropped };
-    }
-    const headline = String(raw.headline);
-
-    return { payload: { headline, bullets, tone }, errors, dropped };
 }

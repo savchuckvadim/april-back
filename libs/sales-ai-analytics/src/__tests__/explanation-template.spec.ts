@@ -43,17 +43,21 @@ const containsForbidden = (text: string): boolean =>
     EXPLANATION_FORBIDDEN_WORDS.some(word => text.toLowerCase().includes(word));
 
 describe('renderCellExplanation', () => {
-    it('шаблон плана: оценка, сильно, слабо, изменение с ±, команда, один совет', () => {
+    it('шаблон плана словами: оценка, лучше/слабее всего, изменение с ±, команда, один совет', () => {
         const result = renderCellExplanation(cell, {
             teamMedian: 6,
             previous,
             previousSd: SD,
         });
         expect(result.text).toBe(
-            'Оценка 6,4/10 (n = 18). Сильно: приветствие 8,1 (n = 18). ' +
-                'Слабо: работа по цене 4,2 (n = 11). Изменение −0,9 (n = 18/22; ±0,5). ' +
-                'Команда: медиана 6,0. Совет: разобрать «работа по цене» на звонке t-worst.',
+            'Оценка 6,4 из 10 по 18 разборам. Лучше всего — приветствие (8,1), ' +
+                'слабее всего — работа по цене (4,2, по 11 разборам). ' +
+                'По сравнению с прошлым периодом −0,9 (18 разборов против 22) — ' +
+                'больше обычного разброса (±0,5). У команды обычно 6,0. ' +
+                'Совет: разобрать раздел «работа по цене» на самом слабом звонке.',
         );
+        // Обозначений «n = …», «/10» и id звонка в тексте нет — только в basis.
+        expect(result.text).not.toMatch(/n = |\/10|t-worst/);
         expect(result.basis).toEqual([
             'score=6.4',
             'n=18',
@@ -89,7 +93,7 @@ describe('renderCellExplanation', () => {
         }
     });
 
-    it('confidence none → «мало данных (n = …)» и только n в basis', () => {
+    it('confidence none → «мало данных: … разборов» и только n в basis', () => {
         const thin: MatrixCellCore = {
             ...cell,
             n: 5,
@@ -101,14 +105,14 @@ describe('renderCellExplanation', () => {
             scoreSd: null,
         };
         expect(renderCellExplanation(thin)).toEqual({
-            text: 'мало данных (n = 5)',
+            text: 'мало данных: 5 разборов',
             basis: ['n=5'],
         });
     });
 
     it('без прошлого периода — «нет сравнимой истории»; прошлый none — «мало данных»', () => {
         expect(renderCellExplanation(cell).text).toContain(
-            'Изменение: нет сравнимой истории.',
+            'С прошлым периодом сравнить не с чем.',
         );
         const thinPrevious: MetricValue = {
             value: null,
@@ -117,7 +121,7 @@ describe('renderCellExplanation', () => {
         };
         const result = renderCellExplanation(cell, { previous: thinPrevious });
         expect(result.text).toContain(
-            'Изменение: мало данных за прошлый период (n = 4).',
+            'За прошлый период мало данных (4 разбора).',
         );
         expect(result.basis).toContain('n_prev=4');
     });
@@ -128,22 +132,29 @@ describe('renderCellExplanation', () => {
             previousSd: SD,
         });
         expect(small.text).toContain(
-            'Изменение −0,2 (n = 18/22; ±0,5) — в пределах разброса.',
+            'По сравнению с прошлым периодом −0,2 (18 разборов против 22) — ' +
+                'в пределах обычного разброса (±0,5).',
         );
         const noSd = renderCellExplanation(cell, { previous });
-        expect(noSd.text).toContain('Изменение −0,9 (n = 18/22).');
+        expect(noSd.text).toContain(
+            'По сравнению с прошлым периодом −0,9 (18 разборов против 22).',
+        );
         expect(noSd.basis).not.toContain(expect.stringContaining('halfwidth'));
     });
 
-    it('один оценённый раздел → «Раздел:», ни одного → подсказка про n ≥ 8', () => {
+    it('один оценённый раздел → «Единственный…», ни одного → подсказка про 8 разборов', () => {
         const single = renderCellExplanation({
             ...cell,
             sections: [cell.sections[0]],
         });
-        expect(single.text).toContain('Раздел: работа по цене 4,2 (n = 11).');
+        expect(single.text).toContain(
+            'Единственный оценённый раздел — работа по цене (4,2, по 11 разборам).',
+        );
         expect(single.basis).toContain('section=PRICE:4.2:n=11');
         const none = renderCellExplanation({ ...cell, sections: [] });
-        expect(none.text).toContain('Разделы: нет оценённых (нужно n ≥ 8).');
+        expect(none.text).toContain(
+            'Оценённых разделов нет: нужно не меньше 8 разборов.',
+        );
         expect(none.text).toContain(
             'Совет: накопить разборы, чтобы увидеть разделы.',
         );
@@ -187,10 +198,14 @@ describe('renderCellExplanation', () => {
         });
         const built = buildCellCore(rows, 0);
         const result = renderCellExplanation(built);
-        expect(result.text).toContain('Оценка 7,0/10 (n = 9).');
-        expect(result.text).toContain('Сильно: приветствие 9,0 (n = 9).');
-        expect(result.text).toContain('Слабо: работа по цене 3,0 (n = 9).');
-        expect(result.text).toContain('на звонке r1.');
+        expect(result.text).toContain('Оценка 7,0 из 10 по 9 разборам.');
+        expect(result.text).toContain(
+            'Лучше всего — приветствие (9,0), слабее всего — работа по цене ' +
+                '(3,0, по 9 разборам).',
+        );
+        expect(result.text).toContain('на самом слабом звонке.');
+        // Сам худший звонок остаётся в опоре, не в тексте.
+        expect(result.basis.join(' ')).toContain('worst:r1');
     });
 
     it('подпись раздела строчными, неизвестный код — как есть', () => {

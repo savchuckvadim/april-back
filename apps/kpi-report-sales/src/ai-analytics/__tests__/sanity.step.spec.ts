@@ -108,8 +108,13 @@ describe('Правило «цель против медианы факта по�
 
         expect(result.status).toBe('warning');
         expect(result.rule).toBe(AI_SANITY_RULES.target);
-        expect(result.warnings[0]).toContain('Цель уровня middle — 12 продаж');
-        expect(result.warnings[0]).toContain('медиана факта полосы 4');
+        expect(result.warnings[0]).toContain(
+            'Цель для уровня «Мидл» — 12 продаж в месяц',
+        );
+        expect(result.warnings[0]).toContain(
+            `обычный результат менеджеров этого уровня за последние месяцы — 4 продажи (по ${MIN_N} месяцам работы)`,
+        );
+        expect(result.warnings[0]).not.toMatch(/middle|n = /);
     });
 
     it('цель рядом с медианой — вердикт «ok»', () => {
@@ -139,8 +144,23 @@ describe('Правило «SLA против фактических кванти�
         );
 
         expect(result.status).toBe('warning');
-        expect(result.warnings[0]).toContain(`SLA стадии ${STAGE.refine}`);
-        expect(result.warnings[0]).toContain('p25 17 / p50 21 / p90 31');
+        expect(result.warnings[0]).toContain('Срок на стадии «Доработка»');
+        expect(result.warnings[0]).toContain(
+            'договорились не дольше 14 дней, а половина сделок стоит дольше 21 дня, каждая десятая — дольше 31 дня',
+        );
+        expect(result.warnings[0]).toContain(`(по ${MIN_N + 4} сделкам)`);
+        expect(result.warnings[0]).not.toMatch(/p25|p50|p90|sales_/);
+    });
+
+    it('стадия вне карты названий зовётся «одной из стадий»', () => {
+        const result = slaRule(
+            { [STAGE.presentation]: 3 },
+            { [STAGE.presentation]: slaFact(MIN_N, 9) },
+            MIN_N,
+        );
+
+        expect(result.warnings[0]).toContain('Срок на одной из стадий');
+        expect(result.warnings[0]).not.toContain(STAGE.presentation);
     });
 
     it('факт укладывается в договорённость — «ok»', () => {
@@ -178,8 +198,15 @@ describe('Правило «порог длительности против фа
         const result = durationRule({ presentation: 300 }, rows, MIN_N);
 
         expect(result.status).toBe('warning');
-        expect(result.warnings[0]).toContain('отрезает 50 % звонков типа');
-        expect(result.warnings[0]).toContain('p10 100');
+        expect(result.warnings[0]).toContain(
+            'Порог длительности для звонков типа «Презентация» — 5 минут',
+        );
+        expect(result.warnings[0]).toContain('отрезает 50 % таких звонков');
+        expect(result.warnings[0]).toContain(
+            'обычно такой звонок длится от 2 минут до 15 минут, а половина — дольше 8 минут',
+        );
+        expect(result.warnings[0]).toContain('(по 10 звонкам)');
+        expect(result.warnings[0]).not.toMatch(/p10|p50|p90|presentation/);
     });
 
     it('порог отрезает меньше четверти — «ok»', () => {
@@ -213,8 +240,9 @@ describe('Правило «шум алертов»', () => {
 
         expect(result.status).toBe('warning');
         expect(result.warnings[0]).toContain(
-            'Менеджер 10: алертов за неделю 4',
+            'У одного из менеджеров 4 тревожных сигнала за неделю при допустимых 3',
         );
+        expect(result.warnings[0]).not.toContain('10');
     });
 
     it('три алерта на менеджера — ещё не шум', () => {
@@ -264,8 +292,19 @@ describe('Правило «менеджер-месяцы с прокси-отс�
 
         expect(result.status).toBe('warning');
         expect(result.warnings[0]).toContain(
-            'Менеджер-месяцев с прокси-отсутствиями 1 (10)',
+            'У одного из менеджеров отсутствия за последние месяцы не заведены руками',
         );
+        expect(result.warnings[0]).not.toMatch(/прокси|\(10\)/);
+    });
+
+    it('несколько менеджеров с угаданными отсутствиями — число словами', () => {
+        const result = exposureRule([
+            { managerId: '10', daysSource: 'proxy' },
+            { managerId: '10', daysSource: 'proxy' },
+            { managerId: '20', daysSource: 'proxy' },
+        ]);
+
+        expect(result.warnings[0]).toContain('У 2 менеджеров отсутствия');
     });
 
     it('все знаменатели по календарю — «ok»', () => {
@@ -298,6 +337,11 @@ describe('Правило «плацебо-тест меток времени»',
         expect(result.warnings[0]).toContain(
             `${Math.round(fact.maxPct * 100)} %`,
         );
+        expect(result.warnings[0]).toContain('Даты в сделках не сходятся');
+        expect(result.warnings[0]).toContain(
+            'этим цифрам пока нельзя доверять',
+        );
+        expect(result.warnings[0]).not.toContain('dq-гейт');
     });
 
     it('протечек нет — «ok»', () => {
@@ -680,8 +724,9 @@ describe('Порог длительности: один источник у пу
         const result = durationRule({ default: 60 }, rows, MIN_N);
 
         expect(result.status).toBe('warning');
-        expect(result.warnings[0]).toContain('Порог длительности типа cold');
-        expect(result.warnings[0]).toContain('(60 с)');
+        expect(result.warnings[0]).toContain(
+            'для звонков типа «Холодный (выход на ЛПР)» — 1 минута',
+        );
     });
 
     it('без карты и без реестра порог прежний — 300 с Фазы 1a', () => {
@@ -690,7 +735,7 @@ describe('Порог длительности: один источник у пу
         const result = durationRule({}, rows, MIN_N);
 
         expect(result.status).toBe('warning');
-        expect(result.warnings[0]).toContain('(300 с)');
+        expect(result.warnings[0]).toContain('— 5 минут:');
     });
 
     it('значение реестра портала доезжает до правила панели', async () => {

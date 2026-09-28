@@ -325,7 +325,9 @@ describe('Контракт шины: slaFacts и timestampLeak (stage-history �
         expect(result.report.readiness.warningRules).toContain(
             AI_SANITY_RULES.timestampLeak,
         );
-        expect(result.warnings.join(' ')).toContain('Протечка меток времени');
+        expect(result.warnings.join(' ')).toContain(
+            'Даты в сделках не сходятся',
+        );
     });
 
     it('отчёт панели из шины попадает в факты модели портала того же прогона', async () => {

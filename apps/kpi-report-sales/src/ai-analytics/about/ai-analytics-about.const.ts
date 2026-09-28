@@ -1,19 +1,21 @@
-import type {
-    AiAnalyticsParamCode,
-    ParamResolveReason,
-    ParamResolveSource,
-    ParamSource,
+import {
+    RU_FORMS,
+    ruCount,
+    type AiAnalyticsParamCode,
+    type ParamResolveReason,
+    type ParamResolveSource,
+    type ParamSource,
+    type RuPluralForms,
 } from '@lib/sales-ai-analytics';
 
 /**
- * Блок «Как считаем» (план Фазы 2 §6, долг 26 волны C): статические
- * тексты по ручкам витрины и перечень кодов параметров, которые ручка
- * использует. Числа в блоке НЕ пишутся руками — их подставляет билдер из
- * реестра и снапшота модели портала; здесь только слова и коды.
+ * Блок «Как считаем» (план Фазы 2 §6, долг 26 волны C): словарь ручек,
+ * подписи оценок модели и причины её отсутствия. Тексты по ручкам — в
+ * `ai-analytics-about.texts.const.ts` (вынесены по лимиту 300 строк).
  *
- * Перечень кодов закреплён `__tests__/about.spec.ts`: спека транзитивно
- * сканирует исходники ручки и требует, чтобы каждый найденный код был в
- * её списке. Новый код в коде ручки → дописать сюда, иначе спека красная.
+ * Правило владельца: всё, что читает руководитель, — простым русским, без
+ * формул, греческих букв, кодов и жаргона. Числа в блоке НЕ пишутся
+ * руками — их подставляет билдер из реестра и снапшота модели портала.
  */
 export const AI_ABOUT_ROUTE = 'about' as const;
 
@@ -55,22 +57,25 @@ export const AI_ABOUT_RESOLVE_REASONS = [
     'unknown-code',
 ] as const satisfies readonly ParamResolveReason[];
 
-/** Оценки модели портала в блоке: код реестра, символ и подпись. */
+/**
+ * Оценки модели портала в блоке: код реестра, короткая подпись (поле
+ * `symbol` DTO — раньше там была греческая буква) и полное название.
+ */
 export const AI_ABOUT_ESTIMATES = {
     kappa: {
         code: 'kappa_edge_late',
-        symbol: 'κ',
-        title: 'Сила усадки менеджера к норме',
+        symbol: 'сила усадки',
+        title: 'Насколько сильно цифры менеджера подтягиваются к норме',
     },
     phi: {
         code: 'overdispersion_default',
-        symbol: 'φ',
-        title: 'Сверхдисперсия темпов активностей',
+        symbol: 'разброс между менеджерами',
+        title: 'Насколько сильно темпы менеджеров отличаются друг от друга',
     },
     lambda: {
         code: 'forget_lambda',
-        symbol: 'λ',
-        title: 'Забывание прошлых месяцев',
+        symbol: 'память ряда',
+        title: 'Как быстро забываются прошлые месяцы',
     },
 } as const satisfies Readonly<
     Record<
@@ -79,16 +84,48 @@ export const AI_ABOUT_ESTIMATES = {
     >
 >;
 
+/** «для 1 из 4 шагов воронки» — родительный падеж. */
+const FUNNEL_STEPS_GENITIVE: RuPluralForms = ['шага', 'шагов', 'шагов'];
+
+/** Пояснения к источнику оценки модели — словами. */
+export const AI_ABOUT_ESTIMATE_NOTES = {
+    /** Часть шагов воронки уточнена по данным портала. */
+    edgesEstimated: (estimated: number, total: number): string =>
+        estimated >= total
+            ? 'для всех шагов воронки норма уточнена по данным портала'
+            : `для ${estimated} из ${ruCount(total, FUNNEL_STEPS_GENITIVE)} ` +
+              'воронки норма уточнена по данным портала, для остальных — ' +
+              'стандартное значение',
+    estimated: 'оценено по данным портала',
+    notEstimated:
+        'по данным портала пока не оценивается — стандартное значение',
+    configuredByPortal: 'задано настройкой портала',
+    configured: 'задано настройкой — стандартное значение',
+} as const;
+
 /** Почему в блоке нет модели портала — честная деградация (§5.4). */
 export const AI_ABOUT_MODEL_REASONS = {
     missing:
-        'Модель портала ещё не рассчитана: месячный шаг ночного конвейера не ' +
-        'отработал. Параметры показаны по реестру и настройкам портала, ' +
-        'режим готовности без модели — не выше descriptive.',
+        'Расчёт по порталу ещё не готов: ночной пересчёт за месяц не ' +
+        'выполнялся. Параметры показаны по стандартным значениям и ' +
+        'настройкам портала; пока расчёт по порталу не готов, витрина ' +
+        'показывает только описательные цифры, без норм.',
     unavailable:
-        'Хранилище снапшотов не ответило: модель портала прочитать не ' +
-        'удалось. Параметры показаны по реестру и настройкам портала.',
+        'Не удалось прочитать расчёт по порталу. Параметры показаны по ' +
+        'стандартным значениям и настройкам портала.',
 } as const;
+
+/**
+ * Числа для строк блока — только из реестра со слоями портала: билдер
+ * отдаёт действующее значение кода, текст подставляет его в слова.
+ */
+export interface AiAboutNumbers {
+    /** Действующее числовое значение кода; у нечисловых кодов — дефолт. */
+    readonly value: (code: AiAnalyticsParamCode) => number;
+}
+
+/** Строка блока: готовый текст или текст с числами из реестра. */
+export type AiAboutLine = string | ((numbers: AiAboutNumbers) => string);
 
 export interface AiAboutEndpointText {
     readonly endpoint: AiAboutEndpoint;
@@ -96,230 +133,14 @@ export interface AiAboutEndpointText {
     readonly purpose: string;
     /** Откуда берутся данные. */
     readonly sources: readonly string[];
-    /** Как читать результат. */
-    readonly howToRead: readonly string[];
+    /** Как читать результат; числа — из реестра через билдер. */
+    readonly howToRead: readonly AiAboutLine[];
     /** Чего ручка не делает (границы). */
     readonly notDoing: readonly string[];
     /** Коды реестра, которые ручка использует (проверяется спекой). */
     readonly params: readonly AiAnalyticsParamCode[];
 }
 
-/**
- * Коды, общие для всех ручек: порог разбора, пороги «мало данных» и
- * доверия (`AI_ANALYTICS_THRESHOLDS`), XmR, гейт совета, сцепка.
- */
-const SHARED_PARAMS = [
-    'golden_kappa_min',
-    'min_duration_sec',
-    'min_duration_sec_by_type',
-    'n_min_none',
-    'n_min_ok_score',
-    'n_min_ok_rate',
-    'n_min_rating',
-    'trend_window_calls',
-    'xmr_sigma',
-    'xmr_run_length',
-    'z_compare',
-    'evidence_gate_advice',
-    'deal_chain_min_pct',
-    'deal_chain_exit_pct',
-    'pool_min_portals_beta',
-] as const satisfies readonly AiAnalyticsParamCode[];
-
-/** Коды норм и рычагов, общие для обзора и плана дня. */
-const NORM_PARAMS = [
-    'kappa_edge_early',
-    'kappa_edge_late',
-    'kappa_max',
-    'kappa_activity_days',
-    'kappa_layer_ratio',
-    'kappa_portal_to_global',
-    'forget_lambda',
-    'delta_prac_score',
-    'delta_prac_pct',
-    'lever_max',
-    'lever_lb_level',
-    'lever_min_section_calls',
-] as const satisfies readonly AiAnalyticsParamCode[];
-
-export const AI_ABOUT_ENDPOINT_TEXTS: Readonly<
-    Record<AiAboutEndpoint, AiAboutEndpointText>
-> = {
-    overview: {
-        endpoint: 'overview',
-        title: 'Обзор менеджер × тип',
-        purpose:
-            'Оценки разборов по типам звонков, рёбра воронки с нормой ' +
-            'портала, рычаги и готовность витрины за период.',
-        sources: [
-            'разборы звонков (ais, agent-analysis) за период в TZ портала',
-            'KPI-список sales_kpi (план-факт звонков и презентаций)',
-            'финансы закрытых сделок и живой пайплайн',
-            'месячная модель портала (нормы μ, κ) и прогнозы менеджеров из ais',
-        ],
-        howToRead: [
-            'n меньше порога n_min_none — числа нет, показывается «мало данных»',
-            'ребро воронки: своя доля, норма портала и вес данных w ∈ [0; 1]',
-            'разрыв к норме меньше практического порога — направления нет',
-            'режим готовности с причинами — в баннере; без модели портала не выше descriptive',
-            'карточка goodhart во «Внимании»: за goodhart_window_months сглаженное давление (объём, оценка, доля ребра) выросло, а противовес упал не меньше goodhart_drop — «метрика растёт, результат — нет»',
-        ],
-        notDoing: [
-            'не ставит менеджерам рейтинг и не сравнивает людей по стилю',
-            'не утверждает причинность: связь «качество → исход» до оценки β — гипотеза',
-        ],
-        params: [
-            ...SHARED_PARAMS,
-            ...NORM_PARAMS,
-            'kappa_boot_ratio',
-            'calibration_min_months',
-            'calibration_min_presentations',
-            'roster_confirm_required',
-            'goodhart_window_months',
-            'goodhart_drop',
-        ],
-    },
-    'plan/daily': {
-        endpoint: 'plan/daily',
-        title: 'План дня менеджера',
-        purpose:
-            'Обратная задача от цели месяца: сколько входной активности ' +
-            'нужно до конца месяца с учётом пайплайна, зрелости лага и потолка дня.',
-        sources: [
-            'снапшот прогноза дня (P50, λ_pipe, λ_new, утечки рёбер)',
-            'месячная модель портала (θ рёбер, шкала лага F(d), потолок cap)',
-            'месяц менеджера (Y₀, входная активность, план руководителя)',
-        ],
-        howToRead: [
-            'G → Y₀ → λ_pipe → N_req → разворот по рёбрам → потолок дня',
-            'λ_pipe = null с причиной — истории стадий нет, а не «пайплайн пуст»',
-            'рычаг объёма выдаётся только с 80 %-интервалом эффекта',
-        ],
-        notDoing: [
-            'не назначает план руководителя — берёт его из CRM или цели уровня',
-            'не меняет потолок дня: множитель plan_day_ceiling — решение портала',
-        ],
-        params: [
-            ...SHARED_PARAMS,
-            ...NORM_PARAMS,
-            'plan_day_ceiling',
-            'f_min',
-            'cycle_median_days',
-            'lag_window_sale_days',
-            'lag_cdf_F',
-            'cif_sale_inf',
-            'cap_quantile',
-            'day_hours',
-            's_ref',
-            's_req_max',
-            'lever_samples',
-            'fte_share_default',
-            'absence_proxy_min_run',
-            'min_workdays_month',
-        ],
-    },
-    brief: {
-        endpoint: 'brief',
-        title: 'AI-резюме периода',
-        purpose:
-            'Короткий текст по пакету фактов витрины: числа считает код, ' +
-            'модель только формулирует; каждая цифра проходит факт-чек.',
-        sources: [
-            'пакет фактов обзора за период (хэш пакета — ключ кэша)',
-            'VibeCode (LLM) при наличии ключа и квоты; иначе шаблон',
-        ],
-        howToRead: [
-            'source = template — ключа нет, квота исчерпана или факт-чек не пройден; причина в ответе',
-            'стоп-слова и каузальные обороты в тексте запрещены — их ловит факт-чек',
-        ],
-        notDoing: [
-            'не считает новых чисел: только числа из пакета фактов',
-            'не пишет о менеджере вне периметра запросившего',
-        ],
-        params: [...SHARED_PARAMS, 'brief_quota_per_day', 'llm_price_per_1k'],
-    },
-    'plan-fact': {
-        endpoint: 'plan-fact',
-        title: 'Реконсиляция план-факт',
-        purpose:
-            'Цели руководителя за месяц против факта на дату: темп по ' +
-            'рабочим дням, прогноз закрытия, разрыв и «сколько надо в день».',
-        sources: [
-            'снимок целей руководителя за месяц (ais, тип plan)',
-            'месяцы менеджеров (ais, тип manager-month): KPI-вектор и финансовый хвост',
-            'рабочий календарь портала',
-        ],
-        howToRead: [
-            'темп 1 — идём ровно по плану; полоса вокруг единицы задана delta_prac_pct',
-            'прогноз срезан потолком дня plan_day_ceiling — догонять месяц рывком нельзя',
-            'плана нет — строка no-plan без единого числа, причина в reasons',
-        ],
-        notDoing: [
-            'не сверяет денежный план: источник плана — только снимок целей руководителя',
-            'не назначает цели и не меняет их задним числом',
-        ],
-        params: [...SHARED_PARAMS, 'plan_day_ceiling', 'delta_prac_pct'],
-    },
-    dossier: {
-        endpoint: 'dossier',
-        title: 'Досье менеджера',
-        purpose:
-            'Всё, что витрина знает о менеджере за окно: паспорт, ряды ' +
-            'недель и месяцев, тренды, план-факт, год назад, стиль, ' +
-            'возражения, обратная связь, метки руководителя и готовность.',
-        sources: [
-            'снапшоты менеджера за окно: недели и месяцы',
-            'снапшот стиля и настройка отказа сотрудника от профиля',
-            'снапшот трендов за последнюю неделю окна',
-            'снимок целей руководителя за последний месяц окна и месяц год назад (M−12)',
-            'модель портала последнего месяца окна (готовность)',
-            'записи обратной связи и метки руководителя',
-        ],
-        howToRead: [
-            'раздел пуст — он не собрался; код и подпись причины лежат в reasons',
-            'разделы соседних ручек считаются их же презентерами на тех же снапшотах: тренды — как в строке обзора, план-факт — как в ручке plan-fact (те же plan_day_ceiling и delta_prac_pct), год назад — как блок yoy обзора',
-            'окно с текущим месяцем живёт в кэше 10 минут, окно закрытых месяцев — 30 дней',
-        ],
-        notDoing: [
-            'не считает ничего сам: только читает снапшоты и записи, в Битрикс не ходит',
-            'не сравнивает людей между собой и не ставит рейтинг',
-        ],
-        params: [...SHARED_PARAMS, 'plan_day_ceiling', 'delta_prac_pct'],
-    },
-    'manager/style': {
-        endpoint: 'manager/style',
-        title: 'Карточка стиля менеджера',
-        purpose:
-            'Как человек работает: оси с двумя законными полюсами, ' +
-            'отклонение от нормы коллег с интервалом 80 %, подписи-факты.',
-        sources: [
-            'снапшот стиля за месячное окно (ночной шаг конвейера)',
-            'маркеры стиля из разборов и жёсткие счётчики телефонии и CRM',
-        ],
-        howToRead: [
-            'рейтинга по осям нет: обе стороны оси нейтральны',
-            'меньше style_min_calls разборов или мало коллег — «данных для стиля пока мало»',
-            'подпись выдаётся при p_out ≥ style_p_out и снимается при p_in ≤ style_p_in',
-        ],
-        notDoing: [
-            'не входит в нормы, цели и премии',
-            'не профилирует сотрудника из ai_analytics_style_opt_out',
-        ],
-        params: [
-            ...SHARED_PARAMS,
-            'style_min_calls',
-            'style_min_peers',
-            'style_p_in',
-            'style_p_out',
-            'style_rope_delta',
-            'style_tenure_kappa',
-            'style_z_raw',
-            'style_interval_z',
-            'style_dispersion_min_days',
-            'style_conversation_min_sec',
-            'style_tempo_min_sec',
-            'style_give_up_workdays',
-            'style_promise_window_days',
-        ],
-    },
-};
+/** «3 месяца», «5 месяцев» — для окон и сроков в строках блока. */
+export const aboutMonths = (count: number): string =>
+    ruCount(count, RU_FORMS.months);

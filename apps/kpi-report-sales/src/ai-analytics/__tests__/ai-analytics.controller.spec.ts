@@ -28,6 +28,7 @@ const pulse: AiPulseDto = {
             quote: '',
             callStartedAt: '2026-09-01T07:00:00.000Z',
             handled: false,
+            link: null,
         },
         {
             managerId: '20',
@@ -36,6 +37,7 @@ const pulse: AiPulseDto = {
             quote: '',
             callStartedAt: '2026-09-02T07:00:00.000Z',
             handled: true,
+            link: 'https://april.bitrix24.ru/crm/type/1036/details/128/',
         },
     ],
 };
@@ -164,7 +166,7 @@ describe('AiAnalyticsController', () => {
         const response = await controller.getPulse(base);
         expect(response.status).toBe('ready');
         expect(response.requestKey).toBe(
-            'sales-ai-analytics:v1:april.bitrix24.ru:pulse:2026-09-04',
+            'sales-ai-analytics:v1:april.bitrix24.ru:pulse:v2:2026-09-04',
         );
         expect(response.data?.byManager).toHaveLength(2);
         expect(response.data?.alerts).toHaveLength(2);

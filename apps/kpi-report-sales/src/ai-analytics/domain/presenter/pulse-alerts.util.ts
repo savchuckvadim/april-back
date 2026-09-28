@@ -51,6 +51,12 @@ export function pickAlertQuote(
         : quote;
 }
 
+/**
+ * Сигнал без ссылки на карточку разбора: ссылки проставляет use-case после
+ * резолва SmartLinkLoader (withPulseAlertLinks в pulse.presenter).
+ */
+export type PulseAlertDraft = Omit<AiPulseAlertDto, 'link'>;
+
 export interface AlertMarks {
     /** transcriptionId звонков с ais alert_sent. */
     sent: ReadonlySet<string>;
@@ -67,7 +73,7 @@ export function collectPulseAlerts(
     window: { from: string; to: string },
     timeZone: string,
     marks: AlertMarks,
-): AiPulseAlertDto[] {
+): PulseAlertDraft[] {
     return rows
         .filter(row => {
             const day = toPortalDate(row.callStartedAt, timeZone);

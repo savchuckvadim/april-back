@@ -11,6 +11,9 @@ import {
     confidenceFor,
     isCallTypeCode,
     MetricValue,
+    objectionTitleOf,
+    RU_FORMS,
+    ruCount,
 } from '@lib/sales-ai-analytics';
 import {
     AI_ANALYTICS_BY_TYPE_ALL,
@@ -30,6 +33,7 @@ import {
 } from '../../dto/ai-manager-type-cell.dto';
 import { AiObjectionsManagerDto } from '../../dto/ai-objections.dto';
 import { AiOverviewDto } from '../../dto/ai-overview.dto';
+import { kpiEventTitle, kpiReasonText } from './kpi-title.util';
 import { ru1, typeTitle } from './type-cell.presenter';
 
 const OBJECTIONS_TITLE = 'Возражения';
@@ -74,10 +78,23 @@ const sectionMetric = (avgScore: number | null, n: number): MetricValue => ({
     confidence: confidenceFor(n, 'score'),
 });
 
+/** «45 % из 20 разборов» / «мало данных: 3 разбора» — объём словами. */
 const pctText = (metric: MetricValue): string =>
     metric.value === null
-        ? `мало данных (n = ${metric.n})`
-        : `${Math.round(metric.value)} % (n = ${metric.n})`;
+        ? `мало данных: ${ruCount(metric.n, RU_FORMS.reviews)}`
+        : `${Math.round(metric.value)} % из ${ruCount(metric.n, RU_FORMS.reviewsGenitive)}`;
+
+/** «Сделано 40 при плане 60» / «Факта нет: …» — строка KPI словами. */
+function kpiExplanation(
+    fact: number | null,
+    planCrm: number | undefined,
+    reason: string | undefined,
+): string {
+    if (fact === null) return `Факта нет: ${kpiReasonText(reason)}.`;
+    const plan = planCrm === undefined ? '' : ` при плане ${planCrm}`;
+
+    return `Сделано ${fact}${plan}.`;
+}
 
 /**
  * Пары в порядке менеджеров обзора, внутри менеджера — в порядке типов
@@ -160,18 +177,13 @@ export function toLongRows(
         });
     }
     for (const kpi of cell.kpi) {
-        const plan =
-            kpi.planCrm !== undefined ? `, план CRM ${kpi.planCrm}` : '';
         rows.push({
             ...base,
             kind: 'kpi',
             indicator: kpi.code,
-            title: `KPI ${kpi.code}`,
+            title: kpiEventTitle(kpi.code),
             metric: factMetric(kpi.fact),
-            explanation:
-                kpi.fact === null
-                    ? `Факта нет (${kpi.reason ?? 'нет данных'}).`
-                    : `Факт ${kpi.fact}${plan}.`,
+            explanation: kpiExplanation(kpi.fact, kpi.planCrm, kpi.reason),
         });
     }
     return rows;
@@ -192,10 +204,11 @@ export function toObjectionLongRows(
             callType: AI_ANALYTICS_BY_TYPE_OBJECTIONS,
             kind: 'objection',
             indicator: category.category,
-            title: category.category,
+            title: objectionTitleOf(category.category),
             metric: category.handledRatePct,
             explanation:
-                `${category.n} возражений в ${category.calls} звонках, ${handled}; ` +
+                `${ruCount(category.n, RU_FORMS.objections)} в ` +
+                `${ruCount(category.calls, RU_FORMS.callsPrepositional)}, ${handled}; ` +
                 `исходы: продолжили ${outcomes.continued}, согласились ${outcomes.converted}, ` +
                 `ушли ${outcomes.disengaged}, без исхода ${outcomes.other}.`,
         };

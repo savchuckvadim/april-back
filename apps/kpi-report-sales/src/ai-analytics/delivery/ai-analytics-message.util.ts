@@ -8,9 +8,15 @@ import {
     CALL_REPORT_CALL_TYPE_ITEMS,
     CALL_REPORT_SECTIONS,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
-import { DigestItem } from '@lib/sales-ai-analytics';
+import {
+    DigestItem,
+    isIsoWeekKey,
+    mondayOfIsoWeek,
+    shiftDate,
+} from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_PUSH_QUOTE_MAX_LENGTH } from '../constants/ai-analytics.const';
 import { AiAgendaDisagreementDto, AiAgendaItemDto } from '../dto/ai-agenda.dto';
+import { feedbackObjectLabel } from './feedback-object-label.util';
 
 export interface AgendaMessageInput {
     weekKey: string;
@@ -31,7 +37,7 @@ export interface DigestMessageInput {
     managerName?: string | null;
 }
 
-export const AGENDA_MESSAGE_TITLE = 'Повестка планёрки: звонки недели';
+export const AGENDA_MESSAGE_TITLE = 'Повестка планёрки';
 export const DIGEST_MESSAGE_TITLE = 'Вчерашние звонки: что сказать иначе';
 
 /** Название типа звонка из справочника смарта; неизвестный — код. */
@@ -84,6 +90,28 @@ export function formatPortalDay(day: string): string {
     return year && month && date ? `${date}.${month}.${year}` : day;
 }
 
+/** «04.09» из YYYY-MM-DD — короткая дата внутри заголовка. */
+const formatDayMonth = (day: string): string =>
+    formatPortalDay(day).slice(0, 5);
+
+/**
+ * Заголовок повестки словами: weekKey — ТЕКУЩАЯ неделя планёрки, звонки
+ * в ней — за предыдущую полную ISO-неделю: «Повестка планёрки (неделя с
+ * 22.09): звонки за 15–21.09». Не ключ недели — как есть, без дат.
+ */
+export function agendaMessageHeadline(weekKey: string): string {
+    if (!isIsoWeekKey(weekKey)) {
+        return `${AGENDA_MESSAGE_TITLE}: звонки недели ${weekKey}`;
+    }
+    const monday = mondayOfIsoWeek(weekKey);
+    const callsFrom = formatDayMonth(shiftDate(monday, -7));
+    const callsTo = formatDayMonth(shiftDate(monday, -1));
+    return (
+        `${AGENDA_MESSAGE_TITLE} (неделя с ${formatDayMonth(monday)}): ` +
+        `звонки за ${callsFrom}–${callsTo}`
+    );
+}
+
 const nonNull = (line: string | null): line is string => line !== null;
 
 /**
@@ -91,7 +119,7 @@ const nonNull = (line: string | null): line is string => line !== null;
  * ссылка) и пункт «Несогласия недели».
  */
 export function buildAgendaMessage(input: AgendaMessageInput): string {
-    const head = `[B]${AGENDA_MESSAGE_TITLE} ${input.weekKey}[/B]`;
+    const head = `[B]${agendaMessageHeadline(input.weekKey)}[/B]`;
     const calls = input.items.flatMap((item, index) =>
         [
             `${index + 1}. ${managerLabel(item.managerId, input.managerNames)} — ${callTypeTitle(item.callType)}`,
@@ -105,7 +133,7 @@ export function buildAgendaMessage(input: AgendaMessageInput): string {
               `Несогласия недели: ${input.disagreements.length}`,
               ...input.disagreements.map(
                   record =>
-                      `— ${managerLabel(record.managerId, input.managerNames)} · ${record.object}` +
+                      `— ${managerLabel(record.managerId, input.managerNames)} · ${feedbackObjectLabel(record.object)}` +
                       (record.reason
                           ? `: ${truncateQuote(record.reason)}`
                           : ''),

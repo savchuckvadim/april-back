@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
     computePulse,
     lastWorkdays,
@@ -13,8 +13,13 @@ import { toPulseRow } from '../loaders/lite-row.mapper';
 import { portalMinDurationByType } from '../loaders/min-duration.util';
 import { portalRangeUtc } from '../loaders/period.util';
 import { SettingsLoader } from '../loaders/settings.loader';
-import { AlertMarks, collectPulseAlerts } from '../presenter/pulse-alerts.util';
-import { toPulseDto } from '../presenter/pulse.presenter';
+import { SmartLinkLoader } from '../loaders/smart-link.loader';
+import {
+    AlertMarks,
+    collectPulseAlerts,
+    PulseAlertDraft,
+} from '../presenter/pulse-alerts.util';
+import { toPulseDto, withPulseAlertLinks } from '../presenter/pulse.presenter';
 
 /**
  * Единый порог «разбираемого» звонка живёт в
@@ -43,15 +48,23 @@ export interface PulseUseCaseOptions {
  * видно сразу. Запись alert_handled сбрасывает кэш пульса домена
  * (FeedbackUseCase), поэтому следующий запрос пересчитывает отметки.
  *
+ * Каждый сигнал несёт ссылку на карточку разбора в смарте «AI-анализ
+ * звонков» (SmartLinkLoader, как в повестке и «Внимании»): один вызов
+ * загрузчика на все сигналы окна; fail-open — без элемента смарта или при
+ * ошибке загрузчика link = null, пульс отдаётся без ссылок.
+ *
  * Результат — на весь домен (кэшируется контроллером); периметр
  * requester'а применяется presenter'ом при отдаче.
  */
 @Injectable()
 export class PulseUseCase {
+    private readonly logger = new Logger(PulseUseCase.name);
+
     constructor(
         private readonly calls: CallsLoader,
         private readonly settings: SettingsLoader,
         private readonly feedback: AiAnalyticsFeedbackStore,
+        private readonly smartLinks: SmartLinkLoader,
     ) {}
 
     /** Последний день окна: вчерашний рабочий день в TZ портала. */
@@ -100,7 +113,8 @@ export class PulseUseCase {
             calendar.timeZone,
             marks,
         );
-        return toPulseDto(endDate, result, alerts);
+        const links = await this.resolveAlertLinks(domain, alerts);
+        return toPulseDto(endDate, result, withPulseAlertLinks(alerts, links));
     }
 
     /** Отправленные/отработанные алерты по звонкам (ais feedback). */
@@ -120,5 +134,26 @@ export class PulseUseCase {
             }
         }
         return { sent, handled };
+    }
+
+    /**
+     * Ссылки на карточки разборов всех сигналов одним вызовом загрузчика
+     * (он сам ходит в смарт и ais пачкой по всем id). Fail-open: ошибка
+     * загрузчика → пустая карта, у всех сигналов link = null.
+     */
+    private async resolveAlertLinks(
+        domain: string,
+        alerts: readonly PulseAlertDraft[],
+    ): Promise<ReadonlyMap<string, string | null>> {
+        const ids = [...new Set(alerts.map(alert => alert.transcriptionId))];
+        if (!ids.length) return new Map();
+        try {
+            return await this.smartLinks.resolveLinks(domain, ids);
+        } catch (error) {
+            this.logger.warn(
+                `Ссылки на разборы пульса (${domain}) не построены: ${(error as Error).message}`,
+            );
+            return new Map();
+        }
     }
 }

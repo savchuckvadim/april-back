@@ -457,7 +457,15 @@ describe('DailyPlanUseCase — план дня (поток 17)', () => {
             step => step.value !== null && !numbers.has(step.value),
         );
         expect(outside).toEqual([]);
-        expect(dto.explanation.text).toContain('Цель месяца');
+        expect(dto.explanation.text).toContain('Цель на месяц');
+        // Тексты шагов и итог — словами: без обозначений и формул.
+        const texts = [
+            ...dto.explanation.steps.map(step => step.text),
+            dto.explanation.text,
+        ];
+        for (const text of texts) {
+            expect(text).not.toMatch(/λ|θ|N_req|Y₀|E\[|F̄|\/10/);
+        }
     });
 
     it('шаги воспроизводят расчёт: G, Y₀, λ_pipe и N_req равны числам прогноза', async () => {
@@ -567,7 +575,7 @@ describe('DailyPlanUseCase — план дня (поток 17)', () => {
         );
         expect(dto.ropOnly?.norm.value).toBeNull();
         expect(dto.ropOnly?.betaSource).toBe('none');
-        expect(dto.explanation.text).toContain('Модель портала');
+        expect(dto.explanation.text).toContain('Нормы портала');
     });
 
     it('в деградации N_req не выдумывается: null и в DTO, и в шаге объяснения', async () => {

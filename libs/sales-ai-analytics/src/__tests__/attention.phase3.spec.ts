@@ -78,7 +78,8 @@ describe('goodhartRule — расхождение «метрика ↔ прот�
             availableFrom: 3,
             severity: -0.36,
             headline:
-                'разборов +50 %, оценка −36 % за 3 мес.: метрика растёт, результат — нет',
+                'За 3 месяца разборов — больше на 50 %, а оценка — меньше ' +
+                'на 36 %: показатель растёт, а результат — нет',
             basis: [
                 { code: 'goodhart_pressure_change', value: 0.5, n: 3 },
                 { code: 'goodhart_counter_change', value: -0.36, n: 3 },
@@ -107,7 +108,8 @@ describe('trendShiftRule / trendDriftRule — только вниз и с дов
             signal: 'trend_shift',
             availableFrom: 3,
             severity: -2,
-            headline: 'Уровень сместился вниз: оценка −0,8 с недели 2026-W31',
+            // 2026-W31 начинается в понедельник 27 июля — в тексте дата, не ключ.
+            headline: 'Уровень сместился вниз: оценка −0,8 с недели 27 июля',
             basis: [{ code: 'trend_shift_magnitude', value: -0.8, n: 0 }],
         });
         expect(item?.headline).not.toMatch(FORBIDDEN);
@@ -149,7 +151,7 @@ describe('trendShiftRule / trendDriftRule — только вниз и с дов
         expect(item).toMatchObject({
             signal: 'trend_drift',
             severity: -1,
-            headline: 'Дрейф вниз: оценка −0,3 с недели 2026-W31',
+            headline: 'Дрейф вниз: оценка −0,3 с недели 27 июля',
         });
     });
 });

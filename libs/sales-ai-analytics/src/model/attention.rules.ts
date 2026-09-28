@@ -4,6 +4,14 @@ import {
     AttentionManagerInput,
     AttentionRules,
 } from './attention.types';
+import { riskTitleOf } from './dictionary-titles.util';
+import {
+    RU_FORMS,
+    ruCount,
+    ruDecimal,
+    ruInt,
+    ruPluralForm,
+} from './ru-text.util';
 
 /** Правило сигнала: менеджер + пороги → кандидат или null. */
 export type AttentionRule = (
@@ -12,8 +20,14 @@ export type AttentionRule = (
 ) => AttentionCandidate | null;
 
 const pct = (share: number): string => `${Math.round(share * 100)} %`;
-const ratio = (value: number): string =>
-    `×${value.toFixed(1).replace('.', ',')}`;
+
+/** «в 2,5 раза», «в 2 раза», «в 5 раз» — кратность словами, без «×». */
+function timesText(factor: number): string {
+    const rounded = Math.round(factor * 10) / 10;
+    return Number.isInteger(rounded)
+        ? `в ${ruCount(rounded, RU_FORMS.times)}`
+        : `в ${ruDecimal(rounded)} раза`;
+}
 
 /**
  * «Закрыватель» (план §4.5): исходы заданы и не ниже норм уровня по всем
@@ -41,13 +55,15 @@ export const riskRule: AttentionRule = manager => {
     if (calls.length === 0) {
         return null;
     }
-    const kinds = [...new Set(calls.map(call => call.kind))].sort();
+    const kinds = [...new Set(calls.map(call => call.kind))]
+        .sort()
+        .map(riskTitleOf);
     return {
         managerId: manager.managerId,
         signal: 'risk',
         availableFrom: 1,
         severity: -calls.length,
-        headline: `Риск-сигналы: ${calls.length} (${kinds.join(', ')})`,
+        headline: `Сигналы риска: ${calls.length} (${kinds.join('; ')})`,
         basis: [{ code: 'risk_calls', value: calls.length, n: manager.n }],
         link: {
             managerId: manager.managerId,
@@ -68,13 +84,14 @@ export const noDataRule: AttentionRule = (manager, rules) => {
     if (callsTotal !== undefined) {
         basis.push({ code: 'calls_total', value: callsTotal, n: callsTotal });
     }
-    const suffix = callsTotal === undefined ? '' : ` при ${callsTotal} звонках`;
+    const suffix = callsTotal === undefined ? '' : ` из ${callsTotal}`;
+    const verb = ruPluralForm(n, ['Разобран', 'Разобрано', 'Разобрано']);
     return {
         managerId: manager.managerId,
         signal: 'no_data',
         availableFrom: 1,
         severity: n,
-        headline: `Мало разборов: n = ${n}${suffix}`,
+        headline: `${verb} всего ${ruCount(n, RU_FORMS.calls)}${suffix}`,
         basis,
         link: { managerId: manager.managerId },
     };
@@ -154,7 +171,9 @@ export const nextStepDropRule: AttentionRule = (manager, rules) => {
         signal: 'next_step_drop',
         availableFrom: 1,
         severity: current.value - previous.value,
-        headline: `Доля шага с датой упала: ${pct(previous.value)} → ${pct(current.value)}`,
+        headline:
+            'Реже договаривается о следующем шаге с датой: ' +
+            `было ${pct(previous.value)}, стало ${pct(current.value)}`,
         basis: [
             {
                 code: 'next_step_date_rate',
@@ -185,12 +204,17 @@ export const planGapRule: AttentionRule = (manager, rules) => {
         return null;
     }
     const direction = factor > 1 ? 'выше' : 'ниже';
+    const times = timesText(factor > 1 ? factor : 1 / factor);
     return {
         managerId: manager.managerId,
         signal: 'plan_gap',
         availableFrom: 1,
         severity: -Math.abs(factor - 1),
-        headline: `План руководителя ${gap.planHead} ${direction} нормы ${gap.norm} (${ratio(factor)})`,
+        // Разрыв плана считается по презентациям (ребро «звонок →
+        // презентация», см. planGapOf в презентере «Внимания»).
+        headline:
+            `План руководителя — ${ruCount(ruInt(gap.planHead), RU_FORMS.presentations)}, ` +
+            `по норме уровня выходит около ${ruInt(gap.norm)}: план ${direction} ${times}`,
         basis: [
             { code: 'plan_head', value: gap.planHead, norm: gap.norm, n: 0 },
         ],

@@ -29,6 +29,7 @@ import {
     portalSettings,
     settingsLoaderWith,
 } from './fixtures/lite-row.fixture';
+import { smartLinksWith } from './fixtures/smart-links.fixture';
 
 /** Суббота 05.09.2026 12:00 MSK → окно пн 31.08 — пт 04.09. */
 const NOW = new Date('2026-09-05T09:00:00Z');
@@ -78,6 +79,7 @@ describe('PulseUseCase', () => {
             loader,
             settingsLoaderWith(),
             feedbackStoreWith([]),
+            smartLinksWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -119,6 +121,7 @@ describe('PulseUseCase', () => {
             callsLoaderWith(rows).loader,
             settingsLoaderWith(),
             feedbackStoreWith([]),
+            smartLinksWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -171,6 +174,7 @@ describe('PulseUseCase', () => {
                 { kind: 'alert_sent', transcriptionId: 'sent' },
                 { kind: 'alert_handled', transcriptionId: 'risk' },
             ]),
+            smartLinksWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -202,6 +206,7 @@ describe('PulseUseCase', () => {
             callsLoaderWith(rows).loader,
             settingsLoaderWith(),
             feedbackStoreWith([]),
+            smartLinksWith().loader,
         );
         const dto = await useCase.execute('d', { now: NOW });
 
@@ -336,6 +341,7 @@ describe('PulseUseCase: порог длительности из реестра'
             callsLoaderWith(mixedRows()).loader,
             settingsLoaderWith(),
             feedbackStoreWith([]),
+            smartLinksWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -354,6 +360,7 @@ describe('PulseUseCase: порог длительности из реестра'
             callsLoaderWith(mixedRows()).loader,
             settingsLoader,
             feedbackStoreWith([]),
+            smartLinksWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -397,6 +404,7 @@ describe('PulseUseCase: порог длительности из реестра'
             callsLoaderWith(mixedRows()).loader,
             settingsLoaderWith({ definitions }),
             feedbackStoreWith([]),
+            smartLinksWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });

@@ -2,16 +2,21 @@
  * Проверки блоков «как считаем»: определения событий, гиперпараметры
  * реестра, потолки оценивания и дата подтверждения ростера (план Фазы 2,
  * §3.3). Вынесены из `ai-settings.sanity.ts` ради правила «файл ≤ 300
- * строк»; входные типы-заявки объявлены здесь же, потому что это контракт
- * проверки, а не разобранная настройка.
- *
- * Границы берутся из реестра параметров (`findParam(code).range`) —
- * литералов диапазонов в DTO быть не должно.
+ * строк»; типы-заявки объявлены здесь же — это контракт проверки.
+ * Границы — из реестра (`findParam(code).range`), не из литералов в DTO;
+ * тексты ошибок — словами (`ai-settings.labels.ts`), без кодов и скобок.
  */
 import { CALL_REPORT_SECTION_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-smart.type';
 import { findParam } from '../params/registry.const';
 import type { ParamPrimitive } from '../params/registry.types';
+import { callTypeTitleOf } from '../model/dictionary-titles.util';
 import { AI_SALES_STAGE_CODES, registryRange } from './ai-settings.defaults';
+import {
+    allowedRangeWords,
+    expectedValueWords,
+    managerLevelLabel,
+    paramUserTitle,
+} from './ai-settings.labels';
 import {
     AI_FUNNEL_EDGE_CODES,
     AI_HOT_CLIENT_COLORS,
@@ -101,8 +106,8 @@ function durationSanity(
     for (const [type, seconds] of Object.entries(byType)) {
         if (seconds < range[0] || seconds > range[1]) {
             blocking.push(
-                `Порог длительности типа ${type} (${seconds} с) вне ` +
-                    `[${range[0]}; ${range[1]}]`,
+                `Порог длительности для звонков типа «${callTypeTitleOf(type)}»: ` +
+                    `${seconds} с — ${allowedRangeWords(range)}`,
             );
         }
     }
@@ -146,8 +151,9 @@ export function definitionsSanity(
     durationSanity(claim.minDurationSecByType, result.blocking);
     if (claim.normStratum === 'level') {
         result.warnings.push(
-            'Нормы стратифицируются по уровню, а не по стажу: уровень ' +
-                'назначает руководитель, и норма junior может стать средним слабых',
+            'Нормы считаются по уровню, а не по стажу: уровень назначает ' +
+                `руководитель, и норма для уровня «${managerLevelLabel('junior')}» ` +
+                'может стать средним слабых',
         );
     }
 }
@@ -160,13 +166,13 @@ export function modelParamsSanity(
     for (const [code, value] of Object.entries(claim)) {
         const descriptor = findParam(code);
         if (!descriptor) {
-            result.blocking.push(`Параметр ${code} не найден в реестре`);
+            result.blocking.push(`Неизвестный параметр «${code}»`);
             continue;
         }
+        const title = paramUserTitle(descriptor);
         if (typeof value !== typeof descriptor.defaultValue) {
             result.blocking.push(
-                `Параметр ${code}: ожидается ${typeof descriptor.defaultValue}, ` +
-                    `получено ${typeof value}`,
+                `Параметр «${title}»: ${expectedValueWords(descriptor)}`,
             );
             continue;
         }
@@ -177,13 +183,13 @@ export function modelParamsSanity(
             (value < range[0] || value > range[1])
         ) {
             result.blocking.push(
-                `Параметр ${code} (${value}) вне [${range[0]}; ${range[1]}]`,
+                `Параметр «${title}»: ${value} — ${allowedRangeWords(range)}`,
             );
         }
         if (descriptor.source === 'estimated') {
             result.warnings.push(
-                `Параметр ${code} оценивается из данных — ручное значение ` +
-                    'будет перезаписано ночным конвейером',
+                `Параметр «${title}» рассчитывается по данным портала — ` +
+                    'введённое вручную значение будет заменено при ночном пересчёте',
             );
         }
     }
@@ -214,8 +220,8 @@ export function scoringSanity(
         codes.add(rule.ruleCode);
         if (rule.maxScore < capMaxScore[0] || rule.maxScore > capMaxScore[1]) {
             result.blocking.push(
-                `Потолок правила ${rule.ruleCode} (${rule.maxScore}) вне ` +
-                    `[${capMaxScore[0]}; ${capMaxScore[1]}]`,
+                `Потолок правила «${rule.ruleCode}»: ${rule.maxScore} — ` +
+                    allowedRangeWords(capMaxScore),
             );
         }
         requireOneOf(
@@ -248,8 +254,8 @@ export function hypothesisSanity(
     for (const pair of hypothesis.pairs) {
         if (pair.s < hypothesisScore[0] || pair.s > hypothesisScore[1]) {
             result.blocking.push(
-                `Качество ${pair.s} в гипотезе вне ` +
-                    `[${hypothesisScore[0]}; ${hypothesisScore[1]}]`,
+                `Качество ${pair.s} в гипотезе — ` +
+                    allowedRangeWords(hypothesisScore),
             );
         }
         if (!(pair.n > 0)) {

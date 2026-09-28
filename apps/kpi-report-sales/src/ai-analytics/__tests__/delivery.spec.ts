@@ -2,6 +2,7 @@ import { DigestItem } from '@lib/sales-ai-analytics';
 import { AiAnalyticsDeliveryService } from '../delivery/ai-analytics-delivery.service';
 import {
     AGENDA_MESSAGE_TITLE,
+    agendaMessageHeadline,
     buildAgendaMessage,
     buildDigestMessage,
     callTypeTitle,
@@ -22,7 +23,7 @@ const agenda: AiAgendaDto = {
             managerId: '10',
             callType: 'presentation',
             kind: 'risk',
-            reason: 'Риск-флаги: promise',
+            reason: 'Сигналы риска: необоснованное обещание клиенту',
             quote: 'Мы вам точно перезвоним завтра',
             charOffset: null,
             link: LINK,
@@ -33,7 +34,7 @@ const agenda: AiAgendaDto = {
             managerId: '20',
             callType: null,
             kind: 'objection',
-            reason: 'Спорное возражение (price): не отработано',
+            reason: 'Спорное возражение «Цена»: не отработано',
             quote: 'Дорого для нас',
             charOffset: null,
             link: null,
@@ -90,17 +91,32 @@ describe('Тексты push-уведомлений (ai-analytics-message.util)',
             disagreements: agenda.disagreements,
             managerNames: new Map([['10', 'Иванов Иван']]),
         });
-        expect(text).toContain(`[B]${AGENDA_MESSAGE_TITLE} 2026-W36[/B]`);
+        // 2026-W36 — неделя планёрки с понедельника 31.08; звонки — за
+        // предыдущую полную неделю 24.08–30.08. Ключа недели в тексте нет.
+        expect(text).toContain(
+            `[B]${AGENDA_MESSAGE_TITLE} (неделя с 31.08): звонки за 24.08–30.08[/B]`,
+        );
+        expect(text).not.toContain('2026-W36');
         expect(text).toContain('1. Иванов Иван — Презентация');
         expect(text).toContain('Цитата: «Мы вам точно перезвоним завтра»');
         expect(text).toContain(`Разбор: ${LINK}`);
         expect(text).toContain('2. #20 — тип не определён');
         expect(text).toContain(
-            'Причина: Спорное возражение (price): не отработано',
+            'Причина: Спорное возражение «Цена»: не отработано',
         );
         expect(text).toContain('Несогласия недели: 1');
-        expect(text).toContain('— #20 · call:o1: не так');
+        expect(text).toContain('— #20 · по звонку: не так');
+        expect(text).not.toContain('call:o1');
         expect(text.split('Разбор:')).toHaveLength(2); // без ссылки — строки нет
+    });
+
+    it('заголовок повестки: не ключ недели — без дат, как есть', () => {
+        expect(agendaMessageHeadline('2026-W01')).toBe(
+            `${AGENDA_MESSAGE_TITLE} (неделя с 29.12): звонки за 22.12–28.12`,
+        );
+        expect(agendaMessageHeadline('week-x')).toBe(
+            `${AGENDA_MESSAGE_TITLE}: звонки недели week-x`,
+        );
     });
 
     it('повестка без несогласий — пункт «нет»', () => {

@@ -3,11 +3,11 @@
  *
  * Схема ключей (читаемая, без хэшей):
  *   sales-ai-analytics:v1:{domain}:settings              — настройки + готовность
- *   sales-ai-analytics:v1:{domain}:pulse:{endDate}       — пульс до даты
+ *   sales-ai-analytics:v1:{domain}:pulse:v2:{endDate}    — пульс до даты (v2 — alerts[].link)
  *   sales-ai-analytics:v1:{domain}:agenda:{weekKey}      — повестка недели
  *   sales-ai-analytics:v1:{domain}:access:v2:{userId}    — периметр requester'а
- *   sales-ai-analytics:v1:{domain}:overview:v2:{from}_{to}:{usersKey}:{confirmedOnly}
- *                                                        — обзор менеджер × тип (Фаза 1b)
+ *   sales-ai-analytics:v1:{domain}:overview:v3:{from}_{to}:{usersKey}:{confirmedOnly}
+ *                                                        — обзор менеджер × тип (v3 — riskCalls[].link)
  *   sales-ai-analytics:v1:{domain}:managers:org          — раскладка ростера по отделам/группам
  *
  * Кэшируется полный результат по домену, периметр requester'а применяется
@@ -34,8 +34,16 @@ export function buildSettingsKey(domain: string): string {
     return `${AI_ANALYTICS_CACHE_PREFIX}:${domain}:${SETTINGS}`;
 }
 
+/**
+ * Версия формы пульса в кэше: v2 — у сигналов (`alerts[]`) появилась
+ * ссылка `link` на карточку разбора. Меняется вместе с формой, чтобы после
+ * деплоя не отдавать записи старой формы без поля до истечения TTL; версия
+ * стоит после секции — сброс по `pulse:*`/домену её захватывает.
+ */
+const PULSE_KEY_VERSION = 'v2';
+
 export function buildPulseKey(domain: string, endDate: string): string {
-    return `${AI_ANALYTICS_CACHE_PREFIX}:${domain}:${PULSE}:${endDate}`;
+    return `${AI_ANALYTICS_CACHE_PREFIX}:${domain}:${PULSE}:${PULSE_KEY_VERSION}:${endDate}`;
 }
 
 export function buildAgendaKey(domain: string, weekKey: string): string {
@@ -84,11 +92,14 @@ export function agendaTtlSeconds(now: Date, timeZone: string): number {
  * Ключ обзора (план 6.4): период, нормализованный список менеджеров
  * (buildReportUsersKey — дедуп, сортировка) и флаг confirmedOnly. Он же —
  * jobId джобы SALES_AI_ANALYTICS_OVERVIEW: повторный клик подписывается на
- * идущий расчёт, а не плодит второй. Версия v2 — строки с источником
- * стажа (levelSource passport, since/sinceSource) и meta.excludedBeforeComparable:
- * кэш закрытых периодов (30 дней) старой формы не читается.
+ * идущий расчёт, а не плодит второй. Версия меняется вместе с формой
+ * строки, чтобы кэш закрытых периодов (30 дней) старой формы не читался:
+ * v2 — строки с источником стажа (levelSource passport, since/sinceSource)
+ * и meta.excludedBeforeComparable; v3 — у риск-звонков строк
+ * (`riskCalls[].link`) ссылка на карточку разбора. Ключ = jobId =
+ * requestKey WS-событий, поэтому версия доезжает до фронта сама.
  */
-const OVERVIEW_KEY_VERSION = 'v2';
+const OVERVIEW_KEY_VERSION = 'v3';
 
 export function buildOverviewKey(
     domain: string,

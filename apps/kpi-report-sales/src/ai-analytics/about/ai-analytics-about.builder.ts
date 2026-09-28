@@ -1,5 +1,7 @@
 import {
     findParam,
+    paramUserDescription,
+    paramUserTitle,
     resolveNumberParam,
     resolveParam,
     type AiAnalyticsParamCode,
@@ -15,11 +17,14 @@ import type { AiAboutDto, AiAboutParamDto } from '../dto/ai-about.dto';
 import type { ReadinessDto } from '../dto/readiness.dto';
 import { AI_SANITY_DATA_QUALITY } from '../steps/sanity.types';
 import {
-    AI_ABOUT_ENDPOINT_TEXTS,
+    AI_ABOUT_ESTIMATE_NOTES,
     AI_ABOUT_ESTIMATES,
     AI_ABOUT_MODEL_REASONS,
     type AiAboutEndpoint,
+    type AiAboutLine,
+    type AiAboutNumbers,
 } from './ai-analytics-about.const';
+import { AI_ABOUT_ENDPOINT_TEXTS } from './ai-analytics-about.texts.const';
 import {
     buildAboutReliability,
     type AiAboutGoldenSource,
@@ -31,6 +36,10 @@ import {
  * DI: слова берутся из констант среза, числа — ТОЛЬКО из реестра
  * (`resolveParam` по контексту портала) и из нагрузки модели. Ни одного
  * значения, написанного руками: правится дефолт реестра — меняется текст.
+ *
+ * Тексты для руководителя — простым русским (правило владельца): названия
+ * и описания параметров берутся из `userTitle`/`userDescription` реестра,
+ * строки «как читать» получают числа через `AiAboutNumbers`.
  *
  * Без модели портала блок честно деградирует (§5.4): параметры остаются,
  * `model = null`, причина — в `modelReason`.
@@ -71,21 +80,37 @@ function paramOf(
     const resolved = resolveParam(code, registry);
     return {
         code,
-        title: descriptor?.title ?? code,
+        title: descriptor ? paramUserTitle(descriptor) : code,
         unit: descriptor?.unit ?? '',
         value: resolved.value,
         layer: resolved.source,
         kind: descriptor?.source ?? 'configured',
-        description: descriptor?.description ?? '',
+        description: descriptor ? paramUserDescription(descriptor) : '',
         breaksSeries: descriptor?.breaksSeries === true,
         ...(resolved.reason === undefined ? {} : { reason: resolved.reason }),
     };
 }
 
+/** Действующее число кода для строк блока; нечисловой код — дефолт или 0. */
+function numbersOf(registry: ParamContext): AiAboutNumbers {
+    return {
+        value: code => {
+            const resolved = resolveNumberParam(code, registry);
+            if (resolved !== undefined) return resolved;
+            const fallback = findParam(code)?.defaultValue;
+            return typeof fallback === 'number' ? fallback : 0;
+        },
+    };
+}
+
+const lineOf = (line: AiAboutLine, numbers: AiAboutNumbers): string =>
+    typeof line === 'string' ? line : line(numbers);
+
 /**
  * Класс источника оценки: по данным — `estimated`; настройка любого слоя
- * портала — `configured`; иначе класс дескриптора реестра (для κ и φ —
- * `hybrid`: прайор до гейта, для λ — `configured`).
+ * портала — `configured`; иначе класс дескриптора реестра (для силы усадки
+ * и разброса — `hybrid`: стандартное значение до оценки, для памяти ряда —
+ * `configured`).
  */
 function sourceOf(
     estimated: boolean,
@@ -97,12 +122,28 @@ function sourceOf(
     return findParam(code)?.source ?? 'configured';
 }
 
+/** Пояснение к источнику словами: по данным, настройкой, стандартное. */
+function noteOf(
+    estimated: boolean,
+    estimatedNote: string,
+    code: AiAnalyticsParamCode,
+    registry: ParamContext,
+): string {
+    if (estimated) return estimatedNote;
+    if (resolveParam(code, registry).source !== 'default') {
+        return AI_ABOUT_ESTIMATE_NOTES.configuredByPortal;
+    }
+    return findParam(code)?.source === 'configured'
+        ? AI_ABOUT_ESTIMATE_NOTES.configured
+        : AI_ABOUT_ESTIMATE_NOTES.notEstimated;
+}
+
 function estimateOf(
     key: keyof typeof AI_ABOUT_ESTIMATES,
     value: number | null,
     estimated: boolean,
     registry: ParamContext,
-    note: string,
+    estimatedNote: string,
 ): AiAboutEstimateDto {
     const { code, symbol, title } = AI_ABOUT_ESTIMATES[key];
     return {
@@ -111,7 +152,7 @@ function estimateOf(
         title,
         value,
         source: sourceOf(estimated, code, registry),
-        note,
+        note: noteOf(estimated, estimatedNote, code, registry),
     };
 }
 
@@ -133,7 +174,7 @@ function readinessOf(payload: Partial<PortalModelPayload>): ReadinessDto {
     };
 }
 
-/** Модель портала → раздел блока с источниками κ, φ, λ. */
+/** Модель портала → раздел блока с источниками оценок. */
 function modelOf(
     source: AiAboutModelSource,
     registry: ParamContext,
@@ -158,16 +199,17 @@ function modelOf(
             numberOrNull(payload.kappa),
             kleinman.length > 0,
             registry,
-            `гейт Клейнмана ${kleinman.length > 0 ? 'открыт' : 'закрыт'}: рёбер с оценкой по данным ${kleinman.length} из ${edges.length}`,
+            AI_ABOUT_ESTIMATE_NOTES.edgesEstimated(
+                kleinman.length,
+                edges.length,
+            ),
         ),
         phi: estimateOf(
             'phi',
             numberOrNull(payload.overdispersion?.value),
             phiEstimated,
             registry,
-            phiEstimated
-                ? 'оценено по темпам активностей портала'
-                : 'собственной оценки в Фазе 2 нет — значение реестра',
+            AI_ABOUT_ESTIMATE_NOTES.estimated,
         ),
         lambda: estimateOf(
             'lambda',
@@ -175,7 +217,7 @@ function modelOf(
                 null,
             false,
             registry,
-            'настройка реестра: оценки из данных нет',
+            AI_ABOUT_ESTIMATE_NOTES.estimated,
         ),
         estimand: {
             kind: payload.edgeKind ?? 'rate',
@@ -200,12 +242,13 @@ function modelOf(
 /** Блок «Как считаем» ручки: тексты среза, параметры реестра, модель. */
 export function buildAiAnalyticsAbout(input: AiAboutBuildInput): AiAboutDto {
     const text = AI_ABOUT_ENDPOINT_TEXTS[input.endpoint];
+    const numbers = numbersOf(input.registry);
     return {
         endpoint: text.endpoint,
         title: text.title,
         purpose: text.purpose,
         sources: [...text.sources],
-        howToRead: [...text.howToRead],
+        howToRead: text.howToRead.map(line => lineOf(line, numbers)),
         notDoing: [...text.notDoing],
         params: text.params.map(code => paramOf(code, input.registry)),
         paramsVersion: input.paramsVersion,

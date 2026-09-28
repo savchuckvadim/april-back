@@ -1,26 +1,49 @@
 /**
- * Шаблонное резюме без LLM и сборка резюме из ответа модели (план §8).
+ * Шаблонное резюме без LLM и сборка резюме из ответа модели (план §8,
+ * версия 2 «что изменилось и что делать»).
  *
- * Шаблон — штатная деградация: нет ключа VibeCode, исчерпана квота,
- * ответ не разобрался или после факт-чека осталось меньше двух буллетов.
- * Числа шаблона берутся из пакета фактов теми же функциями форматирования,
- * поэтому шаблонное резюме само проходит факт-чек.
+ * Шаблон — штатная деградация и гарантированный путь: нет ключа
+ * нейросети, исчерпана квота, ответ не разобрался или после факт-чека
+ * осталось меньше двух буллетов. Три группы буллетов (изменения, фокус,
+ * действия) собираются в `brief-template.groups.ts`; числа шаблона
+ * берутся из пакета фактов теми же функциями форматирования, поэтому
+ * шаблонное резюме само проходит факт-чек.
+ *
+ * Резюме нейросети — её изменения и фокус после факт-чека плюс действия
+ * тех же правил, что и в шаблоне: действия всегда стоят на фактах пакета.
+ * Заголовок нейросети с числом не из пакета заменяется шаблонным.
  */
 import {
-    AI_BRIEF_LIMITS,
+    AI_BRIEF_BULLET_GROUPS,
     AI_BRIEF_PROMPT_VERSION,
+    AI_BRIEF_LIMITS,
     AI_BRIEF_TEMPLATE_REASONS,
     type AiBriefBullet,
-    type AiBriefFact,
     type AiBriefResult,
     type AiBriefTone,
     type AiEvidencePack,
 } from '../contracts/ai-brief.contract';
+import { AI_BRIEF_FOCUS_CODES } from '../contracts/ai-brief.rules';
+import { isCompared } from './brief-delta';
 import {
     factCheckBullets,
-    validateBriefPayload,
+    findAlienNumber,
+    packNumberKeys,
     type BriefDroppedBullet,
 } from './brief-factcheck';
+import { findFact } from './brief-pack';
+import { validateBriefPayload } from './brief-payload';
+import {
+    actionBullets,
+    changeBullets,
+    focusBullets,
+    templateHeadline,
+} from './brief-template.groups';
+
+export { limitWords } from './brief-template.groups';
+
+/** Код нарушения: в заголовке нейросети число не из пакета фактов. */
+export const AI_BRIEF_HEADLINE_NUMBER_ERROR = 'headline-number-not-in-pack';
 
 /** Период и момент сборки резюме; время приходит параметром, не из часов. */
 export interface BriefContext {
@@ -44,58 +67,49 @@ export interface BriefBuildOutcome {
     errors: string[];
 }
 
-/** Обрезка текста до лимита слов (без «…» — фраза факта самодостаточна). */
-export function limitWords(text: string, maxWords: number): string {
-    const words = text.trim().split(/\s+/);
+const FOCUS_CODES: ReadonlySet<string> = new Set(AI_BRIEF_FOCUS_CODES);
 
-    return words.length <= maxWords
-        ? text.trim()
-        : words.slice(0, maxWords).join(' ');
-}
-
-/** Тон по составу пакета: алерты — тревожно, отклонения — внимание. */
+/**
+ * Тон по составу пакета: есть сигналы риска — тревожно, есть отклонения
+ * — внимание. Факт с нулём («сигналов риска: 0») тон не поднимает;
+ * факт фокуса — карточка «Внимания» — поднимает всегда.
+ */
 export function toneForPack(pack: AiEvidencePack): AiBriefTone {
-    if (pack.facts.some(fact => fact.kind === 'alert')) {
+    const active = pack.facts.filter(
+        fact =>
+            FOCUS_CODES.has(fact.code) ||
+            (fact.value !== null && fact.value !== 0),
+    );
+    if (active.some(fact => fact.kind === 'alert')) {
         return 'alarm';
     }
 
-    return pack.facts.some(fact => fact.kind === 'deviation')
+    return active.some(fact => fact.kind === 'deviation')
         ? 'attention'
         : 'calm';
 }
 
-/** Буллет шаблона из факта: фраза факта и ссылка на него. */
-function bulletOf(fact: AiBriefFact): AiBriefBullet {
-    return {
-        text: limitWords(fact.text, AI_BRIEF_LIMITS.bulletWords),
-        factRefs: [fact.code],
-        ...(fact.managerId === undefined ? {} : { managerId: fact.managerId }),
-        ...(fact.callType === undefined ? {} : { callType: fact.callType }),
-    };
-}
-
-/** Заголовок шаблона: период и число фактов не смешиваются с числами буллетов. */
-function templateHeadline(pack: AiEvidencePack, ctx: BriefContext): string {
-    const headline =
-        pack.facts.length === 0
-            ? `Сводка отдела продаж за ${ctx.from} — ${ctx.to}: данных нет`
-            : `Сводка отдела продаж за ${ctx.from} — ${ctx.to}`;
-
-    return headline.slice(0, AI_BRIEF_LIMITS.headline);
-}
-
 /**
- * Шаблонное резюме: первые факты пакета в порядке приоритета, по одному
- * буллету на факт, без единого числа вне пакета.
+ * Шаблонное резюме: изменения → фокус → действия, по группам в лимитах,
+ * без единого числа вне пакета.
  */
 export function buildTemplateBrief(
     pack: AiEvidencePack,
     ctx: BriefContext,
     reason: string,
 ): AiBriefResult {
+    const bullets =
+        pack.facts.length === 0
+            ? []
+            : [
+                  ...changeBullets(pack),
+                  ...focusBullets(pack),
+                  ...actionBullets(pack),
+              ].slice(0, AI_BRIEF_LIMITS.bullets);
+
     return {
-        headline: templateHeadline(pack, ctx),
-        bullets: pack.facts.slice(0, AI_BRIEF_LIMITS.bullets).map(bulletOf),
+        headline: templateHeadline(pack, ctx.from, ctx.to),
+        bullets,
         tone: toneForPack(pack),
         source: 'template',
         packHash: pack.hash,
@@ -106,8 +120,35 @@ export function buildTemplateBrief(
 }
 
 /**
+ * Изменение буллета модели: дельта первого сравнимого факта из его
+ * ссылок — модель дельту не пишет, витрина берёт её из пакета.
+ */
+function withFactDelta(
+    bullet: AiBriefBullet,
+    pack: AiEvidencePack,
+): AiBriefBullet {
+    if (bullet.group !== 'change') return bullet;
+    for (const code of bullet.factRefs) {
+        const fact = findFact(pack, code);
+        if (fact && isCompared(pack, fact) && typeof fact.delta === 'number') {
+            return { ...bullet, delta: fact.delta };
+        }
+    }
+
+    return bullet;
+}
+
+/** Буллеты в порядке групп витрины; внутри группы порядок сохраняется. */
+function byGroupOrder(bullets: readonly AiBriefBullet[]): AiBriefBullet[] {
+    return AI_BRIEF_BULLET_GROUPS.flatMap(group =>
+        bullets.filter(bullet => bullet.group === group),
+    );
+}
+
+/**
  * Резюме из ответа модели: строгая схема → факт-чек → шаблон, если после
- * проверки осталось меньше `AI_BRIEF_LIMITS.minBullets` буллетов.
+ * проверки осталось меньше `AI_BRIEF_LIMITS.minBullets` буллетов. К
+ * прошедшим буллетам модели добавляются действия правил пакета.
  */
 export function buildBriefFromLlm(
     raw: unknown,
@@ -141,11 +182,21 @@ export function buildBriefFromLlm(
             errors: validation.errors,
         };
     }
+    const headlineOk =
+        findAlienNumber(validation.payload.headline, packNumberKeys(pack)) ===
+        null;
 
     return {
         brief: {
-            headline: validation.payload.headline,
-            bullets: checked.kept,
+            headline: headlineOk
+                ? validation.payload.headline
+                : templateHeadline(pack, ctx.from, ctx.to),
+            bullets: [
+                ...byGroupOrder(
+                    checked.kept.map(bullet => withFactDelta(bullet, pack)),
+                ),
+                ...actionBullets(pack),
+            ],
             tone: validation.payload.tone,
             source: 'llm',
             packHash: pack.hash,
@@ -155,6 +206,8 @@ export function buildBriefFromLlm(
         },
         passRatePct: checked.passRatePct,
         dropped,
-        errors: validation.errors,
+        errors: headlineOk
+            ? validation.errors
+            : [...validation.errors, AI_BRIEF_HEADLINE_NUMBER_ERROR],
     };
 }

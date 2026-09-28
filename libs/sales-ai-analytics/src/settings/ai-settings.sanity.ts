@@ -20,6 +20,7 @@ import {
     type AiQualityHypothesis,
     type AiTargets,
 } from './ai-settings.types';
+import { allowedRangeWords, managerLevelLabel } from './ai-settings.labels';
 import {
     definitionsSanity,
     hypothesisSanity,
@@ -82,8 +83,8 @@ function levelsSanity(
         seen.add(level.managerId);
         if (level.since !== null && level.since > today) {
             blocking.push(
-                `since менеджера ${level.managerId} (${level.since}) ` +
-                    `позже сегодняшнего дня ${today}`,
+                `Дата начала стажа у менеджера ${level.managerId} ` +
+                    `(${level.since}) позже сегодняшнего дня (${today})`,
             );
         }
     }
@@ -136,30 +137,32 @@ function targetsSanity(targets: AiTargets, blocking: string[]): void {
         range: readonly [number, number],
     ): boolean => value < range[0] || value > range[1];
     for (const [level, target] of Object.entries(targets.byLevel)) {
+        const label = managerLevelLabel(level);
         if (target.sales !== null && outside(target.sales, targetSales)) {
             blocking.push(
-                `Цель продаж уровня ${level} (${target.sales}) вне ` +
-                    `[${targetSales[0]}; ${targetSales[1]}]`,
+                `Цель продаж для уровня «${label}»: ${target.sales} — ` +
+                    allowedRangeWords(targetSales),
             );
         }
         if (outside(target.presentationsMin, presentationsMin)) {
             blocking.push(
-                `Минимум презентаций уровня ${level} вне ` +
-                    `[${presentationsMin[0]}; ${presentationsMin[1]}]`,
+                `Минимум презентаций для уровня «${label}»: ` +
+                    `${target.presentationsMin} — ` +
+                    allowedRangeWords(presentationsMin),
             );
         }
         if (outside(target.coldPerDay, coldPerDay)) {
             blocking.push(
-                `Холодных в день у уровня ${level} вне ` +
-                    `[${coldPerDay[0]}; ${coldPerDay[1]}]`,
+                `Холодных звонков в день для уровня «${label}»: ` +
+                    `${target.coldPerDay} — ${allowedRangeWords(coldPerDay)}`,
             );
         }
     }
     for (const [managerId, value] of Object.entries(targets.overrides)) {
         if (value !== null && outside(value, targetSales)) {
             blocking.push(
-                `Личная цель менеджера ${managerId} (${value}) вне ` +
-                    `[${targetSales[0]}; ${targetSales[1]}]`,
+                `Личная цель менеджера ${managerId}: ${value} — ` +
+                    allowedRangeWords(targetSales),
             );
         }
     }
@@ -178,8 +181,8 @@ function managerParamsSanity(
             (item.fteShare < fteShare[0] || item.fteShare > fteShare[1])
         ) {
             result.blocking.push(
-                `Ставка менеджера ${managerId} (${item.fteShare}) вне ` +
-                    `[${fteShare[0]}; ${fteShare[1]}]`,
+                `Ставка менеджера ${managerId}: ${item.fteShare} — ` +
+                    allowedRangeWords(fteShare),
             );
         }
         if (
@@ -189,8 +192,8 @@ function managerParamsSanity(
                 item.targetOverride > targetSales[1])
         ) {
             result.blocking.push(
-                `Личная цель менеджера ${managerId} вне ` +
-                    `[${targetSales[0]}; ${targetSales[1]}]`,
+                `Личная цель менеджера ${managerId}: ${item.targetOverride} — ` +
+                    allowedRangeWords(targetSales),
             );
         }
         if (item.absences) {
@@ -198,8 +201,8 @@ function managerParamsSanity(
         }
         if (item.excludeFromNorms) {
             result.warnings.push(
-                `Менеджер ${managerId} исключён из норм отдела — его строки ` +
-                    `не участвуют в оценке нормы полосы`,
+                `Менеджер ${managerId} исключён из норм отдела — его месяцы ` +
+                    'не участвуют в расчёте нормы для его уровня',
             );
         }
     }

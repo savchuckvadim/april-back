@@ -1,7 +1,8 @@
 /**
  * Константы ручки «план дня» (план Фазы 2, поток 17 `p2-api-plan-daily`,
  * §5.2 и §5.4): ключ и TTL кэша, текст 403 при выключенной настройке,
- * коды шагов объяснения и коды штатной деградации.
+ * коды шагов объяснения, коды штатной деградации и русские подписи
+ * (источник цели, активности рёбер) для текста объяснения словами.
  *
  * Свой файл констант — требование владения общими файлами (§1.6):
  * `constants/ai-analytics.const.ts` и `cache/cache-key.util.ts` поток не
@@ -13,9 +14,15 @@
  * Чистые константы и чистая функция: без DI, Bitrix и Prisma.
  */
 import {
+    RU_FORMS,
+    type RuPluralForms,
+    type TargetSource,
+} from '@lib/sales-ai-analytics';
+import {
     AI_ANALYTICS_CACHE_PREFIX,
     AI_ANALYTICS_CACHE_SECTIONS,
 } from './ai-analytics.const';
+import type { AiAnalyticsFunnelEdgeCode } from './ai-overview.const';
 
 /** Роут ручки внутри префикса `ai-analytics`. */
 export const AI_DAILY_PLAN_ROUTE = 'plan/daily' as const;
@@ -39,9 +46,8 @@ export const AI_DAILY_PLAN_MONTH_LIMIT = 24;
  * а не пустой конверт).
  */
 export const AI_DAILY_PLAN_DISABLED_MESSAGE =
-    'План дня выключен на портале: включите признак «План дня в утреннем ' +
-    'дайджесте и ручке plan/daily» (ai_analytics_daily_plan_enabled) в ' +
-    'настройках приложения kpi-sales портала';
+    'План дня выключен на портале: попросите разработчика включить ' +
+    '«План дня» в настройках AI-аналитики';
 
 /**
  * Коды штатной деградации (§5.4): нет модели портала — нормы не
@@ -63,14 +69,48 @@ export type AiDailyPlanReason =
 /** Человеческие подписи причин деградации — их видит руководитель. */
 export const AI_DAILY_PLAN_REASON_TEXTS: Record<AiDailyPlanReason, string> = {
     [AI_DAILY_PLAN_REASONS.modelMissing]:
-        'Модель портала за месяц ещё не посчитана: нормы не показываем, ' +
-        'план дня — по объёму прошлого темпа',
+        'Нормы портала за месяц ещё не посчитаны: нормы не показываем, ' +
+        'план дня строим по темпу прошлых дней',
     [AI_DAILY_PLAN_REASONS.forecastMissing]:
-        'Дневной прогноз за эту дату не записан: план дня — по объёму ' +
-        'прошлого темпа',
+        'Прогноз на эту дату ещё не посчитан: план дня строим по темпу ' +
+        'прошлых дней',
     [AI_DAILY_PLAN_REASONS.monthMissing]:
-        'Месяц менеджера ещё не посчитан: плана дня нет',
+        'Данные менеджера за месяц ещё не посчитаны: плана дня нет',
 };
+
+/** Откуда взята цель месяца — словами для текста объяснения. */
+export const AI_DAILY_PLAN_TARGET_SOURCE_TEXTS: Record<TargetSource, string> = {
+    plan: 'поставил руководитель',
+    levelTarget: 'из целей по уровню',
+    median: 'обычный результат коллег с таким же стажем',
+};
+
+/**
+ * Активность на входе ребра воронки словами (три формы при числе):
+ * «звонок → презентация» считает звонки, «презентация → КП» —
+ * презентации и т.д. Форма «много» служит подписью в перечислении
+ * («звонков — 250»).
+ */
+export const AI_DAILY_PLAN_EDGE_ACTIVITY_FORMS: Record<
+    AiAnalyticsFunnelEdgeCode,
+    RuPluralForms
+> = {
+    call_to_presentation: RU_FORMS.calls,
+    presentation_to_offer: RU_FORMS.presentations,
+    offer_to_invoice: ['КП', 'КП', 'КП'],
+    invoice_to_sale: ['счёт', 'счёта', 'счетов'],
+};
+
+/** Формы активности по коду ребра; чужой код — null (подпись по названию). */
+export function dailyPlanActivityForms(callType: string): RuPluralForms | null {
+    const forms = (
+        AI_DAILY_PLAN_EDGE_ACTIVITY_FORMS as Partial<
+            Record<string, RuPluralForms>
+        >
+    )[callType];
+
+    return forms ?? null;
+}
 
 /**
  * Оговорки к цели сверх санити-флагов библиотеки (`AI_TARGET_FLAGS`:

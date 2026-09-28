@@ -15,9 +15,22 @@ import {
     type AiBriefSource,
     type AiBriefTone,
 } from '@lib/sales-ai-analytics';
+import {
+    AiBriefBulletDto,
+    AiBriefPreviousPeriodDto,
+    AiBriefUsageDto,
+} from './ai-brief-parts.dto';
 import { AiRequestBaseDto } from './ai-request-base.dto';
 import { AiAnalyticsEnvelopeDto } from './ai-response-envelope.dto';
 import { IsOverviewPeriod } from './validators/overview-period.validator';
+
+// Части резюме (буллет, расход, прошлый период) вынесены в
+// ai-brief-parts.dto.ts («≤ 300 строк»); реэкспорт сохраняет прежние импорты.
+export {
+    AiBriefBulletDto,
+    AiBriefPreviousPeriodDto,
+    AiBriefUsageDto,
+} from './ai-brief-parts.dto';
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -87,81 +100,29 @@ export class AiBriefRequestDto extends AiRequestBaseDto {
     forceRefresh?: boolean;
 }
 
-/** Буллет резюме: текст, адресат и ссылки на факты пакета. */
-export class AiBriefBulletDto {
-    @ApiProperty({
-        description: 'Текст буллета, не длиннее 30 слов; числа — из пакета.',
-        type: String,
-        example: 'Дисциплина CRM ниже нормы: шаг с датой в 42,0 % звонков.',
-    })
-    text: string;
-
-    @ApiPropertyOptional({
-        description: 'Bitrix-id менеджера буллета; нет — буллет про отдел.',
-        type: String,
-        example: '512',
-    })
-    managerId?: string;
-
-    @ApiPropertyOptional({
-        description: 'Код AI-типа звонка, если буллет про тип.',
-        type: String,
-        example: 'call',
-    })
-    callType?: string;
-
-    @ApiProperty({
-        description:
-            'Коды фактов пакета, на которых стоит буллет (alerts, ' +
-            'funnel_gap, discipline_next_step, …).',
-        type: [String],
-        example: ['discipline_next_step'],
-    })
-    factRefs: string[];
-}
-
-/** Расход вызова модели: токены, цена и признак оценки. */
-export class AiBriefUsageDto {
-    @ApiProperty({
-        description:
-            'Токенов вызова; null — модель не вызывали (шаблон без LLM).',
-        type: Number,
-        nullable: true,
-        example: 1240,
-    })
-    tokens: number | null;
-
-    @ApiProperty({
-        description:
-            'Стоимость вызова, ₽ = токены / 1000 × llm_price_per_1k; ' +
-            'null — модель не вызывали.',
-        type: Number,
-        nullable: true,
-        example: 1.86,
-    })
-    price: number | null;
-
-    @ApiProperty({
-        description:
-            'Токены и цена — оценка: провайдер не вернул usage (считали по ' +
-            'длине текста) либо цена 1 000 токенов не задана (0 в реестре).',
-        type: Boolean,
-        example: false,
-    })
-    estimated: boolean;
-}
-
-/** AI-резюме периода (план §5.2). */
+/**
+ * AI-резюме периода (план §5.2, версия 2 «что изменилось и что делать»):
+ * заголовок — самое сильное изменение, буллеты трёх групп (изменения к
+ * прошлому периоду той же длины, фокус на менеджерах, действия недели).
+ */
 export class AiBriefDto {
     @ApiProperty({
-        description: 'Заголовок резюме, до 140 символов.',
+        description:
+            'Заголовок резюме, до 140 символов: самое сильное изменение ' +
+            'одной фразой. Когда сравнения с прошлым периодом нет или ' +
+            'ничего не изменилось — сводка за период словами.',
         type: String,
-        example: 'Сводка отдела продаж за 2026-09-01 — 2026-09-07',
+        example:
+            'Сигналов риска за период: 68 — вдвое больше, чем за прошлый ' +
+            'период (31)',
     })
     headline: string;
 
     @ApiProperty({
-        description: 'Буллеты резюме (до 5), прошедшие факт-чек.',
+        description:
+            'Пункты резюме (до 10: изменения ≤ 4, фокус ≤ 3, действия ≤ 3) ' +
+            'в порядке групп change, focus, action. Действия всегда ' +
+            'выводятся правилами из фактов пакета — нейросеть их не пишет.',
         type: [AiBriefBulletDto],
     })
     bullets: AiBriefBulletDto[];
@@ -169,7 +130,7 @@ export class AiBriefDto {
     @ApiProperty({
         description:
             'Тон резюме: calm — спокойно, attention — требует внимания, ' +
-            'alarm — есть алерты.',
+            'alarm — есть сигналы риска.',
         enum: AI_BRIEF_TONES,
         example: 'attention',
     })
@@ -177,8 +138,9 @@ export class AiBriefDto {
 
     @ApiProperty({
         description:
-            'Источник: llm — ответ модели прошёл факт-чек; template — ' +
-            'шаблон по фактам пакета (см. reason).',
+            'Источник: llm — изменения и фокус написала нейросеть, ответ ' +
+            'прошёл проверку фактов; template — резюме собрано по шаблону ' +
+            'из фактов пакета (см. reason).',
         enum: AI_BRIEF_SOURCES,
         example: 'llm',
     })
@@ -193,6 +155,27 @@ export class AiBriefDto {
     packHash: string;
 
     @ApiProperty({
+        description:
+            'Есть сравнение с прошлым периодом той же длины: хотя бы один ' +
+            'факт сравнён с ним. false — прошлый период несопоставим, ' +
+            'данных за него нет или расчёт не готов; тогда ни у одного ' +
+            'пункта нет изменения (delta = null), а первым пунктом ' +
+            'изменений идёт фраза о причине.',
+        type: Boolean,
+        example: true,
+    })
+    comparable: boolean;
+
+    @ApiProperty({
+        description:
+            'Прошлый период сравнения (YYYY-MM-DD, TZ портала) той же ' +
+            'длины, примыкающий к периоду резюме; null — сравнения нет.',
+        type: AiBriefPreviousPeriodDto,
+        nullable: true,
+    })
+    previousPeriod: AiBriefPreviousPeriodDto | null;
+
+    @ApiProperty({
         description: 'Момент сборки резюме (ISO 8601, UTC).',
         type: String,
         example: '2026-09-08T06:15:00.000Z',
@@ -200,20 +183,23 @@ export class AiBriefDto {
     generatedAt: string;
 
     @ApiProperty({
-        description: 'Версия промпта резюме (смена рвёт сравнимость).',
+        description:
+            'Версия промпта резюме (входит в ключ кэша; смена рвёт ' +
+            'сравнимость резюме между периодами).',
         type: String,
-        example: 'brief-1.0.0',
+        example: 'brief-2.0.0',
     })
     promptVersion: string;
 
     @ApiPropertyOptional({
         description:
-            'Подпись причины шаблона: нет ключа VibeCode, исчерпана квота, ' +
-            'ответ не разобрался, провален факт-чек; null — резюме от модели.',
+            'Подпись причины шаблона: к порталу не подключена нейросеть, ' +
+            'исчерпана квота, ответ не разобрался, провалена проверка ' +
+            'фактов; null — резюме от нейросети.',
         type: String,
         nullable: true,
         example:
-            'Резюме собрано по шаблону: у портала не заведён ключ VibeCode.',
+            'Резюме собрано по шаблону: к порталу не подключена нейросеть.',
     })
     reason?: string | null;
 
@@ -238,7 +224,9 @@ export class AiBriefResponseDto extends AiAnalyticsEnvelopeDto {
 /**
  * Payload Bull-джобы SALES_AI_ANALYTICS_BRIEF (внутренний контракт
  * ручка → процессор, валидаторы не нужны; план §5.3). managerIds — уже
- * нормализованный периметр; requestKey = jobId = ключ кэша резюме.
+ * нормализованный периметр; requestKey = jobId = ключ кэша резюме по
+ * пакету ручки (джоба кладёт результат ещё и под ключ своего пакета — с
+ * обзорами периода и прошлого периода).
  */
 export interface AiBriefJobData {
     domain: string;
@@ -247,6 +235,11 @@ export interface AiBriefJobData {
     managerIds: number[];
     requestKey: string;
     packHash: string;
+    /**
+     * Просили собрать заново: готовое резюме такого же пакета из кэша не
+     * берётся, нейросеть зовётся снова.
+     */
+    forceRefresh?: boolean;
     socketId?: string;
     /** Кто инициировал (для логов и квоты). */
     requesterUserId?: string;

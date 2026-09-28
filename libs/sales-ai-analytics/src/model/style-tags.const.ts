@@ -1,3 +1,4 @@
+import { RU_FORMS, RuPluralForms, ruCount } from './ru-text.util';
 import { StyleAxisCode, StyleAxisUnit } from './style-axes.const';
 
 /**
@@ -203,26 +204,28 @@ export interface StyleTagLabelInput {
     unit: StyleAxisUnit;
 }
 
-const UNIT_TITLES: Record<StyleAxisUnit, string> = {
-    calls: 'разборов',
-    leads: 'лидов',
-    objections: 'возражений',
-    workdays: 'рабочих дней',
-    deals: 'сделок',
+/** Формы единиц осей при числе: «42 разбора», «26 лидов», «3 сделки». */
+export const STYLE_UNIT_FORMS: Record<StyleAxisUnit, RuPluralForms> = {
+    calls: RU_FORMS.reviews,
+    leads: ['лид', 'лида', 'лидов'],
+    objections: RU_FORMS.objections,
+    workdays: RU_FORMS.workdays,
+    deals: RU_FORMS.deals,
 };
 
 /**
  * Текст подписи: «по данным» — факт с объёмом и числом коллег, «похоже» —
- * тот же факт с явной оговоркой «данных пока мало: n из min». Слово
- * «значимо» в текстах запрещено (план §6).
+ * тот же факт с явной оговоркой «данных пока мало: 30 из 40 разборов».
+ * Объём пишется словами, без «n = …»; слово «значимо» в текстах
+ * запрещено (план §6).
  */
 export function styleTagLabel(
     descriptor: StyleTagDescriptor,
     input: StyleTagLabelInput,
 ): string {
-    const unit = UNIT_TITLES[input.unit];
+    const forms = STYLE_UNIT_FORMS[input.unit];
     if (input.tier === 'likely') {
-        return `похоже: ${descriptor.fact} (данных пока мало: ${input.n} из ${input.minN} ${unit})`;
+        return `похоже: ${descriptor.fact} (данных пока мало: ${input.n} из ${ruCount(input.minN, forms)})`;
     }
-    return `${descriptor.fact} (n = ${input.n} ${unit}, коллег в норме ${input.peers})`;
+    return `${descriptor.fact} (${ruCount(input.n, forms)}, коллег в норме ${input.peers})`;
 }

@@ -2,12 +2,18 @@
  * Ключи кэша и снапшота AI-резюме (план Фазы 2, поток 18).
  *
  * Схема кэша (общая с `cache/cache-key.util.ts`, тот файл — чужой и не правится):
- *   sales-ai-analytics:v1:{domain}:brief:{packHash}        — резюме по пакету
+ *   sales-ai-analytics:v1:{domain}:brief:{promptVersion}:{packHash}
+ *                                                          — резюме по пакету
+ *   sales-ai-analytics:v1:{domain}:brief:prev:{prevFrom}_{prevTo}:{ростер}
+ *                                                          — факты прошлого периода
  *   sales-ai-analytics:v1:{domain}:brief-quota:{YYYY-MM-DD} — вызовов LLM за день
  *
  * Ключ резюме он же `requestKey` конверта и он же `jobId` джобы
  * SALES_AI_ANALYTICS_BRIEF: одинаковый пакет фактов даёт один расчёт, а
  * повторный клик подписывается на идущий (ai/rules/heavy-endpoint-queue.md).
+ * Версия промпта в ключе: смена промпта без смены фактов тоже
+ * пересобирает резюме, а сброс по паттерну `brief:*` захватывает и
+ * резюме, и факты прошлого периода.
  *
  * Ключ периода снапшота `ai-analytics-brief` (`activity_id` в ais) — другой:
  *   {from}_{to}_{ростер}
@@ -19,6 +25,7 @@
  *
  * Чистые функции: без DI и без времени.
  */
+import { AI_BRIEF_PROMPT_VERSION } from '@lib/sales-ai-analytics';
 import {
     AI_ANALYTICS_CACHE_PREFIX,
     AI_ANALYTICS_CACHE_SECTIONS,
@@ -29,9 +36,28 @@ import { snapshotHashKey } from '../store/snapshot-serialize.util';
 
 const { BRIEF, BRIEF_QUOTA } = AI_ANALYTICS_CACHE_SECTIONS;
 
-/** `sales-ai-analytics:v1:{domain}:brief:{packHash}` — ключ резюме и jobId. */
+/** Сегмент ключа фактов прошлого периода внутри секции резюме. */
+const BRIEF_PREV_SEGMENT = 'prev';
+
+/** `sales-ai-analytics:v1:{domain}:brief:{promptVersion}:{packHash}` — ключ резюме и jobId. */
 export function buildBriefKey(domain: string, packHash: string): string {
-    return `${AI_ANALYTICS_CACHE_PREFIX}:${domain}:${BRIEF}:${packHash}`;
+    return `${AI_ANALYTICS_CACHE_PREFIX}:${domain}:${BRIEF}:${AI_BRIEF_PROMPT_VERSION}:${packHash}`;
+}
+
+/**
+ * `sales-ai-analytics:v1:{domain}:brief:prev:{prevFrom}_{prevTo}:{ростер}` —
+ * факты прошлого периода той же длины; ростер — как у ключа периода
+ * снапшота (входной список менеджеров резюме, пусто — `all`).
+ */
+export function buildBriefPrevKey(
+    domain: string,
+    prevFrom: string,
+    prevTo: string,
+    managerIds: readonly (string | number)[],
+): string {
+    const roster = buildBriefRosterKey(prevFrom, prevTo, managerIds);
+
+    return `${AI_ANALYTICS_CACHE_PREFIX}:${domain}:${BRIEF}:${BRIEF_PREV_SEGMENT}:${prevFrom}_${prevTo}:${roster}`;
 }
 
 /** `sales-ai-analytics:v1:{domain}:brief-quota:{date}` — счётчик вызовов за день. */

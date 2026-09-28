@@ -15,11 +15,12 @@ import {
     type AiAboutBuildInput,
 } from '../about/ai-analytics-about.builder';
 import {
-    AI_ABOUT_ENDPOINT_TEXTS,
     AI_ABOUT_ENDPOINTS,
+    AI_ABOUT_ESTIMATES,
     AI_ABOUT_MODEL_REASONS,
     type AiAboutEndpoint,
 } from '../about/ai-analytics-about.const';
+import { AI_ABOUT_ENDPOINT_TEXTS } from '../about/ai-analytics-about.texts.const';
 import {
     AiAnalyticsAboutUseCase,
     buildAboutKey,
@@ -143,22 +144,34 @@ describe('about: текст ручки содержит все коды пара
 });
 
 describe('about: блок генерируется из реестра и снапшота, не из литералов', () => {
-    it('параметр несёт title, unit и описание дескриптора, значение и слой из resolveParam', () => {
+    it('параметр несёт название и описание для руководителя (userTitle), unit дескриптора, значение и слой из resolveParam', () => {
         const registry: ParamContext = { portal: { n_min_none: 12 } };
         const about = buildAiAnalyticsAbout(buildInput({ registry }));
         const param = about.params.find(item => item.code === 'n_min_none');
         const descriptor = findParam('n_min_none');
 
+        expect(descriptor?.userTitle).toBeDefined();
         expect(param).toMatchObject({
             value: 12,
             layer: 'portal',
             kind: descriptor?.source,
-            title: descriptor?.title,
+            title: descriptor?.userTitle,
             unit: descriptor?.unit,
-            description: descriptor?.description,
+            description: descriptor?.userDescription,
             breaksSeries: descriptor?.breaksSeries,
         });
         expect(about.paramsVersion).toBe('pv-about');
+    });
+
+    it('числа в строках «как читать» берутся из реестра со слоями портала', () => {
+        const registry: ParamContext = { portal: { n_min_none: 12 } };
+        const about = buildAiAnalyticsAbout(buildInput({ registry }));
+        const byDefault = buildAiAnalyticsAbout(buildInput());
+
+        expect(about.howToRead[0]).toContain('если разборов меньше 12');
+        expect(byDefault.howToRead[0]).toContain(
+            `если разборов меньше ${findParam('n_min_none')?.defaultValue}`,
+        );
     });
 
     it('мутация дефолта реестра меняет значение в блоке', () => {
@@ -207,10 +220,12 @@ describe('about: модель портала — readiness, κ/φ/λ с исто
         expect(model?.monthKey).toBe(payload.monthKey);
         expect(model?.kappa).toMatchObject({
             code: 'kappa_edge_late',
-            symbol: 'κ',
+            symbol: AI_ABOUT_ESTIMATES.kappa.symbol,
             value: payload.kappa,
             source: 'hybrid',
         });
+        expect(model?.kappa.note).toContain('стандартное значение');
+        expect(model?.lambda.note).toContain('задано настройкой');
         expect(model?.phi).toMatchObject({
             value: payload.overdispersion.value,
             source: 'hybrid',
@@ -249,8 +264,11 @@ describe('about: модель портала — readiness, κ/φ/λ с исто
             }),
         );
         expect(estimated.model?.kappa.source).toBe('estimated');
-        expect(estimated.model?.kappa.note).toContain('открыт');
+        expect(estimated.model?.kappa.note).toContain(
+            'для всех шагов воронки норма уточнена по данным портала',
+        );
         expect(configured.model?.kappa.source).toBe('configured');
+        expect(configured.model?.kappa.note).toBe('задано настройкой портала');
     });
 
     it('санити-панель модели доезжает до блока', () => {

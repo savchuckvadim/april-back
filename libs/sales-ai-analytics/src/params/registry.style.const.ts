@@ -19,6 +19,9 @@ export const AI_ANALYTICS_STYLE_PARAMS = [
         breaksSeries: false,
         description:
             'Гейт подписи «по данным» для менеджера; ниже — confidence: none с причиной few-calls. Коллеги входят в норму портала с n ≥ 20 разборов.',
+        userTitle: 'Сколько разборов нужно для подписи стиля',
+        userDescription:
+            'Пока разборов у менеджера меньше, пишем «данных для стиля пока мало».',
     },
     {
         code: 'style_min_peers',
@@ -32,6 +35,9 @@ export const AI_ANALYTICS_STYLE_PARAMS = [
         breaksSeries: false,
         description:
             'Сколько менеджеров с n ≥ 20 нужно для яруса «по данным». При 5–7 коллегах доступен только ярус «похоже» с подписью «только ориентир», при менее 5 — режим малой команды без сравнения с коллегами.',
+        userTitle: 'Сколько коллег нужно для сравнения стиля',
+        userDescription:
+            'Пока коллег с достаточным числом разборов меньше, сравнение с коллегами показываем только как ориентир.',
     },
     {
         code: 'style_rope_delta',
@@ -45,6 +51,9 @@ export const AI_ANALYTICS_STYLE_PARAMS = [
         breaksSeries: false,
         description:
             'В документе ai/tasks/ai-analytics-manager-style.md — `style_tag_d_in`. ROPE вокруг нуля: p_ROPE = P(|δ| ≥ style_rope_delta). Отличие менеджера от коллег меньше этой величины считается практически нулевым и подписи не даёт.',
+        userTitle: 'Порог заметного отличия от коллег',
+        userDescription:
+            'Отличие от коллег меньше этого считаем практически нулевым и подписи не даём.',
     },
     {
         code: 'style_p_in',
@@ -58,6 +67,9 @@ export const AI_ANALYTICS_STYLE_PARAMS = [
         breaksSeries: false,
         description:
             'В документе ai/tasks/ai-analytics-manager-style.md — `style_tag_p_in`. Подпись «по данным» ставится при p_ROPE не ниже порога; для устойчивых признаков (настойчив, даёт время, слушает, быстрый) порог поднимается до 0,9 в style-tags.const.ts.',
+        userTitle: 'Уверенность для появления подписи стиля',
+        userDescription:
+            'Подпись появляется, когда мы уверены в особенности не меньше, чем на эту долю.',
     },
     {
         code: 'style_p_out',
@@ -71,6 +83,9 @@ export const AI_ANALYTICS_STYLE_PARAMS = [
         breaksSeries: false,
         description:
             'Гистерезис: уже выданная подпись снимается только когда p_ROPE опустится ниже этого значения — иначе профиль мигал бы между пересчётами.',
+        userTitle: 'Уверенность для снятия подписи стиля',
+        userDescription:
+            'Уже выданная подпись снимается, только когда уверенность упадёт ниже этой доли, чтобы профиль не мигал.',
     },
     {
         code: 'style_z_raw',
@@ -84,6 +99,9 @@ export const AI_ANALYTICS_STYLE_PARAMS = [
         breaksSeries: false,
         description:
             'В документе ai/tasks/ai-analytics-manager-style.md — `style_tag_z_floor`. Дополнительно к байесовскому критерию: |x̄ − μ_LOO|/SE_raw должно превышать порог, иначе подпись не выдаётся даже при высоком p_ROPE.',
+        userTitle: 'Минимальный отрыв от коллег для подписи',
+        userDescription:
+            'Дополнительная проверка: отрыв менеджера от коллег должен быть заметным на фоне разброса, иначе подписи нет.',
     },
     {
         code: 'style_interval_z',
@@ -97,6 +115,9 @@ export const AI_ANALYTICS_STYLE_PARAMS = [
         breaksSeries: false,
         description:
             'В профиле стиля везде один уровень интервалов — 80 % (z = 1,282): при n = 40 и доле 0,5 полуширина Уилсона составляет около 10 п.п. Частотный пол подписи задаёт style_z_raw.',
+        userTitle: 'Ширина полосы уверенности в профиле стиля',
+        userDescription:
+            'Задаёт ширину полосы вокруг цифр профиля стиля; уровень один для всего профиля.',
     },
     {
         code: 'style_dispersion_min_days',
@@ -110,6 +131,9 @@ export const AI_ANALYTICS_STYLE_PARAMS = [
         breaksSeries: false,
         description:
             'Ось rhythm (документ ai/tasks/ai-analytics-manager-style.md, §2.1 ось 8): индекс избыточной дисперсии дневных объёмов Var/mean − 1 считается только при стольких рабочих днях в окне; ниже — null, подписи по ритму нет. Читает style-crm.units.ts (жёсткие счётчики телефонии).',
+        userTitle: 'Минимум рабочих дней для оценки ритма',
+        userDescription:
+            'Насколько ровно звонки распределены по дням, считаем только при таком числе рабочих дней в окне.',
     },
     // Пороги счётчиков телефонии и CRM (STYLE_CRM_THRESHOLDS, П11 Фазы 3,
     // 22.09.2026): определения единиц документа §2.1, scope global — портал
@@ -126,6 +150,9 @@ export const AI_ANALYTICS_STYLE_PARAMS = [
         breaksSeries: false,
         description:
             'Оси persistence и tempo (документ ai/tasks/ai-analytics-manager-style.md, §2.1 оси 4 и 7): звонок телефонии с кодом 200 считается разговором от стольких секунд — попытки дозвона короче лид не «связывают» и в ряды длительностей не входят. Определение единицы, а не порог разбора min_duration_sec. Читает style-crm.units.ts (STYLE_CRM_THRESHOLDS.conversationMinSec).',
+        userTitle: 'Минимальная длительность состоявшегося разговора',
+        userDescription:
+            'Звонок считаем разговором от этого числа секунд; более короткие попытки дозвона в стиль не входят.',
     },
     {
         code: 'style_tempo_min_sec',
@@ -139,6 +166,9 @@ export const AI_ANALYTICS_STYLE_PARAMS = [
         breaksSeries: false,
         description:
             'Ось tempo (документ ai/tasks/ai-analytics-manager-style.md, §2.1 ось 7, под-ось «дни»): в объём рабочего дня callsPerWorkday входят исходящие звонки длиннее стольких секунд — короткие недозвоны темп не создают. Читает style-crm.units.ts (STYLE_CRM_THRESHOLDS.tempoMinSec).',
+        userTitle: 'Минимальная длительность звонка в объёме дня',
+        userDescription:
+            'В объём рабочего дня входят исходящие звонки длиннее этого числа секунд; короткие недозвоны темп не создают.',
     },
     {
         code: 'style_give_up_workdays',
@@ -152,6 +182,9 @@ export const AI_ANALYTICS_STYLE_PARAMS = [
         breaksSeries: false,
         description:
             'Ось persistence (документ ai/tasks/ai-analytics-manager-style.md, §2.1 ось 4): giveUpRate — доля лидов, у которых после первой попытки без разговора не было второй в столько рабочих дней по календарю портала; позже — лид считается брошенным. Читает style-crm.units.ts (STYLE_CRM_THRESHOLDS.giveUpWorkdays).',
+        userTitle: 'Срок второй попытки дозвона',
+        userDescription:
+            'Если после первой неудачной попытки нет второй за столько рабочих дней, считаем, что клиента бросили.',
     },
     {
         code: 'style_promise_window_days',
@@ -165,6 +198,9 @@ export const AI_ANALYTICS_STYLE_PARAMS = [
         breaksSeries: false,
         description:
             'Ось rhythm (документ ai/tasks/ai-analytics-manager-style.md, §2.1 ось 8): promiseKept — обещанная дата следующего шага считается выполненной, если звонок тому же клиенту состоялся в ±столько дней от неё. Читает style-crm.units.ts (STYLE_CRM_THRESHOLDS.promiseWindowDays).',
+        userTitle: 'Допуск по обещанной дате',
+        userDescription:
+            'Обещание перезвонить считаем выполненным, если звонок состоялся в пределах стольких дней от названной даты.',
     },
     {
         code: 'style_tenure_kappa',
@@ -178,5 +214,8 @@ export const AI_ANALYTICS_STYLE_PARAMS = [
         breaksSeries: false,
         description:
             'Оффсет β_band полосы стажа стягивается к нулю с этой силой: без стажа оффсет равен нулю и в «Как считаем» пишется причина no-tenure.',
+        userTitle: 'Сила поправки на стаж в стиле',
+        userDescription:
+            'Насколько сильно поправка на стаж стягивается к нулю, пока менеджеров с таким стажем мало.',
     },
 ] as const satisfies readonly ParamDescriptor[];

@@ -12,11 +12,20 @@ import type {
     ManagerWeekPayload,
 } from '../domain/assembler/manager-snapshot.types';
 import type { PortalModelPayload } from '../domain/assembler/portal-model.types';
+import type { AiAgendaDto } from '../dto/ai-agenda.dto';
 import type { BriefManagerRow } from './evidence-pack.types';
+
+/** Кэш повестки — сам DTO (ручка кладёт его через `remember`). */
+export const isAgendaDto = (value: unknown): value is AiAgendaDto =>
+    typeof value === 'object' &&
+    value !== null &&
+    Array.isArray((value as { items?: unknown }).items);
 
 /** Запись снапшота в объёме, который нужен сборщику пакета. */
 export interface SnapshotRowLike {
     managerId: string | null;
+    /** Ключ периода записи; нет у старых моков — считается пустым. */
+    periodKey?: string;
     payload: unknown;
 }
 
@@ -74,7 +83,11 @@ export function toBriefRows<T>(
     const rows: BriefManagerRow<T>[] = [];
     for (const record of records) {
         if (record.managerId === null || !guard(record.payload)) continue;
-        rows.push({ managerId: record.managerId, payload: record.payload });
+        rows.push({
+            managerId: record.managerId,
+            periodKey: record.periodKey ?? '',
+            payload: record.payload,
+        });
     }
 
     return rows;

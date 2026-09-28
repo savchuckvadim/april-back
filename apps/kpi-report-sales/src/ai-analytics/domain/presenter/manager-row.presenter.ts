@@ -109,7 +109,13 @@ export function buildManagerRow(input: ManagerRowInput): AiManagerRowDto {
         callsTotal: input.callFacts.callsTotal,
         analyzedCalls: input.matrixRow?.n ?? 0,
         nextStepRate: input.callFacts.nextStepRate,
-        riskCalls: input.callFacts.riskCalls,
+        // Ссылки на карточки разборов проставляет OverviewUseCase после
+        // сборки всех строк одним вызовом SmartLinkLoader
+        // (withOverviewRiskCallLinks); до него link = null.
+        riskCalls: input.callFacts.riskCalls.map(call => ({
+            ...call,
+            link: null,
+        })),
         recommendations: [],
         ...(since === null ? {} : { since }),
         ...(sinceSource === null ? {} : { sinceSource }),

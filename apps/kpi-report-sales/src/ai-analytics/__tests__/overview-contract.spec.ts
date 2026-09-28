@@ -39,6 +39,7 @@ import {
     type ContractCall,
 } from './fixtures/overview-contract.fixture';
 import { emptyFinance, emptyPlans } from './fixtures/overview.fixture';
+import { smartLinksWith } from './fixtures/smart-links.fixture';
 
 /**
  * Контракт обзора с существующими ручками (аудит 14.09, M18; план §9 1b
@@ -114,6 +115,7 @@ async function overviewOf(
         { load: jest.fn().mockResolvedValue(new Map()) } as never,
         { loadLevels: jest.fn().mockResolvedValue(new Map()) } as never,
         { listInPeriod: jest.fn().mockResolvedValue([]) } as never,
+        smartLinksWith().loader,
     );
     return useCase.execute(
         { domain: CONTRACT_DOMAIN, from: CONTRACT_FROM, to: CONTRACT_TO },

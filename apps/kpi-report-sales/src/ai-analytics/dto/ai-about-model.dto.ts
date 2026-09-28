@@ -28,16 +28,17 @@ export class AiAboutEstimateDto {
     code: string;
 
     @ApiProperty({
-        description: 'Символ величины в формулах.',
+        description:
+            'Короткая подпись величины простыми словами (без символов и формул).',
         type: String,
-        example: 'κ',
+        example: 'сила усадки',
     })
     symbol: string;
 
     @ApiProperty({
-        description: 'Подпись величины по-русски.',
+        description: 'Полное название величины по-русски.',
         type: String,
-        example: 'Сила усадки менеджера к норме',
+        example: 'Насколько сильно цифры менеджера подтягиваются к норме',
     })
     title: string;
 
@@ -59,9 +60,10 @@ export class AiAboutEstimateDto {
     source: ParamSource;
 
     @ApiProperty({
-        description: 'Пояснение источника: гейт, объём данных, слой.',
+        description:
+            'Пояснение источника словами: по данным, настройкой, стандартное.',
         type: String,
-        example: 'гейт Клейнмана закрыт: рёбер с оценкой по данным 0 из 4',
+        example: 'по данным портала пока не оценивается — стандартное значение',
     })
     note: string;
 }
@@ -202,19 +204,21 @@ export class AiAboutModelDto {
     readiness: ReadinessDto;
 
     @ApiProperty({
-        description: 'κ — сила усадки к норме.',
+        description:
+            'Сила усадки: насколько цифры менеджера подтягиваются к норме.',
         type: AiAboutEstimateDto,
     })
     kappa: AiAboutEstimateDto;
 
     @ApiProperty({
-        description: 'φ — сверхдисперсия темпов.',
+        description:
+            'Разброс между менеджерами: насколько отличаются их темпы.',
         type: AiAboutEstimateDto,
     })
     phi: AiAboutEstimateDto;
 
     @ApiProperty({
-        description: 'λ — забывание прошлых месяцев.',
+        description: 'Память ряда: как быстро забываются прошлые месяцы.',
         type: AiAboutEstimateDto,
     })
     lambda: AiAboutEstimateDto;

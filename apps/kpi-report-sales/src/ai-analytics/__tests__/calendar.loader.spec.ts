@@ -11,6 +11,7 @@ import {
 import {
     AI_CALENDAR_FALLBACK_DAY_HOURS,
     calendarWarnings,
+    inRuMonth,
     parseBxHolidays,
     parseBxWorkweek,
     ruWorkCalendar,
@@ -295,5 +296,13 @@ describe('calendarWarnings — оговорки календаря', () => {
 
         expect(warnings[0]).toContain('на 2026 год праздников нет');
         expect(warnings.length).toBeGreaterThan(1);
+        expect(warnings[1]).toContain('в январе 2026');
+        expect(warnings.join(' ')).not.toMatch(/в месяце \d{4}-\d{2}/);
+    });
+
+    it('месяц называется словами в предложном падеже', () => {
+        expect(inRuMonth('2026-02')).toBe('в феврале 2026');
+        expect(inRuMonth('2026-12')).toBe('в декабре 2026');
+        expect(inRuMonth('мусор')).toBe('в месяце мусор');
     });
 });

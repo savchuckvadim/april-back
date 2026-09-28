@@ -94,17 +94,18 @@ describe('buildAgenda', () => {
         expect(a.charOffset).toBe(
             RISK_TEXT.indexOf('Я перезвоню когда-нибудь'),
         );
-        expect(a.reason).toContain('promise');
+        expect(a.reason).toBe('Сигналы риска: необоснованное обещание клиенту');
         expect(a.score).toBe(6);
         expect(a.callType).toBe('presentation');
 
         expect(b.quote).toBe('Дорого');
         expect(b.charOffset).toBe(15);
-        expect(b.reason).toContain('price');
+        expect(b.reason).toBe('Спорное возражение «Цена»: не отработано');
 
         expect(c.quote).toBe('Что вам нужно?');
         expect(c.charOffset).toBeNull();
-        expect(c.reason).toContain('needs');
+        // Код раздела фикстуры не из справочника — остаётся как есть.
+        expect(c.reason).toBe('Слабее всего — «needs»: 2 из 10');
     });
 
     it('цитата не найдена в тексте → charOffset null', () => {
@@ -168,6 +169,39 @@ describe('buildAgenda', () => {
         ]);
         expect(item.quote).toBe('');
         expect(item.charOffset).toBeNull();
-        expect(item.reason).toBe('Риск-флаги: conflict, promise');
+        expect(item.reason).toBe(
+            'Сигналы риска: конфликт / грубость; необоснованное обещание клиенту',
+        );
+    });
+
+    it('повторы одного риск-флага схлопываются в один пункт со счётчиком словами', () => {
+        const [item] = buildAgenda([
+            call('H', 'm1', {
+                riskFlags: [
+                    'client_negative',
+                    'promise',
+                    'client_negative',
+                    'client_negative',
+                    'promise',
+                ],
+                sections: [],
+            }),
+        ]);
+        expect(item.reason).toBe(
+            'Сигналы риска: сильный негатив клиента (3 раза); ' +
+                'необоснованное обещание клиенту (2 раза)',
+        );
+        // Кодов, дублей и знака «×» в причине нет.
+        expect(item.reason).not.toMatch(/client_negative|promise|×/);
+        expect(item.reason.split('негатив клиента')).toHaveLength(2);
+        // Тяжесть — по числу флагов (5), не по числу видов: порядок прежний.
+        const [heavier] = buildAgenda([
+            call('I', 'm2', { riskFlags: ['conflict'], sections: [] }),
+            call('H', 'm1', {
+                riskFlags: ['client_negative', 'client_negative'],
+                sections: [],
+            }),
+        ]);
+        expect(heavier.transcriptionId).toBe('H');
     });
 });

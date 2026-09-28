@@ -1,3 +1,4 @@
+import { findParam } from '../params/registry.const';
 import { defaultTargets } from '../settings/ai-settings.defaults';
 import {
     settingsSanity,
@@ -91,19 +92,49 @@ describe('settingsSanity: блокирующие проверки', () => {
                 },
             }).blocking,
         ).toHaveLength(1);
-        expect(
-            check({ modelParams: { kappa_edge_early: 1000 } }).blocking.join(
-                ' ',
-            ),
-        ).toContain('[5; 500]');
+        const outOfRange = check({
+            modelParams: { kappa_edge_early: 1000 },
+        }).blocking.join(' ');
+        expect(outOfRange).toContain('допустимо от 5 до 500');
+        expect(outOfRange).toContain(
+            `«${findParam('kappa_edge_early')?.userTitle}»`,
+        );
+        expect(outOfRange).not.toContain('kappa_edge_early');
         expect(
             check({ modelParams: { forget_lambda: 'много' } }).blocking.join(
                 ' ',
             ),
-        ).toContain('ожидается number');
+        ).toContain('нужно число');
         expect(
             check({ modelParams: { нет_такого: 1 } }).blocking.join(' '),
-        ).toContain('не найден в реестре');
+        ).toContain('Неизвестный параметр «нет_такого»');
+    });
+
+    it('тексты ошибок — простым русским: уровни подписаны, интервалов и кодов нет', () => {
+        const { blocking } = check({
+            levels: [
+                {
+                    managerId: 10,
+                    level: 'senior',
+                    since: '2026-09-08',
+                    source: 'manual',
+                },
+            ],
+            targets: {
+                ...defaultTargets(),
+                byLevel: {
+                    ...defaultTargets().byLevel,
+                    middle: { sales: 100, presentationsMin: 0, coldPerDay: 0 },
+                },
+            },
+            definitions: { minDurationSecByType: { presentation: 5 } },
+        });
+        const text = blocking.join(' ');
+
+        expect(text).toContain('Дата начала стажа у менеджера 10');
+        expect(text).toContain('Цель продаж для уровня «Мидл»: 100');
+        expect(text).toContain('звонков типа «Презентация»');
+        expect(text).not.toMatch(/\[\d+; \d+\]|middle|presentation|since/);
     });
 
     it('справочники определений и объёмы оценивания', () => {

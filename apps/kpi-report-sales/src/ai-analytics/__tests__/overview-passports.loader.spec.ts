@@ -21,6 +21,7 @@ import {
     OVERVIEW_TO,
     twoManagersRows,
 } from './fixtures/overview.fixture';
+import { smartLinksWith } from './fixtures/smart-links.fixture';
 
 /**
  * Паспорта менеджеров для строки обзора: читаются из месячных снапшотов
@@ -196,6 +197,7 @@ describe('OverviewUseCase: паспорт месяца в строке', () => {
                     ),
             } as never,
             { listInPeriod: jest.fn().mockResolvedValue([]) } as never,
+            smartLinksWith().loader,
             store,
         );
     }

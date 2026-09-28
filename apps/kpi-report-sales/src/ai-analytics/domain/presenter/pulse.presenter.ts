@@ -5,6 +5,22 @@
 import { PulseResult } from '@lib/sales-ai-analytics';
 import { AiPulseAlertDto, AiPulseDto } from '../../dto/ai-pulse.dto';
 import { filterByPerimeter, RequesterAccess } from '../access/perimeter.util';
+import { PulseAlertDraft } from './pulse-alerts.util';
+
+/**
+ * Ссылки на карточки разборов сигналов: transcriptionId → URL элемента
+ * смарта «AI-анализ звонков» (карта SmartLinkLoader.resolveLinks); нет
+ * элемента или ссылки не построены → null. Остальные поля не меняются.
+ */
+export function withPulseAlertLinks(
+    alerts: readonly PulseAlertDraft[],
+    links: ReadonlyMap<string, string | null>,
+): AiPulseAlertDto[] {
+    return alerts.map(alert => ({
+        ...alert,
+        link: links.get(alert.transcriptionId) ?? null,
+    }));
+}
 
 export function toPulseDto(
     endDate: string,

@@ -17,6 +17,14 @@ import {
 } from '@lib/sales-ai-analytics';
 import { calendarWarnings } from '../domain/loaders/calendar.util';
 import {
+    alertsWarning,
+    durationWarning,
+    exposureWarning,
+    slaWarning,
+    targetWarning,
+    timestampLeakWarning,
+} from './sanity.texts';
+import {
     AI_SANITY_DATA_QUALITY,
     AI_SANITY_LIMITS,
     AI_SANITY_PROXY_DAYS_SOURCE,
@@ -30,8 +38,6 @@ import {
     SanityLeakFact,
     SanityLevelFact,
 } from './sanity.types';
-
-const PERCENT = 100;
 
 /** Вердикт правила: есть предупреждения — «warning», иначе «ok». */
 const verdict = (
@@ -92,9 +98,7 @@ export function targetRule(
             ratio < 1 / AI_SANITY_LIMITS.targetGapRatio
         ) {
             warnings.push(
-                `Цель уровня ${level} — ${target.sales} продаж, медиана ` +
-                    `факта полосы ${median} (n = ${sales.length}): цель и ` +
-                    'факт разошлись больше чем в полтора раза',
+                targetWarning(level, target.sales, median, sales.length),
             );
         }
     }
@@ -116,11 +120,7 @@ export function slaRule(
         if (!fact || fact.n < minN) continue;
         checked += 1;
         if (fact.p50 > days) {
-            warnings.push(
-                `SLA стадии ${stage}: договорённость ${days} дн., факт ` +
-                    `p25 ${fact.p25} / p50 ${fact.p50} / p90 ${fact.p90} дн. ` +
-                    `(n = ${fact.n}) — половина сделок вне договорённости`,
-            );
+            warnings.push(slaWarning(stage, days, fact));
         }
     }
     return checked === 0
@@ -159,12 +159,17 @@ export function durationRule(
             durations.length;
         if (cut > AI_SANITY_LIMITS.durationCutShare) {
             warnings.push(
-                `Порог длительности типа ${callType} (${threshold} с) ` +
-                    `отрезает ${Math.round(cut * PERCENT)} % звонков типа: ` +
-                    `p10 ${Math.round(quantileOf(durations, 0.1))} / ` +
-                    `p50 ${Math.round(quantileOf(durations, 0.5))} / ` +
-                    `p90 ${Math.round(quantileOf(durations, 0.9))} с ` +
-                    `(n = ${durations.length})`,
+                durationWarning(
+                    callType,
+                    threshold,
+                    cut,
+                    {
+                        p10: quantileOf(durations, 0.1),
+                        p50: quantileOf(durations, 0.5),
+                        p90: quantileOf(durations, 0.9),
+                    },
+                    durations.length,
+                ),
             );
         }
     }
@@ -191,11 +196,8 @@ export function alertsRule(
             ([, alerts]) =>
                 alerts.length > AI_SANITY_LIMITS.alertsPerManagerWeek,
         )
-        .map(
-            ([managerId, alerts]) =>
-                `Менеджер ${managerId}: алертов за неделю ${alerts.length} ` +
-                `(порог ${AI_SANITY_LIMITS.alertsPerManagerWeek}) — ` +
-                'разбирать столько некогда, сигнал тонет в шуме',
+        .map(([, alerts]) =>
+            alertsWarning(alerts.length, AI_SANITY_LIMITS.alertsPerManagerWeek),
         );
     return verdict(AI_SANITY_RULES.alerts, warnings);
 }
@@ -221,14 +223,8 @@ export function exposureRule(
     const proxy = facts.filter(
         fact => fact.daysSource === AI_SANITY_PROXY_DAYS_SOURCE,
     );
-    const warnings =
-        proxy.length === 0
-            ? []
-            : [
-                  `Менеджер-месяцев с прокси-отсутствиями ${proxy.length} ` +
-                      `(${proxy.map(fact => fact.managerId).join(', ')}) — ` +
-                      'они исключены из норм, отсутствия стоит завести руками',
-              ];
+    const managers = new Set(proxy.map(fact => fact.managerId)).size;
+    const warnings = managers === 0 ? [] : [exposureWarning(managers)];
     return verdict(AI_SANITY_RULES.exposure, warnings);
 }
 
@@ -248,15 +244,7 @@ export function timestampLeakRule(
             AI_SANITY_SKIP_REASONS.leakFacts,
         );
     }
-    const warnings = fact.flagged
-        ? [
-              `Протечка меток времени: ${fact.leaked} из ${fact.n} продаж ` +
-                  'закрыты раньше последней презентации или счёта ' +
-                  `(${fact.sharePct} % при пороге ` +
-                  `${Math.round(fact.maxPct * PERCENT)} %) — сделки ` +
-                  'оформлены задним числом, dq-гейт не пройден',
-          ]
-        : [];
+    const warnings = fact.flagged ? [timestampLeakWarning(fact)] : [];
     return verdict(AI_SANITY_RULES.timestampLeak, warnings);
 }
 

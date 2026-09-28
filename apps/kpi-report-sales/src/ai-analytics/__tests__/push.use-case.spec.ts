@@ -16,7 +16,7 @@ const agenda: AiAgendaDto = {
             managerId: '10',
             callType: 'presentation',
             kind: 'risk',
-            reason: 'Риск-флаги: promise',
+            reason: 'Сигналы риска: необоснованное обещание клиенту',
             quote: 'Перезвоним',
             charOffset: null,
             link: null,

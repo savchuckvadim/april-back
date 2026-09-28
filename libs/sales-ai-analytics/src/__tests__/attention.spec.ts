@@ -45,7 +45,8 @@ describe('buildAttention: правила Фазы 1', () => {
             rank: 1,
             signal: 'risk',
             availableFrom: 1,
-            headline: 'Риск-сигналы: 2 (conflict, promise)',
+            headline:
+                'Сигналы риска: 2 (конфликт / грубость; необоснованное обещание клиенту)',
             basis: [{ code: 'risk_calls', value: 2, n: 30 }],
             link: { managerId: 'm1', transcriptionIds: ['t1', 't2'] },
         });
@@ -56,11 +57,15 @@ describe('buildAttention: правила Фазы 1', () => {
             managers: [manager({ n: 3, callsTotal: 25 })],
         });
         expect(withCalls.signal).toBe('no_data');
-        expect(withCalls.headline).toBe('Мало разборов: n = 3 при 25 звонках');
+        expect(withCalls.headline).toBe('Разобрано всего 3 звонка из 25');
         expect(withCalls.basis).toEqual([
             { code: 'analyzed_calls', value: 3, norm: 8, n: 3 },
             { code: 'calls_total', value: 25, n: 25 },
         ]);
+        const [unknownTotal] = buildAttention({
+            managers: [manager({ n: 1 })],
+        });
+        expect(unknownTotal.headline).toBe('Разобран всего 1 звонок');
         expect(signalsOf([manager({ n: 3 })])).toEqual(['no_data']);
         expect(signalsOf([manager({ n: 3, callsTotal: 0 })])).toEqual([]);
         expect(signalsOf([manager({ n: 8, callsTotal: 25 })])).toEqual([]);
@@ -145,7 +150,9 @@ describe('buildAttention: правила Фазы 1', () => {
         });
         const [item] = buildAttention({ managers: [drop] });
         expect(item.signal).toBe('next_step_drop');
-        expect(item.headline).toBe('Доля шага с датой упала: 75 % → 25 %');
+        expect(item.headline).toBe(
+            'Реже договаривается о следующем шаге с датой: было 75 %, стало 25 %',
+        );
         expect(item.basis[0]).toEqual(
             expect.objectContaining({
                 code: 'next_step_date_rate',
@@ -185,7 +192,8 @@ describe('buildAttention: правила Фазы 1', () => {
         });
         expect(above.signal).toBe('plan_gap');
         expect(above.headline).toBe(
-            'План руководителя 30 выше нормы 12 (×2,5)',
+            'План руководителя — 30 презентаций, по норме уровня выходит ' +
+                'около 12: план выше в 2,5 раза',
         );
         expect(above.basis).toEqual([
             { code: 'plan_head', value: 30, norm: 12, n: 0 },
@@ -193,7 +201,17 @@ describe('buildAttention: правила Фазы 1', () => {
         const [below] = buildAttention({
             managers: [manager({ planGap: { norm: 12, planHead: 5 } })],
         });
-        expect(below.headline).toBe('План руководителя 5 ниже нормы 12 (×0,4)');
+        expect(below.headline).toBe(
+            'План руководителя — 5 презентаций, по норме уровня выходит ' +
+                'около 12: план ниже в 2,4 раза',
+        );
+        const [twice] = buildAttention({
+            managers: [manager({ planGap: { norm: 12, planHead: 24 } })],
+        });
+        expect(twice.headline).toBe(
+            'План руководителя — 24 презентации, по норме уровня выходит ' +
+                'около 12: план выше в 2 раза',
+        );
         expect(
             signalsOf([manager({ planGap: { norm: 12, planHead: 14 } })]),
         ).toEqual([]);
