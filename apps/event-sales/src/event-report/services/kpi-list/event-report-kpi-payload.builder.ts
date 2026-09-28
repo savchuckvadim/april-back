@@ -501,7 +501,7 @@ export class EventReportKpiPayloadBuilder {
         const client = companyId ?? `${ctx.entityType}${ctx.entityId}`;
         const dealId =
             Number(ctx.currentBaseDeal?.ID ?? this.deals.baseDealId) || 'new';
-        const userId = ctx.planResponsibleId || 0;
+        const userId = ctx.workResponsibleId || 0;
         return `final_${kind}_${client}_${dealId}_${userId}`;
     }
 
@@ -783,8 +783,9 @@ export class EventReportKpiPayloadBuilder {
                 event_title: input.name,
                 plan_date: ctx.planDeadline?.toCrmDateTime() ?? null,
                 author: ctx.planCreatedById || ctx.planResponsibleId,
-                responsible: ctx.planResponsibleId,
-                su: ctx.planResponsibleId,
+                // Продажа — ответственному сделки (workResponsibleId).
+                responsible: ctx.workResponsibleId,
+                su: ctx.workResponsibleId,
                 crm: input.crm,
                 crm_company:
                     ctx.entityType === EEventReportEntityType.COMPANY &&

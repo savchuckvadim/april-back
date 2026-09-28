@@ -76,7 +76,8 @@ export class SalesBaseDealService {
             ...this.failFields(ctx),
             CATEGORY_ID: String(category.bitrixId),
             STAGE_ID: composeStageId(category.bitrixId, targetStage),
-            ASSIGNED_BY_ID: String(ctx.planResponsibleId),
+            // Продажа по существующей сделке — за её ответственным.
+            ASSIGNED_BY_ID: String(ctx.workResponsibleId),
         };
 
         if (ctx.currentBaseDeal) {

@@ -62,7 +62,7 @@ export class SalesXoDealService {
             ...ctx.ownerLinkFields,
             CATEGORY_ID: String(category.bitrixId),
             STAGE_ID: composeStageId(category.bitrixId, targetStage),
-            ASSIGNED_BY_ID: String(ctx.planResponsibleId),
+            ASSIGNED_BY_ID: String(ctx.workResponsibleId),
         };
 
         const cmd = `update_xo_deal_${ctx.currentXoDeal.ID}`;

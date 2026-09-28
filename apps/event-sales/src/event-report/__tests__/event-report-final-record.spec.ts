@@ -289,6 +289,41 @@ describe('Финальная запись продажи/отказа (лега�
         expect(final!.name).toBe('Продажа: спонтанная презентация');
     });
 
+    /*
+     * ПРОДАЖА НА ОТВЕТСТВЕННОГО СДЕЛКИ (решение владельца 28.09.2026):
+     * нажавший (план — на нём) не забирает продажу себе — KPI и код финала
+     * по ответственному основной сделки.
+     */
+    it('продажа засчитывается ответственному сделки, а не нажавшему', () => {
+        const ctx = makeCtx({
+            dto: {
+                currentTask: { eventType: 'hot', name: 'ООО Ромашка' },
+                report: {
+                    resultStatus: 'result',
+                    workStatus: { current: { code: 'success' } },
+                },
+                plan: { responsibility: { ID: 11 } },
+            },
+            init: {
+                entityType: 'company',
+                entityId: 431,
+                currentBaseDeal: { ID: '5512', ASSIGNED_BY_ID: '387' },
+            },
+        });
+        expect(ctx.workResponsibleId).toBe(387);
+        const sale = build(ctx).find(p => p.items.event_type === 'ev_success');
+        expect(sale!.values.responsible).toBe(387);
+        expect(sale!.dedup!.key).toBe('final_sale_431_5512_387');
+    });
+
+    it('не продажа — работа по-прежнему на ответственном плана', () => {
+        const ctx = makeCtx({
+            dto: { plan: { responsibility: { ID: 11 } } },
+            init: { currentBaseDeal: { ID: '5512', ASSIGNED_BY_ID: '387' } },
+        });
+        expect(ctx.workResponsibleId).toBe(11);
+    });
+
     it('crm-привязки финала несут L_лид при владельце-сделке', () => {
         const final = build(makeCtx()).find(
             p => p.items.event_type === 'ev_fail',

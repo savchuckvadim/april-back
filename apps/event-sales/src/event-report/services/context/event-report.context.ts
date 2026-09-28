@@ -410,6 +410,26 @@ export class EventReportContext {
     get planResponsibleId(): number {
         return Number(this.dto.plan?.responsibility?.ID ?? 0);
     }
+
+    /**
+     * ЗА КЕМ РАБОТА и кому она засчитывается.
+     *
+     * Продажа по существующей основной сделке закрывается на её
+     * ОТВЕТСТВЕННОГО, а не на того, кто нажал (решение владельца
+     * 28.09.2026): сделка не переназначается, «Менеджер по продажам» и KPI
+     * продажи — ответственному сделки. Во всех остальных случаях — как
+     * раньше, ответственный плана.
+     */
+    get workResponsibleId(): number {
+        if (this.isSuccessSale) {
+            const owner = Number(
+                (this.currentBaseDeal as Record<string, unknown> | null)
+                    ?.ASSIGNED_BY_ID,
+            );
+            if (Number.isInteger(owner) && owner > 0) return owner;
+        }
+        return this.planResponsibleId;
+    }
     get planCreatedById(): number {
         return Number(this.dto.plan?.createdBy?.ID ?? 0);
     }
