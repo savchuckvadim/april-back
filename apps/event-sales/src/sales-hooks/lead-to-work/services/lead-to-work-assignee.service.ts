@@ -39,6 +39,8 @@ export const LEAD_TO_WORK_ASSIGNEE_SOURCES = [
     'explicit',
     'lead',
     'round-robin',
+    // Повторная заявка присоединена к сделке клиента — ответственный сделки.
+    'repeat',
 ] as const;
 export type LeadToWorkAssigneeSource =
     (typeof LEAD_TO_WORK_ASSIGNEE_SOURCES)[number];

@@ -10,6 +10,7 @@ import {
     BxRow,
     CALL_TASK_PREFIX,
     LeadToWorkFlowBase,
+    XO_TASK_PREFIX,
 } from './lead-to-work-flow.base';
 
 /** Ограничение на задачи в группе — запас до лимита батча 50. */
@@ -172,6 +173,81 @@ export class TaskFlowService extends LeadToWorkFlowBase {
         const deadline = this.parseDeadline(item.deadline);
         if (deadline) payload.DEADLINE = deadline.toTaskDeadline();
 
+        buffer.queue(() => this.bitrix.batch.task.add(cmd, payload as never));
+        result.addCmd = cmd;
+        return result;
+    }
+
+    /**
+     * ОДНА задача ХО для присоединённой повторной заявки (28.09.2026).
+     *
+     * У основной сделки уже может висеть открытая задача «Холодный
+     * обзвон…» от прежней заявки — тогда вторая не ставится (владелец:
+     * «задача должна создаваться, но одна»), а к существующей добавляется
+     * привязка нового лида. Остальные задачи клиента не трогаются вовсе.
+     */
+    ensureXoTask(
+        item: ResolvedLeadToWorkItem,
+        input: {
+            xoTitle: string;
+            /** Реальный id основной сделки (не $result — сделка существует). */
+            mainDealId: number;
+            companyId: number | null;
+            /** Открытые задачи основной сделки (прочитаны файндером). */
+            openMainTasks: readonly BxRow[];
+        },
+        buffer: IBatchGroupBuffer,
+    ): TaskFlowResult {
+        const result: TaskFlowResult = {
+            tasksMoved: 0,
+            tasksClosed: 0,
+            warnings: [],
+        };
+        const existing = input.openMainTasks.find(row =>
+            (this.text(row.title) ?? this.text(row.TITLE) ?? '').startsWith(
+                XO_TASK_PREFIX,
+            ),
+        );
+        if (existing) {
+            const taskId = Number(existing.id ?? existing.ID);
+            const current = this.refList(
+                existing.ufCrmTask ?? existing.UF_CRM_TASK,
+            );
+            const merged = mergeTaskCrmBindings(current, [
+                taskCrmBinding('LEAD', item.leadId),
+            ]);
+            if (Number.isFinite(taskId) && merged.length !== current.length) {
+                buffer.queue(() =>
+                    this.bitrix.batch.task.update(
+                        `lw_join_task_${taskId}`,
+                        taskId,
+                        { UF_CRM_TASK: merged } as never,
+                    ),
+                );
+                result.tasksMoved = 1;
+            }
+            return result;
+        }
+
+        const bindings = [
+            taskCrmBinding('LEAD', item.leadId),
+            taskCrmBinding('DEAL', input.mainDealId),
+        ];
+        if (input.companyId) {
+            bindings.push(taskCrmBinding('COMPANY', input.companyId));
+        }
+        const groupId = this.portal.getSalesTaskGroupId();
+        const cmd = `lw_task_add_${item.leadId}`;
+        const payload: BxRow = {
+            TITLE: toBatchSafeText(input.xoTitle),
+            RESPONSIBLE_ID: item.responsible,
+            // Постановщик = ответственный (см. комментарий в queue()).
+            CREATED_BY: item.responsible,
+            UF_CRM_TASK: bindings,
+            ...(groupId ? { GROUP_ID: groupId } : {}),
+        };
+        const deadline = this.parseDeadline(item.deadline);
+        if (deadline) payload.DEADLINE = deadline.toTaskDeadline();
         buffer.queue(() => this.bitrix.batch.task.add(cmd, payload as never));
         result.addCmd = cmd;
         return result;

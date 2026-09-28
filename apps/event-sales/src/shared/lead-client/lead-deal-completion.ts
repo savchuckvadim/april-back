@@ -71,7 +71,14 @@ export class LeadDealCompletion {
          * даже при включённой настройке портала (вызывающий сказал «не
          * надо»). Не передан — решает настройка.
          */
-        options: { kind?: LeadClientKind | 'none' } = {},
+        options: {
+            kind?: LeadClientKind | 'none';
+            /**
+             * Повторная заявка присоединена к существующей сделке: поля
+             * заявки — свежими значениями, своя карточка в таймлайне.
+             */
+            repeat?: boolean;
+        } = {},
     ): Promise<ILeadDealCompletionResult> {
         const result: ILeadDealCompletionResult = {
             link: null,
@@ -102,7 +109,9 @@ export class LeadDealCompletion {
             }
         }
 
-        const enriched = await this.enricher.enrich(dealId, deal, leads);
+        const enriched = await this.enricher.enrich(dealId, deal, leads, {
+            repeat: options.repeat === true,
+        });
         result.inns = enriched.inns;
         result.warnings.push(...enriched.warnings);
         return result;

@@ -119,6 +119,7 @@ export class LeadRequestSlaScheduler implements OnModuleInit {
                         minutes,
                         settings.leadIntakeSlaMaxPerRun,
                         settings.leadIntakeSlaMaxTransfers,
+                        settings.leadIntakeSlaRepeatMultiplier,
                     );
                     if (run.warnings.length) {
                         this.logger.warn(

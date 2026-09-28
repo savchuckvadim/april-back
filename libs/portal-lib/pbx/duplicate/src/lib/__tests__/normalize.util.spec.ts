@@ -1,4 +1,6 @@
 import {
+    corporateEmailDomain,
+    emailDomain,
     extractInnFromText,
     extractInnFromTitle,
     extractPhonesFromText,
@@ -159,5 +161,24 @@ describe('signalsCacheKey', () => {
             titles: [],
         });
         expect(a).toBe(b);
+    });
+});
+
+describe('emailDomain / corporateEmailDomain', () => {
+    it('домен в нижнем регистре, мусор — null', () => {
+        expect(emailDomain('RyapolovaIN@AdmLR.Lipetsk.RU')).toBe(
+            'admlr.lipetsk.ru',
+        );
+        expect(emailDomain('без собаки')).toBeNull();
+        expect(emailDomain('a@localhost')).toBeNull();
+    });
+
+    it('бесплатные провайдеры не идентифицируют организацию', () => {
+        expect(corporateEmailDomain('ac8508@mail.ru')).toBeNull();
+        expect(corporateEmailDomain('x@gmail.com')).toBeNull();
+        expect(corporateEmailDomain('x@yandex.ru')).toBeNull();
+        expect(corporateEmailDomain('x@admlr.lipetsk.ru')).toBe(
+            'admlr.lipetsk.ru',
+        );
     });
 });

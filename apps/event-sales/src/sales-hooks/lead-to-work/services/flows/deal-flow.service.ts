@@ -1,7 +1,9 @@
 import { toBatchSafeText } from '@lib/bitrix/consts/batch.consts';
 import { mergeTaskCrmBindings } from '@/modules/bitrix/domain/tasks/task/lib/task-crm-binding.util';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
+import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import {
+    appendDealHistory,
     clearDealAssignedAt,
     setDealAcceptedBy,
     stampDealAssignedAt,
@@ -266,6 +268,89 @@ export class DealFlowService extends LeadToWorkFlowBase {
      * У существующей сделки не перетираем: там может стоять лид штатной
      * конвертации, и он первичнее нашего.
      */
+    /**
+     * ПОВТОРНАЯ ЗАЯВКА → существующая основная сделка клиента (28.09.2026).
+     *
+     * Узкая запись — НЕ queueBase: консолидацию не зовём (она закрыла бы
+     * «лишние» открытые сделки клиента), событийные поля ХО не пишем
+     * (обзвон ведёт задача). Что делается:
+     *  - лид — в `deal_joined_leads` (union), первоисточник не трогаем;
+     *  - контакты лида — в сделку (union);
+     *  - стадия → «Новая» (сотрудник обязан принять), а ПРЕЖНЯЯ стадия —
+     *    в `op_return_stage`: принятие вернёт сделку туда же, а не в
+     *    «Холодную». Уже заполненное поле не перетираем — там стадия,
+     *    с которой сделку увела ПЕРВАЯ непринятая повторная заявка;
+     *  - ответственный — если сменился (владелец уволен → круг);
+     *  - таймер подтверждения и запись в историю сделки.
+     */
+    queueJoinBase(
+        item: ResolvedLeadToWorkItem,
+        ctx: LeadToWorkContext,
+        main: BxRow,
+        historyText: string,
+        buffer: IBatchGroupBuffer,
+    ): DealFlowResult {
+        const dealId = Number(main.ID);
+        const cmd = `lw_deal_join_${item.leadId}`;
+        const fields: BxRow = {
+            ...this.dealLinkFields(item.leadId, main),
+        };
+        // Штатный LEAD_ID первоисточника не подменяем чужим лидом.
+        delete fields.LEAD_ID;
+
+        const mergedContacts = this.mergeContacts(
+            this.refList(main.CONTACT_IDS).map(Number),
+            ctx.contactIds,
+        );
+        if (mergedContacts.length > this.refList(main.CONTACT_IDS).length) {
+            fields.CONTACT_IDS = mergedContacts;
+        }
+
+        const newStageId = this.salesStageId('sales_new');
+        const currentStage = this.text(main.STAGE_ID);
+        const returnName = this.dealFieldName(
+            PBX_SALES_EVENT_FIELD_CODES.op_return_stage,
+        );
+        if (newStageId && currentStage !== newStageId) {
+            if (returnName) {
+                if (!this.text(main[returnName]) && currentStage) {
+                    fields[returnName] = currentStage;
+                }
+                fields.STAGE_ID = newStageId;
+            } else {
+                // Некуда запомнить стадию — «Оплату» в «Новую» не уводим.
+                this.logger.warn(
+                    `[join] сделка ${dealId}: поле op_return_stage не установлено — стадия оставлена ${currentStage}`,
+                );
+            }
+        }
+
+        if (this.text(main.ASSIGNED_BY_ID) !== String(item.responsible)) {
+            Object.assign(
+                fields,
+                this.responsibleFields('deal', item.responsible),
+            );
+        }
+        this.stampWaiting(item, fields);
+        appendDealHistory(this.portal, fields, main, historyText);
+
+        buffer.queue(() =>
+            this.bitrix.batch.deal.update(cmd, dealId, fields as never),
+        );
+        return { ref: String(dealId), cmd };
+    }
+
+    /** STAGE_ID стадии воронки ОП по коду; нет — null. */
+    private salesStageId(code: string): string | null {
+        const category = this.portal.getDealCategoryByCode(
+            PbxDealCategoryCodeEnum.sales_base,
+        );
+        const stage = category?.stages.find(item => item.code === code);
+        return category && stage
+            ? `C${category.bitrixId}:${stage.bitrixId}`
+            : null;
+    }
+
     /**
      * Ссылка ХО-сделки на КОРНЕВУЮ основную (`to_base_sales`).
      *

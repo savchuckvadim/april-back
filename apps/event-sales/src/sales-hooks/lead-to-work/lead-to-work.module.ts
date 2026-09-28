@@ -12,6 +12,8 @@ import { LeadToWorkDuplicateCheckService } from './services/lead-to-work-duplica
 import { PortalWorkingHoursService } from '../../shared/working-hours/portal-working-hours.service';
 import { PBXModule } from '@/modules/pbx/pbx.module';
 import { ActiveStaffModule } from '../../shared/active-staff';
+import { PbxDuplicateModule } from '@lib/portal-lib/pbx-duplicate';
+import { LeadToWorkRepeatService } from './services/lead-to-work-repeat.service';
 
 /**
  * Хук «лид → работа» (группа 1): конвертация лида в работу ОП и «ХО из
@@ -35,12 +37,16 @@ import { ActiveStaffModule } from '../../shared/active-staff';
         // Живая проверка «кто работает»: уволенные и отдел неработающих не
         // получают заявок ни по кругу, ни адресно.
         ActiveStaffModule,
+        // Повторная заявка: карта ИНН-полей портала (кэш 24 ч).
+        PbxDuplicateModule,
     ],
     controllers: [LeadToWorkController],
     providers: [
         LeadToWorkUseCase,
         LeadToWorkAssigneeService,
         LeadToWorkDuplicateCheckService,
+        // Повторная заявка: поиск работы клиента и присоединение.
+        LeadToWorkRepeatService,
         // Имена сотрудников для читаемой истории и уведомлений (кэш на домен).
         UserNameResolver,
         // График портала: срок задачи не должен попадать в ночь и выходные

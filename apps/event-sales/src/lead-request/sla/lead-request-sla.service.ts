@@ -105,6 +105,12 @@ export class LeadRequestSlaService {
         maxPerRun: number,
         /** Передач одной работы за сутки; 0 — без лимита. */
         maxTransfers: number = MAX_TRANSFERS_PER_WINDOW,
+        /**
+         * Повторная заявка, присоединённая к сделке клиента, ждёт дольше:
+         * порог × множитель (решение владельца 28.09.2026 — «не спешить
+         * забирать» работу с историей).
+         */
+        repeatMultiplier = 3,
     ): Promise<LeadRequestSlaRunResult> {
         const result: LeadRequestSlaRunResult = {
             candidates: 0,
@@ -200,6 +206,18 @@ export class LeadRequestSlaService {
                         toBaseName,
                         newStageId,
                     );
+                    if (
+                        base.isRepeat &&
+                        !base.moved &&
+                        assignedAtName &&
+                        !this.olderThan(
+                            lead[assignedAtName],
+                            minutes * Math.max(1, repeatMultiplier),
+                        )
+                    ) {
+                        // Повторная заявка: ждёт утроенный срок, не трогаем.
+                        continue;
+                    }
                     if (base.moved) {
                         /*
                          * Менеджер работает, вебхук принятия потерялся —
@@ -603,8 +621,13 @@ export class LeadRequestSlaService {
         lead: BxRow,
         toBaseBitrixId: string | null,
         newStageId: string | null,
-    ): Promise<{ moved: boolean; responsibleId: number | null }> {
-        const none = { moved: false, responsibleId: null };
+    ): Promise<{
+        moved: boolean;
+        responsibleId: number | null;
+        /** Лид присоединён к ЧУЖОЙ сделке клиента (повторная заявка). */
+        isRepeat: boolean;
+    }> {
+        const none = { moved: false, responsibleId: null, isRepeat: false };
         if (!toBaseBitrixId || !newStageId) return none;
         const dealId = this.parseRef(lead[toBaseBitrixId]);
         if (!dealId) return none;
@@ -614,10 +637,30 @@ export class LeadRequestSlaService {
         if (!deal) return none;
         const stage = typeof deal.STAGE_ID === 'string' ? deal.STAGE_ID : '';
         const responsibleId = Number(deal.ASSIGNED_BY_ID) || null;
+        const fromLeadField = portal.getEntityFieldByCode(
+            'deal',
+            PBX_SALES_EVENT_FIELD_CODES.deal_from_lead_id,
+        );
+        const fromLeadRaw = fromLeadField
+            ? deal[portal.getFieldBitrixId(fromLeadField)]
+            : null;
+        const fromLead =
+            typeof fromLeadRaw === 'string' || typeof fromLeadRaw === 'number'
+                ? String(fromLeadRaw).trim()
+                : '';
         return {
             moved: stage !== '' && stage !== newStageId,
             responsibleId,
+            isRepeat: fromLead !== '' && fromLead !== `L_${String(lead.ID)}`,
         };
+    }
+
+    /** Отметка времени старше N минут; мусор/пусто → «старше» (не держим). */
+    private olderThan(raw: unknown, minutes: number): boolean {
+        if (typeof raw !== 'string' || !raw.trim()) return true;
+        const at = Date.parse(raw);
+        if (!Number.isFinite(at)) return true;
+        return Date.now() - at >= minutes * 60_000;
     }
 
     /** Передача: история → повторный ХО (round-robin) → алерт руководителю. */

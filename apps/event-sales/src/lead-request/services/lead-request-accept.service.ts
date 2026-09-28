@@ -74,6 +74,29 @@ export interface LeadAcceptPlan {
 }
 
 const EMPTY_TAKEOVER: IWorkTakeoverScope = { leadIds: [], dealIds: [] };
+
+/**
+ * Стадия возврата повторной заявки: значение `op_return_stage` сделки,
+ * если оно — стадия ТОЙ ЖЕ воронки ОП (`C31:…`). Поле не установлено,
+ * пусто или указывает в чужую воронку — null (принятие как раньше).
+ */
+export function returnStageOf(
+    portal: PortalModel,
+    dealRow: BxRow | null,
+    categoryBitrixId: string | number | undefined,
+): { stageId: string; fieldName: string } | null {
+    if (!dealRow || categoryBitrixId === undefined) return null;
+    const field = portal.getEntityFieldByCode(
+        'deal',
+        PBX_SALES_EVENT_FIELD_CODES.op_return_stage,
+    );
+    if (!field) return null;
+    const fieldName = portal.getFieldBitrixId(field);
+    const raw = dealRow[fieldName];
+    const value = typeof raw === 'string' ? raw.trim() : '';
+    if (!value.startsWith(`C${String(categoryBitrixId)}:`)) return null;
+    return { stageId: value, fieldName };
+}
 const NOTHING_TAKEN: IWorkTakeoverOutcome = {
     tasksMoved: 0,
     activitiesMoved: 0,
@@ -430,11 +453,36 @@ export class LeadRequestAcceptService {
         deal: BxRow | undefined,
     ): number | null {
         if (!deal) return null;
+        /*
+         * ПОВТОРНАЯ ЗАЯВКА ждёт принятия (стадия возврата заполнена): ждёт
+         * не лид-первоисточник, а последний присоединённый — он в конце
+         * `deal_joined_leads` (union дописывает в хвост). Иначе робот,
+         * принимающий по dealId, получил бы «уже принята» по старому лиду,
+         * а новая заявка осталась бы непринятой под SLA.
+         */
+        const category = portal.getDealCategoryByCode(
+            PbxDealCategoryCodeEnum.sales_base,
+        );
+        const joinedField = portal.getEntityFieldByCode(
+            'deal',
+            PBX_SALES_EVENT_FIELD_CODES.deal_joined_leads,
+        );
+        const joinedRaw = joinedField
+            ? deal[portal.getFieldBitrixId(joinedField)]
+            : null;
+        const joined: unknown[] = Array.isArray(joinedRaw)
+            ? (joinedRaw as unknown[])
+            : [];
+        const pendingRepeat = returnStageOf(portal, deal, category?.bitrixId)
+            ? joined[joined.length - 1]
+            : null;
+
         const fromLeadField = portal.getEntityFieldByCode(
             'deal',
             PBX_SALES_EVENT_FIELD_CODES.deal_from_lead_id,
         );
         const candidates: unknown[] = [
+            pendingRepeat,
             fromLeadField ? deal[portal.getFieldBitrixId(fromLeadField)] : null,
             deal.LEAD_ID,
         ];
@@ -492,10 +540,30 @@ export class LeadRequestAcceptService {
         const category = portal.getDealCategoryByCode(
             PbxDealCategoryCodeEnum.sales_base,
         );
+        /*
+         * ПОВТОРНАЯ ЗАЯВКА увела сделку клиента в «Новая» и запомнила
+         * прежнюю стадию (op_return_stage). Принятие возвращает сделку туда
+         * же — сделка из «Оплаты» в «Холодную» не съезжает (решение
+         * владельца 28.09.2026) — и очищает поле.
+         */
+        const returned = returnStageOf(portal, dealRow, category?.bitrixId);
         const stage = category?.stages.find(
             item => item.code === ACCEPT_DEAL_STAGE_CODE,
         );
-        if (category && stage) {
+        const newStage = category?.stages.find(
+            item => item.code === 'sales_new',
+        );
+        const newStageId =
+            category && newStage
+                ? `C${category.bitrixId}:${newStage.bitrixId}`
+                : null;
+        if (returned) {
+            // Менеджер уже сам увёл сделку из «Новой» — его стадию не трогаем.
+            if (!newStageId || this.text(dealRow?.STAGE_ID) === newStageId) {
+                fields.STAGE_ID = returned.stageId;
+            }
+            fields[returned.fieldName] = '';
+        } else if (category && stage) {
             fields.STAGE_ID = `C${category.bitrixId}:${stage.bitrixId}`;
         } else {
             warnings.push(

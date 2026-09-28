@@ -81,6 +81,24 @@ const DEAL_FIELD_COPY: readonly { from: string; to: string }[] = [
 /** Заголовок карточки — он же признак «уже писали» для идемпотентности. */
 const TIMELINE_MARKER = 'Данные заявки';
 
+/**
+ * Карточка ПОВТОРНОГО обращения (28.09.2026): своя на каждый присоединённый
+ * лид — маркер содержит id лида, поэтому повторный прогон по тому же лиду
+ * её не дублирует, а новый лид клиента получает свою.
+ */
+const repeatMarker = (leadId: number): string =>
+    `Повторное обращение (лид #${leadId})`;
+
+/** Режим обогащения. */
+export interface ILeadEnrichOptions {
+    /**
+     * Повторная заявка присоединена к существующей сделке: одиночные поля
+     * заявки ПЕРЕЗАПИСЫВАЮТСЯ свежими значениями (решение владельца
+     * 28.09.2026), телефоны/почты — объединением, карточка пишется своя.
+     */
+    repeat?: boolean;
+}
+
 /** `ownerTypeId` сделки для `crm.timeline.item.pin`. */
 const TIMELINE_OWNER_DEAL = 2;
 
@@ -128,6 +146,7 @@ export class LeadDataEnrichService {
         dealId: number,
         deal: Row,
         leadIds: readonly number[],
+        options: ILeadEnrichOptions = {},
     ): Promise<ILeadEnrichResult> {
         const result: ILeadEnrichResult = {
             inns: [],
@@ -141,14 +160,25 @@ export class LeadDataEnrichService {
             if (lead) leads.push(lead);
         }
 
-        await this.writeLeadFields(dealId, deal, leads, result.warnings);
+        await this.writeLeadFields(
+            dealId,
+            deal,
+            leads,
+            result.warnings,
+            options.repeat === true,
+        );
 
         result.inns = await this.collectInns(deal, leads);
         if (result.inns.length) {
             await this.writeInns(dealId, deal, result.inns, result.warnings);
         }
 
-        const posted = await this.writeTimeline(dealId, leads, result.warnings);
+        const posted = await this.writeTimeline(
+            dealId,
+            leads,
+            result.warnings,
+            options.repeat === true,
+        );
         result.timelinePosted = posted;
         return result;
     }
@@ -234,17 +264,22 @@ export class LeadDataEnrichService {
         deal: Row,
         leads: Row[],
         warnings: string[],
+        /** Повторная заявка: одиночные поля — свежими значениями. */
+        overwrite = false,
     ): Promise<void> {
         if (!leads.length) return;
         const fields: Row = {};
 
         for (const { from, to } of DEAL_FIELD_COPY) {
             const target = this.fieldName('deal', to);
-            if (!target || this.list(deal[target]).length) continue;
+            if (!target) continue;
+            if (!overwrite && this.list(deal[target]).length) continue;
             const value = leads
                 .map(lead => this.text(lead[from]))
                 .find(Boolean);
-            if (value) fields[target] = value;
+            if (value && value !== this.text(deal[target])) {
+                fields[target] = value;
+            }
         }
 
         const multi: readonly [string, 'PHONE' | 'EMAIL'][] = [
@@ -323,16 +358,21 @@ export class LeadDataEnrichService {
         dealId: number,
         leads: Row[],
         warnings: string[],
+        repeat = false,
     ): Promise<boolean> {
         const lines = this.timelineLines(leads);
         if (!lines.length) return false;
+        const repeatLeadId = repeat ? Number(leads[0]?.ID) || 0 : 0;
+        const marker = repeatLeadId
+            ? repeatMarker(repeatLeadId)
+            : TIMELINE_MARKER;
         /*
          * Карточка уже есть — второй раз не пишем, но ЗАКРЕПЛЯЕМ: закрепление
          * появилось позже самой карточки, и 8 тысяч записей от 16.09 остались
          * в ленте (решение владельца 17.09.2026: «закреплять можно везде
          * вчерашнюю запись»). Повторное закрепление Битрикс принимает молча.
          */
-        const posted = await this.postedCommentId(dealId);
+        const posted = await this.postedCommentId(dealId, marker);
         if (posted !== null) {
             if (posted > 0) await this.pin(dealId, posted, warnings);
             return false;
@@ -346,7 +386,7 @@ export class LeadDataEnrichService {
                         ENTITY_ID: dealId,
                         ENTITY_TYPE: 'deal',
                         COMMENT: toTimelineCommentDirect([
-                            timelineBold(TIMELINE_MARKER),
+                            timelineBold(marker),
                             ...lines,
                         ]),
                     },
@@ -426,7 +466,10 @@ export class LeadDataEnrichService {
      * Чтение не удалось — возвращаем 0 («карточка есть, id неизвестен»):
      * лучше не записать, чем задублировать.
      */
-    private async postedCommentId(dealId: number): Promise<number | null> {
+    private async postedCommentId(
+        dealId: number,
+        marker: string = TIMELINE_MARKER,
+    ): Promise<number | null> {
         try {
             const response = (await this.bitrix.api.call(
                 'crm.timeline.comment.list',
@@ -441,7 +484,7 @@ export class LeadDataEnrichService {
                 ? (response.result as Row[])
                 : [];
             const card = rows.find(row =>
-                this.text(row.COMMENT).includes(TIMELINE_MARKER),
+                this.text(row.COMMENT).includes(marker),
             );
             if (!card) return null;
             return Number(card.ID) || 0;

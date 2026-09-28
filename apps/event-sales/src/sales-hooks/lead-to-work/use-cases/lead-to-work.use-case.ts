@@ -44,8 +44,60 @@ import {
     EnumPortalAppCode,
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
+import {
+    IRepeatLeadNote,
+    LeadToWorkRepeatService,
+    RepeatJoinMode,
+} from '../services/lead-to-work-repeat.service';
+import { IRepeatFindOutcome } from '../services/repeat-work-finder.service';
+import {
+    describeRepeatResolution,
+    isRepeatCandidate,
+} from '../lib/repeat-work.resolver';
 
 type BxRow = Record<string, unknown>;
+
+/** Что запланировано по одному лиду (реальные id — после отправки). */
+interface IQueuedLead {
+    item: ILeadToWorkItem;
+    plan?: LeadToWorkQueuedPlan;
+    companyId: number | null;
+    existingDealId: number | null;
+    existingXoDealId: number | null;
+    responsible?: number;
+    assigneeSource?: LeadToWorkAssigneeSource;
+    /** Название лида — в текст персонального уведомления. */
+    leadTitle?: string;
+    /** Прежний ответственный (передача) — ему уходит «работа ушла». */
+    previousResponsibleId?: number | null;
+    /** Повторная заявка присоединена к сделке клиента. */
+    repeat?: {
+        mainDealId: number;
+        signal: string;
+        /** Владелец не работал — после записи сделка передаётся. */
+        transfer: boolean;
+    };
+    error?: string;
+    warnings: string[];
+}
+
+/** Присоединение повторной заявки, решённое до записи. */
+interface IPreparedJoin {
+    outcome: IRepeatFindOutcome;
+    /** Владелец основной не работает — после записи передать сделку. */
+    transfer: boolean;
+}
+
+/** Итог шага «повторная заявка» по пачке. */
+interface IRepeatPlan {
+    mode: RepeatJoinMode;
+    /** leadId → присоединение (только mode='on' и kind='join'). */
+    joins: Map<number, IRepeatFindOutcome>;
+    /** Комментарии в таймлайн лидов после записи. */
+    notes: IRepeatLeadNote[];
+    /** Кто из владельцев найденных сделок работает сейчас. */
+    activeIds: Set<number>;
+}
 
 /**
  * Через сколько суток звонить, если срок не прислали. Столько же ставит
@@ -104,7 +156,172 @@ export class LeadToWorkUseCase
         private readonly workingHours: PortalWorkingHoursService,
         /** Кто работает сейчас: уволенные и «не работающие» не получают заявок. */
         private readonly activeStaff: ActiveStaffService,
+        /** Повторная заявка: поиск работы клиента и присоединение к ней. */
+        private readonly repeat: LeadToWorkRepeatService,
     ) {}
+
+    /**
+     * Шаг 1.1: повторная заявка. Кандидат — ХО-заявка БЕЗ своей сделки,
+     * не конвертированная и не адресная (адресный ХО с работающим
+     * сотрудником не присоединяем — решение владельца 28.09.2026: человек
+     * выбран осознанно; остаётся комментарий-дубль и кнопка руководителю).
+     * Конвертация (isXo=N) не затрагивается вовсе.
+     */
+    private async planRepeat(
+        ctx: SalesHookExecutionContext,
+        intents: readonly {
+            item: ILeadToWorkItem;
+            leadContext?: Awaited<ReturnType<LeadToWorkContextService['load']>>;
+            resolution?: LeadToWorkIntentResolution;
+        }[],
+    ): Promise<IRepeatPlan> {
+        const plan: IRepeatPlan = {
+            mode: await this.repeat.mode(ctx.domain),
+            joins: new Map(),
+            notes: [],
+            activeIds: new Set(),
+        };
+        if (plan.mode === 'off') return plan;
+
+        const candidates = intents.filter(
+            entry =>
+                entry.leadContext &&
+                entry.resolution &&
+                entry.resolution.intent.isXo === 'Y' &&
+                !entry.leadContext.existingOurDeal &&
+                !entry.leadContext.isConverted,
+        );
+        // Явно названные ответственные: работающий = адресный ХО → мимо.
+        const explicitIds = candidates
+            .map(entry => entry.resolution!.item.responsible ?? 0)
+            .filter(id => id > 0);
+        const explicitActive = explicitIds.length
+            ? await this.activeUserIds(ctx, explicitIds)
+            : new Set<number>();
+        const eligible = candidates.filter(entry => {
+            const explicit = entry.resolution!.item.responsible;
+            return isRepeatCandidate({
+                isXo: entry.resolution!.intent.isXo,
+                hasOwnDeal: !!entry.leadContext!.existingOurDeal,
+                isConverted: entry.leadContext!.isConverted,
+                explicitResponsible: explicit,
+                explicitActive: !!explicit && explicitActive.has(explicit),
+            });
+        });
+        if (!eligible.length) return plan;
+
+        const outcomes = await this.repeat.find(
+            ctx,
+            eligible.map(entry => ({
+                leadId: entry.item.leadId,
+                row: entry.leadContext!.lead as unknown as BxRow,
+            })),
+        );
+
+        const ownerIds: number[] = [];
+        for (const [leadId, outcome] of outcomes) {
+            const { resolution } = outcome;
+            if (resolution.kind === 'join' && plan.mode === 'on') {
+                plan.joins.set(leadId, outcome);
+                if (resolution.mainDeal?.responsibleId) {
+                    ownerIds.push(resolution.mainDeal.responsibleId);
+                }
+            } else if (
+                resolution.kind === 'ambiguous' ||
+                (resolution.kind === 'join' && plan.mode === 'dry_run')
+            ) {
+                plan.notes.push({ leadId, resolution, mode: plan.mode });
+            }
+        }
+        if (ownerIds.length) {
+            plan.activeIds = await this.activeUserIds(ctx, ownerIds);
+        }
+        return plan;
+    }
+
+    /**
+     * Шаг 1.3-join: запись присоединения повторной заявки одной группой
+     * буфера (queueJoin). Срок задачи — как у круга: сутки от сейчас в
+     * рабочих часах, если не прислали.
+     */
+    private async queueJoinEntry(
+        ctx: SalesHookExecutionContext,
+        flowService: LeadToWorkFlowService,
+        entry: {
+            item: ILeadToWorkItem;
+            leadContext: Awaited<ReturnType<LeadToWorkContextService['load']>>;
+            assignee: {
+                responsible: number;
+                source: LeadToWorkAssigneeSource;
+                warnings: string[];
+            };
+            resolution: LeadToWorkIntentResolution;
+            join: IPreparedJoin;
+        },
+    ): Promise<IQueuedLead> {
+        const { item, leadContext, assignee, resolution, join } = entry;
+        const main = join.outcome.resolution.mainDeal!;
+        const leadRow = leadContext.lead as unknown as BxRow;
+        const resolvedItem: ResolvedLeadToWorkItem = {
+            ...item,
+            ...resolution.intent,
+            responsible: assignee.responsible,
+            addressed: false,
+            deadline: await this.workingDeadline(
+                ctx,
+                item.deadline ?? this.autoDeadline('repeat', item),
+            ),
+        };
+        const stagePlan = new LeadToWorkStageResolver(ctx.portal)
+            .withCurrentLeadStatus(this.text(leadRow.STATUS_ID))
+            .resolve(
+                resolvedItem,
+                !!leadContext.company,
+                leadContext.isConverted,
+            );
+        const signal = describeRepeatResolution(join.outcome.resolution);
+        const plan = flowService.queueJoin(
+            resolvedItem,
+            leadContext,
+            stagePlan,
+            {
+                mainDealId: main.dealId,
+                mainDealRow: main.row,
+                mainCompanyId: main.companyId,
+                openMainTasks: join.outcome.openMainTasks,
+                historyText: `Повторная заявка: лид #${item.leadId} присоединён (${signal})`,
+            },
+            ctx.buffer,
+            ctx.initiatorUserId ?? null,
+        );
+        await ctx.buffer.endGroup();
+        return {
+            item,
+            plan,
+            companyId: leadContext.company
+                ? Number(leadContext.company.ID)
+                : main.companyId,
+            existingDealId: main.dealId,
+            existingXoDealId: null,
+            responsible: assignee.responsible,
+            assigneeSource: assignee.source,
+            leadTitle: this.text(leadRow.TITLE) ?? undefined,
+            previousResponsibleId: this.previousResponsibleOf(item, leadRow),
+            repeat: {
+                mainDealId: main.dealId,
+                signal,
+                transfer: join.transfer,
+            },
+            warnings: [
+                ...assignee.warnings,
+                ...leadContext.warnings,
+                ...stagePlan.warnings,
+                ...plan.warnings,
+                ...join.outcome.warnings,
+                `Повторная заявка: присоединена к сделке #${main.dealId} (${signal})`,
+            ],
+        };
+    }
 
     /**
      * Кому заявка принадлежала ДО этого прогона — ему уйдёт уведомление
@@ -172,6 +389,8 @@ export class LeadToWorkUseCase
             >;
             /** Намерение после слияния «запрос + карточка». */
             resolution?: LeadToWorkIntentResolution;
+            /** Повторная заявка: присоединяем к сделке клиента. */
+            join?: IPreparedJoin;
             error?: string;
         }[] = [];
         const detector = new LeadRequestDetectorService(ctx.portal);
@@ -184,6 +403,22 @@ export class LeadToWorkUseCase
             items.map(entry => entry.leadId),
             items.some(entry => entry.taskAnyGroup === 'Y'),
         );
+        /*
+         * 1.0 Намерение каждого лида — без запросов к порталу. Резолвим ДО
+         * выбора ответственного: от isXo зависит keepLeadResponsible, а isXo
+         * может прийти не из запроса, а из поля карточки.
+         *
+         * Подтверждением заявки служит kind === 'request', а НЕ
+         * detection.isRequest: тот включает и входящее обращение
+         * (звонок/письмо/чат), а такой клиент заявки не оставлял и в начало
+         * воронки продаж уезжать не должен.
+         */
+        const intents: {
+            item: ILeadToWorkItem;
+            leadContext?: Awaited<ReturnType<LeadToWorkContextService['load']>>;
+            resolution?: LeadToWorkIntentResolution;
+            error?: string;
+        }[] = [];
         for (const item of items) {
             try {
                 const loaded = contexts.get(item.leadId);
@@ -191,47 +426,84 @@ export class LeadToWorkUseCase
                 if (!loaded) {
                     throw new Error(`Лид ${item.leadId} не прочитан`);
                 }
-                const leadContext = loaded;
-                const leadRow = leadContext.lead as unknown as BxRow;
-                /*
-                 * Намерение резолвим ДО выбора ответственного: от isXo
-                 * зависит keepLeadResponsible, а isXo теперь может прийти
-                 * не из запроса, а из поля карточки.
-                 *
-                 * Подтверждением заявки служит kind === 'request', а НЕ
-                 * detection.isRequest: тот включает и входящее обращение
-                 * (звонок/письмо/чат), а такой клиент заявки не оставлял и
-                 * в начало воронки продаж уезжать не должен.
-                 */
-                const resolution = resolveLeadToWorkIntent({
+                const leadRow = loaded.lead as unknown as BxRow;
+                intents.push({
                     item,
-                    leadRow,
-                    portal: ctx.portal,
-                    isSiteRequest:
-                        detector.detect(leadRow).kind ===
-                        LEAD_WORK_KIND.request,
+                    leadContext: loaded,
+                    resolution: resolveLeadToWorkIntent({
+                        item,
+                        leadRow,
+                        portal: ctx.portal,
+                        isSiteRequest:
+                            detector.detect(leadRow).kind ===
+                            LEAD_WORK_KIND.request,
+                    }),
                 });
-                const assignee = await this.assignee.resolve(
-                    ctx.domain,
-                    // Именно слитый элемент: responsible и department могли
-                    // прийти не из запроса, а из полей карточки.
-                    resolution.item,
-                    {
-                        leadResponsibleId:
-                            Number(leadRow.ASSIGNED_BY_ID) || null,
-                        // ХО распределяет заявку по кругу, конвертация —
-                        // переносит работу как есть, за текущим менеджером.
-                        keepLeadResponsible: resolution.intent.isXo !== 'Y',
-                        // Уволенные в круге не участвуют — свежий user.get,
-                        // а не суточный кеш структуры.
-                        activeUserIds: ids => this.activeUserIds(ctx, ids),
-                    },
+            } catch (error) {
+                const { message } = getErrorDetails(error);
+                this.logger.warn(
+                    `lead-to-work: лид ${item.leadId} пропущен — ${message}`,
                 );
+                intents.push({ item, error: message });
+            }
+        }
+
+        /*
+         * 1.1 ПОВТОРНАЯ ЗАЯВКА (решения владельца 28.09.2026): до выбора
+         * ответственного и до первой записи ищем открытую работу клиента.
+         * Строго здесь: круг сдвигает курсор при каждом выборе, а у
+         * присоединённой заявки ответственный — владелец сделки.
+         */
+        const repeat = await this.planRepeat(ctx, intents);
+
+        for (const entry of intents) {
+            const { item, leadContext, resolution } = entry;
+            if (!leadContext || !resolution) {
+                prepared.push({ item, error: entry.error });
+                continue;
+            }
+            try {
+                const leadRow = leadContext.lead as unknown as BxRow;
+                const join = repeat.joins.get(item.leadId);
+                const ownerId =
+                    join?.resolution.mainDeal?.responsibleId ?? null;
+                const assignee =
+                    join && ownerId && repeat.activeIds.has(ownerId)
+                        ? {
+                              responsible: ownerId,
+                              source: 'repeat' as const,
+                              departmentKey: null,
+                              warnings: [],
+                          }
+                        : await this.assignee.resolve(
+                              ctx.domain,
+                              // Именно слитый элемент: responsible и department
+                              // могли прийти не из запроса, а из карточки.
+                              resolution.item,
+                              {
+                                  leadResponsibleId:
+                                      Number(leadRow.ASSIGNED_BY_ID) || null,
+                                  // ХО распределяет заявку по кругу,
+                                  // конвертация — переносит работу как есть.
+                                  keepLeadResponsible:
+                                      resolution.intent.isXo !== 'Y',
+                                  // Уволенные в круге не участвуют.
+                                  activeUserIds: ids =>
+                                      this.activeUserIds(ctx, ids),
+                              },
+                          );
                 prepared.push({
                     item: resolution.item,
                     leadContext,
                     assignee,
                     resolution,
+                    join: join
+                        ? {
+                              outcome: join,
+                              // Владелец не работает — сделку передаём новому.
+                              transfer: assignee.source !== 'repeat',
+                          }
+                        : undefined,
                 });
             } catch (error) {
                 const { message } = getErrorDetails(error);
@@ -261,21 +533,7 @@ export class LeadToWorkUseCase
         // Накопитель: что запланировали по каждому лиду. Реальные id
         // появятся только после отправки батча (шаг 2), поэтому пока
         // храним ключи команд (dealCmd/xoCmd/companyCmd) и найденное чтением.
-        const queued: {
-            item: ILeadToWorkItem;
-            plan?: LeadToWorkQueuedPlan;
-            companyId: number | null;
-            existingDealId: number | null;
-            existingXoDealId: number | null;
-            responsible?: number;
-            assigneeSource?: LeadToWorkAssigneeSource;
-            /** Название лида — в текст персонального уведомления. */
-            leadTitle?: string;
-            /** Прежний ответственный (передача) — ему уходит «работа ушла». */
-            previousResponsibleId?: number | null;
-            error?: string;
-            warnings: string[];
-        }[] = [];
+        const queued: IQueuedLead[] = [];
 
         // ── Шаг 1. Планируем запись по каждому лиду (данные уже прочитаны).
         for (const entry of prepared) {
@@ -304,6 +562,21 @@ export class LeadToWorkUseCase
                         error: 'Не удалось определить ответственного (responsible не передан, отдел пуст/не найден)',
                         warnings: assignee.warnings,
                     });
+                    continue;
+                }
+                if (entry.join) {
+                    queued.push(
+                        await this.queueJoinEntry(ctx, flowService, {
+                            item,
+                            leadContext,
+                            assignee: {
+                                ...assignee,
+                                responsible: assignee.responsible,
+                            },
+                            resolution,
+                            join: entry.join,
+                        }),
+                    );
                     continue;
                 }
                 const resolvedItem: ResolvedLeadToWorkItem = {
@@ -359,9 +632,13 @@ export class LeadToWorkUseCase
                     companyId: leadContext.company
                         ? Number(leadContext.company.ID)
                         : null,
-                    existingDealId: leadContext.existingOurDeal
-                        ? Number(leadContext.existingOurDeal.ID)
-                        : null,
+                    // По итогу консолидации: контекст мог держать закрытую.
+                    existingDealId:
+                        plan.existingBaseDealId !== undefined
+                            ? plan.existingBaseDealId
+                            : leadContext.existingOurDeal
+                              ? Number(leadContext.existingOurDeal.ID)
+                              : null,
                     existingXoDealId: leadContext.existingXoDeal
                         ? Number(leadContext.existingXoDeal.ID)
                         : null,
@@ -430,8 +707,33 @@ export class LeadToWorkUseCase
             entry.warnings.push(...warnings);
         }
 
+        /*
+         * Шаг 3.6. Повторные заявки: комментарии в таймлайн лидов (холостой
+         * ход, неоднозначность) и передача основной сделки, если её
+         * владелец больше не работает (задачи, контакты, лиды — штатной
+         * «передачей работы»). После записи: сделка уже на новом.
+         */
+        const repeatWarnings = await this.repeat.writeLeadNotes(
+            ctx,
+            repeat.notes,
+        );
+        for (const entry of queued) {
+            if (!entry.repeat?.transfer || entry.error || !entry.responsible) {
+                continue;
+            }
+            const warning = await this.repeat.transferMainDeal(
+                ctx,
+                entry.repeat.mainDealId,
+                entry.responsible,
+            );
+            if (warning) entry.warnings.push(warning);
+        }
+
         // ── Шаг 4. Сшиваем план каждого лида с реальными id из ответов.
         const results = queued.map(entry => this.toItemResult(entry, byCmd));
+        if (repeatWarnings.length && results.length) {
+            results[0].warnings.push(...repeatWarnings);
+        }
 
         /*
          * Шаг 4.1. Дубли на входе: увидеть «клиента уже ведут» надо ДО
@@ -480,7 +782,16 @@ export class LeadToWorkUseCase
          * кодом, которым идёт перегон прошлого, — иначе конвертация у
          * клиента и перегон давали бы разный результат.
          */
-        const enrichWarnings = await this.enrichDeals(ctx, results, items);
+        const enrichWarnings = await this.enrichDeals(
+            ctx,
+            results,
+            items,
+            new Set(
+                queued
+                    .filter(entry => entry.repeat && !entry.error)
+                    .map(entry => entry.item.leadId),
+            ),
+        );
         if (enrichWarnings.length && results.length) {
             results[0].warnings.push(...enrichWarnings);
         }
@@ -544,7 +855,8 @@ export class LeadToWorkUseCase
         source: LeadToWorkAssigneeSource,
         item: ILeadToWorkItem,
     ): string | undefined {
-        if (source !== 'round-robin' || item.isXo !== 'Y') return undefined;
+        if (source !== 'round-robin' && source !== 'repeat') return undefined;
+        if (source === 'round-robin' && item.isXo !== 'Y') return undefined;
         const next = new Date();
         next.setDate(next.getDate() + AUTO_DEADLINE_DAYS);
         return next.toISOString();
@@ -602,6 +914,8 @@ export class LeadToWorkUseCase
         ctx: SalesHookExecutionContext,
         results: readonly LeadToWorkItemResultDto[],
         items: readonly ILeadToWorkItem[],
+        /** Повторные заявки: поля — свежими значениями, своя карточка. */
+        repeatLeadIds: ReadonlySet<number> = new Set(),
     ): Promise<string[]> {
         const warnings: string[] = [];
         const settings = await this.appSettings.resolve(
@@ -644,7 +958,10 @@ export class LeadToWorkUseCase
                 const outcome = await completion.complete(
                     dealId,
                     [result.leadId],
-                    { kind: kindOf.get(result.leadId) },
+                    {
+                        kind: kindOf.get(result.leadId),
+                        repeat: repeatLeadIds.has(result.leadId),
+                    },
                 );
                 warnings.push(...outcome.warnings);
             } catch (error) {

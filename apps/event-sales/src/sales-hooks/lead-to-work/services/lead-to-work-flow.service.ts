@@ -41,6 +41,12 @@ export interface LeadToWorkQueuedPlan {
     xoCmd?: string;
     taskAddCmd?: string;
     reused: boolean;
+    /**
+     * Существующая основная сделка ПОСЛЕ консолидации. Контекст до неё мог
+     * указывать на закрытую сделку (to_base_sales), и тогда таймлайн,
+     * данные заявки и зеркало дублей уезжали бы в закрытую.
+     */
+    existingBaseDealId?: number | null;
     tasksMoved: number;
     tasksClosed: number;
     /** Открытые дела CRM лида/сделки, переданные новому ответственному. */
@@ -57,6 +63,18 @@ export interface LeadToWorkQueuedPlan {
 }
 
 type BxRow = Record<string, unknown>;
+
+/** Что нужно для присоединения повторной заявки к основной сделке. */
+export interface ILeadToWorkJoinInput {
+    mainDealId: number;
+    /** Строка основной сделки (стадия, контакты, история, поля). */
+    mainDealRow: BxRow;
+    mainCompanyId: number | null;
+    /** Открытые задачи основной сделки — «одна задача ХО». */
+    openMainTasks: readonly BxRow[];
+    /** Запись в историю основной сделки. */
+    historyText: string;
+}
 
 /**
  * Сколько контактов лида переназначать в группе лида: команды уходят одним
@@ -135,6 +153,9 @@ export class LeadToWorkFlowService {
 
         const result: LeadToWorkQueuedPlan = {
             reused: !!ctx.existingOurDeal,
+            existingBaseDealId: ctx.existingOurDeal
+                ? Number(ctx.existingOurDeal.ID)
+                : null,
             tasksMoved: 0,
             tasksClosed: 0,
             activitiesMoved: 0,
@@ -274,6 +295,113 @@ export class LeadToWorkFlowService {
             result,
         );
 
+        return result;
+    }
+
+    /**
+     * ПОВТОРНАЯ ЗАЯВКА: лид присоединяется к существующей основной сделке
+     * клиента вместо создания новой пары (решения владельца 28.09.2026).
+     *
+     * Одна группа буфера, как у queue(): сделка → лид → контакты → задача
+     * → дела → KPI. Компания не создаётся (клиент уже есть), ХО-сделка не
+     * создаётся (обзвон ведёт одна задача ХО у основной), консолидация не
+     * вызывается (не закрываем «лишние» сделки клиента).
+     */
+    queueJoin(
+        item: ResolvedLeadToWorkItem,
+        ctx: LeadToWorkContext,
+        plan: LeadToWorkStagePlan,
+        join: ILeadToWorkJoinInput,
+        buffer: IBatchGroupBuffer,
+        authorId: number | null = null,
+    ): LeadToWorkQueuedPlan {
+        const detection = this.detect(item, ctx);
+        const result: LeadToWorkQueuedPlan = {
+            reused: true,
+            tasksMoved: 0,
+            tasksClosed: 0,
+            activitiesMoved: 0,
+            extraDealsClosed: 0,
+            isRequest: detection.isRequest,
+            kpiPlanned: false,
+            kpiNotHeld: false,
+            warnings: [],
+        };
+        const eventName = this.eventName(item, ctx.lead);
+        const xoTitle = this.xoTitle(eventName, detection);
+        const eventCtx = this.eventContext(item, eventName, authorId);
+        const mainId = String(join.mainDealId);
+        const companyId = ctx.company
+            ? Number(ctx.company.ID)
+            : join.mainCompanyId;
+
+        const deal = this.dealFlow.queueJoinBase(
+            item,
+            ctx,
+            join.mainDealRow,
+            join.historyText,
+            buffer,
+        );
+        result.dealCmd = deal.cmd;
+
+        const lead = this.leadFlow.queue(
+            item,
+            ctx,
+            plan,
+            {
+                dealRef: mainId,
+                xoRef: null,
+                detection,
+                eventCtx,
+                hasCompany: Boolean(companyId),
+                userNames: this.userNames,
+            },
+            buffer,
+        );
+        result.warnings.push(...lead.warnings);
+
+        this.relations.queueContactsResponsible(
+            buffer,
+            ctx.contactIds.slice(0, MAX_CONTACTS_REASSIGN),
+            item.responsible,
+            `lw_ct_${item.leadId}`,
+        );
+
+        const task = this.taskFlow.ensureXoTask(
+            item,
+            {
+                xoTitle,
+                mainDealId: join.mainDealId,
+                companyId,
+                openMainTasks: join.openMainTasks,
+            },
+            buffer,
+        );
+        result.tasksMoved = task.tasksMoved;
+        result.taskAddCmd = task.addCmd;
+        result.warnings.push(...task.warnings);
+
+        result.activitiesMoved = this.takeover.queue(
+            buffer,
+            { tasks: [], activities: ctx.openActivities ?? [], warnings: [] },
+            item.responsible,
+            `lw_act_${item.leadId}`,
+        ).activitiesMoved;
+
+        this.queueKpi(
+            item,
+            ctx,
+            {
+                eventName,
+                detection,
+                authorId,
+                companyRef: companyId ? String(companyId) : null,
+                dealRef: mainId,
+                xoRef: null,
+            },
+            buffer,
+            result,
+        );
         return result;
     }
 

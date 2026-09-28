@@ -2895,6 +2895,33 @@ export const PBX_SALES_EVENT_FIELDS = [
         isNeedUpdate: true,
         isMultiple: false,
     },
+    {
+        /*
+         * СТАДИЯ ВОЗВРАТА после повторной заявки (28.09.2026).
+         *
+         * Автоприсоединение повторной заявки двигает основную сделку в
+         * «Новая» (сотрудник обязан её принять), а сюда записывает
+         * ПРЕЖНИЙ STAGE_ID (`C31:EXECUTING`). Принятие заявки читает поле,
+         * возвращает сделку на прежнюю стадию и очищает его — сделка из
+         * «Оплаты» не съезжает в «Холодную». Поле пусто — принятие ведёт
+         * себя как раньше (стадия «Холодная»).
+         */
+        name: 'ОП Стадия возврата после заявки',
+        appType: 'xo',
+        type: 'string',
+        items: [],
+        code: 'op_return_stage',
+        lead: '',
+        company: '',
+        deal: 'OP_RETURN_STAGE',
+        smart: '',
+        task: '',
+        app: 'calling',
+        order: 748,
+        is_rewrite: '',
+        isNeedUpdate: true,
+        isMultiple: false,
+    },
 ] as const;
 
 export type PbxSalesEventField = (typeof PBX_SALES_EVENT_FIELDS)[number];

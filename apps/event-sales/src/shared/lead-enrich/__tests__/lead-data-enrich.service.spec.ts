@@ -456,4 +456,50 @@ describe('LeadDataEnrichService', () => {
 
         expect(result.inns).toEqual([]);
     });
+
+    /*
+     * ПОВТОРНАЯ ЗАЯВКА присоединена к сделке клиента (28.09.2026): поля
+     * заявки — свежими значениями, телефоны объединяются, карточка своя
+     * (маркер с id лида), первая карточка «Данные заявки» её не глушит.
+     */
+    it('повторная заявка: поля перезаписываются, карточка своя', async () => {
+        const { bitrix, calls } = makeBitrix({
+            'crm.lead.get': LEAD,
+            'crm.timeline.comment.list': [
+                { ID: '1', COMMENT: '<b>Данные заявки</b> старое' },
+            ],
+        });
+        const service = new LeadDataEnrichService(
+            bitrix,
+            portalWithFields,
+            'portal.bitrix24.ru',
+        );
+
+        const result = await service.enrich(
+            100,
+            {
+                ID: '100',
+                UF_CRM_LEAD_USER_REGION: 'Москва',
+                UF_CRM_LEAD_ORDER_NUMBER: '1111111',
+                UF_CRM_OP_LEAD_PHONES: ['+70000000000'],
+            },
+            [777],
+            { repeat: true },
+        );
+
+        const update = calls.find(
+            c =>
+                c.method === 'crm.deal.update' &&
+                'UF_CRM_LEAD_ORDER_NUMBER' in ((c.params.fields ?? {}) as Row),
+        );
+        const fields = (update?.params.fields ?? {}) as Row;
+        expect(fields.UF_CRM_LEAD_USER_REGION).toBe('Воронежская область');
+        expect(fields.UF_CRM_LEAD_ORDER_NUMBER).toBe('2184035');
+        expect(fields.UF_CRM_OP_LEAD_PHONES).toEqual([
+            '+70000000000',
+            '+79102880648',
+        ]);
+        expect(result.timelinePosted).toBe(true);
+        expect(commentOf(calls)).toContain('Повторное обращение (лид #777)');
+    });
 });

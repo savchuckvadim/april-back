@@ -55,6 +55,59 @@ export function normalizeEmail(raw: string | null | undefined): string | null {
 }
 
 /**
+ * Бесплатные почтовые провайдеры: их домен НЕ идентифицирует организацию —
+ * на `@mail.ru` сидит полстраны, и «поиск клиента по домену почты» через
+ * такой домен склеил бы посторонних людей. Только для доменных сигналов;
+ * точное совпадение целого адреса работает и с бесплатной почтой.
+ */
+export const FREE_EMAIL_DOMAINS: ReadonlySet<string> = new Set([
+    'mail.ru',
+    'bk.ru',
+    'inbox.ru',
+    'list.ru',
+    'internet.ru',
+    'yandex.ru',
+    'ya.ru',
+    'yandex.com',
+    'gmail.com',
+    'googlemail.com',
+    'rambler.ru',
+    'lenta.ru',
+    'autorambler.ru',
+    'icloud.com',
+    'me.com',
+    'outlook.com',
+    'hotmail.com',
+    'live.com',
+    'yahoo.com',
+    'aol.com',
+    'protonmail.com',
+    'proton.me',
+    'tut.by',
+    'ukr.net',
+]);
+
+/** Домен адреса в нижнем регистре; мусор без `@` → null. */
+export function emailDomain(raw: string | null | undefined): string | null {
+    const email = normalizeEmail(raw);
+    if (!email) return null;
+    const domain = email.slice(email.lastIndexOf('@') + 1);
+    return domain.includes('.') ? domain : null;
+}
+
+/**
+ * Корпоративный домен адреса: идентифицирует организацию. Бесплатные
+ * провайдеры → null (см. FREE_EMAIL_DOMAINS).
+ */
+export function corporateEmailDomain(
+    raw: string | null | undefined,
+): string | null {
+    const domain = emailDomain(raw);
+    if (!domain || FREE_EMAIL_DOMAINS.has(domain)) return null;
+    return domain;
+}
+
+/**
  * Название → lowercase без кавычек, ОПФ и лишних пробелов.
  * `ООО "Ромашка-Плюс"` и `Ромашка Плюс` дают одну строку.
  */

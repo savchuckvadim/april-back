@@ -1482,3 +1482,158 @@ describe('LeadToWorkFlowService', () => {
         expect(calls.some(c => c.method === 'lead.update')).toBe(false);
     });
 });
+
+/*
+ * ПОВТОРНАЯ ЗАЯВКА → существующая основная сделка (28.09.2026): новой пары
+ * нет, сделка идёт в «Новая» с запомненной прежней стадией, задача ХО одна.
+ */
+describe('LeadToWorkFlowService.queueJoin', () => {
+    const JOIN_FIELDS = {
+        ...REQUEST_FIELDS,
+        ...XO_EVENT_FIELDS,
+        'deal:op_return_stage': { bitrixId: 'OP_RETURN_STAGE' },
+    };
+    const joinPortal = () => {
+        const portal = makePortal(JOIN_FIELDS);
+        return {
+            ...portal,
+            getDealCategoryByCode: (code: string) =>
+                code === 'sales_base'
+                    ? {
+                          bitrixId: '3',
+                          stages: [
+                              { code: 'sales_new', bitrixId: 'NEW' },
+                              { code: 'sales_cold', bitrixId: 'COLD' },
+                          ],
+                      }
+                    : portal.getDealCategoryByCode(code),
+        };
+    };
+    const mainRow = (over: Record<string, unknown> = {}) => ({
+        ID: '42423',
+        STAGE_ID: 'C3:EXECUTING',
+        ASSIGNED_BY_ID: '387',
+        CONTACT_IDS: ['282699'],
+        UF_CRM_DEAL_FROM_LEAD_ID: 'L_339193',
+        UF_CRM_DEAL_JOINED_LEADS: ['L_339193'],
+        UF_CRM_OP_MHISTORY: ['01.09.2026 — старое'],
+        ...over,
+    });
+    const join = (
+        over: Record<string, unknown> = {},
+        tasks: unknown[] = [],
+    ) => ({
+        mainDealId: 42423,
+        mainDealRow: mainRow(over),
+        mainCompanyId: 167119,
+        openMainTasks: tasks as Record<string, unknown>[],
+        historyText: 'Повторная заявка: лид #42 присоединён (номер заявки 1)',
+    });
+    const run = (joinInput: ReturnType<typeof join>, responsible = 387) => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            joinPortal() as never,
+        );
+        const plan = service.queueJoin(
+            makeItem({
+                leadId: 42,
+                responsible,
+                isXo: 'Y',
+                taskMode: 'close',
+                stageMode: 'new',
+            }),
+            baseContext({ contactIds: [288609] } as never),
+            { ...basePlan(), leadStatusId: 'PBX_ASSIGNED' },
+            joinInput,
+            makeBuffer() as never,
+        );
+        return { calls, plan };
+    };
+
+    it('сделка: «Новая», прежняя стадия в op_return_stage, joined ∪ лид, первоисточник цел', () => {
+        const { calls, plan } = run(join());
+
+        expect(calls.some(c => c.method === 'deal.set')).toBe(false);
+        const deal = calls.find(c => c.method === 'deal.update')!;
+        expect(deal.args[0]).toBe(42423);
+        const fields = deal.args[1] as Record<string, unknown>;
+        expect(fields.STAGE_ID).toBe('C3:NEW');
+        expect(fields.UF_CRM_OP_RETURN_STAGE).toBe('C3:EXECUTING');
+        expect(fields.UF_CRM_DEAL_JOINED_LEADS).toEqual(['L_339193', 'L_42']);
+        expect(fields.UF_CRM_DEAL_FROM_LEAD_ID).toBeUndefined();
+        expect(fields.LEAD_ID).toBeUndefined();
+        expect(fields.CONTACT_IDS).toEqual([282699, 288609]);
+        // Тот же ответственный — не переписываем.
+        expect(fields.ASSIGNED_BY_ID).toBeUndefined();
+        const history = fields.UF_CRM_OP_MHISTORY as string[];
+        expect(history.join(' ')).toContain('лид #42 присоединён');
+        expect(plan.reused).toBe(true);
+
+        // Лид — на существующую сделку.
+        const lead = calls.find(c => c.method === 'lead.update')!;
+        const leadFields = lead.args[1] as Record<string, unknown>;
+        expect(leadFields.UF_CRM_TO_BASE_SALES).toBe('D_42423');
+        expect(leadFields.STATUS_ID).toBe('PBX_ASSIGNED');
+    });
+
+    it('стадия возврата уже записана (непринятая прежняя заявка) — не перетирается', () => {
+        const { calls } = run(
+            join({
+                STAGE_ID: 'C3:NEW',
+                UF_CRM_OP_RETURN_STAGE: 'C3:PAYMENT',
+            }),
+        );
+        const fields = calls.find(c => c.method === 'deal.update')!
+            .args[1] as Record<string, unknown>;
+        expect(fields.UF_CRM_OP_RETURN_STAGE).toBeUndefined();
+        expect(fields.STAGE_ID).toBeUndefined();
+    });
+
+    it('задачи ХО нет → ставится одна новая на ответственного сделки', () => {
+        const { calls, plan } = run(
+            join({}, [
+                {
+                    id: '900',
+                    title: 'Звонок по решению',
+                    ufCrmTask: ['D_42423'],
+                },
+            ]),
+        );
+        const adds = calls.filter(c => c.method === 'task.add');
+        expect(adds).toHaveLength(1);
+        const payload = adds[0].args[0] as Record<string, unknown>;
+        expect(String(payload.TITLE)).toContain('Холодный обзвон');
+        expect(payload.RESPONSIBLE_ID).toBe(387);
+        expect(payload.UF_CRM_TASK).toEqual(['L_42', 'D_42423', 'CO_167119']);
+        // Другие задачи клиента не трогаются.
+        expect(calls.some(c => c.method === 'task.complete')).toBe(false);
+        expect(plan.taskAddCmd).toBeDefined();
+    });
+
+    it('задача ХО уже есть → вторая не ставится, к ней привязывается новый лид', () => {
+        const { calls } = run(
+            join({}, [
+                {
+                    id: '901',
+                    title: 'Холодный обзвон. Заявка. Клиент',
+                    ufCrmTask: ['D_42423', 'L_339193'],
+                },
+            ]),
+        );
+        expect(calls.some(c => c.method === 'task.add')).toBe(false);
+        const update = calls.find(c => c.method === 'task.update')!;
+        expect(update.args[0]).toBe(901);
+        expect((update.args[1] as Record<string, unknown>).UF_CRM_TASK).toEqual(
+            ['D_42423', 'L_339193', 'L_42'],
+        );
+    });
+
+    it('владелец сменился (прежний не работает) — сделка новому ответственному', () => {
+        const { calls } = run(join(), 455);
+        const fields = calls.find(c => c.method === 'deal.update')!
+            .args[1] as Record<string, unknown>;
+        expect(fields.ASSIGNED_BY_ID).toBe('455');
+        expect(fields.UF_CRM_MANAGER_OP).toBe('455');
+    });
+});

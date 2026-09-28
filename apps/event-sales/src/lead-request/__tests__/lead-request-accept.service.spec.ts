@@ -413,3 +413,93 @@ describe('LeadRequestAcceptService — менеджер по продажам', 
         expect(plan.fields).toEqual({});
     });
 });
+
+/*
+ * ПОВТОРНАЯ ЗАЯВКА (28.09.2026): присоединение увело сделку клиента в
+ * «Новая» и запомнило прежнюю стадию — принятие возвращает её туда же.
+ */
+describe('LeadRequestAcceptService — стадия возврата повторной заявки', () => {
+    const REPEAT_FIELDS: Record<string, { bitrixId: string }> = {
+        op_return_stage: { bitrixId: 'OP_RETURN_STAGE' },
+        deal_joined_leads: { bitrixId: 'DEAL_JOINED_LEADS' },
+        deal_from_lead_id: { bitrixId: 'DEAL_FROM_LEAD_ID' },
+        to_base_sales: { bitrixId: 'TO_BASE_SALES' },
+        op_lead_assigned_at: { bitrixId: 'OP_LEAD_ASSIGNED_AT' },
+        op_lead_firstprepare_history: {
+            bitrixId: 'OP_LEAD_FIRSTPREPARE_HISTORY',
+        },
+    };
+    const portal = {
+        ...makePortal(),
+        getEntityFieldByCode: (_entity: string, code: string) =>
+            REPEAT_FIELDS[code]
+                ? { bitrixId: REPEAT_FIELDS[code].bitrixId, items: [] }
+                : undefined,
+        getDealCategoryByCode: () => ({
+            bitrixId: '3',
+            stages: [
+                { code: 'sales_new', bitrixId: 'NEW' },
+                { code: 'sales_cold', bitrixId: 'COLD' },
+            ],
+        }),
+    };
+    const LEAD = {
+        ID: '348945',
+        ASSIGNED_BY_ID: '387',
+        UF_CRM_TO_BASE_SALES: 'D_42423',
+        UF_CRM_OP_LEAD_ASSIGNED_AT: '28.09.2026 10:00:00',
+    };
+
+    it('сделка в «Новой» с стадией возврата → возвращается туда, поле очищается', () => {
+        const service = new LeadRequestAcceptService({} as never);
+        const plan = service.plan(portal as never, LEAD, 387, undefined, {
+            ID: '42423',
+            STAGE_ID: 'C3:NEW',
+            ASSIGNED_BY_ID: '387',
+            UF_CRM_OP_RETURN_STAGE: 'C3:EXECUTING',
+        });
+        expect(plan.dealUpdate?.fields.STAGE_ID).toBe('C3:EXECUTING');
+        expect(plan.dealUpdate?.fields.UF_CRM_OP_RETURN_STAGE).toBe('');
+    });
+
+    it('менеджер уже сам увёл сделку из «Новой» — его стадию не трогаем', () => {
+        const service = new LeadRequestAcceptService({} as never);
+        const plan = service.plan(portal as never, LEAD, 387, undefined, {
+            ID: '42423',
+            STAGE_ID: 'C3:HOT',
+            UF_CRM_OP_RETURN_STAGE: 'C3:EXECUTING',
+        });
+        expect(plan.dealUpdate?.fields.STAGE_ID).toBeUndefined();
+        expect(plan.dealUpdate?.fields.UF_CRM_OP_RETURN_STAGE).toBe('');
+    });
+
+    it('стадия возврата из чужой воронки игнорируется — как раньше, «Холодная»', () => {
+        const service = new LeadRequestAcceptService({} as never);
+        const plan = service.plan(portal as never, LEAD, 387, undefined, {
+            ID: '42423',
+            STAGE_ID: 'C3:NEW',
+            UF_CRM_OP_RETURN_STAGE: 'C9:WON',
+        });
+        expect(plan.dealUpdate?.fields.STAGE_ID).toBe('C3:COLD');
+    });
+
+    it('робот принимает по dealId: ждёт последний присоединённый лид, не первоисточник', () => {
+        const service = new LeadRequestAcceptService({} as never);
+        expect(
+            service.leadIdFromDealRow(portal as never, {
+                ID: '42423',
+                UF_CRM_OP_RETURN_STAGE: 'C3:EXECUTING',
+                UF_CRM_DEAL_FROM_LEAD_ID: 'L_339193',
+                UF_CRM_DEAL_JOINED_LEADS: ['L_339193', 'L_348945'],
+            }),
+        ).toBe(348945);
+        // Повтора нет — как раньше, первоисточник.
+        expect(
+            service.leadIdFromDealRow(portal as never, {
+                ID: '42423',
+                UF_CRM_DEAL_FROM_LEAD_ID: 'L_339193',
+                UF_CRM_DEAL_JOINED_LEADS: ['L_339193', 'L_348945'],
+            }),
+        ).toBe(339193);
+    });
+});
