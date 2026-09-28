@@ -18,6 +18,11 @@ export interface ILeadClientRef {
     id: number;
     /** Нашёлся созданный прошлым прогоном — второй не создавали. */
     reused: boolean;
+    /**
+     * Существующий клиент найден по телефону/почте лида (findbycomm) —
+     * второй контакт/компания для того же человека не создавались.
+     */
+    matchedBy?: 'comm';
 }
 
 export interface ILeadClientLinkOptions {

@@ -9,6 +9,7 @@ import {
     resultOf,
     Row,
 } from './lead-client.types';
+import { LeadClientCommMatcher } from './lead-client-comm-matcher';
 
 const COMMUNICATION_FIELDS = ['PHONE', 'EMAIL'] as const;
 
@@ -33,7 +34,11 @@ const ORIGINATOR = 'april-lead';
  * `ORIGINATOR_ID` + `ORIGIN_ID = id лида`, по ней ищем перед созданием.
  */
 export class LeadClientFactory {
-    constructor(private readonly bitrix: ILeadClientBitrix) {}
+    private readonly matcher: LeadClientCommMatcher;
+
+    constructor(private readonly bitrix: ILeadClientBitrix) {
+        this.matcher = new LeadClientCommMatcher(bitrix);
+    }
 
     /**
      * Клиент лида.
@@ -50,6 +55,8 @@ export class LeadClientFactory {
         dealCompanyId: number,
         kind: LeadClientKind,
         created: ILeadClientRef[],
+        /** Предупреждения (неоднозначное совпадение и т.п.). */
+        warnings: string[] = [],
     ): Promise<ILeadClientPair> {
         const contactId = bxFieldId(lead.CONTACT_ID) ?? 0;
         const companyId = bxFieldId(lead.COMPANY_ID) ?? 0;
@@ -59,25 +66,57 @@ export class LeadClientFactory {
         const leadId = Number(lead.ID);
 
         if (kind === 'company') {
-            const reused =
+            const own =
                 dealCompanyId || (await this.findCreatedFrom(kind, leadId));
+            const matched = own
+                ? null
+                : await this.matcher.find('COMPANY', lead, warnings);
+            const reused = own || matched;
             const id =
                 reused || (await this.create(kind, lead, deal, dealCompanyId));
             await this.bindLead(leadId, { COMPANY_ID: id });
+            if (matched) await this.matcher.dedupe(kind, id);
             await this.completeCommunications(kind, id, lead);
             if (contactId) await this.linkContactToCompany(contactId, id);
             if (id !== dealCompanyId) {
-                created.push({ leadId, type: kind, id, reused: !!reused });
+                created.push({
+                    leadId,
+                    type: kind,
+                    id,
+                    reused: !!reused,
+                    ...(matched ? { matchedBy: 'comm' as const } : {}),
+                });
             }
             return { contactId, companyId: id, isNew: true };
         }
 
         const existing = await this.findCreatedFrom(kind, leadId);
+        /*
+         * ДУБЛЬ КОНТАКТА (решение владельца 28.09.2026): заявки автоматом
+         * создают контакт, и повторная заявка того же человека давала
+         * второй. Перед созданием ищем существующего по телефону/почте —
+         * в контактах И компаниях («не знаем, где он лежит»).
+         */
+        const matched =
+            existing ?? (await this.matcher.find('CONTACT', lead, warnings));
         const id =
-            existing ?? (await this.create(kind, lead, deal, dealCompanyId));
+            matched ?? (await this.create(kind, lead, deal, dealCompanyId));
         await this.bindLead(leadId, { CONTACT_ID: id });
+        const byComm = matched !== null && existing === null;
+        if (byComm) {
+            await this.matcher.dedupe(kind, id);
+            if (dealCompanyId) {
+                await this.linkContactToCompany(id, dealCompanyId, warnings);
+            }
+        }
         await this.completeCommunications(kind, id, lead);
-        created.push({ leadId, type: kind, id, reused: existing !== null });
+        created.push({
+            leadId,
+            type: kind,
+            id,
+            reused: matched !== null,
+            ...(byComm ? { matchedBy: 'comm' as const } : {}),
+        });
         return { contactId: id, companyId: 0, isNew: true };
     }
 
@@ -88,11 +127,20 @@ export class LeadClientFactory {
     private async linkContactToCompany(
         contactId: number,
         companyId: number,
+        /** Передан — сбой (связь уже есть и т.п.) идёт сюда, а не исключением. */
+        warnings?: string[],
     ): Promise<void> {
-        await this.bitrix.api.call('crm.contact.company.add', {
-            id: contactId,
-            fields: { COMPANY_ID: companyId },
-        });
+        try {
+            await this.bitrix.api.call('crm.contact.company.add', {
+                id: contactId,
+                fields: { COMPANY_ID: companyId },
+            });
+        } catch (error) {
+            if (!warnings) throw error;
+            warnings.push(
+                `Контакт ${contactId} не привязан к компании ${companyId}: ${(error as Error).message}`,
+            );
+        }
     }
 
     /** Клиент, созданный из этого лида прошлым прогоном. */

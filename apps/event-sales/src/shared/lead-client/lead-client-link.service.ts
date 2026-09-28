@@ -83,6 +83,7 @@ export class LeadClientLinkService {
                     state.companyId,
                     kind,
                     result.created,
+                    result.warnings,
                 );
                 /*
                  * К сделке едут ВСЕ контакты лида, а не только главный: у

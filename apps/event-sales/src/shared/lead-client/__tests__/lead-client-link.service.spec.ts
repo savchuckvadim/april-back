@@ -80,6 +80,30 @@ function makePortal(state: {
                 `${String(params.entityTypeId)}:${String(params.entityId)}`,
             );
             bindings.set(Number(params.activityId), list);
+        } else if (method === 'crm.duplicate.findbycomm') {
+            const type = String(params.entity_type);
+            const wanted = new Set(
+                (params.values as string[]).map(
+                    value =>
+                        value.replace(/\D/g, '').slice(-10) ||
+                        value.toLowerCase(),
+                ),
+            );
+            const source = type === 'CONTACT' ? contacts : companies;
+            const ids = Object.entries(source)
+                .filter(([, row]) =>
+                    ['PHONE', 'EMAIL'].some(field =>
+                        ((row[field] as Row[] | undefined) ?? []).some(item => {
+                            const value = String(item.VALUE);
+                            const key =
+                                value.replace(/\D/g, '').slice(-10) ||
+                                value.toLowerCase();
+                            return wanted.has(key);
+                        }),
+                    ),
+                )
+                .map(([id]) => Number(id));
+            result = ids.length ? { [type]: ids } : {};
         } else if (action === 'list') {
             const filter = params.filter as Row;
             result = Object.entries(store(kind))
@@ -98,12 +122,19 @@ function makePortal(state: {
         } else if (action === 'update' && kind !== 'deal') {
             const row = store(kind)[id];
             for (const key of ['PHONE', 'EMAIL']) {
-                if (fields[key]) {
-                    row[key] = [
-                        ...((row[key] as Row[]) ?? []),
-                        ...(fields[key] as Row[]),
-                    ];
-                }
+                if (!fields[key]) continue;
+                const items = fields[key] as Row[];
+                const drop = new Set(
+                    items
+                        .filter(item => item.DELETE === 'Y')
+                        .map(item => item.ID),
+                );
+                row[key] = [
+                    ...((row[key] as Row[]) ?? []).filter(
+                        item => !drop.has(String(item.ID)),
+                    ),
+                    ...items.filter(item => item.DELETE !== 'Y'),
+                ];
             }
         }
         return Promise.resolve({ result });
@@ -401,5 +432,114 @@ describe('LeadClientLinkService', () => {
 
         expect(result.warnings[0]).toContain('Лид 42');
         expect(result.created).toHaveLength(1);
+    });
+
+    /*
+     * ДУБЛЬ КОНТАКТА (28.09.2026): повторная заявка того же человека не
+     * создаёт второй контакт — существующий находится по телефону/почте.
+     */
+    it('контакт с тем же телефоном переиспользуется, второй не создаётся', async () => {
+        const portal = makePortal({
+            leads: { 42: { ...BARE_LEAD } },
+            contacts: {
+                288609: {
+                    NAME: 'Иван',
+                    PHONE: [{ ID: '1', VALUE: '+7 (910) 288-06-48' }],
+                },
+            },
+        });
+        const service = new LeadClientLinkService(portal.bitrix);
+
+        const result = await service.link(100, DEAL, [42], OPTIONS);
+
+        expect(portal.calls.some(c => c.method === 'crm.contact.add')).toBe(
+            false,
+        );
+        expect(result.created).toEqual([
+            {
+                leadId: 42,
+                type: 'contact',
+                id: 288609,
+                reused: true,
+                matchedBy: 'comm',
+            },
+        ]);
+        expect(portal.dealContacts).toContain(288609);
+    });
+
+    it('копия телефона от Битрикса при привязке снимается (DELETE)', async () => {
+        const portal = makePortal({
+            leads: { 42: { ...BARE_LEAD } },
+            contacts: {
+                288609: {
+                    NAME: 'Иван',
+                    PHONE: [{ ID: '1', VALUE: '+79102880648' }],
+                },
+            },
+        });
+        // Имитация: Битрикс при привязке дописал копию того же номера.
+        const original = portal.bitrix.api.call;
+        portal.bitrix.api.call = (method: string, params: Row) => {
+            if (method === 'crm.lead.update') {
+                (portal.contacts[288609].PHONE as Row[]).push({
+                    ID: '2',
+                    VALUE: '89102880648',
+                });
+            }
+            return original(method, params);
+        };
+        const service = new LeadClientLinkService(portal.bitrix);
+
+        await service.link(100, DEAL, [42], OPTIONS);
+
+        const phones = (portal.contacts[288609].PHONE as Row[]).map(
+            item => item.ID,
+        );
+        expect(phones).toEqual(['1']);
+    });
+
+    it('несколько контактов с этим телефоном — создаём новый и предупреждаем', async () => {
+        const portal = makePortal({
+            leads: { 42: { ...BARE_LEAD } },
+            contacts: {
+                1: { PHONE: [{ ID: '1', VALUE: '+79102880648' }] },
+                2: { PHONE: [{ ID: '2', VALUE: '+79102880648' }] },
+            },
+        });
+        const service = new LeadClientLinkService(portal.bitrix);
+
+        const result = await service.link(100, DEAL, [42], OPTIONS);
+
+        expect(portal.calls.some(c => c.method === 'crm.contact.add')).toBe(
+            true,
+        );
+        expect(result.warnings.join(' ')).toContain('несколько клиентов');
+    });
+
+    it('kind=company: компания с этим телефоном переиспользуется', async () => {
+        const portal = makePortal({
+            leads: { 42: { ...BARE_LEAD } },
+            companies: {
+                91429: {
+                    TITLE: 'Министерство',
+                    PHONE: [{ ID: '7', VALUE: '+79102880648' }],
+                },
+            },
+        });
+        const service = new LeadClientLinkService(portal.bitrix);
+
+        const result = await service.link(100, DEAL, [42], {
+            ...OPTIONS,
+            kind: 'company',
+        });
+
+        expect(portal.calls.some(c => c.method === 'crm.company.add')).toBe(
+            false,
+        );
+        expect(result.created[0]).toMatchObject({
+            type: 'company',
+            id: 91429,
+            matchedBy: 'comm',
+        });
     });
 });
