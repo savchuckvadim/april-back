@@ -815,6 +815,59 @@ describe('LeadToWorkFlowService', () => {
         expect(fields.ASSIGNED_BY_ID).toBeUndefined();
     });
 
+    /*
+     * ЛИД-ПЕРВОИСТОЧНИК ОДИН НАВСЕГДА (решение владельца 28.09.2026):
+     * повторный прогон по другому лиду того же клиента (SLA-передача,
+     * повторная заявка) дополняет joined_leads, но deal_from_lead_id
+     * существующей сделки не подменяет.
+     */
+    it('reuse: deal_from_lead_id существующей сделки не перетирается', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(FIELDS) as never,
+        );
+
+        service.queue(
+            makeItem({ leadId: 42, responsible: 5 }),
+            baseContext({
+                existingOurDeal: {
+                    ID: '1024',
+                    UF_CRM_DEAL_FROM_LEAD_ID: 'L_11',
+                    UF_CRM_DEAL_JOINED_LEADS: ['L_11'],
+                } as never,
+            }),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        const fields = calls.find(c => c.method === 'deal.update')
+            ?.args[1] as Record<string, unknown>;
+        expect(fields.UF_CRM_DEAL_FROM_LEAD_ID).toBeUndefined();
+        expect(fields.UF_CRM_DEAL_JOINED_LEADS).toEqual(['L_11', 'L_42']);
+    });
+
+    it('reuse: пустой deal_from_lead_id дозаполняется текущим лидом', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(FIELDS) as never,
+        );
+
+        service.queue(
+            makeItem({ leadId: 42, responsible: 5 }),
+            baseContext({
+                existingOurDeal: { ID: '1024' } as never,
+            }),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        const fields = calls.find(c => c.method === 'deal.update')
+            ?.args[1] as Record<string, unknown>;
+        expect(fields.UF_CRM_DEAL_FROM_LEAD_ID).toBe('L_42');
+    });
+
     it('задачи move: идемпотентный префикс «Звонок», GROUP_ID, union UF_CRM_TASK', () => {
         const { bitrix, calls } = makeBitrix();
         const service = new LeadToWorkFlowService(

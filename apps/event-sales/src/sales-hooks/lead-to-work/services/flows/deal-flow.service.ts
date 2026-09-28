@@ -301,7 +301,17 @@ export class DealFlowService extends LeadToWorkFlowBase {
         const fromLeadName = this.dealFieldName(
             PBX_SALES_EVENT_FIELD_CODES.deal_from_lead_id,
         );
-        if (fromLeadName) {
+        /*
+         * ЛИД-ПЕРВОИСТОЧНИК НЕ ПЕРЕТИРАЕТСЯ (решение владельца 28.09.2026):
+         * у сделки он один навсегда, а каждый следующий лид клиента — в
+         * `deal_joined_leads`. Раньше повторный прогон (SLA-передача,
+         * повторная заявка) молча подменял первоисточник свежим лидом, и
+         * «из какого лида создана сделка» переставало быть правдой.
+         */
+        if (
+            fromLeadName &&
+            !(existingRow && this.text(existingRow[fromLeadName]))
+        ) {
             fields[fromLeadName] = `L_${leadId}`;
         }
         const joinedName = this.dealFieldName(
