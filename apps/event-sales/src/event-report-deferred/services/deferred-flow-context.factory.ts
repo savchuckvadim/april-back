@@ -14,6 +14,7 @@ import {
 import { EventSalesFlowDto } from '../../event-report/dto/event-sale-flow/event-sales-flow.dto';
 import { EventReportInitService } from '../../event-report/services/init/event-report-init.service';
 import { EventReportContext } from '../../event-report/services/context/event-report.context';
+import { EventReportActingManagerService } from '../../event-report/services/acting-manager/event-report-acting-manager.service';
 import {
     DEFAULT_FIELD_POLICY_SETTINGS,
     DEFAULT_STAGE_RULE_SETTINGS,
@@ -55,6 +56,9 @@ export class DeferredFlowContextFactory {
         private readonly initService: EventReportInitService,
         private readonly appSettings: PortalAppSettingsService,
         private readonly ufDefinitions: LeadUfDefinitionsService,
+        // Режим руководителя: пометка «кто отчитался» и уведомление
+        // сотруднику — тем же сервисом, что у обычного flow.
+        private readonly actingManager: EventReportActingManagerService,
     ) {}
 
     async build(
@@ -75,8 +79,22 @@ export class DeferredFlowContextFactory {
             await this.resolveFieldPolicySettings(domain),
         );
         ctx.setStageRuleSettings(await this.resolveStageRuleSettings(domain));
+        // Режим руководителя: досылаемые KPI-записи обязаны нести ту же
+        // пометку, что и записи обычного flow.
+        ctx.setActingManager(await this.actingManager.resolve(payload));
 
         return { bitrix, portal, ctx };
+    }
+
+    /**
+     * Уведомление сотруднику «руководитель отработал ваше дело». Обычный
+     * отчёт — ни одного запроса; ошибка отправки гасится внутри сервиса.
+     */
+    async notifyActingManager(
+        ctx: EventReportContext,
+        bitrix: BitrixService,
+    ): Promise<void> {
+        await this.actingManager.notify(ctx, bitrix);
     }
 
     /**

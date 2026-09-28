@@ -225,6 +225,12 @@ const makeService = (options: { reserved?: boolean } = {}) => {
         {
             build,
             leadLinkDefinitions: () => Promise.resolve({}),
+            // Режим руководителя: уведомление сотруднику едет шагом
+            // transfer-notify; в обычном отчёте это пустой вызов.
+            notifyActingManager: () => {
+                called.push('acting-manager-notify');
+                return Promise.resolve();
+            },
         } as unknown as DeferredFlowContextFactory,
         { reserve, release } as unknown as DeferredStepDedupStore,
         {
@@ -278,6 +284,8 @@ describe('EventReportDeferredService — досылка хвоста', () => {
             'kpi-flow',
             'lead-request-sync',
             'transfer-notify',
+            // Уведомление сотруднику (режим руководителя) — тем же шагом.
+            'acting-manager-notify',
             'side-flow:zpr',
             'side-flow:pres',
         ]);

@@ -231,6 +231,10 @@ export class EventReportDeferredService {
                 portal,
                 false,
             ).notifyTransfer(ctx);
+            // Режим руководителя: уведомление сотруднику едет тем же
+            // шагом — оба сообщения «после отчёта», и отметка шага в Redis
+            // защищает от повтора сразу оба.
+            await this.contextFactory.notifyActingManager(ctx, bitrix);
             this.succeed(entry);
         } catch (error) {
             await this.fail(

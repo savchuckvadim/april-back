@@ -5,6 +5,8 @@ import { RedisModule } from '@lib/core/redis/redis.module';
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.module';
 import { PortalQuestionnairesModule } from '@lib/portal-lib/store/questionnaires/portal-questionnaires.module';
 import { PortalFieldsModule } from '../shared/portal-fields';
+import { BxDepartmentModule } from '@lib/bx-department';
+import { EventReportActingManagerService } from '../event-report/services/acting-manager/event-report-acting-manager.service';
 import { EventReportInitService } from '../event-report/services/init/event-report-init.service';
 import { QuestionnaireSmartContextLoader } from '../event-report/services/post-flow/questionnaire-smart-context.loader';
 import { EventReportDeferredController } from './controllers/event-report-deferred.controller';
@@ -34,7 +36,9 @@ import { DeferredStepDedupStore } from './services/deferred-step-dedup.store';
  *    выключатель анкет;
  *  - `PortalQuestionnairesModule` — портальный каталог анкет (лёгкий
  *    lib-модуль глубоким путём: админ-роуты каталога не должны утечь в
- *    Swagger приложения).
+ *    Swagger приложения);
+ *  - `BxDepartmentModule` — структура отдела продаж: проверка пометки
+ *    «руководитель отчитался за сотрудника».
  */
 @Module({
     imports: [
@@ -44,6 +48,7 @@ import { DeferredStepDedupStore } from './services/deferred-step-dedup.store';
         PortalFieldsModule,
         PortalAppSettingsModule,
         PortalQuestionnairesModule,
+        BxDepartmentModule,
     ],
     controllers: [EventReportDeferredController],
     providers: [
@@ -53,6 +58,8 @@ import { DeferredStepDedupStore } from './services/deferred-step-dedup.store';
         DeferredStepDedupStore,
         EventReportInitService,
         QuestionnaireSmartContextLoader,
+        // Второй экземпляр безопасен: bitrix приходит параметром.
+        EventReportActingManagerService,
     ],
 })
 export class EventReportDeferredModule {}
