@@ -24,6 +24,11 @@ export interface IEventHistoryCommentSource {
      * (настройка выключена, задачи не было, пункты не заводились).
      */
     taskChecklist?: EventTaskChecklistOutcome | null;
+    /**
+     * Пометка режима руководителя («Отчитался руководитель: Имя»);
+     * пусто/undefined — обычный отчёт.
+     */
+    actingManagerNote?: string;
 }
 
 /**
@@ -53,6 +58,10 @@ export const buildEventHistoryParts = (
     } else if (src.reportComment) {
         parts.push(src.reportComment);
     }
+
+    // Кто отчитался за сотрудника — сразу за «что сделано»: это свойство
+    // самого отчёта, а не плана.
+    if (src.actingManagerNote) parts.push(src.actingManagerNote);
 
     // Чек-лист описывает ЗАКРЫВАЕМУЮ задачу — идёт после «что сделано» и
     // до «что запланировано»; нечего писать — строки не будет вовсе.

@@ -34,6 +34,7 @@ import { EventReportReturnToTmcService } from '../services/return-to-tmc/event-r
 import { EventReportTimelineService } from '../services/timeline/event-report-timeline.service';
 import { ColdHookBatchGroupBuffer } from '../../cold-hook/services/batch/cold-hook-batch-group-buffer';
 import { EventReportPostFlowService } from '../services/post-flow/event-report-post-flow.service';
+import { EventReportActingManagerService } from '../services/acting-manager/event-report-acting-manager.service';
 
 /**
  * Оркестратор event-report flow.
@@ -62,6 +63,8 @@ export class EventReportUseCase {
         // Всё, что происходит ПОСЛЕ основного батча: анкеты, id план-задачи
         // из ответа батча и постановка сайд-очередей.
         private readonly postFlow: EventReportPostFlowService,
+        // Режим руководителя: проверка пометки и уведомление сотруднику.
+        private readonly actingManager: EventReportActingManagerService,
     ) {}
 
     async execute(
@@ -88,6 +91,9 @@ export class EventReportUseCase {
         ctx.setStageRuleSettings(
             await this.resolveStageRuleSettings(dto.domain),
         );
+        // Режим руководителя: пометка ставится до flow-сервисов — её читают
+        // история карточки, таймлайн, описание задачи и KPI.
+        ctx.setActingManager(await this.actingManager.resolve(dto));
 
         const entityFlow = new EventReportEntityFlowService(bitrix, portal);
         const dealFlow = new EventReportDealFlowService(bitrix, portal);
@@ -175,6 +181,9 @@ export class EventReportUseCase {
         // (im.notify не батчится), ошибка отправки гасится внутри и отчёт
         // не роняет (todo2508-02 №4б).
         await taskFlow.notifyTransfer(ctx);
+
+        // Режим руководителя: сотрудник узнаёт, что его дело отработали.
+        await this.actingManager.notify(ctx, bitrix);
 
         // Считаем по СКЛЕЕННОМУ ответу — то есть по обоим источникам сразу.
         // Прежняя формула складывала число КОМАНД (reduce по `results`) с

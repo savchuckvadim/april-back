@@ -16,6 +16,7 @@ import {
     eventTypeName,
 } from '../../types/event-report.event-codes';
 import { EventReportContext } from '../context/event-report.context';
+import { withActingManagerNote } from '../acting-manager/acting-manager.mark';
 import { EEventReportEntityType } from '../init/event-report-init.types';
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';
 import { toBatchSafeText } from '@lib/bitrix/consts/batch.consts';
@@ -806,7 +807,12 @@ export class EventReportKpiPayloadBuilder {
                  * обрывало команду на решётке (`parse_url` режет фрагмент),
                  * и элемент списка терял хвост полей целиком.
                  */
-                manager_comment: toBatchSafeText(ctx.reportComment),
+                manager_comment: toBatchSafeText(
+                    withActingManagerNote(
+                        ctx.reportComment,
+                        ctx.actingManagerNote,
+                    ),
+                ),
             },
             items: {
                 event_type: input.eventType,

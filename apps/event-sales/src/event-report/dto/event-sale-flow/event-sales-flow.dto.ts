@@ -32,6 +32,7 @@ import { FailDto } from './fail.dto';
 import { LeadDto } from './lead.dto';
 import { PresentationDto } from './presentation.dto';
 import { QuestionnaireAnswerDto } from './questionnaire-answer.dto';
+import { ActingManagerDto } from './acting-manager.dto';
 
 /**
  * TMC-сделка для возврата (legacy-тип фронта `TmcDealsForReturn`:
@@ -366,6 +367,21 @@ export class EventSalesFlowDto {
     @ValidateNested()
     @Type(() => PresentationDto)
     presentation: PresentationDto;
+
+    @ApiPropertyOptional({
+        description:
+            'Режим руководителя: кто фактически отправил отчёт за ' +
+            'сотрудника. Отчёт идёт от имени сотрудника (он в ' +
+            '`plan.responsibility`): сделки, задачи и KPI остаются за ним, ' +
+            'а руководитель попадает пометкой в историю, таймлайн, задачу ' +
+            'и KPI; сотрудник получает уведомление. Поле не передано — ' +
+            'обычный отчёт.',
+        type: ActingManagerDto,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => ActingManagerDto)
+    actingManager?: ActingManagerDto;
 
     @ApiPropertyOptional({
         description:

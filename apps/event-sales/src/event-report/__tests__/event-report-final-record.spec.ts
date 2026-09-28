@@ -316,9 +316,47 @@ describe('Финальная запись продажи/отказа (лега�
         expect(sale!.dedup!.key).toBe('final_sale_431_5512_387');
     });
 
-    it('не продажа — работа по-прежнему на ответственном плана', () => {
+    /*
+     * ОТКАЗ — ТОЖЕ НА ОТВЕТСТВЕННОГО СДЕЛКИ (решение владельца 28.09.2026):
+     * отказ закрывает чужую работу так же, как продажа, и нажавший не
+     * должен забирать её себе.
+     */
+    it('отказ засчитывается ответственному сделки, а не нажавшему', () => {
         const ctx = makeCtx({
             dto: { plan: { responsibility: { ID: 11 } } },
+            init: {
+                entityType: 'company',
+                entityId: 431,
+                currentBaseDeal: { ID: '5512', ASSIGNED_BY_ID: '387' },
+            },
+        });
+        expect(ctx.isFail).toBe(true);
+        expect(ctx.workResponsibleId).toBe(387);
+        const fail = build(ctx).find(p => p.items.event_type === 'ev_fail');
+        expect(fail!.values.responsible).toBe(387);
+        expect(fail!.values.su).toBe(387);
+        expect(fail!.dedup!.key).toBe('final_fail_431_5512_387');
+    });
+
+    it('финал без основной сделки — работа на ответственном плана', () => {
+        const ctx = makeCtx({
+            dto: { plan: { responsibility: { ID: 11 } } },
+            init: { currentBaseDeal: null },
+        });
+        expect(ctx.isFail).toBe(true);
+        expect(ctx.workResponsibleId).toBe(11);
+    });
+
+    it('работа продолжается — по-прежнему на ответственном плана', () => {
+        const ctx = makeCtx({
+            dto: {
+                currentTask: { eventType: 'hot', name: 'ООО Ромашка' },
+                report: {
+                    resultStatus: 'result',
+                    workStatus: { current: { code: 'inJob' } },
+                },
+                plan: { responsibility: { ID: 11 } },
+            },
             init: { currentBaseDeal: { ID: '5512', ASSIGNED_BY_ID: '387' } },
         });
         expect(ctx.workResponsibleId).toBe(11);

@@ -14,6 +14,8 @@ import { QuestionnaireSmartContextLoader } from './services/post-flow/questionna
 import { EventFlowProcessor } from './queue/event-flow.processor';
 import { EventSalesController } from './controllers/event-sales.controller';
 import { PortalFieldsModule } from '../shared/portal-fields';
+import { BxDepartmentModule } from '@lib/bx-department';
+import { EventReportActingManagerService } from './services/acting-manager/event-report-acting-manager.service';
 
 /**
  * Модуль event-report flow. Подключается родительским `EventSalesModule`.
@@ -40,6 +42,9 @@ import { PortalFieldsModule } from '../shared/portal-fields';
         // Импортируется ЛЁГКИЙ lib-модуль глубоким путём — админ-роуты
         // каталога не должны попасть в Swagger приложения.
         PortalQuestionnairesModule,
+        // Структура отдела продаж: периметр руководителя для отчёта за
+        // сотрудника (режим руководителя).
+        BxDepartmentModule,
     ],
     controllers: [EventSalesController],
     providers: [
@@ -57,6 +62,8 @@ import { PortalFieldsModule } from '../shared/portal-fields';
         // bitrix-состояние per-request, инжектить его сюда безопасно.
         StagePredictService,
         EventFlowGuardService,
+        // Режим руководителя: bitrix приходит параметром, в полях не живёт.
+        EventReportActingManagerService,
     ],
 })
 export class EventReportModule {}

@@ -22,6 +22,7 @@ export const EVENT_TASK_DESCRIPTION_STYLE = {
         links: '🔗',
         phones: '📞',
         comment: '💬',
+        manager: '👤',
     },
     /** Разделитель между секциями. */
     divider: '——————————',
@@ -34,6 +35,7 @@ export const EVENT_TASK_DESCRIPTION_SECTIONS = [
     'links',
     'phones',
     'comment',
+    'manager',
 ] as const;
 
 export type EventTaskDescriptionSection =
@@ -62,6 +64,16 @@ export interface EventTaskDescriptionSource {
     baseDeal: EventTaskDescriptionDeal | null;
     /** Комментарий менеджера из отчёта — «о чём договорились». */
     comment: string;
+    /** Режим руководителя: кто отчитался за сотрудника; нет — обычный отчёт. */
+    actingManager?: EventTaskDescriptionManager | null;
+}
+
+/** Подпись и ссылка на того, кто отчитался по прошлому событию. */
+export interface EventTaskDescriptionManager {
+    /** «Отчитался руководитель» / «Отчёт отправил». */
+    label: string;
+    name: string;
+    profileUrl: string;
 }
 
 /**
@@ -191,6 +203,7 @@ export const buildEventTaskDescription = (
         links: () => buildLinkBlock(src),
         phones: () => buildPhoneBlock(src),
         comment: () => buildCommentBlock(src),
+        manager: () => buildManagerBlock(src),
     };
 
     const blocks = EVENT_TASK_DESCRIPTION_SECTIONS.map(section =>
@@ -198,6 +211,16 @@ export const buildEventTaskDescription = (
     ).filter(Boolean);
 
     return blocks.join(`\n${EVENT_TASK_DESCRIPTION_STYLE.divider}\n`);
+};
+
+/** Кто отчитался по прошлому событию за сотрудника; '' — обычный отчёт. */
+const buildManagerBlock = (src: EventTaskDescriptionSource): string => {
+    const manager = src.actingManager;
+    if (!manager) return '';
+    return [
+        heading(EVENT_TASK_DESCRIPTION_STYLE.icons.manager, manager.label),
+        bb.url(manager.profileUrl, manager.name),
+    ].join('\n');
 };
 
 /** Комментарий менеджера по прошлому событию; '' — комментария не было. */

@@ -12,8 +12,15 @@ import {
 } from '../init/event-report-init.types';
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';
 import {
+    ActingManagerMark,
+    actingManagerLabel,
+    actingManagerName,
+    userProfileUrl,
+} from '../acting-manager/acting-manager.mark';
+import {
     buildEventReportTimelineComment,
     IEventReportTimelineSource,
+    ITimelineActingManager,
     ITimelineCard,
     ITimelineContact,
     TimelineOutcome,
@@ -145,6 +152,10 @@ export class EventReportTimelineService {
             comment: ctx.reportComment,
             outcome: outcomeOf(ctx),
             cards: [],
+            actingManager: toTimelineActingManager(
+                ctx.domain,
+                ctx.actingManager,
+            ),
         };
     }
 
@@ -231,6 +242,20 @@ const outcomeOf = (ctx: EventReportContext): TimelineOutcome | null => {
     if (!ctx.isFail) return null;
     return ctx.isNotCa ? 'notCa' : 'fail';
 };
+
+/** Пометка режима руководителя → строка записи; null — обычный отчёт. */
+const toTimelineActingManager = (
+    domain: string,
+    mark: ActingManagerMark | null,
+): ITimelineActingManager | null =>
+    mark
+        ? {
+              id: mark.id,
+              name: actingManagerName(mark),
+              label: actingManagerLabel(mark),
+              profileUrl: userProfileUrl(domain, mark.id),
+          }
+        : null;
 
 /** Контакт карточки → контакт записи; без id — контакта для записи нет. */
 const toTimelineContact = (

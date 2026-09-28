@@ -28,6 +28,15 @@ export interface ITimelineCard {
     title: string;
 }
 
+/** Кто отчитался за сотрудника: подпись строки + ссылка на профиль. */
+export interface ITimelineActingManager {
+    id: number;
+    name: string;
+    /** «Отчитался руководитель» / «Отчёт отправил». */
+    label: string;
+    profileUrl: string;
+}
+
 /** Чем закончилась работа с клиентом; null — работа продолжается. */
 export type TimelineOutcome = 'success' | 'fail' | 'notCa';
 
@@ -65,6 +74,8 @@ export interface IEventReportTimelineSource {
     outcome: TimelineOutcome | null;
     /** Карточки клиента: основная сделка, компания, заявка. */
     cards: readonly ITimelineCard[];
+    /** Режим руководителя; null/undefined — обычный отчёт. */
+    actingManager?: ITimelineActingManager | null;
 }
 
 const OUTCOME_TITLE: Record<TimelineOutcome, string> = {
@@ -110,6 +121,15 @@ export const buildEventReportTimelineComment = (
 
     const done = doneLine(src);
     if (done) lines.push(timelineText(done));
+
+    if (src.actingManager) {
+        lines.push(
+            `${timelineText(src.actingManager.label)}: ${timelineLink(
+                src.actingManager.profileUrl,
+                src.actingManager.name,
+            )}`,
+        );
+    }
 
     const reportContact = contactLine(src.domain, src.reportContact);
     if (reportContact) lines.push(reportContact);

@@ -8,6 +8,11 @@ import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import { toBatchSafeText } from '@lib/bitrix/consts/batch.consts';
 import { EventReportContext } from '../context/event-report.context';
 import {
+    actingManagerLabel,
+    actingManagerName,
+    userProfileUrl,
+} from '../acting-manager/acting-manager.mark';
+import {
     clipTaskTitle,
     clipText,
     TASK_COMMENT_MAX_LENGTH,
@@ -249,6 +254,16 @@ export class EventReportTaskFlowService {
                 contacts: [ctx.planContact, ctx.reportContact],
                 baseDeal: this.resolveBaseDeal(ctx, deals),
                 comment: ctx.reportComment,
+                actingManager: ctx.actingManager
+                    ? {
+                          label: actingManagerLabel(ctx.actingManager),
+                          name: actingManagerName(ctx.actingManager),
+                          profileUrl: userProfileUrl(
+                              ctx.domain,
+                              ctx.actingManager.id,
+                          ),
+                      }
+                    : null,
             });
 
             this.bitrix.batch.task.add(ADD_TASK_CMD, {

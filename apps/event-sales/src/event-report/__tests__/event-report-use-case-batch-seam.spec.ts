@@ -249,6 +249,11 @@ describe('EventReportUseCase — ответ основного батча дое
                 resolve: () => Promise.resolve({}),
             } as unknown as ConstructorParameters<typeof EventReportUseCase>[3],
             { dispatch } as unknown as EventReportPostFlowService,
+            // Режим руководителя в этих сценариях выключен: обычный отчёт.
+            {
+                resolve: () => Promise.resolve(null),
+                notify: () => Promise.resolve(),
+            } as unknown as ConstructorParameters<typeof EventReportUseCase>[5],
         );
 
         return { useCase, dispatch, batchCalls };
