@@ -17,6 +17,7 @@ import {
     StructuralRole,
 } from './forced-visibility.util';
 import { ISalesDepartment, IStructureData } from './structure-data.types';
+import { subordinateIdsOf } from './subordinates.util';
 
 /**
  * Роль текущего пользователя поверх структуры отделов (чистые функции
@@ -131,6 +132,7 @@ export const allOpIdsOf = (structure: IStructureData): number[] =>
 export const applySuperUser = (
     user: BxCurrentUserDto,
     allOpIds: number[],
+    structure?: IStructureData,
 ): BxCurrentUserDto => ({
     ...user,
     headOf: EBxDepartmentHeadType.cup,
@@ -138,6 +140,17 @@ export const applySuperUser = (
     visibility: EBxVisibilityLevel.all,
     headOfSource: EBxHeadOfSource.superuser,
     isSuperUser: true,
+    // Периметр суперпользователя — вся структура, как и его видимость.
+    subordinateIds: structure
+        ? subordinateIdsOf(
+              structure,
+              {
+                  visibility: EBxVisibilityLevel.all,
+                  headOfDepartmentIds: allOpIds,
+              },
+              user.userId,
+          )
+        : user.subordinateIds,
 });
 
 /** Роль текущего пользователя (структура + настройки + вендор) и его коллеги. */
@@ -171,12 +184,13 @@ export const buildCurrentUser = (
         visibility: role.visibility,
         headOfSource: role.headOfSource,
         isSuperUser: false,
+        subordinateIds: subordinateIdsOf(structure, role, uid),
         colleagues: {
             group: withoutUser(myGroup?.USERS ?? []),
             department: withoutUser(myOp?.allUsers ?? []),
         },
     };
     return context.isSuperUser && uid > 0
-        ? applySuperUser(user, allOpIds)
+        ? applySuperUser(user, allOpIds, structure)
         : user;
 };

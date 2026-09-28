@@ -6,5 +6,6 @@ export * from './services/bx-department-cache.service';
 export * from './services/bx-department-heads.service';
 export * from './services/bx-super-user.service';
 export * from './lib/department-heads.util';
+export * from './lib/subordinates.util';
 export * from './repositories/vendor-super-user.repository';
 export * from './bx-department.module';

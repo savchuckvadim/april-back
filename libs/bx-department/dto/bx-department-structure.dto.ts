@@ -233,6 +233,22 @@ export class BxCurrentUserDto {
     isSuperUser: boolean;
 
     @ApiProperty({
+        description:
+            'Подчинённые пользователя — сотрудники, чью работу он видит как ' +
+            'руководитель (без него самого). Периметр совпадает с ' +
+            'visibility: group — своя группа, department — свой отдел ' +
+            'продаж со всеми группами, all — вся структура. Пустой массив — ' +
+            'пользователь не руководитель. Единый источник для режима ' +
+            'руководителя в «Звонках»: по нему фронт показывает дела ' +
+            'сотрудников, по нему же бэк проверяет отчёт за сотрудника.',
+        type: [Number],
+        example: [231, 465],
+    })
+    @IsArray()
+    @IsInt({ each: true })
+    subordinateIds: number[];
+
+    @ApiProperty({
         description: 'Коллеги текущего пользователя.',
         type: BxCurrentUserColleaguesDto,
     })
