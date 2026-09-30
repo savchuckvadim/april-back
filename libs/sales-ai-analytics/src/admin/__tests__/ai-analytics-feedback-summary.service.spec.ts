@@ -9,6 +9,7 @@ function feedback(partial: {
     id: string;
     kind: unknown;
     managerId?: string | null;
+    status?: string;
 }): AiEntityDto {
     return {
         id: partial.id,
@@ -16,7 +17,7 @@ function feedback(partial: {
         domain: DOMAIN,
         activity_id: '2026-09-10',
         model: '',
-        status: 'done',
+        status: partial.status ?? 'done',
         user_id: 0,
         tokens_count: 0,
         price: 0,
@@ -132,6 +133,41 @@ describe('AiAnalyticsFeedbackSummaryService', () => {
         expect(result.skipped).toBe(2);
     });
 
+    it('замещённые записи не считаются: ни в счётчиках, ни в доле, ни в skipped', async () => {
+        const { service } = makeService([
+            feedback({ id: '1', kind: 'useful', managerId: '154' }),
+            // Смена оценки за день: прежняя оценка ушла в superseded.
+            feedback({
+                id: '2',
+                kind: 'not_useful',
+                managerId: '154',
+                status: 'superseded',
+            }),
+            // Пустой статус старых записей — актуальная запись.
+            feedback({
+                id: '3',
+                kind: 'disagree',
+                managerId: '200',
+                status: '',
+            }),
+            // Замещённая запись чужой формы — тоже только в superseded.
+            feedback({ id: '4', kind: 'чужой', status: 'superseded' }),
+        ]);
+        const result = await service.summary(
+            DOMAIN,
+            '2026-09-01',
+            '2026-09-21',
+        );
+        expect(result.total).toBe(2);
+        expect(result.skipped).toBe(0);
+        expect(result.superseded).toBe(2);
+        expect(result.byKind).toEqual([
+            { kind: 'useful', count: 1 },
+            { kind: 'disagree', count: 1 },
+        ]);
+        expect(result.usefulRatePct).toBe(50);
+    });
+
     it('записей нет — нули и пустые разрезы', async () => {
         const { service } = makeService([]);
         const result = await service.summary(
@@ -145,6 +181,7 @@ describe('AiAnalyticsFeedbackSummaryService', () => {
             to: '2026-09-21',
             total: 0,
             skipped: 0,
+            superseded: 0,
             byKind: [],
             byManager: [],
             usefulRatePct: null,

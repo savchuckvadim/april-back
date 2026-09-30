@@ -20,11 +20,19 @@ import {
     KAPPA_DEFAULTS,
     NORM_HIERARCHY_DEFAULTS,
     resolveNumberParam,
+    toEdgeKappaPool,
     type EdgeKappaParams,
     type KappaCell,
+    type NormGlobalPrior,
     type NormLayer,
     type ParamContext,
 } from '@lib/sales-ai-analytics';
+import {
+    globalPriorOf,
+    mixWithPrior,
+    poolEdgeOf,
+    type PortalNormsPool,
+} from './portal-model.norms.pool';
 import type {
     PortalEdgeNormFacts,
     PortalManagerEdgeNorm,
@@ -58,6 +66,8 @@ export interface PortalNormsInput {
     readonly registry: ParamContext;
     /** Минимум менеджеров полосы для собственного слоя (по умолчанию 3). */
     readonly minBandManagers?: number;
+    /** Пул порталов (Фаза 4); null — одно-портальный режим. */
+    readonly pool?: PortalNormsPool | null;
 }
 
 export interface PortalNormsResult {
@@ -154,22 +164,27 @@ function poolsOf(cells: readonly EdgeCell[]): {
     return { portal, bands };
 }
 
-/** Норма слоя из пула: μ, слой и доля данных. */
+/** Норма слоя из пула: μ, слой и доля данных (с общим прайором пула). */
 function normOf(
     pool: Pool,
     useBand: boolean,
     kappa: number,
     edge: string,
+    prior: NormGlobalPrior | null = null,
 ): PortalManagerEdgeNorm {
     const layer: NormLayer =
         pool.n <= 0 ? 'global' : useBand ? 'tenure' : 'portal';
+    const mixed =
+        prior === null
+            ? { mu: pool.n > 0 ? pool.s / pool.n : 0, w: pool.n > 0 ? 1 : 0 }
+            : mixWithPrior(pool.s, pool.n, prior);
 
     return {
         edge,
-        mu: pool.n > 0 ? pool.s / pool.n : 0,
+        mu: mixed.mu,
         layer,
         n: Math.max(0, pool.n),
-        w: pool.n > 0 ? 1 : 0,
+        w: mixed.w,
         kappa,
     };
 }
@@ -199,7 +214,13 @@ export function buildPortalNorms(input: PortalNormsInput): PortalNormsResult {
     )) {
         const usable = [...cells.values()].filter(isUsable);
         const { portal, bands } = poolsOf(usable);
+        const poolEdge = poolEdgeOf(input.pool, edge);
+        const prior = globalPriorOf(input.pool, poolEdge);
         const kappa = estimateEdgeKappa({
+            pool:
+                poolEdge === null
+                    ? null
+                    : toEdgeKappaPool(poolEdge, usable.length),
             cells: usable.map(
                 (cell): KappaCell => ({
                     managerId: cell.managerId,
@@ -236,7 +257,7 @@ export function buildPortalNorms(input: PortalNormsInput): PortalNormsResult {
             const pool = useBand ? bandPool : sub(portal, ownUsable);
             normsByManager.set(managerId, [
                 ...(normsByManager.get(managerId) ?? []),
-                normOf(pool, useBand, kappa.kappa, edge),
+                normOf(pool, useBand, kappa.kappa, edge, prior),
             ]);
         }
     }

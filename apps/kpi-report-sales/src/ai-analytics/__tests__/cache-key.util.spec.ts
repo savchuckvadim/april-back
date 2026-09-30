@@ -40,12 +40,12 @@ describe('cache-key.util (ai-analytics)', () => {
                 false,
             ),
         ).toBe(
-            'sales-ai-analytics:v1:april.bitrix24.ru:overview:v3:2026-08-10_2026-09-06:10_20:0',
+            'sales-ai-analytics:v1:april.bitrix24.ru:overview:v4:2026-08-10_2026-09-06:10_20:0',
         );
         expect(
             buildOverviewKey(DOMAIN, '2026-08-10', '2026-09-06', '10_20', true),
         ).toBe(
-            'sales-ai-analytics:v1:april.bitrix24.ru:overview:v3:2026-08-10_2026-09-06:10_20:1',
+            'sales-ai-analytics:v1:april.bitrix24.ru:overview:v4:2026-08-10_2026-09-06:10_20:1',
         );
     });
 

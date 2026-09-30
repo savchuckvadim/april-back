@@ -11,6 +11,7 @@ import type {
     AttentionTrendSignal,
 } from '@lib/sales-ai-analytics';
 import { trendMetricTitle } from '../../constants/ai-goodhart.const';
+import { AI_TREND_EDGE_METRIC_PREFIX } from '../../constants/ai-trend.const';
 import type { AiManagerTrendsDto } from '../../dto/ai-trend.dto';
 
 /** Сигналы трендов строки с подписями; блока нет или сигналов нет — undefined. */
@@ -27,6 +28,11 @@ export function trendSignalsOf(
         sinceWeek: signal.sinceWeek,
         magnitude: signal.magnitude,
         confidence: signal.confidence,
+        grain: signal.grain,
+        // Рёбра воронки — доли 0..1: заголовок называет их в пунктах.
+        unit: signal.metric.startsWith(AI_TREND_EDGE_METRIC_PREFIX)
+            ? ('share' as const)
+            : ('value' as const),
     }));
 }
 

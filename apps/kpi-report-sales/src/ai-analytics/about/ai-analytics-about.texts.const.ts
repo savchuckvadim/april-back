@@ -8,7 +8,9 @@ import {
 import {
     AI_ABOUT_NORM_PARAMS as NORM_PARAMS,
     AI_ABOUT_SHARED_PARAMS as SHARED_PARAMS,
+    AI_ABOUT_STAGE_PARAMS as STAGE_PARAMS,
 } from './ai-analytics-about.params.const';
+import { AI_ABOUT_FORECAST_TEXT } from './ai-analytics-about.texts.phase4.const';
 
 /**
  * Тексты блока «Как считаем» по ручкам витрины (вынесены из
@@ -71,6 +73,10 @@ export const AI_ABOUT_ENDPOINT_TEXTS: Readonly<
             'готовность витрины и её причины — в баннере; пока расчёт по ' +
                 'порталу не готов, показываем только описательные цифры, без норм',
             numbers =>
+                'прогноз отдела и советы с ожидаемым эффектом включаются после ' +
+                'проверки на истории: прогноз — не раньше чем через ' +
+                `${aboutMonths(numbers.value('forecast_shadow_min_months'))}`,
+            numbers =>
                 'карточка «показатель растёт, результат — нет» в блоке ' +
                 '«Внимание»: за ' +
                 `${aboutMonths(numbers.value('goodhart_window_months'))} ` +
@@ -86,6 +92,7 @@ export const AI_ABOUT_ENDPOINT_TEXTS: Readonly<
         params: [
             ...SHARED_PARAMS,
             ...NORM_PARAMS,
+            ...STAGE_PARAMS,
             'kappa_boot_ratio',
             'calibration_min_months',
             'calibration_min_presentations',
@@ -267,4 +274,5 @@ export const AI_ABOUT_ENDPOINT_TEXTS: Readonly<
             'style_promise_window_days',
         ],
     },
+    forecast: AI_ABOUT_FORECAST_TEXT,
 };

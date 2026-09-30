@@ -141,6 +141,15 @@ export class AiAnalyticsFeedbackResultDto implements FeedbackSummary {
     skipped: number;
 
     @ApiProperty({
+        description:
+            'Замещённых записей (смена оценки за день, повторная метка ' +
+            'руководителя) — в счётчики и долю полезных не вошли.',
+        example: 3,
+        type: Number,
+    })
+    superseded: number;
+
+    @ApiProperty({
         description: 'Разрез по видам записей; виды без записей опущены.',
         type: [AiAnalyticsFeedbackKindDto],
     })

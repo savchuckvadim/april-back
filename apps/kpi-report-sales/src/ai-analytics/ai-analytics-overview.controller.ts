@@ -46,6 +46,7 @@ export class AiAnalyticsOverviewController {
         private readonly settingsSaveUseCase: SettingsSaveUseCase,
     ) {}
 
+    @PortalSessionProtected()
     @Post('overview')
     @HttpCode(200)
     @ApiOperation({
@@ -75,6 +76,7 @@ export class AiAnalyticsOverviewController {
         return this.overviewLookup.lookup(dto, access);
     }
 
+    @PortalSessionProtected()
     @Post('attention')
     @HttpCode(200)
     @ApiOperation({
@@ -100,6 +102,7 @@ export class AiAnalyticsOverviewController {
         return this.attentionUseCase.execute(dto, access);
     }
 
+    @PortalSessionProtected()
     @Post('by-type')
     @HttpCode(200)
     @ApiOperation({

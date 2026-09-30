@@ -5,6 +5,7 @@ import {
     objectionTitleOf,
     riskTitleOf,
     sectionTitleOf,
+    upperFirst,
 } from '../model/dictionary-titles.util';
 
 describe('dictionary-titles — названия кодов справочников смарта', () => {
@@ -32,5 +33,14 @@ describe('dictionary-titles — названия кодов справочник
         expect(callTypeTitleOf('x')).toBe('x');
         expect(lowerFirst('Звонок → презентация')).toBe('звонок → презентация');
         expect(lowerFirst('')).toBe('');
+    });
+
+    it('upperFirst — подпись метрики открывает заголовок «Внимания»', () => {
+        expect(upperFirst('оценка')).toBe('Оценка');
+        expect(upperFirst('доля КП после презентаций')).toBe(
+            'Доля КП после презентаций',
+        );
+        expect(upperFirst('Оценка')).toBe('Оценка');
+        expect(upperFirst('')).toBe('');
     });
 });

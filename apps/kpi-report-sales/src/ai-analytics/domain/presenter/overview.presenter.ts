@@ -32,10 +32,8 @@ import {
     assembleDepartmentTotals,
     assembleMatrix,
 } from '../assembler/manager-type-matrix.assembler';
-import type { OverviewSources } from '../assembler/overview-model.types';
 import type { DatedLiteRow } from '../loaders/lite-row.mapper';
 import { withSignals } from './attention.presenter';
-import type { LevelPassport } from './level.util';
 import { buildManagerRow } from './manager-row.presenter';
 import {
     buildOverviewYoy,
@@ -149,14 +147,8 @@ function toTotals(
     });
 }
 
-/**
- * Источники презентера: контракт обзора плюс паспорта месячных снапшотов
- * (уровень и стаж строки). Поле не в `OverviewSources`: тот контракт
- * правит соседний поток (приём `OverviewYoySnapshots`).
- */
-export interface OverviewPresenterSources extends OverviewSources {
-    passports?: ReadonlyMap<string, LevelPassport>;
-}
+export type { OverviewPresenterSources } from './overview-presenter.types';
+import type { OverviewPresenterSources } from './overview-presenter.types';
 
 export function buildOverviewDto(
     sources: OverviewPresenterSources,
@@ -239,7 +231,11 @@ export function buildOverviewDto(
         ),
     }));
 
-    const readiness = buildOverviewReadiness(sources, now);
+    const readiness = buildOverviewReadiness(
+        sources,
+        now,
+        sources.stageSources,
+    );
 
     return {
         period: {

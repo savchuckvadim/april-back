@@ -97,7 +97,7 @@ const makeService = (leads: Row[] = []) => {
     const service = new ColdAddressedXoV2Service(
         portal,
         fake.bitrix as unknown as BitrixService,
-        new LeadRequestAcceptService(null as never),
+        new LeadRequestAcceptService(null as never, null as never),
     );
     return { service, ...fake };
 };

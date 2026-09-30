@@ -15,6 +15,13 @@ import { ForecastStep } from '../steps/forecast.step';
 import { KpiStep } from '../steps/kpi.step';
 import { PassportStep } from '../steps/passport.step';
 import { PlansStep } from '../steps/plans.step';
+import { PoolStep } from '../steps/pool.step';
+import { QualityLinkStep } from '../steps/quality-link.step';
+import { RecommendationEffectStep } from '../steps/recommendation-effect.step';
+import { RecommendationLogStep } from '../steps/recommendation-log.step';
+import { DepartmentForecastStep } from '../steps/department-forecast.step';
+import { ForecastBacktestStep } from '../steps/forecast-backtest.step';
+import { PoolPortalsLoader } from '../domain/loaders/pool-portals.loader';
 import { PortalModelStep } from '../steps/portal-model.step';
 import { RopMarkStep } from '../steps/rop-mark.step';
 import { StageHistoryStep } from '../steps/stage-history.step';
@@ -97,10 +104,20 @@ export const AI_ANALYTICS_PIPELINE_STEP_ORDER: Type<AiAnalyticsPipelineStep>[] =
         StyleStep,
         PlansStep,
         FinanceStep,
+        // Фаза 4 (monthly/backfill): оценка β, пул, точность прогноза и
+        // эффект советов — до модели портала, которая читает их итоги.
+        QualityLinkStep,
+        PoolStep,
+        ForecastBacktestStep,
+        RecommendationEffectStep,
         RopMarkStep,
         SanityStep,
         PortalModelStep,
         ForecastStep,
+        // Фаза 4 (nightly): теневой журнал прогноза отдела и журнал советов
+        // читают прогнозы дня из шины (forecastDay).
+        DepartmentForecastStep,
+        RecommendationLogStep,
     ];
 
 /**
@@ -149,6 +166,10 @@ export const AI_ANALYTICS_PIPELINE_STEP_MODULES: Type<unknown>[] = [
         AiAnalyticsSnapshotScheduler,
         SanityStep,
         TrendsStep,
+        // Фаза 4: шаги без PBX, зависящие только от ядра.
+        PoolPortalsLoader,
+        PoolStep,
+        RecommendationLogStep,
         { provide: AI_ANALYTICS_PIPELINE_STEPS, useValue: [] },
         {
             provide: AI_ANALYTICS_SNAPSHOT_RUNNER,
@@ -160,6 +181,8 @@ export const AI_ANALYTICS_PIPELINE_STEP_MODULES: Type<unknown>[] = [
         AiAnalyticsBackfillService,
         SanityStep,
         TrendsStep,
+        PoolStep,
+        RecommendationLogStep,
         AI_ANALYTICS_SNAPSHOT_RUNNER,
     ],
 })

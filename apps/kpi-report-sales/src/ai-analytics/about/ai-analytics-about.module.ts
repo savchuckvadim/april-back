@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PortalSessionModule } from '@lib/auth';
 import { AiAnalyticsCoreModule } from '../core/ai-analytics-core.module';
 import { AiAnalyticsAboutController } from './ai-analytics-about.controller';
 import { AiAnalyticsAboutUseCase } from './ai-analytics-about.use-case';
@@ -13,9 +14,10 @@ import { AiAnalyticsAboutUseCase } from './ai-analytics-about.use-case';
  * `RequesterAccessService`) берутся из `AiAnalyticsCoreModule` и здесь не
  * объявляются повторно — DI-спека сборки закрепляет отсутствие дублей.
  * Битрикс срезу не нужен: только настройки портала и `ais`.
+ * `PortalSessionModule` — для guard'а сессии портала на ручке чтения.
  */
 @Module({
-    imports: [AiAnalyticsCoreModule],
+    imports: [AiAnalyticsCoreModule, PortalSessionModule],
     controllers: [AiAnalyticsAboutController],
     providers: [AiAnalyticsAboutUseCase],
     exports: [AiAnalyticsAboutUseCase],

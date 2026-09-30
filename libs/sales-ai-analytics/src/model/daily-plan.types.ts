@@ -87,6 +87,12 @@ export interface DailyPlanItem {
     readonly cap: number | null;
     /** Место в приоритете по `L_k`, начиная с 1. */
     readonly priority: number;
+    /**
+     * `L_k` — ожидаемые потери продаж на этом шаге (план §4.9, «узкое
+     * место»); null — утечки на входе не было (план по объёму), и приоритет
+     * задан порядком, а не утечкой.
+     */
+    readonly leak: number | null;
     /** `plan_day_ceiling × план_τ/D_m`. */
     readonly ceiling: number;
     /** План уперся в потолок дня. */

@@ -179,6 +179,9 @@ function planItem(
         monthDone: doneMonth,
         cap: typeof input.cap === 'number' ? input.cap : null,
         priority,
+        // Утечка отдаётся как есть: витрина отмечает «узкое место» по
+        // `leak !== null && priority === 1`, а не угадывает по форме строки.
+        leak: input.leak ?? null,
         ceiling,
         cappedByCeiling: raw > ceiling,
         trainingApplied: training > byVolume,

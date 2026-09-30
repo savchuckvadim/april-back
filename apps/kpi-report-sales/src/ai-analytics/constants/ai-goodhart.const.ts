@@ -10,10 +10,7 @@
  */
 import { AI_ANALYTICS_BUCKETS } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import type { GoodhartPair } from '@lib/sales-ai-analytics';
-import {
-    AI_ANALYTICS_FUNNEL_EDGES,
-    type AiAnalyticsFunnelEdgeCode,
-} from './ai-overview.const';
+import type { AiAnalyticsFunnelEdgeCode } from './ai-overview.const';
 import {
     AI_TREND_BUCKET_METRIC_PREFIX,
     AI_TREND_EDGE_METRIC_PREFIX,
@@ -34,7 +31,7 @@ const edgeMetric = (code: AiAnalyticsFunnelEdgeCode) =>
 
 /**
  * Пары «давление ↔ противовес» (план П9): рост объёма при падении оценки,
- * рост оценки при падении доли «презентация → КП», рост доли ребра при
+ * рост оценки при падении доли КП после презентаций, рост доли ребра при
  * падении следующего ребра. Порядок — порядок показа при равных
  * величинах.
  */
@@ -87,27 +84,33 @@ const BUCKET_TITLES: Record<(typeof AI_ANALYTICS_BUCKETS)[number], string> = {
     closing: 'оценка закрытия',
 };
 
-/** Первая буква строчная — подпись стоит внутри фразы. */
-const lowerFirst = (title: string): string =>
-    title.charAt(0).toLowerCase() + title.slice(1);
+/**
+ * Подписи рёбер воронки для заголовков: доля исхода после входа словами,
+ * без стрелок (правило владельца: в клиентских текстах нет «→»). Новое
+ * ребро без подписи не соберётся — `Record` по коду ребра.
+ */
+const EDGE_TREND_TITLES: Record<AiAnalyticsFunnelEdgeCode, string> = {
+    call_to_presentation: 'доля презентаций после звонков',
+    presentation_to_offer: 'доля КП после презентаций',
+    offer_to_invoice: 'доля счетов после КП',
+    invoice_to_sale: 'доля продаж после счетов',
+};
 
 /**
- * Подпись метрики тренда для человека: «оценка», «разборов», «оценка
- * контакта», «звонок → презентация». Незнакомый код (чужая нагрузка) —
- * сам код, чтобы карточка не потеряла смысл.
+ * Подпись метрики тренда для человека в именительном падеже: «оценка»,
+ * «число разборов», «оценка контакта», «доля КП после презентаций» —
+ * она стоит подлежащим в заголовке карточки. Незнакомый код (чужая
+ * нагрузка) — сам код, чтобы карточка не потеряла смысл.
  */
 export function trendMetricTitle(metric: string): string {
     if (metric === AI_TREND_WEEK_METRIC.quality) return 'оценка';
-    if (metric === AI_TREND_WEEK_METRIC.volume) return 'разборов';
+    if (metric === AI_TREND_WEEK_METRIC.volume) return 'число разборов';
     if (metric.startsWith(AI_TREND_BUCKET_METRIC_PREFIX)) {
         const bucket = bucketOfTrendMetric(metric as AiTrendMetric);
 
         return bucket === null ? metric : BUCKET_TITLES[bucket];
     }
     const edge = edgeOfTrendMetric(metric as AiTrendMetric);
-    const title = AI_ANALYTICS_FUNNEL_EDGES.find(
-        item => item.code === edge,
-    )?.title;
 
-    return title === undefined ? metric : lowerFirst(title);
+    return edge === null ? metric : EDGE_TREND_TITLES[edge];
 }

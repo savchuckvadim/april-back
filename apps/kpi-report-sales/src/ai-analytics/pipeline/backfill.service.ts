@@ -174,10 +174,13 @@ export class AiAnalyticsBackfillService {
                 options.forceRefresh,
             ),
         ]);
-        const monthKeys = missingMonths.slice(
-            0,
-            AI_PIPELINE_BACKFILL.maxMonthsPerNight,
-        );
+        // Какие месяцы догонять — свежие первыми; в каком порядке ставить —
+        // от старых к свежим: месячные шаги читают прошлый месяц (серия
+        // гейта связи качества, модель M − 1), и в обратном порядке его ещё
+        // нет — серия обнулялась бы, а шаги брали бы модель из будущего.
+        const monthKeys = missingMonths
+            .slice(0, AI_PIPELINE_BACKFILL.maxMonthsPerNight)
+            .sort((a, b) => a.localeCompare(b));
         const weekKeys = missingWeeks.slice(0, AI_PIPELINE_BACKFILL.weekLimit);
         if (monthKeys.length === 0 && weekKeys.length === 0) {
             return emptyPlan(AI_BACKFILL_REASONS.nothingToDo);

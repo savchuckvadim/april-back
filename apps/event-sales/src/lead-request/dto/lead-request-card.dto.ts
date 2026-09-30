@@ -222,7 +222,7 @@ export class LeadRequestCardDto {
         description:
             'История обработки заявки (append-only, старые не переписываются).',
         type: [String],
-        example: ['10.08.2026 12:40 — ХО назначен: 447'],
+        example: ['10.08.2026 12:40 — ХО назначен: Вадим Савчук'],
     })
     @IsArray()
     @IsString({ each: true })

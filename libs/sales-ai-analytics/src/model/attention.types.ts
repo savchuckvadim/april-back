@@ -33,7 +33,23 @@ export interface AttentionTrendSignal {
     /** Величина в единицах метрики. */
     magnitude: number;
     confidence: ConfidenceLevel;
+    /**
+     * Зерно ряда: month — закрытые месяцы, `sinceWeek` тогда неделя
+     * первого числа месяца (заголовок называет месяц). Нет — недели.
+     */
+    grain?: AttentionTrendGrain;
+    /**
+     * Единица величины: share — доля 0..1 (заголовок в пунктах), value —
+     * баллы или штуки. Нет — value.
+     */
+    unit?: AttentionTrendUnit;
 }
+
+/** Зерно ряда сигнала тренда. */
+export type AttentionTrendGrain = 'week' | 'month';
+
+/** Единица величины сигнала тренда. */
+export type AttentionTrendUnit = 'share' | 'value';
 
 /** Флаг детектора Гудхарта с подписями обеих метрик. */
 export interface AttentionGoodhartFlag {

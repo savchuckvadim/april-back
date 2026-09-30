@@ -8,6 +8,8 @@ import { EnumLeadRequestFieldCode } from '@lib/portal-lib/pbx/pbx-lead-request/t
 import {
     appendLeadRequestHistory,
     buildLeadRequestHistoryEntry,
+    historyActor,
+    LEAD_REQUEST_HISTORY_TEXT,
 } from './lead-request-history.util';
 
 // Плагины idempotent: extend() повторно — no-op (см. lead-request-history.util).
@@ -66,6 +68,37 @@ export function stampDealAssignedAt(
     if (!name) return false;
     fields[name] = dayjs().tz(timezoneName).format(CRM_DATETIME_FORMAT);
     return true;
+}
+
+/**
+ * СТАРТ ожидания при ПЕРЕДАЧЕ РАБОТЫ: таймер + зеркальная запись в историю
+ * сделки — «ХО передан: A → B» либо «ХО назначен: B» (прежнего нет или это
+ * он же). Имена — из заранее разрезолвленной карты (`UserNameResolver`),
+ * имени нет — id.
+ *
+ * Это единственная точка, где таймер сделки СТАВИТСЯ: передача и есть
+ * момент, когда сделка меняет хозяина и новый обязан её подтвердить.
+ * Снимает таймер только принятие (`LeadRequestAcceptService`), страхует
+ * SLA-крон. Поля таймера нет — не пишем ничего.
+ */
+export function startDealWaitingForAccept(
+    portal: PortalModel,
+    fields: BxRow,
+    dealRow: BxRow,
+    newResponsibleId: number,
+    names?: Readonly<Record<number, string>>,
+): void {
+    if (!stampDealAssignedAt(portal, fields, portal.getTimezone())) return;
+    const previous = Number(dealRow.ASSIGNED_BY_ID) || null;
+    const to = historyActor(names, newResponsibleId);
+    const text =
+        previous && previous !== newResponsibleId
+            ? LEAD_REQUEST_HISTORY_TEXT.transferred(
+                  historyActor(names, previous),
+                  to,
+              )
+            : LEAD_REQUEST_HISTORY_TEXT.assigned(to);
+    appendDealHistory(portal, fields, dealRow, text);
 }
 
 /**

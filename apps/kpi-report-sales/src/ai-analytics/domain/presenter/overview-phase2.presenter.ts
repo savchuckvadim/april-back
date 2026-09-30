@@ -36,6 +36,12 @@ import type {
 import type { OverviewYoySnapshots } from '../loaders/overview-snapshots.loader';
 import { toRecommendations } from './levers.presenter';
 import { buildReadiness, type ReadinessOptions } from './readiness.util';
+import {
+    modelReadinessStageGates,
+    modelReadinessStages,
+    stagesFromSources,
+    type ReadinessStageSources,
+} from './readiness-stages.util';
 import { toStyleProfile } from './style.presenter';
 import { toTrendsBlock } from './trends.presenter';
 import { yoyForRow } from './yoy-rows.presenter';
@@ -114,9 +120,11 @@ export function modelDataQualityFlagged(
 
 /**
  * Всё, что готовность берёт из модели портала: режим β и счётчик до его
- * гейта, окно счётчиков (12 месяцев), вердикт санити-панели и сам факт
- * наличия модели (кап §5.4). Одна функция на обзор и `/settings`, чтобы
- * в одном интерфейсе не было двух разных режимов готовности.
+ * гейта, окно счётчиков (12 месяцев), вердикт санити-панели, сам факт
+ * наличия модели (кап §5.4), с Фазы 4 — источник календаря (хвост 1: нет
+ * поля в старом снапшоте — прежний расчёт по праздникам) и снимок
+ * ступеней L4/L5. Одна функция на обзор и `/settings`, чтобы в одном
+ * интерфейсе не было двух разных режимов готовности.
  */
 export function modelReadinessOptions(
     model: PortalModelView | null | undefined,
@@ -127,13 +135,24 @@ export function modelReadinessOptions(
     | 'modelWindow'
     | 'dataQualityFlagged'
     | 'portalModelPresent'
+    | 'calendarImported'
+    | 'stages'
+    | 'stageGates'
 > {
     const betaSource = AI_BETA_SOURCES.find(
         source => source === model?.betaSource,
     );
+    const calendarSource = model?.readiness?.calendarSource;
+    const stages = modelReadinessStages(model);
+    const stageGates = modelReadinessStageGates(model);
 
     return {
         ...(betaSource === undefined ? {} : { betaSource }),
+        ...(calendarSource === undefined
+            ? {}
+            : { calendarImported: calendarSource !== 'fallback' }),
+        ...(stages === null ? {} : { stages }),
+        ...(stageGates === null ? {} : { stageGates }),
         betaCountdown: model?.betaCountdown ?? null,
         modelWindow: modelReadinessWindow(model),
         dataQualityFlagged: modelDataQualityFlagged(model),
@@ -212,11 +231,13 @@ export function applyPhase2(
  * а без модели остаётся периодом витрины; продажи приходят из финансов
  * (при пустых финансах — из эпизодов прогноза), состав и гипотеза — из
  * настроек портала, режим β, счётчик до его гейта и вердикт качества
- * данных — из модели портала.
+ * данных — из модели портала. Ступени L4/L5: свежие снапшоты с флагами
+ * (`stageSources`), иначе снимок ступеней модели портала.
  */
 export function buildOverviewReadiness(
     sources: OverviewSources,
     now: Date,
+    stageSources?: ReadinessStageSources,
 ): ReadinessDto {
     return buildReadiness(sources.rows, {
         now,
@@ -234,6 +255,14 @@ export function buildOverviewReadiness(
         rosterConfirmedAt: sources.rosterConfirmedAt ?? '',
         hypothesisPairs: sources.hypothesisPairs ?? 0,
         ...modelReadinessOptions(sources.snapshots?.model ?? null),
+        ...(stageSources === undefined
+            ? {}
+            : {
+                  stages: stagesFromSources(stageSources),
+                  ...(stageSources.gates === undefined
+                      ? {}
+                      : { stageGates: stageSources.gates }),
+              }),
         ...(sigmaLlmSourceOf(sources.snapshots?.goldenReport) === undefined
             ? {}
             : {

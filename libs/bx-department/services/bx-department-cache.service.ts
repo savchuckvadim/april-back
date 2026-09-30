@@ -5,9 +5,12 @@ import { BxDepartmentCacheResetResponseDto } from '../dto/bx-department-cache.dt
 
 /**
  * Префиксы ключей кэша либы bx-department.
- * Должны соответствовать ключам в BxDepartmentService (`department_*`),
- * BxDepartmentStructureService (`department_structure_v3_*`)
- * и BxTeamService (`bx_team_*`).
+ * `department` — снимок отдела BxDepartmentService
+ * (`department_{domain}_{MMDD}_{group}_{mode}_v4`); структура
+ * BxDepartmentStructureService строится из него же и своего кэша не держит.
+ * `department_structure_v3` — легаси-ключи структуры: их ещё пишут
+ * приложения, не передеплоенные после перехода на единый снимок, а
+ * паттерн `department_{domain}_*` их не накрывает. `bx_team` — BxTeamService.
  */
 const CACHE_KEY_PREFIXES = [
     'department_structure_v3',
@@ -21,8 +24,8 @@ const DEL_CHUNK_SIZE = 500;
 /**
  * Сброс кэша отделов и команд в Redis: по конкретному домену или по всем
  * порталам сразу. Ключи ищутся через SCAN (не KEYS — он блокирует Redis),
- * пересечения паттернов (`department_*` накрывает и structure-ключи)
- * дедуплицируются перед удалением.
+ * пересечения паттернов (без домена `department_*` накрывает и легаси
+ * structure-ключи) дедуплицируются перед удалением.
  */
 @Injectable()
 export class BxDepartmentCacheService {

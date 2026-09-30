@@ -10,6 +10,8 @@ import { settingsLoaderWith } from './lite-row.fixture';
 export interface SettingsSaveHarness {
     useCase: SettingsSaveUseCase;
     savePortalSettings: jest.Mock;
+    /** Запись согласия на пул (ключи app-settings). */
+    savePool: jest.Mock;
     resetByPattern: jest.Mock;
     create: jest.Mock;
 }
@@ -23,6 +25,7 @@ export function settingsSaveHarness(
     settings: Partial<AiAnalyticsPortalSettings> = {},
 ): SettingsSaveHarness {
     const savePortalSettings = jest.fn().mockResolvedValue(undefined);
+    const savePool = jest.fn().mockResolvedValue(undefined);
     const resetByPattern = jest.fn().mockResolvedValue(2);
     const create = jest.fn().mockResolvedValue({ id: '90210' });
     const auditPort: AiSettingsAuditPort = {
@@ -30,11 +33,11 @@ export function settingsSaveHarness(
     };
     const useCase = new SettingsSaveUseCase(
         settingsLoaderWith(settings),
-        { savePortalSettings } as never,
+        { savePortalSettings, savePool } as never,
         { resetByPattern } as never,
         new AiAnalyticsSettingsAuditStore(auditPort as never),
     );
-    return { useCase, savePortalSettings, resetByPattern, create };
+    return { useCase, savePortalSettings, savePool, resetByPattern, create };
 }
 
 /** Аргумент последнего вызова мока по индексу (calls типизированы как any). */

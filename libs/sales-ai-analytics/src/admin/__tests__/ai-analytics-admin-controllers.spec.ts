@@ -14,6 +14,10 @@ import {
 import { AiAnalyticsAuditAdminController } from '../controllers/audit.admin.controller';
 import { AiAnalyticsFeedbackCostAdminController } from '../controllers/feedback-cost.admin.controller';
 import { AiAnalyticsGoldenSetAdminController } from '../controllers/golden-set.admin.controller';
+import {
+    AI_ANALYTICS_PHASE4_ADMIN_ROUTES,
+    AiAnalyticsPhase4AdminController,
+} from '../controllers/phase4.admin.controller';
 import { AiAnalyticsPipelineAdminController } from '../controllers/pipeline.admin.controller';
 import { AiAnalyticsRetentionAdminController } from '../controllers/retention.admin.controller';
 import { SalesAiAnalyticsAdminModule } from '../sales-ai-analytics-admin.module';
@@ -22,6 +26,7 @@ import { SalesAiAnalyticsOpsModule } from '../sales-ai-analytics-ops.module';
 import { SalesAiAnalyticsProbeModule } from '../sales-ai-analytics-probe.module';
 import { SalesAiAnalyticsRetentionCronModule } from '../sales-ai-analytics-retention-cron.module';
 import { AI_ANALYTICS_ETL_STATUS_DEFAULTS } from '../dto/ai-analytics-etl-status-query.dto';
+import { AI_ANALYTICS_BACKTEST_HISTORY } from '../dto/ai-analytics-phase4-query.dto';
 import { AI_ANALYTICS_RETENTION_DEFAULTS } from '../services/ai-analytics-retention.service';
 import { GOLDEN_SET_MESSAGES } from '../services/ai-analytics-golden-set.service';
 
@@ -31,6 +36,7 @@ const ADMIN_CONTROLLERS = [
     AiAnalyticsRetentionAdminController,
     AiAnalyticsFeedbackCostAdminController,
     AiAnalyticsGoldenSetAdminController,
+    AiAnalyticsPhase4AdminController,
 ];
 
 const metadataOf = (key: string, target: unknown): unknown[] =>
@@ -119,6 +125,27 @@ describe('админ-контроллеры AI-аналитики', () => {
         expect(Reflect.getMetadata(METHOD_METADATA, run)).toBe(
             RequestMethod.POST,
         );
+    });
+});
+
+describe('роуты Фазы 4: pool-status, forecast-backtest, recommendation-effect, quality-link', () => {
+    it.each([
+        ['poolStatus', 'pool-status'],
+        ['forecastBacktest', 'forecast-backtest'],
+        ['recommendationEffect', 'recommendation-effect'],
+        ['qualityLink', 'quality-link'],
+    ])('%s → GET %s', (method, path) => {
+        const handler = handlerOf(AiAnalyticsPhase4AdminController, method);
+        expect(Reflect.getMetadata(PATH_METADATA, handler)).toBe(path);
+        expect(Reflect.getMetadata(METHOD_METADATA, handler)).toBe(
+            RequestMethod.GET,
+        );
+    });
+
+    it('маршруты — из справочника, без повторов', () => {
+        const paths = Object.values(AI_ANALYTICS_PHASE4_ADMIN_ROUTES);
+        expect(new Set(paths).size).toBe(paths.length);
+        expect(paths).toHaveLength(4);
     });
 });
 
@@ -233,6 +260,39 @@ describe('делегирование контроллеров в сервисы'
             dryRun: false,
             sampleLimit: 5,
         });
+    });
+
+    it('ручки Фазы 4 делегируют в сервис; months по умолчанию 6, явный — как есть', async () => {
+        const phase4 = {
+            poolStatus: jest
+                .fn()
+                .mockResolvedValue({ domain: 'd', latest: null }),
+            forecastBacktest: jest.fn().mockResolvedValue({}),
+            recommendationEffect: jest.fn().mockResolvedValue({}),
+            qualityLink: jest.fn().mockResolvedValue({}),
+        };
+        const controller = new AiAnalyticsPhase4AdminController(
+            phase4 as never,
+        );
+
+        await expect(controller.poolStatus({ domain: 'd' })).resolves.toEqual({
+            domain: 'd',
+            latest: null,
+        });
+        await controller.recommendationEffect({ domain: 'd' });
+        await controller.qualityLink({ domain: 'd' });
+        await controller.forecastBacktest({ domain: 'd' });
+        await controller.forecastBacktest({ domain: 'd', months: 12 });
+
+        expect(phase4.poolStatus).toHaveBeenCalledWith('d');
+        expect(phase4.recommendationEffect).toHaveBeenCalledWith('d');
+        expect(phase4.qualityLink).toHaveBeenCalledWith('d');
+        expect(phase4.forecastBacktest).toHaveBeenNthCalledWith(
+            1,
+            'd',
+            AI_ANALYTICS_BACKTEST_HISTORY.months,
+        );
+        expect(phase4.forecastBacktest).toHaveBeenLastCalledWith('d', 12);
     });
 
     it('golden-set/run передаёт домен и квоту сервису и отдаёт его ответ', async () => {

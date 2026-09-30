@@ -21,7 +21,11 @@ import { dealAssignedAtName } from '../../shared/lead-request/deal-work-timer.ut
 import {
     appendLeadRequestHistory,
     buildLeadRequestHistoryEntry,
+    historyActor,
+    LEAD_REQUEST_HISTORY_TEXT,
+    LeadRequestHistoryActor,
 } from '../../shared/lead-request/lead-request-history.util';
+import { UserNameResolver } from '../../shared/lead-request/user-name.resolver';
 import { EnumLeadRequestFieldCode } from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
 import { LeadRequestAcceptService } from '../services/lead-request-accept.service';
 
@@ -97,6 +101,8 @@ export class LeadRequestSlaService {
         private readonly redisService: RedisService,
         /** Кто работает сейчас — уволенным SLA работу не передаёт. */
         private readonly activeStaff: ActiveStaffService,
+        /** Имя непринявшего — в историю и руководителю вместо id. */
+        private readonly userNames: UserNameResolver,
     ) {}
 
     async runForDomain(
@@ -703,6 +709,14 @@ export class LeadRequestSlaService {
             return;
         }
 
+        // Имя непринявшего (в историю и руководителю); не отдали — id.
+        const actor = historyActor(
+            await this.userNames.resolve(domain, bitrix, [
+                prevResponsible ?? 0,
+            ]),
+            prevResponsible,
+        );
+
         /*
          * 1. Причина передачи в историю И ТАЙМЕР — синхронно, одной записью,
          *    ДО вызова хука.
@@ -724,7 +738,7 @@ export class LeadRequestSlaService {
             patch[historyBitrixId] = appendLeadRequestHistory(
                 lead[historyBitrixId],
                 buildLeadRequestHistoryEntry(
-                    `Не принял за ${minutes} мин: ${prevResponsible ?? '—'}`,
+                    LEAD_REQUEST_HISTORY_TEXT.notAccepted(minutes, actor),
                     portal.getTimezone(),
                 ),
             );
@@ -795,7 +809,7 @@ export class LeadRequestSlaService {
             lead,
             leadId,
             minutes,
-            prevResponsible,
+            actor,
             departmentHint?.headUserIds ?? [],
             result,
         );
@@ -922,7 +936,7 @@ export class LeadRequestSlaService {
         lead: BxRow,
         leadId: number,
         minutes: number,
-        prevResponsible: number | null,
+        responsible: LeadRequestHistoryActor,
         headUserIds: number[],
         result: LeadRequestSlaRunResult,
     ): Promise<void> {
@@ -936,7 +950,7 @@ export class LeadRequestSlaService {
             typeof lead.TITLE === 'string' ? lead.TITLE : `Лид ${leadId}`;
         const message =
             `Заявка «${title}» не принята сотрудником за ${minutes} мин` +
-            (prevResponsible ? ` (ответственный: ${prevResponsible})` : '') +
+            (responsible ? ` (ответственный: ${responsible})` : '') +
             ` — передана другому. [URL=https://${domain}/crm/lead/details/${leadId}/]Открыть лид[/URL]`;
         // Все руководители отдела (руководитель + заместители): сбой
         // одного адресата не отменяет остальных.

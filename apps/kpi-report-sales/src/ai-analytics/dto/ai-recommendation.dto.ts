@@ -86,4 +86,35 @@ export class AiRecommendationDto {
         example: 'quality-weak-section',
     })
     ruleCode: string;
+
+    @ApiProperty({
+        description:
+            'Устойчивый ключ совета (рычаг, правило, тип звонка, раздел, ' +
+            'категория): один и тот же совет каждую ночь получает один ключ. ' +
+            'Кнопка «Сделано» пишет обратную связь kind = ' +
+            'recommendation_done с объектом lever:{managerId}:{key}.',
+        type: String,
+        example: 'quality:quality-weak-section:presentation:PRICE:',
+    })
+    key: string;
+
+    @ApiProperty({
+        description:
+            'Совет отмечен выполненным («Сделано») за период обзора — ' +
+            'руководителем или самим менеджером.',
+        type: Boolean,
+        example: false,
+    })
+    done: boolean;
+
+    @ApiProperty({
+        description:
+            'День первой выдачи совета в периоде обзора (YYYY-MM-DD, TZ ' +
+            'портала) по журналу советов; null — выдача в периоде не ' +
+            'записана.',
+        type: String,
+        nullable: true,
+        example: '2026-09-08',
+    })
+    issuedAt: string | null;
 }

@@ -26,6 +26,7 @@ import { PortalModelUseCase } from '../domain/use-cases/portal-model.use-case';
 import {
     busNumber,
     chainEstimandOf,
+    phase4BusFactsOf,
     qualityGroupsOf,
     rosterOf,
     rubricVersionOf,
@@ -56,6 +57,8 @@ export interface PortalModelBusEntry {
  * один читатель на форму писателя `EpisodesChain.sharePct` (аудит B1).
  * Санити-отчёт — из ключа `sanity` того же прогона (панель идёт перед
  * моделью в месячном ритме); нет отчёта — `null`, старый не тянется.
+ * Фаза 4: связь качества и пул — из ключей `qualityLink` и `pool`,
+ * источник календаря — из контекста прогона (хвост 1).
  */
 export function portalModelFacts(
     ctx: AiPipelineStepContext,
@@ -77,6 +80,13 @@ export function portalModelFacts(
         qualityGroups: qualityGroupsOf(rows),
         roster: rosterOf(bus.get(AI_PIPELINE_BUS_KEYS.passport)),
         rubricVersion: rubricVersionOf(rows),
+        ...phase4BusFactsOf(
+            bus.get(AI_PIPELINE_BUS_KEYS.qualityLink),
+            bus.get(AI_PIPELINE_BUS_KEYS.pool),
+        ),
+        ...(ctx.calendarSource === undefined
+            ? {}
+            : { calendarSource: ctx.calendarSource }),
         registry: ctx.registry,
         paramsVersion: ctx.paramsVersion,
         comparableFrom: ctx.comparableFrom,

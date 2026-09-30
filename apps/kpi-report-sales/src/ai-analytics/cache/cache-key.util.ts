@@ -99,7 +99,7 @@ export function agendaTtlSeconds(now: Date, timeZone: string): number {
  * (`riskCalls[].link`) ссылка на карточку разбора. Ключ = jobId =
  * requestKey WS-событий, поэтому версия доезжает до фронта сама.
  */
-const OVERVIEW_KEY_VERSION = 'v3';
+const OVERVIEW_KEY_VERSION = 'v4';
 
 export function buildOverviewKey(
     domain: string,

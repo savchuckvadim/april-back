@@ -33,6 +33,12 @@ export const AI_PIPELINE_JOB_OPTIONS = {
 } as const;
 
 /**
+ * Причина пропуска необязательного (теневого) шага, упавшего с исключением:
+ * в журнал прогона уходит `<код>: <текст ошибки>`, прогон продолжается.
+ */
+export const AI_PIPELINE_OPTIONAL_STEP_FAILED = 'optional-step-failed' as const;
+
+/**
  * Backfill (владелец механики — вторая половина потока 12): не больше трёх
  * месяцев за ночь, только в окне 22:00–06:00 по TZ портала, недели режутся
  * лимитом. Вне окна план прогона пуст с причиной.
@@ -147,7 +153,11 @@ export type AiPipelineJournalStatus =
  * plans          | plans         | PlanSnapshot                            | finance
  * style          | style         | профили стиля по менеджерам             | finance
  * sanity         | sanity        | AiSanityReport (+ readiness)            | portal-model (поле sanity, тот же monthly-прогон)
- * portalModel    | portal-model  | PortalModelBusEntry                     | forecast
+ * portalModel    | portal-model  | PortalModelBusEntry                     | forecast, department-forecast
+ * betaSample     | quality-link  | BetaSample (lib)                        | никто (главный потребитель — сам шаг; для отладки)
+ * qualityLink    | quality-link  | QualityLinkBusEntry {id, payload: QualityLinkSnapshot} | portal-model
+ * pool           | pool          | PoolBusEntry {id, payload: PoolSnapshot} | portal-model
+ * forecastDay    | forecast      | ForecastDayBusEntry {day, monthKey, modelSnapshotId, managers} | department-forecast, recommendation-log
  *
  * Экспозиции менеджер-месяцев в шине НЕТ: санити-панель читает её из
  * нагрузок снапшотов `manager-month` (`payload.exposure.daysSource`),
@@ -178,6 +188,20 @@ export const AI_PIPELINE_BUS_KEYS = {
     portalModel: 'portalModel',
     /** Профили стиля менеджеров за месячное окно (шаг стиля). */
     style: 'style',
+    /**
+     * Фаза 4. Выборка «звонок-триггер → ближний исход» (пишет quality-link,
+     * форма BetaSample библиотеки; внешних читателей нет).
+     */
+    betaSample: 'betaSample',
+    /** Фаза 4. Оценка β месяца (пишет quality-link; читает portal-model). */
+    qualityLink: 'qualityLink',
+    /** Фаза 4. Пул порталов (пишет pool; читает portal-model). */
+    pool: 'pool',
+    /**
+     * Фаза 4. Прогнозы дня по менеджерам (пишет forecast; читают
+     * department-forecast и recommendation-log).
+     */
+    forecastDay: 'forecastDay',
 } as const;
 export type AiPipelineBusKey =
     (typeof AI_PIPELINE_BUS_KEYS)[keyof typeof AI_PIPELINE_BUS_KEYS];

@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { PortalSessionProtected } from '@lib/auth';
 import {
     AI_ANALYTICS_ROUTE_PREFIX,
     AI_ANALYTICS_SWAGGER_TAG,
@@ -20,6 +21,8 @@ import { AiAnalyticsAboutUseCase } from './ai-analytics-about.use-case';
  * менеджер — только при ai_analytics_self_view_enabled, иначе 403.
  * Менеджеру в self_view блок отдаётся целиком с признаком `selfView`
  * (B13, решение 22.09.2026) — фронт по нему сворачивает детали параметров.
+ * Чтение защищено сессией портала (`@PortalSessionProtected`), как у
+ * остальных читающих ручек витрины.
  */
 @ApiTags(AI_ANALYTICS_SWAGGER_TAG)
 @Controller(AI_ANALYTICS_ROUTE_PREFIX)
@@ -29,6 +32,7 @@ export class AiAnalyticsAboutController {
         private readonly about: AiAnalyticsAboutUseCase,
     ) {}
 
+    @PortalSessionProtected()
     @Post(AI_ABOUT_ROUTE)
     @HttpCode(200)
     @ApiOperation({
@@ -40,8 +44,11 @@ export class AiAnalyticsAboutController {
             'стажа, менеджер, дефолт), версия набора параметров, ' +
             'готовность с причинами, κ / φ / λ с источником ' +
             '(estimated | configured | hybrid), betaSource, трактовка ' +
-            'рёбер, comparableFrom и санити-панель. Модели портала ещё нет — ' +
-            'model = null с причиной в modelReason, параметры остаются.',
+            'рёбер, comparableFrom и санити-панель; с Фазы 4 — связь ' +
+            'качества с результатом, точность прогноза, пул порталов и ' +
+            'эффект советов (каждая секция null, пока данных нет). Модели ' +
+            'портала ещё нет — model = null с причиной в modelReason, ' +
+            'параметры остаются.',
     })
     @ApiBody({ type: AiAboutRequestDto })
     @ApiOkResponse({

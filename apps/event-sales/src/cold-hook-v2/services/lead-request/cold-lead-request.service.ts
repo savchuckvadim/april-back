@@ -8,6 +8,7 @@ import {
 import {
     appendLeadRequestHistory,
     buildLeadRequestHistoryEntry,
+    historyActor,
     LEAD_REQUEST_HISTORY_TEXT,
 } from '../../../shared/lead-request/lead-request-history.util';
 import { isLeadStatusBefore } from '../../../shared/lead-request/lead-status-order.util';
@@ -201,7 +202,7 @@ export class ColdLeadRequestV2Service {
         names: Record<number, string>,
         what: { transferred: boolean; accepted: boolean },
     ): unknown {
-        const actor = (id: number): string | number => names[id] ?? id;
+        const actor = (id: number) => historyActor(names, id);
         const tz = this.portal.getTimezone();
         let history = lead.row[historyName];
         if (what.transferred && lead.responsibleId) {

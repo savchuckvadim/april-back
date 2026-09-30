@@ -30,6 +30,7 @@ export const AI_ABOUT_ENDPOINTS = [
     'brief',
     'manager/style',
     'dossier',
+    'forecast',
 ] as const;
 export type AiAboutEndpoint = (typeof AI_ABOUT_ENDPOINTS)[number];
 

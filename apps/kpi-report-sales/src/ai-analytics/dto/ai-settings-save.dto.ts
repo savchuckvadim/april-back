@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
     ArrayMaxSize,
     IsArray,
+    IsBoolean,
     IsIn,
     IsInt,
     IsOptional,
@@ -62,11 +63,31 @@ export class AiManagerLevelDto {
 }
 
 /**
+ * Согласие портала на обезличенный пул порталов (Фаза 4, план §4.11):
+ * пишется в ключи настроек ai_analytics_pool_opt_in и
+ * ai_analytics_pool_consent_at (дата согласия — день портала при первом
+ * включении, повторное включение её не сдвигает; пусто при отзыве).
+ * Сравнимую историю не рвёт.
+ */
+export class AiPoolConsentDto {
+    @ApiProperty({
+        description:
+            'Портал согласен передавать обезличенные агрегаты (нормы, ' +
+            'сезонность, лаги — без записей разговоров и имён) в общий пул ' +
+            'порталов. false — согласие отозвано, одно-портальный режим.',
+        type: Boolean,
+        example: true,
+    })
+    @IsBoolean()
+    optIn: boolean;
+}
+
+/**
  * Сохранение настроек витрины (план 6.2, только cup|op). Фаза 2: уровни,
  * цели, отсутствия, параметры менеджеров, определения событий, журнал,
  * гиперпараметры модели, потолки оценивания, гипотеза и подтверждение
- * ростера. Каждый переданный блок заменяет предыдущее значение ключа
- * целиком; **не переданный блок не трогается**.
+ * ростера; Фаза 4 — согласие на пул. Каждый переданный блок заменяет
+ * предыдущее значение ключа целиком; **не переданный блок не трогается**.
  */
 export class AiSettingsSaveRequestDto extends AiRequestBaseDto {
     @ApiPropertyOptional({
@@ -185,6 +206,20 @@ export class AiSettingsSaveRequestDto extends AiRequestBaseDto {
     @IsOptional()
     @IsString()
     rosterConfirmedAt?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Согласие на обезличенный пул порталов. Передано — ' +
+            'перезаписывается вместе с датой согласия (сегодня при ' +
+            'первом включении, повторное включение дату не сдвигает; ' +
+            'пусто при отзыве); не передано — остаётся прежним. ' +
+            'Сравнимую историю не рвёт.',
+        type: AiPoolConsentDto,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => AiPoolConsentDto)
+    pool?: AiPoolConsentDto;
 }
 
 export class AiSettingsSaveResultDto {

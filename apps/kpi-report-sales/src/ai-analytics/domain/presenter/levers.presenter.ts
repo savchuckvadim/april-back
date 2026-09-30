@@ -14,6 +14,7 @@ import {
     EVIDENCE_DEFAULTS,
     LEVER_DEFAULTS,
     type LeverCandidate,
+    leverKeyOf,
 } from '@lib/sales-ai-analytics';
 import {
     AI_ANALYTICS_EVIDENCE_LEVELS,
@@ -21,8 +22,13 @@ import {
     AiAnalyticsEvidenceLevel,
     AiAnalyticsLever,
 } from '../../constants/ai-overview.const';
+import type { AiManagerRowDto } from '../../dto/ai-manager-row.dto';
 import { AiRecommendationDto } from '../../dto/ai-recommendation.dto';
 import type { ForecastView } from '../assembler/overview-model.types';
+import {
+    type LeverFeedbackMarks,
+    leverFeedbackObject,
+} from '../use-cases/feedback-lever.util';
 
 export type { ForecastView };
 
@@ -59,7 +65,13 @@ function toRecommendation(
     if (!isLever(candidate.lever) || typeof candidate.ruleCode !== 'string') {
         return [];
     }
+    // План §4.10: совет по качеству с числом эффекта — только с уровня, на
+    // котором совет разрешён (E2). Ниже (E1 — связь в данных одного
+    // портала) остаётся наблюдение без обещания «+N продаж».
+    const effectHidden =
+        candidate.lever === 'quality' && candidate.adviceAllowed !== true;
     const deltaSales =
+        !effectHidden &&
         typeof candidate.deltaSales === 'number' &&
         Number.isFinite(candidate.deltaSales)
             ? candidate.deltaSales
@@ -81,6 +93,17 @@ function toRecommendation(
                 : 'E0',
             basis: basisOf(candidate.basis),
             ruleCode: candidate.ruleCode,
+            key: leverKeyOf({
+                lever: candidate.lever,
+                ruleCode: candidate.ruleCode,
+                callType,
+                section,
+                category,
+            }),
+            // Отметки «Сделано» и день выдачи ставит applyLeverMarks по
+            // обратной связи периода — снапшот прогноза их не знает.
+            done: false,
+            issuedAt: null,
         },
     ];
 }
@@ -105,4 +128,34 @@ export function toRecommendations(
             toRecommendation((candidate ?? {}) as Partial<LeverCandidate>),
         )
         .slice(0, Math.max(0, options.max ?? LEVER_DEFAULTS.max));
+}
+
+/**
+ * Отметки обратной связи периода на советах строк: «Сделано» и день
+ * первой выдачи по объекту `lever:{managerId}:{key}`. Строки не мутируются
+ * — возвращаются копии; строки без советов остаются как есть.
+ */
+export function applyLeverMarks(
+    rows: readonly AiManagerRowDto[],
+    marks: LeverFeedbackMarks,
+): AiManagerRowDto[] {
+    if (marks.done.size === 0 && marks.issuedAt.size === 0) return [...rows];
+    return rows.map(row =>
+        row.recommendations.length === 0
+            ? row
+            : {
+                  ...row,
+                  recommendations: row.recommendations.map(item => {
+                      const object = leverFeedbackObject(
+                          row.managerId,
+                          item.key,
+                      );
+                      return {
+                          ...item,
+                          done: marks.done.has(object),
+                          issuedAt: marks.issuedAt.get(object) ?? null,
+                      };
+                  }),
+              },
+    );
 }

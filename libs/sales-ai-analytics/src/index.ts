@@ -101,6 +101,7 @@ export type {
 export * from './params';
 export * from './contracts/snapshot-kinds.const';
 export * from './contracts/snapshot-descriptors.const';
+export * from './contracts/snapshot.phase4.types';
 export * from './model/norms.index';
 export * from './model/quality.index';
 
@@ -129,6 +130,8 @@ export * from './model/evidence';
 export * from './model/readiness';
 export * from './model/readiness-confidence';
 export * from './model/readiness-window';
+// Фаза 4: ступени «прогноз» (L4) и «рекомендации» (L5) поверх лестницы.
+export * from './model/readiness-phase4';
 export * from './contracts/ai-brief.contract';
 export * from './contracts/ai-brief.schema';
 export * from './contracts/ai-brief.rules';
@@ -361,3 +364,6 @@ export type {
     PlanFactTargets,
     PlanFactValues,
 } from './model/plan-fact';
+
+// Фаза 4: прогноз, пул, эффект советов, связь качества — см. model/phase4.index.ts.
+export * from './model/phase4.index';

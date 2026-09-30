@@ -27,6 +27,7 @@ import type {
     PortalMonthEdge,
 } from '../assembler/portal-model.types';
 import { AiAnalyticsSnapshotStore } from '../../store/ai-analytics-snapshot.store';
+import { latestPortalByPeriod } from '../../store/snapshot-latest-period.util';
 
 /** Записанная модель портала: id записи `ais` и её нагрузка. */
 export interface PortalModelRecord {
@@ -155,15 +156,29 @@ export class PortalModelLoader {
     }
 
     /**
-     * Последняя записанная модель портала: её читают прогноз (через
-     * `meta.modelSnapshotId`) и деградация месячного шага.
+     * Модель портала для потребителей. С `before` — модель с самым поздним
+     * месяцем строго раньше `before` (прогноз дня и отдела берут последний
+     * закрытый месяц: после догона истории последняя ЗАПИСАННАЯ модель —
+     * самый старый месяц). Без `before` — последняя записанная (деградация
+     * месячного шага).
      */
-    async latestModel(domain: string): Promise<PortalModelRecord | null> {
-        const record = await this.snapshots.latest(
-            domain,
-            AI_ANALYTICS_SNAPSHOT_TYPE.portalModel,
-            null,
-        );
+    async latestModel(
+        domain: string,
+        before?: string,
+    ): Promise<PortalModelRecord | null> {
+        const record =
+            before === undefined
+                ? await this.snapshots.latest(
+                      domain,
+                      AI_ANALYTICS_SNAPSHOT_TYPE.portalModel,
+                      null,
+                  )
+                : await latestPortalByPeriod(
+                      this.snapshots,
+                      domain,
+                      AI_ANALYTICS_SNAPSHOT_TYPE.portalModel,
+                      before,
+                  );
 
         return record === null ? null : toModelRecord(record);
     }

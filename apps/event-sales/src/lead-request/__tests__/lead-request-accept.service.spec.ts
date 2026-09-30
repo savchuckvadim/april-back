@@ -122,13 +122,24 @@ const makePbx = (
 const ASSIGNED_ENTRY = '01.08.2026 10:00 — ХО назначен: 5';
 const ACCEPTED_ENTRY = '01.08.2026 10:30 — Заявка принята в работу: 5';
 
+/**
+ * UserNameResolver-заглушка. По умолчанию имена не разрезолвились — в
+ * историю уходит id (страховка резолвера), как в тестах ниже.
+ */
+const noNames = (names: Record<number, string> = {}) => ({
+    resolve: jest.fn().mockResolvedValue(names),
+});
+
 describe('LeadRequestAcceptService', () => {
     it('принятие: стадия, site-метки, firstprepare от назначения, история', async () => {
         const { pbx, update } = makePbx({
             ID: '42',
             UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
         });
-        const service = new LeadRequestAcceptService(pbx as never);
+        const service = new LeadRequestAcceptService(
+            pbx as never,
+            noNames() as never,
+        );
 
         const result = await service.accept({
             domain: 'd.b24.ru',
@@ -166,7 +177,10 @@ describe('LeadRequestAcceptService', () => {
             UF_CRM_OP_LEAD_ASSIGNED_AT: '01.08.2026 10:00:00',
             UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
         });
-        const service = new LeadRequestAcceptService(pbx as never);
+        const service = new LeadRequestAcceptService(
+            pbx as never,
+            noNames() as never,
+        );
 
         await service.accept({ domain: 'd.b24.ru', leadId: 42, userId: 5 });
 
@@ -188,7 +202,10 @@ describe('LeadRequestAcceptService', () => {
             },
             { ID: '1024', UF_CRM_OP_MHISTORY: ['старое событие сделки'] },
         );
-        const service = new LeadRequestAcceptService(pbx as never);
+        const service = new LeadRequestAcceptService(
+            pbx as never,
+            noNames() as never,
+        );
 
         await service.accept({ domain: 'd.b24.ru', leadId: 42, userId: 5 });
 
@@ -211,7 +228,10 @@ describe('LeadRequestAcceptService', () => {
             UF_CRM_TO_BASE_SALES: 'D_1024',
             UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
         });
-        const service = new LeadRequestAcceptService(pbx as never);
+        const service = new LeadRequestAcceptService(
+            pbx as never,
+            noNames() as never,
+        );
 
         await service.accept({ domain: 'd.b24.ru', leadId: 42, userId: 5 });
 
@@ -228,7 +248,10 @@ describe('LeadRequestAcceptService', () => {
                 ACCEPTED_ENTRY,
             ],
         });
-        const service = new LeadRequestAcceptService(pbx as never);
+        const service = new LeadRequestAcceptService(
+            pbx as never,
+            noNames() as never,
+        );
 
         const result = await service.accept({ domain: 'd.b24.ru', leadId: 42 });
         expect(result.already).toBe(true);
@@ -245,7 +268,10 @@ describe('LeadRequestAcceptService', () => {
             },
             { ID: '1024' },
         );
-        const service = new LeadRequestAcceptService(pbx as never);
+        const service = new LeadRequestAcceptService(
+            pbx as never,
+            noNames() as never,
+        );
 
         await service.accept({ domain: 'd.b24.ru', leadId: 42, userId: 7 });
 
@@ -269,7 +295,10 @@ describe('LeadRequestAcceptService', () => {
                 ACCEPTED_ENTRY,
             ],
         });
-        const service = new LeadRequestAcceptService(pbx as never);
+        const service = new LeadRequestAcceptService(
+            pbx as never,
+            noNames() as never,
+        );
 
         const result = await service.accept({
             domain: 'd.b24.ru',
@@ -293,7 +322,10 @@ describe('LeadRequestAcceptService', () => {
                 transferred,
             ],
         });
-        const service = new LeadRequestAcceptService(pbx as never);
+        const service = new LeadRequestAcceptService(
+            pbx as never,
+            noNames() as never,
+        );
 
         const result = await service.accept({
             domain: 'd.b24.ru',
@@ -310,7 +342,10 @@ describe('LeadRequestAcceptService', () => {
             UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
             UF_CRM_OP_LEAD_FIRSTPREPARE_LONG: 100,
         });
-        const service = new LeadRequestAcceptService(pbx as never);
+        const service = new LeadRequestAcceptService(
+            pbx as never,
+            noNames() as never,
+        );
 
         const result = await service.accept({ domain: 'd.b24.ru', leadId: 42 });
         expect(result.firstprepareSeconds).toBeNull();
@@ -335,7 +370,10 @@ describe('LeadRequestAcceptService — менеджер по продажам', 
             },
             { ID: '1024' },
         );
-        const service = new LeadRequestAcceptService(pbx as never);
+        const service = new LeadRequestAcceptService(
+            pbx as never,
+            noNames() as never,
+        );
 
         await service.accept({ domain: 'd.b24.ru', leadId: 42, userId: 7 });
 
@@ -344,22 +382,25 @@ describe('LeadRequestAcceptService — менеджер по продажам', 
     });
 
     it('без userId менеджером становится ответственный лида (вебхук робота)', () => {
-        const plan = new LeadRequestAcceptService(null as never).plan(
-            makePortal() as never,
-            {
-                ID: '42',
-                ASSIGNED_BY_ID: '5',
-                UF_CRM_TO_BASE_SALES: 'D_1024',
-                UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
-            },
-        );
+        const plan = new LeadRequestAcceptService(
+            null as never,
+            null as never,
+        ).plan(makePortal() as never, {
+            ID: '42',
+            ASSIGNED_BY_ID: '5',
+            UF_CRM_TO_BASE_SALES: 'D_1024',
+            UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
+        });
 
         expect(plan.fields.UF_CRM_MANAGER_OP).toBe(5);
         expect(plan.dealUpdate?.fields.UF_CRM_MANAGER_OP).toBe(5);
     });
 
     it('принятие сделки без лида тоже ставит менеджера', () => {
-        const plan = new LeadRequestAcceptService(null as never).planDealOnly(
+        const plan = new LeadRequestAcceptService(
+            null as never,
+            null as never,
+        ).planDealOnly(
             makePortal() as never,
             1024,
             {
@@ -381,7 +422,10 @@ describe('LeadRequestAcceptService — менеджер по продажам', 
                     ? undefined
                     : makePortal().getEntityFieldByCode(entity, code),
         };
-        const plan = new LeadRequestAcceptService(null as never).plan(
+        const plan = new LeadRequestAcceptService(
+            null as never,
+            null as never,
+        ).plan(
             portal as never,
             {
                 ID: '42',
@@ -397,7 +441,10 @@ describe('LeadRequestAcceptService — менеджер по продажам', 
     });
 
     it('повтор после принятия — менеджер не переписывается', () => {
-        const plan = new LeadRequestAcceptService(null as never).plan(
+        const plan = new LeadRequestAcceptService(
+            null as never,
+            null as never,
+        ).plan(
             makePortal() as never,
             {
                 ID: '42',
@@ -411,6 +458,134 @@ describe('LeadRequestAcceptService — менеджер по продажам', 
 
         expect(plan.already).toBe(true);
         expect(plan.fields).toEqual({});
+    });
+});
+
+/*
+ * История читается людьми: «Заявка принята в работу: Вадим Савчук», а не
+ * голый id (16.09.2026 в истории стояло «…: 447»). Имена резолвятся ДО
+ * плана — он чистый — и до первой записи.
+ */
+describe('LeadRequestAcceptService — имена в истории', () => {
+    it('лид: имя принявшего в истории лида и сделки, resolve до записи', async () => {
+        const { pbx, update, dealUpdate } = makePbx(
+            {
+                ID: '42',
+                ASSIGNED_BY_ID: '5',
+                UF_CRM_TO_BASE_SALES: 'D_1024',
+                UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
+            },
+            { ID: '1024', ASSIGNED_BY_ID: '7', UF_CRM_OP_MHISTORY: [] },
+        );
+        const names = noNames({ 7: 'Иван Петров' });
+        const service = new LeadRequestAcceptService(
+            pbx as never,
+            names as never,
+        );
+
+        // Робот без userId: принял ответственный СДЕЛКИ (7), не лида (5).
+        await service.accept({ domain: 'd.b24.ru', leadId: 42 });
+
+        // Кандидаты в принявшие — все: сделка и лид (userId не пришёл).
+        expect(names.resolve).toHaveBeenCalledWith(
+            'd.b24.ru',
+            expect.anything(),
+            [7, 5],
+        );
+        expect(names.resolve.mock.invocationCallOrder[0]).toBeLessThan(
+            update.mock.invocationCallOrder[0],
+        );
+        const leadHistory = update.mock.calls[0][1]
+            .UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
+        expect(leadHistory[1]).toContain(
+            'Заявка принята в работу: Иван Петров',
+        );
+        const dealHistory = dealUpdate.mock.calls[0][1]
+            .UF_CRM_OP_MHISTORY as string[];
+        expect(dealHistory.at(-1)).toContain(
+            'Заявка принята в работу: Иван Петров',
+        );
+        // В поля «кто принял» уходит id, имя — только в текст истории.
+        expect(update.mock.calls[0][1].UF_CRM_OP_LEAD_ACCEPTED_BY).toBe(7);
+    });
+
+    it('кнопка UI: явный userId первым в списке имён', async () => {
+        const { pbx, update } = makePbx({
+            ID: '42',
+            ASSIGNED_BY_ID: '5',
+            UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
+        });
+        const names = noNames({ 9: 'Саломе Давитадзе' });
+        const service = new LeadRequestAcceptService(
+            pbx as never,
+            names as never,
+        );
+
+        await service.accept({ domain: 'd.b24.ru', leadId: 42, userId: 9 });
+
+        expect(names.resolve).toHaveBeenCalledWith(
+            'd.b24.ru',
+            expect.anything(),
+            [9, 5],
+        );
+        const history = update.mock.calls[0][1]
+            .UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
+        expect(history[1]).toContain(
+            'Заявка принята в работу: Саломе Давитадзе',
+        );
+    });
+
+    it('сделка без лида: имя в истории сделки, resolve до записи', async () => {
+        const { pbx, dealUpdate } = makePbx(
+            { ID: '42' },
+            {
+                ID: '1024',
+                ASSIGNED_BY_ID: '8',
+                UF_CRM_OP_LEAD_ASSIGNED_AT: '10.08.2026 10:00:00',
+                UF_CRM_OP_MHISTORY: ['10.08.2026 10:00 — ХО передан: 5 → 8'],
+            },
+        );
+        const names = noNames({ 8: 'Иван Петров' });
+        const service = new LeadRequestAcceptService(
+            pbx as never,
+            names as never,
+        );
+
+        const result = await service.accept({
+            domain: 'd.b24.ru',
+            dealId: 1024,
+        });
+
+        expect(result.already).toBe(false);
+        expect(names.resolve).toHaveBeenCalledWith(
+            'd.b24.ru',
+            expect.anything(),
+            [8],
+        );
+        expect(names.resolve.mock.invocationCallOrder[0]).toBeLessThan(
+            dealUpdate.mock.invocationCallOrder[0],
+        );
+        const [dealId, fields] = dealUpdate.mock.calls[0];
+        expect(dealId).toBe(1024);
+        const history = fields.UF_CRM_OP_MHISTORY as string[];
+        expect(history.at(-1)).toContain(
+            'Заявка принята в работу: Иван Петров',
+        );
+    });
+
+    it('план без карты имён (другие вызывающие) — id, как раньше', () => {
+        const plan = new LeadRequestAcceptService(
+            null as never,
+            null as never,
+        ).plan(makePortal() as never, {
+            ID: '42',
+            ASSIGNED_BY_ID: '5',
+            UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
+        });
+
+        const history = plan.fields
+            .UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
+        expect(history[1]).toContain('Заявка принята в работу: 5');
     });
 });
 
@@ -451,7 +626,7 @@ describe('LeadRequestAcceptService — стадия возврата повто�
     };
 
     it('сделка в «Новой» с стадией возврата → возвращается туда, поле очищается', () => {
-        const service = new LeadRequestAcceptService({} as never);
+        const service = new LeadRequestAcceptService({} as never, {} as never);
         const plan = service.plan(portal as never, LEAD, 387, undefined, {
             ID: '42423',
             STAGE_ID: 'C3:NEW',
@@ -463,7 +638,7 @@ describe('LeadRequestAcceptService — стадия возврата повто�
     });
 
     it('менеджер уже сам увёл сделку из «Новой» — его стадию не трогаем', () => {
-        const service = new LeadRequestAcceptService({} as never);
+        const service = new LeadRequestAcceptService({} as never, {} as never);
         const plan = service.plan(portal as never, LEAD, 387, undefined, {
             ID: '42423',
             STAGE_ID: 'C3:HOT',
@@ -474,7 +649,7 @@ describe('LeadRequestAcceptService — стадия возврата повто�
     });
 
     it('стадия возврата из чужой воронки игнорируется — как раньше, «Холодная»', () => {
-        const service = new LeadRequestAcceptService({} as never);
+        const service = new LeadRequestAcceptService({} as never, {} as never);
         const plan = service.plan(portal as never, LEAD, 387, undefined, {
             ID: '42423',
             STAGE_ID: 'C3:NEW',
@@ -484,7 +659,7 @@ describe('LeadRequestAcceptService — стадия возврата повто�
     });
 
     it('робот принимает по dealId: ждёт последний присоединённый лид, не первоисточник', () => {
-        const service = new LeadRequestAcceptService({} as never);
+        const service = new LeadRequestAcceptService({} as never, {} as never);
         expect(
             service.leadIdFromDealRow(portal as never, {
                 ID: '42423',

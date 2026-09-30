@@ -36,7 +36,10 @@ export function priceMedianOf(
 /**
  * Последняя запись — ровно то, что прогон записал бы сейчас: тот же месяц
  * и та же версия параметров, а дальше по виду записи. Посчитанная модель
- * совпадает, когда в окне тот же объём наблюдений; деградация (`reused`)
+ * совпадает, когда в окне тот же объём наблюдений и тот же отпечаток
+ * входов Фазы 4 (пул с учётом согласия, связь качества — `phase4InputsKeyOf`:
+ * после отзыва согласия или смены состава пула модель пересчитывается);
+ * деградация (`reused`)
  * — когда окно по-прежнему пусто и причина та же (аудит M4: раньше копия
  * прошлой модели писалась каждый прогон). В обоих случаях запись не
  * переписывается — `written: 0`, `superseded` не плодится (идемпотентность
@@ -47,6 +50,7 @@ export function freshResult(
     request: PortalModelRequest,
     paramsVersion: string,
     months: readonly PortalManagerMonth[],
+    phase4InputsKey: string,
 ): PortalModelResult | null {
     const payload = previous?.payload;
     if (
@@ -63,7 +67,9 @@ export function freshResult(
     const same = reused
         ? months.length === 0 &&
           payload.reusedReason === AI_PORTAL_MODEL_REASONS.monthsMissing
-        : months.length > 0 && payload.observations === observations;
+        : months.length > 0 &&
+          payload.observations === observations &&
+          payload.signature?.phase4InputsKey === phase4InputsKey;
     if (!same) {
         return null;
     }
@@ -98,6 +104,24 @@ export function reusedPayload(
         reused: true,
         reusedReason: AI_PORTAL_MODEL_REASONS.monthsMissing,
         meta,
+    };
+}
+
+/** Версии расчёта в нагрузке; модель считается сама по себе (id — null). */
+export function portalModelMetaOf(
+    layers: {
+        paramsVersion: string;
+        comparableFrom: string;
+        calcVersion: string;
+    },
+    now: Date,
+): AiSnapshotMeta {
+    return {
+        calcVersion: layers.calcVersion,
+        paramsVersion: layers.paramsVersion,
+        comparableFrom: layers.comparableFrom || null,
+        generatedAt: now.toISOString(),
+        modelSnapshotId: null,
     };
 }
 

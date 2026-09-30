@@ -23,7 +23,7 @@ dayjs.extend(customParseFormat);
 /** Держим историю компактной: старые записи не удаляем до этого предела. */
 export const LEAD_REQUEST_HISTORY_MAX_ENTRIES = 100;
 
-/** «10.08.2026 12:40 — ХО назначен: 447». */
+/** «10.08.2026 12:40 — ХО назначен: Вадим Савчук». */
 export function buildLeadRequestHistoryEntry(
     text: string,
     portalTz: ETimeZone,
@@ -81,6 +81,16 @@ export type LeadRequestHistoryActor = number | string | null;
 const actorText = (actor: LeadRequestHistoryActor): string =>
     actor === null || actor === '' ? '—' : String(actor);
 
+/**
+ * Участник записи по id: имя из заранее разрезолвленной карты
+ * (`UserNameResolver`), иначе сам id; нет id — null («—» в тексте).
+ * Одно правило «имя вместо числа» для всех, кто пишет историю и уведомления.
+ */
+export const historyActor = (
+    names: Readonly<Record<number, string>> | undefined,
+    id: number | null | undefined,
+): LeadRequestHistoryActor => (id ? (names?.[id] ?? id) : null);
+
 export const LEAD_REQUEST_HISTORY_TEXT = {
     assigned: (responsible: LeadRequestHistoryActor): string =>
         `ХО назначен: ${actorText(responsible)}`,
@@ -98,6 +108,9 @@ export const LEAD_REQUEST_HISTORY_TEXT = {
         actor
             ? `Заявка принята в работу: ${actorText(actor)}`
             : 'Заявка принята в работу',
+    /** SLA: не принял за порог — заявку передают другому. */
+    notAccepted: (minutes: number, actor: LeadRequestHistoryActor): string =>
+        `Не принял за ${minutes} мин: ${actorText(actor)}`,
 } as const;
 
 /** Запись — назначение/передача ХО (точка отсчёта firstprepare). */

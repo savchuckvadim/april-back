@@ -4,6 +4,8 @@ import { AI_ANALYTICS_EDGE_PARAMS } from './registry.edges.const';
 import { AI_ANALYTICS_EXPOSURE_PARAMS } from './registry.exposure.const';
 import { AI_ANALYTICS_FUNNEL_PARAMS } from './registry.funnel.const';
 import { AI_ANALYTICS_NORM_PARAMS } from './registry.norms.const';
+import { AI_ANALYTICS_PHASE4_ADVICE_PARAMS } from './registry.phase4-advice.const';
+import { AI_ANALYTICS_PHASE4_PARAMS } from './registry.phase4.const';
 import { AI_ANALYTICS_PLAN_PARAMS } from './registry.plan.const';
 import { AI_ANALYTICS_POLICY_PARAMS } from './registry.policy.const';
 import { AI_ANALYTICS_POOL_PARAMS } from './registry.pool.const';
@@ -41,6 +43,8 @@ export const AI_ANALYTICS_PARAMS = [
     ...AI_ANALYTICS_POOL_PARAMS,
     ...AI_ANALYTICS_QUALITY_PARAMS,
     ...AI_ANALYTICS_DQ_PARAMS,
+    ...AI_ANALYTICS_PHASE4_PARAMS,
+    ...AI_ANALYTICS_PHASE4_ADVICE_PARAMS,
 ] as const satisfies readonly ParamDescriptor[];
 
 /** Дескриптор реестра с литеральными типами кода и дефолта. */

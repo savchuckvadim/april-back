@@ -6,6 +6,7 @@ import {
     AI_PIPELINE_LOCK_KEY,
     AI_PIPELINE_MAX_PER_DOMAIN,
     AI_PIPELINE_MAX_SLOT_RETRIES,
+    AI_PIPELINE_OPTIONAL_STEP_FAILED,
     AI_PIPELINE_RETRY_DELAY_MS,
     AiPipelineRhythm,
     isAiPipelineRhythm,
@@ -23,6 +24,7 @@ import {
     AiSnapshotRunner,
     createStepBus,
     stepFailed,
+    stepSkipped,
 } from '../steps/step.types';
 import { EtlRunWriter } from './etl-run.writer';
 import { AiPipelineRunContextFactory } from './run-context.factory';
@@ -148,6 +150,21 @@ export class SnapshotPipelineService implements AiSnapshotRunner {
             } catch (error) {
                 const ms = Date.now() - startedAt;
                 const reason = (error as Error).message;
+                if (step.optional) {
+                    // Теневой шаг не обрывает прогон: следующие шаги (санити,
+                    // модель портала) считают без его результата.
+                    this.logger.warn(
+                        `Необязательный шаг ${step.code} (${ctx.domain}) пропущен: ${reason}`,
+                    );
+                    results.push(
+                        stepSkipped(
+                            step.code,
+                            `${AI_PIPELINE_OPTIONAL_STEP_FAILED}: ${reason}`,
+                            { ms },
+                        ),
+                    );
+                    continue;
+                }
                 results.push(stepFailed(step.code, reason, { ms }));
                 return { results, error: error as Error };
             }

@@ -167,6 +167,56 @@ export const AI_ANALYTICS_SNAPSHOT_DESCRIPTORS = {
             'Настройки витрины до появления ключей схемы app-settings ' +
             '(план 5.1): актуальна последняя запись на ключ набора.',
     },
+    [AI_ANALYTICS_SNAPSHOT_TYPE.qualityLink]: {
+        type: AI_ANALYTICS_SNAPSHOT_TYPE.qualityLink,
+        grain: 'portal-month',
+        keyFormat: KEY_FORMAT.month,
+        retention: { unit: 'records', value: 36 },
+        description:
+            'Оценка β «качество → ближний исход» за месяц (Фаза 4, П20): ' +
+            'выборка, коэффициенты с интервалами, калибровка, плацебо, ' +
+            'гейт с гистерезисом и кривая p̂(S); читает модель портала.',
+    },
+    [AI_ANALYTICS_SNAPSHOT_TYPE.pool]: {
+        type: AI_ANALYTICS_SNAPSHOT_TYPE.pool,
+        grain: 'portal-month',
+        keyFormat: KEY_FORMAT.month,
+        retention: { unit: 'records', value: 36 },
+        description:
+            'Обезличенный пул порталов по согласию (Фаза 4, П22): нормы μ₀, ' +
+            'κ̄, τ₀, β пула с Q и I², общая таблица лага, чек, сезон; ' +
+            'копия пишется каждому порталу-участнику и читается его моделью.',
+    },
+    [AI_ANALYTICS_SNAPSHOT_TYPE.forecastLog]: {
+        type: AI_ANALYTICS_SNAPSHOT_TYPE.forecastLog,
+        grain: 'portal-month',
+        keyFormat: KEY_FORMAT.month,
+        retention: { unit: 'records', value: 36 },
+        description:
+            'Теневой журнал прогноза отдела (Фаза 4, П21): по дням месяца — ' +
+            'вилка, P50, наивные базы и факт нарастающим итогом; пишется ' +
+            'еженочно, факт месяца закрывается при заморозке.',
+    },
+    [AI_ANALYTICS_SNAPSHOT_TYPE.forecastBacktest]: {
+        type: AI_ANALYTICS_SNAPSHOT_TYPE.forecastBacktest,
+        grain: 'portal-month',
+        keyFormat: KEY_FORMAT.month,
+        retention: { unit: 'records', value: 36 },
+        description:
+            'Точность прогноза на истории (Фаза 4, П21, гейт L4): покрытие ' +
+            'вилки, отношение ошибок к простым прогнозам, статус гейта и ' +
+            'число теневых месяцев; читает готовность витрины.',
+    },
+    [AI_ANALYTICS_SNAPSHOT_TYPE.recommendationEffect]: {
+        type: AI_ANALYTICS_SNAPSHOT_TYPE.recommendationEffect,
+        grain: 'portal-month',
+        keyFormat: KEY_FORMAT.month,
+        retention: { unit: 'records', value: 36 },
+        description:
+            'Эффект советов (Фаза 4, П23, гейт L5): доля выполненных с ' +
+            'интервалом, доли КП и счетов до и после совета, несогласия, ' +
+            'статус гейта; читает готовность витрины и досье.',
+    },
 } as const satisfies Record<
     AiAnalyticsSnapshotType,
     AiAnalyticsSnapshotDescriptor

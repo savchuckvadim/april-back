@@ -180,7 +180,14 @@ export const AI_ANALYTICS_FEEDBACK_OBJECTS = {
     PULSE: 'pulse',
     AGENDA: 'agenda',
     CALL_PREFIX: 'call:',
+    /** Фаза 4: объект совета — 'lever:{managerId}:{ключ совета}' (журнал и «Сделано»). */
+    LEVER_PREFIX: 'lever:',
 } as const;
+
+/** Объект совета 'lever:{managerId}:{ключ}' — один для журнала выдачи и ручки «Сделано». */
+export function leverFeedbackObjectOf(managerId: string, key: string): string {
+    return `${AI_ANALYTICS_FEEDBACK_OBJECTS.LEVER_PREFIX}${managerId}:${key}`;
+}
 
 // ---------------------------------------------------------------------------
 // Push-контур (шаг 2 Фазы 1a): повестка РОПам и утренний разбор менеджерам

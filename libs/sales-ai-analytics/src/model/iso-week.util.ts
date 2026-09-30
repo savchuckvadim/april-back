@@ -94,6 +94,22 @@ export function formatRuDateRange(from: string, to: string): string {
     return `${formatRuDate(from)} – ${formatRuDate(to)}`;
 }
 
+/**
+ * «с сентября» — месяц, первое число которого лежит в ISO-неделе (так
+ * месячные ряды записывают начало сигнала); первого числа в неделе нет
+ * или не ключ — «с недели …».
+ */
+export function formatRuMonthSince(weekKey: string): string {
+    if (!isIsoWeekKey(weekKey)) return formatRuWeekSince(weekKey);
+    const monday = mondayOfIsoWeek(weekKey);
+    for (let offset = 0; offset < 7; offset += 1) {
+        const parts = parseDate(shiftDate(monday, offset));
+        if (parts !== null && parts.day === 1) return `с ${monthName(parts)}`;
+    }
+
+    return formatRuWeekSince(weekKey);
+}
+
 /** «с недели 27 июля» по ключу недели; не ключ — «с недели <как есть>». */
 export function formatRuWeekSince(weekKey: string): string {
     return isIsoWeekKey(weekKey)

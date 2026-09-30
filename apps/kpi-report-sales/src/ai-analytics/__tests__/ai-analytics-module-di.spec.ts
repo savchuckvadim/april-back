@@ -86,6 +86,7 @@ const EXPECTED_CONTROLLERS = [
     'AiAnalyticsBriefController',
     'AiAnalyticsController',
     'AiAnalyticsDossierController',
+    'AiAnalyticsForecastController',
     'AiAnalyticsOverviewController',
     'AiAnalyticsPlanController',
     'AiAnalyticsPlanFactController',
@@ -248,7 +249,7 @@ describe('DI-граф AiAnalyticsModule (kpi-report-sales)', () => {
         expect(names).toContain('AiAnalyticsPortalModelModule');
     });
 
-    it('конвейер собран: массив шагов непуст и содержит все 12 шагов в порядке STEP_ORDER', () => {
+    it('конвейер собран: массив шагов непуст и содержит все 18 шагов в порядке STEP_ORDER', () => {
         const dynamic = pipelineDynamicModule();
         expect(dynamic.imports).toEqual(AI_ANALYTICS_PIPELINE_STEP_MODULES);
         const provider = (dynamic.providers ?? [])[0] as FactoryProvider<
@@ -256,14 +257,14 @@ describe('DI-граф AiAnalyticsModule (kpi-report-sales)', () => {
         >;
         expect(provider.provide).toBe(AI_ANALYTICS_PIPELINE_STEPS);
         expect(provider.inject).toEqual(AI_ANALYTICS_PIPELINE_STEP_ORDER);
-        expect(provider.inject).toHaveLength(12);
+        expect(provider.inject).toHaveLength(18);
         const steps = AI_ANALYTICS_PIPELINE_STEP_ORDER.map(
             step => new (step as StepCtor)(),
         );
         const factory = provider.useFactory as (
             ...items: AiAnalyticsPipelineStep[]
         ) => AiAnalyticsPipelineStep[];
-        expect(factory(...steps)).toHaveLength(12);
+        expect(factory(...steps)).toHaveLength(18);
         expect(factory(...steps).map(step => step.code)).toEqual(
             steps.map(step => step.code),
         );

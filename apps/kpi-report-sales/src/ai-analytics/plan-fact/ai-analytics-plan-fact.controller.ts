@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { PortalSessionProtected } from '@lib/auth';
 import {
     AI_ANALYTICS_ROUTE_PREFIX,
     AI_ANALYTICS_SWAGGER_TAG,
@@ -18,8 +19,9 @@ import { PlanFactUseCase } from './plan-fact.use-case';
  * дням, описательный прогноз закрытия под потолком дня, разрыв и
  * «сколько надо в день».
  *
- * Ручка читающая: мутаций нет, поэтому guard мутаций не нужен, а права
- * проверяются периметром `RequesterAccessService.resolveViewer` —
+ * Ручка читающая, но под portal-session guard (Фаза 4, хвост 2: тело
+ * сверяется с сессией, как у мутирующих ручек), а права проверяются
+ * периметром `RequesterAccessService.resolveViewer` —
  * руководитель видит свой периметр, менеджер только себя и только при
  * `ai_analytics_self_view_enabled`, иначе 403.
  *
@@ -34,6 +36,7 @@ export class AiAnalyticsPlanFactController {
         private readonly planFact: PlanFactUseCase,
     ) {}
 
+    @PortalSessionProtected()
     @Post(AI_PLAN_FACT_ROUTE)
     @HttpCode(200)
     @ApiOperation({

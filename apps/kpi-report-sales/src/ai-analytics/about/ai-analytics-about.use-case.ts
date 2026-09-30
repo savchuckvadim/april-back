@@ -1,9 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { AI_ANALYTICS_SNAPSHOT_TYPE } from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_CACHE_PREFIX } from '../constants/ai-analytics.const';
 import type { RequesterAccess } from '../domain/access/perimeter.util';
 import type { PortalModelPayload } from '../domain/assembler/portal-model.types';
 import { AiAnalyticsParamsLoader } from '../domain/loaders/params.loader';
+import { Phase4SnapshotsLoader } from '../domain/loaders/phase4-snapshots.loader';
+import { SettingsLoader } from '../domain/loaders/settings.loader';
 import type {
     AiAboutRequestDto,
     AiAboutResponseDto,
@@ -30,7 +32,8 @@ export const buildAboutKey = (
 /**
  * Блок «Как считаем» для ручки витрины: контекст реестра портала
  * (`AiAnalyticsParamsLoader`) + последняя модель портала из `ais`
- * (`AiAnalyticsSnapshotStore.latestModel`) → билдер. Синхронно и легко:
+ * (`AiAnalyticsSnapshotStore.latestModel`) + последние снапшоты Фазы 4
+ * (связь качества, точность прогноза, пул, эффект советов) → билдер. Синхронно и легко:
  * одно чтение настроек и одна выборка снапшота, Битрикс не зовётся.
  *
  * Хранилище не ответило — блок собирается по реестру с причиной (§5.4):
@@ -50,17 +53,30 @@ export class AiAnalyticsAboutUseCase {
     constructor(
         private readonly params: AiAnalyticsParamsLoader,
         private readonly snapshots: AiAnalyticsSnapshotStore,
+        /**
+         * Настройки портала — только согласие на пул: после отзыва секция
+         * «общая статистика порталов» не показывает последний пул. Нет
+         * загрузчика (сборки без ядра, спеки) — секция как есть.
+         */
+        @Optional() private readonly settings?: SettingsLoader,
     ) {}
 
     async execute(
         dto: AiAboutRequestDto,
         access: RequesterAccess,
     ): Promise<AiAboutResponseDto> {
-        const [params, model, goldenReport] = await Promise.all([
-            this.params.load(dto.domain),
-            this.loadModel(dto.domain),
-            this.loadGoldenReport(dto.domain),
-        ]);
+        const [params, model, goldenReport, latest, poolConsented] =
+            await Promise.all([
+                this.params.load(dto.domain),
+                this.loadModel(dto.domain),
+                this.loadGoldenReport(dto.domain),
+                // Каждый тип деградирует сам (null), блок не гаснет.
+                new Phase4SnapshotsLoader(this.snapshots).loadLatest(
+                    dto.domain,
+                ),
+                this.poolConsented(dto.domain),
+            ]);
+        const phase4 = poolConsented ? latest : { ...latest, pool: null };
         return {
             status: 'ready',
             requestKey: buildAboutKey(dto.domain, dto.endpoint),
@@ -72,9 +88,24 @@ export class AiAnalyticsAboutUseCase {
                 model: model.source,
                 ...(model.reason === null ? {} : { modelReason: model.reason }),
                 goldenReport,
+                phase4,
                 selfView: access.role === 'manager',
             }),
         };
+    }
+
+    /** Действует ли согласие на пул; ошибка чтения — считаем, что нет. */
+    private async poolConsented(domain: string): Promise<boolean> {
+        if (!this.settings) return true;
+        try {
+            const settings = await this.settings.load(domain);
+            return settings.poolOptIn && settings.poolConsentAt !== null;
+        } catch (error) {
+            this.logger.warn(
+                `Согласие на пул (${domain}) не прочитано: ${String(error)}`,
+            );
+            return false;
+        }
     }
 
     /** Последний отчёт согласия оценщика (П7); нет или ошибка стора — null. */

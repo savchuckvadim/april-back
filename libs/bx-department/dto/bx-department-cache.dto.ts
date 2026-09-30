@@ -38,7 +38,7 @@ export class BxDepartmentCacheResetResponseDto {
             'Паттерны ключей, по которым выполнялся поиск (SCAN MATCH).',
         type: [String],
         example: [
-            'department_structure_v2_april-garant.bitrix24.ru_*',
+            'department_structure_v3_april-garant.bitrix24.ru_*',
             'department_april-garant.bitrix24.ru_*',
             'bx_team_april-garant.bitrix24.ru_*',
         ],

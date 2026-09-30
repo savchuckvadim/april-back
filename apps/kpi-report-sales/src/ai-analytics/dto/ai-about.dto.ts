@@ -15,6 +15,12 @@ import {
     type AiAboutEndpoint,
 } from '../about/ai-analytics-about.const';
 import { AiAboutModelDto } from './ai-about-model.dto';
+import { AiAboutRecommendationsEffectDto } from './ai-about-phase4-effect.dto';
+import {
+    AiAboutForecastAccuracyDto,
+    AiAboutPoolDto,
+} from './ai-about-phase4-pool.dto';
+import { AiAboutQualityLinkDto } from './ai-about-phase4.dto';
 import { AiRequestBaseDto } from './ai-request-base.dto';
 import { AiAnalyticsEnvelopeDto } from './ai-response-envelope.dto';
 
@@ -31,7 +37,7 @@ export class AiAboutRequestDto extends AiRequestBaseDto {
             'Ручка витрины, для которой нужен блок: overview — обзор ' +
             'менеджеров и типов звонков, plan/daily — план дня, brief — ' +
             'краткое резюме, plan-fact — план и факт, dossier — досье, ' +
-            'manager/style — карточка стиля.',
+            'manager/style — карточка стиля, forecast — прогноз отдела.',
         enum: AI_ABOUT_ENDPOINTS,
         example: 'overview',
     })
@@ -213,6 +219,45 @@ export class AiAboutDto {
         nullable: true,
     })
     reliability: AiAboutReliabilityDto | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Связь качества разговора с результатом (Фаза 4): оценки с ' +
+            'интервалами, согласие с фактом, проверка «не объясняется ' +
+            'будущим», сколько месяцев подряд проверка пройдена; null — ' +
+            'оценки ещё не было.',
+        type: AiAboutQualityLinkDto,
+        nullable: true,
+    })
+    qualityLink?: AiAboutQualityLinkDto | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Точность прогноза отдела на прошлых месяцах (Фаза 4): месяцы ' +
+            'без показа, попадания в вилку и отношение ошибок с ' +
+            'интервалами; null — проверки ещё не было.',
+        type: AiAboutForecastAccuracyDto,
+        nullable: true,
+    })
+    forecastAccuracy?: AiAboutForecastAccuracyDto | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Обезличенный пул порталов (Фаза 4): участники, общая связь и ' +
+            'что из пула попало в расчёт; null — пула нет.',
+        type: AiAboutPoolDto,
+        nullable: true,
+    })
+    pool?: AiAboutPoolDto | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Эффект советов (Фаза 4): выполнение, несогласия и шаги ' +
+            'воронки до/после с интервалами; null — оценки ещё не было.',
+        type: AiAboutRecommendationsEffectDto,
+        nullable: true,
+    })
+    recommendationsEffect?: AiAboutRecommendationsEffectDto | null;
 
     @ApiProperty({
         description:

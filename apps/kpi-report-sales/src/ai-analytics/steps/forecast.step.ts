@@ -12,6 +12,10 @@
  * ⚠ Штатная деградация: без истории стадий `pipelineExpected` равен
  * `null` С ПРИЧИНОЙ, а не нулю — ноль означал бы «пайплайн пуст».
  *
+ * После записи прогнозы дня публикуются в шину (`forecastDay`): их
+ * читают прогноз отдела (`department-forecast`) и журнал советов
+ * (`recommendation-log`) — без повторного чтения `ais`.
+ *
  * `@Injectable` без bitrix-состояния: Битрикс не вызывается — все входы
  * уже лежат в `ais` и в шине прогона.
  */
@@ -60,6 +64,24 @@ import {
     stepOk,
     stepSkipped,
 } from './step.types';
+
+/** Прогноз дня одного менеджера в шине. */
+export interface ForecastDayManager {
+    readonly managerId: string;
+    readonly payload: ForecastPayload;
+}
+
+/**
+ * Значение шины `AI_PIPELINE_BUS_KEYS.forecastDay` (пишет шаг прогноза,
+ * читают `department-forecast` и `recommendation-log`): прогнозы дня всех
+ * менеджеров ростера и модель, по которой они посчитаны.
+ */
+export interface ForecastDayBusEntry {
+    readonly day: string;
+    readonly monthKey: string;
+    readonly modelSnapshotId: string | null;
+    readonly managers: readonly ForecastDayManager[];
+}
 
 /** Предыдущий месяц по ключу месяца ('2026-09' → '2026-08'). */
 const previousMonthOf = (monthKey: string): string =>
@@ -115,7 +137,10 @@ export class ForecastStep implements AiAnalyticsPipelineStep {
         });
     }
 
-    /** Модель портала: из шины месячного шага либо последняя из `ais`. */
+    /**
+     * Модель портала: из шины месячного шага либо из `ais` — с самым
+     * поздним закрытым месяцем (ключ раньше месяца прогона).
+     */
     private async model(
         ctx: AiPipelineStepContext,
         bus: StepBus,
@@ -127,7 +152,7 @@ export class ForecastStep implements AiAnalyticsPipelineStep {
         if (payload !== null && Array.isArray(payload.edges)) {
             return { id: fromBus?.id ?? null, payload };
         }
-        const record = await this.loader.latestModel(ctx.domain);
+        const record = await this.loader.latestModel(ctx.domain, ctx.monthKey);
 
         return isModel(record)
             ? { id: record.id, payload: record.payload as PortalModelPayload }
@@ -146,7 +171,7 @@ export class ForecastStep implements AiAnalyticsPipelineStep {
             busNumber(bus.get(AI_PIPELINE_BUS_KEYS.historyMonths)) ?? 0;
         const episodes = this.episodesByManager(bus, model.payload);
         const previousMonth = previousMonthOf(ctx.monthKey);
-        let written = 0;
+        const managers: ForecastDayManager[] = [];
         for (const managerId of ctx.managerIds.map(String)) {
             const payload = buildForecastPayload({
                 day: ctx.day,
@@ -179,10 +204,16 @@ export class ForecastStep implements AiAnalyticsPipelineStep {
                 },
             });
             await this.write(ctx, managerId, payload);
-            written += 1;
+            managers.push({ managerId, payload });
         }
+        bus.set<ForecastDayBusEntry>(AI_PIPELINE_BUS_KEYS.forecastDay, {
+            day: ctx.day,
+            monthKey: ctx.monthKey,
+            modelSnapshotId: model.id,
+            managers,
+        });
 
-        return written;
+        return managers.length;
     }
 
     /** Открытые эпизоды по менеджерам: сцепка звонков + стадийные θ. */

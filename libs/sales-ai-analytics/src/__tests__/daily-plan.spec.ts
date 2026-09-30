@@ -173,6 +173,32 @@ describe('dailyPlan', () => {
         ]);
     });
 
+    it('утечка L_k отдаётся в строке; без утечки на входе — null', () => {
+        const withLeaks = dailyPlan(base).items;
+        expect(withLeaks.map(item => [item.callType, item.leak])).toEqual([
+            ['presentation', 0.9],
+            ['call', 0.2],
+            ['cold', null],
+        ]);
+        // «Узкое место» витрины — строка с утечкой на первом месте.
+        const bottleneck = withLeaks.find(
+            item => item.leak !== null && item.priority === 1,
+        );
+        expect(bottleneck?.callType).toBe('presentation');
+        // План по объёму (leak не передан) — утечек нет, приоритет по порядку.
+        const byVolume = dailyPlan({
+            ...base,
+            items: PLAN_ITEMS.map(item => ({ ...item, leak: undefined })),
+        }).items;
+        expect(byVolume.every(item => item.leak === null)).toBe(true);
+        expect(byVolume.map(item => item.callType)).toEqual([
+            'call',
+            'cold',
+            'presentation',
+        ]);
+        expect(dailyPlan(base)).toEqual(dailyPlan(base));
+    });
+
     it('дневное число — остаток месячного плана на оставшиеся дни', () => {
         const call = dailyPlan({ ...base, daysLeft: 15 }).items.find(
             item => item.callType === 'call',

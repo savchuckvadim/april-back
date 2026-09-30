@@ -19,6 +19,7 @@ import {
     resolvePipelineKeys,
 } from '../constants/ai-snapshot.const';
 import { AiAnalyticsCalendarLoader } from '../domain/loaders/calendar.loader';
+import type { AiCalendarSource } from '../domain/loaders/calendar.util';
 import { ManagersLoader } from '../domain/loaders/managers.loader';
 import { AiAnalyticsParamsLoader } from '../domain/loaders/params.loader';
 import {
@@ -35,9 +36,10 @@ export interface AiPipelineRunContext {
     warnings: string[];
 }
 
-/** Календарь прогона и оговорки его получения. */
+/** Календарь прогона, его источник и оговорки получения. */
 interface ResolvedCalendar {
     calendar: WorkCalendar;
+    source: AiCalendarSource;
     warnings: string[];
 }
 
@@ -57,7 +59,7 @@ export class AiPipelineRunContextFactory {
         now: Date,
     ): Promise<AiPipelineRunContext> {
         const settings = await this.settings.load(data.domain);
-        const { calendar, warnings } = await this.resolveCalendar(
+        const { calendar, source, warnings } = await this.resolveCalendar(
             data.domain,
             settings,
             now,
@@ -76,6 +78,7 @@ export class AiPipelineRunContextFactory {
             monthKey: data.monthKey || keys.monthKey,
             timeZone: calendar.timeZone,
             calendar,
+            calendarSource: source,
             settings,
             registry: params.ctx,
             paramsVersion: params.paramsVersion,
@@ -103,10 +106,16 @@ export class AiPipelineRunContextFactory {
     ): Promise<ResolvedCalendar> {
         try {
             const result = await this.calendar.load(domain, { now });
-            return { calendar: result.calendar, warnings: result.warnings };
+            return {
+                calendar: result.calendar,
+                source: result.source,
+                warnings: result.warnings,
+            };
         } catch (error) {
             return {
                 calendar: settings.calendar,
+                // Импорт не подтверждён — гейт календаря честно закрыт.
+                source: 'fallback',
                 warnings: [
                     'Производственный календарь не прочитан ' +
                         `(${(error as Error).message}) — ` +

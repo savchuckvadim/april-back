@@ -4,22 +4,29 @@
  * дня и отбор рычагов.
  *
  * Вынесено из `forecast.assembler.ts` по лимиту 300 строк. Считают
- * готовые функции библиотеки (`unwindPaths`, `dailyPlan`, `buildLevers`),
- * здесь — только раскладка входов.
+ * готовые функции библиотеки (`unwindPaths`, `dailyPlan`, `buildLevers`,
+ * `buildQualityLink`), здесь — только раскладка входов.
  *
  * Чистые функции: без DI, Bitrix и Prisma.
  */
 import {
     buildLevers,
+    buildQualityLink,
     dailyPlan,
+    QAV_DEFAULTS,
     resolveNumberParam,
     unwindPaths,
     type DailyPlan,
     type FunnelLeak,
     type LeverCandidate,
+    type QualityLeverInput,
     type QualityLink,
 } from '@lib/sales-ai-analytics';
-import { AI_FORECAST_LEVER_MAX } from '../../constants/ai-portal-model.const';
+import {
+    AI_FORECAST_LEVER_MAX,
+    AI_FORECAST_QUALITY_DELTA,
+} from '../../constants/ai-portal-model.const';
+import { AI_QUALITY_LINK_OFFSET_EDGE } from '../../constants/ai-quality-link.const';
 import type { ForecastBuildInput } from './forecast.types';
 import type { PortalModelPayload } from './portal-model.types';
 
@@ -63,55 +70,115 @@ export function buildPlan(
     });
 }
 
+/** Что нужно рычагам дня: объём, θ пути и зрелость `F̄`. */
+export interface ForecastLeverContext {
+    readonly entryRate: number;
+    readonly salesPerUnit: number;
+    readonly ci80: [number, number] | undefined;
+    readonly thetas: Readonly<Record<string, number>>;
+    readonly path: readonly string[];
+    readonly fBar: number;
+}
+
 /**
  * Рычаги дня. Рычаг объёма выдаётся только с 80 %-интервалом эффекта
  * (правило §4.10): без интервала библиотека его отбросит — и это честнее
- * совета, опирающегося на одно число. Рычаг качества в режимах `none` и
- * `hypothesis` не выдаётся вовсе.
+ * совета, опирающегося на одно число. Рычаг качества — только при связи
+ * «по данным» (Фаза 4) и оценке менеджера; в режимах `none` и
+ * `hypothesis` его нет вовсе.
  */
 export function leversOf(
     input: ForecastBuildInput,
-    volume: {
-        entryRate: number;
-        salesPerUnit: number;
-        ci80: [number, number] | undefined;
-    },
+    context: ForecastLeverContext,
 ): LeverCandidate[] {
+    const link = linkOf(input.model);
+    const quality = qualityLeverOf(input, link, context);
+    const minSectionCalls = resolveNumberParam(
+        'lever_min_section_calls',
+        input.registry,
+    );
+
     return buildLevers({
-        link: linkOf(input.model),
+        link,
         chainLinked: input.model.chainSharePct > 0,
         volume: {
             callType: input.model.capActivity,
-            addedUnits: Math.max(0, volume.entryRate),
-            salesPerUnit: volume.salesPerUnit,
+            addedUnits: Math.max(0, context.entryRate),
+            salesPerUnit: context.salesPerUnit,
             costMinutes: 0,
-            ...(volume.ci80 === undefined
+            ...(context.ci80 === undefined
                 ? {}
-                : { salesPerUnitCi80: volume.ci80 }),
+                : { salesPerUnitCi80: context.ci80 }),
         },
+        ...(quality === undefined ? {} : { quality }),
         evidence: {
             n: input.manager.entryDone,
-            hasInterval: volume.ci80 !== undefined,
+            hasInterval: context.ci80 !== undefined,
         },
+        ...(minSectionCalls === undefined ? {} : { minSectionCalls }),
         max: AI_FORECAST_LEVER_MAX,
     });
 }
 
 /**
- * Связь «качество → исход» вне режима `data`: множитель ровно 1.
- * Прикладные величины (множитель, изо-линия, `S_req`) в Фазе 2
- * недоступны — оценка β появляется только в Фазе 4.
+ * Вход рычага качества: оценка менеджера за месяц, объём ребра
+ * «презентация → КП» до конца месяца по темпу и `Π θ` ниже него с
+ * зрелостью. Связь не применима, оценки нет, ребра нет в пути или месяц
+ * только начался — рычага нет.
+ */
+export function qualityLeverOf(
+    input: ForecastBuildInput,
+    link: QualityLink,
+    context: ForecastLeverContext,
+): QualityLeverInput | undefined {
+    const quality = input.manager.quality ?? null;
+    const position = context.path.indexOf(AI_QUALITY_LINK_OFFSET_EDGE);
+    if (
+        !link.applied ||
+        quality === null ||
+        position < 0 ||
+        input.daysElapsed <= 0
+    ) {
+        return undefined;
+    }
+    const delta = Math.min(
+        AI_FORECAST_QUALITY_DELTA,
+        QAV_DEFAULTS.sMax - quality.score,
+    );
+    if (!(delta > 0)) return undefined;
+    const edge = input.manager.edges.find(
+        item => item.edge === AI_QUALITY_LINK_OFFSET_EDGE,
+    );
+    const below = context.path
+        .slice(position + 1)
+        .reduce((product, code) => product * (context.thetas[code] ?? 0), 1);
+
+    return {
+        score: quality.score,
+        delta,
+        volume: ((edge?.n ?? 0) / input.daysElapsed) * input.daysLeft,
+        downstream: below * context.fBar,
+        sectionCalls: quality.n,
+        coachingHours:
+            resolveNumberParam('coaching_hours_section', input.registry) ?? 0,
+    };
+}
+
+/**
+ * Связь «качество → исход» модели портала. В режиме `data` — кривая
+ * `p̂(S)` и наклон pooled-модели из снапшота модели (как в плане дня
+ * руководителя, `daily-plan-rop.facts.ts`); в режимах `none` и
+ * `hypothesis` кривой нет и множитель ровно 1.
  */
 export function linkOf(model: PortalModelPayload): QualityLink {
-    return {
+    return buildQualityLink({
         betaSource: model.betaSource,
         sRef: model.sRef,
-        curve: [],
-        pRef: null,
-        beta: null,
-        hypothesisBeta: null,
-        rareOutcomeOnly: false,
-        applied: false,
-        reason: model.betaSource === 'none' ? 'no-beta' : 'hypothesis-only',
-    };
+        ...(model.betaSource === 'data'
+            ? {
+                  curve: model.qualityLink?.curve ?? [],
+                  beta: model.qualityLink?.pooled?.value ?? null,
+              }
+            : {}),
+    });
 }

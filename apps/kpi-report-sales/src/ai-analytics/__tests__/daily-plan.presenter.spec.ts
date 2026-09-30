@@ -22,6 +22,7 @@ const item = (
     monthDone: 0,
     cap: null,
     priority,
+    leak: null,
     ceiling: requiredToday,
     cappedByCeiling: false,
     trainingApplied: false,
@@ -197,5 +198,28 @@ describe('presentDailyPlan — объяснение словами', () => {
         };
         expect(presentDailyPlan(view(), manager).ropOnly).toBeUndefined();
         expect(presentDailyPlan(view(), leader).ropOnly).toBeDefined();
+    });
+
+    it('утечка шага доходит до строки плана; нет утечки (и старый снапшот без поля) — null', () => {
+        const leaky: DailyPlanItem = {
+            ...item('presentation_to_offer', 40, 3, 1),
+            leak: 0.6,
+        };
+        const legacy = {
+            ...item('call_to_presentation', 250, 12.4, 2),
+            leak: undefined,
+        } as unknown as DailyPlanItem;
+        const base = view();
+        const dto = presentDailyPlan(
+            view({
+                plan: {
+                    ...base.plan,
+                    items: [leaky, legacy, item('offer_to_invoice', 15, 1, 3)],
+                },
+            }),
+            leader,
+        );
+
+        expect(dto.items.map(row => row.leak)).toEqual([0.6, null, null]);
     });
 });

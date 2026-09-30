@@ -6,6 +6,7 @@ import { AiCacheResetRequestDto } from '../dto/ai-cache-reset.dto';
 import { AiDailyPlanRequestDto } from '../dto/ai-daily-plan.dto';
 import { AiFeedbackListRequestDto } from '../dto/ai-feedback-list.dto';
 import { AiFeedbackRequestDto } from '../dto/ai-feedback.dto';
+import { AiForecastRequestDto } from '../dto/ai-forecast.dto';
 import { AI_DOSSIER_MONTHS } from '../constants/ai-dossier.const';
 import { AiDossierRequestDto } from '../dto/ai-dossier.dto';
 import { AI_PLAN_FACT_MANAGERS_MAX } from '../constants/ai-plan-fact.const';
@@ -17,6 +18,10 @@ import {
     AiRopMarkSaveRequestDto,
 } from '../dto/ai-rop-mark-request.dto';
 import { AiReviewRequestDto } from '../dto/ai-review.dto';
+import {
+    AiPoolConsentDto,
+    AiSettingsSaveRequestDto,
+} from '../dto/ai-settings-save.dto';
 import { AiStyleProfileRequestDto } from '../dto/ai-style-card.dto';
 
 const pipe = new ValidationPipe({ whitelist: true, transform: true });
@@ -579,5 +584,40 @@ describe('DTO валидация досье менеджера (AiDossierRequest
         expect(
             await failsOn(AiDossierRequestDto, { ...dossier, socketId: 7 }),
         ).toContain('socketId');
+    });
+});
+
+// --- Фаза 4, поток B3: прогноз отдела и согласие на пул ---
+
+describe('DTO валидация прогноза отдела и согласия на пул', () => {
+    it('forecast: только domain и requesterUserId, лишнее вырезается', async () => {
+        const dto = await run(AiForecastRequestDto, { ...base, hack: 1 });
+        expect(dto).toEqual(base);
+        expect(
+            await failsOn(AiForecastRequestDto, { domain: base.domain }),
+        ).toContain('requesterUserId');
+    });
+
+    it('settings/save: pool необязателен, optIn — только boolean', async () => {
+        const dto = await run(AiSettingsSaveRequestDto, {
+            ...base,
+            pool: { optIn: true, consentAt: '2026-09-29' },
+        });
+        // Дату согласия ставит сервер — поле клиента вырезается.
+        expect(dto.pool).toEqual({ optIn: true });
+        expect(dto.pool).toBeInstanceOf(AiPoolConsentDto);
+
+        expect(
+            (await run(AiSettingsSaveRequestDto, base)).pool,
+        ).toBeUndefined();
+        expect(
+            await failsOn(AiSettingsSaveRequestDto, {
+                ...base,
+                pool: { optIn: 'да' },
+            }),
+        ).toContain('optIn');
+        expect(
+            await failsOn(AiSettingsSaveRequestDto, { ...base, pool: {} }),
+        ).toContain('optIn');
     });
 });

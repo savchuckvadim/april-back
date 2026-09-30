@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
+import { historyActor } from '../../../shared/lead-request/lead-request-history.util';
 
 /** Кому и о чём сообщаем при назначении/передаче заявки. */
 export interface ILeadAssignNotifyInput {
@@ -33,7 +34,11 @@ export interface ILeadAssignNotifyInput {
 export class LeadToWorkNotifyService {
     private readonly logger = new Logger(LeadToWorkNotifyService.name);
 
-    constructor(private readonly bitrix: BitrixService) {}
+    constructor(
+        private readonly bitrix: BitrixService,
+        /** Имена сотрудников пачки (UserNameResolver); нет имени — id. */
+        private readonly names: Readonly<Record<number, string>> = {},
+    ) {}
 
     /** Возвращает предупреждения (не бросает: уведомление вторично). */
     async notifyAssignment(input: ILeadAssignNotifyInput): Promise<string[]> {
@@ -61,10 +66,11 @@ export class LeadToWorkNotifyService {
 
         // 2. Прежнему — почему работа ушла (сам отдал или передали за него).
         if (previous && previous !== input.responsibleId) {
+            const to = historyActor(this.names, input.responsibleId);
             const message =
                 input.transferredById === previous
-                    ? `Вы передали заявку ${link} сотруднику ${input.responsibleId}.`
-                    : `Заявка ${link} передана другому сотруднику (${input.responsibleId}).`;
+                    ? `Вы передали заявку ${link} сотруднику ${to}.`
+                    : `Заявка ${link} передана другому сотруднику (${to}).`;
             await this.send(previous, message, warnings);
         }
         return warnings;

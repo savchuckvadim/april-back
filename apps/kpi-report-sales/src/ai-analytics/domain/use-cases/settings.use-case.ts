@@ -3,7 +3,7 @@ import {
     AI_ANALYTICS_EVENT_KINDS,
     CALL_REPORT_CALL_TYPE_CODES,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
-import { toPortalDate } from '@lib/sales-ai-analytics';
+import { readinessStageGatesOf, toPortalDate } from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_WINDOWS } from '../../constants/ai-analytics.const';
 import { AiCallReportStatusDto } from '../../dto/ai-settings-call-report.dto';
 import {
@@ -14,6 +14,7 @@ import { AiAnalyticsSnapshotStore } from '../../store/ai-analytics-snapshot.stor
 import type { OverviewSnapshots } from '../assembler/overview-model.types';
 import { CallsLoader } from '../loaders/calls.loader';
 import { OverviewSnapshotsLoader } from '../loaders/overview-snapshots.loader';
+import type { Phase4LatestSnapshots } from '../loaders/phase4-snapshots.loader';
 import {
     AiAnalyticsPortalSettings,
     AiCallReportStatus,
@@ -33,6 +34,12 @@ import {
     buildReadiness,
     resolveComparableFrom,
 } from '../presenter/readiness.util';
+import {
+    portalRegistryOf,
+    stagesFromSources,
+    stageFlagsOf,
+} from '../presenter/readiness-stages.util';
+import { settingsPhase4FieldsOf } from '../presenter/settings-phase4.presenter';
 
 const DAY_MS = 86_400_000;
 
@@ -66,6 +73,10 @@ export interface SettingsUseCaseOptions {
  * без модели, источник σ_llm — из последнего отчёта согласия (как у
  * обзора). Иначе `/settings` и обзор показывали бы два разных режима
  * в одном интерфейсе (долг 11 волны C). Одна lite-выборка на оба окна.
+ * Фаза 4: ступени L4/L5 — из последних снапшотов точности прогноза и
+ * эффекта советов с флагами и гейтами реестра портала; источник календаря
+ * — из модели портала (нет поля — по праздникам ключа настроек); в ответ
+ * добавлены гипотеза и согласие на пул.
  * Статус конвейера разбора (callReport) — чтобы витрина отличала пилот
  * от поломки. Кэшируется контроллером на 300 с.
  */
@@ -100,11 +111,12 @@ export class SettingsUseCase {
                 row.analysisPresent &&
                 row.callStartedAt.getTime() >= pipelineFrom,
         );
-        const snapshots = await this.loadSnapshots(
+        const { snapshots, phase4 } = await this.loadSnapshots(
             domain,
             toPortalDate(now, settings.calendar.timeZone),
         );
         const sigmaLlmSource = sigmaLlmSourceOf(snapshots.goldenReport);
+        const registry = portalRegistryOf(settings);
 
         return {
             enabled: settings.enabled,
@@ -121,6 +133,15 @@ export class SettingsUseCase {
                 financeSales: modelSalesOf(snapshots.model),
                 episodeSales: episodeSalesOf(snapshots.forecasts),
                 ...(sigmaLlmSource === undefined ? {} : { sigmaLlmSource }),
+                ...(phase4 === null
+                    ? {}
+                    : {
+                          stages: stagesFromSources({
+                              snapshots: phase4,
+                              flags: stageFlagsOf(settings),
+                          }),
+                          stageGates: readinessStageGatesOf(registry),
+                      }),
             }),
             callTypes: buildCallTypes(),
             comparableFrom: resolveComparableFrom(rows),
@@ -137,28 +158,35 @@ export class SettingsUseCase {
             ...(settings.callReport === undefined
                 ? {}
                 : { callReport: toCallReportDto(settings.callReport) }),
+            ...settingsPhase4FieldsOf(settings),
         };
     }
 
     /**
-     * Снапшоты Фазы 2 на сегодня: модель портала, прогнозы и отчёт
-     * согласия (σ_llm). `ais` не ответила — настройки не гаснут,
-     * готовность считается без модели (кап §5.4), как и в обзоре.
+     * Снапшоты на сегодня: модель портала, прогнозы, отчёт согласия (σ_llm)
+     * и снапшоты ступеней Фазы 4. `ais` не ответила — настройки не гаснут,
+     * готовность считается без модели (кап §5.4) и без ступеней, как и в
+     * обзоре.
      */
     private async loadSnapshots(
         domain: string,
         day: string,
-    ): Promise<OverviewSnapshots> {
+    ): Promise<{
+        snapshots: OverviewSnapshots;
+        phase4: Phase4LatestSnapshots | null;
+    }> {
+        const loader = new OverviewSnapshotsLoader(this.snapshots);
         try {
-            return await new OverviewSnapshotsLoader(this.snapshots).load(
-                domain,
-                day,
-            );
+            const [snapshots, phase4] = await Promise.all([
+                loader.load(domain, day),
+                loader.loadPhase4(domain),
+            ]);
+            return { snapshots, phase4 };
         } catch (error) {
             this.logger.warn(
                 `Снапшоты Фазы 2 недоступны (${domain}): ${String(error)}`,
             );
-            return {};
+            return { snapshots: {}, phase4: null };
         }
     }
 }

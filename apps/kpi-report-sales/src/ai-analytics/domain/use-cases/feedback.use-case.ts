@@ -25,6 +25,7 @@ import { RequesterAccessService } from '../access/requester-access.service';
 import { portalRangeUtc } from '../loaders/period.util';
 import { SettingsLoader } from '../loaders/settings.loader';
 import { resetFeedbackCaches } from './feedback-cache-reset.util';
+import { leverFeedbackManagerId, refersToLever } from './feedback-lever.util';
 import {
     decideFeedbackWrite,
     type FeedbackWriteDecision,
@@ -64,6 +65,11 @@ export function disagreementSharePct(
  * alert_handled сбрасывается кэш пульса домена, после disagree — кэш
  * повестки (новое «Отработано» и несогласие видны сразу).
  *
+ * Отметка «Сделано» по совету (recommendation_done) — только с объектом
+ * lever:{managerId}:{ключ}; любая реакция с объектом lever: (несогласие
+ * с советом) проверяется так же: менеджер записи — из объекта, права как
+ * у useful (feedback-lever.util).
+ *
  * Список: только пользовательские реакции, без managerId — в периметре
  * requester'а (feedback-visibility.util).
  */
@@ -85,7 +91,11 @@ export class FeedbackUseCase {
         now: Date = new Date(),
     ): Promise<{ id: string }> {
         if (this.isLeaderOnly(dto.kind)) this.access.assertLeader(access);
-        const managerId = this.scopeManagerId(dto.managerId, dto, access);
+        const managerId = refersToLever(dto)
+            ? leverFeedbackManagerId(dto, requested =>
+                  this.scopeManagerId(requested, dto, access),
+              )
+            : this.scopeManagerId(dto.managerId, dto, access);
         const decision = await this.decideWrite(dto, now);
         if (decision.action === 'reuse') return { id: decision.id };
         const authorRole = isStyleSubject(dto.requesterUserId, managerId)

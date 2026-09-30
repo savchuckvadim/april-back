@@ -65,6 +65,12 @@ function levelTargetOf(
     return byLevel[level]?.sales ?? null;
 }
 
+/** Оценка месяца `{value, n}` → вход рычага качества `{score, n}`. */
+const qualityOf = (
+    score: { value: number; n: number } | null,
+): { score: number; n: number } | null =>
+    score === null ? null : { score: score.value, n: score.n };
+
 /** Вход прогноза по менеджеру: месяц, прошлый месяц и нормы модели. */
 export function managerInput(
     options: ManagerInputOptions,
@@ -91,5 +97,7 @@ export function managerInput(
             options.model.managerNorms.find(
                 norm => norm.managerId === options.managerId,
             ) ?? null,
+        // Оценка месяца; в начале месяца разборов ещё нет — прошлый месяц.
+        quality: qualityOf(current?.score ?? previous?.score ?? null),
     };
 }

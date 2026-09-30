@@ -27,7 +27,7 @@ import {
 import { DealConsolidationService } from './flows/deal-consolidation.service';
 import { CompanyFlowService } from './flows/company-flow.service';
 import { DealFlowService } from './flows/deal-flow.service';
-import { LeadFlowService } from './flows/lead-flow.service';
+import { LeadFlowService, xoPrevResponsible } from './flows/lead-flow.service';
 import { TaskFlowService } from './flows/task-flow.service';
 import { CrmRelationsReassignService } from '../../../shared/crm-relations';
 import { WorkTakeoverService } from '../../../shared/work-takeover';
@@ -487,7 +487,7 @@ export class LeadToWorkFlowService {
             this.portal.getTimezone(),
         );
 
-        const prev = this.leadFlow.prevResponsible(ctx);
+        const prev = xoPrevResponsible(ctx);
         if (prev && prev !== item.responsible) {
             this.kpi.queueNotHeld(
                 {

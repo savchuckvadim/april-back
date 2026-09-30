@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import {
     AI_ANALYTICS_FEEDBACK_KINDS,
     type AiAnalyticsFeedbackKind,
@@ -7,6 +7,10 @@ import {
     AI_ANALYTICS_SERVICE_FEEDBACK_KINDS,
     AI_ANALYTICS_USER_FEEDBACK_KINDS,
 } from '../constants/ai-feedback.const';
+import {
+    isLeverFeedbackKind,
+    leverFeedbackObject,
+} from '../domain/use-cases/feedback-lever.util';
 import { isServiceFeedbackKind } from '../domain/use-cases/feedback-visibility.util';
 import type { AiAnalyticsFeedbackRecord } from '../store/ai-analytics-feedback.store';
 import {
@@ -141,5 +145,123 @@ describe('FeedbackUseCase.list: периметр и служебные виды'
         expect(all).toEqual([...AI_ANALYTICS_FEEDBACK_KINDS].sort());
         expect(isServiceFeedbackKind('rop_mark')).toBe(true);
         expect(isServiceFeedbackKind('view')).toBe(false);
+    });
+});
+
+describe('FeedbackUseCase: recommendation_done — «Сделано» по совету', () => {
+    const KEY = 'volume:volume-below-capacity:::';
+    const done = (managerId: string, extra: object = {}) => ({
+        domain: 'd',
+        requesterUserId: '512',
+        kind: 'recommendation_done' as const,
+        object: leverFeedbackObject(managerId, KEY),
+        ...extra,
+    });
+
+    it('менеджер отмечает свой совет; менеджер записи — из объекта', async () => {
+        const { useCase, store } = makeFeedbackUseCase();
+
+        await expect(useCase.add(done('512'), manager, NOW)).resolves.toEqual({
+            id: '9001',
+        });
+        expect(store.add).toHaveBeenCalledWith(
+            expect.objectContaining({
+                kind: 'recommendation_done',
+                object: `lever:512:${KEY}`,
+                managerId: '512',
+            }),
+        );
+    });
+
+    it('менеджер по чужому совету → 403, записи нет', async () => {
+        const { useCase, store } = makeFeedbackUseCase();
+
+        await expect(
+            useCase.add(done('10'), manager, NOW),
+        ).rejects.toBeInstanceOf(ForbiddenException);
+        expect(store.add).not.toHaveBeenCalled();
+    });
+
+    it('руководитель отмечает совет менеджера периметра; вне периметра — 403', async () => {
+        const { useCase, store } = makeFeedbackUseCase();
+
+        await useCase.add(done('20', { requesterUserId: '447' }), leader, NOW);
+        expect(store.add).toHaveBeenCalledWith(
+            expect.objectContaining({ managerId: '20' }),
+        );
+
+        await expect(
+            useCase.add(done('99', { requesterUserId: '447' }), leader, NOW),
+        ).rejects.toBeInstanceOf(ForbiddenException);
+        expect(store.add).toHaveBeenCalledTimes(1);
+    });
+
+    it('объект не совет или битый ключ → 400 до выборки и записи', async () => {
+        const { useCase, store } = makeFeedbackUseCase();
+        const bad = [
+            'overview:512',
+            'lever:512',
+            'lever:abc:' + KEY,
+            'lever:512:магия:правило:::',
+            'lever:512:volume::::',
+        ];
+
+        for (const object of bad) {
+            await expect(
+                useCase.add({ ...done('512'), object }, manager, NOW),
+            ).rejects.toBeInstanceOf(BadRequestException);
+        }
+        expect(store.listInPeriod).not.toHaveBeenCalled();
+        expect(store.add).not.toHaveBeenCalled();
+    });
+
+    it('managerId тела не совпал с менеджером совета → 400', async () => {
+        const { useCase, store } = makeFeedbackUseCase();
+
+        await expect(
+            useCase.add(
+                done('20', { requesterUserId: '447', managerId: '10' }),
+                leader,
+                NOW,
+            ),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(store.add).not.toHaveBeenCalled();
+    });
+
+    it('несогласие с советом (объект lever:) — те же права: чужой совет 403, битый объект 400', async () => {
+        const { useCase, store } = makeFeedbackUseCase();
+        const disagree = (managerId: string) => ({
+            ...done(managerId),
+            kind: 'disagree' as const,
+        });
+
+        await useCase.add(disagree('512'), manager, NOW);
+        expect(store.add).toHaveBeenCalledWith(
+            expect.objectContaining({ kind: 'disagree', managerId: '512' }),
+        );
+        await expect(
+            useCase.add(disagree('10'), manager, NOW),
+        ).rejects.toBeInstanceOf(ForbiddenException);
+        await expect(
+            useCase.add(
+                { ...disagree('512'), object: 'lever:512' },
+                manager,
+                NOW,
+            ),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(store.add).toHaveBeenCalledTimes(1);
+    });
+
+    it('объект lever: у других видов не обязателен (несогласие пишется как прежде)', async () => {
+        const { useCase, store } = makeFeedbackUseCase();
+
+        await useCase.add(
+            { ...done('512'), kind: 'disagree', object: 'overview:512' },
+            manager,
+            NOW,
+        );
+        expect(store.add).toHaveBeenCalledTimes(1);
+        expect(isLeverFeedbackKind('disagree')).toBe(false);
+        expect(isLeverFeedbackKind('recommendation_done')).toBe(true);
     });
 });

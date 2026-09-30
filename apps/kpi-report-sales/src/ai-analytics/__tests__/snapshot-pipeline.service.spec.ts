@@ -8,6 +8,7 @@ import {
 import {
     AI_PIPELINE_BUS_KEYS,
     AI_PIPELINE_METRICS,
+    AI_PIPELINE_OPTIONAL_STEP_FAILED,
     AI_PIPELINE_RETRY_DELAY_MS,
 } from '../constants/ai-snapshot.const';
 import { AiEtlRunPayload, AiSnapshotJobData } from '../dto/ai-snapshot.dto';
@@ -293,6 +294,37 @@ describe('SnapshotPipelineService — раннер ночного конвейе
             domain: DOMAIN,
         });
         error.mockRestore();
+    });
+
+    it('сбой необязательного (теневого) шага — пропуск с причиной, прогон идёт дальше', async () => {
+        const warn = jest
+            .spyOn(Logger.prototype, 'warn')
+            .mockImplementation(() => undefined);
+        const shadow = {
+            ...fakeStep('quality-link', ['nightly'], () => {
+                throw new Error('таймаут БД');
+            }),
+            optional: true,
+        };
+        const next = fakeStep('portal-model', ['nightly']);
+        const { service, records } = makeService([shadow, next]);
+
+        const summary = await service.run(makeJob(), NOW);
+
+        expect(next.calls).toHaveLength(1);
+        expect(summary.status).toBe('partial');
+        const payload = activeRuns(records)[0].payload;
+        expect(payload.steps[0]).toMatchObject({
+            step: 'quality-link',
+            status: 'skipped',
+            reason: `${AI_PIPELINE_OPTIONAL_STEP_FAILED}: таймаут БД`,
+        });
+        expect(payload.steps[1]).toMatchObject({
+            step: 'portal-model',
+            status: 'ok',
+        });
+        expect(warn).toHaveBeenCalled();
+        warn.mockRestore();
     });
 
     it('занятый слот: джоба переставляется через 60 с, шаги не выполняются, журнал не пишется', async () => {

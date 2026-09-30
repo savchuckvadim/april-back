@@ -3,6 +3,8 @@ import { SalesAiAnalyticsAdminModule } from '../sales-ai-analytics-admin.module'
 import { SalesAiAnalyticsAuditModule } from '../sales-ai-analytics-audit.module';
 import { SalesAiAnalyticsOpsModule } from '../sales-ai-analytics-ops.module';
 import { SalesAiAnalyticsRetentionCronModule } from '../sales-ai-analytics-retention-cron.module';
+import { AiAnalyticsPhase4AdminController } from '../controllers/phase4.admin.controller';
+import { AiAnalyticsPhase4StatusService } from '../services/ai-analytics-phase4-status.service';
 
 /**
  * Статическая проверка DI-графа админ-слоя AI-аналитики: каждая
@@ -111,6 +113,17 @@ describe('DI-граф админ-слоя AI-аналитики', () => {
 
     it('крон ретенции получает сервис ретенции и настройки порталов', () => {
         expect(missingIn(SalesAiAnalyticsRetentionCronModule)).toEqual([]);
+    });
+
+    it('сервис снапшотов Фазы 4 объявлен в Ops и доступен admin-контроллеру', () => {
+        const provided = metadataOf(SalesAiAnalyticsOpsModule, 'providers');
+        expect(provided).toContain(AiAnalyticsPhase4StatusService);
+        expect(availableIn(SalesAiAnalyticsAdminModule)).toContain(
+            AiAnalyticsPhase4StatusService,
+        );
+        expect(
+            metadataOf(SalesAiAnalyticsAdminModule, 'controllers'),
+        ).toContain(AiAnalyticsPhase4AdminController);
     });
 
     it('сервисный модуль аудита остаётся самодостаточным', () => {

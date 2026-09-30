@@ -1,5 +1,14 @@
-import type { LeverCandidate } from '@lib/sales-ai-analytics';
-import { toRecommendations } from '../domain/presenter/levers.presenter';
+import { type LeverCandidate, leverKeyOf } from '@lib/sales-ai-analytics';
+import {
+    applyLeverMarks,
+    toRecommendations,
+} from '../domain/presenter/levers.presenter';
+import {
+    leverFeedbackMarks,
+    leverFeedbackObject,
+    periodLeverFeedbackMarks,
+} from '../domain/use-cases/feedback-lever.util';
+import type { AiManagerRowDto } from '../dto/ai-manager-row.dto';
 
 const lever = (overrides: Partial<LeverCandidate> = {}): LeverCandidate => ({
     lever: 'volume',
@@ -75,6 +84,43 @@ describe('toRecommendations — рычаги прогноза в строку м
         expect(toRecommendations(forecastWith('нет'), { n: 40 })).toEqual([]);
     });
 
+    it('совет по качеству ниже уровня совета (E1) — без числа эффекта, с уровня E2 — с числом', () => {
+        const [observed] = toRecommendations(
+            forecastWith([
+                lever({
+                    lever: 'quality',
+                    ruleCode: 'quality-section-gap',
+                    section: 'NEEDS',
+                    deltaSales: 0.7,
+                    evidence: 'E1',
+                    adviceAllowed: false,
+                }),
+            ]),
+            { n: 40 },
+        );
+        expect(observed.lever).toBe('quality');
+        expect(observed.evidence).toBe('E1');
+        expect(observed).not.toHaveProperty('deltaSales');
+
+        const [advice] = toRecommendations(
+            forecastWith([
+                lever({
+                    lever: 'quality',
+                    ruleCode: 'quality-section-gap',
+                    deltaSales: 0.7,
+                    evidence: 'E2',
+                    adviceAllowed: true,
+                }),
+            ]),
+            { n: 40 },
+        );
+        expect(advice.deltaSales).toBe(0.7);
+
+        // Объём — арифметика по своей конверсии менеджера, число остаётся.
+        const [volume] = toRecommendations(forecastWith([lever()]), { n: 40 });
+        expect(volume.deltaSales).toBe(1.2);
+    });
+
     it('рычаг без ожидаемого эффекта отдаётся без числа (уровень E0)', () => {
         const [item] = toRecommendations(
             forecastWith([
@@ -117,5 +163,154 @@ describe('toRecommendations — рычаги прогноза в строку м
                 max: 1,
             }),
         ).toHaveLength(1);
+    });
+
+    it('ключ совета — leverKeyOf по частям кандидата; без отметок done = false, issuedAt = null', () => {
+        const [item] = toRecommendations(
+            forecastWith([
+                lever({
+                    lever: 'checklist',
+                    ruleCode: 'checklist-item-missing',
+                    callType: 'presentation',
+                    section: 'NEXT_STEP',
+                }),
+            ]),
+            { n: 40 },
+        );
+
+        expect(item.key).toBe(
+            leverKeyOf({
+                lever: 'checklist',
+                ruleCode: 'checklist-item-missing',
+                callType: 'presentation',
+                section: 'NEXT_STEP',
+            }),
+        );
+        expect(item.key).toBe(
+            'checklist:checklist-item-missing:presentation:NEXT_STEP:',
+        );
+        expect(item.done).toBe(false);
+        expect(item.issuedAt).toBeNull();
+    });
+
+    it('один и тот же рычаг каждую ночь получает тот же ключ; пустые части = отсутствующие', () => {
+        const [first] = toRecommendations(forecastWith([lever()]), { n: 40 });
+        const [again] = toRecommendations(
+            forecastWith([lever({ deltaSales: 0.3, section: '' })]),
+            { n: 40 },
+        );
+        expect(first.key).toBe('volume:volume-below-capacity:::');
+        expect(again.key).toBe(first.key);
+    });
+});
+
+describe('applyLeverMarks — «Сделано» и день выдачи на советах строки', () => {
+    const row = (managerId: string): AiManagerRowDto =>
+        ({
+            managerId,
+            recommendations: toRecommendations(
+                forecastWith([
+                    lever(),
+                    lever({
+                        lever: 'quality',
+                        ruleCode: 'quality-weak-section',
+                    }),
+                ]),
+                { n: 40 },
+            ),
+        }) as unknown as AiManagerRowDto;
+
+    it('обзор прошлого периода: «Сделано» после конца периода засчитывается, день выдачи — только из периода', () => {
+        const [volume] = toRecommendations(forecastWith([lever()]), { n: 40 });
+        const object = leverFeedbackObject('10', volume.key);
+        // Период — сентябрь; «Сделано» нажали 2 октября, открыв обзор сентября.
+        const periodEnd = new Date('2026-09-30T20:59:59.999Z');
+        const marks = periodLeverFeedbackMarks(
+            [
+                {
+                    kind: 'recommendation_issued',
+                    object,
+                    payload: { day: '2026-09-29' },
+                    createdAt: new Date('2026-09-29T01:00:00Z'),
+                },
+                {
+                    kind: 'recommendation_done',
+                    object,
+                    createdAt: new Date('2026-10-02T09:00:00Z'),
+                },
+                // Совет выдан снова уже в октябре — дню выдачи сентября не мешает.
+                {
+                    kind: 'recommendation_issued',
+                    object,
+                    payload: { day: '2026-10-01' },
+                    createdAt: new Date('2026-10-01T01:00:00Z'),
+                },
+            ],
+            periodEnd,
+        );
+
+        expect(marks.done.has(object)).toBe(true);
+        expect(marks.issuedAt.get(object)).toBe('2026-09-29');
+        const [ten] = applyLeverMarks([row('10')], marks);
+        expect(ten.recommendations[0].done).toBe(true);
+    });
+
+    it('отметка ставится только совету того же менеджера и с тем же ключом', () => {
+        const [volume] = toRecommendations(forecastWith([lever()]), { n: 40 });
+        const marks = leverFeedbackMarks([
+            {
+                kind: 'recommendation_done',
+                object: leverFeedbackObject('10', volume.key),
+            },
+            {
+                kind: 'recommendation_issued',
+                object: leverFeedbackObject('10', volume.key),
+                payload: { day: '2026-09-09' },
+            },
+            {
+                kind: 'recommendation_issued',
+                object: leverFeedbackObject('10', volume.key),
+                payload: { day: '2026-09-03' },
+            },
+            // Чужой менеджер — не отметка для строки 10.
+            {
+                kind: 'recommendation_done',
+                object: leverFeedbackObject('20', 'quality:x:::'),
+            },
+            // Не совет и чужая форма объекта — пропускаются.
+            { kind: 'recommendation_done', object: 'overview:10' },
+            { kind: 'disagree', object: leverFeedbackObject('10', volume.key) },
+        ]);
+
+        const [ten, twenty] = applyLeverMarks([row('10'), row('20')], marks);
+
+        expect(ten.recommendations.map(item => item.done)).toEqual([
+            true,
+            false,
+        ]);
+        expect(ten.recommendations[0].issuedAt).toBe('2026-09-03');
+        expect(ten.recommendations[1].issuedAt).toBeNull();
+        expect(twenty.recommendations.map(item => item.done)).toEqual([
+            false,
+            false,
+        ]);
+    });
+
+    it('без отметок строки возвращаются как есть; исходные строки не мутируются', () => {
+        const rows = [row('10')];
+        expect(applyLeverMarks(rows, leverFeedbackMarks([]))).toEqual(rows);
+
+        const [volume] = rows[0].recommendations;
+        const marked = applyLeverMarks(
+            rows,
+            leverFeedbackMarks([
+                {
+                    kind: 'recommendation_done',
+                    object: leverFeedbackObject('10', volume.key),
+                },
+            ]),
+        );
+        expect(marked[0].recommendations[0].done).toBe(true);
+        expect(rows[0].recommendations[0].done).toBe(false);
     });
 });

@@ -49,12 +49,21 @@ const trends = (
 });
 
 describe('подписи метрик трендов', () => {
-    it('оценка, объём, корзины и рёбра по справочникам; чужой код — как есть', () => {
+    it('оценка, объём, корзины и рёбра словами без стрелок; чужой код — как есть', () => {
         expect(trendMetricTitle('quality')).toBe('оценка');
-        expect(trendMetricTitle('volume')).toBe('разборов');
+        expect(trendMetricTitle('volume')).toBe('число разборов');
         expect(trendMetricTitle('bucket_closing')).toBe('оценка закрытия');
+        expect(trendMetricTitle('edge_call_to_presentation')).toBe(
+            'доля презентаций после звонков',
+        );
         expect(trendMetricTitle('edge_presentation_to_offer')).toBe(
-            'презентация → КП',
+            'доля КП после презентаций',
+        );
+        expect(trendMetricTitle('edge_offer_to_invoice')).toBe(
+            'доля счетов после КП',
+        );
+        expect(trendMetricTitle('edge_invoice_to_sale')).toBe(
+            'доля продаж после счетов',
         );
         expect(trendMetricTitle('edge_nope')).toBe('edge_nope');
     });
@@ -65,16 +74,35 @@ describe('вход «Внимания» из блока трендов', () => {
         expect(trendSignalsOf(trends())).toEqual([
             expect.objectContaining({
                 metric: 'edge_presentation_to_offer',
-                title: 'презентация → КП',
+                title: 'доля КП после презентаций',
                 kind: 'shift',
                 direction: 'down',
                 magnitude: -0.2,
+                grain: 'month',
+                unit: 'share',
             }),
         ]);
+        expect(
+            trendSignalsOf(
+                trends({
+                    signals: [
+                        {
+                            metric: 'quality',
+                            grain: 'week',
+                            kind: 'shift',
+                            direction: 'down',
+                            sinceWeek: '2026-W31',
+                            magnitude: -0.8,
+                            confidence: 'ok',
+                        },
+                    ],
+                }),
+            ),
+        ).toEqual([expect.objectContaining({ grain: 'week', unit: 'value' })]);
         expect(goodhartOf(trends())).toEqual([
             expect.objectContaining({
                 pair: 'volume_vs_quality',
-                pressureTitle: 'разборов',
+                pressureTitle: 'число разборов',
                 counterTitle: 'оценка',
                 pressureChange: 0.5,
                 counterChange: -0.36,
@@ -101,13 +129,14 @@ describe('вход «Внимания» из блока трендов', () => {
             'trend_shift',
         ]);
         expect(items[0].headline).toBe(
-            'За 3 месяца разборов — больше на 50 %, а оценка — меньше ' +
-                'на 36 %: показатель растёт, а результат — нет',
+            'За 3 месяца число разборов — больше на 50 %, а оценка — ' +
+                'меньше на 36 %: показатель растёт, а результат — нет',
         );
         expect(items[0].availableFrom).toBe(3);
-        // 2026-W27 начинается в понедельник 29 июня — дата вместо ключа.
+        // Месячный ряд доли ребра: 2026-W27 (29 июня – 5 июля) — неделя
+        // 1 июля, величина в пунктах, а не дробью «0,2».
         expect(items[1].headline).toBe(
-            'Уровень сместился вниз: презентация → КП −0,2 с недели 29 июня',
+            'Доля КП после презентаций ниже на 20 пунктов с июля',
         );
     });
 });

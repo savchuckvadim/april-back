@@ -172,7 +172,10 @@ export function capOf(
 }
 
 /** Ступенчатая таблица `F(d)` из непрерывной шкалы: сетка дней окна. */
-function tableOf(cdf: LagCdf, windowDays: number): PortalLagCdfFacts['points'] {
+export function tableOf(
+    cdf: LagCdf,
+    windowDays: number,
+): PortalLagCdfFacts['points'] {
     return LAG_CDF_GRID.filter(days => days <= windowDays).map(days => ({
         days,
         value: Math.round(cdf.at(days) * 1e6) / 1e6,

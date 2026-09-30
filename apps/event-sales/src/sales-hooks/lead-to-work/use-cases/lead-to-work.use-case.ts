@@ -33,6 +33,7 @@ import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import { LeadUfDefinitionsService } from '../../../shared/portal-fields';
 import { UserNameResolver } from '../../../shared/lead-request/user-name.resolver';
 import { LeadToWorkNotifyService } from '../services/lead-to-work-notify.service';
+import { leadToWorkNameIds } from './lead-to-work-name-ids';
 import { LeadToWorkDuplicateCheckService } from '../services/lead-to-work-duplicate-check.service';
 import { LeadDealCompletion } from '../../../shared/lead-client/lead-deal-completion';
 import { LeadClientKind } from '../../../shared/lead-client';
@@ -516,11 +517,7 @@ export class LeadToWorkUseCase
         const userNames = await this.userNames.resolve(
             ctx.domain,
             ctx.bitrix,
-            prepared.flatMap(entry => [
-                entry.assignee?.responsible ?? 0,
-                entry.item.transferredBy ?? 0,
-                entry.item.excludeResponsible ?? 0,
-            ]),
+            leadToWorkNameIds(prepared),
         );
 
         const flowService = new LeadToWorkFlowService(
@@ -692,7 +689,7 @@ export class LeadToWorkUseCase
          * заявка» (с требованием подтвердить в ХО-ветке), прежнему — почему
          * работа ушла. Падение уведомления не роняет операцию.
          */
-        const notifier = new LeadToWorkNotifyService(ctx.bitrix);
+        const notifier = new LeadToWorkNotifyService(ctx.bitrix, userNames);
         for (const entry of queued) {
             if (entry.error || !entry.responsible) continue;
             const warnings = await notifier.notifyAssignment({

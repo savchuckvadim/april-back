@@ -12,6 +12,7 @@ import {
 } from '@lib/sales-ai-analytics';
 import { AiAnalyticsAboutModule } from './about/ai-analytics-about.module';
 import { AiAnalyticsReviewModule } from './review/ai-analytics-review.module';
+import { AiAnalyticsForecastController } from './ai-analytics-forecast.controller';
 import { AiAnalyticsOverviewController } from './ai-analytics-overview.controller';
 import { AiAnalyticsController } from './ai-analytics.controller';
 import { AiAnalyticsBriefModule } from './brief/ai-analytics-brief.module';
@@ -25,6 +26,9 @@ import { AttentionUseCase } from './domain/use-cases/attention.use-case';
 import { AuditSnapshotUseCase } from './domain/use-cases/audit-snapshot.use-case';
 import { ByTypeUseCase } from './domain/use-cases/by-type.use-case';
 import { FeedbackUseCase } from './domain/use-cases/feedback.use-case';
+import { CachedSettingsReader } from './domain/use-cases/cached-settings.reader';
+import { AI_READINESS_MODE_SOURCE } from './domain/use-cases/readiness-mode.source';
+import { ForecastUseCase } from './domain/use-cases/forecast.use-case';
 import { MorningDigestUseCase } from './domain/use-cases/morning-digest.use-case';
 import { OverviewJobUseCase } from './domain/use-cases/overview-job.use-case';
 import { OverviewLookupUseCase } from './domain/use-cases/overview-lookup.use-case';
@@ -85,9 +89,10 @@ import { AiAnalyticsStyleModule } from './style/ai-analytics-style.module';
  * настроек), PbxAicallSmartModule (entityTypeId смарта для ссылок на
  * разборы), SalesAiAnalyticsAuditModule (ручки аудита — в apps/admin).
  * BxDepartmentModule публикует роуты структуры, которые приложение
- * подключает и само. Контроллеров в поверхности приложения ровно семь:
- * два здесь и по одному у срезов плана, резюме, стиля, проверки и блока
- * «Как считаем» — закреплено `__tests__/ai-analytics-module-di.spec.ts`.
+ * подключает и само. Контроллеры фичи: три здесь (витрина, обзор и
+ * прогноз отдела Фазы 4) и по одному у срезов плана, план-факта, резюме,
+ * досье, стиля, проверки, отзыва с сайта и блока «Как считаем» — список
+ * закреплён `__tests__/ai-analytics-module-di.spec.ts`.
  *
  * Все провайдеры — @Injectable без bitrix-состояния (см. CLAUDE.md про
  * race condition c this.bitrix): портал приходит параметром domain.
@@ -117,7 +122,11 @@ import { AiAnalyticsStyleModule } from './style/ai-analytics-style.module';
         AiAnalyticsAboutModule,
         AiAnalyticsReviewModule,
     ],
-    controllers: [AiAnalyticsController, AiAnalyticsOverviewController],
+    controllers: [
+        AiAnalyticsController,
+        AiAnalyticsOverviewController,
+        AiAnalyticsForecastController,
+    ],
     providers: [
         AiAnalyticsSettingsAuditStore,
         AiAnalyticsPushLogStore,
@@ -139,6 +148,14 @@ import { AiAnalyticsStyleModule } from './style/ai-analytics-style.module';
         AttentionUseCase,
         ByTypeUseCase,
         SettingsSaveUseCase,
+        // Фаза 4 (поток B3): прогноз отдела — два чтения снапшотов и
+        // режим готовности из кэша settings/get.
+        ForecastUseCase,
+        CachedSettingsReader,
+        {
+            provide: AI_READINESS_MODE_SOURCE,
+            useExisting: CachedSettingsReader,
+        },
         AiAnalyticsOverviewPrewarmScheduler,
         AiAnalyticsQueueProcessor,
     ],

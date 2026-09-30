@@ -29,6 +29,7 @@ import {
     type FunnelLeak,
 } from '@lib/sales-ai-analytics';
 import { AI_FORECAST_CI80_Z } from '../../constants/ai-portal-model.const';
+import { AI_QUALITY_LINK_OFFSET_EDGE } from '../../constants/ai-quality-link.const';
 import { buildPlan, leversOf, linkOf } from './forecast.plan';
 import type { ForecastBuildInput, ForecastPayload } from './forecast.types';
 import type {
@@ -127,6 +128,16 @@ function leaksOf(
         ],
         seed: input.seed,
         qualityLink: linkOf(input.model),
+        // Компонента «качество» — на ребре «презентация → КП»: библиотека
+        // считает её только при связи «по данным» с кривой.
+        ...(input.manager.quality
+            ? {
+                  quality: {
+                      score: input.manager.quality.score,
+                      edgeCode: AI_QUALITY_LINK_OFFSET_EDGE,
+                  },
+              }
+            : {}),
     }).leaks.map(leak => ({ ...leak }));
 }
 
@@ -215,6 +226,9 @@ export function buildForecastPayload(
             entryRate,
             salesPerUnit: conversion * fBar,
             ci80: salesPerUnitCi80(input, thetas, path, fBar),
+            thetas,
+            path,
+            fBar,
         }),
         leaks: [...leaks],
         meta: { ...input.meta, modelSnapshotId: input.modelSnapshotId },

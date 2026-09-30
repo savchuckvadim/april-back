@@ -5,15 +5,15 @@ import {
     ISalesHookUseCase,
     SalesHookExecutionContext,
 } from '../../core/contracts/sales-hook-use-case.contract';
-import {
-    LeadAcceptPlan,
-    LeadRequestAcceptService,
-} from '../../../lead-request/services/lead-request-accept.service';
+import { LeadRequestAcceptService } from '../../../lead-request/services/lead-request-accept.service';
+import { LeadAcceptPlan } from '../../../lead-request/services/lead-accept-plan';
 import { LeadRequestAcceptResultDto } from '../../../lead-request/dto/lead-request-accept.dto';
 import {
     IWorkTakeoverOutcome,
     WorkTakeoverService,
 } from '../../../shared/work-takeover';
+import { acceptActorIds } from '../../../shared/lead-request/accept-actor.util';
+import { UserNameResolver } from '../../../shared/lead-request/user-name.resolver';
 
 type BxRow = Record<string, unknown>;
 
@@ -49,6 +49,7 @@ export interface LeadAcceptBatchResult {
  *   Волна 1 (1 HTTP): batch deal.get для элементов с dealId → leadId
  *                     по связям (deal_from_lead_id/LEAD_ID);
  *   Волна 2 (1 HTTP): batch lead.get всех лидов пачки;
+ *   Имена (≤1 HTTP):  UserNameResolver — принявшие в истории по имени;
  *   Расчёт:           LeadRequestAcceptService.plan() на каждый лид —
  *                     чистая функция, ноль вызовов;
  *   Запись:           lead.update + deal.update группами через буфер
@@ -65,7 +66,11 @@ export class LeadAcceptUseCase
     readonly hook = EnumSalesHookCode.LEAD_ACCEPT;
     private readonly logger = new Logger(LeadAcceptUseCase.name);
 
-    constructor(private readonly acceptService: LeadRequestAcceptService) {}
+    constructor(
+        private readonly acceptService: LeadRequestAcceptService,
+        /** Имена принявших: историю читают люди, а не сверяют id. */
+        private readonly userNames: UserNameResolver,
+    ) {}
 
     async execute(
         ctx: SalesHookExecutionContext,
@@ -74,7 +79,13 @@ export class LeadAcceptUseCase
         const results: LeadAcceptBatchResult['items'] = [];
 
         // === Волна 1: сделки элементов без leadId — одним batch'ем.
-        const dealsById = await this.prefetchDeals(ctx, items);
+        const dealsById = await this.prefetch(
+            ctx,
+            'deal',
+            items.flatMap(item =>
+                !item.leadId && item.dealId ? [item.dealId] : [],
+            ),
+        );
 
         // leadId каждого элемента: явный либо по связям его сделки.
         const resolved = items.map(item => ({
@@ -88,8 +99,9 @@ export class LeadAcceptUseCase
         }));
 
         // === Волна 2: все лиды пачки — одним batch'ем.
-        const leadsById = await this.prefetchLeads(
+        const leadsById = await this.prefetch(
             ctx,
+            'lead',
             resolved
                 .map(entry => entry.leadId)
                 .filter((id): id is number => !!id),
@@ -113,12 +125,28 @@ export class LeadAcceptUseCase
                     : null;
             })
             .filter((id): id is number => !!id && !dealsById.has(id));
-        for (const [dealId, row] of await this.prefetchDealsByIds(
+        for (const [dealId, row] of await this.prefetch(
             ctx,
+            'deal',
             baseDealIds,
         )) {
             dealsById.set(dealId, row);
         }
+
+        /*
+         * === Имена принявших — одним заходом ДО расчёта и первой записи:
+         * resolve шлёт свой batch, а карта команд сейчас пуста (волны выше
+         * отправлены, буфер ещё ничего не коммитил). Кандидаты с запасом:
+         * явные userId + ответственные всех прочитанных лидов и сделок.
+         */
+        const names = await this.userNames.resolve(
+            ctx.domain,
+            ctx.bitrix,
+            acceptActorIds(
+                items.map(item => item.userId),
+                [...leadsById.values(), ...dealsById.values()],
+            ),
+        );
 
         // === Расчёт планов — чисто, ноль вызовов.
         const planned: IPlannedAccept[] = [];
@@ -151,6 +179,7 @@ export class LeadAcceptUseCase
                     item.userId,
                     item.dealId,
                     baseDealId ? (dealsById.get(baseDealId) ?? null) : null,
+                    names,
                 );
                 planned.push({ item, leadId, plan });
             } catch (error) {
@@ -246,63 +275,30 @@ export class LeadAcceptUseCase
         };
     }
 
-    /** Волна 1: batch deal.get для всех элементов с dealId (1 HTTP). */
-    private async prefetchDeals(
+    /**
+     * batch get строк лидов/сделок по списку id — одна волна на любое
+     * количество (1 HTTP на 50 команд). Отправляет карту команд инстанса
+     * целиком — звать только в фазе чтения, до первой записи.
+     */
+    private async prefetch(
         ctx: SalesHookExecutionContext,
-        items: ILeadAcceptItem[],
-    ): Promise<Map<number, BxRow>> {
-        return this.prefetchDealsByIds(
-            ctx,
-            items
-                .filter(item => !item.leadId && item.dealId)
-                .map(item => item.dealId!),
-        );
-    }
-
-    /** batch deal.get по списку id — одна волна на любое количество. */
-    private async prefetchDealsByIds(
-        ctx: SalesHookExecutionContext,
+        entity: 'lead' | 'deal',
         ids: number[],
     ): Promise<Map<number, BxRow>> {
-        const dealIds = [...new Set(ids)];
-        const map = new Map<number, BxRow>();
-        if (!dealIds.length) return map;
-
-        for (const dealId of dealIds) {
-            ctx.bitrix.batch.deal.get(`la_deal_get_${dealId}`, dealId);
-        }
-        const chunks = await ctx.bitrix.api.callBatchWithConcurrency(1);
-        for (const chunk of chunks) {
-            for (const [cmd, value] of Object.entries(
-                (chunk?.result ?? {}) as Record<string, unknown>,
-            )) {
-                const match = /^la_deal_get_(\d+)$/.exec(cmd);
-                if (match && value && typeof value === 'object') {
-                    map.set(Number(match[1]), value as BxRow);
-                }
-            }
-        }
-        return map;
-    }
-
-    /** Волна 2: batch lead.get всех лидов пачки (1 HTTP). */
-    private async prefetchLeads(
-        ctx: SalesHookExecutionContext,
-        leadIds: number[],
-    ): Promise<Map<number, BxRow>> {
-        const unique = [...new Set(leadIds)];
+        const unique = [...new Set(ids)];
         const map = new Map<number, BxRow>();
         if (!unique.length) return map;
 
-        for (const leadId of unique) {
-            ctx.bitrix.batch.lead.get(`la_lead_get_${leadId}`, leadId);
+        for (const id of unique) {
+            ctx.bitrix.batch[entity].get(`la_${entity}_get_${id}`, id);
         }
+        const key = new RegExp(`^la_${entity}_get_(\\d+)$`);
         const chunks = await ctx.bitrix.api.callBatchWithConcurrency(1);
         for (const chunk of chunks) {
             for (const [cmd, value] of Object.entries(
                 (chunk?.result ?? {}) as Record<string, unknown>,
             )) {
-                const match = /^la_lead_get_(\d+)$/.exec(cmd);
+                const match = key.exec(cmd);
                 if (match && value && typeof value === 'object') {
                     map.set(Number(match[1]), value as BxRow);
                 }

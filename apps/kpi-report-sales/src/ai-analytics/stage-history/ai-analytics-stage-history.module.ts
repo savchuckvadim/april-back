@@ -20,11 +20,18 @@ import { AiModule } from '@lib/call-lib';
 import { AiAnalyticsCoreModule } from '../core/ai-analytics-core.module';
 import { CallEntityLoader } from '../domain/loaders/call-entity.loader';
 import { StageHistoryLoader } from '../domain/loaders/stage-history.loader';
+import { QualityLinkStep } from '../steps/quality-link.step';
 import { StageHistoryStep } from '../steps/stage-history.step';
 
 @Module({
     imports: [PBXModule, AiModule, AiAnalyticsCoreModule],
-    providers: [StageHistoryLoader, CallEntityLoader, StageHistoryStep],
-    exports: [StageHistoryStep],
+    providers: [
+        StageHistoryLoader,
+        CallEntityLoader,
+        StageHistoryStep,
+        // Фаза 4, П20: оценка β читает сущности звонков тем же загрузчиком.
+        QualityLinkStep,
+    ],
+    exports: [StageHistoryStep, QualityLinkStep],
 })
 export class AiAnalyticsStageHistoryModule {}

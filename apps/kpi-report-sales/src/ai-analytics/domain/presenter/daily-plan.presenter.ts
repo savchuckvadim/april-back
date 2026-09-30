@@ -42,6 +42,8 @@ function toItemDto(item: DailyPlanItem): AiDailyPlanItemDto {
         monthDone: item.monthDone,
         cap: item.cap,
         priority: item.priority,
+        // Старые снапшоты прогноза без утечки → null: «узкого места» нет.
+        leak: item.leak ?? null,
     };
 }
 

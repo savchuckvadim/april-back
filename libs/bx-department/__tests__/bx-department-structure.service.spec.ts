@@ -183,6 +183,24 @@ describe('BxDepartmentStructureService', () => {
             ).toEqual([61, 62]);
         });
 
+        it('department дополнен полями снимка: предки ОП с сотрудниками, isMultiple, multipleTag', async () => {
+            const result = await service.getStructure(
+                DOMAIN,
+                EDepartamentGroup.sales,
+                204,
+            );
+
+            const parents = result.department.parentDepartments ?? [];
+            expect(parents.map(d => d.ID).sort((a, b) => a - b)).toEqual([
+                1, 53,
+            ]);
+            expect(parents.every(d => Array.isArray(d.USERS))).toBe(true);
+            expect(result.department.isMultiple).toBe(true);
+            expect(result.department.multipleTag).toBeNull();
+            expect(result.isMultiple).toBe(true);
+            expect(result.multipleTag).toBeNull();
+        });
+
         it('service: матчит отделы «ОС …»', async () => {
             const result = await service.getStructure(
                 DOMAIN,
@@ -240,8 +258,13 @@ describe('BxDepartmentStructureService', () => {
             expect(result.department.generalDepartment.map(d => d.ID)).toEqual(
                 expect.arrayContaining([37, 41, 49]),
             );
+            // своего ключа у структуры нет — перезаписывается снимок отдела
             expect(redisSet).toHaveBeenCalledWith(
-                expect.stringContaining(`department_structure_v3_${DOMAIN}_`),
+                expect.stringMatching(
+                    new RegExp(
+                        `^department_${DOMAIN}_\\d{4}_sales_multi_default_v4$`,
+                    ),
+                ),
                 expect.any(String),
                 'EX',
                 86400,

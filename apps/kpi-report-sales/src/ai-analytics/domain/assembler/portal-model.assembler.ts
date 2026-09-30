@@ -8,7 +8,9 @@
  * Здесь ОРКЕСТРАЦИЯ готовых функций библиотеки, а не своя математика:
  * `buildPortalNorms` (leave-one-out + κ Клейнмана), `estimateMS`,
  * `capacityQuantile`, `kaplanMeierLagCdf`, `betaGateCountdown`,
- * `buildReadiness`. Собственных порогов и формул файл не держит.
+ * `buildReadiness` + `elevateReadiness` (ступени L4/L5). Части Фазы 4 —
+ * `portal-model.phase4.ts` и `portal-model.estimates.phase4.ts`.
+ * Собственных порогов и формул файл не держит.
  *
  * Чистые функции: без DI, Bitrix и Prisma, без `new Date()` внутри —
  * момент расчёта приходит в `meta.generatedAt`.
@@ -17,9 +19,10 @@ import {
     AI_READINESS_GATE_DEFAULTS,
     betaGateCountdown,
     buildReadiness,
+    elevateReadiness,
     estimateEdgeKappa,
+    readinessStageGatesOf,
     resolveNumberParam,
-    type AiBetaSource,
     type AiEdgeEstimand,
     type ParamContext,
     type QualityGroup,
@@ -27,29 +30,37 @@ import {
     type StageTheta,
 } from '@lib/sales-ai-analytics';
 import type { AiPortalEvent } from '@lib/sales-ai-analytics/settings/ai-settings.types';
-import {
-    AI_PORTAL_CAP_ACTIVITY,
-    AI_PORTAL_SEASON_NOT_ESTIMATED,
-} from '../../constants/ai-portal-model.const';
+import { AI_PORTAL_CAP_ACTIVITY } from '../../constants/ai-portal-model.const';
 import type { AiSanityReport } from '../../steps/sanity.types';
+import type { AiCalendarSource } from '../loaders/calendar.util';
 import type { AiSnapshotMeta } from './manager-snapshot.types';
 import {
     capOf,
-    lagCdfOf,
     msOf,
-    overdispersionOf,
     sRefOf,
     stageThetaFactsOf,
 } from './portal-model.estimates';
+import {
+    lagPhase4Of,
+    overdispersionPhase4Of,
+    seasonPhase4Of,
+} from './portal-model.estimates.phase4';
+import { checkPhase4Of } from './portal-model.check.phase4';
 import { buildPortalNorms } from './portal-model.norms';
+import {
+    modelBetaCountdownOf,
+    modelBetaSourceOf,
+    normsPoolOf,
+    poolUsageOf,
+    qualityLinkFactsOf,
+    readinessStagesOf,
+} from './portal-model.phase4';
+import type { PortalModelPhase4Facts } from './portal-model.phase4.types';
 import type {
     PortalManagerMonth,
     PortalModelSignature,
     PortalModelPayload,
 } from './portal-model.types';
-
-/** Минимум пар гипотезы портала для режима `hypothesis` (план §4.11). */
-const MIN_HYPOTHESIS_PAIRS = 2;
 
 /** Решения портала, от которых зависит режим готовности витрины. */
 export interface PortalReadinessFacts {
@@ -59,6 +70,8 @@ export interface PortalReadinessFacts {
     readonly pipelineEnabled: boolean;
     /** Производственный календарь портала импортирован. */
     readonly calendarImported: boolean;
+    /** Источник календаря прогона; нет — вызывающий его не знает. */
+    readonly calendarSource?: AiCalendarSource;
     /** Записей в `ai_analytics_levels`. */
     readonly rosterLevels: number;
     /** `ai_analytics_roster_confirmed_at`; '' — не подтверждён. */
@@ -74,6 +87,8 @@ export interface PortalModelBuildInput {
     readonly window: readonly string[];
     /** Месячные снапшоты менеджеров окна. */
     readonly months: readonly PortalManagerMonth[];
+    /** Месяцы глубины сезона (≥ гейта); нет — сезон по окну норм. */
+    readonly seasonMonths?: readonly PortalManagerMonth[];
     readonly registry: ParamContext;
     /** Сырые оценки разборов по менеджерам (шкала 1–10) для ANOVA. */
     readonly qualityGroups: readonly QualityGroup[];
@@ -97,6 +112,8 @@ export interface PortalModelBuildInput {
     /** Сигнатура источников — вход обнаружения автособытий в следующий раз. */
     readonly signature: PortalModelSignature;
     readonly meta: AiSnapshotMeta;
+    /** Входы Фазы 4 (связь качества, пул, ступени L4/L5, недели φ). */
+    readonly phase4?: PortalModelPhase4Facts;
 }
 
 /** Объёмы окна: презентации, продажи и месяцы с данными. */
@@ -138,43 +155,43 @@ function defaultKappaOf(registry: ParamContext, months: number): number {
 }
 
 /**
- * Режим связи «качество → исход» до Фазы 4: оценки на данных нет, поэтому
- * либо гипотеза портала (≥ 2 пар), либо честное «связи нет».
- */
-function betaSourceOf(hypothesisPairs: number): AiBetaSource {
-    return hypothesisPairs >= MIN_HYPOTHESIS_PAIRS ? 'hypothesis' : 'none';
-}
-
-/**
  * Нагрузка снапшота `ai-analytics-portal-model` за месяц. Пустое окно
  * сюда не приходит: переиспользование прошлой модели решает сценарий.
+ * Входы Фазы 4 необязательны: без снапшотов и флагов ступени L4/L5 не
+ * рассматриваются, связь качества, пул и φ по неделям — прежние (§5.4).
  */
 export function buildPortalModelPayload(
     input: PortalModelBuildInput,
 ): PortalModelPayload {
+    const phase4 = input.phase4 ?? {};
     // Месяцев истории — столько, сколько их РЕАЛЬНО в данных: гейт
     // Клейнмана открывается по накопленной истории, а не по ширине
     // запрошенного окна (иначе новый портал сразу получил бы κ_late).
     const windowMonths = new Set(input.months.map(month => month.monthKey))
         .size;
+    const normsPool = normsPoolOf(phase4.pool, input.edgeKind, input.registry);
     const norms = buildPortalNorms({
         months: input.months,
         windowMonths,
         registry: input.registry,
+        pool: normsPool,
     });
     const volumes = volumesOf(input.months);
     const ms = msOf(input.qualityGroups, input.registry);
     const sRef = sRefOf(input.months, input.window, input.registry);
     const cap = capOf(input.months, input.registry);
-    const betaSource = betaSourceOf(input.hypothesisPairs);
-    const countdown = betaGateCountdown({
-        presentations: volumes.presentations,
-        presentationsPerMonth:
-            volumes.monthsWithData > 0
-                ? volumes.presentations / volumes.monthsWithData
-                : 0,
-    });
-    const readiness = buildReadiness(
+    const link = qualityLinkFactsOf(phase4.qualityLink);
+    const countdown = modelBetaCountdownOf(
+        phase4.qualityLink,
+        betaGateCountdown({
+            presentations: volumes.presentations,
+            presentationsPerMonth:
+                volumes.monthsWithData > 0
+                    ? volumes.presentations / volumes.monthsWithData
+                    : 0,
+        }),
+    );
+    const base = buildReadiness(
         {
             enabled: input.readiness.enabled,
             pipelineEnabled: input.readiness.pipelineEnabled,
@@ -186,15 +203,29 @@ export function buildPortalModelPayload(
             rosterLevels: input.readiness.rosterLevels,
             rosterConfirmedAt: input.readiness.rosterConfirmedAt,
             hypothesisPairs: input.hypothesisPairs,
-            betaSource,
+            betaSource: modelBetaSourceOf(input.hypothesisPairs, link),
             betaCountdown: countdown,
         },
         AI_READINESS_GATE_DEFAULTS,
     );
-    const cycleMedianDays =
-        input.cycleMedianDays ??
-        resolveNumberParam('cycle_median_days', input.registry) ??
-        null;
+    const stages = readinessStagesOf(phase4, input.registry);
+    const stageGates = readinessStageGatesOf(input.registry);
+    const readiness =
+        stages === null ? base : elevateReadiness(base, stages, stageGates);
+    const lag = lagPhase4Of(
+        input.saleLags,
+        input.cycleMedianDays,
+        input.registry,
+        phase4.pool,
+    );
+    const phi = overdispersionPhase4Of(phase4.weeklyActivity, input.registry);
+    const season = seasonPhase4Of(
+        input.seasonMonths ?? input.months,
+        input.monthKey,
+        input.registry,
+        phase4.pool,
+    );
+    const check = checkPhase4Of(input.months, phase4.pool, input.registry);
 
     return {
         monthKey: input.monthKey,
@@ -205,7 +236,8 @@ export function buildPortalModelPayload(
         edges: norms.edges,
         managerNorms: norms.managerNorms,
         kappa: defaultKappaOf(input.registry, windowMonths),
-        overdispersion: overdispersionOf(input.registry),
+        overdispersion: phi.estimate,
+        overdispersionFit: phi.fit,
         mS: ms.value,
         msSource: ms.source,
         msGroups: ms.groups,
@@ -214,15 +246,26 @@ export function buildPortalModelPayload(
         cap: cap.cap,
         capSource: cap.source,
         capActivity: AI_PORTAL_CAP_ACTIVITY,
-        cycleMedianDays,
-        lagCdf: lagCdfOf(input.saleLags, cycleMedianDays, input.registry),
+        cycleMedianDays: lag.cycleMedianDays,
+        lagCdf: lag.lagCdf,
+        lagShrink: lag.shrink,
         stageTheta: stageThetaFactsOf(input.stageThetas),
         chainSharePct: input.chainSharePct,
         edgeKind: input.edgeKind,
         edgeKindReason: input.edgeKindReason,
         betaSource: readiness.betaSource,
         betaCountdown: readiness.betaCountdown,
-        season: { ...AI_PORTAL_SEASON_NOT_ESTIMATED },
+        qualityLink: link,
+        season: season.season,
+        seasonIndex: season.index,
+        checkLognormal: check,
+        pool: poolUsageOf(phase4.pool, {
+            norms: normsPool,
+            edges: norms.edges,
+            lagTable: lag.shrink.source === 'shrunk',
+            seasonPooled: season.index.source === 'pooled',
+            checkPrior: check.priorFromPool,
+        }),
         readiness: {
             mode: readiness.mode,
             historyMonths: readiness.historyMonths,
@@ -230,7 +273,13 @@ export function buildPortalModelPayload(
             sales: readiness.sales,
             comparableFrom: readiness.comparableFrom,
             reasons: readiness.reasons,
+            ...(input.readiness.calendarSource === undefined
+                ? {}
+                : { calendarSource: input.readiness.calendarSource }),
         },
+        ...(stages === null
+            ? {}
+            : { readinessStages: stages, readinessStageGates: stageGates }),
         sanity: input.sanity,
         events: [...input.events],
         detectedEvents: [...input.detectedEvents],

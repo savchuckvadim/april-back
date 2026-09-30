@@ -10,6 +10,7 @@ import * as dailyPlanDto from '../dto/ai-daily-plan.dto';
 import * as dossierPartsDto from '../dto/ai-dossier-parts.dto';
 import * as dossierDto from '../dto/ai-dossier.dto';
 import * as feedbackListDto from '../dto/ai-feedback-list.dto';
+import * as forecastDto from '../dto/ai-forecast.dto';
 import * as managerRowDto from '../dto/ai-manager-row.dto';
 import * as managerSignalsDto from '../dto/ai-manager-signals.dto';
 import * as objectionsDto from '../dto/ai-objections.dto';
@@ -19,6 +20,7 @@ import * as pushDto from '../dto/ai-push.dto';
 import * as ropMarkRequestDto from '../dto/ai-rop-mark-request.dto';
 import * as reviewDto from '../dto/ai-review.dto';
 import * as ropMarkDto from '../dto/ai-rop-mark.dto';
+import * as settingsSaveDto from '../dto/ai-settings-save.dto';
 import * as styleCardDto from '../dto/ai-style-card.dto';
 
 /**
@@ -74,6 +76,9 @@ const MODULES: ReadonlyArray<readonly [string, DtoModule]> = [
     // Фаза 3, поток П4 «досье менеджера».
     ['ai-dossier.dto', dossierDto],
     ['ai-dossier-parts.dto', dossierPartsDto],
+    // Фаза 4, поток B3: прогноз отдела и согласие на пул в настройках.
+    ['ai-forecast.dto', forecastDto],
+    ['ai-settings-save.dto', settingsSaveDto],
 ];
 
 const SCALAR_CTORS: readonly unknown[] = [String, Number, Boolean];

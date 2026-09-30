@@ -9,7 +9,7 @@ import type {
 } from '../domain/assembler/portal-model.types';
 import type { PortalModelRecord } from '../domain/loaders/portal-model.loader';
 import { workdaysOf } from '../steps/forecast.facts';
-import { ForecastStep } from '../steps/forecast.step';
+import { ForecastStep, type ForecastDayBusEntry } from '../steps/forecast.step';
 import { createStepBus, type AiPipelineStepContext } from '../steps/step.types';
 import { stepContext } from './fixtures/manager-snapshot.fixture';
 
@@ -189,7 +189,12 @@ function month(monthKey: string, sales: number): PortalManagerMonth {
 function makeStep(options: {
     model?: PortalModelRecord | null;
     months?: PortalManagerMonth[];
-}): { step: ForecastStep; upsert: jest.Mock; loadMonths: jest.Mock } {
+}): {
+    step: ForecastStep;
+    upsert: jest.Mock;
+    loadMonths: jest.Mock;
+    loader: { latestModel: jest.Mock };
+} {
     const upsert = jest
         .fn()
         .mockResolvedValue({ id: 'ais-7', supersededIds: [] });
@@ -207,6 +212,7 @@ function makeStep(options: {
         step: new ForecastStep(loader as never, { upsert } as never),
         upsert,
         loadMonths,
+        loader,
     };
 }
 
@@ -230,7 +236,7 @@ describe('ForecastStep', () => {
     });
 
     it('пишет прогноз дня по менеджеру и несёт идентификатор модели', async () => {
-        const { step, upsert } = makeStep({
+        const { step, upsert, loader } = makeStep({
             model: {
                 id: 'ais-model-3',
                 monthKey: MONTH,
@@ -251,11 +257,45 @@ describe('ForecastStep', () => {
         const payload = payloadOf(upsert);
         expect(payload.meta.modelSnapshotId).toBe('ais-model-3');
         expect(payload.day).toBe(DAY);
+        // Модель — последнего закрытого месяца, а не последняя записанная.
+        expect(loader.latestModel).toHaveBeenCalledWith(DOMAIN, MONTH);
         expect(payload.doneSales).toBe(2);
         expect(payload.naiveLastMonth).toBe(4);
         expect(payload.p50).toBeGreaterThanOrEqual(payload.descriptive);
         expect(payload.plan.items.length).toBeGreaterThan(0);
         expect(Array.isArray(payload.leaks)).toBe(true);
+    });
+
+    it('публикует прогнозы дня в шину forecastDay в форме писателя', async () => {
+        const { step, upsert } = makeStep({
+            model: {
+                id: 'ais-model-3',
+                monthKey: MONTH,
+                payload: modelPayload(),
+            },
+        });
+        const bus = createStepBus();
+
+        await step.run(context(), bus);
+
+        const entry = bus.get<ForecastDayBusEntry>(
+            AI_PIPELINE_BUS_KEYS.forecastDay,
+        );
+        expect(entry).toBeDefined();
+        expect(entry?.day).toBe(DAY);
+        expect(entry?.monthKey).toBe(MONTH);
+        expect(entry?.modelSnapshotId).toBe('ais-model-3');
+        expect(entry?.managers.map(item => item.managerId)).toEqual(['11']);
+        expect(entry?.managers[0].payload).toBe(payloadOf(upsert));
+    });
+
+    it('модели нет — шина forecastDay не заполняется', async () => {
+        const { step } = makeStep({ model: null });
+        const bus = createStepBus();
+
+        await step.run(context(), bus);
+
+        expect(bus.get(AI_PIPELINE_BUS_KEYS.forecastDay)).toBeUndefined();
     });
 
     it('без истории стадий ожидание от пайплайна — null с причиной', async () => {

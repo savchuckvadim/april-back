@@ -130,7 +130,7 @@ describe('AiAnalyticsBackfillService.plan — план догона истори
 
         const plan = await service.plan(DOMAIN, { now: NIGHT });
 
-        expect(plan.monthKeys).toEqual(['2026-08', '2026-07', '2026-06']);
+        expect(plan.monthKeys).toEqual(['2026-06', '2026-07', '2026-08']);
         expect(plan.monthKeys.length).toBe(
             AI_PIPELINE_BACKFILL.maxMonthsPerNight,
         );
@@ -144,7 +144,7 @@ describe('AiAnalyticsBackfillService.plan — план догона истори
 
         const plan = await service.plan(DOMAIN, { now: NIGHT });
 
-        expect(plan.monthKeys).toEqual(['2026-06', '2026-05', '2026-04']);
+        expect(plan.monthKeys).toEqual(['2026-04', '2026-05', '2026-06']);
         expect(plan.weekKeys).not.toContain('2026-W36');
         expect(plan.weekKeys[0]).toBe('2026-W35');
     });
@@ -197,7 +197,7 @@ describe('AiAnalyticsBackfillService.plan — план догона истори
             forceRefresh: true,
         });
 
-        expect(plan.monthKeys).toEqual(['2026-08', '2026-07', '2026-06']);
+        expect(plan.monthKeys).toEqual(['2026-06', '2026-07', '2026-08']);
         expect(store.findByKeys).not.toHaveBeenCalled();
     });
 
@@ -238,11 +238,26 @@ describe('AiAnalyticsBackfillService.plan — план догона истори
             ignoreWindow: true,
         });
 
-        expect(plan.monthKeys).toEqual(['2026-08', '2026-07', '2026-06']);
+        expect(plan.monthKeys).toEqual(['2026-06', '2026-07', '2026-08']);
     });
 });
 
 describe('AiAnalyticsBackfillService.dispatch — постановка джоб', () => {
+    it('месяцы ночи ставятся от старых к свежим — прошлый месяц уже посчитан', async () => {
+        const { service, dispatcher } = makeService();
+
+        await service.dispatch(DOMAIN, { now: NIGHT, weeksBack: 0 });
+
+        const months = (
+            dispatcher.dispatch.mock.calls as [
+                string,
+                string,
+                { monthKey: string },
+            ][]
+        ).map(call => call[2].monthKey);
+        expect(months).toEqual(['2026-06', '2026-07', '2026-08']);
+    });
+
     it('на каждый период ставится своя джоба с детерминированным jobId', async () => {
         const { service, dispatcher } = makeService();
 
@@ -346,9 +361,9 @@ describe('AiAnalyticsBackfillService.dispatch — постановка джоб'
             { backfill: { monthKeys: string[]; weekKeys: string[] } },
         ];
         expect(data.backfill.monthKeys).toEqual([
-            '2026-08',
-            '2026-07',
             '2026-06',
+            '2026-07',
+            '2026-08',
         ]);
         expect(data.backfill.weekKeys).toEqual(['2026-W36']);
     });

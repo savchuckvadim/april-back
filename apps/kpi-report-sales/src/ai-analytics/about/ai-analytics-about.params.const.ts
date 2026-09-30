@@ -43,4 +43,16 @@ export const AI_ABOUT_NORM_PARAMS = [
     'lever_max',
     'lever_lb_level',
     'lever_min_section_calls',
+    'coaching_hours_section',
+] as const satisfies readonly AiAnalyticsParamCode[];
+
+/**
+ * Коды ступеней готовности Фазы 4 (прогноз и советы с эффектом): флаги
+ * показа и гейты — их читает готовность обзора, настроек и прогноза.
+ */
+export const AI_ABOUT_STAGE_PARAMS = [
+    'forecast_stage_enabled',
+    'recommendations_stage_enabled',
+    'forecast_shadow_min_months',
+    'recommendations_min_issued',
 ] as const satisfies readonly AiAnalyticsParamCode[];

@@ -19,6 +19,12 @@ import {
 } from '@lib/sales-ai-analytics';
 import type { PortalRosterMember } from '@lib/sales-ai-analytics/model/portal-events';
 import { readPassports } from '../domain/assembler/bus-facts.util';
+import {
+    isPoolSnapshot,
+    isQualityLinkSnapshot,
+    phase4PayloadOf,
+} from '../domain/assembler/phase4-snapshot.guards';
+import type { PortalModelPhase4Facts } from '../domain/assembler/portal-model.phase4.types';
 import type { AiSanityReport } from './sanity.types';
 
 /** Делитель шкалы разбора: 0–100 в звонке, 1–10 в модели качества. */
@@ -218,4 +224,28 @@ export function openEpisodesOf(value: unknown): {
               ]
             : [],
     );
+}
+
+/**
+ * Входы Фазы 4 из шины (ключи `qualityLink` и `pool`, форма писателя —
+ * нагрузка снапшота либо запись `{ payload }`). Ключа нет — поле не
+ * задаётся (сценарий возьмёт снапшот из стора); форма чужая — null.
+ */
+export function phase4BusFactsOf(
+    qualityLink: unknown,
+    pool: unknown,
+): Pick<PortalModelPhase4Facts, 'qualityLink' | 'pool'> {
+    return {
+        ...(qualityLink === undefined
+            ? {}
+            : {
+                  qualityLink: phase4PayloadOf(
+                      qualityLink,
+                      isQualityLinkSnapshot,
+                  ),
+              }),
+        ...(pool === undefined
+            ? {}
+            : { pool: phase4PayloadOf(pool, isPoolSnapshot) }),
+    };
 }

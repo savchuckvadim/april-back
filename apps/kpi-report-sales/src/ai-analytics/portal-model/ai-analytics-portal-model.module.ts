@@ -27,8 +27,11 @@ import { AiAnalyticsCorePbxModule } from '../core/ai-analytics-core-pbx.module';
 import { AiAnalyticsCoreModule } from '../core/ai-analytics-core.module';
 import { PortalModelLoader } from '../domain/loaders/portal-model.loader';
 import { PortalModelUseCase } from '../domain/use-cases/portal-model.use-case';
+import { DepartmentForecastStep } from '../steps/department-forecast.step';
+import { ForecastBacktestStep } from '../steps/forecast-backtest.step';
 import { ForecastStep } from '../steps/forecast.step';
 import { PortalModelStep } from '../steps/portal-model.step';
+import { RecommendationEffectStep } from '../steps/recommendation-effect.step';
 
 @Module({
     imports: [AiAnalyticsCoreModule, AiAnalyticsCorePbxModule],
@@ -37,7 +40,18 @@ import { PortalModelStep } from '../steps/portal-model.step';
         PortalModelUseCase,
         PortalModelStep,
         ForecastStep,
+        // Фаза 4, П21/П23: шаги читают модель и месяцы через PortalModelLoader.
+        DepartmentForecastStep,
+        ForecastBacktestStep,
+        RecommendationEffectStep,
     ],
-    exports: [PortalModelStep, ForecastStep, PortalModelUseCase],
+    exports: [
+        PortalModelStep,
+        ForecastStep,
+        PortalModelUseCase,
+        DepartmentForecastStep,
+        ForecastBacktestStep,
+        RecommendationEffectStep,
+    ],
 })
 export class AiAnalyticsPortalModelModule {}

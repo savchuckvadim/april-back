@@ -61,6 +61,7 @@ export class AiAnalyticsRopMarkController {
         private readonly ropMark: RopMarkUseCase,
     ) {}
 
+    @PortalSessionProtected()
     @Post(AI_ROP_MARK_ROUTES.pick)
     @HttpCode(200)
     @ApiOperation({
@@ -103,6 +104,7 @@ export class AiAnalyticsRopMarkController {
         };
     }
 
+    @PortalSessionProtected()
     @Post(AI_ROP_MARK_ROUTES.list)
     @HttpCode(200)
     @ApiOperation({

@@ -1,4 +1,6 @@
+import { AI_LEVERS } from '@lib/sales-ai-analytics';
 import {
+    AI_LEVER_TITLES,
     FEEDBACK_OBJECT_FALLBACK_LABEL,
     feedbackObjectLabel,
 } from '../delivery/feedback-object-label.util';
@@ -36,5 +38,24 @@ describe('feedbackObjectLabel — объект обратной связи сл�
             FEEDBACK_OBJECT_FALLBACK_LABEL,
         );
         expect(feedbackObjectLabel('')).toBe(FEEDBACK_OBJECT_FALLBACK_LABEL);
+    });
+
+    it('совет — по рычагу из ключа, битый ключ — «по совету» без кода', () => {
+        expect(
+            feedbackObjectLabel('lever:512:volume:volume-below-capacity:::'),
+        ).toBe('по совету «Объём»');
+        expect(
+            feedbackObjectLabel(
+                'lever:512:quality:quality-weak-section:presentation:PRICE:',
+            ),
+        ).toBe('по совету «Качество»');
+        expect(feedbackObjectLabel('lever:512:магия:x:::')).toBe('по совету');
+        expect(feedbackObjectLabel('lever:512')).toBe('по совету');
+    });
+
+    it('у каждого рычага есть подпись по-русски без кода', () => {
+        for (const lever of AI_LEVERS) {
+            expect(AI_LEVER_TITLES[lever]).toMatch(/^[А-ЯЁ][а-яё-]+$/);
+        }
     });
 });

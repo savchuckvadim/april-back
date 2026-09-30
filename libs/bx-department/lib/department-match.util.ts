@@ -5,8 +5,9 @@ import {
 } from 'src/modules/bitrix/domain/interfaces/bitrix.interface';
 
 /**
- * Поиск отделов по названию в мультирежиме структуры и сбор их
- * сотрудников — чистые функции BxDepartmentStructureService.
+ * Поиск отделов по названию в мультирежиме и сбор их сотрудников —
+ * чистые функции снимка отдела (DepartmentTreeLoader, BxDepartmentService)
+ * и его проекции в структуру.
  */
 
 /** Шаблоны названий отделов по группе для поиска по всей структуре. */

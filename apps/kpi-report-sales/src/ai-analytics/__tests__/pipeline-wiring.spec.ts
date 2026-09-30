@@ -28,6 +28,26 @@ import {
     type AiPipelineRhythm,
 } from '../constants/ai-snapshot.const';
 import { AI_STAGE_HISTORY_RHYTHMS } from '../constants/ai-stage-history.const';
+import {
+    AI_DEPARTMENT_FORECAST_RHYTHMS,
+    AI_DEPARTMENT_FORECAST_STEP_CODE,
+    AI_FORECAST_BACKTEST_RHYTHMS,
+    AI_FORECAST_BACKTEST_STEP_CODE,
+} from '../constants/ai-forecast-log.const';
+import {
+    AI_POOL_STEP_CODE,
+    AI_POOL_STEP_RHYTHMS,
+} from '../constants/ai-pool.const';
+import {
+    AI_QUALITY_LINK_STEP_CODE,
+    AI_QUALITY_LINK_STEP_RHYTHMS,
+} from '../constants/ai-quality-link.const';
+import {
+    AI_RECOMMENDATION_EFFECT_RHYTHMS,
+    AI_RECOMMENDATION_EFFECT_STEP_CODE,
+    AI_RECOMMENDATION_LOG_RHYTHMS,
+    AI_RECOMMENDATION_LOG_STEP_CODE,
+} from '../constants/ai-recommendation-effect.const';
 import { AiAnalyticsPassportModule } from '../passport/ai-analytics-passport.module';
 import {
     AI_ANALYTICS_PIPELINE_STEP_MODULES,
@@ -39,6 +59,12 @@ import { AiAnalyticsRopMarkModule } from '../rop-mark/ai-analytics-rop-mark.modu
 import { AiAnalyticsSnapshotsModule } from '../snapshots/ai-analytics-snapshots.module';
 import { AiAnalyticsStageHistoryModule } from '../stage-history/ai-analytics-stage-history.module';
 import { CallsStep } from '../steps/calls.step';
+import { DepartmentForecastStep } from '../steps/department-forecast.step';
+import { ForecastBacktestStep } from '../steps/forecast-backtest.step';
+import { PoolStep } from '../steps/pool.step';
+import { QualityLinkStep } from '../steps/quality-link.step';
+import { RecommendationEffectStep } from '../steps/recommendation-effect.step';
+import { RecommendationLogStep } from '../steps/recommendation-log.step';
 import { FinanceStep } from '../steps/finance.step';
 import { ForecastStep } from '../steps/forecast.step';
 import { KpiStep } from '../steps/kpi.step';
@@ -108,10 +134,16 @@ const RHYTHMS_BY_STEP = new Map<
     [StyleStep, AI_STYLE_STEP_RHYTHMS],
     [PlansStep, AI_PLANS_STEP_RHYTHMS],
     [FinanceStep, AI_FINANCE_STEP_RHYTHMS],
+    [QualityLinkStep, AI_QUALITY_LINK_STEP_RHYTHMS],
+    [PoolStep, AI_POOL_STEP_RHYTHMS],
+    [ForecastBacktestStep, AI_FORECAST_BACKTEST_RHYTHMS],
+    [RecommendationEffectStep, AI_RECOMMENDATION_EFFECT_RHYTHMS],
     [RopMarkStep, AI_ROP_MARK_STEP_RHYTHMS],
     [SanityStep, AI_SANITY_STEP_RHYTHMS],
     [PortalModelStep, AI_PORTAL_MODEL_RHYTHMS],
     [ForecastStep, AI_FORECAST_RHYTHMS],
+    [DepartmentForecastStep, AI_DEPARTMENT_FORECAST_RHYTHMS],
+    [RecommendationLogStep, AI_RECOMMENDATION_LOG_RHYTHMS],
 ]);
 
 /** Коды шагов ритма по константам срезов в порядке массива. */
@@ -180,8 +212,8 @@ describe('Срезы шагов конвейера', () => {
 });
 
 describe('Порядок шагов ночного конвейера', () => {
-    it('двенадцать шагов с уникальными кодами, у каждого известны ритмы', () => {
-        expect(CODES).toHaveLength(12);
+    it('восемнадцать шагов с уникальными кодами, у каждого известны ритмы', () => {
+        expect(CODES).toHaveLength(18);
         expect(new Set(CODES).size).toBe(CODES.length);
         expect(
             AI_ANALYTICS_PIPELINE_STEP_ORDER.filter(
@@ -203,10 +235,16 @@ describe('Порядок шагов ночного конвейера', () => {
             'style',
             'plans',
             'finance',
+            AI_QUALITY_LINK_STEP_CODE,
+            AI_POOL_STEP_CODE,
+            AI_FORECAST_BACKTEST_STEP_CODE,
+            AI_RECOMMENDATION_EFFECT_STEP_CODE,
             AI_ROP_MARK_STEP_CODE,
             AI_SANITY_STEP_CODE,
             AI_PORTAL_MODEL_STEP_CODE,
             AI_FORECAST_STEP_CODE,
+            AI_DEPARTMENT_FORECAST_STEP_CODE,
+            AI_RECOMMENDATION_LOG_STEP_CODE,
         ]);
     });
 
@@ -232,6 +270,16 @@ describe('Порядок шагов ночного конвейера', () => {
         ['plans', 'finance'],
         ['sanity', 'portal-model'],
         ['portal-model', 'forecast'],
+        // Фаза 4: episodes/historyMonths/timestampLeak → оценка β;
+        // qualityLink и pool → модель портала; forecastDay → журналы.
+        ['stage-history', 'quality-link'],
+        ['quality-link', 'pool'],
+        ['quality-link', 'portal-model'],
+        ['pool', 'portal-model'],
+        ['forecast-backtest', 'portal-model'],
+        ['recommendation-effect', 'portal-model'],
+        ['forecast', 'department-forecast'],
+        ['forecast', 'recommendation-log'],
     ])('шаг «%s» идёт раньше читающего его «%s»', (writer, reader) => {
         expect(indexOfCode(writer)).toBeGreaterThanOrEqual(0);
         expect(indexOfCode(writer)).toBeLessThan(indexOfCode(reader));
@@ -278,10 +326,14 @@ describe('Ритмы прогона', () => {
         );
     });
 
-    it('ночной ритм: прогноз последний, модель портала каждую ночь не пересчитывается', () => {
+    it('ночной ритм: за прогнозом — журнал отдела и журнал советов, модель портала каждую ночь не пересчитывается', () => {
         const nightly = codesOfRhythm('nightly');
         expect(nightly).toContain(AI_FORECAST_STEP_CODE);
-        expect(last(nightly)).toBe(AI_FORECAST_STEP_CODE);
+        // Оба журнала читают прогнозы дня из шины (forecastDay).
+        expect(
+            nightly.indexOf(AI_DEPARTMENT_FORECAST_STEP_CODE),
+        ).toBeGreaterThan(nightly.indexOf(AI_FORECAST_STEP_CODE));
+        expect(last(nightly)).toBe(AI_RECOMMENDATION_LOG_STEP_CODE);
         expect(nightly).not.toContain(AI_PORTAL_MODEL_STEP_CODE);
         expect(nightly).not.toContain(AI_SANITY_STEP_CODE);
         expect(nightly.indexOf('stage-history')).toBeLessThan(

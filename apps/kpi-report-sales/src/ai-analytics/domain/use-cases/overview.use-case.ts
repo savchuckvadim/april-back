@@ -1,3 +1,8 @@
+import { readinessStageGatesOf } from '@lib/sales-ai-analytics';
+import {
+    portalRegistryOf,
+    stageFlagsOf,
+} from '../presenter/readiness-stages.util';
 import {
     BadRequestException,
     Injectable,
@@ -25,10 +30,15 @@ import {
     overviewRiskCallIds,
     withOverviewRiskCallLinks,
 } from '../presenter/overview-links.presenter';
+import { applyLeverMarks } from '../presenter/levers.presenter';
 import {
     buildOverviewDto,
     type OverviewPresenterSources,
 } from '../presenter/overview.presenter';
+import {
+    type LeverFeedbackMarks,
+    periodLeverFeedbackMarks,
+} from './feedback-lever.util';
 
 /** Вход расчёта обзора: период в TZ портала, ростер (пусто — структура). */
 export interface OverviewInput {
@@ -48,14 +58,21 @@ export interface OverviewUseCaseOptions {
 
 const DISAGREE_KIND = 'disagree';
 
+/** Обратная связь периода, нужная обзору: несогласия и отметки по советам. */
+interface OverviewFeedbackFacts {
+    disagreementsCount: number;
+    levers: LeverFeedbackMarks;
+}
+
 /**
  * Оркестрация обзора менеджер × тип (план 6.4, ТЗ FR-13): период
  * (≤ 3 мес., иначе 400) → ростер → параллельно звонки (loadLite за UTC-окно
  * периода), KPI-месяцы, финансы, планы руководителя, раскладка по отделам,
  * уровни из стора, несогласия и снапшоты `ais` (Фаза 2, «год назад»,
  * паспорта месяца — уровень и стаж строки без ручной записи) →
- * assembler/presenter → AiOverviewDto на весь домен → ссылки риск-звонков
- * строк на карточки разборов одним вызовом SmartLinkLoader (как у сигналов
+ * assembler/presenter → AiOverviewDto на весь домен → отметки «Сделано» и
+ * день выдачи на советах строк (обратная связь периода, Фаза 4) → ссылки
+ * риск-звонков строк на карточки разборов одним вызовом SmartLinkLoader (как у сигналов
  * пульса; fail-open — при ошибке загрузчика link = null и один warn).
  * Периметр requester'а применяется при отдаче (applyOverviewPerimeter),
  * результат кэшируется процессором.
@@ -118,8 +135,11 @@ export class OverviewUseCase {
             this.fromSnapshots(domain, 'Паспорта менеджеров', loader =>
                 loader.loadPassports(domain, to),
             ),
+            this.fromSnapshots(domain, 'Снапшоты ступеней Фазы 4', loader =>
+                loader.loadPhase4(domain),
+            ),
         ]);
-        const [rows, kpi, finance, plans, org, levels, disagreementsCount] =
+        const [rows, kpi, finance, plans, org, levels, feedback] =
             await Promise.all([
                 this.calls.loadLite(domain, range.from, range.to),
                 this.kpi.loadKpiMonths(domain, from, to, managerIds, {
@@ -133,10 +153,10 @@ export class OverviewUseCase {
                 this.plans.loadPlans(domain, managerIds, { forceRefresh }),
                 this.org.load(domain),
                 this.levels.loadLevels(domain),
-                this.countDisagreements(domain, range.from, range.to),
+                this.loadFeedbackFacts(domain, range.from, range.to, now),
             ]);
 
-        const [snapshots, yoy, passports] = await snapshotReads;
+        const [snapshots, yoy, passports, phase4] = await snapshotReads;
         const sources: OverviewPresenterSources = {
             domain,
             from,
@@ -151,14 +171,29 @@ export class OverviewUseCase {
             plans,
             org,
             levels,
-            disagreementsCount,
+            disagreementsCount: feedback.disagreementsCount,
             snapshots: snapshots ?? {},
             ...(yoy === undefined ? {} : { yoy }),
             ...(passports === undefined ? {} : { passports }),
             rosterConfirmedAt: settings.rosterConfirmedAt,
             hypothesisPairs: settings.hypothesis?.pairs.length ?? 0,
+            ...(phase4 === undefined
+                ? {}
+                : {
+                      stageSources: {
+                          snapshots: phase4,
+                          flags: stageFlagsOf(settings),
+                          gates: readinessStageGatesOf(
+                              portalRegistryOf(settings),
+                          ),
+                      },
+                  }),
         };
-        const built = buildOverviewDto(sources, now);
+        const overview = buildOverviewDto(sources, now);
+        const built: AiOverviewDto = {
+            ...overview,
+            managers: applyLeverMarks(overview.managers, feedback.levers),
+        };
         const dto = withOverviewRiskCallLinks(
             built,
             await this.resolveRiskCallLinks(domain, built.managers),
@@ -225,13 +260,29 @@ export class OverviewUseCase {
         }
     }
 
-    /** Реакций disagree за период (по created_at записи). */
-    private async countDisagreements(
+    /**
+     * Одна выборка обратной связи (по created_at записи): реакции disagree
+     * и день выдачи советов — за период, «Сделано» — от начала периода до
+     * «сейчас». Прошлый период смотрят и после его конца (сентябрь — 2
+     * октября): отметка, поставленная позже периода, иначе пропадала бы
+     * после перечитки обзора, кнопка возвращалась и копила дубли.
+     */
+    private async loadFeedbackFacts(
         domain: string,
         from: Date,
         to: Date,
-    ): Promise<number> {
-        const records = await this.feedback.listInPeriod(domain, from, to);
-        return records.filter(record => record.kind === DISAGREE_KIND).length;
+        now: Date,
+    ): Promise<OverviewFeedbackFacts> {
+        const until = now.getTime() > to.getTime() ? now : to;
+        const records = await this.feedback.listInPeriod(domain, from, until);
+        const inPeriod = records.filter(
+            record => record.createdAt.getTime() <= to.getTime(),
+        );
+        return {
+            disagreementsCount: inPeriod.filter(
+                record => record.kind === DISAGREE_KIND,
+            ).length,
+            levers: periodLeverFeedbackMarks(records, to),
+        };
     }
 }

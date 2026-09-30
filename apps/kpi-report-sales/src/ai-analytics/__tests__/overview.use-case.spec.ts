@@ -17,6 +17,9 @@ import {
 } from './fixtures/overview.fixture';
 import { smartLinksWith } from './fixtures/smart-links.fixture';
 
+/** Реакция внутри периода обзора (10.08–06.09). */
+const IN_PERIOD = new Date('2026-09-01T10:00:00Z');
+
 function makeUseCase(
     rows = twoManagersRows(),
     roster = [10, 20],
@@ -53,7 +56,7 @@ function makeUseCase(
                 transcriptionId: null,
                 requesterUserId: null,
                 reason: null,
-                createdAt: OVERVIEW_NOW,
+                createdAt: IN_PERIOD,
             })),
         ),
     };
@@ -203,6 +206,35 @@ describe('OverviewUseCase', () => {
             }),
         );
         expect(dto.meta.disagreementsCount).toBe(2);
+    });
+
+    it('обратная связь читается до «сейчас» (отметки «Сделано» после конца периода), несогласия — только за период', async () => {
+        const { useCase, feedback } = makeUseCase(twoManagersRows(), [10, 20]);
+        feedback.listInPeriod.mockResolvedValue([
+            {
+                id: '1',
+                kind: 'disagree',
+                object: 'call:x',
+                managerId: '10',
+                createdAt: IN_PERIOD,
+            },
+            {
+                id: '2',
+                kind: 'disagree',
+                object: 'call:y',
+                managerId: '10',
+                createdAt: OVERVIEW_NOW,
+            },
+        ]);
+
+        const dto = await useCase.execute(input, { now: OVERVIEW_NOW });
+
+        expect(feedback.listInPeriod).toHaveBeenCalledWith(
+            OVERVIEW_DOMAIN,
+            new Date('2026-08-09T21:00:00.000Z'),
+            OVERVIEW_NOW,
+        );
+        expect(dto.meta.disagreementsCount).toBe(1);
     });
 
     it('менеджер ростера без звонков получает пустую строку', async () => {

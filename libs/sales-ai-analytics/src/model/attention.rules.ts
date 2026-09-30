@@ -100,6 +100,10 @@ export const noDataRule: AttentionRule = (manager, rules) => {
 /**
  * discipline — сделано < disciplineMinShare плана CRM при плане ≥
  * disciplineMinPlan (звонки и/или презентации); «закрывателю» не ставится.
+ *
+ * Заголовок словами, без «CRM» и кодов (правило владельца): «План по
+ * звонкам выполнен на 20 % (4 из 20), по презентациям — на 42 % (5 из
+ * 12)» — проценты и «сделано из плана» остаются для факт-чека резюме.
  */
 export const disciplineRule: AttentionRule = (manager, rules) => {
     if (isCloser(manager)) {
@@ -109,13 +113,13 @@ export const disciplineRule: AttentionRule = (manager, rules) => {
     const parts = [
         {
             code: 'call',
-            title: 'звонки',
+            title: 'по звонкам',
             plan: discipline.callPlan,
             done: discipline.callDone,
         },
         {
             code: 'presentation',
-            title: 'презентации',
+            title: 'по презентациям',
             plan: discipline.presentationPlan,
             done: discipline.presentationDone,
         },
@@ -129,16 +133,18 @@ export const disciplineRule: AttentionRule = (manager, rules) => {
     if (parts.length === 0) {
         return null;
     }
-    const describe = parts.map(
-        part =>
-            `${part.title} ${part.done} из ${part.plan} (${pct(part.share)})`,
-    );
+    const doneOf = (part: (typeof parts)[number]): string =>
+        `${pct(part.share)} (${part.done} из ${part.plan})`;
+    const [first, ...rest] = parts;
+    const headline =
+        `План ${first.title} выполнен на ${doneOf(first)}` +
+        rest.map(part => `, ${part.title} — на ${doneOf(part)}`).join('');
     return {
         managerId: manager.managerId,
         signal: 'discipline',
         availableFrom: 1,
         severity: Math.min(...parts.map(part => part.share)),
-        headline: `Дисциплина CRM: ${describe.join(', ')}`,
+        headline,
         basis: parts.map(part => ({
             code: `${part.code}_plan_done_share`,
             value: part.share,
@@ -193,7 +199,14 @@ export const nextStepDropRule: AttentionRule = (manager, rules) => {
     };
 };
 
-/** plan_gap — план руководителя отличается от нормы на ≥ planGapRatio. */
+/**
+ * plan_gap — план руководителя отличается от нормы на ≥ planGapRatio.
+ *
+ * Норма уровня в заголовке названа словами «обычно для такого уровня
+ * выходит около N» — без канцелярита «по норме» и кодов слоёв, но смысл
+ * сохранён: сравнение идёт с уровнем менеджера, а не со всеми коллегами;
+ * числа плана, нормы и кратности остаются для факт-чека резюме.
+ */
 export const planGapRule: AttentionRule = (manager, rules) => {
     const gap = manager.planGap;
     if (!gap || !(gap.norm > 0) || !Number.isFinite(gap.planHead)) {
@@ -210,11 +223,11 @@ export const planGapRule: AttentionRule = (manager, rules) => {
         signal: 'plan_gap',
         availableFrom: 1,
         severity: -Math.abs(factor - 1),
-        // Разрыв плана считается по презентациям (ребро «звонок →
+        // Разрыв плана считается по презентациям (ребро «звонок —
         // презентация», см. planGapOf в презентере «Внимания»).
         headline:
             `План руководителя — ${ruCount(ruInt(gap.planHead), RU_FORMS.presentations)}, ` +
-            `по норме уровня выходит около ${ruInt(gap.norm)}: план ${direction} ${times}`,
+            `обычно для такого уровня выходит около ${ruInt(gap.norm)}: план ${direction} ${times}`,
         basis: [
             { code: 'plan_head', value: gap.planHead, norm: gap.norm, n: 0 },
         ],

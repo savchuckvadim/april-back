@@ -26,6 +26,7 @@ import type {
     AiPipelineBusKey,
     AiPipelineRhythm,
 } from '../constants/ai-snapshot.const';
+import type { AiCalendarSource } from '../domain/loaders/calendar.util';
 import type { AiAnalyticsPortalSettings } from '../domain/loaders/settings.loader';
 import type {
     AiPipelineRunSummary,
@@ -56,6 +57,12 @@ export interface AiPipelineStepContext {
     timeZone: string;
     /** Производственный календарь портала: праздники и рабочая неделя. */
     calendar: WorkCalendar;
+    /**
+     * Откуда взят календарь: импорт портала, ключ настроек или запасной
+     * РФ (отказ загрузчика — тоже запасной). Не задан — прогон собран без
+     * загрузчика календаря (ручной вызов, спеки).
+     */
+    calendarSource?: AiCalendarSource;
     /** Настройки портала (десять ключей [kpiSales] в разобранном виде). */
     settings: AiAnalyticsPortalSettings;
     /** Слои реестра параметров: менеджер → полоса стажа → портал. */
@@ -143,6 +150,12 @@ export interface AiPipelineStepResult {
 export interface AiAnalyticsPipelineStep {
     readonly code: string;
     readonly rhythms: readonly AiPipelineRhythm[];
+    /**
+     * Необязательный (теневой) шаг Фазы 4: его исключение раннер пишет
+     * пропуском с причиной и продолжает прогон — модель портала и санити
+     * без его результата штатно деградируют (§5.4), а не пропадают.
+     */
+    readonly optional?: boolean;
     run(
         ctx: AiPipelineStepContext,
         bus: StepBus,

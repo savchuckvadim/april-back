@@ -49,6 +49,11 @@ export interface ForecastManagerInput {
     readonly edges: readonly ForecastEdgeFact[];
     /** Нормы менеджера из модели портала; null — норм нет. */
     readonly norms: PortalManagerNorms | null;
+    /**
+     * Средняя оценка разборов месяца (шкала 1–10) и их число — вход
+     * рычага и утечки качества при связи «по данным»; null — разборов нет.
+     */
+    readonly quality?: { readonly score: number; readonly n: number } | null;
 }
 
 /** Вход сборки прогноза: день, календарь, модель портала и менеджер. */

@@ -45,6 +45,21 @@ const makePortal = () => ({
 
 const CRM_DATE = /^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}:\d{2}$/;
 
+/** UserNameResolver-заглушка; пустая карта — в историю уходят id. */
+const namesStub = (names: Record<number, string> = {}) => ({
+    resolve: jest.fn().mockResolvedValue(names),
+});
+
+const TRANSFER_ITEM = {
+    action: 'give' as const,
+    dealIds: [1024],
+    newResponsibleId: 8,
+    includeOverdue: true,
+    rescheduleOverdue: false,
+    moveMainDealToCold: false,
+    createCallTask: false,
+};
+
 describe('Таймер подтверждения на СДЕЛКЕ', () => {
     /* ---------------------------------------------------------------- *
      * ЗАПИСЬ — передача работы.
@@ -100,27 +115,51 @@ describe('Таймер подтверждения на СДЕЛКЕ', () => {
             [HISTORY]: ['01.08.2026 10:00 — старая запись'],
         });
 
-        await new TransferWorkUseCase().execute(ctx as never, [
-            {
-                action: 'give',
-                dealIds: [1024],
-                newResponsibleId: 8,
-                includeOverdue: true,
-                rescheduleOverdue: false,
-                moveMainDealToCold: false,
-                createCallTask: false,
-            },
-        ]);
+        await new TransferWorkUseCase(namesStub() as never).execute(
+            ctx as never,
+            [TRANSFER_ITEM],
+        );
 
         const fields = calls[0].args[1] as Record<string, unknown>;
         expect(fields.ASSIGNED_BY_ID).toBe('8');
         // Таймер стартует заново — новый ответственный не наследует чужую
         // просрочку.
         expect(String(fields[ASSIGNED_AT])).toMatch(CRM_DATE);
-        // История дописывается, прошлое не затирается.
+        // История дописывается, прошлое не затирается. Имён нет — id.
         const history = fields[HISTORY] as string[];
         expect(history[0]).toBe('01.08.2026 10:00 — старая запись');
         expect(history[1]).toContain('ХО передан: 5 → 8');
+    });
+
+    /*
+     * Историю читают люди: «ХО передан: Вадим Савчук → Иван Петров», а не
+     * «5 → 8». Имена резолвятся один раз на передачу — по новому и прежним
+     * ответственным всех сделок охвата.
+     */
+    it('передача работы пишет в историю сделки имена, а не id', async () => {
+        const { ctx, calls } = makeTransferCtx({
+            ID: '1024',
+            CATEGORY_ID: '3',
+            ASSIGNED_BY_ID: '5',
+            CLOSED: 'N',
+            [HISTORY]: [],
+        });
+        const names = namesStub({ 5: 'Вадим Савчук', 8: 'Иван Петров' });
+
+        await new TransferWorkUseCase(names as never).execute(ctx as never, [
+            TRANSFER_ITEM,
+        ]);
+
+        expect(names.resolve).toHaveBeenCalledTimes(1);
+        expect(names.resolve).toHaveBeenCalledWith(
+            'd.b24.ru',
+            ctx.bitrix,
+            [8, 5],
+        );
+        const fields = calls[0].args[1] as Record<string, unknown>;
+        expect((fields[HISTORY] as string[]).at(-1)).toContain(
+            'ХО передан: Вадим Савчук → Иван Петров',
+        );
     });
 
     /* ---------------------------------------------------------------- *
@@ -143,7 +182,10 @@ describe('Таймер подтверждения на СДЕЛКЕ', () => {
         };
         return {
             dealUpdate,
-            service: new LeadRequestAcceptService(pbx as never),
+            service: new LeadRequestAcceptService(
+                pbx as never,
+                namesStub() as never,
+            ),
         };
     };
 
@@ -203,11 +245,10 @@ describe('Таймер подтверждения на СДЕЛКЕ', () => {
             ...makePortal(),
             getEntityFieldByCode: () => undefined,
         };
-        const plan = new LeadRequestAcceptService({} as never).planDealOnly(
-            portal as never,
-            1024,
-            { ID: '1024' },
-        );
+        const plan = new LeadRequestAcceptService(
+            {} as never,
+            {} as never,
+        ).planDealOnly(portal as never, 1024, { ID: '1024' });
         expect(plan.already).toBe(true);
         expect(plan.dealUpdate).toBeNull();
         expect(plan.warnings.join(' ')).toContain('не установлено');

@@ -85,8 +85,33 @@ describe('buildAttention: правила Фазы 1', () => {
             ],
         });
         expect(item.signal).toBe('discipline');
+        // Без «CRM» и кодов; проценты и «сделано из плана» — для факт-чека.
         expect(item.headline).toBe(
-            'Дисциплина CRM: звонки 4 из 20 (20 %), презентации 5 из 12 (42 %)',
+            'План по звонкам выполнен на 20 % (4 из 20), по презентациям — на 42 % (5 из 12)',
+        );
+        const [callsOnly] = buildAttention({
+            managers: [
+                manager({
+                    discipline: { ...quiet, callPlan: 20, callDone: 4 },
+                }),
+            ],
+        });
+        expect(callsOnly.headline).toBe(
+            'План по звонкам выполнен на 20 % (4 из 20)',
+        );
+        const [presentationsOnly] = buildAttention({
+            managers: [
+                manager({
+                    discipline: {
+                        ...quiet,
+                        presentationPlan: 12,
+                        presentationDone: 5,
+                    },
+                }),
+            ],
+        });
+        expect(presentationsOnly.headline).toBe(
+            'План по презентациям выполнен на 42 % (5 из 12)',
         );
         expect(item.basis).toEqual([
             { code: 'call_plan_done_share', value: 0.2, norm: 0.5, n: 20 },
@@ -192,8 +217,8 @@ describe('buildAttention: правила Фазы 1', () => {
         });
         expect(above.signal).toBe('plan_gap');
         expect(above.headline).toBe(
-            'План руководителя — 30 презентаций, по норме уровня выходит ' +
-                'около 12: план выше в 2,5 раза',
+            'План руководителя — 30 презентаций, обычно для такого уровня ' +
+                'выходит около 12: план выше в 2,5 раза',
         );
         expect(above.basis).toEqual([
             { code: 'plan_head', value: 30, norm: 12, n: 0 },
@@ -202,15 +227,15 @@ describe('buildAttention: правила Фазы 1', () => {
             managers: [manager({ planGap: { norm: 12, planHead: 5 } })],
         });
         expect(below.headline).toBe(
-            'План руководителя — 5 презентаций, по норме уровня выходит ' +
-                'около 12: план ниже в 2,4 раза',
+            'План руководителя — 5 презентаций, обычно для такого уровня ' +
+                'выходит около 12: план ниже в 2,4 раза',
         );
         const [twice] = buildAttention({
             managers: [manager({ planGap: { norm: 12, planHead: 24 } })],
         });
         expect(twice.headline).toBe(
-            'План руководителя — 24 презентации, по норме уровня выходит ' +
-                'около 12: план выше в 2 раза',
+            'План руководителя — 24 презентации, обычно для такого уровня ' +
+                'выходит около 12: план выше в 2 раза',
         );
         expect(
             signalsOf([manager({ planGap: { norm: 12, planHead: 14 } })]),
@@ -315,5 +340,23 @@ describe('buildAttention: лимиты, порядок, детерминизм',
 
     it('пустой вход → пусто', () => {
         expect(buildAttention({ managers: [] })).toEqual([]);
+    });
+
+    it('заголовки без кодов, формул и знаков (правило владельца)', () => {
+        const items = buildAttention(
+            { managers: [everything('m1')] },
+            { maxItems: 10, maxPerManager: 10 },
+        );
+        expect(items.map(item => item.signal)).toEqual([
+            'risk',
+            'no_data',
+            'discipline',
+            'next_step_drop',
+            'plan_gap',
+        ]);
+        for (const item of items) {
+            expect(item.headline).not.toMatch(/[→×÷=_]|CRM|[a-z]{3,}/i);
+            expect(item.headline).not.toMatch(/накрут|обман/i);
+        }
     });
 });

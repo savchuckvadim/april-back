@@ -76,7 +76,7 @@ const makeService = (rows: Row[]) => {
     const service = new ColdLeadRequestV2Service(
         portal as never,
         fake.bitrix as never,
-        new LeadRequestAcceptService(null as never),
+        new LeadRequestAcceptService(null as never, null as never),
     );
     return { service, ...fake };
 };

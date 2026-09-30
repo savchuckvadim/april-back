@@ -2,6 +2,7 @@ import {
     appendLeadRequestHistory,
     buildLeadRequestHistoryEntry,
     getLeadRequestAcceptState,
+    historyActor,
     LEAD_REQUEST_HISTORY_MAX_ENTRIES,
     LEAD_REQUEST_HISTORY_TEXT,
 } from '../lead-request-history.util';
@@ -82,6 +83,73 @@ describe('lead-request-history.util', () => {
         // Момент назначения распарсен (точка отсчёта firstprepare).
         expect(
             getLeadRequestAcceptState([assigned], tz).lastAssignedAt,
+        ).toBeInstanceOf(Date);
+    });
+
+    /*
+     * Историю читают люди: «Вадим Савчук» вместо «447». id остаётся
+     * страховкой, когда портал не отдал сотрудника.
+     */
+    it('historyActor: имя из карты, без имени — id, без id — null', () => {
+        const names = { 447: 'Вадим Савчук' };
+        expect(historyActor(names, 447)).toBe('Вадим Савчук');
+        expect(historyActor(names, 465)).toBe(465);
+        expect(historyActor(undefined, 465)).toBe(465);
+        expect(historyActor(names, null)).toBeNull();
+        expect(historyActor(names, undefined)).toBeNull();
+        expect(historyActor(names, 0)).toBeNull();
+    });
+
+    it('тексты событий подставляют имена, пустой участник — «—»', () => {
+        const names = { 447: 'Вадим Савчук', 465: 'Иван Петров' };
+        expect(
+            LEAD_REQUEST_HISTORY_TEXT.transferred(
+                historyActor(names, 447),
+                historyActor(names, 465),
+            ),
+        ).toBe('ХО передан: Вадим Савчук → Иван Петров');
+        expect(
+            LEAD_REQUEST_HISTORY_TEXT.accepted(historyActor(names, 465)),
+        ).toBe('Заявка принята в работу: Иван Петров');
+        expect(LEAD_REQUEST_HISTORY_TEXT.accepted(historyActor(names, 0))).toBe(
+            'Заявка принята в работу',
+        );
+        // SLA: формулировка прежняя, меняется только участник.
+        expect(
+            LEAD_REQUEST_HISTORY_TEXT.notAccepted(60, historyActor(names, 447)),
+        ).toBe('Не принял за 60 мин: Вадим Савчук');
+        expect(LEAD_REQUEST_HISTORY_TEXT.notAccepted(60, 5)).toBe(
+            'Не принял за 60 мин: 5',
+        );
+        expect(LEAD_REQUEST_HISTORY_TEXT.notAccepted(60, null)).toBe(
+            'Не принял за 60 мин: —',
+        );
+    });
+
+    /*
+     * Разбор истории опирается на ПРЕФИКСЫ записей, а не на участника:
+     * переход с id на имена не должен ломать расчёт «принята ли заявка».
+     */
+    it('accept-state с именами вместо id считается так же', () => {
+        const names = { 447: 'Вадим Савчук', 9: 'Иван Петров' };
+        const entries = [
+            LEAD_REQUEST_HISTORY_TEXT.assigned(historyActor(names, 447)),
+            LEAD_REQUEST_HISTORY_TEXT.accepted(historyActor(names, 447)),
+            LEAD_REQUEST_HISTORY_TEXT.transferred(
+                historyActor(names, 447),
+                historyActor(names, 9),
+            ),
+        ].map(text => buildLeadRequestHistoryEntry(text, TZ));
+
+        expect(
+            getLeadRequestAcceptState(entries.slice(0, 2), TZ)
+                .acceptedAfterAssign,
+        ).toBe(true);
+        expect(getLeadRequestAcceptState(entries, TZ).acceptedAfterAssign).toBe(
+            false,
+        );
+        expect(
+            getLeadRequestAcceptState(entries, TZ).lastAssignedAt,
         ).toBeInstanceOf(Date);
     });
 

@@ -10,8 +10,11 @@ export const AI_ANALYTICS_FEEDBACK_APP = 'ai-analytics';
 export const AI_ANALYTICS_FEEDBACK_PROVIDER = 'ai-analytics';
 
 /**
- * Виды записей: реакции пользователей, факты доставки push-контура и
- * слепая метка руководителя по звонку недели (`rop_mark`, план §4.11).
+ * Виды записей: реакции пользователей, факты доставки push-контура,
+ * слепая метка руководителя по звонку недели (`rop_mark`, план §4.11) и
+ * журнал советов Фазы 4: `recommendation_issued` пишет конвейер при
+ * показе совета (дедуп по менеджеру, ключу совета и месяцу),
+ * `recommendation_done` ставит пользователь кнопкой «Сделано» (план §10, L5).
  */
 export const AI_ANALYTICS_FEEDBACK_KINDS = [
     'view',
@@ -23,6 +26,8 @@ export const AI_ANALYTICS_FEEDBACK_KINDS = [
     'digest_sent',
     'agenda_sent',
     'rop_mark',
+    'recommendation_issued',
+    'recommendation_done',
 ] as const;
 
 export type AiAnalyticsFeedbackKind =

@@ -138,6 +138,22 @@ export function snapshotHashKey(parts: readonly string[]): string {
         .slice(0, AI_ANALYTICS_SNAPSHOT_HASH_LENGTH);
 }
 
+/**
+ * Сигнатура записи с содержимым: хэш прогона плюс нагрузка без `meta`
+ * (там момент прогона). Нужна шагам, чей результат зависит от данных вне
+ * хэша прогона (чужие порталы, звонки окна, отчёт согласия): повтор с тем
+ * же хэшем прогона, но другим итогом пишет новую запись, а не отдаёт id
+ * старой вместе с новой нагрузкой.
+ */
+export function contentInputsHashOf(
+    runInputsHash: string,
+    payload: object,
+): string {
+    const content = JSON.stringify({ ...payload, meta: null });
+
+    return snapshotHashKey([runInputsHash, content]);
+}
+
 /** managerId ростера → user_id ais; нечисловой или пустой → null. */
 export function toManagerUserId(managerId: string | null): number | null {
     if (managerId === null || managerId === '') return null;

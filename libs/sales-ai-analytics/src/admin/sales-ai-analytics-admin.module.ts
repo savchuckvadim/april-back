@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AiAnalyticsAuditAdminController } from './controllers/audit.admin.controller';
 import { AiAnalyticsFeedbackCostAdminController } from './controllers/feedback-cost.admin.controller';
 import { AiAnalyticsGoldenSetAdminController } from './controllers/golden-set.admin.controller';
+import { AiAnalyticsPhase4AdminController } from './controllers/phase4.admin.controller';
 import { AiAnalyticsPipelineAdminController } from './controllers/pipeline.admin.controller';
 import { AiAnalyticsRetentionAdminController } from './controllers/retention.admin.controller';
 import { SalesAiAnalyticsAuditModule } from './sales-ai-analytics-audit.module';
@@ -14,7 +15,7 @@ import { SalesAiAnalyticsProbeModule } from './sales-ai-analytics-probe.module';
  * данных Фазы 0), `SalesAiAnalyticsProbeModule` (проба истории стадий
  * через PBXService) и `SalesAiAnalyticsOpsModule` (эксплуатация: очередь
  * конвейера, состояние прогонов, ретенция, расход модели, обратная связь,
- * золотой набор).
+ * золотой набор, снапшоты Фазы 4).
  *
  * Контроллеры разрезаны по темам (правило 200–300 строк на файл), путь
  * `admin/ai-analytics` и защита у них общие — `controllers/
@@ -40,6 +41,7 @@ import { SalesAiAnalyticsProbeModule } from './sales-ai-analytics-probe.module';
         AiAnalyticsRetentionAdminController,
         AiAnalyticsFeedbackCostAdminController,
         AiAnalyticsGoldenSetAdminController,
+        AiAnalyticsPhase4AdminController,
     ],
 })
 export class SalesAiAnalyticsAdminModule {}

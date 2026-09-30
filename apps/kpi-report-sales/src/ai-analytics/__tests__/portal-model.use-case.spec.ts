@@ -10,6 +10,7 @@ import {
 import { AppCacheService } from '@lib/app-cache';
 import type { JsonObject } from '@lib/sales-ai-analytics/params/index';
 import { AI_PORTAL_MODEL_REASONS } from '../constants/ai-portal-model.const';
+import { AI_PORTAL_SEASON_WINDOW_MONTHS } from '../domain/assembler/portal-model.estimates.phase4';
 import { buildPortalNorms } from '../domain/assembler/portal-model.norms';
 import type {
     PortalManagerMonth,
@@ -234,7 +235,15 @@ describe('PortalModelUseCase — состав месячного снапшот�
         expect(payload.msSource).toBe('default');
         expect(payload.sRef).toBe(7);
         expect(payload.cap).toBeGreaterThan(0);
-        expect(payload.cycleMedianDays).toBe(24);
+        // Гибрид медианы цикла (план §4.8, Фаза 4): без закрытых продаж
+        // вес медианы портала w = n/(n + κ) = 0 — остаётся прайор реестра.
+        expect(payload.cycleMedianDays).toBe(
+            AI_ANALYTICS_PARAM_DEFAULTS.cycle_median_days,
+        );
+        expect(payload.lagShrink).toMatchObject({
+            source: 'exponential',
+            cycleMedianW: 0,
+        });
         expect(payload.stageTheta[0]).toMatchObject({
             stageCode: 'sales_in_progress',
             value: 0.15,
@@ -268,6 +277,26 @@ describe('PortalModelUseCase — состав месячного снапшот�
             EDGE,
             SECOND_EDGE,
         ]);
+    });
+});
+
+describe('PortalModelUseCase — выборка сезона глубиной гейта', () => {
+    it('месяцы читаются за 36 мес., нормы — только по окну 12 мес.', async () => {
+        const old = month('11', '2024-01', { s: 10, n: 100 });
+        const { useCase, loader, upsert } = makeUseCase({
+            months: [...window(6, 5), old],
+        });
+
+        await useCase.execute({ domain: DOMAIN, monthKey: MONTH }, NOW);
+
+        const keys = (loader.loadMonths.mock.calls[0] as [string, string[]])[1];
+        const payload = firstUpsert(upsert).payload;
+        expect(keys).toHaveLength(AI_PORTAL_SEASON_WINDOW_MONTHS);
+        expect(keys).toContain('2023-10');
+        expect(payload.window).toHaveLength(12);
+        expect(payload.window).not.toContain('2024-01');
+        expect(payload.observations).toBe(30);
+        expect(payload.seasonIndex?.monthsUsed).toBe(7);
     });
 });
 

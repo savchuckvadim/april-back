@@ -6,15 +6,12 @@
  * потоку хранилища снапшотов — здесь она только расширяется полями
  * Фазы 2 (источники оценок, стадийные θ, шкала лага, трактовка рёбер,
  * готовность, сезон, санити-панель, журнал событий и НОРМЫ ПО КАЖДОМУ
- * МЕНЕДЖЕРУ). Расширение на стороне приложения — то же решение, что у
- * менеджерских снапшотов (§1.6 п. 8).
+ * МЕНЕДЖЕРУ). Расширение на стороне приложения — как у менеджерских (§1.6).
  *
  * Нормы по менеджерам лежат в снапшоте намеренно: leave-one-out по
  * 6–12 месяцам × менеджеры × рёбра считается ОДИН раз за месяц, а витрина
- * (поток 16b) их только читает — иначе каждый запрос обзора превращался бы
- * в квадратичный пересчёт (риск потока 16a).
- *
- * Все поля JSON-сериализуемы: `Date` внутри нагрузок запрещены (§3.2).
+ * (поток 16b) их только читает — иначе обзор пересчитывался бы квадратично
+ * (риск потока 16a). Поля JSON-сериализуемы: `Date` запрещены (§3.2).
  */
 import type {
     AiBetaSource,
@@ -39,6 +36,7 @@ import type {
 } from '../../constants/ai-portal-model.const';
 import type { AiSanityReport } from '../../steps/sanity.types';
 import type { AiSnapshotMeta } from './manager-snapshot.types';
+import type * as Phase4 from './portal-model.phase4.types';
 
 /** Ребро воронки в месячном снапшоте менеджера — вход норм портала. */
 export interface PortalMonthEdge {
@@ -170,9 +168,11 @@ export interface PortalEstimate<TSource extends string> {
  * Модель портала за месяц (`ai-analytics-portal-model`): нормы рёбер и
  * менеджеров, параметры усадки, потолок темпа, шкала лага, стадийные θ,
  * трактовка рёбер, режим связи качества с исходом, готовность, санити и
- * журнал событий.
+ * журнал событий; поля Фазы 4 — `portal-model.phase4.types.ts`.
  */
-export interface PortalModelPayload extends PortalModelSnapshot {
+export interface PortalModelPayload
+    extends Omit<PortalModelSnapshot, 'readiness'>,
+        Phase4.PortalModelPhase4Fields {
     monthKey: string;
     /** Окно оценки: месяцы 'YYYY-MM' по возрастанию. */
     window: string[];
@@ -236,10 +236,12 @@ export interface PortalModelSignature {
     scriptHash: string | null;
     /** Медиана среднего чека месяца, ₽; null — продаж не было. */
     priceMedian: number | null;
+    /** Отпечаток пула (с учётом согласия) и связи качества; нет в старых. */
+    phase4InputsKey?: string;
 }
 
 /** Значения ночного конвейера, которых нет в месячных снапшотах. */
-export interface PortalModelFacts {
+export interface PortalModelFacts extends Phase4.PortalModelPhase4Facts {
     /** Вероятности продажи из стадии (шина `stageTheta`). */
     readonly stageThetas?: readonly StageTheta[];
     /** Лаги продаж под шкалу `F(d)` (из эпизодов шины). */

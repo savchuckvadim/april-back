@@ -18,6 +18,7 @@ import {
     appendLeadRequestHistory,
     buildLeadRequestHistoryEntry,
     getLeadRequestAcceptState,
+    historyActor,
     LEAD_REQUEST_HISTORY_TEXT,
 } from '../../shared/lead-request/lead-request-history.util';
 import {
@@ -28,14 +29,22 @@ import {
 } from '../../shared/lead-request/deal-work-timer.util';
 import { setManagerOp } from '../../shared/lead-request/manager-op.util';
 import {
+    acceptActorIds,
+    acceptActorOf,
+} from '../../shared/lead-request/accept-actor.util';
+import {
+    UserNameMap,
+    UserNameResolver,
+} from '../../shared/lead-request/user-name.resolver';
+import {
     IWorkTakeoverOutcome,
-    IWorkTakeoverScope,
     WorkTakeoverService,
 } from '../../shared/work-takeover';
 import {
     LeadRequestAcceptDto,
     LeadRequestAcceptResultDto,
 } from '../dto/lead-request-accept.dto';
+import { alreadyAcceptedPlan, LeadAcceptPlan } from './lead-accept-plan';
 
 type BxRow = Record<string, unknown>;
 type Bitrix = Awaited<ReturnType<PBXService['init']>>['bitrix'];
@@ -46,34 +55,6 @@ export const ACCEPT_LEAD_STAGE_CODE =
 
 /** Принятая сделка встаёт «окончательно в ХО» — стадия «Холодная». */
 const ACCEPT_DEAL_STAGE_CODE = 'sales_cold';
-
-/**
- * ПЛАН принятия одного лида — чистый расчёт без I/O. Нужен двум
- * потребителям: одиночной ручке (кнопка UI) и ПАЧЕЧНОМУ хуку
- * (sales-hooks/lead-accept), который сам batch-читает лиды и batch-пишет
- * план через буфер — предобработка хука экономит сотни вызовов.
- */
-export interface LeadAcceptPlan {
-    /** Уже принята после последнего назначения — писать нечего. */
-    already: boolean;
-    /** Поля lead.update (пусто при already или неустановленных полях). */
-    fields: BxRow;
-    firstprepareSeconds: number | null;
-    warnings: string[];
-    /**
-     * Запись в базовую сделку: стадия «Холодная» + зеркальная строка
-     * истории. null — сделки нет либо писать нечего.
-     */
-    dealUpdate: { dealId: number; fields: BxRow } | null;
-    /** ХО-сделка заявки (to_xo_sales) — тоже принявшему. */
-    xoDealUpdate: { dealId: number; fields: BxRow } | null;
-    /** Кто принял — ему уходят задачи и дела. null — некому/нечего. */
-    acceptedBy: number | null;
-    /** Чьи открытые задачи и дела перехватывает принявший. */
-    takeover: IWorkTakeoverScope;
-}
-
-const EMPTY_TAKEOVER: IWorkTakeoverScope = { leadIds: [], dealIds: [] };
 
 /**
  * Стадия возврата повторной заявки: значение `op_return_stage` сделки,
@@ -111,7 +92,7 @@ const NOTHING_TAKEN: IWorkTakeoverOutcome = {
  *  - site_status/site_stage → «Взята в работу»;
  *  - op_lead_firstprepare_long = секунды от последнего «ХО назначен/
  *    передан» в истории до принятия (только если поле пусто);
- *  - история += «Заявка принята в работу».
+ *  - история += «Заявка принята в работу: Имя» (имени нет — id).
  *
  * Идемпотентность: принятие валидно только ПОСЛЕ последнего назначения
  * (после передачи другому — принимать заново); повтор → already=true.
@@ -120,7 +101,11 @@ const NOTHING_TAKEN: IWorkTakeoverOutcome = {
 export class LeadRequestAcceptService {
     private readonly logger = new Logger(LeadRequestAcceptService.name);
 
-    constructor(private readonly pbx: PBXService) {}
+    constructor(
+        private readonly pbx: PBXService,
+        /** Имена принявших: историю читают люди, а не сверяют id. */
+        private readonly userNames: UserNameResolver,
+    ) {}
 
     /** Одиночное принятие (кнопка UI): чтение → план → запись. */
     async accept(
@@ -157,12 +142,23 @@ export class LeadRequestAcceptService {
                     `Сделка ${dto.dealId} не найдена на портале`,
                 );
             }
+            /*
+             * Имена — до плана (он чистый). Batch resolve'а безопасен:
+             * инстанс свой на вызов (pbx.init), остальное здесь — прямые
+             * вызовы, чужих команд в карте нет.
+             */
+            const names = await this.userNames.resolve(
+                dto.domain,
+                bitrix,
+                acceptActorIds([dto.userId], [dealRow]),
+            );
             return this.acceptDealOnly(
                 bitrix,
                 portal,
                 dto.dealId,
                 dealRow,
                 dto.userId,
+                names,
             );
         }
 
@@ -188,7 +184,20 @@ export class LeadRequestAcceptService {
             }
         }
 
-        const plan = this.plan(portal, lead, dto.userId, dto.dealId, dealRow);
+        // Имена кандидатов в принявшие — до плана (см. ветку без лида).
+        const names = await this.userNames.resolve(
+            dto.domain,
+            bitrix,
+            acceptActorIds([dto.userId], [dealRow, lead]),
+        );
+        const plan = this.plan(
+            portal,
+            lead,
+            dto.userId,
+            dto.dealId,
+            dealRow,
+            names,
+        );
         if (plan.already) {
             return {
                 success: true,
@@ -244,9 +253,10 @@ export class LeadRequestAcceptService {
         portal: PortalModel,
         dealId: number,
         dealRow: BxRow,
-        userId?: number,
+        userId: number | undefined,
+        names: Readonly<UserNameMap>,
     ): Promise<LeadRequestAcceptResultDto> {
-        const plan = this.planDealOnly(portal, dealId, dealRow, userId);
+        const plan = this.planDealOnly(portal, dealId, dealRow, userId, names);
         if (plan.already || !plan.dealUpdate) {
             return {
                 success: true,
@@ -281,6 +291,8 @@ export class LeadRequestAcceptService {
         explicitDealId?: number,
         /** Текущее состояние базовой сделки — нужно для append истории. */
         dealRow: BxRow | null = null,
+        /** Имена сотрудников (UserNameResolver) — в историю вместо id. */
+        names: Readonly<UserNameMap> = {},
     ): LeadAcceptPlan {
         const warnings: string[] = [];
         const tz = portal.getTimezone();
@@ -303,16 +315,7 @@ export class LeadRequestAcceptService {
             acceptState.acceptedAfterAssign === true &&
             !this.isWaiting(portal, lead)
         ) {
-            return {
-                already: true,
-                fields: {},
-                firstprepareSeconds: null,
-                warnings,
-                dealUpdate: null,
-                xoDealUpdate: null,
-                acceptedBy: null,
-                takeover: EMPTY_TAKEOVER,
-            };
+            return alreadyAcceptedPlan(warnings);
         }
 
         const fields: BxRow = {};
@@ -361,15 +364,9 @@ export class LeadRequestAcceptService {
 
         /*
          * История: запись принятия (append-only от текущего значения).
-         * Кто принял: явный userId (кнопка UI); иначе ответственный СДЕЛКИ —
-         * робот срабатывает на смену стадии сделки, а двигает её тот, кто
-         * работает; лида — если сделки нет (ХО-хук при назначении/передаче
-         * ставит назначенного в ASSIGNED_BY_ID).
+         * Кто принял — {@link acceptActorOf}; в запись — его имя, нет имени — id.
          */
-        const acceptedBy =
-            userId ??
-            this.parsePositiveInt(dealRow?.ASSIGNED_BY_ID) ??
-            this.parsePositiveInt(lead.ASSIGNED_BY_ID);
+        const acceptedBy = acceptActorOf(userId, dealRow, lead);
         const historyField = portal.getEntityFieldByCode(
             'lead',
             EnumLeadRequestFieldCode.op_lead_firstprepare_history,
@@ -379,7 +376,9 @@ export class LeadRequestAcceptService {
             fields[bitrixId] = appendLeadRequestHistory(
                 lead[bitrixId],
                 buildLeadRequestHistoryEntry(
-                    LEAD_REQUEST_HISTORY_TEXT.accepted(acceptedBy),
+                    LEAD_REQUEST_HISTORY_TEXT.accepted(
+                        historyActor(names, acceptedBy),
+                    ),
                     tz,
                 ),
             );
@@ -429,6 +428,7 @@ export class LeadRequestAcceptService {
                 acceptedBy,
                 dealRow,
                 warnings,
+                names,
             ),
             xoDealUpdate:
                 xoDealId && acceptedBy
@@ -532,6 +532,7 @@ export class LeadRequestAcceptService {
         acceptedBy: number | null,
         dealRow: BxRow | null,
         warnings: string[],
+        names: Readonly<UserNameMap>,
     ): { dealId: number; fields: BxRow } | null {
         const dealId = this.baseDealIdOf(portal, lead, explicitDealId);
         if (!dealId) return null;
@@ -571,7 +572,7 @@ export class LeadRequestAcceptService {
             );
         }
 
-        this.applyDealAccept(portal, fields, dealRow, acceptedBy);
+        this.applyDealAccept(portal, fields, dealRow, acceptedBy, names);
 
         return Object.keys(fields).length ? { dealId, fields } : null;
     }
@@ -587,6 +588,7 @@ export class LeadRequestAcceptService {
         fields: BxRow,
         dealRow: BxRow | null,
         acceptedBy: number | null,
+        names: Readonly<UserNameMap>,
     ): void {
         clearDealAssignedAt(portal, fields);
         setDealAcceptedBy(portal, fields, acceptedBy);
@@ -602,7 +604,7 @@ export class LeadRequestAcceptService {
             portal,
             fields,
             dealRow,
-            LEAD_REQUEST_HISTORY_TEXT.accepted(acceptedBy),
+            LEAD_REQUEST_HISTORY_TEXT.accepted(historyActor(names, acceptedBy)),
         );
     }
 
@@ -622,6 +624,8 @@ export class LeadRequestAcceptService {
         dealId: number,
         dealRow: BxRow,
         userId?: number,
+        /** Имена сотрудников (UserNameResolver) — в историю вместо id. */
+        names: Readonly<UserNameMap> = {},
     ): LeadAcceptPlan {
         const warnings: string[] = [];
         const assignedAtName = dealAssignedAtName(portal);
@@ -629,35 +633,16 @@ export class LeadRequestAcceptService {
             warnings.push(
                 'Поле «Заявка назначена (дата)» не установлено на сделке — подтверждать нечего',
             );
-            return {
-                already: true,
-                fields: {},
-                firstprepareSeconds: null,
-                warnings,
-                dealUpdate: null,
-                xoDealUpdate: null,
-                acceptedBy: null,
-                takeover: EMPTY_TAKEOVER,
-            };
+            return alreadyAcceptedPlan(warnings);
         }
-        const waiting = this.text(dealRow[assignedAtName]);
-        if (!waiting) {
-            return {
-                already: true,
-                fields: {},
-                firstprepareSeconds: null,
-                warnings,
-                dealUpdate: null,
-                xoDealUpdate: null,
-                acceptedBy: null,
-                takeover: EMPTY_TAKEOVER,
-            };
+        // Таймер пуст — подтверждать нечего.
+        if (!this.text(dealRow[assignedAtName])) {
+            return alreadyAcceptedPlan(warnings);
         }
 
-        const acceptedBy =
-            userId ?? this.parsePositiveInt(dealRow.ASSIGNED_BY_ID);
+        const acceptedBy = acceptActorOf(userId, dealRow, null);
         const fields: BxRow = {};
-        this.applyDealAccept(portal, fields, dealRow, acceptedBy);
+        this.applyDealAccept(portal, fields, dealRow, acceptedBy, names);
 
         return {
             already: false,

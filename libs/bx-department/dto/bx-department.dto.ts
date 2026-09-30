@@ -3,7 +3,7 @@ import { IBXDepartment } from '@/modules/bitrix/domain/interfaces/bitrix.interfa
 import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsEnum, IsOptional } from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
 
 export enum EClients {
     dev = 'april-dev.bitrix24.ru',
@@ -117,14 +117,19 @@ export class BxDepartmentDto implements IBXDepartment {
 }
 export class BxDepartmentDataDto {
     @ApiProperty({
-        description: 'Department ID',
+        description:
+            'Bitrix ID базового отдела группы из конфига портала. ' +
+            '0 в мультирежиме — единого корневого отдела нет, ОП собраны ' +
+            'по тэгу со всей структуры.',
         example: 1,
         required: true,
     })
     department: number;
 
     @ApiProperty({
-        description: 'General department',
+        description:
+            'Базовый отдел группы с сотрудниками; в мультирежиме — все ' +
+            'найденные по тэгу отделы продаж (ОП).',
         example: [BxDepartmentDto],
         required: true,
         type: [BxDepartmentDto],
@@ -132,7 +137,9 @@ export class BxDepartmentDataDto {
     generalDepartment: BxDepartmentDto[];
 
     @ApiProperty({
-        description: 'Children departments',
+        description:
+            'Прямые подотделы базового отдела (в мультирежиме — всех ОП) ' +
+            'с сотрудниками, включая подотделы не «Группа …».',
         example: [BxDepartmentDto],
         required: true,
         type: [BxDepartmentDto],
@@ -142,18 +149,48 @@ export class BxDepartmentDataDto {
     @ApiPropertyOptional({
         description:
             'Родительские отделы базового (климб по PARENT до 3 уровней, ' +
-            'с сотрудниками) — для честного «вышестоящего» без хардкода bossId.',
+            'с сотрудниками) — для честного «вышестоящего» без хардкода ' +
+            'bossId. В мультирежиме — предки всех найденных ОП (до 3 ' +
+            'уровней от каждого ОП, без дублей, с сотрудниками).',
         type: [BxDepartmentDto],
     })
     parentDepartments?: BxDepartmentDto[];
 
     @ApiProperty({
-        description: 'All users',
+        description:
+            'Все сотрудники базового отдела (в мультирежиме — всех ОП) и ' +
+            'их подотделов, без дублей; сотрудники родительских отделов ' +
+            'сюда не входят.',
         example: [BXUserDto],
         required: true,
         type: [BXUserDto],
     })
     allUsers: BXUserDto[];
+
+    @ApiPropertyOptional({
+        description:
+            'Мультирежим портала: отделы продаж собраны по тэгу со всей ' +
+            'структуры (departaments.is_multiple в БД). false — один ' +
+            'базовый отдел из конфига портала.',
+        type: Boolean,
+        example: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    isMultiple?: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Тэг поиска отделов в мультирежиме (departaments.multiple_tag); ' +
+            'null — тэг не задан, отделы ищутся по шаблонам группы ' +
+            '(«ОП …», «Отдел продаж»).',
+        type: String,
+        nullable: true,
+        example: '(ОП)',
+    })
+    @IsOptional()
+    @IsString()
+    multipleTag?: string | null;
 }
 
 export class BxDepartmentResponseDto {

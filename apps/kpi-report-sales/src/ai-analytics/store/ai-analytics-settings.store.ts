@@ -34,6 +34,15 @@ interface AiLevelsPayload {
 /** Что писать в ключи схемы: имя блока → JSON-строка (или скаляр-строка). */
 export type AiSettingsPatch = Partial<Record<AiSettingsKeyName, string>>;
 
+/**
+ * Согласие портала на пул (Фаза 4): флаг и дата согласия ISO ('' — снято).
+ * Ключи схемы `aiAnalyticsPoolOptIn` / `aiAnalyticsPoolConsentAt`.
+ */
+export interface AiPoolConsentRecord {
+    optIn: boolean;
+    consentAt: string;
+}
+
 /** Имя блока Фазы 2 → ключ схемы `[kpiSales]` (camelCase, см. §3.3). */
 const SETTINGS_SCHEMA_KEYS = {
     levels: 'aiAnalyticsLevels',
@@ -119,6 +128,25 @@ export class AiAnalyticsSettingsStore {
             Object.fromEntries(entries) as PortalAppSettingsPatch<
                 typeof EnumPortalAppCode.kpiSales
             >,
+        );
+    }
+
+    /**
+     * Согласие на пул порталов (Фаза 4): флаг ai_analytics_pool_opt_in и
+     * дата ai_analytics_pool_consent_at одной записью в ключи схемы тем же
+     * сервисом настроек, что и блоки Фазы 2 (кэш настроек сбрасывает он).
+     */
+    async savePool(
+        domain: string,
+        consent: AiPoolConsentRecord,
+    ): Promise<void> {
+        await this.appSettings.save(
+            await this.resolvePortalId(domain),
+            EnumPortalAppCode.kpiSales,
+            {
+                aiAnalyticsPoolOptIn: consent.optIn,
+                aiAnalyticsPoolConsentAt: consent.consentAt,
+            },
         );
     }
 

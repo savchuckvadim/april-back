@@ -68,10 +68,18 @@ function makeCtx(contacts: Row[]) {
             }),
         },
     };
+    /** Резолвер имён: отмечаем момент вызова в общем журнале. */
+    const userNames = {
+        resolve: jest.fn(() => {
+            events.push('names');
+            return Promise.resolve({});
+        }),
+    };
     return {
         ctx: { bitrix, portal, buffer, domain: 'd.b24.ru' },
         events,
         contactUpdates,
+        useCase: new TransferWorkUseCase(userNames as never),
     };
 }
 
@@ -92,12 +100,12 @@ describe('TransferWorkUseCase — контакты клиента', () => {
      * ставится везде, в том числе на контактах сделки и компании.
      */
     it('контакты основной сделки и компании получают нового ответственного', async () => {
-        const { ctx, contactUpdates } = makeCtx([
+        const { ctx, contactUpdates, useCase } = makeCtx([
             { CONTACT_ID: '301' },
             { CONTACT_ID: '302' },
         ]);
 
-        await new TransferWorkUseCase().execute(ctx as never, [ITEM]);
+        await useCase.execute(ctx as never, [ITEM]);
 
         expect(contactUpdates).toEqual([
             { id: 301, fields: { ASSIGNED_BY_ID: '8' } },
@@ -110,9 +118,9 @@ describe('TransferWorkUseCase — контакты клиента', () => {
      * накопленные команды мимо буфера.
      */
     it('накопленное отправляется до чтения, контакты читаются до записи', async () => {
-        const { ctx, events } = makeCtx([{ CONTACT_ID: '301' }]);
+        const { ctx, events, useCase } = makeCtx([{ CONTACT_ID: '301' }]);
 
-        await new TransferWorkUseCase().execute(ctx as never, [ITEM]);
+        await useCase.execute(ctx as never, [ITEM]);
 
         expect(events[0]).toBe('flush');
         const lastRead = events.lastIndexOf('read');
@@ -120,15 +128,28 @@ describe('TransferWorkUseCase — контакты клиента', () => {
         expect(lastRead).toBeLessThan(firstWrite);
     });
 
+    /*
+     * Резолвер имён сам шлёт batch: до чтений он увёз бы их команды, после
+     * первой записи — закоммиченные группы буфера. Место одно — между.
+     */
+    it('имена резолвятся после всех чтений и до первой записи', async () => {
+        const { ctx, events, useCase } = makeCtx([{ CONTACT_ID: '301' }]);
+
+        await useCase.execute(ctx as never, [ITEM]);
+
+        const names = events.indexOf('names');
+        const firstWrite = events.findIndex(event => event.endsWith('.update'));
+        expect(names).toBeGreaterThan(events.lastIndexOf('read'));
+        expect(names).toBeLessThan(firstWrite);
+    });
+
     it('больше десяти контактов — первые десять и предупреждение', async () => {
         const many = Array.from({ length: 12 }, (_, i) => ({
             CONTACT_ID: String(400 + i),
         }));
-        const { ctx, contactUpdates } = makeCtx(many);
+        const { ctx, contactUpdates, useCase } = makeCtx(many);
 
-        const result = await new TransferWorkUseCase().execute(ctx as never, [
-            ITEM,
-        ]);
+        const result = await useCase.execute(ctx as never, [ITEM]);
 
         expect(contactUpdates).toHaveLength(10);
         expect(result.warnings.join(' ')).toContain('первых 10');

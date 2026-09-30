@@ -10,11 +10,15 @@ import { BxSuperUserService } from '../../services/bx-super-user.service';
 
 /*
  * Общий стенд спеков BxDepartmentStructureService: структура портала
- * старого API, пользователи отделов и фабрика сервиса с моками Redis,
- * PBX, руководителей, настроек портала и суперпользователей вендора.
+ * старого API, пользователи отделов и фабрика сервиса. Структура строится
+ * настоящим BxDepartmentService (снимок отдела) поверх моков Redis, PBX и
+ * руководителей; настройки портала и суперпользователи вендора — моки.
  */
 
 export const DOMAIN = 'example.bitrix24.ru';
+
+/** Базовый отдел одиночного режима из конфига портала (PortalModel). */
+export const SINGLE_BASE_ID = 9;
 
 // Структура портала (старый API):
 // 1 ГАРАНТ СЕРВИС (корень)
@@ -55,9 +59,10 @@ export const USERS_BY_DEPARTMENT: Record<number, IBXUser[]> = {
 type MultipleFlags = Record<EDepartamentGroup, boolean>;
 type MultipleTags = Partial<Record<EDepartamentGroup, string>>;
 
-/** Результат pbx.init: bitrix и локальный портал с флагами мультирежима. */
+/** Результат pbx.init: bitrix, конфиг портала и локальный портал с флагами мультирежима. */
 export interface StructureInitResult {
     bitrix: { api: { call: jest.Mock } };
+    PortalModel: { getDepartamentIdByCode: () => { bitrixId: number } };
     internalPortal: {
         departaments: {
             group: EDepartamentGroup;
@@ -72,11 +77,13 @@ export interface StructureStand {
     redisGet: jest.Mock;
     redisSet: jest.Mock;
     apiCall: jest.Mock;
+    /** Шпион настоящего BxDepartmentService.getFullDepartment (можно подменить ответ). */
     getFullDepartment: jest.Mock;
     pbxInit: jest.Mock;
     headsResolve: jest.Mock;
     settingsResolve: jest.Mock;
     isSuperUser: jest.Mock;
+    departments: BxDepartmentService;
     service: BxDepartmentStructureService;
     /** init отдаёт bitrix и локальный портал с флагами мультирежима по группам. */
     initResult: (
@@ -115,6 +122,9 @@ export function makeStructureStand(): StructureStand {
         tags: MultipleTags = {},
     ): StructureInitResult => ({
         bitrix: { api: { call: apiCall } },
+        PortalModel: {
+            getDepartamentIdByCode: () => ({ bitrixId: SINGLE_BASE_ID }),
+        },
         internalPortal: {
             departaments: Object.entries(isMultiple).map(([group, flag]) => ({
                 group: group as EDepartamentGroup,
@@ -123,7 +133,6 @@ export function makeStructureStand(): StructureStand {
             })),
         },
     });
-    const getFullDepartment = jest.fn();
     const pbxInit = jest.fn().mockResolvedValue(
         initResult({
             [EDepartamentGroup.sales]: true,
@@ -135,13 +144,21 @@ export function makeStructureStand(): StructureStand {
     const settingsResolve = jest.fn().mockResolvedValue({});
     const isSuperUser = jest.fn().mockResolvedValue(false);
 
-    const service = new BxDepartmentStructureService(
+    const departments = new BxDepartmentService(
         {
             getClient: () => ({ get: redisGet, set: redisSet }),
         } as unknown as RedisService,
         { init: pbxInit } as unknown as PBXService,
-        { getFullDepartment } as unknown as BxDepartmentService,
         { resolve: headsResolve } as unknown as BxDepartmentHeadsService,
+    );
+    // Шпион вызывает настоящий метод; тест может подменить ответ снимка.
+    const getFullDepartment = jest.spyOn(
+        departments,
+        'getFullDepartment',
+    ) as unknown as jest.Mock;
+
+    const service = new BxDepartmentStructureService(
+        departments,
         { resolve: settingsResolve } as unknown as PortalAppSettingsService,
         { isSuperUser } as unknown as BxSuperUserService,
     );
@@ -155,6 +172,7 @@ export function makeStructureStand(): StructureStand {
         headsResolve,
         settingsResolve,
         isSuperUser,
+        departments,
         service,
         initResult,
     };

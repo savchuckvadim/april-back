@@ -1,4 +1,5 @@
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
+import { bxFieldId, bxFieldText } from '@lib/shared/lib/utils';
 import { buildCrmRefValue } from '../../../../shared/portal-fields';
 import { IBatchGroupBuffer } from '../../../../shared/batch/batch-group-buffer.interface';
 import { ResolvedLeadToWorkItem } from '../../dto/lead-to-work.dto';
@@ -30,6 +31,26 @@ export interface LeadFlowInput {
     hasCompany: boolean;
     /** Имена сотрудников (id → «Имя Фамилия») для читаемой истории. */
     userNames?: Record<number, string>;
+}
+
+/**
+ * Прежний ответственный за обзвон: открытая задача «Холодный обзвон…»
+ * → ответственный существующей ХО-сделки → null (первый ХО по лиду).
+ * Нужен лид-ветке (история «ХО передан: A → B»), KPI-ветке («не
+ * состоялся») и use-case'у — его имя резолвится заранее, вместе с прочими.
+ */
+export function xoPrevResponsible(
+    ctx: Pick<LeadToWorkContext, 'openTasks' | 'existingXoDeal'>,
+): number | null {
+    for (const task of ctx.openTasks) {
+        const row = task as unknown as BxRow;
+        const title = bxFieldText(row.title) ?? bxFieldText(row.TITLE) ?? '';
+        if (!title.startsWith(XO_TASK_PREFIX)) continue;
+        const id = bxFieldId(row.responsibleId ?? row.RESPONSIBLE_ID);
+        if (id) return id;
+    }
+    const xo = ctx.existingXoDeal as unknown as BxRow | null;
+    return xo ? bxFieldId(xo.ASSIGNED_BY_ID) : null;
 }
 
 /**
@@ -79,7 +100,7 @@ export class LeadFlowService extends LeadToWorkFlowBase {
                     : null,
             hasCompany: input.hasCompany,
             userNames: input.userNames,
-            previousResponsibleId: this.prevResponsible(ctx),
+            previousResponsibleId: xoPrevResponsible(ctx),
             transferredById: item.transferredBy ?? null,
             timezone: this.portal.getTimezone(),
             responsibleId: item.responsible,
@@ -103,27 +124,6 @@ export class LeadFlowService extends LeadToWorkFlowBase {
             this.bitrix.batch.lead.update(cmd, item.leadId, fields as never),
         );
         return { skipped: false, warnings };
-    }
-
-    /**
-     * Прежний ответственный за обзвон: открытая задача «Холодный обзвон…»
-     * → ответственный существующей ХО-сделки → null (первый ХО по лиду).
-     * Нужен и лид-ветке (история передачи), и KPI-ветке («не состоялся»).
-     */
-    prevResponsible(ctx: LeadToWorkContext): number | null {
-        for (const task of ctx.openTasks) {
-            const row = task as unknown as BxRow;
-            const title = this.text(row.title) ?? this.text(row.TITLE) ?? '';
-            if (!title.startsWith(XO_TASK_PREFIX)) continue;
-            const id = Number(row.responsibleId ?? row.RESPONSIBLE_ID);
-            if (Number.isFinite(id) && id > 0) return id;
-        }
-        const xo = ctx.existingXoDeal as unknown as BxRow | null;
-        if (xo) {
-            const id = Number(xo.ASSIGNED_BY_ID);
-            if (Number.isFinite(id) && id > 0) return id;
-        }
-        return null;
     }
 
     /* ------------------------------------------------------------------ */

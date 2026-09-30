@@ -55,13 +55,11 @@ import {
 } from './dto/ai-settings.dto';
 
 /**
- * AI-аналитика отдела продаж, Фаза 1a (план ai/tasks/ai-sales-analytics-plan.md,
- * 6.2–6.5): синхронные ручки с кэшем на домен и серверной проверкой прав по
- * структуре отделов (requesterUserId): руководитель видит периметр,
- * менеджер без headOf — 403 на читающих ручках, пока не включена
- * ai_analytics_self_view_enabled (тогда — только свои строки); settings/get
- * доступна всем; сброс кэша — только cup|op; ручной push (повестка /
- * дайджест / сводный дайджест) — руководители.
+ * AI-аналитика ОП, Фаза 1a (план 6.2–6.5): синхронные ручки с кэшем на домен
+ * и проверкой прав по структуре отделов (requesterUserId): руководитель —
+ * периметр, менеджер без headOf — 403 на чтении, пока не включена
+ * ai_analytics_self_view_enabled; settings/get — всем; сброс кэша — cup|op;
+ * ручной push — руководители. Все ручки под portal-session guard (Фаза 4).
  */
 @ApiTags(AI_ANALYTICS_SWAGGER_TAG)
 @Controller(AI_ANALYTICS_ROUTE_PREFIX)
@@ -76,6 +74,7 @@ export class AiAnalyticsController {
         private readonly pushUseCase: AiAnalyticsPushUseCase,
     ) {}
 
+    @PortalSessionProtected()
     @Post('settings/get')
     @HttpCode(200)
     @ApiOperation({
@@ -100,6 +99,7 @@ export class AiAnalyticsController {
         return { status: 'ready', requestKey, data: value };
     }
 
+    @PortalSessionProtected()
     @Post('pulse')
     @HttpCode(200)
     @ApiOperation({
@@ -134,6 +134,7 @@ export class AiAnalyticsController {
         };
     }
 
+    @PortalSessionProtected()
     @Post('agenda')
     @HttpCode(200)
     @ApiOperation({
@@ -203,6 +204,7 @@ export class AiAnalyticsController {
         };
     }
 
+    @PortalSessionProtected()
     @Post('feedback/list')
     @HttpCode(200)
     @ApiOperation({

@@ -44,6 +44,10 @@ export const OBJECTION_NO_CATEGORY_TITLE = 'Без категории';
 export const lowerFirst = (title: string): string =>
     title.charAt(0).toLowerCase() + title.slice(1);
 
+/** Первая буква прописная — подпись открывает фразу («Оценка ниже…»). */
+export const upperFirst = (title: string): string =>
+    title.charAt(0).toUpperCase() + title.slice(1);
+
 /** Название раздела с большой буквы: «Работа по цене»; чужой код — как есть. */
 export function sectionTitleOf(code: string): string {
     return SECTION_TITLES.get(code) ?? code;

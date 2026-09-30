@@ -19,6 +19,7 @@ export const AI_ANALYTICS_USER_FEEDBACK_KINDS = [
     'not_useful',
     'disagree',
     'alert_handled',
+    'recommendation_done',
 ] as const satisfies readonly AiAnalyticsFeedbackKind[];
 export type AiAnalyticsUserFeedbackKind =
     (typeof AI_ANALYTICS_USER_FEEDBACK_KINDS)[number];
@@ -38,14 +39,16 @@ export type AiAnalyticsReactionKind =
 
 /**
  * Служебные виды: их пишут push-контур (digest_sent / agenda_sent),
- * алерты event-sales (alert_sent) и слепая проверка руководителя
- * (rop_mark). В пользовательский список обратной связи они не попадают.
+ * алерты event-sales (alert_sent), слепая проверка руководителя
+ * (rop_mark) и журнал советов конвейера (recommendation_issued, Фаза 4).
+ * В пользовательский список обратной связи они не попадают.
  */
 export const AI_ANALYTICS_SERVICE_FEEDBACK_KINDS = [
     'alert_sent',
     'digest_sent',
     'agenda_sent',
     'rop_mark',
+    'recommendation_issued',
 ] as const satisfies readonly AiAnalyticsFeedbackKind[];
 
 /**
@@ -66,6 +69,7 @@ export const AI_ANALYTICS_RATE_FEEDBACK_KINDS = [
  */
 export const AI_ANALYTICS_DAILY_ONCE_FEEDBACK_KINDS = [
     'alert_handled',
+    'recommendation_done',
 ] as const satisfies readonly AiAnalyticsUserFeedbackKind[];
 
 /**
@@ -87,4 +91,5 @@ export const AI_ANALYTICS_FEEDBACK_RESET_SCOPES: Partial<
 > = {
     alert_handled: ['pulse'],
     disagree: ['agenda'],
+    recommendation_done: ['overview'],
 };

@@ -26,10 +26,13 @@ import {
     AI_READINESS_REASON_CODES,
     buildWindowedReadiness,
     comparableFrom,
+    elevateReadiness,
     readinessReason,
     type AiBetaSource,
     type BetaCountdown,
     type ReadinessGates,
+    type ReadinessStageGates,
+    type ReadinessStages,
     type ReadinessWindowCounters,
     type ReliabilitySource,
 } from '@lib/sales-ai-analytics';
@@ -154,9 +157,19 @@ export interface ReadinessOptions {
     sigmaLlmSource?: ReliabilitySource;
     /** Гейты режимов; по умолчанию — дефолты библиотеки. */
     gates?: ReadinessGates;
+    /**
+     * Входы ступеней L4/L5 (Фаза 4): точность прогноза и эффект советов с
+     * флагами портала. Не заданы — режим не выше `norms`/`hypothesis`.
+     */
+    stages?: ReadinessStages | null;
+    /** Гейты ступеней; по умолчанию — дефолты реестра библиотеки. */
+    stageGates?: ReadinessStageGates;
 }
 
-/** Готовность витрины: окно и правила режимов считает библиотека. */
+/**
+ * Готовность витрины: окно и правила режимов считает библиотека, ступени
+ * L4/L5 поверх них — `elevateReadiness` (своих порогов адаптер не держит).
+ */
 export function buildReadiness(
     rows: readonly DatedLiteRow[],
     options: ReadinessOptions,
@@ -193,20 +206,24 @@ export function buildReadiness(
         },
         options.gates,
     );
-    const mode: AiAnalyticsReadinessMode = result.mode;
+    const elevated =
+        options.stages === undefined || options.stages === null
+            ? result
+            : elevateReadiness(result, options.stages, options.stageGates);
+    const mode: AiAnalyticsReadinessMode = elevated.mode;
 
     return {
         mode,
-        historyMonths: result.historyMonths,
-        presentations: result.presentations,
-        sales: result.sales,
-        comparableFrom: result.comparableFrom,
-        reasons: result.reasons,
-        betaSource: result.betaSource,
-        betaCountdown: toCountdownDto(result.betaCountdown),
-        ...(result.sigmaLlmSource === undefined
+        historyMonths: elevated.historyMonths,
+        presentations: elevated.presentations,
+        sales: elevated.sales,
+        comparableFrom: elevated.comparableFrom,
+        reasons: elevated.reasons,
+        betaSource: elevated.betaSource,
+        betaCountdown: toCountdownDto(elevated.betaCountdown),
+        ...(elevated.sigmaLlmSource === undefined
             ? {}
-            : { sigmaLlmSource: result.sigmaLlmSource }),
+            : { sigmaLlmSource: elevated.sigmaLlmSource }),
     };
 }
 

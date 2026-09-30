@@ -1,16 +1,12 @@
 /**
- * Снапшоты Фазы 2 для витрины обзора (поток 16b): месячная модель
- * портала, дневные прогнозы менеджеров и месячные профили стиля; с Фазы 3
- * (П1) — ещё и недельные тренды рядов менеджеров; паспорта месячных
- * снапшотов менеджеров — источник уровня и стажа строки обзора.
+ * Снапшоты для витрины обзора (поток 16b): модель портала, прогнозы и
+ * профили стиля; с Фазы 3 — тренды, паспорта (уровень и стаж строки); с
+ * Фазы 4 — точность прогноза, эффект советов, связь качества и пул.
  *
- * Загрузчик НЕ инжектируемый: он создаётся поверх уже существующего
- * `AiAnalyticsSnapshotStore` (`new OverviewSnapshotsLoader(store)`), чтобы
+ * Загрузчик НЕ инжектируемый (`new OverviewSnapshotsLoader(store)`), чтобы
  * не трогать модуль приложения — его правит только поток сборки (§1.6).
- *
- * Все выборки идут ПО КЛЮЧАМ ПЕРИОДОВ (индексы `ais` владельцем не
- * подтверждены, §3.2), кроме запасного поиска последней модели портала —
- * там окно `created_at` стора. Битрикс не зовётся вовсе: всё уже в `ais`.
+ * Выборки — ПО КЛЮЧАМ ПЕРИОДОВ (индексы `ais` не подтверждены, §3.2), кроме
+ * «последних» снапшотов (окно `created_at` стора). Битрикс не зовётся.
  */
 import {
     AI_ANALYTICS_SNAPSHOT_TYPE,
@@ -30,14 +26,17 @@ import type { TrendsView } from '../presenter/trends.presenter';
 import type { YoyMonthView } from '../presenter/yoy.presenter';
 import { isoWeekKey } from './period.util';
 import {
+    Phase4SnapshotsLoader,
+    type Phase4LatestSnapshots,
+} from './phase4-snapshots.loader';
+import {
     AiAnalyticsSnapshotStore,
     type AiAnalyticsSnapshotRecord,
 } from '../../store/ai-analytics-snapshot.store';
 
 /**
- * Сколько строк `manager-month` стор берёт за один месяц сравнения:
- * ростер портала с запасом. Выборка идёт по ключу месяца (не окном
- * `created_at`), но `findManagerMonths` требует `limit` явно.
+ * Строк `manager-month` за месяц сравнения: ростер портала с запасом
+ * (выборка по ключу месяца, но `findManagerMonths` требует `limit`).
  */
 export const YOY_MONTHS_LIMIT = 500;
 
@@ -196,6 +195,14 @@ export class OverviewSnapshotsLoader {
             ]);
 
         return { model, forecasts, styles, trends, goldenReport };
+    }
+
+    /**
+     * Последние снапшоты Фазы 4 (вход ступеней L4/L5 готовности, связь
+     * качества и пул); отказ стора по типу — null только для него.
+     */
+    loadPhase4(domain: string): Promise<Phase4LatestSnapshots> {
+        return new Phase4SnapshotsLoader(this.snapshots).loadLatest(domain);
     }
 
     /** Последний отчёт согласия портала (П7): источник σ_llm для готовности. */

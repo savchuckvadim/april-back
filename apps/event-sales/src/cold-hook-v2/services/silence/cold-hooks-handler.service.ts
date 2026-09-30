@@ -125,12 +125,12 @@ export class ColdHooksHandlerV2Service {
             const notify = new ColdStartNotifyV2Service(bitrix);
             const useCase = new ColdCallV2UseCase(PortalModel, bitrix);
             // Адресный ХО: лиды и контакты — новому ответственному. План
-            // принятия — чистый расчёт, его единственная зависимость
-            // (PBXService) у обработчика уже есть: модуль заявок не нужен.
+            // принятия — чистый расчёт, его зависимости (PBXService,
+            // UserNameResolver) у обработчика уже есть: модуль заявок не нужен.
             const addressedXo = new ColdAddressedXoV2Service(
                 PortalModel,
                 bitrix,
-                new LeadRequestAcceptService(this.pbx),
+                new LeadRequestAcceptService(this.pbx, this.userNames),
             );
             // Резолв смартов — один на окно тишины, null = не установлен.
             const smarts: ColdSmartInfos = {

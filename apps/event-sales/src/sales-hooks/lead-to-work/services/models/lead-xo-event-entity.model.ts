@@ -19,6 +19,7 @@ import {
 import {
     appendLeadRequestHistory,
     buildLeadRequestHistoryEntry,
+    historyActor,
     LEAD_REQUEST_HISTORY_TEXT,
 } from '../../../../shared/lead-request/lead-request-history.util';
 import {
@@ -141,9 +142,10 @@ export class LeadXoEventEntityModel extends XoEventEntityModel {
             EnumLeadRequestFieldCode.op_lead_firstprepare_history,
         );
         if (!history) return;
-        const actor =
-            this.leadCtx.userNames?.[this.leadCtx.responsibleId] ??
-            this.leadCtx.responsibleId;
+        const actor = historyActor(
+            this.leadCtx.userNames,
+            this.leadCtx.responsibleId,
+        );
         // Дописываем к уже собранной записи назначения, не к значению карточки.
         fields[history] = appendLeadRequestHistory(
             fields[history] ??
@@ -242,11 +244,14 @@ export class LeadXoEventEntityModel extends XoEventEntityModel {
         );
         if (!name) return;
 
-        const { previousResponsibleId, transferredById, responsibleId } =
-            this.leadCtx;
+        const {
+            previousResponsibleId,
+            transferredById,
+            responsibleId,
+            userNames,
+        } = this.leadCtx;
         // Историю читают люди: подставляем имена, id — только если имени нет.
-        const actor = (id: number): string | number =>
-            this.leadCtx.userNames?.[id] ?? id;
+        const actor = (id: number) => historyActor(userNames, id);
         const text = transferredById
             ? LEAD_REQUEST_HISTORY_TEXT.selfTransferred(
                   actor(transferredById),

@@ -3,6 +3,7 @@ import { SalesHookCoreModule } from '../core/sales-hook-core.module';
 import { SalesHookRegistryService } from '../core/services/sales-hook-registry.service';
 import { LeadRequestModule } from '../../lead-request/lead-request.module';
 import { LeadAcceptUseCase } from './use-cases/lead-accept.use-case';
+import { UserNameResolver } from '../../shared/lead-request/user-name.resolver';
 
 /**
  * Хук принятия заявки (7-й хук каркаса): вебхук робота идёт через
@@ -13,7 +14,11 @@ import { LeadAcceptUseCase } from './use-cases/lead-accept.use-case';
  */
 @Module({
     imports: [SalesHookCoreModule, LeadRequestModule],
-    providers: [LeadAcceptUseCase],
+    providers: [
+        LeadAcceptUseCase,
+        // Имена принявших для истории (кэш на домен, AppCache @Global).
+        UserNameResolver,
+    ],
 })
 export class LeadAcceptHookModule implements OnModuleInit {
     constructor(

@@ -13,8 +13,9 @@
  * Деградация (§5.4): месячных снапшотов в окне нет — переиспользуется
  * прошлая модель с пометкой `reused` и причиной; прошлой тоже нет —
  * запись не создаётся, а шаг уходит в журнал «частично» с причиной.
- * Повтор деградации за тот же месяц на той же версии параметров копию
- * НЕ переписывает (`freshResult`, аудит M4).
+ * Повтор за тот же месяц на той же версии параметров (и тех же входах
+ * Фазы 4 — пул с учётом согласия, связь качества) запись НЕ переписывает
+ * (`freshResult`, аудит M4).
  *
  * `@Injectable` без bitrix-состояния: Битрикс на месячном шаге не
  * вызывается вовсе — все входы уже лежат в `ais`.
@@ -24,26 +25,19 @@ import {
     AI_ANALYTICS_SNAPSHOT_TYPE,
     type ParamContext,
 } from '@lib/sales-ai-analytics';
-import {
-    detectPortalEvents,
-    mergePortalEvents,
-} from '@lib/sales-ai-analytics/model/portal-events';
+import { mergePortalEvents } from '@lib/sales-ai-analytics/model/portal-events';
 import type { AiPortalEvent } from '@lib/sales-ai-analytics/settings/ai-settings.types';
-import {
-    monthBounds,
-    monthKeysBack,
-} from '../../constants/ai-manager-snapshot.const';
+import { monthKeysBack } from '../../constants/ai-manager-snapshot.const';
 import { AI_ANALYTICS_CALC_VERSION } from '../../constants/ai-overview.const';
 import {
     AI_PORTAL_MODEL_REASONS,
     AI_PORTAL_MODEL_WINDOW_MONTHS,
 } from '../../constants/ai-portal-model.const';
+import { AI_PORTAL_SEASON_WINDOW_MONTHS } from '../assembler/portal-model.estimates.phase4';
 import { AiAnalyticsSettingsStore } from '../../store/ai-analytics-settings.store';
 import { AiAnalyticsSnapshotStore } from '../../store/ai-analytics-snapshot.store';
-import type { AiSnapshotMeta } from '../assembler/manager-snapshot.types';
 import { buildPortalModelPayload } from '../assembler/portal-model.assembler';
 import type {
-    PortalManagerMonth,
     PortalModelFacts,
     PortalModelPayload,
     PortalModelRequest,
@@ -54,10 +48,19 @@ import {
     PortalModelLoader,
     type PortalModelRecord,
 } from '../loaders/portal-model.loader';
+import { Phase4SnapshotsLoader } from '../loaders/phase4-snapshots.loader';
 import { SettingsLoader } from '../loaders/settings.loader';
+import {
+    detectedEventsOf,
+    phase4InputsKeyOf,
+    phase4LinksOf,
+    portalPhase4FactsOf,
+    portalReadinessFactsOf,
+} from './portal-model.inputs';
 import {
     freshResult,
     NO_MODEL_RESULT,
+    portalModelMetaOf,
     priceMedianOf,
     reusedPayload,
 } from './portal-model.reuse';
@@ -83,30 +86,54 @@ export class PortalModelUseCase {
             request.monthKey,
             AI_PORTAL_MODEL_WINDOW_MONTHS,
         );
-        const months = await this.loader.loadMonths(request.domain, window);
+        // Одна выборка на глубину сезона (≥ гейта 36 мес.): окну норм — его
+        // 12 месяцев, сезону — вся глубина, иначе гейт сезона недостижим.
+        const seasonMonths = await this.loader.loadMonths(
+            request.domain,
+            monthKeysBack(request.monthKey, AI_PORTAL_SEASON_WINDOW_MONTHS),
+        );
+        const inWindow = new Set(window);
+        const months = seasonMonths.filter(month =>
+            inWindow.has(month.monthKey),
+        );
         const previous = await this.loader.latestModel(request.domain);
+        const phase4 = new Phase4SnapshotsLoader(this.snapshots);
+        const stored = await phase4.loadForMonth(
+            request.domain,
+            request.monthKey,
+        );
+        const phase4Key = phase4InputsKeyOf(
+            phase4LinksOf(facts, request.monthKey, stored, settings),
+        );
         // Идемпотентность до любой записи — и модели, и деградации (M4).
         const fresh = freshResult(
             previous,
             request,
             layers.paramsVersion,
             months,
+            phase4Key,
         );
         if (fresh) return fresh;
         if (months.length === 0) {
             return this.degrade(request, previous, layers, now);
         }
-        const detected = this.detect(
+        const detected = detectedEventsOf(
             request,
             facts,
             months,
             settings.events,
             previous,
         );
+        const weekly = await phase4.loadWeeklyActivity(
+            request.domain,
+            request.monthKey,
+            settings.calendar,
+        );
         const payload = buildPortalModelPayload({
             monthKey: request.monthKey,
             window,
             months,
+            seasonMonths,
             registry: layers.registry,
             qualityGroups: facts.qualityGroups ?? [],
             stageThetas: facts.stageThetas ?? [],
@@ -117,18 +144,19 @@ export class PortalModelUseCase {
             edgeKindReason: facts.edgeKindReason ?? 'chain-below-enter',
             historyMonths: facts.historyMonths ?? 0,
             hypothesisPairs: settings.hypothesis?.pairs.length ?? 0,
-            readiness: {
-                enabled: settings.enabled,
-                // Разборы в окне есть: либо их принёс прогон (группы
-                // оценок), либо они уже записаны в месяцах менеджеров.
-                pipelineEnabled:
-                    (facts.qualityGroups ?? []).length > 0 ||
-                    months.some(month => month.score !== null),
-                calendarImported: settings.calendar.holidays.length > 0,
-                rosterLevels: settings.levels.length,
-                rosterConfirmedAt: settings.rosterConfirmedAt,
-                comparableFrom: layers.comparableFrom,
-            },
+            readiness: portalReadinessFactsOf(
+                settings,
+                facts,
+                months,
+                layers.comparableFrom,
+            ),
+            phase4: portalPhase4FactsOf(
+                facts,
+                request.monthKey,
+                stored,
+                weekly,
+                settings,
+            ),
             // Отчёт панели — только из шины этого прогона (ключ `sanity`);
             // старый из прошлой модели не тянется: он про другой месяц (N1).
             sanity: facts.sanity ?? null,
@@ -138,8 +166,9 @@ export class PortalModelUseCase {
                 rubricVersion: facts.rubricVersion ?? null,
                 scriptHash: facts.scriptHash ?? null,
                 priceMedian: priceMedianOf(months, request.monthKey),
+                phase4InputsKey: phase4Key,
             },
-            meta: this.meta(layers, now),
+            meta: portalModelMetaOf(layers, now),
         });
         await this.saveEvents(request.domain, settings.events, detected);
         const { id } = await this.write(request, layers, payload, now);
@@ -183,49 +212,6 @@ export class PortalModelUseCase {
         };
     }
 
-    /** Версии расчёта в нагрузке; модель считается сама по себе (id — null). */
-    private meta(
-        layers: {
-            paramsVersion: string;
-            comparableFrom: string;
-            calcVersion: string;
-        },
-        now: Date,
-    ): AiSnapshotMeta {
-        return {
-            calcVersion: layers.calcVersion,
-            paramsVersion: layers.paramsVersion,
-            comparableFrom: layers.comparableFrom || null,
-            generatedAt: now.toISOString(),
-            modelSnapshotId: null,
-        };
-    }
-
-    /** Автособытия окна: новички, версия рубрики, методичка, медиана цены. */
-    private detect(
-        request: PortalModelRequest,
-        facts: PortalModelFacts,
-        months: readonly PortalManagerMonth[],
-        known: readonly AiPortalEvent[],
-        previous: PortalModelRecord | null,
-    ): AiPortalEvent[] {
-        const bounds = monthBounds(request.monthKey);
-        const signature = previous?.payload.signature;
-
-        return detectPortalEvents({
-            from: bounds.from,
-            to: bounds.to,
-            roster: facts.roster ?? [],
-            rubricVersion: facts.rubricVersion ?? null,
-            previousRubricVersion: signature?.rubricVersion ?? null,
-            scriptHash: facts.scriptHash ?? null,
-            previousScriptHash: signature?.scriptHash ?? null,
-            priceMedian: priceMedianOf(months, request.monthKey),
-            previousPriceMedian: signature?.priceMedian ?? null,
-            known,
-        });
-    }
-
     /**
      * Данных окна нет: переиспользуем прошлую модель под ключом текущего
      * месяца — витрина остаётся с нормами, но честно помечена.
@@ -244,7 +230,7 @@ export class PortalModelUseCase {
         const payload = reusedPayload(
             previous,
             request.monthKey,
-            this.meta(layers, now),
+            portalModelMetaOf(layers, now),
         );
         if (payload === null) return NO_MODEL_RESULT;
         const { id } = await this.write(request, layers, payload, now);

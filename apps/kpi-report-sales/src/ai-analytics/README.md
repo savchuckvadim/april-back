@@ -1,4 +1,4 @@
-# ai-analytics — AI-аналитика отдела продаж (Фаза 1a)
+# ai-analytics — AI-аналитика отдела продаж (Фазы 1a–4)
 
 Feature-модуль `apps/kpi-report-sales/src/ai-analytics/` по плану
 `ai/tasks/ai-sales-analytics-plan.md` (разделы 6.2–6.5, 4.11, 9 «Фаза 1a»).
@@ -661,6 +661,33 @@ ai-analytics/rop-mark/pick` (подбор, `forceRefresh` пересобирае
 периметр), `__tests__/rop-mark.step.spec.ts` (ритм, идемпотентность,
 штатные пропуски), `__tests__/rop-mark.store.spec.ts` (раскладка по ais,
 перевод прошлых записей в `superseded`, разбор чужих форм).
+
+## Фаза 4: прогноз отдела, связь качества с результатом, пул порталов, эффект советов
+
+План — `ai/tasks/ai-sales-analytics-phase4-plan.md` (и основной план §4.4, §4.8, §4.10, §4.11, §10). Математика — `@lib/sales-ai-analytics` (`model/beta-*`, `near-outcome`, `negbin`, `forecast-interval`, `lognormal-check`, `lag-cdf-shrink`, `season-index`, `forecast-backtest*`, `pool*`, `lever-key.util`, `recommendation-effect*`, `readiness-phase4*`), контракт нагрузок снапшотов — `contracts/snapshot.phase4.types.ts`.
+
+**Шаги конвейера (18 в `AI_ANALYTICS_PIPELINE_STEP_ORDER`).** Новые:
+
+| Шаг | Ритмы | Читает | Пишет |
+|---|---|---|---|
+| `quality-link` | monthly, backfill | шина `episodes`, `historyMonths`, `timestampLeak`; 12 мес. lite-строк звонков (`CallsLoader`), сущности звонков (`CallEntityLoader`), прошлый снапшот (серия гейта), `golden-report` (надёжность формы), модель прошлого месяца (оффсет, `S_ref`) | снапшот `ai-analytics-quality-link`, шина `betaSample`, `qualityLink` |
+| `pool` | monthly, backfill | все порталы kpiSales → согласие (`ai_analytics_pool_opt_in` + дата) → последние модель и `quality-link` (только `ais`, без Битрикса) | снапшот `ai-analytics-pool` копией у участника, шина `pool`; не участник — пропуск `not-in-pool` |
+| `forecast-backtest` | monthly, backfill | журналы `forecast-log` 12 мес., замороженные `manager-month` закрытого месяца | факт месяца в `forecast-log`, снапшот `ai-analytics-forecast-backtest` |
+| `recommendation-effect` | monthly, backfill | журнал советов (`recommendation_issued`), «Сделано» и «Не согласен» по объекту `lever:`, рёбра `manager-month` до/после, флаги Гудхарта последних трендов | снапшот `ai-analytics-recommendation-effect` |
+| `department-forecast` | nightly (после `forecast`) | шина `forecastDay` (или `ais`), модель портала (φ, чек), 3 замороженных месяца (среднее-3) | снапшот `ai-analytics-forecast-log` (день заменяется, факт сохраняется) |
+| `recommendation-log` | nightly (последний) | шина `forecastDay` | служебные записи `recommendation_issued` (один совет — одна запись на менеджера, ключ и месяц) |
+
+Модель портала (`portal-model`) читает шину `qualityLink` и `pool`: при опубликованной связи `betaSource: 'data'` и кривая `p̂(S)` уходят в план дня (`daily-plan-rop.facts.ts`), нормы получают κ̄ пула, таблица лага — усадку к общей при ≥ `lag_cdf_portal_min_n` продаж, медиана цикла — гибрид с прайором, φ — по недельным точкам, сезон и чек — оценкой с усадкой к пулу. Готовность модели и витрины поднимается до `forecast` и `recommendations` функцией `elevateReadiness` по последним снапшотам точности и эффекта и флагам портала `forecast_stage_enabled` / `recommendations_stage_enabled` (коды реестра в `ai_analytics_model_params`, включает разработчик); ступени последовательны.
+
+**Ручки Фазы 4.** `POST ai-analytics/forecast` — прогноз отдела (только руководителям, `@PortalSessionProtected`): режим `shadow` (вилки нет, только прогресс теневых месяцев и итог последней проверки) или `published` (вилка, деньги, сделано, простые прогнозы). `settings/get` отдаёт `hypothesis`, `poolOptIn`, `poolConsentAt`; `settings/save` принимает блок `pool {optIn}` (дата согласия ставится днём портала, повторное включение дату не сдвигает). Советы в строках обзора несут `key`, `done`, `issuedAt`; «Сделано» — `feedback {kind: 'recommendation_done', object: 'lever:{managerId}:{key}'}` (менеджер — по своим советам, руководитель — в периметре; «Не согласен» с объектом `lever:` — по тем же правилам). «Как считаем» получил endpoint `forecast` и секции `qualityLink`, `forecastAccuracy`, `pool` (скрыта после отзыва согласия), `recommendationsEffect`.
+
+**Правила показа (ревью Фазы 4).** Прогноз: `published` требует ещё и режима готовности портала не ниже «прогноза» — режим берётся из кэша `settings/get` (`CachedSettingsReader`, тот же ключ и TTL), иначе `shadow` с причиной `forecast-readiness-below`; `forecast-log-missing` — только когда нет ни проверки, ни журнала месяца; проверка пройдена, а журнала за месяц нет — `published` с `band: null` (фронт: «цифры появятся после ночного расчёта»). Простое правило сравнения ошибки (`maseNaive`, `errorVsLastMonth`) — «по темпу с начала месяца» (в первый рабочий день — факт прошлого месяца), не «как в прошлом месяце». Эффект советов: разница «после − до» по ребру (и доли в «Как считаем») — только при знаменателях «до» и «после» не меньше `n_min_none`; в `recommendationsEffect` отдельно `goodhartFlags` (сигналы) и `goodhartManagers` (менеджеры). Два гейта L5 — разные коды готовности: `recommendations-issued-below-{N}` (закрытых окон) и `recommendations-shares-issued-below-{N}` (выданных для долей). «Сделано» в обзоре прошлого периода считается до «сейчас» (день выдачи — только из периода).
+
+**Guard чтения.** `@PortalSessionProtected()` теперь стоит и на ручках чтения (`overview`, `attention`, `by-type`, `settings/get`, `pulse`, `agenda`, `feedback/list`, `rop-mark/pick|list`, `plan-fact`, `about`, `forecast`); `review` остаётся открытой. Режим прежний — `PORTAL_SESSION_GUARD_MODE` (report по умолчанию).
+
+**Админ-ручки** (`apps/admin`, `SUPER_USER`): `GET admin/ai-analytics/pool-status`, `forecast-backtest` (`?months=`), `recommendation-effect`, `quality-link` — все `?domain=`; сводка `GET admin/ai-analytics/feedback` больше не считает заменённые записи (отдельное поле `superseded`). Пересчёт шагов Фазы 4 — `POST admin/ai-analytics/recompute {domain, rhythm: 'monthly', monthKey, steps: ['quality-link', 'pool', 'forecast-backtest', 'recommendation-effect', 'portal-model']}`.
+
+**Известные ограничения (решения за владельцем).** Ключ портала в пуле — усечённый sha1 домена без соли (по словарю доменов обратим; вариант — HMAC с секретом из env). Выданными считаются все советы прогноза дня, в том числе скрытые на витрине при малом числе разборов. SE β — консервативный множитель d_eff, а не кластер-робастная оценка; наклон калибровки — на той же выборке. Покрытие вилки — по дням (дни внутри месяца коррелированы).
 
 ## Проверка
 

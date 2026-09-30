@@ -87,6 +87,12 @@ const ENDPOINT_ENTRIES: Readonly<Record<AiAboutEndpoint, readonly string[]>> = {
         'style/style-profile.use-case.ts',
         'steps/style.step.ts',
     ],
+    // Фаза 4: ручка прогноза отдела и шаги, которые пишут его журнал и
+    // проверку точности, — тексты «Как считаем» ведёт срез about.
+    forecast: [
+        'ai-analytics-forecast.controller.ts',
+        'domain/use-cases/forecast.use-case.ts',
+    ],
 };
 
 function buildInput(

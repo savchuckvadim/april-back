@@ -50,6 +50,8 @@ const makeDeps = (input: {
     busyLeads?: Record<string, unknown>[];
     dealStage?: string;
     withAssignedAt?: boolean;
+    /** Что отдаёт UserNameResolver; по умолчанию пусто — в текстах id. */
+    names?: Record<number, string>;
 }) => {
     const leadUpdate = jest.fn().mockResolvedValue({});
     const dealUpdate = jest.fn().mockResolvedValue({});
@@ -132,6 +134,9 @@ const makeDeps = (input: {
     const redisService = {
         getClient: () => ({ incr, expire: jest.fn().mockResolvedValue(1) }),
     };
+    const userNames = {
+        resolve: jest.fn().mockResolvedValue(input.names ?? {}),
+    };
     const service = new LeadRequestSlaService(
         pbx as never,
         acceptService as never,
@@ -142,9 +147,11 @@ const makeDeps = (input: {
         redisService as never,
         // Круг замокан целиком — проверка «кто работает» не вызывается.
         { activeUserIds: jest.fn() } as never,
+        userNames as never,
     );
     return {
         service,
+        userNames,
         incr,
         leadUpdate,
         dealUpdate,
@@ -270,8 +277,47 @@ describe('LeadRequestSlaService', () => {
         expect(message.USER_ID).toBe(900);
         expect(message.MESSAGE).toContain('не принята');
         expect(message.MESSAGE).toContain('/crm/lead/details/42/');
+        // Имя не разрезолвилось — страховка: id.
+        expect(message.MESSAGE).toContain('(ответственный: 5)');
         // Заместитель из HEADS получает то же уведомление.
         expect(notifyCalls.map(call => call[0].USER_ID)).toEqual([900, 901]);
+    });
+
+    /*
+     * Историю и уведомление читают люди: «Не принял за 60 мин: Вадим
+     * Савчук», а не «…: 5» — руководителю не нужно сверять id с людьми.
+     */
+    it('передача: в историю и руководителю — имя непринявшего, не id', async () => {
+        const { service, leadUpdate, notify, userNames } = makeDeps({
+            leads: [OVERDUE_LEAD],
+            dealStage: 'C3:NEW',
+            names: { 5: 'Вадим Савчук' },
+        });
+        await service.runForDomain('d.b24.ru', 60, 30);
+
+        expect(userNames.resolve).toHaveBeenCalledWith(
+            'd.b24.ru',
+            expect.anything(),
+            [5],
+        );
+        // Имя — до записи причины в лид.
+        expect(userNames.resolve.mock.invocationCallOrder[0]).toBeLessThan(
+            leadUpdate.mock.invocationCallOrder[0],
+        );
+        const leadCalls = leadUpdate.mock.calls as unknown as [
+            number,
+            Record<string, unknown>,
+        ][];
+        const history = leadCalls[0][1]
+            .UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
+        expect(history.at(-1)).toContain('Не принял за 60 мин: Вадим Савчук');
+
+        const notifyCalls = notify.mock.calls as unknown as [
+            { USER_ID: number; MESSAGE: string },
+        ][];
+        expect(notifyCalls[0][0].MESSAGE).toContain(
+            '(ответственный: Вадим Савчук)',
+        );
     });
 
     /* ------------------------------------------------------------------ *

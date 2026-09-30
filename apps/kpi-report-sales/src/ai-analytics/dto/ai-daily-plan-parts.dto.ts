@@ -128,6 +128,16 @@ export class AiDailyPlanItemDto {
         example: 1,
     })
     priority: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Ожидаемые потери продаж на этом шаге; нет значения — приоритет ' +
+            'задан порядком, а не утечкой.',
+        type: Number,
+        nullable: true,
+        example: 0.6,
+    })
+    leak?: number | null;
 }
 
 /** Служебные числа руководителя (менеджеру не отдаются). */

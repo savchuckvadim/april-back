@@ -36,6 +36,7 @@ import {
     sameSignature,
     withoutNullColumns,
 } from './snapshot-store.util';
+import { latestPortalByPeriod } from './snapshot-latest-period.util';
 
 export * from './ai-analytics-snapshot.types';
 
@@ -156,17 +157,18 @@ export class AiAnalyticsSnapshotStore {
 
     /**
      * Актуальная модель портала: за месяц monthKey (по ключу, без окна)
-     * либо последняя записанная вообще. null — модели ещё нет.
+     * либо модель с самым поздним месяцем (не последняя записанная: догон
+     * пишет старые месяцы после свежих). null — модели ещё нет.
      */
     async latestModel(
         domain: string,
         monthKey?: string,
     ): Promise<AiAnalyticsSnapshotRecord | null> {
         if (monthKey === undefined) {
-            return this.latest(
+            return latestPortalByPeriod(
+                this,
                 domain,
                 AI_ANALYTICS_SNAPSHOT_TYPE.portalModel,
-                null,
             );
         }
         const records = await this.findByKeys(

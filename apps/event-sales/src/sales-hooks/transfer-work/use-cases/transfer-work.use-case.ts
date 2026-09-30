@@ -14,11 +14,8 @@ import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/d
 import { ITransferWorkItem } from '../dto/transfer-work.dto';
 import { TransferWorkResultDto } from '../dto/transfer-work-result.dto';
 import { SalesScopeService, ScopedDeal } from '../services/sales-scope.service';
-import {
-    appendDealHistory,
-    stampDealAssignedAt,
-} from '../../../shared/lead-request/deal-work-timer.util';
-import { LEAD_REQUEST_HISTORY_TEXT } from '../../../shared/lead-request/lead-request-history.util';
+import { startDealWaitingForAccept } from '../../../shared/lead-request/deal-work-timer.util';
+import { UserNameResolver } from '../../../shared/lead-request/user-name.resolver';
 import { CrmRelationsReassignService } from '../../../shared/crm-relations';
 import {
     EMPTY_WORK_TAKEOVER_PLAN,
@@ -79,6 +76,9 @@ export class TransferWorkUseCase
 {
     readonly hook = EnumSalesHookCode.TRANSFER_WORK;
     private readonly logger = new Logger(TransferWorkUseCase.name);
+
+    /** Имена в истории сделки: «ХО передан: Вадим Савчук → Иван Петров». */
+    constructor(private readonly userNames: UserNameResolver) {}
 
     async execute(
         ctx: SalesHookExecutionContext,
@@ -162,6 +162,25 @@ export class TransferWorkUseCase
                 [{ leadIds: openLeadIds, dealIds: baseDealIds }],
                 'batch',
             );
+        /*
+         * Имена для истории сделок — после чтений и ДО первой записи:
+         * resolve шлёт свой batch, а карта команд сейчас пуста (буфер сброшен
+         * в начале, чтения выше отправили свои команды сами).
+         */
+        const names = await this.userNames.resolve(ctx.domain, ctx.bitrix, [
+            item.newResponsibleId,
+            ...scope.deals.map(scoped => Number(scoped.deal.ASSIGNED_BY_ID)),
+        ]);
+        // Таймер подтверждения + «ХО передан: A → B» в историю сделки.
+        // Закрываемым сателлитам не ставится: закрытую сделку не подтверждают.
+        const startWaiting = (scoped: ScopedDeal, fields: BxRow): void =>
+            startDealWaitingForAccept(
+                ctx.portal,
+                fields,
+                scoped.deal as unknown as BxRow,
+                item.newResponsibleId,
+                names,
+            );
         const warnings = [
             ...scope.warnings,
             ...scope.foreign,
@@ -186,7 +205,7 @@ export class TransferWorkUseCase
                             `Стадия sales_cold не сопоставлена — основная сделка ${dealId} осталась в своей стадии`,
                         );
                 }
-                this.startWaitingForAccept(ctx, scoped, fields, item);
+                startWaiting(scoped, fields);
                 ctx.buffer.queue(() =>
                     ctx.bitrix.batch.deal.update(
                         `tw_base_${dealId}`,
@@ -222,7 +241,7 @@ export class TransferWorkUseCase
 
             // tmc/service и прочие наши: только новый ответственный.
             const otherFields: BxRow = { ASSIGNED_BY_ID: newResponsible };
-            this.startWaitingForAccept(ctx, scoped, otherFields, item);
+            startWaiting(scoped, otherFields);
             ctx.buffer.queue(() =>
                 ctx.bitrix.batch.deal.update(
                     `tw_other_${dealId}`,
@@ -413,47 +432,6 @@ export class TransferWorkUseCase
             );
             return [];
         }
-    }
-
-    /**
-     * СТАРТ ожидания подтверждения по сделке: пишем `op_lead_assigned_at` и
-     * зеркальную запись в историю сделки.
-     *
-     * Это единственная точка, где таймер сделки СТАВИТСЯ: передача работы и
-     * есть тот момент, когда сделка меняет хозяина и новый обязан её
-     * подтвердить. Снимает таймер только принятие
-     * (`LeadRequestAcceptService`), а страхует SLA-крон.
-     *
-     * Закрываемые сателлиты (презентации/ХО) сюда не попадают: подтверждать
-     * закрытую в fail сделку не нужно.
-     */
-    private startWaitingForAccept(
-        ctx: SalesHookExecutionContext,
-        scoped: ScopedDeal,
-        fields: BxRow,
-        item: ITransferWorkItem,
-    ): void {
-        if (
-            !stampDealAssignedAt(ctx.portal, fields, ctx.portal.getTimezone())
-        ) {
-            return;
-        }
-        const previous = this.textOf(
-            (scoped.deal as unknown as BxRow).ASSIGNED_BY_ID,
-        );
-        const text =
-            previous && previous !== String(item.newResponsibleId)
-                ? LEAD_REQUEST_HISTORY_TEXT.transferred(
-                      Number(previous),
-                      item.newResponsibleId,
-                  )
-                : LEAD_REQUEST_HISTORY_TEXT.assigned(item.newResponsibleId);
-        appendDealHistory(
-            ctx.portal,
-            fields,
-            scoped.deal as unknown as BxRow,
-            text,
-        );
     }
 
     private stageId(

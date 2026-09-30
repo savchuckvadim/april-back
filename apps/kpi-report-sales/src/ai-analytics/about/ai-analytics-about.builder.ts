@@ -9,6 +9,7 @@ import {
     type ParamSource,
 } from '@lib/sales-ai-analytics';
 import type { PortalModelPayload } from '../domain/assembler/portal-model.types';
+import type { Phase4LatestSnapshots } from '../domain/loaders/phase4-snapshots.loader';
 import type {
     AiAboutEstimateDto,
     AiAboutModelDto,
@@ -29,6 +30,7 @@ import {
     buildAboutReliability,
     type AiAboutGoldenSource,
 } from './ai-analytics-about-reliability.builder';
+import { buildAboutPhase4 } from './ai-analytics-about.phase4.builder';
 
 /**
  * Билдер блока «Как считаем» (план Фазы 2 §6, долг 26): реестр параметров
@@ -66,6 +68,8 @@ export interface AiAboutBuildInput {
     readonly selfView?: boolean;
     /** Последний отчёт согласия оценщика (П7); нет — секции нет. */
     readonly goldenReport?: AiAboutGoldenSource | null;
+    /** Последние снапшоты Фазы 4; не читались — секций Фазы 4 нет. */
+    readonly phase4?: Phase4LatestSnapshots | null;
 }
 
 const KLEINMAN_SOURCE = 'kleinman';
@@ -260,6 +264,11 @@ export function buildAiAnalyticsAbout(input: AiAboutBuildInput): AiAboutDto {
                 ? (input.modelReason ?? AI_ABOUT_MODEL_REASONS.missing)
                 : null,
         reliability: buildAboutReliability(input.goldenReport, input.registry),
+        ...buildAboutPhase4({
+            latest: input.phase4 ?? null,
+            model: input.model?.payload ?? null,
+            registry: input.registry,
+        }),
         selfView: input.selfView === true,
     };
 }

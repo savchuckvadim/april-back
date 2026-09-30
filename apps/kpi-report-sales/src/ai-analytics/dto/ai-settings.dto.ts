@@ -10,6 +10,7 @@ import {
 import { AiRequestBaseDto } from './ai-request-base.dto';
 import { AiManagerAbsencesDto, AiTargetsDto } from './ai-settings-blocks.dto';
 import { AiCallReportStatusDto } from './ai-settings-call-report.dto';
+import { AiHypothesisDto } from './ai-settings-scoring.dto';
 import { AiAnalyticsEnvelopeDto } from './ai-response-envelope.dto';
 import { ReadinessDto } from './readiness.dto';
 
@@ -213,6 +214,17 @@ export class AiAnalyticsSettingsDto {
         example: '2026-09-01',
     })
     rosterConfirmedAt: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Текущая гипотеза «качество → объём» (ai_analytics_hypothesis) ' +
+            'в форме блока settings/save — для предзаполнения формы ' +
+            'гипотезы; null — гипотеза не задана (причина готовности ' +
+            'hypothesis-not-set). Поля нет — ответ старой версии.',
+        type: AiHypothesisDto,
+        nullable: true,
+    })
+    hypothesis?: AiHypothesisDto | null;
 
     @ApiPropertyOptional({
         description:

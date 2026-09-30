@@ -36,6 +36,7 @@ describe('AiFeedbackRequestDto: только виды реакций польз�
             'agenda_sent',
             'alert_sent',
             'digest_sent',
+            'recommendation_issued',
             'rop_mark',
         ]);
     });

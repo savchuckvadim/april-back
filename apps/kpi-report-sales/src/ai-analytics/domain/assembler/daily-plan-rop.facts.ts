@@ -146,9 +146,18 @@ export function buildDailyPlanRopFacts(
         model?.managerNorms?.find(item => item.managerId === input.managerId) ??
         null;
     const betaSource: AiBetaSource = model?.betaSource ?? 'none';
+    // Режим «по данным» (Фаза 4): кривая p̂(S) и наклон pooled-модели из
+    // снапшота модели — множитель качества, изо-линия и S_req считаются
+    // библиотекой (qav.ts) без правок; в остальных режимах кривой нет.
     const link = buildQualityLink({
         betaSource,
         ...(model?.sRef === undefined ? {} : { sRef: model.sRef }),
+        ...(betaSource === 'data'
+            ? {
+                  curve: model?.qualityLink?.curve ?? [],
+                  beta: model?.qualityLink?.pooled?.value ?? null,
+              }
+            : {}),
     });
     const { conversion, fBar, entryEdge } = conversionOf(
         model,

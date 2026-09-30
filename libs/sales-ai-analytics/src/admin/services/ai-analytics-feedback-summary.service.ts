@@ -7,6 +7,11 @@
  * Только чтение: записи пишет приложение (витрина и push-контур).
  * Нагрузка разбирается через guard вида (`isAiAnalyticsFeedbackKind`);
  * запись чужой формы в сводку не попадает и ручку не роняет.
+ *
+ * Замещённые записи (status = superseded: смена оценки useful/not_useful
+ * за день, повторная метка руководителя) в счётчики не входят — та же
+ * семантика, что у стора обратной связи приложения (пустой статус =
+ * актуальная запись); их число отдаётся отдельно полем `superseded`.
  */
 import { Injectable } from '@nestjs/common';
 import {
@@ -15,6 +20,7 @@ import {
     AiAnalyticsFeedbackKind,
     isAiAnalyticsFeedbackKind,
 } from '../../contracts/feedback.types';
+import { AI_ANALYTICS_SNAPSHOT_STATUS } from '../../contracts/snapshot-kinds.const';
 import { AiAnalyticsAdminSnapshotStore } from '../ai-analytics-admin-snapshot.store';
 
 /** Счётчик по виду записи. */
@@ -42,6 +48,8 @@ export interface FeedbackSummary {
     total: number;
     /** Записей чужой формы (в счётчики не вошли). */
     skipped: number;
+    /** Замещённых записей (superseded) — в счётчики не вошли. */
+    superseded: number;
     byKind: FeedbackKindCount[];
     byManager: FeedbackManagerCount[];
     /**
@@ -75,7 +83,10 @@ export class AiAnalyticsFeedbackSummaryService {
             [AI_ANALYTICS_FEEDBACK_TYPE],
             { from: dayStart(from), to: dayEnd(to) },
         );
-        const entries = records.flatMap(record => {
+        const actual = records.filter(
+            record => record.status !== AI_ANALYTICS_SNAPSHOT_STATUS.superseded,
+        );
+        const entries = actual.flatMap(record => {
             const kind = kindOf(record.userResult);
             return kind === null
                 ? []
@@ -86,7 +97,8 @@ export class AiAnalyticsFeedbackSummaryService {
             from,
             to,
             total: entries.length,
-            skipped: records.length - entries.length,
+            skipped: actual.length - entries.length,
+            superseded: records.length - actual.length,
             byKind: countKinds(entries),
             byManager: countManagers(entries),
             usefulRatePct: usefulRate(entries),

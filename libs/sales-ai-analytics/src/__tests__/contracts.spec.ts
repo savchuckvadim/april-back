@@ -74,6 +74,8 @@ describe('feedback.types', () => {
             'digest_sent',
             'agenda_sent',
             'rop_mark',
+            'recommendation_issued',
+            'recommendation_done',
         ]);
     });
 

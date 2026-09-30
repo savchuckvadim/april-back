@@ -78,6 +78,16 @@ export const AI_ANALYTICS_SNAPSHOT_TYPE = {
     feedback: AI_ANALYTICS_FEEDBACK_TYPE,
     audit: AI_ANALYTICS_AUDIT_TYPE,
     settings: AI_ANALYTICS_SETTINGS_TYPE,
+    /** Фаза 4, П20: оценка β «качество → исход» за месяц (portal-month). */
+    qualityLink: 'ai-analytics-quality-link',
+    /** Фаза 4, П22: обезличенный пул порталов по согласию (portal-month, копия у каждого участника). */
+    pool: 'ai-analytics-pool',
+    /** Фаза 4, П21: теневой журнал дневных прогнозов отдела за месяц (portal-month). */
+    forecastLog: 'ai-analytics-forecast-log',
+    /** Фаза 4, П21: точность прогноза на истории — гейт L4 (portal-month). */
+    forecastBacktest: 'ai-analytics-forecast-backtest',
+    /** Фаза 4, П23: эффект советов — доля выполненных и до/после (portal-month). */
+    recommendationEffect: 'ai-analytics-recommendation-effect',
 } as const;
 
 /** Порядок — порядок таблицы §3.1 плана (снапшоты Фазы 2, затем 1a/0). */
@@ -97,6 +107,11 @@ export const AI_ANALYTICS_SNAPSHOT_TYPES = [
     AI_ANALYTICS_SNAPSHOT_TYPE.feedback,
     AI_ANALYTICS_SNAPSHOT_TYPE.audit,
     AI_ANALYTICS_SNAPSHOT_TYPE.settings,
+    AI_ANALYTICS_SNAPSHOT_TYPE.qualityLink,
+    AI_ANALYTICS_SNAPSHOT_TYPE.pool,
+    AI_ANALYTICS_SNAPSHOT_TYPE.forecastLog,
+    AI_ANALYTICS_SNAPSHOT_TYPE.forecastBacktest,
+    AI_ANALYTICS_SNAPSHOT_TYPE.recommendationEffect,
 ] as const;
 
 export type AiAnalyticsSnapshotType =

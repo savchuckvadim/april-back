@@ -1,7 +1,8 @@
 /**
  * Сервисный модуль эксплуатации AI-аналитики ОП (план Фазы 3, П5):
  * read-only стор снапшотов, состояние конвейера, ретенция, расход модели,
- * обратная связь и золотой набор — БЕЗ контроллеров
+ * обратная связь, золотой набор и чтение снапшотов Фазы 4 (пул, β,
+ * точность прогноза, эффект советов) — БЕЗ контроллеров
  * (ai/rules/app-api-surface.md). Контроллеры подключает
  * `SalesAiAnalyticsAdminModule` только в `apps/admin`.
  *
@@ -28,6 +29,7 @@ import { AiAnalyticsCostService } from './services/ai-analytics-cost.service';
 import { AiAnalyticsEtlStatusService } from './services/ai-analytics-etl-status.service';
 import { AiAnalyticsFeedbackSummaryService } from './services/ai-analytics-feedback-summary.service';
 import { AiAnalyticsGoldenSetService } from './services/ai-analytics-golden-set.service';
+import { AiAnalyticsPhase4StatusService } from './services/ai-analytics-phase4-status.service';
 import { AiAnalyticsPipelineAdminService } from './services/ai-analytics-pipeline-admin.service';
 import { AiAnalyticsRetentionService } from './services/ai-analytics-retention.service';
 
@@ -41,6 +43,7 @@ import { AiAnalyticsRetentionService } from './services/ai-analytics-retention.s
         AiAnalyticsCostService,
         AiAnalyticsFeedbackSummaryService,
         AiAnalyticsGoldenSetService,
+        AiAnalyticsPhase4StatusService,
     ],
     exports: [
         AiAnalyticsAdminSnapshotStore,
@@ -50,6 +53,7 @@ import { AiAnalyticsRetentionService } from './services/ai-analytics-retention.s
         AiAnalyticsCostService,
         AiAnalyticsFeedbackSummaryService,
         AiAnalyticsGoldenSetService,
+        AiAnalyticsPhase4StatusService,
     ],
 })
 export class SalesAiAnalyticsOpsModule {}

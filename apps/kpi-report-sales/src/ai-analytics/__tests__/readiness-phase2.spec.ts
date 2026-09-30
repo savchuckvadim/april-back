@@ -392,3 +392,55 @@ describe('адаптер приложения не держит своих пр�
         },
     );
 });
+
+describe('готовность витрины Фазы 4: ступени L4/L5 и календарь', () => {
+    const forecastPass = {
+        stageEnabled: true,
+        shadowMonths: 10,
+        backtest: { status: 'pass' as const, reasons: [] },
+    };
+
+    it('ступени не заданы — режим по лестнице Фазы 2', () => {
+        expect(
+            buildReadiness(presentations(100, 95), ready({ stages: null }))
+                .mode,
+        ).toBe('norms');
+    });
+
+    it('прогноз проверен и включён — forecast поверх норм', () => {
+        const readiness = buildReadiness(
+            presentations(100, 95),
+            ready({ stages: { forecast: forecastPass } }),
+        );
+        expect(readiness.mode).toBe('forecast');
+        expect(readiness.reasons).toEqual([]);
+    });
+
+    it('гейт теневых месяцев — параметром, причина с числом гейта', () => {
+        const readiness = buildReadiness(
+            presentations(100, 95),
+            ready({
+                stages: { forecast: forecastPass },
+                stageGates: {
+                    forecastShadowMonths: 12,
+                    recommendationsMinIssued: 20,
+                    recommendationsMinN: 8,
+                },
+            }),
+        );
+        expect(readiness.mode).toBe('norms');
+        expect(readiness.reasons).toEqual(['forecast-shadow-months-below-12']);
+    });
+
+    it('ступени не поднимают режим ниже норм (календарь не импортирован)', () => {
+        const readiness = buildReadiness(
+            presentations(100, 95),
+            ready({
+                calendarImported: false,
+                stages: { forecast: forecastPass },
+            }),
+        );
+        expect(readiness.mode).toBe('descriptive');
+        expect(readiness.reasons).toEqual([READINESS_REASONS.calendarMissing]);
+    });
+});

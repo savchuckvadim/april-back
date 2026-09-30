@@ -1125,6 +1125,46 @@ describe('LeadToWorkFlowService', () => {
     });
 
     /*
+     * «От кого» в «ХО передан: A → B» — прежний за обзвон (задача ХО либо
+     * ХО-сделка), а не ответственный лида. Use-case резолвит и его имя
+     * (leadToWorkNameIds) — раньше эта сторона оставалась голым id.
+     */
+    it('повторный ХО: «ХО передан» с именами обеих сторон', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(REQUEST_FIELDS) as never,
+            {},
+            { 9: 'Вадим Савчук', 5: 'Иван Петров' },
+        );
+
+        service.queue(
+            makeItem({ leadId: 42, responsible: 5, isXo: 'Y', isRequest: 'Y' }),
+            baseContext({
+                existingOurDeal: { ID: '1024' } as never,
+                existingXoDeal: { ID: '2048', ASSIGNED_BY_ID: '9' } as never,
+                openTasks: [
+                    {
+                        id: 900,
+                        title: 'Холодный обзвон Ромашка',
+                        responsibleId: 9,
+                    } as never,
+                ],
+            }),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        const leadFields = calls.find(c => c.method === 'lead.update')
+            ?.args[1] as Record<string, unknown>;
+        const history =
+            leadFields.UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
+        expect(history.at(-1)).toContain(
+            'ХО передан: Вадим Савчук → Иван Петров',
+        );
+    });
+
+    /*
      * Решение владельца 17.09.2026: «Менеджер по продажам Гарант» меняется
      * при ХО сразу на того же сотрудника. Событийная модель пишет его
      * только при сроке обзвона — без срока поле оставалось у прежнего.

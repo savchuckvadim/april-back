@@ -14,11 +14,12 @@
 
 ## 🎯 Приоритет 1 — прямые кандидаты (тяжёлые данные, обидно терять при рестарте Redis)
 
-1. **bx-department: структура отделов** — `libs/bx-department/services/bx-department-structure.service.ts`
-   Ключи `department_structure_v2_{domain}_{day}_{group}_{mode}`. Тяжёлый батч в Bitrix;
-   используется kpi-report-sales и event-sales. → `app: 'bx-department', group: 'structure'`.
+1. **bx-department: снимок отдела** — `libs/bx-department/services/bx-department.service.ts`
+   Ключи `department_{domain}_{day}_{group}_{single|multi_<тэг>}_v4` — единый снимок: из него же
+   строится структура отделов (`bx-department-structure.service.ts` своего кэша больше не держит,
+   легаси `department_structure_v3_*` протухают по TTL). Тяжёлые запросы в Bitrix;
+   используется kpi-report-sales и event-sales. → `app: 'bx-department', group: 'department'`.
    Вместе с ним:
-   - `bx-department.service.ts` (`department_{domain}_…`) → group `department`
    - `bx-team.service.ts` (`bx_team_{domain}_…`) → group `team`
    - `bx-department-cache.service.ts` (инвалидация SCAN-паттернами) → `appCache.reset({app:'bx-department', domain})` — код сильно упростится.
 

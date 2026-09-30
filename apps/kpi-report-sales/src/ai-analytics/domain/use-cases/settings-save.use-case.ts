@@ -29,6 +29,7 @@ import {
     AiSettingsSaveResultDto,
 } from '../../dto/ai-settings-save.dto';
 import { AiAnalyticsSettingsAuditStore } from '../../store/ai-analytics-settings-audit.store';
+import { poolConsentChangeOf, savePoolConsent } from './settings-pool.util';
 import {
     AiAnalyticsSettingsStore,
     AiSettingsPatch,
@@ -105,6 +106,28 @@ export class SettingsSaveUseCase {
             dto.domain,
             this.patchOf(before, after),
         );
+        // Фаза 4: согласие на пул — отдельные ключи app-settings, ряд не рвёт
+        // и в сравнение блоков не входит; дата прежнего согласия сохраняется.
+        // В аудит выдача/отзыв идут отдельным изменением с автором правки.
+        const consentBefore = {
+            optIn: settings.poolOptIn,
+            consentAt: settings.poolConsentAt,
+        };
+        const pool = await savePoolConsent(
+            this.store,
+            dto.domain,
+            dto.pool,
+            today,
+            consentBefore,
+        );
+        const poolChange = poolConsentChangeOf(consentBefore, pool);
+        const audited =
+            poolChange === null ? changed : [...changed, poolChange];
+        if (pool !== null) {
+            this.logger.log(
+                `Пул порталов ${dto.domain}: ${pool.optIn ? `согласие с ${pool.consentAt}` : 'согласие отозвано'}`,
+            );
+        }
         const comparableFrom = nextSettingsComparableFrom(
             comparableBefore,
             changed,
@@ -115,7 +138,7 @@ export class SettingsSaveUseCase {
             domain: dto.domain,
             day: today,
             author: dto.requesterUserId,
-            changed,
+            changed: audited,
             comparableFromBefore: comparableBefore,
             comparableFromAfter: comparableFrom,
             paramsVersion: this.versionOf(next),
@@ -124,7 +147,7 @@ export class SettingsSaveUseCase {
         });
         this.logger.log(
             `Настройки ${dto.domain} сохранены пользователем ` +
-                `${dto.requesterUserId}: изменений ${changed.length}, ` +
+                `${dto.requesterUserId}: изменений ${audited.length}, ` +
                 `рвущих ряд ${breaking.length}, сброшено ключей ${resetCount}`,
         );
 

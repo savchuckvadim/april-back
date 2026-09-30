@@ -94,6 +94,12 @@ export type AiPortalModelReason =
 export const AI_FORECAST_LEVER_MAX = 3;
 
 /**
+ * Прирост качества δ рычага «подтянуть оценку» (план §4.10: «обычно
+ * 1 балл»): эффект считается как `p̂(S + δ) − p̂(S)` на кривой связи.
+ */
+export const AI_FORECAST_QUALITY_DELTA = 1;
+
+/**
  * Значение из карты реестра «тип:значение» (`cap_level_activity`):
  * 'cold:40,call:25,presentation:3'. Битая карта — запасное значение, а не
  * исключение: опечатка портала не должна ронять ночной конвейер.

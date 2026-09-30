@@ -195,3 +195,42 @@ describe('feedback-dedup.util / feedback-cache-reset.util', () => {
         expect(logger.warn).toHaveBeenCalledTimes(1);
     });
 });
+
+describe('FeedbackUseCase: recommendation_done — один раз в день и сброс обзора', () => {
+    const OBJECT = 'lever:20:volume:volume-below-capacity:::';
+    const OVERVIEW_PATTERN = 'sales-ai-analytics:v1:d:overview:*';
+    const done = {
+        domain: 'd',
+        requesterUserId: '447',
+        kind: 'recommendation_done' as const,
+        object: OBJECT,
+    };
+
+    it('повтор «Сделано» того же автора по тому же совету сегодня → id прежней записи', async () => {
+        const { useCase, store, cache } = makeFeedbackUseCase([
+            record({ id: '7010', kind: 'recommendation_done', object: OBJECT }),
+        ]);
+
+        const result = await useCase.add(done, leader, NOW);
+
+        expect(result).toEqual({ id: '7010' });
+        expect(store.add).not.toHaveBeenCalled();
+        expect(cache.resetByPattern).not.toHaveBeenCalled();
+        expect(isDailyOnceFeedbackKind('recommendation_done')).toBe(true);
+    });
+
+    it('новая отметка пишется и сбрасывает кэш обзора домена (строка покажет «Сделано»)', async () => {
+        const { useCase, store, cache } = makeFeedbackUseCase();
+
+        await expect(useCase.add(done, leader, NOW)).resolves.toEqual({
+            id: '9001',
+        });
+        expect(store.add).toHaveBeenCalledWith(
+            expect.objectContaining({ managerId: '20', object: OBJECT }),
+        );
+        expect(feedbackResetScopes('recommendation_done')).toEqual([
+            'overview',
+        ]);
+        expect(cache.resetByPattern).toHaveBeenCalledWith(OVERVIEW_PATTERN);
+    });
+});
