@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
 import { IBXDepartment, IBXUser } from '../../interfaces/bitrix.interface';
 
@@ -33,6 +34,8 @@ const USER_SELECT = [
 ];
 
 export class DepartmentBitrixService {
+    private readonly logger = new Logger(DepartmentBitrixService.name);
+
     constructor(private readonly bitrix: BitrixService) {}
 
     /** Все отделы портала — все страницы department.get. */
@@ -49,11 +52,17 @@ export class DepartmentBitrixService {
         return res.result;
     }
 
-    /** Активные сотрудники отдела — все страницы user.get (по 50). */
+    /**
+     * Активные сотрудники отдела — все страницы user.get (по 50). Порядок
+     * по ID явно: смещение по страницам устойчиво только при стабильной
+     * сортировке (по умолчанию user.get и так отдаёт по ID).
+     */
     async getUsersByDepartment(id: number): Promise<{ result: IBXUser[] }> {
         const result = await this.callAllPages<IBXUser>('user.get', {
             FILTER: { UF_DEPARTMENT: id, ACTIVE: true },
             SELECT: USER_SELECT,
+            SORT: 'ID',
+            ORDER: 'ASC',
         });
         return { result };
     }
@@ -100,7 +109,14 @@ export class DepartmentBitrixService {
                 seen.add(id);
                 return true;
             });
-            if (start !== undefined && fresh.length === 0) break;
+            if (start !== undefined && fresh.length === 0) {
+                // обход встал: смещение проигнорировано или страницы
+                // съехали — список может быть неполным, пусть это видно
+                this.logger.warn(
+                    `${method}: страница start=${start} без новых строк — обход остановлен на ${rows.length}`,
+                );
+                break;
+            }
 
             rows.push(...fresh);
             const next = Number(page?.next);

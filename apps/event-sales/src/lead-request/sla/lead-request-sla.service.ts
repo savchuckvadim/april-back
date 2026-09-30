@@ -23,9 +23,15 @@ import {
     buildLeadRequestHistoryEntry,
     historyActor,
     LEAD_REQUEST_HISTORY_TEXT,
-    LeadRequestHistoryActor,
 } from '../../shared/lead-request/lead-request-history.util';
 import { UserNameResolver } from '../../shared/lead-request/user-name.resolver';
+import { PortalWorkingHoursService } from '../../shared/working-hours/portal-working-hours.service';
+import { workingMinutesBefore } from '../../shared/working-hours/working-minutes.util';
+import {
+    notAcceptedHeadMessage,
+    notifyHeads,
+    SlaNotifyClient,
+} from './sla-head-notify.util';
 import { EnumLeadRequestFieldCode } from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-lead-request.enum';
 import { LeadRequestAcceptService } from '../services/lead-request-accept.service';
 
@@ -103,6 +109,8 @@ export class LeadRequestSlaService {
         private readonly activeStaff: ActiveStaffService,
         /** Имя непринявшего — в историю и руководителю вместо id. */
         private readonly userNames: UserNameResolver,
+        /** Просрочка — в рабочих минутах, как и срок задачи при круге. */
+        private readonly workingHours: PortalWorkingHoursService,
     ) {}
 
     async runForDomain(
@@ -137,7 +145,17 @@ export class LeadRequestSlaService {
             PBX_SALES_EVENT_FIELD_CODES.to_base_sales,
         );
 
-        const filter = this.buildOverdueFilter(portal, minutes, result);
+        // Граница просрочки: назначенное раньше ждёт N РАБОЧИХ минут.
+        const { hours } = await this.workingHours.resolve(domain);
+        const now = new Date();
+        const overdueBefore = (limit: number): Date =>
+            workingMinutesBefore(hours, now, limit, portal.getTimezone());
+
+        const filter = this.buildOverdueFilter(
+            portal,
+            overdueBefore(minutes),
+            result,
+        );
         const handledDealIds = new Set<number>();
 
         if (filter) {
@@ -218,7 +236,9 @@ export class LeadRequestSlaService {
                         assignedAtName &&
                         !this.olderThan(
                             lead[assignedAtName],
-                            minutes * Math.max(1, repeatMultiplier),
+                            overdueBefore(
+                                minutes * Math.max(1, repeatMultiplier),
+                            ),
                         )
                     ) {
                         // Повторная заявка: ждёт утроенный срок, не трогаем.
@@ -269,6 +289,7 @@ export class LeadRequestSlaService {
             portal,
             domain,
             minutes,
+            overdueBefore(minutes),
             maxPerRun,
             handledDealIds,
             result,
@@ -303,6 +324,8 @@ export class LeadRequestSlaService {
         portal: PortalModel,
         domain: string,
         minutes: number,
+        /** Граница просрочки в рабочих минутах (см. runForDomain). */
+        overdueBefore: Date,
         maxPerRun: number,
         handledDealIds: ReadonlySet<number>,
         result: LeadRequestSlaRunResult,
@@ -316,9 +339,8 @@ export class LeadRequestSlaService {
             return;
         }
 
-        const threshold = dayjs()
+        const threshold = dayjs(overdueBefore)
             .tz(portal.getTimezone())
-            .subtract(minutes, 'minute')
             .format(CRM_DATETIME_FORMAT);
 
         const { result: deals } = await bitrix.deal.getList(
@@ -555,7 +577,8 @@ export class LeadRequestSlaService {
      */
     private buildOverdueFilter(
         portal: PortalModel,
-        minutes: number,
+        /** Граница просрочки в рабочих минутах (см. runForDomain). */
+        overdueBefore: Date,
         result: LeadRequestSlaRunResult,
     ): Record<string, unknown> | null {
         const assignedAtField = portal.getEntityFieldByCode(
@@ -569,9 +592,8 @@ export class LeadRequestSlaService {
 
         if (assignedAtField) {
             const assignedAtName = portal.getFieldBitrixId(assignedAtField);
-            const threshold = dayjs()
+            const threshold = dayjs(overdueBefore)
                 .tz(portal.getTimezone())
-                .subtract(minutes, 'minute')
                 .format(CRM_DATETIME_FORMAT);
             const filter: Record<string, unknown> = {
                 [`!${assignedAtName}`]: '',
@@ -597,7 +619,7 @@ export class LeadRequestSlaService {
         );
         return {
             STATUS_ID: assignedStatusId,
-            '<DATE_MODIFY': dayjs().subtract(minutes, 'minute').toISOString(),
+            '<DATE_MODIFY': overdueBefore.toISOString(),
         };
     }
 
@@ -661,12 +683,12 @@ export class LeadRequestSlaService {
         };
     }
 
-    /** Отметка времени старше N минут; мусор/пусто → «старше» (не держим). */
-    private olderThan(raw: unknown, minutes: number): boolean {
+    /** Отметка времени не позже границы; мусор/пусто → «старше» (не держим). */
+    private olderThan(raw: unknown, before: Date): boolean {
         if (typeof raw !== 'string' || !raw.trim()) return true;
         const at = Date.parse(raw);
         if (!Number.isFinite(at)) return true;
-        return Date.now() - at >= minutes * 60_000;
+        return at <= before.getTime();
     }
 
     /** Передача: история → повторный ХО (round-robin) → алерт руководителю. */
@@ -805,11 +827,14 @@ export class LeadRequestSlaService {
         // 4. Уведомление руководителю отдела прежнего ответственного.
         await this.notifyHead(
             bitrix,
-            domain,
-            lead,
             leadId,
-            minutes,
-            actor,
+            notAcceptedHeadMessage({
+                domain,
+                lead,
+                leadId,
+                minutes,
+                responsible: actor,
+            }),
             departmentHint?.headUserIds ?? [],
             result,
         );
@@ -916,27 +941,18 @@ export class LeadRequestSlaService {
             );
             return;
         }
-        for (const headUserId of headUserIds) {
-            try {
-                await bitrix.imNotify.systemAdd({
-                    USER_ID: headUserId,
-                    MESSAGE: message,
-                });
-            } catch (error) {
-                result.warnings.push(
-                    `Эскалация руководителю ${headUserId} не отправлена — ${(error as Error).message}`,
-                );
-            }
+        for (const failure of await notifyHeads(bitrix, headUserIds, message)) {
+            result.warnings.push(
+                `Эскалация руководителю ${failure.headUserId} не отправлена — ${failure.error}`,
+            );
         }
     }
 
+    /** Всем руководителям отдела (руководитель + заместители). */
     private async notifyHead(
-        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
-        domain: string,
-        lead: BxRow,
+        bitrix: SlaNotifyClient,
         leadId: number,
-        minutes: number,
-        responsible: LeadRequestHistoryActor,
+        message: string,
         headUserIds: number[],
         result: LeadRequestSlaRunResult,
     ): Promise<void> {
@@ -946,25 +962,10 @@ export class LeadRequestSlaService {
             );
             return;
         }
-        const title =
-            typeof lead.TITLE === 'string' ? lead.TITLE : `Лид ${leadId}`;
-        const message =
-            `Заявка «${title}» не принята сотрудником за ${minutes} мин` +
-            (responsible ? ` (ответственный: ${responsible})` : '') +
-            ` — передана другому. [URL=https://${domain}/crm/lead/details/${leadId}/]Открыть лид[/URL]`;
-        // Все руководители отдела (руководитель + заместители): сбой
-        // одного адресата не отменяет остальных.
-        for (const headUserId of headUserIds) {
-            try {
-                await bitrix.imNotify.systemAdd({
-                    USER_ID: headUserId,
-                    MESSAGE: message,
-                });
-            } catch (error) {
-                result.warnings.push(
-                    `Лид ${leadId}: уведомление руководителю ${headUserId} не отправлено — ${(error as Error).message}`,
-                );
-            }
+        for (const failure of await notifyHeads(bitrix, headUserIds, message)) {
+            result.warnings.push(
+                `Лид ${leadId}: уведомление руководителю ${failure.headUserId} не отправлено — ${failure.error}`,
+            );
         }
     }
 

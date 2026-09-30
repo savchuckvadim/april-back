@@ -17,10 +17,24 @@ import { PbxDealSalesBaseStageCode } from '@lib/portal-lib/pbx-domain/portal-dea
 // contractEnd у горячих (pbx-fields) — старые v4-ключи протухнут по TTL.
 // v6: + contractTypeName (live-словарь типов договора), opMHistory у
 // горячих, кэш товарных строк per-сделка (версия по DATE_MODIFY).
-export const SALES_FINANCE_CACHE_PREFIX = 'sales-finance:v7' as const;
+// v8: закрытый месяц — ОБЩИЙ на домен (все выигранные сделки воронки за
+// месяц, отбор ответственных — в памяти после чтения); прежние ключи
+// месяца по составу сотрудников (closed:month:{месяц}:{сотрудники}) не
+// читаются — страница сотрудника, команда и AI видят один и тот же месяц.
+export const SALES_FINANCE_CACHE_PREFIX = 'sales-finance:v8' as const;
 
 /** TTL сегмента полного прошлого месяца: данные закрыты, живут долго. */
 export const SALES_FINANCE_PAST_MONTH_TTL_SECONDS = 60 * 60 * 24 * 30;
+
+/**
+ * Сколько последних закрытых месяцев живут в кэше коротко: сделки
+ * закрывают задним числом и передают другим ответственным, поэтому
+ * свежие месяцы перечитываются раз в сутки, а не раз в 30 дней.
+ */
+export const SALES_FINANCE_RECENT_CLOSED_MONTHS = 2;
+
+/** TTL недавнего закрытого месяца (см. SALES_FINANCE_RECENT_CLOSED_MONTHS). */
+export const SALES_FINANCE_RECENT_MONTH_TTL_SECONDS = 60 * 60 * 24;
 
 /** TTL смёрженного итога и hot-clients: текущие данные меняются. */
 export const SALES_FINANCE_RESULT_TTL_SECONDS = 60 * 3;

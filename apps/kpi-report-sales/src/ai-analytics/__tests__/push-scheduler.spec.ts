@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import {
     AI_ANALYTICS_PUSH_SLOTS,
     AiAnalyticsPushScheduler,
@@ -242,5 +243,92 @@ describe('AiAnalyticsPushScheduler', () => {
         const { scheduler: failing, appSettings } = makeScheduler({});
         appSettings.listByAppCode.mockRejectedValueOnce(new Error('db down'));
         expect(await failing.dispatchAll('digest', MORNING)).toEqual([]);
+    });
+});
+
+/**
+ * Молчаливые пропуски (расследование дайджеста 30.09.2026): рассылка
+ * настроена частично и не уходит — в наступивший слот один warn на
+ * портал и вид, без повтора в том же слоте; не настроенная — тихо.
+ */
+describe('AiAnalyticsPushScheduler: предупреждения о пропуске слота', () => {
+    let warn: jest.SpyInstance;
+
+    beforeEach(() => {
+        warn = jest
+            .spyOn(Logger.prototype, 'warn')
+            .mockImplementation(() => undefined);
+    });
+
+    afterEach(() => {
+        warn.mockRestore();
+    });
+
+    const messages = (): string[] =>
+        warn.mock.calls.map(([message]) => String(message));
+
+    it('адресаты сводного дайджеста заданы, а AI-аналитика выключена — один warn на слот', async () => {
+        const { scheduler, dispatcher } = makeScheduler({
+            'off.bitrix24.ru': { enabled: false, digestAllUserIds: [1, 187] },
+            'quiet.bitrix24.ru': { enabled: false },
+        });
+
+        expect(await scheduler.dispatchAll('digest_all', MORNING)).toEqual([]);
+        // Повторный тик того же слота — без повтора предупреждения.
+        await scheduler.dispatchAll('digest_all', MORNING);
+
+        expect(dispatcher.dispatch).not.toHaveBeenCalled();
+        expect(messages()).toEqual([
+            expect.stringContaining('Сводный дайджест off.bitrix24.ru'),
+        ]);
+        expect(messages()[0]).toContain('ai_analytics_enabled');
+
+        // Вне слота — тихо; слот следующего дня — снова предупреждение.
+        await scheduler.dispatchAll(
+            'digest_all',
+            new Date(MORNING.getTime() + 3_600_000),
+        );
+        expect(warn).toHaveBeenCalledTimes(1);
+        await scheduler.dispatchAll(
+            'digest_all',
+            new Date(MORNING.getTime() + 86_400_000),
+        );
+        expect(warn).toHaveBeenCalledTimes(2);
+    });
+
+    it('личный дайджест: выключен при включённой аналитике и включён без неё — warn; не настроен — тихо', async () => {
+        const { scheduler, dispatcher } = makeScheduler({
+            'nodigest.bitrix24.ru': { enabled: true, digestEnabled: false },
+            'noai.bitrix24.ru': { enabled: false, digestEnabled: true },
+            'quiet.bitrix24.ru': { enabled: false, digestEnabled: false },
+        });
+
+        expect(await scheduler.dispatchAll('digest', MORNING)).toEqual([]);
+
+        expect(dispatcher.dispatch).not.toHaveBeenCalled();
+        expect(messages()).toEqual([
+            expect.stringContaining(
+                'Личный дайджест nodigest.bitrix24.ru: выключен',
+            ),
+            expect.stringContaining(
+                'Личный дайджест noai.bitrix24.ru: включён',
+            ),
+        ]);
+    });
+
+    it('всё настроено — джоба ставится без предупреждений', async () => {
+        const { scheduler } = makeScheduler({
+            'all.bitrix24.ru': {
+                enabled: true,
+                digestEnabled: true,
+                digestAllUserIds: [447],
+            },
+        });
+
+        expect(await scheduler.dispatchAll('digest', MORNING)).toHaveLength(1);
+        expect(await scheduler.dispatchAll('digest_all', MORNING)).toHaveLength(
+            1,
+        );
+        expect(warn).not.toHaveBeenCalled();
     });
 });

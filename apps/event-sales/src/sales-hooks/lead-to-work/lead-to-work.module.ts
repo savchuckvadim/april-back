@@ -14,6 +14,7 @@ import { PBXModule } from '@/modules/pbx/pbx.module';
 import { ActiveStaffModule } from '../../shared/active-staff';
 import { PbxDuplicateModule } from '@lib/portal-lib/pbx-duplicate';
 import { LeadToWorkRepeatService } from './services/lead-to-work-repeat.service';
+import { LeadToWorkDeadlineService } from './services/lead-to-work-deadline.service';
 
 /**
  * Хук «лид → работа» (группа 1): конвертация лида в работу ОП и «ХО из
@@ -52,6 +53,8 @@ import { LeadToWorkRepeatService } from './services/lead-to-work-repeat.service'
         // График портала: срок задачи не должен попадать в ночь и выходные
         // (роботы ставят его формулой «ровно через сутки»).
         PortalWorkingHoursService,
+        // Срок задачи ХО: при круге — порог SLA рабочих минут.
+        LeadToWorkDeadlineService,
     ],
 })
 export class LeadToWorkHookModule implements OnModuleInit {

@@ -12,11 +12,13 @@ import {
     AiAnalyticsManagerLevel,
 } from '../constants/ai-overview.const';
 import { AiAttentionItemDto } from './ai-attention.dto';
+import { AiDisciplineDto } from './ai-discipline.dto';
 import { AiFinanceTailDto } from './ai-finance-tail.dto';
 import { AiFunnelEdgeDto } from './ai-funnel-edge.dto';
 import { AiManagerRowTenureDto } from './ai-manager-row-tenure.dto';
 import { AiManagerTypeCellDto } from './ai-manager-type-cell.dto';
 import { AiNextStepRateDto, AiRiskCallDto } from './ai-manager-signals.dto';
+import { AiPlanTargetCellDto } from './ai-plan-target-cell.dto';
 import { AiRecommendationDto } from './ai-recommendation.dto';
 import { AiStyleProfileDto } from './ai-style-profile.dto';
 import { AiManagerTrendsDto } from './ai-trend.dto';
@@ -26,12 +28,18 @@ import { MetricDto } from './metric.dto';
 // Финансовый хвост вынесен в ai-finance-tail.dto.ts (v2, «≤ 300 строк»);
 // реэкспорт сохраняет импорты соседних DTO (ai-by-type.dto).
 export {
+    AiFinanceSourceDto,
     AiFinanceTailDto,
     AiHotByColorDto,
     AiPipelineByContractTypeDto,
     AiPipelineByTermDto,
     AiPipelineDto,
 } from './ai-finance-tail.dto';
+
+// План CRM (самоотчёт) и план руководителя — в своих файлах («≤ 300
+// строк»); реэкспорт сохраняет прежние импорты AiDisciplineDto.
+export { AiDisciplineDto } from './ai-discipline.dto';
+export { AiPlanTargetCellDto } from './ai-plan-target-cell.dto';
 
 // Ребро воронки, рекомендации, профиль стиля и сигнальные части строки —
 // в своих файлах (Фаза 2 их расширила, «≤ 300 строк»); реэкспорт
@@ -65,37 +73,6 @@ export class AiBucketScoreDto {
         type: MetricDto,
     })
     score: MetricDto;
-}
-
-/** План CRM: запланировано / сделано за период (самоотчёт). */
-export class AiDisciplineDto {
-    @ApiProperty({
-        description: 'Звонков запланировано (call_plan).',
-        type: Number,
-        example: 40,
-    })
-    callPlan: number;
-
-    @ApiProperty({
-        description: 'Звонков сделано (call_done).',
-        type: Number,
-        example: 33,
-    })
-    callDone: number;
-
-    @ApiProperty({
-        description: 'Презентаций запланировано (presentation_plan).',
-        type: Number,
-        example: 12,
-    })
-    presentationPlan: number;
-
-    @ApiProperty({
-        description: 'Презентаций сделано (presentation_done).',
-        type: Number,
-        example: 10,
-    })
-    presentationDone: number;
 }
 
 /**
@@ -209,11 +186,34 @@ export class AiManagerRowDto extends AiManagerRowTenureDto {
     })
     funnel: AiFunnelEdgeDto[];
 
-    @ApiProperty({ description: 'Финансовый хвост.', type: AiFinanceTailDto })
+    @ApiProperty({
+        description:
+            'Финансовый хвост: закрытые продажи за период (как вкладка ' +
+            '«Финансы» за эти даты) и живой пайплайн.',
+        type: AiFinanceTailDto,
+    })
     finance: AiFinanceTailDto;
 
-    @ApiProperty({ description: 'План CRM.', type: AiDisciplineDto })
+    @ApiProperty({
+        description:
+            'План CRM — самоотчёт менеджера: сколько звонков и презентаций он ' +
+            'сам запланировал в CRM и сколько сделал. Не план руководителя ' +
+            '(тот — в planTargets).',
+        type: AiDisciplineDto,
+    })
     discipline: AiDisciplineDto;
+
+    @ApiPropertyOptional({
+        description:
+            'План руководителя (поля «План: …» сотрудника) против факта за ' +
+            'период обзора — ровно как блок «Планы» вкладки KPI: только ' +
+            'включённые в настройках планов показатели в их порядке, план ' +
+            'пересчитан на даты обзора. Пусто — показатели планов не ' +
+            'включены или настройки не прочитаны; нет поля — сохранённый ' +
+            'расчёт до появления поля.',
+        type: [AiPlanTargetCellDto],
+    })
+    planTargets?: AiPlanTargetCellDto[];
 
     @ApiProperty({
         description:

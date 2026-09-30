@@ -42,7 +42,9 @@ export const AI_ANALYTICS_PROCESSOR_ERRORS = {
  * обзор (Фаза 1b) — в OverviewJobUseCase, AI-резюме (Фаза 2) — в
  * BriefJobUseCase (оба: расчёт, write-through в кэш, WS done/error).
  * Ошибка — warn + rethrow: джоба помечается failed, ретраев нет
- * (attempts: 1), повтор — следующим тиком или вручную.
+ * (attempts: 1), повтор — следующим тиком или вручную. У push сбой и итог
+ * «никому не доставлено» — error с Telegram: следующего тика в этот день
+ * не будет.
  *
  * Снапшот-джоба диспетчеризуется по виду (план §5.3): `audit` — месячный
  * аудит Фазы 0, остальные виды — ритмы ночного конвейера Фазы 2
@@ -139,21 +141,32 @@ export class AiAnalyticsQueueProcessor {
         }
     }
 
+    /**
+     * Рассылка push-контура. Джоба ставится с attempts: 1 под jobId дня,
+     * поэтому её сбой — это день без рассылки: и исключение, и итог
+     * `failed` (никому не доставлено) идут error-логом с оповещением в
+     * Telegram, а не тихим warn (расследование дайджеста 30.09.2026).
+     */
     @Process(JobNames.SALES_AI_ANALYTICS_PUSH)
     async handlePush(job: Job<AiPushJobData>): Promise<AiPushResult> {
         const { domain, kind, date } = job.data;
         this.logger.log(`SALES_AI_ANALYTICS_PUSH ${kind}: ${domain} ${date}`);
         try {
             const result = await this.push.execute({ domain, kind, date });
-            this.logger.log(
+            const summary =
                 `Push ${kind} ${domain} ${date}: ${result.status}` +
-                    (result.reason ? ` (${result.reason})` : '') +
-                    `, доставлено ${result.delivered.length}`,
-            );
+                (result.reason ? ` (${result.reason})` : '') +
+                `, доставлено ${result.delivered.length}`;
+            if (result.status === 'failed') {
+                this.logger.error(summary, { telegram: true, domain });
+            } else {
+                this.logger.log(summary);
+            }
             return result;
         } catch (error) {
-            this.logger.warn(
+            this.logger.error(
                 `Push ${kind} ${domain} ${date} упал: ${(error as Error).message}`,
+                { telegram: true, domain },
             );
             throw error;
         }

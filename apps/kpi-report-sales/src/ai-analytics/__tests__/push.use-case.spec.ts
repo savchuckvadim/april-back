@@ -47,9 +47,16 @@ function makeBitrix(failFor: number[] = []) {
                 ? Promise.reject(new Error('ACCESS_DENIED'))
                 : Promise.resolve({ result: true }),
     );
-    const get = jest
-        .fn()
-        .mockResolvedValue({ result: [{ LAST_NAME: 'И', NAME: 'И' }] });
+    // user.get пачкой по списку id (=ID), как читает UserNamesReader.
+    const get = jest.fn((filter: { '=ID'?: string[] }) =>
+        Promise.resolve({
+            result: (filter['=ID'] ?? []).map(ID => ({
+                ID,
+                LAST_NAME: 'И',
+                NAME: 'И',
+            })),
+        }),
+    );
     return { bitrix: { imNotify: { systemAdd }, user: { get } }, systemAdd };
 }
 

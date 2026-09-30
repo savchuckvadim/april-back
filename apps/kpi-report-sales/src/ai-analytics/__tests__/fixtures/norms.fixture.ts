@@ -8,6 +8,7 @@ import {
     scoreMetric,
     type NormCell,
 } from '@lib/sales-ai-analytics';
+import { AI_ANALYTICS_PLAN_GAP_CODES } from '../../constants/ai-norms.const';
 import { toFunnel } from '../../domain/assembler/funnel-edges.assembler';
 import {
     toDiscipline,
@@ -208,7 +209,8 @@ function planCell(code: string, planHead: number) {
 
 /**
  * Строка менеджера обзора: воронка строится по тем же KPI-фактам, что и в
- * витрине, план руководителя кладётся в ячейку типа «презентация».
+ * витрине, план руководителя кладётся в ячейку типа «презентация» на код,
+ * с которого его читает разрыв плана (AI_ANALYTICS_PLAN_GAP_CODES).
  */
 export function managerRow(
     overrides: {
@@ -242,7 +244,12 @@ export function managerRow(
         byType:
             overrides.planHead === undefined
                 ? []
-                : [planCell('presentation_uniq', overrides.planHead)],
+                : [
+                      planCell(
+                          AI_ANALYTICS_PLAN_GAP_CODES.presentations,
+                          overrides.planHead,
+                      ),
+                  ],
         funnel: overrides.funnel ?? toFunnel(kpi),
         finance: toFinanceTail(undefined),
         discipline: toDiscipline(kpi),

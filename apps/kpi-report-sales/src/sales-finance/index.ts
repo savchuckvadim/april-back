@@ -5,6 +5,7 @@ export { SalesFinanceModule } from './sales-finance.module';
 // модуля и типы результатов. Кросс-импорты `../sales-finance/domain/*`
 // запрещены — только через этот index.
 export { ClosedSalesUseCase } from './domain/use-cases/closed-sales.use-case';
+export type { ClosedSalesExecution } from './domain/use-cases/closed-sales.use-case';
 export { HotClientsUseCase } from './domain/use-cases/hot-clients.use-case';
 export { SalesFinanceCacheService } from './cache/sales-finance-cache.service';
 export {

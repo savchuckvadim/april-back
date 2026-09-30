@@ -50,6 +50,7 @@ export type {
     AiFinancePipelineFacts,
     AiFinancePipelineResult,
     AiFinanceResult,
+    AiFinanceSource,
 } from './finance.types';
 
 export { PlansLoader } from './plans.loader';
@@ -65,7 +66,6 @@ export {
     AI_ANALYTICS_LIVE_TTL_SECONDS,
     AI_ANALYTICS_PLANS_TTL_SECONDS,
     buildKpiMonthKey,
-    buildFinanceMonthKey,
     buildFinancePipelineKey,
     buildPlansKey,
     buildManagersKey,

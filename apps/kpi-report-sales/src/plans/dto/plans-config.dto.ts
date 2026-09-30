@@ -16,6 +16,7 @@ import {
     PLAN_UNITS,
     PlanFactSource,
     PlanIndicatorCode,
+    PlanIndicatorSetting,
     PlanPeriodType,
     PlanUnit,
 } from '../constants/plan-indicators.const';
@@ -63,7 +64,7 @@ export class PlanIndicatorMetaDto {
 }
 
 /** Настройка одного показателя на портале. */
-export class PlanIndicatorConfigDto {
+export class PlanIndicatorConfigDto implements PlanIndicatorSetting {
     @ApiProperty({
         description: 'Код показателя.',
         enum: PLAN_INDICATOR_CODE_LIST,

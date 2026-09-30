@@ -78,7 +78,9 @@ export class AiPulseManagerDto {
     managerId: string;
 
     @ApiProperty({
-        description: 'Разобранных звонков менеджера в окне (n ≥ 20).',
+        description:
+            'Разобранных звонков менеджера в окне; не меньше порога ' +
+            'портала managerMinN (иначе строки нет).',
         type: Number,
         example: 24,
     })
@@ -162,7 +164,12 @@ export class AiPulseDto {
     })
     periodDate: string;
 
-    @ApiProperty({ description: 'Окно рабочих дней.', type: AiPulseWindowDto })
+    @ApiProperty({
+        description:
+            'Окно рабочих дней: последние 5 рабочих дней до вчерашнего ' +
+            'рабочего дня по календарю портала; от периода отчёта не зависит.',
+        type: AiPulseWindowDto,
+    })
     window: AiPulseWindowDto;
 
     @ApiProperty({
@@ -189,14 +196,41 @@ export class AiPulseDto {
 
     @ApiProperty({
         description:
-            'Доля коротких звонков (< 300 с) среди всех звонков окна, %.',
+            'Доля коротких звонков среди всех звонков окна, %: звонок короче ' +
+            'порога длительности своего типа (порог портала, см. ' +
+            'minDurationSec) AI не разбирает, в долю шага он не входит.',
         type: Number,
         example: 37.5,
     })
     shortCallsSharePct: number;
 
+    @ApiPropertyOptional({
+        description:
+            'Порог «короткого» звонка портала, секунды: звонки короче в долю ' +
+            'шага не входят. Если у портала разные пороги по типам звонков, ' +
+            'это порог остальных типов и звонков без типа. Поля нет — ответ ' +
+            'из кэша до обновления.',
+        type: Number,
+        example: 300,
+    })
+    minDurationSec?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Сколько разобранных звонков за окно нужно сотруднику, чтобы ' +
+            'получить свою строку в byManager (параметр реестра ' +
+            'pulse_manager_min_n портала, по умолчанию 8). Поля нет — ответ ' +
+            'из кэша до обновления.',
+        type: Number,
+        example: 8,
+    })
+    managerMinN?: number;
+
     @ApiProperty({
-        description: "Менеджеры с n ≥ 20 в периметре requester'а.",
+        description:
+            'Сотрудники, у которых разобранных звонков в окне не меньше ' +
+            "managerMinN, в периметре requester'а. Строки с числом ниже " +
+            'порога надёжной доли идут с пониженным доверием.',
         type: [AiPulseManagerDto],
     })
     byManager: AiPulseManagerDto[];

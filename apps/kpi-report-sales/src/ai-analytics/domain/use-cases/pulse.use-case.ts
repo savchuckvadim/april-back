@@ -3,6 +3,8 @@ import {
     computePulse,
     lastWorkdays,
     previousWorkday,
+    PULSE_DEFAULTS,
+    resolveNumberParam,
     toPortalDate,
 } from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_WINDOWS } from '../../constants/ai-analytics.const';
@@ -12,7 +14,10 @@ import { CallsLoader } from '../loaders/calls.loader';
 import { toPulseRow } from '../loaders/lite-row.mapper';
 import { portalMinDurationByType } from '../loaders/min-duration.util';
 import { portalRangeUtc } from '../loaders/period.util';
-import { SettingsLoader } from '../loaders/settings.loader';
+import {
+    AiAnalyticsPortalSettings,
+    SettingsLoader,
+} from '../loaders/settings.loader';
 import { SmartLinkLoader } from '../loaders/smart-link.loader';
 import {
     AlertMarks,
@@ -20,6 +25,7 @@ import {
     PulseAlertDraft,
 } from '../presenter/pulse-alerts.util';
 import { toPulseDto, withPulseAlertLinks } from '../presenter/pulse.presenter';
+import { portalRegistryOf } from '../presenter/readiness-stages.util';
 
 /**
  * Единый порог «разбираемого» звонка живёт в
@@ -33,6 +39,24 @@ export { portalMinDurationByType } from '../loaders/min-duration.util';
 const laterOf = (left: Date, right: Date): Date =>
     left.getTime() >= right.getTime() ? left : right;
 
+/**
+ * Минимум разборов сотрудника за окно для его строки в пульсе: код
+ * реестра `pulse_manager_min_n` со слоем портала
+ * (`ai_analytics_model_params`); значение вне диапазона реестр сам
+ * откатывает к дефолту.
+ */
+export function pulseManagerMinN(
+    settings: Pick<
+        AiAnalyticsPortalSettings,
+        'modelParams' | 'definitions' | 'targets'
+    >,
+): number {
+    return (
+        resolveNumberParam('pulse_manager_min_n', portalRegistryOf(settings)) ??
+        PULSE_DEFAULTS.managerMinN
+    );
+}
+
 export interface PulseUseCaseOptions {
     /** «Сейчас» (для тестов и крона); по умолчанию — текущее время. */
     now?: Date;
@@ -41,7 +65,10 @@ export interface PulseUseCaseOptions {
 /**
  * Пульс дисциплины «следующий шаг с датой» (план, 6.2/6.3): окно из 5
  * рабочих дней до вчерашнего рабочего дня в TZ портала, история 25
- * рабочих дней для XmR, сигналы руководителю по звонкам окна.
+ * рабочих дней для XmR, сигналы руководителю по звонкам окна. Строка
+ * сотрудника — с порога портала `pulse_manager_min_n` (дефолт реестра 8);
+ * применённый порог и порог «короткого» звонка уходят в ответ, чтобы
+ * витрина не писала числа наугад.
  *
  * Отметки алертов (alert_sent / alert_handled) читаются до момента запроса,
  * а не до конца окна: «Отработано», поставленное сегодня по звонку окна,
@@ -106,6 +133,7 @@ export class PulseUseCase {
             calendar,
             historyWorkdays: AI_ANALYTICS_WINDOWS.pulseHistoryWorkdays,
             minDurationSecByType: portalMinDurationByType(settings),
+            managerMinN: pulseManagerMinN(settings),
         });
         const alerts = collectPulseAlerts(
             rows,

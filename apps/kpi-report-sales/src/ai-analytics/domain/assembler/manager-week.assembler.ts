@@ -10,6 +10,8 @@
  * - звонки ДО `comparableFrom` в оценки не смешиваются и считаются
  *   отдельно (`nBeforeComparable`) — иначе смена рубрики выглядит
  *   изменением работы менеджера;
+ * - срез возражений строится теми же опциями, что и матрица: «N
+ *   возражений в M звонках» говорит о тех же звонках, что `n` недели;
  * - потолки оценивания применяются ДО сборки матрицы, иначе в снапшот
  *   уедет балл, который руководитель уже отменил правилом;
  * - неприменимые к типу разделы рубрики вычёркиваются ПЕРЕД потолками:
@@ -80,7 +82,11 @@ export type PeriodMatrixInput = Pick<
 /**
  * Опции матрицы периода: карта порогов и граница сравнимости кладутся,
  * только если заданы, — опции без ключа означают «дефолт библиотеки».
- * Неделя и месяц обязаны строить матрицу одними опциями.
+ * Граница недели и месяца — разрыв ряда сменой настроек портала
+ * (`ctx.comparableFrom` конвейера): она режет по дню звонка в TZ портала
+ * (`seriesBreakFrom`), а не по версии разбора, — как и до разделения
+ * границ в матрице. Неделя и месяц обязаны строить матрицу одними
+ * опциями; срез возражений недели строится ими же.
  */
 export function periodMatrixOptions(
     input: PeriodMatrixInput,
@@ -91,7 +97,7 @@ export function periodMatrixOptions(
             : { minDurationSecByType: input.minDurationSecByType }),
         ...(input.comparableFrom === null
             ? {}
-            : { comparableFrom: input.comparableFrom }),
+            : { seriesBreakFrom: input.comparableFrom }),
         timeZone: input.timeZone,
     };
 }
@@ -186,11 +192,9 @@ export function buildManagerWeekPayload(
         scoring.rows.map(toMatrixRow),
         matrixOptions,
     );
-    const objections = buildObjectionsSlice(scoring.rows, {
-        ...(matrixOptions.minDurationSecByType === undefined
-            ? {}
-            : { minDurationSecByType: matrixOptions.minDurationSecByType }),
-    });
+    // Те же опции, что у матрицы: возражения недели — по тем же звонкам,
+    // что её n (порог по типам, тип известен, граница сравнимости и TZ).
+    const objections = buildObjectionsSlice(scoring.rows, matrixOptions);
     const rows = matrix.managers.map(manager => {
         const trace = traceOf(scoring, manager.managerId);
         const versions = comparableVersions(scoring.rows, manager.managerId);

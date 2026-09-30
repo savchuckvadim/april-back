@@ -1,7 +1,7 @@
 import {
     AI_ANALYTICS_CLOSED_MONTH_TTL_SECONDS,
     AI_ANALYTICS_LIVE_TTL_SECONDS,
-    buildFinanceMonthKey,
+    AI_ANALYTICS_LOADER_CACHE_SECTIONS,
     buildFinancePipelineKey,
     buildKpiMonthKey,
     buildManagersKey,
@@ -32,9 +32,15 @@ describe('loader-cache-key.util', () => {
         expect(buildKpiMonthKey('d', partialJuly, '1_2')).toBe(
             `${AI_ANALYTICS_CACHE_PREFIX}:d:kpi-month:2026-07:1_2:2026-07-15_2026-07-31`,
         );
-        expect(buildFinanceMonthKey('d', closedAugust, 'all')).toBe(
-            `${AI_ANALYTICS_CACHE_PREFIX}:d:finance-month:2026-08:all`,
+    });
+
+    it('своего кэша закрытых продаж нет — источник кэша один, sales-finance', () => {
+        const sections: readonly string[] = Object.values(
+            AI_ANALYTICS_LOADER_CACHE_SECTIONS,
         );
+        expect(sections).not.toContain('finance-month');
+        // живой пайплайн по-прежнему буферизуется у AI (180 с)
+        expect(sections).toContain('finance-pipeline');
     });
 
     it('ключи пайплайна, планов и ростера', () => {

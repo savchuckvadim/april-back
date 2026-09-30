@@ -23,6 +23,7 @@ import {
     settingsLoaderWith,
 } from './fixtures/lite-row.fixture';
 import { overviewSources } from './fixtures/overview.fixture';
+import { transcriptionsWith } from './fixtures/transcriptions.fixture';
 import { hasCallDate } from '../domain/loaders/lite-row.mapper';
 
 /**
@@ -201,6 +202,7 @@ describe('SettingsUseCase: callReport и σ_llm', () => {
             callsLoaderWith(rows).loader,
             settingsLoaderWith({ callReport: pilot }),
             storeWith(null),
+            transcriptionsWith(),
         ).execute(DOMAIN, { now: NOW });
 
         expect(dto.callReport).toEqual({
@@ -219,6 +221,7 @@ describe('SettingsUseCase: callReport и σ_llm', () => {
             callsLoaderWith(rows).loader,
             settingsLoaderWith(),
             storeWith(null),
+            transcriptionsWith(),
         ).execute(DOMAIN, { now: NOW });
 
         expect(dto).not.toHaveProperty('callReport');
@@ -230,6 +233,7 @@ describe('SettingsUseCase: callReport и σ_llm', () => {
             callsLoaderWith(rows).loader,
             settingsLoaderWith(),
             storeWith(golden),
+            transcriptionsWith(),
         ).execute(DOMAIN, { now: NOW });
         const overview = buildOverviewReadiness(
             overviewSources(rows.filter(hasCallDate), [10], {
@@ -249,11 +253,13 @@ describe('SettingsUseCase: callReport и σ_llm', () => {
             callsLoaderWith(rows).loader,
             settingsLoaderWith(),
             storeWith(null),
+            transcriptionsWith(),
         ).execute(DOMAIN, { now: NOW });
         const alien = await new SettingsUseCase(
             callsLoaderWith(rows).loader,
             settingsLoaderWith(),
             storeWith(goldenRecord('guess')),
+            transcriptionsWith(),
         ).execute(DOMAIN, { now: NOW });
 
         expect(none.readiness).not.toHaveProperty('sigmaLlmSource');

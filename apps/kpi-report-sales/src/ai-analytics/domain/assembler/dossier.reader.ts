@@ -11,6 +11,7 @@
  *
  * Чистые функции: без DI, Bitrix и Prisma.
  */
+import { ratePctMetric } from '@lib/sales-ai-analytics';
 import type { AiDossierPassportDto } from '../../dto/ai-dossier-parts.dto';
 import type {
     AiObjectionCategoryDto,
@@ -56,6 +57,28 @@ function numberOrNull(
 /** Пустая метрика: значения нет, объём нулевой, доверие none. */
 export function emptyMetric(): MetricDto {
     return { value: null, n: 0, confidence: { level: 'none' } };
+}
+
+/**
+ * Причина пустой метрики досье: снапшот посчитан старой версией расчёта,
+ * в которой этой величины не было (оценка месяца до 30.09.2026, счётчики
+ * доли отработанных возражений у старых недель). Витрина пишет «нет в
+ * расчёте», а не «мало данных».
+ */
+export const DOSSIER_METRIC_REASONS = {
+    legacySnapshot: 'legacy-snapshot',
+} as const;
+
+/** Пустая метрика старого расчёта: none с причиной `legacy-snapshot`. */
+export function legacyMetric(): MetricDto {
+    return {
+        value: null,
+        n: 0,
+        confidence: {
+            level: 'none',
+            reason: DOSSIER_METRIC_REASONS.legacySnapshot,
+        },
+    };
 }
 
 /**
@@ -127,71 +150,118 @@ function outcomesOf(value: unknown): AiObjectionOutcomesDto {
     };
 }
 
+/** Счётчики доли отработанных: handled = true и всего с известным handled. */
+interface HandledCounts {
+    handled: number;
+    known: number;
+}
+
+/**
+ * Категория недели на пути к окну: поля DTO, счётчики доли (null — неделя
+ * старого расчёта, счётчиков в ней нет) и сколько недель уже сложено.
+ */
+interface CategoryPart {
+    dto: AiObjectionCategoryDto;
+    counts: HandledCounts | null;
+    weeks: number;
+}
+
 /** Категория возражений из нагрузки; без кода категории — отбрасывается. */
-function toCategory(value: unknown): AiObjectionCategoryDto[] {
+function toCategory(value: unknown): CategoryPart[] {
     if (!isRecord(value) || typeof value.category !== 'string') return [];
+    const { handled, handledKnown } = value;
 
     return [
         {
-            category: value.category,
-            n: isFiniteNumber(value.n) ? value.n : 0,
-            calls: isFiniteNumber(value.calls) ? value.calls : 0,
-            handledRatePct: isRecord(value.handledRatePct)
-                ? scoreMetricOf({ score: value.handledRatePct })
-                : emptyMetric(),
-            outcomes: outcomesOf(value.outcomes),
+            dto: {
+                category: value.category,
+                n: isFiniteNumber(value.n) ? value.n : 0,
+                calls: isFiniteNumber(value.calls) ? value.calls : 0,
+                handledRatePct: isRecord(value.handledRatePct)
+                    ? scoreMetricOf({ score: value.handledRatePct })
+                    : emptyMetric(),
+                outcomes: outcomesOf(value.outcomes),
+            },
+            counts:
+                isFiniteNumber(handled) && isFiniteNumber(handledKnown)
+                    ? { handled, known: handledKnown }
+                    : null,
+            weeks: 1,
         },
     ];
 }
 
+/** Сложение двух недель одной категории: счётчики и исходы складываются. */
+function sum(left: CategoryPart, right: CategoryPart): CategoryPart {
+    const a = left.dto.outcomes;
+    const b = right.dto.outcomes;
+
+    return {
+        dto: {
+            ...left.dto,
+            n: left.dto.n + right.dto.n,
+            calls: left.dto.calls + right.dto.calls,
+            outcomes: {
+                continued: a.continued + b.continued,
+                converted: a.converted + b.converted,
+                disengaged: a.disengaged + b.disengaged,
+                other: a.other + b.other,
+            },
+        },
+        counts:
+            left.counts === null || right.counts === null
+                ? null
+                : {
+                      handled: left.counts.handled + right.counts.handled,
+                      known: left.counts.known + right.counts.known,
+                  },
+        weeks: left.weeks + right.weeks,
+    };
+}
+
+/**
+ * Доля отработанных по окну: из сложенных счётчиков недель (доли недель
+ * между собой не складываются). Одна неделя без счётчиков — её доля как
+ * есть; несколько недель, среди которых есть старый расчёт, — пустая
+ * метрика с причиной `legacy-snapshot` вместо выдуманного числа.
+ */
+function handledRateOf(part: CategoryPart): MetricDto {
+    if (part.counts !== null) {
+        return ratePctMetric(part.counts.handled, part.counts.known);
+    }
+
+    return part.weeks === 1 ? part.dto.handledRatePct : legacyMetric();
+}
+
 /**
  * Возражения окна: категории недельных нагрузок складываются по коду
- * категории (n и calls суммируются, исходы — тоже). Доля отработанных
- * по окну не пересчитывается: её знаменатель в нагрузке не лежит,
- * поэтому наружу идёт пустая метрика вместо выдуманного числа.
+ * категории (n, calls и исходы суммируются), доля отработанных
+ * пересчитывается из счётчиков `handled` / `handledKnown` недель. Недели
+ * считают возражения по тем же звонкам, что и ряды (срез недели строится
+ * опциями её матрицы).
  *
  * null — за окно не встретилось ни одной категории.
  */
 export function toObjectionCategories(
     records: readonly DossierSnapshotView[],
 ): AiObjectionCategoryDto[] | null {
-    const merged = new Map<string, AiObjectionCategoryDto>();
+    const merged = new Map<string, CategoryPart>();
     for (const record of records) {
         const payload = isRecord(record.payload) ? record.payload : {};
         const list = Array.isArray(payload.objections)
             ? payload.objections
             : [];
-        for (const category of list.flatMap(toCategory)) {
-            const current = merged.get(category.category);
+        for (const part of list.flatMap(toCategory)) {
+            const current = merged.get(part.dto.category);
             merged.set(
-                category.category,
-                current === undefined ? category : sum(current, category),
+                part.dto.category,
+                current === undefined ? part : sum(current, part),
             );
         }
     }
     if (merged.size === 0) return null;
 
-    return [...merged.values()].sort((left, right) =>
-        left.category.localeCompare(right.category),
-    );
-}
-
-/** Сложение двух срезов одной категории: счётчики складываются. */
-function sum(
-    left: AiObjectionCategoryDto,
-    right: AiObjectionCategoryDto,
-): AiObjectionCategoryDto {
-    return {
-        category: left.category,
-        n: left.n + right.n,
-        calls: left.calls + right.calls,
-        // Доля по окну не восстанавливается из долей недель — честный none.
-        handledRatePct: emptyMetric(),
-        outcomes: {
-            continued: left.outcomes.continued + right.outcomes.continued,
-            converted: left.outcomes.converted + right.outcomes.converted,
-            disengaged: left.outcomes.disengaged + right.outcomes.disengaged,
-            other: left.outcomes.other + right.outcomes.other,
-        },
-    };
+    return [...merged.values()]
+        .map(part => ({ ...part.dto, handledRatePct: handledRateOf(part) }))
+        .sort((left, right) => left.category.localeCompare(right.category));
 }

@@ -16,6 +16,11 @@ import {
     AiBriefJobData,
     AiBriefRequestDto,
 } from '../../dto/ai-brief.dto';
+import { AiManagerScopeResolver } from '../access/ai-manager-scope.resolver';
+import {
+    AI_MANAGER_SCOPE_EMPTY_MESSAGE,
+    type AiManagerScope,
+} from '../access/ai-manager-scope.util';
 import type { RequesterAccess } from '../access/perimeter.util';
 import { RequesterAccessService } from '../access/requester-access.service';
 import { normalizeManagerIds } from '../loaders/managers.loader';
@@ -41,8 +46,11 @@ export type BriefLookup =
  * из кэша не отдаётся. Пакет собирается синхронно — он читает только кэш
  * витрины и снапшоты, в Bitrix не ходит.
  *
- * Периметр: список менеджеров запроса проверяется на видимость
- * (чужой — 403), пустой список означает периметр requester'а.
+ * Периметр — тот же, что у страницы обзора (AiManagerScopeResolver:
+ * фильтр ∩ список разбора звонков), иначе ключ обзора в пакете разошёлся
+ * бы с ключом страницы: список менеджеров запроса сначала сужается
+ * списком разбора и лишь потом проверяется на видимость (чужой — 403),
+ * пустой список означает периметр requester'а.
  */
 @Injectable()
 export class BriefUseCase {
@@ -53,6 +61,7 @@ export class BriefUseCase {
         private readonly cache: AiAnalyticsCacheService,
         private readonly queue: QueueDispatcherService,
         private readonly access: RequesterAccessService,
+        private readonly scopes: AiManagerScopeResolver,
     ) {}
 
     async lookup(
@@ -60,7 +69,7 @@ export class BriefUseCase {
         access: RequesterAccess,
         now = new Date(),
     ): Promise<BriefLookup> {
-        const managerIds = this.resolveManagerIds(dto, access);
+        const managerIds = await this.resolveManagerIds(dto, access);
         const pack = await this.pack.build({
             domain: dto.domain,
             from: dto.from,
@@ -113,33 +122,36 @@ export class BriefUseCase {
     }
 
     /**
-     * Менеджеры резюме: явный список проверяется на видимость (чужой —
-     * 403 тем же правилом, что у остальных ручек), без списка берётся
-     * периметр requester'а; у роли cup периметра нет
-     * (visibleManagerIds = null) — пакет собирается по всему порталу.
-     * Пустой список для сборщика значит «весь портал», поэтому периметр,
-     * в котором не осталось ни одного менеджера, — отказ, а не весь
-     * портал (fail-closed).
+     * Менеджеры резюме — периметр вкладки AI: явный список сужается
+     * списком разбора и затем проверяется на видимость (чужой — 403 тем же
+     * правилом, что у остальных ручек); без списка — периметр requester'а
+     * ∩ список разбора, у роли cup (visibleManagerIds = null) — весь
+     * периметр разбора: список разбора либо ростер ОП. Пустой список для
+     * сборщика значит «весь портал», поэтому пустой итог — отказ, а не
+     * весь портал (fail-closed).
      */
-    private resolveManagerIds(
+    private async resolveManagerIds(
         dto: AiBriefRequestDto,
         access: RequesterAccess,
-    ): number[] {
+    ): Promise<number[]> {
         const explicit = normalizeManagerIds(dto.managerIds ?? []);
         if (explicit.length) {
-            for (const managerId of explicit) {
+            const scope = await this.scopes.resolve(dto.domain, explicit);
+            for (const managerId of scope.managerIds) {
                 this.access.assertVisible(access, String(managerId));
             }
 
-            return explicit;
+            return nonEmptyScope(scope);
         }
-        if (access.visibleManagerIds === null) return [];
+        if (access.visibleManagerIds === null) {
+            return nonEmptyScope(await this.scopes.resolve(dto.domain));
+        }
         const perimeter = normalizeManagerIds(access.visibleManagerIds);
         if (perimeter.length === 0) {
             throw new ForbiddenException(AI_BRIEF_EMPTY_PERIMETER_MESSAGE);
         }
 
-        return perimeter;
+        return nonEmptyScope(await this.scopes.resolve(dto.domain, perimeter));
     }
 
     /** Запись кэша → конверт; резюме общее на домен, периметр уже в пакете. */
@@ -163,4 +175,13 @@ export class BriefUseCase {
             state,
         );
     }
+}
+
+/** Сотрудники периметра; пусто — в фильтре никого из разбора, отказ. */
+function nonEmptyScope(scope: AiManagerScope): number[] {
+    if (scope.empty) {
+        throw new ForbiddenException(AI_MANAGER_SCOPE_EMPTY_MESSAGE);
+    }
+
+    return scope.managerIds;
 }

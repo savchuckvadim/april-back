@@ -37,8 +37,7 @@ import { leadToWorkNameIds } from './lead-to-work-name-ids';
 import { LeadToWorkDuplicateCheckService } from '../services/lead-to-work-duplicate-check.service';
 import { LeadDealCompletion } from '../../../shared/lead-client/lead-deal-completion';
 import { LeadClientKind } from '../../../shared/lead-client';
-import { PortalWorkingHoursService } from '../../../shared/working-hours/portal-working-hours.service';
-import { shiftDeadlineToWorkingHours } from '../../../shared/working-hours/working-hours.model';
+import { LeadToWorkDeadlineService } from '../services/lead-to-work-deadline.service';
 import { ActiveStaffService } from '../../../shared/active-staff';
 import { LeadToWorkTimelineService } from '../services/lead-to-work-timeline.service';
 import {
@@ -101,13 +100,6 @@ interface IRepeatPlan {
 }
 
 /**
- * Через сколько суток звонить, если срок не прислали. Столько же ставит
- * формула роботов (`dateadd(Now,"1d")`) — держим одинаково, чтобы заявки с
- * присланным сроком и без него вели себя одинаково.
- */
-const AUTO_DEADLINE_DAYS = 1;
-
-/**
  * Хук «лид → работа» — не обнуляющее преобразование лида в работу ОП.
  *
  * ПОРЯДОК РАБОТЫ (по шагам, они же помечены в коде execute()):
@@ -153,8 +145,8 @@ export class LeadToWorkUseCase
         private readonly userNames: UserNameResolver,
         private readonly duplicateCheck: LeadToWorkDuplicateCheckService,
         private readonly appSettings: PortalAppSettingsService,
-        /** График портала — чтобы срок задачи не попадал в ночь и выходные. */
-        private readonly workingHours: PortalWorkingHoursService,
+        /** Срок задачи ХО: круг — час рабочего времени, прочее — в рабочие часы. */
+        private readonly deadlines: LeadToWorkDeadlineService,
         /** Кто работает сейчас: уволенные и «не работающие» не получают заявок. */
         private readonly activeStaff: ActiveStaffService,
         /** Повторная заявка: поиск работы клиента и присоединение к ней. */
@@ -268,10 +260,11 @@ export class LeadToWorkUseCase
             ...resolution.intent,
             responsible: assignee.responsible,
             addressed: false,
-            deadline: await this.workingDeadline(
-                ctx,
-                item.deadline ?? this.autoDeadline('repeat', item),
-            ),
+            deadline: await this.deadlines.resolve(ctx, {
+                source: 'repeat',
+                isXo: resolution.intent.isXo,
+                deadline: item.deadline,
+            }),
         };
         const stagePlan = new LeadToWorkStageResolver(ctx.portal)
             .withCurrentLeadStatus(this.text(leadRow.STATUS_ID))
@@ -584,11 +577,11 @@ export class LeadToWorkUseCase
                     addressed:
                         resolution.intent.isXo === 'Y' &&
                         assignee.source === 'explicit',
-                    deadline: await this.workingDeadline(
-                        ctx,
-                        item.deadline ??
-                            this.autoDeadline(assignee.source, item),
-                    ),
+                    deadline: await this.deadlines.resolve(ctx, {
+                        source: assignee.source,
+                        isXo: resolution.intent.isXo,
+                        deadline: item.deadline,
+                    }),
                 };
 
                 // 1.2 Считаем целевые стадии от ТЕКУЩЕГО статуса лида:
@@ -834,69 +827,6 @@ export class LeadToWorkUseCase
         ids: number[],
     ): Promise<Set<number>> {
         return this.activeStaff.activeUserIds(ctx.domain, ctx.bitrix, ids);
-    }
-
-    /**
-     * Срок, когда его не прислали.
-     *
-     * Решение владельца 18.09.2026: раз сотрудника выбирает круг, то и срок
-     * назначаем мы сами — «сутки от сейчас», а `workingDeadline` ниже
-     * подвинет его в рабочие часы портала. Раньше такая заявка уходила с
-     * задачей БЕЗ срока: её не видно ни в списке «на сегодня», ни в
-     * просрочке.
-     *
-     * Только для круга: если сотрудника назвали явно (кнопка, адресный ХО),
-     * человек сам решает, когда звонить, и выдумывать за него срок нельзя.
-     */
-    private autoDeadline(
-        source: LeadToWorkAssigneeSource,
-        item: ILeadToWorkItem,
-    ): string | undefined {
-        if (source !== 'round-robin' && source !== 'repeat') return undefined;
-        if (source === 'round-robin' && item.isXo !== 'Y') return undefined;
-        const next = new Date();
-        next.setDate(next.getDate() + AUTO_DEADLINE_DAYS);
-        return next.toISOString();
-    }
-
-    private async workingDeadline(
-        ctx: SalesHookExecutionContext,
-        deadline: string | undefined,
-    ): Promise<string | undefined> {
-        if (!deadline) return deadline;
-        const { domain } = ctx;
-        try {
-            const { hours } = await this.workingHours.resolve(domain);
-            /*
-             * Срок разбирается в ОБЕИХ формах — ISO из запроса и
-             * «23.09.2026 05:41:32» из карточки лида. Раньше здесь стоял
-             * `new Date`, который вторую форму не читает и молча оставлял
-             * ночной срок ночным (сделка 84763, 22.09.2026).
-             */
-            const moved = shiftDeadlineToWorkingHours(
-                deadline,
-                hours,
-                ctx.portal.getTimezone(),
-            );
-            if (moved === null) {
-                this.logger.warn(
-                    `[deadline] ${domain}: срок «${deadline}» не распознан — оставлен как есть`,
-                );
-                return deadline;
-            }
-            if (moved !== deadline) {
-                this.logger.log(
-                    `[deadline] ${domain}: срок ${deadline} вне рабочего времени — перенесён на ${moved}`,
-                );
-            }
-            return moved;
-        } catch (error) {
-            this.logger.warn(
-                `[deadline] ${domain}: график не прочитан (${(error as Error).message}) — ` +
-                    'срок оставлен как есть',
-            );
-            return deadline;
-        }
     }
 
     /**

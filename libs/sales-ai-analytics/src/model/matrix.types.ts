@@ -43,7 +43,11 @@ export interface EvidenceCallIds {
 export interface MatrixCellCore {
     /** Разобранных сравнимых звонков (после всех фильтров). */
     n: number;
-    /** Строк до comparableFrom (и без даты при заданном comparableFrom). */
+    /**
+     * Строк до границы сравнимости: разбор старой версии (дата набора
+     * versions раньше границы версий) или звонок раньше разрыва ряда
+     * настройками; строка без версий — по дню звонка, без даты — сюда же.
+     */
     nBeforeComparable: number;
     /** Среднее weightedScore/10 (шкала 1–10) при n ≥ 8, иначе none. */
     score: MetricValue;
@@ -99,7 +103,15 @@ export interface ManagerTypeMatrix {
     analyzed: number;
     /** Из них без корзины (other / irrelevant / неизвестный тип). */
     noBucket: number;
+    /**
+     * Действующая граница сравнимости: поздняя из границы версий и разрыва
+     * ряда настройками; null — ни одна не задана.
+     */
     comparableFrom: string | null;
+    /** Граница по версии разбора (`comparableVersionFrom` / `comparableFrom`). */
+    comparableVersionFrom: string | null;
+    /** Разрыв ряда сменой настроек портала — по дню звонка. */
+    seriesBreakFrom: string | null;
     excluded: MatrixExcluded;
 }
 
@@ -108,10 +120,41 @@ export interface MatrixThresholds {
     shortCallSec: number;
 }
 
+/**
+ * Опции матрицы. Сравнимость (план §5.4) держится на ДВУХ разных
+ * основаниях — версии разбора и разрыве ряда настройками портала, —
+ * поэтому у них разные опции (правило — `model/comparable-row.ts`).
+ */
 export interface MatrixOptions {
     thresholds?: Partial<MatrixThresholds>;
-    /** Начало сравнимой истории YYYY-MM-DD (план §5.4). */
+    /**
+     * Прежнее имя границы по ВЕРСИИ разбора 'YYYY-MM-DD' — синоним
+     * `comparableVersionFrom` (при обоих главнее он). Вызывающим с одной
+     * этой опцией строки без версий режутся по дню звонка, как раньше.
+     */
     comparableFrom?: string;
-    /** TZ портала для сравнения даты звонка с comparableFrom. */
+    /**
+     * Граница по ВЕРСИИ разбора 'YYYY-MM-DD' (обзор: max дат версий среди
+     * разборов периода): строка сравнима, если дата её СОБСТВЕННОГО набора
+     * versions не раньше границы, день звонка не участвует. Строка без
+     * versions (или без дат в них) — по дню звонка в TZ портала.
+     */
+    comparableVersionFrom?: string;
+    /**
+     * Разрыв ряда сменой настроек портала 'YYYY-MM-DD' (события
+     * `settings_break`, `ctx.comparableFrom` конвейера): звонок раньше этого
+     * дня в TZ портала или без даты — до границы при любой версии разбора.
+     */
+    seriesBreakFrom?: string;
+    /** TZ портала для дня звонка (разрыв ряда и строки без версий). */
     timeZone?: string;
+}
+
+/** Границы сравнимости из опций матрицы: пустая строка — границы нет. */
+export interface MatrixComparability {
+    /** Граница по версии разбора; null — не задана. */
+    versionFrom: string | null;
+    /** Разрыв ряда настройками (по дню звонка); null — не задан. */
+    seriesBreakFrom: string | null;
+    timeZone: string;
 }

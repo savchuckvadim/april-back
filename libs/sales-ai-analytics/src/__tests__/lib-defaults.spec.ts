@@ -17,6 +17,7 @@ import { FUNNEL_GAP_DEFAULTS } from '../model/funnel-gap';
 import { KAPPA_DEFAULTS } from '../model/kappa';
 import { LAG_CDF_DEFAULTS, LAG_CDF_PARAM_CODE } from '../model/lag-cdf';
 import { NORM_HIERARCHY_DEFAULTS } from '../model/norms-hierarchy';
+import { PULSE_DEFAULTS } from '../model/pulse';
 import { QAV_DEFAULTS } from '../model/qav';
 import { RAMP_DEFAULTS } from '../model/ramp';
 import { AI_READINESS_GATE_DEFAULTS } from '../model/readiness';
@@ -108,6 +109,7 @@ const OBJECTS: Readonly<
         values: NORM_HIERARCHY_DEFAULTS,
         file: 'norms-hierarchy.ts',
     },
+    PULSE_DEFAULTS: { values: PULSE_DEFAULTS, file: 'pulse.ts' },
 };
 
 /**
@@ -185,6 +187,7 @@ const REGISTRY_FIELDS = [
     ['AI_ANALYTICS_THRESHOLDS.shortCallSec', 'min_duration_sec_by_type'],
     ['NORM_HIERARCHY_DEFAULTS.portalToGlobal', 'kappa_portal_to_global'],
     ['NORM_HIERARCHY_DEFAULTS.bootRatio', 'kappa_boot_ratio'],
+    ['PULSE_DEFAULTS.managerMinN', 'pulse_manager_min_n'],
 ] as const satisfies readonly (readonly [string, string])[];
 
 /**
@@ -229,6 +232,7 @@ const LOCAL_FIELDS: Readonly<Record<string, readonly string[]>> = {
         'bootMonths',
         'levelUnderstatedRatio',
     ],
+    PULSE_DEFAULTS: ['windowWorkdays', 'historyWorkdays'],
 };
 
 /** Пометка локальной константы в исходнике модели. */

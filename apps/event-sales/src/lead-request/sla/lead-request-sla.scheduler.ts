@@ -8,27 +8,13 @@ import {
 } from '@lib/portal-lib/store/app-settings';
 import { LeadRequestSlaService } from './lead-request-sla.service';
 import { PortalWorkingHoursService } from '../../shared/working-hours/portal-working-hours.service';
+import {
+    SLA_MIN_MINUTES,
+    slaThresholdMinutes,
+} from '../../shared/lead-request/sla-threshold.util';
 
 const LOCK_KEY = 'lead-request:sla-lock';
 const LOCK_TTL_SEC = 9 * 60;
-
-/**
- * НИЖНЯЯ ГРАНИЦА ПОРОГА SLA — ЧАС.
- *
- * Авария 16–17.09.2026: на портале в поле «минут на принятие» стояло 10, то
- * есть ровно тик крона. Просроченным становилось всё, что крон только что
- * передал, и один и тот же пул сделок переназначался НА КАЖДОМ ТИКЕ: заявки
- * скакали между менеджерами каждые десять минут два дня подряд.
- *
- * Первая версия этого предохранителя поднимала только значения МЕНЬШЕ тика и
- * ровно десять пропускала как осмысленные — авария повторилась. Поэтому
- * граница теперь не «тик», а ЧАС: меньше часа на принятие заявки не имеет
- * смысла ни при каких настройках — человеку нужно время увидеть заявку и
- * взять её в работу, а крон всё равно реагирует не чаще раза в десять минут.
- *
- * Решение владельца 17.09.2026: «60 мин минимум и дефолт, всё».
- */
-const SLA_MIN_MINUTES = 60;
 
 /**
  * Планировщик SLA принятия заявок: раз в 10 минут обходит порталы, у
@@ -97,14 +83,10 @@ export class LeadRequestSlaScheduler implements OnModuleInit {
                      * кругу менеджеров, которые её всё равно не видят.
                      *
                      * Заявка не потеряется: срок считается от
-                     * `op_lead_assigned_at`, она остаётся просроченной и
-                     * будет передана первым тиком рабочего дня.
-                     *
-                     * ОТДЕЛЬНО СТОИТ ЗНАТЬ: сам срок SLA измеряется
-                     * КАЛЕНДАРНЫМИ минутами (см. buildOverdueFilter).
-                     * Заявка, назначенная в 17:55 при пороге 30 минут,
-                     * утром понедельника будет просрочена, хотя рабочего
-                     * времени у менеджера было пять минут.
+                     * `op_lead_assigned_at` в РАБОЧИХ минутах (с 30.09.2026,
+                     * как и срок задачи при распределении по кругу): заявка
+                     * в 17:30 при пороге в час просрочена в 9:30 следующего
+                     * рабочего дня, ночная — в 10:00.
                      */
                     if (!(await this.workingHours.isWorkingTime(domain))) {
                         continue;
@@ -143,7 +125,8 @@ export class LeadRequestSlaScheduler implements OnModuleInit {
      * ошибка настройки, а не осознанный выбор, и стоит она каруселью.
      */
     private safeMinutes(domain: string, configured: number): number {
-        if (configured >= SLA_MIN_MINUTES) return configured;
+        const minutes = slaThresholdMinutes(configured);
+        if (minutes === configured) return minutes;
         this.logger.warn(
             `[sla] ${domain}: порог ${configured} мин меньше минимального ` +
                 `(${SLA_MIN_MINUTES} мин) — поднят до ${SLA_MIN_MINUTES}. ` +

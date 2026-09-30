@@ -17,8 +17,8 @@ Feature-модуль `apps/kpi-report-sales/src/ai-analytics/` по плану
 
 | Ручка | Кэш | Права | Ответ |
 |---|---|---|---|
-| `ai-analytics/settings/get` | 300 с на домен | все | `AiAnalyticsSettingsDto`: флаги, `pipelineEnabled` (разборы за 30 дней), `readiness`, `callTypes[]` из `AI_ANALYTICS_EVENT_KINDS`, `comparableFrom`, `ropUserIds`; настройки 07.09.2026 — `selfViewEnabled`, `dailyPlanEnabled`, `digestAllUserIds: string[]`, `poolOptIn`, `poolConsentAt: string \| null`, `experimentsEnabled` |
-| `ai-analytics/pulse` | 1 ч на домен, ключ по `endDate` | периметр; менеджер — только при `self_view` | `AiPulseDto`: окно 5 рабочих дней до вчерашнего рабочего дня, XmR, `byManager` (n ≥ 20), `alerts` (каждый — с `link` на карточку разбора в смарте, null — элемента нет) |
+| `ai-analytics/settings/get` | 300 с на домен | все | `AiAnalyticsSettingsDto`: флаги, `pipelineEnabled` (разборы за 30 дней), `readiness`, `callTypes[]` из `AI_ANALYTICS_EVENT_KINDS`, `comparableFrom`, `ropUserIds`; настройки 07.09.2026 — `selfViewEnabled`, `dailyPlanEnabled`, `digestAllUserIds: string[]`, `poolOptIn`, `poolConsentAt: string \| null`, `experimentsEnabled`; `analysisSince?: string \| null` (30.09.2026) — день самого раннего готового разбора портала в его TZ (`TranscriptionStoreService.findFirstDoneAt`): период раньше — «разбор ещё не шёл»; null — разборов нет, поля нет — не прочитано |
+| `ai-analytics/pulse` | 1 ч на домен, ключ по `endDate` | периметр; менеджер — только при `self_view` | `AiPulseDto`: окно 5 рабочих дней до вчерашнего рабочего дня, XmR, `byManager` (строка сотрудника — с `managerMinN` разборов за окно: код реестра `pulse_manager_min_n`, портал переопределяет в `ai_analytics_model_params`, по умолчанию 8), `managerMinN` и `minDurationSec` (порог «короткого» звонка портала для подписи доли коротких), `alerts` (каждый — с `link` на карточку разбора в смарте, null — элемента нет) |
 | `ai-analytics/agenda` | до 15 минут (и не дольше, чем до следующего понедельника); новое несогласие сбрасывает | периметр; менеджер — только при `self_view` | `AiAgendaDto`: 3 звонка прошлой полной ISO-недели, `link` на карточку смарта, `disagreements` |
 | `ai-analytics/feedback` | — | менеджер только за себя; `alert_handled` — только руководители | запись в `ais` (контракт 4); `useful`/`not_useful` — одна оценка на автора, объект и день портала (смена оценки переводит прежнюю в `superseded`) |
 | `ai-analytics/review` | — | открытая (с сайта продукта, без сессии фрейма): ссылка на карточку разбора сверяется со смартом портала, лимит 10 отправок за 10 минут с адреса | отзыв руководителя на разбор → запись `ai-analytics-feedback` (useful / disagree, object `site-review:{itemId}`, детали в payload) + сообщение в чат; `AiReviewResultDto` |
@@ -86,14 +86,14 @@ store/ai-analytics-push-log.store.ts   — журнал доставки (agenda
 delivery/ai-analytics-delivery.service.ts — non-injectable транспорт new Svc(bitrix): im.notify.system.add
 delivery/ai-analytics-message.util.ts  — чистые тексты повестки и дайджеста (BB-код)
 delivery/ai-analytics-digest-all-message.util.ts — группировка ростера по отделам и текст сводного дайджеста
-cron/ai-analytics-push.scheduler.ts    — крон: пн 08:30 МСК повестка, ежедневно 08:00 МСК дайджест + сводный дайджест
+cron/ai-analytics-push.scheduler.ts    — крон: пн 08:30 повестка, ежедневно 08:00 дайджест + сводный дайджест — по часовому поясу портала (ai_analytics_calendar), тик ежечасный; push-slot.rules.ts — когда слот пропускается и о чём предупредить
 queue/ai-analytics.processor.ts        — воркер очереди SALES_KPI_REPORT: PUSH, SNAPSHOT (аудит и ритмы конвейера), OVERVIEW, BRIEF
 __tests__/*                            — юнит-тесты + DI-граф сборки и срезов
 ```
 
 ## Push-контур (шаг 2)
 
-Поток: `AiAnalyticsPushScheduler` (крон в UTC: `30 5 * * 1` и `0 5 * * *`) →
+Поток: `AiAnalyticsPushScheduler` (тики ежечасные: `30 * * * *` повестка и `0 * * * *` дайджесты; слот — 08:30 по понедельникам и 08:00 ежедневно по часовому поясу портала из `ai_analytics_calendar`, по умолчанию Europe/Moscow) →
 `PortalAppSettingsService.listByAppCode(kpiSales)` → по каждому домену
 `SettingsLoader.load` (нужен `ai_analytics_enabled`; для дайджеста — ещё
 `ai_analytics_digest_enabled`; для повестки — непустой `ai_analytics_rop_user_ids`;
@@ -103,18 +103,18 @@ __tests__/*                            — юнит-тесты + DI-граф с�
 {domain, kind, date}, jobId)` с `jobId = ai-analytics:push:{kind}:{domain}:{date}`
 (дедуп повторного тика за день; `date` — день в TZ портала) →
 `AiAnalyticsQueueProcessor` → `AiAnalyticsPushUseCase.execute` (тот же код, что
-у ручки `ai-analytics/push`; ошибка — warn + rethrow, `attempts: 1`).
+у ручки `ai-analytics/push`; `attempts: 1`, поэтому исключение и итог `failed` — error-лог с Telegram и rethrow/возврат результата). Пропуск наступившего слота, когда рассылка настроена частично (адресаты `digest_all` заданы, а `ai_analytics_enabled` выключен; личный дайджест выключен или включён без AI-аналитики), пишется warn'ом один раз на слот портала (`cron/push-slot.rules.ts`); портал без настроек рассылки пропускается молча.
 
 | Вид | Кейс | Получатели | Текст | Идемпотентность |
 |---|---|---|---|---|
 | `agenda` | `PushAgendaUseCase` | РОПы из настроек | `buildAgendaMessage`: 3 звонка недели — менеджер («Фамилия Имя» через `user.get`, fail-open `#id`), тип звонка, причина, цитата (≤ 300 симв.), ссылка на карточку разбора; пункт «Несогласия недели» | одна запись `agenda_sent` (`object = agenda:{weekKey}`) на домен+неделю, ищется с понедельника недели |
 | `digest` | `PushDigestUseCase` | каждый менеджер (bitrix-id = `managerId`) | `buildDigestMessage`: «Вчерашние звонки: что сказать иначе» — до 3 звонков с худшим разделом, «было» и до 3 дословных фраз `alternatives`, ссылка | одна запись `digest_sent` (`object = digest:{day}`, `managerId`) на домен+менеджер+день; в выходной (календарь портала) не шлётся |
-| `digest_all` | `PushDigestAllUseCase` | адресаты `ai_analytics_digest_all_user_ids` (`ai_analytics_digest_enabled` НЕ нужен — достаточно непустого списка) | `buildDigestAllMessage` (`delivery/ai-analytics-digest-all-message.util.ts`): «Сводный разбор звонков за вчера» — весь ростер ОП (`ManagersLoader` ∪ менеджеры со звонками) по отделам (`ManagerOrgLoader.departmentName`; «Без отдела» последним), на менеджера ≤ 3 звонка (`AI_ANALYTICS_DIGEST_ALL_CALLS_PER_MANAGER`) «время · раздел — «одна лучшая фраза»» + ссылка, «Звонков не было: …» для остальных, в конце «Итог, кому что» (менеджер → разделы); пустой день отправляется одной строкой «Звонков не было» | одна запись `digest_sent` с `object = digest_all:{day}`, `managerId = null` на домен+день (проверяется до расчёта); в выходной не шлётся; тот же крон 08:00 |
+| `digest_all` | `PushDigestAllUseCase` | адресаты `ai_analytics_digest_all_user_ids` (`ai_analytics_digest_enabled` НЕ нужен — достаточно непустого списка) | `buildDigestAllMessage` (`delivery/ai-analytics-digest-all-message.util.ts`): «Сводный разбор звонков за вчера» — периметр вкладки AI без фильтра (`AiManagerScopeResolver`: список разбора звонков, без него — ростер ОП) ∪ менеджеры со звонками, по отделам (`ManagerOrgLoader.departmentName`; «Без отдела» последним), на менеджера ≤ 3 звонка (`AI_ANALYTICS_DIGEST_ALL_CALLS_PER_MANAGER`) «время · раздел — «одна лучшая фраза»» + ссылка, «Звонков не было: …» для остальных, в конце «Итог, кому что» (менеджер → разделы); пустой день отправляется одной строкой «Звонков не было» | одна запись `digest_sent` с `object = digest_all:{day}`, `managerId = null` на домен+день (проверяется до расчёта; сбой записи после доставки — error-лог с Telegram, результат — фактическая доставка); в выходной не шлётся; тот же крон 08:00; имена — `UserNamesReader` (один `user.get` с `=ID` на 50 id) |
 
 Записи доставки — те же ais-записи контракта 4 (`AiAnalyticsPushLogStore` над
 `AiAnalyticsFeedbackStore`), `payload` — доставленные и `transcriptionIds`.
 Уведомления — `bitrix.imNotify.systemAdd` с `TAG` (`ai-analytics:agenda:{weekKey}`,
-`ai-analytics:digest:{day}:{managerId}`, `ai-analytics:digest_all:{day}`): сбой одного получателя не мешает остальным;
+`ai-analytics:digest:{day}:{managerId}`, `ai-analytics:digest_all:{day}`): сбой одного получателя не мешает остальным; доставленным считается только ответ с id уведомления — `result: false` (уведомление не создано) даёт warn и в `delivered` не попадает;
 никому не доставлено → `status: failed`, отметка не пишется.
 
 Ручной запуск `POST ai-analytics/push` (руководители): `date` — «как если бы крон
@@ -145,6 +145,24 @@ TZ портала, `from ≤ to`, не длиннее 3 мес. — валида
 `managerIds?` (пусто — весь ростер ОП по структуре), `confirmedOnly?`
 (принимается, входит в ключ, фильтрация — Фаза 3), `socketId?`, `forceRefresh?`.
 
+**Периметр вкладки AI** (решение владельца 30.09.2026): строки = (`managerIds`
+фильтра или весь ростер ОП) ∩ список разбора звонков
+(`portal_ai_settings.allowed_user_ids`). Список действует, только когда разбор
+включён и список непуст; пустой список — ограничения нет, разбор выключен или
+запись не прочитана — тоже (fail-open). Единственное место пересечения —
+`domain/access/ai-manager-scope.resolver.ts` (`AiManagerScopeResolver`, ядро;
+чистые правила — `ai-manager-scope.util.ts`): через него идут ключ и джоба
+обзора, строки/итоги/итоги отделов/возражения/«год назад»/медиана команды
+(lite-строки звонков режутся по периметру, звонки без сотрудника остаются только
+в `meta.skippedNoManager`), срезы by-type, итоги периода (brief), план-факт и
+сводный дайджест. Пустое пересечение — `ready` с пустым обзором без джобы, ключ
+с маркером `none` (не `all`). `meta.scope {pilotActive, shownManagers,
+hiddenByPilot}` считается ручкой по фильтру запроса. Прогноз отдела, ночной
+конвейер, пульс и повестка периметр не используют (деньги отдела делают все,
+конвейеру нужен полный ростер). Матрица обзора режет «короткие» по порогу портала
+(`portalMinDurationByType`, как пульс); `meta.excludedShort|NoType|NoAnalysis` и
+`coverage` среза by-type объясняют пустые матрицы.
+
 | Ручка | Режим | Права | Ответ |
 |---|---|---|---|
 | `ai-analytics/overview` | очередь + WS + кэш | периметр | `AiOverviewResponseDto {status, requestKey, jobId?, data?: AiOverviewDto, message?}` |
@@ -153,11 +171,13 @@ TZ портала, `from ≤ to`, не длиннее 3 мес. — валида
 | `ai-analytics/settings/save` | sync | только `cup`/`op` | `AiSettingsSaveResponseDto {status: ready, requestKey, data: {id, levels[], savedAt, resetCount, comparableFrom, paramsVersion, breaksSeries[], warnings[]}}` |
 
 **Конверт обзора.** `requestKey` = ключ кэша = `jobId`:
-`sales-ai-analytics:v1:{domain}:overview:v3:{from}_{to}:{usersKey}:{0|1}`, где
-`usersKey` — нормализованный ростер (`buildReportUsersKey`: дедуп, сортировка,
-`10_20`), последний сегмент — `confirmedOnly`; `v3` — версия формы кэша
-(`OVERVIEW_KEY_VERSION`, меняется вместе с формой строки: v3 —
-`riskCalls[].link`), она же уезжает в `jobId` и `requestKey` WS-событий. Поток
+`sales-ai-analytics:v1:{domain}:overview:v5:{from}_{to}:{usersKey}:{0|1}`, где
+`usersKey` — нормализованный периметр (фильтр ∩ список разбора;
+`overviewUsersKey`: дедуп, сортировка, `10_20`, пусто — `none`), последний
+сегмент — `confirmedOnly`; `v5` — версия формы кэша (`OVERVIEW_KEY_VERSION`,
+меняется вместе с формой: v3 — `riskCalls[].link`, v5 — периметр разбора,
+`meta.scope`, счётчики исключений, порог длительности портала), она же уезжает
+в `jobId` и `requestKey` WS-событий. Поток
 (`domain/use-cases/overview-lookup.use-case.ts`): попадание → `ready` (строки уже
 в периметре requester'а, `meta.fromCache = true`); в кэше error-конверт → `error`
 с `message` (живёт 120 с); джоба с таким id ждёт/идёт → `processing`; промах →
@@ -165,10 +185,10 @@ TZ портала, `from ≤ to`, не длиннее 3 мес. — валида
 {priority: 1, attempts: 1, timeout: 120000, removeOnComplete/Fail})` → `queued`.
 `forceRefresh` не читает кэш, но идущую джобу не дублирует. Периметр: менеджер
 без `headOf` получает только свою строку `managers[]`, свои `objections.byManager`
-и свой id в `departmentTotals[].managerIds`; `totals` по домену остаются.
+и свой id в `departmentTotals[].managerIds`; `totals` по периметру обзора остаются.
 
 **Процессор** (`queue/ai-analytics.processor.ts` → `OverviewJobUseCase`):
-`OverviewUseCase` (ростер → параллельно `CallsLoader.loadLite` за UTC-окно
+`OverviewUseCase` (периметр `AiManagerScopeResolver` → параллельно `CallsLoader.loadLite` за UTC-окно
 периода, `KpiLoader.loadKpiMonths`, `FinanceLoader.loadFinance`,
 `PlansLoader.loadPlans`, `ManagerOrgLoader`, уровни из
 `AiAnalyticsSettingsStore`, несогласия из `AiAnalyticsFeedbackStore` →
@@ -254,15 +274,19 @@ expectedContractAmount}` — бакеты `AI_ANALYTICS_CONTRACT_TERM_BUCKETS`
 (`3|6|12|24|none`) по `countContractMonths` из `@lib/shared` (≤ 3 → 3, ≤ 6 →
 6, ≤ 12 → 12, дольше → 24, нет дат → `none`), `expectedContractAmount = Σ
 round2(monthlyAmount × месяцы)`, для `none` — `null`. Закрытые продажи
-(`salesCount`, `advanceAmount`, `monthlyAmount`) — как раньше, из
-`ClosedSalesUseCase`. Порог `decision` в `SALES_HOT_THRESHOLDS` не заводится.
+(`salesCount`, `advanceAmount`, `monthlyAmount`) — одним вызовом
+`ClosedSalesUseCase` за весь период обзора, как вкладка «Финансы» (те же
+даты и формула); своего кэша у AI нет — кэш только у sales-finance (общий на
+домен закрытый месяц), помесячная разбивка для ночного шага — по дате
+закрытия сделок (`finance.assembler.ts`). Порог `decision` в `SALES_HOT_THRESHOLDS` не заводится.
 Тесты: `finance-pipeline.assembler.spec.ts` (фикстура
 `__tests__/fixtures/hot-clients.fixture.ts`), `finance.loader.spec.ts`.
 
-**Кэш и сброс.** Ключи модуля: `overview:v3:{from}_{to}:{usersKey}:{c}`,
-`kpi-month:{yyyy-MM}:{usersKey}[:{from}_{to}]`, `finance-month:…`,
+**Кэш и сброс.** Ключи модуля: `overview:v5:{from}_{to}:{usersKey}:{c}`,
+`kpi-month:{yyyy-MM}:{usersKey}[:{from}_{to}]`,
 `finance-pipeline:{pipelineThreshold}-{hotStageCode}:{usersKey}`, `plans:{usersKey}`, `managers`,
-`managers:org`. `POST ai-analytics/cache/reset {scope}`:
+`managers:org`, `managers:scope` (периметр вкладки без фильтра, публикует
+`AiManagerScopeResolver` для итогов периода, 5 минут). `POST ai-analytics/cache/reset {scope}`:
 `pulse|agenda|settings|overview|attention|kpi-month|plans|all`
 (`attention` — резерв, сейчас считается синхронно над `overview`).
 

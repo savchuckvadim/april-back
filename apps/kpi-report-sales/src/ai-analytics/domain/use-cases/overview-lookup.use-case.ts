@@ -3,9 +3,8 @@ import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { QueueDispatcherService } from '@/modules/queue/dispatch/queue-dispatcher.service';
 import { JobOptions } from 'bull';
-import { buildReportUsersKey } from '../../../report';
 import { AiAnalyticsCacheService } from '../../cache/ai-analytics-cache.service';
-import { buildOverviewKey } from '../../cache/cache-key.util';
+import { buildOverviewKey, overviewUsersKey } from '../../cache/cache-key.util';
 import {
     AI_ANALYTICS_JOB_RUNNING_STATES,
     AI_ANALYTICS_OVERVIEW_JOB_OPTIONS,
@@ -15,14 +14,23 @@ import {
     AiOverviewJobData,
 } from '../../dto/ai-overview-request.dto';
 import { AiOverviewCacheEntry, AiOverviewDto } from '../../dto/ai-overview.dto';
+import { AiManagerScopeResolver } from '../access/ai-manager-scope.resolver';
+import type { AiManagerScope } from '../access/ai-manager-scope.util';
 import type { RequesterAccess } from '../access/perimeter.util';
-import { ManagersLoader } from '../loaders/managers.loader';
+import {
+    type AiAnalyticsPortalSettings,
+    SettingsLoader,
+} from '../loaders/settings.loader';
+import { buildEmptyOverviewDto } from '../presenter/overview-empty.presenter';
+import { withOverviewScope } from '../presenter/overview-scope.presenter';
 import { applyOverviewPerimeter } from '../presenter/overview.presenter';
 
-/** Ключ обзора и нормализованный ростер, под который он построен. */
+/** Ключ обзора и периметр (фильтр ∩ список разбора), под который он построен. */
 export interface OverviewKeyRef {
     requestKey: string;
+    /** Сотрудники строк; пусто — периметр пуст, ключ с маркером none. */
     managerIds: number[];
+    scope: AiManagerScope;
 }
 
 /**
@@ -48,57 +56,58 @@ export type OverviewLookupFilters = Pick<
     | 'requesterUserId'
 >;
 
+type OverviewKeyFilters = Pick<
+    OverviewLookupFilters,
+    'domain' | 'from' | 'to' | 'managerIds' | 'confirmedOnly'
+>;
+
 /**
  * Паттерн «кэш-синхронно + очередь при промахе» для обзора (план 6.4,
  * ai/rules/heavy-endpoint-queue.md): ключ из нормализованных фильтров
- * (ростер — явный список либо структура) → cache hit → ready с периметром;
- * существующая джоба (jobId = ключ) → processing; промах → dispatch
- * SALES_AI_ANALYTICS_OVERVIEW в SALES_KPI_REPORT → queued. forceRefresh
- * обходит чтение, идущую джобу не дублирует. Общий для ручек overview,
- * attention, by-type и прогрева.
+ * (периметр — фильтр отчёта либо ростер ∩ список разбора звонков,
+ * AiManagerScopeResolver) → cache hit → ready с периметром requester'а и
+ * meta.scope запроса; существующая джоба (jobId = ключ) → processing;
+ * промах → dispatch SALES_AI_ANALYTICS_OVERVIEW в SALES_KPI_REPORT →
+ * queued. Пустой периметр (в фильтре никого из разбора) — ready с пустым
+ * обзором без джобы: пустой managerIds в джобе загрузчики прочитали бы
+ * как «весь ростер». forceRefresh обходит чтение, идущую джобу не
+ * дублирует. Общий для ручек overview, attention, by-type и прогрева.
  */
 @Injectable()
 export class OverviewLookupUseCase {
     private readonly logger = new Logger(OverviewLookupUseCase.name);
 
     constructor(
-        private readonly managers: ManagersLoader,
+        private readonly settings: SettingsLoader,
+        private readonly scopes: AiManagerScopeResolver,
         private readonly cache: AiAnalyticsCacheService,
         private readonly queue: QueueDispatcherService,
     ) {}
 
-    /** Ключ результата = jobId: период, нормализованный ростер, confirmedOnly. */
-    async resolveKey(
-        filters: Pick<
-            OverviewLookupFilters,
-            'domain' | 'from' | 'to' | 'managerIds' | 'confirmedOnly'
-        >,
-    ): Promise<OverviewKeyRef> {
-        const managerIds = await this.managers.resolve(
-            filters.domain,
-            filters.managerIds,
-        );
-        return {
-            managerIds,
-            requestKey: buildOverviewKey(
-                filters.domain,
-                filters.from,
-                filters.to,
-                buildReportUsersKey(managerIds),
-                filters.confirmedOnly === true,
-            ),
-        };
+    /** Ключ результата = jobId: период, периметр строк, confirmedOnly. */
+    async resolveKey(filters: OverviewKeyFilters): Promise<OverviewKeyRef> {
+        const { ref } = await this.resolveScoped(filters);
+
+        return ref;
     }
 
     async lookup(
         filters: OverviewLookupFilters,
         access: RequesterAccess,
     ): Promise<OverviewLookup> {
-        const { requestKey, managerIds } = await this.resolveKey(filters);
+        const { ref, settings } = await this.resolveScoped(filters);
+        const { requestKey, managerIds, scope } = ref;
+        if (scope.empty) {
+            return {
+                status: 'ready',
+                requestKey,
+                data: this.emptyOverview(filters, settings, scope),
+            };
+        }
         const forceRefresh = filters.forceRefresh === true;
 
         if (!forceRefresh) {
-            const cached = await this.readEntry(requestKey, access);
+            const cached = await this.readEntry(requestKey, access, scope);
             if (cached) return cached;
         }
         if (await this.isRunning(requestKey)) {
@@ -142,10 +151,57 @@ export class OverviewLookupUseCase {
         return data.requestKey;
     }
 
-    /** Запись кэша → конверт; ready — с периметром requester'а. */
+    /** Настройки портала (список разбора, календарь) и ключ по периметру. */
+    private async resolveScoped(
+        filters: OverviewKeyFilters,
+    ): Promise<{ ref: OverviewKeyRef; settings: AiAnalyticsPortalSettings }> {
+        const settings = await this.settings.load(filters.domain);
+        const scope = await this.scopes.resolveFor(
+            filters.domain,
+            filters.managerIds,
+            settings.callReport,
+        );
+        const requestKey = buildOverviewKey(
+            filters.domain,
+            filters.from,
+            filters.to,
+            overviewUsersKey(scope.managerIds),
+            filters.confirmedOnly === true,
+        );
+
+        return {
+            settings,
+            ref: { requestKey, managerIds: scope.managerIds, scope },
+        };
+    }
+
+    /** Пустой обзор пустого периметра: без кэша и джобы, meta.scope — причина. */
+    private emptyOverview(
+        filters: OverviewKeyFilters,
+        settings: AiAnalyticsPortalSettings,
+        scope: AiManagerScope,
+    ): AiOverviewDto {
+        return withOverviewScope(
+            buildEmptyOverviewDto(
+                {
+                    domain: filters.domain,
+                    from: filters.from,
+                    to: filters.to,
+                    confirmedOnly: filters.confirmedOnly === true,
+                    settings,
+                    scope,
+                },
+                new Date(),
+            ),
+            scope,
+        );
+    }
+
+    /** Запись кэша → конверт; ready — с периметром requester'а и meta.scope запроса. */
     private async readEntry(
         requestKey: string,
         access: RequesterAccess,
+        scope: AiManagerScope,
     ): Promise<OverviewLookup | null> {
         const entry =
             await this.cache.getJson<AiOverviewCacheEntry>(requestKey);
@@ -156,7 +212,10 @@ export class OverviewLookupUseCase {
         return {
             status: 'ready',
             requestKey,
-            data: applyOverviewPerimeter(entry.data, access, true),
+            data: withOverviewScope(
+                applyOverviewPerimeter(entry.data, access, true),
+                scope,
+            ),
         };
     }
 

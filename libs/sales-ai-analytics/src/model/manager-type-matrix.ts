@@ -4,12 +4,18 @@ import {
     bucketOfCallType,
     compareCallTypes,
 } from './buckets';
+import {
+    effectiveComparableFrom,
+    isBeforeComparable,
+    matrixComparability,
+} from './comparable-row';
 import { buildCellCore, callScore10, hasScore } from './matrix-cell';
 import {
     ManagerMatrixRow,
     ManagerTypeCell,
     ManagerTypeMatrix,
     MatrixCallRow,
+    MatrixComparability,
     MatrixExcluded,
     MatrixOptions,
     MatrixThresholds,
@@ -22,7 +28,15 @@ import {
     type MinDurationSecByType,
 } from './pulse';
 import { AI_ANALYTICS_THRESHOLDS } from './thresholds.const';
-import { DEFAULT_WORK_CALENDAR, toPortalDate } from './workdays.util';
+
+/** Правило сравнимости — общий предикат (срез возражений и др.). */
+export {
+    effectiveComparableFrom,
+    isBeforeComparable,
+    matrixComparability,
+    rowVersionsDate,
+    type ComparableRow,
+} from './comparable-row';
 
 export const MATRIX_DEFAULT_THRESHOLDS: MatrixThresholds = {
     shortCallSec: AI_ANALYTICS_THRESHOLDS.shortCallSec,
@@ -89,11 +103,14 @@ const emptyExcluded = (): MatrixExcluded => ({
     beforeComparable: 0,
 });
 
+/**
+ * Вердикт строки: сначала фильтры слоя качества, затем сравнимость —
+ * по версии разбора и по разрыву ряда настройками (`comparable-row.ts`).
+ */
 function judge(
     row: MatrixCallRow,
     byType: MinDurationSecByType,
-    comparableFrom: string | null,
-    timeZone: string,
+    comparability: MatrixComparability,
 ): Verdict {
     if (!row.analysisPresent) {
         return { kind: 'noAnalysis' };
@@ -112,35 +129,27 @@ function judge(
         managerId: row.managerId,
         callType: row.callType,
     };
-    if (comparableFrom === null) {
-        return { kind: 'ok', row: quality };
-    }
-    const day =
-        row.callStartedAt === null
-            ? null
-            : toPortalDate(row.callStartedAt, timeZone);
-    return day !== null && day >= comparableFrom
-        ? { kind: 'ok', row: quality }
-        : { kind: 'before', row: quality };
+    return isBeforeComparable(row, comparability)
+        ? { kind: 'before', row: quality }
+        : { kind: 'ok', row: quality };
 }
 
 function classify(
     rows: readonly MatrixCallRow[],
     options: ManagerTypeMatrixOptions,
+    comparability: MatrixComparability,
 ): Classified {
     const byType = minDurationMapOf(
         options.thresholds?.shortCallSec,
         options.minDurationSecByType,
     );
-    const comparableFrom = options.comparableFrom ?? null;
-    const timeZone = options.timeZone ?? DEFAULT_WORK_CALENDAR.timeZone;
     const result: Classified = {
         ok: [],
         before: [],
         excluded: emptyExcluded(),
     };
     for (const row of rows) {
-        const verdict = judge(row, byType, comparableFrom, timeZone);
+        const verdict = judge(row, byType, comparability);
         if (verdict.kind === 'ok') {
             result.ok.push(verdict.row);
         } else if (verdict.kind === 'before') {
@@ -241,18 +250,22 @@ function buildTotals(
  * Матрица менеджер × тип звонка за период (план §4.3, §6.3, ТЗ FR-22).
  * В слой качества попадают строки с разбором, менеджером и типом,
  * не короче порога своего типа (карта `minDurationSecByType`, иначе
- * скаляр shortCallSec, иначе 300 с); при заданном comparableFrom строки до этой даты
- * (в TZ портала) и строки без даты считаются отдельно (nBeforeComparable)
- * и в оценки не смешиваются (§5.4). Ячейка: n, score (среднее S/10 при
- * n ≥ 8), разделы с relevance > 0, чек-листы, три опорных звонка,
- * versionsMixed. Итоги по типам, корзины менеджера и отдела — той же
- * функцией ядра. Чистая детерминированная функция: порядок входа не влияет.
+ * скаляр shortCallSec, иначе 300 с). Строки до границы сравнимости
+ * считаются отдельно (nBeforeComparable) и в оценки не смешиваются (§5.4):
+ * разбор старой версии (дата набора versions раньше `comparableVersionFrom`
+ * / прежнего `comparableFrom`; без версий — по дню звонка) либо звонок
+ * раньше разрыва ряда настройками (`seriesBreakFrom`, день в TZ портала).
+ * Ячейка: n, score (среднее S/10 при n ≥ 8), разделы с relevance > 0,
+ * чек-листы, три опорных звонка, versionsMixed. Итоги по типам, корзины
+ * менеджера и отдела — той же функцией ядра. Чистая детерминированная
+ * функция: порядок входа не влияет.
  */
 export function buildManagerTypeMatrix(
     rows: readonly MatrixCallRow[],
     options: ManagerTypeMatrixOptions = {},
 ): ManagerTypeMatrix {
-    const { ok, before, excluded } = classify(rows, options);
+    const comparability = matrixComparability(options);
+    const { ok, before, excluded } = classify(rows, options, comparability);
     const okByManager = groupBy(ok, row => row.managerId);
     const beforeByManager = groupBy(before, row => row.managerId);
     const managers = unionKeys(okByManager, beforeByManager, (a, b) =>
@@ -271,7 +284,9 @@ export function buildManagerTypeMatrix(
         analyzed: ok.length,
         noBucket: ok.filter(row => bucketOfCallType(row.callType) === null)
             .length,
-        comparableFrom: options.comparableFrom ?? null,
+        comparableFrom: effectiveComparableFrom(comparability),
+        comparableVersionFrom: comparability.versionFrom,
+        seriesBreakFrom: comparability.seriesBreakFrom,
         excluded,
     };
 }

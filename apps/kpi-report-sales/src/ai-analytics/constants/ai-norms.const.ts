@@ -8,6 +8,7 @@
  * `style_min_calls`), здесь НЕ дублируются — витрина берёт их оттуда:
  * правила режимов и отбора живут в одном месте (§5.1).
  */
+import { EnumSalesKpiEventType } from '@lib/portal-lib/pbx/pbx-sales-kpi-list/type/pbx-sales-kpi-list.enum';
 import type { AiAnalyticsFunnelEdgeCode } from './ai-overview.const';
 
 /** Направление разрыва к норме слоя: выше нормы, ниже нормы, разрыва нет. */
@@ -49,9 +50,11 @@ export const AI_ANALYTICS_OUTCOME_EDGES = {
 /**
  * KPI-коды плана руководителя, по которым считается разрыв плана: сначала
  * презентации (знаменатель больше — норма устойчивее), при отсутствии
- * плана презентаций — звонки.
+ * плана презентаций — звонки. План лежит в ячейке на коде, чей факт —
+ * factKey каталога планов (presentations_done → presentation_done,
+ * calls_done → call_done), см. cell-kpi.assembler.
  */
 export const AI_ANALYTICS_PLAN_GAP_CODES = {
-    presentations: 'presentation_uniq',
-    calls: 'call',
+    presentations: EnumSalesKpiEventType.presentation,
+    calls: EnumSalesKpiEventType.call,
 } as const;

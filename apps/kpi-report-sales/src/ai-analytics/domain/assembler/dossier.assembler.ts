@@ -28,7 +28,6 @@ import type {
     AiDossierReasonDto,
     AiDossierRopMarksDto,
     AiDossierSeriesDto,
-    AiDossierSeriesPointDto,
 } from '../../dto/ai-dossier-parts.dto';
 import type { AiDossierDto } from '../../dto/ai-dossier.dto';
 import type { AiObjectionCategoryDto } from '../../dto/ai-objections.dto';
@@ -38,10 +37,12 @@ import {
     scoreMetricOf,
     toObjectionCategories,
     toPassport,
-    type DossierSnapshotView,
 } from './dossier.reader';
 
 export type { DossierSnapshotView } from './dossier.reader';
+// Ряды недель и месяцев живут в `dossier-series.ts` (правило «файл ≤ 300
+// строк»); реэкспорт держит прежний путь импорта джобы и спек.
+export { toSeries, toSeriesPoints } from './dossier-series';
 
 /** Копилка причин: раздел пуст → код причины и её подпись. */
 export class DossierReasons {
@@ -82,32 +83,6 @@ export function section<T>(
     } catch {
         return reasons.add(code, AI_DOSSIER_REASONS.sectionFailed);
     }
-}
-
-/** Ряд периодов: снапшоты по возрастанию ключа → точки ряда. */
-export function toSeriesPoints(
-    records: readonly DossierSnapshotView[],
-): AiDossierSeriesPointDto[] {
-    return [...records]
-        .sort((left, right) => left.periodKey.localeCompare(right.periodKey))
-        .map(record => ({
-            periodKey: record.periodKey,
-            n: numberOf(record.payload, 'n'),
-            score: scoreMetricOf(record.payload),
-        }));
-}
-
-/** Ряды досье; null — ни недель, ни месяцев за окно нет. */
-export function toSeries(
-    weeks: readonly DossierSnapshotView[],
-    months: readonly DossierSnapshotView[],
-): AiDossierSeriesDto | null {
-    if (weeks.length === 0 && months.length === 0) return null;
-
-    return {
-        weeks: toSeriesPoints(weeks),
-        months: toSeriesPoints(months),
-    };
 }
 
 /** Реакция из ais глазами досье (форма стора, без зависимости от него). */
@@ -210,13 +185,6 @@ function rankSections(records: readonly DossierRopMarkView[]): string[] {
                 right[1] - left[1] || left[0].localeCompare(right[0]),
         )
         .map(([code]) => code);
-}
-
-/** Целое поле чужой нагрузки; не число — 0 (а не «данных нет»). */
-function numberOf(payload: unknown, field: string): number {
-    const value = (payload as Record<string, unknown> | null)?.[field];
-
-    return typeof value === 'number' && Number.isFinite(value) ? value : 0;
 }
 
 /** Служебный блок досье: версия расчёта, прочитанные записи, момент. */

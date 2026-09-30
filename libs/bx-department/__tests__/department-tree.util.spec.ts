@@ -160,6 +160,21 @@ describe('department-tree.util', () => {
             expect(idsOf(parents)).toEqual([1]);
         });
 
+        it('стартовые и уже найденные отделы повторно не запрашиваются', async () => {
+            // 1 ← 5 ← 63 (старт) ← 70 (старт), 1 ← 5 ← 64 (старт)
+            const tree = [dep(1, 'Корень'), dep(5, 'Глава', 1)];
+            const { findById, requested } = lookup(tree);
+
+            const parents = await climbParents(
+                [dep(63, 'ОП', 5), dep(70, 'ОП-2', 63), dep(64, 'ОП-3', 5)],
+                findById,
+            );
+
+            expect(idsOf(parents)).toEqual([5, 1]);
+            // 63 — стартовый (берётся из памяти), 5 и 1 — по разу
+            expect(requested).toEqual([5, 1]);
+        });
+
         it('цикл PARENT не зацикливает подъём', async () => {
             // 2 ← 3 ← 2 … (цикл), старт 1 → 2
             const { findById, requested } = lookup([

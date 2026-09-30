@@ -1,10 +1,6 @@
-type BxRow = Record<string, unknown>;
+import { bxFieldId } from '@lib/shared/lib/utils';
 
-/** Положительный id из сырого значения Битрикса (строка/число); иначе null. */
-const positiveId = (raw: unknown): number | null => {
-    const value = Number(raw);
-    return Number.isFinite(value) && value > 0 ? value : null;
-};
+type BxRow = Record<string, unknown>;
 
 /**
  * Кто принял заявку: явный userId (кнопка UI); иначе ответственный СДЕЛКИ —
@@ -19,8 +15,8 @@ export function acceptActorOf(
 ): number | null {
     return (
         userId ??
-        positiveId(dealRow?.ASSIGNED_BY_ID) ??
-        positiveId(lead?.ASSIGNED_BY_ID)
+        bxFieldId(dealRow?.ASSIGNED_BY_ID) ??
+        bxFieldId(lead?.ASSIGNED_BY_ID)
     );
 }
 
@@ -36,6 +32,6 @@ export function acceptActorIds(
 ): number[] {
     return [
         ...userIds,
-        ...rows.map(row => positiveId(row?.ASSIGNED_BY_ID)),
+        ...rows.map(row => bxFieldId(row?.ASSIGNED_BY_ID)),
     ].filter((id): id is number => typeof id === 'number' && id > 0);
 }

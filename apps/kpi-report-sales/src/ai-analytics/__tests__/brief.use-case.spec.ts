@@ -6,8 +6,10 @@ import {
     AI_ANALYTICS_BRIEF_JOB_OPTIONS,
     AI_BRIEF_EMPTY_PERIMETER_MESSAGE,
 } from '../constants/ai-brief.const';
+import { AI_MANAGER_SCOPE_EMPTY_MESSAGE } from '../domain/access/ai-manager-scope.util';
 import { RequesterAccess } from '../domain/access/perimeter.util';
 import { RequesterAccessService } from '../domain/access/requester-access.service';
+import type { AiCallReportStatus } from '../domain/loaders/settings.loader';
 import { BriefUseCase } from '../domain/use-cases/brief.use-case';
 import { AiBriefCacheEntry, AiBriefRequestDto } from '../dto/ai-brief.dto';
 import {
@@ -17,6 +19,10 @@ import {
     BRIEF_TO,
     briefPack,
 } from './fixtures/brief.fixture';
+import {
+    callReportWith,
+    scopeResolverWith,
+} from './fixtures/manager-scope.fixture';
 
 const PACK = briefPack();
 const KEY = buildBriefKey(BRIEF_DOMAIN, PACK.hash);
@@ -39,9 +45,18 @@ interface Harness {
     cached?: AiBriefCacheEntry | null;
     /** Состояние джобы с jobId = requestKey; нет — джобы в очереди нет. */
     jobState?: string;
+    /** Статус разбора звонков; нет — статус не прочитан (без ограничения). */
+    callReport?: AiCallReportStatus;
+    /** Ростер ОП по структуре. */
+    roster?: number[];
 }
 
-function makeUseCase({ cached = null, jobState }: Harness = {}) {
+function makeUseCase({
+    cached = null,
+    jobState,
+    callReport,
+    roster = [10, 20, 30],
+}: Harness = {}) {
     const build = jest.fn().mockResolvedValue(PACK);
     const getJson = jest.fn().mockResolvedValue(cached);
     const dispatch = jest.fn().mockResolvedValue({ id: KEY });
@@ -58,11 +73,13 @@ function makeUseCase({ cached = null, jobState }: Harness = {}) {
         {} as never,
         {} as never,
     );
+    const scope = scopeResolverWith(roster, callReport ? { callReport } : {});
     const useCase = new BriefUseCase(
         { build } as never,
         { getJson } as never,
         { dispatch, getJob } as never,
         access,
+        scope.resolver,
     );
 
     return { useCase, build, getJson, dispatch, getJob };
@@ -196,7 +213,7 @@ describe('BriefUseCase: конверт ручки резюме', () => {
         );
     });
 
-    it('без списка менеджеров берётся периметр requester’а, у cup — весь портал', async () => {
+    it('без списка менеджеров берётся периметр requester’а, у cup — весь ростер ОП (не «весь портал» пустым списком)', async () => {
         const perimeter = makeUseCase();
         await perimeter.useCase.lookup(request(), leader, BRIEF_NOW);
         expect(perimeter.build).toHaveBeenCalledWith(
@@ -206,8 +223,53 @@ describe('BriefUseCase: конверт ручки резюме', () => {
         const all = makeUseCase();
         await all.useCase.lookup(request(), cup, BRIEF_NOW);
         expect(all.build).toHaveBeenCalledWith(
-            expect.objectContaining({ managerIds: [] }),
+            expect.objectContaining({ managerIds: [10, 20, 30] }),
         );
+    });
+
+    it('список разбора: явный список сужается до проверки видимости — чужой вне разбора не даёт 403', async () => {
+        const { useCase, build } = makeUseCase({
+            callReport: callReportWith([10]),
+        });
+
+        await useCase.lookup(
+            request({ managerIds: [10, 99] }),
+            leader,
+            BRIEF_NOW,
+        );
+
+        expect(build).toHaveBeenCalledWith(
+            expect.objectContaining({ managerIds: [10] }),
+        );
+    });
+
+    it('список разбора: периметр requester’а и cup без списка — только сотрудники из разбора', async () => {
+        const perimeter = makeUseCase({ callReport: callReportWith([20]) });
+        await perimeter.useCase.lookup(request(), leader, BRIEF_NOW);
+        expect(perimeter.build).toHaveBeenCalledWith(
+            expect.objectContaining({ managerIds: [20] }),
+        );
+
+        const all = makeUseCase({ callReport: callReportWith([512, 20]) });
+        await all.useCase.lookup(request(), cup, BRIEF_NOW);
+        expect(all.build).toHaveBeenCalledWith(
+            expect.objectContaining({ managerIds: [20, 512] }),
+        );
+    });
+
+    it('в фильтре никого из разбора — отказ с понятным текстом, пакет и джоба не собираются', async () => {
+        const { useCase, build, dispatch } = makeUseCase({
+            callReport: callReportWith([512]),
+        });
+
+        await expect(
+            useCase.lookup(request({ managerIds: [10, 20] }), cup, BRIEF_NOW),
+        ).rejects.toThrow(AI_MANAGER_SCOPE_EMPTY_MESSAGE);
+        await expect(
+            useCase.lookup(request(), leader, BRIEF_NOW),
+        ).rejects.toBeInstanceOf(ForbiddenException);
+        expect(build).not.toHaveBeenCalled();
+        expect(dispatch).not.toHaveBeenCalled();
     });
 
     it('менеджер вне периметра в списке → 403, пакет не собирается', async () => {

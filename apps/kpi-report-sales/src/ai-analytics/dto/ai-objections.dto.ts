@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MetricDto } from './metric.dto';
 
 /** Исходы возражений категории; other — неизвестный исход или его нет. */
@@ -64,6 +64,24 @@ export class AiObjectionCategoryDto {
         type: MetricDto,
     })
     handledRatePct: MetricDto;
+
+    @ApiPropertyOptional({
+        description:
+            'Отработанных возражений категории (числитель доли; нужен, чтобы ' +
+            'пересчитать долю по нескольким периодам). Нет в старом расчёте.',
+        type: Number,
+        example: 5,
+    })
+    handled?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Возражений категории с известным итогом «отработано / нет» ' +
+            '(знаменатель доли). Нет в старом расчёте.',
+        type: Number,
+        example: 8,
+    })
+    handledKnown?: number;
 
     @ApiProperty({
         description: 'Исходы возражений категории.',

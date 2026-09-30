@@ -13,6 +13,9 @@
  *   по нему месяц никогда не выглядел бы закрытым (аудит Фазы 2, M3);
  * - порог «разбираемого» звонка — карта по типам, та же, что у недели и
  *   пульса (M2);
+ * - объём и оценка месяца (`n`, `nBeforeComparable`, `score`) пишутся из
+ *   той же строки матрицы, что у недели: без них ряд досье «Месяцы» и
+ *   тренды досье видели 0 разборов у каждого менеджера (30.09.2026);
  * - экспозиция, рёбра и стиль собираются отдельными функциями (файл
  *   ассемблера обязан оставаться в пределах 300 строк);
  * - правила портала (применимость разделов → потолки оценивания →
@@ -30,6 +33,7 @@
 import {
     buildManagerTypeMatrix,
     resolveNumberParam,
+    scoreMetric,
     type AiAbsence,
     type ManagerMatrixRow,
     type MinDurationSecByType,
@@ -226,9 +230,14 @@ export function buildManagerMonthPayload(
             managerId,
             input.day,
         );
+        const matrixRow = matrixRowOf(matrix.managers, managerId);
         const payload: ManagerMonthPayload = {
             kpi: buildKpiVector(kpiRow),
-            byType: buildTypeFacts(matrixRowOf(matrix.managers, managerId)),
+            // Объём и оценка — те же поля строки матрицы, что пишет неделя.
+            n: matrixRow?.n ?? 0,
+            nBeforeComparable: matrixRow?.nBeforeComparable ?? 0,
+            score: matrixRow?.score ?? scoreMetric([]),
+            byType: buildTypeFacts(matrixRow),
             workdays: buildWorkdays(exposure),
             finance: buildFinanceFacts(financeRow, kpiRow, pipeline),
             edges: buildManagerEdges(kpiRow, estimand.estimand),

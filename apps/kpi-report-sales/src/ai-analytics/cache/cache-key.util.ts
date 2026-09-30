@@ -6,14 +6,16 @@
  *   sales-ai-analytics:v1:{domain}:pulse:v2:{endDate}    — пульс до даты (v2 — alerts[].link)
  *   sales-ai-analytics:v1:{domain}:agenda:{weekKey}      — повестка недели
  *   sales-ai-analytics:v1:{domain}:access:v2:{userId}    — периметр requester'а
- *   sales-ai-analytics:v1:{domain}:overview:v3:{from}_{to}:{usersKey}:{confirmedOnly}
- *                                                        — обзор менеджер × тип (v3 — riskCalls[].link)
+ *   sales-ai-analytics:v1:{domain}:overview:v5:{from}_{to}:{usersKey}:{confirmedOnly}
+ *                                                        — обзор менеджер × тип (usersKey — фильтр ∩ список разбора; none — пусто)
  *   sales-ai-analytics:v1:{domain}:managers:org          — раскладка ростера по отделам/группам
+ *   sales-ai-analytics:v1:{domain}:managers:scope        — периметр вкладки AI без фильтра (список разбора либо ростер)
  *
  * Кэшируется полный результат по домену, периметр requester'а применяется
  * после чтения (иначе ключ пришлось бы плодить на каждого пользователя).
  */
 import { shiftDate, isoWeekday, toPortalDate } from '@lib/sales-ai-analytics';
+import { buildReportUsersKey } from '../../report/cache/report-cache-key.util';
 import {
     AI_ANALYTICS_AGENDA_MAX_TTL_SECONDS,
     AI_ANALYTICS_AGENDA_MIN_TTL_SECONDS,
@@ -96,10 +98,36 @@ export function agendaTtlSeconds(now: Date, timeZone: string): number {
  * строки, чтобы кэш закрытых периодов (30 дней) старой формы не читался:
  * v2 — строки с источником стажа (levelSource passport, since/sinceSource)
  * и meta.excludedBeforeComparable; v3 — у риск-звонков строк
- * (`riskCalls[].link`) ссылка на карточку разбора. Ключ = jobId =
- * requestKey WS-событий, поэтому версия доезжает до фронта сама.
+ * (`riskCalls[].link`) ссылка на карточку разбора; v5 — строки только
+ * сотрудников из разбора звонков (usersKey — пересечение фильтра со
+ * списком разбора), meta.scope, счётчики исключений матрицы и порог
+ * длительности портала. Ключ = jobId = requestKey WS-событий, поэтому
+ * версия доезжает до фронта сама.
  */
-const OVERVIEW_KEY_VERSION = 'v4';
+const OVERVIEW_KEY_VERSION = 'v5';
+
+/**
+ * Маркер пустого периметра в ключе обзора: в фильтре нет ни одного
+ * сотрудника из разбора. Не 'all' (buildReportUsersKey([])) — иначе ключ
+ * совпал бы с ключом всего портала.
+ */
+export const OVERVIEW_USERS_KEY_NONE = 'none';
+
+/** usersKey обзора по периметру: пусто — маркер none, иначе id через «_». */
+export function overviewUsersKey(managerIds: readonly number[]): string {
+    return managerIds.length === 0
+        ? OVERVIEW_USERS_KEY_NONE
+        : buildReportUsersKey(managerIds);
+}
+
+/**
+ * Периметр вкладки AI без фильтра отчёта (список разбора либо ростер ОП),
+ * который публикует AiManagerScopeResolver: читатели только кэша (итоги
+ * периода) воспроизводят по нему ключ обзора «без фильтра».
+ */
+export function buildManagerScopeKey(domain: string): string {
+    return `${AI_ANALYTICS_CACHE_PREFIX}:${domain}:${MANAGERS}:scope`;
+}
 
 export function buildOverviewKey(
     domain: string,

@@ -21,6 +21,7 @@ import {
     OVERVIEW_TO,
     twoManagersRows,
 } from './fixtures/overview.fixture';
+import { scopeResolverWith } from './fixtures/manager-scope.fixture';
 import { smartLinksWith } from './fixtures/smart-links.fixture';
 
 /**
@@ -172,7 +173,7 @@ describe('OverviewUseCase: паспорт месяца в строке', () => {
         const roster = [10, 20];
         return new OverviewUseCase(
             settingsLoaderWith(),
-            { resolve: jest.fn().mockResolvedValue(roster) } as never,
+            scopeResolverWith(roster).resolver,
             callsLoaderWith(twoManagersRows()).loader,
             {
                 loadKpiMonths: jest.fn().mockResolvedValue(emptyKpi(roster)),

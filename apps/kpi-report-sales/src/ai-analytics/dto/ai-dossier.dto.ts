@@ -118,7 +118,10 @@ export class AiDossierDto {
     passport: AiDossierPassportDto | null;
 
     @ApiProperty({
-        description: 'Ряды недель и месяцев; null — см. reasons.',
+        description:
+            'Ряды недель и месяцев: объём разборов, разборы до даты ' +
+            'сравнимости и средняя оценка каждого периода; неделя и месяц ' +
+            'считаются одной функцией по одним звонкам. null — см. reasons.',
         type: AiDossierSeriesDto,
         nullable: true,
     })
@@ -127,7 +130,8 @@ export class AiDossierDto {
     @ApiProperty({
         description:
             'Тренды метрик менеджера за последнюю неделю окна (поток П1); ' +
-            'null — снапшота трендов нет или данных мало, см. reasons.',
+            'null — снапшота трендов нет или разобранных звонков за окно ' +
+            '(сумма n месяцев ряда) меньше порога n_min_none, см. reasons.',
         type: AiManagerTrendsDto,
         nullable: true,
     })
@@ -164,7 +168,12 @@ export class AiDossierDto {
 
     @ApiProperty({
         description:
-            'Возражения менеджера за окно по категориям; null — см. reasons.',
+            'Возражения менеджера за окно по категориям — по тем же ' +
+            'разобранным звонкам, что ряды недель (тип известен, звонок не ' +
+            'короче порога и не раньше даты сравнимости). Доля отработанных ' +
+            'handledRatePct пересчитана по окну из счётчиков недель; если в ' +
+            'окне есть недели старого расчёта без счётчиков, доля пустая с ' +
+            'причиной legacy-snapshot. null — см. reasons.',
         type: [AiObjectionCategoryDto],
         nullable: true,
     })

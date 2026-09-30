@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
 import { DigestItem } from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_NOTIFY_TAG_PREFIX } from '../constants/ai-analytics.const';
+import { UserNamesReader } from '../domain/loaders/user-names.reader';
 import { AiAgendaDto } from '../dto/ai-agenda.dto';
 import {
     buildDigestAllMessage,
@@ -106,28 +107,24 @@ export class AiAnalyticsDeliveryService {
         );
     }
 
-    /** «Фамилия Имя» по bitrix-id; ошибка/пусто — id в карту не попадает. */
+    /**
+     * «Фамилия Имя» по bitrix-id пачкой: user.get по списку id — тот же
+     * читатель, что у сводного дайджеста (вызов на 50 id, а не на
+     * сотрудника). Ошибка или пустое имя — id в карту не попадает, подпись
+     * падает на «#id».
+     */
     async resolveUserNames(
         userIds: readonly string[],
     ): Promise<Map<string, string>> {
-        const names = new Map<string, string>();
-        for (const userId of userIds) {
-            try {
-                const response = await this.bitrix.user.get({ ID: userId });
-                const user = response?.result?.[0];
-                const name = [user?.LAST_NAME, user?.NAME]
-                    .filter((part): part is string => Boolean(part?.trim()))
-                    .join(' ');
-                if (name) names.set(userId, name);
-            } catch (error) {
-                this.logger.warn(
-                    `Имя пользователя ${userId} не прочитано: ${(error as Error).message}`,
-                );
-            }
-        }
-        return names;
+        return new UserNamesReader(this.bitrix).read(userIds);
     }
 
+    /**
+     * Уведомление каждому получателю отдельно. Доставленным считается
+     * только тот, кому Битрикс вернул id уведомления: ответ `result: false`
+     * (уведомление не создано) — не доставка, иначе рассылка пометилась бы
+     * отправленной и больше в этот день не повторялась.
+     */
     private async notify(
         userIds: number[],
         message: string,
@@ -136,12 +133,18 @@ export class AiAnalyticsDeliveryService {
         const delivered: number[] = [];
         for (const userId of userIds) {
             try {
-                await this.bitrix.imNotify.systemAdd({
+                const response = await this.bitrix.imNotify.systemAdd({
                     USER_ID: userId,
                     MESSAGE: message,
                     TAG: tag,
                 });
-                delivered.push(userId);
+                if (isNotifyCreated(response?.result)) {
+                    delivered.push(userId);
+                } else {
+                    this.logger.warn(
+                        `Уведомление ${tag} не создано для пользователя ${userId}: Битрикс вернул ${String(response?.result)}`,
+                    );
+                }
             } catch (error) {
                 this.logger.warn(
                     `Уведомление ${tag} не доставлено пользователю ${userId}: ${(error as Error).message}`,
@@ -150,4 +153,13 @@ export class AiAnalyticsDeliveryService {
         }
         return delivered;
     }
+}
+
+/**
+ * Ответ im.notify.system.add: id созданного уведомления (по документации
+ * — число, может прийти и true); false и пустой ответ — уведомление не
+ * создано.
+ */
+function isNotifyCreated(result: unknown): boolean {
+    return (typeof result === 'number' && result > 0) || result === true;
 }

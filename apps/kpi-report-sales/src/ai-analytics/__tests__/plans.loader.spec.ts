@@ -4,6 +4,7 @@ import type { AiPlansResult } from '../domain/loaders/plans.types';
 import {
     PLAN_INDICATOR_CODE_LIST,
     PLAN_INDICATOR_CODES,
+    PLAN_INDICATORS,
     planIndicatorUfName,
 } from '../../plans';
 import { cacheMock, managersMock } from './fixtures/kpi-loader.fixture';
@@ -22,7 +23,51 @@ function userRow(id: number, values: Partial<Record<string, unknown>>) {
     };
 }
 
-function makeLoader(userGet: jest.Mock, preset: Record<string, unknown> = {}) {
+/** Строка-сентинел конфига планов: презентации — на квартал, «План продаж». */
+const STORED_CONFIG = {
+    version: 1,
+    updatedAt: '2026-09-01T00:00:00.000Z',
+    config: {
+        version: 1,
+        indicators: [
+            {
+                code: PLAN_INDICATOR_CODES.presentations_done,
+                enabled: true,
+                customName: 'Презентации РОПа',
+                periodType: 'quarter',
+            },
+            {
+                code: PLAN_INDICATOR_CODES.sales_count,
+                enabled: true,
+                customName: null,
+                periodType: 'month',
+            },
+        ],
+    },
+};
+
+/** Prisma для PlansConfigService: портал + строка конфига (или ошибка). */
+function prismaMock(options: { fail?: boolean } = {}) {
+    return {
+        portal: {
+            findFirst: options.fail
+                ? jest.fn().mockRejectedValue(new Error('DB down'))
+                : jest.fn().mockResolvedValue({ id: 7, domain: DOMAIN }),
+        },
+        report_settings: {
+            findFirst: jest.fn().mockResolvedValue({
+                id: 1,
+                other: JSON.stringify(STORED_CONFIG),
+            }),
+        },
+    };
+}
+
+function makeLoader(
+    userGet: jest.Mock,
+    preset: Record<string, unknown> = {},
+    prisma = prismaMock(),
+) {
     const init = jest
         .fn()
         .mockResolvedValue({ bitrix: { user: { get: userGet } } });
@@ -32,6 +77,7 @@ function makeLoader(userGet: jest.Mock, preset: Record<string, unknown> = {}) {
         { init } as never,
         cache.service,
         managers.loader,
+        prisma as never,
     );
     return { loader, init, cache, managers };
 }
@@ -77,13 +123,41 @@ describe('PlansLoader', () => {
         );
     });
 
+    it('конфиг планов портала: весь каталог, сохранённое поверх дефолтов; строки несут его же', async () => {
+        const { loader } = makeLoader(
+            jest.fn().mockResolvedValue({ result: [] }),
+        );
+
+        const result = await loader.loadPlans(DOMAIN, [1]);
+
+        expect(result.config).toHaveLength(PLAN_INDICATORS.length);
+        expect(
+            result.config?.find(
+                item => item.code === PLAN_INDICATOR_CODES.presentations_done,
+            ),
+        ).toEqual({
+            code: PLAN_INDICATOR_CODES.presentations_done,
+            enabled: true,
+            customName: 'Презентации РОПа',
+            periodType: 'quarter',
+        });
+        // невключённый в сохранённом конфиге показатель — выключен, месяц
+        expect(
+            result.config?.find(
+                item => item.code === PLAN_INDICATOR_CODES.calls_done,
+            ),
+        ).toMatchObject({ enabled: false, periodType: 'month' });
+        expect(result.managers[0].config).toEqual(result.config);
+    });
+
     it('попадание в кэш — Bitrix не дёргается, fromCache = true', async () => {
         const cached: AiPlansResult = {
             managerIds: [1],
             fromCache: false,
             ok: true,
             error: null,
-            managers: [toManagerTargets(1, undefined)],
+            config: [],
+            managers: [toManagerTargets(1, undefined, [])],
         };
         const { loader, init } = makeLoader(jest.fn(), {
             [buildPlansKey(DOMAIN, '1')]: cached,
@@ -94,6 +168,45 @@ describe('PlansLoader', () => {
         expect(init).not.toHaveBeenCalled();
         expect(result.fromCache).toBe(true);
         expect(result.managers[0].managerId).toBe(1);
+    });
+
+    it('запись кэша старой формы (без конфига) не отдаётся — планы перечитываются', async () => {
+        const stale: AiPlansResult = {
+            managerIds: [1],
+            fromCache: false,
+            ok: true,
+            error: null,
+            managers: [toManagerTargets(1, undefined)],
+        };
+        const userGet = jest.fn().mockResolvedValue({ result: [] });
+        const { loader } = makeLoader(userGet, {
+            [buildPlansKey(DOMAIN, '1')]: stale,
+        });
+
+        const result = await loader.loadPlans(DOMAIN, [1]);
+
+        expect(userGet).toHaveBeenCalledTimes(1);
+        expect(result.fromCache).toBe(false);
+        expect(Array.isArray(result.config)).toBe(true);
+    });
+
+    it('ошибка конфига — fail-open: цели есть, config = null, кэш не пишется', async () => {
+        const userGet = jest.fn().mockResolvedValue({
+            result: [userRow(1, { [PLAN_INDICATOR_CODES.sales_count]: 3 })],
+        });
+        const { loader, cache } = makeLoader(
+            userGet,
+            {},
+            prismaMock({ fail: true }),
+        );
+
+        const result = await loader.loadPlans(DOMAIN, [1]);
+
+        expect(result.ok).toBe(true);
+        expect(result.config).toBeNull();
+        expect(result.managers[0].sales).toBe(3);
+        expect(result.managers[0].config).toBeUndefined();
+        expect(cache.setJson).not.toHaveBeenCalled();
     });
 
     it('ошибка Bitrix — fail-open: ok=false, error, цели null, кэш не пишется', async () => {
@@ -110,7 +223,9 @@ describe('PlansLoader', () => {
             error: 'ACCESS_DENIED',
             fromCache: false,
         });
-        expect(result.managers).toEqual([toManagerTargets(3, undefined)]);
+        expect(result.managers[0]).toMatchObject(
+            toManagerTargets(3, undefined),
+        );
         expect(cache.setJson).not.toHaveBeenCalled();
     });
 });

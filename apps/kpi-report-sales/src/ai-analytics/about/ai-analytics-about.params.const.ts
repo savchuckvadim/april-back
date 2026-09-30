@@ -8,8 +8,9 @@ import type { AiAnalyticsParamCode } from '@lib/sales-ai-analytics';
 
 /**
  * Коды, общие для всех ручек: порог разбора, пороги «мало данных» и
- * доверия (`AI_ANALYTICS_THRESHOLDS`), контрольная карта, гейт совета,
- * привязка звонков к сделкам.
+ * доверия (`AI_ANALYTICS_THRESHOLDS`), контрольная карта и порог строки
+ * сотрудника пульса (оба живут рядом с порогом длительности, который
+ * читает матрица каждой ручки), гейт совета, привязка звонков к сделкам.
  */
 export const AI_ABOUT_SHARED_PARAMS = [
     'golden_kappa_min',
@@ -19,6 +20,7 @@ export const AI_ABOUT_SHARED_PARAMS = [
     'n_min_ok_score',
     'n_min_ok_rate',
     'n_min_rating',
+    'pulse_manager_min_n',
     'trend_window_calls',
     'xmr_sigma',
     'xmr_run_length',

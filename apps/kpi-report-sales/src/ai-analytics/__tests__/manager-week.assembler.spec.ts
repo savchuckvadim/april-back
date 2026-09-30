@@ -214,6 +214,7 @@ describe('Порог длительности по типам звонков', (
         expect(
             periodMatrixOptions({ comparableFrom: null, timeZone: 'UTC' }),
         ).toEqual({ timeZone: 'UTC' });
+        // Граница недели и месяца — разрыв ряда настройками, по дню звонка.
         expect(
             periodMatrixOptions({
                 minDurationSecByType: byType,
@@ -222,9 +223,54 @@ describe('Порог длительности по типам звонков', (
             }),
         ).toEqual({
             minDurationSecByType: byType,
-            comparableFrom: '2026-09-01',
+            seriesBreakFrom: '2026-09-01',
             timeZone: 'UTC',
         });
+    });
+});
+
+/**
+ * Возражения недели считаются по тем же звонкам, что её n (досье,
+ * 30.09.2026): срез строится опциями матрицы периода.
+ */
+describe('Возражения недели — по тем же звонкам, что n', () => {
+    const priced = (id: string, overrides: Partial<DatedLiteRow> = {}) =>
+        callRow(id, {
+            objections: [
+                {
+                    category: 'price',
+                    quote: null,
+                    handled: true,
+                    outcome: 'continued',
+                },
+            ],
+            ...overrides,
+        });
+
+    it('звонок до границы сравнимости и звонок без типа в срез не попадают', () => {
+        const assembly = input(
+            [
+                priced('new'),
+                priced('old', {
+                    callStartedAt: new Date('2026-08-25T09:00:00Z'),
+                }),
+                priced('untyped', { callType: null }),
+            ],
+            { comparableFrom: '2026-08-31' },
+        );
+
+        const payload = assembly.rows[0].payload;
+        expect(payload.n).toBe(1);
+        expect(payload.nBeforeComparable).toBe(1);
+        expect(payload.objections).toEqual([
+            expect.objectContaining({
+                category: 'price',
+                n: 1,
+                calls: 1,
+                handled: 1,
+                handledKnown: 1,
+            }),
+        ]);
     });
 });
 

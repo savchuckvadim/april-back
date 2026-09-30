@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MetricDto } from './metric.dto';
 
 /**
@@ -121,7 +121,12 @@ export class AiDossierSeriesPointDto {
     periodKey: string;
 
     @ApiProperty({
-        description: 'Разобранных сравнимых звонков периода.',
+        description:
+            'Разобранных звонков периода, которые идут в сравнение: есть ' +
+            'разбор, известны сотрудник и тип звонка, звонок не короче ' +
+            'порога длительности и не раньше даты сравнимости. У месяцев ' +
+            'старого расчёта (до 30.09.2026) число собрано из разбивки по ' +
+            'типам звонков.',
         type: Number,
         example: 14,
     })
@@ -129,11 +134,35 @@ export class AiDossierSeriesPointDto {
 
     @ApiProperty({
         description:
-            'Средняя оценка периода, шкала 1–10; value null при «мало ' +
-            'данных» (n ниже порога реестра).',
+            'Разобранных звонков периода до даты сравнимости: они разобраны ' +
+            'по прежним правилам и не входят ни в n, ни в оценку. У месяцев ' +
+            'старого расчёта — 0.',
+        type: Number,
+        example: 3,
+    })
+    nBeforeComparable: number;
+
+    @ApiProperty({
+        description:
+            'Средняя оценка периода, шкала 1–10: только звонки с баллом, ' +
+            'которые относятся к контакту, презентации или закрытию, поэтому ' +
+            'её объём score.n бывает меньше n (звонки «прочее» и без балла в ' +
+            'оценку не входят). value null — оценённых звонков меньше порога ' +
+            'n_min_none (причина not-enough-data) либо месяц посчитан старым ' +
+            'расчётом, где оценка не сохранялась (причина legacy-snapshot).',
         type: MetricDto,
     })
     score: MetricDto;
+
+    @ApiPropertyOptional({
+        description:
+            'Только у недель: в неделе разборы разных версий (промпт, ' +
+            'рубрика, классификатор) — сравнивать её с соседними неделями ' +
+            'нужно осторожно. У месяцев поля нет.',
+        type: Boolean,
+        example: false,
+    })
+    versionsMixed?: boolean;
 }
 
 /** Ряды досье: недели и месяцы по возрастанию ключа периода. */

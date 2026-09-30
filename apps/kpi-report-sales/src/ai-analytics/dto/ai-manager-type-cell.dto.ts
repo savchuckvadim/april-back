@@ -154,7 +154,8 @@ export class AiCellKpiDto {
 
     @ApiPropertyOptional({
         description:
-            'План CRM по коду за период (call_plan, presentation_*_plan).',
+            'План CRM по коду за период — сколько менеджер сам запланировал ' +
+            'в CRM (call_plan, presentation_*_plan); не план руководителя.',
         type: Number,
         example: 30,
     })
@@ -162,10 +163,14 @@ export class AiCellKpiDto {
 
     @ApiPropertyOptional({
         description:
-            'План руководителя (UF_USR_A_SALES_PLAN_*) для кода: calls_done → ' +
-            'call, presentations_done → presentation_uniq.',
+            'План руководителя на период обзора (поле «План: …» сотрудника, ' +
+            'пересчитан на даты обзора, как в блоке «Планы») для кода, чей ' +
+            'факт — строка отчёта KPI «{код}_done» по каталогу планов: ' +
+            'calls_done → call, presentations_done → presentation, ' +
+            'sales_count → ev_success. Только включённые в настройках планов ' +
+            'показатели с заданным значением больше нуля.',
         type: Number,
-        example: 40,
+        example: 89.16,
     })
     planHead?: number;
 }
@@ -263,8 +268,11 @@ export class AiManagerTypeCellDto {
 
     @ApiProperty({
         description:
-            'Разобранных сравнимых звонков типа (с разбором, менеджером, не ' +
-            'короче 300 с, не раньше comparableFrom).',
+            'Разобранных сравнимых звонков типа: с разбором, менеджером, не ' +
+            'короче порога длительности своего типа (по умолчанию 300 с). ' +
+            'Сравнимость определяется версией самого разбора (набор версий ' +
+            'разбора не старше границы сравнимости), а не датой звонка; у ' +
+            'разбора без версий — по дню звонка.',
         type: Number,
         example: 18,
     })
@@ -272,7 +280,10 @@ export class AiManagerTypeCellDto {
 
     @ApiProperty({
         description:
-            'Звонков до comparableFrom (в оценки не смешиваются, план 5.4).',
+            'Звонков, не вошедших в оценки по сравнимости (план 5.4): разбор ' +
+            'старой версии (набор версий старше границы сравнимости; без ' +
+            'версий — по дню звонка) либо звонок раньше разрыва ряда ' +
+            'настройками портала. В оценки не смешиваются.',
         type: Number,
         example: 4,
     })

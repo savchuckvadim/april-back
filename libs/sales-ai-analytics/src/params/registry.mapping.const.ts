@@ -222,6 +222,7 @@ export const AI_ANALYTICS_PARAM_MAPPING: Readonly<
         'n_min_ok_score',
         'n_min_ok_rate',
         'n_min_rating',
+        'pulse_manager_min_n',
     ],
     z_compare: ['z_compare'],
     delta_prac: ['delta_prac_pct', 'delta_prac_score'],

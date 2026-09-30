@@ -101,9 +101,11 @@ export const noDataRule: AttentionRule = (manager, rules) => {
  * discipline — сделано < disciplineMinShare плана CRM при плане ≥
  * disciplineMinPlan (звонки и/или презентации); «закрывателю» не ставится.
  *
- * Заголовок словами, без «CRM» и кодов (правило владельца): «План по
- * звонкам выполнен на 20 % (4 из 20), по презентациям — на 42 % (5 из
- * 12)» — проценты и «сделано из плана» остаются для факт-чека резюме.
+ * План CRM — самоотчёт менеджера (сколько он сам запланировал в CRM), а
+ * не план руководителя, поэтому заголовок так и говорит (решение
+ * владельца 30.09.2026): «Из запланированных в CRM звонков сделано 20 %
+ * (4 из 20), презентаций — 42 % (5 из 12)» — проценты и «сделано из
+ * запланированного» остаются для факт-чека резюме, кодов в тексте нет.
  */
 export const disciplineRule: AttentionRule = (manager, rules) => {
     if (isCloser(manager)) {
@@ -113,13 +115,13 @@ export const disciplineRule: AttentionRule = (manager, rules) => {
     const parts = [
         {
             code: 'call',
-            title: 'по звонкам',
+            title: 'звонков',
             plan: discipline.callPlan,
             done: discipline.callDone,
         },
         {
             code: 'presentation',
-            title: 'по презентациям',
+            title: 'презентаций',
             plan: discipline.presentationPlan,
             done: discipline.presentationDone,
         },
@@ -137,8 +139,8 @@ export const disciplineRule: AttentionRule = (manager, rules) => {
         `${pct(part.share)} (${part.done} из ${part.plan})`;
     const [first, ...rest] = parts;
     const headline =
-        `План ${first.title} выполнен на ${doneOf(first)}` +
-        rest.map(part => `, ${part.title} — на ${doneOf(part)}`).join('');
+        `Из запланированных в CRM ${first.title} сделано ${doneOf(first)}` +
+        rest.map(part => `, ${part.title} — ${doneOf(part)}`).join('');
     return {
         managerId: manager.managerId,
         signal: 'discipline',

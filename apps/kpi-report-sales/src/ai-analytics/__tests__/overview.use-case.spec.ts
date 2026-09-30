@@ -1,79 +1,22 @@
 import { BadRequestException } from '@nestjs/common';
-import { OverviewUseCase } from '../domain/use-cases/overview.use-case';
 import { AI_ANALYTICS_CALC_VERSION } from '../constants/ai-overview.const';
 import {
-    callsLoaderWith,
-    settingsLoaderWith,
-} from './fixtures/lite-row.fixture';
-import {
-    emptyFinance,
-    emptyKpi,
-    emptyPlans,
     OVERVIEW_DOMAIN,
     OVERVIEW_FROM,
     OVERVIEW_NOW,
     OVERVIEW_TO,
     twoManagersRows,
 } from './fixtures/overview.fixture';
-import { smartLinksWith } from './fixtures/smart-links.fixture';
+import {
+    makeOverviewUseCase,
+    OVERVIEW_FEEDBACK_AT as IN_PERIOD,
+} from './fixtures/overview-use-case.fixture';
 
-/** Реакция внутри периода обзора (10.08–06.09). */
-const IN_PERIOD = new Date('2026-09-01T10:00:00Z');
-
-function makeUseCase(
+const makeUseCase = (
     rows = twoManagersRows(),
     roster = [10, 20],
     disagreements = 0,
-) {
-    const calls = callsLoaderWith(rows);
-    const managers = { resolve: jest.fn().mockResolvedValue(roster) };
-    const kpi = {
-        loadKpiMonths: jest.fn().mockResolvedValue(emptyKpi(roster)),
-    };
-    const finance = {
-        loadFinance: jest.fn().mockResolvedValue(emptyFinance(roster)),
-    };
-    const plans = {
-        loadPlans: jest.fn().mockResolvedValue(emptyPlans(roster)),
-    };
-    const org = { load: jest.fn().mockResolvedValue(new Map()) };
-    const levels = {
-        loadLevels: jest
-            .fn()
-            .mockResolvedValue(
-                new Map([
-                    [10, { managerId: 10, level: 'senior', since: null }],
-                ]),
-            ),
-    };
-    const feedback = {
-        listInPeriod: jest.fn().mockResolvedValue(
-            Array.from({ length: disagreements }, (_, index) => ({
-                id: String(index),
-                kind: 'disagree',
-                object: 'call:x',
-                managerId: '10',
-                transcriptionId: null,
-                requesterUserId: null,
-                reason: null,
-                createdAt: IN_PERIOD,
-            })),
-        ),
-    };
-    const useCase = new OverviewUseCase(
-        settingsLoaderWith(),
-        managers as never,
-        calls.loader,
-        kpi as never,
-        finance as never,
-        plans as never,
-        org as never,
-        levels as never,
-        feedback as never,
-        smartLinksWith().loader,
-    );
-    return { useCase, calls, managers, kpi, finance, plans, feedback };
-}
+) => makeOverviewUseCase({ rows, roster, disagreements });
 
 const input = { domain: OVERVIEW_DOMAIN, from: OVERVIEW_FROM, to: OVERVIEW_TO };
 
@@ -165,7 +108,7 @@ describe('OverviewUseCase', () => {
     });
 
     it('loader’ы получают ростер, forceRefresh и now; звонки — за UTC-окно периода в TZ портала', async () => {
-        const { useCase, calls, kpi, finance, plans, managers } = makeUseCase(
+        const { useCase, calls, kpi, finance, plans, roster } = makeUseCase(
             twoManagersRows(),
             [10, 20],
             2,
@@ -174,10 +117,8 @@ describe('OverviewUseCase', () => {
             { ...input, managerIds: [20, 10, 10], forceRefresh: true },
             { now: OVERVIEW_NOW },
         );
-        expect(managers.resolve).toHaveBeenCalledWith(
-            OVERVIEW_DOMAIN,
-            [20, 10, 10],
-        );
+        // Явный фильтр нормализуется резолвером — ростер ОП не читается.
+        expect(roster).not.toHaveBeenCalled();
         expect(kpi.loadKpiMonths).toHaveBeenCalledWith(
             OVERVIEW_DOMAIN,
             OVERVIEW_FROM,

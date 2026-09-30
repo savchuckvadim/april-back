@@ -59,6 +59,17 @@ export interface PlanIndicatorDef {
     defaultName: string;
 }
 
+/** Настройка показателя на портале (конфиг планов, строка-сентинел). */
+export interface PlanIndicatorSetting {
+    code: PlanIndicatorCode;
+    /** Показатель включён — виден в блоке «Планы» и в AI-вкладке. */
+    enabled: boolean;
+    /** Своё название портала; null/пусто — defaultName каталога. */
+    customName: string | null;
+    /** На какой период руководитель задаёт значение плана. */
+    periodType: PlanPeriodType;
+}
+
 /** kpi-ключ, прижатый к FilterInnerCode (опечатка не соберётся). */
 const kpiKey = (key: FilterInnerCode): string => key;
 /** Ключ бакета звонков, прижатый к CallingDuration. */

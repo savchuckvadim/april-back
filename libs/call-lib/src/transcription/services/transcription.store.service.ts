@@ -238,6 +238,16 @@ export class TranscriptionStoreService {
         return rows.map(row => this.toPipelineLiteView(row));
     }
 
+    /**
+     * С какого момента на портале есть готовые разборы автоконвейера:
+     * самая ранняя done-строка домена по времени звонка (без него — по
+     * created_at). null — готовых строк нет. Витрина AI-аналитики отличает
+     * по нему «в этом периоде разбор ещё не шёл» от «звонки не попали».
+     */
+    async findFirstDoneAt(domain: string): Promise<Date | null> {
+        return this.transcriptionRepository.findFirstDonePipelineAt(domain);
+    }
+
     /** Строка по id в pipeline-представлении (с dedup/call-полями). */
     async findPipelineById(id: string): Promise<TranscriptionPipelineView> {
         const row = await this.transcriptionRepository.findById(id);

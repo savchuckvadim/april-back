@@ -10,8 +10,8 @@ import {
     buildManagerTypeMatrix,
     buildObjectionsSlice,
     ManagerTypeMatrix,
+    ManagerTypeMatrixOptions,
     MatrixCallRow,
-    MatrixOptions,
     ObjectionsSlice,
     TypeTotalsCell,
 } from '@lib/sales-ai-analytics';
@@ -63,9 +63,15 @@ export function otherSharePct(matrix: ManagerTypeMatrix): number {
     return round1((matrix.noBucket / matrix.analyzed) * 100);
 }
 
+/**
+ * Матрица, срез возражений и доля «прочего». Срез возражений получает те
+ * же порог длительности по типам и границы сравнимости (версия разбора,
+ * разрыв ряда, TZ портала), что и матрица: «N возражений» считаются по
+ * тем же разборам, что её n.
+ */
 export function assembleMatrix(
     rows: readonly DatedLiteRow[],
-    options: MatrixOptions,
+    options: ManagerTypeMatrixOptions,
 ): MatrixAssembly {
     const matrixRows = rows.map(toMatrixRow);
     const matrix = buildManagerTypeMatrix(matrixRows, options);
@@ -73,6 +79,13 @@ export function assembleMatrix(
         matrix,
         objections: buildObjectionsSlice(matrixRows, {
             shortCallSec: options.thresholds?.shortCallSec,
+            ...(options.minDurationSecByType
+                ? { minDurationSecByType: options.minDurationSecByType }
+                : {}),
+            comparableFrom: options.comparableFrom,
+            comparableVersionFrom: options.comparableVersionFrom,
+            seriesBreakFrom: options.seriesBreakFrom,
+            timeZone: options.timeZone,
         }),
         otherSharePct: otherSharePct(matrix),
     };
@@ -88,7 +101,7 @@ export function assembleDepartmentTotals(
     rows: readonly DatedLiteRow[],
     managerIds: readonly string[],
     org: ReadonlyMap<number, ManagerOrg>,
-    options: MatrixOptions,
+    options: ManagerTypeMatrixOptions,
 ): DepartmentTotals[] {
     const groups = new Map<number | null, string[]>();
     for (const managerId of managerIds) {

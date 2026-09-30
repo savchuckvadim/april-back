@@ -8,6 +8,7 @@ import { ByTypeUseCase } from '../domain/use-cases/by-type.use-case';
 import { OverviewLookupUseCase } from '../domain/use-cases/overview-lookup.use-case';
 import { AiOverviewCacheEntry } from '../dto/ai-overview.dto';
 import {
+    callsOf,
     OVERVIEW_DOMAIN,
     OVERVIEW_FROM,
     OVERVIEW_TO,
@@ -15,7 +16,12 @@ import {
     twoManagersRows,
 } from './fixtures/overview.fixture';
 import { settingsLoaderWith } from './fixtures/lite-row.fixture';
+import {
+    callReportWith,
+    scopeResolverWith,
+} from './fixtures/manager-scope.fixture';
 import { AI_ANALYTICS_SELF_VIEW_FORBIDDEN_MESSAGE } from '../constants/ai-analytics.const';
+import type { AiCallReportStatus } from '../domain/loaders/settings.loader';
 import type { SmartLinkLoader } from '../domain/loaders/smart-link.loader';
 
 /** Ссылки на разборы карточек «Внимания» здесь не проверяются — пустая карта. */
@@ -49,6 +55,8 @@ interface Harness {
     jobState?: string;
     /** ai_analytics_self_view_enabled портала (по умолчанию выключена). */
     selfViewEnabled?: boolean;
+    /** Статус разбора звонков портала; нет — статус не прочитан. */
+    callReport?: AiCallReportStatus;
 }
 
 function makeController({
@@ -56,12 +64,17 @@ function makeController({
     cached,
     jobState,
     selfViewEnabled = false,
+    callReport,
 }: Harness) {
+    const settings = settingsLoaderWith({
+        selfViewEnabled,
+        ...(callReport ? { callReport } : {}),
+    });
     // resolve подменён; resolveViewer — настоящий: правило self_view проверяется.
     const accessService = new RequesterAccessService(
         {} as never,
         {} as never,
-        settingsLoaderWith({ selfViewEnabled }),
+        settings,
     );
     jest.spyOn(accessService, 'resolve').mockResolvedValue(access);
 
@@ -78,9 +91,10 @@ function makeController({
                     : null,
             ),
     };
-    const managers = { resolve: jest.fn().mockResolvedValue([10, 20]) };
+    const scope = scopeResolverWith([10, 20]);
     const lookup = new OverviewLookupUseCase(
-        managers as never,
+        settings,
+        scope.resolver,
         cache as never,
         queue as never,
     );
@@ -92,7 +106,7 @@ function makeController({
         new ByTypeUseCase(lookup),
         settingsSave as never,
     );
-    return { controller, cache, queue, managers, settingsSave };
+    return { controller, cache, queue, roster: scope.roster, settingsSave };
 }
 
 const ready = (): AiOverviewCacheEntry => ({
@@ -201,7 +215,7 @@ describe('AiAnalyticsOverviewController', () => {
     });
 
     it('overview: менеджер без headOf видит только свои строки; managerIds нормализуются в ключ', async () => {
-        const { controller, managers } = makeController({
+        const { controller, roster } = makeController({
             access: manager,
             selfViewEnabled: true,
             cached: ready(),
@@ -211,10 +225,8 @@ describe('AiAnalyticsOverviewController', () => {
             requesterUserId: '20',
             managerIds: [20, 10],
         });
-        expect(managers.resolve).toHaveBeenCalledWith(
-            OVERVIEW_DOMAIN,
-            [20, 10],
-        );
+        // Явный фильтр нормализуется в ключ без чтения ростера ОП.
+        expect(roster).not.toHaveBeenCalled();
         expect(response.requestKey).toBe(KEY);
         expect(response.data?.managers.map(row => row.managerId)).toEqual([
             '20',
@@ -293,6 +305,98 @@ describe('AiAnalyticsOverviewController', () => {
             controller.getByType({ ...own, callType: 'presentation' }),
         ).rejects.toBeInstanceOf(ForbiddenException);
         expect(cache.getJson).not.toHaveBeenCalled();
+    });
+
+    it('список разбора: ключ по пересечению, meta.scope — по фильтру запроса', async () => {
+        const pilotKey = buildOverviewKey(
+            OVERVIEW_DOMAIN,
+            OVERVIEW_FROM,
+            OVERVIEW_TO,
+            '10',
+            false,
+        );
+        const { controller, cache, queue } = makeController({
+            access: leader,
+            callReport: callReportWith([10]),
+            cached: {
+                status: 'ready',
+                data: overviewFixture(callsOf('10', 10), [10]),
+            },
+        });
+        const response = await controller.getOverview({
+            ...base,
+            managerIds: [10, 20, 30],
+        });
+
+        expect(response.requestKey).toBe(pilotKey);
+        expect(cache.getJson).toHaveBeenCalledWith(pilotKey);
+        expect(queue.dispatch).not.toHaveBeenCalled();
+        expect(response.data?.managers.map(row => row.managerId)).toEqual([
+            '10',
+        ]);
+        expect(response.data?.meta.scope).toEqual({
+            pilotActive: true,
+            shownManagers: 1,
+            hiddenByPilot: 2,
+        });
+
+        // Промах: джоба получает уже суженный список, jobId = тот же ключ.
+        const cold = makeController({
+            access: leader,
+            callReport: callReportWith([10]),
+        });
+        await cold.controller.getOverview({ ...base, managerIds: [20, 10] });
+        expect(cold.queue.dispatch).toHaveBeenCalledWith(
+            'sales-kpi-report',
+            'sales-ai-analytics-overview',
+            expect.objectContaining({ managerIds: [10], requestKey: pilotKey }),
+            pilotKey,
+            expect.any(Object),
+        );
+    });
+
+    it('пустое пересечение → ready с пустым обзором: без джобы и кэша, ключ с маркером none', async () => {
+        const { controller, cache, queue } = makeController({
+            access: leader,
+            callReport: callReportWith([10]),
+        });
+        const response = await controller.getOverview({
+            ...base,
+            managerIds: [20, 30],
+        });
+
+        expect(response.status).toBe('ready');
+        expect(response.requestKey).toBe(
+            buildOverviewKey(
+                OVERVIEW_DOMAIN,
+                OVERVIEW_FROM,
+                OVERVIEW_TO,
+                'none',
+                false,
+            ),
+        );
+        expect(response.requestKey).toContain(':none:');
+        expect(response.data?.managers).toEqual([]);
+        expect(response.data?.meta.scope).toEqual({
+            pilotActive: true,
+            shownManagers: 0,
+            hiddenByPilot: 2,
+        });
+        expect(cache.getJson).not.toHaveBeenCalled();
+        expect(queue.dispatch).not.toHaveBeenCalled();
+
+        // Срез by-type по тому же пустому периметру: пустые строки и нулевое покрытие.
+        const slice = await controller.getByType({
+            ...base,
+            managerIds: [20, 30],
+            callType: 'all',
+        });
+        expect(slice.data?.wide).toEqual([]);
+        expect(slice.data?.coverage).toMatchObject({
+            analyzedCalls: 0,
+            excludedShort: 0,
+            excludedNoType: 0,
+        });
     });
 
     it('settings/save: менеджеру и руководителю группы → 403, cup|op — через use-case', async () => {

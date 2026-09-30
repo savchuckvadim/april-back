@@ -18,8 +18,10 @@ import {
     toSeries,
     toSeriesPoints,
 } from '../domain/assembler/dossier.assembler';
+import { ratePctMetric } from '@lib/sales-ai-analytics';
 import {
     emptyMetric,
+    legacyMetric,
     scoreMetricOf,
     toObjectionCategories,
     toPassport,
@@ -175,7 +177,7 @@ describe('dossier.reader: чужие нагрузки читаются стру�
         expect(toPassport(undefined, '512')).toBeNull();
     });
 
-    it('возражения окна складываются по категории, доля по окну — честный none', () => {
+    it('недели старого расчёта без счётчиков: категории складываются, доля по окну — пустая с причиной legacy-snapshot', () => {
         const objection = (n: number, calls: number, converted: number) => ({
             category: 'price',
             n,
@@ -195,7 +197,7 @@ describe('dossier.reader: чужие нагрузки читаются стру�
                 category: 'price',
                 n: 8,
                 calls: 6,
-                handledRatePct: emptyMetric(),
+                handledRatePct: legacyMetric(),
                 outcomes: {
                     continued: 0,
                     converted: 3,
@@ -221,6 +223,58 @@ describe('dossier.reader: чужие нагрузки читаются стру�
             toObjectionCategories([view('w', { objections: [] })]),
         ).toBeNull();
     });
+
+    it('счётчики handled / handledKnown недель складываются, доля пересчитывается по окну', () => {
+        const objection = (handled: number, handledKnown: number) => ({
+            category: 'price',
+            n: handledKnown,
+            calls: handledKnown,
+            handled,
+            handledKnown,
+            handledRatePct: ratePctMetric(handled, handledKnown),
+            outcomes: { continued: 0, converted: 0, disengaged: 0, other: 0 },
+        });
+        const [price] =
+            toObjectionCategories([
+                view('2026-W37', { objections: [objection(4, 5)] }),
+                view('2026-W38', { objections: [objection(2, 5)] }),
+            ]) ?? [];
+
+        // 6 отработанных из 10 с известным исходом — 60 %, n = 10 ≥ 8.
+        expect(price.n).toBe(10);
+        expect(price.handledRatePct.n).toBe(10);
+        expect(price.handledRatePct.value).toBeCloseTo(60, 9);
+        expect(price.handledRatePct.confidence.level).toBe('low');
+        // Одна неделя: доля той же функцией из её счётчиков.
+        const [single] =
+            toObjectionCategories([
+                view('2026-W38', { objections: [objection(2, 5)] }),
+            ]) ?? [];
+        expect(single.handledRatePct).toEqual(ratePctMetric(2, 5));
+    });
+
+    it('в окне есть неделя старого расчёта — доля по окну не выдумывается', () => {
+        const [price] =
+            toObjectionCategories([
+                view('2026-W37', {
+                    objections: [
+                        {
+                            category: 'price',
+                            n: 9,
+                            calls: 9,
+                            handled: 9,
+                            handledKnown: 9,
+                        },
+                    ],
+                }),
+                view('2026-W38', {
+                    objections: [{ category: 'price', n: 3, calls: 3 }],
+                }),
+            ]) ?? [];
+
+        expect(price.n).toBe(12);
+        expect(price.handledRatePct).toEqual(legacyMetric());
+    });
 });
 
 describe('dossier.assembler: ряды, своды и служебный блок', () => {
@@ -234,9 +288,34 @@ describe('dossier.assembler: ряды, своды и служебный блок
     });
 
     it('ряды null только когда нет ни недель, ни месяцев', () => {
+        const score = {
+            value: null,
+            n: 1,
+            confidence: { level: 'none', reason: 'not-enough-data' },
+        };
         expect(toSeries([], [])).toBeNull();
-        expect(toSeries([view('2026-W36', { n: 1 })], [])).toEqual({
-            weeks: [{ periodKey: '2026-W36', n: 1, score: emptyMetric() }],
+        expect(
+            toSeries(
+                [
+                    view('2026-W36', {
+                        n: 1,
+                        nBeforeComparable: 2,
+                        score,
+                        versionsMixed: true,
+                    }),
+                ],
+                [],
+            ),
+        ).toEqual({
+            weeks: [
+                {
+                    periodKey: '2026-W36',
+                    n: 1,
+                    nBeforeComparable: 2,
+                    score,
+                    versionsMixed: true,
+                },
+            ],
             months: [],
         });
     });

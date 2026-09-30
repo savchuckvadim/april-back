@@ -1,8 +1,11 @@
+import { Logger } from '@nestjs/common';
 import { DepartmentBitrixService } from '../services/department-bitrxi.service';
 
 interface Params {
     FILTER?: { UF_DEPARTMENT?: number };
     SELECT?: string[];
+    SORT?: string;
+    ORDER?: string;
     start?: number;
     START?: number;
 }
@@ -51,14 +54,20 @@ describe('DepartmentBitrixService: постраничное чтение', () =>
         // первая страница — с прежними параметрами, без смещения
         expect(first.start).toBeUndefined();
         expect(first.FILTER).toEqual({ UF_DEPARTMENT: 63, ACTIVE: true });
-        // вторая — тот же фильтр и select, смещение в нижнем регистре
+        // порядок по ID явно: иначе страницы по смещению могут съехать
+        expect([first.SORT, first.ORDER]).toEqual(['ID', 'ASC']);
+        // вторая — тот же фильтр, select и порядок, смещение в нижнем регистре
         expect(second.start).toBe(50);
         expect(second.START).toBeUndefined();
         expect(second.FILTER).toEqual(first.FILTER);
         expect(second.SELECT).toEqual(first.SELECT);
+        expect([second.SORT, second.ORDER]).toEqual(['ID', 'ASC']);
     });
 
-    it('смещение проигнорировано (снова первая страница) — обход останавливается без дублей', async () => {
+    it('смещение проигнорировано (снова первая страница) — обход останавливается без дублей и с warn', async () => {
+        const warn = jest
+            .spyOn(Logger.prototype, 'warn')
+            .mockImplementation(() => undefined);
         const firstPage = rows(1, 50);
         const call = jest.fn(() =>
             Promise.resolve({ result: firstPage, total: 54, next: 50 }),
@@ -68,6 +77,12 @@ describe('DepartmentBitrixService: постраничное чтение', () =>
 
         expect(result).toHaveLength(50);
         expect(call).toHaveBeenCalledTimes(2);
+        expect(warn).toHaveBeenCalledWith(
+            expect.stringContaining(
+                'user.get: страница start=50 без новых строк',
+            ),
+        );
+        warn.mockRestore();
     });
 
     it('next строкой («50») — тоже смещение следующей страницы', async () => {

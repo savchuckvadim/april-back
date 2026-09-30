@@ -12,6 +12,7 @@ import { defaultDefinitions } from '@lib/sales-ai-analytics/settings/ai-settings
 import {
     PulseUseCase,
     portalMinDurationByType,
+    pulseManagerMinN,
 } from '../domain/use-cases/pulse.use-case';
 import { AiAnalyticsParamsLoader } from '../domain/loaders/params.loader';
 import type { AiAnalyticsPortalSettings } from '../domain/loaders/settings.loader';
@@ -107,7 +108,7 @@ describe('PulseUseCase', () => {
         expect(await useCase.resolveEndDate('d', NOW)).toBe('2026-09-04');
     });
 
-    it('доля шага с датой = 30/40, менеджер с n ≥ 20 попадает в byManager', async () => {
+    it('доля шага с датой = 30/40, менеджер с n не меньше порога портала попадает в byManager', async () => {
         const rows = [
             ...windowRows(),
             // менеджер 20: 5 звонков — меньше managerMinN
@@ -133,6 +134,9 @@ describe('PulseUseCase', () => {
         expect(dto.byManager.map(row => row.managerId)).toEqual(['10']);
         expect(dto.byManager[0].analyzed).toBe(40);
         expect(dto.shortCallsSharePct).toBeCloseTo((1 / 46) * 100, 1);
+        // Пороги, по которым посчитан ответ, уходят витрине.
+        expect(dto.managerMinN).toBe(8);
+        expect(dto.minDurationSec).toBe(300);
     });
 
     it('alerts: риск-флаг, urgent и alert_sent из ais; handled — по alert_handled', async () => {
@@ -458,5 +462,76 @@ describe('PulseUseCase: порог длительности из реестра'
         expect(
             nextSettingsComparableFrom('2026-06-01', changed, '2026-09-08'),
         ).toBe('2026-09-08');
+    });
+
+    it('единый порог 60 с портала уходит в ответ как minDurationSec', async () => {
+        const definitions = definitionsWith(60);
+        const useCase = new PulseUseCase(
+            callsLoaderWith(mixedRows()).loader,
+            settingsLoaderWith({ definitions }),
+            feedbackStoreWith([]),
+            smartLinksWith().loader,
+        );
+
+        const dto = await useCase.execute('d', { now: NOW });
+
+        expect(dto.minDurationSec).toBe(60);
+    });
+});
+
+// Порог строки сотрудника в пульсе — код реестра pulse_manager_min_n
+// (30.09.2026): прежние 20 разборов за 5 рабочих дней на пилоте почти
+// недостижимы, дефолт равен порогу «мало данных» (8).
+describe('PulseUseCase: порог строки сотрудника из реестра', () => {
+    /** count разобранных звонков менеджера managerId в окне пульса. */
+    const managerRows = (
+        managerId: string,
+        count: number,
+    ): AnalyticsCallLiteRow[] =>
+        Array.from({ length: count }, (_, index) =>
+            liteRow({ transcriptionId: `${managerId}-${index}`, managerId }),
+        );
+
+    const run = (
+        rows: AnalyticsCallLiteRow[],
+        modelParams: AiAnalyticsPortalSettings['modelParams'] = {},
+    ) =>
+        new PulseUseCase(
+            callsLoaderWith(rows).loader,
+            settingsLoaderWith({ modelParams }),
+            feedbackStoreWith([]),
+            smartLinksWith().loader,
+        ).execute('d', { now: NOW });
+
+    it('по умолчанию строка с 8 разборов: 8 — есть, 7 — нет', async () => {
+        const dto = await run([
+            ...managerRows('10', 8),
+            ...managerRows('20', 7),
+        ]);
+
+        expect(pulseManagerMinN(portalSettings())).toBe(8);
+        expect(dto.managerMinN).toBe(8);
+        expect(dto.byManager.map(row => [row.managerId, row.analyzed])).toEqual(
+            [['10', 8]],
+        );
+        // Между порогом строки и порогом надёжной доли — пониженное доверие.
+        expect(dto.byManager[0].nextStepDateRate.confidence.level).toBe('low');
+    });
+
+    it('портал переопределяет порог в ai_analytics_model_params', async () => {
+        const dto = await run(
+            [...managerRows('10', 8), ...managerRows('20', 5)],
+            { pulse_manager_min_n: 5 },
+        );
+
+        expect(dto.managerMinN).toBe(5);
+        expect(dto.byManager.map(row => row.managerId)).toEqual(['10', '20']);
+    });
+
+    it('значение вне диапазона реестра откатывается к дефолту', async () => {
+        const dto = await run(managerRows('10', 6), { pulse_manager_min_n: 2 });
+
+        expect(dto.managerMinN).toBe(8);
+        expect(dto.byManager).toEqual([]);
     });
 });

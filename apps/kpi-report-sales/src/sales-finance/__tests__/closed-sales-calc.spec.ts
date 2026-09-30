@@ -2,6 +2,7 @@ import { IBXDeal } from '@/modules/bitrix';
 import {
     aggregateClosedSales,
     buildClosedSalesDeal,
+    filterDealsByAssignees,
 } from '../domain/calc/closed-sales-calc';
 import { SalesFinanceUfFields } from '../domain/services/sales-finance-deal-query.service';
 
@@ -207,5 +208,34 @@ describe('aggregateClosedSales', () => {
         const { employees, totals } = aggregateClosedSales([]);
         expect(employees).toEqual([]);
         expect(totals.dealsCount).toBe(0);
+    });
+});
+
+describe('filterDealsByAssignees', () => {
+    const dealOf = (id: number, assignedId: number) =>
+        buildClosedSalesDeal(
+            wonDeal({ ID: id, ASSIGNED_BY_ID: String(assignedId) }),
+            [],
+            UF,
+            NO_COMPANIES,
+            NO_ITEMS,
+        );
+    const monthDeals = [dealOf(1, 10), dealOf(2, 20), dealOf(3, 30)];
+
+    it('оставляет сделки только выбранных ответственных, порядок сохраняется', () => {
+        expect(
+            filterDealsByAssignees(monthDeals, [30, 10]).map(deal => deal.id),
+        ).toEqual([1, 3]);
+    });
+
+    it('пустой фильтр — все сделки (как ключ сотрудников all), исходный массив не делится', () => {
+        const all = filterDealsByAssignees(monthDeals, []);
+        expect(all.map(deal => deal.id)).toEqual([1, 2, 3]);
+        expect(all).not.toBe(monthDeals);
+        expect(filterDealsByAssignees(monthDeals, undefined)).toHaveLength(3);
+    });
+
+    it('сотрудник без сделок в месяце — пусто', () => {
+        expect(filterDealsByAssignees(monthDeals, [99])).toEqual([]);
     });
 });

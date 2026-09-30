@@ -1,7 +1,8 @@
 /**
  * Факты менеджера за период из KPI-слоя, финансов и планов (план §2.2,
- * §6.3): сумма месячных сегментов KPI, план-факт CRM (дисциплина) и
- * финансовый хвост.
+ * §6.3): сумма месячных сегментов KPI (вместе с сырыми счётчиками
+ * kpi-report — факт плана руководителя по factKey, как блок «Планы»),
+ * план-факт CRM (дисциплина) и финансовый хвост с источником чисел.
  *
  * Рёбра воронки живут в `funnel-edges.assembler.ts`, KPI-часть ячейки
  * типа — в `cell-kpi.assembler.ts` (Фаза 2, поток 16b: файл перестал
@@ -29,6 +30,18 @@ import type {
     AiKpiTypeFact,
 } from '../loaders/kpi.types';
 import type { ManagerKpiPeriod } from './overview-model.types';
+
+/**
+ * KPI-факты менеджера за период + то, что нужно плану руководителя:
+ * границы периода KPI-слоя и Σ счётчиков kpi-report по месяцам (строки
+ * отчёта KPI по innerCode — факт блока «Планы»).
+ */
+export interface ManagerKpiPeriodFacts extends ManagerKpiPeriod {
+    /** Период KPI-слоя (он же период обзора), yyyy-MM-dd включительно. */
+    period: { from: string; to: string };
+    /** Σ счётчиков kpi-report по месяцам периода: innerCode → число. */
+    counters: Readonly<Record<string, number>>;
+}
 
 export {
     emptyCellKpi,
@@ -141,25 +154,53 @@ function addMonth(
     };
 }
 
-/** Сумма месячных сегментов KPI по каждому менеджеру ростера. */
+/** Σ счётчиков kpi-report: запись старого кэша без counters — нули. */
+function addCounters(
+    target: Readonly<Record<string, number>>,
+    month: AiKpiManagerMonth['counters'] | undefined,
+): Record<string, number> {
+    const sum: Record<string, number> = { ...target };
+    if (!month) return sum;
+    for (const [code, value] of Object.entries(month)) {
+        sum[code] = (sum[code] ?? 0) + (value ?? 0);
+    }
+    return sum;
+}
+
+/**
+ * Сумма месячных сегментов KPI по каждому менеджеру ростера — вместе с
+ * периодом и суммой сырых счётчиков (факт плана руководителя).
+ */
 export function sumKpiMonths(
     result: AiKpiMonthsResult,
-): Map<number, ManagerKpiPeriod> {
-    const totals = new Map<number, ManagerKpiPeriod>(
-        result.managerIds.map(id => [id, emptyKpiPeriod(id)]),
+): Map<number, ManagerKpiPeriodFacts> {
+    const period = { from: result.from, to: result.to };
+    const empty = (managerId: number): ManagerKpiPeriodFacts => ({
+        ...emptyKpiPeriod(managerId),
+        period,
+        counters: {},
+    });
+    const totals = new Map<number, ManagerKpiPeriodFacts>(
+        result.managerIds.map(id => [id, empty(id)]),
     );
     for (const month of result.months) {
         for (const manager of month.managers) {
             const current =
-                totals.get(manager.managerId) ??
-                emptyKpiPeriod(manager.managerId);
-            totals.set(manager.managerId, addMonth(current, manager));
+                totals.get(manager.managerId) ?? empty(manager.managerId);
+            totals.set(manager.managerId, {
+                ...addMonth(current, manager),
+                period,
+                counters: addCounters(current.counters, manager.counters),
+            });
         }
     }
     return totals;
 }
 
-/** План-факт CRM по звонкам и презентациям «всего». */
+/**
+ * План-факт CRM по звонкам и презентациям «всего»: самоотчёт менеджера
+ * (сколько сам запланировал в CRM и сделал), не план руководителя.
+ */
 export function toDiscipline(
     kpi: ManagerKpiPeriod | undefined,
 ): AttentionDiscipline {
@@ -172,10 +213,11 @@ export function toDiscipline(
 }
 
 /**
- * Финансовый хвост менеджера: закрытые продажи периода + пайплайн v2
- * («горячие» ≥ «В решении», разрезы по цвету, предложению, типу и сроку
- * договора); без строки — нули и пустые разрезы. Разрезы копируются,
- * чтобы DTO не делил массивы с доменной сводкой.
+ * Финансовый хвост менеджера: закрытые продажи периода (итоги сотрудника
+ * как на вкладке «Финансы») + источник чисел + пайплайн v2 («горячие» ≥
+ * «В решении», разрезы по цвету, предложению, типу и сроку договора); без
+ * строки — нули и пустые разрезы. Разрезы копируются, чтобы DTO не делил
+ * массивы с доменной сводкой.
  */
 export function toFinanceTail(
     summary: AiFinanceManagerSummary | undefined,
@@ -185,6 +227,7 @@ export function toFinanceTail(
         salesCount: summary?.salesCount ?? 0,
         advanceAmount: summary?.advanceAmount ?? 0,
         monthlyAmount: summary?.monthlyAmount ?? 0,
+        ...(summary?.source ? { source: { ...summary.source } } : {}),
         pipelineFromStage: { ...live.pipelineFromStage },
         hotEvents: live.hotEvents,
         hotByColor: { ...live.hotByColor },

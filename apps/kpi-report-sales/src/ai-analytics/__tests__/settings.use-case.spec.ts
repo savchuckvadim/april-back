@@ -28,6 +28,7 @@ import {
     settingsLoaderWith,
 } from './fixtures/lite-row.fixture';
 import { portalModel } from './fixtures/norms.fixture';
+import { transcriptionsWith } from './fixtures/transcriptions.fixture';
 import { overviewSources } from './fixtures/overview.fixture';
 
 const NOW = new Date('2026-09-05T09:00:00Z');
@@ -117,6 +118,7 @@ describe('SettingsUseCase', () => {
                 poolConsentAt: '2026-09-07',
             }),
             storeWith(null),
+            transcriptionsWith(),
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -176,6 +178,7 @@ describe('SettingsUseCase', () => {
             callsLoaderWith(presentations(5, 45)).loader,
             settingsLoaderWith({ enabled: true }),
             storeWith(null),
+            transcriptionsWith(),
         );
         const dto = await useCase.execute('d', { now: NOW });
         expect(dto.pipelineEnabled).toBe(false);
@@ -266,6 +269,7 @@ describe('SettingsUseCase: готовность совпадает с обзор
             callsLoaderWith(rows).loader,
             settingsLoader(),
             storeWith(model),
+            transcriptionsWith(),
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -285,6 +289,7 @@ describe('SettingsUseCase: готовность совпадает с обзор
             callsLoaderWith(rows).loader,
             settingsLoader(),
             storeWith(null),
+            transcriptionsWith(),
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -303,6 +308,7 @@ describe('SettingsUseCase: готовность совпадает с обзор
             callsLoaderWith(ready).loader,
             settingsLoader(),
             storeWith(null),
+            transcriptionsWith(),
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -316,6 +322,7 @@ describe('SettingsUseCase: готовность совпадает с обзор
             callsLoaderWith(rows).loader,
             settingsLoader(),
             storeWith(null, { fail: true }),
+            transcriptionsWith(),
         );
 
         const dto = await useCase.execute('d', { now: NOW });

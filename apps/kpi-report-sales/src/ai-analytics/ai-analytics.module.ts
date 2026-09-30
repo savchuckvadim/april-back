@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { QueueModule } from 'src/modules/queue/queue.module';
 import { WsModule } from '@/core/ws/ws.module';
-import { AiModule } from '@lib/call-lib';
+import { AiModule, TranscriptionStoreModule } from '@lib/call-lib';
 import { PortalSessionModule } from '@lib/auth';
 import { BxDepartmentModule } from '@lib/bx-department';
 import { PbxAicallSmartModule } from '@lib/portal-lib/pbx/pbx-aicall-smart';
@@ -103,6 +103,9 @@ import { AiAnalyticsStyleModule } from './style/ai-analytics-style.module';
         QueueModule,
         WsModule,
         AiModule,
+        // Хранилище транскрипций без контроллеров: дата начала разборов
+        // портала для settings/get (analysisSince).
+        TranscriptionStoreModule,
         BxDepartmentModule,
         PbxAicallSmartModule,
         PortalSessionModule,

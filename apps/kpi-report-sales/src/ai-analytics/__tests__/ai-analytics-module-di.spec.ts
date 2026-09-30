@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import type { DynamicModule, FactoryProvider } from '@nestjs/common';
 import { AppCacheService } from '@lib/app-cache';
 import { BxDepartmentModule } from '@lib/bx-department';
+import { PrismaService } from '@/core/prisma/prisma.service';
 import { WsService } from '@/core/ws';
 import { TelegramModule } from '@lib/telegram/telegram.module';
 import { TelegramService } from '@lib/telegram/telegram.service';
@@ -17,7 +18,16 @@ import {
     AI_ANALYTICS_CORE_PROVIDERS,
     AiAnalyticsCoreModule,
 } from '../core/ai-analytics-core.module';
+import { AiAnalyticsCacheService } from '../cache/ai-analytics-cache.service';
+import { AiManagerScopeResolver } from '../domain/access/ai-manager-scope.resolver';
+import { ManagersLoader } from '../domain/loaders/managers.loader';
+import { SettingsLoader } from '../domain/loaders/settings.loader';
 import { BriefJobUseCase } from '../domain/use-cases/brief-job.use-case';
+import { BriefUseCase } from '../domain/use-cases/brief.use-case';
+import { OverviewLookupUseCase } from '../domain/use-cases/overview-lookup.use-case';
+import { OverviewUseCase } from '../domain/use-cases/overview.use-case';
+import { PushDigestAllUseCase } from '../domain/use-cases/push-digest-all.use-case';
+import { PlanFactUseCase } from '../plan-fact/plan-fact.use-case';
 import { AiAnalyticsPassportModule } from '../passport/ai-analytics-passport.module';
 import {
     AI_ANALYTICS_PIPELINE_STEP_MODULES,
@@ -40,6 +50,7 @@ import {
 import { AiAnalyticsStyleModule } from '../style/ai-analytics-style.module';
 import {
     availableIn,
+    dependenciesOf,
     exportsOf,
     metadataList,
     type Ctor,
@@ -64,9 +75,17 @@ import {
  * (AppCacheModule — @Global), WsService (WsModule — @Global; срез резюме
  * шлёт WS done/error, не импортируя WsModule) и TelegramService
  * (TelegramModule — @Global, импортирует корень приложения; срез отзыва с
- * сайта шлёт сообщение в чат, не импортируя модуль с контроллером).
+ * сайта шлёт сообщение в чат, не импортируя модуль с контроллером) и
+ * PrismaService (PrismaModule — @Global, импортирует корень
+ * kpi-report-sales; загрузчик планов читает конфиг планов портала, не
+ * импортируя PlansModule с контроллером).
  */
-const GLOBAL_PROVIDERS: Ctor[] = [AppCacheService, WsService, TelegramService];
+const GLOBAL_PROVIDERS: Ctor[] = [
+    AppCacheService,
+    WsService,
+    TelegramService,
+    PrismaService,
+];
 
 /**
  * Поддеревья, чьи роуты приложение публикует и без AI-аналитики: их
@@ -290,6 +309,37 @@ describe('DI-граф AiAnalyticsModule (kpi-report-sales)', () => {
         expect(importsDeep(AiAnalyticsCoreModule)).not.toContain(PBXModule);
         expect(importsOf(AiAnalyticsCoreModule)).not.toContain(PBXModule);
         expect(importsOf(AiAnalyticsCorePbxModule)).toContain(PBXModule);
+    });
+
+    it('резолвер периметра вкладки AI — в ядре; обзор, резюме, план-факт и сводный дайджест берут его из DI', () => {
+        expect(AI_ANALYTICS_CORE_PROVIDERS).toContain(AiManagerScopeResolver);
+        // Без Битрикса: только настройки, ростер и кэш ядра.
+        expect(dependenciesOf(AiManagerScopeResolver)).toEqual([
+            SettingsLoader,
+            ManagersLoader,
+            AiAnalyticsCacheService,
+        ]);
+        const consumers: Ctor[] = [
+            OverviewLookupUseCase,
+            OverviewUseCase,
+            BriefUseCase,
+            PlanFactUseCase,
+            PushDigestAllUseCase,
+        ];
+        for (const consumer of consumers) {
+            expect(dependenciesOf(consumer)).toContain(AiManagerScopeResolver);
+        }
+        for (const module of [
+            AiAnalyticsModule,
+            AiAnalyticsBriefModule,
+            AiAnalyticsPlanFactModule,
+        ]) {
+            expect(
+                availableIn(module, GLOBAL_PROVIDERS).has(
+                    AiManagerScopeResolver,
+                ),
+            ).toBe(true);
+        }
     });
 
     it('общие провайдеры объявлены один раз: дублей между модулями фичи нет', () => {

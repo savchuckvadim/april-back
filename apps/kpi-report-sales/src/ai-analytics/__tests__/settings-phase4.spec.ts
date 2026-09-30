@@ -24,6 +24,7 @@ import {
 } from './fixtures/lite-row.fixture';
 import { portalModel } from './fixtures/norms.fixture';
 import { backtestSnapshot } from './fixtures/phase4-snapshots.fixture';
+import { transcriptionsWith } from './fixtures/transcriptions.fixture';
 
 /**
  * Настройки витрины Фазы 4: гипотеза и согласие на пул в ответе
@@ -125,6 +126,7 @@ async function execute(
         loader,
         settingsLoaderWith({ levels: LEVELS, ...settings }),
         store,
+        transcriptionsWith(),
     ).execute('d', { now: NOW });
 }
 

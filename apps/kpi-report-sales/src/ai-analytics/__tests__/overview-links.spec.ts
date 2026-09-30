@@ -13,6 +13,7 @@ import {
     liteRow,
     settingsLoaderWith,
 } from './fixtures/lite-row.fixture';
+import { scopeResolverWith } from './fixtures/manager-scope.fixture';
 import {
     callsOf,
     emptyFinance,
@@ -85,7 +86,7 @@ function makeUseCase(
 ): OverviewUseCase {
     return new OverviewUseCase(
         settingsLoaderWith(),
-        { resolve: jest.fn().mockResolvedValue(ROSTER) } as never,
+        scopeResolverWith(ROSTER).resolver,
         callsLoaderWith(rows).loader,
         {
             loadKpiMonths: jest.fn().mockResolvedValue(emptyKpi(ROSTER)),

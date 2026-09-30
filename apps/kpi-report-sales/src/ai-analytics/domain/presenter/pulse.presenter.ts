@@ -41,6 +41,8 @@ export function toPulseDto(
             : null,
         analyzedCalls: result.analyzedCalls,
         shortCallsSharePct: result.shortCallsSharePct,
+        minDurationSec: result.minDurationSec,
+        managerMinN: result.managerMinN,
         byManager: result.byManager,
         alerts,
     };

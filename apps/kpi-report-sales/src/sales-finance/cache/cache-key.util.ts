@@ -2,9 +2,13 @@
  * Чистые построители ключей Redis-кэша модуля sales-finance.
  *
  * Схема ключей (читаемая, без хэшей — компоненты фиксированного формата):
- *   sales-finance:{domain}:closed:month:{yyyy-MM}:{empKey}  — сегмент прошлого месяца
+ *   sales-finance:{domain}:closed:month:{yyyy-MM}           — закрытый месяц: ВСЕ выигранные сделки домена
  *   sales-finance:{domain}:closed:result:{from}_{to}_{empKey} — смёрженный итог
  *   sales-finance:{domain}:hot:{threshold}:{empKey}         — горячие клиенты
+ *
+ * Месяц не зависит от состава сотрудников: страница сотрудника, команда и
+ * AI-аналитика читают одну и ту же ячейку и отбирают ответственных в
+ * памяти, поэтому их числа по одному сотруднику не расходятся.
  */
 import {
     SALES_FINANCE_CACHE_PREFIX,
@@ -21,13 +25,10 @@ export function buildEmployeesKey(assignedIds?: number[]): string {
     return [...new Set(assignedIds)].sort((a, b) => a - b).join('_');
 }
 
-export function buildClosedMonthKey(
-    domain: string,
-    month: string,
-    assignedIds?: number[],
-): string {
+/** Закрытый месяц домена: все выигранные сделки воронки за месяц. */
+export function buildClosedMonthKey(domain: string, month: string): string {
     const { CLOSED, MONTH } = SALES_FINANCE_CACHE_SECTIONS;
-    return `${SALES_FINANCE_CACHE_PREFIX}:${domain}:${CLOSED}:${MONTH}:${month}:${buildEmployeesKey(assignedIds)}`;
+    return `${SALES_FINANCE_CACHE_PREFIX}:${domain}:${CLOSED}:${MONTH}:${month}`;
 }
 
 export function buildClosedResultKey(

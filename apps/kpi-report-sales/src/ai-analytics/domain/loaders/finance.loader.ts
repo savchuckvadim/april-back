@@ -3,25 +3,29 @@ import type { PbxDealSalesBaseStageCode } from '@lib/portal-lib/pbx-domain/porta
 import { AiAnalyticsCacheService } from '../../cache/ai-analytics-cache.service';
 import { AI_ANALYTICS_HOT_STAGE_CODE } from '../../constants/ai-overview.const';
 import { buildReportUsersKey } from '../../../report';
-import { SalesHotThreshold } from '../../../sales-finance';
-import { normalizeReportPeriod } from '../../../shared/lib/date-util';
+import type {
+    ClosedSalesExecution,
+    SalesHotThreshold,
+} from '../../../sales-finance';
 import {
-    MonthSegment,
-    splitIntoMonthSegments,
-} from '../../../shared/lib/month-segments.util';
-import { summarizeManagers, toFinanceMonth } from './finance.assembler';
+    normalizeReportPeriod,
+    type NormalizedReportPeriod,
+} from '../../../shared/lib/date-util';
+import { splitIntoMonthSegments } from '../../../shared/lib/month-segments.util';
+import {
+    splitClosedSalesByMonth,
+    summarizeManagers,
+} from './finance.assembler';
 import { toPipelineByManager } from './finance-pipeline.assembler';
 import type {
     AiFinanceLoadOptions,
-    AiFinanceMonth,
     AiFinancePipelineResult,
     AiFinanceResult,
+    AiFinanceSource,
 } from './finance.types';
 import {
     AI_ANALYTICS_LIVE_TTL_SECONDS,
-    buildFinanceMonthKey,
     buildFinancePipelineKey,
-    monthSegmentTtlSeconds,
 } from './loader-cache-key.util';
 import { ManagersLoader } from './managers.loader';
 import {
@@ -37,13 +41,16 @@ import {
 const DEFAULT_PIPELINE_THRESHOLD: SalesHotThreshold = 'presentation';
 
 /**
- * Загрузчик финансового хвоста (план, Фаза 1b п. 3): закрытые продажи —
- * по месячным сегментам через ClosedSalesUseCase (закрытые месяцы из кэша
- * `finance-month` 30 дней, живой сегмент 180 с; внутри use-case свой
- * месячный кэш sales-finance — общий с вкладкой «Финансы»); пайплайн —
- * один вызов HotClientsUseCase по порогу пайплайна, «горячие» (стадия ≥
- * «В решении») и разрезы v2 выделяются по порядку стадии в памяти
- * (кэш `finance-pipeline` 180 с).
+ * Загрузчик финансового хвоста (план, Фаза 1b п. 3). Закрытые продажи —
+ * ОДНИМ вызовом ClosedSalesUseCase за весь период обзора, как вкладка
+ * «Финансы»: те же даты, та же формула, итоги сотрудника берутся как есть.
+ * Своего кэша у закрытых продаж нет — единственный источник кэша
+ * sales-finance (общий на домен закрытый месяц), поэтому «Пересчитать» и
+ * сброс вкладки «Финансы» действуют и здесь. Помесячная разбивка для
+ * ночного шага строится по дате закрытия сделок (finance.assembler).
+ * Пайплайн — один вызов HotClientsUseCase по порогу пайплайна, «горячие»
+ * (стадия ≥ «В решении») и разрезы v2 выделяются по порядку стадии в
+ * памяти (кэш `finance-pipeline` 180 с).
  *
  * @Injectable без bitrix-состояния: фабрика use-case'ов, кэш, ростер.
  */
@@ -66,40 +73,34 @@ export class FinanceLoader {
     ): Promise<AiFinanceResult> {
         const period = normalizeReportPeriod(from, to);
         const ids = await this.managers.resolve(domain, managerIds);
-        const usersKey = buildReportUsersKey(ids);
         const pipelineThreshold =
             options.pipelineThreshold ?? DEFAULT_PIPELINE_THRESHOLD;
         const hotStageCode =
             options.hotStageCode ?? AI_ANALYTICS_HOT_STAGE_CODE;
-        const segments = splitIntoMonthSegments(
-            period.fromIso,
-            period.toIsoInclusive,
-            options.now ?? new Date(),
-        );
+        const now = options.now ?? new Date();
         const useCases = this.useCases.create();
 
-        const months: AiFinanceMonth[] = [];
-        for (const segment of segments) {
-            months.push(
-                await this.loadMonth(
-                    domain,
-                    segment,
-                    ids,
-                    usersKey,
-                    useCases,
-                    options,
-                ),
-            );
-        }
+        const closed = await this.loadClosed(
+            domain,
+            period,
+            ids,
+            useCases,
+            options,
+        );
         const pipeline = await this.loadPipeline(
             domain,
             ids,
-            usersKey,
             useCases,
             pipelineThreshold,
             hotStageCode,
             options,
         );
+        const source: AiFinanceSource = {
+            from: period.fromIso,
+            to: period.toIsoInclusive,
+            generatedAt: closed?.report.generatedAt ?? now.toISOString(),
+        };
+        const employees = closed?.report.employees ?? [];
 
         return {
             from: period.fromIso,
@@ -107,63 +108,52 @@ export class FinanceLoader {
             managerIds: ids,
             pipelineThreshold,
             hotStageCode,
-            months,
+            months: splitClosedSalesByMonth(
+                splitIntoMonthSegments(
+                    period.fromIso,
+                    period.toIsoInclusive,
+                    now,
+                ),
+                employees,
+                ids,
+                new Set(closed?.cachedMonths ?? []),
+            ),
             pipeline,
-            managers: summarizeManagers(months, pipeline.managers, ids),
+            managers: summarizeManagers(
+                employees,
+                pipeline.managers,
+                ids,
+                source,
+            ),
         };
     }
 
-    private async loadMonth(
+    /**
+     * Закрытые продажи периода одним вызовом (даты — как у «Финансов»:
+     * начало и конец периода включительно). Пустой ростер — без вызова.
+     */
+    private async loadClosed(
         domain: string,
-        segment: MonthSegment,
+        period: NormalizedReportPeriod,
         ids: number[],
-        usersKey: string,
         useCases: SalesFinanceUseCases,
         options: AiFinanceLoadOptions,
-    ): Promise<AiFinanceMonth> {
-        const key = buildFinanceMonthKey(domain, segment, usersKey);
-        const cached = options.forceRefresh
-            ? null
-            : await this.cache.getJson<AiFinanceMonth>(key);
-        if (cached) return { ...cached, fromCache: true };
-
-        const report = ids.length
-            ? await useCases.closed.execute({
-                  domain,
-                  forceRefresh: options.forceRefresh === true,
-                  filters: {
-                      assignedIds: ids,
-                      dateFrom: segment.from,
-                      dateTo: segment.to,
-                  },
-              })
-            : null;
-        const month = toFinanceMonth(
-            segment,
-            report ?? {
-                employees: [],
-                totals: {
-                    dealsCount: 0,
-                    advanceAmount: 0,
-                    paidMonths: 0,
-                    monthlyAmount: 0,
-                    quantity: 0,
-                    expectedContractAmount: 0,
-                },
-                dateFrom: segment.from,
-                dateTo: segment.to,
-                generatedAt: new Date().toISOString(),
+    ): Promise<ClosedSalesExecution | null> {
+        if (!ids.length) return null;
+        return useCases.closed.executeDetailed({
+            domain,
+            forceRefresh: options.forceRefresh === true,
+            filters: {
+                assignedIds: ids,
+                dateFrom: period.fromIso,
+                dateTo: period.toIsoInclusive,
             },
-            ids,
-        );
-        await this.store(key, month, monthSegmentTtlSeconds(segment));
-        return month;
+        });
     }
 
     private async loadPipeline(
         domain: string,
         ids: number[],
-        usersKey: string,
         useCases: SalesFinanceUseCases,
         pipelineThreshold: SalesHotThreshold,
         hotStageCode: PbxDealSalesBaseStageCode,
@@ -172,7 +162,7 @@ export class FinanceLoader {
         const key = buildFinancePipelineKey(
             domain,
             `${pipelineThreshold}-${hotStageCode}`,
-            usersKey,
+            buildReportUsersKey(ids),
         );
         const cached = options.forceRefresh
             ? null

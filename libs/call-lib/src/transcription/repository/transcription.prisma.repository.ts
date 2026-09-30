@@ -355,6 +355,32 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
         });
     }
 
+    async findFirstDonePipelineAt(domain: string): Promise<Date | null> {
+        const done = this.donePipelineWhere(domain);
+        // MIN(COALESCE(call_started_at, created_at)) двумя агрегатами:
+        // строки с временем звонка — по нему, без него — по created_at
+        // (та же подмена, что в выборке за период).
+        const [byCall, byCreated] = await Promise.all([
+            this.prisma.transcription.aggregate({
+                where: { ...done, call_started_at: { not: null } },
+                _min: { call_started_at: true },
+            }),
+            this.prisma.transcription.aggregate({
+                where: { ...done, call_started_at: null },
+                _min: { created_at: true },
+            }),
+        ]);
+        return earliestOf(
+            byCall._min.call_started_at,
+            byCreated._min.created_at,
+        );
+    }
+
+    /** Done-строки автоконвейера домена — общее условие выборок. */
+    private donePipelineWhere(domain: string): Prisma.TranscriptionWhereInput {
+        return { status: 'done', dedup_key: { not: null }, domain };
+    }
+
     /** Done-строки автоконвейера домена за период — общий where выборок. */
     private donePipelineInPeriodWhere(
         domain: string,
@@ -362,9 +388,7 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
         to: Date,
     ): Prisma.TranscriptionWhereInput {
         return {
-            status: 'done',
-            dedup_key: { not: null },
-            domain,
+            ...this.donePipelineWhere(domain),
             // Период — по фактическому времени звонка; у части строк
             // call_started_at пуст (ручные POST /call-report/analyze без
             // callStartedAtIso) — для них fallback на created_at, иначе
@@ -378,6 +402,13 @@ export class TranscriptionPrismaRepository implements TranscriptionRepository {
             ],
         };
     }
+}
+
+/** Более ранний из двух моментов; оба null — null. */
+function earliestOf(left: Date | null, right: Date | null): Date | null {
+    if (left === null) return right;
+    if (right === null) return left;
+    return left.getTime() <= right.getTime() ? left : right;
 }
 
 /** JSON-колонка из значения строки: null → DbNull, undefined — не трогать. */

@@ -16,10 +16,10 @@ describe('cache-key.util', () => {
         expect(buildEmployeesKey([])).toBe('all');
     });
 
-    it('ключ месячного сегмента содержит домен, месяц и сотрудников', () => {
-        expect(
-            buildClosedMonthKey('april.bitrix24.ru', '2026-03', [2, 1]),
-        ).toBe('sales-finance:v7:april.bitrix24.ru:closed:month:2026-03:1_2');
+    it('ключ закрытого месяца — общий на домен: домен и месяц, без сотрудников', () => {
+        expect(buildClosedMonthKey('april.bitrix24.ru', '2026-03')).toBe(
+            'sales-finance:v8:april.bitrix24.ru:closed:month:2026-03',
+        );
     });
 
     it('ключ итога содержит период и сотрудников', () => {
@@ -31,25 +31,25 @@ describe('cache-key.util', () => {
                 [1],
             ),
         ).toBe(
-            'sales-finance:v7:april.bitrix24.ru:closed:result:2026-01-01_2026-06-30_1',
+            'sales-finance:v8:april.bitrix24.ru:closed:result:2026-01-01_2026-06-30_1',
         );
     });
 
     it('ключ горячих клиентов содержит порог', () => {
         expect(buildHotClientsKey('april.bitrix24.ru', 'document')).toBe(
-            'sales-finance:v7:april.bitrix24.ru:hot:document:all',
+            'sales-finance:v8:april.bitrix24.ru:hot:document:all',
         );
     });
 
     it('паттерны сброса по scope', () => {
         expect(buildResetPattern('d.ru', 'all')).toBe(
-            'sales-finance:v7:d.ru:*',
+            'sales-finance:v8:d.ru:*',
         );
         expect(buildResetPattern('d.ru', 'closed')).toBe(
-            'sales-finance:v7:d.ru:closed:*',
+            'sales-finance:v8:d.ru:closed:*',
         );
         expect(buildResetPattern('d.ru', 'hot')).toBe(
-            'sales-finance:v7:d.ru:hot:*',
+            'sales-finance:v8:d.ru:hot:*',
         );
     });
 });

@@ -1,10 +1,11 @@
 /**
  * Результат финансового слоя AI-аналитики (ТЗ FR-40): «финансовый хвост»
- * на менеджера — закрытые продажи по месяцам (ClosedSalesUseCase, сделки
- * sales_base в успехе по CLOSEDATE; формулы libs/shared deal-finance) и
- * живой пайплайн открытых сделок от стадии (HotClientsUseCase) с разрезами
- * v2: «горячие» по стадии ≥ «В решении», цвет компании, товарные строки,
- * тип и срок договора (решение владельца А.2).
+ * на менеджера — закрытые продажи за период ОДНИМ вызовом ClosedSalesUseCase
+ * (как вкладка «Финансы»: сделки sales_base в успехе по CLOSEDATE, формулы
+ * libs/shared deal-finance) с помесячной разбивкой по дате закрытия сделок
+ * и живой пайплайн открытых сделок от стадии (HotClientsUseCase) с
+ * разрезами v2: «горячие» по стадии ≥ «В решении», цвет компании,
+ * товарные строки, тип и срок договора (решение владельца А.2).
  */
 import type { PbxDealSalesBaseStageCode } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
 import type {
@@ -35,15 +36,33 @@ export interface AiFinanceManagerMonth extends AiFinanceClosedTotals {
     managerId: number;
 }
 
+/**
+ * Месяц закрытых продаж: сделки периода, разложенные по месяцу CLOSEDATE
+ * (нужен ночному шагу finance и месячному снапшоту менеджера).
+ */
 export interface AiFinanceMonth {
     month: IsoMonth;
     from: IsoDate;
     to: IsoDate;
     /** Полный календарный месяц, закончившийся до текущего (долгоживущий кэш). */
     closed: boolean;
+    /** Месяц взят из общего кэша sales-finance — Bitrix за ним не ходили. */
     fromCache: boolean;
     managers: AiFinanceManagerMonth[];
     totals: AiFinanceClosedTotals;
+}
+
+/**
+ * Откуда числа закрытых продаж: период вызова ClosedSalesUseCase (тот же,
+ * что у вкладки «Финансы» за эти даты) и момент расчёта.
+ */
+export interface AiFinanceSource {
+    /** Начало периода по дате закрытия сделки, yyyy-MM-dd. */
+    from: IsoDate;
+    /** Конец периода включительно, yyyy-MM-dd. */
+    to: IsoDate;
+    /** Момент формирования отчёта закрытых продаж, ISO. */
+    generatedAt: string;
 }
 
 /** Открытые сделки от стадии порога и выше: число и месячный чек. */
@@ -103,11 +122,17 @@ export interface AiFinancePipelineResult {
     managers: AiFinanceManagerPipeline[];
 }
 
-/** Сводка по менеджеру за весь период: закрытые продажи + пайплайн. */
+/**
+ * Сводка по менеджеру за весь период: закрытые продажи (итоги сотрудника
+ * из отчёта ClosedSalesUseCase — те же числа, что на вкладке «Финансы»)
+ * + пайплайн.
+ */
 export interface AiFinanceManagerSummary
     extends AiFinanceClosedTotals,
         AiFinancePipelineFacts {
     managerId: number;
+    /** Откуда числа закрытых продаж; нет — сводка собрана без отчёта. */
+    source?: AiFinanceSource;
 }
 
 export interface AiFinanceResult {

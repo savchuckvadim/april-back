@@ -1,3 +1,4 @@
+import { registryDefault } from '../params/registry.access';
 import { AI_ANALYTICS_THRESHOLDS } from './thresholds.const';
 import { MetricValue, rateMetric } from './metric';
 import { XmrPoint, XmrResult, xmrLimits } from './xmr';
@@ -47,8 +48,12 @@ export interface PulseResult {
     /** Дневные доли по рабочим дням истории (только дни с разборами). */
     daily: XmrPoint[];
     analyzedCalls: number;
-    /** Доля коротких звонков (< shortCallSec) среди всех звонков окна, %. */
+    /** Доля коротких звонков (короче порога своего типа) среди звонков окна, %. */
     shortCallsSharePct: number;
+    /** Порог «короткого» звонка, с: типы вне карты и звонки без типа. */
+    minDurationSec: number;
+    /** Применённый минимум разборов менеджера для строки byManager. */
+    managerMinN: number;
     /** Менеджеры с analyzed ≥ managerMinN, по managerId. */
     byManager: PulseManagerRow[];
 }
@@ -61,7 +66,11 @@ export interface PulseOptions {
     windowWorkdays?: number;
     /** Рабочих дней истории для дневного ряда XmR (по умолчанию 25). */
     historyWorkdays?: number;
-    /** Минимум разобранных звонков менеджера для строки byManager (20). */
+    /**
+     * Минимум разобранных звонков менеджера для строки byManager (код
+     * реестра `pulse_manager_min_n`, портал может переопределить); нет —
+     * дефолт реестра.
+     */
     managerMinN?: number;
     /**
      * Пороги «разбираемого» звонка по типу (реестр
@@ -131,9 +140,12 @@ export function minDurationByType(
 }
 
 export const PULSE_DEFAULTS = {
+    /** Окно доли — рабочих дней (план 6.3); не параметр реестра. */
     windowWorkdays: 5,
+    /** История дневного ряда XmR — рабочих дней; не параметр реестра. */
     historyWorkdays: 25,
-    managerMinN: 20,
+    /** Строка менеджера — с этого числа разборов (реестр, дефолт 8). */
+    managerMinN: registryDefault('pulse_manager_min_n'),
 } as const;
 
 interface DatedRow {
@@ -274,6 +286,8 @@ export function computePulse(
             inWindow.length > 0
                 ? round1((shortCalls / inWindow.length) * 100)
                 : 0,
+        minDurationSec: minDurationSecOf(null, byType),
+        managerMinN,
         byManager: buildByManager(analyzedInWindow, managerMinN),
     };
 }

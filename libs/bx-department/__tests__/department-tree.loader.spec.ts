@@ -130,6 +130,21 @@ describe('DepartmentTreeLoader', () => {
             ]);
         });
 
+        it('без базового отдела в конфиге — родители не ищутся, лишних запросов нет', async () => {
+            // department.get {ID: undefined} уходит как {} и отдаёт все отделы
+            const call = makeApi([...SINGLE_TREE].reverse());
+            const { loader, warn } = makeLoader(call);
+
+            const tree = await loader.loadSingle(undefined);
+
+            expect(idsOf(tree.general)).toEqual([11, 10, 9, 5, 1]);
+            expect(tree.parents).toEqual([]);
+            expect(
+                trace(call).filter(line => line.startsWith('department.get')),
+            ).toEqual(['department.get {}', 'department.get {}']);
+            expect(warn).not.toHaveBeenCalled();
+        });
+
         it('дерево с сотрудниками у каждого отдела, родители снизу вверх', async () => {
             const { loader, warn } = makeLoader(makeApi(SINGLE_TREE));
 

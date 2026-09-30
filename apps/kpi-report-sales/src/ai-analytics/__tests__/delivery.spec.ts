@@ -1,5 +1,7 @@
+import { Logger } from '@nestjs/common';
 import { DigestItem } from '@lib/sales-ai-analytics';
 import { AiAnalyticsDeliveryService } from '../delivery/ai-analytics-delivery.service';
+import type { DigestAllMessageInput } from '../delivery/ai-analytics-digest-all-message.util';
 import {
     AGENDA_MESSAGE_TITLE,
     agendaMessageHeadline,
@@ -67,13 +69,14 @@ function makeBitrix(failFor: number[] = []) {
                 ? Promise.reject(new Error('ACCESS_DENIED'))
                 : Promise.resolve({ result: true }),
     );
-    const get = jest.fn(({ ID }: { ID: string }) =>
+    /** user.get по списку id (`=ID`) — одна пачка на всех. */
+    const get = jest.fn((filter: { '=ID'?: string[] }) =>
         Promise.resolve({
-            result: [
+            result: (filter['=ID'] ?? []).map(ID =>
                 ID === '10'
-                    ? { LAST_NAME: 'Иванов', NAME: 'Иван' }
-                    : { LAST_NAME: '', NAME: '' },
-            ],
+                    ? { ID, LAST_NAME: 'Иванов', NAME: 'Иван' }
+                    : { ID, LAST_NAME: '', NAME: '' },
+            ),
         }),
     );
     return {
@@ -177,7 +180,9 @@ describe('AiAnalyticsDeliveryService (Bitrix im.notify.system.add)', () => {
         const delivery = new AiAnalyticsDeliveryService(bitrix as never);
         const delivered = await delivery.sendAgenda([447, 448], agenda);
         expect(delivered).toEqual([447, 448]);
-        expect(get).toHaveBeenCalledTimes(2);
+        // Имена менеджеров повестки — одним user.get на пачку id.
+        expect(get).toHaveBeenCalledTimes(1);
+        expect(get.mock.calls[0][0]).toEqual({ '=ID': ['10', '20'] });
         expect(systemAdd).toHaveBeenCalledTimes(2);
         const [{ USER_ID, MESSAGE, TAG }] = systemAdd.mock.calls[0];
         expect(USER_ID).toBe(447);
@@ -193,6 +198,41 @@ describe('AiAnalyticsDeliveryService (Bitrix im.notify.system.add)', () => {
         const delivered = await delivery.sendAgenda([447, 448, 449], agenda);
         expect(delivered).toEqual([448, 449]);
         expect(systemAdd).toHaveBeenCalledTimes(3);
+    });
+
+    it('ответ result: false — уведомление не создано: не доставка, warn, остальные получают', async () => {
+        const { bitrix, systemAdd } = makeBitrix();
+        systemAdd
+            .mockResolvedValueOnce({ result: false })
+            .mockResolvedValueOnce({ result: 1051 })
+            .mockResolvedValueOnce({});
+        const warn = jest
+            .spyOn(Logger.prototype, 'warn')
+            .mockImplementation(() => undefined);
+        try {
+            const delivery = new AiAnalyticsDeliveryService(bitrix as never);
+            const input: DigestAllMessageInput = {
+                day: '2026-09-29',
+                timeZone: 'Europe/Moscow',
+                departments: [],
+                links: new Map(),
+            };
+            const delivered = await delivery.sendDigestAll(
+                [1, 187, 200],
+                input,
+            );
+
+            // Числовой id — доставка; false и пустой ответ — нет.
+            expect(delivered).toEqual([187]);
+            expect(systemAdd).toHaveBeenCalledTimes(3);
+            expect(warn).toHaveBeenCalledTimes(2);
+            expect(String(warn.mock.calls[0][0])).toContain(
+                'ai-analytics:digest_all:2026-09-29',
+            );
+            expect(String(warn.mock.calls[0][0])).toContain('пользователя 1');
+        } finally {
+            warn.mockRestore();
+        }
     });
 
     it('sendDigest: TAG по дню и менеджеру, ссылки из карты', async () => {

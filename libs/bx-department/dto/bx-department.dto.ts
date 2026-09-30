@@ -121,6 +121,7 @@ export class BxDepartmentDataDto {
             'Bitrix ID базового отдела группы из конфига портала. ' +
             '0 в мультирежиме — единого корневого отдела нет, ОП собраны ' +
             'по тэгу со всей структуры.',
+        type: Number,
         example: 1,
         required: true,
     })

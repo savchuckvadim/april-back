@@ -33,6 +33,7 @@ import { BxDepartmentModule } from '@lib/bx-department';
 import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
 import { AiAnalyticsCacheService } from '../cache/ai-analytics-cache.service';
+import { AiManagerScopeResolver } from '../domain/access/ai-manager-scope.resolver';
 import { RequesterAccessService } from '../domain/access/requester-access.service';
 import { CallsLoader } from '../domain/loaders/calls.loader';
 import { ManagerOrgLoader } from '../domain/loaders/manager-org.loader';
@@ -64,6 +65,9 @@ export const AI_ANALYTICS_CORE_PROVIDERS: Type<unknown>[] = [
     // Журнал советов Фазы 4 (выдача и «Сделано») поверх стора обратной связи.
     AiAnalyticsRecommendationLogStore,
     RequesterAccessService,
+    // Периметр вкладки AI: фильтр отчёта ∩ список разбора звонков (обзор,
+    // by-type, итоги периода, план-факт, сводный дайджест).
+    AiManagerScopeResolver,
 ];
 
 @Module({

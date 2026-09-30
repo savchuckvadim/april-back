@@ -46,9 +46,10 @@ export class AiOverviewFiltersDto extends AiRequestBaseDto {
 
     @ApiPropertyOptional({
         description:
-            'Bitrix-id менеджеров. Пусто — весь ростер отделов продаж по ' +
-            'структуре. Список нормализуется (дедуп, сортировка) и входит в ' +
-            'ключ результата.',
+            'Bitrix-id менеджеров (глобальный фильтр отчёта). Пусто — весь ' +
+            'ростер отделов продаж по структуре. При действующем списке ' +
+            'разбора звонков остаются только сотрудники из него; ключ ' +
+            'результата — по нормализованному пересечению (дедуп, сортировка).',
         type: [Number],
         example: [447, 512],
     })
@@ -103,7 +104,8 @@ export class AiOverviewRequestDto extends AiOverviewFiltersDto {}
 /**
  * Payload Bull-джобы SALES_AI_ANALYTICS_OVERVIEW (внутренний контракт
  * контроллер/прогрев → процессор, валидаторы не нужны). managerIds —
- * уже нормализованный ростер; requestKey — ключ кэша и jobId.
+ * уже нормализованный периметр (фильтр ∩ список разбора, повторное
+ * пересечение его не меняет); requestKey — ключ кэша и jobId.
  */
 export interface AiOverviewJobData {
     domain: string;

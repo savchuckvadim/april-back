@@ -177,6 +177,32 @@ describe('BxDepartmentService', () => {
         expect(second).toEqual(first);
     });
 
+    it('кэш: режим и тэг в ответе — из БД, а не из снимка (одиночный ключ тэга не содержит)', async () => {
+        // снимок сохранён, пока в конфиге стоял другой тэг
+        redisGet.mockResolvedValue(
+            JSON.stringify({
+                department: {
+                    department: BASE_ID,
+                    generalDepartment: [],
+                    childrenDepartments: [],
+                    allUsers: [],
+                    isMultiple: true,
+                    multipleTag: 'старый',
+                },
+            }),
+        );
+
+        const { department } = await service.getFullDepartment(
+            DOMAIN,
+            EDepartamentGroup.sales,
+        );
+
+        expect(apiCall).not.toHaveBeenCalled();
+        expect(department.isMultiple).toBe(false);
+        expect(department.multipleTag).toBeNull();
+        expect(department.department).toBe(BASE_ID);
+    });
+
     it('resetCache: игнорирует кэш и перезаписывает его', async () => {
         redisGet.mockResolvedValue(JSON.stringify({ поломанный: 'кеш' }));
 

@@ -10,6 +10,7 @@ import {
     AiAnalyticsByTypeLayout,
     AiAnalyticsManagerLevel,
 } from '../constants/ai-overview.const';
+import { AiByTypeCoverageDto } from './ai-by-type-coverage.dto';
 import { AiCellKpiDto, AiManagerTypeCellDto } from './ai-manager-type-cell.dto';
 import { AiFinanceTailDto } from './ai-manager-row.dto';
 import { AiObjectionsDto } from './ai-objections.dto';
@@ -209,8 +210,8 @@ export class AiByTypeDto {
 
     @ApiProperty({
         description:
-            'Итог по выбранному типу по домену; null при callType = all ' +
-            '(см. totalsByType) и objections.',
+            'Итог по выбранному типу по сотрудникам обзора (фильтр ∩ список ' +
+            'разбора); null при callType = all (см. totalsByType) и objections.',
         type: AiTypeTotalsDto,
         nullable: true,
     })
@@ -218,8 +219,8 @@ export class AiByTypeDto {
 
     @ApiProperty({
         description:
-            'Итоги по каждому типу по домену (порядок справочника); ' +
-            'заполнено только при callType = all, иначе null.',
+            'Итоги по каждому типу по сотрудникам обзора (порядок ' +
+            'справочника); заполнено только при callType = all, иначе null.',
         type: [AiTypeTotalsDto],
         nullable: true,
     })
@@ -231,6 +232,15 @@ export class AiByTypeDto {
         nullable: true,
     })
     objections: AiObjectionsDto | null;
+
+    @ApiProperty({
+        description:
+            'Покрытие разборами: сколько звонков в оценке и почему остальные ' +
+            'не вошли (до даты сравнимости, короткие, без типа) — для ' +
+            'пустого состояния матриц.',
+        type: AiByTypeCoverageDto,
+    })
+    coverage: AiByTypeCoverageDto;
 }
 
 export class AiByTypeResponseDto extends AiAnalyticsEnvelopeDto {

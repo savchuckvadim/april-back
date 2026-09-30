@@ -24,6 +24,9 @@ export class DepartmentTreeLoader {
     /**
      * Одиночный режим (как раньше): базовый отдел из конфига портала,
      * его прямые подотделы и родители — теми же запросами в том же порядке.
+     * Без базового в конфиге (портал маркетплейса) department.get
+     * {ID: undefined} отдаёт страницу всех отделов: родители тогда не
+     * ищутся — подъём от каждого стоил бы сотни запросов впустую.
      */
     async loadSingle(baseId: number | undefined): Promise<IDepartmentTree> {
         const general = await this.bx.getDepartments({ ID: baseId });
@@ -31,9 +34,12 @@ export class DepartmentTreeLoader {
 
         const generalWithUsers = await this.bx.enrichWithUsers(general);
         const childrenWithUsers = await this.bx.enrichWithUsers(children);
-        const parents = await climbParents(generalWithUsers, id =>
-            this.findParentWithUsers(id),
-        );
+        const parents =
+            baseId === undefined
+                ? []
+                : await climbParents(generalWithUsers, id =>
+                      this.findParentWithUsers(id),
+                  );
         return {
             general: generalWithUsers,
             children: childrenWithUsers,

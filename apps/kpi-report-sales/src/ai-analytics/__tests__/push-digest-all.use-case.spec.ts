@@ -1,9 +1,14 @@
+import { Logger } from '@nestjs/common';
 import { DigestItem } from '@lib/sales-ai-analytics';
 import { PushDigestAllUseCase } from '../domain/use-cases/push-digest-all.use-case';
 import { AiPushRunContext } from '../domain/use-cases/push.types';
 import { AiAnalyticsPushLogStore } from '../store/ai-analytics-push-log.store';
 import { DIGEST_ALL_NO_CALLS } from '../delivery/ai-analytics-digest-all-message.util';
 import { portalSettings } from './fixtures/lite-row.fixture';
+import {
+    callReportWith,
+    scopeResolverWith,
+} from './fixtures/manager-scope.fixture';
 
 const digestItem: DigestItem = {
     transcriptionId: 'a1',
@@ -26,9 +31,14 @@ function makeBitrix(failFor: number[] = []) {
                 ? Promise.reject(new Error('ACCESS_DENIED'))
                 : Promise.resolve({ result: true }),
     );
-    const get = jest.fn(({ ID }: { ID: string }) =>
+    // user.get с фильтром по списку id (=ID) — пачкой, как в Битриксе.
+    const get = jest.fn((filter: { '=ID': string[] }) =>
         Promise.resolve({
-            result: [{ LAST_NAME: 'Менеджер', NAME: ID }],
+            result: filter['=ID'].map(id => ({
+                ID: id,
+                LAST_NAME: 'Менеджер',
+                NAME: id,
+            })),
         }),
     );
     return {
@@ -70,9 +80,7 @@ function makeCase(
                 ]),
         }),
     };
-    const managers = {
-        resolve: jest.fn().mockResolvedValue(options.roster ?? [10, 20, 30]),
-    };
+    const scope = scopeResolverWith(options.roster ?? [10, 20, 30]);
     const org = {
         load: jest.fn().mockResolvedValue(
             new Map([
@@ -108,7 +116,7 @@ function makeCase(
     const useCase = new PushDigestAllUseCase(
         pbx as never,
         digestUseCase as never,
-        managers as never,
+        scope.resolver,
         org as never,
         smartLinks as never,
         store,
@@ -118,7 +126,7 @@ function makeCase(
         systemAdd,
         get,
         digestUseCase,
-        managers,
+        roster: scope.roster,
         org,
         smartLinks,
         pbx,
@@ -149,8 +157,13 @@ describe('PushDigestAllUseCase (сводный дайджест по всем м
             new Date('2026-09-03T21:00:00.000Z'),
         );
         expect(smartLinks.resolveLinks).toHaveBeenCalledWith('d', ['a1', 'b1']);
-        // Имена — по всему ростеру и менеджерам со звонками.
-        expect(get).toHaveBeenCalledTimes(3);
+        // Имена — по всему периметру и менеджерам со звонками, одним user.get.
+        expect(get).toHaveBeenCalledTimes(1);
+        expect(get).toHaveBeenCalledWith({ '=ID': ['10', '20', '30'] }, [
+            'ID',
+            'NAME',
+            'LAST_NAME',
+        ]);
         expect(systemAdd).toHaveBeenCalledTimes(2);
         const [{ USER_ID, MESSAGE, TAG }] = systemAdd.mock.calls[0];
         expect(USER_ID).toBe(447);
@@ -226,6 +239,66 @@ describe('PushDigestAllUseCase (сводный дайджест по всем м
             delivered: [],
         });
         expect(markSent).not.toHaveBeenCalled();
+    });
+
+    it('список разбора: «Звонков не было» перечисляет только сотрудников из разбора, а не весь отдел', async () => {
+        const { useCase, systemAdd, roster, get } = makeCase({
+            roster: [10, 20, 30, 40],
+            byManager: new Map([['10', [digestItem]]]),
+        });
+        const result = await useCase.run(
+            context({
+                settings: portalSettings({
+                    digestAllUserIds: [447],
+                    callReport: callReportWith([10, 30]),
+                }),
+            }),
+        );
+
+        expect(result).toMatchObject({ status: 'sent', delivered: [447] });
+        const [{ MESSAGE }] = systemAdd.mock.calls[0];
+        expect(MESSAGE).toContain(`${DIGEST_ALL_NO_CALLS}: Менеджер 30`);
+        expect(MESSAGE).not.toContain('Менеджер 20');
+        expect(MESSAGE).not.toContain('Менеджер 40');
+        // Список действует — ростер ОП не читается, имена — только периметра.
+        expect(roster).not.toHaveBeenCalled();
+        expect(get).toHaveBeenCalledWith({ '=ID': ['10', '30'] }, [
+            'ID',
+            'NAME',
+            'LAST_NAME',
+        ]);
+    });
+
+    it('сбой записи отметки после доставки — не провал: sent с адресатами и error-лог с оповещением', async () => {
+        const errorLog = jest
+            .spyOn(Logger.prototype, 'error')
+            .mockImplementation(() => undefined);
+        const { useCase, markSent, systemAdd } = makeCase();
+        markSent.mockRejectedValueOnce(new Error('ais недоступна'));
+
+        const result = await useCase.run(context());
+
+        expect(result).toEqual({
+            kind: 'digest_all',
+            date: '2026-09-07',
+            status: 'sent',
+            reason: null,
+            delivered: [447, 448],
+        });
+        expect(systemAdd).toHaveBeenCalledTimes(2);
+        expect(errorLog).toHaveBeenCalledWith(
+            expect.stringContaining('отметка об отправке не записана'),
+            { telegram: true, domain: 'd' },
+        );
+        errorLog.mockRestore();
+    });
+
+    it('имена не прочитались — рассылка всё равно уходит (подписи «#id»)', async () => {
+        const { useCase, get, systemAdd } = makeCase();
+        get.mockRejectedValueOnce(new Error('ACCESS_DENIED'));
+
+        expect(await useCase.run(context())).toMatchObject({ status: 'sent' });
+        expect(systemAdd).toHaveBeenCalledTimes(2);
     });
 
     it('ручной запуск «себе»: получатели вместо настроек, отметки не читаются и не пишутся, выходной не мешает', async () => {

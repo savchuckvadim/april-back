@@ -5,14 +5,15 @@ type LeadContext = NonNullable<
     Parameters<typeof leadToWorkNameIds>[0][number]['leadContext']
 >;
 
-/** Прочитанный контекст лида: ответственный лида — 5. */
+/** Прочитанный контекст лида без задач и сделок. */
 const context = (
     over: Partial<Record<keyof LeadContext, unknown>> = {},
 ): LeadContext =>
     ({
-        lead: { ASSIGNED_BY_ID: '5' },
         openTasks: [],
         existingXoDeal: null,
+        convertedDeals: [],
+        fromLeadDeals: [],
         ...over,
     }) as unknown as LeadContext;
 
@@ -61,10 +62,9 @@ describe('xoPrevResponsible', () => {
 describe('leadToWorkNameIds', () => {
     /*
      * Ради этого список и расширен: «от кого» в «ХО передан: A → B» —
-     * прежний за обзвон, а в уведомлении «работа ушла» — ответственный
-     * лида. Оба раньше не резолвились и уходили голыми id.
+     * прежний за обзвон; раньше он не резолвился и уходил голым id.
      */
-    it('в список входят прежний за обзвон и ответственный лида', () => {
+    it('в список входит прежний за обзвон', () => {
         const ids = leadToWorkNameIds([
             {
                 item: {},
@@ -73,7 +73,25 @@ describe('leadToWorkNameIds', () => {
             },
         ]);
 
-        expect(ids).toEqual(expect.arrayContaining([8, 5, 9]));
+        expect(ids).toEqual(expect.arrayContaining([8, 9]));
+    });
+
+    it('ответственные всех сделок-кандидатов: консолидация может сменить основную ХО-сделку', () => {
+        // до консолидации основная ХО-сделка — у 11; открытой может
+        // остаться другая (у 12 или 14) — её ответственный станет «от кого»
+        const ids = leadToWorkNameIds([
+            {
+                item: {},
+                leadContext: context({
+                    existingXoDeal: { ASSIGNED_BY_ID: '11' },
+                    convertedDeals: [{ ASSIGNED_BY_ID: '12' }, null],
+                    fromLeadDeals: [{ ASSIGNED_BY_ID: 14 }],
+                }),
+                assignee: { responsible: 8 },
+            },
+        ]);
+
+        expect(ids).toEqual(expect.arrayContaining([8, 11, 12, 14]));
     });
 
     it('сам передавший и исключённый SLA — тоже в списке', () => {
@@ -85,7 +103,7 @@ describe('leadToWorkNameIds', () => {
             },
         ]);
 
-        expect(ids).toEqual(expect.arrayContaining([8, 3, 4, 5]));
+        expect(ids).toEqual(expect.arrayContaining([8, 3, 4]));
     });
 
     it('лид не прочитан — только то, что пришло в элементе', () => {

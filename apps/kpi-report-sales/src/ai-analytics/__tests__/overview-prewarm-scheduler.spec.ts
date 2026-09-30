@@ -6,13 +6,18 @@ import {
 } from '../constants/ai-cron.const';
 import { AI_ANALYTICS_PREWARM_JOB_OPTIONS } from '../constants/ai-overview.const';
 import { AiAnalyticsOverviewPrewarmScheduler } from '../cron/ai-analytics-overview-prewarm.scheduler';
+import { AiManagerScopeResolver } from '../domain/access/ai-manager-scope.resolver';
 import { AiAnalyticsPortalsLoader } from '../domain/loaders/portals.loader';
+import type { AiCallReportStatus } from '../domain/loaders/settings.loader';
 import { OverviewLookupUseCase } from '../domain/use-cases/overview-lookup.use-case';
+import { callReportWith } from './fixtures/manager-scope.fixture';
 
 interface PortalFlags {
     enabled?: boolean;
     timeZone?: string;
     roster?: number[];
+    /** Статус разбора звонков; нет — статус не прочитан (без ограничения). */
+    callReport?: AiCallReportStatus;
 }
 
 function makeScheduler(portals: Record<string, PortalFlags>) {
@@ -37,6 +42,7 @@ function makeScheduler(portals: Record<string, PortalFlags>) {
                     ...DEFAULT_WORK_CALENDAR,
                     timeZone: flags.timeZone ?? DEFAULT_WORK_CALENDAR.timeZone,
                 },
+                ...(flags.callReport ? { callReport: flags.callReport } : {}),
             });
         }),
     };
@@ -49,9 +55,15 @@ function makeScheduler(portals: Record<string, PortalFlags>) {
         dispatch: jest.fn().mockResolvedValue({ id: 'x' }),
         getJob: jest.fn().mockResolvedValue(null),
     };
+    const cache = { getJson: jest.fn(), setJson: jest.fn() };
     const lookup = new OverviewLookupUseCase(
-        managers as never,
-        { getJson: jest.fn() } as never,
+        settings as never,
+        new AiManagerScopeResolver(
+            settings as never,
+            managers as never,
+            cache as never,
+        ),
+        cache as never,
         dispatcher as never,
     );
     return {
@@ -107,6 +119,35 @@ describe('AiAnalyticsOverviewPrewarmScheduler', () => {
                 requestKey: expectedKey('on.bitrix24.ru'),
             },
             expectedKey('on.bitrix24.ru'),
+            AI_ANALYTICS_PREWARM_JOB_OPTIONS,
+        );
+    });
+
+    it('список разбора: прогрев ставит ключ фронта без фильтра — периметр разбора, а не весь ОП', async () => {
+        const { scheduler, dispatcher } = makeScheduler({
+            'pilot.bitrix24.ru': {
+                enabled: true,
+                roster: [10, 20, 30],
+                callReport: callReportWith([20, 512]),
+            },
+        });
+        const pilotKey = buildOverviewKey(
+            'pilot.bitrix24.ru',
+            '2026-08-10',
+            '2026-09-06',
+            '20_512',
+            false,
+        );
+
+        expect(await scheduler.dispatchAll(NOW)).toEqual([pilotKey]);
+        expect(dispatcher.dispatch).toHaveBeenCalledWith(
+            'sales-kpi-report',
+            'sales-ai-analytics-overview',
+            expect.objectContaining({
+                managerIds: [20, 512],
+                requestKey: pilotKey,
+            }),
+            pilotKey,
             AI_ANALYTICS_PREWARM_JOB_OPTIONS,
         );
     });

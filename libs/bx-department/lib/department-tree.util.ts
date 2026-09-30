@@ -40,13 +40,15 @@ export const selectMultipleTree = (
  * без дублей по ID и без самих стартовых отделов. Через общего предка
  * подъём продолжается (у каждой ветки свой лимит уровней), цикл PARENT
  * обрывает ветку. Поиск вернул undefined — ветка тоже обрывается.
+ * Уже известные отделы (найденные и стартовые) повторно не ищутся —
+ * в одиночном режиме поиск идёт HTTP-запросами.
  */
 export const climbParents = async (
     start: readonly IBXDepartment[],
     findById: DepartmentLookup,
     limit: number = PARENT_CLIMB_LIMIT,
 ): Promise<IBXDepartment[]> => {
-    const startIds = new Set(start.map(d => Number(d.ID)));
+    const startById = new Map(start.map(d => [Number(d.ID), d]));
     const found = new Map<number, IBXDepartment>();
 
     for (const department of start) {
@@ -57,9 +59,12 @@ export const climbParents = async (
             if (parentId === null || branch.has(parentId)) break;
             branch.add(parentId);
 
-            const parent = found.get(parentId) ?? (await findById(parentId));
+            const parent =
+                found.get(parentId) ??
+                startById.get(parentId) ??
+                (await findById(parentId));
             if (!parent) break;
-            if (!startIds.has(parentId)) found.set(parentId, parent);
+            if (!startById.has(parentId)) found.set(parentId, parent);
             parentId = toPositiveInt(parent.PARENT);
         }
     }

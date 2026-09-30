@@ -85,9 +85,11 @@ describe('buildAttention: правила Фазы 1', () => {
             ],
         });
         expect(item.signal).toBe('discipline');
-        // Без «CRM» и кодов; проценты и «сделано из плана» — для факт-чека.
+        // План CRM — самоотчёт менеджера, не план руководителя: заголовок
+        // так и говорит; проценты и «сделано из запланированного» — для
+        // факт-чека, кодов в тексте нет.
         expect(item.headline).toBe(
-            'План по звонкам выполнен на 20 % (4 из 20), по презентациям — на 42 % (5 из 12)',
+            'Из запланированных в CRM звонков сделано 20 % (4 из 20), презентаций — 42 % (5 из 12)',
         );
         const [callsOnly] = buildAttention({
             managers: [
@@ -97,7 +99,7 @@ describe('buildAttention: правила Фазы 1', () => {
             ],
         });
         expect(callsOnly.headline).toBe(
-            'План по звонкам выполнен на 20 % (4 из 20)',
+            'Из запланированных в CRM звонков сделано 20 % (4 из 20)',
         );
         const [presentationsOnly] = buildAttention({
             managers: [
@@ -111,7 +113,7 @@ describe('buildAttention: правила Фазы 1', () => {
             ],
         });
         expect(presentationsOnly.headline).toBe(
-            'План по презентациям выполнен на 42 % (5 из 12)',
+            'Из запланированных в CRM презентаций сделано 42 % (5 из 12)',
         );
         expect(item.basis).toEqual([
             { code: 'call_plan_done_share', value: 0.2, norm: 0.5, n: 20 },
@@ -355,7 +357,11 @@ describe('buildAttention: лимиты, порядок, детерминизм',
             'plan_gap',
         ]);
         for (const item of items) {
-            expect(item.headline).not.toMatch(/[→×÷=_]|CRM|[a-z]{3,}/i);
+            // Единственное исключение (решение владельца 30.09.2026):
+            // «запланированных в CRM» — отличает самоотчёт менеджера от
+            // плана руководителя; других кодов и латиницы в тексте нет.
+            const text = item.headline.replace('запланированных в CRM', '');
+            expect(text).not.toMatch(/[→×÷=_]|CRM|[a-z]{3,}/i);
             expect(item.headline).not.toMatch(/накрут|обман/i);
         }
     });

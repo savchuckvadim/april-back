@@ -1,6 +1,8 @@
 import type { AnalyticsCallLiteRow } from '@lib/call-lib/call-report-analytics/types/analytics-lite.types';
 import { CALL_REPORT_OBJECTION_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-smart.type';
+import { isBeforeComparable, matrixComparability } from './comparable-row';
 import { isBelowMinDuration, minDurationMapOf } from './manager-type-matrix';
+import type { MatrixComparability, MatrixOptions } from './matrix.types';
 import { MetricValue } from './metric';
 import { ratePctMetric } from './metric-pct.util';
 import type { MinDurationSecByType } from './pulse';
@@ -30,6 +32,14 @@ export interface ObjectionCategoryStat {
     n: number;
     /** Звонков, в которых встретилась категория. */
     calls: number;
+    /**
+     * Возражений с handled = true — числитель доли отработанных. Вместе с
+     * `handledKnown` позволяет пересчитать долю по окну из нескольких
+     * периодов (доли периодов между собой не складываются).
+     */
+    handled: number;
+    /** Возражений с известным handled (true или false) — знаменатель доли. */
+    handledKnown: number;
     /** Доля handled = true среди возражений с известным handled, %. */
     handledRatePct: MetricValue;
     outcomes: ObjectionOutcomes;
@@ -49,7 +59,21 @@ export interface ObjectionsSlice {
     n: number;
 }
 
-export interface ObjectionsOptions {
+/**
+ * Опции среза. Границы сравнимости — те же, что у матрицы менеджер × тип
+ * (`comparableFrom` / `comparableVersionFrom` / `seriesBreakFrom` +
+ * `timeZone`, правило — `comparable-row.ts`): срез, собранный с опциями
+ * матрицы периода, считает возражения по тем же звонкам, что и её `n`.
+ * Границы не заданы — звонки по дате не отсекаются.
+ */
+export interface ObjectionsOptions
+    extends Pick<
+        MatrixOptions,
+        | 'comparableFrom'
+        | 'comparableVersionFrom'
+        | 'seriesBreakFrom'
+        | 'timeZone'
+    > {
     /** Звонок короче — вне слоя качества (по умолчанию shortCallSec). */
     shortCallSec?: number;
     /**
@@ -84,20 +108,42 @@ const categoryRank = (category: string): number => {
 export const compareObjectionCategories = (a: string, b: string): number =>
     categoryRank(a) - categoryRank(b) || a.localeCompare(b);
 
+/** Разбор в слое качества: менеджер известен (строка идёт в срез). */
+type QualityRow = AnalyticsCallLiteRow & { managerId: string };
+
+/**
+ * Те же фильтры, что у матрицы менеджер × тип: разбор есть, менеджер и
+ * тип звонка известны, звонок не короче порога своего типа и не раньше
+ * границы сравнимости. Иначе «N возражений в M звонках» считалось бы по
+ * другому набору звонков, чем объём и оценки периода.
+ */
+function inQualityLayer(
+    row: AnalyticsCallLiteRow,
+    byType: MinDurationSecByType,
+    comparability: MatrixComparability,
+): row is QualityRow {
+    return (
+        row.analysisPresent &&
+        row.managerId !== null &&
+        row.managerId !== '' &&
+        row.callType !== null &&
+        row.callType !== '' &&
+        !isBelowMinDuration(row, byType) &&
+        !isBeforeComparable(row, comparability)
+    );
+}
+
 function collect(
     rows: readonly AnalyticsCallLiteRow[],
     byType: MinDurationSecByType,
+    comparability: MatrixComparability,
 ): ObjectionRecord[] {
     const records: ObjectionRecord[] = [];
     for (const row of rows) {
-        const managerId = row.managerId;
-        if (!row.analysisPresent || managerId === null || managerId === '') {
-            continue;
-        }
-        if (isBelowMinDuration(row, byType)) continue;
+        if (!inQualityLayer(row, byType, comparability)) continue;
         for (const objection of row.objections) {
             records.push({
-                managerId,
+                managerId: row.managerId,
                 transcriptionId: row.transcriptionId,
                 category:
                     objection.category && objection.category.trim() !== ''
@@ -141,15 +187,17 @@ function byCategory(
         .sort(([a], [b]) => compareObjectionCategories(a, b))
         .map(([category, group]) => {
             const known = group.filter(record => record.handled !== null);
+            const handled = known.filter(
+                record => record.handled === true,
+            ).length;
             return {
                 category,
                 n: group.length,
                 calls: new Set(group.map(record => record.transcriptionId))
                     .size,
-                handledRatePct: ratePctMetric(
-                    known.filter(record => record.handled === true).length,
-                    known.length,
-                ),
+                handled,
+                handledKnown: known.length,
+                handledRatePct: ratePctMetric(handled, known.length),
                 outcomes: countOutcomes(group),
             };
         });
@@ -158,11 +206,13 @@ function byCategory(
 /**
  * Сквозной срез возражений по всем типам звонков (ТЗ FR-30, уровень E0):
  * менеджер × категория → n, доля отработанных (Уилсон 90 %, только среди
- * возражений с известным handled) и исходы. outcome читается как есть:
- * continued / converted / disengaged, всё прочее и null → other.
- * Возражение без категории → OBJECTION_CATEGORY_UNKNOWN. Строки без
- * разбора, без менеджера и короче порога своего типа (карта
- * `minDurationSecByType`, иначе shortCallSec) не участвуют.
+ * возражений с известным handled) со счётчиками handled / handledKnown и
+ * исходы. outcome читается как есть: continued / converted / disengaged,
+ * всё прочее и null → other. Возражение без категории →
+ * OBJECTION_CATEGORY_UNKNOWN. Звонки — те же, что у матрицы менеджер ×
+ * тип: без разбора, без менеджера, без типа, короче порога своего типа
+ * (карта `minDurationSecByType`, иначе shortCallSec) и до границы
+ * сравнимости (если задана) не участвуют.
  * Чистая детерминированная функция.
  */
 export function buildObjectionsSlice(
@@ -172,6 +222,7 @@ export function buildObjectionsSlice(
     const records = collect(
         rows,
         minDurationMapOf(options.shortCallSec, options.minDurationSecByType),
+        matrixComparability(options),
     );
     const managers = new Map<string, ObjectionRecord[]>();
     for (const record of records) {

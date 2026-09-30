@@ -1,17 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
-import { isWorkday, previousWorkday } from '@lib/sales-ai-analytics';
+import {
+    DigestItem,
+    isWorkday,
+    previousWorkday,
+} from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_PUSH_REASONS } from '../../constants/ai-analytics.const';
 import { AiAnalyticsDeliveryService } from '../../delivery/ai-analytics-delivery.service';
 import { groupDigestAll } from '../../delivery/ai-analytics-digest-all-message.util';
 import {
     AiAnalyticsPushLogStore,
+    type AiAnalyticsPushSentKey,
     digestAllObject,
 } from '../../store/ai-analytics-push-log.store';
+import { AiManagerScopeResolver } from '../access/ai-manager-scope.resolver';
 import { ManagerOrgLoader } from '../loaders/manager-org.loader';
-import { ManagersLoader } from '../loaders/managers.loader';
 import { dayStartUtc } from '../loaders/period.util';
 import { SmartLinkLoader } from '../loaders/smart-link.loader';
+import { UserNamesReader } from '../loaders/user-names.reader';
 import { MorningDigestUseCase } from './morning-digest.use-case';
 import {
     AiPushResult,
@@ -22,17 +28,28 @@ import {
 
 const KIND = 'digest_all' as const;
 
+/** Что ушло адресатам: для отметки digest_sent и её payload. */
+interface DigestAllSent {
+    domain: string;
+    day: string;
+    recipients: number[];
+    byManager: ReadonlyMap<string, readonly DigestItem[]>;
+}
+
 /**
  * Сводный утренний дайджест (решение владельца 07.09.2026, план §14.5
  * п. 8): адресатам из ai_analytics_digest_all_user_ids — один текст по
- * ВСЕМ менеджерам портала (весь ростер ОП по структуре, по отделам, до 3
+ * сотрудникам вкладки AI (периметр без фильтра, AiManagerScopeResolver:
+ * список разбора звонков, а без него — весь ростер ОП; по отделам, до 3
  * звонков вчерашнего рабочего дня на менеджера с одной лучшей фразой,
- * итог «кому что»). Идёт в 08:00 тем же кроном, что и личный дайджест,
- * и НЕ зависит от ai_analytics_digest_enabled: достаточно непустого
- * списка адресатов. В выходной не шлётся; пустой день отправляется
- * («Звонков не было») — адресаты видят, что конвейер молчал.
+ * итог «кому что»). «Звонков не было» перечисляет только сотрудников из
+ * разбора, а не весь отдел. Идёт в 08:00 тем же кроном, что и личный
+ * дайджест, и НЕ зависит от ai_analytics_digest_enabled: достаточно
+ * непустого списка адресатов. В выходной не шлётся; пустой день
+ * отправляется («Звонков не было») — адресаты видят, что конвейер молчал.
  * Идемпотентность — одна запись digest_sent с object digest_all:{day}
- * (managerId = null) на домен+день. Ручные получатели (тест «отправить
+ * (managerId = null) на домен+день; сбой записи отметки после доставки
+ * не превращает доставку в ошибку. Ручные получатели (тест «отправить
  * себе») получают тот же текст, выходные и отметки не применяются.
  */
 @Injectable()
@@ -42,7 +59,7 @@ export class PushDigestAllUseCase {
     constructor(
         private readonly pbx: PBXService,
         private readonly digest: MorningDigestUseCase,
-        private readonly managers: ManagersLoader,
+        private readonly scopes: AiManagerScopeResolver,
         private readonly org: ManagerOrgLoader,
         private readonly smartLinks: SmartLinkLoader,
         private readonly pushLog: AiAnalyticsPushLogStore,
@@ -61,16 +78,10 @@ export class PushDigestAllUseCase {
 
         const timeZone = settings.calendar.timeZone;
         const expectedDay = previousWorkday(date, settings.calendar);
-        const key = {
-            domain,
-            kind: 'digest_sent' as const,
-            object: digestAllObject(expectedDay),
-            managerId: null,
-        };
         if (
             !manual &&
             (await this.pushLog.wasSent(
-                key,
+                this.sentKey(domain, expectedDay),
                 dayStartUtc(expectedDay, timeZone),
             ))
         ) {
@@ -78,10 +89,11 @@ export class PushDigestAllUseCase {
         }
 
         const { day, byManager } = await this.digest.execute(domain, { now });
-        const [roster, org] = await Promise.all([
-            this.managers.resolve(domain),
+        const [scope, org] = await Promise.all([
+            this.scopes.resolveFor(domain, undefined, settings.callReport),
             this.org.load(domain),
         ]);
+        const roster = scope.managerIds;
         const items = [...byManager.values()].flat();
         const links = await this.smartLinks.resolveLinks(
             domain,
@@ -89,7 +101,6 @@ export class PushDigestAllUseCase {
         );
 
         const { bitrix } = await this.pbx.init(domain);
-        const delivery = new AiAnalyticsDeliveryService(bitrix);
         const managerIds = [
             ...new Set([...roster.map(String), ...byManager.keys()]),
         ];
@@ -97,30 +108,59 @@ export class PushDigestAllUseCase {
             roster,
             org,
             byManager,
-            names: await delivery.resolveUserNames(managerIds),
+            names: await new UserNamesReader(bitrix).read(managerIds),
         });
-        const sentTo = await delivery.sendDigestAll(recipients, {
-            day,
-            timeZone,
-            departments,
-            links,
-        });
+        const sentTo = await new AiAnalyticsDeliveryService(
+            bitrix,
+        ).sendDigestAll(recipients, { day, timeZone, departments, links });
         if (sentTo.length && !manual) {
-            await this.pushLog.markSent({
-                ...key,
-                object: digestAllObject(day),
-                payload: {
-                    recipients: sentTo,
-                    managerIds: [...byManager.keys()],
-                    transcriptionIds: items.map(item => item.transcriptionId),
-                },
-            });
+            await this.markSent({ domain, day, recipients: sentTo, byManager });
         }
         this.logger.log(
-            `Сводный дайджест ${domain} за ${day}: менеджеров в ростере ${managerIds.length}, ` +
-                `со звонками ${byManager.size}, доставлено ${sentTo.length} из ${recipients.length}` +
+            `Сводный дайджест ${domain} за ${day}: сотрудников вкладки ${managerIds.length}` +
+                (scope.pilotActive ? ' (список разбора)' : '') +
+                `, со звонками ${byManager.size}, доставлено ${sentTo.length} из ${recipients.length}` +
                 (manual ? ' (ручная отправка)' : ''),
         );
         return delivered(KIND, date, sentTo);
+    }
+
+    /** Адрес отметки «отправлено» за день разбора (managerId = null). */
+    private sentKey(domain: string, day: string): AiAnalyticsPushSentKey {
+        return {
+            domain,
+            kind: 'digest_sent',
+            object: digestAllObject(day),
+            managerId: null,
+        };
+    }
+
+    /**
+     * Отметка digest_sent после доставки. Уведомления уже у адресатов,
+     * поэтому сбой записи (например, ais недоступна) — не провал рассылки:
+     * error-лог с оповещением в Telegram, а результат — фактическая
+     * доставка. Без отметки повторный запуск за этот день отправит
+     * дайджест ещё раз — об этом и говорит оповещение.
+     */
+    private async markSent(sent: DigestAllSent): Promise<void> {
+        const items = [...sent.byManager.values()].flat();
+        try {
+            await this.pushLog.markSent({
+                ...this.sentKey(sent.domain, sent.day),
+                payload: {
+                    recipients: sent.recipients,
+                    managerIds: [...sent.byManager.keys()],
+                    transcriptionIds: items.map(item => item.transcriptionId),
+                },
+            });
+        } catch (error) {
+            this.logger.error(
+                `Сводный дайджест ${sent.domain} за ${sent.day} доставлен ` +
+                    `(${sent.recipients.join(', ')}), но отметка об отправке не ` +
+                    `записана: ${(error as Error).message}. Повторный запуск за ` +
+                    'этот день отправит его снова',
+                { telegram: true, domain: sent.domain },
+            );
+        }
     }
 }

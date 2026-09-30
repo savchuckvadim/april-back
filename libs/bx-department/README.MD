@@ -24,8 +24,10 @@ PBX
   дублей, с сотрудниками); `department = 0`. Ни одного ОП не найдено — warn и пустой снимок
   в кэше на 5 минут, структура отвечает 404.
 
-`department.get` и `user.get` читаются всеми страницами (смещение — `start` в нижнем
-регистре из `next` ответа).
+Все отделы портала (`getDepartmentsAll`, мультирежим) и сотрудники отдела
+(`getUsersByDepartment`, порядок по ID) читаются всеми страницами (смещение — `start` в
+нижнем регистре из `next` ответа). Запросы одиночного режима по `ID`/`PARENT` — одной
+страницей, как раньше. Без базового отдела в конфиге родители не ищутся.
 
 Руководители отдела — список `HEADS` (руководитель первым, потом заместители):
 объединение ролей участников узла новой структуры (REST 3.0 `humanresources.node.get`,
@@ -33,9 +35,9 @@ PBX
 `UF_HEAD` в ответе = `HEADS[0] ?? null`. Без скоупа `humanresources` на вебхуке
 остаётся только `UF_HEAD` (warn в лог, ответ не падает).
 
-Суперпользователь вендора (сотрудник April) — `BxSuperUserService`, env
-`BX_SUPER_USER_IDS` в формате `domain:id[,domain:id...]` (домен без учёта регистра,
-мусорные записи — один warn). В `bx/department/structure` он получает
+Суперпользователь вендора (сотрудник April) — `BxSuperUserService`, список в БД
+(`vendor_super_users`, заводится в админке «Суперпользователи April»; env
+`BX_SUPER_USER_IDS` больше не читается). В `bx/department/structure` он получает
 `currentUser.isSuperUser = true`, `visibility = all`, `headOf = cup`,
 `headOfDepartmentIds` — все ОП, `headOfSource = superuser`; `isHead` и коллеги — по
 структуре. У остальных `isSuperUser = false`, userId ≤ 0 — никогда. Фронты больше не

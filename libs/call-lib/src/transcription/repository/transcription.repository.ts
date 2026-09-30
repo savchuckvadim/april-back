@@ -134,4 +134,12 @@ export abstract class TranscriptionRepository {
         from: Date,
         to: Date,
     ): Promise<TranscriptionPipelineLiteRow[]>;
+
+    /**
+     * Момент самой ранней готовой (done) строки автоконвейера домена — по
+     * тем же условиям и той же дате, что выборки за период: время звонка
+     * (call_started_at), а без него — created_at. null — готовых строк нет.
+     * С этого момента на портале идёт AI-разбор звонков.
+     */
+    abstract findFirstDonePipelineAt(domain: string): Promise<Date | null>;
 }

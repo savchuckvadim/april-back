@@ -33,6 +33,7 @@ import {
 } from '../../dto/ai-manager-type-cell.dto';
 import { AiObjectionsManagerDto } from '../../dto/ai-objections.dto';
 import { AiOverviewDto } from '../../dto/ai-overview.dto';
+import { byTypeCoverage } from './by-type-coverage.presenter';
 import { kpiEventTitle, kpiReasonText } from './kpi-title.util';
 import { ru1, typeTitle } from './type-cell.presenter';
 
@@ -232,6 +233,7 @@ function buildObjectionsSlice(
         totals: null,
         totalsByType: null,
         objections: overview.objections,
+        coverage: byTypeCoverage(overview),
     };
 }
 
@@ -270,5 +272,6 @@ export function buildByType(
               null),
         totalsByType: isAll ? overview.totals : null,
         objections: null,
+        coverage: byTypeCoverage(overview),
     };
 }

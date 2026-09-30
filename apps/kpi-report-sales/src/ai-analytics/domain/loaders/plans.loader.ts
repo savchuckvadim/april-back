@@ -1,10 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '@/core/prisma/prisma.service';
 import { PBXService } from '@/modules/pbx';
 import { AiAnalyticsCacheService } from '../../cache/ai-analytics-cache.service';
 import {
     PLAN_INDICATOR_CODES,
     PLAN_INDICATORS,
     PlanIndicatorCode,
+    PlanIndicatorSetting,
+    PlansConfigService,
     PlanTargetsService,
     PlanUserTargetsDto,
 } from '../../../plans';
@@ -27,10 +30,14 @@ function emptyTargets(): Record<PlanIndicatorCode, number | null> {
     ) as Record<PlanIndicatorCode, number | null>;
 }
 
-/** PlanUserTargetsDto → строка витрины: каталог целиком + три ключевые цели. */
+/**
+ * PlanUserTargetsDto → строка витрины: каталог целиком + три ключевые
+ * цели; конфиг портала (если прочитан) прикладывается к строке.
+ */
 export function toManagerTargets(
     managerId: number,
     dto: PlanUserTargetsDto | undefined,
+    config?: readonly PlanIndicatorSetting[] | null,
 ): AiPlanManagerTargets {
     const targets = emptyTargets();
     for (const value of dto?.values ?? []) {
@@ -42,15 +49,23 @@ export function toManagerTargets(
         calls: targets[PLAN_INDICATOR_CODES.calls_done],
         presentations: targets[PLAN_INDICATOR_CODES.presentations_done],
         targets,
+        ...(config ? { config } : {}),
     };
+}
+
+/** Запись кэша в текущей форме (с конфигом портала), а не старая. */
+function hasPortalConfig(cached: AiPlansResult): boolean {
+    return Array.isArray(cached.config);
 }
 
 /**
  * Загрузчик планов руководителя (план, Фаза 1b п. 3): одно user.get по
  * ростеру через PlanTargetsService (non-injectable, `new Svc(bitrix)` после
- * pbx.init), кэш `plans` на 1 час. Источник вспомогательный, поэтому
- * fail-open: ошибка Bitrix → пустые цели с ok=false, а не падение overview.
- * Ошибочный результат не кэшируется.
+ * pbx.init) и конфиг планов портала (PlansConfigService поверх глобальной
+ * prisma — модуль планов несёт контроллер, импортировать его нельзя), кэш
+ * `plans` на 1 час. Источник вспомогательный, поэтому fail-open: ошибка
+ * Bitrix → пустые цели с ok=false, ошибка конфига → config = null (план на
+ * период в строке не строится); такой результат не кэшируется.
  */
 @Injectable()
 export class PlansLoader {
@@ -60,6 +75,7 @@ export class PlansLoader {
         private readonly pbx: PBXService,
         private readonly cache: AiAnalyticsCacheService,
         private readonly managers: ManagersLoader,
+        private readonly prisma: PrismaService,
     ) {}
 
     async loadPlans(
@@ -73,8 +89,11 @@ export class PlansLoader {
         const cached = options.forceRefresh
             ? null
             : await this.cache.getJson<AiPlansResult>(key);
-        if (cached) return { ...cached, fromCache: true };
+        if (cached && hasPortalConfig(cached)) {
+            return { ...cached, fromCache: true };
+        }
 
+        const config = await this.loadConfig(domain);
         try {
             const { bitrix } = await this.pbx.init(domain);
             const rows = await new PlanTargetsService(bitrix).getTargets(ids);
@@ -84,9 +103,12 @@ export class PlansLoader {
                 fromCache: false,
                 ok: true,
                 error: null,
-                managers: ids.map(id => toManagerTargets(id, byId.get(id))),
+                config,
+                managers: ids.map(id =>
+                    toManagerTargets(id, byId.get(id), config),
+                ),
             };
-            await this.store(key, result);
+            if (config !== null) await this.store(key, result);
             return result;
         } catch (error) {
             const message = (error as Error).message;
@@ -98,8 +120,33 @@ export class PlansLoader {
                 fromCache: false,
                 ok: false,
                 error: message,
-                managers: ids.map(id => toManagerTargets(id, undefined)),
+                config,
+                managers: ids.map(id =>
+                    toManagerTargets(id, undefined, config),
+                ),
             };
+        }
+    }
+
+    /** Конфиг планов портала по каталогу; ошибка — null (fail-open). */
+    private async loadConfig(
+        domain: string,
+    ): Promise<PlanIndicatorSetting[] | null> {
+        try {
+            const config = await new PlansConfigService(this.prisma).getConfig(
+                domain,
+            );
+            return config.indicators.map(indicator => ({
+                code: indicator.code,
+                enabled: indicator.enabled,
+                customName: indicator.customName,
+                periodType: indicator.periodType,
+            }));
+        } catch (error) {
+            this.logger.warn(
+                `Конфиг планов портала не прочитан (${domain}): ${(error as Error).message}`,
+            );
+            return null;
         }
     }
 

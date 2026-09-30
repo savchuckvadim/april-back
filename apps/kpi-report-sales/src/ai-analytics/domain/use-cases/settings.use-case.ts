@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { TranscriptionStoreService } from '@lib/call-lib';
 import {
     AI_ANALYTICS_EVENT_KINDS,
     CALL_REPORT_CALL_TYPE_CODES,
@@ -78,7 +79,9 @@ export interface SettingsUseCaseOptions {
  * — из модели портала (нет поля — по праздникам ключа настроек); в ответ
  * добавлены гипотеза и согласие на пул.
  * Статус конвейера разбора (callReport) — чтобы витрина отличала пилот
- * от поломки. Кэшируется контроллером на 300 с.
+ * от поломки; дата начала разборов на портале (analysisSince) — чтобы
+ * период до неё назывался «разбор ещё не шёл», а не «звонки не попадают
+ * в разбор». Кэшируется контроллером на 300 с.
  */
 @Injectable()
 export class SettingsUseCase {
@@ -88,6 +91,7 @@ export class SettingsUseCase {
         private readonly calls: CallsLoader,
         private readonly settings: SettingsLoader,
         private readonly snapshots: AiAnalyticsSnapshotStore,
+        private readonly transcriptions: TranscriptionStoreService,
     ) {}
 
     async execute(
@@ -96,14 +100,17 @@ export class SettingsUseCase {
     ): Promise<AiAnalyticsSettingsDto> {
         const now = options.now ?? new Date();
         const settings = await this.settings.load(domain);
-        const rows = await this.calls.loadLite(
-            domain,
-            new Date(
-                now.getTime() -
-                    AI_ANALYTICS_WINDOWS.readinessLookbackDays * DAY_MS,
+        const [rows, analysisSince] = await Promise.all([
+            this.calls.loadLite(
+                domain,
+                new Date(
+                    now.getTime() -
+                        AI_ANALYTICS_WINDOWS.readinessLookbackDays * DAY_MS,
+                ),
+                now,
             ),
-            now,
-        );
+            this.analysisSinceOf(domain, settings.calendar.timeZone),
+        ]);
         const pipelineFrom =
             now.getTime() - AI_ANALYTICS_WINDOWS.pipelineLookbackDays * DAY_MS;
         const pipelineEnabled = rows.some(
@@ -158,8 +165,30 @@ export class SettingsUseCase {
             ...(settings.callReport === undefined
                 ? {}
                 : { callReport: toCallReportDto(settings.callReport) }),
+            ...(analysisSince === undefined ? {} : { analysisSince }),
             ...settingsPhase4FieldsOf(settings),
         };
+    }
+
+    /**
+     * С какого дня на портале идёт AI-разбор: день самой ранней готовой
+     * транскрипции автоконвейера в TZ портала (те же условия, что у выборок
+     * витрины); null — разборов ещё не было. Сбой чтения — undefined: поля
+     * в ответе не будет, настройки витрины не гаснут.
+     */
+    private async analysisSinceOf(
+        domain: string,
+        timeZone: string,
+    ): Promise<string | null | undefined> {
+        try {
+            const first = await this.transcriptions.findFirstDoneAt(domain);
+            return first === null ? null : toPortalDate(first, timeZone);
+        } catch (error) {
+            this.logger.warn(
+                `Дата начала разборов (${domain}) не прочитана: ${String(error)}`,
+            );
+            return undefined;
+        }
     }
 
     /**

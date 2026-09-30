@@ -9,6 +9,7 @@ import {
 } from '../model/pulse';
 import { AI_ANALYTICS_THRESHOLDS } from '../model/thresholds.const';
 import { DEFAULT_WORK_CALENDAR, lastWorkdays } from '../model/workdays.util';
+import { registryDefault } from '../params/registry.access';
 
 // Сентябрь 2026: 04 — пятница, 05 — суббота, 07–11 — пн–пт.
 const END = '2026-09-11';
@@ -123,10 +124,16 @@ describe('computePulse', () => {
             withDate('2026-09-08', { managerId: 'm2', durationSec: 10 }),
         ];
 
+        // Дефолт — код реестра pulse_manager_min_n (8): у m1 и m2 меньше.
         expect(computePulse(rows, options).byManager).toEqual([]);
-        expect(PULSE_DEFAULTS.managerMinN).toBe(20);
+        expect(PULSE_DEFAULTS.managerMinN).toBe(
+            registryDefault('pulse_manager_min_n'),
+        );
+        expect(PULSE_DEFAULTS.managerMinN).toBe(8);
+        expect(computePulse(rows, options).managerMinN).toBe(8);
 
         const result = computePulse(rows, { ...options, managerMinN: 5 });
+        expect(result.managerMinN).toBe(5);
         expect(result.byManager.map(item => item.managerId)).toEqual([
             'm1',
             'm2',
@@ -286,6 +293,11 @@ describe('порог длительности разбора (min_duration_sec_b
             null,
         ]);
         expect(after.shortCallsSharePct).toBe(20);
+        // Порог «короткого» для подписи доли — тот же, что применён.
+        expect(before.minDurationSec).toBe(
+            AI_ANALYTICS_THRESHOLDS.shortCallSec,
+        );
+        expect(after.minDurationSec).toBe(60);
     });
 
     it('порог берётся по типу звонка: 60 у cold не трогает payment', () => {
@@ -302,5 +314,7 @@ describe('порог длительности разбора (min_duration_sec_b
         });
         expect(result.analyzedCalls).toBe(1);
         expect(result.shortCallsSharePct).toBe(50);
+        // Карта разная по типам: в подпись идёт порог остальных типов.
+        expect(result.minDurationSec).toBe(300);
     });
 });

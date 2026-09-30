@@ -10,6 +10,11 @@ import type { DossierNeighbourSources } from '../domain/loaders/dossier-neighbou
 import type { DossierSources } from '../domain/loaders/dossier-sources.loader';
 import { DossierJobUseCase } from '../domain/use-cases/dossier-job.use-case';
 import type { AiDossierJobData } from '../dto/ai-dossier.dto';
+import {
+    dossierPassport,
+    monthCalls,
+    realMonthPayload,
+} from './fixtures/dossier-month.fixture';
 
 const DOMAIN = 'april.bitrix24.ru';
 const MANAGER = '512';
@@ -64,18 +69,15 @@ const fullNeighbours = (): DossierNeighbourSources => ({
         periodKey: '2025-09',
         managerId: MANAGER,
         generatedAt: '2025-10-01T00:00:00.000Z',
-        payload: {
-            n: 30,
-            byType: [
-                {
-                    callType: 'presentation',
-                    n: 30,
-                    score: { value: 6.9, n: 30, confidence: { level: 'ok' } },
-                },
-            ],
-            finance: { salesSum: 300000, salesCount: 3, averageCheck: 100000 },
-            passport: { departmentId: 91 },
-        },
+        // Настоящая нагрузка сборщика месяца, а не выдуманный объект.
+        payload: realMonthPayload(
+            MANAGER,
+            '2025-09',
+            monthCalls(MANAGER, '2025-09', 30),
+            {
+                passports: new Map([[MANAGER, dossierPassport(MANAGER, 91)]]),
+            },
+        ),
     },
     planFact: {
         monthKey: '2026-09',
@@ -125,19 +127,12 @@ const fullSources = (): DossierSources => ({
             periodKey: '2026-09',
             managerId: MANAGER,
             generatedAt: '2026-09-21T00:00:00.000Z',
-            payload: {
-                n: 40,
-                score: { value: 7.5, n: 40, confidence: { level: 'ok' } },
-                passport: {
-                    since: '2025-04-01',
-                    sinceSource: 'employment-date',
-                    status: 'active',
-                    leftAt: null,
-                    level: 'middle',
-                    tenureMonths: 17,
-                    tenureBand: 'experienced',
-                },
-            },
+            // Настоящая нагрузка сборщика месяца: 40 презентаций с баллом 70.
+            payload: realMonthPayload(
+                MANAGER,
+                '2026-09',
+                monthCalls(MANAGER, '2026-09', 40),
+            ),
         },
     ],
     weeks: [
@@ -248,14 +243,17 @@ describe('DossierJobUseCase: сборка досье в воркере', () => {
                 {
                     periodKey: '2026-W38',
                     n: 11,
+                    nBeforeComparable: 0,
                     score: { value: 7.1, n: 11, confidence: { level: 'low' } },
                 },
             ],
             months: [
                 {
                     periodKey: '2026-09',
+                    // Месячный снапшот пишет n и score — ряд не 0.
                     n: 40,
-                    score: { value: 7.5, n: 40, confidence: { level: 'ok' } },
+                    nBeforeComparable: 0,
+                    score: { value: 7, n: 40, confidence: { level: 'ok' } },
                 },
             ],
         });

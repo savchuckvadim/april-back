@@ -254,6 +254,36 @@ describe('ByTypeUseCase', () => {
         );
     });
 
+    it('coverage: разборы в оценке и причины исключений — из служебной сводки обзора, у всех срезов', async () => {
+        const data = overviewFixture(
+            [
+                ...callsOf('10', 10),
+                ...callsOf('20', 2, { durationSec: 100 }),
+                ...callsOf('20', 1, {
+                    callType: null,
+                    transcriptionId: 'no-type',
+                }),
+            ],
+            [10, 20],
+        );
+        const useCase = makeUseCase(data);
+        const expected = {
+            comparableFrom: data.comparableFrom,
+            analyzedCalls: 10,
+            excludedBeforeComparable: 0,
+            excludedShort: 2,
+            excludedNoType: 1,
+        };
+
+        for (const callType of ['all', 'presentation', 'objections'] as const) {
+            const response = await useCase.execute(
+                { ...request, callType },
+                leader,
+            );
+            expect(response.data?.coverage).toEqual(expected);
+        }
+    });
+
     it('обзор ещё считается → конверт обзора', async () => {
         const useCase = makeUseCase(null);
         expect(

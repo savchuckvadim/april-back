@@ -130,6 +130,19 @@ function addToTotals(
     );
 }
 
+/**
+ * Сделки выбранных ответственных (отбор в памяти поверх общего на домен
+ * закрытого месяца). Пустой фильтр — все сделки, как ключ сотрудников 'all'.
+ */
+export function filterDealsByAssignees(
+    deals: readonly ClosedSalesDealDto[],
+    assignedIds: readonly number[] | undefined,
+): ClosedSalesDealDto[] {
+    if (!assignedIds || assignedIds.length === 0) return [...deals];
+    const wanted = new Set(assignedIds);
+    return deals.filter(deal => wanted.has(deal.assignedId));
+}
+
 /** Агрегация сделок по сотрудникам + общие итоги. */
 export function aggregateClosedSales(deals: ClosedSalesDealDto[]): {
     employees: ClosedSalesEmployeeDto[];

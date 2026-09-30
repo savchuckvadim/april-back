@@ -16,6 +16,10 @@
  * отдаётся целиком, но `perDayNeeded` у строк равен null с причиной
  * `daily-plan-disabled` (приёмка потока).
  *
+ * Строки — периметр вкладки AI (AiManagerScopeResolver): фильтр отчёта в
+ * пределах видимости ∩ список разбора звонков; пустое пересечение — вид
+ * без строк под маркером ключа none (не 'all').
+ *
  * `@Injectable` без bitrix-состояния: `this.bitrix` здесь нет и быть не
  * может (CLAUDE.md) — источник данных один, таблица `ais`.
  */
@@ -33,7 +37,9 @@ import {
     planFactUsersKey,
 } from '../constants/ai-plan-fact.const';
 import { AiAnalyticsCacheService } from '../cache/ai-analytics-cache.service';
+import { OVERVIEW_USERS_KEY_NONE } from '../cache/cache-key.util';
 import { AiAnalyticsSnapshotStore } from '../store/ai-analytics-snapshot.store';
+import { AiManagerScopeResolver } from '../domain/access/ai-manager-scope.resolver';
 import type { RequesterAccess } from '../domain/access/perimeter.util';
 import type { ManagerMonthPayload } from '../domain/assembler/manager-snapshot.types';
 import {
@@ -45,7 +51,6 @@ import {
     SettingsLoader,
     type AiAnalyticsPortalSettings,
 } from '../domain/loaders/settings.loader';
-import { ManagersLoader } from '../domain/loaders/managers.loader';
 import { presentPlanFact } from '../domain/presenter/plan-fact.presenter';
 import type {
     AiPlanFactRequestDto,
@@ -56,7 +61,7 @@ import type {
 export class PlanFactUseCase {
     constructor(
         private readonly settings: SettingsLoader,
-        private readonly managers: ManagersLoader,
+        private readonly scopes: AiManagerScopeResolver,
         private readonly cache: AiAnalyticsCacheService,
         private readonly snapshots: AiAnalyticsSnapshotStore,
     ) {}
@@ -69,11 +74,13 @@ export class PlanFactUseCase {
         const settings = await this.settings.load(dto.domain);
         const today = toPortalDate(now, settings.calendar.timeZone);
         const closed = isClosedMonth(dto.monthKey, today);
-        const managerIds = await this.resolveManagers(dto, access);
+        const managerIds = await this.resolveManagers(dto, access, settings);
         const requestKey = buildPlanFactKey(
             dto.domain,
             dto.monthKey,
-            planFactUsersKey(managerIds),
+            managerIds.length > 0
+                ? planFactUsersKey(managerIds)
+                : OVERVIEW_USERS_KEY_NONE,
         );
         const { value } = await this.cache.remember<PlanFactView>(
             requestKey,
@@ -94,24 +101,31 @@ export class PlanFactUseCase {
      * Менеджеры расчёта: явный список пересекается с периметром (чужие
      * отбрасываются молча — 403 на чтение чужой строки означал бы, что
      * периметр раскрывается через код ответа), иначе весь периметр,
-     * иначе — ростер ОП портала для тех, кто видит всех.
+     * иначе — периметр вкладки без фильтра для тех, кто видит всех; итог
+     * сужается списком разбора звонков (AiManagerScopeResolver).
      */
     private async resolveManagers(
         dto: AiPlanFactRequestDto,
         access: RequesterAccess,
+        settings: AiAnalyticsPortalSettings,
     ): Promise<string[]> {
         const visible = access.visibleManagerIds;
-        if (dto.managerIds?.length) {
-            const asked = normalizeIds(dto.managerIds);
+        const requested = dto.managerIds?.length
+            ? normalizeIds(dto.managerIds).filter(
+                  id => visible === null || visible.includes(id),
+              )
+            : visible === null
+              ? undefined
+              : normalizeIds(visible);
+        // Фильтр не пересёкся с периметром: без строк, а не «весь портал».
+        if (requested?.length === 0) return [];
+        const scope = await this.scopes.resolveFor(
+            dto.domain,
+            requested,
+            settings.callReport,
+        );
 
-            return visible === null
-                ? asked
-                : asked.filter(id => visible.includes(id));
-        }
-        if (visible !== null) return normalizeIds(visible);
-        const roster = await this.managers.resolve(dto.domain);
-
-        return normalizeIds(roster.map(String));
+        return scope.managerIds.map(String);
     }
 
     /** Сборка вида: снимок целей + месяцы менеджеров + календарь портала. */
@@ -123,7 +137,10 @@ export class PlanFactUseCase {
     ): Promise<PlanFactView> {
         const [plan, months] = await Promise.all([
             this.planOf(dto.domain, dto.monthKey),
-            this.monthsOf(dto.domain, dto.monthKey, managerIds),
+            // Пустой список стор читает как «все менеджеры» — не спрашиваем.
+            managerIds.length > 0
+                ? this.monthsOf(dto.domain, dto.monthKey, managerIds)
+                : new Map<string, Partial<ManagerMonthPayload>>(),
         ]);
         const ceiling = planDayCeilingOf(settings);
 

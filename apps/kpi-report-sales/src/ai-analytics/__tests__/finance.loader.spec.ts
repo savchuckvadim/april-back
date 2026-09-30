@@ -1,73 +1,106 @@
 import { PBX_DEAL_SALES_BASE_STAGE_CODE } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
 import { AI_ANALYTICS_HOT_STAGE_CODE } from '../constants/ai-overview.const';
 import { FinanceLoader } from '../domain/loaders/finance.loader';
-import type { AiFinanceMonth } from '../domain/loaders/finance.types';
-import { buildFinanceMonthKey } from '../domain/loaders/loader-cache-key.util';
 import type {
+    ClosedSalesDealDto,
     ClosedSalesEmployeeDto,
-    ClosedSalesReportDto,
+    ClosedSalesExecution,
 } from '../../sales-finance';
 import { hotDeal, hotReport } from './fixtures/hot-clients.fixture';
 import { cacheMock, managersMock } from './fixtures/kpi-loader.fixture';
 
 const NOW = new Date(2026, 8, 6, 12, 0, 0);
 const DOMAIN = 'example.bitrix24.ru';
+const GENERATED_AT = '2026-09-06T09:00:00.000Z';
 
-function employee(
+/** Закрытая сделка: 1000 аванса, 12 оплаченных месяцев, месячная сумма. */
+function deal(
+    id: number,
     assignedId: number,
-    totals: Partial<ClosedSalesEmployeeDto> = {},
-): ClosedSalesEmployeeDto {
+    closeDay: string,
+    monthlyAmount = 100,
+): ClosedSalesDealDto {
     return {
+        id,
+        title: `Сделка ${id}`,
         assignedId,
-        dealsCount: 1,
+        closeDate: `${closeDay}T12:00:00+03:00`,
+        opportunity: 0,
         advanceAmount: 1000,
         paidMonths: 12,
-        monthlyAmount: 100,
+        monthlyAmount,
         quantity: 1,
-        expectedContractAmount: 1200,
-        deals: [],
+        contractStart: null,
+        contractEnd: null,
+        contractMonths: 12,
+        contractTypeCode: null,
+        contractTypeName: null,
+        expectedContractAmount: monthlyAmount * 12,
+        companyId: null,
+        companyName: null,
+        companyColor: null,
+        companyClientType: null,
+    };
+}
+
+/** Сотрудник отчёта: итоги — сумма сделок (как aggregateClosedSales). */
+function employee(
+    assignedId: number,
+    deals: ClosedSalesDealDto[],
+    totals: Partial<ClosedSalesEmployeeDto> = {},
+): ClosedSalesEmployeeDto {
+    const sum = (pick: (item: ClosedSalesDealDto) => number) =>
+        deals.reduce((acc, item) => acc + pick(item), 0);
+    return {
+        assignedId,
+        dealsCount: deals.length,
+        advanceAmount: sum(item => item.advanceAmount),
+        paidMonths: sum(item => item.paidMonths),
+        monthlyAmount: sum(item => item.monthlyAmount),
+        quantity: sum(item => item.quantity),
+        expectedContractAmount: sum(item => item.expectedContractAmount),
+        deals,
         ...totals,
     };
 }
 
-function closedReport(
+function execution(
     employees: ClosedSalesEmployeeDto[],
-): ClosedSalesReportDto {
+    cachedMonths: string[] = [],
+): ClosedSalesExecution {
     return {
-        employees,
-        totals: {
-            dealsCount: 0,
-            advanceAmount: 0,
-            paidMonths: 0,
-            monthlyAmount: 0,
-            quantity: 0,
-            expectedContractAmount: 0,
+        report: {
+            employees,
+            totals: {
+                dealsCount: 0,
+                advanceAmount: 0,
+                paidMonths: 0,
+                monthlyAmount: 0,
+                quantity: 0,
+                expectedContractAmount: 0,
+            },
+            dateFrom: '2026-07-15',
+            dateTo: '2026-09-06',
+            generatedAt: GENERATED_AT,
         },
-        dateFrom: '',
-        dateTo: '',
-        generatedAt: '',
+        cachedMonths: cachedMonths as ClosedSalesExecution['cachedMonths'],
     };
 }
 
-function makeLoader(preset: Record<string, unknown> = {}) {
-    const closedExecute = jest.fn(
-        (job: {
-            forceRefresh: boolean;
-            filters: { assignedIds: number[]; dateFrom: string };
-        }) =>
-            Promise.resolve(
-                closedReport(
-                    // менеджер 1 продаёт каждый месяц, менеджер 2 — только в августе
-                    job.filters.assignedIds
-                        .filter(
-                            id =>
-                                id === 1 ||
-                                job.filters.dateFrom.startsWith('2026-08'),
-                        )
-                        .map(id => employee(id, { monthlyAmount: 100 * id })),
-                ),
-            ),
-    );
+/** Менеджер 1 продаёт каждый месяц, менеджер 2 — только в августе. */
+const DEFAULT_EMPLOYEES = [
+    employee(1, [
+        deal(11, 1, '2026-07-20'),
+        deal(12, 1, '2026-08-10'),
+        deal(13, 1, '2026-09-03'),
+    ]),
+    employee(2, [deal(21, 2, '2026-08-31', 200)]),
+];
+
+function makeLoader(
+    closed: ClosedSalesExecution = execution(DEFAULT_EMPLOYEES, ['2026-08']),
+) {
+    const closedExecute = jest.fn(() => Promise.resolve(closed));
     const hotExecute = jest.fn(() =>
         Promise.resolve(
             hotReport([
@@ -80,11 +113,11 @@ function makeLoader(preset: Record<string, unknown> = {}) {
     );
     const factory = {
         create: () => ({
-            closed: { execute: closedExecute },
+            closed: { executeDetailed: closedExecute },
             hot: { execute: hotExecute },
         }),
     };
-    const cache = cacheMock(preset);
+    const cache = cacheMock();
     const managers = managersMock();
     const loader = new FinanceLoader(
         factory as never,
@@ -95,8 +128,8 @@ function makeLoader(preset: Record<string, unknown> = {}) {
 }
 
 describe('FinanceLoader', () => {
-    it('месяцы через ClosedSalesUseCase по сегментам, сводка суммирует месяцы и пайплайн v2', async () => {
-        const { loader, closedExecute, hotExecute } = makeLoader();
+    it('закрытые продажи — ОДНИМ вызовом за весь период обзора, как вкладка «Финансы»', async () => {
+        const { loader, closedExecute } = makeLoader();
 
         const result = await loader.loadFinance(
             DOMAIN,
@@ -107,35 +140,31 @@ describe('FinanceLoader', () => {
         );
 
         expect(result.managerIds).toEqual([1, 2]);
-        expect(result.pipelineThreshold).toBe('presentation');
-        expect(result.hotStageCode).toBe(AI_ANALYTICS_HOT_STAGE_CODE);
-        expect(closedExecute).toHaveBeenCalledTimes(3);
-        expect(closedExecute).toHaveBeenNthCalledWith(1, {
+        expect(closedExecute).toHaveBeenCalledTimes(1);
+        expect(closedExecute).toHaveBeenCalledWith({
             domain: DOMAIN,
             forceRefresh: false,
             filters: {
                 assignedIds: [1, 2],
                 dateFrom: '2026-07-15',
-                dateTo: '2026-07-31',
+                dateTo: '2026-09-06',
             },
         });
-        expect(result.months.map(m => [m.month, m.closed])).toEqual([
-            ['2026-07', false],
-            ['2026-08', true],
-            ['2026-09', false],
-        ]);
-        // менеджер 2 без продаж в июле — строка с нулями
-        expect(result.months[0].managers[1]).toEqual({
-            managerId: 2,
-            salesCount: 0,
-            advanceAmount: 0,
-            paidMonths: 0,
-            monthlyAmount: 0,
-            expectedContractAmount: 0,
-        });
-        expect(result.months[1].totals.monthlyAmount).toBe(300);
+    });
 
-        expect(hotExecute).toHaveBeenCalledTimes(1);
+    it('сводка — итоги сотрудника из отчёта как есть + пайплайн v2 и откуда числа', async () => {
+        const { loader, hotExecute } = makeLoader();
+
+        const result = await loader.loadFinance(
+            DOMAIN,
+            '2026-07-15',
+            '2026-09-06',
+            [1, 2],
+            { now: NOW },
+        );
+
+        expect(result.pipelineThreshold).toBe('presentation');
+        expect(result.hotStageCode).toBe(AI_ANALYTICS_HOT_STAGE_CODE);
         expect(hotExecute).toHaveBeenCalledWith({
             domain: DOMAIN,
             threshold: 'presentation',
@@ -171,6 +200,11 @@ describe('FinanceLoader', () => {
                     expectedContractAmount: null,
                 },
             ],
+            source: {
+                from: '2026-07-15',
+                to: '2026-09-06',
+                generatedAt: GENERATED_AT,
+            },
         });
         expect(summary2.salesCount).toBe(1);
         expect(summary2.pipelineFromStage).toEqual({
@@ -180,71 +214,102 @@ describe('FinanceLoader', () => {
         expect(summary2.hotEvents).toBe(0);
     });
 
-    it('закрытый месяц из кэша: use-case не вызывается для него, TTL 30 дней при записи', async () => {
-        const augustKey = buildFinanceMonthKey(
-            DOMAIN,
-            {
-                from: '2026-08-01',
-                to: '2026-08-31',
-                month: '2026-08',
-                cacheable: true,
-            },
-            '1_2',
+    it('кейс Агеевой: 2 сделки, аванс 69 024, месячная сумма 9 127 — ровно как в «Финансах»', async () => {
+        const ageeva = employee(
+            5,
+            [deal(51, 5, '2026-05-12'), deal(52, 5, '2026-06-30')],
+            { advanceAmount: 69024, monthlyAmount: 9127 },
         );
-        const cachedAugust: AiFinanceMonth = {
-            month: '2026-08',
-            from: '2026-08-01',
-            to: '2026-08-31',
-            closed: true,
-            fromCache: false,
-            managers: [],
-            totals: {
-                salesCount: 0,
-                advanceAmount: 0,
-                paidMonths: 0,
-                monthlyAmount: 0,
-                expectedContractAmount: 0,
-            },
-        };
-        const { loader, closedExecute, cache } = makeLoader({
-            [augustKey]: cachedAugust,
-        });
+        const { loader } = makeLoader(execution([ageeva]));
 
         const result = await loader.loadFinance(
             DOMAIN,
-            '2026-07-01',
+            '2026-04-27',
+            '2026-07-26',
+            [5],
+            { now: NOW },
+        );
+
+        expect(result.managers[0]).toMatchObject({
+            managerId: 5,
+            salesCount: 2,
+            advanceAmount: 69024,
+            monthlyAmount: 9127,
+        });
+    });
+
+    it('помесячная разбивка — по дате закрытия сделок; сумма месяцев = период', async () => {
+        const { loader } = makeLoader();
+
+        const result = await loader.loadFinance(
+            DOMAIN,
+            '2026-07-15',
             '2026-09-06',
             [1, 2],
             { now: NOW },
         );
 
-        expect(result.months[1].fromCache).toBe(true);
-        expect(
-            closedExecute.mock.calls.map(call => call[0].filters.dateFrom),
-        ).toEqual(['2026-07-01', '2026-09-01']);
-        const ttlByKey = new Map(
-            cache.setJson.mock.calls.map(call => [call[0], call[2]] as const),
+        expect(result.months.map(month => [month.month, month.closed])).toEqual(
+            [
+                ['2026-07', false],
+                ['2026-08', true],
+                ['2026-09', false],
+            ],
         );
+        // месяц из кэша sales-finance — Bitrix за ним не ходили
+        expect(result.months.map(month => month.fromCache)).toEqual([
+            false,
+            true,
+            false,
+        ]);
+        // менеджер 2 без продаж в июле — строка с нулями
+        expect(result.months[0].managers[1]).toEqual({
+            managerId: 2,
+            salesCount: 0,
+            advanceAmount: 0,
+            paidMonths: 0,
+            monthlyAmount: 0,
+            expectedContractAmount: 0,
+        });
+        // сделка 31 августа — в августе, не в сентябре
+        expect(result.months[1].totals.monthlyAmount).toBe(300);
+        expect(result.months[1].managers[1].salesCount).toBe(1);
+        for (const summary of result.managers) {
+            const months = result.months.map(
+                month =>
+                    month.managers.find(
+                        row => row.managerId === summary.managerId,
+                    )!,
+            );
+            expect(months.reduce((sum, row) => sum + row.salesCount, 0)).toBe(
+                summary.salesCount,
+            );
+            expect(
+                months.reduce((sum, row) => sum + row.monthlyAmount, 0),
+            ).toBe(summary.monthlyAmount);
+        }
+    });
+
+    it('своего кэша закрытых продаж нет: пишется только пайплайн (180 с, ключ со стадией «горячих»)', async () => {
+        const { loader, cache } = makeLoader();
+
+        await loader.loadFinance(DOMAIN, '2026-07-01', '2026-09-06', [1, 2], {
+            now: NOW,
+        });
+
         expect(
-            ttlByKey.get(
-                buildFinanceMonthKey(
-                    DOMAIN,
-                    {
-                        from: '2026-07-01',
-                        to: '2026-07-31',
-                        month: '2026-07',
-                        cacheable: true,
-                    },
-                    '1_2',
-                ),
-            ),
-        ).toBe(30 * 24 * 3600);
-        // ключ пайплайна включает стадию «горячих» — старые записи с другим порогом не читаются
-        expect(
-            ttlByKey.get(
+            cache.setJson.mock.calls.map(call => [call[0], call[2]]),
+        ).toEqual([
+            [
                 `sales-ai-analytics:v1:${DOMAIN}:finance-pipeline:presentation-sales_in_progress:1_2`,
+                180,
+            ],
+        ]);
+        expect(
+            cache.getJson.mock.calls.every(([key]) =>
+                key.includes(':finance-pipeline:'),
             ),
-        ).toBe(180);
+        ).toBe(true);
     });
 
     it('forceRefresh обходит чтение кэша и прокидывается в use-case’ы; hotStageCode переопределяется', async () => {
@@ -264,7 +329,9 @@ describe('FinanceLoader', () => {
         );
 
         expect(cache.getJson).not.toHaveBeenCalled();
-        expect(closedExecute.mock.calls[0][0].forceRefresh).toBe(true);
+        expect(closedExecute).toHaveBeenCalledWith(
+            expect.objectContaining({ forceRefresh: true }),
+        );
         expect(hotExecute).toHaveBeenCalledWith(
             expect.objectContaining({
                 threshold: 'document',
@@ -280,6 +347,22 @@ describe('FinanceLoader', () => {
         expect(keys).toContainEqual(
             expect.stringContaining('document-sales_offer_create:1_2'),
         );
+    });
+
+    it('сделка с нераспознанной датой закрытия: в сводке есть, в месяцы не попадает', async () => {
+        const odd = { ...deal(61, 1, '2026-08-10'), closeDate: '' };
+        const { loader } = makeLoader(execution([employee(1, [odd])]));
+
+        const result = await loader.loadFinance(
+            DOMAIN,
+            '2026-08-01',
+            '2026-08-31',
+            [1],
+            { now: NOW },
+        );
+
+        expect(result.managers[0].salesCount).toBe(1);
+        expect(result.months[0].managers[0].salesCount).toBe(0);
     });
 
     it('пустой ростер — use-case’ы не вызываются, результат пустой', async () => {

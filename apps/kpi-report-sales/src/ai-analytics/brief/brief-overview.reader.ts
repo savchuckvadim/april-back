@@ -2,10 +2,11 @@
  * Обзор окна из кэша витрины для AI-резюме: общий читатель сборщика
  * пакета и джобы резюме.
  *
- * Ключ кэша обзора несёт нормализованный ростер. Страница обзора обычно
- * считает его по всему ростеру портала, а периметр применяет при чтении,
- * поэтому резюме ищет обзор дважды: по своему периметру и по всему
- * ростеру. Строки чужих менеджеров отсекает сборщик (`rowsInScope`), так
+ * Ключ кэша обзора несёт периметр строк — фильтр отчёта ∩ список разбора
+ * звонков (AiManagerScopeResolver). Резюме ищет обзор дважды: по своему
+ * периметру (он же ключ страницы — BriefUseCase сужает список тем же
+ * резолвером) и по периметру вкладки без фильтра (прогрев, страница без
+ * фильтра). Строки чужих менеджеров отсекает сборщик (`rowsInScope`), так
  * что числа резюме от выбора ключа не зависят — зато уже посчитанный
  * обзор не считается второй раз.
  *
@@ -13,9 +14,12 @@
  * создаётся сборщиком и джобой поверх их сервиса кэша.
  */
 import type { BriefPeriod } from '@lib/sales-ai-analytics';
-import { buildReportUsersKey } from '../../report';
 import { AiAnalyticsCacheService } from '../cache/ai-analytics-cache.service';
-import { buildOverviewKey } from '../cache/cache-key.util';
+import {
+    buildManagerScopeKey,
+    buildOverviewKey,
+    overviewUsersKey,
+} from '../cache/cache-key.util';
 import { buildManagersKey } from '../domain/loaders/loader-cache-key.util';
 import { normalizeManagerIds } from '../domain/loaders/managers.loader';
 import type {
@@ -26,18 +30,18 @@ import type {
 export class BriefOverviewReader {
     constructor(private readonly cache: AiAnalyticsCacheService) {}
 
-    /** Кэшированный ростер портала (ManagersLoader, 5 минут); нет — пусто. */
+    /**
+     * Периметр вкладки AI без фильтра — список разбора либо ростер ОП,
+     * как его опубликовал AiManagerScopeResolver (5 минут); нет записи —
+     * кэшированный ростер ОП (ManagersLoader); нет ничего — пусто.
+     */
     async roster(domain: string): Promise<number[]> {
-        const cached = await this.cache.getJson<unknown>(
-            buildManagersKey(domain),
-        );
+        const scope = await this.cachedIds(buildManagerScopeKey(domain));
 
-        return Array.isArray(cached)
-            ? normalizeManagerIds(cached as (string | number)[])
-            : [];
+        return scope ?? (await this.cachedIds(buildManagersKey(domain))) ?? [];
     }
 
-    /** Ключ кэша обзора окна по списку менеджеров (все звонки, не только подтверждённые). */
+    /** Ключ кэша обзора окна по периметру (все звонки, не только подтверждённые). */
     key(
         domain: string,
         period: BriefPeriod,
@@ -47,14 +51,14 @@ export class BriefOverviewReader {
             domain,
             period.from,
             period.to,
-            buildReportUsersKey(managerIds),
+            overviewUsersKey(normalizeManagerIds(managerIds)),
             false,
         );
     }
 
     /**
      * Менеджеры, по которым воспроизводится окно обзора: периметр резюме,
-     * а без него — кэшированный ростер портала; пусто — окно не
+     * а без него — периметр вкладки без фильтра; пусто — окно не
      * воспроизвести.
      */
     async scope(
@@ -72,8 +76,8 @@ export class BriefOverviewReader {
     }
 
     /**
-     * Обзор окна из кэша: по периметру резюме, затем по всему ростеру
-     * портала; нет обоих — null. Обзор по ростеру годится, только если в
+     * Обзор окна из кэша: по периметру резюме, затем по периметру вкладки
+     * без фильтра; нет обоих — null. Второй обзор годится, только если в
      * нём есть строки всех менеджеров периметра — иначе числа резюме
      * молча потеряли бы человека.
      */
@@ -96,6 +100,15 @@ export class BriefOverviewReader {
         const shared = await this.readByKey(sharedKey);
 
         return shared && coversAll(shared, managerIds) ? shared : null;
+    }
+
+    /** Список id из кэша; записи нет или она не список — null. */
+    private async cachedIds(key: string): Promise<number[] | null> {
+        const cached = await this.cache.getJson<unknown>(key);
+
+        return Array.isArray(cached)
+            ? normalizeManagerIds(cached as (string | number)[])
+            : null;
     }
 }
 

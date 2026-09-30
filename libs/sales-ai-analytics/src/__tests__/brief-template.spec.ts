@@ -107,7 +107,7 @@ function fullFacts(): AiBriefFact[] {
             signal: 'risk',
         }),
         fact(AI_BRIEF_FOCUS_CODES[1], 'deviation', 12, {
-            text: 'План по звонкам выполнен на 30 % (12 из 40)',
+            text: 'Из запланированных в CRM звонков сделано 30 % (12 из 40)',
             managerId: '15',
             link: null,
             signal: 'discipline',

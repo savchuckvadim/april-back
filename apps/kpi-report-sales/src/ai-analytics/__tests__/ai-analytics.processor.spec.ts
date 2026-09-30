@@ -94,6 +94,9 @@ function makeProcessor({
     const warn = jest
         .spyOn(Logger.prototype, 'warn')
         .mockImplementation(() => undefined);
+    const error = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation(() => undefined);
 
     return {
         processor,
@@ -104,6 +107,7 @@ function makeProcessor({
         dossierUseCase,
         pipeline,
         warn,
+        error,
     };
 }
 
@@ -182,7 +186,8 @@ describe('AiAnalyticsQueueProcessor: ошибка — warn + rethrow', () => {
     });
 
     it('overview, push и snapshot пробрасывают ошибку use-case', async () => {
-        const { processor, overview, push, audit, warn } = makeProcessor();
+        const { processor, overview, push, audit, warn, error } =
+            makeProcessor();
         overview.execute.mockRejectedValueOnce(new Error('bitrix down'));
         push.execute.mockRejectedValueOnce(new Error('im.notify failed'));
         audit.execute.mockRejectedValueOnce(new Error('db down'));
@@ -198,7 +203,48 @@ describe('AiAnalyticsQueueProcessor: ошибка — warn + rethrow', () => {
                 data: { domain: DOMAIN, kind: 'audit', monthKey: '2026-08' },
             } as never),
         ).rejects.toThrow('db down');
-        expect(warn).toHaveBeenCalledTimes(3);
+        // Push — error с Telegram (день без рассылки), остальные — warn.
+        expect(warn).toHaveBeenCalledTimes(2);
+        expect(error).toHaveBeenCalledTimes(1);
+        expect(error).toHaveBeenCalledWith(
+            expect.stringContaining('im.notify failed'),
+            { telegram: true, domain: DOMAIN },
+        );
+    });
+
+    it('push с итогом failed (никому не доставлено) — error с Telegram, результат отдаётся', async () => {
+        const { processor, push, error } = makeProcessor();
+        push.execute.mockResolvedValueOnce({
+            kind: 'digest_all',
+            date: '2026-09-29',
+            status: 'failed',
+            reason: 'not-delivered',
+            delivered: [],
+        });
+
+        await expect(
+            processor.handlePush({ data: pushJob } as never),
+        ).resolves.toMatchObject({ status: 'failed' });
+        expect(error).toHaveBeenCalledWith(
+            expect.stringContaining('failed (not-delivered), доставлено 0'),
+            { telegram: true, domain: DOMAIN },
+        );
+    });
+
+    it('push отправлен или штатно пропущен — без error', async () => {
+        const { processor, push, error } = makeProcessor();
+        push.execute.mockResolvedValueOnce({
+            kind: 'digest',
+            date: '2026-09-29',
+            status: 'skipped',
+            reason: 'not-workday',
+            delivered: [],
+        });
+
+        await processor.handlePush({ data: pushJob } as never);
+        await processor.handlePush({ data: pushJob } as never);
+
+        expect(error).not.toHaveBeenCalled();
     });
 
     it('неизвестный вид снапшота — ошибка до вызова use-case', async () => {

@@ -76,24 +76,30 @@ export class SalesFinanceDealQueryService {
         };
     }
 
-    /** Сделки, закрытые в успех, по сотрудникам и периоду CLOSEDATE. */
+    /**
+     * Сделки, закрытые в успех, за период CLOSEDATE. Без сотрудников (или
+     * с пустым списком) — все выигранные сделки воронки: так читается
+     * общий на домен закрытый месяц, ответственные отбираются в памяти.
+     */
     async getWonDealsByCloseDateRange(
-        assignedIds: number[],
         dateFrom: string,
         dateTo: string,
+        assignedIds?: readonly number[],
     ): Promise<IBXDeal[]> {
         const category = this.getSalesBaseCategory();
         const uf = this.getUfFields();
 
-        // '=ASSIGNED_BY_ID' с массивом — IN-семантика фильтра Bitrix;
-        // прямое ASSIGNED_BY_ID объявлено в IBXDeal как string и массив не примет.
         const filter: Partial<IBXDeal> = {
             CATEGORY_ID: category.bitrixId,
             STAGE_SEMANTIC_ID: STAGE_SEMANTIC_WON,
-            '=ASSIGNED_BY_ID': assignedIds.map(String),
             '>=CLOSEDATE': dateFrom,
             '<=CLOSEDATE': dateTo,
         };
+        if (assignedIds && assignedIds.length > 0) {
+            // '=ASSIGNED_BY_ID' с массивом — IN-семантика фильтра Bitrix;
+            // прямое ASSIGNED_BY_ID объявлено в IBXDeal как string и массив не примет.
+            filter['=ASSIGNED_BY_ID'] = assignedIds.map(String);
+        }
 
         return await this.bitrix.deal.all(
             filter,

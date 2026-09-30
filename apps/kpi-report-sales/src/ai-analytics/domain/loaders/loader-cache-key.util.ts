@@ -5,10 +5,13 @@
  *
  *   sales-ai-analytics:v1:{domain}:kpi-month:{yyyy-MM}:{usersKey}            — полный закрытый месяц KPI
  *   sales-ai-analytics:v1:{domain}:kpi-month:{yyyy-MM}:{usersKey}:{from}_{to} — живой/неполный сегмент
- *   sales-ai-analytics:v1:{domain}:finance-month:{yyyy-MM}:{usersKey}[…]     — финансы по той же схеме
  *   sales-ai-analytics:v1:{domain}:finance-pipeline:{threshold}:{usersKey}   — открытый пайплайн
  *   sales-ai-analytics:v1:{domain}:plans:{usersKey}                          — планы руководителя
  *   sales-ai-analytics:v1:{domain}:managers                                  — ростер ОП
+ *
+ * Закрытые продажи своего слоя кэша не имеют: FinanceLoader зовёт
+ * ClosedSalesUseCase за весь период, и единственный кэш — sales-finance
+ * (общий на домен закрытый месяц), тот же, что у вкладки «Финансы».
  *
  * Неполный сегмент (часть месяца или текущий месяц) обязан нести границы
  * дней в ключе: иначе частичный расчёт за «15–31 августа» лёг бы под ключ
@@ -20,7 +23,6 @@ import type { MonthSegment } from '../../../shared/lib/month-segments.util';
 
 export const AI_ANALYTICS_LOADER_CACHE_SECTIONS = {
     KPI_MONTH: 'kpi-month',
-    FINANCE_MONTH: 'finance-month',
     FINANCE_PIPELINE: 'finance-pipeline',
     PLANS: 'plans',
     MANAGERS: 'managers',
@@ -35,7 +37,7 @@ export const AI_ANALYTICS_PLANS_TTL_SECONDS = 60 * 60;
 /** Ростер менеджеров ОП по структуре отделов. */
 export const AI_ANALYTICS_MANAGERS_TTL_SECONDS = 300;
 
-const { KPI_MONTH, FINANCE_MONTH, FINANCE_PIPELINE, PLANS, MANAGERS } =
+const { KPI_MONTH, FINANCE_PIPELINE, PLANS, MANAGERS } =
     AI_ANALYTICS_LOADER_CACHE_SECTIONS;
 
 function monthSegmentKey(
@@ -54,14 +56,6 @@ export function buildKpiMonthKey(
     usersKey: string,
 ): string {
     return monthSegmentKey(domain, KPI_MONTH, segment, usersKey);
-}
-
-export function buildFinanceMonthKey(
-    domain: string,
-    segment: MonthSegment,
-    usersKey: string,
-): string {
-    return monthSegmentKey(domain, FINANCE_MONTH, segment, usersKey);
 }
 
 export function buildFinancePipelineKey(

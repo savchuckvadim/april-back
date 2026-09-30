@@ -36,6 +36,12 @@ const EMPTY_MULTIPLE_TTL_SECONDS = 300;
 const CACHE_SHAPE_VERSION = 'v4';
 
 /**
+ * Базовый отдел групп кроме продаж — исторический хардкод: для них отдел
+ * из конфига портала не берётся. Оставлен как было.
+ */
+const LEGACY_NON_SALES_BASE_DEPARTMENT_ID = 9;
+
+/**
  * Снимок отдела группы (продаж/сервиса) со всеми сотрудниками — единый
  * источник и для `bitrix/department/sales`, и для структуры отделов
  * (BxDepartmentStructureService строит её проекцией этого же снимка).
@@ -72,7 +78,15 @@ export class BxDepartmentService {
         if (!resetCache) {
             const fromCache = await this.redis.get(cacheKey);
             if (fromCache) {
-                return JSON.parse(fromCache) as BxDepartmentResponseDto;
+                const cached = JSON.parse(fromCache) as BxDepartmentResponseDto;
+                // режим и тэг — всегда из БД: одиночный ключ тэга не содержит
+                return {
+                    department: {
+                        ...cached.department,
+                        isMultiple: mode.isMultiple,
+                        multipleTag: mode.multipleTag,
+                    },
+                };
             }
         }
 
@@ -147,6 +161,6 @@ export class BxDepartmentService {
         if (group === EDepartamentGroup.sales) {
             return portal.getDepartamentIdByCode(group)?.bitrixId;
         }
-        return 9;
+        return LEGACY_NON_SALES_BASE_DEPARTMENT_ID;
     }
 }

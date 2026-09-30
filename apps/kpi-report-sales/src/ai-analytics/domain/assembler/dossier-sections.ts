@@ -24,6 +24,7 @@ import { presentPlanFact } from '../presenter/plan-fact.presenter';
 import { toTrendsBlock, type TrendsView } from '../presenter/trends.presenter';
 import { baseDepartmentOf } from '../presenter/yoy-rows.presenter';
 import { toYoyBlock, type YoyMonthView } from '../presenter/yoy.presenter';
+import { analyzedOf } from './dossier-series';
 import type { DossierSnapshotView } from './dossier.reader';
 import type { ManagerMonthPayload } from './manager-snapshot.types';
 import { buildPlanFactView } from './plan-fact.assembler';
@@ -34,16 +35,14 @@ export interface DossierSectionOutcome<T> {
     missing: AiDossierReason;
 }
 
-/** Целое поле чужой нагрузки; не число — 0. */
-function countOf(payload: unknown, field: string): number {
-    const value = (payload as Record<string, unknown> | null)?.[field];
-
-    return typeof value === 'number' && Number.isFinite(value) ? value : 0;
-}
-
-/** Разобранных звонков за окно — сумма `n` месяцев менеджера. */
+/**
+ * Разобранных звонков за окно — сумма объёмов месяцев менеджера тем же
+ * ридером, что у ряда «Месяцы» (`analyzedOf`: поле `n`, у месяцев старого
+ * расчёта — сумма `byType[].n`). Раньше здесь читалось только `n`, а
+ * месячный снапшот его не писал, и тренды досье всегда были «мало данных».
+ */
 export function windowAnalyzed(months: readonly DossierSnapshotView[]): number {
-    return months.reduce((sum, month) => sum + countOf(month.payload, 'n'), 0);
+    return months.reduce((sum, month) => sum + analyzedOf(month.payload), 0);
 }
 
 /**

@@ -1,4 +1,23 @@
 import { LeadRequestSlaService } from '../sla/lead-request-sla.service';
+import { PortalWorkingHours } from '../../shared/working-hours/working-hours.model';
+
+/** Круглосуточный график: рабочие минуты = календарные (прежние тесты). */
+const ROUND_THE_CLOCK: PortalWorkingHours = {
+    startHour: 0,
+    endHour: 24,
+    weekHolidays: [],
+    yearHolidays: new Set(),
+    source: 'portal',
+};
+
+/** Пн–пт 9:00–18:00 — для проверки отсчёта в рабочих минутах. */
+const OFFICE_HOURS: PortalWorkingHours = {
+    startHour: 9,
+    endHour: 18,
+    weekHolidays: [0, 6],
+    yearHolidays: new Set(),
+    source: 'portal',
+};
 
 /**
  * SLA принятия: self-healing (менеджер двинул сделку — принятие доводится
@@ -52,6 +71,8 @@ const makeDeps = (input: {
     withAssignedAt?: boolean;
     /** Что отдаёт UserNameResolver; по умолчанию пусто — в текстах id. */
     names?: Record<number, string>;
+    /** График портала; по умолчанию круглосуточный. */
+    hours?: PortalWorkingHours;
 }) => {
     const leadUpdate = jest.fn().mockResolvedValue({});
     const dealUpdate = jest.fn().mockResolvedValue({});
@@ -148,6 +169,12 @@ const makeDeps = (input: {
         // Круг замокан целиком — проверка «кто работает» не вызывается.
         { activeUserIds: jest.fn() } as never,
         userNames as never,
+        {
+            resolve: jest.fn().mockResolvedValue({
+                hours: input.hours ?? ROUND_THE_CLOCK,
+                timezone: 'Europe/Moscow',
+            }),
+        } as never,
     );
     return {
         service,
@@ -173,6 +200,41 @@ const OVERDUE_LEAD = {
 };
 
 describe('LeadRequestSlaService', () => {
+    /*
+     * Решение владельца 30.09.2026: на принятие даётся час РАБОЧЕГО
+     * времени (как и срок задачи при круге). Утром в 9:30 просрочено то,
+     * что назначено до 17:30 прошлого рабочего дня, — не до 8:30: ночь
+     * рабочим временем не считается.
+     */
+    it('граница просрочки — в рабочих минутах: в 9:30 это 17:30 прошлого дня', async () => {
+        jest.useFakeTimers({ now: new Date('2026-10-01T09:30:00+03:00') });
+        try {
+            const { service, leadGetList, dealGetList } = makeDeps({
+                leads: [],
+                withAssignedAt: true,
+                hours: OFFICE_HOURS,
+            });
+            await service.runForDomain('d.b24.ru', 60, 30);
+
+            const leadFilter = (
+                leadGetList.mock.calls as unknown as [Record<string, unknown>][]
+            )[0][0];
+            const dealFilter = (
+                dealGetList.mock.calls as unknown as [Record<string, unknown>][]
+            )[0][0];
+            expect(leadFilter['<UF_CRM_OP_LEAD_ASSIGNED_AT']).toBe(
+                '30.09.2026 17:30:00',
+            );
+            expect(
+                Object.entries(dealFilter).find(([key]) =>
+                    key.startsWith('<'),
+                )?.[1],
+            ).toBe('30.09.2026 17:30:00');
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
     /*
      * Отбор идёт по НАШИМ полям, а не по стадии лида: стадию двигают
      * конструктор, роботы и менеджеры руками, а op_lead_assigned_at пишет

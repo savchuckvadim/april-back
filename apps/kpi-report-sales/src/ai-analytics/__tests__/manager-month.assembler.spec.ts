@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import type { AiScoringSettings } from '@lib/sales-ai-analytics';
 import { buildManagerMonthPayload } from '../domain/assembler/manager-month.assembler';
 import type { ManagerMonthInput } from '../domain/assembler/manager-month.assembler';
+import { buildManagerWeekPayload } from '../domain/assembler/manager-week.assembler';
 import type { ManagerPassportFacts } from '../domain/assembler/manager-snapshot.types';
 import type { DatedLiteRow } from '../domain/loaders/lite-row.mapper';
 import { liteRow, portalSettings } from './fixtures/lite-row.fixture';
@@ -76,6 +77,50 @@ function input(overrides: Partial<ManagerMonthInput> = {}): ManagerMonthInput {
         ...overrides,
     };
 }
+
+describe('buildManagerMonthPayload — объём и оценка разборов', () => {
+    it('n, nBeforeComparable и score пишутся и совпадают с неделей на тех же строках', () => {
+        // 30 разборов сентября; граница 03.09 — 1-е и 2-е число до неё.
+        const rows = monthRows();
+        const month = buildManagerMonthPayload(
+            input({ comparableFrom: '2026-09-03' }),
+        ).rows[0].payload;
+        const week = buildManagerWeekPayload({
+            weekKey: '2026-W36',
+            rows,
+            scoring: { caps: [], stopWords: [] },
+            comparableFrom: '2026-09-03',
+            timeZone: 'Europe/Moscow',
+            meta: META,
+        }).rows[0].payload;
+
+        expect(month.n).toBe(28);
+        expect(month.nBeforeComparable).toBe(2);
+        expect(month.score).toMatchObject({ value: 7, n: 28 });
+        expect({
+            n: month.n,
+            nBeforeComparable: month.nBeforeComparable,
+            score: month.score,
+        }).toEqual({
+            n: week.n,
+            nBeforeComparable: week.nBeforeComparable,
+            score: week.score,
+        });
+    });
+
+    it('месяц без разборов: 0 и пустая оценка, а не отсутствие полей', () => {
+        const payload = buildManagerMonthPayload(input({ rows: [] })).rows[0]
+            .payload;
+
+        expect(payload.n).toBe(0);
+        expect(payload.nBeforeComparable).toBe(0);
+        expect(payload.score).toEqual({
+            value: null,
+            n: 0,
+            confidence: { level: 'none', reason: 'not-enough-data' },
+        });
+    });
+});
 
 describe('buildManagerMonthPayload — месяц менеджера', () => {
     it('нагрузка несёт экспозицию, рёбра, паспорт, план и версии модели', () => {

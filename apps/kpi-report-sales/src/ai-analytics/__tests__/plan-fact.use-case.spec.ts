@@ -11,12 +11,18 @@ import {
     buildPlanFactKey,
     planFactUsersKey,
 } from '../constants/ai-plan-fact.const';
-import { buildResetPattern } from '../cache/cache-key.util';
+import {
+    buildResetPattern,
+    OVERVIEW_USERS_KEY_NONE,
+} from '../cache/cache-key.util';
+import { AiManagerScopeResolver } from '../domain/access/ai-manager-scope.resolver';
 import type { RequesterAccess } from '../domain/access/perimeter.util';
 import type { ManagerMonthPayload } from '../domain/assembler/manager-snapshot.types';
+import type { AiCallReportStatus } from '../domain/loaders/settings.loader';
 import { PlanFactUseCase } from '../plan-fact/plan-fact.use-case';
 import type { AiPlanFactRequestDto } from '../dto/ai-plan-fact.dto';
 import { settingsLoaderWith } from './fixtures/lite-row.fixture';
+import { callReportWith } from './fixtures/manager-scope.fixture';
 
 /**
  * Сценарий ручки реконсиляции план-факт (Фаза 3, П2). Стор снапшотов,
@@ -82,6 +88,8 @@ interface UseCaseOptions {
     readonly dailyPlanEnabled?: boolean;
     readonly roster?: number[];
     readonly cached?: unknown;
+    /** Статус разбора звонков; нет — статус не прочитан (без ограничения). */
+    readonly callReport?: AiCallReportStatus;
 }
 
 function makeUseCase(options: UseCaseOptions = {}) {
@@ -119,11 +127,16 @@ function makeUseCase(options: UseCaseOptions = {}) {
     const settings = settingsLoaderWith({
         dailyPlanEnabled: options.dailyPlanEnabled ?? true,
         calendar: CALENDAR,
+        ...(options.callReport ? { callReport: options.callReport } : {}),
     });
     const resolve = jest.fn().mockResolvedValue(options.roster ?? [11, 12]);
     const useCase = new PlanFactUseCase(
         settings,
-        { resolve } as never,
+        new AiManagerScopeResolver(
+            settings,
+            { resolve } as never,
+            { setJson: jest.fn() } as never,
+        ),
         { remember } as never,
         { findByKeys, findManagerMonths } as never,
     );
@@ -296,6 +309,45 @@ describe('PlanFactUseCase — реконсиляция план-факт', () =>
                 planFactUsersKey(['11', '12', '13']),
             ),
         );
+    });
+
+    it('список разбора: видящему всех без фильтра — только сотрудники из разбора, ростер не читается', async () => {
+        const { useCase, resolve } = makeUseCase({
+            callReport: callReportWith([12]),
+        });
+        const result = await useCase.execute(request(), leader, NOW_CLOSED);
+
+        expect(resolve).not.toHaveBeenCalled();
+        expect(result.requestKey).toBe(
+            buildPlanFactKey(DOMAIN, MONTH, planFactUsersKey(['12'])),
+        );
+        expect(result.data?.rows.map(row => row.managerId)).toEqual(['12']);
+    });
+
+    it('список разбора: явный фильтр ∩ разбор; пустое пересечение — без строк под ключом none', async () => {
+        const narrowed = await makeUseCase({
+            callReport: callReportWith([11]),
+        }).useCase.execute(
+            request({ managerIds: ['12', '11'] }),
+            leader,
+            NOW_CLOSED,
+        );
+        expect(narrowed.data?.rows.map(row => row.managerId)).toEqual(['11']);
+
+        const { useCase, findManagerMonths } = makeUseCase({
+            callReport: callReportWith([11]),
+        });
+        const empty = await useCase.execute(
+            request({ managerIds: ['12'] }),
+            leader,
+            NOW_CLOSED,
+        );
+        expect(empty.requestKey).toBe(
+            buildPlanFactKey(DOMAIN, MONTH, OVERVIEW_USERS_KEY_NONE),
+        );
+        expect(empty.data?.rows).toEqual([]);
+        // Пустой список стор прочитал бы как «все менеджеры» — не спрашиваем.
+        expect(findManagerMonths).not.toHaveBeenCalled();
     });
 
     it('порядок id в запросе не меняет ключ кэша', async () => {

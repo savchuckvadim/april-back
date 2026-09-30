@@ -3,36 +3,27 @@
  * (assembler), строки менеджеров (manager-row.presenter), расчёты Фазы 2
  * поверх строк (overview-phase2.presenter: нормы рёбер, рычаги, стиль),
  * сигналы «Внимания», итоги по типам и отделам, готовность
- * (readiness.util), версии разбора, meta. Периметр requester'а —
+ * (readiness.util), версии разбора, meta. Периметр строк — фильтр отчёта
+ * ∩ список разбора (overview-scope.presenter), периметр requester'а —
  * applyOverviewPerimeter. Чистые функции; «сейчас» приходит параметром.
  */
-import {
-    isWorkday,
-    MatrixOptions,
-    shiftDate,
-    TypeTotalsCell,
-    versionsSignature,
-    WorkCalendar,
-} from '@lib/sales-ai-analytics';
+import type { ManagerTypeMatrixOptions } from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_CALC_VERSION } from '../../constants/ai-overview.const';
 import { AiManagerRowDto } from '../../dto/ai-manager-row.dto';
 import {
-    AiAnalysisVersionsDto,
     AiDepartmentTotalsDto,
     AiOverviewDto,
-    AiTypeTotalsDto,
 } from '../../dto/ai-overview.dto';
 import { filterByPerimeter, RequesterAccess } from '../access/perimeter.util';
 import {
     assembleCallFacts,
     emptyCallFacts,
 } from '../assembler/call-facts.assembler';
-import { sumCellKpi, sumKpiMonths } from '../assembler/manager-facts.assembler';
+import { sumKpiMonths } from '../assembler/manager-facts.assembler';
 import {
     assembleDepartmentTotals,
     assembleMatrix,
 } from '../assembler/manager-type-matrix.assembler';
-import type { DatedLiteRow } from '../loaders/lite-row.mapper';
 import { withSignals } from './attention.presenter';
 import { buildManagerRow } from './manager-row.presenter';
 import {
@@ -41,125 +32,57 @@ import {
     buildOverviewReadiness,
     type Phase2Context,
 } from './overview-phase2.presenter';
-import { resolveComparableFrom } from './readiness.util';
 import {
-    emptyCellCore,
-    median,
-    orderedCallTypes,
-    toCellDto,
-} from './type-cell.presenter';
-import { emptyCellKpi } from '../assembler/manager-facts.assembler';
+    countDays,
+    countWorkdays,
+    resolveVersions,
+    teamMediansOf,
+    toTotals,
+    unionManagerIds,
+} from './overview-parts.presenter';
+import { overviewScopeMeta, scopeLiteRows } from './overview-scope.presenter';
+import { resolveComparableFrom } from './readiness.util';
 
-/** Рабочих дней [from; to] по календарю портала. */
-export function countWorkdays(
-    from: string,
-    to: string,
-    calendar: WorkCalendar,
-): number {
-    let count = 0;
-    for (let day = from; day <= to; day = shiftDate(day, 1)) {
-        if (isWorkday(day, calendar)) count += 1;
-    }
-    return count;
-}
-
-/** Календарных дней [from; to]. */
-export function countDays(from: string, to: string): number {
-    const ms = Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`);
-    return Math.round(ms / 86_400_000) + 1;
-}
-
-/** Объединение ростера и менеджеров матрицы, строками, по возрастанию id. */
-export function unionManagerIds(
-    roster: readonly number[],
-    fromMatrix: readonly string[],
-): string[] {
-    return [...new Set([...roster.map(String), ...fromMatrix])].sort(
-        (a, b) => Number(a) - Number(b),
-    );
-}
-
-/** Версии последнего разобранного звонка + число разных сигнатур. */
-export function resolveVersions(
-    rows: readonly DatedLiteRow[],
-): AiAnalysisVersionsDto {
-    const analyzed = rows.filter(row => row.analysisPresent);
-    const latest = [...analyzed]
-        .filter(row => row.versions !== null)
-        .sort(
-            (a, b) => b.callStartedAt.getTime() - a.callStartedAt.getTime(),
-        )[0];
-    const versions = latest?.versions ?? {};
-    return {
-        prompt: versions.prompt ?? null,
-        rubric: versions.rubric ?? null,
-        registry: versions.registry ?? null,
-        attribution: versions.attribution ?? null,
-        classifier: versions.classifier ?? null,
-        distinct: new Set(analyzed.map(versionsSignature)).size,
-    };
-}
-
-/** Медиана оценок менеджеров по каждому типу (для «Команда: медиана …»). */
-function teamMediansOf(
-    rows: readonly AiManagerRowDto[],
-): Map<string, number | null> {
-    const values = new Map<string, number[]>();
-    for (const row of rows) {
-        for (const cell of row.byType) {
-            if (cell.score.value === null) continue;
-            const list = values.get(cell.callType) ?? [];
-            list.push(cell.score.value);
-            values.set(cell.callType, list);
-        }
-    }
-    return new Map(
-        [...values.entries()].map(([callType, list]) => [
-            callType,
-            median(list),
-        ]),
-    );
-}
-
-/** Итоги по типам: ядро ячейки итога + суммы KPI по строкам группы. */
-function toTotals(
-    totals: readonly TypeTotalsCell[],
-    rows: readonly AiManagerRowDto[],
-): AiTypeTotalsDto[] {
-    const byType = new Map(totals.map(cell => [cell.callType, cell]));
-    return orderedCallTypes(byType.keys()).map(callType => {
-        const cell = byType.get(callType);
-        const cells = rows.flatMap(row =>
-            row.byType.filter(item => item.callType === callType),
-        );
-        const kpi = sumCellKpi(cells.map(item => item.kpi));
-        const primaryCode = cells.find(item => item.primaryKpi)?.primaryKpi
-            ?.code;
-        return {
-            ...toCellDto(callType, cell ?? emptyCellCore(), emptyCellKpi(), {
-                teamMedian: null,
-            }),
-            kpi,
-            primaryKpi: kpi.find(item => item.code === primaryCode) ?? null,
-            kpiReason: cells[0]?.kpiReason ?? null,
-            managers: cell?.managers ?? 0,
-        };
-    });
-}
+// Части сборки вынесены в overview-parts.presenter («≤ 300 строк»);
+// реэкспорт сохраняет прежние импорты.
+export {
+    countDays,
+    countWorkdays,
+    resolveVersions,
+    unionManagerIds,
+} from './overview-parts.presenter';
 
 export type { OverviewPresenterSources } from './overview-presenter.types';
 import type { OverviewPresenterSources } from './overview-presenter.types';
+
+/**
+ * Опции матрицы обзора: граница сравнимости по версии разбора (дата набора
+ * версий строки, не день звонка) и порог длительности портала по типам
+ * (тот же, что у пульса); без порога — дефолт матрицы 300 с.
+ */
+function overviewMatrixOptions(
+    sources: OverviewPresenterSources,
+    comparableFrom: string,
+): ManagerTypeMatrixOptions {
+    return {
+        timeZone: sources.calendar.timeZone,
+        ...(comparableFrom ? { comparableVersionFrom: comparableFrom } : {}),
+        ...(sources.minDurationSecByType
+            ? { minDurationSecByType: sources.minDurationSecByType }
+            : {}),
+    };
+}
 
 export function buildOverviewDto(
     sources: OverviewPresenterSources,
     now: Date,
 ): AiOverviewDto {
-    const { calendar, rows } = sources;
-    const comparableFrom = resolveComparableFrom(rows);
-    const matrixOptions: MatrixOptions = {
-        timeZone: calendar.timeZone,
-        ...(comparableFrom ? { comparableFrom } : {}),
-    };
+    const { calendar } = sources;
+    // Граница сравнимости и версии — по всем разборам портала за период:
+    // это свойство конвейера разбора, а не сотрудников периметра.
+    const comparableFrom = resolveComparableFrom(sources.rows);
+    const rows = scopeLiteRows(sources);
+    const matrixOptions = overviewMatrixOptions(sources, comparableFrom);
     const { matrix, objections, otherSharePct } = assembleMatrix(
         rows,
         matrixOptions,
@@ -178,9 +101,13 @@ export function buildOverviewDto(
     const matrixByManager = new Map(
         matrix.managers.map(row => [row.managerId, row]),
     );
+    // С периметром lite-строки уже сужены — объединение с матрицей ничего
+    // не добавит; строка есть у каждого сотрудника периметра.
     const managerIds = unionManagerIds(
         sources.managerIds,
-        matrix.managers.map(row => row.managerId),
+        sources.scope === undefined
+            ? matrix.managers.map(row => row.managerId)
+            : [],
     );
     const workdays = countWorkdays(sources.from, sources.to, calendar);
 
@@ -247,7 +174,7 @@ export function buildOverviewDto(
         },
         readiness,
         calcVersion: AI_ANALYTICS_CALC_VERSION,
-        versions: resolveVersions(rows),
+        versions: resolveVersions(sources.rows),
         comparableFrom,
         managers,
         totals: toTotals(matrix.totals, managers),
@@ -260,11 +187,15 @@ export function buildOverviewDto(
             analyzedCalls: matrix.analyzed,
             skippedNoManager: matrix.excluded.noManager,
             excludedBeforeComparable: matrix.excluded.beforeComparable,
+            excludedShort: matrix.excluded.short,
+            excludedNoType: matrix.excluded.noType,
+            excludedNoAnalysis: matrix.excluded.noAnalysis,
             otherSharePct,
             disagreementsCount: sources.disagreementsCount,
             fromCache: false,
             generatedAt: now.toISOString(),
             confirmedOnly: sources.confirmedOnly,
+            scope: overviewScopeMeta(sources.scope, managers.length),
         },
     };
 }

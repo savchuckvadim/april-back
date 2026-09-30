@@ -17,6 +17,7 @@ import { AiAnalyticsPortalsLoader } from '../domain/loaders/portals.loader';
 import { SettingsLoader } from '../domain/loaders/settings.loader';
 import { AiPushJobData } from '../dto/ai-push.dto';
 import { dueLocalClock } from './local-hour.util';
+import { pushSlotSkip } from './push-slot.rules';
 
 /** jobId push-джобы: дедуп по виду, домену и дню запуска. */
 export function buildPushJobId(
@@ -46,7 +47,10 @@ export const AI_ANALYTICS_PUSH_SLOTS: Readonly<
  * проверяется, наступил ли его локальный час (cron/local-hour.util.ts).
  * Джоба SALES_AI_ANALYTICS_PUSH ставится порталу с ai_analytics_enabled:
  * для digest — и ai_analytics_digest_enabled, для digest_all — непустой
- * список адресатов (от digest_enabled не зависит).
+ * список адресатов (от digest_enabled не зависит). Пропуск частично
+ * настроенной рассылки (адресаты есть, а AI-аналитика выключена; личный
+ * дайджест выключен) пишется warn'ом один раз на слот портала — правила
+ * в `push-slot.rules.ts`; портал без настроек рассылки пропускается молча.
  *
  * Сам расчёт и доставка — в процессоре (AiAnalyticsQueueProcessor), чтобы
  * Bitrix-вызовы не жили в cron-тике. jobId = ai-analytics:push:{kind}:
@@ -56,6 +60,13 @@ export const AI_ANALYTICS_PUSH_SLOTS: Readonly<
 @Injectable()
 export class AiAnalyticsPushScheduler {
     private readonly logger = new Logger(AiAnalyticsPushScheduler.name);
+
+    /**
+     * Слоты, о пропуске которых уже предупредили: `{kind}:{domain}` → день
+     * портала. Размер ограничен числом порталов × видов рассылки; без
+     * инфраструктурного состояния (перезапуск просто повторит warn).
+     */
+    private readonly warnedSlots = new Map<string, string>();
 
     constructor(
         private readonly portals: AiAnalyticsPortalsLoader,
@@ -109,15 +120,17 @@ export class AiAnalyticsPushScheduler {
                 timeZone,
                 AI_ANALYTICS_PUSH_SLOTS[kind],
             );
-            if (!clock || !settings.enabled) return null;
-            if (kind === 'digest' && !settings.digestEnabled) return null;
-            if (kind === 'digest_all' && !settings.digestAllUserIds.length) {
-                return null;
-            }
-            if (kind === 'agenda' && !settings.ropUserIds.length) {
-                this.logger.warn(
-                    `Повестка ${domain}: AI-аналитика включена, но РОПы не заданы — джоба не ставится`,
-                );
+            if (!clock) return null;
+            const skip = pushSlotSkip(kind, domain, settings);
+            if (skip !== null) {
+                if (skip.warning !== null) {
+                    this.warnOncePerSlot(
+                        kind,
+                        domain,
+                        clock.date,
+                        skip.warning,
+                    );
+                }
                 return null;
             }
             const jobId = buildPushJobId(kind, domain, clock.date);
@@ -139,5 +152,18 @@ export class AiAnalyticsPushScheduler {
             );
             return null;
         }
+    }
+
+    /** Предупреждение о пропуске слота — не чаще раза на вид, портал и день. */
+    private warnOncePerSlot(
+        kind: AiAnalyticsPushKind,
+        domain: string,
+        date: string,
+        warning: string,
+    ): void {
+        const key = `${kind}:${domain}`;
+        if (this.warnedSlots.get(key) === date) return;
+        this.warnedSlots.set(key, date);
+        this.logger.warn(warning, { domain });
     }
 }

@@ -1,11 +1,12 @@
 /**
  * Финансовый хвост строки менеджера обзора (ТЗ FR-40/41, решение владельца
- * А.2): закрытые продажи периода и живой пайплайн открытых сделок v2 —
+ * А.2): закрытые продажи периода (тот же ClosedSalesUseCase и те же даты,
+ * что у вкладки «Финансы») и живой пайплайн открытых сделок v2 —
  * «горячие» по стадии ≥ «В решении», разрезы по цвету компании,
- * наличию предложения, типу и сроку договора. Источник — тот же
+ * наличию предложения, типу и сроку договора. Источник пайплайна — тот же
  * HotClientsUseCase, что и вкладка «Финансы → Горячие клиенты».
  */
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
     AI_ANALYTICS_CONTRACT_TERM_BUCKETS,
     AiAnalyticsCompanyColorKey,
@@ -16,7 +17,40 @@ import type {
     AiFinancePipelineByContractType,
     AiFinancePipelineByTerm,
     AiFinancePipelineFacts,
+    AiFinanceSource,
 } from '../domain/loaders/finance.types';
+
+/**
+ * Откуда числа закрытых продаж строки: период и момент расчёта. Фронт
+ * подписывает колонки «как на вкладке «Финансы» за ДД.ММ – ДД.ММ».
+ */
+export class AiFinanceSourceDto implements AiFinanceSource {
+    @ApiProperty({
+        description:
+            'Начало периода закрытых продаж по дате закрытия сделки ' +
+            '(yyyy-MM-dd) — то же начало, что у вкладки «Финансы» за эти даты.',
+        type: String,
+        example: '2026-04-27',
+    })
+    from: AiFinanceSource['from'];
+
+    @ApiProperty({
+        description: 'Конец периода закрытых продаж включительно (yyyy-MM-dd).',
+        type: String,
+        example: '2026-07-26',
+    })
+    to: AiFinanceSource['to'];
+
+    @ApiProperty({
+        description:
+            'Момент расчёта отчёта закрытых продаж (ISO). Закрытые месяцы ' +
+            'берутся из общего кэша вкладки «Финансы»; свежие данные из CRM — ' +
+            'кнопкой «Пересчитать».',
+        type: String,
+        example: '2026-09-30T10:11:00.000Z',
+    })
+    generatedAt: string;
+}
 
 /** Открытые сделки от пороговой стадии и выше. */
 export class AiPipelineDto implements AiFinancePipeline {
@@ -160,25 +194,39 @@ export class AiPipelineByTermDto implements AiFinancePipelineByTerm {
 export class AiFinanceTailDto implements AiFinancePipelineFacts {
     @ApiProperty({
         description:
-            'Продаж: сделок sales_base в успехе по CLOSEDATE за период.',
+            'Продаж: сделок sales_base, закрытых в успех за период по дате ' +
+            'закрытия, у которых менеджер — ответственный. То же число, что ' +
+            '«Сделок» на вкладке «Финансы» за эти даты.',
         type: Number,
         example: 4,
     })
     salesCount: number;
 
     @ApiProperty({
-        description: 'Аванс: сумма price × qty по товарным строкам.',
+        description:
+            'Аванс: сумма price × qty по товарным строкам закрытых сделок — ' +
+            '«Аванс (в кассе)» вкладки «Финансы».',
         type: Number,
         example: 380000,
     })
     advanceAmount: number;
 
     @ApiProperty({
-        description: 'Месячный чек: сумма (сумма строки / эффективные месяцы).',
+        description:
+            'Месячный чек: сумма (сумма строки / эффективные месяцы) — ' +
+            '«Месячная сумма» вкладки «Финансы».',
         type: Number,
         example: 47500,
     })
     monthlyAmount: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Откуда числа закрытых продаж: период и момент расчёта. Нет — ' +
+            'обзор посчитан до появления поля (сохранённый расчёт).',
+        type: AiFinanceSourceDto,
+    })
+    source?: AiFinanceSourceDto;
 
     @ApiProperty({
         description:

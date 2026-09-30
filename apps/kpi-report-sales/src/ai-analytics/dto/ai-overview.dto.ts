@@ -9,7 +9,7 @@ import { ReadinessDto } from './readiness.dto';
 
 // Служебная сводка вынесена в ai-overview-meta.dto.ts («≤ 300 строк»);
 // реэкспорт сохраняет прежние импорты.
-export { AiOverviewMetaDto } from './ai-overview-meta.dto';
+export { AiOverviewMetaDto, AiOverviewScopeDto } from './ai-overview-meta.dto';
 
 /** Период обзора в TZ портала. */
 export class AiOverviewPeriodDto {
@@ -160,19 +160,27 @@ export class AiOverviewDto {
     comparableFrom: string;
 
     @ApiProperty({
-        description: 'Строки менеджеров периметра запрашивающего по managerId.',
+        description:
+            'Строки сотрудников: выбранные в фильтре отчёта (без фильтра — ' +
+            'весь отдел продаж), чьи звонки разбирает AI (см. meta.scope), в ' +
+            'периметре запрашивающего; по managerId.',
         type: [AiManagerRowDto],
     })
     managers: AiManagerRowDto[];
 
     @ApiProperty({
-        description: 'Итоги по типам по всему домену (порядок справочника).',
+        description:
+            'Итоги по типам по сотрудникам обзора — фильтр отчёта ∩ список ' +
+            'разбора, включая продажи и планы в их строках; периметр ' +
+            'запрашивающего итоги не режет (порядок справочника).',
         type: [AiTypeTotalsDto],
     })
     totals: AiTypeTotalsDto[];
 
     @ApiProperty({
-        description: 'Итоги по типам в разрезе отделов продаж.',
+        description:
+            'Итоги по типам в разрезе отделов продаж — по тем же ' +
+            'сотрудникам, что и строки обзора.',
         type: [AiDepartmentTotalsDto],
     })
     departmentTotals: AiDepartmentTotalsDto[];

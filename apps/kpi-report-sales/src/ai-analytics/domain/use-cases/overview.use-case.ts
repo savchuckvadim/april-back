@@ -16,11 +16,12 @@ import { isOverviewPeriodValid } from '../../dto/validators/overview-period.vali
 import { AiAnalyticsFeedbackStore } from '../../store/ai-analytics-feedback.store';
 import { AiAnalyticsSettingsStore } from '../../store/ai-analytics-settings.store';
 import { AiAnalyticsSnapshotStore } from '../../store/ai-analytics-snapshot.store';
+import { AiManagerScopeResolver } from '../access/ai-manager-scope.resolver';
 import { CallsLoader } from '../loaders/calls.loader';
 import { FinanceLoader } from '../loaders/finance.loader';
 import { KpiLoader } from '../loaders/kpi.loader';
 import { ManagerOrgLoader } from '../loaders/manager-org.loader';
-import { ManagersLoader } from '../loaders/managers.loader';
+import { portalMinDurationByType } from '../loaders/min-duration.util';
 import { OverviewSnapshotsLoader } from '../loaders/overview-snapshots.loader';
 import { portalRangeUtc } from '../loaders/period.util';
 import { PlansLoader } from '../loaders/plans.loader';
@@ -31,16 +32,18 @@ import {
     withOverviewRiskCallLinks,
 } from '../presenter/overview-links.presenter';
 import { applyLeverMarks } from '../presenter/levers.presenter';
+import { buildEmptyOverviewDto } from '../presenter/overview-empty.presenter';
 import {
     buildOverviewDto,
     type OverviewPresenterSources,
 } from '../presenter/overview.presenter';
 import {
-    type LeverFeedbackMarks,
-    periodLeverFeedbackMarks,
-} from './feedback-lever.util';
+    overviewFeedbackFacts,
+    type OverviewFeedbackFacts,
+    overviewFeedbackUntil,
+} from './overview-feedback.util';
 
-/** Вход расчёта обзора: период в TZ портала, ростер (пусто — структура). */
+/** Вход расчёта обзора: период в TZ портала, фильтр отчёта (пусто — весь ОП). */
 export interface OverviewInput {
     domain: string;
     from: string;
@@ -56,18 +59,12 @@ export interface OverviewUseCaseOptions {
     now?: Date;
 }
 
-const DISAGREE_KIND = 'disagree';
-
-/** Обратная связь периода, нужная обзору: несогласия и отметки по советам. */
-interface OverviewFeedbackFacts {
-    disagreementsCount: number;
-    levers: LeverFeedbackMarks;
-}
-
 /**
  * Оркестрация обзора менеджер × тип (план 6.4, ТЗ FR-13): период
- * (≤ 3 мес., иначе 400) → ростер → параллельно звонки (loadLite за UTC-окно
- * периода), KPI-месяцы, финансы, планы руководителя, раскладка по отделам,
+ * (≤ 3 мес., иначе 400) → периметр строк (AiManagerScopeResolver: фильтр
+ * отчёта ∩ список разбора; на суженном списке из джобы — тот же список;
+ * пусто — пустой обзор без загрузчиков) → параллельно звонки (loadLite за
+ * UTC-окно периода), KPI-месяцы, финансы, планы руководителя, раскладка по отделам,
  * уровни из стора, несогласия и снапшоты `ais` (Фаза 2, «год назад»,
  * паспорта месяца — уровень и стаж строки без ручной записи) →
  * assembler/presenter → AiOverviewDto на весь домен → отметки «Сделано» и
@@ -87,7 +84,7 @@ export class OverviewUseCase {
 
     constructor(
         private readonly settings: SettingsLoader,
-        private readonly managers: ManagersLoader,
+        private readonly scopes: AiManagerScopeResolver,
         private readonly calls: CallsLoader,
         private readonly kpi: KpiLoader,
         private readonly finance: FinanceLoader,
@@ -115,11 +112,24 @@ export class OverviewUseCase {
         const startedAt = Date.now();
         const { domain, from, to } = input;
         const forceRefresh = input.forceRefresh === true;
+        const confirmedOnly = input.confirmedOnly === true;
 
-        const [settings, managerIds] = await Promise.all([
-            this.settings.load(domain),
-            this.managers.resolve(domain, input.managerIds),
-        ]);
+        const settings = await this.settings.load(domain);
+        const scope = await this.scopes.resolveFor(
+            domain,
+            input.managerIds,
+            settings.callReport,
+        );
+        if (scope.empty) {
+            this.logger.log(
+                `Обзор ${domain} ${from}..${to}: в периметре нет сотрудников из разбора — пустой обзор`,
+            );
+            return buildEmptyOverviewDto(
+                { domain, from, to, confirmedOnly, settings, scope },
+                now,
+            );
+        }
+        const managerIds = scope.managerIds;
         const range = portalRangeUtc(from, to, settings.calendar.timeZone);
 
         // Снапшоты `ais` (Фаза 2, «год назад», паспорта месяца) идут
@@ -161,10 +171,16 @@ export class OverviewUseCase {
             domain,
             from,
             to,
-            confirmedOnly: input.confirmedOnly === true,
+            confirmedOnly,
             calendar: settings.calendar,
             enabled: settings.enabled,
             managerIds,
+            scope: {
+                pilotActive: scope.pilotActive,
+                hiddenByPilot: scope.hiddenByPilot,
+            },
+            // Порог «короткого» портала — тот же, что у пульса.
+            minDurationSecByType: portalMinDurationByType(settings),
             rows,
             kpi,
             finance,
@@ -260,29 +276,18 @@ export class OverviewUseCase {
         }
     }
 
-    /**
-     * Одна выборка обратной связи (по created_at записи): реакции disagree
-     * и день выдачи советов — за период, «Сделано» — от начала периода до
-     * «сейчас». Прошлый период смотрят и после его конца (сентябрь — 2
-     * октября): отметка, поставленная позже периода, иначе пропадала бы
-     * после перечитки обзора, кнопка возвращалась и копила дубли.
-     */
+    /** Одна выборка обратной связи до «сейчас» (правила — overview-feedback.util). */
     private async loadFeedbackFacts(
         domain: string,
         from: Date,
         to: Date,
         now: Date,
     ): Promise<OverviewFeedbackFacts> {
-        const until = now.getTime() > to.getTime() ? now : to;
-        const records = await this.feedback.listInPeriod(domain, from, until);
-        const inPeriod = records.filter(
-            record => record.createdAt.getTime() <= to.getTime(),
+        const records = await this.feedback.listInPeriod(
+            domain,
+            from,
+            overviewFeedbackUntil(to, now),
         );
-        return {
-            disagreementsCount: inPeriod.filter(
-                record => record.kind === DISAGREE_KIND,
-            ).length,
-            levers: periodLeverFeedbackMarks(records, to),
-        };
+        return overviewFeedbackFacts(records, to);
     }
 }

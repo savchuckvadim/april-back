@@ -11,6 +11,7 @@ import {
 } from '@lib/call-lib/call-report-analytics/services/call-report-analytics-aggregator.service';
 import { registryDefault } from '@lib/sales-ai-analytics';
 import { ReportKpiUseCase, type ReportGetFiltersDto } from '../../report';
+import { AiManagerScopeResolver } from '../domain/access/ai-manager-scope.resolver';
 import { KpiLoader } from '../domain/loaders/kpi.loader';
 import { portalRangeUtc } from '../domain/loaders/period.util';
 import { OverviewUseCase } from '../domain/use-cases/overview.use-case';
@@ -105,7 +106,11 @@ async function overviewOf(
     const managers = managersMock(ROSTER);
     const useCase = new OverviewUseCase(
         settingsLoaderWith(),
-        managers.loader,
+        new AiManagerScopeResolver(
+            settingsLoaderWith(),
+            managers.loader,
+            cacheMock().service,
+        ),
         callsLoaderWith(calls.map(toLiteRow)).loader,
         new KpiLoader(pbx.service, cacheMock().service, managers.loader),
         {

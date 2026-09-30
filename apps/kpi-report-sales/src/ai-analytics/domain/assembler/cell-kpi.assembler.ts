@@ -3,6 +3,11 @@
  * item'ов KPI-списка, план CRM и план руководителя, главный факт типа и
  * причина его отсутствия, суммирование ячеек в итоги по типу.
  *
+ * План руководителя (planHead) — план на период обзора из той же формулы,
+ * что planTargets строки (plan-targets.assembler): цель показателя
+ * каталога планов, чей факт — строка отчёта KPI «{код}_done» (calls_done →
+ * call, presentations_done → presentation, sales_count → ev_success).
+ *
  * Вынесено из `manager-facts.assembler.ts` (Фаза 2, поток 16b): тот
  * собирает KPI-факты периода целиком, этот — только ячейку типа, иначе
  * файл не влезает в лимит «≤ 300 строк». Реэкспорт из
@@ -15,36 +20,32 @@ import {
     CallReportCallTypeCode,
     type AiAnalyticsKpiEventTypeCode,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
+import { EnumSalesKpiEventType } from '@lib/portal-lib/pbx/pbx-sales-kpi-list/type/pbx-sales-kpi-list.enum';
 import { AiCellKpiDto } from '../../dto/ai-manager-type-cell.dto';
-import type { AiPlanManagerTargets } from '../loaders/plans.types';
+import { doneInnerCode } from '../loaders/kpi-month.assembler';
 import type { ManagerKpiPeriod } from './overview-model.types';
 
-/** План CRM по KPI-коду (только у кодов с парой *_plan в kpi-report). */
+/** План CRM по KPI-коду: только коды с парой *_plan в kpi-report. */
+const PLAN_CRM_BY_CODE: ReadonlyMap<string, (kpi: ManagerKpiPeriod) => number> =
+    new Map<string, (kpi: ManagerKpiPeriod) => number>([
+        [EnumSalesKpiEventType.call, kpi => kpi.calls.plan],
+        [EnumSalesKpiEventType.presentation, kpi => kpi.presentations.plan],
+        [
+            EnumSalesKpiEventType.presentation_uniq,
+            kpi => kpi.presentationsUniq.plan,
+        ],
+        [
+            EnumSalesKpiEventType.presentation_contact_uniq,
+            kpi => kpi.presentationsContactUniq.plan,
+        ],
+    ]);
+
 function planCrmFor(kpi: ManagerKpiPeriod, code: string): number | undefined {
-    switch (code) {
-        case 'call':
-            return kpi.calls.plan;
-        case 'presentation':
-            return kpi.presentations.plan;
-        case 'presentation_uniq':
-            return kpi.presentationsUniq.plan;
-        case 'presentation_contact_uniq':
-            return kpi.presentationsContactUniq.plan;
-        default:
-            return undefined;
-    }
+    return PLAN_CRM_BY_CODE.get(code)?.(kpi);
 }
 
-/** План руководителя по KPI-коду (calls_done → call, presentations_done → presentation_uniq). */
-function planHeadFor(
-    plans: AiPlanManagerTargets | undefined,
-    code: string,
-): number | undefined {
-    if (!plans) return undefined;
-    if (code === 'call') return plans.calls ?? undefined;
-    if (code === 'presentation_uniq') return plans.presentations ?? undefined;
-    return undefined;
-}
+/** Планов руководителя нет (конфиг не прочитан либо показатели выключены). */
+export const NO_PLAN_HEADS: ReadonlyMap<string, number> = new Map();
 
 /** KPI-часть ячейки: факты по кодам, главный факт и причина его отсутствия. */
 export interface CellKpiPart {
@@ -53,11 +54,14 @@ export interface CellKpiPart {
     kpiReason: string | null;
 }
 
-/** KPI-факты ячейки типа в порядке карты + главный факт. */
+/**
+ * KPI-факты ячейки типа в порядке карты + главный факт. `planHeads` —
+ * план руководителя на период по innerCode факта (planHeadsByFactKey).
+ */
 export function toCellKpi(
     kind: CallReportCallTypeCode,
     kpi: ManagerKpiPeriod | undefined,
-    plans: AiPlanManagerTargets | undefined,
+    planHeads: ReadonlyMap<string, number> = NO_PLAN_HEADS,
 ): CellKpiPart {
     const definition = AI_ANALYTICS_EVENT_KINDS[kind];
     const fact = kpi?.byType[kind];
@@ -71,7 +75,7 @@ export function toCellKpi(
     const items: AiCellKpiDto[] = codes.map(code => {
         const done = doneByCode.get(code);
         const planCrm = kpi ? planCrmFor(kpi, code) : undefined;
-        const planHead = planHeadFor(plans, code);
+        const planHead = planHeads.get(doneInnerCode(code));
         return {
             code,
             fact: done ?? null,

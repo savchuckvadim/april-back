@@ -73,6 +73,8 @@ describe('buildManagerTypeMatrix', () => {
         expect(matrix.analyzed).toBe(24);
         expect(matrix.noBucket).toBe(2);
         expect(matrix.comparableFrom).toBeNull();
+        expect(matrix.comparableVersionFrom).toBeNull();
+        expect(matrix.seriesBreakFrom).toBeNull();
         expect(matrix.excluded).toEqual({
             noAnalysis: 1,
             noManager: 1,
@@ -211,12 +213,14 @@ describe('buildManagerTypeMatrix', () => {
         expect(partial.managers[0].byType[0].versionsMixed).toBe(true);
     });
 
-    it('comparableFrom отсекает старые строки: считаются отдельно, в оценки не входят', () => {
+    it('разрыв ряда настройками отсекает звонки до даты: считаются отдельно, в оценки не входят', () => {
         const cut = buildManagerTypeMatrix(
             [...rows, liteRow({ transcriptionId: 'nd', callStartedAt: null })],
-            { comparableFrom: '2026-09-05' },
+            { seriesBreakFrom: '2026-09-05' },
         );
         expect(cut.comparableFrom).toBe('2026-09-05');
+        expect(cut.seriesBreakFrom).toBe('2026-09-05');
+        expect(cut.comparableVersionFrom).toBeNull();
         expect(cut.excluded.beforeComparable).toBe(4);
         const cutM1 = cut.managers[0];
         // 3 холодных 1 сентября + строка nd без даты (менеджер m1 по умолчанию)
@@ -246,14 +250,22 @@ describe('buildManagerTypeMatrix', () => {
                 managers: 0,
             }),
         );
-        // без comparableFrom строка без даты — обычная сравнимая строка
+        // без границ строка без даты — обычная сравнимая строка
         const open = buildManagerTypeMatrix([
             liteRow({ transcriptionId: 'nd', callStartedAt: null }),
         ]);
         expect(open.analyzed).toBe(1);
+        // прежняя опция comparableFrom — граница ВЕРСИЙ: все строки разобраны
+        // набором от 05.09, поэтому сравнимы при любой дате звонка
+        const byVersion = buildManagerTypeMatrix(
+            [...rows, liteRow({ transcriptionId: 'nd', callStartedAt: null })],
+            { comparableFrom: '2026-09-05' },
+        );
+        expect(byVersion.excluded.beforeComparable).toBe(0);
+        expect(byVersion.analyzed).toBe(25);
     });
 
-    it('граница comparableFrom берётся в TZ портала', () => {
+    it('день звонка сравнивается с границей в TZ портала', () => {
         const edge = [
             liteRow({
                 transcriptionId: 'e1',
@@ -261,12 +273,12 @@ describe('buildManagerTypeMatrix', () => {
             }),
         ];
         expect(
-            buildManagerTypeMatrix(edge, { comparableFrom: '2026-09-05' })
+            buildManagerTypeMatrix(edge, { seriesBreakFrom: '2026-09-05' })
                 .analyzed,
         ).toBe(1);
         expect(
             buildManagerTypeMatrix(edge, {
-                comparableFrom: '2026-09-05',
+                seriesBreakFrom: '2026-09-05',
                 timeZone: 'UTC',
             }).excluded.beforeComparable,
         ).toBe(1);

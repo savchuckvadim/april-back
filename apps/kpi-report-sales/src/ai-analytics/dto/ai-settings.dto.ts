@@ -235,6 +235,19 @@ export class AiAnalyticsSettingsDto {
         type: AiCallReportStatusDto,
     })
     callReport?: AiCallReportStatusDto;
+
+    @ApiPropertyOptional({
+        description:
+            'С какого дня (YYYY-MM-DD, TZ портала) на портале идёт AI-разбор ' +
+            'звонков: день самого раннего готового разбора. Период целиком ' +
+            'раньше этой даты — «разбор ещё не шёл», а не «звонки не ' +
+            'попадают в разбор». null — готовых разборов ещё нет; поля нет — ' +
+            'дата не прочитана или ответ из кэша старой версии.',
+        type: String,
+        nullable: true,
+        example: '2026-07-21',
+    })
+    analysisSince?: string | null;
 }
 
 export class AiSettingsResponseDto extends AiAnalyticsEnvelopeDto {

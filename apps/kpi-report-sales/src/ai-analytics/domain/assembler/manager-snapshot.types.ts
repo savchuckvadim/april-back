@@ -21,6 +21,7 @@ import type {
     ManagerFinanceFacts,
     ManagerMonthSnapshot,
     ManagerWeekSnapshot,
+    MetricValue,
     StyleProfile,
 } from '@lib/sales-ai-analytics';
 
@@ -202,10 +203,26 @@ export interface ManagerWeekPayload extends ManagerWeekSnapshot {
 
 /**
  * Месяц менеджера (`ai-analytics-manager-month`): базовая форма плюс
- * экспозиция, трактовка рёбер, паспорт, снимок плана, профиль стиля и
- * версии расчёта с идентификатором модели портала.
+ * объём и оценка разборов, экспозиция, трактовка рёбер, паспорт, снимок
+ * плана, профиль стиля и версии расчёта с идентификатором модели портала.
+ *
+ * Объём и оценка (`n`, `nBeforeComparable`, `score`) считаются той же
+ * матрицей и с теми же опциями, что у недели: ряд досье «Месяцы» и сумма
+ * недель обязаны говорить об одних звонках. Поля необязательны по типу:
+ * месяцы, посчитанные до 30.09.2026 (замороженные июль и август), их не
+ * несут — читатель берёт объём из `byType[].n`, а оценку честно
+ * оставляет пустой (`dossier-series.ts`).
  */
 export interface ManagerMonthPayload extends ManagerMonthSnapshot {
+    /** Разобранных сравнимых звонков месяца (как `n` недели). */
+    n?: number;
+    /** Разобранных звонков ДО границы сравнимости — считаются отдельно. */
+    nBeforeComparable?: number;
+    /**
+     * Средняя оценка по звонкам с баллом и корзиной, шкала 1–10; её объём
+     * `score.n` бывает меньше `n` (типы «прочее» и звонки без балла).
+     */
+    score?: MetricValue;
     edges: ManagerEdgeFacts[];
     finance: ManagerFinanceMonthFacts;
     exposure: ManagerExposureFacts;

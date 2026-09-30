@@ -2,10 +2,13 @@ import {
     agendaTtlSeconds,
     buildAccessKey,
     buildAgendaKey,
+    buildManagerScopeKey,
     buildOverviewKey,
     buildPulseKey,
     buildResetPattern,
     buildSettingsKey,
+    OVERVIEW_USERS_KEY_NONE,
+    overviewUsersKey,
 } from '../cache/cache-key.util';
 import {
     AI_ANALYTICS_AGENDA_MAX_TTL_SECONDS,
@@ -30,7 +33,7 @@ describe('cache-key.util (ai-analytics)', () => {
         );
     });
 
-    it('ключ обзора (= jobId = requestKey): версия формы v3 (riskCalls[].link), период, ростер, confirmedOnly', () => {
+    it('ключ обзора (= jobId = requestKey): версия формы v5 (периметр разбора, meta.scope), период, ростер, confirmedOnly', () => {
         expect(
             buildOverviewKey(
                 DOMAIN,
@@ -40,13 +43,41 @@ describe('cache-key.util (ai-analytics)', () => {
                 false,
             ),
         ).toBe(
-            'sales-ai-analytics:v1:april.bitrix24.ru:overview:v4:2026-08-10_2026-09-06:10_20:0',
+            'sales-ai-analytics:v1:april.bitrix24.ru:overview:v5:2026-08-10_2026-09-06:10_20:0',
         );
         expect(
             buildOverviewKey(DOMAIN, '2026-08-10', '2026-09-06', '10_20', true),
         ).toBe(
-            'sales-ai-analytics:v1:april.bitrix24.ru:overview:v4:2026-08-10_2026-09-06:10_20:1',
+            'sales-ai-analytics:v1:april.bitrix24.ru:overview:v5:2026-08-10_2026-09-06:10_20:1',
         );
+    });
+
+    it('usersKey обзора: пустой периметр — маркер none, а не all всего портала', () => {
+        expect(overviewUsersKey([])).toBe(OVERVIEW_USERS_KEY_NONE);
+        expect(OVERVIEW_USERS_KEY_NONE).toBe('none');
+        expect(overviewUsersKey([20, 10, 20])).toBe('10_20');
+        expect(
+            buildOverviewKey(
+                DOMAIN,
+                '2026-08-10',
+                '2026-09-06',
+                overviewUsersKey([]),
+                false,
+            ),
+        ).toBe(
+            'sales-ai-analytics:v1:april.bitrix24.ru:overview:v5:2026-08-10_2026-09-06:none:0',
+        );
+    });
+
+    it('периметр вкладки без фильтра — в секции managers (сбрасывается с доменом)', () => {
+        expect(buildManagerScopeKey(DOMAIN)).toBe(
+            'sales-ai-analytics:v1:april.bitrix24.ru:managers:scope',
+        );
+        expect(
+            buildManagerScopeKey(DOMAIN).startsWith(
+                buildResetPattern(DOMAIN, 'all').slice(0, -1),
+            ),
+        ).toBe(true);
     });
 
     it('паттерн сброса: scope → секция, all → весь домен', () => {
