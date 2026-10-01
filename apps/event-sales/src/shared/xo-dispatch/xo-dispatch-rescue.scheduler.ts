@@ -87,6 +87,7 @@ export class XoDispatchRescueScheduler {
                         markerMaxAgeHours: Number(
                             settings.xoRescueMarkerMaxAgeHours,
                         ),
+                        markerSince: String(settings.xoRescueMarkerSince ?? ''),
                         orphanEnabled: Boolean(settings.xoRescueOrphanEnabled),
                         orphanDryRun: Boolean(settings.xoRescueOrphanDryRun),
                         orphanLookbackHours: Number(

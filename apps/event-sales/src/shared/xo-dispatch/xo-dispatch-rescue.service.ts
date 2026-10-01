@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import dayjs from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
 import { PBXService } from '@/modules/pbx';
 import { BitrixService } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
-import { ETimeZone } from '@lib/shared/lib/date';
+import { ETimeZone, parsePortalInput } from '@lib/shared/lib/date';
 import { ColdHookSilinceEndpointV2Service } from '../../cold-hook-v2/services/silence/cold-hook-silince-endpoint.service';
 import {
     EnumColdCallEntityType,
@@ -34,6 +34,12 @@ export interface XoRescueOptions {
     resendAfterMinutes: number;
     /** Метки старше — не досылать (старый сбой, ХО могли отработать). */
     markerMaxAgeHours: number;
+    /**
+     * «Учитывать метки начиная с» (ДД.ММ.ГГГГ ЧЧ:ММ по времени портала);
+     * пусто — без нижней даты. Метки раньше — до включения подстраховки,
+     * их не досылаем никогда: так она не тронет уже назначенные ХО.
+     */
+    markerSince: string;
     /** Включён ли ВТОРОЙ способ поиска — по дате звонка. */
     orphanEnabled: boolean;
     /** Глубина окна поиска по дате звонка, часов. */
@@ -305,6 +311,32 @@ export class XoDispatchRescueService {
         }
     }
 
+    /**
+     * Нижняя граница меток: позднейшая из «не старше N часов» и «учитывать
+     * начиная с». Непонятную дату не угадываем — без неё граница по часам.
+     */
+    private markerNotBefore(
+        now: Dayjs,
+        timezone: ETimeZone,
+        options: XoRescueOptions,
+    ): Dayjs {
+        const byAge = now.subtract(
+            Math.max(1, options.markerMaxAgeHours),
+            'hour',
+        );
+        const raw = options.markerSince.trim();
+        if (!raw) return byAge;
+        try {
+            const since = parsePortalInput(raw, timezone);
+            return since.isAfter(byAge) ? since : byAge;
+        } catch {
+            this.logger.warn(
+                `[xo-rescue] «учитывать метки начиная с» не разобрано: «${raw}» — нужен формат ДД.ММ.ГГГГ ЧЧ:ММ`,
+            );
+            return byAge;
+        }
+    }
+
     private async thresholds(
         domain: string,
         timezone: ETimeZone,
@@ -332,10 +364,7 @@ export class XoDispatchRescueService {
                 Math.max(1, options.resendAfterMinutes),
                 'minute',
             ),
-            markerNotBefore: now.subtract(
-                Math.max(1, options.markerMaxAgeHours),
-                'hour',
-            ),
+            markerNotBefore: this.markerNotBefore(now, timezone, options),
             orphanNotBefore,
             // Верхняя граница жёсткая: час на то, чтобы хук доработал сам.
             orphanNotAfter: now.subtract(1, 'hour'),

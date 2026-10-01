@@ -27,6 +27,7 @@ const options = (over: Partial<XoRescueOptions> = {}): XoRescueOptions => ({
     maxPerRun: 20,
     resendAfterMinutes: 120,
     markerMaxAgeHours: 72,
+    markerSince: '',
     orphanEnabled: false,
     orphanDryRun: true,
     orphanLookbackHours: 96,
@@ -174,6 +175,51 @@ describe('XoDispatchRescueService — досылка по метке робот�
                 name: 'ООО Ромашка',
             }),
         );
+    });
+
+    it('метка поставлена до «учитывать метки начиная с» — не досылает: это работа до включения', async () => {
+        const { service, coldHook } = makeDeps({ companies: [stuckCompany()] });
+
+        const run = await service.runForDomain(
+            DOMAIN,
+            options({
+                markerSince: dayjs()
+                    .subtract(1, 'hour')
+                    .format('DD.MM.YYYY HH:mm'),
+            }),
+        );
+
+        expect(run.byMarker).toBe(0);
+        expect(run.skipped['marker-too-old']).toBe(1);
+        expect(coldHook.createColdCallHook).not.toHaveBeenCalled();
+    });
+
+    it('метка после даты начала — досылает как обычно', async () => {
+        const { service, coldHook } = makeDeps({ companies: [stuckCompany()] });
+
+        const run = await service.runForDomain(
+            DOMAIN,
+            options({
+                markerSince: dayjs()
+                    .subtract(10, 'hour')
+                    .format('DD.MM.YYYY HH:mm'),
+            }),
+        );
+
+        expect(run.byMarker).toBe(1);
+        expect(coldHook.createColdCallHook).toHaveBeenCalledTimes(1);
+    });
+
+    it('непонятная дата начала не ломает подстраховку — действует граница по часам', async () => {
+        const { service, coldHook } = makeDeps({ companies: [stuckCompany()] });
+
+        const run = await service.runForDomain(
+            DOMAIN,
+            options({ markerSince: 'вчера' }),
+        );
+
+        expect(run.byMarker).toBe(1);
+        expect(coldHook.createColdCallHook).toHaveBeenCalledTimes(1);
     });
 
     it('свежую метку не трогает — хук ещё обрабатывается', async () => {

@@ -10,7 +10,7 @@ import {
 import { ClientWorkService } from '../services/client-work.service';
 
 /**
- * «Работа клиента» в «Звонках»: все открытые сделки клиента в воронке
+ * «Открытые сделки по клиенту» в «Звонках»: все открытые сделки клиента в воронке
  * продаж и присоединение выбранных к основной (руководителю). Нужна,
  * потому что «Возможные пересечения» сделки ТОЙ ЖЕ компании не
  * показывают — это окружение клиента, а не дубль.
@@ -36,7 +36,7 @@ export class ClientWorkController {
     })
     @ApiOkResponse({
         type: ClientWorkResponseDto,
-        description: 'Работа клиента для блока в «Звонках».',
+        description: 'Открытые сделки по клиенту для блока в «Звонках».',
     })
     async deals(
         @Body() dto: ClientWorkRequestDto,

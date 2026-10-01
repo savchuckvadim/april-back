@@ -8,7 +8,7 @@ import { ClientWorkController } from './controllers/client-work.controller';
 import { ClientWorkService } from './services/client-work.service';
 
 /**
- * «Работа клиента»: открытые сделки клиента и присоединение пачкой через
+ * «Открытые сделки по клиенту»: открытые сделки клиента и присоединение пачкой через
  * хук join-to-main (сам хук регистрирует JoinToMainHookModule — здесь
  * только постановка операции). `HeadAccessModule` — проверка прав,
  * `ActiveStaffModule` — кто из ответственных работает; `UserNameResolver`

@@ -17,7 +17,7 @@ export type ClientWorkClientKind = (typeof CLIENT_WORK_CLIENT_KINDS)[number];
 /** Сколько сделок можно присоединить одной операцией. */
 export const CLIENT_WORK_MAX_JOIN = 20;
 
-/** Запрос «Работы клиента» для сделки, открытой в «Звонках». */
+/** Запрос блока «Открытые сделки по клиенту» для сделки, открытой в «Звонках». */
 export class ClientWorkRequestDto {
     @ApiProperty({
         description: 'Домен портала Bitrix24.',
@@ -197,7 +197,7 @@ export class ClientWorkDealDto {
     isCurrent: boolean;
 }
 
-/** «Работа клиента»: его открытые сделки и что с ними сделать. */
+/** «Открытые сделки по клиенту»: его открытые сделки и что с ними сделать. */
 export class ClientWorkResponseDto {
     @ApiProperty({
         description:

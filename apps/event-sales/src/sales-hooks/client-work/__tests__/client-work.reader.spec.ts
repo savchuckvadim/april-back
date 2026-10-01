@@ -5,7 +5,7 @@ import { pickClientGroup } from '../services/client-work.reader';
 const ids = (group: ReturnType<typeof pickClientGroup>) =>
     group?.deals.map(deal => deal.id) ?? null;
 
-describe('«Работа клиента»: группа клиента сделки', () => {
+describe('«Открытые сделки по клиенту»: группа клиента сделки', () => {
     const groups = clientGroupsOf([
         makeDeal(1, { companyId: 100, contactId: 7 }),
         makeDeal(2, { companyId: 100 }),

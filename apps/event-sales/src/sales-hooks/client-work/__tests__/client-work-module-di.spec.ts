@@ -12,11 +12,11 @@ import { ClientWorkModule } from '../client-work.module';
 const GLOBALS = [AppCacheService];
 
 /**
- * DI-граф «Работы клиента» и кнопок, куда добавлена проверка прав
+ * DI-граф блока «Открытые сделки по клиенту» и кнопок, куда добавлена проверка прав
  * руководителя: забытый импорт HeadAccessModule уронил бы event-sales на
  * старте (502), а юнит-тесты на моках этого не видят.
  */
-describe('DI-граф: «Работа клиента» и проверка прав в кнопках слияния', () => {
+describe('DI-граф: «Открытые сделки по клиенту» и проверка прав в кнопках слияния', () => {
     it('ClientWorkModule — все зависимости провайдеров и контроллера доступны', () => {
         expect(missingDependencies(ClientWorkModule, GLOBALS)).toEqual([]);
     });

@@ -67,7 +67,7 @@ const JOIN = {
     operationId: 'op-1',
 };
 
-describe('ClientWorkService — «Работа клиента»', () => {
+describe('ClientWorkService — «Открытые сделки по клиенту»', () => {
     beforeEach(() => {
         mockLoad.mockReset().mockResolvedValue(CLIENT);
         jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
