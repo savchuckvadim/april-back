@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { BxDealRepository } from '../repository/bx-deal.repository';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
-import { IBXDeal } from '../interface/bx-deal.interface';
+import { IBXDeal, IBXDealContactBinding } from '../interface/bx-deal.interface';
 import { IBXField } from '../../fields/bx-field.interface';
 
 @Injectable()
@@ -68,6 +68,19 @@ export class BxDealBatchService {
         contactIds: number[] | string[],
     ) {
         return this.repo.contactItemsSetBtch(cmdCode, dealId, contactIds);
+    }
+
+    /**
+     * Привязать ОДИН контакт к сделке (`crm.deal.contact.add`), не трогая
+     * остальные. Для существующей сделки это безопаснее CONTACT_IDS в
+     * update: тот перезаписывает набор целиком.
+     */
+    contactAdd(
+        cmdCode: string,
+        dealId: number | string,
+        fields: IBXDealContactBinding,
+    ) {
+        return this.repo.contactAddBtch(cmdCode, dealId, fields);
     }
 
     contactItemsGet(cmdCode: string, dealId: number | string) {

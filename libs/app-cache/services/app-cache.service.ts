@@ -461,7 +461,7 @@ export class AppCacheService {
     }
 
     /** Чистит протухшие строки БД (Redis протухает сам по TTL). */
-    @Cron(CronExpression.EVERY_HOUR)
+    @Cron(CronExpression.EVERY_HOUR, { name: 'app-cache-purge' })
     async purgeExpired(): Promise<number> {
         const { count } = await this.prisma.appCache.deleteMany({
             where: { expiredAt: { lte: new Date() } },

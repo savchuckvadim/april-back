@@ -12,8 +12,8 @@ import {
     Provider2FieldCode,
 } from '../dto/other-provider.dto';
 
+import { formatRu } from '@lib/shared/lib/date/format-ru';
 import dayjs from 'dayjs';
-import 'dayjs/locale/ru'; // подключаем русскую локаль
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 
@@ -48,7 +48,6 @@ export class ZakupkiOfferCreateService {
         private readonly totalRowService: DocumentTotalRowService,
     ) {
         dayjs.extend(localizedFormat);
-        dayjs.locale('ru'); // устанавливаем локаль
         dayjs.extend(utc);
         dayjs.extend(timezone);
         dayjs.tz.setDefault('Europe/Moscow');
@@ -301,7 +300,7 @@ export class ZakupkiOfferCreateService {
             this.resultPath,
         );
 
-        const documentDate = dayjs().format('D MMMM YYYY [г.]');
+        const documentDate = formatRu(dayjs(), 'D MMMM YYYY [г.]');
         const documentNumber = `${documentDate.slice(0, 2)}${userId}-${filesCount + 1}`;
         return { documentDate, documentNumber };
     }
@@ -309,10 +308,10 @@ export class ZakupkiOfferCreateService {
     private getContractPeriod(contractStart: string, contractEnd: string) {
         const tz = 'Europe/Moscow';
         const contractStartFormatted = contractStart
-            ? dayjs(contractStart).tz(tz).format('D MMMM YYYY [г.]')
+            ? formatRu(dayjs(contractStart).tz(tz), 'D MMMM YYYY [г.]')
             : '___________________________________';
         const contractEndFormatted = contractEnd
-            ? dayjs(contractEnd).tz(tz).format('D MMMM YYYY [г.]')
+            ? formatRu(dayjs(contractEnd).tz(tz), 'D MMMM YYYY [г.]')
             : '___________________________________';
         const period = `c ${contractStartFormatted} по ${contractEndFormatted}`;
 

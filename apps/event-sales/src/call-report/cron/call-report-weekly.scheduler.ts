@@ -20,7 +20,7 @@ export class CallReportWeeklyScheduler {
         private readonly sendWeekly: SendCallReportWeeklyUseCase,
     ) {}
 
-    @Cron('0 16 * * 5')
+    @Cron('0 16 * * 5', { name: 'call-report-weekly' })
     async tick(): Promise<void> {
         const portals = await this.portalAiSettings
             .findEnabled()

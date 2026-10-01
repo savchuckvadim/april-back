@@ -37,7 +37,7 @@ export class LeadIntakeRescueScheduler {
         private readonly workingHours: PortalWorkingHoursService,
     ) {}
 
-    @Cron(RESCUE_CRON)
+    @Cron(RESCUE_CRON, { name: 'lead-intake-rescue' })
     async tick(): Promise<void> {
         const domains = await this.resolveEnabledDomains();
         if (!domains.length) return;

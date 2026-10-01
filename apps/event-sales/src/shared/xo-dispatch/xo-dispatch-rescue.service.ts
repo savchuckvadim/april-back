@@ -32,6 +32,8 @@ export interface XoRescueOptions {
     maxPerRun: number;
     /** Через сколько минут «взятый в очередь» считается недоехавшим. */
     resendAfterMinutes: number;
+    /** Метки старше — не досылать (старый сбой, ХО могли отработать). */
+    markerMaxAgeHours: number;
     /** Включён ли ВТОРОЙ способ поиска — по дате звонка. */
     orphanEnabled: boolean;
     /** Глубина окна поиска по дате звонка, часов. */
@@ -329,6 +331,10 @@ export class XoDispatchRescueService {
             resendBefore: now.subtract(
                 Math.max(1, options.resendAfterMinutes),
                 'minute',
+            ),
+            markerNotBefore: now.subtract(
+                Math.max(1, options.markerMaxAgeHours),
+                'hour',
             ),
             orphanNotBefore,
             // Верхняя граница жёсткая: час на то, чтобы хук доработал сам.

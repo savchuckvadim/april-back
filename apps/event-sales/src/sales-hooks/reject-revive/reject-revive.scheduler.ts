@@ -36,7 +36,7 @@ export class RejectReviveScheduler {
         private readonly workingHours: PortalWorkingHoursService,
     ) {}
 
-    @Cron(REVIVE_CRON)
+    @Cron(REVIVE_CRON, { name: 'reject-revive' })
     async tick(): Promise<void> {
         const domains = await this.resolveEnabledDomains();
         if (!domains.length) return;

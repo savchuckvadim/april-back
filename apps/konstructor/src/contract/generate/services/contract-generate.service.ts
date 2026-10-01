@@ -7,8 +7,8 @@ import { ConfigService } from '@nestjs/config';
 import fs from 'fs';
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
+import { formatRu } from '@lib/shared/lib/date/format-ru';
 import dayjs from 'dayjs';
-import 'dayjs/locale/ru';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import {
     ProviderService,
@@ -46,7 +46,6 @@ export class ContractGenerateService {
         private readonly specificationService: ContractSpecificationService,
     ) {
         dayjs.extend(localizedFormat);
-        dayjs.locale('ru');
         this.currentYear = dayjs().format('YYYY');
 
         this.baseUrl = this.configService.get('APP_URL') as string;
@@ -153,7 +152,7 @@ export class ContractGenerateService {
     }
 
     private formatDocumentDate(date: string): string {
-        const formattedDate = dayjs(date).format('D MMMM YYYY [г.]');
+        const formattedDate = formatRu(dayjs(date), 'D MMMM YYYY [г.]');
         return formattedDate;
     }
 

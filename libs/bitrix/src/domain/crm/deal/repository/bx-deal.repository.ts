@@ -5,7 +5,7 @@ import {
     EBxNamespace,
 } from '../../../../core/domain/consts/bitrix-api.enum';
 import { EBXEntity } from '../../../../core/domain/consts/bitrix-entities.enum';
-import { IBXDeal } from '../interface/bx-deal.interface';
+import { IBXDeal, IBXDealContactBinding } from '../interface/bx-deal.interface';
 import { IBXField } from '../../fields/bx-field.interface';
 
 export class BxDealRepository {
@@ -200,6 +200,30 @@ export class BxDealRepository {
                     CONTACT_ID: id,
                 })),
             },
+        );
+    }
+
+    /** crm.deal.contact.add — один контакт, набор сделки не перезаписывается. */
+    async contactAdd(dealId: number | string, fields: IBXDealContactBinding) {
+        return await this.bxApi.callType(
+            EBxNamespace.CRM,
+            EBXEntity.DEAL,
+            EBxMethod.CONTACT_ADD,
+            { id: dealId, fields },
+        );
+    }
+
+    contactAddBtch(
+        cmdCode: string,
+        dealId: number | string,
+        fields: IBXDealContactBinding,
+    ) {
+        return this.bxApi.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.CRM,
+            EBXEntity.DEAL,
+            EBxMethod.CONTACT_ADD,
+            { id: dealId, fields },
         );
     }
 

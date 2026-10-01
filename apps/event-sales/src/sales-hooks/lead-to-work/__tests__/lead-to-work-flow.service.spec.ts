@@ -33,6 +33,7 @@ const makeBitrix = () => {
                 deal: {
                     set: record('deal.set'),
                     update: record('deal.update'),
+                    contactAdd: record('deal.contactAdd'),
                 },
                 lead: { update: record('lead.update') },
                 contact: { update: record('contact.update') },
@@ -434,7 +435,12 @@ describe('LeadToWorkFlowService', () => {
         }
     });
 
-    it('reuse: контакты лида добавляются к уже привязанным (union)', () => {
+    /*
+     * Существующая сделка прочитана crm.deal.get — CONTACT_IDS он не отдаёт.
+     * Запись CONTACT_IDS от такой строки отвязывала бы контакты сделки
+     * клиента на каждом повторном прогоне (SLA-передача, кнопка).
+     */
+    it('reuse: контакты лида — привязками после обновления сделки, набор сделки не перезаписывается', () => {
         const { bitrix, calls } = makeBitrix();
         const service = new LeadToWorkFlowService(
             bitrix as never,
@@ -444,20 +450,48 @@ describe('LeadToWorkFlowService', () => {
         service.queue(
             makeItem({ leadId: 42, responsible: 5 }),
             baseContext({
-                existingOurDeal: {
-                    ID: '300',
-                    CATEGORY_ID: '3',
-                    CONTACT_IDS: ['99'],
-                } as never,
+                existingOurDeal: { ID: '300', CATEGORY_ID: '3' } as never,
                 contactIds: [11],
             }),
             basePlan(),
             makeBuffer() as never,
         );
 
+        const cmds = calls.map(c => c.cmd);
         const update = calls.find(c => c.cmd === 'lw_deal_upd_42');
         const fields = update?.args[1] as Record<string, unknown>;
-        expect(fields.CONTACT_IDS).toEqual([99, 11]);
+        expect(fields).not.toHaveProperty('CONTACT_IDS');
+        expect(fields).not.toHaveProperty('CONTACT_ID');
+        const links = calls.filter(c => c.method === 'deal.contactAdd');
+        expect(links).toEqual([
+            {
+                method: 'deal.contactAdd',
+                cmd: 'lw_deal_upd_42_ct_11',
+                args: [300, { CONTACT_ID: 11 }],
+            },
+        ]);
+        expect(cmds.indexOf('lw_deal_upd_42_ct_11')).toBeGreaterThan(
+            cmds.indexOf('lw_deal_upd_42'),
+        );
+    });
+
+    it('reuse: у лида нет контактов — привязок нет', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(FIELDS) as never,
+        );
+
+        service.queue(
+            makeItem({ leadId: 42, responsible: 5 }),
+            baseContext({
+                existingOurDeal: { ID: '300', CATEGORY_ID: '3' } as never,
+            }),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        expect(calls.some(c => c.method === 'deal.contactAdd')).toBe(false);
     });
 
     it('флаг робота isRequest=Y делает лид заявкой без полей лидогена', () => {
@@ -858,6 +892,63 @@ describe('LeadToWorkFlowService', () => {
             makeItem({ leadId: 42, responsible: 5 }),
             baseContext({
                 existingOurDeal: { ID: '1024' } as never,
+            }),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        const fields = calls.find(c => c.method === 'deal.update')
+            ?.args[1] as Record<string, unknown>;
+        expect(fields.UF_CRM_DEAL_FROM_LEAD_ID).toBe('L_42');
+    });
+
+    /*
+     * Повторная заявка присоединена к сделке без первоисточника (холодная,
+     * ручная). SLA-передача прогоняет тот же лид снова — через reuse: он
+     * уже среди присоединённых, штатный лид сделки не он. Первоисточником
+     * он не становится, иначе SLA и карточка перестали бы видеть повтор.
+     */
+    it('reuse: повторная заявка (лид среди присоединённых) не занимает ни LEAD_ID, ни первоисточник', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(FIELDS) as never,
+        );
+
+        service.queue(
+            makeItem({ leadId: 42, responsible: 5 }),
+            baseContext({
+                existingOurDeal: {
+                    ID: '72000',
+                    UF_CRM_DEAL_JOINED_LEADS: ['L_11', 'L_42'],
+                } as never,
+            }),
+            basePlan(),
+            makeBuffer() as never,
+        );
+
+        const fields = calls.find(c => c.method === 'deal.update')
+            ?.args[1] as Record<string, unknown>;
+        expect(fields).not.toHaveProperty('UF_CRM_DEAL_FROM_LEAD_ID');
+        expect(fields).not.toHaveProperty('LEAD_ID');
+        expect(fields.UF_CRM_DEAL_JOINED_LEADS).toEqual(['L_11', 'L_42']);
+    });
+
+    it('reuse: своя сделка лида (штатный лид — он) с пустым первоисточником — дозаполняется', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            makePortal(FIELDS) as never,
+        );
+
+        service.queue(
+            makeItem({ leadId: 42, responsible: 5 }),
+            baseContext({
+                existingOurDeal: {
+                    ID: '1024',
+                    LEAD_ID: '42',
+                    UF_CRM_DEAL_JOINED_LEADS: ['L_42'],
+                } as never,
             }),
             basePlan(),
             makeBuffer() as never,
@@ -1603,7 +1694,17 @@ describe('LeadToWorkFlowService.queueJoin', () => {
         expect(fields.UF_CRM_DEAL_JOINED_LEADS).toEqual(['L_339193', 'L_42']);
         expect(fields.UF_CRM_DEAL_FROM_LEAD_ID).toBeUndefined();
         expect(fields.LEAD_ID).toBeUndefined();
-        expect(fields.CONTACT_IDS).toEqual([282699, 288609]);
+        // Набор контактов сделки не перезаписывается: CONTACT_IDS list/get
+        // не отдают, union от пустого отвязал бы прежние контакты.
+        expect(fields).not.toHaveProperty('CONTACT_IDS');
+        const links = calls.filter(c => c.method === 'deal.contactAdd');
+        expect(links).toEqual([
+            {
+                method: 'deal.contactAdd',
+                cmd: 'lw_deal_join_42_ct_288609',
+                args: [42423, { CONTACT_ID: 288609 }],
+            },
+        ]);
         // Тот же ответственный — не переписываем.
         expect(fields.ASSIGNED_BY_ID).toBeUndefined();
         const history = fields.UF_CRM_OP_MHISTORY as string[];
@@ -1615,6 +1716,26 @@ describe('LeadToWorkFlowService.queueJoin', () => {
         const leadFields = lead.args[1] as Record<string, unknown>;
         expect(leadFields.UF_CRM_TO_BASE_SALES).toBe('D_42423');
         expect(leadFields.STATUS_ID).toBe('PBX_ASSIGNED');
+    });
+
+    /*
+     * Сделка холодного звонка, ручная или старая первоисточника не имеет.
+     * Заявка им не становится: иначе SLA и карточка заявки сочли бы сделку
+     * её собственной — без ожидания ×3 и без блока «повторное обращение».
+     */
+    it('у сделки нет первоисточника — заявка им не становится, только присоединённой', () => {
+        const { calls } = run(
+            join({
+                UF_CRM_DEAL_FROM_LEAD_ID: undefined,
+                UF_CRM_DEAL_JOINED_LEADS: undefined,
+            }),
+        );
+
+        const fields = calls.find(c => c.method === 'deal.update')!
+            .args[1] as Record<string, unknown>;
+        expect(fields).not.toHaveProperty('UF_CRM_DEAL_FROM_LEAD_ID');
+        expect(fields).not.toHaveProperty('LEAD_ID');
+        expect(fields.UF_CRM_DEAL_JOINED_LEADS).toEqual(['L_42']);
     });
 
     it('стадия возврата уже записана (непринятая прежняя заявка) — не перетирается', () => {
@@ -1667,6 +1788,35 @@ describe('LeadToWorkFlowService.queueJoin', () => {
         expect((update.args[1] as Record<string, unknown>).UF_CRM_TASK).toEqual(
             ['D_42423', 'L_339193', 'L_42'],
         );
+    });
+
+    it('контакты лида: по привязке на каждый, без повторов, в той же группе после обновления сделки', () => {
+        const { bitrix, calls } = makeBitrix();
+        const buffer = makeBuffer();
+        const service = new LeadToWorkFlowService(
+            bitrix as never,
+            joinPortal() as never,
+        );
+        service.queueJoin(
+            makeItem({ leadId: 42, responsible: 387, isXo: 'Y' }),
+            baseContext({ contactIds: [11, 22, 11, 0] } as never),
+            basePlan(),
+            join(),
+            buffer as never,
+        );
+
+        const methods = calls.map(c => c.method);
+        const dealIndex = methods.indexOf('deal.update');
+        const linked = calls
+            .filter(c => c.method === 'deal.contactAdd')
+            .map(c => c.args);
+        expect(linked).toEqual([
+            [42423, { CONTACT_ID: 11 }],
+            [42423, { CONTACT_ID: 22 }],
+        ]);
+        expect(methods.indexOf('deal.contactAdd')).toBeGreaterThan(dealIndex);
+        // Группу закрывает вызывающий: сам queueJoin её не отправляет.
+        expect(buffer.endGroup).not.toHaveBeenCalled();
     });
 
     it('владелец сменился (прежний не работает) — сделка новому ответственному', () => {

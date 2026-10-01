@@ -1,9 +1,13 @@
+import { BatchApiService } from '@lib/bitrix/core/base/batch-api.service';
 import {
     describeRepeatResolution,
     IRepeatDealInfo,
     IRepeatSignalCandidates,
     isRepeatCandidate,
+    otherOpenDeals,
+    repeatJoinHistoryText,
     resolveRepeatWork,
+    sortByFreshness,
 } from '../lib/repeat-work.resolver';
 
 const deal = (
@@ -16,6 +20,7 @@ const deal = (
     responsibleId: 387,
     companyId: null,
     title: `Сделка ${dealId}`,
+    modifiedAt: null,
     row: { ID: String(dealId) },
     ...over,
 });
@@ -50,17 +55,90 @@ describe('resolveRepeatWork', () => {
         expect(res.mainDeal?.dealId).toBe(42423);
     });
 
-    it('несколько открытых сделок у клиента → ambiguous, автоматики нет', () => {
+    /*
+     * Решение владельца 01.10.2026: из нескольких открытых сделок клиента
+     * заявка идёт в самую свежую (по DATE_MODIFY), остальные — дубли.
+     */
+    it('несколько открытых → ambiguous: выбрана самая свежая по дате изменения', () => {
         const res = resolveRepeatWork([
             bucket({
                 signal: 'inn',
                 value: '4826006839',
-                deals: [deal(1), deal(2)],
+                deals: [
+                    deal(1, { modifiedAt: '2026-09-30T10:00:00+03:00' }),
+                    deal(2, { modifiedAt: '2026-09-01T10:00:00+03:00' }),
+                    deal(3, { modifiedAt: '2026-08-15T10:00:00+03:00' }),
+                ],
             }),
         ]);
         expect(res.kind).toBe('ambiguous');
-        expect(res.openDealIds).toEqual([1, 2]);
-        expect(describeRepeatResolution(res)).toContain('#1, #2');
+        expect(res.mainDeal?.dealId).toBe(1);
+        expect(res.openDeals?.map(item => item.dealId)).toEqual([1, 2, 3]);
+        expect(otherOpenDeals(res).map(item => item.dealId)).toEqual([2, 3]);
+        const text = describeRepeatResolution(res);
+        expect(text).toContain('самая свежая из открытых сделок клиента #1');
+        expect(text).toContain('ещё открыты: #2, #3');
+        expect(text).toContain('ИНН 4826006839');
+    });
+
+    it('одинаковая дата изменения → свежей считается сделка с большим ID', () => {
+        const at = '2026-09-30T10:00:00+03:00';
+        const res = resolveRepeatWork([
+            bucket({
+                signal: 'phone',
+                deals: [
+                    deal(500, { modifiedAt: at }),
+                    deal(700, { modifiedAt: at }),
+                ],
+            }),
+        ]);
+        expect(res.mainDeal?.dealId).toBe(700);
+    });
+
+    it('сделка без даты изменения уступает датированной; обе без даты — больший ID', () => {
+        expect(
+            sortByFreshness([
+                deal(900),
+                deal(10, { modifiedAt: '2026-01-01T00:00:00+03:00' }),
+            ]).map(item => item.dealId),
+        ).toEqual([10, 900]);
+        expect(
+            sortByFreshness([deal(5), deal(9), deal(7)]).map(
+                item => item.dealId,
+            ),
+        ).toEqual([9, 7, 5]);
+    });
+
+    it('открытые сделки разных компаний — всё равно самая свежая (владелец: «там может быть что угодно»)', () => {
+        const res = resolveRepeatWork([
+            bucket({
+                signal: 'email',
+                deals: [
+                    deal(11, {
+                        companyId: 100,
+                        modifiedAt: '2026-09-01T09:00:00+03:00',
+                    }),
+                    deal(12, {
+                        companyId: 200,
+                        modifiedAt: '2026-09-29T09:00:00+03:00',
+                    }),
+                    deal(13, { closed: true, companyId: 100 }),
+                ],
+            }),
+        ]);
+        expect(res).toMatchObject({ kind: 'ambiguous', signal: 'email' });
+        expect(res.mainDeal?.dealId).toBe(12);
+        expect(res.mainDeal?.companyId).toBe(200);
+        expect(res.closedDealIds).toEqual([13]);
+    });
+
+    it('одна открытая — по-прежнему join, без списка «ещё открыты»', () => {
+        const res = resolveRepeatWork([
+            bucket({ signal: 'order', deals: [deal(42423)] }),
+        ]);
+        expect(res.kind).toBe('join');
+        expect(res.openDeals).toBeUndefined();
+        expect(otherOpenDeals(res)).toEqual([]);
     });
 
     it('закрытые сделки не мешают: одна открытая + закрытая → join', () => {
@@ -115,6 +193,56 @@ describe('resolveRepeatWork', () => {
             kind: 'none',
         });
         expect(resolveRepeatWork([])).toEqual({ kind: 'none' });
+    });
+});
+
+/*
+ * Запись истории уходит значением batch-команды: Битрикс разбирает команду
+ * как url и режет всё от первого `#` — запись сохранялась как «лид ».
+ */
+describe('repeatJoinHistoryText', () => {
+    const ambiguous = resolveRepeatWork([
+        bucket({
+            signal: 'inn',
+            value: '4826006839',
+            deals: [
+                deal(72000, { modifiedAt: '2026-09-30T10:00:00+03:00' }),
+                deal(71000, { modifiedAt: '2026-09-01T10:00:00+03:00' }),
+            ],
+        }),
+    ]);
+
+    it('номера голыми числами, без `#`', () => {
+        const text = repeatJoinHistoryText(348391, ambiguous);
+
+        expect(text).toBe(
+            'Повторная заявка: лид 348391 присоединён (самая свежая из ' +
+                'открытых сделок клиента 72000, ещё открыты: 71000 (сигнал: ИНН 4826006839))',
+        );
+        expect(
+            repeatJoinHistoryText(
+                42,
+                resolveRepeatWork([
+                    bucket({ signal: 'order', value: '7', deals: [deal(5)] }),
+                ]),
+            ),
+        ).toBe(
+            'Повторная заявка: лид 42 присоединён (открытая сделка 5 (сигнал: номер заявки 7))',
+        );
+    });
+
+    it('в batch-команде обновления сделки запись доезжает целиком', () => {
+        const text = repeatJoinHistoryText(348391, ambiguous);
+        const api = new BatchApiService({} as never, {} as never);
+
+        api.addCmdBatch('lw_deal_join_348391', 'crm.deal.update', {
+            id: 72000,
+            fields: { UF_CRM_OP_MHISTORY: ['01.09.2026 — старое', text] },
+        });
+        const cmd = api.getCmdBatch().lw_deal_join_348391;
+
+        expect(cmd).not.toContain('#');
+        expect(cmd.endsWith(`[]=${text}`)).toBe(true);
     });
 });
 

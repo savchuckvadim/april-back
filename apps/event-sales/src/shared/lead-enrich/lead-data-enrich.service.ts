@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { uniq } from '@lib/portal-lib/pbx-duplicate';
+import { uniq, uniqueContacts } from '@lib/portal-lib/pbx-duplicate';
 import {
     IInnObservation,
     IInnRequisiteCard,
@@ -54,7 +54,8 @@ const TIMELINE_FIELDS: readonly { field: string; label: string }[] = [
     { field: 'UF_CRM_REG_NUMBER', label: 'Код партнёра' },
     { field: 'UF_CRM_DEPARTMENT_STRING', label: 'Отдел' },
     { field: 'UF_CRM_LEAD_USER_ADVICE', label: 'Рекомендации по работе' },
-    { field: 'UF_CRM_LEAD_QUEST_URL', label: 'Источник (анкета)' },
+    // На лиде поле подписано «Оценка» — так его и ищут в ленте сделки.
+    { field: 'UF_CRM_LEAD_QUEST_URL', label: 'Оценка (ссылка из заявки)' },
     { field: 'UF_CRM_LEAD_PAGE_REFERRER', label: 'Откуда пришёл' },
 ];
 
@@ -297,11 +298,18 @@ export class LeadDataEnrichService {
              * Прежние значения разбираются одинаково, поэтому объединение
              * работает при любой установке.
              */
+            const kind = source === 'PHONE' ? 'phone' : 'email';
             const current = this.listValues(deal[target]);
-            const found = uniq(leads.flatMap(lead => this.multi(lead[source])));
-            const merged = uniq([...current, ...found]);
-            // Объединением: номер, добавленный руками, не теряется.
-            if (merged.length > current.length) {
+            const found = leads.flatMap(lead => this.multi(lead[source]));
+            /*
+             * Объединением и без повторов ПО СМЫСЛУ (решение владельца
+             * 01.10.2026): «+7 921…» и «8921…» — один номер. Номер,
+             * добавленный руками, не теряется; пишем, только если пришло
+             * новое.
+             */
+            const merged = uniqueContacts([...current, ...found], kind);
+            const known = uniqueContacts(current, kind).length;
+            if (merged.length > known) {
                 fields[target] = (await this.isMultiple(target))
                     ? merged
                     : merged.join(', ');

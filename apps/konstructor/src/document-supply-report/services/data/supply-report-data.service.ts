@@ -6,8 +6,8 @@ import {
     ProductDto,
     ProductTypeEnum,
 } from '../../../document-generate/dto/product/product.dto';
+import { formatRu } from '@lib/shared/lib/date/format-ru';
 import dayjs from 'dayjs';
-import 'dayjs/locale/ru';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import { formatRuble } from '../../../document-generate/lib/rubles.util';
@@ -44,7 +44,6 @@ type BankRqSlot = 'bank' | 'rs' | 'ks' | 'bik' | 'other';
 
 dayjs.extend(customParseFormat);
 dayjs.extend(localizedFormat);
-dayjs.locale('ru');
 
 export interface SupplyReportTemplateData {
     // Client data
@@ -567,17 +566,16 @@ export class SupplyReportDataService {
                     'contract_present_end',
                 ].includes(code)
             ) {
-                return dateTime.format('D MMMM YYYY').toLowerCase() + ' г.';
+                return formatRu(dateTime, 'D MMMM YYYY').toLowerCase() + ' г.';
             } else if (code === 'client_call_date') {
                 const time = dateTime.format('HH:mm');
                 if (time === '00:00') {
-                    return dateTime
-                        .hour(8)
-                        .minute(0)
-                        .format('D MMMM YYYY HH:mm')
-                        .toLowerCase();
+                    return formatRu(
+                        dateTime.hour(8).minute(0),
+                        'D MMMM YYYY HH:mm',
+                    ).toLowerCase();
                 }
-                return dateTime.format('D MMMM YYYY HH:mm').toLowerCase();
+                return formatRu(dateTime, 'D MMMM YYYY HH:mm').toLowerCase();
             }
 
             return String(date);

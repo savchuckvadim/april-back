@@ -14,6 +14,7 @@ import { PBXModule } from '@/modules/pbx/pbx.module';
 import { ActiveStaffModule } from '../../shared/active-staff';
 import { PbxDuplicateModule } from '@lib/portal-lib/pbx-duplicate';
 import { LeadToWorkRepeatService } from './services/lead-to-work-repeat.service';
+import { LeadToWorkRepeatNoticeService } from './services/lead-to-work-repeat-notice.service';
 import { LeadToWorkDeadlineService } from './services/lead-to-work-deadline.service';
 
 /**
@@ -48,6 +49,9 @@ import { LeadToWorkDeadlineService } from './services/lead-to-work-deadline.serv
         LeadToWorkDuplicateCheckService,
         // Повторная заявка: поиск работы клиента и присоединение.
         LeadToWorkRepeatService,
+        // Несколько открытых сделок клиента: комментарии в сделки и лид,
+        // уведомления менеджерам и руководителям (снимок отдела продаж).
+        LeadToWorkRepeatNoticeService,
         // Имена сотрудников для читаемой истории и уведомлений (кэш на домен).
         UserNameResolver,
         // График портала: срок задачи не должен попадать в ночь и выходные

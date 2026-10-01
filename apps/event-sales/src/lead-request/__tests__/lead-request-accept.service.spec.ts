@@ -677,4 +677,27 @@ describe('LeadRequestAcceptService — стадия возврата повто�
             }),
         ).toBe(339193);
     });
+
+    /*
+     * Присоединение не делает заявку первоисточником (01.10.2026): у
+     * холодной или ручной сделки, бывшей в «Новой», нет ни первоисточника,
+     * ни стадии возврата — робот по dealId всё равно находит заявку.
+     */
+    it('у сделки нет первоисточника и штатного лида — ждёт последний присоединённый', () => {
+        const service = new LeadRequestAcceptService({} as never, {} as never);
+        expect(
+            service.leadIdFromDealRow(portal as never, {
+                ID: '72000',
+                UF_CRM_DEAL_JOINED_LEADS: ['L_348391', 'L_348945'],
+            }),
+        ).toBe(348945);
+        // Штатный лид есть — как раньше, он.
+        expect(
+            service.leadIdFromDealRow(portal as never, {
+                ID: '72000',
+                LEAD_ID: '339193',
+                UF_CRM_DEAL_JOINED_LEADS: ['L_348945'],
+            }),
+        ).toBe(339193);
+    });
 });

@@ -10,6 +10,7 @@ import { DuplicateCheckHookModule } from './duplicate-check/duplicate-check.modu
 import { LeadAcceptHookModule } from './lead-accept/lead-accept.module';
 import { LeadClientHookModule } from './lead-client/lead-client.module';
 import { JoinToMainHookModule } from './join-to-main/join-to-main.module';
+import { ClientWorkModule } from './client-work/client-work.module';
 
 /**
  * Семейство sales-хуков: ядро (silence + очередь операций + статусы + WS)
@@ -28,6 +29,7 @@ import { JoinToMainHookModule } from './join-to-main/join-to-main.module';
         LeadAcceptHookModule,
         LeadClientHookModule,
         JoinToMainHookModule,
+        ClientWorkModule,
     ],
 })
 export class SalesHooksModule {}

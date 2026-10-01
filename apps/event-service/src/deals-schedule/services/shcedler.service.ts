@@ -1,6 +1,6 @@
 // scheduler.service.ts
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { MoveDealQueueService } from '../../deals-move/services/move-deal-queue.service';
 import { TelegramService } from '@lib/telegram/telegram.service';
 import { DealsOrderQueueService } from '../../deals-order/services/queue/deals-order-queue.service';
@@ -15,8 +15,12 @@ enum CronJobName {
     ACTUALIZE_FIN_SERVICES_WITH_TASKS = 'actualizeDealsFinServicesWithTasks',
 }
 
+/**
+ * Список кронов при старте шлёт общий CronJobsReporter (@lib/core/schedule),
+ * подключённый в корневом модуле приложения.
+ */
 @Injectable()
-export class SchedulerService implements OnApplicationBootstrap {
+export class SchedulerService {
     private readonly logger = new Logger(SchedulerService.name);
 
     constructor(
@@ -24,33 +28,7 @@ export class SchedulerService implements OnApplicationBootstrap {
         private readonly dealsOrderQueueService: DealsOrderQueueService,
         private readonly smartActQueueService: SmartActQueueService,
         private readonly telegramService: TelegramService,
-        private readonly schedulerRegistry: SchedulerRegistry,
     ) {}
-
-    /**
-     * Диагностика: при старте приложения логируем все зарегистрированные
-     * cron-задачи и их ближайшие даты запуска — сразу видно, что job
-     * зарегистрирован и когда он реально сработает по мнению планировщика.
-     */
-    onApplicationBootstrap() {
-        const jobs = this.schedulerRegistry.getCronJobs();
-        const lines: string[] = [];
-        jobs.forEach((job, name) => {
-            const nextRuns = job
-                .nextDates(2)
-                .map(d => d.setZone(MOSCOW_TZ).toFormat('yyyy-MM-dd HH:mm:ss'))
-                .join(', ');
-            const line = `${name}: next runs (msk) ${nextRuns}`;
-            lines.push(line);
-            this.logger.log(`CRON registered: ${line}`);
-        });
-        if (!lines.length) {
-            this.logger.error('CRON: no jobs registered in SchedulerRegistry');
-        }
-        void this.telegramService.sendMessage(
-            `🕒 event-service SCHEDLER started, jobs:\n${lines.join('\n')}`,
-        );
-    }
 
     @Cron(CronExpression.EVERY_5_HOURS, {
         name: CronJobName.MOVE_DEALS,

@@ -25,6 +25,7 @@ import {
     JoinToMainWebhookQueryDto,
 } from '../dto/join-to-main.dto';
 import { JoinToMainOperationDto } from '../dto/join-to-main-result.dto';
+import { HeadAccessService } from '../../../shared/head-access/head-access.service';
 
 const HOOK = EnumSalesHookCode.JOIN_TO_MAIN;
 
@@ -41,6 +42,7 @@ export class JoinToMainController {
         private readonly silence: SalesHookSilenceGateway,
         private readonly dispatch: SalesHookDispatchService,
         private readonly idempotency: SalesHookIdempotencyService,
+        private readonly headAccess: HeadAccessService,
     ) {}
 
     @Post('webhook')
@@ -97,8 +99,8 @@ export class JoinToMainController {
         description:
             'Ставит операцию в очередь без silence-задержки. Статус — ' +
             'GET /sales-hooks/operations/{operationId} или WS-события ' +
-            'sales-hook:done / sales-hook:error. Во фронте кнопка доступна ' +
-            'только руководителю.',
+            'sales-hook:done / sales-hook:error. Только руководителю отдела ' +
+            'продаж: initiatorUserId проверяется на сервере, иначе 403.',
     })
     @ApiBody({
         type: JoinToMainRunDto,
@@ -110,6 +112,10 @@ export class JoinToMainController {
         description: 'Операция поставлена (или возвращена существующая).',
     })
     async run(@Body() dto: JoinToMainRunDto): Promise<SalesHookOperationDto> {
+        await this.headAccess.assertCanManageDuplicates(
+            dto.domain,
+            dto.initiatorUserId,
+        );
         const item = buildJoinToMainItem(dto);
         const entityKey = `deal:${item.dealId}`;
         const operation = await this.dispatch.accept<IJoinToMainItem>(

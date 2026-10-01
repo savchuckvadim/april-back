@@ -9,6 +9,7 @@ import {
 } from '@lib/portal-lib/store/app-settings';
 import { ActiveStaffService } from '../../shared/active-staff';
 import { UserNameResolver } from '../../shared/lead-request/user-name.resolver';
+import { isRepeatRequestDeal } from '../../shared/lead-request/repeat-request.util';
 import { parseUserIds } from '../../sales-hooks/lead-to-work/lib/round-robin-exclusion.util';
 import { LeadRequestRepeatDto } from '../dto/lead-request-repeat.dto';
 
@@ -50,8 +51,9 @@ export class LeadRequestRepeatInfoService {
                 | undefined;
             if (!deal) return null;
 
-            const fromLead = this.fieldText(portal, deal, 'deal_from_lead_id');
-            const isRepeat = fromLead !== '' && fromLead !== `L_${leadId}`;
+            // Правило одно с SLA: чужой первоисточник либо лид — среди
+            // присоединённых к сделке без первоисточника.
+            const isRepeat = isRepeatRequestDeal(portal, deal, leadId);
             if (!isRepeat) return null;
 
             const returnStage = this.fieldText(portal, deal, 'op_return_stage');

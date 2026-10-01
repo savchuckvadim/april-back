@@ -153,27 +153,37 @@ export class BxTaskRepository {
     }
 
     /**
-     * Прикрепляет файлы к задаче
+     * Прикрепляет ОДИН файл Диска к задаче (`tasks.task.files.attach`).
+     * По документации параметр — `fileId` (одно число); прежний вызов с
+     * `files: [...]` Битрикс молча не понимал, и файл не прикреплялся.
      */
-    async filesAttach(taskId: number | string, files: number[]) {
+    async fileAttach(taskId: number | string, fileId: number) {
         return this.bxApi.callType(
             EBxNamespace.TASKS,
             EBXEntity.TASK,
             EBxMethod.FILES_ATTACH,
-            { taskId, files },
+            { taskId, fileId },
         );
     }
 
-    /**
-     * Прикрепляет файлы к задаче (batch)
-     */
-    filesAttachBtch(cmdCode: string, taskId: number | string, files: number[]) {
+    /** Прикрепляет файлы к задаче — по одному вызову на файл. */
+    async filesAttach(taskId: number | string, files: number[]) {
+        const results: Awaited<ReturnType<BxTaskRepository['fileAttach']>>[] =
+            [];
+        for (const fileId of files) {
+            results.push(await this.fileAttach(taskId, fileId));
+        }
+        return results;
+    }
+
+    /** Прикрепляет файл к задаче (batch, одна команда на файл). */
+    fileAttachBtch(cmdCode: string, taskId: number | string, fileId: number) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.TASKS,
             EBXEntity.TASK,
             EBxMethod.FILES_ATTACH,
-            { taskId, files },
+            { taskId, fileId },
         );
     }
 

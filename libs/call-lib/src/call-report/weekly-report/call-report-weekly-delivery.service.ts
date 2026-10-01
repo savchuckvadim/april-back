@@ -98,7 +98,7 @@ export class CallReportWeeklyDeliveryService {
     /**
      * ЗАДАЧА С ФАЙЛОМ: одна задача на всех получателей (первый —
      * ответственный, остальные — соисполнители), файл с Диска
-     * прикрепляется через tasks.task.file.attach. Требует, чтобы файл
+     * прикрепляется через tasks.task.files.attach (параметр fileId). Требует, чтобы файл
      * уже лежал на Диске (см. upload).
      */
     async createTask(
@@ -123,7 +123,7 @@ export class CallReportWeeklyDeliveryService {
             if (!Number.isFinite(taskId) || taskId <= 0) return null;
             if (diskFileId) {
                 await bitrix.task
-                    .filesAttach(taskId, [diskFileId])
+                    .fileAttach(taskId, diskFileId)
                     .catch((error: Error) =>
                         this.logger.warn(
                             `Файл ${diskFileId} не прикреплён к задаче ${taskId}: ${error.message}`,

@@ -22,6 +22,7 @@ import {
 } from '@app/konstructor/document-generate';
 import { ContractDto } from '@app/konstructor/dto/contract.dto';
 import { ClientTypeEnum } from '@app/konstructor/document-generate/type/client.type';
+import { formatRu } from '@lib/shared/lib/date/format-ru';
 import dayjs from 'dayjs';
 import { getWithTax } from '@app/konstructor/document-generate/lib/get-with-tax.util';
 
@@ -90,7 +91,7 @@ export class InvoiceRenderDataService {
     private getInvoiceGeneralData(
         dto: OfferWordByTemplateGenerateDto,
     ): IInvoiceRenderGeneralData {
-        const nowDate = dayjs().format('D MMMM YYYY [г.]');
+        const nowDate = formatRu(dayjs(), 'D MMMM YYYY [г.]');
         const rawInvoicePaymentDate = dto.invoice.invoiceDate || '';
         return {
             InvoiceNumber: dto.invoice.invoiceNumber ?? '',

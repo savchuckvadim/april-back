@@ -1,4 +1,5 @@
 import { Module, OnModuleInit } from '@nestjs/common';
+import { HeadAccessModule } from '../../shared/head-access/head-access.module';
 import { SalesHookCoreModule } from '../core/sales-hook-core.module';
 import { SalesHookRegistryService } from '../core/services/sales-hook-registry.service';
 import { JoinToMainController } from './controllers/join-to-main.controller';
@@ -9,7 +10,8 @@ import { JoinToMainUseCase } from './use-cases/join-to-main.use-case';
  * удаления (контакты, лиды, задачи, дела; дубль — в стадию «Дубль»).
  */
 @Module({
-    imports: [SalesHookCoreModule],
+    // HeadAccessModule — кнопка фрейма только руководителю (проверка на сервере).
+    imports: [SalesHookCoreModule, HeadAccessModule],
     controllers: [JoinToMainController],
     providers: [JoinToMainUseCase],
 })

@@ -19,6 +19,8 @@ const thresholds: XoRescueThresholds = {
     now: NOW,
     /** Маркер старше 30 минут — хук считаем упавшим. */
     resendBefore: NOW.subtract(30, 'minute'),
+    /** Метки старше трёх суток — старый сбой, не досылаем. */
+    markerNotBefore: NOW.subtract(72, 'hour'),
     /** Сироты — только за последние двое суток. */
     orphanNotBefore: NOW.subtract(48, 'hour'),
     /** И не моложе часа: хук мог ещё не доработать. */
@@ -61,6 +63,34 @@ describe('decideXoRescue — признак 1: маркер робота', () =>
                 thresholds,
             ),
         ).toEqual({ action: 'skip', reason: 'marker-fresh' });
+    });
+
+    it('метка старше отсечки (старый сбой) → НЕ досылаем: ХО могли отработать вручную', () => {
+        expect(
+            decideXoRescue(
+                candidate({
+                    markers: {
+                        queuedAt: NOW.subtract(10, 'day'),
+                        sentAt: null,
+                    },
+                }),
+                thresholds,
+            ),
+        ).toEqual({ action: 'skip', reason: 'marker-too-old' });
+    });
+
+    it('метка ровно на отсечке — ещё досылаем', () => {
+        expect(
+            decideXoRescue(
+                candidate({
+                    markers: {
+                        queuedAt: thresholds.markerNotBefore,
+                        sentAt: null,
+                    },
+                }),
+                thresholds,
+            ),
+        ).toEqual({ action: 'dispatch', reason: 'marker-stuck' });
     });
 
     it('повторная отправка при старом sent → досылаем', () => {

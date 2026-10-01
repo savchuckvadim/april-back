@@ -54,7 +54,7 @@ export class CallReportScheduler implements OnModuleInit {
         );
     }
 
-    @Cron(CronExpression.EVERY_30_MINUTES)
+    @Cron(CronExpression.EVERY_30_MINUTES, { name: 'call-report-scan' })
     async tick(): Promise<void> {
         const domains = await this.roster.resolve();
 

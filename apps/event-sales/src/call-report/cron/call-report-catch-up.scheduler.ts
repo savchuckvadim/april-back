@@ -53,7 +53,7 @@ export class CallReportCatchUpScheduler implements OnModuleInit {
         );
     }
 
-    @Cron(DAILY_AT_MSK_2100)
+    @Cron(DAILY_AT_MSK_2100, { name: 'call-report-catch-up' })
     async tick(): Promise<void> {
         const domains = await this.roster.resolve();
         if (!domains.length) return;

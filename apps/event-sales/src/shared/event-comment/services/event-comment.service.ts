@@ -2,14 +2,13 @@ import {
     EnumEventItemResultType,
     EnumWorkStatusCode,
 } from '@lib/shared/event-sales/types/report-types';
+import { formatRu } from '@lib/shared/lib/date/format-ru';
 import dayjs from 'dayjs';
-import 'dayjs/locale/ru';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 
 dayjs.extend(customParseFormat);
 dayjs.extend(localizedFormat);
-dayjs.locale('ru');
 
 export interface IGetComment {
     deadline: string;
@@ -51,7 +50,7 @@ export class EventCommentService {
             // Parse date from format 'DD.MM.YYYY HH:mm:ss' and format in Russian locale: "1 ноября 12:30"
             const parsedDate = dayjs(deadline, 'DD.MM.YYYY HH:mm:ss', true);
             if (parsedDate.isValid()) {
-                formattedDate = parsedDate.format('D MMMM HH:mm');
+                formattedDate = formatRu(parsedDate, 'D MMMM HH:mm');
             }
         }
 

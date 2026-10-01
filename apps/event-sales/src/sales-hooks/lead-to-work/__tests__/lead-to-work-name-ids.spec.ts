@@ -106,6 +106,65 @@ describe('leadToWorkNameIds', () => {
         expect(ids).toEqual(expect.arrayContaining([8, 3, 4]));
     });
 
+    /*
+     * Повторная заявка к самой свежей из нескольких открытых сделок: в
+     * комментариях и уведомлениях названы владельцы ВСЕХ открытых сделок.
+     */
+    it('повторная заявка: владельцы всех открытых сделок клиента — в списке', () => {
+        const owner = (dealId: number, responsibleId: number | null) =>
+            ({ dealId, responsibleId }) as never;
+        const ids = leadToWorkNameIds([
+            {
+                item: {},
+                leadContext: context(),
+                assignee: { responsible: 8 },
+                join: {
+                    outcome: {
+                        resolution: {
+                            mainDeal: owner(72000, 433),
+                            openDeals: [
+                                owner(72000, 433),
+                                owner(71000, 500),
+                                owner(70000, null),
+                            ],
+                        },
+                    },
+                },
+            },
+        ]);
+
+        expect(ids).toEqual(expect.arrayContaining([8, 433, 500]));
+    });
+
+    /*
+     * Холостой ход: присоединения нет (join пуст), но комментарий
+     * «присоединил бы…» называет владельцев — иначе «сотрудник 447».
+     */
+    it('холостой ход: владельцы сделок из комментариев «присоединил бы…» — в списке', () => {
+        const owner = (dealId: number, responsibleId: number | null) =>
+            ({ dealId, responsibleId }) as never;
+        const ids = leadToWorkNameIds(
+            [
+                {
+                    item: {},
+                    leadContext: context(),
+                    assignee: { responsible: 8 },
+                },
+            ],
+            [
+                {
+                    resolution: {
+                        mainDeal: owner(72000, 447),
+                        openDeals: [owner(72000, 447), owner(71000, 465)],
+                    },
+                },
+                { resolution: { mainDeal: owner(42423, 387) } },
+            ],
+        );
+
+        expect(ids).toEqual(expect.arrayContaining([8, 447, 465, 387]));
+    });
+
     it('лид не прочитан — только то, что пришло в элементе', () => {
         const ids = leadToWorkNameIds([{ item: { transferredBy: 3 } }]).filter(
             Boolean,

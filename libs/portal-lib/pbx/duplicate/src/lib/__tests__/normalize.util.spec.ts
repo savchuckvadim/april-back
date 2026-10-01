@@ -10,6 +10,7 @@ import {
     normalizeInnList,
     normalizePhone,
     normalizeTitle,
+    uniqueContacts,
     signalsCacheKey,
 } from '../normalize.util';
 
@@ -180,5 +181,37 @@ describe('emailDomain / corporateEmailDomain', () => {
         expect(corporateEmailDomain('x@admlr.lipetsk.ru')).toBe(
             'admlr.lipetsk.ru',
         );
+    });
+});
+
+describe('uniqueContacts — множественные поля сделки без повторов по смыслу', () => {
+    it('телефон в разных написаниях — один, остаётся первое', () => {
+        expect(
+            uniqueContacts(
+                [
+                    '+7 921 889-28-48',
+                    '89218892848',
+                    '9218892848',
+                    '+79001112233',
+                ],
+                'phone',
+            ),
+        ).toEqual(['+7 921 889-28-48', '+79001112233']);
+    });
+
+    it('почта без учёта регистра и пробелов; пустые отбрасываются', () => {
+        expect(
+            uniqueContacts(
+                [' Ivan@Mail.ru', 'ivan@mail.ru', '', 'b@x.ru'],
+                'email',
+            ),
+        ).toEqual(['Ivan@Mail.ru', 'b@x.ru']);
+    });
+
+    it('короткий внутренний номер сравнивается как есть', () => {
+        expect(uniqueContacts(['101', '101', '102'], 'phone')).toEqual([
+            '101',
+            '102',
+        ]);
     });
 });

@@ -41,7 +41,7 @@ export class CallRevisionScheduler implements OnModuleInit {
         );
     }
 
-    @Cron(NIGHTLY_AT_MSK_2330)
+    @Cron(NIGHTLY_AT_MSK_2330, { name: 'call-revision' })
     async tick(): Promise<void> {
         const domains = await this.roster.resolve();
         if (!domains.length) return;

@@ -60,7 +60,8 @@ export type TaskSchema = {
     [EBxMethod.FILES_ATTACH]: {
         request: {
             taskId: number | string;
-            files: number[];
+            /** Один файл Диска (документация tasks.task.files.attach). */
+            fileId: number;
         };
         response: {
             task: IBXTask;

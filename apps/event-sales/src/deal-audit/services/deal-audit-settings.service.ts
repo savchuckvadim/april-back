@@ -74,6 +74,12 @@ export class DealAuditSettingsService {
                 userIds: parseUserIds(
                     String(settings.dealAuditDigestUserIds ?? ''),
                 ),
+                departmentUserIds: parseUserIds(
+                    String(settings.dealAuditDigestDepartmentUserIds ?? ''),
+                ),
+                excludeUserIds: parseUserIds(
+                    String(settings.dealAuditDigestExcludeUserIds ?? ''),
+                ),
                 limit: positive(settings.dealAuditDigestLimit, 20),
             },
             intervalMinutes: positive(settings.dealAuditIntervalMinutes, 1440),

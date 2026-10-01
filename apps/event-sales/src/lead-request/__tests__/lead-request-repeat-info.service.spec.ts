@@ -4,6 +4,7 @@ type Row = Record<string, unknown>;
 
 const FIELDS: Record<string, string> = {
     deal_from_lead_id: 'DEAL_FROM_LEAD_ID',
+    deal_joined_leads: 'DEAL_JOINED_LEADS',
     op_return_stage: 'OP_RETURN_STAGE',
 };
 
@@ -119,6 +120,43 @@ describe('LeadRequestRepeatInfoService', () => {
             active: true,
             inRotation: false,
         });
+    });
+
+    /*
+     * Сделка холодного звонка, ручная или старая первоисточника не имеет, а
+     * присоединение его не заполняет: повтор узнаётся по присоединённым.
+     */
+    it('у сделки нет первоисточника, лид — среди присоединённых → блок есть', async () => {
+        const block = await makeService({ active: [387] }).build(
+            'd.b24.ru',
+            bitrixWith({
+                ID: '72000',
+                STAGE_ID: 'C31:NEW',
+                ASSIGNED_BY_ID: '387',
+                UF_CRM_DEAL_JOINED_LEADS: ['L_348945'],
+                UF_CRM_OP_RETURN_STAGE: 'C31:HOT',
+            }) as never,
+            portal as never,
+            348945,
+            72000,
+        );
+        expect(block).toMatchObject({
+            isRepeat: true,
+            mainDealId: 72000,
+            stageBeforeName: 'Решение',
+            willReturnStage: true,
+        });
+    });
+
+    it('у сделки нет первоисточника и лида нет среди присоединённых — блока нет', async () => {
+        const block = await makeService({}).build(
+            'd.b24.ru',
+            bitrixWith({ ID: '1', UF_CRM_DEAL_JOINED_LEADS: ['L_5'] }) as never,
+            portal as never,
+            7,
+            1,
+        );
+        expect(block).toBeNull();
     });
 
     it('сделка создана из этого же лида — блока нет', async () => {

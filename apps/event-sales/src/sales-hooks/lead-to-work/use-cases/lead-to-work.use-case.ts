@@ -44,16 +44,24 @@ import {
     EnumPortalAppCode,
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
-import {
-    IRepeatLeadNote,
-    LeadToWorkRepeatService,
-    RepeatJoinMode,
-} from '../services/lead-to-work-repeat.service';
+import { LeadToWorkRepeatService } from '../services/lead-to-work-repeat.service';
 import { IRepeatFindOutcome } from '../services/repeat-work-finder.service';
 import {
     describeRepeatResolution,
     isRepeatCandidate,
+    repeatJoinHistoryText,
 } from '../lib/repeat-work.resolver';
+import {
+    activeRepeatOwner,
+    IRepeatRouting,
+    RepeatJoinMode,
+    routeRepeatOutcomes,
+} from '../lib/repeat-work-routing';
+import {
+    IRepeatJoinNotice,
+    joinedRepeatNotices,
+    repeatJoinNoticeOf,
+} from '../lib/repeat-join-notice';
 
 type BxRow = Record<string, unknown>;
 
@@ -73,9 +81,10 @@ interface IQueuedLead {
     /** Повторная заявка присоединена к сделке клиента. */
     repeat?: {
         mainDealId: number;
-        signal: string;
         /** Владелец не работал — после записи сделка передаётся. */
         transfer: boolean;
+        /** Открытых сделок было несколько — оповещения после записи. */
+        notice: IRepeatJoinNotice | null;
     };
     error?: string;
     warnings: string[];
@@ -88,13 +97,10 @@ interface IPreparedJoin {
     transfer: boolean;
 }
 
-/** Итог шага «повторная заявка» по пачке. */
-interface IRepeatPlan {
+/** Итог шага «повторная заявка» по пачке: присоединения и холостой ход. */
+interface IRepeatPlan
+    extends Omit<IRepeatRouting<IRepeatFindOutcome>, 'ownerIds'> {
     mode: RepeatJoinMode;
-    /** leadId → присоединение (только mode='on' и kind='join'). */
-    joins: Map<number, IRepeatFindOutcome>;
-    /** Комментарии в таймлайн лидов после записи. */
-    notes: IRepeatLeadNote[];
     /** Кто из владельцев найденных сделок работает сейчас. */
     activeIds: Set<number>;
 }
@@ -211,25 +217,12 @@ export class LeadToWorkUseCase
             })),
         );
 
-        const ownerIds: number[] = [];
-        for (const [leadId, outcome] of outcomes) {
-            const { resolution } = outcome;
-            if (resolution.kind === 'join' && plan.mode === 'on') {
-                plan.joins.set(leadId, outcome);
-                if (resolution.mainDeal?.responsibleId) {
-                    ownerIds.push(resolution.mainDeal.responsibleId);
-                }
-            } else if (
-                resolution.kind === 'ambiguous' ||
-                (resolution.kind === 'join' && plan.mode === 'dry_run')
-            ) {
-                plan.notes.push({ leadId, resolution, mode: plan.mode });
-            }
+        // Одна открытая сделка и несколько (самая свежая) — одним путём.
+        const routing = routeRepeatOutcomes(outcomes, plan.mode);
+        if (routing.ownerIds.length) {
+            plan.activeIds = await this.activeUserIds(ctx, routing.ownerIds);
         }
-        if (ownerIds.length) {
-            plan.activeIds = await this.activeUserIds(ctx, ownerIds);
-        }
-        return plan;
+        return { ...plan, joins: routing.joins, notes: routing.notes };
     }
 
     /**
@@ -253,7 +246,8 @@ export class LeadToWorkUseCase
         },
     ): Promise<IQueuedLead> {
         const { item, leadContext, assignee, resolution, join } = entry;
-        const main = join.outcome.resolution.mainDeal!;
+        const found = join.outcome.resolution;
+        const main = found.mainDeal!;
         const leadRow = leadContext.lead as unknown as BxRow;
         const resolvedItem: ResolvedLeadToWorkItem = {
             ...item,
@@ -273,7 +267,7 @@ export class LeadToWorkUseCase
                 !!leadContext.company,
                 leadContext.isConverted,
             );
-        const signal = describeRepeatResolution(join.outcome.resolution);
+        const signal = describeRepeatResolution(found);
         const plan = flowService.queueJoin(
             resolvedItem,
             leadContext,
@@ -283,7 +277,7 @@ export class LeadToWorkUseCase
                 mainDealRow: main.row,
                 mainCompanyId: main.companyId,
                 openMainTasks: join.outcome.openMainTasks,
-                historyText: `Повторная заявка: лид #${item.leadId} присоединён (${signal})`,
+                historyText: repeatJoinHistoryText(item.leadId, found),
             },
             ctx.buffer,
             ctx.initiatorUserId ?? null,
@@ -303,8 +297,8 @@ export class LeadToWorkUseCase
             previousResponsibleId: this.previousResponsibleOf(item, leadRow),
             repeat: {
                 mainDealId: main.dealId,
-                signal,
                 transfer: join.transfer,
+                notice: repeatJoinNoticeOf(entry),
             },
             warnings: [
                 ...assignee.warnings,
@@ -459,33 +453,31 @@ export class LeadToWorkUseCase
             try {
                 const leadRow = leadContext.lead as unknown as BxRow;
                 const join = repeat.joins.get(item.leadId);
-                const ownerId =
-                    join?.resolution.mainDeal?.responsibleId ?? null;
-                const assignee =
-                    join && ownerId && repeat.activeIds.has(ownerId)
-                        ? {
-                              responsible: ownerId,
-                              source: 'repeat' as const,
-                              departmentKey: null,
-                              warnings: [],
-                          }
-                        : await this.assignee.resolve(
-                              ctx.domain,
-                              // Именно слитый элемент: responsible и department
-                              // могли прийти не из запроса, а из карточки.
-                              resolution.item,
-                              {
-                                  leadResponsibleId:
-                                      Number(leadRow.ASSIGNED_BY_ID) || null,
-                                  // ХО распределяет заявку по кругу,
-                                  // конвертация — переносит работу как есть.
-                                  keepLeadResponsible:
-                                      resolution.intent.isXo !== 'Y',
-                                  // Уволенные в круге не участвуют.
-                                  activeUserIds: ids =>
-                                      this.activeUserIds(ctx, ids),
-                              },
-                          );
+                const ownerId = activeRepeatOwner(join, repeat.activeIds);
+                const assignee = ownerId
+                    ? {
+                          responsible: ownerId,
+                          source: 'repeat' as const,
+                          departmentKey: null,
+                          warnings: [],
+                      }
+                    : await this.assignee.resolve(
+                          ctx.domain,
+                          // Именно слитый элемент: responsible и department
+                          // могли прийти не из запроса, а из карточки.
+                          resolution.item,
+                          {
+                              leadResponsibleId:
+                                  Number(leadRow.ASSIGNED_BY_ID) || null,
+                              // ХО распределяет заявку по кругу,
+                              // конвертация — переносит работу как есть.
+                              keepLeadResponsible:
+                                  resolution.intent.isXo !== 'Y',
+                              // Уволенные в круге не участвуют.
+                              activeUserIds: ids =>
+                                  this.activeUserIds(ctx, ids),
+                          },
+                      );
                 prepared.push({
                     item: resolution.item,
                     leadContext,
@@ -510,7 +502,7 @@ export class LeadToWorkUseCase
         const userNames = await this.userNames.resolve(
             ctx.domain,
             ctx.bitrix,
-            leadToWorkNameIds(prepared),
+            leadToWorkNameIds(prepared, repeat.notes),
         );
 
         const flowService = new LeadToWorkFlowService(
@@ -698,15 +690,16 @@ export class LeadToWorkUseCase
         }
 
         /*
-         * Шаг 3.6. Повторные заявки: комментарии в таймлайн лидов (холостой
-         * ход, неоднозначность) и передача основной сделки, если её
-         * владелец больше не работает (задачи, контакты, лиды — штатной
-         * «передачей работы»). После записи: сделка уже на новом.
+         * Шаг 3.6. Повторные заявки (после записи): холостой ход и выбор
+         * самой свежей из нескольких открытых — комментарии и уведомления;
+         * передача основной сделки, если её владелец больше не работает
+         * (задачи, контакты, лиды — штатной «передачей работы»).
          */
-        const repeatWarnings = await this.repeat.writeLeadNotes(
-            ctx,
-            repeat.notes,
-        );
+        const repeatWarnings = await this.repeat.writeNotes(ctx, {
+            notes: repeat.notes,
+            notices: joinedRepeatNotices(queued, byCmd),
+            names: userNames,
+        });
         for (const entry of queued) {
             if (!entry.repeat?.transfer || entry.error || !entry.responsible) {
                 continue;

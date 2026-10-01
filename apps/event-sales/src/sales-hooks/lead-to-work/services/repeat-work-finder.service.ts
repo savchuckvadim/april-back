@@ -20,6 +20,7 @@ import {
     RepeatSignalKind,
     resolveRepeatWork,
 } from '../lib/repeat-work.resolver';
+import { isJoinable } from '../lib/repeat-work-routing';
 
 type BxRow = Record<string, unknown>;
 
@@ -55,6 +56,8 @@ const MAX_SIBLING_DEALS = 10;
 const MIN_ORDER_LENGTH = 3;
 
 const DEAL_SELECT = ['*', 'UF_*'];
+/** Свежие — первыми: list отдаёт ≤ 50 строк, свежая работа не теряется. */
+const DEAL_ORDER = { DATE_MODIFY: 'DESC', ID: 'DESC' } as const;
 const TASK_SELECT = ['ID', 'TITLE', 'RESPONSIBLE_ID', 'UF_CRM_TASK', 'STATUS'];
 
 interface ILeadSignals {
@@ -63,6 +66,16 @@ interface ILeadSignals {
     emails: string[];
     domains: string[];
     inns: string[];
+}
+
+/** Команда волны 1: чей лид, какой сигнал, как разбирать ответ. */
+interface IWave1Command {
+    leadId: number;
+    signal: RepeatSignalKind;
+    value: string;
+    shape: 'deals' | 'comm' | 'leads' | 'requisites' | 'companies';
+    /** Имя поля сделки для JS-перепроверки LIKE/точного фильтра. */
+    verifyField?: string;
 }
 
 /** Куда привёл разбор одной команды чтения. */
@@ -161,7 +174,7 @@ export class RepeatWorkFinderService {
                 openMainTasks: [],
                 warnings: [],
             });
-            if (resolution.kind === 'join' && resolution.mainDeal) {
+            if (isJoinable(resolution)) {
                 joins.push({
                     leadId: lead.leadId,
                     dealId: resolution.mainDeal.dealId,
@@ -169,7 +182,7 @@ export class RepeatWorkFinderService {
             }
         }
 
-        // === Волна 3: открытые задачи основных сделок (только join).
+        // === Волна 3: открытые задачи выбранных для присоединения сделок.
         if (joins.length) {
             const taskGroupId = this.portal.getSalesTaskGroupId();
             for (const join of joins) {
@@ -250,27 +263,8 @@ export class RepeatWorkFinderService {
         leads: readonly IRepeatFinderLead[],
         signalsByLead: Map<number, ILeadSignals>,
         baseCategoryId: string,
-    ): Map<
-        string,
-        {
-            leadId: number;
-            signal: RepeatSignalKind;
-            value: string;
-            shape: 'deals' | 'comm' | 'leads' | 'requisites' | 'companies';
-            /** Имя поля сделки для JS-перепроверки LIKE/точного фильтра. */
-            verifyField?: string;
-        }
-    > {
-        const commands = new Map<
-            string,
-            {
-                leadId: number;
-                signal: RepeatSignalKind;
-                value: string;
-                shape: 'deals' | 'comm' | 'leads' | 'requisites' | 'companies';
-                verifyField?: string;
-            }
-        >();
+    ): Map<string, IWave1Command> {
+        const commands = new Map<string, IWave1Command>();
         const leadOrderName = this.fieldName('lead', 'lead_order_number');
         const leadToBaseName = this.fieldName('lead', 'to_base_sales');
         const dealOrderName = this.fieldName('deal', 'lead_order_number');
@@ -297,6 +291,7 @@ export class RepeatWorkFinderService {
                 cmd,
                 { ...filter, CATEGORY_ID: baseCategoryId } as never,
                 DEAL_SELECT,
+                DEAL_ORDER,
             );
         };
 
@@ -431,7 +426,7 @@ export class RepeatWorkFinderService {
     /** Разбор волны 1 по лиду: signal → value → попадания. */
     private parseWave1(
         lead: IRepeatFinderLead,
-        commands: ReturnType<RepeatWorkFinderService['queueWave1']>,
+        commands: Map<string, IWave1Command>,
         flat: Map<string, unknown>,
     ): Map<RepeatSignalKind, Map<string, IParsedHits>> {
         const result = new Map<RepeatSignalKind, Map<string, IParsedHits>>();
@@ -578,6 +573,7 @@ export class RepeatWorkFinderService {
                 `rjw2_co_${id}`,
                 { COMPANY_ID: id, CATEGORY_ID: baseCategoryId } as never,
                 DEAL_SELECT,
+                DEAL_ORDER,
             );
         }
         for (const id of contactIds) {
@@ -585,6 +581,7 @@ export class RepeatWorkFinderService {
                 `rjw2_ct_${id}`,
                 { CONTACT_ID: id, CATEGORY_ID: baseCategoryId } as never,
                 DEAL_SELECT,
+                DEAL_ORDER,
             );
         }
         for (const id of dealIds) {
@@ -682,6 +679,7 @@ export class RepeatWorkFinderService {
             responsibleId: this.toId(row.ASSIGNED_BY_ID),
             companyId: this.toId(row.COMPANY_ID),
             title: this.text(row.TITLE) || `#${String(row.ID)}`,
+            modifiedAt: this.text(row.DATE_MODIFY) || null,
             row,
         };
     }

@@ -16,6 +16,7 @@ import {
     MergeDuplicatesRunDto,
 } from '../dto/merge-duplicates.dto';
 import { MergeDuplicatesOperationDto } from '../dto/merge-duplicates-result.dto';
+import { HeadAccessService } from '../../../shared/head-access/head-access.service';
 
 const HOOK = EnumSalesHookCode.MERGE_DUPLICATES;
 
@@ -31,6 +32,7 @@ export class MergeDuplicatesController {
     constructor(
         private readonly dispatch: SalesHookDispatchService,
         private readonly idempotency: SalesHookIdempotencyService,
+        private readonly headAccess: HeadAccessService,
     ) {}
 
     @Post('run')
@@ -41,7 +43,8 @@ export class MergeDuplicatesController {
             'Ставит операцию объединения в очередь. dryRun=true (по ' +
             'умолчанию) — только расчёт плана, без записи. Реальный merge ' +
             'требует dryRun=false и planHash из dry-run-ответа: сущности-' +
-            'жертвы удаляются безвозвратно. Статус — ' +
+            'жертвы удаляются безвозвратно. Только руководителю отдела ' +
+            'продаж: initiatorUserId проверяется на сервере, иначе 403. Статус — ' +
             'GET /sales-hooks/operations/{operationId} или WS.',
     })
     @ApiBody({
@@ -55,6 +58,10 @@ export class MergeDuplicatesController {
     async run(
         @Body() dto: MergeDuplicatesRunDto,
     ): Promise<SalesHookOperationDto> {
+        await this.headAccess.assertCanManageDuplicates(
+            dto.domain,
+            dto.initiatorUserId,
+        );
         const item: IMergeDuplicatesItem = {
             entityRefs: [...dto.entityRefs].sort(),
             dryRun: dto.dryRun ?? true,

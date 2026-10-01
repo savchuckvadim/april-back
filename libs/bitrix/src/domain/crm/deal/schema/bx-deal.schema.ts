@@ -5,7 +5,7 @@ import {
     CrmUpdateRequestType,
     CrmListRequestType,
 } from '../../type/crm-request.type';
-import { IBXDeal } from '../interface/bx-deal.interface';
+import { IBXDeal, IBXDealContactBinding } from '../interface/bx-deal.interface';
 import { IBXField } from '../../fields/bx-field.interface';
 
 export type DealSchema = {
@@ -31,6 +31,11 @@ export type DealSchema = {
             items: { CONTACT_ID: string | number }[];
         };
         response: number;
+    };
+    /** crm.deal.contact.add: true — привязан, false — уже был привязан. */
+    [EBxMethod.CONTACT_ADD]: {
+        request: { id: number | string; fields: IBXDealContactBinding };
+        response: boolean;
     };
     [EBxMethod.CONTACT_ITEMS_GET]: {
         request: { id: number | string };

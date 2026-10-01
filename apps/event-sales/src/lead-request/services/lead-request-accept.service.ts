@@ -447,7 +447,10 @@ export class LeadRequestAcceptService {
         };
     }
 
-    /** Лид-первоисточник по строке сделки: deal_from_lead_id → LEAD_ID. */
+    /**
+     * Лид заявки по строке сделки: непринятая повторная → deal_from_lead_id
+     * → LEAD_ID → последний присоединённый.
+     */
     leadIdFromDealRow(
         portal: PortalModel,
         deal: BxRow | undefined,
@@ -485,6 +488,9 @@ export class LeadRequestAcceptService {
             pendingRepeat,
             fromLeadField ? deal[portal.getFieldBitrixId(fromLeadField)] : null,
             deal.LEAD_ID,
+            // Сделка без первоисточника и штатного лида (холодная, ручная):
+            // присоединение первоисточником заявку не делает — ждёт она.
+            joined[joined.length - 1],
         ];
         for (const raw of candidates.flat()) {
             if (typeof raw !== 'string' && typeof raw !== 'number') continue;

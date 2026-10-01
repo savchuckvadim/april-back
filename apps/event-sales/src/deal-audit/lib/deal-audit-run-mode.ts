@@ -8,6 +8,29 @@ export interface DealAuditRunMode {
     readonly warning: string | null;
 }
 
+/** Адресаты сводки из настроек портала — то, что решает «слать ли». */
+export interface DealAuditDigestRecipients {
+    readonly toManager: boolean;
+    readonly toHead: boolean;
+    /** Сводка по всей структуре. */
+    readonly userIds: readonly number[];
+    /** Сводка по своему отделу и подотделам. */
+    readonly departmentUserIds: readonly number[];
+}
+
+/**
+ * Задан ли хоть один адресат сводки. Одно правило на рассылку и на отчёт
+ * крона: иначе отчёт пишет «получатели не заданы», а рассылка считает
+ * иначе — и разбор «почему не пришло» уходит не туда.
+ */
+export const hasDigestRecipients = (
+    recipients: DealAuditDigestRecipients,
+): boolean =>
+    recipients.toManager ||
+    recipients.toHead ||
+    recipients.userIds.length > 0 ||
+    recipients.departmentUserIds.length > 0;
+
 export const DEAL_AUDIT_FIELDS_MISSING_WARNING =
     'поля аудита не установлены — карточки не размечены, сводки отправлены';
 

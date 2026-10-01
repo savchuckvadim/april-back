@@ -18,6 +18,8 @@ import {
 export interface LeadFlowResult {
     /** Записи не было (ни одного поля к записи). */
     skipped: boolean;
+    /** Ключ команды обновления лида; записи нет — undefined. */
+    cmd?: string;
     warnings: string[];
 }
 
@@ -123,7 +125,7 @@ export class LeadFlowService extends LeadToWorkFlowBase {
         buffer.queue(() =>
             this.bitrix.batch.lead.update(cmd, item.leadId, fields as never),
         );
-        return { skipped: false, warnings };
+        return { skipped: false, cmd, warnings };
     }
 
     /* ------------------------------------------------------------------ */

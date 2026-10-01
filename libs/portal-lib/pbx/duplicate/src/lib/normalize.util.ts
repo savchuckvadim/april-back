@@ -259,3 +259,28 @@ export function signalsCacheKey(signals: {
         part(signals.titles),
     ].join('|');
 }
+
+/**
+ * Телефоны или почты без повторов ПО СМЫСЛУ: `+7 921 889-28-48`,
+ * `89218892848` и `9218892848` — один номер, `Ivan@Mail.ru` и
+ * `ivan@mail.ru` — одна почта. Остаётся первое написание (порядок
+ * сохраняется); значение, которое не нормализуется, сравнивается как есть.
+ * Нужно множественным полям сделки при дописывании повторной заявки.
+ */
+export function uniqueContacts(
+    values: readonly string[],
+    kind: 'phone' | 'email',
+): string[] {
+    const keyOf = kind === 'phone' ? normalizePhone : normalizeEmail;
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const raw of values) {
+        const value = String(raw ?? '').trim();
+        if (!value) continue;
+        const key = keyOf(value) ?? value.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        result.push(value);
+    }
+    return result;
+}

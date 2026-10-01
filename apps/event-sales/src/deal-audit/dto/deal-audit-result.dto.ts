@@ -188,3 +188,22 @@ export class DealAuditRunResponseDto {
     })
     warnings: string[];
 }
+
+/** Ответ ручного прогона: начат ли он; итог придёт в Telegram. */
+export class DealAuditRunNowResponseDto {
+    @ApiProperty({
+        description:
+            'true — прогон начат в фоне, итог придёт в Telegram отчётом ' +
+            'крона; false — уже идёт другой прогон (крон или ручной).',
+        type: Boolean,
+        example: true,
+    })
+    started: boolean;
+
+    @ApiProperty({
+        description: 'Пояснение для человека.',
+        type: String,
+        example: 'Прогон начат — итог придёт в Telegram через несколько минут',
+    })
+    message: string;
+}

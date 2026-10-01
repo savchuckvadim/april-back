@@ -1,11 +1,18 @@
 import { IBXDiskAccessRule } from '../../folder';
 
+/**
+ * Чьё хранилище (`ENTITY_TYPE` в `disk.storage.get/getList`, официальная
+ * документация): личное сотрудника, рабочей группы, общий диск компании,
+ * приложения. Личное ищут фильтром `ENTITY_TYPE: 'user'` + `ENTITY_ID`.
+ */
+export type IBXDiskStorageEntityType = 'user' | 'group' | 'common' | 'restapp';
+
 export interface IBXDiskStorage {
     ID: string;
     NAME: string;
     CODE: string | null;
     MODULE_ID: 'disk' | 'crm';
-    ENTITY_TYPE: 'group';
+    ENTITY_TYPE: IBXDiskStorageEntityType;
     ENTITY_ID: number;
     ROOT_OBJECT_ID: string;
 }
@@ -51,5 +58,6 @@ export interface IBXDiskStorageAddFolderRequest {
     data: {
         NAME: string;
     };
-    rights: IBXDiskAccessRule[];
+    /** Необязателен (документация `disk.storage.addFolder`): без него — права хранилища. */
+    rights?: IBXDiskAccessRule[];
 }

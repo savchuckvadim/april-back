@@ -29,6 +29,8 @@ interface ICommand {
     cmd: string;
     method: string;
     arg: Row;
+    /** Сортировка списка (4-й аргумент getList), если передана. */
+    order?: Row;
 }
 
 /**
@@ -40,8 +42,8 @@ const makeBitrix = (respond: (command: ICommand) => unknown) => {
     const flushes: ICommand[][] = [];
     const push =
         (method: string) =>
-        (cmd: string, arg: unknown): void => {
-            queue.push({ cmd, method, arg: (arg ?? {}) as Row });
+        (cmd: string, arg: unknown, _select?: unknown, order?: Row): void => {
+            queue.push({ cmd, method, arg: (arg ?? {}) as Row, order });
         };
     const bitrix = {
         batch: {
@@ -309,6 +311,89 @@ describe('RepeatWorkFinderService', () => {
             signal: 'inn',
             value: '4826006839',
         });
+    });
+
+    /*
+     * Список отдаёт не больше 50 строк: у клиента с длинной историей
+     * открытая работа не должна теряться за старыми сделками.
+     */
+    it('все списки сделок идут свежими вперёд (DATE_MODIFY DESC, затем ID DESC)', async () => {
+        const { bitrix, flushes } = makeBitrix(command => {
+            if (command.method === 'findbycomm') {
+                return { COMPANY: [91429], CONTACT: [288609] };
+            }
+            return [];
+        });
+        const finder = new RepeatWorkFinderService(
+            bitrix as never,
+            portal as never,
+            NO_INN,
+        );
+        await finder.find([
+            { leadId: 4, row: lead({ PHONE: [{ VALUE: '+79001234567' }] }) },
+        ]);
+
+        const dealLists = flushes
+            .flat()
+            .filter(command => command.method === 'deal.list');
+        // Волна 1 (строковое поле телефонов) + волна 2 (компания и контакт).
+        expect(dealLists).toHaveLength(3);
+        for (const command of dealLists) {
+            expect(command.order).toEqual({ DATE_MODIFY: 'DESC', ID: 'DESC' });
+        }
+    });
+
+    /*
+     * Решение владельца 01.10.2026: несколько открытых сделок клиента —
+     * заявка идёт в самую свежую, и «одна задача ХО» решается по её задачам.
+     */
+    it('несколько открытых сделок: выбрана самая свежая, её задачи читаются волной 3', async () => {
+        const { bitrix, flushes } = makeBitrix(command => {
+            if (command.method === 'findbycomm') return { COMPANY: [91429] };
+            if (command.method === 'deal.list' && command.arg.COMPANY_ID) {
+                return [
+                    openDeal(71000, {
+                        COMPANY_ID: '91429',
+                        ASSIGNED_BY_ID: '433',
+                        DATE_MODIFY: '2026-09-02T10:00:00+03:00',
+                    }),
+                    openDeal(72000, {
+                        COMPANY_ID: '91429',
+                        ASSIGNED_BY_ID: '455',
+                        DATE_MODIFY: '2026-09-30T10:00:00+03:00',
+                    }),
+                ];
+            }
+            if (command.method === 'task.list') {
+                return { tasks: [{ id: '9', title: 'Холодный обзвон' }] };
+            }
+            return [];
+        });
+        const finder = new RepeatWorkFinderService(
+            bitrix as never,
+            portal as never,
+            NO_INN,
+        );
+
+        const out = await finder.find([
+            { leadId: 6, row: lead({ EMAIL: [{ VALUE: 'x@mail.ru' }] }) },
+        ]);
+
+        const outcome = out.get(6)!;
+        expect(outcome.resolution.kind).toBe('ambiguous');
+        expect(outcome.resolution.mainDeal).toMatchObject({
+            dealId: 72000,
+            responsibleId: 455,
+            modifiedAt: '2026-09-30T10:00:00+03:00',
+        });
+        expect(outcome.resolution.openDeals?.map(deal => deal.dealId)).toEqual([
+            72000, 71000,
+        ]);
+        expect(outcome.openMainTasks).toHaveLength(1);
+        const taskList = flushes
+            .flat()
+            .find(command => command.method === 'task.list');
+        expect(taskList?.arg).toMatchObject({ UF_CRM_TASK: ['D_72000'] });
     });
 
     it('без сигналов — ни одного запроса, kind=none', async () => {

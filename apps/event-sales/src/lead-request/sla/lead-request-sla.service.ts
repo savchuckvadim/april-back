@@ -18,6 +18,7 @@ import { buildTransferWorkItem } from '../../sales-hooks/transfer-work/dto/trans
 import { LeadToWorkAssigneeService } from '../../sales-hooks/lead-to-work/services/lead-to-work-assignee.service';
 import { ActiveStaffService } from '../../shared/active-staff';
 import { dealAssignedAtName } from '../../shared/lead-request/deal-work-timer.util';
+import { isRepeatRequestDeal } from '../../shared/lead-request/repeat-request.util';
 import {
     appendLeadRequestHistory,
     buildLeadRequestHistoryEntry,
@@ -665,21 +666,10 @@ export class LeadRequestSlaService {
         if (!deal) return none;
         const stage = typeof deal.STAGE_ID === 'string' ? deal.STAGE_ID : '';
         const responsibleId = Number(deal.ASSIGNED_BY_ID) || null;
-        const fromLeadField = portal.getEntityFieldByCode(
-            'deal',
-            PBX_SALES_EVENT_FIELD_CODES.deal_from_lead_id,
-        );
-        const fromLeadRaw = fromLeadField
-            ? deal[portal.getFieldBitrixId(fromLeadField)]
-            : null;
-        const fromLead =
-            typeof fromLeadRaw === 'string' || typeof fromLeadRaw === 'number'
-                ? String(fromLeadRaw).trim()
-                : '';
         return {
             moved: stage !== '' && stage !== newStageId,
             responsibleId,
-            isRepeat: fromLead !== '' && fromLead !== `L_${String(lead.ID)}`,
+            isRepeat: isRepeatRequestDeal(portal, deal, Number(lead.ID)),
         };
     }
 

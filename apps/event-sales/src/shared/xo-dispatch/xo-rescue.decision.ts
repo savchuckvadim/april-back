@@ -24,6 +24,11 @@ export interface XoRescueThresholds {
     now: Dayjs;
     /** Маркер старше этого — хук считаем упавшим. */
     resendBefore: Dayjs;
+    /**
+     * Маркер старше этого не досылаем: это не «хук упал только что», а
+     * старый сбой — ХО за это время могли отработать вручную.
+     */
+    markerNotBefore: Dayjs;
     /** Раньше этого сирот не берём: слишком старое — не наш случай. */
     orphanNotBefore: Dayjs;
     /** Позже этого сирот не берём: хук, возможно, ещё обрабатывается. */
@@ -39,6 +44,8 @@ export type XoRescueReason =
     | 'orphan-xo-date'
     /** Маркер свежий: хук, вероятно, прямо сейчас обрабатывается. */
     | 'marker-fresh'
+    /** Маркер слишком старый: старый сбой, досылать вслепую нельзя. */
+    | 'marker-too-old'
     /** Метки говорят «доставлено». */
     | 'delivered'
     /** Дата ХО не заполнена — цеплять не за что. */
@@ -92,6 +99,9 @@ export function decideXoRescue(
         if (queuedAt && queuedAt.isAfter(thresholds.resendBefore)) {
             return { action: 'skip', reason: 'marker-fresh' };
         }
+        if (queuedAt && queuedAt.isBefore(thresholds.markerNotBefore)) {
+            return { action: 'skip', reason: 'marker-too-old' };
+        }
         return { action: 'dispatch', reason: 'marker-stuck' };
     }
     // Маркеры есть и говорят «доставлено» — второй признак не спрашиваем:
@@ -122,6 +132,8 @@ export const XO_RESCUE_REASON_TEXT: Record<XoRescueReason, string> = {
     'marker-stuck': 'взят в очередь, но хук не доехал',
     'orphan-xo-date': 'звонок назначен, а работы по нему не появилось',
     'marker-fresh': 'взят в очередь только что — хук ещё обрабатывается',
+    'marker-too-old':
+        'взят в очередь слишком давно — старый сбой, не досылаем (проверьте вручную)',
     delivered: 'хук уже доставлен',
     'no-plan-date': 'дата ХО не заполнена',
     'plan-ahead': 'дата ХО в будущем — звонок ещё не наступил',

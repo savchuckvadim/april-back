@@ -4,8 +4,13 @@
  * Вход собирает RepeatWorkFinder: по каждому сигналу лида (номер заявки,
  * ИНН, телефон, почта, корпоративный домен почты) — куда он привёл: наши
  * основные сделки и клиенты (контакты/компании). Здесь только правило
- * «присоединять или нет» (решения владельца 28.09.2026).
+ * «присоединять или нет» (решения владельца 28.09.2026) и выбор сделки,
+ * когда открытых несколько (01.10.2026).
  */
+import {
+    compareFreshness,
+    DealFreshness,
+} from '../../../shared/lead-request/deal-freshness.util';
 
 type BxRow = Record<string, unknown>;
 
@@ -35,6 +40,8 @@ export interface IRepeatDealInfo {
     responsibleId: number | null;
     companyId: number | null;
     title: string;
+    /** DATE_MODIFY сделки (ISO): по нему выбирается самая свежая; нет — null. */
+    modifiedAt: string | null;
     row: BxRow;
 }
 
@@ -53,10 +60,13 @@ export interface IRepeatResolution {
     /** Сигнал, который решил (join/reuse-client/ambiguous). */
     signal?: RepeatSignalKind;
     value?: string;
-    /** kind='join': единственная открытая основная сделка клиента. */
+    /**
+     * Сделка, к которой присоединяется заявка: kind='join' — единственная
+     * открытая основная, kind='ambiguous' — самая свежая из открытых.
+     */
     mainDeal?: IRepeatDealInfo;
-    /** kind='ambiguous': открытых сделок больше одной. */
-    openDealIds?: number[];
+    /** kind='ambiguous': ВСЕ открытые основные клиента, свежие — первыми. */
+    openDeals?: IRepeatDealInfo[];
     /** kind='reuse-client': найденный клиент без открытой работы. */
     contactId?: number;
     companyId?: number;
@@ -73,9 +83,12 @@ export function describeRepeatResolution(res: IRepeatResolution): string {
         case 'join':
             return `открытая сделка #${res.mainDeal?.dealId} (сигнал: ${signal})`;
         case 'ambiguous':
-            return `несколько открытых сделок: ${(res.openDealIds ?? [])
-                .map(id => `#${id}`)
-                .join(', ')} (сигнал: ${signal})`;
+            return (
+                `самая свежая из открытых сделок клиента #${res.mainDeal?.dealId}` +
+                `, ещё открыты: ${otherOpenDeals(res)
+                    .map(deal => `#${deal.dealId}`)
+                    .join(', ')} (сигнал: ${signal})`
+            );
         case 'reuse-client':
             return res.companyId
                 ? `существующая компания ${res.companyId} (сигнал: ${signal})`
@@ -86,13 +99,32 @@ export function describeRepeatResolution(res: IRepeatResolution): string {
 }
 
 /**
+ * Запись в историю сделки о присоединении — БЕЗ `#`. Она уходит значением
+ * batch-команды, а Битрикс разбирает команду как url и отбрасывает всё от
+ * первого `#` (batch.consts): запись обрывалась на «лид », а сохранённая с
+ * `#` обрывала бы и следующие batch-записи истории — они пересылают её
+ * целиком. Номера — голыми числами: «лид 348391», «сделка 72000».
+ */
+export function repeatJoinHistoryText(
+    leadId: number,
+    res: IRepeatResolution,
+): string {
+    return `Повторная заявка: лид ${leadId} присоединён (${describeRepeatResolution(res)})`.replace(
+        /#/g,
+        '',
+    );
+}
+
+/**
  * Правило присоединения.
  *
  * Первый по порядку доверия сигнал С ПОПАДАНИЯМИ решает всё — к слабым
  * сигналам не спускаемся: если номер заявки нашёл клиента, телефон уже
  * не переголосует. Внутри сигнала:
  *  - ровно одна ОТКРЫТАЯ основная → join;
- *  - открытых больше одной → ambiguous (автоматики нет, комментарий);
+ *  - открытых больше одной → ambiguous: заявка идёт в САМУЮ СВЕЖУЮ (решение
+ *    владельца 01.10.2026, даже если сделки у разных компаний), остальные —
+ *    возможные дубли, о них узнают менеджеры и руководители;
  *  - открытых нет, ровно одна компания → reuse-client (компания);
  *  - открытых нет, компаний нет, ровно один контакт → reuse-client;
  *  - иначе → none (обычный путь).
@@ -137,11 +169,14 @@ export function resolveRepeatWork(
             };
         }
         if (open.length > 1) {
+            const openDeals = sortByFreshness(open);
             return {
                 kind: 'ambiguous',
                 signal,
                 value,
-                openDealIds: open.map(deal => deal.dealId),
+                mainDeal: openDeals[0],
+                openDeals,
+                closedDealIds,
             };
         }
 
@@ -174,6 +209,35 @@ export function resolveRepeatWork(
         };
     }
     return { kind: 'none' };
+}
+
+/**
+ * Свежие — первыми: по DATE_MODIFY, при равенстве (или без даты) — больший
+ * ID, то есть созданная позже. Правило общее с отчётом по дублям
+ * (shared/lead-request/deal-freshness.util).
+ */
+export function sortByFreshness(
+    deals: readonly IRepeatDealInfo[],
+): IRepeatDealInfo[] {
+    return [...deals].sort((a, b) =>
+        compareFreshness(freshnessKey(a), freshnessKey(b)),
+    );
+}
+
+/** Открытые сделки клиента, кроме выбранной, — возможные дубли. */
+export function otherOpenDeals(res: IRepeatResolution): IRepeatDealInfo[] {
+    return (res.openDeals ?? []).filter(
+        deal => deal.dealId !== res.mainDeal?.dealId,
+    );
+}
+
+/** Ключ свежести; дата нет/мусор — null («старее всех»). */
+function freshnessKey(deal: IRepeatDealInfo): DealFreshness {
+    const time = deal.modifiedAt ? Date.parse(deal.modifiedAt) : NaN;
+    return {
+        modifiedAtMs: Number.isFinite(time) ? time : null,
+        id: deal.dealId,
+    };
 }
 
 function uniqueDeals(deals: readonly IRepeatDealInfo[]): IRepeatDealInfo[] {

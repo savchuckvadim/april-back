@@ -39,6 +39,7 @@ export interface LeadToWorkQueuedPlan {
     companyCmd?: string;
     dealCmd?: string;
     xoCmd?: string;
+    leadCmd?: string;
     taskAddCmd?: string;
     reused: boolean;
     /**
@@ -224,6 +225,7 @@ export class LeadToWorkFlowService {
             },
             buffer,
         );
+        result.leadCmd = lead.cmd;
         result.warnings.push(...lead.warnings);
 
         /*
@@ -358,6 +360,7 @@ export class LeadToWorkFlowService {
             },
             buffer,
         );
+        result.leadCmd = lead.cmd;
         result.warnings.push(...lead.warnings);
 
         this.relations.queueContactsResponsible(

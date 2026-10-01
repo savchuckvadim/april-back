@@ -33,7 +33,7 @@ export class CallReportAnalyticsSnapshotScheduler {
     ) {}
 
     /** Понедельник 03:15 — после ночного прогона агента за воскресенье. */
-    @Cron('15 3 * * 1')
+    @Cron('15 3 * * 1', { name: 'call-report-analytics-snapshot' })
     async tick(): Promise<void> {
         const domains = await this.portalAiSettings
             .findEnabled()

@@ -5,6 +5,8 @@ import { parseTaskCrmBinding } from '@/modules/bitrix/domain/tasks/task/lib/task
 import { ETimeZone, parseBitrixField } from '@lib/shared/lib/date';
 // См. комментарий в deal-audit-deals.reader: утилита event-report.
 import { scalarText } from '../../event-report/services/entity/scalar-text.util';
+// Открытая = ещё делается, «Отложена» — нет: правило общее с отчётом по дублям.
+import { isOpenTaskStatus } from '../../shared/bitrix/open-task-statuses';
 import { DealAuditTask } from '../types/deal-audit.types';
 
 /** Страница `tasks.task.list` в Битриксе — 50 элементов, не меняется. */
@@ -20,19 +22,6 @@ const MAX_TASKS = 20000;
 
 /** Селект: только то, что нужно правилам (дедлайн + привязка). */
 const TASK_SELECT = ['ID', 'DEADLINE', 'STATUS', 'UF_CRM_TASK'];
-
-/**
- * Открытая задача = ещё делается. «Завершена» и «Отклонена» очевидно
- * закрыты, а «Отложена» сюда не попадает намеренно: отложенная задача
- * никому не напомнит о клиенте, и считать её работой значило бы прятать
- * ровно тот случай, ради которого аудит и заводится.
- */
-const OPEN_STATUSES: readonly string[] = [
-    EBXTaskStatus.NEW,
-    EBXTaskStatus.PENDING,
-    EBXTaskStatus.IN_PROGRESS,
-    EBXTaskStatus.SUPPOSEDLY_COMPLETED,
-];
 
 type TaskRow = Record<string, unknown>;
 
@@ -187,7 +176,7 @@ export class DealAuditTasksReader {
         const id = Number(row['id'] ?? row['ID'] ?? 0);
         if (!Number.isFinite(id) || id <= 0) return null;
         const status = scalarText(row['status'] ?? row['STATUS']);
-        if (!OPEN_STATUSES.includes(status)) return null;
+        if (!isOpenTaskStatus(status)) return null;
         const deadline = parseBitrixField(
             row['deadline'] ?? row['DEADLINE'],
             this.timezone,

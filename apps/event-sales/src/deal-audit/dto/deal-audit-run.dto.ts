@@ -76,3 +76,19 @@ export class DealAuditRunRequestDto {
     @Min(1, { each: true })
     dealIds?: number[];
 }
+
+/**
+ * Запрос ручного прогона «как у крона» — сейчас, вне интервала, по
+ * настройкам портала. Итог приходит в Telegram, а не в ответ ручки.
+ */
+export class DealAuditRunNowRequestDto {
+    @ApiProperty({
+        description:
+            'Домен портала Bitrix, который прогнать прямо сейчас. Пороги, ' +
+            'режим и получатели сводок — из настроек портала в админке.',
+        type: String,
+        example: 'example.bitrix24.ru',
+    })
+    @IsString()
+    domain: string;
+}

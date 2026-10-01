@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { CronJobsReportModule } from '@lib/core/schedule';
 import { LoggerModule } from '@lib/logger';
 import { MetricsModule } from '@lib/metrics';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -22,6 +23,7 @@ import { AppCacheServiceModule } from '@lib/app-cache';
 import { EventSalesAppSettingsModule } from './app-settings/app-settings.module';
 import { EventSalesQuestionnairesModule } from './questionnaires/questionnaires.module';
 import { DealAuditModule } from './deal-audit/deal-audit.module';
+import { DuplicateReportModule } from './duplicate-report/duplicate-report.module';
 import { InnModule } from './inn/inn.module';
 
 @Module({
@@ -35,6 +37,8 @@ import { InnModule } from './inn/inn.module';
         EventEmitterModule.forRoot(),
         // Крон автоконвейера AI-отчётности (CallReportScheduler)
         ScheduleModule.forRoot(),
+        // При старте — список кронов с ближайшими запусками в Telegram
+        CronJobsReportModule,
         HealthModule,
         EventModule,
 
@@ -70,6 +74,9 @@ import { InnModule } from './inn/inn.module';
         // Аудит сделок: крон ищет «забытые» сделки и размечает их полями
         // op_audit_*. По умолчанию выключен на всех порталах.
         DealAuditModule,
+        // Отчёт по дублям сделок: раз в неделю руководителям задача с
+        // Excel по клиентам с несколькими открытыми сделками. Выключен.
+        DuplicateReportModule,
     ],
     providers: [GlobalExceptionFilter],
     exports: [BxDepartmentModule, AiRagModule],

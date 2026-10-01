@@ -7,13 +7,8 @@ import {
     EnumPortalAppCode,
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
-import {
-    crmCardUrl,
-    timelineBold,
-    timelineLinkLine,
-    timelineText,
-    toTimelineCommentDirect,
-} from '@lib/bitrix/consts/timeline.consts';
+import { toTimelineCommentDirect } from '@lib/bitrix/consts/timeline.consts';
+import { BitrixEntityType } from '@/modules/bitrix/domain/enums/bitrix-constants.enum';
 import { EnumSalesHookCode } from '../../core/constants/sales-hook-code.enum';
 import { EnumSalesHookSource } from '../../core/contracts/sales-hook-job.type';
 import { SalesHookExecutionContext } from '../../core/contracts/sales-hook-use-case.contract';
@@ -21,33 +16,31 @@ import { SalesHookDispatchService } from '../../core/services/sales-hook-dispatc
 import { SalesHookIdempotencyService } from '../../core/services/sales-hook-idempotency.service';
 import { buildTransferWorkItem } from '../../transfer-work/dto/transfer-work.dto';
 import {
-    describeRepeatResolution,
-    IRepeatResolution,
-} from '../lib/repeat-work.resolver';
+    IRepeatLeadNote,
+    REPEAT_JOIN_MODES,
+    RepeatJoinMode,
+} from '../lib/repeat-work-routing';
+import { IRepeatJoinNotice } from '../lib/repeat-join-notice';
+import {
+    dryRunNoteLines,
+    RepeatNoticeNames,
+} from '../lib/repeat-join-notice.texts';
 import {
     IRepeatFinderLead,
     IRepeatFindOutcome,
     RepeatWorkFinderService,
 } from './repeat-work-finder.service';
-
-/** Режим настройки `lead_intake_repeat_join_mode`. */
-export const REPEAT_JOIN_MODES = ['off', 'dry_run', 'on'] as const;
-export type RepeatJoinMode = (typeof REPEAT_JOIN_MODES)[number];
-
-/** Комментарий в таймлайн лида после записи. */
-export interface IRepeatLeadNote {
-    leadId: number;
-    resolution: IRepeatResolution;
-    mode: RepeatJoinMode;
-}
+import { LeadToWorkRepeatNoticeService } from './lead-to-work-repeat-notice.service';
 
 /**
- * ПОВТОРНАЯ ЗАЯВКА на входе (решения владельца 28.09.2026) — всё, что
- * хуку «лид → работа» нужно вокруг присоединения, кроме самой записи
+ * ПОВТОРНАЯ ЗАЯВКА на входе (решения владельца 28.09 и 01.10.2026) — всё,
+ * что хуку «лид → работа» нужно вокруг присоединения, кроме самой записи
  * (её ставит LeadToWorkFlowService.queueJoin в группу лида):
  *  - режим из настроек портала (off | dry_run | on);
  *  - поиск работы клиента (RepeatWorkFinderService, batch-чтение);
- *  - комментарии в таймлайн лида: холостой ход и неоднозначность;
+ *  - комментарии холостого хода в таймлайн лида;
+ *  - оповещения, когда открытых сделок было несколько (комментарии в
+ *    сделки и лид, менеджерам и руководителям — LeadToWorkRepeatNoticeService);
  *  - передача основной сделки, если её владелец больше не работает.
  *
  * @Injectable без состояния: инстанс Битрикса приходит в ctx вызова.
@@ -61,6 +54,7 @@ export class LeadToWorkRepeatService {
         private readonly fieldMap: SignalFieldMapService,
         private readonly dispatch: SalesHookDispatchService,
         private readonly idempotency: SalesHookIdempotencyService,
+        private readonly notice: LeadToWorkRepeatNoticeService,
     ) {}
 
     async mode(domain: string): Promise<RepeatJoinMode> {
@@ -121,25 +115,35 @@ export class LeadToWorkRepeatService {
     }
 
     /**
-     * Комментарии в таймлайн ЛИДА — после записи, прямыми вызовами.
-     * dry_run: «присоединил бы…»; on + неоднозначность: «присоедините
-     * вручную». Сбой комментария операцию не роняет.
+     * Всё, что пишется о повторных заявках ПОСЛЕ записи, прямыми вызовами
+     * (сбой — в предупреждения, операция не падает):
+     *  - холостой ход — «присоединил бы…» в таймлайн лида (к единственной
+     *    открытой либо к самой свежей из нескольких);
+     *  - присоединение к самой свежей из нескольких открытых — комментарии
+     *    в сделки и лид, уведомления менеджерам и руководителям.
      */
-    async writeLeadNotes(
+    async writeNotes(
         ctx: SalesHookExecutionContext,
-        notes: readonly IRepeatLeadNote[],
+        input: {
+            notes: readonly IRepeatLeadNote[];
+            notices: readonly IRepeatJoinNotice[];
+            names: RepeatNoticeNames;
+        },
     ): Promise<string[]> {
         const warnings: string[] = [];
-        for (const note of notes) {
-            const lines = this.noteLines(ctx.domain, note);
+        for (const note of input.notes) {
+            if (note.mode !== 'dry_run') continue;
+            const lines = dryRunNoteLines(
+                ctx.domain,
+                note.resolution,
+                input.names,
+            );
             if (!lines.length) continue;
             try {
-                await ctx.bitrix.api.call('crm.timeline.comment.add', {
-                    fields: {
-                        ENTITY_ID: note.leadId,
-                        ENTITY_TYPE: 'lead',
-                        COMMENT: toTimelineCommentDirect(lines),
-                    },
+                await ctx.bitrix.timeline.addTimelineComment({
+                    ENTITY_ID: note.leadId,
+                    ENTITY_TYPE: BitrixEntityType.LEAD,
+                    COMMENT: toTimelineCommentDirect(lines),
                 });
             } catch (error) {
                 warnings.push(
@@ -147,6 +151,9 @@ export class LeadToWorkRepeatService {
                 );
             }
         }
+        warnings.push(
+            ...(await this.notice.send(ctx, input.notices, input.names)),
+        );
         return warnings;
     }
 
@@ -190,36 +197,5 @@ export class LeadToWorkRepeatService {
         } catch (error) {
             return `Сделка ${mainDealId}: передача новому ответственному не поставлена — ${(error as Error).message}`;
         }
-    }
-
-    private noteLines(domain: string, note: IRepeatLeadNote): string[] {
-        const { resolution, mode } = note;
-        if (resolution.kind === 'join' && mode === 'dry_run') {
-            const dealId = resolution.mainDeal?.dealId ?? 0;
-            return [
-                timelineBold('🔁 Повторная заявка — холостой ход'),
-                timelineText(
-                    `Присоединил бы к работе клиента: ${describeRepeatResolution(resolution)}.`,
-                ),
-                timelineLinkLine(
-                    'Сделка',
-                    crmCardUrl(domain, 'deal', dealId),
-                    `#${dealId}`,
-                ),
-                timelineText(
-                    'Сейчас создана отдельная работа (режим «холостой ход» в настройках портала).',
-                ),
-            ];
-        }
-        if (resolution.kind === 'ambiguous') {
-            return [
-                timelineBold('🔁 Повторная заявка — нужен выбор'),
-                timelineText(
-                    `У клиента ${describeRepeatResolution(resolution)}. ` +
-                        'Автоматически не присоединено: руководитель может присоединить кнопкой «Присоединить сюда» в панели дублей.',
-                ),
-            ];
-        }
-        return [];
     }
 }

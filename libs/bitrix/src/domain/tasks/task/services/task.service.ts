@@ -99,9 +99,12 @@ export class BxTaskService {
         return this.repo.delete(taskId);
     }
 
-    /**
-     * Прикрепляет файлы к задаче
-     */
+    /** Прикрепляет один файл Диска к задаче (tasks.task.files.attach). */
+    async fileAttach(taskId: number | string, fileId: number) {
+        return this.repo.fileAttach(taskId, fileId);
+    }
+
+    /** Прикрепляет файлы к задаче — по одному вызову на файл. */
     async filesAttach(taskId: number | string, files: number[]) {
         return this.repo.filesAttach(taskId, files);
     }

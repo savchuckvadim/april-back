@@ -39,7 +39,7 @@ export class XoDispatchRescueScheduler {
         private readonly workingHours: PortalWorkingHoursService,
     ) {}
 
-    @Cron(RESCUE_CRON)
+    @Cron(RESCUE_CRON, { name: 'xo-dispatch-rescue' })
     async tick(): Promise<void> {
         const domains = await this.resolveEnabledDomains();
         if (!domains.length) return;
@@ -83,6 +83,9 @@ export class XoDispatchRescueScheduler {
                         // всю подстраховку (решение владельца 13.09.2026).
                         resendAfterMinutes: Number(
                             settings.rejectReviveResendAfterMinutes,
+                        ),
+                        markerMaxAgeHours: Number(
+                            settings.xoRescueMarkerMaxAgeHours,
                         ),
                         orphanEnabled: Boolean(settings.xoRescueOrphanEnabled),
                         orphanDryRun: Boolean(settings.xoRescueOrphanDryRun),

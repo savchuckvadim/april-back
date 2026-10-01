@@ -45,7 +45,7 @@ export class PresentationAuditScheduler implements OnModuleInit {
         );
     }
 
-    @Cron(DAILY_AT_MSK_0800)
+    @Cron(DAILY_AT_MSK_0800, { name: 'presentation-audit' })
     async tick(): Promise<void> {
         const domains = await this.roster.resolve();
         if (!domains.length) return;

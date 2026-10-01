@@ -13,6 +13,7 @@ import { ResolvedLeadToWorkItem } from '../../dto/lead-to-work.dto';
 import { LeadToWorkContext } from '../lead-to-work-context.service';
 import { LeadToWorkStagePlan } from '../lead-to-work-stage.resolver';
 import { IXoEventContext } from '../models/xo-event-entity.model';
+import { queueDealContactLinks } from './deal-contact-links';
 import { BxRow, LeadToWorkFlowBase } from './lead-to-work-flow.base';
 
 /** Итог по одной сделке: ссылка для связей + ключ команды. */
@@ -52,13 +53,6 @@ export class DealFlowService extends LeadToWorkFlowBase {
             if (companyRef && !this.text(row.COMPANY_ID)) {
                 fields.COMPANY_ID = companyRef;
             }
-            // Контакты лида доводим и на существующую сделку, но не затираем
-            // уже привязанные: у неё могли появиться свои (union).
-            const mergedContacts = this.mergeContacts(
-                this.refList(row.CONTACT_IDS).map(Number),
-                ctx.contactIds,
-            );
-            if (mergedContacts.length) fields.CONTACT_IDS = mergedContacts;
             Object.assign(fields, this.moneyFields(ctx, row));
             /*
              * ХО ЗАБИРАЕТ клиента: сделка переходит новому ответственному,
@@ -106,6 +100,13 @@ export class DealFlowService extends LeadToWorkFlowBase {
                     fields as never,
                 ),
             );
+            // Контакты лида — привязками в той же группе, набор сделки не
+            // перезаписываем: CONTACT_IDS get/list не отдают (deal-contact-links).
+            queueDealContactLinks(this.bitrix, buffer, {
+                dealId: Number(dealId),
+                contactIds: ctx.contactIds,
+                cmdPrefix: `${cmd}_ct`,
+            });
             return { ref: dealId, cmd };
         }
 
@@ -188,17 +189,6 @@ export class DealFlowService extends LeadToWorkFlowBase {
         stampDealAssignedAt(this.portal, fields, this.portal.getTimezone());
     }
 
-    /** Union контактов с сохранением порядка (главный лида — первым). */
-    private mergeContacts(current: number[], fromLead: number[]): number[] {
-        const merged: number[] = [];
-        for (const id of [...current, ...fromLead]) {
-            if (Number.isFinite(id) && id > 0 && !merged.includes(id)) {
-                merged.push(id);
-            }
-        }
-        return merged;
-    }
-
     /**
      * ХО-сделка (только isXo=Y). Повторный ХО существующую сделку не
      * плодит, а ПЕРЕДАЁТ новому ответственному; смежные сделки не
@@ -259,23 +249,14 @@ export class DealFlowService extends LeadToWorkFlowBase {
     }
 
     /**
-     * Наши поля-связи, обязательные для ЛЮБОЙ связанной сделки (основной И
-     * ХО): deal_from_lead_id = лид-первоисточник, deal_joined_leads = union
-     * с текущим значением сделки. Отсутствующее на портале поле — скип.
-     *
-     * Плюс ШТАТНОЕ поле `LEAD_ID`: по нему Битрикс сам рисует связь с лидом
-     * в карточке сделки (без него наши UF-связи видит только приложение).
-     * У существующей сделки не перетираем: там может стоять лид штатной
-     * конвертации, и он первичнее нашего.
-     */
-    /**
      * ПОВТОРНАЯ ЗАЯВКА → существующая основная сделка клиента (28.09.2026).
      *
      * Узкая запись — НЕ queueBase: консолидацию не зовём (она закрыла бы
      * «лишние» открытые сделки клиента), событийные поля ХО не пишем
      * (обзвон ведёт задача). Что делается:
      *  - лид — в `deal_joined_leads` (union), первоисточник не трогаем;
-     *  - контакты лида — в сделку (union);
+     *  - контакты лида — привязками crm.deal.contact.add, не CONTACT_IDS:
+     *    набор сделки не перезаписывается (queueDealContactLinks);
      *  - стадия → «Новая» (сотрудник обязан принять), а ПРЕЖНЯЯ стадия —
      *    в `op_return_stage`: принятие вернёт сделку туда же, а не в
      *    «Холодную». Уже заполненное поле не перетираем — там стадия,
@@ -293,18 +274,8 @@ export class DealFlowService extends LeadToWorkFlowBase {
         const dealId = Number(main.ID);
         const cmd = `lw_deal_join_${item.leadId}`;
         const fields: BxRow = {
-            ...this.dealLinkFields(item.leadId, main),
+            ...this.dealLinkFields(item.leadId, main, true),
         };
-        // Штатный LEAD_ID первоисточника не подменяем чужим лидом.
-        delete fields.LEAD_ID;
-
-        const mergedContacts = this.mergeContacts(
-            this.refList(main.CONTACT_IDS).map(Number),
-            ctx.contactIds,
-        );
-        if (mergedContacts.length > this.refList(main.CONTACT_IDS).length) {
-            fields.CONTACT_IDS = mergedContacts;
-        }
 
         const newStageId = this.salesStageId('sales_new');
         const currentStage = this.text(main.STAGE_ID);
@@ -337,6 +308,11 @@ export class DealFlowService extends LeadToWorkFlowBase {
         buffer.queue(() =>
             this.bitrix.batch.deal.update(cmd, dealId, fields as never),
         );
+        queueDealContactLinks(this.bitrix, buffer, {
+            dealId,
+            contactIds: ctx.contactIds,
+            cmdPrefix: `${cmd}_ct`,
+        });
         return { ref: String(dealId), cmd };
     }
 
@@ -378,9 +354,39 @@ export class DealFlowService extends LeadToWorkFlowBase {
         return name ? { [name]: baseDealRef } : {};
     }
 
-    private dealLinkFields(leadId: number, existingRow: BxRow | null): BxRow {
+    /**
+     * Наши поля-связи, обязательные для ЛЮБОЙ связанной сделки (основной И
+     * ХО): deal_from_lead_id = лид-первоисточник, deal_joined_leads = union
+     * с текущим значением сделки. Отсутствующее на портале поле — скип.
+     *
+     * Плюс ШТАТНОЕ поле `LEAD_ID`: по нему Битрикс сам рисует связь с лидом
+     * в карточке сделки (без него наши UF-связи видит только приложение).
+     * У существующей сделки не перетираем: там может стоять лид штатной
+     * конвертации, и он первичнее нашего.
+     *
+     * ПОВТОРНАЯ ЗАЯВКА первоисточником не становится (01.10.2026): ни при
+     * присоединении (`joining`), ни при повторном прогоне (лид уже среди
+     * присоединённых, штатный лид сделки другой) — иначе SLA и карточка
+     * заявки не узнали бы повтор (ожидание ×3, «повторное обращение»).
+     */
+    private dealLinkFields(
+        leadId: number,
+        existingRow: BxRow | null,
+        joining = false,
+    ): BxRow {
         const fields: BxRow = {};
-        if (!existingRow || !this.text(existingRow.LEAD_ID)) {
+        const joinedName = this.dealFieldName(
+            PBX_SALES_EVENT_FIELD_CODES.deal_joined_leads,
+        );
+        const joined =
+            existingRow && joinedName
+                ? this.refList(existingRow[joinedName])
+                : [];
+        const joinedElsewhere =
+            joined.some(ref => ref === `L_${leadId}` || ref === `${leadId}`) &&
+            this.text(existingRow?.LEAD_ID) !== String(leadId);
+        const asSource = !joining && !joinedElsewhere;
+        if (asSource && !(existingRow && this.text(existingRow.LEAD_ID))) {
             fields.LEAD_ID = String(leadId);
         }
         const fromLeadName = this.dealFieldName(
@@ -394,19 +400,14 @@ export class DealFlowService extends LeadToWorkFlowBase {
          * «из какого лида создана сделка» переставало быть правдой.
          */
         if (
+            asSource &&
             fromLeadName &&
             !(existingRow && this.text(existingRow[fromLeadName]))
         ) {
             fields[fromLeadName] = `L_${leadId}`;
         }
-        const joinedName = this.dealFieldName(
-            PBX_SALES_EVENT_FIELD_CODES.deal_joined_leads,
-        );
         if (joinedName) {
-            const current = existingRow
-                ? this.refList(existingRow[joinedName])
-                : [];
-            fields[joinedName] = mergeTaskCrmBindings(current, [`L_${leadId}`]);
+            fields[joinedName] = mergeTaskCrmBindings(joined, [`L_${leadId}`]);
         }
         return fields;
     }

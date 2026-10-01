@@ -5,8 +5,10 @@ import { BxDepartmentService } from '@lib/bx-department';
 import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { buildDealAuditDigest } from '../lib/deal-audit-digest.formatter';
 import { buildHeadsByUser } from '../lib/deal-audit-heads';
+import { departmentScopeOf } from '../lib/deal-audit-department-scope';
 import { DealAuditVerdict } from '../types/deal-audit.types';
 import { isForgotten } from '../lib/deal-audit-rules';
+import { hasDigestRecipients } from '../lib/deal-audit-run-mode';
 
 /** Тег уведомления: новая сводка ЗАМЕЩАЕТ вчерашнюю, а не копится. */
 const DIGEST_TAG = 'event-sales-deal-audit';
@@ -17,6 +19,10 @@ export interface DealAuditDigestOptions {
     readonly toHead: boolean;
     /** Получатели ОБЩЕЙ сводки по всем отделам (Bitrix ID). */
     readonly userIds: readonly number[];
+    /** Получатели сводки по своему отделу и подотделам (Bitrix ID). */
+    readonly departmentUserIds: readonly number[];
+    /** Чьи забытые сделки не попадают ни в одну сводку (Bitrix ID). */
+    readonly excludeUserIds: readonly number[];
     readonly limit: number;
 }
 
@@ -46,11 +52,15 @@ export class DealAuditDigestService {
         options: DealAuditDigestOptions,
         warnings: string[],
     ): Promise<number> {
-        const forgotten = verdicts.filter(isForgotten);
+        // Исключённые (тестовые, руководство) не попадают ни в одну сводку.
+        const excluded = new Set(options.excludeUserIds);
+        const forgotten = verdicts.filter(
+            verdict =>
+                isForgotten(verdict) &&
+                !(verdict.assignedById && excluded.has(verdict.assignedById)),
+        );
         if (!forgotten.length) return 0;
-        const wanted =
-            options.toManager || options.toHead || options.userIds.length > 0;
-        if (!wanted) return 0;
+        if (!hasDigestRecipients(options)) return 0;
 
         const byManager = groupByManager(forgotten);
         const structure = await this.loadDepartments(domain, warnings);
@@ -93,6 +103,13 @@ export class DealAuditDigestService {
             );
         }
 
+        this.collectByDepartment(messages, structure, forgotten, {
+            domain,
+            options,
+            userNames,
+            warnings,
+        });
+
         for (const userId of options.userIds) {
             this.collect(messages, userId, {
                 domain,
@@ -104,6 +121,45 @@ export class DealAuditDigestService {
         }
 
         return this.deliver(domain, messages, warnings);
+    }
+
+    /**
+     * Сводка «по своему отделу»: каждому получателю — забытые сделки
+     * сотрудников его отдела и подотделов ({@link departmentScopeOf}).
+     */
+    private collectByDepartment(
+        messages: Map<number, string>,
+        structure: readonly IBXDepartment[],
+        forgotten: readonly DealAuditVerdict[],
+        input: {
+            domain: string;
+            options: DealAuditDigestOptions;
+            userNames: ReadonlyMap<number, string>;
+            warnings: string[];
+        },
+    ): void {
+        const { domain, options, userNames, warnings } = input;
+        if (!options.departmentUserIds.length) return;
+        if (!structure.length) {
+            warnings.push(
+                'структура отдела продаж не прочитана — сводка по своему отделу не отправлена',
+            );
+            return;
+        }
+        for (const userId of options.departmentUserIds) {
+            const scope = departmentScopeOf(structure, userId);
+            this.collect(messages, userId, {
+                domain,
+                heading: 'Забытые сделки вашего отдела',
+                verdicts: forgotten.filter(
+                    verdict =>
+                        !!verdict.assignedById &&
+                        scope.has(verdict.assignedById),
+                ),
+                limit: options.limit,
+                userNames,
+            });
+        }
     }
 
     /**

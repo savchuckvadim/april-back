@@ -1,10 +1,15 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { DealAuditRunRequestDto } from '../dto/deal-audit-run.dto';
 import {
+    DealAuditRunNowRequestDto,
+    DealAuditRunRequestDto,
+} from '../dto/deal-audit-run.dto';
+import {
+    DealAuditRunNowResponseDto,
     DealAuditRunResponseDto,
     DealAuditVerdictDto,
 } from '../dto/deal-audit-result.dto';
+import { DealAuditScheduler } from '../deal-audit.scheduler';
 import { DealAuditSettingsService } from '../services/deal-audit-settings.service';
 import { DealAuditService } from '../services/deal-audit.service';
 
@@ -22,7 +27,38 @@ export class DealAuditController {
     constructor(
         private readonly settings: DealAuditSettingsService,
         private readonly audit: DealAuditService,
+        private readonly scheduler: DealAuditScheduler,
     ) {}
+
+    @Post('run-now')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Прогнать аудит сейчас, как крон',
+        description:
+            'Прогон портала вне интервала, по его настройкам: разметка и ' +
+            'сводки — как у ночного крона. Идёт в фоне (на большой воронке ' +
+            'он дольше таймаута прокси), итог приходит в Telegram. Метка ' +
+            'последнего прогона обновляется — крон не повторит его следом.',
+    })
+    @ApiBody({
+        type: DealAuditRunNowRequestDto,
+        description: 'Домен портала.',
+    })
+    @ApiOkResponse({
+        type: DealAuditRunNowResponseDto,
+        description: 'Начат ли прогон; итог — в Telegram.',
+    })
+    async runNow(
+        @Body() body: DealAuditRunNowRequestDto,
+    ): Promise<DealAuditRunNowResponseDto> {
+        const started = await this.scheduler.runNow(body.domain);
+        return {
+            started,
+            message: started
+                ? 'Прогон начат — итог придёт в Telegram через несколько минут'
+                : 'Уже идёт другой прогон аудита — повторите позже',
+        };
+    }
 
     @Post('run')
     @HttpCode(200)

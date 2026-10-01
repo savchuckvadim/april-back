@@ -26,6 +26,7 @@ const UF = (code: string) => `UF_CRM_${FIELDS[code]}`;
 const options = (over: Partial<XoRescueOptions> = {}): XoRescueOptions => ({
     maxPerRun: 20,
     resendAfterMinutes: 120,
+    markerMaxAgeHours: 72,
     orphanEnabled: false,
     orphanDryRun: true,
     orphanLookbackHours: 96,

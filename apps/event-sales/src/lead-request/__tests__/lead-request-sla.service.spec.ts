@@ -41,6 +41,13 @@ const makePortal = (withAssignedAt = false) => ({
         if (code === 'to_base_sales') {
             return { bitrixId: 'TO_BASE_SALES', items: [] };
         }
+        // Связи сделки с лидами: по ним SLA узнаёт повторную заявку.
+        if (code === 'deal_from_lead_id') {
+            return { bitrixId: 'DEAL_FROM_LEAD_ID', items: [] };
+        }
+        if (code === 'deal_joined_leads') {
+            return { bitrixId: 'DEAL_JOINED_LEADS', items: [] };
+        }
         if (withAssignedAt && code === 'op_lead_assigned_at') {
             return { bitrixId: 'OP_LEAD_ASSIGNED_AT', items: [] };
         }
@@ -68,6 +75,8 @@ const makeDeps = (input: {
     /** Лиды этих сделок, у которых таймер ещё не снят (busy). */
     busyLeads?: Record<string, unknown>[];
     dealStage?: string;
+    /** Прочие поля базовой сделки (связи с лидами). */
+    dealRow?: Record<string, unknown>;
     withAssignedAt?: boolean;
     /** Что отдаёт UserNameResolver; по умолчанию пусто — в текстах id. */
     names?: Record<number, string>;
@@ -138,7 +147,11 @@ const makeDeps = (input: {
                     update: dealUpdate,
                     get: jest.fn().mockResolvedValue({
                         result: input.dealStage
-                            ? { ID: '1024', STAGE_ID: input.dealStage }
+                            ? {
+                                  ID: '1024',
+                                  STAGE_ID: input.dealStage,
+                                  ...input.dealRow,
+                              }
                             : undefined,
                     }),
                 },
@@ -548,5 +561,64 @@ describe('LeadRequestSlaService', () => {
         const run = await service.runForDomain('d.b24.ru', 60, 30);
         expect(dealGetList).not.toHaveBeenCalled();
         expect(run.warnings.join(' ')).toContain('на СДЕЛКЕ');
+    });
+
+    /*
+     * Повторная заявка ждёт утроенный срок (решение владельца 28.09.2026) —
+     * и тогда, когда у сделки клиента нет первоисточника (холодный звонок,
+     * ручная, старая): присоединение его не заполняет, повтор узнаётся по
+     * присоединённым лидам (01.10.2026).
+     */
+    describe('повторная заявка: утроенный срок', () => {
+        /** Назначена 90 минут назад: просрочена при 60, но не при 180. */
+        const lead = {
+            ...OVERDUE_LEAD,
+            UF_CRM_OP_LEAD_ASSIGNED_AT: new Date(
+                Date.now() - 90 * 60_000,
+            ).toISOString(),
+        };
+
+        it.each([
+            [
+                'первоисточник — другой лид',
+                {
+                    UF_CRM_DEAL_FROM_LEAD_ID: 'L_339193',
+                    UF_CRM_DEAL_JOINED_LEADS: ['L_339193', 'L_42'],
+                },
+            ],
+            [
+                'первоисточника нет, лид — среди присоединённых',
+                { UF_CRM_DEAL_JOINED_LEADS: ['L_42'] },
+            ],
+        ])('%s → заявка ждёт, не передаётся', async (_title, dealRow) => {
+            const { service, dispatch, acceptService } = makeDeps({
+                leads: [lead],
+                dealStage: 'C3:NEW',
+                dealRow,
+                withAssignedAt: true,
+            });
+            const run = await service.runForDomain('d.b24.ru', 60, 30);
+
+            expect(run.transferred).toBe(0);
+            expect(run.healed).toBe(0);
+            expect(dispatch.accept).not.toHaveBeenCalled();
+            expect(acceptService.accept).not.toHaveBeenCalled();
+        });
+
+        it('собственная сделка лида (он сам первоисточник) — обычный срок, передача', async () => {
+            const { service, dispatch } = makeDeps({
+                leads: [lead],
+                dealStage: 'C3:NEW',
+                dealRow: {
+                    UF_CRM_DEAL_FROM_LEAD_ID: 'L_42',
+                    UF_CRM_DEAL_JOINED_LEADS: ['L_42'],
+                },
+                withAssignedAt: true,
+            });
+            const run = await service.runForDomain('d.b24.ru', 60, 30);
+
+            expect(run.transferred).toBe(1);
+            expect(dispatch.accept).toHaveBeenCalledTimes(1);
+        });
     });
 });

@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
     IsBoolean,
     IsIn,
@@ -8,6 +9,7 @@ import {
     Min,
 } from 'class-validator';
 import { SalesHookRunRequestBaseDto } from '../../core/dto/sales-hook-run-request.dto';
+import { crmRefId } from '../../core/lib/crm-ref-id.util';
 
 /** К чему присоединяем: к конкретной основной сделке либо к компании клиента. */
 export const JOIN_TO_MAIN_TARGET_TYPES = ['deal', 'company'] as const;
@@ -27,6 +29,11 @@ export class JoinToMainWebhookQueryDto {
         type: Number,
         minimum: 1,
     })
+    // Битрикс подставляет «Привязку к CRM» как D_123 / CO_45 — берём число
+    // из ИСХОДНОГО значения: неявное приведение уже превратило бы его в NaN.
+    @Transform(({ obj, key }: { obj: Record<string, unknown>; key: string }) =>
+        crmRefId(obj[key]),
+    )
     @IsInt()
     @Min(1)
     dealId: number;
@@ -40,6 +47,11 @@ export class JoinToMainWebhookQueryDto {
         minimum: 1,
     })
     @IsOptional()
+    // Битрикс подставляет «Привязку к CRM» как D_123 / CO_45 — берём число
+    // из ИСХОДНОГО значения: неявное приведение уже превратило бы его в NaN.
+    @Transform(({ obj, key }: { obj: Record<string, unknown>; key: string }) =>
+        crmRefId(obj[key]),
+    )
     @IsInt()
     @Min(1)
     mainDealId?: number;
@@ -54,6 +66,11 @@ export class JoinToMainWebhookQueryDto {
         minimum: 1,
     })
     @IsOptional()
+    // Битрикс подставляет «Привязку к CRM» как D_123 / CO_45 — берём число
+    // из ИСХОДНОГО значения: неявное приведение уже превратило бы его в NaN.
+    @Transform(({ obj, key }: { obj: Record<string, unknown>; key: string }) =>
+        crmRefId(obj[key]),
+    )
     @IsInt()
     @Min(1)
     companyId?: number;

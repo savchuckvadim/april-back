@@ -48,7 +48,7 @@ export class LeadRequestSlaScheduler implements OnModuleInit {
         );
     }
 
-    @Cron(CronExpression.EVERY_10_MINUTES)
+    @Cron(CronExpression.EVERY_10_MINUTES, { name: 'lead-request-sla' })
     async tick(): Promise<void> {
         const domains = await this.resolveEnabledDomains();
         if (!domains.length) return;

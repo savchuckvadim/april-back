@@ -3,6 +3,7 @@ import { getErrorDetails } from '@/shared';
 import { toTimelineComment } from '@lib/bitrix/consts/timeline.consts';
 import { taskCrmBinding } from '@/modules/bitrix/domain/tasks/task/lib/task-crm-binding.util';
 import { EnumSalesHookCode } from '../../core/constants/sales-hook-code.enum';
+import { EnumSalesHookSource } from '../../core/contracts/sales-hook-job.type';
 import {
     ISalesHookUseCase,
     SalesHookExecutionContext,
@@ -98,6 +99,19 @@ export class JoinToMainUseCase
 
         const plan = buildJoinPlan(ctx.portal, ctx.domain, snapshot);
         if (plan.skipped) {
+            /*
+             * Робот (БП «Отдать работу») результата не видит: без записи в
+             * ленте пропуск выглядел как «хук не работает». Кнопки в
+             * «Звонках» показывают причину сами — им запись не нужна.
+             */
+            if (ctx.source === EnumSalesHookSource.ROBOT && snapshot.source) {
+                this.queueOp(ctx, {
+                    kind: 'timeline',
+                    dealId: snapshot.source.id,
+                    comment: `⚠️ Присоединение к основной не выполнено: ${plan.warnings.join('; ')}`,
+                });
+                await ctx.buffer.endGroup();
+            }
             return {
                 ...this.empty(item),
                 mainDealId: plan.mainDealId,

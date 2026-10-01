@@ -1,5 +1,6 @@
 import {
     DEAL_AUDIT_FIELDS_MISSING_WARNING,
+    hasDigestRecipients,
     resolveDealAuditRunMode,
 } from '../lib/deal-audit-run-mode';
 import { DealAuditService } from '../services/deal-audit.service';
@@ -67,6 +68,28 @@ describe('resolveDealAuditRunMode', () => {
     });
 });
 
+describe('hasDigestRecipients', () => {
+    const none = {
+        toManager: false,
+        toHead: false,
+        userIds: [],
+        departmentUserIds: [],
+    };
+
+    it('ни одного адресата — сводку слать некому', () => {
+        expect(hasDigestRecipients(none)).toBe(false);
+    });
+
+    it('достаточно любого из четырёх адресатов', () => {
+        expect(hasDigestRecipients({ ...none, toManager: true })).toBe(true);
+        expect(hasDigestRecipients({ ...none, toHead: true })).toBe(true);
+        expect(hasDigestRecipients({ ...none, userIds: [1] })).toBe(true);
+        expect(hasDigestRecipients({ ...none, departmentUserIds: [447] })).toBe(
+            true,
+        );
+    });
+});
+
 describe('DealAuditService: сводки без установленных полей', () => {
     /** Портал без единого поля аудита. */
     const portal = {
@@ -82,7 +105,14 @@ describe('DealAuditService: сводки без установленных по�
         overdueHours: 24,
         stageStuckDays: 30,
         forgotCloseDays: 21,
-        digest: { toManager: true, toHead: false, userIds: [], limit: 20 },
+        digest: {
+            toManager: true,
+            toHead: false,
+            userIds: [],
+            departmentUserIds: [],
+            excludeUserIds: [],
+            limit: 20,
+        },
     });
 
     const makeService = () => {

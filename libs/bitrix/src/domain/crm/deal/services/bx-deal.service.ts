@@ -1,6 +1,6 @@
 import { BxDealRepository } from '../repository/bx-deal.repository';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
-import { IBXDeal } from '../interface/bx-deal.interface';
+import { IBXDeal, IBXDealContactBinding } from '../interface/bx-deal.interface';
 import { IBXField } from '../../fields/bx-field.interface';
 
 export class BxDealService {
@@ -78,6 +78,11 @@ export class BxDealService {
         contactIds: number[] | string[],
     ) {
         return await this.repo.contactItemsSet(dealId, contactIds);
+    }
+
+    /** Привязать один контакт к сделке, не трогая остальные. */
+    async contactAdd(dealId: number | string, fields: IBXDealContactBinding) {
+        return await this.repo.contactAdd(dealId, fields);
     }
 
     /** Все контакты сделки (множественная связь). */
