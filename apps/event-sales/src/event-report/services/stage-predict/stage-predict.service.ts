@@ -21,6 +21,7 @@ import {
     StagePredictRequestDto,
     StagePredictResponseDto,
 } from '../../dto/stage-predict/stage-predict.dto';
+import { StagePredictDealsCache } from './stage-predict-deals.cache';
 
 /**
  * Предикт стадии основной воронки — ДО отправки отчёта.
@@ -46,6 +47,9 @@ export class StagePredictService {
         // настроек держит чтение дешёвым — предикт зовётся на каждую смену
         // плана.
         private readonly appSettings: PortalAppSettingsService,
+        // Сделки клиента за разговор не меняются — читаем их раз в минуту,
+        // а не на каждую смену статуса и плана.
+        private readonly deals: StagePredictDealsCache,
     ) {}
 
     async predict(
@@ -69,7 +73,7 @@ export class StagePredictService {
         if (!category) return empty;
 
         const [baseDeal, refineStageOnPlan] = await Promise.all([
-            this.findCurrentBaseDeal(bitrix, category, dto.context),
+            this.findCurrentBaseDeal(bitrix, category, dto.domain, dto.context),
             this.resolveRefineStageOnPlan(dto.domain),
         ]);
 
@@ -150,10 +154,15 @@ export class StagePredictService {
      * сотрудника (`ASSIGNED_BY_ID` числом — REST отдаёт строки); чужая
      * открытая молча не подхватывается. Сделка плейсмента — явный контекст,
      * она вне фильтра. Без responsibleId (легаси-фронт) — как раньше.
+     *
+     * Оба чтения идут через короткий кэш (StagePredictDealsCache): предикт
+     * зовётся на каждое изменение формы, а сделки при этом те же самые.
+     * Сам выбор сделки не кэшируется — он зависит от ответственного.
      */
     private async findCurrentBaseDeal(
         bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
         category: IPCategory,
+        domain: string,
         context: StagePredictRequestDto['context'],
     ): Promise<IBXDeal | null> {
         const select = [
@@ -169,12 +178,19 @@ export class StagePredictService {
         // добираем компанию из её COMPANY_ID (менеджер мог привязать её
         // после открытия фрейма).
         let placementDeal: IBXDeal | null = null;
-        if (context.dealId) {
-            const response = await bitrix.deal.get(context.dealId, [
-                ...select,
-                'COMPANY_ID',
-            ]);
-            placementDeal = (response?.result as IBXDeal | undefined) ?? null;
+        const placementDealId = context.dealId;
+        if (placementDealId) {
+            placementDeal = await this.deals.placementDeal(
+                domain,
+                placementDealId,
+                async () => {
+                    const response = await bitrix.deal.get(placementDealId, [
+                        ...select,
+                        'COMPANY_ID',
+                    ]);
+                    return (response?.result as IBXDeal | undefined) ?? null;
+                },
+            );
             const dealCompanyId = Number(
                 (placementDeal as Record<string, unknown> | null)?.[
                     'COMPANY_ID'
@@ -193,16 +209,27 @@ export class StagePredictService {
         if (!companyId)
             return isActiveBase(placementDeal) ? placementDeal : null;
 
-        const listResponse = await bitrix.deal.getList(
-            {
-                COMPANY_ID: String(companyId),
-                CATEGORY_ID: String(category.bitrixId),
-                CLOSED: 'N',
-            } as Partial<IBXDeal>,
-            select,
-        );
-        const deals = (listResponse?.result ?? []).filter(
-            deal => (deal as Record<string, unknown>)['CLOSED'] !== 'Y',
+        const baseCompanyId = companyId;
+        const deals = await this.deals.companyDeals(
+            domain,
+            baseCompanyId,
+            async () => {
+                const listResponse = await bitrix.deal.getList(
+                    {
+                        COMPANY_ID: String(baseCompanyId),
+                        CATEGORY_ID: String(category.bitrixId),
+                        CLOSED: 'N',
+                    } as Partial<IBXDeal>,
+                    select,
+                    undefined,
+                    // Общее число сделок предикту не нужно — без него
+                    // Битрикс отвечает быстрее.
+                    -1,
+                );
+                return (listResponse?.result ?? []).filter(
+                    deal => (deal as Record<string, unknown>)['CLOSED'] !== 'Y',
+                );
+            },
         );
 
         const preferred = context.dealId

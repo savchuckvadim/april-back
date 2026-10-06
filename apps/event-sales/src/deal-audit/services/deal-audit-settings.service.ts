@@ -4,10 +4,20 @@ import {
     parseUserIds,
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
+import {
+    DealAuditFrequency,
+    parseDealAuditFrequency,
+} from '../lib/deal-audit-schedule';
 import { DealAuditOptions } from './deal-audit.service';
 
 /** Нижняя граница порогов: ноль сделал бы забытыми все сделки портала. */
 const MIN_DAYS = 1;
+
+/**
+ * Потолок сделок на отдел за прогон: решение владельца (05.10.2026) и
+ * одновременно размер страницы Битрикса — больше одним запросом не взять.
+ */
+const MAX_PER_DEPARTMENT = 50;
 
 const positive = (raw: unknown, fallback: number): number => {
     const value = Number(raw);
@@ -44,7 +54,7 @@ export class DealAuditSettingsService {
         overrides: Partial<
             Pick<DealAuditOptions, 'dryRun' | 'maxPerRun' | 'dealIds'>
         > = {},
-    ): Promise<DealAuditOptions & { intervalMinutes: number }> {
+    ): Promise<DealAuditOptions & { frequency: DealAuditFrequency }> {
         const settings = await this.appSettings.resolve(
             domain,
             EnumPortalAppCode.eventSales,
@@ -82,7 +92,16 @@ export class DealAuditSettingsService {
                 ),
                 limit: positive(settings.dealAuditDigestLimit, 20),
             },
-            intervalMinutes: positive(settings.dealAuditIntervalMinutes, 1440),
+            maxPerDepartment: Math.min(
+                MAX_PER_DEPARTMENT,
+                Math.floor(
+                    positive(
+                        settings.dealAuditMaxPerDepartment,
+                        MAX_PER_DEPARTMENT,
+                    ),
+                ),
+            ),
+            frequency: parseDealAuditFrequency(settings.dealAuditFrequency),
         };
     }
 }

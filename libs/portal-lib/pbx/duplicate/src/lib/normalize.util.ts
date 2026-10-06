@@ -87,6 +87,57 @@ export const FREE_EMAIL_DOMAINS: ReadonlySet<string> = new Set([
     'ukr.net',
 ]);
 
+/**
+ * Служебные домены: адрес на них клиенту не принадлежит. `garant.ru` —
+ * домен самого Гаранта: на нём генератор заявок выдумывает адреса для
+ * обращений из мессенджеров (`79601159292.max.fict@garant.ru`). Домен у
+ * них у всех один, и «поиск клиента по домену» склеивал разных людей в
+ * одного (garant, 06.10.2026: в сделку 92123 ушли девять чужих заявок).
+ */
+export const SERVICE_EMAIL_DOMAINS: ReadonlySet<string> = new Set([
+    'garant.ru',
+]);
+
+/**
+ * Выдуманный адрес заявки: генератор ставит его, когда почты нет, —
+ * `<телефон>.<канал>.fict@…`. Человека он не описывает ничем, кроме
+ * телефона, а домен у таких адресов общий на всех.
+ */
+export function isPlaceholderEmail(raw: string | null | undefined): boolean {
+    const email = normalizeEmail(raw);
+    if (!email) return false;
+    const local = email.slice(0, email.lastIndexOf('@'));
+    return /(^|\.)fict$/.test(local);
+}
+
+/** Домен или его поддомен есть в списке (`vrn.garant.ru` попадает под `garant.ru`). */
+const isListedDomain = (
+    domain: string,
+    list: ReadonlySet<string> | undefined,
+): boolean => {
+    if (!list?.size) return false;
+    if (list.has(domain)) return true;
+    for (const listed of list) {
+        if (domain.endsWith(`.${listed}`)) return true;
+    }
+    return false;
+};
+
+/**
+ * Список доменов из настройки портала: через запятую, точку с запятой или
+ * пробел; `@` в начале и регистр не важны. Мусор без точки отбрасывается.
+ */
+export function parseEmailDomainList(
+    raw: string | null | undefined,
+): Set<string> {
+    return new Set(
+        String(raw ?? '')
+            .split(/[\s,;]+/)
+            .map(item => item.trim().toLowerCase().replace(/^@+/, ''))
+            .filter(item => item.includes('.') && !item.includes('@')),
+    );
+}
+
 /** Домен адреса в нижнем регистре; мусор без `@` → null. */
 export function emailDomain(raw: string | null | undefined): string | null {
     const email = normalizeEmail(raw);
@@ -96,14 +147,20 @@ export function emailDomain(raw: string | null | undefined): string | null {
 }
 
 /**
- * Корпоративный домен адреса: идентифицирует организацию. Бесплатные
- * провайдеры → null (см. FREE_EMAIL_DOMAINS).
+ * Корпоративный домен адреса: идентифицирует организацию. Не идентифицируют
+ * (→ null): бесплатные провайдеры (FREE_EMAIL_DOMAINS), служебные домены
+ * (SERVICE_EMAIL_DOMAINS), выдуманные адреса заявок и домены из списка
+ * портала `excluded` (общие домены холдингов, госструктур, свой домен).
  */
 export function corporateEmailDomain(
     raw: string | null | undefined,
+    excluded?: ReadonlySet<string>,
 ): string | null {
+    if (isPlaceholderEmail(raw)) return null;
     const domain = emailDomain(raw);
     if (!domain || FREE_EMAIL_DOMAINS.has(domain)) return null;
+    if (isListedDomain(domain, SERVICE_EMAIL_DOMAINS)) return null;
+    if (isListedDomain(domain, excluded)) return null;
     return domain;
 }
 

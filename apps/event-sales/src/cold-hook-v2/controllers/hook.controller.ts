@@ -5,8 +5,10 @@ import { BxWebHookDto } from '@lib/bitrix/dto/bx-webhook.dto';
 import { ColdHookSilinceEndpointV2Service } from '../services/silence/cold-hook-silince-endpoint.service';
 import { toColdCallData } from '../lib/cold-call-data';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { BackgroundCalls } from '@lib/core/call-context';
 
 @ApiTags('Event Sales Cold Hook')
+@BackgroundCalls()
 @Controller('event-sales-hook')
 export class EventSalesHookV2Controller {
     private readonly logger = new Logger(EventSalesHookV2Controller.name);

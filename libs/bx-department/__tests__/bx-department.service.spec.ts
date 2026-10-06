@@ -161,7 +161,7 @@ describe('BxDepartmentService', () => {
         expect(key).toMatch(
             new RegExp(`^department_${DOMAIN}_\\d{4}_sales_single_v4$`),
         );
-        expect(ttl).toBe(86400);
+        expect(ttl).toBe(172800);
 
         redisGet.mockResolvedValue(json);
         apiCall.mockClear();
@@ -313,7 +313,7 @@ describe('BxDepartmentService', () => {
             );
         });
 
-        it('ключ кэша с режимом и тэгом: …_sales_multi_(оп)_v4 на сутки', async () => {
+        it('ключ кэша с режимом и тэгом: …_sales_multi_(оп)_v4 на двое суток', async () => {
             await load();
 
             const [key, , , ttl] = savedKey();
@@ -322,7 +322,7 @@ describe('BxDepartmentService', () => {
                     `^department_${GARANT_DOMAIN}_\\d{4}_sales_multi_\\(оп\\)_v4$`,
                 ),
             );
-            expect(ttl).toBe(86400);
+            expect(ttl).toBe(172800);
         });
 
         it('is_multiple = true (boolean из Prisma) — тот же мультирежим', async () => {
@@ -377,5 +377,39 @@ describe('BxDepartmentService', () => {
             ).toEqual([]);
             expect(savedKey()[0]).toMatch(/_sales_single_v4$/);
         });
+    });
+});
+
+describe('BxDepartmentService: модель портала на попадании в кэш', () => {
+    it('режим отдела помнится — повторный запрос модель портала не собирает', async () => {
+        const snapshot = JSON.stringify({
+            department: {
+                department: BASE_ID,
+                generalDepartment: [],
+                childrenDepartments: [],
+                allUsers: [],
+                isMultiple: false,
+                multipleTag: null,
+            },
+        });
+        const init = jest.fn().mockResolvedValue({
+            bitrix: { api: { call: jest.fn() } },
+            PortalModel: { getDepartamentIdByCode: () => ({ bitrixId: 9 }) },
+        });
+        const service = new BxDepartmentService(
+            {
+                getClient: () => ({
+                    get: jest.fn().mockResolvedValue(snapshot),
+                    set: jest.fn(),
+                }),
+            } as unknown as RedisService,
+            { init } as unknown as PBXService,
+            { resolve: jest.fn() } as unknown as BxDepartmentHeadsService,
+        );
+
+        await service.getFullDepartment(DOMAIN, EDepartamentGroup.sales);
+        await service.getFullDepartment(DOMAIN, EDepartamentGroup.sales);
+
+        expect(init).toHaveBeenCalledTimes(1);
     });
 });

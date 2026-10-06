@@ -26,14 +26,13 @@ const FORGOTTEN_DEAL: DealAuditSnapshot = {
 // Ридеры ходят в Битрикс: подменяем их целиком, сеть в тесте не нужна.
 jest.mock('../services/deal-audit-tasks.reader', () => ({
     DealAuditTasksReader: jest.fn().mockImplementation(() => ({
-        load: jest.fn().mockResolvedValue({}),
+        loadFor: jest.fn().mockResolvedValue({}),
     })),
 }));
 jest.mock('../services/deal-audit-deals.reader', () => ({
     DealAuditDealsReader: jest.fn().mockImplementation(() => ({
-        load: jest
-            .fn()
-            .mockImplementation(() => Promise.resolve([FORGOTTEN_DEAL])),
+        loadMostIdle: jest.fn().mockResolvedValue([{ ID: '77' }]),
+        toSnapshots: jest.fn().mockImplementation(() => [FORGOTTEN_DEAL]),
     })),
 }));
 
@@ -101,6 +100,7 @@ describe('DealAuditService: сводки без установленных по�
     const options = (dryRun: boolean) => ({
         dryRun,
         maxPerRun: 500,
+        maxPerDepartment: 50,
         idleDays: 14,
         overdueHours: 24,
         stageStuckDays: 30,
@@ -124,6 +124,14 @@ describe('DealAuditService: сводки без установленных по�
                     .mockResolvedValue({ bitrix: {}, PortalModel: portal }),
             } as never,
             { send } as never,
+            {
+                getFullDepartment: jest.fn().mockResolvedValue({
+                    department: {
+                        generalDepartment: [],
+                        childrenDepartments: [],
+                    },
+                }),
+            } as never,
         );
         return { service, send };
     };

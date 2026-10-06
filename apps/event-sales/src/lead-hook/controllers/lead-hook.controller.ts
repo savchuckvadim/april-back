@@ -4,8 +4,10 @@ import { BxWebHookDto } from '@/modules/bitrix/dto/bx-webhook.dto';
 import { LeadColdCallQueryDto } from '../dto/lead-cold.dto';
 import { LeadColdCallResponseDto } from '../dto/lead-cold-response.dto';
 import { LeadColdEndpointService } from '../services/lead-cold-endpoint.service';
+import { BackgroundCalls } from '@lib/core/call-context';
 
 @ApiTags('Event Sales Lead Hook')
+@BackgroundCalls()
 @Controller('event-sales-lead-hook')
 export class EventSalesLeadHookController {
     private readonly logger = new Logger(EventSalesLeadHookController.name);

@@ -173,7 +173,9 @@ describe('PBXService.init (marketplace-ветка vs legacy)', () => {
         expect(builder.buildByDomain).toHaveBeenCalledWith(
             'legacy.bitrix24.ru',
         );
-        expect(result.internalPortal).toBe(INTERNAL_PORTAL);
+        // Каждый init получает свою копию локальной модели, не общий объект.
+        expect(result.internalPortal).toEqual(INTERNAL_PORTAL);
+        expect(result.internalPortal).not.toBe(INTERNAL_PORTAL);
         expect(result.portal).toEqual(LEGACY_PORTAL);
     });
 
@@ -213,7 +215,7 @@ describe('PBXService.init (marketplace-ветка vs legacy)', () => {
 
         const result = await service.init('legacy.bitrix24.ru');
 
-        expect(result.portal.lead).toBe(localLead);
+        expect(result.portal.lead).toEqual(localLead);
         // Остальные поля внешнего портала не тронуты.
         expect(result.portal.key).toBe('webhook-key');
         expect(modelFactory.create).toHaveBeenCalledWith(result.portal);
@@ -237,5 +239,87 @@ describe('PBXService.init (marketplace-ветка vs legacy)', () => {
 
         // Секция копируется, но содержимое — внешнее, не локальное.
         expect(result.portal.lead).toEqual(externalLead);
+    });
+
+    /*
+     * Локальная сборка — около 19 SQL-запросов, а init зовётся 7–8 раз на
+     * одно открытие сделки. Собранная модель живёт в памяти процесса
+     * минуту (разбор нагрузки 05.10.2026).
+     */
+    describe('кэш локальной сборки портала', () => {
+        it('второй init того же домена сборку из БД не повторяет', async () => {
+            const service = build();
+
+            await service.init('legacy.bitrix24.ru');
+            const second = await service.init('legacy.bitrix24.ru');
+
+            expect(builder.buildByDomain).toHaveBeenCalledTimes(1);
+            expect(second.internalPortal).toEqual(INTERNAL_PORTAL);
+        });
+
+        it('параллельные init одного домена ждут одну сборку', async () => {
+            const service = build();
+
+            await Promise.all([
+                service.init('legacy.bitrix24.ru'),
+                service.init('legacy.bitrix24.ru'),
+                service.init('legacy.bitrix24.ru'),
+            ]);
+
+            expect(builder.buildByDomain).toHaveBeenCalledTimes(1);
+        });
+
+        it('у каждого домена своя сборка', async () => {
+            const service = build();
+
+            await service.init('legacy.bitrix24.ru');
+            await service.init('other.bitrix24.ru');
+
+            expect(builder.buildByDomain).toHaveBeenCalledTimes(2);
+        });
+
+        it('правка модели одним потребителем не видна следующему', async () => {
+            const service = build();
+
+            const first = await service.init('legacy.bitrix24.ru');
+            Object.assign(first.internalPortal ?? {}, { domain: 'испорчено' });
+            const second = await service.init('legacy.bitrix24.ru');
+
+            expect(second.internalPortal).toEqual(INTERNAL_PORTAL);
+        });
+
+        it('экземпляр Bitrix создаётся на каждый init — кэшируются только данные', async () => {
+            const service = build();
+
+            await service.init('legacy.bitrix24.ru');
+            await service.init('legacy.bitrix24.ru');
+
+            expect(factory.create).toHaveBeenCalledTimes(2);
+        });
+
+        it('неудачная сборка не запоминается — следующий init пробует снова', async () => {
+            builder.buildByDomain
+                .mockRejectedValueOnce(new Error('база недоступна'))
+                .mockResolvedValueOnce(INTERNAL_PORTAL);
+            const service = build();
+
+            const first = await service.init('legacy.bitrix24.ru');
+            const second = await service.init('legacy.bitrix24.ru');
+
+            expect(first.internalPortal).toBeUndefined();
+            expect(second.internalPortal).toEqual(INTERNAL_PORTAL);
+        });
+
+        it('initFresh перечитывает модель из БД мимо кэша', async () => {
+            Object.assign(portalService, {
+                refreshByDomain: jest.fn().mockResolvedValue(LEGACY_PORTAL),
+            });
+            const service = build();
+
+            await service.init('legacy.bitrix24.ru');
+            await service.initFresh('legacy.bitrix24.ru');
+
+            expect(builder.buildByDomain).toHaveBeenCalledTimes(2);
+        });
     });
 });

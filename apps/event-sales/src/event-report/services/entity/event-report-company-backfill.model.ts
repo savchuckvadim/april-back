@@ -1,5 +1,6 @@
 import { IField } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 
 type BackfillValue = string | number | Array<string | number>;
 export type CompanyBackfillMap = Record<string, BackfillValue>;
@@ -11,11 +12,15 @@ export type CompanyBackfillMap = Record<string, BackfillValue>;
  *
  * Flow-поля (xo_*, pres-даты, статусы) сюда не входят: их и так пишет
  * каждый отчёт в обе сущности.
+ *
+ * Коды — из реестра, а не строками (ai/rules/pbx-typing.md): множественные
+ * «Конкуренты» на порталах стоят как `concurents_multiple`, и строка
+ * `op_concurents_multiple` молча не находила поле.
  */
 export const COMPANY_BACKFILL_CODES = [
-    'op_sale_date_prognoz',
-    'op_concurents',
-    'op_concurents_multiple',
+    PBX_SALES_EVENT_FIELD_CODES.op_sale_date_prognoz,
+    PBX_SALES_EVENT_FIELD_CODES.op_concurents,
+    PBX_SALES_EVENT_FIELD_CODES.concurents_multiple,
 ] as const;
 
 /**

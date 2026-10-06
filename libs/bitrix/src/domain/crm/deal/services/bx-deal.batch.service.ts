@@ -27,8 +27,10 @@ export class BxDealBatchService {
         filter: Partial<IBXDeal>,
         select?: string[],
         order?: { [key in keyof IBXDeal]?: 'asc' | 'desc' | 'ASC' | 'DESC' },
+        /** `-1` — без подсчёта total (см. BxDealRepository.getList). */
+        start?: number,
     ) {
-        return this.repo.getListBtch(cmdCode, filter, select, order);
+        return this.repo.getListBtch(cmdCode, filter, select, order, start);
     }
 
     set(cmdCode: string, data: Partial<IBXDeal>) {

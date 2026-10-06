@@ -10,7 +10,6 @@ import {
     BXActivityRequestFields,
     IBXActivity,
 } from './interfaces/bx-activity.interface';
-import { delay } from '@/shared/lib';
 
 export class BxActivityRepository {
     constructor(private readonly bitrixService: BitrixBaseApi) {}
@@ -121,7 +120,8 @@ export class BxActivityRepository {
             EBxNamespace.CRM,
             EBXEntity.ACTIVITY,
             EBxMethod.LIST,
-            { select, filter },
+            // Общее число не нужно — без него Битрикс отвечает быстрее.
+            { select, filter, start: -1 },
         );
     }
 
@@ -135,7 +135,7 @@ export class BxActivityRepository {
             EBxNamespace.CRM,
             EBXEntity.ACTIVITY,
             EBxMethod.LIST,
-            { select, filter },
+            { select, filter, start: -1 },
         );
     }
 
@@ -178,7 +178,9 @@ export class BxActivityRepository {
             ) {
                 condition = false;
             }
-            await delay(1000);
+            // Своей паузы нет: темп держит ограничитель запросов. Пауза в
+            // секунду после КАЖДОЙ страницы (и после последней тоже) только
+            // удлиняла чтение записей звонков.
         }
         return {
             activities: results,
@@ -231,7 +233,9 @@ export class BxActivityRepository {
             ) {
                 condition = false;
             }
-            await delay(1000);
+            // Своей паузы нет: темп держит ограничитель запросов. Пауза в
+            // секунду после КАЖДОЙ страницы (и после последней тоже) только
+            // удлиняла чтение записей звонков.
         }
         return {
             activities: results,

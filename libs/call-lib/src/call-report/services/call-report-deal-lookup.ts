@@ -118,6 +118,8 @@ export class CallReportDealLookup {
                 filter: { ...filter, CATEGORY_ID: categoryId },
                 select: CALL_REPORT_DEAL_SELECT,
                 order: { ID: 'DESC' },
+                // Общее число не нужно — без него Битрикс отвечает быстрее.
+                start: -1,
             })) as { result?: CallReportDealRow[] };
             const rows = response?.result;
             // Воронку проверяем ещё раз по самой строке: фильтр Битрикса —

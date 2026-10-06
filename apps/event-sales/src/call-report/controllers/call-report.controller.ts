@@ -29,6 +29,7 @@ import {
     PresentationPlanFactResponseDto,
     ReviseCallsResponseDto,
 } from '../dto/call-report-response.dto';
+import { BackgroundCalls } from '@lib/core/call-context';
 
 const REVISOR_DEFAULT_WINDOW_HOURS = 24;
 const REVISOR_DEFAULT_MAX_ENTITIES = 20;
@@ -38,6 +39,7 @@ const REVISOR_DEFAULT_MAX_ENTITIES = 20;
  * и ручной анализ одного звонка (смоук). Автоматика — CallReportScheduler.
  */
 @ApiTags('Call Report')
+@BackgroundCalls()
 @Controller('call-report')
 export class CallReportController {
     constructor(

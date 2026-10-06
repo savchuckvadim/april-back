@@ -1,5 +1,8 @@
 import { DEAL_AUDIT_STATUS } from '../constants/deal-audit.const';
-import { buildDealAuditDigest } from '../lib/deal-audit-digest.formatter';
+import {
+    buildDealAuditDigest,
+    DEAL_AUDIT_DIGEST_SCOPE_NOTE,
+} from '../lib/deal-audit-digest.formatter';
 import { DealAuditVerdict } from '../types/deal-audit.types';
 
 const verdict = (patch: Partial<DealAuditVerdict> = {}): DealAuditVerdict => ({
@@ -58,6 +61,20 @@ describe('deal-audit: вёрстка сводки', () => {
 
         expect(message).toContain('…и ещё 2');
         expect(message).not.toContain('#3 ');
+    });
+
+    it('сводка честно говорит об охвате: проверяются самые давние сделки, не вся воронка', () => {
+        const message = buildDealAuditDigest({
+            domain: 'example.bitrix24.ru',
+            heading: 'Сводка',
+            verdicts: [verdict({ dealId: 1 })],
+            limit: 20,
+        });
+
+        expect(message.endsWith(`[i]${DEAL_AUDIT_DIGEST_SCOPE_NOTE}[/i]`)).toBe(
+            true,
+        );
+        expect(DEAL_AUDIT_DIGEST_SCOPE_NOTE).toContain('до 50 на отдел');
     });
 
     it('имя ответственного подставляется, когда его передали', () => {

@@ -35,6 +35,7 @@ import { EventReportTimelineService } from '../services/timeline/event-report-ti
 import { ColdHookBatchGroupBuffer } from '../../cold-hook/services/batch/cold-hook-batch-group-buffer';
 import { EventReportPostFlowService } from '../services/post-flow/event-report-post-flow.service';
 import { EventReportActingManagerService } from '../services/acting-manager/event-report-acting-manager.service';
+import { StagePredictDealsCache } from '../services/stage-predict/stage-predict-deals.cache';
 
 /**
  * Оркестратор event-report flow.
@@ -65,6 +66,9 @@ export class EventReportUseCase {
         private readonly postFlow: EventReportPostFlowService,
         // Режим руководителя: проверка пометки и уведомление сотруднику.
         private readonly actingManager: EventReportActingManagerService,
+        // Предикт стадии держит сделки клиента в коротком кэше — отчёт их
+        // меняет, поэтому после батча кэш этого клиента сбрасывается.
+        private readonly stagePredictDeals: StagePredictDealsCache,
     ) {}
 
     async execute(
@@ -163,6 +167,15 @@ export class EventReportUseCase {
         // сайд-очередей читает отсюда id созданной план-задачи, и взять
         // только `results` значило бы не найти её никогда.
         const batchResults = [...buffer.getResults(), ...results];
+
+        // Стадии сделок клиента только что могли сдвинуться: следующий
+        // предикт (следующее дело того же клиента) обязан увидеть новые,
+        // а не дожидаться срока кэша.
+        await this.stagePredictDeals.invalidate(dto.domain, {
+            companyId:
+                Number(ctx.company?.ID) || dto.context?.companyId || null,
+            dealId: dto.context?.dealId ?? null,
+        });
 
         // Финал (продажа/отказ) двигает статусы связанных заявок/лидов и
         // дописывает историю обработки — отдельными волнами ПОСЛЕ основного

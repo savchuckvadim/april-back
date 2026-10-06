@@ -5,7 +5,10 @@ import { WsModule } from '@/core/ws/ws.module';
 import { EventReportInitService } from './services/init/event-report-init.service';
 import { EventFlowStatusService } from './services/status/event-flow-status.service';
 import { StagePredictService } from './services/stage-predict/stage-predict.service';
+import { StagePredictDealsCache } from './services/stage-predict/stage-predict-deals.cache';
+import { RedisModule } from '@/core/redis/redis.module';
 import { EventFlowGuardService } from './services/flow-guard/event-flow-guard.service';
+import { EventFlowDuplicateGuardService } from './services/flow-guard/event-flow-duplicate-guard.service';
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.module';
 import { PortalQuestionnairesModule } from '@lib/portal-lib/store/questionnaires/portal-questionnaires.module';
 import { EventReportUseCase } from './use-cases/event-report.use-case';
@@ -45,6 +48,8 @@ import { EventReportActingManagerService } from './services/acting-manager/event
         // Структура отдела продаж: периметр руководителя для отчёта за
         // сотрудника (режим руководителя).
         BxDepartmentModule,
+        // Короткий кэш чтений предикта стадии (сделки клиента на минуту).
+        RedisModule,
     ],
     controllers: [EventSalesController],
     providers: [
@@ -61,7 +66,11 @@ import { EventReportActingManagerService } from './services/acting-manager/event
         // Предикт стадии: PBXService.init(domain) внутри метода —
         // bitrix-состояние per-request, инжектить его сюда безопасно.
         StagePredictService,
+        // Кэш сделок клиента для предикта; отчёт сбрасывает его после батча.
+        StagePredictDealsCache,
         EventFlowGuardService,
+        // Гард повторной отправки: второй отчёт по тому же делу — 409.
+        EventFlowDuplicateGuardService,
         // Режим руководителя: bitrix приходит параметром, в полях не живёт.
         EventReportActingManagerService,
     ],

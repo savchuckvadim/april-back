@@ -75,7 +75,9 @@ export class BxTaskRepository {
             EBxNamespace.TASKS,
             EBXEntity.TASK,
             EBxMethod.LIST,
-            { filter, select, order, start },
+            // Без start — без подсчёта total: на портале с десятками тысяч
+            // задач подсчёт в 4–5 раз дороже самой выборки.
+            { filter, select, order, start: start ?? -1 },
         );
     }
 
@@ -94,7 +96,9 @@ export class BxTaskRepository {
             EBxNamespace.TASKS,
             EBXEntity.TASK,
             EBxMethod.LIST,
-            { filter, select, order, start },
+            // Без start — без подсчёта total: на портале с десятками тысяч
+            // задач подсчёт в 4–5 раз дороже самой выборки.
+            { filter, select, order, start: start ?? -1 },
         );
     }
 

@@ -15,11 +15,18 @@ export class Semaphore {
         }
     }
 
+    /**
+     * Освободить слот. Если кто-то ждёт — слот ПЕРЕХОДИТ ему, счётчик не
+     * растёт. Раньше счётчик увеличивался всегда, а разбуженный ждущий его
+     * не уменьшал: после каждой очереди предел тихо растягивался, и
+     * «не больше десяти одновременно» переставало выполняться.
+     */
     release(): void {
-        this.semaphore += 1;
-        if (this.waiting.length > 0) {
-            const next = this.waiting.shift();
-            next?.();
+        const next = this.waiting.shift();
+        if (next) {
+            next();
+            return;
         }
+        this.semaphore += 1;
     }
 }

@@ -39,6 +39,7 @@ import {
 } from '../../../shared/event-title';
 import { EEventReportEntityType } from '../init/event-report-init.types';
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';
+import { reportClosesTask } from './report-closes-task';
 
 /**
  * Эмодзи-маркеры «важных» планов (legacy `isPlannedImportant`).
@@ -306,12 +307,19 @@ export class EventReportTaskFlowService {
     private closingTaskId(ctx: EventReportContext): number | null {
         const taskId = ctx.currentTask?.id ? Number(ctx.currentTask.id) : null;
         if (!taskId) return null;
-        // Перенос — задача остаётся жить (ветка update выше).
-        if (ctx.isExpired) return null;
-        if (ctx.isNew) return null;
-        const isFinalStatus = ctx.isFail || ctx.isSuccessSale;
-        if (ctx.isNoResult && !isFinalStatus) return null;
-        return taskId;
+        // Перенос (ветка update выше), новое событие, нерезультативный
+        // звонок и быстрый «Недозвон» без финала дело не закрывают — это
+        // попытка, а не итог: клиент не должен остаться без дела. Правило
+        // общее с гардом повторной отправки (report-closes-task).
+        return reportClosesTask({
+            isMove: ctx.isExpired,
+            isNew: ctx.isNew,
+            isNoResult: ctx.isNoResult,
+            isNoCall: ctx.isNoCall,
+            isFinal: ctx.isFail || ctx.isSuccessSale,
+        })
+            ? taskId
+            : null;
     }
 
     /**

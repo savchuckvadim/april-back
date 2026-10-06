@@ -46,6 +46,7 @@ export class BxRqService {
 
         const result = (await bitrix.api.call('crm.requisite.list', {
             filter: { ENTITY_ID: companyId },
+            start: -1,
         })) as IBitrixResponse<BXRequisiteDTO[]>;
 
         const resultRqs = result?.result;
@@ -190,6 +191,7 @@ export class BxRqService {
         const { bitrix } = await this.pbxService.init(domain);
         const result = (await bitrix.api.call('crm.requisite.list', {
             filter: { ENTITY_ID: companyId },
+            start: -1,
         })) as IBitrixResponse<BXRequisiteDTO[]>;
         return !!result?.result?.[0];
     }

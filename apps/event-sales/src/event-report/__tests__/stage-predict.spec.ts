@@ -1,4 +1,7 @@
 import { StagePredictService } from '../services/stage-predict/stage-predict.service';
+import { StagePredictDealsCache } from '../services/stage-predict/stage-predict-deals.cache';
+import { RedisService } from '@/core/redis/redis.service';
+import { createInMemoryRedis } from '@/core/redis/testing/in-memory-redis';
 import { PBXService } from '@/modules/pbx';
 import { PortalAppSettingsService } from '@lib/portal-lib/store/app-settings';
 import { StagePredictRequestDto } from '../dto/stage-predict/stage-predict.dto';
@@ -33,6 +36,10 @@ const makeService = (over?: {
     refineStageOnPlan?: boolean;
     /** Сервис настроек лёг — предикт обязан работать на дефолтах. */
     settingsDown?: boolean;
+    /** Redis для кэша сделок; не задан — кэша нет, каждое чтение в портал. */
+    redis?: RedisService;
+    /** Счётчик обращений в портал (get и list). */
+    reads?: { get: number; list: number };
 }): StagePredictService => {
     const appSettings = {
         resolve: () =>
@@ -47,12 +54,18 @@ const makeService = (over?: {
             Promise.resolve({
                 bitrix: {
                     deal: {
-                        get: (id: number) =>
-                            Promise.resolve({
+                        get: (id: number) => {
+                            if (over?.reads) over.reads.get += 1;
+                            return Promise.resolve({
                                 result: over?.dealById?.[String(id)] ?? null,
-                            }),
-                        getList: () =>
-                            Promise.resolve({ result: over?.deals ?? [] }),
+                            });
+                        },
+                        getList: () => {
+                            if (over?.reads) over.reads.list += 1;
+                            return Promise.resolve({
+                                result: over?.deals ?? [],
+                            });
+                        },
                     },
                 },
                 PortalModel: {
@@ -61,7 +74,11 @@ const makeService = (over?: {
                 },
             }),
     } as unknown as PBXService;
-    return new StagePredictService(pbx, appSettings);
+    return new StagePredictService(
+        pbx,
+        appSettings,
+        new StagePredictDealsCache(over?.redis),
+    );
 };
 
 const request = (
@@ -312,5 +329,114 @@ describe('StagePredictService', () => {
         );
         expect(result.baseDealId).toBe(250);
         expect(result.targetStageCode).toBe('sales_fail');
+    });
+
+    /*
+     * Предикт зовётся на каждую смену статуса и типа плана. Сделки клиента
+     * за разговор не меняются — читать их на каждый клик значит тратить
+     * лимит Битрикса впустую (разбор нагрузки 05.10.2026).
+     */
+    describe('кэш сделок клиента', () => {
+        const DEALS = [{ ID: '100', STAGE_ID: 'C1:PRES', CATEGORY_ID: '1' }];
+        const DEAL_250 = {
+            ID: '250',
+            STAGE_ID: 'C1:WARM',
+            CATEGORY_ID: '1',
+            COMPANY_ID: '431',
+        };
+
+        it('вторая смена формы сделки не перечитывает, а итог считает заново', async () => {
+            const reads = { get: 0, list: 0 };
+            const service = makeService({
+                deals: DEALS,
+                redis: createInMemoryRedis().redis,
+                reads,
+            });
+
+            const first = await service.predict(
+                request({ planEventType: 'hot' }),
+            );
+            const second = await service.predict(
+                request({ workStatusCode: EnumWorkStatusCode.fail }),
+            );
+
+            expect(reads.list).toBe(1);
+            expect(first.targetStageCode).toBe('sales_in_progress');
+            // Новый статус из запроса применён к тем же сделкам из кэша.
+            expect(second.targetStageCode).toBe('sales_fail');
+        });
+
+        it('сделка встройки и сделки компании кэшируются обе', async () => {
+            const reads = { get: 0, list: 0 };
+            const service = makeService({
+                dealById: { '250': DEAL_250 },
+                deals: [DEAL_250],
+                redis: createInMemoryRedis().redis,
+                reads,
+            });
+            const dto = request({ context: { dealId: 250 } });
+
+            await service.predict(dto);
+            await service.predict(dto);
+
+            expect(reads).toEqual({ get: 1, list: 1 });
+        });
+
+        it('записи живут минуту', async () => {
+            const memory = createInMemoryRedis();
+            const service = makeService({ deals: DEALS, redis: memory.redis });
+
+            await service.predict(request());
+
+            expect([...memory.ttlByKey.values()]).toEqual([60]);
+        });
+
+        it('после отчёта по клиенту сделки читаются заново', async () => {
+            const reads = { get: 0, list: 0 };
+            const memory = createInMemoryRedis();
+            const service = makeService({
+                deals: DEALS,
+                redis: memory.redis,
+                reads,
+            });
+            await service.predict(request());
+
+            await new StagePredictDealsCache(memory.redis).invalidate(
+                'x.bitrix24.ru',
+                { companyId: 431 },
+            );
+            await service.predict(request());
+
+            expect(reads.list).toBe(2);
+        });
+
+        it('чужой клиент кэш не трогает', async () => {
+            const reads = { get: 0, list: 0 };
+            const memory = createInMemoryRedis();
+            const service = makeService({
+                deals: DEALS,
+                redis: memory.redis,
+                reads,
+            });
+            await service.predict(request());
+
+            await new StagePredictDealsCache(memory.redis).invalidate(
+                'x.bitrix24.ru',
+                { companyId: 999, dealId: 777 },
+            );
+            await service.predict(request());
+
+            expect(reads.list).toBe(1);
+        });
+
+        it('без Redis каждое обращение читает портал, как раньше', async () => {
+            const reads = { get: 0, list: 0 };
+            const service = makeService({ deals: DEALS, reads });
+
+            await service.predict(request());
+            await service.predict(request());
+
+            expect(reads.list).toBe(2);
+        });
     });
 });

@@ -26,6 +26,7 @@ export class BitrixApiFactoryService {
             token || null,
             authType,
             this.rateLimiter,
+            credentials.rateLimit,
         );
         api.init();
         return api;

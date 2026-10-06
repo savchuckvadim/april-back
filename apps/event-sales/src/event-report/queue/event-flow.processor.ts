@@ -5,10 +5,15 @@ import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueConcurrencyService } from '@/modules/queue/concurrency/queue-concurrency.service';
 import { WsService } from '@/core/ws';
+import { runAsInteractive } from '@lib/core/call-context';
 import { EVENT_FLOW_WS_EVENTS } from '../constants/event-flow.const';
 import { EnumEventFlowStatus } from '../dto/response/event-flow-operation.dto';
 import { EventFlowJobData } from '../dto/event-flow-job.dto';
 import { EventFlowStatusService } from '../services/status/event-flow-status.service';
+import {
+    EVENT_FLOW_SETTLE,
+    EventFlowDuplicateGuardService,
+} from '../services/flow-guard/event-flow-duplicate-guard.service';
 import { EventReportUseCase } from '../use-cases/event-report.use-case';
 
 /**
@@ -56,6 +61,7 @@ export class EventFlowProcessor {
         private readonly status: EventFlowStatusService,
         private readonly useCase: EventReportUseCase,
         private readonly concurrency: QueueConcurrencyService,
+        private readonly duplicates: EventFlowDuplicateGuardService,
     ) {
         // Как у ColdHooksProcessor: без этой строки в логе нельзя отличить
         // «воркер не поднялся» от «джобов не было» — а разница критичная,
@@ -138,7 +144,14 @@ export class EventFlowProcessor {
                 operation,
                 new Date().toISOString(),
             );
-            const result = await this.useCase.execute(dto, socketId);
+            // Отчёт менеджера — интерактив: человек смотрит на экран финиша
+            // и ждёт исход. Очередь работает вне HTTP-запроса и по умолчанию
+            // считалась бы фоном — тогда отчёты стояли бы в ограничителе
+            // Битрикса за кронами (см. @lib/core/call-context).
+            const result = await runAsInteractive(
+                `queue:${QueueNames.EVENT_SALES_FLOW}`,
+                () => this.useCase.execute(dto, socketId),
+            );
             const done = await this.status.setDone(
                 domain,
                 running,
@@ -146,6 +159,11 @@ export class EventFlowProcessor {
                 new Date().toISOString(),
             );
             this.notify(socketId, EVENT_FLOW_WS_EVENTS.DONE, done);
+            await this.duplicates.settle(
+                dto,
+                operationId,
+                EVENT_FLOW_SETTLE.done,
+            );
         } catch (error) {
             const message =
                 error instanceof Error ? error.message : String(error);
@@ -156,6 +174,12 @@ export class EventFlowProcessor {
                 new Date().toISOString(),
             );
             this.notify(socketId, EVENT_FLOW_WS_EVENTS.ERROR, failed);
+            // Упавший отчёт можно отправить заново — замок по делу снимаем.
+            await this.duplicates.settle(
+                dto,
+                operationId,
+                EVENT_FLOW_SETTLE.failed,
+            );
             throw error;
         } finally {
             await slot.release();
@@ -207,6 +231,11 @@ export class EventFlowProcessor {
                     new Date().toISOString(),
                 );
             }
+            await this.duplicates.settle(
+                job.data.dto,
+                job.data.operationId,
+                EVENT_FLOW_SETTLE.failed,
+            );
             return;
         }
 

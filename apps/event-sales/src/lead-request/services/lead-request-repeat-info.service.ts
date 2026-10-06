@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
-import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
+import {
+    PBX_SALES_EVENT_FIELD_CODES,
+    PbxSalesEventFieldCode,
+} from '@lib/portal-lib/pbx';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import {
     EnumPortalAppCode,
@@ -56,7 +59,11 @@ export class LeadRequestRepeatInfoService {
             const isRepeat = isRepeatRequestDeal(portal, deal, leadId);
             if (!isRepeat) return null;
 
-            const returnStage = this.fieldText(portal, deal, 'op_return_stage');
+            const returnStage = this.fieldText(
+                portal,
+                deal,
+                PBX_SALES_EVENT_FIELD_CODES.op_return_stage,
+            );
             const stageBefore = returnStage || this.text(deal.STAGE_ID);
             const responsibleId = Number(deal.ASSIGNED_BY_ID) || 0;
 
@@ -124,12 +131,9 @@ export class LeadRequestRepeatInfoService {
     private fieldText(
         portal: PortalModel,
         deal: BxRow,
-        code: keyof typeof PBX_SALES_EVENT_FIELD_CODES,
+        code: PbxSalesEventFieldCode,
     ): string {
-        const field = portal.getEntityFieldByCode(
-            'deal',
-            PBX_SALES_EVENT_FIELD_CODES[code],
-        );
+        const field = portal.getEntityFieldByCode('deal', code);
         return field ? this.text(deal[portal.getFieldBitrixId(field)]) : '';
     }
 

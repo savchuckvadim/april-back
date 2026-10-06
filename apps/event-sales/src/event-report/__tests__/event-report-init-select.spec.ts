@@ -76,7 +76,7 @@ describe('buildDealListSelect', () => {
         expect(COMPANY_BACKFILL_CODES).toEqual([
             'op_sale_date_prognoz',
             'op_concurents',
-            'op_concurents_multiple',
+            'concurents_multiple',
         ]);
         for (const code of COMPANY_BACKFILL_CODES) {
             expect(select).toContain(`UF_CRM_${code.toUpperCase()}`);

@@ -1,6 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import { RedisService } from '@/core/redis/redis.service';
 import { AppCacheService } from '@lib/app-cache';
 import { PBXService } from '@lib/pbx';
+import { assertBatchDelivered } from '@lib/bitrix/core/base/batch-delivery.util';
 import { signalsCacheKey } from '../lib/normalize.util';
 import { resolveDuplicateDealCategories } from '../lib/deal-category.filter';
 import {
@@ -23,6 +25,7 @@ import {
 } from '../type/duplicate.type';
 import { DuplicateScoreService } from './duplicate-score.service';
 import { DuplicateSignalExtractService } from './duplicate-signal-extract.service';
+import { DuplicateSignalsCache } from './duplicate-signals.cache';
 import {
     DUPLICATE_CACHE_APP,
     SignalFieldMapService,
@@ -61,7 +64,13 @@ export class DuplicateSearchService {
         private readonly fieldMap: SignalFieldMapService,
         private readonly extractor: DuplicateSignalExtractService,
         private readonly scorer: DuplicateScoreService,
-    ) {}
+        // Кэш сигналов необязателен: без Redis (юнит-тесты) — как раньше.
+        @Optional() redis?: RedisService,
+    ) {
+        this.signalsCache = new DuplicateSignalsCache(redis);
+    }
+
+    private readonly signalsCache: DuplicateSignalsCache;
 
     async search(
         domain: string,
@@ -161,11 +170,12 @@ export class DuplicateSearchService {
 
         if (input.entityType && input.entityId) {
             parts.push(
-                await this.extractor.extract(
+                await this.entitySignals(
                     domain,
                     input.entityType,
                     input.entityId,
                     input.level ?? DuplicateSearchLevel.FAST,
+                    Boolean(input.force),
                 ),
             );
         }
@@ -185,6 +195,32 @@ export class DuplicateSearchService {
             excluded: [...acc.excluded, ...part.excluded],
             warnings: [...(acc.warnings ?? []), ...(part.warnings ?? [])],
         }));
+    }
+
+    /**
+     * Сигналы сущности: из кэша, при промахе — обходом связей. Обход, у
+     * которого не дошла пачка, бросает ошибку и в кэш не попадает.
+     */
+    private async entitySignals(
+        domain: string,
+        entityType: DuplicateEntityType,
+        entityId: number,
+        level: DuplicateSearchLevel,
+        force: boolean,
+    ): Promise<ExtractedSignals> {
+        const ref = { domain, entityType, entityId, level };
+        if (!force) {
+            const cached = await this.signalsCache.get(ref);
+            if (cached) return cached;
+        }
+        const fresh = await this.extractor.extract(
+            domain,
+            entityType,
+            entityId,
+            level,
+        );
+        await this.signalsCache.set(ref, fresh);
+        return fresh;
     }
 
     private isEmpty(signals: DuplicateSignals): boolean {
@@ -226,6 +262,9 @@ export class DuplicateSearchService {
         }
 
         const chunks = await bitrix.api.callBatchAsync();
+        // Пачка не дошла — это не «пересечений нет»: ответ ушёл бы
+        // менеджеру и в кэш. Ошибки отдельных команд — предупреждения ниже.
+        assertBatchDelivered(chunks, 'Поиск пересечений');
         for (const chunk of chunks) {
             const rows = (chunk?.result ?? {}) as Record<string, unknown>;
             for (const [cmd, value] of Object.entries(rows)) {

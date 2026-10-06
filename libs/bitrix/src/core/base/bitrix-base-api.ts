@@ -12,6 +12,7 @@ import {
     IBitrixResponse,
 } from '../interface/bitrix-api-http.intterface';
 import { BitrixRateLimiterService } from '../rate-limit/bitrix-rate-limiter.service';
+import type { BitrixRateLimitOverrides } from '../rate-limit/bitrix-rate-limiter.config';
 
 export class BitrixBaseApi {
     private readonly core: BitrixCore;
@@ -26,6 +27,7 @@ export class BitrixBaseApi {
         token: string | null,
         authType: BxAuthType,
         rateLimiter: BitrixRateLimiterService,
+        rateLimit?: BitrixRateLimitOverrides,
     ) {
         const http = axios.create({ timeout: 25000 });
         this.core = new BitrixCore(
@@ -35,6 +37,7 @@ export class BitrixBaseApi {
             token,
             apiKey,
             rateLimiter,
+            rateLimit,
         );
         this.callApi = new CallApiService(this.core, http);
         this.batchApi = new BatchApiService(this.core, http);

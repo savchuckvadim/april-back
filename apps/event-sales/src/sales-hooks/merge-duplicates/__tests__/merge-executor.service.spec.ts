@@ -1,4 +1,5 @@
 import { MergeExecutorService } from '../services/merge-executor.service';
+import { MergeConflictResolver } from '../services/merge-conflict.resolver';
 import { MergePlan } from '../services/merge-plan.service';
 import { DuplicateEntityType } from '@lib/portal-lib/pbx-duplicate';
 
@@ -45,19 +46,125 @@ describe('MergeExecutorService', () => {
         });
     });
 
-    it('CONFLICT: группа отдаётся человеку, без ручной «дочистки»', async () => {
+    /*
+     * CONFLICT (владелец, 05.10.2026: «надо по-любому объединять»): поля
+     * выравниваются и порция объединяется ещё раз — ровно один раз.
+     */
+    const resolverOf = (impl: jest.Mock) =>
+        ({ resolve: impl }) as unknown as MergeConflictResolver;
+
+    it('CONFLICT: поля выровнены — порция объединяется повторно', async () => {
+        const mergeBatch = jest
+            .fn()
+            .mockResolvedValueOnce({ result: { STATUS: 'CONFLICT' } })
+            .mockResolvedValueOnce({
+                result: { STATUS: 'SUCCESS', ENTITY_IDS: [8821, 8822] },
+            });
+        const resolve = jest
+            .fn()
+            .mockResolvedValue({ changed: true, keptInTimeline: 2 });
+        const executor = new MergeExecutorService(
+            makeBitrix(mergeBatch) as never,
+            resolverOf(resolve),
+        );
+
+        const outcome = await executor.execute(plan());
+
+        expect(outcome.groups[0].status).toBe('SUCCESS');
+        expect(outcome.groups[0].mergedIds).toEqual([8821, 8822]);
+        expect(resolve).toHaveBeenCalledWith(
+            expect.objectContaining({ survivorId: 431 }),
+            [8821, 8822],
+        );
+        // Повтор — тем же порядком: главная карточка первой.
+        expect(mergeBatch).toHaveBeenNthCalledWith(2, {
+            entityTypeId: 4,
+            entityIds: [431, 8821, 8822],
+        });
+        expect(outcome.warnings).toEqual([
+            'Компания 431: поля дублей выровнены по главной карточке, прежние значения (2) записаны в её ленту',
+        ]);
+    });
+
+    it('CONFLICT и после выравнивания — человеку в штатный интерфейс, без третьей попытки', async () => {
         const mergeBatch = jest
             .fn()
             .mockResolvedValue({ result: { STATUS: 'CONFLICT' } });
+        const resolve = jest
+            .fn()
+            .mockResolvedValue({ changed: true, keptInTimeline: 0 });
         const executor = new MergeExecutorService(
             makeBitrix(mergeBatch) as never,
+            resolverOf(resolve),
         );
 
         const outcome = await executor.execute(plan());
 
         expect(outcome.groups[0].status).toBe('CONFLICT');
         expect(outcome.groups[0].error).toContain('штатном интерфейсе');
+        expect(mergeBatch).toHaveBeenCalledTimes(2);
+        expect(resolve).toHaveBeenCalledTimes(1);
+    });
+
+    it('CONFLICT, а выравнивать нечего — повтора нет', async () => {
+        const mergeBatch = jest
+            .fn()
+            .mockResolvedValue({ result: { STATUS: 'CONFLICT' } });
+        const resolve = jest
+            .fn()
+            .mockResolvedValue({ changed: false, keptInTimeline: 0 });
+        const executor = new MergeExecutorService(
+            makeBitrix(mergeBatch) as never,
+            resolverOf(resolve),
+        );
+
+        const outcome = await executor.execute(plan());
+
+        expect(outcome.groups[0].status).toBe('CONFLICT');
         expect(mergeBatch).toHaveBeenCalledTimes(1);
+    });
+
+    it('выравнивание упало — группа остаётся конфликтной, остальные идут дальше', async () => {
+        const mergeBatch = jest
+            .fn()
+            .mockResolvedValueOnce({ result: { STATUS: 'CONFLICT' } })
+            .mockResolvedValueOnce({
+                result: { STATUS: 'SUCCESS', ENTITY_IDS: [8] },
+            });
+        const resolve = jest
+            .fn()
+            .mockRejectedValue(new Error('Битрикс не отвечает'));
+        const executor = new MergeExecutorService(
+            makeBitrix(mergeBatch) as never,
+            resolverOf(resolve),
+        );
+
+        const outcome = await executor.execute(
+            plan({
+                groups: [
+                    {
+                        entityType: DuplicateEntityType.COMPANY,
+                        entityTypeId: 4,
+                        survivorId: 431,
+                        victimIds: [1],
+                    },
+                    {
+                        entityType: DuplicateEntityType.CONTACT,
+                        entityTypeId: 3,
+                        survivorId: 7,
+                        victimIds: [8],
+                    },
+                ],
+            }),
+        );
+
+        expect(outcome.groups.map(group => group.status)).toEqual([
+            'CONFLICT',
+            'SUCCESS',
+        ]);
+        expect(outcome.warnings[0]).toContain(
+            'Компания 431: не удалось выровнять поля',
+        );
     });
 
     it('ERROR первой группы — fail-fast по остальным', async () => {

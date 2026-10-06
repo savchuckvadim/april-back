@@ -29,16 +29,29 @@ export class BxDealRepository {
         );
     }
 
+    /**
+     * `start: -1` — без подсчёта общего числа записей: одна страница (50) и
+     * ничего больше. На больших воронках подсчёт стоит в разы дороже самой
+     * выборки; передавайте -1 везде, где `total`/`next` из ответа не нужны.
+     * Не задан — тоже -1. Постраничный обход со сдвигом (`start: 50`…)
+     * передаёт число явно; полный обход — курсором по ID (см. `all`).
+     */
     async getList(
         filter: Partial<IBXDeal>,
         select?: string[],
         order?: { [key in keyof IBXDeal]?: 'asc' | 'desc' | 'ASC' | 'DESC' },
+        start?: number,
     ) {
         return await this.bxApi.callType(
             EBxNamespace.CRM,
             EBXEntity.DEAL,
             EBxMethod.LIST,
-            { select, filter, order },
+            {
+                select,
+                filter,
+                order,
+                start: start ?? -1,
+            },
         );
     }
 
@@ -47,13 +60,19 @@ export class BxDealRepository {
         filter: Partial<IBXDeal>,
         select?: string[],
         order?: { [key in keyof IBXDeal]?: 'asc' | 'desc' | 'ASC' | 'DESC' },
+        start?: number,
     ) {
         return this.bxApi.addCmdBatchType(
             cmdCode,
             EBxNamespace.CRM,
             EBXEntity.DEAL,
             EBxMethod.LIST,
-            { select, filter, order: order || {} },
+            {
+                select,
+                filter,
+                order: order || {},
+                start: start ?? -1,
+            },
         );
     }
     //     field_n — название поля, по которому будет отфильтрована выборка элементов

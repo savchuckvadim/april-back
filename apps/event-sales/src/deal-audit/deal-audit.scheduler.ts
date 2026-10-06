@@ -6,12 +6,14 @@ import {
     PORTAL_APP_SETTINGS_SCHEMA,
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
+import { resolveTimezoneByDomain } from '@lib/shared/lib/date';
 import {
-    buildDealAuditLastRunKey,
+    buildDealAuditLastPeriodKey,
     DEAL_AUDIT_LOCK_KEY,
     DEAL_AUDIT_LOCK_TTL_SEC,
 } from './constants/deal-audit.const';
 import { hasDigestRecipients } from './lib/deal-audit-run-mode';
+import { dealAuditPeriodKey, isDealAuditDue } from './lib/deal-audit-schedule';
 import {
     DealAuditDomainOutcome,
     DealAuditPortalMode,
@@ -26,15 +28,17 @@ import {
 } from './services/deal-audit.service';
 
 /**
- * Тик планировщика. Частота ТИКА фиксирована, частота аудита ПОРТАЛА —
- * настройка (`deal_audit_interval_minutes`): один общий крон на все
- * порталы, каждый портал фильтруется по метке последнего прогона.
- * Так частота меняется из админки без деплоя (паттерн skap-import).
+ * Тик планировщика. Частота ТИКА фиксирована, а когда аудировать ПОРТАЛ —
+ * решает календарь (`deal_audit_frequency`): раз в неделю в ночь на
+ * понедельник или раз в месяц в ночь на первое число, по часам портала
+ * (см. lib/deal-audit-schedule). Один общий крон на все порталы, каждый
+ * фильтруется по метке отработанного периода — частота меняется из
+ * админки без деплоя.
  */
 const AUDIT_CRON = CronExpression.EVERY_30_MINUTES;
 
-/** Метка последнего прогона живёт чуть дольше максимального интервала. */
-const LAST_RUN_TTL_SEC = 14 * 24 * 60 * 60;
+/** Метка отработанного периода живёт дольше самого длинного — месяца. */
+const LAST_PERIOD_TTL_SEC = 45 * 24 * 60 * 60;
 
 /** Режим портала из уже разобранных настроек — для отчётов крона. */
 const modeOf = (options: DealAuditOptions): DealAuditPortalMode => ({
@@ -50,9 +54,11 @@ const modeOf = (options: DealAuditOptions): DealAuditPortalMode => ({
  * наложения тиков, настройки перечитываются на домен, ошибка одного
  * домена не роняет цикл.
  *
- * Рабочее время портала НЕ проверяется намеренно: аудит никого не
- * тревожит звонком, он только размечает карточки. Сводки же удобнее
- * получать утром — этим управляет интервал, а не календарь.
+ * Аудит идёт ТОЛЬКО НОЧЬЮ по часам портала (решение владельца,
+ * 05.10.2026): прежний «интервал от прошлого прогона» каждые сутки сползал
+ * на полчаса и в итоге попадал в рабочий день — а это сотни запросов в
+ * общий с менеджерами лимит Битрикса. Сводка, ушедшая ночью, ждёт
+ * сотрудника утром в уведомлениях.
  *
  * Крон без работы молчит, поэтому он сам о себе рассказывает в Telegram:
  * при старте — на каких порталах включён и в каком режиме, после прогона —
@@ -153,14 +159,21 @@ export class DealAuditScheduler implements OnApplicationBootstrap {
     ): Promise<DealAuditDomainOutcome> {
         try {
             const options = await this.settings.resolveOptions(domain);
-            if (
-                !force &&
-                !(await this.isDue(domain, options.intervalMinutes))
-            ) {
-                return { kind: 'waiting', domain };
+            const now = new Date();
+            const tz = resolveTimezoneByDomain(domain);
+            const period = dealAuditPeriodKey(now, tz, options.frequency);
+            if (!force) {
+                const due = isDealAuditDue({
+                    now,
+                    tz,
+                    frequency: options.frequency,
+                    lastPeriodKey: await this.lastPeriod(domain),
+                });
+                if (!due) return { kind: 'waiting', domain };
             }
             const result = await this.audit.runForDomain(domain, options);
-            await this.markRun(domain);
+            // Период закрывает и ручной прогон: крон не повторит его следом.
+            await this.markPeriod(domain, period);
             return { kind: 'ran', domain, result, ...modeOf(options) };
         } catch (error) {
             const message = (error as Error).message;
@@ -178,7 +191,7 @@ export class DealAuditScheduler implements OnApplicationBootstrap {
             return;
         }
         this.logger.log(
-            `Аудит сделок: порталов ${outcomes.length}, все ждут своего интервала`,
+            `Аудит сделок: порталов ${outcomes.length}, все ждут своей ночи`,
         );
     }
 
@@ -192,7 +205,7 @@ export class DealAuditScheduler implements OnApplicationBootstrap {
                     const options = await this.settings.resolveOptions(domain);
                     return {
                         domain,
-                        intervalMinutes: options.intervalMinutes,
+                        frequency: options.frequency,
                         ...modeOf(options),
                     };
                 }),
@@ -205,29 +218,22 @@ export class DealAuditScheduler implements OnApplicationBootstrap {
         }
     }
 
-    /** Интервал per-портал через Redis-метку последнего прогона. */
-    private async isDue(
-        domain: string,
-        intervalMinutes: number,
-    ): Promise<boolean> {
-        const raw = await this.redisService
+    /** Ключ периода последнего прогона портала; null — ещё не аудировался. */
+    private async lastPeriod(domain: string): Promise<string | null> {
+        return this.redisService
             .getClient()
-            .get(buildDealAuditLastRunKey(domain))
+            .get(buildDealAuditLastPeriodKey(domain))
             .catch(() => null);
-        if (!raw) return true;
-        const lastRunAt = Number(raw);
-        if (!Number.isFinite(lastRunAt)) return true;
-        return Date.now() - lastRunAt >= intervalMinutes * 60_000;
     }
 
-    private async markRun(domain: string): Promise<void> {
+    private async markPeriod(domain: string, period: string): Promise<void> {
         await this.redisService
             .getClient()
             .set(
-                buildDealAuditLastRunKey(domain),
-                String(Date.now()),
+                buildDealAuditLastPeriodKey(domain),
+                period,
                 'EX',
-                LAST_RUN_TTL_SEC,
+                LAST_PERIOD_TTL_SEC,
             )
             .catch(() => undefined);
     }

@@ -16,6 +16,9 @@ interface BxLeadRow {
 /** Потолок страниц (50 строк на страницу) — защита от разноса пагинации. */
 const MAX_PAGES = 80;
 
+/** Размер страницы crm.lead.list. */
+const LEADS_PAGE_SIZE = 50;
+
 /**
  * Лиды сегмента для скорости ответа на лид: `crm.lead.list` по дате
  * создания и ответственным. НЕ `@Injectable` — создаётся под конкретный
@@ -33,29 +36,38 @@ export class StyleCrmLeadsService {
     ): Promise<StyleCrmLead[]> {
         if (managerIds.length === 0) return [];
         const leads: StyleCrmLead[] = [];
-        let start = 0;
+        // Курсор по ID вместо сдвига: со сдвигом Битрикс заново считает
+        // общее число лидов на КАЖДОЙ странице.
+        let lastId = 0;
         for (let page = 0; page < MAX_PAGES; page += 1) {
             const response = (await this.bitrix.api.call('crm.lead.list', {
                 filter: {
                     '>=DATE_CREATE': `${segment.from}T00:00:00`,
                     '<=DATE_CREATE': `${segment.to}T23:59:59`,
                     ASSIGNED_BY_ID: managerIds.map(String),
+                    ...(lastId ? { '>ID': lastId } : {}),
                 },
                 select: [...LEAD_SELECT],
                 order: { ID: 'ASC' },
-                start,
-            })) as { result?: BxLeadRow[]; next?: number } | null;
+                start: -1,
+            })) as { result?: BxLeadRow[] } | null;
 
             if (!response || !('result' in response)) {
                 this.logger.warn(
-                    `crm.lead.list: страница со смещения ${start} без result — ` +
+                    `crm.lead.list: страница после лида ${lastId} без result — ` +
                         'скорость ответа на лид посчитана не по всем лидам',
                 );
                 break;
             }
-            leads.push(...(response.result ?? []).flatMap(toLead));
-            if (response.next === undefined) break;
-            start = response.next;
+            const rows = response.result ?? [];
+            leads.push(...rows.flatMap(toLead));
+            const maxId = rows.reduce(
+                (max, row) => Math.max(max, Number(row.ID) || 0),
+                lastId,
+            );
+            // Неполная страница — последняя; ID не вырос — курсор не сработал.
+            if (rows.length < LEADS_PAGE_SIZE || maxId <= lastId) break;
+            lastId = maxId;
         }
         return leads;
     }

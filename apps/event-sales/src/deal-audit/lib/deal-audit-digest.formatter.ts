@@ -90,8 +90,15 @@ export const buildDealAuditDigest = (input: DealAuditDigestInput): string => {
     if (rest > 0) {
         lines.push('', `[i]…и ещё ${rest} — полный список в фильтре CRM[/i]`);
     }
+    // Аудит смотрит не всю воронку: число выше — не «всего забытых на
+    // портале», и сотрудник должен это понимать.
+    lines.push('', `[i]${DEAL_AUDIT_DIGEST_SCOPE_NOTE}[/i]`);
     return lines.join('\n').trim();
 };
+
+/** Пояснение охвата: что именно проверялось в этом прогоне. */
+export const DEAL_AUDIT_DIGEST_SCOPE_NOTE =
+    'За один прогон проверяются самые давние открытые сделки — до 50 на отдел.';
 
 const renderRow = (
     input: DealAuditDigestInput,

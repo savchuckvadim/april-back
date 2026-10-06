@@ -254,6 +254,10 @@ describe('EventReportUseCase — ответ основного батча дое
                 resolve: () => Promise.resolve(null),
                 notify: () => Promise.resolve(),
             } as unknown as ConstructorParameters<typeof EventReportUseCase>[5],
+            // Кэш предикта стадии: отчёту нужен только сброс после батча.
+            {
+                invalidate: () => Promise.resolve(),
+            } as unknown as ConstructorParameters<typeof EventReportUseCase>[6],
         );
 
         return { useCase, dispatch, batchCalls };

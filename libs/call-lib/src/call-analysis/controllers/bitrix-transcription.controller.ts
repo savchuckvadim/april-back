@@ -20,8 +20,10 @@ import {
 } from '../dto/bitrix-transcription.dto';
 import { StartBitrixTranscriptionUseCase } from '../use-cases/start-bitrix-transcription.use-case';
 import { GetBitrixTranscriptionResultUseCase } from '../use-cases/get-bitrix-transcription-result.use-case';
+import { BackgroundCalls } from '@lib/core/call-context';
 
 @ApiTags('Транскрибация (Bitrix Vibecode)')
+@BackgroundCalls()
 @Controller('transcription-bitrix')
 export class BitrixTranscriptionController {
     private readonly logger = new Logger(BitrixTranscriptionController.name);

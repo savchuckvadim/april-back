@@ -34,6 +34,7 @@ import {
     AgentKeyGuard,
     AgentRequest,
 } from '../guards/agent-key.guard';
+import { BackgroundCalls } from '@lib/core/call-context';
 
 /**
  * Agent API: RAG-материалы для скиллов внешнего агента — скрипты типов
@@ -47,6 +48,7 @@ import {
     required: true,
 })
 @UseGuards(AgentKeyGuard)
+@BackgroundCalls()
 @Controller('agent/knowledge')
 export class AgentKnowledgeController {
     constructor(

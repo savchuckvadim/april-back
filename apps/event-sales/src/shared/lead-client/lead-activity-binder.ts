@@ -73,6 +73,8 @@ export class LeadActivityBinder {
                 },
                 select: ['ID'],
                 order: { ID: 'DESC' },
+                // Общее число не нужно — без него Битрикс отвечает быстрее.
+                start: -1,
             }),
         );
         if (!Array.isArray(rows)) return [];

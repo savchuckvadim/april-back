@@ -33,7 +33,7 @@ const ran = (
 });
 
 describe('shouldNotifyDealAuditTick', () => {
-    it('все порталы ждут интервала — в Telegram не шлём', () => {
+    it('все порталы ждут своей ночи — в Telegram не шлём', () => {
         expect(
             shouldNotifyDealAuditTick([
                 { kind: 'waiting', domain: 'a.bitrix24.ru' },
@@ -63,7 +63,7 @@ describe('formatDealAuditTick', () => {
             '🧹 Аудит сделок — прогон',
             '✅ a.bitrix24.ru: сделок 412, забытых 57, размечено 0, сводок 3',
             '❌ b.bitrix24.ru: ошибка — timeout',
-            '⏳ ждут своего интервала: 1',
+            '⏳ ждут своей ночи: 1',
         ]);
     });
 
@@ -113,26 +113,26 @@ describe('formatDealAuditRoster', () => {
         );
     });
 
-    it('портал, режим и интервал в часах', () => {
+    it('портал, режим и расписание', () => {
         const text = formatDealAuditRoster([
             {
                 domain: 'a.bitrix24.ru',
                 countOnly: true,
                 hasRecipients: true,
-                intervalMinutes: 1440,
+                frequency: 'weekly',
             },
             {
                 domain: 'b.bitrix24.ru',
                 countOnly: false,
                 hasRecipients: true,
-                intervalMinutes: 90,
+                frequency: 'monthly',
             },
         ]);
 
         expect(text.split('\n')).toEqual([
             '🧹 Аудит сделок включён на порталах: 2',
-            '• a.bitrix24.ru — только считать — ничего не пишет и не рассылает, раз в 24 ч',
-            '• b.bitrix24.ru — сводки рассылаются, раз в 90 мин',
+            '• a.bitrix24.ru — только считать — ничего не пишет и не рассылает, раз в неделю, в ночь на понедельник',
+            '• b.bitrix24.ru — сводки рассылаются, раз в месяц, в ночь на первое число',
         ]);
     });
 });

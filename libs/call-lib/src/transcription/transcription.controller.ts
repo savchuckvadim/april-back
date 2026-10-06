@@ -6,8 +6,10 @@ import {
 } from './dto/transcription.dto';
 import { StartTranscriptionUseCase } from './use-cases/start-transcription.use-case';
 import { GetTranscriptionResultUseCase } from './use-cases/get-transcription-result.use-case';
+import { BackgroundCalls } from '@lib/core/call-context';
 
 @ApiTags('transcription')
+@BackgroundCalls()
 @Controller('transcription')
 export class TranscriptionController {
     private readonly logger = new Logger(TranscriptionController.name);

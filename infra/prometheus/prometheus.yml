@@ -23,6 +23,17 @@ scrape_configs:
           - kpi-report-sales:3000
           - kpi-report-service:3000
 
+  # Фронты (Next): метрики браузеров — первая загрузка, доставка отчётов,
+  # прямые вызовы Битрикса (event_sales_*). Фронт живёт в своей сети
+  # (front/docker-compose.prod.yml), поэтому цель — адрес, по которому
+  # контейнер виден отсюда: общий docker-сеть или порт хоста
+  # (${PORT_EVENT_SALES}). Раскомментируйте и подставьте адрес.
+  # - job_name: 'front'
+  #   metrics_path: /api/metrics
+  #   static_configs:
+  #     - targets:
+  #         - host.docker.internal:PORT_EVENT_SALES
+
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']

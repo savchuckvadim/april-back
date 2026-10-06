@@ -106,6 +106,10 @@ export const DEAL_AUDIT_LOCK_KEY = 'event-sales:deal-audit-lock';
 /** TTL лока: прогон по домену длинный (тысячи сделок + задачи). */
 export const DEAL_AUDIT_LOCK_TTL_SEC = 25 * 60;
 
-/** Метка последнего прогона домена — по ней работает интервал из админки. */
-export const buildDealAuditLastRunKey = (domain: string): string =>
-    `event-sales:deal-audit:last-run:${domain}`;
+/**
+ * Метка отработанного периода домена (неделя или месяц — см.
+ * lib/deal-audit-schedule): по ней крон знает, что портал в этом периоде
+ * уже аудирован.
+ */
+export const buildDealAuditLastPeriodKey = (domain: string): string =>
+    `event-sales:deal-audit:last-period:${domain}`;

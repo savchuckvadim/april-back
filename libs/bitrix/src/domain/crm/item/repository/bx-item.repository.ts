@@ -48,7 +48,8 @@ export class BxItemRepository {
             EBxNamespace.CRM,
             EBXEntity.ITEM,
             EBxMethod.LIST,
-            { entityTypeId, filter, select },
+            // Общее число не нужно — без него Битрикс отвечает быстрее.
+            { entityTypeId, filter, select, start: -1 },
         );
     }
 

@@ -31,6 +31,7 @@ import {
     AgentCallPackageDto,
     AgentPendingCallDto,
 } from '../dto/agent-response.dto';
+import { BackgroundCalls } from '@lib/core/call-context';
 
 /**
  * Agent API: данные звонков для внешнего агента-аналитика
@@ -44,6 +45,7 @@ import {
     required: true,
 })
 @UseGuards(AgentKeyGuard)
+@BackgroundCalls()
 @Controller('agent/calls')
 export class AgentCallsController {
     constructor(

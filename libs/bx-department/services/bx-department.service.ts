@@ -1,39 +1,36 @@
 import { Injectable, Logger } from '@nestjs/common';
-import dayjs from 'dayjs';
 import Redis from 'ioredis';
 import { RedisService } from 'src/core/redis/redis.service';
 import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { DepartmentBitrixService } from '@/modules/bitrix/domain/department/services/department-bitrxi.service';
 import { PBXService } from '@/modules/pbx';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { TimedCache } from '@lib/shared';
 import { BxDepartmentResponseDto } from '../dto/bx-department.dto';
 import { withHeads } from '../lib/department-heads.util';
 import { collectUsers } from '../lib/department-match.util';
 import {
     DepartmentMode,
-    departmentModeCacheKey,
     resolveDepartmentMode,
 } from '../lib/department-mode.util';
+import {
+    DEPARTMENT_SNAPSHOT_TTL_SECONDS,
+    EMPTY_MULTIPLE_TTL_SECONDS,
+} from '../lib/department-snapshot-cache.util';
 import { IDepartmentData, IDepartmentTree } from '../lib/structure-data.types';
 import { BxDepartmentHeadsService } from './bx-department-heads.service';
+import {
+    DepartmentSnapshotBuild,
+    DepartmentSnapshotCache,
+} from './department-snapshot.cache';
 import { DepartmentTreeLoader } from './department-tree.loader';
 
-const CACHE_TTL_SECONDS = 86400;
-
 /**
- * Мультирежим без единого найденного ОП — скорее ошибка в названиях или
- * тэге: кэшируем ненадолго, чтобы исправление на портале подхватилось.
+ * Сколько помнить режим отдела (одиночный или мультирежим) в памяти
+ * процесса. Режим входит в ключ кэша, а берётся из модели портала: без
+ * этой памяти каждое попадание в кэш всё равно собирало бы модель.
  */
-const EMPTY_MULTIPLE_TTL_SECONDS = 300;
-
-/**
- * Версия формы ответа в ключе кэша: новые поля не должны ждать полуночи,
- * пока протухнет вчерашний JSON. v2 — parentDepartments и нормализованный
- * UF_HEAD; v3 — список HEADS (структура v3 + UF_HEAD); v4 — режим в ключе,
- * мультирежим ОП (снимок общий со структурой отделов).
- * Менять синхронно с BxDepartmentCacheService.
- */
-const CACHE_SHAPE_VERSION = 'v4';
+const MODE_CACHE_TTL_MS = 60_000;
 
 /**
  * Базовый отдел групп кроме продаж — исторический хардкод: для них отдел
@@ -47,11 +44,18 @@ const LEGACY_NON_SALES_BASE_DEPARTMENT_ID = 9;
  * (BxDepartmentStructureService строит её проекцией этого же снимка).
  * Режим — из БД: одиночный (базовый отдел из конфига портала) или
  * мультирежим (все ОП по тэгу со всей структуры портала).
+ *
+ * Хранение снимка — DepartmentSnapshotCache (вчерашний, пока собирается
+ * сегодняшний; одна сборка на всех). Режим отдела помнится минуту, поэтому
+ * попадание в кэш модель портала не собирает.
  */
 @Injectable()
 export class BxDepartmentService {
     private readonly logger = new Logger(BxDepartmentService.name);
     private readonly redis: Redis;
+    private readonly snapshots: DepartmentSnapshotCache;
+    /** Режим отдела по порталу и группе — см. MODE_CACHE_TTL_MS. */
+    private readonly modes = new TimedCache<DepartmentMode>(MODE_CACHE_TTL_MS);
 
     constructor(
         private readonly redisService: RedisService,
@@ -59,6 +63,7 @@ export class BxDepartmentService {
         private readonly heads: BxDepartmentHeadsService,
     ) {
         this.redis = this.redisService.getClient();
+        this.snapshots = new DepartmentSnapshotCache(this.redis, this.logger);
     }
 
     async getFullDepartment(
@@ -66,30 +71,41 @@ export class BxDepartmentService {
         group: EDepartamentGroup | undefined,
         resetCache = false,
     ): Promise<BxDepartmentResponseDto> {
-        // bitrix и модели портала — только локальные переменные: в this их
-        // класть нельзя (разные порталы → разные инстансы, race condition).
-        const { bitrix, PortalModel, internalPortal } =
-            await this.pbx.init(domain);
         const targetGroup = group || EDepartamentGroup.sales;
-        const mode = resolveDepartmentMode(internalPortal, targetGroup);
-        const day = dayjs().format('MMDD');
-        const cacheKey = `department_${domain}_${day}_${targetGroup}_${departmentModeCacheKey(mode)}_${CACHE_SHAPE_VERSION}`;
+        const mode = await this.resolveMode(domain, targetGroup);
+        return this.snapshots.get(
+            { domain, group: targetGroup, mode },
+            () => this.build(domain, targetGroup, mode),
+            resetCache,
+        );
+    }
 
-        if (!resetCache) {
-            const fromCache = await this.redis.get(cacheKey);
-            if (fromCache) {
-                const cached = JSON.parse(fromCache) as BxDepartmentResponseDto;
-                // режим и тэг — всегда из БД: одиночный ключ тэга не содержит
-                return {
-                    department: {
-                        ...cached.department,
-                        isMultiple: mode.isMultiple,
-                        multipleTag: mode.multipleTag,
-                    },
-                };
-            }
-        }
+    /**
+     * Режим отдела из модели портала. Коротко помнится в памяти: он нужен
+     * для ключа кэша, и без этого каждое попадание в кэш собирало бы модель
+     * портала ради одного флага.
+     */
+    private async resolveMode(
+        domain: string,
+        group: EDepartamentGroup,
+    ): Promise<DepartmentMode> {
+        const load = async (): Promise<DepartmentMode> => {
+            const { internalPortal } = await this.pbx.init(domain);
+            return resolveDepartmentMode(internalPortal, group);
+        };
+        // load не отдаёт undefined — запасной вызов нужен только типу.
+        return (await this.modes.get(`${domain}:${group}`, load)) ?? load();
+    }
 
+    /** Обход структуры портала и сборка снимка (15–30 запросов в Битрикс). */
+    private async build(
+        domain: string,
+        targetGroup: EDepartamentGroup,
+        mode: DepartmentMode,
+    ): Promise<DepartmentSnapshotBuild> {
+        // bitrix и модель портала — только локальные переменные: в this их
+        // класть нельзя (разные порталы → разные инстансы, race condition).
+        const { bitrix, PortalModel } = await this.pbx.init(domain);
         const loader = new DepartmentTreeLoader(
             new DepartmentBitrixService(bitrix),
             this.logger,
@@ -103,7 +119,7 @@ export class BxDepartmentService {
 
         // Внутренние типы отделов и DTO ответа совпадают по форме, кроме
         // ID сотрудника (Битрикс отдаёт числом или строкой).
-        const result = {
+        const snapshot = {
             department: await this.toSnapshot(domain, tree, baseId, mode),
         } as BxDepartmentResponseDto;
 
@@ -113,13 +129,12 @@ export class BxDepartmentService {
                 `[${domain}] мультирежим ${targetGroup}: не найдено отделов по названию/тэгу «${mode.multipleTag ?? 'шаблоны группы'}» — пустой отдел в кэше на ${EMPTY_MULTIPLE_TTL_SECONDS} с`,
             );
         }
-        await this.redis.set(
-            cacheKey,
-            JSON.stringify(result),
-            'EX',
-            isEmptyMultiple ? EMPTY_MULTIPLE_TTL_SECONDS : CACHE_TTL_SECONDS,
-        );
-        return result;
+        return {
+            snapshot,
+            ttlSec: isEmptyMultiple
+                ? EMPTY_MULTIPLE_TTL_SECONDS
+                : DEPARTMENT_SNAPSHOT_TTL_SECONDS,
+        };
     }
 
     /**

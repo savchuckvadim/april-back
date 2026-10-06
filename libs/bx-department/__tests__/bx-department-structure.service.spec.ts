@@ -267,7 +267,7 @@ describe('BxDepartmentStructureService', () => {
                 ),
                 expect.any(String),
                 'EX',
-                86400,
+                172800,
             );
         });
     });

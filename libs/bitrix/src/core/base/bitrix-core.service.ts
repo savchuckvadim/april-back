@@ -1,7 +1,5 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import { Logger } from '@nestjs/common';
-import * as http from 'http';
-import * as https from 'https';
 import { TelegramService } from '@lib/telegram/telegram.service';
 import {
     benignBitrixErrorMarker,
@@ -11,6 +9,30 @@ import { BxAuthType } from './bx-auth-type.enum';
 import { Semaphore } from './semaphor';
 import { delay } from '@/shared/lib';
 import { BitrixRateLimiterService } from '../rate-limit/bitrix-rate-limiter.service';
+import type { BitrixRateLimitOverrides } from '../rate-limit/bitrix-rate-limiter.config';
+import {
+    BITRIX_CALL_CLASS,
+    BitrixCallContext,
+    getBitrixCallContext,
+} from '../context/bitrix-call-context';
+import {
+    BITRIX_REQUEST_RESULT,
+    BitrixRequestResult,
+    observeBitrixRequest,
+} from '../metrics/bitrix-metrics';
+import {
+    BITRIX_HTTPS_AGENT,
+    BITRIX_HTTP_AGENT,
+    BITRIX_REQUEST_PROFILES,
+    BitrixRequestProfile,
+    SLOW_BITRIX_REQUEST_MS,
+    backgroundCooldownMs,
+} from './bitrix-request-profile';
+import {
+    isBitrixQueryLimitExceeded,
+    isBitrixTimeout,
+    readBitrixTime,
+} from './bitrix-response.util';
 
 export class BitrixCore {
     public readonly logger = new Logger(BitrixCore.name);
@@ -29,16 +51,19 @@ export class BitrixCore {
         token: string | null,
         apiKey: string = '',
         private readonly rateLimiter: BitrixRateLimiterService,
+        // Лимит портала из его настроек (тариф, доля фона, ожидание).
+        private readonly rateLimit?: BitrixRateLimitOverrides,
     ) {
         this.semaphore = new Semaphore(10);
         this.domain = domain;
         this.authType = authType;
         this.token = token;
         this.apiKey = apiKey;
+        // Агенты общие на процесс (пул соединений), таймаут задаётся на
+        // каждый запрос по классу вызова — см. bitrix-request-profile.
         this.axiosInstance = axios.create({
-            timeout: 300000,
-            httpAgent: new http.Agent({ keepAlive: true }),
-            httpsAgent: new https.Agent({ keepAlive: true }),
+            httpAgent: BITRIX_HTTP_AGENT,
+            httpsAgent: BITRIX_HTTPS_AGENT,
             headers: { 'Content-Type': 'application/json' },
         });
     }
@@ -48,12 +73,6 @@ export class BitrixCore {
             ? `https://${this.domain}/rest/${method}`
             : `https://${this.domain}/${this.apiKey}/${method}`;
     }
-
-    // init(domain: string, apiKey: string): void {
-    //     this.domain = domain;
-    //     this.apiKey = apiKey;
-    //     this.logger.log(`Initialized Bitrix API for ${domain}`);
-    // }
 
     protected async sleep(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -91,38 +110,144 @@ export class BitrixCore {
         }
     }
 
+    /**
+     * Одно обращение в Битрикс с повторами.
+     *
+     * Сроки и число повторов зависят от класса вызова (менеджер или фон —
+     * см. bitrix-call-context и bitrix-request-profile); `retries` задаёт
+     * число повторов явно, если вызывающему нужно своё.
+     *
+     * Каждая попытка заново проходит ограничитель и семафор. Слот семафора
+     * освобождается ДО паузы перед повтором: раньше повтор вызывался
+     * рекурсивно изнутри catch и держал 2–3 слота сразу, а десять
+     * одновременных повторов на одном экземпляре блокировали друг друга.
+     */
     public async request<T = any>(
         method: string,
-        data: any,
-        retries = 2,
+        data: unknown,
+        retries?: number,
     ): Promise<AxiosResponse<T>> {
         const url = this.getUrl(method);
-        await this.rateLimiter.acquire(this.domain);
-        await this.semaphore.acquire();
+        const context = getBitrixCallContext();
+        const profile = BITRIX_REQUEST_PROFILES[context.callClass];
+        let retriesLeft = retries ?? profile.retries;
 
-        try {
-            const response = await this.axiosInstance.post<T>(url, data);
-            return response;
-        } catch (error) {
-            return await this.handleError<T>(error, method, data, retries);
-        } finally {
-            this.semaphore.release();
+        for (;;) {
+            await this.rateLimiter.acquire(
+                this.domain,
+                context,
+                this.rateLimit,
+            );
+            await this.semaphore.acquire();
+
+            const startedAt = Date.now();
+            let failure: unknown;
+            let response: AxiosResponse<T> | null = null;
+            try {
+                response = await this.axiosInstance.post<T>(url, data, {
+                    timeout: profile.timeoutMs,
+                });
+                this.observe(
+                    method,
+                    context,
+                    BITRIX_REQUEST_RESULT.ok,
+                    startedAt,
+                    response.data,
+                );
+            } catch (error) {
+                failure = error;
+            } finally {
+                this.semaphore.release();
+            }
+
+            if (response) {
+                // Слот семафора уже свободен: пауза тяжёлого фона не держит
+                // остальные запросы этого экземпляра.
+                if (context.callClass === BITRIX_CALL_CLASS.background) {
+                    const cooldown = backgroundCooldownMs(
+                        readBitrixTime(response.data, 'processing'),
+                    );
+                    if (cooldown) await delay(cooldown);
+                }
+                return response;
+            }
+
+            this.observe(
+                method,
+                context,
+                isBitrixTimeout(failure)
+                    ? BITRIX_REQUEST_RESULT.timeout
+                    : BITRIX_REQUEST_RESULT.error,
+                startedAt,
+            );
+            this.reportError(failure, method, data);
+
+            const pauseMs = this.resolveRetryPause(
+                failure,
+                method,
+                retriesLeft,
+                profile,
+            );
+            if (pauseMs === null) throw failure;
+
+            retriesLeft -= 1;
+            await delay(pauseMs);
         }
     }
 
     /**
-     * Обработка ошибок таймаута и Bitrix ошибок
+     * Пауза перед повтором или null, если повторять нельзя.
+     *
+     * Повторяем три случая: таймаут, превышение лимита запросов и «сервис
+     * недоступен» (503) — пока остались попытки. Остальные ошибки отдаём
+     * вызывающему сразу.
      */
-    protected async handleError<T>(
+    protected resolveRetryPause(
         error: unknown,
         method: string,
-        data: Record<string, unknown>,
-        retries: number,
-    ): Promise<AxiosResponse<T>> {
+        retriesLeft: number,
+        profile: BitrixRequestProfile,
+    ): number | null {
+        if (retriesLeft <= 0) return null;
+
+        if (isBitrixTimeout(error)) {
+            this.logger.warn(
+                `Timeout on ${method}, retrying in ` +
+                    `${profile.timeoutPauseMs / 1000}s...`,
+            );
+            return profile.timeoutPauseMs;
+        }
+
+        if (isBitrixQueryLimitExceeded(error)) {
+            this.logger.warn(
+                `Bitrix query limit exceeded for ${method}, waiting ` +
+                    `${profile.queryLimitPauseMs / 1000}s...`,
+            );
+            return profile.queryLimitPauseMs;
+        }
+
+        if ((error as AxiosError).response?.status === 503) {
+            this.logger.warn(
+                `Bitrix 503 Service Unavailable on ${method}, retrying in ` +
+                    `${profile.busyPauseMs / 1000}s...`,
+            );
+            return profile.busyPauseMs;
+        }
+
+        return null;
+    }
+
+    /**
+     * Лог и алерт об ошибке вызова.
+     *
+     * Алерт в Telegram НЕ ожидается: раньше `await` стоял прямо на пути
+     * ошибки, и каждый сбой дополнительно ждал ответа телеграма (у его
+     * клиента нет таймаута) — на каждую попытку и каждый упавший чанк.
+     */
+    protected reportError(error: unknown, method: string, data: unknown): void {
         const e = error as {
             message?: string;
             response?: { data?: unknown };
-            code?: string;
             toString?: () => string;
         };
         const message = e?.message ?? 'Unknown error';
@@ -144,50 +269,52 @@ export class BitrixCore {
                 `Bitrix [${method}]: ${benignMarker} (id ${requestedEntityId(data)}) — ` +
                     'обрабатывается вызывающим кодом, без алерта',
             );
-        } else {
-            this.logger.error(
-                `Error calling Bitrix [${method}]` +
-                    (status ? ` (HTTP ${status})` : '') +
-                    `: ${message}` +
-                    payload,
-            );
-            await this.telegramBot.sendMessageAdminError(
+            return;
+        }
+
+        this.logger.error(
+            `Error calling Bitrix [${method}]` +
+                (status ? ` (HTTP ${status})` : '') +
+                `: ${message}` +
+                payload,
+        );
+        void Promise.resolve(
+            this.telegramBot.sendMessageAdminError(
                 `Bitrix API error (${method}): ${JSON.stringify(responseText)}`,
-            );
-        }
+            ),
+        ).catch(() => undefined);
+    }
 
-        // Retry для таймаута
-        if (
-            (message.includes('timeout') || e?.code === 'ECONNABORTED') &&
-            retries > 0
-        ) {
-            this.logger.warn(`Timeout on ${method}, retrying in 3s...`);
-            await delay(30000);
-            return this.request<T>(method, data, retries - 1);
-        }
+    /**
+     * Учёт попытки: метрики всегда, предупреждение в лог — для медленных.
+     *
+     * Успешные одиночные вызовы раньше не оставляли следа вовсе, и фоновые
+     * обходы были невидимы. Писать строку на КАЖДЫЙ вызов — утопить лог,
+     * поэтому в лог идут только медленные, а счёт ведут метрики.
+     */
+    private observe(
+        method: string,
+        context: BitrixCallContext,
+        result: BitrixRequestResult,
+        startedAt: number,
+        body?: unknown,
+    ): void {
+        const durationMs = Date.now() - startedAt;
+        observeBitrixRequest({
+            domain: this.domain,
+            method,
+            callClass: context.callClass,
+            result,
+            durationMs,
+        });
 
-        // Ошибка квоты Bitrix
-        if (
-            typeof responseText === 'string' &&
-            responseText.includes('QUERY_LIMIT_EXCEEDED')
-        ) {
-            console.log('Bitrix query limit exceeded for ', method);
-            this.logger.warn(
-                `Bitrix query limit exceeded for ${method}, waiting...`,
-            );
-            await new Promise(res => setTimeout(res, 35000));
-            return this.request<T>(method, data, retries - 1);
-        }
-
-        // Если Bitrix вернул 503 — подождать и повторить
-        if ((error as AxiosError).response?.status === 503 && retries > 0) {
-            this.logger.warn(
-                `Bitrix 503 Service Unavailable on ${method}, retrying in 10s...`,
-            );
-            await delay(10000);
-            return this.request<T>(method, data, retries - 1);
-        }
-
-        throw error;
+        if (durationMs < SLOW_BITRIX_REQUEST_MS) return;
+        const operating = readBitrixTime(body, 'operating');
+        this.logger.warn(
+            `Медленный вызов Bitrix [${method}] ${this.domain}: ` +
+                `${(durationMs / 1000).toFixed(1)} с, ${result}, ` +
+                `${context.callClass} (${context.source})` +
+                (operating === null ? '' : `, operating ${operating} с`),
+        );
     }
 }

@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import dayjs from 'dayjs';
 import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { EBxVisibilityLevel } from '../dto/bx-department-structure.dto';
 import { BxDepartmentStructureService } from '../services/bx-department-structure.service';
@@ -126,7 +127,7 @@ describe('Единый снимок отдела: структура ⊆ getFull
         expect((await subordinatesOf(1)).length).toBeGreaterThan(0);
     });
 
-    it('оба эндпоинта читают ровно один ключ Redis — снимок строится один раз', async () => {
+    it('оба эндпоинта пишут один ключ Redis — снимок строится один раз', async () => {
         await stand.departments.getFullDepartment(
             GARANT_DOMAIN,
             EDepartamentGroup.sales,
@@ -140,10 +141,15 @@ describe('Единый снимок отдела: структура ⊆ getFull
 
         const keysOf = (mock: jest.Mock) =>
             new Set((mock.mock.calls as [string][]).map(([key]) => key));
-        const read = keysOf(stand.redis.get);
-        expect(read.size).toBe(1);
-        expect([...keysOf(stand.redis.set)]).toEqual([...read]);
         expect(stand.redis.set).toHaveBeenCalledTimes(1);
+        const [written] = [...keysOf(stand.redis.set)];
+        // Читается снимок дня и — при первом промахе — вчерашний того же
+        // отдела: его отдают, пока сегодняшний собирается (утро).
+        const today = dayjs().format('MMDD');
+        const yesterday = dayjs().subtract(1, 'day').format('MMDD');
+        expect([...keysOf(stand.redis.get)].sort()).toEqual(
+            [written, written.replace(`_${today}_`, `_${yesterday}_`)].sort(),
+        );
         expect(callsOf(stand.apiCall, 'department.get')).toBe(1);
     });
 });

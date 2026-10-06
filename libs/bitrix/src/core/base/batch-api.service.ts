@@ -6,6 +6,36 @@ import {
 } from '../interface/bitrix-api-http.intterface';
 import { BitrixCore } from './bitrix-core.service';
 import { AxiosInstance } from 'axios';
+import { BitrixRateLimitTimeoutError } from '../rate-limit/bitrix-rate-limiter.service';
+
+/**
+ * Что случилось с пачкой — для алерта.
+ *
+ * Объект ошибки axios целиком в алерт НЕ кладём: его сериализация содержит
+ * адрес запроса вместе с ключом вебхука портала и тело запроса с данными
+ * клиентов. Берём только то, что помогает разобраться.
+ */
+const describeBatchFailure = (error: unknown): string => {
+    const e = error as {
+        message?: unknown;
+        code?: unknown;
+        response?: { status?: unknown; data?: unknown };
+    };
+    const parts: string[] = [];
+    if (typeof e?.message === 'string') parts.push(e.message);
+    if (typeof e?.code === 'string') parts.push(`код ${e.code}`);
+    if (typeof e?.response?.status === 'number') {
+        parts.push(`HTTP ${e.response.status}`);
+    }
+    const body = e?.response?.data as
+        | { error?: unknown; error_description?: unknown }
+        | undefined;
+    if (typeof body?.error === 'string') parts.push(body.error);
+    if (typeof body?.error_description === 'string') {
+        parts.push(body.error_description);
+    }
+    return parts.length ? parts.join(' · ') : 'неизвестная ошибка';
+};
 
 export class BatchApiService {
     private cmdBatch: Record<string, string> = {};
@@ -264,14 +294,28 @@ export class BatchApiService {
             // this.logger.log(`Domain: ${this.domain}`);
             const batchResultsCount = Object.keys(result.result).length;
             this.core.logger.log(`Batch results count: ${batchResultsCount}`);
-            await this.handleBatchErrors(result, 'executeBatch');
+            this.handleBatchErrors(result, 'executeBatch');
             return result;
         } catch (error) {
-            await this.core.telegramBot.sendMessageAdminError(
-                `Execute batch failed: ${JSON.stringify(error)}`,
-            );
+            // Фону отказано в слоте ограничителя — это не сбой Битрикса:
+            // ограничитель уже записал причину, алерт не нужен.
+            if (!(error instanceof BitrixRateLimitTimeoutError)) {
+                this.alert(
+                    `Execute batch failed (${this.core.domain}): ${describeBatchFailure(error)}`,
+                );
+            }
             return error as IBitrixBatchResponseResult;
         }
+    }
+
+    /**
+     * Алерт в Telegram без ожидания ответа: сбой пачки не должен ждать
+     * ещё и телеграм (у его клиента нет таймаута).
+     */
+    private alert(message: string): void {
+        void Promise.resolve(
+            this.core.telegramBot.sendMessageAdminError(message),
+        ).catch(() => undefined);
     }
     clearResult(result: IBitrixBatchResponseResult[]): unknown[] {
         const results: unknown[] = [];
@@ -284,25 +328,23 @@ export class BatchApiService {
         });
         return results;
     }
-    protected async handleBatchErrors(
+    protected handleBatchErrors(
         result: IBitrixBatchResponseResult,
         context = 'Batch error',
-    ): Promise<void> {
-        if (!result?.result_error) return;
-        this.core.logger.log(`
-      success
-      Domain:
-      ${this.core.domain}
-      `);
+    ): void {
+        // Успешная пачка отдаёт result_error ПУСТЫМ МАССИВОМ — раньше он
+        // проходил проверку «есть ли ошибки», и на каждый успешный чанк в
+        // лог ложилась запись «success».
+        const errorEntries = Object.entries(result?.result_error ?? {});
+        if (!errorEntries.length) return;
 
-        const errorEntries = Object.entries(result.result_error);
         for (const [key, error] of errorEntries) {
             const message = `[${context}] Ошибка в ${key}: ${JSON.stringify(error)}
 
       Domain: ${this.core.domain}
       `;
             this.core.logger.log(`result_error: ${message}`);
-            await this.core.telegramBot.sendMessageAdminError(message);
+            this.alert(message);
         }
     }
 

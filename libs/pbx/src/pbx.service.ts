@@ -11,6 +11,18 @@ import {
     BitrixServiceFactory,
     BxAuthType,
 } from '@/modules/bitrix/bitrix-service.factory';
+import { TimedCache } from '@lib/shared';
+import { PortalAppSettingsService } from '@lib/portal-lib/store/app-settings';
+import { PortalRateLimitResolver } from './lib/portal-rate-limit.resolver';
+import { fillPortalGapsFromInternal } from './lib/portal-gap-fill';
+import { PBX_INIT_STEP, countInit, timeInitStep } from './lib/pbx-init-metrics';
+
+/**
+ * Сколько локальная сборка портала живёт в памяти процесса. Константа, без
+ * переменной окружения (06.10.2026): правка полей портала доезжает до
+ * приложений за минуту, а кэш модели переделываем вместе с PortalModel.
+ */
+const INTERNAL_PORTAL_TTL_MS = 60_000;
 
 /**
  * Точка входа в Bitrix-мир по домену портала. Два пути авторизации:
@@ -51,26 +63,84 @@ export class PBXService {
         // (юнит-тесты, приложения без либы) internalPortal просто undefined.
         @Optional()
         private readonly portalBuilder?: BackendPortalBuilderService,
-    ) {}
+        // Лимит запросов к Битриксу из «Общих настроек портала». Optional:
+        // без PortalAppSettingsModule — значения по умолчанию ограничителя.
+        @Optional()
+        appSettings?: PortalAppSettingsService,
+    ) {
+        this.rateLimits = new PortalRateLimitResolver(appSettings, this.logger);
+    }
+
+    /** Лимит запросов портала к Битриксу — из его настроек. */
+    private readonly rateLimits: PortalRateLimitResolver;
+
+    /**
+     * Локальная сборка портала из БД — около 19 SQL-запросов. Раньше она
+     * выполнялась на КАЖДЫЙ init (а их 7–8 на одно открытие сделки и
+     * десятки в фоновых задачах), хотя модель меняется, только когда на
+     * портал ставят поля. Теперь собранная модель живёт в памяти процесса
+     * минуту, а параллельные init одного домена ждут одну сборку (разбор
+     * нагрузки 05.10.2026).
+     *
+     * Кэшируются только ДАННЫЕ. Экземпляр Bitrix по-прежнему создаётся на
+     * каждый init и ни с кем не делится (правило проекта).
+     */
+    private readonly internalPortalCache = new TimedCache<IPortal>(
+        INTERNAL_PORTAL_TTL_MS,
+    );
 
     async init(domain: string, authType: BxAuthType = BxAuthType.HOOK) {
-        const internalPortal = await this.buildInternalPortal(domain);
+        countInit(domain);
+        return timeInitStep(PBX_INIT_STEP.total, () =>
+            this.initSteps(domain, authType),
+        );
+    }
 
-        if (await this.isMarketplacePortal(domain)) {
+    /** Шаги init — каждый со своим замером (см. pbx-init-metrics). */
+    private async initSteps(domain: string, authType: BxAuthType) {
+        const internalPortal = await timeInitStep(
+            PBX_INIT_STEP.internalPortal,
+            () => this.getInternalPortal(domain),
+        );
+
+        const isMarketplace = await timeInitStep(
+            PBX_INIT_STEP.marketplaceCheck,
+            () => this.isMarketplacePortal(domain),
+        );
+        if (isMarketplace) {
             return this.initMarketplace(domain, internalPortal);
         }
 
-        const externalPortal = await this.portal.getPortalByDomain(domain);
-        const portal = this.fillGapsFromInternal(
-            domain,
+        const externalPortal = await timeInitStep(
+            PBX_INIT_STEP.externalPortal,
+            () => this.portal.getPortalByDomain(domain),
+        );
+        // Внешний слепок бывает неполным — пустые секции берутся из
+        // локальной сборки (правило — fillPortalGapsFromInternal).
+        const { portal, filled } = fillPortalGapsFromInternal(
             externalPortal,
             internalPortal,
         );
-        const PortalModel = this.modelFactory.create(portal);
+        if (filled.length) {
+            this.logger.log(
+                `[portal] ${domain}: внешний слепок неполон (${filled.join(', ')}) — данные взяты из локальной сборки (БД)`,
+            );
+        }
+        const PortalModel = await timeInitStep(PBX_INIT_STEP.portalModel, () =>
+            this.modelFactory.create(portal),
+        );
 
-        const bitrix = await this.bitrixFactory.create(
-            { domain: portal.domain, key: portal.key },
-            authType,
+        const bitrix = await timeInitStep(
+            PBX_INIT_STEP.bitrixClient,
+            async () =>
+                this.bitrixFactory.create(
+                    {
+                        domain: portal.domain,
+                        key: portal.key,
+                        rateLimit: await this.rateLimits.resolve(domain),
+                    },
+                    authType,
+                ),
         ); // ← полноценный BitrixService
 
         return {
@@ -82,94 +152,6 @@ export class PBXService {
     }
 
     /**
-     * Достраивает внешний слепок портала данными ЛОКАЛЬНОЙ сборки из нашей БД.
-     *
-     * Зачем: внешний Laravel-`getportal` отдаёт не все секции — на реальных
-     * порталах у него бывает пустой `lead` (а поля лида pbx-install пишет
-     * именно в нашу БД). Потребитель в этом случае считает поля
-     * «неустановленными» и МОЛЧА пропускает записи: ни ошибки, ни данных.
-     *
-     * Правило простое и безопасное: секция берётся из локальной сборки,
-     * только если внешняя ПУСТА. Внешние данные никогда не перетираются —
-     * пока Laravel остаётся источником истины, он же и приоритетный.
-     */
-    private fillGapsFromInternal(
-        domain: string,
-        external: IPortal,
-        internal?: IPortal,
-    ): IPortal {
-        if (!internal) return external;
-
-        const filled: string[] = [];
-        const portal: IPortal = { ...external };
-
-        portal.lead = this.mergeEntitySection(
-            external.lead,
-            internal.lead,
-            'lead',
-            filled,
-        );
-        portal.company = this.mergeEntitySection(
-            external.company,
-            internal.company,
-            'company',
-            filled,
-        );
-        portal.contact = this.mergeEntitySection(
-            external.contact,
-            internal.contact,
-            'contact',
-            filled,
-        );
-        if (!external.deals?.length && internal.deals?.length) {
-            portal.deals = internal.deals;
-            filled.push('deals');
-        }
-
-        if (filled.length) {
-            this.logger.log(
-                `[portal] ${domain}: внешний слепок неполон (${filled.join(', ')}) — данные взяты из локальной сборки (БД)`,
-            );
-        }
-        return portal;
-    }
-
-    /**
-     * Достройка ОДНОЙ секции сущности: поля и категории берутся из локальной
-     * сборки независимо друг от друга — у внешнего портала встречается и
-     * полностью отсутствующая секция, и секция с полями, но без стадий
-     * (тогда «стадия не установлена» ломает SLA и движение статусов).
-     */
-    private mergeEntitySection<
-        T extends { bitrixfields?: unknown[]; categories?: unknown[] },
-    >(
-        external: T | undefined,
-        internal: T | undefined,
-        label: string,
-        filled: string[],
-    ): T | undefined {
-        if (!internal) return external;
-        if (!external) {
-            if (internal.bitrixfields?.length || internal.categories?.length) {
-                filled.push(label);
-                return internal;
-            }
-            return external;
-        }
-
-        const section = { ...external };
-        if (!external.bitrixfields?.length && internal.bitrixfields?.length) {
-            section.bitrixfields = internal.bitrixfields;
-            filled.push(`${label}.fields`);
-        }
-        if (!external.categories?.length && internal.categories?.length) {
-            section.categories = internal.categories;
-            filled.push(`${label}.stages`);
-        }
-        return section;
-    }
-
-    /**
      * То же, что init(), но со СБРОСОМ кэша слепка портала.
      *
      * Нужен, когда потребитель обнаружил заведомо неполный слепок (например,
@@ -178,8 +160,40 @@ export class PBXService {
      * У самого сброса есть кулдаун (PortalService), поэтому вызов безопасен.
      */
     async initFresh(domain: string, authType: BxAuthType = BxAuthType.HOOK) {
+        // Потребитель считает модель неполной — локальная сборка тоже
+        // перечитывается из БД, а не берётся из минутного кэша.
+        this.internalPortalCache.delete(domain);
         await this.portal.refreshByDomain(domain);
         return this.init(domain, authType);
+    }
+
+    /**
+     * Локальная модель портала: из минутного кэша или сборкой из БД.
+     *
+     * Каждый вызов получает СВОЮ копию: потребители достраивают и правят
+     * модель под себя, и общий объект протекал бы между запросами и
+     * порталами. Копия стоит миллисекунды, сборка — десятки запросов в БД.
+     */
+    private async getInternalPortal(
+        domain: string,
+    ): Promise<IPortal | undefined> {
+        const cached = await this.internalPortalCache.get(domain, () =>
+            this.buildInternalPortal(domain),
+        );
+        if (cached === undefined) return undefined;
+        try {
+            return structuredClone(cached);
+        } catch (error) {
+            // Модель с неклонируемым содержимым — редкость, но ронять init
+            // из-за кэша нельзя: отдаём сборку как есть и больше не храним.
+            this.internalPortalCache.delete(domain);
+            this.logger.warn(
+                `internal-portal ${domain}: копия не снялась (${
+                    error instanceof Error ? error.message : String(error)
+                }) — кэш для домена сброшен`,
+            );
+            return cached;
+        }
     }
 
     /** Локальная модель портала из БД (best-effort — нет данных/ошибка → undefined). */
@@ -227,7 +241,11 @@ export class PBXService {
             domain,
         });
         const bitrix = await this.bitrixFactory.create(
-            { domain, accessToken },
+            {
+                domain,
+                accessToken,
+                rateLimit: await this.rateLimits.resolve(domain),
+            },
             BxAuthType.TOKEN,
         );
 

@@ -305,3 +305,26 @@ describe('DuplicateSourceGraphService', () => {
         ).toBe(true);
     });
 });
+
+describe('DuplicateSourceGraphService: волна не дошла до Битрикса', () => {
+    it('ошибка «повторите», а не пустой граф — пустые сигналы ушли бы в кэш', async () => {
+        const service = new DuplicateSourceGraphService();
+        const { bitrix } = makeBitrix([]);
+        bitrix.api.callBatchAsync = jest.fn(() =>
+            Promise.resolve([
+                new Error('timeout of 30000ms exceeded') as unknown as {
+                    result: Record<string, unknown>;
+                },
+            ]),
+        );
+
+        await expect(
+            service.collect(
+                bitrix as never,
+                LEAD_ROOT,
+                SOURCE_GRAPH_LIMITS_FAST,
+                [],
+            ),
+        ).rejects.toThrow('Битрикс сейчас не ответил');
+    });
+});

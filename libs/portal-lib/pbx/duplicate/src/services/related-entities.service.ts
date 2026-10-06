@@ -1,3 +1,7 @@
+import {
+    assertBatchDelivered,
+    BitrixBatchUndeliveredError,
+} from '@lib/bitrix/core/base/batch-delivery.util';
 import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@lib/pbx';
 import {
@@ -117,6 +121,10 @@ const CONTACT_SELECT = [
  * разноцветная полоска» на фронте рисуется теми же цветами, что менеджер
  * видит в своей воронке.
  */
+/** ID строки ответа как текст; не строка и не число — пусто. */
+const idText = (value: unknown): string =>
+    typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+
 @Injectable()
 export class RelatedEntitiesService {
     private readonly logger = new Logger(RelatedEntitiesService.name);
@@ -451,6 +459,7 @@ export class RelatedEntitiesService {
 
         try {
             const chunks = await bitrix.api.callBatchAsync();
+            assertBatchDelivered(chunks, 'Связи клиента');
             const byCmd = new Map<string, unknown>();
             for (const chunk of chunks) {
                 const rows = (chunk?.result ?? {}) as Record<string, unknown>;
@@ -477,6 +486,9 @@ export class RelatedEntitiesService {
                 contactIds,
             };
         } catch (error) {
+            // Битрикс не ответил — честная ошибка «повторите», а не пустые
+            // связи: иначе фрейм показал бы «у клиента ничего нет».
+            if (error instanceof BitrixBatchUndeliveredError) throw error;
             warnings.push(
                 `Не удалось получить связанные сущности: ${this.errorText(error)}`,
             );
@@ -521,7 +533,7 @@ export class RelatedEntitiesService {
         leadToDealKeys: string[],
         warnings: string[],
     ): Promise<BxRow[] | null> {
-        const knownIds = new Set(knownLeads.map(row => String(row.ID ?? '')));
+        const knownIds = new Set(knownLeads.map(row => idText(row.ID)));
         const wantLeadIds = new Set<number>();
         for (const deal of deals) {
             for (const id of this.collectDealLeadIds(deal, portalModel)) {
@@ -555,6 +567,8 @@ export class RelatedEntitiesService {
 
         try {
             const chunks = await bitrix.api.callBatchAsync();
+            // Дочитывание вторично: не дошло — предупреждение, связи целы.
+            assertBatchDelivered(chunks, 'Лиды по связям сделок');
             const rows: BxRow[] = [];
             for (const chunk of chunks) {
                 const byCmd = (chunk?.result ?? {}) as Record<string, unknown>;
@@ -606,7 +620,7 @@ export class RelatedEntitiesService {
     private dedupeRows(rows: BxRow[]): BxRow[] {
         const seen = new Set<string>();
         return rows.filter(row => {
-            const id = String(row.ID ?? '');
+            const id = idText(row.ID);
             if (!id || seen.has(id)) return false;
             seen.add(id);
             return true;

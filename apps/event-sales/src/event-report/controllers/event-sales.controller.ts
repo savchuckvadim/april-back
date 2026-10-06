@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import {
     ApiBody,
+    ApiConflictResponse,
     ApiOkResponse,
     ApiOperation,
     ApiParam,
@@ -31,6 +32,10 @@ import {
     StagePredictResponseDto,
 } from '../dto/stage-predict/stage-predict.dto';
 import { EventFlowGuardService } from '../services/flow-guard/event-flow-guard.service';
+import {
+    EVENT_FLOW_SETTLE,
+    EventFlowDuplicateGuardService,
+} from '../services/flow-guard/event-flow-duplicate-guard.service';
 
 @ApiTags('Event Sales')
 @Controller('event-sales')
@@ -42,6 +47,7 @@ export class EventSalesController {
         private readonly status: EventFlowStatusService,
         private readonly stagePredict: StagePredictService,
         private readonly flowGuard: EventFlowGuardService,
+        private readonly duplicates: EventFlowDuplicateGuardService,
     ) {}
 
     /**
@@ -93,6 +99,12 @@ export class EventSalesController {
         description: 'Операция принята (или уже была принята ранее).',
         type: EventFlowOperationDto,
     })
+    @ApiConflictResponse({
+        description:
+            'По этому делу (или с этим итогом по сделке) отчёт уже ' +
+            'отправляется или принят несколько минут назад — второй не ' +
+            'записывается. В тексте ошибки — что сказать менеджеру.',
+    })
     @Post('flow')
     @HttpCode(200)
     async getFlow(
@@ -113,33 +125,48 @@ export class EventSalesController {
             return existing;
         }
 
+        // Второй отчёт по тому же делу, пока первый в очереди или только
+        // что выполнен, — новая операция, и проверка выше его не ловит:
+        // отвечаем 409 с понятным текстом вместо дублей в KPI и истории.
+        await this.duplicates.claim(dto, operationId);
+
         this.logger.log(
             `event-sales/flow: domain=${dto.domain}, operationId=${operationId}, ` +
                 `plan=${dto.plan?.type?.current?.code}, report=${dto.report?.resultStatus}`,
         );
 
-        const operation = await this.status.setQueued(
-            dto.domain,
-            operationId,
-            new Date().toISOString(),
-        );
+        try {
+            const operation = await this.status.setQueued(
+                dto.domain,
+                operationId,
+                new Date().toISOString(),
+            );
 
-        const jobData: EventFlowJobData = {
-            operationId,
-            domain: dto.domain,
-            socketId: dto.socketId,
-            dto,
-        };
-        // jobId = operationId: два одинаковых запроса не породят два прогона.
-        await this.queue.dispatch(
-            QueueNames.EVENT_SALES_FLOW,
-            JobNames.EVENT_SALES_FLOW,
-            jobData,
-            operationId,
-            { removeOnComplete: true, removeOnFail: true },
-        );
+            const jobData: EventFlowJobData = {
+                operationId,
+                domain: dto.domain,
+                socketId: dto.socketId,
+                dto,
+            };
+            // jobId = operationId: два одинаковых запроса не породят два прогона.
+            await this.queue.dispatch(
+                QueueNames.EVENT_SALES_FLOW,
+                JobNames.EVENT_SALES_FLOW,
+                jobData,
+                operationId,
+                { removeOnComplete: true, removeOnFail: true },
+            );
 
-        return operation;
+            return operation;
+        } catch (error) {
+            // Отчёт не встал в очередь — дело свободно для повторной отправки.
+            await this.duplicates.settle(
+                dto,
+                operationId,
+                EVENT_FLOW_SETTLE.failed,
+            );
+            throw error;
+        }
     }
 
     /**

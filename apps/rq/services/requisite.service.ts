@@ -36,6 +36,7 @@ export class RequisiteService {
 
         const result = (await bitrix.api.call('crm.requisite.list', {
             filter: { ENTITY_ID: companyId },
+            start: -1,
         })) as IBitrixResponse<BXRequisiteDTO[]>;
         const resultRqs = result?.result;
 

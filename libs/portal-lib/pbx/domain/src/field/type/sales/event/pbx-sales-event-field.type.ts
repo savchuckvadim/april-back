@@ -803,10 +803,15 @@ export const PBX_SALES_EVENT_FIELDS = [
             { code: 'magazine', name: 'Журналы' },
             { code: 'other', name: 'Другое' },
         ],
-        code: 'op_concurents_multiple',
-        lead: 'OP_CONCURENTS_MULTIPLE',
-        company: 'OP_CONCURENTS_MULTIPLE',
-        deal: 'OP_CONCURENTS_MULTIPLE',
+        // Код и имена — как в шаблоне установки и на порталах
+        // (`concurents_multiple`, только компания и сделка). Прежний
+        // `op_concurents_multiple` в шаблоне не значился и не стоял ни на
+        // одном портале: фронт искал поле по нему и не показывал список
+        // конкурентов (разбор 05.10.2026).
+        code: 'concurents_multiple',
+        lead: '',
+        company: 'CONCURENTS_MULTIPLE',
+        deal: 'CONCURENTS_MULTIPLE',
         smart: '',
         task: '',
         app: 'calling',

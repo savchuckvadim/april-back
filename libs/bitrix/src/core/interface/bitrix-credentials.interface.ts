@@ -1,3 +1,5 @@
+import type { BitrixRateLimitOverrides } from '../rate-limit/bitrix-rate-limiter.config';
+
 /**
  * Минимальный набор учётных данных, которого достаточно
  * клиенту Bitrix API для работы с конкретным порталом.
@@ -13,4 +15,9 @@ export interface BitrixCredentials {
     key?: string;
     /** Access-токен (для авторизации по протоколу TOKEN) */
     accessToken?: string;
+    /**
+     * Лимит запросов этого портала (тариф, доля фона, сроки ожидания) — из
+     * настроек портала. Не задан — значения по умолчанию.
+     */
+    rateLimit?: BitrixRateLimitOverrides;
 }

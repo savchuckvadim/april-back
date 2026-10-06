@@ -235,6 +235,42 @@ describe('RepeatWorkFinderService', () => {
         expect(likeValues).toEqual(['@admlr.lipetsk.ru']);
     });
 
+    /**
+     * garant, 06.10.2026: заявки из мессенджеров приходят с выдуманной
+     * почтой `<телефон>.<канал>.fict@garant.ru`, домен у всех один, и
+     * поиск по домену склеивал разных людей в одного клиента.
+     */
+    it('выдуманная почта заявки и домены из списка портала — без поиска по домену', async () => {
+        const { bitrix, flushes } = makeBitrix(command => {
+            if (command.method === 'findbycomm') return {};
+            return [];
+        });
+        const finder = new RepeatWorkFinderService(
+            bitrix as never,
+            portal as never,
+            NO_INN,
+            new Set(['garant-vrn.ru']),
+        );
+        const out = await finder.find([
+            {
+                leadId: 11,
+                row: lead({
+                    EMAIL: [
+                        { VALUE: '79601159292.max.fict@garant.ru' },
+                        { VALUE: 'manager@garant-vrn.ru' },
+                    ],
+                }),
+            },
+        ]);
+
+        const likeValues = flushes
+            .flat()
+            .map(command => command.arg['%UF_CRM_OP_LEAD_EMAILS'])
+            .filter(Boolean);
+        expect(likeValues).toEqual([]);
+        expect(out.get(11)!.resolution.kind).toBe('none');
+    });
+
     it('findbycomm нашёл компанию → её открытая сделка ОП → join', async () => {
         const { bitrix } = makeBitrix(command => {
             if (command.method === 'findbycomm') return { COMPANY: [91429] };

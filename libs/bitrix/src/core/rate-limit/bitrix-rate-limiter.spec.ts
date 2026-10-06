@@ -1,6 +1,7 @@
 import { BitrixRateLimiterService } from './bitrix-rate-limiter.service';
-import { ConfigService } from '@nestjs/config';
 import { RedisService } from '@/core/redis/redis.service';
+import { runAsInteractive } from '../context/bitrix-call-context';
+import type { BitrixRateLimitOverrides } from './bitrix-rate-limiter.config';
 
 const makeRedis = (evalResult: number | (() => number)): RedisService => {
     const evalFn =
@@ -12,21 +13,15 @@ const makeRedis = (evalResult: number | (() => number)): RedisService => {
     } as unknown as RedisService;
 };
 
-const makeConfig = (enabled: boolean, plan = 'regular'): ConfigService =>
-    ({
-        get: (key: string) => {
-            if (key === 'BITRIX_RATE_LIMIT_ENABLED')
-                return enabled ? 'true' : 'false';
-            if (key === 'BITRIX_PLAN') return plan;
-            return undefined;
-        },
-    }) as unknown as ConfigService;
-
+/**
+ * Переменных окружения у ограничителя нет (06.10.2026): включение и тариф —
+ * настройки портала, они приходят третьим аргументом acquire.
+ */
 describe('BitrixRateLimiterService', () => {
     beforeEach(() => jest.useFakeTimers());
     afterEach(() => jest.useRealTimers());
 
-    describe('disabled mode', () => {
+    describe('портал выключил очередь', () => {
         it('возвращается мгновенно без вызова Redis', async () => {
             const redis = makeRedis(0);
             // Клиент сужаем до формы «свойство — мок»: прямая ссылка на
@@ -35,24 +30,19 @@ describe('BitrixRateLimiterService', () => {
             // счётчик вызовов сохраняется.
             const client = redis.getClient() as unknown as { eval: jest.Mock };
             const evalFn = client.eval;
-            const service = new BitrixRateLimiterService(
-                redis,
-                makeConfig(false),
-            );
+            const service = new BitrixRateLimiterService(redis);
 
-            await service.acquire('test.bitrix24.ru');
+            await service.acquire('test.bitrix24.ru', undefined, {
+                enabled: false,
+            });
 
             expect(evalFn).not.toHaveBeenCalled();
         });
     });
 
-    describe('enabled mode', () => {
+    describe('очередь включена (по умолчанию)', () => {
         it('возвращается сразу если Redis вернул 0', async () => {
-            const redis = makeRedis(0);
-            const service = new BitrixRateLimiterService(
-                redis,
-                makeConfig(true),
-            );
+            const service = new BitrixRateLimiterService(makeRedis(0));
 
             await expect(
                 service.acquire('portal.bitrix24.ru'),
@@ -66,10 +56,7 @@ describe('BitrixRateLimiterService', () => {
                 return callCount < 3 ? 500 : 0;
             });
 
-            const service = new BitrixRateLimiterService(
-                redis,
-                makeConfig(true),
-            );
+            const service = new BitrixRateLimiterService(redis);
 
             const acquirePromise = service.acquire('portal.bitrix24.ru');
 
@@ -85,10 +72,7 @@ describe('BitrixRateLimiterService', () => {
                 getClient: () => ({ eval: evalMock }),
             } as unknown as RedisService;
 
-            const service = new BitrixRateLimiterService(
-                redis,
-                makeConfig(true),
-            );
+            const service = new BitrixRateLimiterService(redis);
 
             await service.acquire('portal-a.bitrix24.ru');
             await service.acquire('portal-b.bitrix24.ru');
@@ -107,38 +91,41 @@ describe('BitrixRateLimiterService', () => {
                 }),
             } as unknown as RedisService;
 
-            const service = new BitrixRateLimiterService(
-                redis,
-                makeConfig(true),
-            );
+            const service = new BitrixRateLimiterService(redis);
 
             await expect(
                 service.acquire('portal.bitrix24.ru'),
             ).resolves.toBeUndefined();
         });
 
-        it('использует enterprise конфиг при BITRIX_PLAN=enterprise', () => {
-            const redis = makeRedis(0);
-            const service = new BitrixRateLimiterService(
-                redis,
-                makeConfig(true, 'enterprise'),
+        /** Предел ведра, с которым менеджер пришёл в Redis. */
+        const interactiveLimitOf = async (
+            overrides?: BitrixRateLimitOverrides,
+        ): Promise<number> => {
+            const evalMock = jest.fn().mockResolvedValue(0);
+            const service = new BitrixRateLimiterService({
+                getClient: () => ({ eval: evalMock }),
+            } as unknown as RedisService);
+            await runAsInteractive('test', () =>
+                service.acquire('a.bitrix24.ru', undefined, overrides),
             );
+            return Number((evalMock.mock.calls[0] as unknown[])[4]);
+        };
 
-            // @ts-expect-error accessing private for test
-            expect(service.config.capacity).toBe(250);
-            // @ts-expect-error accessing private for test
-            expect(service.config.ratePerSec).toBe(5);
+        it('без настроек портала — обычный тариф, ведро 50', async () => {
+            expect(await interactiveLimitOf()).toBe(50);
         });
 
-        it('fallback на regular конфиг при неизвестном плане', () => {
-            const redis = makeRedis(0);
-            const service = new BitrixRateLimiterService(
-                redis,
-                makeConfig(true, 'unknown_plan'),
-            );
+        it('энтерпрайз из настроек портала — ведро 250', async () => {
+            expect(await interactiveLimitOf({ plan: 'enterprise' })).toBe(250);
+        });
 
-            // @ts-expect-error accessing private for test
-            expect(service.config.capacity).toBe(50);
+        it('неизвестный тариф — обычный, ведро 50', async () => {
+            expect(
+                await interactiveLimitOf({
+                    plan: 'unknown_plan',
+                } as unknown as BitrixRateLimitOverrides),
+            ).toBe(50);
         });
     });
 });

@@ -1,0 +1,152 @@
+# Оповещения о нагрузке на Битрикс (разбор 05.10.2026, пункт 1.5).
+# Заводятся сами вместе со всем provisioning (см. infra/compose).
+# ${VAR} разворачиваются из окружения контейнера grafana (env_file ../../.env):
+# бот и чат — те же, что у алертов приложений (TELEGRAM_BOT_TOKEN,
+# TELEGRAM_ADMIN_CHAT_ID). Пустые переменные — Grafana не примет контакт.
+#
+# ВНИМАНИЕ: блок policies задаёт корневую политику уведомлений — всё, что
+# сработает в Grafana, уходит в этот чат. Свои маршруты добавлять здесь же.
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: Телеграм April
+    receivers:
+      - uid: april-telegram
+        type: telegram
+        settings:
+          bottoken: ${TELEGRAM_BOT_TOKEN}
+          chatid: ${TELEGRAM_ADMIN_CHAT_ID}
+        disableResolveMessage: false
+
+policies:
+  - orgId: 1
+    receiver: Телеграм April
+    group_by: ['grafana_folder', 'alertname', 'domain']
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h
+
+groups:
+  - orgId: 1
+    name: Битрикс — лимит запросов
+    folder: April
+    interval: 1m
+    rules:
+      - uid: april-bitrix-interactive-passed
+        title: Битрикс — менеджеры не дождались очереди
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              expr: sum by (domain) (increase(bitrix_rate_limit_wait_seconds_count{call_class="interactive", outcome="passed"}[10m]))
+              instant: true
+              range: false
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [5]
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: '{{ $labels.domain }}: запросы менеджеров уходят мимо очереди к Битриксу'
+          description: >-
+            За 10 минут больше пяти запросов менеджеров ждали очередь дольше
+            15 секунд и ушли без неё — Битрикс может ответить «лимит превышен».
+            Кто ест лимит — панель «Битрикс: кто ест лимит».
+
+      - uid: april-bitrix-background-rejected
+        title: Битрикс — фоновым задачам отказано в очереди
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 1800
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              expr: sum by (domain) (increase(bitrix_rate_limit_wait_seconds_count{call_class="background", outcome="rejected"}[30m]))
+              instant: true
+              range: false
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [3]
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        labels:
+          severity: warning
+        annotations:
+          summary: '{{ $labels.domain }}: фоновые задачи не дождались очереди к Битриксу'
+          description: >-
+            За полчаса больше трёх фоновых задач (кроны, очереди, роботы, AI)
+            ждали очередь 10 минут и получили отказ — их работа не сделана.
+            Обычно это значит, что менеджеры или другой фон заняли лимит
+            надолго.
+
+      - uid: april-bitrix-errors
+        title: Битрикс — много ошибок и таймаутов
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              expr: sum by (domain) (increase(bitrix_requests_total{result!="ok"}[10m]))
+              instant: true
+              range: false
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [20]
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: '{{ $labels.domain }}: Битрикс отвечает ошибками или не отвечает'
+          description: >-
+            За 10 минут больше 20 обращений к Битриксу закончились ошибкой или
+            таймаутом. Разбивка по методам — панель «Битрикс: кто ест лимит»,
+            подробности — логи приложений.

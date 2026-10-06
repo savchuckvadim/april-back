@@ -17,16 +17,16 @@ const FIELDS: Record<string, Record<string, unknown>> = {
         type: 'date',
         items: [],
     },
-    'deal:op_concurents_multiple': {
-        bitrixId: 'OP_CONCURENTS_MULTIPLE',
+    'deal:concurents_multiple': {
+        bitrixId: 'CONCURENTS_MULTIPLE',
         type: 'enumeration',
         items: [
             { code: 'garant', bitrixId: 101 },
             { code: 'kodex', bitrixId: 102 },
         ],
     },
-    'company:op_concurents_multiple': {
-        bitrixId: 'OP_CONCURENTS_MULTIPLE',
+    'company:concurents_multiple': {
+        bitrixId: 'CONCURENTS_MULTIPLE',
         type: 'enumeration',
         items: [
             { code: 'garant', bitrixId: 201 },
@@ -53,7 +53,7 @@ const makePortal = (missing: string[] = []) =>
 const DEAL = {
     ID: '5512',
     UF_CRM_OP_SALE_DATE_PROGNOZ: '01.10.2026',
-    UF_CRM_OP_CONCURENTS_MULTIPLE: [101, 102],
+    UF_CRM_CONCURENTS_MULTIPLE: [101, 102],
 };
 
 describe('EventReportCompanyBackfillModel', () => {
@@ -68,7 +68,7 @@ describe('EventReportCompanyBackfillModel', () => {
         expect(fields.UF_CRM_OP_SALE_DATE_PROGNOZ).toBe('01.10.2026');
         // enum-id переносится через код: 101(garant у сделки) → 201(у компании),
         // 102(kodex) пары не имеет и честно выпадает.
-        expect(fields.UF_CRM_OP_CONCURENTS_MULTIPLE).toEqual([201]);
+        expect(fields.UF_CRM_CONCURENTS_MULTIPLE).toEqual([201]);
     });
 
     it('НЕПУСТОЕ значение компании не перезатирается никогда', () => {
@@ -77,7 +77,7 @@ describe('EventReportCompanyBackfillModel', () => {
             {
                 ID: '431',
                 UF_CRM_OP_SALE_DATE_PROGNOZ: '15.09.2026',
-                UF_CRM_OP_CONCURENTS_MULTIPLE: [201],
+                UF_CRM_CONCURENTS_MULTIPLE: [201],
             },
             DEAL,
         );
@@ -88,7 +88,7 @@ describe('EventReportCompanyBackfillModel', () => {
         const model = new EventReportCompanyBackfillModel(
             makePortal(),
             { ID: '431' },
-            { ID: '5512', UF_CRM_OP_CONCURENTS_MULTIPLE: [] },
+            { ID: '5512', UF_CRM_CONCURENTS_MULTIPLE: [] },
         );
         expect(model.toFields()).toEqual({});
     });
@@ -100,16 +100,16 @@ describe('EventReportCompanyBackfillModel', () => {
             DEAL,
         );
         expect(model.toFields().UF_CRM_OP_SALE_DATE_PROGNOZ).toBeUndefined();
-        expect(model.toFields().UF_CRM_OP_CONCURENTS_MULTIPLE).toEqual([201]);
+        expect(model.toFields().UF_CRM_CONCURENTS_MULTIPLE).toEqual([201]);
     });
 
     it('enum без единой пары по кодам — поле не пишется вовсе', () => {
         const model = new EventReportCompanyBackfillModel(
             makePortal(),
             { ID: '431' },
-            { ID: '5512', UF_CRM_OP_CONCURENTS_MULTIPLE: [102] },
+            { ID: '5512', UF_CRM_CONCURENTS_MULTIPLE: [102] },
         );
-        expect(model.toFields().UF_CRM_OP_CONCURENTS_MULTIPLE).toBeUndefined();
+        expect(model.toFields().UF_CRM_CONCURENTS_MULTIPLE).toBeUndefined();
     });
 
     it('нулевая пустота Битрикса ("0", "") считается пустой', () => {
@@ -118,12 +118,12 @@ describe('EventReportCompanyBackfillModel', () => {
             {
                 ID: '431',
                 UF_CRM_OP_SALE_DATE_PROGNOZ: '',
-                UF_CRM_OP_CONCURENTS_MULTIPLE: ['0'],
+                UF_CRM_CONCURENTS_MULTIPLE: ['0'],
             },
             DEAL,
         );
         const fields = model.toFields();
         expect(fields.UF_CRM_OP_SALE_DATE_PROGNOZ).toBe('01.10.2026');
-        expect(fields.UF_CRM_OP_CONCURENTS_MULTIPLE).toEqual([201]);
+        expect(fields.UF_CRM_CONCURENTS_MULTIPLE).toEqual([201]);
     });
 });

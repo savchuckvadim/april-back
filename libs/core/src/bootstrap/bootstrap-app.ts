@@ -11,6 +11,7 @@ import { GlobalExceptionFilter } from '../filters/global-exception.filter';
 import { ResponseInterceptor } from '../interceptors/response.interceptor';
 import { cors } from '../config/cors/cors.config';
 import { swaggerBasicAuth } from './swagger-basic-auth.middleware';
+import { interactiveCallContextMiddleware } from '../call-context/call-context.middleware';
 
 export interface BootstrapOptions {
     /** Имя приложения — для Swagger-заголовка/тега и логов. */
@@ -101,6 +102,12 @@ export async function bootstrapApp(
     // Единственная зависимость фильтра (TelegramService) @Optional, а standalone-
     // приложения Telegram не подключают, поэтому new эквивалентен DI-инстансу.
     app.useGlobalFilters(new GlobalExceptionFilter());
+
+    // Каждый HTTP-запрос — «интерактив»: за ним обычно человек у экрана, и
+    // ограничитель запросов Битрикса держит таким вызовам место впереди
+    // фоновых (кроны, очереди, AI). Ставится ДО остальных middleware, чтобы
+    // класс видели гарды и обработчики. См. call-context.
+    app.use(interactiveCallContextMiddleware);
 
     app.use(bodyParser.json({ limit: bodyLimit }));
     app.use(bodyParser.urlencoded({ limit: bodyLimit, extended: true }));

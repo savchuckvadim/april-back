@@ -5,6 +5,7 @@ import {
     DuplicateReportRunNowRequestDto,
     DuplicateReportRunNowResponseDto,
 } from '../dto/duplicate-report-run-now.dto';
+import { BackgroundCalls } from '@lib/core/call-context';
 
 /**
  * Ручной прогон еженедельного отчёта по дублям сделок.
@@ -14,6 +15,7 @@ import {
  * Telegram) или по-настоящему — и владелец решает, включать ли крон.
  */
 @ApiTags('Duplicate report')
+@BackgroundCalls()
 @Controller('duplicate-report')
 export class DuplicateReportController {
     constructor(private readonly scheduler: DuplicateReportScheduler) {}

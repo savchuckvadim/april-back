@@ -8,13 +8,23 @@ import {
     DealAuditThresholds,
     DealAuditVerdict,
 } from '../types/deal-audit.types';
-import { DealAuditDealsReader } from './deal-audit-deals.reader';
+import { IBXDepartment } from '@/modules/bitrix/domain/interfaces/bitrix.interface';
+import { BxDepartmentService } from '@lib/bx-department';
+import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.interface';
+import { buildDealAuditStaffGroups } from '../lib/deal-audit-staff-groups';
+import {
+    DealAuditDealRow,
+    DealAuditDealsReader,
+} from './deal-audit-deals.reader';
 import {
     DealAuditDigestOptions,
     DealAuditDigestService,
 } from './deal-audit-digest.service';
 import { DealAuditFields } from './deal-audit-fields';
-import { DealAuditTasksReader } from './deal-audit-tasks.reader';
+import {
+    DealAuditTaskTarget,
+    DealAuditTasksReader,
+} from './deal-audit-tasks.reader';
 import { DealAuditWriterService } from './deal-audit-writer.service';
 
 /** Параметры одного прогона: пороги из админки + режим запуска. */
@@ -23,10 +33,15 @@ export interface DealAuditOptions extends DealAuditThresholds {
     readonly dryRun: boolean;
     /** Максимум карточек, размечаемых за прогон. */
     readonly maxPerRun: number;
+    /**
+     * Сколько сделок берётся за прогон по каждому отделу продаж — самые
+     * давние по последней активности (владелец, 05.10.2026: не больше 50).
+     */
+    readonly maxPerDepartment: number;
     readonly digest: DealAuditDigestOptions;
     /**
      * Ограничить прогон этими сделками — только для ручного запуска:
-     * крон всегда идёт по всей воронке.
+     * крон берёт самые давние сделки отделов.
      */
     readonly dealIds?: readonly number[];
 }
@@ -34,6 +49,10 @@ export interface DealAuditOptions extends DealAuditThresholds {
 /**
  * Аудит сделок: считает признаки «забытости» по открытым сделкам воронки
  * ОП, размечает карточки и рассылает сводки.
+ *
+ * За прогон смотрит не всю воронку, а самые давние сделки каждого отдела
+ * продаж (по дате последней активности) — их отдаёт сам Битрикс одним
+ * запросом на все отделы. Задачи читаются только по выбранным сделкам.
  *
  * Ничего не создаёт и не двигает: ни стадий, ни задач, ни звонков. Это
  * граница модуля — разметка и рассылка. Действия по забытым сделкам
@@ -50,6 +69,7 @@ export class DealAuditService {
     constructor(
         private readonly pbx: PBXService,
         private readonly digest: DealAuditDigestService,
+        private readonly departments: BxDepartmentService,
     ) {}
 
     async runForDomain(
@@ -65,18 +85,29 @@ export class DealAuditService {
         );
         if (mode.warning) warnings.push(mode.warning);
 
+        // Воронка целиком не читается: по каждому отделу продаж Битрикс
+        // отдаёт самые давние сделки (не больше лимита на отдел), задачи
+        // читаются только по ним. Ручной прогон по конкретным сделкам
+        // структуру не трогает.
+        const groups = options.dealIds?.length
+            ? []
+            : buildDealAuditStaffGroups(
+                  await this.loadSalesDepartments(domain, warnings),
+              );
+        const dealsReader = new DealAuditDealsReader(bitrix, portal, fields);
+        const rows = await dealsReader.loadMostIdle(
+            {
+                groups,
+                limitPerGroup: options.maxPerDepartment,
+                dealIds: options.dealIds,
+            },
+            warnings,
+        );
         const tasks = await new DealAuditTasksReader(
             bitrix,
             portal.getTimezone(),
-        ).load(warnings);
-
-        const all = await new DealAuditDealsReader(bitrix, portal, fields).load(
-            tasks,
-            warnings,
-        );
-        const snapshots = options.dealIds?.length
-            ? all.filter(snapshot => options.dealIds?.includes(snapshot.dealId))
-            : all;
+        ).loadFor(rows.map(toTaskTarget), warnings);
+        const snapshots = dealsReader.toSnapshots(rows, tasks);
 
         const now = Date.now();
         const pairs = snapshots.map(snapshot => ({
@@ -131,7 +162,40 @@ export class DealAuditService {
             warnings,
         };
     }
+
+    /** Отделы продаж со всеми подотделами; ошибка → пусто и предупреждение. */
+    private async loadSalesDepartments(
+        domain: string,
+        warnings: string[],
+    ): Promise<IBXDepartment[]> {
+        try {
+            const response = await this.departments.getFullDepartment(
+                domain,
+                EDepartamentGroup.sales,
+            );
+            const data = response.department;
+            return [
+                ...(data.generalDepartment ?? []),
+                ...(data.childrenDepartments ?? []),
+            ];
+        } catch (error) {
+            warnings.push(
+                `структура отделов не прочитана: ${(error as Error).message}`,
+            );
+            return [];
+        }
+    }
 }
+
+/** Сделка → что нужно читателю задач: её id и компания. */
+const toTaskTarget = (row: DealAuditDealRow): DealAuditTaskTarget => {
+    const companyId = Number(row['COMPANY_ID']);
+    return {
+        dealId: Number(row['ID']),
+        companyId:
+            Number.isFinite(companyId) && companyId > 0 ? companyId : null,
+    };
+};
 
 /** Разбивка «статус → количество»; нулевые статусы в ответ не попадают. */
 const countByStatus = (

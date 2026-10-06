@@ -234,6 +234,8 @@ export class WorkTakeoverService {
                             '!STATUS': EBXTaskStatus.COMPLETED,
                         },
                         select: TASK_SELECT,
+                        // Общее число не нужно — без него ответ быстрее.
+                        start: -1,
                     },
                 });
                 commands.push({
@@ -246,6 +248,7 @@ export class WorkTakeoverService {
                             COMPLETED: 'N',
                         },
                         select: ACTIVITY_SELECT,
+                        start: -1,
                     },
                 });
             }

@@ -1,3 +1,4 @@
+import { assertBatchDelivered } from '@lib/bitrix/core/base/batch-delivery.util';
 import { Injectable, Logger } from '@nestjs/common';
 import { BitrixService } from '@lib/bitrix';
 import {
@@ -316,6 +317,9 @@ export class DuplicateSourceGraphService {
         }
 
         const responses = await bitrix.api.callBatchAsync();
+        // Волна не дошла — сигналов «нет» быть не может: без проверки поиск
+        // молча сказал бы «нечего искать», а пустые сигналы легли бы в кэш.
+        assertBatchDelivered(responses, 'Связи клиента для поиска пересечений');
         const rows = new Map<string, BxGraphRow>();
         const requisites: BxGraphRow[] = [];
         const mirrors: BxGraphRow[] = [];

@@ -420,6 +420,8 @@ export class TransferWorkUseCase
             const response = (await ctx.bitrix.api.call('crm.lead.list', {
                 filter: { ID: leadIds, STATUS_SEMANTIC_ID: 'P' },
                 select: ['ID'],
+                // Общее число не нужно — без него Битрикс отвечает быстрее.
+                start: -1,
             })) as { result?: BxRow[] } | undefined;
             return (response?.result ?? [])
                 .map(row => Number(row.ID))

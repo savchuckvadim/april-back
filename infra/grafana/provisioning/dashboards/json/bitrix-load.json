@@ -1,0 +1,206 @@
+{
+  "uid": "april-bitrix-load",
+  "title": "Битрикс: кто ест лимит",
+  "description": "Нагрузка наших приложений на Битрикс24 по порталам: запросы, очередь ограничителя, время ответа, pbx.init. Разбор нагрузки 05.10.2026 (back/ai/tasks/2026-10-05-bitrix-load-optimization-plan.md).",
+  "tags": ["bitrix", "load"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "1m",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "domain",
+        "label": "Портал",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": { "query": "label_values(bitrix_requests_total, domain)", "refId": "domain" },
+        "definition": "label_values(bitrix_requests_total, domain)",
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": { "text": "All", "value": "$__all" },
+        "refresh": 2
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Запросы в Битрикс в секунду: менеджеры и фон",
+      "description": "Лимит обычного тарифа — 2 запроса в секунду на портал (энтерпрайз — 5). Пачка из 50 команд — один запрос.",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (domain, call_class) (rate(bitrix_requests_total{domain=~\"$domain\"}[5m]))",
+          "legendFormat": "{{domain}} · {{call_class}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "table",
+      "title": "Кто ест лимит: методы за 15 минут",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(20, sum by (domain, method, call_class) (increase(bitrix_requests_total{domain=~\"$domain\"}[15m])))",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "domain": "Портал", "method": "Метод", "call_class": "Класс", "Value": "Запросов за 15 мин" } } }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Ожидание в очереди ограничителя, p95",
+      "description": "Сколько запрос ждал свободного места в очереди к Битриксу. Менеджеры ждут не больше 15 с, фон — до 10 минут.",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, domain, call_class) (rate(bitrix_rate_limit_wait_seconds_bucket{domain=~\"$domain\"}[5m])))",
+          "legendFormat": "{{domain}} · {{call_class}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Очередь не дождались: пропуски менеджеров и отказы фону",
+      "description": "passed — запрос менеджера ушёл без очереди (ждал дольше 15 с); rejected — фоновой задаче отказано. В рабочее время должно быть 0.",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (domain, call_class, outcome) (increase(bitrix_rate_limit_wait_seconds_count{domain=~\"$domain\", outcome!=\"granted\"}[15m]))",
+          "legendFormat": "{{domain}} · {{call_class}} · {{outcome}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Время ответа Битрикса, p95",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, domain, call_class) (rate(bitrix_request_duration_seconds_bucket{domain=~\"$domain\"}[5m])))",
+          "legendFormat": "{{domain}} · {{call_class}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Ошибки и таймауты запросов к Битриксу",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (domain, result) (increase(bitrix_requests_total{domain=~\"$domain\", result!=\"ok\"}[15m]))",
+          "legendFormat": "{{domain}} · {{result}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "pbx.init: шаги, p95",
+      "description": "internal_portal — сборка портала из БД (кэш минута); external_portal — слепок из online; portal_model — модель; bitrix_client — клиент Битрикса с лимитом портала.",
+      "gridPos": { "x": 0, "y": 24, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, step) (rate(pbx_init_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{step}}"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "pbx.init в минуту: менеджеры и фон",
+      "gridPos": { "x": 12, "y": 24, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (domain, call_class) (rate(pbx_init_total{domain=~\"$domain\"}[5m])) * 60",
+          "legendFormat": "{{domain}} · {{call_class}}"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "HTTP наших приложений: p95 по маршрутам",
+      "gridPos": { "x": 0, "y": 32, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(10, histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket[5m]))))",
+          "legendFormat": "{{route}}"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Прямые вызовы Битрикса из браузеров «Звонков»",
+      "description": "Битрикс считает их по внешнему IP офиса. Рост limit — менеджеры за одним адресом упираются в общий лимит. Нужна цель фронта в Prometheus (см. infra/prometheus/prometheus.yml).",
+      "gridPos": { "x": 12, "y": 32, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (domain, outcome) (increase(event_sales_bitrix_direct_calls_total{domain=~\"$domain\"}[15m]))",
+          "legendFormat": "{{domain}} · {{outcome}}"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Первая загрузка «Звонков» до списка дел, p50 и p95",
+      "description": "Метрика фронта event-sales. Нужна цель фронта в Prometheus.",
+      "gridPos": { "x": 0, "y": 40, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.5, sum by (le, domain) (rate(event_sales_boot_to_tasks_seconds_bucket{domain=~\"$domain\"}[30m])))",
+          "legendFormat": "p50 · {{domain}}"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le, domain) (rate(event_sales_boot_to_tasks_seconds_bucket{domain=~\"$domain\"}[30m])))",
+          "legendFormat": "p95 · {{domain}}"
+        }
+      ]
+    }
+  ]
+}

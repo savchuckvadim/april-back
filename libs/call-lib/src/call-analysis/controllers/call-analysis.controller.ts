@@ -9,8 +9,10 @@ import {
 import { CallSalesAnalysisDto } from '../dto/call-sales-analysis.dto';
 import { TaskWebhookDto } from '../dto/task-webhook.dto';
 import { TaskCompleteResultDto } from '../dto/task-complete-result.dto';
+import { BackgroundCalls } from '@lib/core/call-context';
 
 @ApiTags('AI-анализ звонков')
+@BackgroundCalls()
 @Controller('call-analysis')
 export class CallAnalysisController {
     constructor(

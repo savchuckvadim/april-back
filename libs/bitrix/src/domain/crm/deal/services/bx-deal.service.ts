@@ -3,6 +3,9 @@ import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
 import { IBXDeal, IBXDealContactBinding } from '../interface/bx-deal.interface';
 import { IBXField } from '../../fields/bx-field.interface';
 
+/** Страница `crm.deal.list` — 50 записей, Битрикс её не меняет. */
+const DEAL_LIST_PAGE_SIZE = 50;
+
 export class BxDealService {
     private repo: BxDealRepository;
 
@@ -24,23 +27,35 @@ export class BxDealService {
         filter: Partial<IBXDeal>,
         select?: string[],
         order?: { [key in keyof IBXDeal]?: 'asc' | 'desc' | 'ASC' | 'DESC' },
+        /** `-1` — без подсчёта total (см. BxDealRepository.getList). */
+        start?: number,
     ) {
-        return await this.repo.getList(filter, select, order);
+        return await this.repo.getList(filter, select, order, start);
     }
 
+    /**
+     * Все сделки по фильтру: курсор `>ID` по возрастанию.
+     *
+     * `start: -1` — Битрикс не считает общее число записей на каждой
+     * странице (на воронке в тысячи сделок подсчёт дороже самой выборки).
+     * Остановка — по неполной странице: раньше обход всегда заканчивался
+     * лишним запросом за пустой.
+     */
     async all(filter: Partial<IBXDeal>, select?: string[]) {
         const deals: IBXDeal[] = [];
-        let needMore = true;
         let nextId = 0;
-        while (needMore) {
+        for (;;) {
             const fullFilter = { ...filter, '>ID': nextId };
-            const { result } = await this.repo.getList(fullFilter, select, {
-                ID: 'ASC',
-            });
-            if (result.length === 0) break;
-            nextId = result[result.length - 1]?.ID ?? 0;
-            if (nextId === 0) needMore = false;
+            const { result } = await this.repo.getList(
+                fullFilter,
+                select,
+                { ID: 'ASC' },
+                -1,
+            );
+            if (!result?.length) break;
             deals.push(...result);
+            nextId = Number(result[result.length - 1]?.ID ?? 0);
+            if (!nextId || result.length < DEAL_LIST_PAGE_SIZE) break;
         }
         return deals;
     }

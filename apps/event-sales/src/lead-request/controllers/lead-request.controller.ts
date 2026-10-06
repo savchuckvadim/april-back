@@ -18,6 +18,7 @@ import {
     ApiTags,
 } from '@nestjs/swagger';
 import { BxWebHookDto } from '@lib/bitrix/dto/bx-webhook.dto';
+import { BackgroundCalls } from '@lib/core/call-context';
 import { EnumSalesHookCode } from '../../sales-hooks/core/constants/sales-hook-code.enum';
 import { SalesHookAcceptedDto } from '../../sales-hooks/core/dto/sales-hook-accepted.dto';
 import { SalesHookSilenceGateway } from '../../sales-hooks/core/services/sales-hook-silence.gateway';
@@ -129,6 +130,8 @@ export class LeadRequestController {
         return this.acceptService.accept(dto);
     }
 
+    // Вебхук робота — фон: за ним нет человека у экрана.
+    @BackgroundCalls()
     @Post('accept/webhook')
     @HttpCode(200)
     @ApiOperation({

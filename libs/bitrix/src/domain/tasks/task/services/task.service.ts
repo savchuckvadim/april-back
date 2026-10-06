@@ -7,6 +7,9 @@ import {
     IBXTask,
 } from '../interface/task.interface';
 
+/** Размер страницы tasks.task.list. */
+const TASKS_PAGE_SIZE = 50;
+
 export class BxTaskService {
     private repo: BxTaskRepository;
 
@@ -47,42 +50,77 @@ export class BxTaskService {
     }
 
     /**
-     * Получает все задачи (с пагинацией)
+     * Все задачи по фильтру.
+     *
+     * Без своего порядка — курсором по ID (`>ID`, по возрастанию,
+     * `start: -1`): Битрикс не считает общее число на каждой странице, а на
+     * портале с десятками тысяч задач подсчёт в разы дороже самой выборки.
+     * Со своим порядком — сдвигом `start` до первой неполной страницы.
+     *
+     * Раньше конец списка определялся по `result.total`, которого в ответе
+     * нет (total лежит уровнем выше), — и каждый обход заканчивался лишним
+     * запросом пустой страницы.
      */
     async getAll(
         filter?: ITaskFilter,
         select?: string[],
         order?: { [key in keyof IBXTask]?: 'asc' | 'desc' | 'ASC' | 'DESC' },
     ): Promise<{ tasks: IBXTask[]; total: number }> {
-        const tasks: IBXTask[] = [];
-        let needMore = true;
-        let start = 0;
+        const tasks = order
+            ? await this.getAllByOffset(filter, select, order)
+            : await this.getAllByCursor(filter, select);
+        return { tasks, total: tasks.length };
+    }
 
-        while (needMore) {
+    private async getAllByCursor(
+        filter?: ITaskFilter,
+        select?: string[],
+    ): Promise<IBXTask[]> {
+        const tasks: IBXTask[] = [];
+        // Курсору нужен ID в каждой задаче.
+        const cursorSelect = select?.length
+            ? [...new Set(['ID', ...select])]
+            : select;
+        let lastId = 0;
+        for (;;) {
+            const result = await this.repo.getList(
+                { ...(filter ?? {}), ...(lastId ? { '>ID': lastId } : {}) },
+                cursorSelect,
+                { id: 'asc' },
+                -1,
+            );
+            const page = result.result?.tasks ?? [];
+            tasks.push(...page);
+            const maxId = page.reduce(
+                (max, task) => Math.max(max, Number(task.id) || 0),
+                lastId,
+            );
+            // Неполная страница — последняя. ID не вырос — курсор не
+            // сработал: дальше пошёл бы круг по той же странице.
+            if (page.length < TASKS_PAGE_SIZE || maxId <= lastId) break;
+            lastId = maxId;
+        }
+        return tasks;
+    }
+
+    private async getAllByOffset(
+        filter: ITaskFilter | undefined,
+        select: string[] | undefined,
+        order: { [key in keyof IBXTask]?: 'asc' | 'desc' | 'ASC' | 'DESC' },
+    ): Promise<IBXTask[]> {
+        const tasks: IBXTask[] = [];
+        for (let start = 0; ; start += TASKS_PAGE_SIZE) {
             const result = await this.repo.getList(
                 filter,
                 select,
                 order,
                 start,
             );
-            if (result.result?.tasks && result.result.tasks.length > 0) {
-                tasks.push(...result.result.tasks);
-                start += result.result.tasks.length;
-                if (
-                    result.result.total !== undefined &&
-                    tasks.length >= result.result.total
-                ) {
-                    needMore = false;
-                }
-            } else {
-                needMore = false;
-            }
+            const page = result.result?.tasks ?? [];
+            tasks.push(...page);
+            if (page.length < TASKS_PAGE_SIZE) break;
         }
-
-        return {
-            tasks,
-            total: tasks.length,
-        };
+        return tasks;
     }
 
     /**

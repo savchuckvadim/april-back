@@ -5,7 +5,7 @@ import { Redis } from 'ioredis';
 import { APIOnlineClient } from '@lib/online';
 import { PortalModelFactory } from './factory/potal-model.factory';
 import { PortalModel } from './services/portal.model';
-import { getErrorString } from '@lib/shared';
+import { getErrorString, TimedCache } from '@lib/shared';
 
 @Injectable()
 export class PortalService {
@@ -13,7 +13,12 @@ export class PortalService {
     private readonly CACHE_TTL = 36000;
     /** Минимальный интервал между принудительными обновлениями слепка. */
     private static readonly REFRESH_COOLDOWN_SEC = 300;
+    /** Сколько сырой слепок живёт в памяти процесса. */
+    private static readonly RAW_PORTAL_TTL_MS = 30_000;
     private readonly redis: Redis;
+    private readonly rawPortalCache = new TimedCache<string>(
+        PortalService.RAW_PORTAL_TTL_MS,
+    );
 
     constructor(
         private readonly redisService: RedisService,
@@ -24,22 +29,32 @@ export class PortalService {
         this.redis = this.redisService.getClient();
     }
 
+    /**
+     * Слепок портала: память процесса → Redis → online-API.
+     *
+     * Вебхук портала в лог НЕ пишется. Раньше он печатался открытым текстом
+     * на каждое чтение слепка — то есть на каждый init, десятки раз на одно
+     * открытие сделки, и уезжал в общие логи (разбор 05.10.2026).
+     *
+     * Сырой JSON слепка (около мегабайта) держится в памяти процесса
+     * полминуты: без этого он тянулся из Redis на каждый init. Разбирается
+     * JSON на каждый вызов заново — вызывающий получает СВОЙ объект и может
+     * его менять, не задевая остальных.
+     */
     async getPortalByDomain(domain: string): Promise<IPortal> {
-        this.logger.log(`Getting portal for domain: ${domain}`);
         const cacheKey = `portal_${domain}`;
-        const cached = (await this.redis.get(cacheKey)) as string;
+        const cached = await this.rawPortalCache.get(domain, async () => {
+            const raw = await this.redis.get(cacheKey);
+            return raw ?? undefined;
+        });
 
         if (cached) {
-            this.logger.log('Returning cached portal');
-            const portal = JSON.parse(cached) as IPortal;
-            this.logger.log(`Cached portal domain: ${portal?.domain}`);
-            this.logger.log(
-                `Cached portal webhook: ${portal?.C_REST_WEB_HOOK_URL}`,
-            );
-            return portal;
+            return JSON.parse(cached) as IPortal;
         }
 
-        this.logger.log('Portal not found in cache, requesting from API');
+        this.logger.log(
+            `Слепок портала ${domain} не найден в кэше — запрашиваем online-API`,
+        );
         const response = await this.apiOnlineClient.request(
             'post',
             'getportal',
@@ -88,6 +103,7 @@ export class PortalService {
         }
 
         this.logger.log(`Принудительное обновление слепка портала ${domain}`);
+        this.rawPortalCache.delete(domain);
         await this.redis.del(`portal_${domain}`);
         return this.getPortalByDomain(domain);
     }
@@ -98,12 +114,10 @@ export class PortalService {
         Logger.log('getModelByDomain: ' + portal?.id);
         return this.modelFactory.create(portal);
     }
+    /** Адрес вебхука портала. В лог не пишется: это ключ доступа. */
     async getHook(domain: string): Promise<string> {
-        this.logger.log(`Getting hook for domain: ${domain}`);
         const portal = await this.getPortalByDomain(domain);
-        const hook = `https://${domain}/${portal.C_REST_WEB_HOOK_URL}`;
-        this.logger.log(`Hook URL: ${hook}`);
-        return hook;
+        return `https://${domain}/${portal.C_REST_WEB_HOOK_URL}`;
     }
 
     async getPortalData(domain: string): Promise<IPortalResponse> {

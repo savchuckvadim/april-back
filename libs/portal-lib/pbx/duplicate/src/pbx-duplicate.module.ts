@@ -7,6 +7,7 @@ import {
     PortalLeadModule,
 } from '@lib/portal-lib/pbx-domain';
 import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
+import { RedisModule } from '@/core/redis/redis.module';
 import { DuplicateScoreService } from './services/duplicate-score.service';
 import { DuplicateSearchService } from './services/duplicate-search.service';
 import { DuplicateSignalExtractService } from './services/duplicate-signal-extract.service';
@@ -27,6 +28,9 @@ import { SignalFieldMapService } from './services/signal-field-map.service';
     imports: [
         PBXModule,
         PortalStoreModule,
+        // Кэш сотрудников (ResponsibleService): час в Redis вместо пяти
+        // пачек в портал на каждое открытие связей клиента.
+        RedisModule,
         PortalLeadModule,
         PortalContactModule,
         PortalCompanyModule,

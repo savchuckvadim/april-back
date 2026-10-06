@@ -9,3 +9,4 @@ export * from './health/health.controller';
 export * from './bootstrap/bootstrap-app';
 export * from './event-silence';
 export { SuccessResponseDto, ErrorResponseDto } from './dto/app.dto';
+export * from './call-context';

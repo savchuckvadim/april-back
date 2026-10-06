@@ -1,4 +1,8 @@
 import { DealAuditRunResult } from '../types/deal-audit.types';
+import {
+    DEAL_AUDIT_FREQUENCY_LABEL,
+    DealAuditFrequency,
+} from './deal-audit-schedule';
 
 /** Сколько предупреждений портала показывать в сообщении. */
 const MAX_WARNINGS = 3;
@@ -29,13 +33,13 @@ export type DealAuditDomainOutcome =
 /** Портал с включённым аудитом — строка отчёта при старте. */
 export interface DealAuditRosterEntry extends DealAuditPortalMode {
     readonly domain: string;
-    readonly intervalMinutes: number;
+    readonly frequency: DealAuditFrequency;
 }
 
 /**
  * Слать ли итог тика в Telegram. Тик каждые 30 минут, а портал
- * аудируется раз в интервал: тик, где все порталы ждут интервала, —
- * шум, его хватает в обычном логе.
+ * аудируется раз в неделю или в месяц, ночью: тик, где все порталы ждут
+ * своей ночи, — шум, его хватает в обычном логе.
  */
 export const shouldNotifyDealAuditTick = (
     outcomes: readonly DealAuditDomainOutcome[],
@@ -54,7 +58,7 @@ export const formatDealAuditTick = (
         }
         if (outcome.kind === 'waiting') waiting += 1;
     }
-    if (waiting) lines.push(`⏳ ждут своего интервала: ${waiting}`);
+    if (waiting) lines.push(`⏳ ждут своей ночи: ${waiting}`);
     return lines.join('\n');
 };
 
@@ -73,7 +77,7 @@ export const formatDealAuditRoster = (
         ...entries.map(
             entry =>
                 `• ${entry.domain} — ${describeMode(entry)}, ` +
-                `раз в ${formatInterval(entry.intervalMinutes)}`,
+                DEAL_AUDIT_FREQUENCY_LABEL[entry.frequency],
         ),
     ].join('\n');
 };
@@ -105,9 +109,6 @@ const describeMode = (mode: DealAuditPortalMode): string => {
     if (!mode.hasRecipients) return 'получатели сводки не заданы';
     return 'сводки рассылаются';
 };
-
-const formatInterval = (minutes: number): string =>
-    minutes % 60 === 0 ? `${minutes / 60} ч` : `${minutes} мин`;
 
 const clip = (text: string): string =>
     text.length > MAX_TEXT ? `${text.slice(0, MAX_TEXT - 1)}…` : text;

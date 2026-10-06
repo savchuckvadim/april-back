@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
     DuplicateEntityType,
     SignalFieldMapService,
+    parseEmailDomainList,
 } from '@lib/portal-lib/pbx-duplicate';
 import {
     EnumPortalAppCode,
@@ -76,6 +77,28 @@ export class LeadToWorkRepeatService {
     }
 
     /**
+     * Домены почты, которые на портале не означают одного клиента.
+     * Настройка не прочиталась — пустой список: служебные, бесплатные и
+     * выдуманные адреса исключаются и без неё.
+     */
+    private async excludedEmailDomains(domain: string): Promise<Set<string>> {
+        try {
+            const settings = await this.appSettings.resolve(
+                domain,
+                EnumPortalAppCode.eventSales,
+            );
+            return parseEmailDomainList(
+                String(settings.leadIntakeRepeatExcludedEmailDomains ?? ''),
+            );
+        } catch (error) {
+            this.logger.warn(
+                `[repeat] ${domain}: список доменов-исключений не прочитан (${(error as Error).message})`,
+            );
+            return new Set();
+        }
+    }
+
+    /**
      * Поиск работы клиента для пачки. ЧИТАЕТ через общую карту batch-команд
      * `ctx.bitrix` — звать строго до первой записи буфера.
      */
@@ -98,11 +121,12 @@ export class LeadToWorkRepeatService {
                 DuplicateEntityType.COMPANY,
             ),
         ]);
-        const finder = new RepeatWorkFinderService(ctx.bitrix, ctx.portal, {
-            lead,
-            deal,
-            company,
-        });
+        const finder = new RepeatWorkFinderService(
+            ctx.bitrix,
+            ctx.portal,
+            { lead, deal, company },
+            await this.excludedEmailDomains(ctx.domain),
+        );
         try {
             return await finder.find(leads);
         } catch (error) {

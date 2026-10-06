@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { BackgroundCalls } from '@lib/core/call-context';
 import {
     EventReportDeferredRequestDto,
     EventReportDeferredResultDto,
@@ -19,6 +20,9 @@ import { EventReportDeferredService } from '../services/event-report-deferred.se
  */
 @ApiTags('Event Sales')
 @Controller('event-sales')
+// Досылку шлёт дренаж очереди отчётов в браузере, а не человек: её
+// запросы к Битриксу идут фоновой полосой и не теснят менеджеров.
+@BackgroundCalls()
 export class EventReportDeferredController {
     constructor(private readonly service: EventReportDeferredService) {}
 

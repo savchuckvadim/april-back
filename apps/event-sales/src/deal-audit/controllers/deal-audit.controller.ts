@@ -12,6 +12,7 @@ import {
 import { DealAuditScheduler } from '../deal-audit.scheduler';
 import { DealAuditSettingsService } from '../services/deal-audit-settings.service';
 import { DealAuditService } from '../services/deal-audit.service';
+import { BackgroundCalls } from '@lib/core/call-context';
 
 /**
  * Ручной прогон аудита сделок.
@@ -22,6 +23,7 @@ import { DealAuditService } from '../services/deal-audit.service';
  * включает крон в админке.
  */
 @ApiTags('Deal audit')
+@BackgroundCalls()
 @Controller('deal-audit')
 export class DealAuditController {
     constructor(

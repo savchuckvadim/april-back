@@ -38,7 +38,8 @@ export class BxContactRepository {
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
             EBxMethod.LIST,
-            { filter, select, order },
+            // Общее число не нужно — без него Битрикс отвечает быстрее.
+            { filter, select, order, start: -1 },
         );
     }
 
@@ -52,7 +53,7 @@ export class BxContactRepository {
             EBxNamespace.CRM,
             EBXEntity.CONTACT,
             EBxMethod.LIST,
-            { filter, select },
+            { filter, select, start: -1 },
         );
     }
 

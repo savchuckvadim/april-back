@@ -44,6 +44,8 @@ const FRONT_DEFAULTS: Record<string, boolean | number> = {
     withChecklistSale: false,
     withReportQuestions: false,
     withKonstructorSlider: false,
+    withActionPrompts: false,
+    withRelationStrips: false,
     taskGroupId: 1,
     bossId: 1,
 };

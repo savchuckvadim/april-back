@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
 import { getErrorDetails } from '@/shared';
 import { MergeGroup, MergePlan } from './merge-plan.service';
+import { MergeConflictResolver } from './merge-conflict.resolver';
 
 /** Итог выполнения одной группы. */
 export interface MergeGroupResult {
@@ -12,6 +13,14 @@ export interface MergeGroupResult {
     error?: string;
 }
 
+/** Как назвать тип сущности в предупреждениях для человека. */
+const ENTITY_LABEL: Record<string, string> = {
+    LEAD: 'Лид',
+    CONTACT: 'Контакт',
+    COMPANY: 'Компания',
+    DEAL: 'Сделка',
+};
+
 /** mergeBatch ~2 c на вызов — жертвы порциями, чтобы не упереться в лимиты. */
 const VICTIMS_PER_CALL = 5;
 
@@ -20,16 +29,23 @@ const VICTIMS_PER_CALL = 5;
  * не в HTTP-batch.
  *
  * Guard'ы: survivor строго ПЕРВЫЙ в entityIds (перепутанный порядок =
- * уничтожение старой сущности); CONFLICT не ретраится и не «дочищается»
- * руками — группа отдаётся во фронт со ссылкой на штатный интерфейс;
- * ERROR — fail-fast по остальным группам. Перед каждой порцией жертвы
+ * уничтожение старой сущности); ERROR — fail-fast по остальным группам.
+ *
+ * CONFLICT (владелец, 05.10.2026: «надо по-любому объединять все данные,
+ * по возможности дополнять»): расхождения снимаются MergeConflictResolver —
+ * главная карточка дополняется, значения дублей, уступившие ей, пишутся в
+ * её ленту — и порция объединяется ещё раз. Только один повтор: если и
+ * после этого CONFLICT, группа отдаётся человеку в штатный интерфейс. Перед каждой порцией жертвы
  * перечитываются: уже удалённые пропускаются (повтор безопасен).
  * НЕ @Injectable: new MergeExecutorService(bitrix).
  */
 export class MergeExecutorService {
     private readonly logger = new Logger(MergeExecutorService.name);
 
-    constructor(private readonly bitrix: BitrixService) {}
+    constructor(
+        private readonly bitrix: BitrixService,
+        private readonly resolver = new MergeConflictResolver(bitrix),
+    ) {}
 
     async execute(plan: MergePlan): Promise<{
         groups: MergeGroupResult[];
@@ -67,7 +83,7 @@ export class MergeExecutorService {
                 });
                 continue;
             }
-            const result = await this.mergeGroup(group);
+            const result = await this.mergeGroup(group, warnings);
             groups.push(result);
             if (result.status === 'ERROR') failFast = true;
         }
@@ -75,7 +91,10 @@ export class MergeExecutorService {
         return { groups, relinked, warnings };
     }
 
-    private async mergeGroup(group: MergeGroup): Promise<MergeGroupResult> {
+    private async mergeGroup(
+        group: MergeGroup,
+        warnings: string[],
+    ): Promise<MergeGroupResult> {
         const mergedIds: number[] = [];
         const pendingVictims = [...group.victimIds];
 
@@ -91,23 +110,26 @@ export class MergeExecutorService {
             }
 
             try {
-                const response = await this.bitrix.crmEntity.mergeBatch({
-                    entityTypeId: group.entityTypeId,
-                    entityIds,
-                });
-                const result = response?.result;
+                let result = await this.mergePortion(group, entityIds);
+                if (
+                    result?.STATUS === 'CONFLICT' &&
+                    (await this.resolveConflict(group, portion, warnings))
+                ) {
+                    result = await this.mergePortion(group, entityIds);
+                }
                 if (result?.STATUS === 'SUCCESS') {
                     mergedIds.push(...(result.ENTITY_IDS ?? portion));
                     continue;
                 }
                 if (result?.STATUS === 'CONFLICT') {
-                    // Противоречивые данные — решает человек в штатном UI.
+                    // Поля выровнены, а Битрикс всё равно отказал — решает
+                    // человек в штатном интерфейсе.
                     return {
                         entityType: group.entityType,
                         survivorId: group.survivorId,
                         status: mergedIds.length ? 'PARTIAL' : 'CONFLICT',
                         mergedIds,
-                        error: 'Битрикс сообщил CONFLICT: разрешите объединение в штатном интерфейсе дублей',
+                        error: 'Битрикс сообщил CONFLICT и после выравнивания полей: разрешите объединение в штатном интерфейсе дублей',
                     };
                 }
                 return {
@@ -138,5 +160,47 @@ export class MergeExecutorService {
             status: 'SUCCESS',
             mergedIds,
         };
+    }
+
+    private async mergePortion(group: MergeGroup, entityIds: number[]) {
+        const response = await this.bitrix.crmEntity.mergeBatch({
+            entityTypeId: group.entityTypeId,
+            entityIds,
+        });
+        return response?.result;
+    }
+
+    /**
+     * Снять расхождения перед повтором. Сбой здесь не рушит остальные
+     * группы: объединение ещё не начиналось, группа просто остаётся
+     * конфликтной.
+     *
+     * @returns true — карточки поправлены, порцию стоит объединить ещё раз.
+     */
+    private async resolveConflict(
+        group: MergeGroup,
+        portion: number[],
+        warnings: string[],
+    ): Promise<boolean> {
+        const label = `${ENTITY_LABEL[group.entityType] ?? 'Карточка'} ${group.survivorId}`;
+        try {
+            const resolution = await this.resolver.resolve(group, portion);
+            if (resolution.keptInTimeline) {
+                warnings.push(
+                    `${label}: поля дублей выровнены по главной карточке, ` +
+                        `прежние значения (${resolution.keptInTimeline}) записаны в её ленту`,
+                );
+            }
+            return resolution.changed;
+        } catch (error) {
+            const { message } = getErrorDetails(error);
+            this.logger.error(
+                `merge-conflict ${group.entityType} survivor=${group.survivorId}: ${message}`,
+            );
+            warnings.push(
+                `${label}: не удалось выровнять поля перед объединением — ${message}`,
+            );
+            return false;
+        }
     }
 }

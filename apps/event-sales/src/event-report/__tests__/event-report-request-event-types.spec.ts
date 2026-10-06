@@ -465,6 +465,65 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
     });
 
     /*
+     * Быстрый «Недозвон» из списка дел: меню результата не открывали,
+     * поэтому типа результата у отчёта нет (resultStatus = null) — а план
+     * выключен. Это попытка дозвониться, а не итог: задача остаётся открытой.
+     * Раньше её закрывало молча — клиент оставался без дела.
+     */
+    it('быстрый «Недозвон» из списка не закрывает и не создаёт задачу', () => {
+        const calls: { method: string; args: unknown[] }[] = [];
+        const bitrix = {
+            batch: {
+                task: {
+                    add: (_cmd: string, ...args: unknown[]) =>
+                        calls.push({ method: 'add', args }),
+                    update: (_cmd: string, ...args: unknown[]) =>
+                        calls.push({ method: 'update', args }),
+                    complete: (_cmd: string, ...args: unknown[]) =>
+                        calls.push({ method: 'complete', args }),
+                    commentItem: {
+                        add: (_cmd: string, ...args: unknown[]) =>
+                            calls.push({ method: 'comment', args }),
+                    },
+                },
+            },
+        };
+        const portal = {
+            getSalesTaskGroupId: () => 77,
+            getEntityFieldByCode: () => undefined,
+            getFieldBitrixId: (f: { bitrixId: string }) => f.bitrixId,
+        };
+
+        new EventReportTaskFlowService(bitrix as never, portal as never).queue(
+            {
+                isExpired: false,
+                isNew: false,
+                isNoResult: false,
+                isNoCall: true,
+                isFail: false,
+                isSuccessSale: false,
+                isPlanned: false,
+                isResult: false,
+                entityType: 'deal',
+                entityId: 500,
+                planResponsibleId: 5,
+                planCreatedById: 5,
+                planDeadline: null,
+                planEventName: '',
+                reportComment: 'Недозвон - трубку не берут',
+                planEventType: null,
+                reportEventType: 'warm',
+                currentTask: { id: 900, title: 'Звонок  ООО Ромашка' },
+                ownerDeal: null,
+                dto: { plan: { isActive: false } },
+            } as never,
+            deals,
+        );
+
+        expect(calls).toHaveLength(0);
+    });
+
+    /*
      * «Не очень» + финальный статус — работа окончена: задачу закрываем,
      * дедлайн не двигаем. План на таком отчёте формально остаётся активным
      * (выключить его на финальном статусе экран не даёт), и без этой защиты

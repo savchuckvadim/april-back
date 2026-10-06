@@ -25,6 +25,7 @@ import {
     BitrixProxyCallDto,
     BitrixProxyCallResponseDto,
 } from './dto/bitrix-proxy.dto';
+import { BackgroundCalls } from '@lib/core/call-context';
 
 /**
  * Agent API: прокси произвольных методов REST API Bitrix. Позволяет
@@ -39,6 +40,7 @@ import {
     required: true,
 })
 @UseGuards(AgentKeyGuard)
+@BackgroundCalls()
 @Controller('agent/bitrix/:domain')
 export class BitrixProxyController {
     constructor(private readonly bitrixProxyService: BitrixProxyService) {}

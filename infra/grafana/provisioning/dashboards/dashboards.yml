@@ -1,0 +1,13 @@
+# Автопровижининг дашбордов Grafana: JSON из папки json/ рядом.
+# Монтируется вместе со всем provisioning (см. infra/compose).
+apiVersion: 1
+
+providers:
+  - name: april
+    folder: April
+    type: file
+    disableDeletion: false
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/json
+      foldersFromFilesStructure: false

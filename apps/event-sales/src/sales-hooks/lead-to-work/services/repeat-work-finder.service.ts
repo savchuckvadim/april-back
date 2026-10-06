@@ -112,6 +112,12 @@ export class RepeatWorkFinderService {
         private readonly bitrix: BitrixService,
         private readonly portal: PortalModel,
         private readonly innFields: IRepeatInnFields,
+        /**
+         * Домены почты, которые на этом портале не означают одного клиента
+         * (настройка «Повторная заявка: почтовые домены…»). Служебные,
+         * бесплатные и выдуманные адреса исключаются всегда.
+         */
+        private readonly excludedEmailDomains: ReadonlySet<string> = new Set(),
     ) {}
 
     /** Решения по каждому лиду; лид без сигналов получает kind='none'. */
@@ -235,7 +241,9 @@ export class RepeatWorkFinderService {
         ).slice(0, MAX_EMAILS);
         const domains = uniq(
             emails
-                .map(corporateEmailDomain)
+                .map(email =>
+                    corporateEmailDomain(email, this.excludedEmailDomains),
+                )
                 .filter((value): value is string => !!value),
         ).slice(0, MAX_DOMAINS);
 

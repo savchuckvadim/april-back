@@ -4,6 +4,9 @@ import { PortalBuilderModule } from '@lib/portal-lib/builder';
 import { BitrixModule } from '@/modules/bitrix/bitrix.module';
 import { BitrixAuthModule } from '@lib/bitrix-auth';
 import { MarketplaceCoreModule } from '@lib/marketplace-core';
+// Лёгкий сервисный модуль (без контроллеров): лимит запросов к Битриксу
+// берётся из «Общих настроек портала».
+import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.module';
 import { PBXService } from './pbx.service';
 // pbx.module.ts
 
@@ -20,6 +23,7 @@ import { PBXService } from './pbx.service';
         BitrixModule,
         BitrixAuthModule,
         MarketplaceCoreModule,
+        PortalAppSettingsModule,
     ],
     providers: [PBXService],
     exports: [PortalModule, BitrixModule, PBXService],

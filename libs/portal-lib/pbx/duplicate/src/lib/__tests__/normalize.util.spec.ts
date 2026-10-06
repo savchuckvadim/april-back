@@ -1,5 +1,7 @@
 import {
     corporateEmailDomain,
+    isPlaceholderEmail,
+    parseEmailDomainList,
     emailDomain,
     extractInnFromText,
     extractInnFromTitle,
@@ -180,6 +182,40 @@ describe('emailDomain / corporateEmailDomain', () => {
         expect(corporateEmailDomain('x@yandex.ru')).toBeNull();
         expect(corporateEmailDomain('x@admlr.lipetsk.ru')).toBe(
             'admlr.lipetsk.ru',
+        );
+    });
+
+    it('выдуманные адреса заявок из мессенджеров — не организация (garant 06.10)', () => {
+        for (const email of [
+            '79601159292.max.fict@garant.ru',
+            '79111708635.telegram.fict@garant.ru',
+            '79616026666.whatsapp.fict@garant.ru',
+            '79616026666.fict@other.ru',
+        ]) {
+            expect(isPlaceholderEmail(email)).toBe(true);
+            expect(corporateEmailDomain(email)).toBeNull();
+        }
+        expect(isPlaceholderEmail('fiction@studio.ru')).toBe(false);
+        expect(isPlaceholderEmail('ivan.fictov@studio.ru')).toBe(false);
+    });
+
+    it('служебный домен Гаранта и его поддомены — не организация клиента', () => {
+        expect(corporateEmailDomain('ivanov@garant.ru')).toBeNull();
+        expect(corporateEmailDomain('ivanov@vrn.garant.ru')).toBeNull();
+        expect(corporateEmailDomain('ivanov@garant-vrn.ru')).toBe(
+            'garant-vrn.ru',
+        );
+    });
+
+    it('домены из списка портала исключаются вместе с поддоменами', () => {
+        const excluded = parseEmailDomainList(
+            '@Garant-VRN.ru; govvrn.ru,  , без-точки',
+        );
+        expect([...excluded]).toEqual(['garant-vrn.ru', 'govvrn.ru']);
+        expect(corporateEmailDomain('a@garant-vrn.ru', excluded)).toBeNull();
+        expect(corporateEmailDomain('a@cit.govvrn.ru', excluded)).toBeNull();
+        expect(corporateEmailDomain('a@romashka.ru', excluded)).toBe(
+            'romashka.ru',
         );
     });
 });

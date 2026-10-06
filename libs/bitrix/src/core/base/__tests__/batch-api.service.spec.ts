@@ -2,6 +2,7 @@ import { AxiosInstance } from 'axios';
 import { BatchApiService } from '../batch-api.service';
 import { BitrixCore } from '../bitrix-core.service';
 import { IBitrixBatchResponseResult } from '../../interface/bitrix-api-http.intterface';
+import { BitrixRateLimitTimeoutError } from '../../rate-limit/bitrix-rate-limiter.service';
 
 /** Сабкласс, открывающий protected-метод сериализации для теста. */
 class TestableBatchApiService extends BatchApiService {
@@ -143,5 +144,117 @@ describe('BatchApiService.callBatchWithConcurrency', () => {
 
         expect(results).toHaveLength(2);
         expect(service.getCmdBatch()).toEqual({});
+    });
+});
+
+/** Сабкласс, открывающий настоящий executeBatch для теста. */
+class ExecutingBatchApiService extends BatchApiService {
+    run(batch: [string, string][]) {
+        return this.executeBatch(batch);
+    }
+}
+
+describe('BatchApiService.executeBatch: алерты и шум в логах', () => {
+    const WEBHOOK_KEY = 'rest/1/secret-webhook-key';
+
+    const makeService = (request: jest.Mock) => {
+        const alert = jest.fn().mockResolvedValue(undefined);
+        const log = jest.fn();
+        const core = {
+            domain: 'portal.bitrix24.ru',
+            logger: { log, warn: jest.fn() },
+            telegramBot: { sendMessageAdminError: alert },
+            request,
+        } as unknown as BitrixCore;
+        const service = new ExecutingBatchApiService(
+            core,
+            {} as unknown as AxiosInstance,
+        );
+        return { service, alert, log };
+    };
+
+    it('сбой пачки: в алерт уходит суть ошибки, а не объект axios с ключом вебхука', async () => {
+        const axiosError = Object.assign(
+            new Error('Request failed with status code 503'),
+            {
+                code: 'ERR_BAD_RESPONSE',
+                config: {
+                    url: `https://portal.bitrix24.ru/${WEBHOOK_KEY}/batch`,
+                    data: '{"cmd":{"a":"crm.deal.list"}}',
+                },
+                response: {
+                    status: 503,
+                    data: { error: 'QUERY_LIMIT_EXCEEDED' },
+                },
+                toJSON(this: { message: string; config: unknown }) {
+                    return { message: this.message, config: this.config };
+                },
+            },
+        );
+        const { service, alert } = makeService(
+            jest.fn().mockRejectedValue(axiosError),
+        );
+
+        await service.run([['a', 'crm.deal.list']]);
+
+        expect(alert).toHaveBeenCalledTimes(1);
+        const [message] = alert.mock.calls[0] as [string];
+        expect(message).toContain('HTTP 503');
+        expect(message).toContain('QUERY_LIMIT_EXCEEDED');
+        expect(message).not.toContain(WEBHOOK_KEY);
+        expect(message).not.toContain('crm.deal.list');
+    });
+
+    it('фону отказано в слоте ограничителя — без алерта', async () => {
+        const { service, alert } = makeService(
+            jest
+                .fn()
+                .mockRejectedValue(
+                    new BitrixRateLimitTimeoutError(
+                        'portal.bitrix24.ru',
+                        'background',
+                        'cron',
+                        600_000,
+                    ),
+                ),
+        );
+
+        await service.run([['a', 'crm.deal.list']]);
+
+        expect(alert).not.toHaveBeenCalled();
+    });
+
+    it('успешная пачка с пустым result_error не пишет «success» и не шлёт алертов', async () => {
+        const { service, alert, log } = makeService(
+            jest.fn().mockResolvedValue({
+                data: { result: { result: { a: [] }, result_error: [] } },
+            }),
+        );
+
+        await service.run([['a', 'crm.deal.list']]);
+
+        expect(alert).not.toHaveBeenCalled();
+        expect(log.mock.calls.flat().join(' ')).not.toContain('success');
+    });
+
+    it('ошибка команды внутри пачки — алерт с ключом команды', async () => {
+        const { service, alert } = makeService(
+            jest.fn().mockResolvedValue({
+                data: {
+                    result: {
+                        result: {},
+                        result_error: {
+                            update_deal_1: { error: 'ACCESS_DENIED' },
+                        },
+                    },
+                },
+            }),
+        );
+
+        await service.run([['update_deal_1', 'crm.deal.update']]);
+
+        expect(alert).toHaveBeenCalledTimes(1);
+        const [firstAlert] = alert.mock.calls as unknown[][];
+        expect(String(firstAlert?.[0])).toContain('update_deal_1');
     });
 });
