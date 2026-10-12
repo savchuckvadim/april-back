@@ -16,6 +16,8 @@ import {
     XVOST_DEAL_FIELD_CODES,
 } from '../entity/event-report-entity-fields.model';
 import { COMPANY_BACKFILL_CODES } from '../entity/event-report-company-backfill.model';
+import { isFinalWorkStatus } from '../task/report-closes-task';
+import { decideClosedLaunchBaseDeal } from './closed-launch-base-deal';
 import {
     EEventReportEntityType,
     EventReportEntityType,
@@ -270,8 +272,20 @@ export class EventReportInitService {
             launchDealId,
             ownResponsibleIds,
         );
+        // Сделка запуска «ОП Основная» закрыта: вернуть её в работу либо
+        // отметить, что работа идёт в другой (см. closed-launch-base-deal).
+        const launchDecision = decideClosedLaunchBaseDeal({
+            launchDeal: ownerDeal,
+            baseCategoryId: this.baseCategoryId(portal),
+            activeDeals,
+            ownResponsibleIds,
+            continuesWork: !isFinalWorkStatus(
+                dto.report?.workStatus?.current?.code,
+            ),
+        });
         const currentBaseDeal =
-            dealsByCategory[PbxDealCategoryCodeEnum.sales_base] ?? null;
+            dealsByCategory[PbxDealCategoryCodeEnum.sales_base] ??
+            launchDecision.reopen;
         const currentXoDeal =
             dealsByCategory[PbxDealCategoryCodeEnum.sales_xo] ?? null;
 
@@ -338,7 +352,17 @@ export class EventReportInitService {
             currentTask,
             reportContact,
             planContact,
+            reopenedBaseDeal: Boolean(launchDecision.reopen),
+            closedLaunchBaseDeal: launchDecision.closed,
         };
+    }
+
+    /** Битрикс-id категории «ОП Основная»; не настроена — null. */
+    private baseCategoryId(portal: PortalModel): string | null {
+        const category = portal.getDealCategoryByCode(
+            PbxDealCategoryCodeEnum.sales_base,
+        );
+        return category ? String(category.bitrixId) : null;
     }
 
     private resolveEntity(dto: EventSalesFlowDto): {

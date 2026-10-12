@@ -55,12 +55,69 @@ const noItem = (): SupplyReportFormSelectItem => ({
 });
 
 /**
+ * Портальная настройка состава формы (колонки `required_fields` /
+ * `optional_fields` в `supply_report_templates`).
+ *
+ * ПОЧЕМУ ТОЛЬКО `isRequired`. Форма описывает одновременно и то, что рисует
+ * фронт, и набор тегов, который уходит в docxtemplater. Он КИДАЕТ, если тега
+ * из .docx нет в данных рендера, поэтому набор полей обязан остаться
+ * НАДМНОЖЕСТВОМ кодового: ни переупорядочить, ни выбросить поле настройкой
+ * нельзя — это сломало бы и мерж значений из сделки на фронте (он идёт по
+ * коду поля), и сборку документа. Настройка меняет ровно один флаг.
+ */
+export type SupplyReportFieldOverrides = {
+    /** Коды, которые портал считает обязательными. */
+    requiredCodes?: readonly string[] | null;
+    /** Коды, которые портал показывает необязательными. */
+    optionalCodes?: readonly string[] | null;
+};
+
+/**
+ * Применение настройки к уже собранному списку.
+ *
+ * Порядок и состав сохраняются полностью: список только отображается по
+ * элементам. `optionalCodes` применяется ПОСЛЕ `requiredCodes` — если
+ * администратор занёс код в оба списка, побеждает «необязательное», то есть
+ * менее строгий вариант: опечатка в настройке не должна блокировать
+ * менеджеру отправку формы. Неизвестный код игнорируется и поля НЕ
+ * добавляет: фронт нарисовал бы его как настоящее.
+ */
+function applyFieldOverrides(
+    fields: SupplyReportFormField[],
+    overrides?: SupplyReportFieldOverrides,
+): SupplyReportFormField[] {
+    const required = new Set(overrides?.requiredCodes ?? []);
+    const optional = new Set(overrides?.optionalCodes ?? []);
+    if (required.size === 0 && optional.size === 0) {
+        return fields;
+    }
+
+    return fields.map(field => {
+        if (optional.has(field.code)) {
+            return { ...field, isRequired: false };
+        }
+        if (required.has(field.code)) {
+            return { ...field, isRequired: true };
+        }
+        return field;
+    });
+}
+
+/**
  * 15 активных полей формы отчёта о поставке.
  *
  * Возвращается новая копия на каждый вызов: фронт присылает форму обратно
  * заполненной, поэтому значения по умолчанию мутировать нельзя.
+ *
+ * Без `overrides` результат байт в байт тот же, что был до появления
+ * портальной настройки.
  */
-export const getSupplyReportFormFields = (): SupplyReportFormField[] => [
+export const getSupplyReportFormFields = (
+    overrides?: SupplyReportFieldOverrides,
+): SupplyReportFormField[] =>
+    applyFieldOverrides(buildSupplyReportFormFields(), overrides);
+
+const buildSupplyReportFormFields = (): SupplyReportFormField[] => [
     {
         type: 'date',
         name: 'Дата продажи',

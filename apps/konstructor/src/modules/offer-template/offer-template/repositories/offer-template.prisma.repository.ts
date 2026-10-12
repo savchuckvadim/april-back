@@ -2,8 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@lib/core/prisma/prisma.service';
 import { OfferTemplateRepository } from './offer-template.repository';
 import { OfferTemplate, OfferTemplateSummary } from '../';
-import { Prisma } from 'generated/prisma';
 import type { OfferTemplateFilters } from '../types/offer-template-filters.type';
+import { OFFER_TEMPLATE_BINDING_SELECT } from '../lib/offer-template-select.const';
+import {
+    buildOfferTemplateWhereInput,
+    matchesOfferTemplateListFilters,
+} from '../lib/offer-template-where.util';
 
 @Injectable()
 export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
@@ -39,34 +43,8 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
     async findMany(
         filters?: OfferTemplateFilters,
     ): Promise<OfferTemplateSummary[]> {
-        const where: Prisma.OfferTemplateWhereInput = {};
-
-        if (filters?.visibility) {
-            where.visibility = filters.visibility;
-        }
-
-        if (filters?.is_active !== undefined) {
-            where.is_active = filters.is_active;
-        }
-
-        if (filters?.search) {
-            where.OR = [
-                { name: { contains: filters.search } },
-                { code: { contains: filters.search } },
-                { tags: { contains: filters.search } },
-            ];
-        }
-
-        if (filters?.portal_id) {
-            where.offerTemplatePortal = {
-                some: {
-                    portal_id: filters.portal_id,
-                },
-            };
-        }
-
-        const results = (await this.prisma.offerTemplate.findMany({
-            where,
+        const rows = (await this.prisma.offerTemplate.findMany({
+            where: buildOfferTemplateWhereInput(filters),
             select: {
                 id: true,
                 name: true,
@@ -83,9 +61,17 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                 counter: true,
                 created_at: true,
                 tags: true,
+                ...OFFER_TEMPLATE_BINDING_SELECT,
             },
             orderBy: { created_at: 'desc' },
         })) as Partial<OfferTemplateSummary>[];
+
+        // client_types/supply_types отбираются уже в памяти —
+        // почему именно так, см. докблок matchesOfferTemplateListFilters.
+        const results = rows.filter(row =>
+            matchesOfferTemplateListFilters(row, filters),
+        );
+
         const resultEntities: (OfferTemplateSummary | undefined)[] = [];
         for (const result of results) {
             // const portalId = await this.getPortalIdByTemplateId(
@@ -132,8 +118,6 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
     }
 
     async create(data: Partial<OfferTemplate>): Promise<OfferTemplate> {
-        console.log('OFFER TEMPLATE CREATE');
-        console.log(data, 'data');
         const result = await this.prisma.offerTemplate.create({
             data: {
                 name: data.name!,
@@ -159,10 +143,17 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                 is_active: data.is_active!,
                 counter: data.counter!,
                 creator_bitrix_user_id: data.creator_bitrix_user_id,
+                // Привязки шаблона. agent_id — скалярное поле без relation и
+                // без FK. client_types/supply_types сущность держит уже
+                // сериализованной JSON-строкой (сериализует сервис через
+                // serializeTemplateList), поэтому здесь строка идёт как есть;
+                // отсутствие значения — NULL, то есть «годится любому».
+                agent_id: data.agent_id ?? null,
+                client_types: data.client_types ?? null,
+                supply_types: data.supply_types ?? null,
                 created_at: new Date(),
             },
         });
-        console.log(result, 'OFFER TEMPLATE CREATE result');
         const entity = {
             ...result,
             id: String(result.id),
@@ -223,6 +214,18 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                     is_active: data.is_active,
                 }),
                 ...(data.counter !== undefined && { counter: data.counter }),
+                // Привязки шаблона: поле не передано — не трогаем; передан
+                // null — сбрасываем в NULL («годится любому»). Строки
+                // client_types/supply_types приходят уже сериализованными.
+                ...(data.agent_id !== undefined && {
+                    agent_id: data.agent_id,
+                }),
+                ...(data.client_types !== undefined && {
+                    client_types: data.client_types,
+                }),
+                ...(data.supply_types !== undefined && {
+                    supply_types: data.supply_types,
+                }),
                 updated_at: new Date(),
             },
         });
@@ -267,6 +270,7 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                 is_active: true,
                 counter: true,
                 created_at: true,
+                ...OFFER_TEMPLATE_BINDING_SELECT,
                 offerTemplatePortal: {
                     select: {
                         portal_id: true,
@@ -309,6 +313,7 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                 is_active: true,
                 counter: true,
                 created_at: true,
+                ...OFFER_TEMPLATE_BINDING_SELECT,
                 offerTemplatePortal: {
                     select: {
                         portal_id: true,
@@ -353,6 +358,7 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                 is_active: true,
                 counter: true,
                 created_at: true,
+                ...OFFER_TEMPLATE_BINDING_SELECT,
                 offerTemplatePortal: {
                     select: {
                         portal_id: true,
@@ -407,6 +413,7 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
                 is_active: true,
                 counter: true,
                 created_at: true,
+                ...OFFER_TEMPLATE_BINDING_SELECT,
                 offerTemplatePortal: true,
             },
             orderBy: { created_at: 'desc' },
@@ -414,10 +421,12 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
 
         const resultEntities: OfferTemplate[] = [];
         for (const result of results) {
+            // BigInt(result.id), не BigInt(!result.id): отрицание приводило id
+            // к boolean, поэтому в запрос всегда уходил 0n и portal_id был
+            // мусорным.
             const portalId = await this.getPortalIdByTemplateId(
-                BigInt(!result.id),
+                BigInt(result.id!),
             );
-            console.log(portalId, 'portalId');
             resultEntities.push(
                 new OfferTemplate({
                     ...result,
@@ -430,10 +439,10 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
     private async prepareToEntityWithPortalId(
         result: Partial<OfferTemplate> | null,
     ): Promise<Partial<OfferTemplate> | null> {
-        if (!result) {
-            return null;
+        if (!result?.id) {
+            return result ?? null;
         }
-        const portalId = await this.getPortalIdByTemplateId(BigInt(!result.id));
+        const portalId = await this.getPortalIdByTemplateId(BigInt(result.id));
         return portalId
             ? {
                   ...result,
@@ -445,10 +454,10 @@ export class OfferTemplatePrismaRepository implements OfferTemplateRepository {
     private async prepareToEntitySummaryWithPortalId(
         result: Partial<OfferTemplateSummary> | null,
     ): Promise<Partial<OfferTemplateSummary> | null> {
-        if (!result) {
-            return null;
+        if (!result?.id) {
+            return result ?? null;
         }
-        const portalId = await this.getPortalIdByTemplateId(BigInt(!result.id));
+        const portalId = await this.getPortalIdByTemplateId(BigInt(result.id));
         return portalId
             ? {
                   ...result,

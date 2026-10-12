@@ -89,7 +89,9 @@ export class EventSilentJobManagerService {
         this.logger.log(
             `Emitting ${eventName} domain=${domain} items=${Object.keys(collected).length}`,
         );
-        // emitAsync ждёт async-listener'ов (помеченных { async: true } в @OnEvent)
+        // emitAsync ждёт промисы слушателей, объявленных БЕЗ { async: true }:
+        // с этим флагом EventEmitter2 зовёт слушателя через setImmediate и не
+        // ждёт его (см. EVENT_SILENCE_GUIDE.md).
         await this.eventEmitter.emitAsync(eventName, handleData);
     }
 

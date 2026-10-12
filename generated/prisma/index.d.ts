@@ -92147,6 +92147,7 @@ export namespace Prisma {
     archived_at: Date | null
     agent_id: bigint | null
     client_types: string | null
+    supply_types: string | null
   }
 
   export type OfferTemplateMaxAggregateOutputType = {
@@ -92180,6 +92181,7 @@ export namespace Prisma {
     archived_at: Date | null
     agent_id: bigint | null
     client_types: string | null
+    supply_types: string | null
   }
 
   export type OfferTemplateCountAggregateOutputType = {
@@ -92213,6 +92215,7 @@ export namespace Prisma {
     archived_at: number
     agent_id: number
     client_types: number
+    supply_types: number
     _all: number
   }
 
@@ -92262,6 +92265,7 @@ export namespace Prisma {
     archived_at?: true
     agent_id?: true
     client_types?: true
+    supply_types?: true
   }
 
   export type OfferTemplateMaxAggregateInputType = {
@@ -92295,6 +92299,7 @@ export namespace Prisma {
     archived_at?: true
     agent_id?: true
     client_types?: true
+    supply_types?: true
   }
 
   export type OfferTemplateCountAggregateInputType = {
@@ -92328,6 +92333,7 @@ export namespace Prisma {
     archived_at?: true
     agent_id?: true
     client_types?: true
+    supply_types?: true
     _all?: true
   }
 
@@ -92448,6 +92454,7 @@ export namespace Prisma {
     archived_at: Date | null
     agent_id: bigint | null
     client_types: string | null
+    supply_types: string | null
     _count: OfferTemplateCountAggregateOutputType | null
     _avg: OfferTemplateAvgAggregateOutputType | null
     _sum: OfferTemplateSumAggregateOutputType | null
@@ -92500,6 +92507,7 @@ export namespace Prisma {
     archived_at?: boolean
     agent_id?: boolean
     client_types?: boolean
+    supply_types?: boolean
     offerTemplateFonts?: boolean | OfferTemplate$offerTemplateFontsArgs<ExtArgs>
     offerTemplatePages?: boolean | OfferTemplate$offerTemplatePagesArgs<ExtArgs>
     offerTemplatePortal?: boolean | OfferTemplate$offerTemplatePortalArgs<ExtArgs>
@@ -92540,9 +92548,10 @@ export namespace Prisma {
     archived_at?: boolean
     agent_id?: boolean
     client_types?: boolean
+    supply_types?: boolean
   }
 
-  export type OfferTemplateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "visibility" | "is_default" | "file_path" | "demo_path" | "type" | "rules" | "price_settings" | "infoblock_settings" | "letter_text" | "sale_text_1" | "sale_text_2" | "sale_text_3" | "sale_text_4" | "sale_text_5" | "field_codes" | "style" | "color" | "code" | "tags" | "is_active" | "counter" | "created_at" | "updated_at" | "creator_bitrix_user_id" | "is_archived" | "archived_at" | "agent_id" | "client_types", ExtArgs["result"]["offerTemplate"]>
+  export type OfferTemplateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "visibility" | "is_default" | "file_path" | "demo_path" | "type" | "rules" | "price_settings" | "infoblock_settings" | "letter_text" | "sale_text_1" | "sale_text_2" | "sale_text_3" | "sale_text_4" | "sale_text_5" | "field_codes" | "style" | "color" | "code" | "tags" | "is_active" | "counter" | "created_at" | "updated_at" | "creator_bitrix_user_id" | "is_archived" | "archived_at" | "agent_id" | "client_types" | "supply_types", ExtArgs["result"]["offerTemplate"]>
   export type OfferTemplateInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     offerTemplateFonts?: boolean | OfferTemplate$offerTemplateFontsArgs<ExtArgs>
     offerTemplatePages?: boolean | OfferTemplate$offerTemplatePagesArgs<ExtArgs>
@@ -92590,6 +92599,10 @@ export namespace Prisma {
       archived_at: Date | null
       agent_id: bigint | null
       client_types: string | null
+      /**
+       * JSON-массив кодов SupplyTypeEnum (internet|proxima); NULL — для любого типа поставки
+       */
+      supply_types: string | null
     }, ExtArgs["result"]["offerTemplate"]>
     composites: {}
   }
@@ -92993,6 +93006,7 @@ export namespace Prisma {
     readonly archived_at: FieldRef<"OfferTemplate", 'DateTime'>
     readonly agent_id: FieldRef<"OfferTemplate", 'BigInt'>
     readonly client_types: FieldRef<"OfferTemplate", 'String'>
+    readonly supply_types: FieldRef<"OfferTemplate", 'String'>
   }
     
 
@@ -109861,6 +109875,7 @@ export namespace Prisma {
     agent_id: bigint | null
     creator_bitrix_user_id: bigint | null
     client_types: string | null
+    supply_types: string | null
   }
 
   export type InvoiceTemplateMaxAggregateOutputType = {
@@ -109883,6 +109898,7 @@ export namespace Prisma {
     agent_id: bigint | null
     creator_bitrix_user_id: bigint | null
     client_types: string | null
+    supply_types: string | null
   }
 
   export type InvoiceTemplateCountAggregateOutputType = {
@@ -109905,6 +109921,7 @@ export namespace Prisma {
     agent_id: number
     creator_bitrix_user_id: number
     client_types: number
+    supply_types: number
     _all: number
   }
 
@@ -109943,6 +109960,7 @@ export namespace Prisma {
     agent_id?: true
     creator_bitrix_user_id?: true
     client_types?: true
+    supply_types?: true
   }
 
   export type InvoiceTemplateMaxAggregateInputType = {
@@ -109965,6 +109983,7 @@ export namespace Prisma {
     agent_id?: true
     creator_bitrix_user_id?: true
     client_types?: true
+    supply_types?: true
   }
 
   export type InvoiceTemplateCountAggregateInputType = {
@@ -109987,6 +110006,7 @@ export namespace Prisma {
     agent_id?: true
     creator_bitrix_user_id?: true
     client_types?: true
+    supply_types?: true
     _all?: true
   }
 
@@ -110096,6 +110116,7 @@ export namespace Prisma {
     agent_id: bigint | null
     creator_bitrix_user_id: bigint | null
     client_types: string | null
+    supply_types: string | null
     _count: InvoiceTemplateCountAggregateOutputType | null
     _avg: InvoiceTemplateAvgAggregateOutputType | null
     _sum: InvoiceTemplateSumAggregateOutputType | null
@@ -110137,6 +110158,7 @@ export namespace Prisma {
     agent_id?: boolean
     creator_bitrix_user_id?: boolean
     client_types?: boolean
+    supply_types?: boolean
     agent?: boolean | InvoiceTemplate$agentArgs<ExtArgs>
     portal?: boolean | InvoiceTemplate$portalArgs<ExtArgs>
   }, ExtArgs["result"]["invoiceTemplate"]>
@@ -110163,9 +110185,10 @@ export namespace Prisma {
     agent_id?: boolean
     creator_bitrix_user_id?: boolean
     client_types?: boolean
+    supply_types?: boolean
   }
 
-  export type InvoiceTemplateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "visibility" | "file_path" | "demo_path" | "type" | "name" | "code" | "counter" | "description" | "is_default" | "is_active" | "is_archived" | "archived_at" | "portal_id" | "agent_id" | "creator_bitrix_user_id" | "client_types", ExtArgs["result"]["invoiceTemplate"]>
+  export type InvoiceTemplateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "visibility" | "file_path" | "demo_path" | "type" | "name" | "code" | "counter" | "description" | "is_default" | "is_active" | "is_archived" | "archived_at" | "portal_id" | "agent_id" | "creator_bitrix_user_id" | "client_types" | "supply_types", ExtArgs["result"]["invoiceTemplate"]>
   export type InvoiceTemplateInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     agent?: boolean | InvoiceTemplate$agentArgs<ExtArgs>
     portal?: boolean | InvoiceTemplate$portalArgs<ExtArgs>
@@ -110197,6 +110220,10 @@ export namespace Prisma {
       agent_id: bigint | null
       creator_bitrix_user_id: bigint | null
       client_types: string | null
+      /**
+       * JSON-массив кодов SupplyTypeEnum (internet|proxima); NULL — для любого типа поставки
+       */
+      supply_types: string | null
     }, ExtArgs["result"]["invoiceTemplate"]>
     composites: {}
   }
@@ -110587,6 +110614,7 @@ export namespace Prisma {
     readonly agent_id: FieldRef<"InvoiceTemplate", 'BigInt'>
     readonly creator_bitrix_user_id: FieldRef<"InvoiceTemplate", 'BigInt'>
     readonly client_types: FieldRef<"InvoiceTemplate", 'String'>
+    readonly supply_types: FieldRef<"InvoiceTemplate", 'String'>
   }
     
 
@@ -118569,6 +118597,7 @@ export namespace Prisma {
     agent_id: bigint | null
     contract_type: string | null
     client_types: string | null
+    supply_types: string | null
     name: string | null
     code: string | null
     file_path: string | null
@@ -118589,6 +118618,7 @@ export namespace Prisma {
     agent_id: bigint | null
     contract_type: string | null
     client_types: string | null
+    supply_types: string | null
     name: string | null
     code: string | null
     file_path: string | null
@@ -118609,6 +118639,7 @@ export namespace Prisma {
     agent_id: number
     contract_type: number
     client_types: number
+    supply_types: number
     name: number
     code: number
     file_path: number
@@ -118645,6 +118676,7 @@ export namespace Prisma {
     agent_id?: true
     contract_type?: true
     client_types?: true
+    supply_types?: true
     name?: true
     code?: true
     file_path?: true
@@ -118665,6 +118697,7 @@ export namespace Prisma {
     agent_id?: true
     contract_type?: true
     client_types?: true
+    supply_types?: true
     name?: true
     code?: true
     file_path?: true
@@ -118685,6 +118718,7 @@ export namespace Prisma {
     agent_id?: true
     contract_type?: true
     client_types?: true
+    supply_types?: true
     name?: true
     code?: true
     file_path?: true
@@ -118792,6 +118826,7 @@ export namespace Prisma {
     agent_id: bigint | null
     contract_type: string
     client_types: string | null
+    supply_types: string | null
     name: string
     code: string
     file_path: string
@@ -118831,6 +118866,7 @@ export namespace Prisma {
     agent_id?: boolean
     contract_type?: boolean
     client_types?: boolean
+    supply_types?: boolean
     name?: boolean
     code?: boolean
     file_path?: boolean
@@ -118853,6 +118889,7 @@ export namespace Prisma {
     agent_id?: boolean
     contract_type?: boolean
     client_types?: boolean
+    supply_types?: boolean
     name?: boolean
     code?: boolean
     file_path?: boolean
@@ -118865,7 +118902,7 @@ export namespace Prisma {
     creator_bitrix_user_id?: boolean
   }
 
-  export type ContractTemplateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "portal_id" | "agent_id" | "contract_type" | "client_types" | "name" | "code" | "file_path" | "demo_path" | "description" | "is_default" | "is_active" | "is_archived" | "archived_at" | "creator_bitrix_user_id", ExtArgs["result"]["contractTemplate"]>
+  export type ContractTemplateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "portal_id" | "agent_id" | "contract_type" | "client_types" | "supply_types" | "name" | "code" | "file_path" | "demo_path" | "description" | "is_default" | "is_active" | "is_archived" | "archived_at" | "creator_bitrix_user_id", ExtArgs["result"]["contractTemplate"]>
 
   export type $ContractTemplatePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "ContractTemplate"
@@ -118887,6 +118924,10 @@ export namespace Prisma {
        * JSON-массив кодов ClientTypeEnum; NULL — для любого типа клиента
        */
       client_types: string | null
+      /**
+       * JSON-массив кодов SupplyTypeEnum (internet|proxima); NULL — для любого типа поставки
+       */
+      supply_types: string | null
       name: string
       code: string
       file_path: string
@@ -119273,6 +119314,7 @@ export namespace Prisma {
     readonly agent_id: FieldRef<"ContractTemplate", 'BigInt'>
     readonly contract_type: FieldRef<"ContractTemplate", 'String'>
     readonly client_types: FieldRef<"ContractTemplate", 'String'>
+    readonly supply_types: FieldRef<"ContractTemplate", 'String'>
     readonly name: FieldRef<"ContractTemplate", 'String'>
     readonly code: FieldRef<"ContractTemplate", 'String'>
     readonly file_path: FieldRef<"ContractTemplate", 'String'>
@@ -119637,6 +119679,7 @@ export namespace Prisma {
     portal_id: bigint | null
     agent_id: bigint | null
     client_types: string | null
+    supply_types: string | null
     name: string | null
     code: string | null
     file_path: string | null
@@ -119658,6 +119701,7 @@ export namespace Prisma {
     portal_id: bigint | null
     agent_id: bigint | null
     client_types: string | null
+    supply_types: string | null
     name: string | null
     code: string | null
     file_path: string | null
@@ -119679,6 +119723,7 @@ export namespace Prisma {
     portal_id: number
     agent_id: number
     client_types: number
+    supply_types: number
     name: number
     code: number
     file_path: number
@@ -119716,6 +119761,7 @@ export namespace Prisma {
     portal_id?: true
     agent_id?: true
     client_types?: true
+    supply_types?: true
     name?: true
     code?: true
     file_path?: true
@@ -119737,6 +119783,7 @@ export namespace Prisma {
     portal_id?: true
     agent_id?: true
     client_types?: true
+    supply_types?: true
     name?: true
     code?: true
     file_path?: true
@@ -119758,6 +119805,7 @@ export namespace Prisma {
     portal_id?: true
     agent_id?: true
     client_types?: true
+    supply_types?: true
     name?: true
     code?: true
     file_path?: true
@@ -119866,6 +119914,7 @@ export namespace Prisma {
     portal_id: bigint | null
     agent_id: bigint | null
     client_types: string | null
+    supply_types: string | null
     name: string
     code: string
     file_path: string
@@ -119906,6 +119955,7 @@ export namespace Prisma {
     portal_id?: boolean
     agent_id?: boolean
     client_types?: boolean
+    supply_types?: boolean
     name?: boolean
     code?: boolean
     file_path?: boolean
@@ -119929,6 +119979,7 @@ export namespace Prisma {
     portal_id?: boolean
     agent_id?: boolean
     client_types?: boolean
+    supply_types?: boolean
     name?: boolean
     code?: boolean
     file_path?: boolean
@@ -119943,7 +119994,7 @@ export namespace Prisma {
     creator_bitrix_user_id?: boolean
   }
 
-  export type SupplyReportTemplateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "portal_id" | "agent_id" | "client_types" | "name" | "code" | "file_path" | "demo_path" | "description" | "required_fields" | "optional_fields" | "is_default" | "is_active" | "is_archived" | "archived_at" | "creator_bitrix_user_id", ExtArgs["result"]["supplyReportTemplate"]>
+  export type SupplyReportTemplateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "portal_id" | "agent_id" | "client_types" | "supply_types" | "name" | "code" | "file_path" | "demo_path" | "description" | "required_fields" | "optional_fields" | "is_default" | "is_active" | "is_archived" | "archived_at" | "creator_bitrix_user_id", ExtArgs["result"]["supplyReportTemplate"]>
 
   export type $SupplyReportTemplatePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "SupplyReportTemplate"
@@ -119961,6 +120012,10 @@ export namespace Prisma {
        * JSON-массив кодов ClientTypeEnum; NULL — для любого типа клиента
        */
       client_types: string | null
+      /**
+       * JSON-массив кодов SupplyTypeEnum (internet|proxima); NULL — для любого типа поставки
+       */
+      supply_types: string | null
       name: string
       code: string
       file_path: string
@@ -120354,6 +120409,7 @@ export namespace Prisma {
     readonly portal_id: FieldRef<"SupplyReportTemplate", 'BigInt'>
     readonly agent_id: FieldRef<"SupplyReportTemplate", 'BigInt'>
     readonly client_types: FieldRef<"SupplyReportTemplate", 'String'>
+    readonly supply_types: FieldRef<"SupplyReportTemplate", 'String'>
     readonly name: FieldRef<"SupplyReportTemplate", 'String'>
     readonly code: FieldRef<"SupplyReportTemplate", 'String'>
     readonly file_path: FieldRef<"SupplyReportTemplate", 'String'>
@@ -122144,7 +122200,8 @@ export namespace Prisma {
     is_archived: 'is_archived',
     archived_at: 'archived_at',
     agent_id: 'agent_id',
-    client_types: 'client_types'
+    client_types: 'client_types',
+    supply_types: 'supply_types'
   };
 
   export type OfferTemplateScalarFieldEnum = (typeof OfferTemplateScalarFieldEnum)[keyof typeof OfferTemplateScalarFieldEnum]
@@ -122491,7 +122548,8 @@ export namespace Prisma {
     portal_id: 'portal_id',
     agent_id: 'agent_id',
     creator_bitrix_user_id: 'creator_bitrix_user_id',
-    client_types: 'client_types'
+    client_types: 'client_types',
+    supply_types: 'supply_types'
   };
 
   export type InvoiceTemplateScalarFieldEnum = (typeof InvoiceTemplateScalarFieldEnum)[keyof typeof InvoiceTemplateScalarFieldEnum]
@@ -122652,6 +122710,7 @@ export namespace Prisma {
     agent_id: 'agent_id',
     contract_type: 'contract_type',
     client_types: 'client_types',
+    supply_types: 'supply_types',
     name: 'name',
     code: 'code',
     file_path: 'file_path',
@@ -122674,6 +122733,7 @@ export namespace Prisma {
     portal_id: 'portal_id',
     agent_id: 'agent_id',
     client_types: 'client_types',
+    supply_types: 'supply_types',
     name: 'name',
     code: 'code',
     file_path: 'file_path',
@@ -123660,7 +123720,8 @@ export namespace Prisma {
     color: 'color',
     code: 'code',
     tags: 'tags',
-    client_types: 'client_types'
+    client_types: 'client_types',
+    supply_types: 'supply_types'
   };
 
   export type OfferTemplateOrderByRelevanceFieldEnum = (typeof OfferTemplateOrderByRelevanceFieldEnum)[keyof typeof OfferTemplateOrderByRelevanceFieldEnum]
@@ -123892,7 +123953,8 @@ export namespace Prisma {
     name: 'name',
     code: 'code',
     description: 'description',
-    client_types: 'client_types'
+    client_types: 'client_types',
+    supply_types: 'supply_types'
   };
 
   export type InvoiceTemplateOrderByRelevanceFieldEnum = (typeof InvoiceTemplateOrderByRelevanceFieldEnum)[keyof typeof InvoiceTemplateOrderByRelevanceFieldEnum]
@@ -123998,6 +124060,7 @@ export namespace Prisma {
   export const ContractTemplateOrderByRelevanceFieldEnum: {
     contract_type: 'contract_type',
     client_types: 'client_types',
+    supply_types: 'supply_types',
     name: 'name',
     code: 'code',
     file_path: 'file_path',
@@ -124010,6 +124073,7 @@ export namespace Prisma {
 
   export const SupplyReportTemplateOrderByRelevanceFieldEnum: {
     client_types: 'client_types',
+    supply_types: 'supply_types',
     name: 'name',
     code: 'code',
     file_path: 'file_path',
@@ -131687,6 +131751,7 @@ export namespace Prisma {
     archived_at?: DateTimeNullableFilter<"OfferTemplate"> | Date | string | null
     agent_id?: BigIntNullableFilter<"OfferTemplate"> | bigint | number | null
     client_types?: StringNullableFilter<"OfferTemplate"> | string | null
+    supply_types?: StringNullableFilter<"OfferTemplate"> | string | null
     offerTemplateFonts?: OfferTemplateFontListRelationFilter
     offerTemplatePages?: OfferTemplatePageListRelationFilter
     offerTemplatePortal?: OfferTemplatePortalListRelationFilter
@@ -131724,6 +131789,7 @@ export namespace Prisma {
     archived_at?: SortOrderInput | SortOrder
     agent_id?: SortOrderInput | SortOrder
     client_types?: SortOrderInput | SortOrder
+    supply_types?: SortOrderInput | SortOrder
     offerTemplateFonts?: OfferTemplateFontOrderByRelationAggregateInput
     offerTemplatePages?: OfferTemplatePageOrderByRelationAggregateInput
     offerTemplatePortal?: OfferTemplatePortalOrderByRelationAggregateInput
@@ -131765,6 +131831,7 @@ export namespace Prisma {
     archived_at?: DateTimeNullableFilter<"OfferTemplate"> | Date | string | null
     agent_id?: BigIntNullableFilter<"OfferTemplate"> | bigint | number | null
     client_types?: StringNullableFilter<"OfferTemplate"> | string | null
+    supply_types?: StringNullableFilter<"OfferTemplate"> | string | null
     offerTemplateFonts?: OfferTemplateFontListRelationFilter
     offerTemplatePages?: OfferTemplatePageListRelationFilter
     offerTemplatePortal?: OfferTemplatePortalListRelationFilter
@@ -131802,6 +131869,7 @@ export namespace Prisma {
     archived_at?: SortOrderInput | SortOrder
     agent_id?: SortOrderInput | SortOrder
     client_types?: SortOrderInput | SortOrder
+    supply_types?: SortOrderInput | SortOrder
     _count?: OfferTemplateCountOrderByAggregateInput
     _avg?: OfferTemplateAvgOrderByAggregateInput
     _max?: OfferTemplateMaxOrderByAggregateInput
@@ -131843,6 +131911,7 @@ export namespace Prisma {
     archived_at?: DateTimeNullableWithAggregatesFilter<"OfferTemplate"> | Date | string | null
     agent_id?: BigIntNullableWithAggregatesFilter<"OfferTemplate"> | bigint | number | null
     client_types?: StringNullableWithAggregatesFilter<"OfferTemplate"> | string | null
+    supply_types?: StringNullableWithAggregatesFilter<"OfferTemplate"> | string | null
   }
 
   export type offer_zakupki_settingsWhereInput = {
@@ -133535,6 +133604,7 @@ export namespace Prisma {
     agent_id?: BigIntNullableFilter<"InvoiceTemplate"> | bigint | number | null
     creator_bitrix_user_id?: BigIntNullableFilter<"InvoiceTemplate"> | bigint | number | null
     client_types?: StringNullableFilter<"InvoiceTemplate"> | string | null
+    supply_types?: StringNullableFilter<"InvoiceTemplate"> | string | null
     agent?: XOR<AgentsNullableScalarRelationFilter, agentsWhereInput> | null
     portal?: XOR<PortalNullableScalarRelationFilter, PortalWhereInput> | null
   }
@@ -133559,6 +133629,7 @@ export namespace Prisma {
     agent_id?: SortOrderInput | SortOrder
     creator_bitrix_user_id?: SortOrderInput | SortOrder
     client_types?: SortOrderInput | SortOrder
+    supply_types?: SortOrderInput | SortOrder
     agent?: agentsOrderByWithRelationInput
     portal?: PortalOrderByWithRelationInput
     _relevance?: InvoiceTemplateOrderByRelevanceInput
@@ -133587,6 +133658,7 @@ export namespace Prisma {
     agent_id?: BigIntNullableFilter<"InvoiceTemplate"> | bigint | number | null
     creator_bitrix_user_id?: BigIntNullableFilter<"InvoiceTemplate"> | bigint | number | null
     client_types?: StringNullableFilter<"InvoiceTemplate"> | string | null
+    supply_types?: StringNullableFilter<"InvoiceTemplate"> | string | null
     agent?: XOR<AgentsNullableScalarRelationFilter, agentsWhereInput> | null
     portal?: XOR<PortalNullableScalarRelationFilter, PortalWhereInput> | null
   }, "id">
@@ -133611,6 +133683,7 @@ export namespace Prisma {
     agent_id?: SortOrderInput | SortOrder
     creator_bitrix_user_id?: SortOrderInput | SortOrder
     client_types?: SortOrderInput | SortOrder
+    supply_types?: SortOrderInput | SortOrder
     _count?: InvoiceTemplateCountOrderByAggregateInput
     _avg?: InvoiceTemplateAvgOrderByAggregateInput
     _max?: InvoiceTemplateMaxOrderByAggregateInput
@@ -133641,6 +133714,7 @@ export namespace Prisma {
     agent_id?: BigIntNullableWithAggregatesFilter<"InvoiceTemplate"> | bigint | number | null
     creator_bitrix_user_id?: BigIntNullableWithAggregatesFilter<"InvoiceTemplate"> | bigint | number | null
     client_types?: StringNullableWithAggregatesFilter<"InvoiceTemplate"> | string | null
+    supply_types?: StringNullableWithAggregatesFilter<"InvoiceTemplate"> | string | null
   }
 
   export type marketplace_installsWhereInput = {
@@ -134421,6 +134495,7 @@ export namespace Prisma {
     agent_id?: BigIntNullableFilter<"ContractTemplate"> | bigint | number | null
     contract_type?: StringFilter<"ContractTemplate"> | string
     client_types?: StringNullableFilter<"ContractTemplate"> | string | null
+    supply_types?: StringNullableFilter<"ContractTemplate"> | string | null
     name?: StringFilter<"ContractTemplate"> | string
     code?: StringFilter<"ContractTemplate"> | string
     file_path?: StringFilter<"ContractTemplate"> | string
@@ -134441,6 +134516,7 @@ export namespace Prisma {
     agent_id?: SortOrderInput | SortOrder
     contract_type?: SortOrder
     client_types?: SortOrderInput | SortOrder
+    supply_types?: SortOrderInput | SortOrder
     name?: SortOrder
     code?: SortOrder
     file_path?: SortOrder
@@ -134465,6 +134541,7 @@ export namespace Prisma {
     agent_id?: BigIntNullableFilter<"ContractTemplate"> | bigint | number | null
     contract_type?: StringFilter<"ContractTemplate"> | string
     client_types?: StringNullableFilter<"ContractTemplate"> | string | null
+    supply_types?: StringNullableFilter<"ContractTemplate"> | string | null
     name?: StringFilter<"ContractTemplate"> | string
     code?: StringFilter<"ContractTemplate"> | string
     file_path?: StringFilter<"ContractTemplate"> | string
@@ -134485,6 +134562,7 @@ export namespace Prisma {
     agent_id?: SortOrderInput | SortOrder
     contract_type?: SortOrder
     client_types?: SortOrderInput | SortOrder
+    supply_types?: SortOrderInput | SortOrder
     name?: SortOrder
     code?: SortOrder
     file_path?: SortOrder
@@ -134513,6 +134591,7 @@ export namespace Prisma {
     agent_id?: BigIntNullableWithAggregatesFilter<"ContractTemplate"> | bigint | number | null
     contract_type?: StringWithAggregatesFilter<"ContractTemplate"> | string
     client_types?: StringNullableWithAggregatesFilter<"ContractTemplate"> | string | null
+    supply_types?: StringNullableWithAggregatesFilter<"ContractTemplate"> | string | null
     name?: StringWithAggregatesFilter<"ContractTemplate"> | string
     code?: StringWithAggregatesFilter<"ContractTemplate"> | string
     file_path?: StringWithAggregatesFilter<"ContractTemplate"> | string
@@ -134535,6 +134614,7 @@ export namespace Prisma {
     portal_id?: BigIntNullableFilter<"SupplyReportTemplate"> | bigint | number | null
     agent_id?: BigIntNullableFilter<"SupplyReportTemplate"> | bigint | number | null
     client_types?: StringNullableFilter<"SupplyReportTemplate"> | string | null
+    supply_types?: StringNullableFilter<"SupplyReportTemplate"> | string | null
     name?: StringFilter<"SupplyReportTemplate"> | string
     code?: StringFilter<"SupplyReportTemplate"> | string
     file_path?: StringFilter<"SupplyReportTemplate"> | string
@@ -134556,6 +134636,7 @@ export namespace Prisma {
     portal_id?: SortOrderInput | SortOrder
     agent_id?: SortOrderInput | SortOrder
     client_types?: SortOrderInput | SortOrder
+    supply_types?: SortOrderInput | SortOrder
     name?: SortOrder
     code?: SortOrder
     file_path?: SortOrder
@@ -134581,6 +134662,7 @@ export namespace Prisma {
     portal_id?: BigIntNullableFilter<"SupplyReportTemplate"> | bigint | number | null
     agent_id?: BigIntNullableFilter<"SupplyReportTemplate"> | bigint | number | null
     client_types?: StringNullableFilter<"SupplyReportTemplate"> | string | null
+    supply_types?: StringNullableFilter<"SupplyReportTemplate"> | string | null
     name?: StringFilter<"SupplyReportTemplate"> | string
     code?: StringFilter<"SupplyReportTemplate"> | string
     file_path?: StringFilter<"SupplyReportTemplate"> | string
@@ -134602,6 +134684,7 @@ export namespace Prisma {
     portal_id?: SortOrderInput | SortOrder
     agent_id?: SortOrderInput | SortOrder
     client_types?: SortOrderInput | SortOrder
+    supply_types?: SortOrderInput | SortOrder
     name?: SortOrder
     code?: SortOrder
     file_path?: SortOrder
@@ -134631,6 +134714,7 @@ export namespace Prisma {
     portal_id?: BigIntNullableWithAggregatesFilter<"SupplyReportTemplate"> | bigint | number | null
     agent_id?: BigIntNullableWithAggregatesFilter<"SupplyReportTemplate"> | bigint | number | null
     client_types?: StringNullableWithAggregatesFilter<"SupplyReportTemplate"> | string | null
+    supply_types?: StringNullableWithAggregatesFilter<"SupplyReportTemplate"> | string | null
     name?: StringWithAggregatesFilter<"SupplyReportTemplate"> | string
     code?: StringWithAggregatesFilter<"SupplyReportTemplate"> | string
     file_path?: StringWithAggregatesFilter<"SupplyReportTemplate"> | string
@@ -143250,6 +143334,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     agent_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
     offerTemplateFonts?: OfferTemplateFontCreateNestedManyWithoutOffer_templatesInput
     offerTemplatePages?: OfferTemplatePageCreateNestedManyWithoutOfferTemplateInput
     offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutOffer_templatesInput
@@ -143287,6 +143372,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     agent_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
     offerTemplateFonts?: OfferTemplateFontUncheckedCreateNestedManyWithoutOffer_templatesInput
     offerTemplatePages?: OfferTemplatePageUncheckedCreateNestedManyWithoutOfferTemplateInput
     offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutOffer_templatesInput
@@ -143324,6 +143410,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplateFonts?: OfferTemplateFontUpdateManyWithoutOffer_templatesNestedInput
     offerTemplatePages?: OfferTemplatePageUpdateManyWithoutOfferTemplateNestedInput
     offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutOffer_templatesNestedInput
@@ -143361,6 +143448,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplateFonts?: OfferTemplateFontUncheckedUpdateManyWithoutOffer_templatesNestedInput
     offerTemplatePages?: OfferTemplatePageUncheckedUpdateManyWithoutOfferTemplateNestedInput
     offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutOffer_templatesNestedInput
@@ -143398,6 +143486,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     agent_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
   }
 
   export type OfferTemplateUpdateManyMutationInput = {
@@ -143431,6 +143520,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type OfferTemplateUncheckedUpdateManyInput = {
@@ -143464,6 +143554,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type offer_zakupki_settingsCreateInput = {
@@ -145434,6 +145525,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     creator_bitrix_user_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
     agent?: agentsCreateNestedOneWithoutInvoiceTemplatesInput
     portal?: PortalCreateNestedOneWithoutInvoiceTemplatesInput
   }
@@ -145458,6 +145550,7 @@ export namespace Prisma {
     agent_id?: bigint | number | null
     creator_bitrix_user_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
   }
 
   export type InvoiceTemplateUpdateInput = {
@@ -145478,6 +145571,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     agent?: agentsUpdateOneWithoutInvoiceTemplatesNestedInput
     portal?: PortalUpdateOneWithoutInvoiceTemplatesNestedInput
   }
@@ -145502,6 +145596,7 @@ export namespace Prisma {
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type InvoiceTemplateCreateManyInput = {
@@ -145524,6 +145619,7 @@ export namespace Prisma {
     agent_id?: bigint | number | null
     creator_bitrix_user_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
   }
 
   export type InvoiceTemplateUpdateManyMutationInput = {
@@ -145544,6 +145640,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type InvoiceTemplateUncheckedUpdateManyInput = {
@@ -145566,6 +145663,7 @@ export namespace Prisma {
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type marketplace_installsCreateInput = {
@@ -146453,6 +146551,7 @@ export namespace Prisma {
     agent_id?: bigint | number | null
     contract_type: string
     client_types?: string | null
+    supply_types?: string | null
     name: string
     code: string
     file_path: string
@@ -146473,6 +146572,7 @@ export namespace Prisma {
     agent_id?: bigint | number | null
     contract_type: string
     client_types?: string | null
+    supply_types?: string | null
     name: string
     code: string
     file_path: string
@@ -146493,6 +146593,7 @@ export namespace Prisma {
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     contract_type?: StringFieldUpdateOperationsInput | string
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     file_path?: StringFieldUpdateOperationsInput | string
@@ -146513,6 +146614,7 @@ export namespace Prisma {
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     contract_type?: StringFieldUpdateOperationsInput | string
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     file_path?: StringFieldUpdateOperationsInput | string
@@ -146533,6 +146635,7 @@ export namespace Prisma {
     agent_id?: bigint | number | null
     contract_type: string
     client_types?: string | null
+    supply_types?: string | null
     name: string
     code: string
     file_path: string
@@ -146553,6 +146656,7 @@ export namespace Prisma {
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     contract_type?: StringFieldUpdateOperationsInput | string
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     file_path?: StringFieldUpdateOperationsInput | string
@@ -146573,6 +146677,7 @@ export namespace Prisma {
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     contract_type?: StringFieldUpdateOperationsInput | string
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     file_path?: StringFieldUpdateOperationsInput | string
@@ -146592,6 +146697,7 @@ export namespace Prisma {
     portal_id?: bigint | number | null
     agent_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
     name: string
     code: string
     file_path: string
@@ -146613,6 +146719,7 @@ export namespace Prisma {
     portal_id?: bigint | number | null
     agent_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
     name: string
     code: string
     file_path: string
@@ -146634,6 +146741,7 @@ export namespace Prisma {
     portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     file_path?: StringFieldUpdateOperationsInput | string
@@ -146655,6 +146763,7 @@ export namespace Prisma {
     portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     file_path?: StringFieldUpdateOperationsInput | string
@@ -146676,6 +146785,7 @@ export namespace Prisma {
     portal_id?: bigint | number | null
     agent_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
     name: string
     code: string
     file_path: string
@@ -146697,6 +146807,7 @@ export namespace Prisma {
     portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     file_path?: StringFieldUpdateOperationsInput | string
@@ -146718,6 +146829,7 @@ export namespace Prisma {
     portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     file_path?: StringFieldUpdateOperationsInput | string
@@ -152816,6 +152928,7 @@ export namespace Prisma {
     archived_at?: SortOrder
     agent_id?: SortOrder
     client_types?: SortOrder
+    supply_types?: SortOrder
   }
 
   export type OfferTemplateAvgOrderByAggregateInput = {
@@ -152856,6 +152969,7 @@ export namespace Prisma {
     archived_at?: SortOrder
     agent_id?: SortOrder
     client_types?: SortOrder
+    supply_types?: SortOrder
   }
 
   export type OfferTemplateMinOrderByAggregateInput = {
@@ -152889,6 +153003,7 @@ export namespace Prisma {
     archived_at?: SortOrder
     agent_id?: SortOrder
     client_types?: SortOrder
+    supply_types?: SortOrder
   }
 
   export type OfferTemplateSumOrderByAggregateInput = {
@@ -154220,6 +154335,7 @@ export namespace Prisma {
     agent_id?: SortOrder
     creator_bitrix_user_id?: SortOrder
     client_types?: SortOrder
+    supply_types?: SortOrder
   }
 
   export type InvoiceTemplateAvgOrderByAggregateInput = {
@@ -154249,6 +154365,7 @@ export namespace Prisma {
     agent_id?: SortOrder
     creator_bitrix_user_id?: SortOrder
     client_types?: SortOrder
+    supply_types?: SortOrder
   }
 
   export type InvoiceTemplateMinOrderByAggregateInput = {
@@ -154271,6 +154388,7 @@ export namespace Prisma {
     agent_id?: SortOrder
     creator_bitrix_user_id?: SortOrder
     client_types?: SortOrder
+    supply_types?: SortOrder
   }
 
   export type InvoiceTemplateSumOrderByAggregateInput = {
@@ -154875,6 +154993,7 @@ export namespace Prisma {
     agent_id?: SortOrder
     contract_type?: SortOrder
     client_types?: SortOrder
+    supply_types?: SortOrder
     name?: SortOrder
     code?: SortOrder
     file_path?: SortOrder
@@ -154902,6 +155021,7 @@ export namespace Prisma {
     agent_id?: SortOrder
     contract_type?: SortOrder
     client_types?: SortOrder
+    supply_types?: SortOrder
     name?: SortOrder
     code?: SortOrder
     file_path?: SortOrder
@@ -154922,6 +155042,7 @@ export namespace Prisma {
     agent_id?: SortOrder
     contract_type?: SortOrder
     client_types?: SortOrder
+    supply_types?: SortOrder
     name?: SortOrder
     code?: SortOrder
     file_path?: SortOrder
@@ -154954,6 +155075,7 @@ export namespace Prisma {
     portal_id?: SortOrder
     agent_id?: SortOrder
     client_types?: SortOrder
+    supply_types?: SortOrder
     name?: SortOrder
     code?: SortOrder
     file_path?: SortOrder
@@ -154982,6 +155104,7 @@ export namespace Prisma {
     portal_id?: SortOrder
     agent_id?: SortOrder
     client_types?: SortOrder
+    supply_types?: SortOrder
     name?: SortOrder
     code?: SortOrder
     file_path?: SortOrder
@@ -155003,6 +155126,7 @@ export namespace Prisma {
     portal_id?: SortOrder
     agent_id?: SortOrder
     client_types?: SortOrder
+    supply_types?: SortOrder
     name?: SortOrder
     code?: SortOrder
     file_path?: SortOrder
@@ -161131,6 +161255,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     creator_bitrix_user_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
     portal?: PortalCreateNestedOneWithoutInvoiceTemplatesInput
   }
 
@@ -161153,6 +161278,7 @@ export namespace Prisma {
     portal_id?: bigint | number | null
     creator_bitrix_user_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
   }
 
   export type InvoiceTemplateCreateOrConnectWithoutAgentInput = {
@@ -161450,6 +161576,7 @@ export namespace Prisma {
     agent_id?: BigIntNullableFilter<"InvoiceTemplate"> | bigint | number | null
     creator_bitrix_user_id?: BigIntNullableFilter<"InvoiceTemplate"> | bigint | number | null
     client_types?: StringNullableFilter<"InvoiceTemplate"> | string | null
+    supply_types?: StringNullableFilter<"InvoiceTemplate"> | string | null
   }
 
   export type bitrixfieldsCreateWithoutBitrixfield_itemsInput = {
@@ -168094,6 +168221,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     creator_bitrix_user_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
     agent?: agentsCreateNestedOneWithoutInvoiceTemplatesInput
   }
 
@@ -168116,6 +168244,7 @@ export namespace Prisma {
     agent_id?: bigint | number | null
     creator_bitrix_user_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
   }
 
   export type InvoiceTemplateCreateOrConnectWithoutPortalInput = {
@@ -178692,6 +178821,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     agent_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
     offerTemplateFonts?: OfferTemplateFontCreateNestedManyWithoutOffer_templatesInput
     offerTemplatePages?: OfferTemplatePageCreateNestedManyWithoutOfferTemplateInput
     userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutOfferTemplateInput
@@ -178728,6 +178858,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     agent_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
     offerTemplateFonts?: OfferTemplateFontUncheckedCreateNestedManyWithoutOffer_templatesInput
     offerTemplatePages?: OfferTemplatePageUncheckedCreateNestedManyWithoutOfferTemplateInput
     userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutOfferTemplateInput
@@ -178919,6 +179050,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplateFonts?: OfferTemplateFontUpdateManyWithoutOffer_templatesNestedInput
     offerTemplatePages?: OfferTemplatePageUpdateManyWithoutOfferTemplateNestedInput
     userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutOfferTemplateNestedInput
@@ -178955,6 +179087,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplateFonts?: OfferTemplateFontUncheckedUpdateManyWithoutOffer_templatesNestedInput
     offerTemplatePages?: OfferTemplatePageUncheckedUpdateManyWithoutOfferTemplateNestedInput
     userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutOfferTemplateNestedInput
@@ -179738,6 +179871,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     agent_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
     offerTemplateFonts?: OfferTemplateFontCreateNestedManyWithoutOffer_templatesInput
     offerTemplatePages?: OfferTemplatePageCreateNestedManyWithoutOfferTemplateInput
     offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutOffer_templatesInput
@@ -179774,6 +179908,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     agent_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
     offerTemplateFonts?: OfferTemplateFontUncheckedCreateNestedManyWithoutOffer_templatesInput
     offerTemplatePages?: OfferTemplatePageUncheckedCreateNestedManyWithoutOfferTemplateInput
     offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutOffer_templatesInput
@@ -179965,6 +180100,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplateFonts?: OfferTemplateFontUpdateManyWithoutOffer_templatesNestedInput
     offerTemplatePages?: OfferTemplatePageUpdateManyWithoutOfferTemplateNestedInput
     offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutOffer_templatesNestedInput
@@ -180001,6 +180137,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplateFonts?: OfferTemplateFontUncheckedUpdateManyWithoutOffer_templatesNestedInput
     offerTemplatePages?: OfferTemplatePageUncheckedUpdateManyWithoutOfferTemplateNestedInput
     offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutOffer_templatesNestedInput
@@ -180574,6 +180711,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     agent_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
     offerTemplatePages?: OfferTemplatePageCreateNestedManyWithoutOfferTemplateInput
     offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutOffer_templatesInput
     userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutOfferTemplateInput
@@ -180610,6 +180748,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     agent_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
     offerTemplatePages?: OfferTemplatePageUncheckedCreateNestedManyWithoutOfferTemplateInput
     offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutOffer_templatesInput
     userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutOfferTemplateInput
@@ -180662,6 +180801,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplatePages?: OfferTemplatePageUpdateManyWithoutOfferTemplateNestedInput
     offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutOffer_templatesNestedInput
     userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutOfferTemplateNestedInput
@@ -180698,6 +180838,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplatePages?: OfferTemplatePageUncheckedUpdateManyWithoutOfferTemplateNestedInput
     offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutOffer_templatesNestedInput
     userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutOfferTemplateNestedInput
@@ -181652,6 +181793,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     agent_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
     offerTemplateFonts?: OfferTemplateFontCreateNestedManyWithoutOffer_templatesInput
     offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutOffer_templatesInput
     userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutOfferTemplateInput
@@ -181688,6 +181830,7 @@ export namespace Prisma {
     archived_at?: Date | string | null
     agent_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
     offerTemplateFonts?: OfferTemplateFontUncheckedCreateNestedManyWithoutOffer_templatesInput
     offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutOffer_templatesInput
     userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutOfferTemplateInput
@@ -181772,6 +181915,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplateFonts?: OfferTemplateFontUpdateManyWithoutOffer_templatesNestedInput
     offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutOffer_templatesNestedInput
     userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutOfferTemplateNestedInput
@@ -181808,6 +181952,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     offerTemplateFonts?: OfferTemplateFontUncheckedUpdateManyWithoutOffer_templatesNestedInput
     offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutOffer_templatesNestedInput
     userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutOfferTemplateNestedInput
@@ -184480,6 +184625,7 @@ export namespace Prisma {
     portal_id?: bigint | number | null
     creator_bitrix_user_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
   }
 
   export type InvoiceTemplateUpdateWithoutAgentInput = {
@@ -184500,6 +184646,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     portal?: PortalUpdateOneWithoutInvoiceTemplatesNestedInput
   }
 
@@ -184522,6 +184669,7 @@ export namespace Prisma {
     portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type InvoiceTemplateUncheckedUpdateManyWithoutAgentInput = {
@@ -184543,6 +184691,7 @@ export namespace Prisma {
     portal_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type portal_contractsCreateManyBitrixfield_itemsInput = {
@@ -186776,6 +186925,7 @@ export namespace Prisma {
     agent_id?: bigint | number | null
     creator_bitrix_user_id?: bigint | number | null
     client_types?: string | null
+    supply_types?: string | null
   }
 
   export type bx_rqsCreateManyPortalInput = {
@@ -187921,6 +188071,7 @@ export namespace Prisma {
     archived_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
     agent?: agentsUpdateOneWithoutInvoiceTemplatesNestedInput
   }
 
@@ -187943,6 +188094,7 @@ export namespace Prisma {
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type InvoiceTemplateUncheckedUpdateManyWithoutPortalInput = {
@@ -187964,6 +188116,7 @@ export namespace Prisma {
     agent_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     client_types?: NullableStringFieldUpdateOperationsInput | string | null
+    supply_types?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type bx_rqsUpdateWithoutPortalInput = {

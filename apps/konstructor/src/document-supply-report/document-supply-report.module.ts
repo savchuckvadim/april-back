@@ -10,7 +10,15 @@ import { SupplyReportDataService } from './services/data/supply-report-data.serv
 import { SupplyReportPdfService } from './services/pdf/supply-report-pdf.service';
 import { SupplyReportTemplateService } from './services/template/supply-report-template.service';
 import { FileLinkModule } from '@lib/core/file-link/file-link.module';
+import { DocumentTemplateModule } from '@lib/portal-lib/konstructor/document-template';
+import { SupplyReportTemplateSourceService } from './services/template/supply-report-template-source.service';
 
+/**
+ * `DocumentTemplateModule` — подбор шаблона отчёта из БД под флагом
+ * `USE_DB_SUPPLY_REPORT_TEMPLATES` (по умолчанию ВЫКЛЮЧЕН). Он же приносит
+ * `PortalStoreModule` для перехода domain → portal_id. `ConfigModule`
+ * отдельно не нужен: в app.module он `forRoot({ isGlobal: true })`.
+ */
 @Module({
     imports: [
         PBXModule,
@@ -18,6 +26,7 @@ import { FileLinkModule } from '@lib/core/file-link/file-link.module';
         LibreOfficeModule,
         ProviderModule,
         FileLinkModule,
+        DocumentTemplateModule,
     ],
     controllers: [DocumentSupplyReportController],
     providers: [
@@ -27,6 +36,7 @@ import { FileLinkModule } from '@lib/core/file-link/file-link.module';
         SupplyReportDataService,
         SupplyReportPdfService,
         SupplyReportTemplateService,
+        SupplyReportTemplateSourceService,
     ],
 })
 export class DocumentSupplyReportModule {}

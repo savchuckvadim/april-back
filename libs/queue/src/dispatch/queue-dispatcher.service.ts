@@ -43,6 +43,9 @@ export class QueueDispatcherService {
         @InjectQueue(QueueNames.EVENT_SALES_COLD_CALL)
         private readonly eventSalesColdCallQueue: Queue,
 
+        @InjectQueue(QueueNames.EVENT_SALES_COLD_CALL_V2)
+        private readonly eventSalesColdCallV2Queue: Queue,
+
         @InjectQueue(QueueNames.EVENT_SALES_FLOW)
         private readonly eventSalesFlowQueue: Queue,
 
@@ -131,6 +134,9 @@ export class QueueDispatcherService {
 
             case QueueNames.EVENT_SALES_COLD_CALL:
                 return this.eventSalesColdCallQueue;
+
+            case QueueNames.EVENT_SALES_COLD_CALL_V2:
+                return this.eventSalesColdCallV2Queue;
 
             case QueueNames.EVENT_SALES_FLOW:
                 return this.eventSalesFlowQueue;

@@ -61,4 +61,15 @@ export class SalesHookOpsProcessor {
     handleLeadClient(job: Job<SalesHookJobData>) {
         return this.runner.run(job.data);
     }
+
+    /**
+     * «Присоединить к основной»: кнопка «Присоединить сюда», блок «Открытые
+     * сделки по клиенту» и робот. Без обработчика Bull валил каждую такую
+     * джобу «Missing process handler» (найдено 12.10.2026). Переносит задачи,
+     * дела и контакты между сделками — строго по одной.
+     */
+    @Process({ name: JobNames.SALES_HOOK_JOIN_TO_MAIN, concurrency: 1 })
+    handleJoinToMain(job: Job<SalesHookJobData>) {
+        return this.runner.run(job.data);
+    }
 }

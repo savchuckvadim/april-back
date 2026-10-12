@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ContractGenerateService } from '../services/contract-generate.service';
 import { ContractGenerateDto } from '../dto/contract-generate.dto';
 import { ContractBitrixPushService } from '../services/contract-bitrix-push.service';
+import { ContractGenerateResult } from '../type/contract-generate.type';
 
 @Injectable()
 export class ContractGenerateUseCase {
@@ -10,14 +11,22 @@ export class ContractGenerateUseCase {
         private readonly contractBitrixPushService: ContractBitrixPushService,
     ) {}
 
-    async getContract(dto: ContractGenerateDto) {
-        const { link, documentName, data, provider } =
-            await this.contractGenerateService.generateContract(dto);
+    /**
+     * Договор + комментарий в таймлайн.
+     *
+     * Результат прокидывается целиком, а не пересобирается по полям: иначе
+     * `file`/`document` (их ждёт фронт и читает init-supply) потерялись бы
+     * по пути. Форму ответа задаёт один тип — `ContractGenerateResult`.
+     */
+    async getContract(
+        dto: ContractGenerateDto,
+    ): Promise<ContractGenerateResult> {
+        const result = await this.contractGenerateService.generateContract(dto);
         await this.contractBitrixPushService.setInBitrix(
             dto,
-            link,
-            documentName,
+            result.link,
+            result.documentName,
         );
-        return { link, documentName, data, provider };
+        return result;
     }
 }

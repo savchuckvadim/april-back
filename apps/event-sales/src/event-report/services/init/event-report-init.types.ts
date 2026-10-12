@@ -63,4 +63,16 @@ export interface IEventReportInitContext {
     /** Контакт-плательщик из DTO (для связи в сделках/задачах) */
     reportContact: IBXContact | null;
     planContact: IBXContact | null;
+
+    /**
+     * Основная сделка — закрытая в отказ сделка запуска, которую отчёт
+     * возвращает в работу (см. closed-launch-base-deal).
+     */
+    reopenedBaseDeal?: boolean;
+
+    /**
+     * Сделка запуска «ОП Основная» закрыта и остаётся закрытой — работа
+     * идёт в другой сделке; о ней пишем в ленту обеих и уведомляем.
+     */
+    closedLaunchBaseDeal?: IBXDeal | null;
 }

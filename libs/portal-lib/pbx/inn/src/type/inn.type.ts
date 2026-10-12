@@ -104,6 +104,11 @@ export const INN_CONFLICT_KINDS = {
     fields_missing: 'fields_missing',
     /** У интеграции нет прав на реквизиты. */
     requisites_denied: 'requisites_denied',
+    /**
+     * ИНН сделки и ИНН компании разные. Текущий ИНН должен быть одним в
+     * обеих (владелец, 06.10.2026) — какой из двух, выбирает человек.
+     */
+    current_mismatch: 'current_mismatch',
 } as const;
 
 export type InnConflictKind =

@@ -32,6 +32,7 @@ import { EventReportLeadRelationService } from '../services/lead/event-report-le
 import { EventReportLeadRequestSyncService } from '../services/lead/event-report-lead-request-sync.service';
 import { EventReportReturnToTmcService } from '../services/return-to-tmc/event-report-return-to-tmc.service';
 import { EventReportTimelineService } from '../services/timeline/event-report-timeline.service';
+import { BaseDealContinuityNotice } from '../services/deal/base-deal-continuity.notice';
 import { ColdHookBatchGroupBuffer } from '../../cold-hook/services/batch/cold-hook-batch-group-buffer';
 import { EventReportPostFlowService } from '../services/post-flow/event-report-post-flow.service';
 import { EventReportActingManagerService } from '../services/acting-manager/event-report-acting-manager.service';
@@ -111,6 +112,9 @@ export class EventReportUseCase {
         const leadRelation = new EventReportLeadRelationService(bitrix, portal);
         const returnToTmc = new EventReportReturnToTmcService(bitrix, portal);
         const timeline = new EventReportTimelineService(bitrix);
+        // Сделка запуска «ОП Основная» была закрыта: вернули в работу либо
+        // работа ушла в другую — записи в ленту и уведомление (06.10.2026).
+        const continuity = new BaseDealContinuityNotice(bitrix);
 
         // KPI использует тот же ColdHookBatchGroupBuffer (контракт KpiListFlowService).
         // По факту мы тут одна группа = весь endpoint; вся работа упадёт в один HTTP.
@@ -148,6 +152,7 @@ export class EventReportUseCase {
          * раньше команды комментария.
          */
         timeline.queue(ctx, deals);
+        continuity.queueReopenNote(ctx);
 
         // Коммитим KPI группу + flush'им буфер.
         //
@@ -197,6 +202,10 @@ export class EventReportUseCase {
 
         // Режим руководителя: сотрудник узнаёт, что его дело отработали.
         await this.actingManager.notify(ctx, bitrix);
+
+        // Закрытая сделка запуска осталась закрытой, а работа ушла в другую:
+        // id новой известен только из ответа батча (ошибки гасятся внутри).
+        await continuity.notifyContinuation(ctx, deals, batchResults);
 
         // Считаем по СКЛЕЕННОМУ ответу — то есть по обоим источникам сразу.
         // Прежняя формула складывала число КОМАНД (reduce по `results`) с

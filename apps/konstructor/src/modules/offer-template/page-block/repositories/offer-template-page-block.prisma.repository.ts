@@ -116,25 +116,6 @@ export class OfferTemplatePageBlockPrismaRepository
     async createMany(
         data: Partial<CreateOfferTemplatePageBlockDto>[],
     ): Promise<OfferTemplatePageBlock[]> {
-        console.log('data');
-        console.log(
-            data.map(d => ({
-                ...d,
-                offer_template_page_id: d.offer_template_page_id!,
-                order: d.order!,
-                name: d.name!,
-                code: d.code,
-                type: d.type!,
-                content: d.content,
-                settings: d.settings,
-                stickers: d.stickers,
-                background: d.background,
-                colors: d.colors,
-                image_id: d.image_id,
-                created_at: new Date(),
-                updated_at: new Date(),
-            })),
-        );
         const results = (await this.prisma.offerTemplatePageBlock.createMany({
             data: data.map(d => {
                 const block = {
@@ -153,8 +134,6 @@ export class OfferTemplatePageBlockPrismaRepository
                     updated_at: new Date(),
                 };
                 if (d.image_id) {
-                    console.log('d.image_id');
-                    console.log(d.image_id);
                     block.image_id = BigInt(d.image_id);
                 }
                 return block;

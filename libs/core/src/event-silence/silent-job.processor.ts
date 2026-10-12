@@ -9,9 +9,10 @@ import { QueueNames } from '@lib/queue';
  * Универсальный воркер для очереди event-silent. Ловит все джобы (`@Process('*')`)
  * и делегирует обработку EventSilentJobManagerService.process.
  *
- * Concurrency = 1 (default Bull) — это намеренно: новые job'ы от тех же ключей
- * выстраиваются в очередь и обрабатываются последовательно, не пересекаясь
- * с предыдущим handleHooks.
+ * Concurrency = 1 (default Bull) — окна разбираются по одному, пока слушатели
+ * silence-событий ждутся (объявлены без `{ async: true }`). Слушатели тонкие:
+ * ставят пачку в свою очередь исполнения, где и держится последовательность
+ * работы (холодный старт — `EVENT_SALES_COLD_CALL[_V2]`, concurrency 1).
  */
 @Injectable()
 @Processor(QueueNames.EVENT_SILENT)

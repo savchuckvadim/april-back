@@ -1783,12 +1783,18 @@ model OfferTemplate {
   agent_id               BigInt?                    @db.UnsignedBigInt
   // JSON-массив кодов ClientTypeEnum: ["org_state","org","ip","fiz"]
   client_types           String?                    @db.LongText
+  /// JSON-массив кодов SupplyTypeEnum (internet|proxima); NULL — для любого типа поставки
+  supply_types           String?                    @db.LongText
 
   offerTemplateFonts    OfferTemplateFont[]
   offerTemplatePages    OfferTemplatePage[]
   offerTemplatePortal   OfferTemplatePortal[]
   userSelectedTemplates UserSelectedTemplate[]
 
+  /// Индекс создаёт миграция 2026_09_15_100300; в модели его не было —
+  /// схема расходилась с БД. Имя обязано совпадать с миграцией, иначе
+  /// prisma db pull / migrate diff будут показывать ложный дрейф.
+  @@index([agent_id], map: "offer_templates_agent_id_index")
   @@map("offer_templates")
 }
 
@@ -2146,6 +2152,8 @@ model InvoiceTemplate {
   creator_bitrix_user_id BigInt?                      @db.UnsignedBigInt
   // JSON-массив кодов ClientTypeEnum; NULL = для любого типа клиента
   client_types           String?                      @db.LongText
+  /// JSON-массив кодов SupplyTypeEnum (internet|proxima); NULL — для любого типа поставки
+  supply_types           String?                      @db.LongText
   agent                  agents?                      @relation(fields: [agent_id], references: [id], onUpdate: NoAction, map: "invoice_templates_agent_id_foreign")
   portal                 Portal?                      @relation(fields: [portal_id], references: [id], onUpdate: NoAction, map: "invoice_templates_portal_id_foreign")
 
@@ -2428,6 +2436,8 @@ model ContractTemplate {
   contract_type          String    @db.VarChar(64)
   /// JSON-массив кодов ClientTypeEnum; NULL — для любого типа клиента
   client_types           String?   @db.LongText
+  /// JSON-массив кодов SupplyTypeEnum (internet|proxima); NULL — для любого типа поставки
+  supply_types           String?   @db.LongText
   name                   String    @db.VarChar(255)
   code                   String    @db.VarChar(255)
   file_path              String    @db.LongText
@@ -2458,6 +2468,8 @@ model SupplyReportTemplate {
   agent_id               BigInt?   @db.UnsignedBigInt
   /// JSON-массив кодов ClientTypeEnum; NULL — для любого типа клиента
   client_types           String?   @db.LongText
+  /// JSON-массив кодов SupplyTypeEnum (internet|proxima); NULL — для любого типа поставки
+  supply_types           String?   @db.LongText
   name                   String    @db.VarChar(255)
   code                   String    @db.VarChar(255)
   file_path              String    @db.LongText

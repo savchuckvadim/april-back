@@ -107,7 +107,9 @@ export class OfferTemplateController {
                 filters.search = search;
             }
 
-            const templates = await this.offerTemplateService.findMany();
+            // filters собираются выше — их и передаём. Без аргумента все
+            // query-параметры молча игнорировались.
+            const templates = await this.offerTemplateService.findMany(filters);
 
             const result = templateResponseMap(templates);
             return result;

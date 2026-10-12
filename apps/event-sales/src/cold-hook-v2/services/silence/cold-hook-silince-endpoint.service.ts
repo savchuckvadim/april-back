@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { IColdCallData } from '../../type/cold-hook-silence.interface';
-import { ColdHooksHandlerV2Service } from './cold-hooks-handler.service';
+import {
+    IColdCallData,
+    IColdHookSilenceHandlerData,
+} from '../../type/cold-hook-silence.interface';
 import {
     EventSilentJobManagerData,
     EventSilentJobManagerHandler,
@@ -9,6 +11,8 @@ import {
     SILENCE_EVENT_PREFIX,
 } from '@lib/core/event-silence';
 import { JobNames } from '@lib/queue';
+import { QueueDispatcherService } from '@/modules/queue/dispatch/queue-dispatcher.service';
+import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { ColdCallHookResponseDto } from '../../dto/cold-call-response.dto';
 
 @Injectable()
@@ -16,8 +20,8 @@ export class ColdHookSilinceEndpointV2Service {
     private readonly logger = new Logger(ColdHookSilinceEndpointV2Service.name);
 
     constructor(
-        private readonly hooksHandler: ColdHooksHandlerV2Service,
         private readonly silentManager: EventSilentJobManagerService,
+        private readonly queueDispatcher: QueueDispatcherService,
     ) {}
 
     async createColdCallHook(
@@ -66,16 +70,30 @@ export class ColdHookSilinceEndpointV2Service {
         };
     }
 
-    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.EVENT_COLD_CALL_V2}`, {
-        async: true,
-    })
-    async onColdCallSilence(data: EventSilentJobManagerHandler<IColdCallData>) {
+    /**
+     * Окно тишины закрылось — передаём его в свою очередь, где окна идут
+     * строго по одному (`ColdHooksV2Processor`). Сами здесь не работаем:
+     * воркер event-silent общий для всех хуков.
+     *
+     * Без `{ async: true }`: с ним EventEmitter2 зовёт слушателя через
+     * setImmediate и НЕ ждёт его, задание event-silent закрывается сразу —
+     * постановка в очередь могла не случиться, а ошибка терялась.
+     */
+    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.EVENT_COLD_CALL_V2}`)
+    async onColdCallSilence(
+        data: EventSilentJobManagerHandler<IColdCallData>,
+    ): Promise<void> {
+        const job: IColdHookSilenceHandlerData = {
+            collected: data.collected,
+            payload: data.payload,
+        };
         this.logger.log(
-            `[silence event] cold-call received, domain=${data.payload.domain} collected=${Object.keys(data.collected).length}`,
+            `[silence event] cold-call v2 → очередь, domain=${data.payload.domain} collected=${Object.keys(data.collected).length}`,
         );
-        await this.hooksHandler.handleHooks(
-            data.payload.domain,
-            data.collected,
+        await this.queueDispatcher.dispatch(
+            QueueNames.EVENT_SALES_COLD_CALL_V2,
+            JobNames.EVENT_COLD_CALL_V2,
+            job,
         );
     }
 }

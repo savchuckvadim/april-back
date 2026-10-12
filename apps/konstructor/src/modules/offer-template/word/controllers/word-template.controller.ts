@@ -12,6 +12,8 @@ import {
     Res,
     Put,
 } from '@nestjs/common';
+import { SyncWordTemplatePortalsDto } from '../dtos/sync-word-template-portals.dto';
+import { OfferTemplatePortalResponseDto } from '../../portal/dtos/offer-template-portal-response.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import {
@@ -107,11 +109,25 @@ export class WordTemplateController {
         @Query() query?: WordTemplateQueryDto,
     ): Promise<WordTemplateSummaryDto[]> {
         const filters: Partial<WordTemplateQueryDto> = {};
-        const { visibility, portal_id, is_active, search } = query || {};
+        const {
+            visibility,
+            portal_id,
+            is_active,
+            search,
+            agent_id,
+            client_type,
+            supply_type,
+        } = query || {};
         if (visibility) filters.visibility = visibility;
         if (portal_id) filters.portal_id = portal_id;
         if (is_active !== undefined) filters.is_active = is_active === true;
         if (search) filters.search = search;
+        // Привязки шаблона. Без этой передачи параметры проходят валидацию и
+        // попадают в OpenAPI, но до сервиса не доезжают — фильтр молча
+        // игнорируется, хотя репозиторий его уже умеет.
+        if (agent_id) filters.agent_id = agent_id;
+        if (client_type) filters.client_type = client_type;
+        if (supply_type) filters.supply_type = supply_type;
 
         const templates = await this.wordTemplateService.findMany(filters);
         return templates.map(t => new WordTemplateSummaryDto(t));
@@ -339,5 +355,26 @@ export class WordTemplateController {
             is_default,
         );
         return template as WordTemplateDto;
+    }
+    @ApiOperation({
+        summary: 'Синхронизировать привязки шаблона к порталам',
+        description:
+            'Принимает ПОЛНЫЙ список порталов: недостающие привязки создаются ' +
+            '(активными), лишние удаляются, существующие не трогаются. ' +
+            'Пустой список снимает все привязки. Под мультиселект порталов в админке.',
+    })
+    @ApiResponse({ status: 200, type: [OfferTemplatePortalResponseDto] })
+    @Put(':id/portals')
+    async syncPortals(
+        @Param() params: WordTemplateIdParamsDto,
+        @Body() dto: SyncWordTemplatePortalsDto,
+    ): Promise<OfferTemplatePortalResponseDto[]> {
+        const bindings = await this.wordTemplateService.syncPortals(
+            BigInt(params.id),
+            dto.portal_ids,
+        );
+        return bindings.map(binding =>
+            OfferTemplatePortalResponseDto.fromEntity(binding),
+        );
     }
 }

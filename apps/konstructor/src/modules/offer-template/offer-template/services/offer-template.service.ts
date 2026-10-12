@@ -68,11 +68,7 @@ export class OfferTemplateService {
         is_active?: boolean;
         search?: string;
     }): Promise<OfferTemplateSummary[]> {
-        console.log(filters);
-
         const result = await this.offerTemplateRepository.findMany(filters);
-        console.log(result);
-
         return result;
     }
 

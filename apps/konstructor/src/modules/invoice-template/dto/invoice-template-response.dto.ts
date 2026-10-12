@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+    parseClientTypes,
+    parseSupplyTypes,
+} from '@lib/portal-lib/konstructor/document-template';
+import { ClientTypeEnum } from '@app/konstructor/document-generate/type/client.type';
+import { SupplyTypeEnum } from '@app/konstructor/document-generate/type/supply.type';
+import {
     InvoiceTemplateType as InvoiceTemplateTypeSchema,
     InvoiceTemplateTypeValue,
     InvoiceTemplateVisibility as InvoiceTemplateVisibilitySchema,
@@ -16,6 +22,9 @@ export type InvoiceTemplateLike = {
     type: InvoiceTemplateTypeValue;
     code: string;
     description: string | null;
+    /** Сырые JSON-строки из LongText-колонок; разбираются в fromEntity. */
+    client_types: string | null;
+    supply_types: string | null;
     counter: number;
     is_default: boolean;
     is_active: boolean;
@@ -46,6 +55,28 @@ export class InvoiceTemplateResponseDto {
 
     @ApiPropertyOptional()
     description?: string | null;
+
+    @ApiProperty({
+        description:
+            'Типы клиента, для которых годится шаблон; null — «для любого». ' +
+            'Разобрано из JSON-колонки client_types.',
+        enum: ClientTypeEnum,
+        enumName: 'ClientTypeEnum',
+        isArray: true,
+        nullable: true,
+    })
+    client_types: ClientTypeEnum[] | null;
+
+    @ApiProperty({
+        description:
+            'Типы поставки, для которых годится шаблон; null — «для любого». ' +
+            'Разобрано из JSON-колонки supply_types.',
+        enum: SupplyTypeEnum,
+        enumName: 'SupplyTypeEnum',
+        isArray: true,
+        nullable: true,
+    })
+    supply_types: SupplyTypeEnum[] | null;
 
     @ApiProperty()
     counter: number;
@@ -93,6 +124,8 @@ export class InvoiceTemplateResponseDto {
         dto.type = t.type;
         dto.code = t.code;
         dto.description = t.description;
+        dto.client_types = parseClientTypes(t.client_types);
+        dto.supply_types = parseSupplyTypes(t.supply_types);
         dto.counter = t.counter;
         dto.is_default = t.is_default;
         dto.is_active = t.is_active;

@@ -1,4 +1,11 @@
 import { offer_templates_visibility } from 'generated/prisma';
+import {
+    parseClientTypes,
+    parseSupplyTypes,
+    serializeTemplateList,
+} from '@lib/portal-lib/konstructor/document-template';
+import type { ClientTypeEnum } from '@app/konstructor/document-generate/type/client.type';
+import type { SupplyTypeEnum } from '@app/konstructor/document-generate/type/supply.type';
 import { OfferTemplate } from '../../offer-template/entities/offer-template.entity';
 
 /**
@@ -22,6 +29,18 @@ export class WordTemplate {
     created_at?: Date;
     updated_at?: Date;
     portal_id?: number;
+    /**
+     * Привязки шаблона. Хранятся/редактируются как есть — автоподбора по ним
+     * НЕТ: у шаблонов КП своя логика выбора, в общий резолвер документов они
+     * сознательно не входят.
+     *
+     * В отличие от OfferTemplate (где лежит сырая JSON-строка) здесь уже
+     * разобранные массивы: WordTemplate — это DTO-уровень, наружу уходит
+     * массив, а не строка. null = «годится любому».
+     */
+    agent_id?: string | null;
+    client_types?: ClientTypeEnum[] | null;
+    supply_types?: SupplyTypeEnum[] | null;
     // Дополнительные поля для Word шаблонов
     template_url?: string; // URL для скачивания шаблона
 
@@ -61,6 +80,10 @@ export class WordTemplate {
             counter: template.counter,
             created_at: template.created_at,
             updated_at: template.updated_at,
+            agent_id:
+                template.agent_id != null ? String(template.agent_id) : null,
+            client_types: parseClientTypes(template.client_types ?? null),
+            supply_types: parseSupplyTypes(template.supply_types ?? null),
         });
     }
 
@@ -79,6 +102,11 @@ export class WordTemplate {
             tags: this.tags,
             is_active: this.is_active,
             counter: this.counter,
+            // Обратно в сущность БД: массивы сериализуются в JSON-строку,
+            // пустой список и null → NULL («годится любому»).
+            agent_id: this.agent_id != null ? BigInt(this.agent_id) : null,
+            client_types: serializeTemplateList(this.client_types),
+            supply_types: serializeTemplateList(this.supply_types),
         };
     }
 }
@@ -99,6 +127,10 @@ export class WordTemplateSummary {
     user_id?: number;
     portal_id?: number;
     tags?: string;
+    /** Привязки шаблона; уже разобранные, см. докблок в WordTemplate. */
+    agent_id?: string | null;
+    client_types?: ClientTypeEnum[] | null;
+    supply_types?: SupplyTypeEnum[] | null;
     constructor(partial: Partial<WordTemplateSummary>) {
         Object.assign(this, {
             ...partial,

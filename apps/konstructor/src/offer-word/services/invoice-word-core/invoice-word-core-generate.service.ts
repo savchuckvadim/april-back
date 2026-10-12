@@ -52,8 +52,10 @@ export class InvoiceWordCoreGenerateService {
         );
         const savedResults: InvoiceWordCoreGenerateResult[] = [];
         if (!template) {
+            // Искали по invoiceTemplateId — его и сообщаем. Раньше в текст
+            // подставлялся templateId (шаблон КП), и 404 указывал на чужой id.
             throw new NotFoundException(
-                `Word template with ID ${dto.templateId} not found`,
+                `Invoice template with ID ${dto.invoiceTemplateId} not found`,
             );
         }
         //for debug/////////////////////////////////////////////////////

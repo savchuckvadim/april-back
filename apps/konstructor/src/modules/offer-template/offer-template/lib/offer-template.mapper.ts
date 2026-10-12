@@ -43,7 +43,6 @@ export const templateResponseMap = (templates: OfferTemplateSummary[]) => {
         };
         return templateDto;
     });
-    console.log(templatesDto);
     return templatesDto;
 };
 export class OfferTemplateMapper {

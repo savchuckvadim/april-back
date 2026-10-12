@@ -1,18 +1,20 @@
 import { Logger } from '@nestjs/common';
 import { isValidInn, uniq } from '@lib/portal-lib/pbx-duplicate';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
-import { formatInnAuditComment, IInnAuditRecord } from '../lib/inn-audit.codec';
 import {
     candidateValues,
     mergeInnObservations,
     pickAutoInn,
 } from '../lib/inn-candidate.util';
 import { InnFieldMap } from '../lib/inn-fields';
+import { InnMirrorWriter } from './inn-mirror.writer';
+import { InnAuditWriter } from './inn-audit.writer';
+import { InnCurrentSyncWriter } from './inn-current-sync.writer';
+import { InnSyncPlan } from '../lib/inn-sync.plan';
 import {
     IInnBitrix,
     innId,
     innList,
-    innRow,
     InnRow,
     innText,
 } from '../lib/inn-row.util';
@@ -57,7 +59,9 @@ export interface IInnChooseResult {
  *  - ручной выбор пишется всегда и всегда оставляет след в таймлайне —
  *    кто, когда и что выбрал;
  *  - пул компании синхронизируется тем же набором, иначе боевой путь и
- *    ночной догон разъезжаются (так и было до 17.09.2026).
+ *    ночной догон разъезжаются (так и было до 17.09.2026);
+ *  - текущий ИНН — ОДИН в сделке и в компании (владелец, 06.10.2026): выбор
+ *    человека пишется в обе, заявкам — в пустое поле.
  *
  * НЕ `@Injectable()`: инстанс Битрикса свой на каждый домен, держать его в
  * поле синглтона нельзя (CLAUDE.md). Создаётся как
@@ -66,6 +70,10 @@ export interface IInnChooseResult {
 export class InnPoolService {
     private readonly logger = new Logger(InnPoolService.name);
     private readonly fields: InnFieldMap;
+    /** Запись ИНН в компанию и заявки — отражения текущего ИНН сделки. */
+    private readonly mirror: InnMirrorWriter;
+    private readonly auditWriter: InnAuditWriter;
+    private readonly currentSync: InnCurrentSyncWriter;
 
     constructor(
         private readonly bitrix: IInnBitrix,
@@ -74,6 +82,14 @@ export class InnPoolService {
         private readonly domain: string,
     ) {
         this.fields = InnFieldMap.from(portal);
+        this.mirror = new InnMirrorWriter(bitrix, this.fields);
+        this.auditWriter = new InnAuditWriter(bitrix, domain);
+        this.currentSync = new InnCurrentSyncWriter(
+            bitrix,
+            this.fields,
+            this.mirror,
+            this.auditWriter,
+        );
     }
 
     /** Карта полей — вызывающему она нужна для признаков доступности. */
@@ -140,7 +156,7 @@ export class InnPoolService {
             result.current = auto;
             result.autoSet = true;
             const label = candidates.find(item => item.inn === auto)?.label;
-            await this.audit(dealId, result.warnings, {
+            await this.auditWriter.write(dealId, result.warnings, {
                 action: INN_AUDIT_ACTIONS.auto,
                 inn: auto,
                 ...(label ? { sourceLabel: label } : {}),
@@ -165,6 +181,7 @@ export class InnPoolService {
         deal: InnRow,
         inn: string,
         actor: IInnActor,
+        leadIds: readonly number[] = [],
     ): Promise<IInnChooseResult> {
         const result: IInnChooseResult = {
             pool: [],
@@ -194,7 +211,7 @@ export class InnPoolService {
         result.pool = pool;
         result.current = inn;
 
-        await this.audit(dealId, result.warnings, {
+        await this.auditWriter.write(dealId, result.warnings, {
             action: INN_AUDIT_ACTIONS.choose,
             inn,
             ...(previous ? { previousInn: previous } : {}),
@@ -202,11 +219,23 @@ export class InnPoolService {
             userName: actor.name,
         });
 
+        // Текущий ИНН — один в сделке и в компании: выбор человека
+        // перезаписывает и ИНН компании (владелец, 06.10.2026).
         const companyId = innId(deal.COMPANY_ID);
         if (companyId) {
-            await this.syncCompany(companyId, pool, result.warnings);
+            await this.syncCompany(companyId, pool, result.warnings, inn);
         }
+        await this.mirror.fillLeads(leadIds, inn, result.warnings);
         return result;
+    }
+
+    /** Выровнять текущий ИНН сделки и компании — см. InnCurrentSyncWriter. */
+    async syncCurrent(
+        dealId: number,
+        deal: InnRow,
+        plan: InnSyncPlan,
+    ): Promise<IInnChooseResult> {
+        return this.currentSync.sync(dealId, deal, plan);
     }
 
     /**
@@ -225,7 +254,7 @@ export class InnPoolService {
         action: InnAuditAction = INN_AUDIT_ACTIONS.hide,
     ): Promise<string[]> {
         const warnings: string[] = [];
-        await this.audit(dealId, warnings, {
+        await this.auditWriter.write(dealId, warnings, {
             action,
             inn,
             userId: actor.id,
@@ -234,75 +263,13 @@ export class InnPoolService {
         return warnings;
     }
 
-    /**
-     * Пул компании — объединением; её `op_inn` заполняем только пустой.
-     *
-     * Перенесено из `scripts/backfill-deal-inn.ts`: раньше синхронизация
-     * жила только в ночном догоне, и боевой хук оставлял компанию без
-     * вариантов — новые сделки клиента начинали с пустого места.
-     */
+    /** Пул и текущий ИНН компании — см. InnMirrorWriter.syncCompany. */
     async syncCompany(
         companyId: number,
         inns: readonly string[],
         warnings: string[] = [],
+        current?: string,
     ): Promise<string[]> {
-        const poolName = this.fields.pool('company');
-        const innName = this.fields.inn('company');
-        const values = uniq(inns.filter(isValidInn));
-        if (!poolName || !values.length) return warnings;
-
-        try {
-            const company = innRow(
-                await this.bitrix.api.call('crm.company.get', {
-                    id: companyId,
-                }),
-            );
-            if (!company) return warnings;
-            const currentPool = innList(company[poolName]);
-            const pool = uniq([...currentPool, ...values]);
-            const currentInn = innName ? innText(company[innName]) : '';
-            if (pool.length === currentPool.length && currentInn) {
-                return warnings;
-            }
-            const fields: InnRow = { [poolName]: pool };
-            // Основной ИНН клиента ставим только в пустое и только когда
-            // вариант один: у компании бывают две пары реквизитов.
-            if (innName && !currentInn && values.length === 1) {
-                fields[innName] = values[0];
-            }
-            await this.bitrix.api.call('crm.company.update', {
-                id: companyId,
-                fields,
-            });
-        } catch (error) {
-            warnings.push(
-                `Пул компании ${companyId} не синхронизирован: ` +
-                    (error as Error).message,
-            );
-        }
-        return warnings;
-    }
-
-    /** Запись в таймлайн сделки. Её отказ не отменяет саму запись полей. */
-    private async audit(
-        dealId: number,
-        warnings: string[],
-        record: IInnAuditRecord,
-    ): Promise<void> {
-        try {
-            await this.bitrix.api.call('crm.timeline.comment.add', {
-                fields: {
-                    ENTITY_ID: dealId,
-                    ENTITY_TYPE: 'deal',
-                    COMMENT: formatInnAuditComment(record),
-                },
-            });
-        } catch (error) {
-            const message =
-                `Запись об ИНН сделки ${dealId} не попала в таймлайн ` +
-                `(${this.domain}): ${(error as Error).message}`;
-            this.logger.warn(message);
-            warnings.push(message);
-        }
+        return this.mirror.syncCompany(companyId, inns, warnings, current);
     }
 }

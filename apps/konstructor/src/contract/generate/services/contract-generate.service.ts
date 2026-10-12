@@ -4,7 +4,6 @@ import { StorageService, StorageType } from '@lib/core/storage';
 import { FileLinkService } from '@lib/core/file-link/file-link.service';
 import { ConfigService } from '@nestjs/config';
 
-import fs from 'fs';
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { formatRu } from '@lib/shared/lib/date/format-ru';
@@ -25,6 +24,8 @@ import { ContractSpecificationService } from './contract-specification.service';
 import { CONTRACT_LTYPE } from '@app/konstructor/document-generate/type/contract.type';
 import { ContractDto } from '@app/konstructor/dto/contract.dto';
 import { SupplyDto } from '@app/konstructor/dto';
+import { ContractTemplateSourceService } from './contract-template-source.service';
+import { ContractGenerateResult } from '../type/contract-generate.type';
 
 @Injectable()
 export class ContractGenerateService {
@@ -44,6 +45,7 @@ export class ContractGenerateService {
         private readonly headerService: ContractRqHeaderService,
         private readonly rqService: ContractRqService,
         private readonly specificationService: ContractSpecificationService,
+        private readonly templateSource: ContractTemplateSourceService,
     ) {
         dayjs.extend(localizedFormat);
         this.currentYear = dayjs().format('YYYY');
@@ -51,19 +53,16 @@ export class ContractGenerateService {
         this.baseUrl = this.configService.get('APP_URL') as string;
     }
 
-    async generateContract(dto: ContractGenerateDto): Promise<{
-        link: string;
-        documentName: string;
-        data: ContractGenerateTemplateProps;
-        provider: RqEntity;
-    }> {
+    async generateContract(
+        dto: ContractGenerateDto,
+    ): Promise<ContractGenerateResult> {
         const provider = await this.providerService.findById(dto.providerId);
         if (!provider) {
             throw new Error('Provider not found');
         }
 
         const resultPath = this.getDocumentPath(dto.domain, dto.userId);
-        const doc = this.getDoc();
+        const doc = await this.getDoc(dto);
 
         const documentName = await this.getDocumentName(
             dto.total.shortName,
@@ -85,25 +84,34 @@ export class ContractGenerateService {
 
         return {
             link,
+            // `file` и `document` — та же ссылка под именами, которые ждёт
+            // фронт (он типизирует ответ как {link, file, document}) и под
+            // которыми её читает init-supply. Отдельного base64-роута, как в
+            // Laravel, на несте нет — ровно как в отчёте о поставке.
+            file: link,
+            document: link,
             data,
             documentName,
             provider,
         };
     }
 
-    private getDoc(): Docxtemplater {
-        const templatePath = this.storage.getFilePath(
-            StorageType.APP,
-            'konstructor/templates/contract',
-            'template.docx',
-        );
-        const content = fs.readFileSync(templatePath, 'binary');
+    /**
+     * Шаблон документа.
+     *
+     * Путь к файлу выбирает `ContractTemplateSourceService` — там же и
+     * единственная проверка фиче-флага. Чтение файла асинхронное
+     * (`StorageService.readFile`): синхронный `fs.readFileSync` блокировал
+     * event loop на каждой генерации.
+     */
+    private async getDoc(dto: ContractGenerateDto): Promise<Docxtemplater> {
+        const template = await this.templateSource.resolve(dto);
+        const content = await this.storage.readFile(template.path);
         const zip = new PizZip(content);
-        const doc = new Docxtemplater(zip, {
+        return new Docxtemplater(zip, {
             paragraphLoop: true,
             linebreaks: true,
         });
-        return doc;
     }
     private async saveDoc(
         doc: Docxtemplater,

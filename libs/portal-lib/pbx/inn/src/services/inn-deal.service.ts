@@ -3,6 +3,11 @@ import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { innText } from '../lib/inn-row.util';
 import { composeInnSnapshot } from '../lib/inn-snapshot.composer';
 import {
+    INN_SYNC_KINDS,
+    INN_SYNC_SOURCES,
+    planInnSync,
+} from '../lib/inn-sync.plan';
+import {
     InnDealClosedError,
     InnDealNotFoundError,
     InnHideCurrentError,
@@ -41,9 +46,21 @@ export class InnDealService {
         this.pool = new InnPoolService(bitrix, portal, domain);
     }
 
-    /** Снимок ИНН сделки. Ничего не пишет: открытие карточки не событие. */
+    /**
+     * Снимок ИНН сделки.
+     *
+     * Раньше снимок не писал ничего («открытие карточки не событие»). С
+     * 06.10.2026 текущий ИНН обязан быть одним в сделке и в компании
+     * (владелец): если одна сторона пуста, вкладка дописывает её из другой
+     * (или из заявки) — один раз, пока расхождение не исчезнет. Закрытую
+     * сделку не трогаем. Разные непустые значения — только конфликт.
+     */
     async snapshot(dealId: number): Promise<IInnSnapshot> {
-        return this.compose(await this.load(dealId));
+        const state = await this.load(dealId);
+        const warnings = await this.syncCurrent(state);
+        const snapshot = this.compose(state);
+        snapshot.warnings.push(...warnings);
+        return snapshot;
     }
 
     /**
@@ -66,11 +83,13 @@ export class InnDealService {
             state.deal,
             inn,
             params.actor,
+            state.leadIds,
         );
         // Пустой `current` значит, что записывать было некуда (поля не
         // установлены) — состояние в этом случае не трогаем.
         if (result.current) {
             this.applyWrite(state, result.pool, result.current);
+            this.applyCompanyInn(state, result.current);
             this.remember(state, INN_AUDIT_ACTIONS.choose, inn, params.actor);
         }
         const snapshot = this.compose(state);
@@ -116,6 +135,75 @@ export class InnDealService {
         return state;
     }
 
+    /** Выровнять текущий ИНН сделки и компании (inn-sync.plan). */
+    private async syncCurrent(state: IInnDealState): Promise<string[]> {
+        if (state.closed) return [];
+        const plan = planInnSync({
+            dealInn: this.currentInn(state),
+            companyInn: this.companyInn(state),
+            hasCompany:
+                Boolean(state.company) && Boolean(state.fields.inn('company')),
+            leadInns: this.leadInns(state),
+        });
+        if (
+            plan.kind !== INN_SYNC_KINDS.toCompany &&
+            plan.kind !== INN_SYNC_KINDS.toDeal
+        ) {
+            return [];
+        }
+        const result = await this.pool.syncCurrent(
+            state.dealId,
+            state.deal,
+            plan,
+        );
+        if (plan.kind === INN_SYNC_KINDS.toDeal && result.current) {
+            this.applyWrite(state, result.pool, result.current);
+            state.audit = [
+                ...state.audit,
+                {
+                    action: INN_AUDIT_ACTIONS.auto,
+                    inn: result.current,
+                    userId: null,
+                    userName: '',
+                    at: new Date().toISOString(),
+                },
+            ];
+        }
+        if (
+            plan.kind === INN_SYNC_KINDS.toCompany ||
+            plan.from === INN_SYNC_SOURCES.lead
+        ) {
+            this.applyCompanyInn(state, plan.inn, true);
+        }
+        return result.warnings;
+    }
+
+    private companyInn(state: IInnDealState): string {
+        const name = state.fields.inn('company');
+        return name && state.company ? innText(state.company[name]) : '';
+    }
+
+    private leadInns(state: IInnDealState): string[] {
+        const name = state.fields.inn('lead');
+        if (!name) return [];
+        return state.leads.map(lead => innText(lead[name])).filter(Boolean);
+    }
+
+    /**
+     * Записанный ИНН компании — в состояние. `onlyEmpty` — выравнивание
+     * пишет компании только в пустое поле.
+     */
+    private applyCompanyInn(
+        state: IInnDealState,
+        inn: string,
+        onlyEmpty = false,
+    ): void {
+        const name = state.fields.inn('company');
+        if (!name || !state.company) return;
+        if (onlyEmpty && innText(state.company[name])) return;
+        state.company = { ...state.company, [name]: inn };
+    }
+
     private compose(state: IInnDealState): IInnSnapshot {
         return composeInnSnapshot({
             dealId: state.dealId,
@@ -130,6 +218,7 @@ export class InnDealService {
             audit: state.audit,
             otherCompanies: state.otherCompanies,
             fields: state.fields,
+            companyInn: this.companyInn(state),
         });
     }
 

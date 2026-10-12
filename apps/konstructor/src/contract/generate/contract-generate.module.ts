@@ -13,6 +13,17 @@ import { ContractRqHeaderService } from './services/contract-rq-header.service';
 import { ContractSpecificationService } from './services/contract-specification.service';
 import { ContractGenerateUseCase } from './use-case/contract-generate.use-case';
 import { ContractBitrixPushService } from './services/contract-bitrix-push.service';
+import { DocumentTemplateModule } from '@lib/portal-lib/konstructor/document-template';
+import { ContractTemplateSourceService } from './services/contract-template-source.service';
+
+/**
+ * `DocumentTemplateModule` добавлен ради подбора шаблона договора из БД
+ * (флаг `USE_DB_CONTRACT_TEMPLATES`). Он же приносит `PortalStoreModule`,
+ * через который domain превращается в portal_id: до этого в модуле не было
+ * ни одного портального модуля, и такой переход был недоступен.
+ * `ConfigModule` отдельно не импортируется — в app.module он
+ * `forRoot({ isGlobal: true })`.
+ */
 @Module({
     imports: [
         PBXModule,
@@ -21,11 +32,13 @@ import { ContractBitrixPushService } from './services/contract-bitrix-push.servi
         LibreOfficeModule,
         ProviderModule,
         DocumentGenerateModule,
+        DocumentTemplateModule,
     ],
     controllers: [ContractGenerateController],
     providers: [
         ContractGenerateUseCase,
         ContractGenerateService,
+        ContractTemplateSourceService,
         ContractBitrixPushService,
         DocumentProductRowService,
         ContractRqService,

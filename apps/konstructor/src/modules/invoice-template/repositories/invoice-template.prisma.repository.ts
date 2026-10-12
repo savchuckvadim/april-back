@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@lib/core/prisma/prisma.service';
 import type { InvoiceTemplate, Prisma } from 'generated/prisma';
 import {
+    buildInvoiceTemplateFindManyWhereInput,
+    matchesInvoiceTemplateListFilters,
+} from '../utils/invoice-template.prisma-where.util';
+import {
     InvoiceTemplateFindManyFilters,
     InvoiceTemplateRepository,
 } from './invoice-template.repository';
@@ -22,37 +26,17 @@ export class InvoiceTemplatePrismaRepository extends InvoiceTemplateRepository {
     async findMany(
         filters: InvoiceTemplateFindManyFilters,
     ): Promise<InvoiceTemplate[]> {
-        const where: Prisma.InvoiceTemplateWhereInput = {};
-
-        if (filters.visibility !== undefined) {
-            where.visibility = filters.visibility;
-        }
-        if (filters.portal_id !== undefined) {
-            where.portal_id = filters.portal_id;
-        }
-        if (filters.agent_id !== undefined) {
-            where.agent_id = filters.agent_id;
-        }
-        if (filters.is_active !== undefined) {
-            where.is_active = filters.is_active;
-        }
-        if (filters.is_archived !== undefined) {
-            where.is_archived = filters.is_archived;
-        }
-        if (filters.search?.trim()) {
-            const q = filters.search.trim();
-            where.OR = [
-                { name: { contains: q } },
-                { code: { contains: q } },
-                { description: { contains: q } },
-            ];
-        }
-
-        return this.prisma.invoiceTemplate.findMany({
-            where,
+        const rows = await this.prisma.invoiceTemplate.findMany({
+            where: buildInvoiceTemplateFindManyWhereInput(filters),
             orderBy: { created_at: 'desc' },
             include: { portal: true, agent: true },
         });
+
+        // Признаки client_types/supply_types отбираются уже в памяти —
+        // почему именно так, см. докблок matchesInvoiceTemplateListFilters.
+        return rows.filter(row =>
+            matchesInvoiceTemplateListFilters(row, filters),
+        );
     }
 
     async create(

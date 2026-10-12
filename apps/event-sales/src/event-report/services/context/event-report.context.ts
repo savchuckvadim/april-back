@@ -128,6 +128,14 @@ export class EventReportContext {
     get currentBaseDeal(): IBXDeal | null {
         return this.init.currentBaseDeal;
     }
+    /** Основная сделка — закрытая в отказ сделка запуска, возвращённая в работу. */
+    get reopenedBaseDeal(): boolean {
+        return Boolean(this.init.reopenedBaseDeal);
+    }
+    /** Сделка запуска «ОП Основная» закрыта, работа идёт в другой сделке. */
+    get closedLaunchBaseDeal(): IBXDeal | null {
+        return this.init.closedLaunchBaseDeal ?? null;
+    }
     get currentXoDeal(): IBXDeal | null {
         return this.init.currentXoDeal;
     }

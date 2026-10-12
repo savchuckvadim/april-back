@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from '@lib/core/prisma/prisma.service';
 import { StorageService, StorageType } from '@lib/core/storage/storage.service';
 import { validateDocxFile } from '@app/konstructor/modules/offer-template/word/lib/file-validator';
+import { serializeTemplateList } from '@lib/portal-lib/konstructor/document-template';
 import type { InvoiceTemplate, Prisma } from 'generated/prisma';
 import {
     InvoiceTemplateType,
@@ -168,6 +169,11 @@ export class InvoiceTemplateService {
             STORAGE_SUBPATH,
         );
 
+        // created_at/updated_at в схеме nullable, без @default(now()) и без
+        // @updatedAt — Prisma их сама не заполнит. Пишем явно, иначе строки
+        // уезжают с NULL и сортировка `orderBy: created_at` их теряет.
+        const now = new Date();
+
         const createData: Prisma.InvoiceTemplateCreateInput = {
             id,
             name: body.name,
@@ -177,9 +183,14 @@ export class InvoiceTemplateService {
             code,
             counter: 0,
             description: body.description ?? null,
+            // Пустой массив сериализуется в NULL — «годится любому».
+            client_types: serializeTemplateList(body.client_types),
+            supply_types: serializeTemplateList(body.supply_types),
             is_default: body.is_default ?? false,
             is_active: body.is_active ?? true,
             is_archived: false,
+            created_at: now,
+            updated_at: now,
         };
         if (portalId != null) {
             createData.portal = { connect: { id: portalId } };
@@ -261,9 +272,18 @@ export class InvoiceTemplateService {
             description: dto.description,
             is_default: dto.is_default,
             is_active: dto.is_active,
+            // В схеме нет @updatedAt — ставим сами, иначе поле навсегда NULL.
+            updated_at: new Date(),
         };
         if (dto.visibility !== undefined) {
             updateData.visibility = dto.visibility;
+        }
+        // Поле не передано — не трогаем; передан пустой массив — сбрасываем в NULL.
+        if (dto.client_types !== undefined) {
+            updateData.client_types = serializeTemplateList(dto.client_types);
+        }
+        if (dto.supply_types !== undefined) {
+            updateData.supply_types = serializeTemplateList(dto.supply_types);
         }
         if (dto.type !== undefined) {
             updateData.type = dto.type;

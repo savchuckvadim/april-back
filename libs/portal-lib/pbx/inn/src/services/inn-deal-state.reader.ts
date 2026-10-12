@@ -24,7 +24,11 @@ export interface IInnDealState {
     closed: boolean;
     companyId: number;
     companyTitle: string;
+    /** Карточка компании — её текущий ИНН выравнивается с ИНН сделки. */
+    company: InnRow | null;
     leadIds: number[];
+    /** Заявки сделки — ИНН мог прийти только с ними. */
+    leads: InnRow[];
     observations: IInnObservation[];
     requisites: IInnRequisiteCard[];
     requisitesReadable: boolean;
@@ -112,7 +116,9 @@ export class InnDealStateReader {
             closed: innText(deal.CLOSED).toUpperCase() === 'Y',
             companyId,
             companyTitle: innText(company?.TITLE),
+            company,
             leadIds,
+            leads,
             observations,
             requisites: cards.cards,
             requisitesReadable: cards.readable,

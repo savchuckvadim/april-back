@@ -1,18 +1,22 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { IsBooleanFlag } from '@lib/portal-lib/konstructor/document-template';
+import { Transform } from 'class-transformer';
 import {
-    IsBoolean,
+    IsArray,
     IsEnum,
     IsNumberString,
     IsOptional,
     IsString,
 } from 'class-validator';
+import { ClientTypeEnum } from '@app/konstructor/document-generate/type/client.type';
+import { SupplyTypeEnum } from '@app/konstructor/document-generate/type/supply.type';
 import {
     InvoiceTemplateType as InvoiceTemplateTypeSchema,
     InvoiceTemplateTypeValue,
     InvoiceTemplateVisibility as InvoiceTemplateVisibilitySchema,
     InvoiceTemplateVisibilityValue,
 } from './invoice-template.enums';
+import { parseMultipartList } from './invoice-template.multipart-list';
 
 /** Ссылка для ESLint/TS (декораторы не всегда засчитывают «использование» импорта). */
 const _invoiceTemplateVisibilityForMeta = InvoiceTemplateVisibilitySchema;
@@ -39,6 +43,36 @@ export class UpdateInvoiceTemplateDto {
     @IsNumberString()
     agent_id?: string;
 
+    @ApiPropertyOptional({
+        description:
+            'Типы клиента. Пустой массив сбрасывает привязку в NULL — ' +
+            '«годится любому типу клиента».',
+        enum: ClientTypeEnum,
+        enumName: 'ClientTypeEnum',
+        isArray: true,
+        example: [ClientTypeEnum.ORG_STATE],
+    })
+    @IsOptional()
+    @Transform(parseMultipartList)
+    @IsArray()
+    @IsEnum(ClientTypeEnum, { each: true })
+    client_types?: ClientTypeEnum[];
+
+    @ApiPropertyOptional({
+        description:
+            'Типы поставки. Пустой массив сбрасывает привязку в NULL — ' +
+            '«годится любому типу поставки».',
+        enum: SupplyTypeEnum,
+        enumName: 'SupplyTypeEnum',
+        isArray: true,
+        example: [SupplyTypeEnum.INTERNET],
+    })
+    @IsOptional()
+    @Transform(parseMultipartList)
+    @IsArray()
+    @IsEnum(SupplyTypeEnum, { each: true })
+    supply_types?: SupplyTypeEnum[];
+
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
@@ -51,13 +85,11 @@ export class UpdateInvoiceTemplateDto {
 
     @ApiPropertyOptional()
     @IsOptional()
-    @Type(() => Boolean)
-    @IsBoolean()
+    @IsBooleanFlag()
     is_default?: boolean;
 
     @ApiPropertyOptional()
     @IsOptional()
-    @Type(() => Boolean)
-    @IsBoolean()
+    @IsBooleanFlag()
     is_active?: boolean;
 }

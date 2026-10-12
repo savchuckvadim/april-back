@@ -163,12 +163,9 @@ export class UserSelectedTemplatePrismaRepository
         id: bigint,
         data: Partial<UserSelectedTemplate>,
     ): Promise<UserSelectedTemplate> {
-        console.log(id, 'id');
-        console.log(data, 'data');
         const check = await this.prisma.userSelectedTemplate.findUnique({
             where: { id },
         });
-        console.log(check, 'check');
         if (!check) {
             throw new NotFoundException(
                 `User selected template with ID ${id} not found`,
@@ -219,12 +216,10 @@ export class UserSelectedTemplatePrismaRepository
                 }),
             },
         });
-        console.log(result, 'result');
         const entity = {
             ...result,
             id: String(result.id),
         } as Partial<UserSelectedTemplate>;
-        console.log(entity, 'entity');
         return new UserSelectedTemplate(entity);
     }
 

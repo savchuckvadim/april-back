@@ -1,4 +1,32 @@
+import { RqEntity } from '@lib/portal-lib/konstructor/provider';
 import { Product } from '../../../document-generate/product-rows/product-row.service';
+
+/**
+ * Ответ генерации договора.
+ *
+ * `link`, `file` и `document` — одна и та же ссылка под тремя именами:
+ * фронт типизирует ответ как `{link, file, document}`, а init-supply берёт
+ * именно `file`. До этой задачи отдавались только `link`/`documentName`,
+ * поэтому `file` у вызывающего был `undefined`.
+ *
+ * `data` и `provider` ОСТАВЛЕНЫ намеренно, хотя `provider` — это полный
+ * `RqEntity` (включая банк/бик/рс/кс). Grep по обоим репозиториям
+ * (april-next/back и front/konstructor) явных читателей этих полей не нашёл,
+ * но ручка `POST contract/generate` публичная и ответ не прикрыт
+ * DTO-сериализацией, поэтому доказать по коду, что их не читает внешний
+ * потребитель, нельзя. Сужение ответа — отдельное решение с заказчиком,
+ * а не побочный эффект включения резолвера шаблонов.
+ */
+export type ContractGenerateResult = {
+    link: string;
+    /** Та же ссылка; её читает init-supply. */
+    file: string;
+    /** Та же ссылка; под этим именем её типизирует фронт. */
+    document: string;
+    documentName: string;
+    data: ContractGenerateTemplateProps;
+    provider: RqEntity;
+};
 
 export type ContractGenerateTemplateProps = {
     contract_number: string;

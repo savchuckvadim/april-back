@@ -1338,7 +1338,8 @@ exports.Prisma.OfferTemplateScalarFieldEnum = {
   is_archived: 'is_archived',
   archived_at: 'archived_at',
   agent_id: 'agent_id',
-  client_types: 'client_types'
+  client_types: 'client_types',
+  supply_types: 'supply_types'
 };
 
 exports.Prisma.Offer_zakupki_settingsScalarFieldEnum = {
@@ -1637,7 +1638,8 @@ exports.Prisma.InvoiceTemplateScalarFieldEnum = {
   portal_id: 'portal_id',
   agent_id: 'agent_id',
   creator_bitrix_user_id: 'creator_bitrix_user_id',
-  client_types: 'client_types'
+  client_types: 'client_types',
+  supply_types: 'supply_types'
 };
 
 exports.Prisma.Marketplace_installsScalarFieldEnum = {
@@ -1774,6 +1776,7 @@ exports.Prisma.ContractTemplateScalarFieldEnum = {
   agent_id: 'agent_id',
   contract_type: 'contract_type',
   client_types: 'client_types',
+  supply_types: 'supply_types',
   name: 'name',
   code: 'code',
   file_path: 'file_path',
@@ -1793,6 +1796,7 @@ exports.Prisma.SupplyReportTemplateScalarFieldEnum = {
   portal_id: 'portal_id',
   agent_id: 'agent_id',
   client_types: 'client_types',
+  supply_types: 'supply_types',
   name: 'name',
   code: 'code',
   file_path: 'file_path',
@@ -2554,7 +2558,8 @@ exports.Prisma.OfferTemplateOrderByRelevanceFieldEnum = {
   color: 'color',
   code: 'code',
   tags: 'tags',
-  client_types: 'client_types'
+  client_types: 'client_types',
+  supply_types: 'supply_types'
 };
 
 exports.Prisma.offer_zakupki_settingsOrderByRelevanceFieldEnum = {
@@ -2741,7 +2746,8 @@ exports.Prisma.InvoiceTemplateOrderByRelevanceFieldEnum = {
   name: 'name',
   code: 'code',
   description: 'description',
-  client_types: 'client_types'
+  client_types: 'client_types',
+  supply_types: 'supply_types'
 };
 
 exports.Prisma.marketplace_installsOrderByRelevanceFieldEnum = {
@@ -2823,6 +2829,7 @@ exports.Prisma.ShareLinkOrderByRelevanceFieldEnum = {
 exports.Prisma.ContractTemplateOrderByRelevanceFieldEnum = {
   contract_type: 'contract_type',
   client_types: 'client_types',
+  supply_types: 'supply_types',
   name: 'name',
   code: 'code',
   file_path: 'file_path',
@@ -2832,6 +2839,7 @@ exports.Prisma.ContractTemplateOrderByRelevanceFieldEnum = {
 
 exports.Prisma.SupplyReportTemplateOrderByRelevanceFieldEnum = {
   client_types: 'client_types',
+  supply_types: 'supply_types',
   name: 'name',
   code: 'code',
   file_path: 'file_path',

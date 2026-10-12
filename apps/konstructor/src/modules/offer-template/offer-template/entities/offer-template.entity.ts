@@ -34,6 +34,17 @@ export class OfferTemplate {
     portal_id?: number;
     is_archived?: boolean;
     archived_at?: Date;
+    /**
+     * Привязки шаблона (миграция 2026_09_15_100300). NULL = «годится любому».
+     *
+     * `agent_id` — скалярное поле без Prisma-relation (и без FK в БД).
+     * `client_types`/`supply_types` лежат JSON-строкой в LongText: сущность
+     * держит сырое значение, разбор в массивы делают DTO ответа через
+     * parseClientTypes/parseSupplyTypes.
+     */
+    agent_id?: bigint | null;
+    client_types?: string | null;
+    supply_types?: string | null;
 
     // Relations
     offerTemplateFonts?: OfferTemplateFont[];
@@ -74,6 +85,10 @@ export class OfferTemplateSummary {
     created_at?: Date;
     portal_id?: number;
     creator_bitrix_user_id?: bigint | number;
+    /** Привязки шаблона; сырые значения, см. докблок в OfferTemplate. */
+    agent_id?: bigint | null;
+    client_types?: string | null;
+    supply_types?: string | null;
     constructor(partial: Partial<OfferTemplateSummary>) {
         Object.assign(this, {
             ...partial,

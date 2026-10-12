@@ -17,6 +17,12 @@ export function invoiceTemplateQueryToFindManyFilters(
     if (query.agent_id !== undefined) {
         filters.agent_id = BigInt(query.agent_id);
     }
+    if (query.client_type !== undefined) {
+        filters.client_type = query.client_type;
+    }
+    if (query.supply_type !== undefined) {
+        filters.supply_type = query.supply_type;
+    }
     if (query.is_active !== undefined) {
         filters.is_active = query.is_active;
     }

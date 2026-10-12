@@ -11,8 +11,10 @@ import { ContractDto } from '../../dto/contract.dto';
 import {
     getClientTypeSelect,
     getSupplyReportFormFields,
+    SupplyReportFieldOverrides,
     SupplyReportFormField,
 } from '../lib/supply-report-form';
+import { SupplyReportTemplateSourceService } from './template/supply-report-template-source.service';
 
 /** Реквизит компании из битрикса, в том виде, в котором его отдаёт REST. */
 interface BxRequisiteRaw {
@@ -44,6 +46,7 @@ export class InitFormService {
     constructor(
         private readonly pbx: PBXService,
         private readonly provider: ProviderService,
+        private readonly templateSource: SupplyReportTemplateSourceService,
     ) {}
 
     /**
@@ -109,7 +112,9 @@ export class InitFormService {
         };
 
         if (dto.isSupplyReport) {
-            result.supply = getSupplyReportFormFields();
+            result.supply = getSupplyReportFormFields(
+                await this.getFieldOverrides(dto),
+            );
         }
 
         const clientRq = await this.getCompanyRequisites(bitrix, companyId);
@@ -127,6 +132,42 @@ export class InitFormService {
         }
 
         return result;
+    }
+
+    /**
+     * Портальная настройка состава формы отчёта.
+     *
+     * Меняет ТОЛЬКО `isRequired` у полей, которые и так есть в коде
+     * (см. `applyFieldOverrides`): состав и порядок полей — контракт с
+     * фронтом и с docxtemplater, настройкой их двигать нельзя.
+     *
+     * Сбой подбора гасится в `undefined`: форма конструктора нужна
+     * менеджеру независимо от того, доступна ли БД шаблонов, а без
+     * настройки она просто такая же, как до её появления. При выключенном
+     * флаге резолвер не вызывается вовсе.
+     */
+    private async getFieldOverrides(
+        dto: DocumentSupplyInitFormDto,
+    ): Promise<SupplyReportFieldOverrides | undefined> {
+        if (!this.templateSource.isDbLookupEnabled()) {
+            return undefined;
+        }
+
+        try {
+            const template = await this.templateSource.resolve({
+                domain: dto.domain,
+                providerId: dto.providerId,
+                contractType: dto.contractType,
+                clientType: dto.clientType,
+                supplyType: dto.supplyType,
+            });
+            return template.fieldOverrides;
+        } catch (error) {
+            this.logger.warn(
+                `Не удалось подобрать шаблон отчёта для домена ${dto.domain}, состав формы берём из кода: ${getErrorString(error)}`,
+            );
+            return undefined;
+        }
     }
 
     /** Реквизит компании (crm.requisite.list, ENTITY_TYPE_ID = 4). */

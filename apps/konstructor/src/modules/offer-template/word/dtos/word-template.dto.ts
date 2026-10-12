@@ -1,4 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ClientTypeEnum } from '@app/konstructor/document-generate/type/client.type';
+import { SupplyTypeEnum } from '@app/konstructor/document-generate/type/supply.type';
 import {
     WordTemplate,
     WordTemplateSummary,
@@ -56,6 +58,34 @@ export class WordTemplateDto extends WordTemplate {
 
     @ApiProperty({ required: false })
     declare updated_at?: Date;
+
+    @ApiProperty({
+        description: 'ID агента (поставщика); null — «для любого».',
+        required: false,
+        type: String,
+        nullable: true,
+    })
+    declare agent_id?: string | null;
+
+    @ApiProperty({
+        description: 'Типы клиента; null — «для любого».',
+        enum: ClientTypeEnum,
+        enumName: 'ClientTypeEnum',
+        isArray: true,
+        required: false,
+        nullable: true,
+    })
+    declare client_types?: ClientTypeEnum[] | null;
+
+    @ApiProperty({
+        description: 'Типы поставки; null — «для любого».',
+        enum: SupplyTypeEnum,
+        enumName: 'SupplyTypeEnum',
+        isArray: true,
+        required: false,
+        nullable: true,
+    })
+    declare supply_types?: SupplyTypeEnum[] | null;
 }
 
 export class WordTemplateSummaryDto extends WordTemplateSummary {
@@ -103,6 +133,34 @@ export class WordTemplateSummaryDto extends WordTemplateSummary {
 
     @ApiProperty({ required: false, type: Number })
     declare portal_id?: number;
+
+    @ApiProperty({
+        description: 'ID агента (поставщика); null — «для любого».',
+        required: false,
+        type: String,
+        nullable: true,
+    })
+    declare agent_id?: string | null;
+
+    @ApiProperty({
+        description: 'Типы клиента; null — «для любого».',
+        enum: ClientTypeEnum,
+        enumName: 'ClientTypeEnum',
+        isArray: true,
+        required: false,
+        nullable: true,
+    })
+    declare client_types?: ClientTypeEnum[] | null;
+
+    @ApiProperty({
+        description: 'Типы поставки; null — «для любого».',
+        enum: SupplyTypeEnum,
+        enumName: 'SupplyTypeEnum',
+        isArray: true,
+        required: false,
+        nullable: true,
+    })
+    declare supply_types?: SupplyTypeEnum[] | null;
 }
 
 export class UserSelectedTemplateSummaryDto {

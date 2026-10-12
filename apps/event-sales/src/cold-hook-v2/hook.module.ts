@@ -9,10 +9,14 @@ import { EventSilenceModule } from '@/core';
 import { PbxPresentationSmartModule } from '@lib/portal-lib/pbx/pbx-presentation-smart';
 import { PbxZprSmartModule } from '@lib/portal-lib/pbx/pbx-zpr-smart';
 import { UserNameResolver } from '../shared/lead-request/user-name.resolver';
+import { QueueModule } from '@/modules/queue/queue.module';
+import { ColdHooksV2Processor } from './queue/cold-hooks-v2.processor';
 
 @Module({
     imports: [
         EventSilenceModule,
+        // Своя очередь окон холодного старта v2 (строго по одному окну).
+        QueueModule,
         PBXModule,
         TelegramModule,
         HttpModule,
@@ -24,6 +28,7 @@ import { UserNameResolver } from '../shared/lead-request/user-name.resolver';
     providers: [
         ColdHookSilinceEndpointV2Service,
         ColdHooksHandlerV2Service,
+        ColdHooksV2Processor,
         // Имена сотрудников для записей таймлайна (кэш на домен, fail-open).
         UserNameResolver,
     ],

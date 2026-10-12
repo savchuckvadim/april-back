@@ -15,6 +15,12 @@ import {
 } from './deal-target-stage.calculator';
 
 /**
+ * Ключ batch-команды создания основной сделки: по нему из ответа батча
+ * читается id новой сделки (записи о продолжении работы).
+ */
+export const SET_BASE_DEAL_CMD = 'set_base_deal';
+
+/**
  * Обновление/создание сделки воронки ОП Основная (sales_base).
  *
  * Возвращает идентификатор сделки (реальный либо `$result[set_base_deal]`),
@@ -90,7 +96,7 @@ export class SalesBaseDealService {
             return String(ctx.currentBaseDeal.ID);
         }
 
-        const cmd = 'set_base_deal';
+        const cmd = SET_BASE_DEAL_CMD;
         this.bitrix.batch.deal.set(cmd, baseFields);
         return `$result[${cmd}]`;
     }

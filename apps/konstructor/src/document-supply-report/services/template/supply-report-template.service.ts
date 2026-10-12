@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { StorageService, StorageType } from '@lib/core/storage';
 import Docxtemplater from 'docxtemplater';
 import PizZip from 'pizzip';
@@ -26,18 +26,18 @@ export class SupplyReportTemplateService {
      * туда, куда потом смотрит `FileLinkService.getFilePath`. Уникальность
      * живёт в ИМЕНИ файла, а не в подпапке с хэшем: иначе ссылка
      * `/api/files/<token>` отдаёт 404, и init-supply не скачивает отчёт.
+     *
+     * `templatePath` приходит готовым: выбор файла (БД или зонд по storage)
+     * — ответственность `SupplyReportTemplateSourceService`. Здесь остаётся
+     * только сборка документа, поэтому прежний флаг `isNewTemplate` ушёл
+     * вместе с веткой, которая его читала.
      */
     async createWordDocument(
         templateData: SupplyReportTemplateData,
         domain: string,
         userId: number,
-        isNewTemplate: boolean = true,
+        templatePath: string,
     ): Promise<{ filePath: string; fileName: string; subPath: string }> {
-        const templatePath = await this.resolveTemplatePath(
-            domain,
-            isNewTemplate,
-        );
-
         const templateBuffer = await this.storageService.readFile(templatePath);
 
         const doc = new Docxtemplater(new PizZip(templateBuffer), {
@@ -69,42 +69,6 @@ export class SupplyReportTemplateService {
         this.logger.log(`Отчёт о поставке собран: ${filePath}`);
 
         return { filePath, fileName, subPath };
-    }
-
-    /**
-     * Путь к шаблону: сначала переопределение под домен, потом общий шаблон —
-     * как в Laravel (`templates/supply/{domain}/sales_report.docx` с фолбэком).
-     */
-    private async resolveTemplatePath(
-        domain: string,
-        isNewTemplate: boolean,
-    ): Promise<string> {
-        const basePath = 'konstructor/templates/supply';
-        const fileName = isNewTemplate
-            ? 'sales_report.docx'
-            : 'supply_report_gsr.docx';
-
-        const domainPath = this.storageService.getFilePath(
-            StorageType.APP,
-            `${basePath}/${domain}`,
-            fileName,
-        );
-        if (await this.storageService.fileExists(domainPath)) {
-            return domainPath;
-        }
-
-        const commonPath = this.storageService.getFilePath(
-            StorageType.APP,
-            basePath,
-            fileName,
-        );
-        if (await this.storageService.fileExists(commonPath)) {
-            return commonPath;
-        }
-
-        throw new NotFoundException(
-            `Шаблон отчёта о поставке не найден: ${commonPath}`,
-        );
     }
 
     /**

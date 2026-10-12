@@ -19,8 +19,10 @@ import {
  * работа (pbx.init, батчи) идёт в воркере EVENT_SALES_HOOK_OPS, чтобы не
  * блокировать однопоточный воркер event-silent.
  *
- * `{ async: true }` обязателен: silence-менеджер ждёт listener'ов через
- * emitAsync (см. EVENT_SILENCE_GUIDE.md).
+ * Без `{ async: true }`: с ним EventEmitter2 зовёт слушателя через
+ * setImmediate и НЕ ждёт его — задание event-silent закрывалось раньше, чем
+ * операция ставилась в очередь, а ошибка постановки терялась. Без флага
+ * emitAsync ждёт промис слушателя (см. EVENT_SILENCE_GUIDE.md).
  */
 @Injectable()
 export class SalesHookSilenceSubscriber {
@@ -31,35 +33,26 @@ export class SalesHookSilenceSubscriber {
         private readonly idempotency: SalesHookIdempotencyService,
     ) {}
 
-    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.SALES_HOOK_LEAD_TO_WORK}`, {
-        async: true,
-    })
+    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.SALES_HOOK_LEAD_TO_WORK}`)
     onLeadToWork(event: EventSilentJobManagerHandler<SalesHookRobotEnvelope>) {
         return this.acceptBatch(EnumSalesHookCode.LEAD_TO_WORK, event);
     }
 
-    @OnEvent(
-        `${SILENCE_EVENT_PREFIX}:${JobNames.SALES_HOOK_MERGE_DUPLICATES}`,
-        { async: true },
-    )
+    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.SALES_HOOK_MERGE_DUPLICATES}`)
     onMergeDuplicates(
         event: EventSilentJobManagerHandler<SalesHookRobotEnvelope>,
     ) {
         return this.acceptBatch(EnumSalesHookCode.MERGE_DUPLICATES, event);
     }
 
-    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.SALES_HOOK_TRANSFER_WORK}`, {
-        async: true,
-    })
+    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.SALES_HOOK_TRANSFER_WORK}`)
     onTransferWork(
         event: EventSilentJobManagerHandler<SalesHookRobotEnvelope>,
     ) {
         return this.acceptBatch(EnumSalesHookCode.TRANSFER_WORK, event);
     }
 
-    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.SALES_HOOK_REJECT_BUFFER}`, {
-        async: true,
-    })
+    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.SALES_HOOK_REJECT_BUFFER}`)
     onRejectBuffer(
         event: EventSilentJobManagerHandler<SalesHookRobotEnvelope>,
     ) {
@@ -68,7 +61,6 @@ export class SalesHookSilenceSubscriber {
 
     @OnEvent(
         `${SILENCE_EVENT_PREFIX}:${JobNames.SALES_HOOK_CONVERT_NORMALIZER}`,
-        { async: true },
     )
     onConvertNormalizer(
         event: EventSilentJobManagerHandler<SalesHookRobotEnvelope>,
@@ -76,27 +68,31 @@ export class SalesHookSilenceSubscriber {
         return this.acceptBatch(EnumSalesHookCode.CONVERT_NORMALIZER, event);
     }
 
-    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.SALES_HOOK_DUPLICATE_CHECK}`, {
-        async: true,
-    })
+    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.SALES_HOOK_DUPLICATE_CHECK}`)
     onDuplicateCheck(
         event: EventSilentJobManagerHandler<SalesHookRobotEnvelope>,
     ) {
         return this.acceptBatch(EnumSalesHookCode.DUPLICATE_CHECK, event);
     }
 
-    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.SALES_HOOK_LEAD_ACCEPT}`, {
-        async: true,
-    })
+    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.SALES_HOOK_LEAD_ACCEPT}`)
     onLeadAccept(event: EventSilentJobManagerHandler<SalesHookRobotEnvelope>) {
         return this.acceptBatch(EnumSalesHookCode.LEAD_ACCEPT, event);
     }
 
-    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.SALES_HOOK_LEAD_CLIENT}`, {
-        async: true,
-    })
+    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.SALES_HOOK_LEAD_CLIENT}`)
     onLeadClient(event: EventSilentJobManagerHandler<SalesHookRobotEnvelope>) {
         return this.acceptBatch(EnumSalesHookCode.LEAD_CLIENT, event);
+    }
+
+    /**
+     * Робот «Присоединить к основной». Без этого слушателя вебхук принимал
+     * событие в окно тишины, а оно уходило в никуда (найдено 12.10.2026 на
+     * gsr: ни одно присоединение роботом не выполнилось).
+     */
+    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.SALES_HOOK_JOIN_TO_MAIN}`)
+    onJoinToMain(event: EventSilentJobManagerHandler<SalesHookRobotEnvelope>) {
+        return this.acceptBatch(EnumSalesHookCode.JOIN_TO_MAIN, event);
     }
 
     private async acceptBatch(

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentSupplyReportGenerateDto } from '../dto/document-supply-report-generate.dto';
 import { SupplyReportDataService } from '../services/data/supply-report-data.service';
 import { SupplyReportTemplateService } from '../services/template/supply-report-template.service';
+import { SupplyReportTemplateSourceService } from '../services/template/supply-report-template-source.service';
 import { SupplyReportPdfService } from '../services/pdf/supply-report-pdf.service';
 import { SupplyReportBitrixService } from '../services/bitrix/supply-report-bitrix.service';
 import { PortalService } from '@lib/portal-lib/portal';
@@ -19,6 +20,7 @@ export class GenerateUseCase {
     constructor(
         private readonly dataService: SupplyReportDataService,
         private readonly templateService: SupplyReportTemplateService,
+        private readonly templateSource: SupplyReportTemplateSourceService,
         private readonly pdfService: SupplyReportPdfService,
         private readonly pbx: PBXService,
         private readonly portalService: PortalService,
@@ -43,8 +45,18 @@ export class GenerateUseCase {
 
         const portal = await this.portalService.getPortalByDomain(domain);
 
-        // второй шаблон (supply_report_gsr.docx) сейчас нигде не включается
-        const isNewTemplate = true;
+        // Единственная точка выбора шаблона. Флаг
+        // USE_DB_SUPPLY_REPORT_TEMPLATES выключен → тот же зонд по storage,
+        // что и до резолвера; включён → сначала строка из БД.
+        // Прежний `isNewTemplate = true` был мёртвой веткой: вторым файлом
+        // (supply_report_gsr.docx) отчёт не собирался никогда.
+        const template = await this.templateSource.resolve({
+            domain,
+            providerId: dto.providerId,
+            contractType: dto.contractType,
+            clientType: dto.clientType,
+            supplyType: dto.supply?.type,
+        });
 
         const templateData = this.dataService.prepareTemplateData(dto);
 
@@ -53,7 +65,7 @@ export class GenerateUseCase {
                 templateData,
                 domain,
                 userId,
-                isNewTemplate,
+                template.path,
             );
 
         const currentYear = dayjs().format('YYYY');

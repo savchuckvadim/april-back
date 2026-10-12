@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
     IsArray,
     IsBoolean,
+    IsDefined,
     IsEnum,
     IsNumber,
     IsObject,
@@ -9,7 +10,24 @@ import {
     IsString,
     ValidateNested,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ClientTypeEnum } from '../../document-generate/type/client.type';
+import { SupplyTypeEnum } from '../../document-generate/type/supply.type';
+
+/**
+ * Тип клиента в форме SelectItem — ровно то, что шлёт легаси-конструктор.
+ * Нужен только ради `code`: по нему подбирается шаблон отчёта.
+ */
+export class ClientTypeCodeDto {
+    @ApiPropertyOptional({
+        description: 'Код типа клиента — по нему идёт подбор шаблона.',
+        enum: ClientTypeEnum,
+        example: ClientTypeEnum.ORG,
+    })
+    @IsOptional()
+    @IsString()
+    code?: string;
+}
 import { CONTRACT_LTYPE } from '../../document-generate/type/contract.type';
 import { ContractDto } from '../../dto/contract.dto';
 import { ProductRowDto } from '../../document-generate/dto/product-row/product-row.dto';
@@ -746,6 +764,39 @@ export class DocumentSupplyInitFormDto {
     @IsOptional()
     @IsBoolean()
     isSupplyReport?: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Id поставщика (agents.id). Нужен только для подбора портальной настройки состава формы отчёта: по нему шаблон отличает «для этого поставщика» от «для любого». Легаси-конструктор это поле в init не шлёт — без него подбор идёт только среди шаблонов без поставщика, то есть как сегодня.',
+        type: Number,
+        example: 12,
+    })
+    @IsOptional()
+    @IsNumber()
+    providerId?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Тип клиента. Как и в генерации, принимаем и строку-код, и объект SelectItem — конструктор шлёт обе формы. Используется только как признак подбора шаблона отчёта.',
+        oneOf: [
+            { type: 'string', enum: Object.values(ClientTypeEnum) },
+            { type: 'object' },
+        ],
+        example: 'org',
+    })
+    @IsOptional()
+    @IsDefined()
+    clientType?: ClientTypeEnum | ClientTypeCodeDto;
+
+    @ApiPropertyOptional({
+        description:
+            'Тип поставки (internet | proxima) — признак подбора шаблона отчёта.',
+        enum: SupplyTypeEnum,
+        example: SupplyTypeEnum.INTERNET,
+    })
+    @IsOptional()
+    @IsEnum(SupplyTypeEnum)
+    supplyType?: SupplyTypeEnum;
 
     @ApiProperty({
         description:

@@ -42,6 +42,8 @@ export interface IInnComposeInput {
     audit: readonly IInnAuditEvent[];
     otherCompanies: ReadonlyMap<string, number[]>;
     fields: InnFieldMap;
+    /** Текущий ИНН компании — должен совпадать с ИНН сделки. */
+    companyInn?: string;
 }
 
 export function composeInnSnapshot(input: IInnComposeInput): IInnSnapshot {
@@ -188,6 +190,19 @@ function collectConflicts(
             kind: INN_CONFLICT_KINDS.not_chosen,
             level: INN_CONFLICT_LEVELS.error,
             message: 'ИНН договора не выбран — выберите плательщика.',
+        });
+    }
+
+    const companyInn = normalizeInn(input.companyInn ?? '') ?? '';
+    if (current && companyInn && companyInn !== normalizeInn(current)) {
+        conflicts.push({
+            kind: INN_CONFLICT_KINDS.current_mismatch,
+            level: INN_CONFLICT_LEVELS.error,
+            message:
+                `ИНН сделки (${current}) и ИНН компании (${companyInn}) разные. ` +
+                'Выберите текущий — он запишется и в сделку, и в компанию.',
+            inn: companyInn,
+            entityIds: [input.companyId],
         });
     }
 

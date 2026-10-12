@@ -9,6 +9,10 @@ import { TelegramModule } from '@lib/telegram/telegram.module';
 import { KonstructorModule } from './konstructor.module';
 import { OfferWordModule } from './offer-word/offer-word.module';
 import { DocumentSupplyReportModule } from './document-supply-report/document-supply-report.module';
+// Справочник шаблонов отчёта о поставке (CRUD для админки). Подбор шаблона
+// при генерации живёт в общем резолвере document-template, здесь — только
+// ведение справочника; строка шаблона в этом домене опциональна.
+import { SupplyReportTemplateModule } from './modules/supply-report-template';
 // Слои доставки konstructor-роутов: контроллеры вынесены из сервисных
 // модулей, чтобы не утекать в Swagger других приложений
 // (ai/rules/app-api-surface.md), поэтому подключаются здесь явно.
@@ -19,6 +23,22 @@ import { TemplateBasePublicModule } from '@lib/portal-lib/konstructor/template-b
 // (next/:rqId/invoice), который старая сборка back.april-app.ru отдавала сама.
 // Из зависимостей модулю нужен только Prisma — он @Global.
 import { DocumentCounterModule } from '@lib/portal-lib/konstructor';
+// CRUD шаблонов договора (contract-templates/*). Подключается здесь, а не
+// в KonstructorModule: контроллер нужен только konstructor-приложению, и
+// так его роуты не утекают в Swagger остальных приложений
+// (ai/rules/app-api-surface.md).
+import { ContractTemplateModule } from './modules/contract-template';
+// Отдел продаж портала (bitrix/department/sales): легаси-конструктор уже
+// зовёт его на этом хосте, а админке он нужен для выбора пользователя,
+// от лица которого настраиваются шаблоны КП.
+import { BxDepartmentModule } from '@lib/bx-department/bx-department.module';
+// Read-only роуты «какой шаблон будет выбран и почему» + диагностика
+// неоднозначности (konstructor/templates/resolve/*, /diagnostics/ambiguous).
+// Только контроллер: сам резолвер живёт в DocumentTemplateModule, который
+// подключается сервисно там, где нужен подбор при генерации. Раскол —
+// по ai/rules/app-api-surface.md, иначе эти роуты утекут в Swagger
+// приложений, тянущих konstructor транзитом.
+import { DocumentTemplatePublicModule } from '@lib/portal-lib/konstructor/document-template';
 
 /**
  * Корневой модуль приложения konstructor (конструктор документов).
@@ -56,9 +76,13 @@ import { DocumentCounterModule } from '@lib/portal-lib/konstructor';
         KonstructorModule,
         OfferWordModule,
         DocumentSupplyReportModule,
+        SupplyReportTemplateModule,
         ProviderPublicModule,
         TemplateBasePublicModule,
         DocumentCounterModule,
+        ContractTemplateModule,
+        BxDepartmentModule,
+        DocumentTemplatePublicModule,
     ],
     providers: [GlobalExceptionFilter],
 })

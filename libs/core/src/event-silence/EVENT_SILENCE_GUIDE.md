@@ -59,12 +59,17 @@ Hook N ─┘  ►  NX-guard / dispatch     │  Processor.handle()   │   │ 
    job в `event-silent`, который встанет за текущим (Bull concurrency=1) и
    обработается последовательно после.
 5. **`emitAsync('silence:{jobName}', { collected, payload })`** —
-   ждёт всех подписчиков с `{ async: true }`. Здесь происходит реальная работа.
+   ждёт промисы подписчиков, объявленных БЕЗ `{ async: true }` (см. ниже).
+   Подписчик тонкий: ставит пачку в СВОЮ очередь исполнения, тяжёлая работа
+   идёт там (холодный старт v1/v2 — `event-sales-cold-call`/`-v2`, sales-хуки —
+   `event-sales-hook-ops`).
 
 ### Что гарантирует последовательность
 
-- `event-silent` queue с **concurrency=1 (default Bull)** — два разных окна
-  одного `keyPrefix` никогда не обрабатываются параллельно.
+- `event-silent` queue с **concurrency=1 (default Bull)** — окна разбираются
+  по одному, ПОКА подписчик ждётся (без `{ async: true }`). Последовательность
+  самой работы даёт очередь исполнения подписчика: у холодного старта — один
+  обработчик с concurrency 1 на свою очередь.
 - `del(jobKey)` ВНУТРИ `collectAndClear` — следующий job может встать в очередь
   пока текущий ещё в emitAsync. Bull обработает их в FIFO порядке.
 
@@ -138,9 +143,7 @@ export class MyEndpointService {
     }
 
     /** срабатывает, когда настала тишина и накопленная пачка готова */
-    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.EVENT_MY_NEW_THING}`, {
-        async: true,
-    })
+    @OnEvent(`${SILENCE_EVENT_PREFIX}:${JobNames.EVENT_MY_NEW_THING}`)
     async onSilence(
         data: EventSilentJobManagerHandler<IMyData>,
     ): Promise<void> {
@@ -152,8 +155,18 @@ export class MyEndpointService {
 }
 ```
 
-> ⚠ **`{ async: true }` обязателен** — без него `emitAsync` не дождётся
-> завершения обработчика и job в Bull завершится раньше, чем сделается работа.
+> ⚠ **`{ async: true }` ЗАПРЕЩЁН** (проверено 12.10.2026 по исходникам
+> @nestjs/event-emitter 3.1 и eventemitter2): Nest оборачивает обычный сервис в
+> НЕ-async стрелку, а EventEmitter2 с `async: true` зовёт такую функцию через
+> setImmediate и не ждёт её. `emitAsync` разрешается сразу, задание event-silent
+> закрывается, следующее окно стартует параллельно с недоделанной работой
+> (gsr 07.10.2026: двойной массовый ХО → 29 компаний с двумя парами работ).
+> Без флага `emitAsync` ждёт промис слушателя.
+>
+> Долгую работу в подписчике не делать: воркер event-silent общий для всех
+> хуков. Подписчик ставит пачку в свою очередь (concurrency 1, один
+> обработчик на очередь — у Bull параллельность именованных обработчиков
+> одной очереди складывается).
 
 ### Шаг 4. Handler-сервис: обработка пачки
 
@@ -238,9 +251,11 @@ hook может улететь на обработку проду и наобо�
   запросы не туда. См. CLAUDE.md → "this.bitrix запрещён".
 - **Эмитить `silence:` события вручную** — нарушает контракт. Только через
   `silentManager.process()` внутри воркера.
-- **Слушать `silence:X` без `{ async: true }`** — `emitAsync` не дождётся,
+- **Слушать `silence:X` с `{ async: true }`** — `emitAsync` не дождётся,
   job в Bull закроется до завершения работы, handler выполнится "в воздухе"
-  без exception-propagation.
+  параллельно со следующими окнами и без exception-propagation.
+- **Делать долгую работу прямо в подписчике** — держит общий воркер
+  event-silent; ставить пачку в свою очередь исполнения.
 
 ## Известные ограничения
 

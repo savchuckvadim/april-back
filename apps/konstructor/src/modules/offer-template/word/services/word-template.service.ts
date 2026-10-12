@@ -7,6 +7,7 @@ import { OfferTemplateRepository } from '../../offer-template/repositories/offer
 import { OfferTemplatePortalRepository } from '../../portal/repositories/offer-template-portal.repository';
 import { UserSelectedTemplateRepository } from '../../user-selected/repositories/user-selected-template.repository';
 import { StorageService, StorageType } from '@lib/core/storage/storage.service';
+import { serializeTemplateList } from '@lib/portal-lib/konstructor/document-template';
 import {
     WordTemplate,
     WordTemplateSummary,
@@ -17,11 +18,13 @@ import {
 } from '../dtos/create-word-template.dto';
 import { UpdateWordTemplateDto } from '../dtos/update-word-template.dto';
 import { OfferTemplate } from '../../offer-template/entities/offer-template.entity';
+import { OfferTemplatePortal } from '../../portal/entities/offer-template-portal.entity';
 import { validateDocxFile } from '../lib/file-validator';
 import { offer_templates_visibility } from 'generated/prisma';
 import { UserSelectedTemplate } from '../../user-selected';
 import { WordTemplateQueryDto } from '../dtos/find-all-word-template.dto';
 import { WordTemplateSummaryDto } from '../dtos';
+import { toWordTemplateBindings } from '../lib/word-template-bindings.util';
 
 @Injectable()
 export class WordTemplateService {
@@ -78,6 +81,9 @@ export class WordTemplateService {
                 : undefined,
             is_active: filters?.is_active,
             search: filters?.search,
+            agent_id: filters?.agent_id ? BigInt(filters.agent_id) : undefined,
+            client_type: filters?.client_type,
+            supply_type: filters?.supply_type,
         });
 
         // Фильтруем только Word шаблоны
@@ -99,6 +105,7 @@ export class WordTemplateService {
                     is_active: t.is_active,
                     counter: t.counter,
                     created_at: t.created_at,
+                    ...toWordTemplateBindings(t),
                 });
                 if (fullTemplate?.file_path) {
                     summary.template_url = this.getTemplateUrl(
@@ -134,6 +141,7 @@ export class WordTemplateService {
                     is_active: t.is_active,
                     counter: t.counter,
                     created_at: t.created_at,
+                    ...toWordTemplateBindings(t),
                 });
                 if (fullTemplate?.file_path) {
                     summary.template_url = this.getTemplateUrl(
@@ -273,6 +281,7 @@ export class WordTemplateService {
             counter: template.counter,
             created_at: template.created_at,
             tags: template.tags,
+            ...toWordTemplateBindings(template),
         });
         if (template?.file_path) {
             summary.template_url = this.getTemplateUrl(
@@ -313,7 +322,6 @@ export class WordTemplateService {
             StorageType.PUBLIC,
             subPath,
         );
-        console.log(createDto);
         // Создаем шаблон в БД
         const templateData: Partial<OfferTemplate> = {
             name: createDto.name,
@@ -324,7 +332,14 @@ export class WordTemplateService {
             code: createDto.code,
             tags: createDto.tags,
             is_active: createDto.is_active || false,
+            // counter в схеме Int NOT NULL без @default — передаём явно.
             counter: 0,
+            // Привязки шаблона: массивы из DTO сериализуются в JSON-строку,
+            // пустой список и отсутствие поля → NULL («годится любому»).
+            agent_id:
+                createDto.agent_id != null ? BigInt(createDto.agent_id) : null,
+            client_types: serializeTemplateList(createDto.client_types),
+            supply_types: serializeTemplateList(createDto.supply_types),
         };
 
         if (createDto.user_id) {
@@ -407,9 +422,29 @@ export class WordTemplateService {
             );
         }
 
-        const updateData: Partial<OfferTemplate> = {
-            ...updateDto,
-        };
+        // Привязки отделяем от остальных полей: в DTO они массивы/строка,
+        // а в сущности БД — JSON-строка и bigint, так что спред напрямую
+        // положил бы в сущность неверный тип.
+        const {
+            agent_id: agentId,
+            client_types: clientTypes,
+            supply_types: supplyTypes,
+            ...rest
+        } = updateDto;
+
+        const updateData: Partial<OfferTemplate> = { ...rest };
+
+        // Поле не передано — не трогаем; передан пустой массив — сбрасываем
+        // в NULL («годится любому»).
+        if (agentId !== undefined) {
+            updateData.agent_id = agentId != null ? BigInt(agentId) : null;
+        }
+        if (clientTypes !== undefined) {
+            updateData.client_types = serializeTemplateList(clientTypes);
+        }
+        if (supplyTypes !== undefined) {
+            updateData.supply_types = serializeTemplateList(supplyTypes);
+        }
 
         // Если загружен новый файл, сохраняем его
         if (file) {
@@ -470,7 +505,6 @@ export class WordTemplateService {
     async delete(id: bigint): Promise<boolean> {
         const existingTemplate =
             await this.offerTemplateRepository.findById(id);
-        console.log(existingTemplate, 'existingTemplate');
         if (!existingTemplate) {
             throw new NotFoundException(
                 `Word template with ID ${id} not found`,
@@ -487,10 +521,6 @@ export class WordTemplateService {
         // Удаляем файл из хранилища
         if (existingTemplate.file_path) {
             try {
-                console.log(
-                    existingTemplate.file_path,
-                    'existingTemplate.file_path',
-                );
                 await this.storageService.deleteFile(
                     existingTemplate.file_path,
                 );
@@ -558,23 +588,17 @@ export class WordTemplateService {
         const template = await this.findById(id);
 
         // Если устанавливаем как default, снимаем default с других шаблонов
+        // ТОЙ ЖЕ ОБЛАСТИ. Раньше область была только visibility, то есть
+        // default у портального шаблона снимал default у шаблонов ВСЕХ
+        // порталов разом (у offer_templates нет portal_id — привязка
+        // в join-таблице, и фильтр по visibility её не учитывал).
         if (is_default) {
-            const otherTemplates = await this.offerTemplateRepository.findMany({
-                visibility: template.visibility,
-            });
-
-            for (const otherTemplate of otherTemplates) {
-                if (
-                    String(otherTemplate.id) !== String(id) &&
-                    otherTemplate.type === 'word' &&
-                    otherTemplate.is_default
-                ) {
-                    await this.offerTemplateRepository.update(
-                        BigInt(otherTemplate.id),
-                        {
-                            is_default: false,
-                        },
-                    );
+            const scopeIds = await this.collectDefaultScopeIds(id, template);
+            for (const otherId of scopeIds) {
+                if (otherId !== String(id)) {
+                    await this.offerTemplateRepository.update(BigInt(otherId), {
+                        is_default: false,
+                    });
                 }
             }
         }
@@ -590,17 +614,112 @@ export class WordTemplateService {
         return wordTemplate;
     }
 
+    /**
+     * id word-шаблонов с is_default = true в той же области, что и .
+     *
+     *  - public  → все публичные word-шаблоны (как и раньше: один общий
+     *              default на всех);
+     *  - private → шаблоны, привязанные к ТЕМ ЖЕ порталам, что и этот
+     *              (через offer_template_portal). Шаблон может быть привязан
+     *              к нескольким порталам — область объединяется по всем;
+     *  - user    → шаблоны того же создателя на тех же порталах.
+     *
+     * Шаблон без единой привязки к порталу (сирота) области не имеет —
+     * у него не снимается ничего, кроме как у самого себя.
+     */
+    private async collectDefaultScopeIds(
+        id: bigint,
+        template: WordTemplate,
+    ): Promise<string[]> {
+        const isWordDefault = (candidate: {
+            id: bigint | string;
+            type: string;
+            is_default: boolean;
+        }): boolean => candidate.type === 'word' && candidate.is_default;
+
+        if (template.visibility === offer_templates_visibility.public) {
+            const publicTemplates = await this.offerTemplateRepository.findMany(
+                {
+                    visibility: offer_templates_visibility.public,
+                },
+            );
+            return publicTemplates
+                .filter(isWordDefault)
+                .map(candidate => String(candidate.id));
+        }
+
+        const bindings =
+            await this.offerTemplatePortalRepository.findByTemplate(id);
+        const portalIds = [...new Set(bindings.map(b => String(b.portal_id)))];
+        const ids = new Set<string>();
+
+        for (const portalId of portalIds) {
+            const scoped =
+                template.visibility === offer_templates_visibility.user &&
+                template.user_id != null
+                    ? await this.offerTemplateRepository.findUserTemplates(
+                          BigInt(template.user_id),
+                          BigInt(portalId),
+                      )
+                    : await this.offerTemplateRepository.findByPortal(
+                          BigInt(portalId),
+                      );
+            for (const candidate of scoped.filter(isWordDefault)) {
+                ids.add(String(candidate.id));
+            }
+        }
+        return [...ids];
+    }
+
+    /**
+     * Синхронизация привязок шаблона к порталам под мультиселект админки.
+     *
+     * Принимает ПОЛНЫЙ желаемый список: недостающие привязки создаются,
+     * лишние удаляются, существующие не трогаются (их is_default/is_active
+     * сохраняются). Новая привязка создаётся АКТИВНОЙ: в join-таблице
+     * is_active по умолчанию false, и без этого свежепривязанный шаблон
+     * был бы невидим на портале — ровно та ловушка, из-за которой
+     * страничные шаблоны КП сегодня не видны ни одному порталу.
+     */
+    async syncPortals(
+        id: bigint,
+        portalIds: readonly string[],
+    ): Promise<OfferTemplatePortal[]> {
+        await this.findById(id);
+
+        const wanted = new Set(portalIds.map(value => String(BigInt(value))));
+        const existing =
+            await this.offerTemplatePortalRepository.findByTemplate(id);
+        const existingByPortal = new Map(
+            existing.map(binding => [String(binding.portal_id), binding]),
+        );
+
+        for (const binding of existing) {
+            if (!wanted.has(String(binding.portal_id))) {
+                await this.offerTemplatePortalRepository.delete(binding.id);
+            }
+        }
+
+        for (const portalId of wanted) {
+            if (!existingByPortal.has(portalId)) {
+                await this.offerTemplatePortalRepository.create({
+                    offer_template_id: id,
+                    portal_id: BigInt(portalId),
+                    is_default: false,
+                    is_active: true,
+                });
+            }
+        }
+
+        return this.offerTemplatePortalRepository.findByTemplate(id);
+    }
+
     private async getPortalIdByTemplateId(
         templateId: bigint,
     ): Promise<number | undefined> {
         const portalTemplate =
             await this.offerTemplatePortalRepository.findByTemplate(templateId);
         if (!portalTemplate) {
-            console.log(
-                portalTemplate,
-                'portalTemplate `Word template with ID ${templateId} not found`,',
-            );
-
             return undefined;
         }
         const portalId =

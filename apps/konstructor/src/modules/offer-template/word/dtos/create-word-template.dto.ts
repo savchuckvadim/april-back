@@ -1,12 +1,18 @@
 import {
+    IsArray,
     IsString,
     IsOptional,
     IsBoolean,
     IsEnum,
     IsNumber,
+    IsNumberString,
     MaxLength,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ClientTypeEnum } from '@app/konstructor/document-generate/type/client.type';
+import { SupplyTypeEnum } from '@app/konstructor/document-generate/type/supply.type';
+import { parseMultipartList } from '@app/konstructor/modules/contract-template/dto/create-contract-template.dto';
 import { OfferTemplateVisibility } from '../../offer-template/dtos/create-offer-template.dto';
 import { WordTemplate } from '../entities';
 
@@ -56,6 +62,48 @@ export class CreateWordTemplateBodyDto {
     })
     @IsNumber()
     user_id: number;
+
+    @ApiPropertyOptional({
+        description:
+            'ID агента (поставщика), под которого годится шаблон. ' +
+            'Отсутствие поля означает «для любого поставщика» (в БД NULL). ' +
+            'Автоподбор по этому полю НЕ выполняется: у шаблонов КП своя ' +
+            'логика выбора, поле хранится и редактируется как есть.',
+        example: '12',
+    })
+    @IsOptional()
+    @IsNumberString()
+    agent_id?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Типы клиента, для которых годится шаблон. Пустой список и ' +
+            'отсутствие поля означают «для любого типа клиента» (в БД NULL).',
+        enum: ClientTypeEnum,
+        enumName: 'ClientTypeEnum',
+        isArray: true,
+        example: [ClientTypeEnum.ORG_STATE],
+    })
+    @IsOptional()
+    @Transform(parseMultipartList)
+    @IsArray()
+    @IsEnum(ClientTypeEnum, { each: true })
+    client_types?: ClientTypeEnum[];
+
+    @ApiPropertyOptional({
+        description:
+            'Типы поставки, для которых годится шаблон. Пустой список и ' +
+            'отсутствие поля означают «для любого типа поставки» (в БД NULL).',
+        enum: SupplyTypeEnum,
+        enumName: 'SupplyTypeEnum',
+        isArray: true,
+        example: [SupplyTypeEnum.INTERNET],
+    })
+    @IsOptional()
+    @Transform(parseMultipartList)
+    @IsArray()
+    @IsEnum(SupplyTypeEnum, { each: true })
+    supply_types?: SupplyTypeEnum[];
 }
 
 export class CreateWordTemplateMultipartDto extends CreateWordTemplateBodyDto {
@@ -130,4 +178,34 @@ export class CreateWordTemplateResponseDto {
 
     @ApiProperty({ required: false, type: Number })
     user_id?: number;
+
+    @ApiProperty({
+        description: 'ID агента (поставщика); null — «для любого».',
+        required: false,
+        type: String,
+        nullable: true,
+    })
+    agent_id?: string | null;
+
+    @ApiProperty({
+        description:
+            'Типы клиента; null — «для любого». Разобрано из JSON-колонки.',
+        enum: ClientTypeEnum,
+        enumName: 'ClientTypeEnum',
+        isArray: true,
+        required: false,
+        nullable: true,
+    })
+    client_types?: ClientTypeEnum[] | null;
+
+    @ApiProperty({
+        description:
+            'Типы поставки; null — «для любого». Разобрано из JSON-колонки.',
+        enum: SupplyTypeEnum,
+        enumName: 'SupplyTypeEnum',
+        isArray: true,
+        required: false,
+        nullable: true,
+    })
+    supply_types?: SupplyTypeEnum[] | null;
 }

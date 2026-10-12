@@ -43,18 +43,14 @@ export type ContractNamesType =
     | 'Абонентский'
     | 'Передача ключа доступа';
 
-export enum CONTRACT_CODE {
-    internet = 'internet',
-    proxima = 'proxima',
-    abonHalf = 'abonHalf',
-    abonYear = 'abonYear',
-    lic = 'lic',
-    key = 'key',
-    licHalf = 'licHalf',
-    licYear = 'licYear',
-    abonTwoYears = 'abonTwoYears',
-    licTwoYears = 'licTwoYears',
-}
+// ВНИМАНИЕ: второе объявление `enum CONTRACT_CODE` (camelCase-ключи:
+// internet/proxima/abonHalf/...) удалено. Non-const enum-ы в TypeScript
+// СЛИВАЮТСЯ, поэтому рядом существовали и CONTRACT_CODE.LIC, и
+// CONTRACT_CODE.lic с одним значением 'lic' (~20 членов вместо 10).
+// Для признака, по которому выбирается юридический документ, это способ
+// выбрать не тот шаблон без ошибки компилятора. Канонично — объявление
+// выше (SCREAMING_CASE). Значения в обоих блоках совпадали, поэтому
+// удаление ключей-дублей не меняет ни одного значения.
 export type ContractShortNamesType = CONTRACT_CODE;
 
 export type MeasureNumberType = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
