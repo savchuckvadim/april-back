@@ -255,15 +255,20 @@ export class TaskFlowService extends LeadToWorkFlowBase {
 
     /* ------------------------------------------------------------------ */
 
+    /**
+     * Лид, основная сделка, компания. ХО-сделку — только когда основной нет
+     * (garant, 14.10.2026): на воронку «ОП Холодные» у менеджеров нет прав,
+     * из задачи они упирались в «Недостаточно прав» или переносили ХО-сделку
+     * в «ОП Основная» и работали в копии. «Звонки» находят ХО-сделку по её
+     * ссылке на основную (`to_base_sales`, см. DealFlowService.baseDealLink).
+     */
     private taskBindings(leadId: number, input: TaskFlowInput): string[] {
-        const bindings = [
-            taskCrmBinding('LEAD', leadId),
-            taskCrmBinding('DEAL', input.dealRef),
-        ];
+        const bindings = [taskCrmBinding('LEAD', leadId)];
+        const dealRef = input.dealRef || input.xoRef;
+        if (dealRef) bindings.push(taskCrmBinding('DEAL', dealRef));
         if (input.companyRef) {
             bindings.push(taskCrmBinding('COMPANY', input.companyRef));
         }
-        if (input.xoRef) bindings.push(taskCrmBinding('DEAL', input.xoRef));
         return bindings;
     }
 

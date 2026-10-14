@@ -23,6 +23,11 @@ import {
 } from './portal-app-settings.schema';
 import { PortalAppSettingsService } from './portal-app-settings.service';
 import {
+    listAppSettingGroups,
+    PortalAppSettingGroupCode,
+    resolveAppSettingGroup,
+} from './lib/app-setting-groups';
+import {
     PortalAppSettingsBlockDto,
     PortalAppSettingsResponseDto,
     PortalAppSettingsSaveDto,
@@ -80,24 +85,45 @@ export class PortalAppSettingsController {
             const storedKeys = new Set(
                 getStoredAppSettingKeys(appCode, stored),
             );
+            const usedGroups = new Set<PortalAppSettingGroupCode>();
             apps.push({
                 appCode,
-                settings: Object.entries(schema).map(([key, descriptor]) => ({
-                    code: descriptor.code,
-                    name: descriptor.name,
-                    description: descriptor.description,
-                    type: descriptor.type,
-                    default: descriptor.default as boolean | number | string,
-                    stored: storedKeys.has(key),
-                    value: storedKeys.has(key)
-                        ? (stored[descriptor.code] as boolean | number | string)
-                        : null,
-                    // Необязательные поля отдаём, только когда они есть:
-                    // остальные ключи реестра ничего в ответе не меняют.
-                    ...(descriptor.options
-                        ? { options: [...descriptor.options] }
-                        : {}),
-                    ...(descriptor.isList ? { isList: true } : {}),
+                settings: Object.entries(schema).map(([key, descriptor]) => {
+                    const group = resolveAppSettingGroup(
+                        appCode,
+                        descriptor.code,
+                    );
+                    usedGroups.add(group);
+                    return {
+                        code: descriptor.code,
+                        name: descriptor.name,
+                        description: descriptor.description,
+                        type: descriptor.type,
+                        default: descriptor.default as
+                            | boolean
+                            | number
+                            | string,
+                        stored: storedKeys.has(key),
+                        value: storedKeys.has(key)
+                            ? (stored[descriptor.code] as
+                                  | boolean
+                                  | number
+                                  | string)
+                            : null,
+                        // Необязательные поля отдаём, только когда они есть:
+                        // остальные ключи реестра ничего в ответе не меняют.
+                        ...(descriptor.options
+                            ? { options: [...descriptor.options] }
+                            : {}),
+                        ...(descriptor.isList ? { isList: true } : {}),
+                        group,
+                    };
+                }),
+                groups: listAppSettingGroups(usedGroups).map(item => ({
+                    code: item.code,
+                    title: item.title,
+                    description: item.description,
+                    links: item.links.map(entry => ({ ...entry })),
                 })),
             });
         }

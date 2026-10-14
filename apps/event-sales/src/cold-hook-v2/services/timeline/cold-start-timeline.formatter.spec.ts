@@ -52,6 +52,7 @@ const closed = (over: Partial<ColdCloseResult> = {}): ColdCloseResult => ({
     closedPresIds: [11],
     closedZprIds: [],
     preservedBaseDeal: null,
+    reopenedBaseDealId: null,
     ...over,
 });
 
@@ -128,6 +129,20 @@ describe('buildColdStartTimeline — proceed', () => {
 
     it('имени нет в карте — честный id', () => {
         expect(build({ names: {} })[0].comment).toContain('сотрудник #447');
+    });
+
+    it('отказная входная вернулась в работу — об этом строка в ленте', () => {
+        const [company] = build({
+            closed: closed({
+                preservedBaseDeal: { ID: '600' } as never,
+                reopenedBaseDealId: 600,
+            }),
+        });
+        expect(company.comment).toContain(
+            'Сделка <a href="https://d.b24.ru/crm/deal/details/600/" target="_blank">#600</a> была закрыта в отказ — ' +
+                'работа продолжается в ней, новая сделка не создана.',
+        );
+        expect(build()[0].comment).not.toContain('закрыта в отказ');
     });
 });
 

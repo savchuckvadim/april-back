@@ -367,6 +367,16 @@ export function getXoTargetStageCode(input: XoStageInput): string | null {
         if ((isResult && !isFail) || isSuccess)
             suffix = XO_STAGE_SUFFIX.success;
         if (!isResult && !isExpired) suffix = XO_STAGE_SUFFIX.noresult;
+    } else if (isSuccess) {
+        /*
+         * Работа закончилась НЕ по задаче холодного обзвона (обычный звонок,
+         * отчёт без задачи, задачу закрыли руками): ХО-сделка этой работы
+         * закрывается вместе с основной, иначе висит «Запланирован» вечно
+         * (garant 12.10.2026, сделка 92283).
+         */
+        suffix = XO_STAGE_SUFFIX.success;
+    } else if (isFail) {
+        suffix = isResult ? XO_STAGE_SUFFIX.fail : XO_STAGE_SUFFIX.noresult;
     }
     if (!suffix) return null;
     return resolveStageBitrixId(category, `${XO_STAGE_PREFIX}${suffix}`);

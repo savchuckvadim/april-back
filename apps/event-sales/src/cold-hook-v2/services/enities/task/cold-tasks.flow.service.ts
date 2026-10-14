@@ -4,6 +4,7 @@ import { Logger } from '@nestjs/common';
 import { SalesBatchGroupBuffer as ColdHookBatchGroupBuffer } from '../../../../shared/batch';
 import { BitrixDateTime } from '@lib/shared/lib/date';
 import { ColdOwner, ownerKey } from '../cold-owner.type';
+import { coldTaskBindings } from './cold-task-bindings';
 
 export interface IColdTaskFlow {
     deadline: BitrixDateTime;
@@ -33,7 +34,7 @@ export class ColdTaskFlowService {
         const addColdTaskKey = `bx_task_add_${key}`;
         const tasksGroupId = this.portal.getSalesTaskGroupId();
         this.logger.log(`Tasks group id: ${tasksGroupId}`);
-        const ufCrms = this.getUfCrms(owner, baseDealId, xoDealId);
+        const ufCrms = coldTaskBindings(owner, baseDealId, xoDealId);
         const taskDeadline = deadline.toTaskDeadline();
         this.logger.log(
             `[deadline][task] owner=${key} DEADLINE="${taskDeadline}" ` +
@@ -55,23 +56,5 @@ export class ColdTaskFlowService {
         buffer.queue(() =>
             this.bitrix.batch.task.add(addColdTaskKey, addColdTaskData),
         );
-    }
-
-    /**
-     * Привязки задачи: компания (если есть), основная и ХО-сделки; у клиента
-     * без компании — ещё лид входной сделки, чтобы задача находилась по `L_`.
-     */
-    private getUfCrms(
-        owner: ColdOwner,
-        baseDealId: string | null,
-        xoDealId: string,
-    ): string[] {
-        const crms: string[] = [];
-        if (owner.kind === 'company') crms.push(`CO_${owner.companyId}`);
-        if (baseDealId) crms.push(`D_${baseDealId}`);
-        crms.push(`D_${xoDealId}`);
-        if (owner.kind === 'deal' && owner.leadId)
-            crms.push(`L_${owner.leadId}`);
-        return crms;
     }
 }

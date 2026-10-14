@@ -625,11 +625,8 @@ describe('ColdHooksHandlerV2Service — сделка без компании', (
             'task.add',
             'bx_task_add_deal_600',
             expect.objectContaining({
-                UF_CRM_TASK: [
-                    'D_600',
-                    'D_$result[new_cold_deal_deal_600]',
-                    'L_12',
-                ],
+                // ХО-сделки в задаче нет: на её воронку у менеджеров нет прав.
+                UF_CRM_TASK: ['D_600', 'L_12'],
             }),
         ]);
         expect(of(journal, 'company.update')).toHaveLength(0);

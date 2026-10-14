@@ -67,9 +67,9 @@ describe('lead → работа: заголовки уходят batch-safe', ()
 
         service.queueBase(
             { leadId: 42, responsible: 7, isXo: 'N' } as never,
-            { contactIds: [], lead: {} } as never,
+            // Название сделки — по клиенту: опасный текст приходит из лида.
+            { contactIds: [], lead: { TITLE: RAW_DANGEROUS } } as never,
             { dealCategoryId: '31', dealStageId: 'C31:REFINE' } as never,
-            RAW_DANGEROUS,
             null,
             null,
             buffer as never,

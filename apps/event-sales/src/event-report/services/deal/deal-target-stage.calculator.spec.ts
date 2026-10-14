@@ -388,6 +388,50 @@ describe('getXoTargetStageCode', () => {
             }),
         ).toBeNull();
     });
+
+    /*
+     * Работа закончилась не по задаче ХО (обычный звонок, отчёт без задачи,
+     * задачу закрыли руками) — ХО-сделка этой работы закрывается вместе с
+     * основной (garant 12.10.2026, сделка 92283 висела «Запланирован»).
+     */
+    it('отказ без задачи ХО (тип события пуст) → cold_fail', () => {
+        expect(
+            getXoTargetStageCode({
+                category: xoCategory,
+                reportEventType: null,
+                isExpired: false,
+                isResult: true,
+                isSuccess: false,
+                isFail: true,
+            }),
+        ).toBe('LOSE');
+    });
+
+    it('отказ по обычному звонку без результата → cold_noresult', () => {
+        expect(
+            getXoTargetStageCode({
+                category: xoCategory,
+                reportEventType: 'warm',
+                isExpired: false,
+                isResult: false,
+                isSuccess: false,
+                isFail: true,
+            }),
+        ).toBe('NORESULT');
+    });
+
+    it('продажа по обычному звонку → cold_success', () => {
+        expect(
+            getXoTargetStageCode({
+                category: xoCategory,
+                reportEventType: 'warm',
+                isExpired: false,
+                isResult: true,
+                isSuccess: true,
+                isFail: false,
+            }),
+        ).toBe('WON');
+    });
 });
 
 describe('getPresentationTargetStageCode', () => {

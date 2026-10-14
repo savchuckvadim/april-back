@@ -107,6 +107,13 @@ describe('buildDealListSelect', () => {
         expect(select.some(key => key === 'UF_CRM_undefined')).toBe(false);
     });
 
+    it('ссылка на основную — по слепку портала (по ней выбирается ХО-сделка работы)', () => {
+        const select = buildDealListSelect(
+            portalStub({ to_base_sales: '1700000000' }),
+        );
+        expect(select).toContain('UF_CRM_1700000000');
+    });
+
     it('не дублирует ключи', () => {
         const select = buildDealListSelect(fullPortal());
         expect(new Set(select).size).toBe(select.length);

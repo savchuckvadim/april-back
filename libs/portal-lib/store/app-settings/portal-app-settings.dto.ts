@@ -22,6 +22,54 @@ export class PortalAppSettingOptionDto {
     name: string;
 }
 
+/** Ссылка группы на связанный раздел админки. */
+export class PortalAppSettingLinkDto {
+    @ApiProperty({
+        description: 'Подпись ссылки.',
+        example: 'Поля и стадии сделки',
+        type: String,
+    })
+    title: string;
+
+    @ApiProperty({
+        description:
+            'Путь раздела админки; `{portalId}` заменяется id портала на фронте.',
+        example: '/portal/{portalId}/pbx/deal',
+        type: String,
+    })
+    href: string;
+}
+
+/** Категория настроек приложения (секция в админке). */
+export class PortalAppSettingGroupDto {
+    @ApiProperty({
+        description: 'Код категории — тот же, что у настроек в поле group.',
+        example: 'xo_rescue',
+        type: String,
+    })
+    code: string;
+
+    @ApiProperty({
+        description: 'Название категории на русском.',
+        example: 'Подстраховка ХО',
+        type: String,
+    })
+    title: string;
+
+    @ApiProperty({
+        description: 'Что объединяет категория и что для неё нужно.',
+        example: 'Досылка холодных обзвонов, которые не дошли.',
+        type: String,
+    })
+    description: string;
+
+    @ApiProperty({
+        description: 'Связанные разделы админки (поля, стадии, отделы).',
+        type: [PortalAppSettingLinkDto],
+    })
+    links: PortalAppSettingLinkDto[];
+}
+
 /** Описатель ключа настройки для админки (из реестра-схемы). */
 export class PortalAppSettingDescriptorDto {
     @ApiProperty({
@@ -95,6 +143,15 @@ export class PortalAppSettingDescriptorDto {
         type: Boolean,
     })
     isList?: boolean;
+
+    @ApiProperty({
+        description:
+            'Код категории настройки (секция в админке); описание категории — ' +
+            'в groups блока приложения.',
+        example: 'lead_sla',
+        type: String,
+    })
+    group: string;
 }
 
 /** Настройки одного приложения портала: схема + действующие значения. */
@@ -113,6 +170,13 @@ export class PortalAppSettingsBlockDto {
         type: [PortalAppSettingDescriptorDto],
     })
     settings: PortalAppSettingDescriptorDto[];
+
+    @ApiProperty({
+        description:
+            'Категории, в которые попали ключи приложения, в порядке показа.',
+        type: [PortalAppSettingGroupDto],
+    })
+    groups: PortalAppSettingGroupDto[];
 }
 
 /** Ответ админки: настройки всех приложений портала. */

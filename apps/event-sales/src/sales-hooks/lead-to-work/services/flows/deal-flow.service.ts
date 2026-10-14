@@ -14,6 +14,7 @@ import { LeadToWorkContext } from '../lead-to-work-context.service';
 import { LeadToWorkStagePlan } from '../lead-to-work-stage.resolver';
 import { IXoEventContext } from '../models/xo-event-entity.model';
 import { queueDealContactLinks } from './deal-contact-links';
+import { baseDealTitle } from '../../lib/base-deal-title';
 import { BxRow, LeadToWorkFlowBase } from './lead-to-work-flow.base';
 
 /** Итог по одной сделке: ссылка для связей + ключ команды. */
@@ -32,12 +33,15 @@ export interface DealFlowResult {
  * правило пользователя «у любой связанной сделки видно, из какого лида».
  */
 export class DealFlowService extends LeadToWorkFlowBase {
-    /** Основная сделка ОП: reuse существующей либо создание новой. */
+    /**
+     * Основная сделка ОП: reuse существующей либо создание новой.
+     * Название — по клиенту (`baseDealTitle`), не по событию ХО; у
+     * существующей сделки название не трогается.
+     */
     queueBase(
         item: ResolvedLeadToWorkItem,
         ctx: LeadToWorkContext,
         plan: LeadToWorkStagePlan,
-        eventName: string,
         companyRef: string | null,
         eventCtx: IXoEventContext | null,
         buffer: IBatchGroupBuffer,
@@ -112,7 +116,13 @@ export class DealFlowService extends LeadToWorkFlowBase {
 
         const cmd = `lw_deal_${item.leadId}`;
         const fields: BxRow = {
-            TITLE: toBatchSafeText(eventName),
+            TITLE: toBatchSafeText(
+                baseDealTitle({
+                    company: ctx.company as unknown as BxRow | null,
+                    lead: ctx.lead as unknown as BxRow | null,
+                    leadId: item.leadId,
+                }),
+            ),
             CATEGORY_ID: plan.dealCategoryId,
             ...this.responsibleFields('deal', item.responsible),
             ...this.dealLinkFields(item.leadId, null),

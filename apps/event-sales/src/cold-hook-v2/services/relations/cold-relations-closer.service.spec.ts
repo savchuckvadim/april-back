@@ -28,6 +28,9 @@ const CATEGORIES = [
         stages: [
             stage('sales_cold', 'PREPARATION'),
             stage('sales_double', 'APOLOGY'),
+            stage('sales_fail', 'LOSE'),
+            stage('sales_not_call', 'NOT_CALL'),
+            stage('sales_success', 'WON'),
         ],
     },
     {
@@ -66,7 +69,7 @@ const makeBitrix = () => {
     const dealUpdate = jest.fn();
     const taskComplete = jest.fn();
     const itemUpdate = jest.fn();
-    const callBatch = jest.fn(async () => []);
+    const callBatch = jest.fn(() => Promise.resolve([]));
     const bitrix = {
         api: { callBatchWithConcurrency: callBatch },
         batch: {
@@ -330,5 +333,88 @@ describe('ColdRelationsCloserV2Service — yield', () => {
         expect(result.closedDealIds).toEqual([510]);
         expect(result.closedPresIds).toEqual([]);
         expect(result.completedTaskIds).toEqual([]);
+    });
+});
+
+/**
+ * ХО из основной, закрытой в отказ (garant, 14.10.2026): открытых основных
+ * у клиента нет — работа возвращается во входную, новая не заводится.
+ */
+describe('ColdRelationsCloserV2Service — возврат отказной в работу', () => {
+    const refused = (STAGE_ID: string) =>
+        deal('600', '17', { STAGE_ID, CLOSED: 'Y', ASSIGNED_BY_ID: '459' });
+    const noOpenWork = relations({
+        deals: [],
+        openBaseDeals: [],
+        tasks: [],
+        pres: { info: null, rows: [] },
+        zpr: { info: null, rows: [] },
+    });
+
+    it.each(['C17:LOSE', 'C17:APOLOGY'])(
+        'входная в %s, открытых основных нет — она и есть основная',
+        async stageId => {
+            const entry = refused(stageId);
+            const result = await closeWith(
+                makeBitrix(),
+                target({ entryDeal: entry }),
+                noOpenWork,
+                PROCEED,
+            );
+            expect(result.preservedBaseDeal).toBe(entry);
+            expect(result.reopenedBaseDealId).toBe(600);
+        },
+    );
+
+    it.each(['C17:NOT_CALL', 'C17:WON'])(
+        'входная в %s («Не беспокоить», продажа) — не возвращаем',
+        async stageId => {
+            const result = await closeWith(
+                makeBitrix(),
+                target({ entryDeal: refused(stageId) }),
+                noOpenWork,
+                PROCEED,
+            );
+            expect(result.preservedBaseDeal).toBeNull();
+            expect(result.reopenedBaseDealId).toBeNull();
+        },
+    );
+
+    it('у клиента есть открытая основная — работа идёт в ней, отказная не трогается', async () => {
+        const open = deal('700', '17', { ASSIGNED_BY_ID: '447' });
+        const result = await closeWith(
+            makeBitrix(),
+            target({ entryDeal: refused('C17:LOSE') }),
+            relations({ deals: [open], openBaseDeals: [open], tasks: [] }),
+            PROCEED,
+        );
+        expect(result.preservedBaseDeal?.ID).toBe('700');
+        expect(result.reopenedBaseDealId).toBeNull();
+    });
+
+    it('входная не основная (презентация) — не возвращаем', async () => {
+        const result = await closeWith(
+            makeBitrix(),
+            target({
+                entryDeal: deal('610', '48', {
+                    STAGE_ID: 'C48:NORESULT',
+                    CLOSED: 'Y',
+                }),
+            }),
+            noOpenWork,
+            PROCEED,
+        );
+        expect(result.reopenedBaseDealId).toBeNull();
+    });
+
+    it('yield — новой работы нет, возвращать нечего', async () => {
+        const result = await closeWith(
+            makeBitrix(),
+            target({ entryDeal: refused('C17:LOSE') }),
+            noOpenWork,
+            YIELD,
+        );
+        expect(result.preservedBaseDeal).toBeNull();
+        expect(result.reopenedBaseDealId).toBeNull();
     });
 });

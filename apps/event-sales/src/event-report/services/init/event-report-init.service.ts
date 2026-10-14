@@ -18,6 +18,8 @@ import {
 import { COMPANY_BACKFILL_CODES } from '../entity/event-report-company-backfill.model';
 import { isFinalWorkStatus } from '../task/report-closes-task';
 import { decideClosedLaunchBaseDeal } from './closed-launch-base-deal';
+import { dealsLinkedToBase, selectLinkedXoDeal } from './linked-xo-deal';
+import { dealLinkKey } from '../../../cold-hook-v2/lib/deal-link-fields';
 import {
     EEventReportEntityType,
     EventReportEntityType,
@@ -122,7 +124,15 @@ export const buildDealListSelect = (portal: PortalModel): string[] => {
             return field?.bitrixId ? `UF_CRM_${field.bitrixId}` : null;
         })
         .filter((name): name is string => !!name);
-    return [...new Set([...DEAL_LIST_SELECT, ...resolved])];
+    // Ссылка на основную — по слепку (фолбэк — канон install из DEAL_LIST_SELECT):
+    // по ней init выбирает ХО-сделку этой работы (linked-xo-deal).
+    return [
+        ...new Set([
+            ...DEAL_LIST_SELECT,
+            dealLinkKey(portal, 'to_base_sales'),
+            ...resolved,
+        ]),
+    ];
 };
 
 /**
@@ -177,6 +187,7 @@ export class EventReportInitService {
         // Select один на все чтения сделок: накопительные поля обязаны
         // приехать, иначе запись их затрёт (см. DEAL_ACCUMULATED_FIELD_CODES).
         const dealSelect = this.dealListSelect(portal);
+        const baseLinkKey = dealLinkKey(portal, 'to_base_sales');
 
         // === Фаза 1: владелец (company/lead/deal) + active deals + task + DTO lead ===
         if (entityType === EEventReportEntityType.COMPANY) {
@@ -203,6 +214,14 @@ export class EventReportInitService {
                     dealSelect,
                 );
             }
+            // Сделки, которые ссылаются НА владельца (ХО-сделка, презентации):
+            // задача ХО больше не привязывает ХО-сделку (у менеджеров нет прав
+            // на её воронку), а у клиента без компании иначе её не найти.
+            bitrix.batch.deal.getList(
+                'list_deals_by_base',
+                { [baseLinkKey]: entityId, CLOSED: 'N' } as never,
+                dealSelect,
+            );
             const primaryLeadId = ownerLeadIds[0];
             if (primaryLeadId && primaryLeadId !== dtoLeadId) {
                 bitrix.batch.lead.get('get_owner_lead', primaryLeadId);
@@ -251,6 +270,11 @@ export class EventReportInitService {
         const dealsRaw = this.dedupeDealsById([
             ...(this.pick<IBXDeal[]>(flat, 'list_deals') ?? []),
             ...(this.pick<IBXDeal[]>(flat, 'list_deals_by_lead') ?? []),
+            ...dealsLinkedToBase(
+                this.pick<IBXDeal[]>(flat, 'list_deals_by_base') ?? [],
+                baseLinkKey,
+                entityId,
+            ),
         ]);
 
         const currentTask = (dto.currentTask ??
@@ -286,8 +310,17 @@ export class EventReportInitService {
         const currentBaseDeal =
             dealsByCategory[PbxDealCategoryCodeEnum.sales_base] ??
             launchDecision.reopen;
-        const currentXoDeal =
-            dealsByCategory[PbxDealCategoryCodeEnum.sales_xo] ?? null;
+        const xoCategory = portal.getDealCategoryByCode(
+            PbxDealCategoryCodeEnum.sales_xo,
+        );
+        const currentXoDeal = selectLinkedXoDeal({
+            activeDeals,
+            linkKey: baseLinkKey,
+            xoCategoryId: xoCategory ? String(xoCategory.bitrixId) : null,
+            baseDealId: currentBaseDeal?.ID ?? null,
+            ownResponsibleIds,
+            fallback: dealsByCategory[PbxDealCategoryCodeEnum.sales_xo] ?? null,
+        });
 
         // Диагностика кейса «flow действовал так, будто основной сделки нет»:
         // одна строка на запуск — какой контекст прислал фронт, что нашлось

@@ -204,8 +204,13 @@ export const buildColdStartTimeline = (
     const taken = takenComment(input, responsible, links);
 
     if (decision.mode === 'proceed') {
+        const reopenedId = closed.reopenedBaseDealId;
         const comment = [
             `${timelineBold('Холодный старт')} — ответственный: ${responsible}.`,
+            reopenedId
+                ? `Сделка ${link(dealUrl(domain, reopenedId), `#${reopenedId}`)} была закрыта в отказ — ` +
+                  'работа продолжается в ней, новая сделка не создана.'
+                : '',
             `Закрыто: ${closedSummary(closed)}.`,
             closedDealLinks(domain, closed.closedDealIds, link),
         ]

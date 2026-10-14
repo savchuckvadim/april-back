@@ -1,0 +1,42 @@
+# Реплика MySQL прода на зеркале. Копируется в <files>/mysql/replica.cnf
+# на сервере зеркала (монтируется в /etc/mysql/conf.d/ контейнера
+# mysql-replica, см. infra/compose/docker-compose.mirror.yml).
+#
+# super_read_only здесь НЕ включаем: entrypoint образа mysql при первом
+# старте создаёт root и не смог бы этого сделать. Его включает
+# infra/mirror/scripts/seed-replica.sh после первичной заливки
+# (SET PERSIST super_read_only=ON) — и дальше он переживает перезапуски.
+[mysqld]
+server_id = 2
+report_host = mirror
+
+# GTID: обязательны для SOURCE_AUTO_POSITION и для clone-плагина.
+gtid_mode = ON
+enforce_gtid_consistency = ON
+
+# read_only блокирует всех, кроме пользователей с CONNECTION_ADMIN/SUPER
+# (root). Этого хватает для первого старта; окончательная защита —
+# super_read_only после заливки.
+read_only = ON
+
+# Свой бинлог нужен, чтобы при возврате прод мог реплицироваться С ЗЕРКАЛА
+# (и для clone в обратную сторону). log_bin в 8.0 включён по умолчанию.
+log_bin = binlog
+log_replica_updates = ON
+binlog_expire_logs_seconds = 604800
+relay_log = relay-bin
+
+# Параллельный аппликатор: догоняет прод быстрее после разрыва туннеля.
+replica_parallel_workers = 4
+replica_preserve_commit_order = ON
+
+# Не терять позицию при падении контейнера.
+sync_binlog = 1
+innodb_flush_log_at_trx_commit = 1
+
+# Подбирается по ОЗУ сервера зеркала (ориентир — 50–60% свободной памяти
+# при выделенном под БД хосте; на общем с приложениями — меньше).
+# innodb_buffer_pool_size = 2G
+
+# Как на проде: иначе приложения упрутся в лимит после переключения.
+max_connections = 500

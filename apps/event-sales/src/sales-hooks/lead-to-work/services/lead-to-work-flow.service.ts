@@ -189,7 +189,6 @@ export class LeadToWorkFlowService {
             item,
             ctx,
             plan,
-            eventName,
             company.ref,
             eventCtx,
             buffer,

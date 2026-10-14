@@ -12,6 +12,8 @@ import { ResponseInterceptor } from '../interceptors/response.interceptor';
 import { cors } from '../config/cors/cors.config';
 import { swaggerBasicAuth } from './swagger-basic-auth.middleware';
 import { interactiveCallContextMiddleware } from '../call-context/call-context.middleware';
+import { APP_ROLE_ENV, AppRole, resolveAppRole } from './app-role';
+import { applyStandbyMode } from './standby-mode';
 
 export interface BootstrapOptions {
     /** Имя приложения — для Swagger-заголовка/тега и логов. */
@@ -148,13 +150,22 @@ export async function bootstrapApp(
         await options.configure(app);
     }
 
+    // Инициализация до listen: кроны и воркеры очередей регистрируются в
+    // хуках жизненного цикла, и режим ожидания может остановить их только
+    // после того, как они появились. Для listen повторный init — no-op.
+    await app.init();
+    const role = resolveAppRole(process.env[APP_ROLE_ENV]);
+    if (role === AppRole.STANDBY) {
+        await applyStandbyMode(app);
+    }
+
     const port = Number(process.env.PORT) || options.defaultPort;
     await app.listen(port);
 
     const url = await app.getUrl();
 
     console.log(
-        `🚀 ${options.name} запущен: ${url}/${globalPrefix} | Swagger: ${url}/${swaggerPath}`,
+        `🚀 ${options.name} запущен [${role}]: ${url}/${globalPrefix} | Swagger: ${url}/${swaggerPath}`,
     );
     return app;
 }

@@ -1,0 +1,215 @@
+# ============================================================
+# Зеркало (тёплый резерв) монорепо под Dokploy у второго хостера.
+# Прод-стек (docker-compose.prod.yml) НЕ трогаем — это отдельный файл.
+# Runbook, чеклист Dokploy и переключение: ../mirror/README.md.
+#
+# Отличия от прода, продиктованные Dokploy:
+#   - нет container_name и host-портов у приложений: наружу их выводит
+#     Traefik через вкладку Domains (Dokploy сам дописывает labels и
+#     сеть dokploy-network при деплое) — поэтому только expose;
+#   - переменные окружения Dokploy пишет в .env РЯДОМ с этим файлом и в
+#     контейнеры сам не пробрасывает — читаем их через env_file: .env;
+#   - каталог репо на каждом деплое клонируется заново, поэтому всё, что
+#     должно пережить деплой (keys, storage, конфиги реплик), лежит в
+#     каталоге files Dokploy (MIRROR_FILES_DIR), а не в репо;
+#   - образы — те же, что на проде (их собирает deploy-mirror.yml), но под
+#     тегом mirror: прод-деплой с тегом latest зеркало не трогает.
+#
+# Переменные (задаются в Dokploy → Environment; см. README, раздел 3):
+#   GHCR_OWNER, IMAGE_TAG=mirror, APP_ROLE=standby|active,
+#   MIRROR_DATABASE_URL, MIRROR_MYSQL_ROOT_PASSWORD, MYSQL_IMAGE,
+#   MIRROR_FILES_DIR, GOTENBERG_REPLICAS, MYSQL_REPLICA_BIND
+# ============================================================
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '3'
+
+x-app-common: &app-common
+  restart: unless-stopped
+  logging: *default-logging
+  depends_on:
+    redis:
+      condition: service_healthy
+    mysql-replica:
+      condition: service_healthy
+  # Каталог files Dokploy лежит рядом с каталогом code (куда клонируется
+  # репо); путь считается от каталога этого compose-файла. Если у вашей
+  # версии Dokploy раскладка другая — поправьте MIRROR_FILES_DIR в env.
+  volumes:
+    - ${MIRROR_FILES_DIR:-../../../files}/keys:/app/keys
+    - ${MIRROR_FILES_DIR:-../../../files}/storage:/app/storage
+  expose:
+    - '3000'
+
+# environment перекрывает env_file: сюда — то, что на зеркале ДОЛЖНО
+# отличаться от скопированного прод-.env.
+x-app-env: &app-env
+  NODE_ENV: production
+  PORT: 3000
+  APP_ROLE: ${APP_ROLE:-standby}
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  DATABASE_URL: ${MIRROR_DATABASE_URL:?MIRROR_DATABASE_URL не задан (mysql://root:...@mysql-replica:3306/bitrix)}
+  DB_HOST: mysql-replica
+  DB_PORT: 3306
+  # ClickHouse на зеркале не поднимаем (логгер fail-open). Когда добавите
+  # сервис clickhouse — верните http://clickhouse:8123 и 'true'.
+  LOG_CLICKHOUSE_ENABLED: 'false'
+
+x-healthcheck: &app-healthcheck
+  test:
+    [
+      'CMD',
+      'node',
+      '-e',
+      "require('http').get('http://localhost:3000/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+    ]
+  interval: 15s
+  timeout: 5s
+  retries: 5
+  start_period: 40s
+
+x-app: &app-service
+  <<: *app-common
+  environment: *app-env
+  healthcheck: *app-healthcheck
+  env_file:
+    - path: .env
+      required: true
+
+services:
+  back:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER не задан}/april-back:${IMAGE_TAG:-mirror}
+
+  kpi-report-sales:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-kpi-report-sales:${IMAGE_TAG:-mirror}
+
+  pbx-install:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-pbx-install:${IMAGE_TAG:-mirror}
+
+  kpi-report-service:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-kpi-report-service:${IMAGE_TAG:-mirror}
+
+  admin:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-admin:${IMAGE_TAG:-mirror}
+
+  event-sales:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-event-sales:${IMAGE_TAG:-mirror}
+
+  event-service:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-event-service:${IMAGE_TAG:-mirror}
+
+  konstructor:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-konstructor:${IMAGE_TAG:-mirror}
+    # Топология Gotenberg как на проде: имя сервиса резолвится во все реплики.
+    environment:
+      <<: *app-env
+      LIBREOFFICE_MODE: http
+      LIBREOFFICE_HTTP_URL: http://gotenberg:3000
+      LIBREOFFICE_DISCOVERY: dns
+
+  rq:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-rq:${IMAGE_TAG:-mirror}
+
+  pbx:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-pbx:${IMAGE_TAG:-mirror}
+
+  bot:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-bot:${IMAGE_TAG:-mirror}
+
+  bitrix-app-client:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER}/april-bitrix-app-client:${IMAGE_TAG:-mirror}
+
+  # ---------------- Инфраструктура ----------------
+  # Redis: до фазы данных — обычный мастер с персистентностью; в фазе данных
+  # в files/redis/redis.conf дописываются replicaof/masterauth (мастер —
+  # Redis прода через WireGuard), и он становится репликой только для чтения.
+  # Конфиг смонтирован на запись, чтобы CONFIG REWRITE после REPLICAOF NO ONE
+  # (повышение) пережил перезапуск.
+  redis:
+    image: redis:7
+    command: ['redis-server', '/etc/redis/redis.conf']
+    restart: unless-stopped
+    logging: *default-logging
+    expose:
+      - '6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - redis_data:/data
+      - ${MIRROR_FILES_DIR:-../../../files}/redis/redis.conf:/etc/redis/redis.conf
+
+  # Реплика MySQL прода. Версия образа — ТОЧНО как на проде (MYSQL_IMAGE).
+  # replica.cnf: server_id, GTID, read_only; super_read_only включается
+  # скриптом после первичной заливки (иначе entrypoint образа не сможет
+  # создать root при первом старте). Порт наружу — только на loopback
+  # (для обратной репликации при возврате — на IP WireGuard, см. README).
+  mysql-replica:
+    image: ${MYSQL_IMAGE:-mysql:8.0}
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MIRROR_MYSQL_ROOT_PASSWORD:?MIRROR_MYSQL_ROOT_PASSWORD не задан}
+    expose:
+      - '3306'
+    ports:
+      - '${MYSQL_REPLICA_BIND:-127.0.0.1}:3306:3306'
+    volumes:
+      - mysql_replica_data:/var/lib/mysql
+      - ${MIRROR_FILES_DIR:-../../../files}/mysql/replica.cnf:/etc/mysql/conf.d/replica.cnf:ro
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'mysqladmin ping -h 127.0.0.1 -uroot -p"$$MYSQL_ROOT_PASSWORD" --silent',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  # Конвертация Office -> PDF. Реплик меньше, чем на проде: зеркало в
+  # ожидании не конвертирует; после переключения поднимите
+  # GOTENBERG_REPLICAS до числа свободных ядер (см. прод-compose).
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    deploy:
+      replicas: ${GOTENBERG_REPLICAS:-2}
+    restart: unless-stopped
+    logging: *default-logging
+    command:
+      - gotenberg
+      - --api-timeout=300s
+      - --libreoffice-auto-start=true
+      - --libreoffice-restart-after=50
+    healthcheck:
+      test: ['CMD-SHELL', 'curl --silent --fail http://localhost:3000/health']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  redis_data:
+  mysql_replica_data:

@@ -3,8 +3,6 @@ import { BitrixService, IBXDeal } from '@/modules/bitrix';
 import { IBXTask } from '@/modules/bitrix/domain/tasks/task';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { hasCrmLink } from '@lib/portal-lib/pbx/const-smart-registry';
-import { PresentationSmartInfo } from '@lib/portal-lib/pbx/pbx-presentation-smart';
-import { ZprSmartInfo } from '@lib/portal-lib/pbx/pbx-zpr-smart';
 import { presUfKey } from '../../../presentation-flow/services/pres-element-fields.builder';
 import { presStageId } from '../../../presentation-flow/services/pres-stage.resolver';
 import { zprUfKey } from '../../../zpr-flow/services/zpr-element-fields.builder';
@@ -15,6 +13,7 @@ import {
     dealLinkKey,
     toLinkedIds,
 } from '../../lib/deal-link-fields';
+import { reopenableBaseDeal } from '../../lib/reopenable-base-deal';
 import { PortalDealColdCategoryService } from '../enities/deal/portal-deal-cold-category.service';
 import { ColdTarget } from '../target/cold-target.types';
 import {
@@ -49,6 +48,12 @@ export interface ColdCloseResult {
      * null: новая работа не создаётся.
      */
     preservedBaseDeal: IBXDeal | null;
+    /**
+     * Сохранённая основная — входная сделка, закрытая в отказ: открытых
+     * основных у клиента нет, и работа возвращается в неё, а не в новую
+     * (см. reopenableBaseDeal). Для записи в ленту; иначе null.
+     */
+    reopenedBaseDealId: number | null;
 }
 
 /**
@@ -81,10 +86,18 @@ export class ColdRelationsCloserV2Service {
         relations: ColdRelations,
         decision: ColdStartDecision,
     ): Promise<ColdCloseResult> {
-        const preserved =
+        const open =
             decision.mode === 'proceed'
                 ? this.preservedBaseDeal(target, relations)
                 : null;
+        const reopened =
+            decision.mode === 'proceed' && !open
+                ? reopenableBaseDeal(
+                      target.entryDeal,
+                      this.categories.getBaseCategory(),
+                  )
+                : null;
+        const preserved = open ?? reopened;
         const scope =
             decision.mode === 'proceed'
                 ? this.proceedScope(relations, preserved)
@@ -96,6 +109,7 @@ export class ColdRelationsCloserV2Service {
             closedPresIds: [],
             closedZprIds: [],
             preservedBaseDeal: preserved,
+            reopenedBaseDealId: reopened ? Number(reopened.ID) : null,
         };
         const clearedDates = this.clearedPlanDates();
 
@@ -158,7 +172,8 @@ export class ColdRelationsCloserV2Service {
         this.logger.log(
             `[close] hook=${target.hookKey} mode=${decision.mode}: deals=${result.closedDealIds.length} ` +
                 `tasks=${result.completedTaskIds.length} pres=${result.closedPresIds.length} ` +
-                `zpr=${result.closedZprIds.length} preservedBase=${preserved?.ID ?? '-'}`,
+                `zpr=${result.closedZprIds.length} preservedBase=${preserved?.ID ?? '-'}` +
+                (reopened ? ' (закрытая в отказ — возвращается в работу)' : ''),
         );
         return result;
     }

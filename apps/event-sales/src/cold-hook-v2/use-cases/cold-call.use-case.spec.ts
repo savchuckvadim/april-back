@@ -187,12 +187,12 @@ describe('ColdCallV2UseCase — корень компания', () => {
         expect(fake.dealSet.mock.calls[0][1]).not.toHaveProperty('CONTACT_ID');
     });
 
-    it('задача и KPI-строки привязаны к компании и обеим сделкам', async () => {
+    it('задача — к компании и основной (без ХО-сделки), KPI-строки — к обеим сделкам', async () => {
         const fake = await run(companyTarget, { ID: '500' } as never);
         expect(fake.taskAdd).toHaveBeenCalledWith(
             'bx_task_add_7',
             expect.objectContaining({
-                UF_CRM_TASK: ['CO_7', 'D_500', 'D_$result[new_cold_deal_7]'],
+                UF_CRM_TASK: ['CO_7', 'D_500'],
                 GROUP_ID: 41,
                 RESPONSIBLE_ID: 447,
             }),
@@ -249,16 +249,12 @@ describe('ColdCallV2UseCase — корень сделка без компани�
         }
     });
 
-    it('задача привязана к сделкам и лиду, KPI — без компании', async () => {
+    it('задача — к основной и лиду (без ХО-сделки), KPI — без компании', async () => {
         const fake = await run(dealTarget, null);
         expect(fake.taskAdd).toHaveBeenCalledWith(
             'bx_task_add_deal_600',
             expect.objectContaining({
-                UF_CRM_TASK: [
-                    'D_$result[new_base_deal_deal_600]',
-                    'D_$result[new_cold_deal_deal_600]',
-                    'L_12',
-                ],
+                UF_CRM_TASK: ['D_$result[new_base_deal_deal_600]', 'L_12'],
             }),
         );
         const [, dto] = fake.listAdd.mock.calls[0];
