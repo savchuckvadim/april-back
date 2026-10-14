@@ -45,6 +45,8 @@ export enum JobNames {
     SALES_USER_REPORT_GENERATE = 'sales-user-report-generate',
     //счётная статистика звонков (6 бакетов × N сотрудников, result_total)
     SALES_CALLING_STATISTIC = 'sales-calling-statistic',
+    //дневной дайджест ОП (kpi-report-sales/digest): партиции дня по порталу
+    SALES_DIGEST_GENERATE = 'sales-digest-generate',
 
     //эфирное время (kpi-airtime): сбор месячной партиции по всему порталу
     //и дособор дневного диапазона текущего/краевого месяца

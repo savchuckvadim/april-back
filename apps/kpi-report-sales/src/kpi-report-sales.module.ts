@@ -22,6 +22,7 @@ import { ShareLinkModule } from './share-link';
 import { PbxFieldsModule } from './pbx-fields';
 import { PlansModule } from './plans';
 import { AiAnalyticsModule } from './ai-analytics';
+import { DigestModule } from './digest';
 
 /**
  * Корневой модуль приложения kpi-report-sales.
@@ -40,6 +41,7 @@ import { AiAnalyticsModule } from './ai-analytics';
  *   PbxFieldsModule      → «PBX Fields» (метаданные + запись pbx-полей)
  *   PlansModule          → «Sales Plans» (планы руководителя)
  *   AiAnalyticsModule    → «Sales AI Analytics» (AI-аналитика ОП, Фаза 1a)
+ *   DigestModule         → «Sales Report» (ручки kpi-report/digest/*: дневной дайджест)
  *
  * BxDepartmentModule подключён, чтобы эндпоинты отделов/команд Bitrix
  * были доступны и из этого приложения (как в event-sales).
@@ -88,6 +90,7 @@ import { AiAnalyticsModule } from './ai-analytics';
         PbxFieldsModule,
         PlansModule,
         AiAnalyticsModule,
+        DigestModule,
         // Обмен AUTH_ID фрейма на portal-context JWT (POST auth/portal-session)
         // для guard'а мутирующих ручек ai-analytics (PORTAL_SESSION_GUARD_MODE).
         PortalSessionApiModule,
