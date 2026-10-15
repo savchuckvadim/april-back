@@ -104,3 +104,73 @@ describe('PortalAppSettingsController: признак stored', () => {
         expect(stored).toEqual([]);
     });
 });
+
+/**
+ * Связи настроек с каталогом хуков: админка показывает у категории
+ * теорию, хуки и PBX-поля, а у настройки — хуки, которые её читают.
+ * Связи выводятся из каталога (@lib/portal-lib/hooks), не пишутся руками.
+ */
+describe('PortalAppSettingsController: теория и связи с хуками', () => {
+    const loadEventSales = async () => {
+        const controller = new PortalAppSettingsController({
+            listByPortal: jest.fn(() => Promise.resolve([])),
+        } as unknown as PortalAppSettingsService);
+        const response = await controller.list(7);
+        const block = response.apps.find(
+            app => app.appCode === EnumPortalAppCode.eventSales,
+        );
+        if (!block) throw new Error('нет блока event-sales');
+        return block;
+    };
+
+    it('настройка SLA знает хук «Лид → работа» и ссылку на его страницу', async () => {
+        const block = await loadEventSales();
+        const setting = block.settings.find(
+            item => item.code === 'lead_intake_sla_minutes',
+        );
+
+        expect(setting?.hooks?.map(hook => hook.code)).toContain(
+            'lead-to-work',
+        );
+        expect(
+            setting?.hooks?.find(hook => hook.code === 'lead-to-work')?.href,
+        ).toBe('/portal/{portalId}/hooks/lead-to-work');
+        expect(
+            setting?.pbxFields?.find(field => field.code === 'to_base_sales'),
+        ).toEqual(
+            expect.objectContaining({
+                entity: 'lead',
+                href: '/portal/{portalId}/pbx/lead',
+            }),
+        );
+    });
+
+    it('категория получает теорию и объединённые связи своих настроек', async () => {
+        const block = await loadEventSales();
+        const group = block.groups.find(item => item.code === 'lead_sla');
+
+        // Внутренняя документация: механизм в терминах кода (имя крона).
+        expect(group?.theory).toEqual(
+            expect.stringContaining('lead-request-sla'),
+        );
+        expect(group?.hooks?.map(hook => hook.code)).toContain('lead-to-work');
+        expect(
+            group?.stages?.some(stage => stage.code === 'lead_assigned'),
+        ).toBe(true);
+        const keys = (group?.pbxFields ?? []).map(
+            field => `${field.entity}:${field.code}`,
+        );
+        expect(new Set(keys).size).toBe(keys.length);
+    });
+
+    it('настройке без хуков связи не приезжают вовсе', async () => {
+        const block = await loadEventSales();
+        const setting = block.settings.find(
+            item => item.code === 'with_presentation_animate',
+        );
+
+        expect(setting).toBeDefined();
+        expect(setting?.hooks).toBeUndefined();
+        expect(setting?.pbxFields).toBeUndefined();
+    });
+});

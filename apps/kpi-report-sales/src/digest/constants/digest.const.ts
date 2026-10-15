@@ -16,8 +16,58 @@ export const KPI_DIGEST_CACHE_GROUPS = {
     DAY: 'day',
     PLANNED: 'planned',
     CALLS: 'calls',
+    PRESENTATIONS: 'presentations',
     RESULT: 'result',
 } as const;
+
+// ---------------------------------------------------------------------
+// Презентации дня: сделки воронки «ОП Презентации» (sales_presentation)
+// и продажи дня — выигранные сделки «ОП Основная» (sales_base).
+// ---------------------------------------------------------------------
+
+/** Предохранитель объёма одной выборки сделок. */
+export const KPI_DIGEST_DEALS_CAP = 2_000;
+
+/** Сколько последних строк истории сделки (op_mhistory) отдавать в тултип. */
+export const KPI_DIGEST_HISTORY_LINES = 3;
+
+/** Суффиксы STAGE_ID воронки «ОП Презентации» → код стадии реестра. */
+export const KPI_DIGEST_PRES_STAGE_BY_SUFFIX: Readonly<Record<string, string>> = {
+    NEW: 'spres_new',
+    PLAN: 'spres_plan',
+    PENDING: 'spres_pending',
+    WON: 'spres_success',
+    LOSE: 'spres_fail',
+    APOLOGY: 'spres_noresult',
+};
+
+/**
+ * Статус презентации в выбранном дне:
+ *  - held — проведена в этот день;
+ *  - notHeld — не состоялась;
+ *  - refused — отказ после презентации;
+ *  - postponed — перенесена;
+ *  - pending — стояла на день, ещё не отработана;
+ *  - plannedNext — запланирована в этот день на будущее;
+ *  - other — попала в выборку иначе (изменение сделки без смены статуса).
+ */
+export const KPI_DIGEST_PRES_DAY_STATUSES = [
+    'held',
+    'notHeld',
+    'refused',
+    'postponed',
+    'pending',
+    'plannedNext',
+    'other',
+] as const;
+export type KpiDigestPresDayStatus = (typeof KPI_DIGEST_PRES_DAY_STATUSES)[number];
+
+/** Откуда взят комплект/сумма презентации. */
+export const KPI_DIGEST_COMPLECT_SOURCES = ['presentation', 'base'] as const;
+export type KpiDigestComplectSource = (typeof KPI_DIGEST_COMPLECT_SOURCES)[number];
+
+/** Маркер названия спонтанной презентации (event-sales). */
+export const KPI_DIGEST_SPONTANEOUS_TITLE_MARK = 'незапланированн';
 
 /**
  * Закрытый день (раньше сегодняшнего по серверному времени) живёт долго,

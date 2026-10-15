@@ -9,6 +9,70 @@ import {
     PortalAppSettingGroupCode,
     resolveAppSettingGroup,
 } from '../lib/app-setting-groups';
+import { APP_SETTING_GROUP_DOCS } from '../lib/app-setting-group-docs';
+
+/**
+ * Внутренняя документация категорий — для сотрудников April, не для
+ * клиента: у каждой содержательной категории она есть, коды настроек в
+ * ней существуют, клиентских оборотов «попросите разработчика» нет.
+ */
+describe('внутренняя документация категорий настроек', () => {
+    const DOC_OPTIONAL: readonly PortalAppSettingGroupCode[] = [
+        'portal_product',
+        'other',
+    ];
+    const allCodes = new Set<string>(
+        Object.values(EnumPortalAppCode).flatMap(appCode =>
+            Object.values(
+                PORTAL_APP_SETTINGS_SCHEMA[appCode] as Record<
+                    string,
+                    PortalAppSettingDescriptor
+                >,
+            ).map(descriptor => descriptor.code),
+        ),
+    );
+
+    it('есть у каждой категории, кроме служебных', () => {
+        const groups = Object.keys(
+            PORTAL_APP_SETTING_GROUPS,
+        ) as PortalAppSettingGroupCode[];
+        const missing = groups.filter(
+            code =>
+                !DOC_OPTIONAL.includes(code) && !APP_SETTING_GROUP_DOCS[code],
+        );
+        expect(missing).toEqual([]);
+    });
+
+    /**
+     * Префиксы, которые в реестре принадлежат ТОЛЬКО настройкам (поля PBX и
+     * стадии так не начинаются): упомянутый в бэктиках код с таким
+     * префиксом обязан быть ключом реестра — опечатка в документации
+     * отправила бы сотрудника искать несуществующую настройку.
+     */
+    const SETTING_ONLY_PREFIX =
+        /^(lead_intake_|lead_work_|lead_client_|xo_rescue_|reject_revive_|deal_audit_|duplicate_report_|with_|checklist_|ai_analytics_|bitrix_|visibility_)[a-z0-9_]*[a-z0-9]$/;
+
+    it.each(Object.entries(APP_SETTING_GROUP_DOCS))(
+        '%s: упомянутые коды настроек существуют, клиентских оборотов нет',
+        (_code, doc) => {
+            const text = doc ?? '';
+            const mentioned = [...text.matchAll(/`([a-z0-9_]+)`/g)]
+                .map(match => match[1] ?? '')
+                .filter(token => SETTING_ONLY_PREFIX.test(token));
+            const unknown = mentioned.filter(token => !allCodes.has(token));
+
+            expect(unknown).toEqual([]);
+            expect(text).not.toMatch(/попросите разработчика/i);
+        },
+    );
+
+    it('listAppSettingGroups отдаёт документацию вместе с группой', () => {
+        const [group] = listAppSettingGroups(
+            new Set<PortalAppSettingGroupCode>(['lead_sla']),
+        );
+        expect(group?.theory).toEqual(APP_SETTING_GROUP_DOCS.lead_sla);
+    });
+});
 
 /**
  * Категории настроек админки (запрос владельца 13.10.2026: в сотне ключей

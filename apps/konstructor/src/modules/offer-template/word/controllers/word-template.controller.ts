@@ -316,6 +316,27 @@ export class WordTemplateController {
     }
 
     @ApiOperation({
+        summary: 'Архивировать шаблон (PATCH)',
+        description:
+            'Та же операция, что GET :id/archive, но без мутирующего GET — ' +
+            'его может дёрнуть предпросмотр ссылки или краулер. GET оставлен ради легаси-фронта.',
+    })
+    @Patch(':id/archive')
+    async archivePatch(
+        @Param() params: WordTemplateIdParamsDto,
+    ): Promise<boolean> {
+        return await this.wordTemplateService.archive(BigInt(params.id));
+    }
+
+    @ApiOperation({ summary: 'Вернуть шаблон из архива (PATCH)' })
+    @Patch(':id/unarchive')
+    async unarchivePatch(
+        @Param() params: WordTemplateIdParamsDto,
+    ): Promise<boolean> {
+        return await this.wordTemplateService.unarchive(BigInt(params.id));
+    }
+
+    @ApiOperation({
         summary: 'Set word template as active/inactive',
         description: 'Set word template active status',
     })

@@ -32,6 +32,11 @@ import {
     PortalAppSettingsResponseDto,
     PortalAppSettingsSaveDto,
 } from './portal-app-settings.dto';
+import {
+    GroupRelationsAccumulator,
+    relationsPayload,
+    resolveSettingRelations,
+} from './lib/app-setting-relations';
 
 /**
  * Админка настроек placement-приложений портала: вкладка «Приложения»
@@ -86,6 +91,11 @@ export class PortalAppSettingsController {
                 getStoredAppSettingKeys(appCode, stored),
             );
             const usedGroups = new Set<PortalAppSettingGroupCode>();
+            // Связи категории = объединение связей её настроек.
+            const groupRelations = new Map<
+                PortalAppSettingGroupCode,
+                GroupRelationsAccumulator
+            >();
             apps.push({
                 appCode,
                 settings: Object.entries(schema).map(([key, descriptor]) => {
@@ -94,6 +104,15 @@ export class PortalAppSettingsController {
                         descriptor.code,
                     );
                     usedGroups.add(group);
+                    const relations = resolveSettingRelations(
+                        appCode,
+                        descriptor.code,
+                    );
+                    const accumulator =
+                        groupRelations.get(group) ??
+                        new GroupRelationsAccumulator();
+                    accumulator.add(relations);
+                    groupRelations.set(group, accumulator);
                     return {
                         code: descriptor.code,
                         name: descriptor.name,
@@ -117,6 +136,9 @@ export class PortalAppSettingsController {
                             : {}),
                         ...(descriptor.isList ? { isList: true } : {}),
                         group,
+                        // Связи отдаём только когда они есть: у настроек
+                        // без хуков ответ не меняется.
+                        ...relationsPayload(relations),
                     };
                 }),
                 groups: listAppSettingGroups(usedGroups).map(item => ({
@@ -124,6 +146,14 @@ export class PortalAppSettingsController {
                     title: item.title,
                     description: item.description,
                     links: item.links.map(entry => ({ ...entry })),
+                    ...(item.theory ? { theory: item.theory } : {}),
+                    ...relationsPayload(
+                        groupRelations.get(item.code)?.result() ?? {
+                            hooks: [],
+                            pbxFields: [],
+                            stages: [],
+                        },
+                    ),
                 })),
             });
         }

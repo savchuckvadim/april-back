@@ -19,6 +19,8 @@ import type {
     DigestPlannedPartition,
 } from '../types/digest-partition.type';
 import { addCalls, emptyCalls } from './digest-calls.util';
+import { assemblePresentations } from './digest-presentations-assemble.util';
+import type { DigestPresentationsPartition } from '../types/digest-presentations.type';
 import { addCount, addCounters, emptyCount, emptyCounters } from './digest-reduce.util';
 
 export interface AssembleDigestInput {
@@ -28,6 +30,8 @@ export interface AssembleDigestInput {
     planned: DigestPlannedPartition;
     /** null — статистика звонков недоступна (warning уже добавлен). */
     calls: DigestCallsPartition | null;
+    /** null — выборка сделок недоступна (warning уже добавлен). */
+    presentations: DigestPresentationsPartition | null;
     catalog: KpiDigestCatalogDto;
     listId: string;
     warnings: readonly string[];
@@ -130,7 +134,19 @@ export function assembleDigest(input: AssembleDigestInput): KpiDigestReportDto {
         listId: input.listId,
         employees,
         summary: buildSummary(day, planned, calls),
-        warnings: [...input.warnings],
-        truncated: day.truncated || planned.truncated || !!calls?.truncated,
+        warnings: [...input.warnings, ...(input.presentations?.warnings ?? [])],
+        truncated:
+            day.truncated ||
+            planned.truncated ||
+            !!calls?.truncated ||
+            !!input.presentations?.truncated,
+        presentations: input.presentations
+            ? assemblePresentations({
+                  partition: input.presentations,
+                  day,
+                  planned,
+                  userIds: new Set(requestedUsers(input.departament).map(user => user.id)),
+              })
+            : null,
     };
 }

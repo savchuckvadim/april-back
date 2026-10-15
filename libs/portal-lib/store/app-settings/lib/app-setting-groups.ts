@@ -1,4 +1,5 @@
 import { EnumPortalAppCode } from '../portal-app-settings.schema';
+import { APP_SETTING_GROUP_DOCS } from './app-setting-group-docs';
 
 /**
  * Категории настроек для админки: у приложения сотня ключей, без групп
@@ -23,6 +24,13 @@ export interface PortalAppSettingGroup {
     title: string;
     description: string;
     links: readonly PortalAppSettingLink[];
+    /**
+     * Внутренняя документация категории для сотрудников April (markdown):
+     * механизм, к чему приведёт включение, что подготовить, риски, где
+     * смотреть результат. Не клиентская база знаний — подробнее и
+     * технически. Тексты — в `app-setting-group-docs.ts`.
+     */
+    theory?: string;
 }
 
 const link = (title: string, path: string): PortalAppSettingLink => ({
@@ -112,7 +120,7 @@ export const PORTAL_APP_SETTING_GROUPS = {
     lead_duplicates: {
         title: 'Заявки: проверка дублей',
         description: 'Проверка дублей при назначении заявки.',
-        links: [],
+        links: [LINK.leadFields],
     },
     lead_rescue: {
         title: 'Заявки: страховка входа',
@@ -124,7 +132,7 @@ export const PORTAL_APP_SETTING_GROUPS = {
         title: 'Заявка → сделка: что переносить',
         description:
             'Что переносится из заявки в сделку: дела, комментарий, клиент.',
-        links: [LINK.dealFields],
+        links: [LINK.dealFields, LINK.leadFields],
     },
     calls_features: {
         title: 'Экран «Звонки»: возможности',
@@ -137,7 +145,7 @@ export const PORTAL_APP_SETTING_GROUPS = {
         title: 'Чек-листы и вопросы',
         description:
             'Чек-листы стадий и вопросы при отчёте, чек-лист в задаче обзвона.',
-        links: [LINK.questionnaires],
+        links: [LINK.questionnaires, LINK.dealFields],
     },
     calls_tasks: {
         title: 'Задачи обзвона и даты событий',
@@ -157,9 +165,9 @@ export const PORTAL_APP_SETTING_GROUPS = {
         title: 'Подстраховка ХО',
         description:
             'Досылка холодных обзвонов, которые не дошли. Работает по полям-' +
-            'меткам «ОП ХО взято в очередь» и «ОП ХО хук отправлен» на ' +
-            'компании и сделке: робот ставит первую ({=System:Now}) перед ' +
-            'вебхуком. Без полей и метки подстраховке не по чему досылать.',
+            'меткам «взято в очередь» и «хук отправлен» на компании и сделке: ' +
+            'БП ставит первую ({=System:Now}) перед вебхуком. Без полей и ' +
+            'метки подстраховке не по чему досылать.',
         links: [LINK.companyFields, LINK.dealFields],
     },
     deal_audit: {
@@ -173,7 +181,7 @@ export const PORTAL_APP_SETTING_GROUPS = {
         title: 'Отчёт по дублям сделок',
         description:
             'Еженедельная задача руководителю с таблицей дублей: когда и кому.',
-        links: [LINK.departments],
+        links: [LINK.departments, LINK.dealFields],
     },
     // --- skap ---
     skap_import: {
@@ -302,7 +310,7 @@ export function resolveAppSettingGroup(
 
 /**
  * Группы, в которые реально попали ключи приложения, — в порядке
- * справочника (так их и рисует админка).
+ * справочника (так их и рисует админка), с внутренней документацией.
  */
 export function listAppSettingGroups(
     used: ReadonlySet<PortalAppSettingGroupCode>,
@@ -311,5 +319,12 @@ export function listAppSettingGroups(
         Object.keys(PORTAL_APP_SETTING_GROUPS) as PortalAppSettingGroupCode[]
     )
         .filter(code => used.has(code))
-        .map(code => ({ code, ...PORTAL_APP_SETTING_GROUPS[code] }));
+        .map(code => {
+            const theory = APP_SETTING_GROUP_DOCS[code];
+            return {
+                code,
+                ...PORTAL_APP_SETTING_GROUPS[code],
+                ...(theory ? { theory } : {}),
+            };
+        });
 }

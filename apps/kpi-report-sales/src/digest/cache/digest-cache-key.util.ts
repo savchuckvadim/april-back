@@ -22,6 +22,10 @@ export const buildDigestPlannedKey = (date: IsoDate): string =>
 export const buildDigestCallsKey = (date: IsoDate): string =>
     `${V}:calls:${date}`;
 
+/** Партиция презентаций и продаж дня (сделки). */
+export const buildDigestPresentationsKey = (date: IsoDate): string =>
+    `${V}:pres:${date}`;
+
 /** Конверт результата по выборке сотрудников. */
 export const buildDigestResultKey = (date: IsoDate, usersKey: string): string =>
     `${V}:result:${date}:${usersKey}`;
@@ -44,5 +48,6 @@ export const buildDigestDayKeyPrefixes = (date: IsoDate): string[] => [
     buildDigestDayKey(date),
     buildDigestPlannedKey(date),
     buildDigestCallsKey(date),
+    buildDigestPresentationsKey(date),
     `${V}:result:${date}:`,
 ];

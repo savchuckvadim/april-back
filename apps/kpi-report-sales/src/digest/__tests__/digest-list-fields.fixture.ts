@@ -65,9 +65,14 @@ export const DIGEST_LIST_FIXTURE = {
     ],
 };
 
-export const portalModelMock = () => ({
+export const portalModelMock = (deals: {
+    categories?: Record<string, unknown>;
+    fields?: Record<string, string>;
+} = {}) => ({
     getListByCode: (code: string) =>
         code === 'sales_kpi' ? DIGEST_LIST_FIXTURE : undefined,
+    getDealCategoryByCode: (code: string) => deals.categories?.[code],
+    getDealFieldBitrixIdByCode: (code: string) => deals.fields?.[code] ?? '',
 });
 
 /** Элемент списка как отдаёт lists.element.get ({valueId: value}-объекты). */

@@ -797,14 +797,19 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             name: 'Отправка без плана',
             description:
                 'Разрешить отправлять отчёт без запланированного ' +
-                'следующего события.',
+                'следующего события — всегда. Без флага фрейм даёт «Без ' +
+                'плана», только когда у клиента больше одного открытого дела.',
             type: 'boolean',
             default: false,
         }),
         withNoReschedle: setting({
             code: 'with_no_reschedle',
             name: 'Перенос события',
-            description: 'Кнопка переноса события на другое время.',
+            description:
+                'Кнопка переноса события на другое время. СЕЙЧАС НЕ ' +
+                'ДЕЙСТВУЕТ: текущий фрейм «Звонки» флаг не читает (его ' +
+                'использовало старое приложение); перенос дела кнопкой ' +
+                '«Не очень» работает без настройки.',
             type: 'boolean',
             default: false,
         }),
@@ -812,42 +817,63 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             code: 'with_post_fail',
             name: 'Пост-отказная дата',
             description:
-                'Поле «дата повторного касания» при отказе (вернуться позже).',
+                'При статусе «Отказ» (кроме отчёта из лида) обязательна дата ' +
+                'следующего звонка; пишется в поле сделки «ОП Дата звонка ' +
+                'после отказа» (post_fail_date). Её читает реанимация ' +
+                'отказников при включённом учёте даты после отказа.',
             type: 'boolean',
             default: false,
         }),
         withNoCall: setting({
             code: 'with_no_call',
             name: 'Недозвон',
-            description: 'Меню недозвона (отчёт без разговора).',
+            description:
+                'Кнопка «Недозвон» в делах фрейма — отчёт без разговора. ' +
+                'Без флага кнопки нет.',
             type: 'boolean',
             default: false,
         }),
         withTM: setting({
             code: 'with_tm',
             name: 'Режим ТМЦ',
-            description: 'Функциональность телемаркетинга (ТМЦ).',
+            description:
+                'Кнопка «В ТМЦ» на презентационных задачах, у которых есть ' +
+                'связанная ТМЦ-сделка (режим ОП). СЕЙЧАС НЕ ДЕЙСТВУЕТ: ' +
+                'ручка /pres/tmc-deals на бэке — заглушка, фрейм её не ' +
+                'вызывает (BACKEND_SUPPORT_READY.tmcDeals = false).',
             type: 'boolean',
             default: false,
         }),
         withRecords: setting({
             code: 'with_records',
             name: 'Записи звонков',
-            description: 'Показывать записи звонков в форме отчёта.',
+            description:
+                'Показывать записи звонков компании в форме отчёта. СЕЙЧАС ' +
+                'НЕ ДЕЙСТВУЕТ: фрейм гасит записи, транскрибацию и AI общим ' +
+                'гейтом ARE_CALLS_ENABLED = false, значение здесь ничего не ' +
+                'меняет.',
             type: 'boolean',
             default: true,
         }),
         withTranscribation: setting({
             code: 'with_transcribation',
             name: 'Транскрибация',
-            description: 'Тексты звонков (расшифровки) в интерфейсе.',
+            description:
+                'Тексты звонков (расшифровки) в интерфейсе. СЕЙЧАС НЕ ' +
+                'ДЕЙСТВУЕТ: фрейм гасит флаг общим гейтом ARE_CALLS_ENABLED = ' +
+                'false. Разбор звонков для AI-аналитики от этого флага не ' +
+                'зависит.',
             type: 'boolean',
             default: false,
         }),
         withAI: setting({
             code: 'with_ai',
             name: 'AI-анализ',
-            description: 'AI-разборы звонков в интерфейсе «Звонков».',
+            description:
+                'AI-разборы звонков в интерфейсе «Звонков». СЕЙЧАС НЕ ' +
+                'ДЕЙСТВУЕТ: фрейм гасит флаг общим гейтом ARE_CALLS_ENABLED = ' +
+                'false. AI-аналитика в KPI-отчёте включается отдельно ' +
+                '(kpi-sales, ai_analytics_enabled).',
             type: 'boolean',
             default: false,
         }),
@@ -869,7 +895,9 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
         withColorRequired: setting({
             code: 'with_color_required',
             name: 'Обязательный «цвет» клиента',
-            description: 'Требовать выбор прогноза/цвета клиента при отправке.',
+            description:
+                'При отчёте по клиенту с компанией отправка блокируется, ' +
+                'пока прогноз (цвет) компании не обновлён в этой сессии.',
             type: 'boolean',
             default: false,
         }),
@@ -878,14 +906,20 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             name: 'Опросник после презентации',
             description:
                 'Обязательный опросник (CheckPresentation) после ' +
-                'проведённой презентации.',
+                'проведённой презентации с результатом: «Хвост», «Итоги ' +
+                'разговора», «Пять К»; ответы пишутся в поля опросника ' +
+                '(op_presentation_xvost, op_presentation_5k и др.).',
             type: 'boolean',
             default: false,
         }),
         withDepartmentModeToggle: setting({
             code: 'with_department_mode_toggle',
             name: 'Переключатель ОП/ТМЦ',
-            description: 'Показывать переключатель режима отдела ОП/ТМЦ.',
+            description:
+                'Тумблер режима отдела ОП/ТМЦ во фрейме. С флагом начальный ' +
+                'режим берётся из сохранённого в браузере или по должности ' +
+                'пользователя, без флага фрейм всегда в режиме ОП. От ' +
+                'режима зависит план события (ТМЦ или ОП).',
             type: 'boolean',
             default: false,
         }),

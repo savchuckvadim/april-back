@@ -1,10 +1,10 @@
 /**
- * Постраничная выгрузка элементов списка одним батчем.
+ * Постраничная выгрузка списочных методов Битрикса одним батчем.
  *
  * Первый вызов отдаёт страницу и `total`; остальные страницы — команды
  * `start=N*50` в одном strict-батче (50 команд на HTTP-запрос — до 2500
- * элементов за один поход). Порядок ELEMENT_ORDER по ID: новые элементы
- * появляются в конце, offset-страницы не плывут, пока идёт выгрузка.
+ * строк за один поход). Порядок по ID: новые строки появляются в конце,
+ * offset-страницы не плывут, пока идёт выгрузка.
  *
  * Громкие ошибки: страница без `result` (дроп rate-limiter) и пропавшая
  * команда батча — исключение, а не тихо неполная партиция
@@ -18,13 +18,14 @@ import {
 import { KPI_DIGEST_LIST_PAGE_SIZE } from '../constants/digest.const';
 
 export const LISTS_ELEMENT_GET_METHOD = 'lists.element.get';
+export const CRM_DEAL_LIST_METHOD = 'crm.deal.list';
 
 export class DigestPageDroppedError extends Error {
-    constructor(pageStart: number, context: string) {
+    constructor(method: string, pageStart: number, context: string) {
         super(
-            `${LISTS_ELEMENT_GET_METHOD}: страница start=${pageStart} ` +
-                `(${context}) потеряна — ответ без массива result (дроп ` +
-                'rate-limiter или обрыв). Данные были бы неполными, расчёт остановлен.',
+            `${method}: страница start=${pageStart} (${context}) потеряна — ` +
+                'ответ без массива result (дроп rate-limiter или обрыв). ' +
+                'Данные были бы неполными, расчёт остановлен.',
         );
         this.name = 'DigestPageDroppedError';
     }
@@ -32,27 +33,26 @@ export class DigestPageDroppedError extends Error {
 
 export type ListElementRow = Record<string, unknown>;
 
-export interface ListElementsQuery {
-    listId: string;
-    filter: Record<string, unknown>;
-    select: string[];
+export interface PagedQuery {
+    method: string;
+    /** Параметры метода без `start` (filter/select/order). */
+    params: Record<string, unknown>;
     /** Предохранитель объёма: больше — truncated. */
     cap: number;
     /** Контекст для сообщений об ошибках. */
     context: string;
 }
 
-export interface ListElementsResult {
+export interface PagedResult {
     rows: ListElementRow[];
-    /** Сколько элементов подходит под фильтр по данным Битрикса. */
+    /** Сколько строк подходит под фильтр по данным Битрикса. */
     total: number;
     truncated: boolean;
 }
 
-interface ListElementsEnvelope {
+interface PagedEnvelope {
     result?: unknown;
     total?: unknown;
-    next?: unknown;
 }
 
 export type ListElementsApi = Pick<
@@ -62,24 +62,16 @@ export type ListElementsApi = Pick<
 
 const pageKey = (start: number): string => `page_${start}`;
 
-export async function loadListElements(
+export async function loadPaged(
     api: ListElementsApi,
-    query: ListElementsQuery,
-): Promise<ListElementsResult> {
-    const params: Record<string, unknown> = {
-        IBLOCK_TYPE_ID: 'lists',
-        IBLOCK_ID: query.listId,
-        filter: query.filter,
-        select: query.select,
-        ELEMENT_ORDER: { ID: 'ASC' },
-    };
-
-    const first = (await api.call(LISTS_ELEMENT_GET_METHOD, {
-        ...params,
+    query: PagedQuery,
+): Promise<PagedResult> {
+    const first = (await api.call(query.method, {
+        ...query.params,
         start: 0,
-    })) as ListElementsEnvelope | null | undefined;
+    })) as PagedEnvelope | null | undefined;
     if (!first || typeof first !== 'object' || !Array.isArray(first.result)) {
-        throw new DigestPageDroppedError(0, query.context);
+        throw new DigestPageDroppedError(query.method, 0, query.context);
     }
 
     const rows: ListElementRow[] = [...(first.result as ListElementRow[])];
@@ -101,8 +93,8 @@ export async function loadListElements(
 
     if (starts.length) {
         for (const start of starts) {
-            api.addCmdBatch(pageKey(start), LISTS_ELEMENT_GET_METHOD, {
-                ...params,
+            api.addCmdBatch(pageKey(start), query.method, {
+                ...query.params,
                 start,
             });
         }
@@ -114,7 +106,11 @@ export async function loadListElements(
         for (const [index, key] of keys.entries()) {
             const page = merged.result[key];
             if (!Array.isArray(page)) {
-                throw new DigestPageDroppedError(starts[index], query.context);
+                throw new DigestPageDroppedError(
+                    query.method,
+                    starts[index],
+                    query.context,
+                );
             }
             rows.push(...(page as ListElementRow[]));
         }
@@ -125,4 +121,47 @@ export async function loadListElements(
         total,
         truncated: total > query.cap,
     };
+}
+
+export interface ListElementsQuery {
+    listId: string;
+    filter: Record<string, unknown>;
+    select: string[];
+    cap: number;
+    context: string;
+}
+
+/** Элементы списка (lists.element.get) по фильтру. */
+export async function loadListElements(
+    api: ListElementsApi,
+    query: ListElementsQuery,
+): Promise<PagedResult> {
+    return loadPaged(api, {
+        method: LISTS_ELEMENT_GET_METHOD,
+        params: {
+            IBLOCK_TYPE_ID: 'lists',
+            IBLOCK_ID: query.listId,
+            filter: query.filter,
+            select: query.select,
+            ELEMENT_ORDER: { ID: 'ASC' },
+        },
+        cap: query.cap,
+        context: query.context,
+    });
+}
+
+/** Сделки (crm.deal.list) по фильтру. */
+export async function loadDeals(
+    api: ListElementsApi,
+    filter: Record<string, unknown>,
+    select: string[],
+    cap: number,
+    context: string,
+): Promise<PagedResult> {
+    return loadPaged(api, {
+        method: CRM_DEAL_LIST_METHOD,
+        params: { filter, select, order: { ID: 'ASC' } },
+        cap,
+        context,
+    });
 }

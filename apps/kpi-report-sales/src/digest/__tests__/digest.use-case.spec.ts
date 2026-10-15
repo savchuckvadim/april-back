@@ -10,6 +10,11 @@ import * as voximplant from '../../airtime/lib/voximplant-fetch.util';
 
 const DAY = '2026-10-14';
 
+const NO_FUNNEL_WARNINGS = [
+    'Воронка «ОП Презентации» не настроена на портале — презентации дня недоступны.',
+    'Воронка «ОП Основная» не настроена — продажи дня недоступны.',
+];
+
 const listPage = (rows: Record<string, unknown>[]) => ({
     result: rows,
     total: rows.length,
@@ -135,12 +140,14 @@ describe('DigestUseCase', () => {
         expect(report.summary.totals.notHeld.total).toBe(1);
         expect(report.summary.totals.noresultReasons).toEqual({ nopickup: 1 });
         expect(report.summary.calls?.callsCount).toBe(1);
-        expect(report.warnings).toEqual([]);
+        // Воронки сделок в фикстуре не настроены — презентации пустые с предупреждением.
+        expect(report.warnings).toEqual(NO_FUNNEL_WARNINGS);
+        expect(report.presentations).toEqual({ items: [], sales: [], truncated: false });
         expect(report.truncated).toBe(false);
         expect(report.catalog.types.length).toBeGreaterThan(0);
 
         // Партиции записаны: закрытый день — длинный TTL.
-        expect(mocks.partitions.set).toHaveBeenCalledTimes(3);
+        expect(mocks.partitions.set).toHaveBeenCalledTimes(4);
         const [, dayKey, , dayTtl, dayGroup] = mocks.partitions.set.mock.calls[0] as unknown[];
         expect(dayKey).toBe('v1:day:2026-10-14');
         expect(dayTtl).toBe(30 * 24 * 60 * 60);
@@ -169,6 +176,7 @@ describe('DigestUseCase', () => {
                 'v1:day:2026-10-14': cachedDay,
                 'v1:planned:2026-10-14': { date: DAY, byUser: {}, elements: 0, truncated: false, builtAt: 'x' },
                 'v1:calls:2026-10-14': { date: DAY, byUser: {}, rowsFetched: 0, truncated: false, builtAt: 'x' },
+                'v1:pres:2026-10-14': { date: DAY, items: [], sales: [], truncated: false, warnings: [], builtAt: 'x' },
             },
         });
         const useCase = new DigestUseCase();
@@ -197,7 +205,7 @@ describe('DigestUseCase', () => {
 
         expect(mocks.partitions.get).not.toHaveBeenCalled();
         expect(mocks.api.call).toHaveBeenCalledTimes(2);
-        expect(mocks.partitions.set).toHaveBeenCalledTimes(3);
+        expect(mocks.partitions.set).toHaveBeenCalledTimes(4);
     });
 
     it('недоступная телефония — warning и calls: null, события дня отдаются', async () => {
@@ -216,8 +224,8 @@ describe('DigestUseCase', () => {
         expect(report.summary.calls).toBeNull();
         expect(report.employees[0].done.total).toBe(1);
         expect(report.warnings[0]).toContain('vox down');
-        // Партиция звонков не записана, события и план — записаны.
-        expect(mocks.partitions.set).toHaveBeenCalledTimes(2);
+        // Партиция звонков не записана; события, план и презентации — записаны.
+        expect(mocks.partitions.set).toHaveBeenCalledTimes(3);
     });
 
     it('обрезанная партиция — truncated в ответе и короткий TTL', async () => {

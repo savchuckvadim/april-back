@@ -40,6 +40,131 @@ export class PortalAppSettingLinkDto {
     href: string;
 }
 
+/** Хук каталога, который читает настройку (ссылка на страницу хука). */
+export class PortalAppSettingHookLinkDto {
+    @ApiProperty({
+        description: 'Код хука в каталоге админки.',
+        example: 'lead-to-work',
+        type: String,
+    })
+    code: string;
+
+    @ApiProperty({
+        description: 'Название хука.',
+        example: 'Лид → работа (заявка в отдел продаж)',
+        type: String,
+    })
+    title: string;
+
+    @ApiProperty({
+        description:
+            'Путь страницы хука в карточке портала; `{portalId}` заменяется на фронте.',
+        example: '/portal/{portalId}/hooks/lead-to-work',
+        type: String,
+    })
+    href: string;
+
+    @ApiProperty({
+        description:
+            'Роль настройки для хука: gate — рубильник (включает хук или крон), ' +
+            'param — параметр поведения.',
+        example: 'param',
+        enum: ['gate', 'param'],
+    })
+    role: 'gate' | 'param';
+
+    @ApiProperty({
+        description:
+            'Как именно хук использует настройку — внутренняя документация ' +
+            'для сотрудников: к чему приведёт значение.',
+        example:
+            'Порог SLA — он же срок задачи обзвона при распределении по кругу.',
+        type: String,
+    })
+    note: string;
+}
+
+/** Стадия лида или воронки ОП, нужная хукам, которые читают настройку. */
+export class PortalAppSettingStageDto {
+    @ApiProperty({
+        description: 'Сущность стадии.',
+        example: 'lead',
+        enum: ['lead', 'deal'],
+    })
+    entity: 'lead' | 'deal';
+
+    @ApiProperty({
+        description: 'Код стадии шаблона.',
+        example: 'lead_assigned',
+        type: String,
+    })
+    code: string;
+
+    @ApiProperty({
+        description: 'Название стадии.',
+        example: 'Назначена менеджеру',
+        type: String,
+    })
+    title: string;
+
+    @ApiProperty({
+        description:
+            'Обязательна хотя бы одному из хуков (без неё хук теряет основную функцию).',
+        example: true,
+        type: Boolean,
+    })
+    required: boolean;
+
+    @ApiProperty({
+        description:
+            'Раздел админки, где стадия ставится или сопоставляется; `{portalId}` заменяется на фронте.',
+        example: '/portal/{portalId}/pbx/lead',
+        type: String,
+    })
+    href: string;
+}
+
+/** PBX-поле, с которым связана настройка через хук, который её читает. */
+export class PortalAppSettingPbxFieldDto {
+    @ApiProperty({
+        description: 'Сущность Битрикса.',
+        example: 'lead',
+        enum: ['lead', 'deal', 'company', 'contact', 'task'],
+    })
+    entity: 'lead' | 'deal' | 'company' | 'contact' | 'task';
+
+    @ApiProperty({
+        description: 'Код поля реестра PBX.',
+        example: 'to_base_sales',
+        type: String,
+    })
+    code: string;
+
+    @ApiProperty({
+        description: 'Название поля.',
+        example: 'Корневая сделка Продажи',
+        type: String,
+    })
+    name: string;
+
+    @ApiProperty({
+        description:
+            'Обязательно хотя бы одному из хуков (без него хук теряет основную ' +
+            'функцию); необязательное хук пропускает молча с предупреждением.',
+        example: true,
+        type: Boolean,
+    })
+    required: boolean;
+
+    @ApiProperty({
+        description:
+            'Раздел админки, где поле устанавливается; `{portalId}` заменяется на фронте.',
+        example: '/portal/{portalId}/pbx/lead',
+        type: String,
+    })
+    href: string;
+}
+
 /** Категория настроек приложения (секция в админке). */
 export class PortalAppSettingGroupDto {
     @ApiProperty({
@@ -68,6 +193,34 @@ export class PortalAppSettingGroupDto {
         type: [PortalAppSettingLinkDto],
     })
     links: PortalAppSettingLinkDto[];
+
+    @ApiPropertyOptional({
+        description:
+            'Теория категории (markdown, русский): как работает механизм, ' +
+            'которым управляют эти настройки, и что от них зависит.',
+        type: String,
+    })
+    theory?: string;
+
+    @ApiPropertyOptional({
+        description: 'Хуки каталога, которые читают настройки категории.',
+        type: [PortalAppSettingHookLinkDto],
+    })
+    hooks?: PortalAppSettingHookLinkDto[];
+
+    @ApiPropertyOptional({
+        description:
+            'PBX-поля, задействованные хуками категории (что должно быть установлено).',
+        type: [PortalAppSettingPbxFieldDto],
+    })
+    pbxFields?: PortalAppSettingPbxFieldDto[];
+
+    @ApiPropertyOptional({
+        description:
+            'Стадии лида и воронки ОП, нужные хукам категории (что поставить или сопоставить).',
+        type: [PortalAppSettingStageDto],
+    })
+    stages?: PortalAppSettingStageDto[];
 }
 
 /** Описатель ключа настройки для админки (из реестра-схемы). */
@@ -152,6 +305,24 @@ export class PortalAppSettingDescriptorDto {
         type: String,
     })
     group: string;
+
+    @ApiPropertyOptional({
+        description: 'Хуки каталога, которые читают именно эту настройку.',
+        type: [PortalAppSettingHookLinkDto],
+    })
+    hooks?: PortalAppSettingHookLinkDto[];
+
+    @ApiPropertyOptional({
+        description: 'PBX-поля хуков, читающих настройку.',
+        type: [PortalAppSettingPbxFieldDto],
+    })
+    pbxFields?: PortalAppSettingPbxFieldDto[];
+
+    @ApiPropertyOptional({
+        description: 'Стадии, нужные хукам, читающим настройку.',
+        type: [PortalAppSettingStageDto],
+    })
+    stages?: PortalAppSettingStageDto[];
 }
 
 /** Настройки одного приложения портала: схема + действующие значения. */

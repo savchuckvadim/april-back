@@ -49,6 +49,7 @@ import { AdminQuestionnairesModule } from './portal/questionnaires/questionnaire
 import { MarketplaceModerationModule } from './marketplace-moderation/marketplace-moderation.module';
 import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.module';
 import { MaintenanceModule } from './maintenance';
+import { HooksAdminModule } from '@lib/portal-lib/hooks';
 
 @Module({
     imports: [
@@ -126,6 +127,9 @@ import { MaintenanceModule } from './maintenance';
         // created_at/updated_at, из-за которых python-сервис не мог разобрать
         // модель портала.
         MaintenanceModule,
+        // Каталог хуков и автоматики ОП: теория, параметры, готовность
+        // портала (поля, стадии, настройки) и мониторинг операций.
+        HooksAdminModule,
     ],
 })
 export class AdminAddModule {}

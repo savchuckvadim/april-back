@@ -24,9 +24,16 @@ import {
     buildDigestCallsKey,
     buildDigestDayKey,
     buildDigestPlannedKey,
+    buildDigestPresentationsKey,
     buildDigestResultKey,
 } from '../cache/digest-cache-key.util';
 import { assembleDigest } from '../lib/digest-assemble.util';
+import {
+    resolveDigestDealFields,
+    type DigestDealFields,
+} from '../lib/digest-deal-fields.util';
+import { DigestPresentationsLoader } from './digest-presentations.loader';
+import type { DigestPresentationsPartition } from '../types/digest-presentations.type';
 import { reduceCallRows } from '../lib/digest-calls.util';
 import {
     DigestListFields,
@@ -74,6 +81,7 @@ export class DigestUseCase {
     private domain: string;
     private api: BitrixBaseApi;
     private fields: DigestListFields;
+    private dealFields: DigestDealFields;
     private partitions: DigestPartitionCacheService;
     private results?: ReportResultCacheService;
 
@@ -90,6 +98,7 @@ export class DigestUseCase {
         this.partitions = partitions;
         this.results = results;
         this.fields = resolveDigestListFields(PortalModel);
+        this.dealFields = resolveDigestDealFields(PortalModel);
     }
 
     async generate(
@@ -118,6 +127,7 @@ export class DigestUseCase {
             () => this.buildPlannedPartition(date, warnings),
         );
         const calls = await this.loadCallsPartition(date, now, force, warnings);
+        const presentations = await this.loadPresentationsPartition(date, now, force, warnings);
 
         const report = assembleDigest({
             date,
@@ -125,6 +135,7 @@ export class DigestUseCase {
             day,
             planned,
             calls,
+            presentations,
             catalog: this.fields.catalog,
             listId: this.fields.listId,
             warnings,
@@ -274,6 +285,33 @@ export class DigestUseCase {
             const message = error instanceof Error ? error.message : String(error);
             this.logger.warn(`[${this.domain}] звонки за ${date} недоступны: ${message}`);
             warnings.push(`Фактические звонки за ${date} недоступны: ${message}`);
+            return null;
+        }
+    }
+
+    /**
+     * Презентации и продажи дня (сделки) — fail-open: недоступные сделки не
+     * должны прятать события дня (warning + presentations: null).
+     */
+    private async loadPresentationsPartition(
+        date: IsoDate,
+        now: Date,
+        force: boolean,
+        warnings: string[],
+    ): Promise<DigestPresentationsPartition | null> {
+        try {
+            return await this.partition<DigestPresentationsPartition>(
+                buildDigestPresentationsKey(date),
+                KPI_DIGEST_CACHE_GROUPS.PRESENTATIONS,
+                date,
+                now,
+                force,
+                () => new DigestPresentationsLoader(this.api, this.dealFields).load(date),
+            );
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logger.warn(`[${this.domain}] презентации за ${date} недоступны: ${message}`);
+            warnings.push(`Презентации и продажи за ${date} недоступны: ${message}`);
             return null;
         }
     }

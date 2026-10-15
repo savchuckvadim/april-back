@@ -1,0 +1,10 @@
+export * from './catalog/hook-catalog.types';
+export * from './catalog/kb-docs';
+export * from './catalog/hook-catalog';
+export * from './catalog/lib/setting-relations';
+export * from './catalog/lib/pbx-field-registry';
+export * from './readiness/lib/evaluate-readiness';
+export * from './monitoring/lib/summarize-operations';
+export { HookReadinessService } from './readiness/hook-readiness.service';
+export { HookOperationsService } from './monitoring/hook-operations.service';
+export { HooksAdminModule } from './admin/hooks-admin.module';

@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { KpiDigestPresentationsDto } from './digest-presentations.dto';
 import {
     KPI_DIGEST_PERIOD_KINDS,
     KPI_DIGEST_RESPONSE_STATUSES,
@@ -347,6 +348,15 @@ export class KpiDigestReportDto {
         example: false,
     })
     truncated: boolean;
+
+    @ApiProperty({
+        description:
+            'Презентации (сделки «ОП Презентации») и продажи дня; null — ' +
+            'выборка сделок недоступна (причина в warnings).',
+        type: KpiDigestPresentationsDto,
+        nullable: true,
+    })
+    presentations: KpiDigestPresentationsDto | null;
 }
 
 /** Конверт POST /kpi-report/digest/get (режим очереди). */
