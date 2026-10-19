@@ -33,6 +33,8 @@ import {
     AI_DEPARTMENT_FORECAST_STEP_CODE,
     AI_FORECAST_BACKTEST_RHYTHMS,
     AI_FORECAST_BACKTEST_STEP_CODE,
+    AI_FORECAST_LOG_REPLAY_RHYTHMS,
+    AI_FORECAST_LOG_REPLAY_STEP_CODE,
 } from '../constants/ai-forecast-log.const';
 import {
     AI_POOL_STEP_CODE,
@@ -61,6 +63,7 @@ import { AiAnalyticsStageHistoryModule } from '../stage-history/ai-analytics-sta
 import { CallsStep } from '../steps/calls.step';
 import { DepartmentForecastStep } from '../steps/department-forecast.step';
 import { ForecastBacktestStep } from '../steps/forecast-backtest.step';
+import { ForecastLogReplayStep } from '../steps/forecast-log-replay.step';
 import { PoolStep } from '../steps/pool.step';
 import { QualityLinkStep } from '../steps/quality-link.step';
 import { RecommendationEffectStep } from '../steps/recommendation-effect.step';
@@ -136,6 +139,7 @@ const RHYTHMS_BY_STEP = new Map<
     [FinanceStep, AI_FINANCE_STEP_RHYTHMS],
     [QualityLinkStep, AI_QUALITY_LINK_STEP_RHYTHMS],
     [PoolStep, AI_POOL_STEP_RHYTHMS],
+    [ForecastLogReplayStep, AI_FORECAST_LOG_REPLAY_RHYTHMS],
     [ForecastBacktestStep, AI_FORECAST_BACKTEST_RHYTHMS],
     [RecommendationEffectStep, AI_RECOMMENDATION_EFFECT_RHYTHMS],
     [RopMarkStep, AI_ROP_MARK_STEP_RHYTHMS],
@@ -212,8 +216,8 @@ describe('Срезы шагов конвейера', () => {
 });
 
 describe('Порядок шагов ночного конвейера', () => {
-    it('восемнадцать шагов с уникальными кодами, у каждого известны ритмы', () => {
-        expect(CODES).toHaveLength(18);
+    it('девятнадцать шагов с уникальными кодами, у каждого известны ритмы', () => {
+        expect(CODES).toHaveLength(19);
         expect(new Set(CODES).size).toBe(CODES.length);
         expect(
             AI_ANALYTICS_PIPELINE_STEP_ORDER.filter(
@@ -237,6 +241,7 @@ describe('Порядок шагов ночного конвейера', () => {
             'finance',
             AI_QUALITY_LINK_STEP_CODE,
             AI_POOL_STEP_CODE,
+            AI_FORECAST_LOG_REPLAY_STEP_CODE,
             AI_FORECAST_BACKTEST_STEP_CODE,
             AI_RECOMMENDATION_EFFECT_STEP_CODE,
             AI_ROP_MARK_STEP_CODE,
@@ -280,6 +285,11 @@ describe('Порядок шагов ночного конвейера', () => {
         ['recommendation-effect', 'portal-model'],
         ['forecast', 'department-forecast'],
         ['forecast', 'recommendation-log'],
+        // Воспроизведение журнала читает episodes/chain/calls.rows и месяцы
+        // менеджеров, записанные финансами; бэктест читает его журнал.
+        ['stage-history', AI_FORECAST_LOG_REPLAY_STEP_CODE],
+        ['finance', AI_FORECAST_LOG_REPLAY_STEP_CODE],
+        [AI_FORECAST_LOG_REPLAY_STEP_CODE, AI_FORECAST_BACKTEST_STEP_CODE],
     ])('шаг «%s» идёт раньше читающего его «%s»', (writer, reader) => {
         expect(indexOfCode(writer)).toBeGreaterThanOrEqual(0);
         expect(indexOfCode(writer)).toBeLessThan(indexOfCode(reader));
@@ -323,6 +333,13 @@ describe('Ритмы прогона', () => {
         expect(last(backfill)).toBe(AI_PORTAL_MODEL_STEP_CODE);
         expect(backfill.indexOf('finance')).toBeLessThan(
             backfill.indexOf(AI_PORTAL_MODEL_STEP_CODE),
+        );
+        // Журнал прогноза восстанавливается по истории на каждый месяц
+        // догона — до бэктеста по этому журналу (ручка backfill ставит
+        // джобы без белого списка, значит оба шага выполняются).
+        expect(backfill).toContain(AI_FORECAST_LOG_REPLAY_STEP_CODE);
+        expect(backfill.indexOf(AI_FORECAST_LOG_REPLAY_STEP_CODE)).toBeLessThan(
+            backfill.indexOf(AI_FORECAST_BACKTEST_STEP_CODE),
         );
     });
 

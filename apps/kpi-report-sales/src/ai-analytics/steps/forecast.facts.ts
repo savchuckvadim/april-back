@@ -23,20 +23,36 @@ import type {
 import type { AiPipelineStepContext } from './step.types';
 
 /** Рабочие дни месяца: всего, прошло и осталось (включая сегодня). */
-export function workdaysOf(ctx: AiPipelineStepContext): {
+export interface WorkdayCounters {
     total: number;
     elapsed: number;
     left: number;
-} {
-    const bounds = monthBounds(ctx.monthKey);
-    const days = enumerateWorkdays(bounds.from, bounds.to, ctx.calendar);
-    const elapsed = days.filter(day => day < ctx.day).length;
+}
 
-    return {
-        total: days.length,
-        elapsed,
-        left: days.filter(day => day >= ctx.day).length,
-    };
+/**
+ * Счётчики рабочих дней на день `day` по уже перечисленным рабочим дням
+ * месяца (воспроизведение журнала считает их для каждого дня месяца —
+ * календарь перечисляется один раз).
+ */
+export function workdayCountersAt(
+    days: readonly string[],
+    day: string,
+): WorkdayCounters {
+    const elapsed = days.filter(item => item < day).length;
+
+    return { total: days.length, elapsed, left: days.length - elapsed };
+}
+
+/** Рабочие дни месяца прогона на день прогона. */
+export function workdaysOf(
+    ctx: Pick<AiPipelineStepContext, 'monthKey' | 'day' | 'calendar'>,
+): WorkdayCounters {
+    const bounds = monthBounds(ctx.monthKey);
+
+    return workdayCountersAt(
+        enumerateWorkdays(bounds.from, bounds.to, ctx.calendar),
+        ctx.day,
+    );
 }
 
 /** Что нужно знать о менеджере, чтобы собрать его прогноз дня. */

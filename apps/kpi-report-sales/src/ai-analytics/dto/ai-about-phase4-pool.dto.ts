@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
     IsArray,
@@ -78,6 +78,18 @@ export class AiAboutForecastAccuracyDto {
     })
     @IsNumber()
     shadowMinMonths: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Сколько из этих месяцев восстановлено по истории: прогноз ' +
+            'посчитан задним числом по данным, известным к каждому дню. ' +
+            'Нет поля — проверка считалась до появления восстановления.',
+        type: Number,
+        example: 7,
+    })
+    @IsOptional()
+    @IsNumber()
+    replayedMonths?: number;
 
     @ApiProperty({
         description:

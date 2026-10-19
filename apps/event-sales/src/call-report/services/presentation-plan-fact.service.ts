@@ -9,8 +9,11 @@ import {
     EnumSalesKpiEventAction,
     EnumSalesKpiEventType,
 } from '@lib/portal-lib/pbx/pbx-sales-kpi-list/type/pbx-sales-kpi-list.enum';
-import { AiService, TranscriptionStoreService } from '@lib/call-lib';
-import { AGENT_ANALYSIS_TYPE } from '../../agent-gate/services/agent-call-package.service';
+import {
+    AiService,
+    pickActiveAnalysis,
+    TranscriptionStoreService,
+} from '@lib/call-lib';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 
 /** Коды типов события «презентация» в списках отчётности. */
@@ -164,10 +167,11 @@ export class PresentationPlanFactService {
             startedAt: Date | null;
         }[] = [];
         for (const row of rows) {
-            const analysis = records.find(
-                record =>
-                    String(record.transcription_id) === row.id &&
-                    record.type === AGENT_ANALYSIS_TYPE,
+            // Активный разбор звонка (после переразбора старый — superseded).
+            const analysis = pickActiveAnalysis(
+                records.filter(
+                    record => String(record.transcription_id) === row.id,
+                ),
             );
             const dto = analysis?.user_result as AgentCallAnalysisDto | null;
             if (dto?.callType !== 'presentation') continue;

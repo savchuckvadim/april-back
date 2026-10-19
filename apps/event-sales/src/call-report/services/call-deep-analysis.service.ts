@@ -16,6 +16,7 @@ import {
     renderCallTypeProfile,
     renderPresentationStrictnessBlock,
 } from '../contracts/call-deep-analysis.contract';
+import { sumCompletionUsage } from './call-analysis-usage.util';
 import { CallReportSettingsService } from './call-report-settings.service';
 
 /** Тип, под которым ищем методичку, если классификатор промолчал. */
@@ -119,24 +120,27 @@ export class CallDeepAnalysisService {
                 (await this.buildAfterPresentationBlock(domain, callType)) +
                 (await this.buildStrictnessBlock(domain));
             const apiKey = await this.vibeKeyResolver.resolve(domain);
-            const parsed = await this.vibeCodeClient.structuredCompletion(
-                systemPrompt,
-                buildDeepAnalysisUserContent(
-                    transcript,
-                    callType,
-                    passportBlock,
-                ),
-                'call_deep_analysis',
-                CALL_DEEP_ANALYSIS_SCHEMA,
-                apiKey,
-                { model: options?.model },
-            );
+            const response =
+                await this.vibeCodeClient.structuredCompletionWithUsage(
+                    systemPrompt,
+                    buildDeepAnalysisUserContent(
+                        transcript,
+                        callType,
+                        passportBlock,
+                    ),
+                    'call_deep_analysis',
+                    CALL_DEEP_ANALYSIS_SCHEMA,
+                    apiKey,
+                    { model: options?.model },
+                );
 
             const dto = plainToInstance(AgentCallAnalysisDto, {
-                ...(parsed as Record<string, unknown>),
+                ...(response.result as Record<string, unknown>),
                 // callType не спрашиваем у модели повторно: он уже определён
                 // дешёвым классификатором на предыдущем шаге конвейера.
                 callType: callType ?? FALLBACK_CALL_TYPE,
+                // Расход единственного вызова — в колонки ais при приёме.
+                usage: sumCompletionUsage([response]),
             });
             this.logger.log(
                 `Глубокий разбор (${domain}): оценка ${dto.score ?? '—'}, ` +

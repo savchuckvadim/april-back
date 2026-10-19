@@ -9,9 +9,19 @@ import { InstallPresentationSmartUseCase } from '@app/pbx-install/smart/presenta
 import { InstallComplectVariantSmartUseCase } from '@app/pbx-install/smart/complect-variant/install-complect-variant-smart.use-case';
 import { CONST_SMART_REGISTRY } from '@lib/portal-lib/pbx/const-smart-registry';
 
+/**
+ * Общая часть результата установки любого const-смарта: тип, поля.
+ * Долив значений перечислений (enumItemsAdded) — специфика установщика
+ * «AI-анализ звонков», у остальных смартов его нет.
+ */
+export type ConstSmartInstallResult = Omit<
+    InstallCallReportSmartResult,
+    'enumItemsAdded'
+>;
+
 /** Общий контракт установщика const-смарта. */
 export interface ConstSmartInstaller {
-    execute(domain: string): Promise<InstallCallReportSmartResult>;
+    execute(domain: string): Promise<ConstSmartInstallResult>;
 }
 
 /**

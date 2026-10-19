@@ -11,9 +11,11 @@ import {
  * Контракт push-back после разреза AgentCallAnalysisDto на слои
  * наследования (лимит файла, 18.09.2026): набор и порядок полей, Swagger-
  * метаданные и правила class-validator обязаны остаться прежними.
+ * 20.10.2026 добавлены riskEvidence (доказательства риск-флагов, сразу
+ * после riskFlags) и usage (расход модели, перед extra).
  */
 
-/** Поля контракта в порядке объявления ДО разреза (единый класс). */
+/** Поля контракта в порядке объявления. */
 const EXPECTED_FIELDS = [
     'callType',
     'callTypeRefined',
@@ -28,6 +30,7 @@ const EXPECTED_FIELDS = [
     'competitors',
     'objectionCategories',
     'riskFlags',
+    'riskEvidence',
     'refusalCategory',
     'refusalReason',
     'talkRatioPct',
@@ -61,6 +64,7 @@ const EXPECTED_FIELDS = [
     'agentVersion',
     'versions',
     'flow',
+    'usage',
     'extra',
 ];
 
@@ -72,7 +76,7 @@ const REQUIRED = {
 };
 
 describe('AgentCallAnalysisDto (слои наследования)', () => {
-    it('Swagger видит все 47 полей в прежнем порядке объявления', () => {
+    it('Swagger видит все 49 полей в порядке объявления', () => {
         const keys = (
             Reflect.getMetadata(
                 DECORATORS.API_MODEL_PROPERTIES_ARRAY,
@@ -119,6 +123,51 @@ describe('AgentCallAnalysisDto (слои наследования)', () => {
             'callType',
             'score',
         ]);
+    });
+
+    it('доказательство риск-флага валидируется: чужой код флага, пустая цитата, чужой speaker', async () => {
+        const instance = plainToInstance(AgentCallAnalysisDto, {
+            ...REQUIRED,
+            riskFlags: ['conflict'],
+            riskEvidence: [
+                {
+                    flag: 'conflict',
+                    quote: 'Вы меня не слушаете',
+                    speaker: 'manager',
+                },
+                { flag: 'weird', quote: 'x', speaker: 'client' },
+                { flag: 'promise', quote: '', speaker: 'manager' },
+                { flag: 'promise', quote: 'y', speaker: 'robot' },
+            ],
+        });
+
+        const errors = await validate(instance, { whitelist: true });
+
+        expect(errors.map(error => error.property)).toEqual(['riskEvidence']);
+        const nested = errors[0].children?.map(child => child.property) ?? [];
+        expect(nested).toEqual(['1', '2', '3']);
+    });
+
+    it('расход модели принимается с null-разбивкой и отвергает отрицательные токены', async () => {
+        const ok = plainToInstance(AgentCallAnalysisDto, {
+            ...REQUIRED,
+            usage: {
+                tokens: 100,
+                promptTokens: null,
+                completionTokens: null,
+                calls: 4,
+                callsWithUsage: 0,
+                model: null,
+            },
+        });
+        expect(await validate(ok, { whitelist: true })).toEqual([]);
+
+        const bad = plainToInstance(AgentCallAnalysisDto, {
+            ...REQUIRED,
+            usage: { tokens: -1, calls: 1, callsWithUsage: 1, model: null },
+        });
+        const errors = await validate(bad, { whitelist: true });
+        expect(errors.map(error => error.property)).toEqual(['usage']);
     });
 
     it('вложенные DTO базового слоя валидируются: пустая реплика диалога', async () => {

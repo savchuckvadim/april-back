@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AiService } from '../../ai/services/ai.service';
 import { TranscriptionStoreService } from '../../transcription/services/transcription.store.service';
 import { TranscriptionPipelineView } from '../../transcription/types/transcription-pipeline.types';
+import { activeAnalysisByTranscription } from '../../ai/lib/ai-active-record.util';
 import { AGENT_ANALYSIS_TYPE } from './call-report-weekly.types';
 import {
     CallReportWeeklyRow,
@@ -258,12 +259,13 @@ export class CallReportWeeklyDataService {
         const records = await this.aiService.findByTranscriptionIds(
             calls.map(call => call.id),
         );
-        for (const record of records) {
-            if (record.type !== AGENT_ANALYSIS_TYPE) continue;
-            const transcriptionId = record.transcription_id
-                ? String(record.transcription_id)
-                : null;
-            if (!transcriptionId) continue;
+        // Активная запись разбора на звонок: после переразбора старая
+        // помечена superseded, в отчёт идёт новая.
+        const active = activeAnalysisByTranscription(
+            records,
+            AGENT_ANALYSIS_TYPE,
+        );
+        for (const [transcriptionId, record] of active) {
             const raw: unknown = record.user_result;
             if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
                 // report_item_id — элемент смарта, созданный по этому

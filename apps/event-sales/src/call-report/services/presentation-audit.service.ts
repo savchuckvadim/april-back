@@ -10,13 +10,16 @@ import {
     renderSalesListRecordLine,
     SalesListReaderService,
 } from '@lib/portal-lib/pbx/pbx-sales-list-reader';
-import { AiService, TranscriptionStoreService } from '@lib/call-lib';
+import {
+    AiService,
+    pickActiveAnalysis,
+    TranscriptionStoreService,
+} from '@lib/call-lib';
 import { CallReportSmartResolverService } from '@lib/call-lib/call-report/services/call-report-smart-resolver.service';
 import { CallReportSmartWriterService } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
 import { CallReportDealFamilyService } from '@lib/call-lib/call-report/services/call-report-deal-family.service';
 import { CallReportDealVerifyService } from '@lib/call-lib/call-report/services/call-report-deal-verify.service';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
-import { AGENT_ANALYSIS_TYPE } from '../../agent-gate/services/agent-call-package.service';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 import {
     buildPresentationAuditUserContent,
@@ -146,9 +149,8 @@ export class PresentationAuditService {
                 result.skippedDone++;
                 continue;
             }
-            const analysis = forRow.find(
-                record => record.type === AGENT_ANALYSIS_TYPE,
-            );
+            // Активный разбор звонка (после переразбора старый — superseded).
+            const analysis = pickActiveAnalysis(forRow);
             const dto = analysis?.user_result as AgentCallAnalysisDto | null;
             if (!dto?.callType) continue;
             if (!['presentation', 'decision'].includes(dto.callType)) continue;

@@ -5,6 +5,7 @@ import {
     AGENT_ANALYSIS_TYPE,
     CALL_CLASSIFY_TYPE,
 } from '../../ai/ai-record-types.const';
+import { pickActiveAnalysis } from '../../ai/lib/ai-active-record.util';
 import { TranscriptionStoreService } from '../../transcription/services/transcription.store.service';
 import { asRecord, asString } from '../lib/json-value.util';
 import { mapLiteAnalysis } from '../lib/analytics-lite.mapper';
@@ -216,13 +217,15 @@ export class CallReportAnalyticsDataService {
         return byTranscription;
     }
 
-    /** user_result первой записи типа (объект или null). */
+    /**
+     * user_result АКТИВНОЙ записи типа (объект или null): после переразбора
+     * старая запись помечена superseded, берётся новая с наибольшим id.
+     */
     private pickUserResult(
         records: AiEntityDto[],
         type: string,
     ): Record<string, unknown> | null {
-        const record = records.find(item => item.type === type);
-        return asRecord(record?.user_result);
+        return asRecord(pickActiveAnalysis(records, type)?.user_result);
     }
 
     private logOutcome(

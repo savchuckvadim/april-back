@@ -48,6 +48,16 @@ export class InstallCallReportSmartResponseDto
         type: [String],
     })
     fieldsFailed: string[];
+
+    @ApiProperty({
+        description:
+            'Существующие поля-перечисления, которым этим вызовом долиты ' +
+            'недостающие значения справочника (например, новый риск-флаг): ' +
+            '«UF-имя поля: коды значений».',
+        example: ['UF_CRM_128_RISK_FLAGS: door_closed'],
+        type: [String],
+    })
+    enumItemsAdded: string[];
 }
 
 /** Результат скана звонков домена. */

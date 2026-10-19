@@ -19,6 +19,10 @@ import {
     AiAnalyticsPhase4AdminController,
 } from '../controllers/phase4.admin.controller';
 import { AiAnalyticsPipelineAdminController } from '../controllers/pipeline.admin.controller';
+import {
+    AI_ANALYTICS_REANALYZE_ROUTES,
+    AiAnalyticsReanalyzeAdminController,
+} from '../controllers/reanalyze.admin.controller';
 import { AiAnalyticsRetentionAdminController } from '../controllers/retention.admin.controller';
 import { SalesAiAnalyticsAdminModule } from '../sales-ai-analytics-admin.module';
 import { SalesAiAnalyticsAuditModule } from '../sales-ai-analytics-audit.module';
@@ -37,6 +41,7 @@ const ADMIN_CONTROLLERS = [
     AiAnalyticsFeedbackCostAdminController,
     AiAnalyticsGoldenSetAdminController,
     AiAnalyticsPhase4AdminController,
+    AiAnalyticsReanalyzeAdminController,
 ];
 
 const metadataOf = (key: string, target: unknown): unknown[] =>
@@ -124,6 +129,57 @@ describe('админ-контроллеры AI-аналитики', () => {
         expect(Reflect.getMetadata(PATH_METADATA, run)).toBe('golden-set/run');
         expect(Reflect.getMetadata(METHOD_METADATA, run)).toBe(
             RequestMethod.POST,
+        );
+    });
+});
+
+describe('роуты переразбора истории (этап 1B): reanalyze, reanalyze-status', () => {
+    it('POST reanalyze ставит джобу, GET reanalyze-status читает статус', () => {
+        const run = handlerOf(AiAnalyticsReanalyzeAdminController, 'run');
+        expect(Reflect.getMetadata(PATH_METADATA, run)).toBe(
+            AI_ANALYTICS_REANALYZE_ROUTES.run,
+        );
+        expect(Reflect.getMetadata(METHOD_METADATA, run)).toBe(
+            RequestMethod.POST,
+        );
+        const status = handlerOf(AiAnalyticsReanalyzeAdminController, 'status');
+        expect(Reflect.getMetadata(PATH_METADATA, status)).toBe(
+            AI_ANALYTICS_REANALYZE_ROUTES.status,
+        );
+        expect(Reflect.getMetadata(METHOD_METADATA, status)).toBe(
+            RequestMethod.GET,
+        );
+    });
+
+    it('контроллер передаёт только заданные поля тела в сервис', async () => {
+        const service = {
+            run: jest.fn().mockResolvedValue({}),
+            status: jest.fn().mockResolvedValue({}),
+        };
+        const controller = new AiAnalyticsReanalyzeAdminController(
+            service as never,
+        );
+        await controller.run({
+            domain: 'gsr.bitrix24.ru',
+            from: '2026-09-01',
+            to: '2026-10-19',
+            dryRun: true,
+        });
+        expect(service.run).toHaveBeenCalledWith({
+            domain: 'gsr.bitrix24.ru',
+            from: '2026-09-01',
+            to: '2026-10-19',
+            dryRun: true,
+        });
+        await controller.status({
+            domain: 'gsr.bitrix24.ru',
+            from: '2026-09-01',
+            to: '2026-10-19',
+        });
+        expect(service.status).toHaveBeenCalledWith(
+            'gsr.bitrix24.ru',
+            '2026-09-01',
+            '2026-10-19',
         );
     });
 });

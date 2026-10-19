@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AGENT_ANALYSIS_TYPE, AiService } from '@lib/call-lib';
+import { activeAnalysisByTranscription, AiService } from '@lib/call-lib';
 import { PbxAicallSmartService } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import { buildSmartItemLink } from '../presenter/smart-link.util';
 
@@ -34,12 +34,14 @@ export class SmartLinkLoader {
             const records = await this.aiService.findByTranscriptionIds([
                 ...transcriptionIds,
             ]);
-            for (const record of records) {
-                if (record.type !== AGENT_ANALYSIS_TYPE) continue;
+            // После переразбора у звонка две записи agent-analysis: берём
+            // активную (не superseded), report_item_id у неё скопирован.
+            const active = activeAnalysisByTranscription(records);
+            for (const [transcriptionId, record] of active) {
                 const itemId = Number(record.report_item_id);
                 if (!Number.isInteger(itemId) || itemId <= 0) continue;
                 links.set(
-                    record.transcription_id,
+                    transcriptionId,
                     buildSmartItemLink(domain, entityTypeId, itemId),
                 );
             }

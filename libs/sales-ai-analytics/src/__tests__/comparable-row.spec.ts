@@ -13,6 +13,8 @@ import { FIXTURE_VERSIONS, liteRow } from './lite-row.fixture';
 /** Наборы версий разбора: v2.2 (промпт от 08.09) и v2.3 (от 25.09). */
 const V22 = { ...FIXTURE_VERSIONS, prompt: 'focus-v2.2-2026-09-08' };
 const V23 = { ...FIXTURE_VERSIONS, prompt: 'focus-v2.3-2026-09-25' };
+/** v2.4 (20.10) — минорная правка, серия v2.3 (PROMPT_SERIES_START). */
+const V24 = { ...FIXTURE_VERSIONS, prompt: 'focus-v2.4-2026-10-20' };
 /** Дата выхода v2.3 — граница периода, в котором есть её разборы. */
 const V23_FROM = '2026-09-25';
 const SETTINGS_BREAK = '2026-09-20';
@@ -52,6 +54,10 @@ describe('rowVersionsDate — дата собственного набора в�
         expect(rowVersionsDate({ versions: FIXTURE_VERSIONS })).toBe(
             '2026-09-05',
         );
+    });
+
+    it('минорная версия v2.4 даёт дату серии v2.3, а не свою', () => {
+        expect(rowVersionsDate({ versions: V24 })).toBe(V23_FROM);
     });
 
     it('нет versions или дат в них — null', () => {
@@ -179,6 +185,32 @@ describe('Сравнимость по версии разбора', () => {
             buildManagerTypeMatrix(period, { seriesBreakFrom: boundary })
                 .analyzed,
         ).toBe(0);
+    });
+
+    /**
+     * Серии сравнимости (19.10.2026): правка промпта без смены оценок
+     * разделов не должна рвать ряд — разборы v2.3 и v2.4 в одной матрице
+     * сравнимы, и граница периода остаётся на 25.09.
+     */
+    it('разборы v2.3 и минорной v2.4 сравнимы в одной матрице, граница не сдвигается', () => {
+        const rows = [
+            reviewed('old', '2026-10-01', V23),
+            reviewed('new', '2026-10-21', V24),
+        ];
+        const boundary = periodBoundary(rows);
+        const matrix = buildManagerTypeMatrix(rows, {
+            comparableFrom: boundary,
+        });
+
+        expect(boundary).toBe(V23_FROM);
+        expect(matrix.analyzed).toBe(2);
+        expect(matrix.excluded.beforeComparable).toBe(0);
+        // Переразбор v2.4 не выкидывает период, разобранный v2.3.
+        expect(
+            buildManagerTypeMatrix([...augustV22(3), ...rows], {
+                comparableFrom: boundary,
+            }).analyzed,
+        ).toBe(2);
     });
 
     it('строка с версиями и без даты звонка судится по версии', () => {

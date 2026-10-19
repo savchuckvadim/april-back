@@ -1,6 +1,7 @@
 import {
     AGENT_ANALYSIS_TYPE,
     CALL_CLASSIFY_TYPE,
+    pickActiveRecord,
     type TranscriptionPipelineView,
 } from '@lib/call-lib';
 import type { CallReportDealFamilyContext } from '@lib/call-lib/call-report/services/call-report-deal-family.service';
@@ -57,6 +58,10 @@ export function familyResolveArgsOf(
 
 /** Запись ais, из которой читается тип звонка (подмножество AiEntity). */
 export interface CallTypeRecordLike {
+    /** id записи ais — при нескольких разборах звонка побеждает больший. */
+    id?: string | null;
+    /** Статус записи: `superseded` — замещена переразбором, не читается. */
+    status?: string | null;
     transcription_id?: string | number | bigint | null;
     type?: string | null;
     result?: string | null;
@@ -83,7 +88,17 @@ export function callTypeOfRecords(
     const own = records.filter(
         record => String(record.transcription_id) === transcriptionId,
     );
-    const analysis = own.find(record => record.type === AGENT_ANALYSIS_TYPE);
+    // Активный разбор (после переразбора старый — superseded, новый — с
+    // большим id); записи без id считаются равными — берётся первая.
+    const analysis = pickActiveRecord(
+        own
+            .filter(record => record.type === AGENT_ANALYSIS_TYPE)
+            .map(record => ({
+                record,
+                id: record.id ?? '',
+                status: record.status,
+            })),
+    )?.record;
     const refined = callTypeOfUserResult(analysis?.user_result);
     if (refined) return refined;
     const classified = own.find(record => record.type === CALL_CLASSIFY_TYPE);

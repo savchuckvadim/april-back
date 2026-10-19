@@ -159,6 +159,97 @@ describe('InstallCallReportSmartUseCase', () => {
         expect(result.entityTypeId).toBe(1056);
     });
 
+    /**
+     * Справочники растут (19.10.2026 — риск-флаг door_closed): повторная
+     * установка обязана ДОЛИТЬ недостающее значение существующему
+     * enum-полю, не трогая остальные и не пересоздавая поле.
+     */
+    it('доливает недостающее значение перечисления существующему enum-полю, существующие значения сохраняются по id', async () => {
+        const { useCase, bitrix } = makeDeps({ existingType: true });
+        bitrix.userFieldConfig.getAllWithItems.mockResolvedValue([
+            {
+                id: 910,
+                fieldName: 'UF_CRM_128_RISK_FLAGS',
+                enum: [
+                    { id: 1, value: 'Обещание', xmlId: 'promise', sort: 100 },
+                    { id: 2, value: 'Конфликт', xmlId: 'conflict', sort: 200 },
+                    {
+                        id: 3,
+                        value: 'Регламент',
+                        xmlId: 'compliance',
+                        sort: 300,
+                    },
+                    {
+                        id: 4,
+                        value: 'Негатив',
+                        xmlId: 'client_negative',
+                        sort: 400,
+                    },
+                ],
+            },
+        ]);
+
+        const result = await useCase.execute(DOMAIN);
+
+        expect(bitrix.userFieldConfig.add).toHaveBeenCalledTimes(
+            CALL_REPORT_SMART_FIELDS.length - 1,
+        );
+        expect(bitrix.userFieldConfig.update).toHaveBeenCalledTimes(1);
+        const [call] = bitrix.userFieldConfig.update.mock.calls as [
+            [
+                {
+                    id: number;
+                    field: {
+                        userTypeId: string;
+                        enum: { id?: number; xmlId: string }[];
+                    };
+                },
+            ],
+        ];
+        expect(call[0].id).toBe(910);
+        expect(call[0].field.userTypeId).toBe('enumeration');
+        expect(call[0].field.enum.map(item => item.xmlId)).toEqual([
+            'promise',
+            'conflict',
+            'compliance',
+            'client_negative',
+            'door_closed',
+        ]);
+        // Существующие значения уходят с их id — Битрикс их не пересоздаёт.
+        expect(call[0].field.enum.slice(0, 4).map(item => item.id)).toEqual([
+            1, 2, 3, 4,
+        ]);
+        expect(result.enumItemsAdded).toEqual([
+            'UF_CRM_128_RISK_FLAGS: door_closed',
+        ]);
+    });
+
+    it('enum-поле со всеми значениями не обновляется (идемпотентно), сбой долива не роняет установку', async () => {
+        const { useCase, bitrix } = makeDeps({ existingType: true });
+        bitrix.userFieldConfig.getAllWithItems.mockResolvedValue([
+            {
+                id: 920,
+                fieldName: 'UF_CRM_128_SENTIMENT',
+                enum: [
+                    { id: 1, xmlId: 'positive' },
+                    { id: 2, xmlId: 'neutral' },
+                    { id: 3, xmlId: 'negative' },
+                ],
+            },
+            { id: 910, fieldName: 'UF_CRM_128_RISK_FLAGS', enum: [] },
+        ]);
+        bitrix.userFieldConfig.update.mockRejectedValue(
+            new Error('access denied'),
+        );
+
+        const result = await useCase.execute(DOMAIN);
+
+        // Только RISK_FLAGS (пустой список) пытались долить; SENTIMENT полон.
+        expect(bitrix.userFieldConfig.update).toHaveBeenCalledTimes(1);
+        expect(result.enumItemsAdded).toEqual([]);
+        expect(result.entityTypeId).toBe(1056);
+    });
+
     it('ошибка создания одного поля не прерывает установку остальных', async () => {
         const { useCase, bitrix } = makeDeps({ existingType: true });
         bitrix.userFieldConfig.add

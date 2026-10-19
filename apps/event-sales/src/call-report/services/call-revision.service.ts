@@ -3,6 +3,7 @@ import { PBXService } from '@lib/pbx/pbx.service';
 import {
     AiService,
     CALL_RESUME_TYPE,
+    pickActiveAnalysis,
     TranscriptionPipelineView,
     TranscriptionStoreService,
 } from '@lib/call-lib';
@@ -15,7 +16,6 @@ import {
 } from '@lib/call-lib/call-report/services/call-report-link-repair.service';
 import { resolveCallManagerId } from '@lib/call-lib/call-report/services/call-manager.util';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
-import { AGENT_ANALYSIS_TYPE } from '../../agent-gate/services/agent-call-package.service';
 import {
     buildRevisionUserContent,
     CALL_REVISION_PROMPT,
@@ -268,9 +268,8 @@ export class CallRevisionService {
             const forRow = records.filter(
                 record => String(record.transcription_id) === row.id,
             );
-            const analysis = forRow.find(
-                record => record.type === AGENT_ANALYSIS_TYPE,
-            );
+            // Активный разбор звонка (после переразбора старый — superseded).
+            const analysis = pickActiveAnalysis(forRow);
             const dto = (analysis?.user_result ?? null) as {
                 summary?: string;
                 score?: number;

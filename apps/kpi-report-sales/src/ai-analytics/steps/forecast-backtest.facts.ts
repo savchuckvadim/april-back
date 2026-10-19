@@ -129,6 +129,19 @@ export interface ForecastBacktestBuildInput {
 }
 
 /**
+ * Сколько журналов с фактом восстановлено по истории: хотя бы один день
+ * воспроизведён шагом `forecast-log-replay` (живые дни могли дописаться
+ * позже — месяц всё равно считается восстановленным).
+ */
+export function replayedMonthsOf(
+    logs: ReadonlyMap<string, ForecastLogSnapshot>,
+): number {
+    return closedLogs(logs).filter(log =>
+        log.days.some(day => day.replayed === true),
+    ).length;
+}
+
+/**
  * Снапшот бэктеста: журналов с фактом нет — `insufficient` без чисел,
  * иначе полный результат библиотеки со статусом и причинами.
  */
@@ -143,6 +156,7 @@ export function buildBacktestSnapshot(
             reasons: ['not-enough-months'],
             shadowMonths: 0,
             shadowMinMonths: input.params.shadowMinMonths,
+            replayedMonths: 0,
             backtest: null,
             meta: input.meta,
         };
@@ -162,6 +176,7 @@ export function buildBacktestSnapshot(
         reasons: backtest.reasons,
         shadowMonths: months.length,
         shadowMinMonths: input.params.shadowMinMonths,
+        replayedMonths: replayedMonthsOf(input.logs),
         backtest,
         meta: input.meta,
     };

@@ -208,6 +208,25 @@ export interface ForecastLogDay {
     /** У части менеджеров нет истории стадий — ожидание от сделок неполное. */
     readonly pipelineUnknown: number;
     readonly modelSnapshotId: string | null;
+    /**
+     * День восстановлен по истории шагом `forecast-log-replay` (прогноз
+     * посчитан задним числом по данным, известным к этому дню), а не
+     * записан ночным прогоном. Нет поля — день живой.
+     */
+    readonly replayed?: boolean;
+}
+
+/** Кто записал дни журнала: ночной прогон или воспроизведение по истории. */
+export const AI_FORECAST_LOG_SOURCES = ['nightly', 'replay'] as const;
+export type AiForecastLogSource = (typeof AI_FORECAST_LOG_SOURCES)[number];
+
+/**
+ * Версии расчёта журнала прогноза с источником последней записи. Поле
+ * `source` необязательно: старые записи и ночной прогон его не несут
+ * (читается как `nightly`), воспроизведение ставит `replay`.
+ */
+export interface ForecastLogMeta extends AiSnapshotMeta {
+    readonly source?: AiForecastLogSource;
 }
 
 /** Снапшот `ai-analytics-forecast-log` (portal-month). */
@@ -218,7 +237,7 @@ export interface ForecastLogSnapshot {
     /** Факт продаж месяца; null — месяц не закрыт. */
     readonly actual: number | null;
     readonly checkSource: LognormalCheckSource | null;
-    readonly meta: AiSnapshotMeta;
+    readonly meta: ForecastLogMeta;
 }
 
 /** Снапшот `ai-analytics-forecast-backtest` (portal-month, ключ — закрытый месяц). */
@@ -230,6 +249,12 @@ export interface ForecastBacktestSnapshot {
     readonly shadowMonths: number;
     /** Сколько теневых месяцев нужно (`forecast_shadow_min_months`). */
     readonly shadowMinMonths: number;
+    /**
+     * Из теневых месяцев восстановлено по истории (хотя бы один день
+     * журнала воспроизведён шагом `forecast-log-replay`). Нет в записях
+     * до появления воспроизведения — читается как 0.
+     */
+    readonly replayedMonths?: number;
     /** Полный результат бэктеста; null — журналов с фактом нет. */
     readonly backtest: ForecastBacktest | null;
     readonly meta: AiSnapshotMeta;

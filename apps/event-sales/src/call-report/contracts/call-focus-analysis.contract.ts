@@ -5,7 +5,6 @@ import {
     CALL_REPORT_COMPETITOR_CODES,
     CALL_REPORT_INTERLOCUTOR_CODES,
     CALL_REPORT_REFUSAL_CODES,
-    CALL_REPORT_RISK_FLAG_CODES,
     CALL_REPORT_SENTIMENT_CODES,
     CALL_REPORT_SPECIALIST_CODES,
 } from '@lib/call-lib';
@@ -22,6 +21,11 @@ import {
     SECTION_FIELDS_SPEC,
     SECTION_ITEM_SCHEMA,
 } from './call-deep-analysis.contract';
+import {
+    RISK_EVIDENCE_LIST_SCHEMA,
+    RISK_FLAGS_SCHEMA,
+    RISK_FLAGS_SPEC,
+} from './call-risk-flags.contract';
 
 /**
  * Контракт МНОГОСЛОЙНОГО разбора (Фаза 2 плана
@@ -199,10 +203,9 @@ export const FOCUS_MOVEMENT_SCHEMA: Record<string, unknown> = {
         refusalReason: { type: ['string', 'null'] },
         nextStep: NEXT_STEP_SCHEMA,
         productive: { type: 'boolean' },
-        riskFlags: {
-            type: 'array',
-            items: { type: 'string', enum: [...CALL_REPORT_RISK_FLAG_CODES] },
-        },
+        riskFlags: RISK_FLAGS_SCHEMA,
+        // Доказательства флагов (focus-v2.4): флаг без цитаты снимается.
+        riskEvidence: RISK_EVIDENCE_LIST_SCHEMA,
         // «Хвост» и «5К» — только для презентаций/решений, иначе null
         // (boolean — фильтры смарта; *_Analysis — отдельные записи в
         // таймлайн элемента).
@@ -224,6 +227,7 @@ export const FOCUS_MOVEMENT_SCHEMA: Record<string, unknown> = {
         'nextStep',
         'productive',
         'riskFlags',
+        'riskEvidence',
         'hvostDone',
         'hvostAnalysis',
         'hvostSteps',
@@ -267,7 +271,6 @@ ${SECTION_FIELDS_SPEC}
 - nextStep.set — договорились ли о КОНКРЕТНОМ шаге («клиент подумает» — не шаг);
   description — что и когда; date — YYYY-MM-DD или null.
 - productive — состоялся ли контакт и есть ли продвижение по сделке.
-- riskFlags — что должно попасть на стол руководителю.
 - hvostDone — ТОЛЬКО для презентации/звонка по решению: пройден ли «хвост»
   после демонстрации (вопросы ценности, кто будет работать, цена комплекта,
   механизм решения, договорённость о КП и ДАТЕ следующего звонка). Частично
@@ -301,7 +304,9 @@ ${FIVE_K_CHECKLIST_SPEC}
   noresult_notime/nocontact/giveup/bay/wrong/auto), иначе null; plan.isPlanned —
   будет ли следующий контакт; plan.typeCode при isPlanned (cold/warm/
   presentation/hot/moneyAwait/supply), иначе null; plan.name — короткое название;
-  plan.deadlineDate — YYYY-MM-DD или null.`;
+  plan.deadlineDate — YYYY-MM-DD или null.
+
+${RISK_FLAGS_SPEC}`;
 
 // ---------------------------------------------------------------------------
 // СИНТЕЗ: итоговая картина по выжимкам трёх фокусов.

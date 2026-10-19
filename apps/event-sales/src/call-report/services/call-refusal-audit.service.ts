@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@lib/pbx/pbx.service';
 import {
-    AGENT_ANALYSIS_TYPE,
+    pickActiveAnalysis,
     AiService,
     CALL_REFUSAL_AUDIT_TYPE,
     TranscriptionStoreService,
@@ -122,9 +122,9 @@ export class CallRefusalAuditService {
                 result.skippedDone++;
                 continue;
             }
-            const dto = forRow.find(
-                record => record.type === AGENT_ANALYSIS_TYPE,
-            )?.user_result as AgentCallAnalysisDto | null;
+            // Активный разбор звонка (после переразбора старый — superseded).
+            const dto = pickActiveAnalysis(forRow)
+                ?.user_result as AgentCallAnalysisDto | null;
             if (!dto) continue;
             candidates.push({
                 transcriptionId: row.id,

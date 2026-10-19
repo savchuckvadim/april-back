@@ -43,9 +43,17 @@ const makeDeps = (options?: {
     completionError?: boolean;
 }) => {
     const vibeCodeClient = {
-        structuredCompletion: options?.completionError
+        structuredCompletionWithUsage: options?.completionError
             ? jest.fn().mockRejectedValue(new Error('vibecode down'))
-            : jest.fn().mockResolvedValue(ANALYSIS_RESPONSE),
+            : jest.fn().mockResolvedValue({
+                  result: ANALYSIS_RESPONSE,
+                  usage: {
+                      promptTokens: 900,
+                      completionTokens: 100,
+                      totalTokens: 1000,
+                  },
+                  model: 'bitrix/bitrixgpt-5.5',
+              }),
     };
     const vibeKeyResolver = { resolve: jest.fn().mockResolvedValue('key-1') };
     const knowledgeContent = {
@@ -87,11 +95,11 @@ const makeDeps = (options?: {
     };
 };
 
-/** Системный промпт — первый аргумент structuredCompletion. */
+/** Системный промпт — первый аргумент structuredCompletionWithUsage. */
 const systemPromptOf = (client: {
-    structuredCompletion: jest.Mock;
+    structuredCompletionWithUsage: jest.Mock;
 }): string => {
-    const calls = client.structuredCompletion.mock.calls as string[][];
+    const calls = client.structuredCompletionWithUsage.mock.calls as string[][];
     return calls[0][0];
 };
 
@@ -146,6 +154,28 @@ describe('CallDeepAnalysisService', () => {
         expect(result?.summary).toBe('Разговор с ЛПР');
     });
 
+    it('расход единственного вызова едет в dto.usage; промпт несёт блок сигналов руководителю и схема — riskEvidence', async () => {
+        const { service, vibeCodeClient } = makeDeps();
+        const result = await service.run('test.bitrix24.ru', 'алло', 'cold');
+
+        expect(result?.usage).toEqual({
+            tokens: 1000,
+            promptTokens: 900,
+            completionTokens: 100,
+            calls: 1,
+            callsWithUsage: 1,
+            model: 'bitrix/bitrixgpt-5.5',
+        });
+        expect(systemPromptOf(vibeCodeClient)).toContain(
+            'СИГНАЛЫ РУКОВОДИТЕЛЮ',
+        );
+        const schema = (
+            vibeCodeClient.structuredCompletionWithUsage.mock
+                .calls[0] as unknown[]
+        )[3] as { required: string[] };
+        expect(schema.required).toContain('riskEvidence');
+    });
+
     it('черновик события flow доезжает до DTO (пишется в ais.report_result)', async () => {
         const { service } = makeDeps();
         const result = await service.run('test.bitrix24.ru', 'алло', 'cold');
@@ -194,7 +224,9 @@ describe('CallDeepAnalysisService', () => {
         const result = await service.run('test.bitrix24.ru', '   ', 'cold');
 
         expect(result).toBeNull();
-        expect(vibeCodeClient.structuredCompletion).not.toHaveBeenCalled();
+        expect(
+            vibeCodeClient.structuredCompletionWithUsage,
+        ).not.toHaveBeenCalled();
     });
 
     // Выключатель шага живёт в processor (настройки портала → env → дефолт,
@@ -214,21 +246,22 @@ describe('CallDeepAnalysisService', () => {
 
         // Для холодного звонка блок не добавляется даже при включённой
         // настройке (хвост — требование к презентации/решению).
-        vibeCodeClient.structuredCompletion.mockClear();
+        vibeCodeClient.structuredCompletionWithUsage.mockClear();
         await service.run('test.bitrix24.ru', 'алло', 'cold');
         expect(systemPromptOf(vibeCodeClient)).not.toContain(
             'ОБЯЗАТЕЛЬНАЯ ОТЧЁТНОСТЬ ПОСЛЕ ПРЕЗЕНТАЦИИ',
         );
     });
 
-    it('модель из настроек портала уезжает в structuredCompletion', async () => {
+    it('модель из настроек портала уезжает в structuredCompletionWithUsage', async () => {
         const { service, vibeCodeClient } = makeDeps();
         await service.run('test.bitrix24.ru', 'алло', 'cold', undefined, {
             model: 'bitrix/custom-model',
         });
 
         const options = (
-            vibeCodeClient.structuredCompletion.mock.calls[0] as unknown[]
+            vibeCodeClient.structuredCompletionWithUsage.mock
+                .calls[0] as unknown[]
         )[5];
         expect(options).toEqual({ model: 'bitrix/custom-model' });
     });

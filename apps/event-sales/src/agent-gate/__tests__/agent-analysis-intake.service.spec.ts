@@ -116,6 +116,9 @@ const makeDeps = (options?: Options) => {
         ),
     };
 
+    // Цена 1 000 токенов портала (llm_price_per_1k) — 2 ₽.
+    const llmPrice = { resolvePerThousand: jest.fn().mockResolvedValue(2) };
+
     const service = new AgentAnalysisIntakeService(
         store as never,
         aiService as never,
@@ -123,8 +126,17 @@ const makeDeps = (options?: Options) => {
         resolver as never,
         dealFamily as never,
         dealVerify as never,
+        llmPrice as never,
     );
-    return { service, aiService, addItem, timeline, dealFamily, dealVerify };
+    return {
+        service,
+        aiService,
+        addItem,
+        timeline,
+        dealFamily,
+        dealVerify,
+        llmPrice,
+    };
 };
 
 describe('AgentAnalysisIntakeService', () => {
@@ -525,6 +537,81 @@ describe('AgentAnalysisIntakeService', () => {
             expect.objectContaining({ mainDealId: undefined }),
             { companyId: 33, contactId: 44 },
         );
+    });
+
+    it('расход разбора пишется в колонки ais: tokens_count — сумма, price — токены/1000 × цена портала', async () => {
+        const { service, aiService, llmPrice } = makeDeps();
+        await service.intake('42', 'claw-main', {
+            ...DTO,
+            usage: {
+                tokens: 18420,
+                promptTokens: 16100,
+                completionTokens: 2320,
+                calls: 4,
+                callsWithUsage: 4,
+                model: 'bitrix/bitrixgpt-5.5',
+            },
+        } as never);
+
+        expect(llmPrice.resolvePerThousand).toHaveBeenCalledWith(
+            'test.bitrix24.ru',
+        );
+        expect(aiService.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'agent-analysis',
+                tokens_count: 18420,
+                price: 36.84,
+            }),
+        );
+    });
+
+    it('без учёта токенов (внешний агент) колонки расхода не пишутся и цена не читается', async () => {
+        const { service, aiService, llmPrice } = makeDeps();
+        await service.intake('42', 'claw-main', DTO);
+
+        expect(llmPrice.resolvePerThousand).not.toHaveBeenCalled();
+        const created = (
+            aiService.create.mock.calls[0] as [Record<string, unknown>]
+        )[0];
+        expect(created).not.toHaveProperty('tokens_count');
+        expect(created).not.toHaveProperty('price');
+    });
+
+    /**
+     * Решение владельца 19.10.2026: флаг без доказательства-цитаты в
+     * карточку и в ais не попадает — иначе РОП получает сигнал «не по делу».
+     */
+    it('риск-флаг без доказательства снимается до записи в ais и в смарт', async () => {
+        const { service, aiService, addItem } = makeDeps();
+        await service.intake('42', 'claw-main', {
+            ...DTO,
+            riskFlags: ['conflict', 'promise'],
+            riskEvidence: [
+                {
+                    flag: 'conflict',
+                    quote: 'Вы меня вообще слушаете?',
+                    speaker: 'manager',
+                    startSec: 30,
+                    endSec: 34,
+                },
+            ],
+        } as never);
+
+        expect(addItem).toHaveBeenCalledWith(
+            expect.objectContaining({ riskFlags: ['conflict'] }),
+        );
+        const created = (
+            aiService.create.mock.calls[0] as [
+                {
+                    user_result: {
+                        riskFlags: string[];
+                        riskEvidence: unknown[];
+                    };
+                },
+            ]
+        )[0];
+        expect(created.user_result.riskFlags).toEqual(['conflict']);
+        expect(created.user_result.riskEvidence).toHaveLength(1);
     });
 
     it('черновик flow (plan+report) сохраняется в ais.report_result', async () => {

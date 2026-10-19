@@ -24,6 +24,10 @@ describe('dictionary-titles — названия кодов справочник
     it('сигналы риска строчными, включая срочный разбор из приоритетов коучинга', () => {
         expect(riskTitleOf('conflict')).toBe('конфликт / грубость');
         expect(riskTitleOf('promise')).toBe('необоснованное обещание клиенту');
+        // Новый флаг 19.10.2026 — название из справочника смарта, не код.
+        expect(riskTitleOf('door_closed')).toBe(
+            'после отказа не оставил дверь открытой',
+        );
         expect(riskTitleOf('urgent')).toBe('срочно на разбор');
         expect(riskTitleOf('other-kind')).toBe('other-kind');
     });

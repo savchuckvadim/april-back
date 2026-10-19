@@ -11,6 +11,7 @@ import {
     AnalyticsCallLiteRow,
     AnalyticsLiteNextStep,
     AnalyticsLiteObjection,
+    AnalyticsLiteRiskEvidence,
     AnalyticsLiteSection,
 } from '../types/analytics-lite.types';
 
@@ -21,6 +22,7 @@ export type AnalyticsLiteAnalysisPart = Pick<
     | 'score'
     | 'nextStep'
     | 'riskFlags'
+    | 'riskEvidence'
     | 'coachingPriority'
     | 'sections'
     | 'objections'
@@ -34,6 +36,7 @@ function noAnalysis(): AnalyticsLiteAnalysisPart {
         score: null,
         nextStep: null,
         riskFlags: [],
+        riskEvidence: [],
         coachingPriority: null,
         sections: [],
         objections: [],
@@ -55,6 +58,7 @@ export function mapLiteAnalysis(
         score: mapScore(analysis),
         nextStep: mapNextStep(analysis.nextStep),
         riskFlags: asStringArray(analysis.riskFlags),
+        riskEvidence: mapRiskEvidence(analysis.riskEvidence),
         coachingPriority: asString(analysis.coachingPriority),
         sections: mapSections(analysis.sections),
         objections: mapObjections(analysis.objections),
@@ -94,6 +98,23 @@ function mapSections(value: unknown): AnalyticsLiteSection[] {
         });
     }
     return sections;
+}
+
+/** Доказательства без кода флага или без цитаты пропускаются. */
+function mapRiskEvidence(value: unknown): AnalyticsLiteRiskEvidence[] {
+    const evidence: AnalyticsLiteRiskEvidence[] = [];
+    for (const item of asRecordArray(value)) {
+        const flag = asString(item.flag);
+        const quote = asString(item.quote);
+        if (flag === null || quote === null) continue;
+        evidence.push({
+            flag,
+            quote,
+            speaker: asString(item.speaker),
+            at: asNumber(item.startSec),
+        });
+    }
+    return evidence;
 }
 
 function mapObjections(value: unknown): AnalyticsLiteObjection[] {

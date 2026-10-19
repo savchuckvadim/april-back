@@ -363,6 +363,45 @@ describe('CallReportSmartWriterService', () => {
         expect(fields.ufCrm128Transcript4).toBeUndefined();
     });
 
+    /**
+     * Портал ещё не переустанавливал смарт после появления риск-флага
+     * door_closed: известные коды пишутся, неизвестный пропускается с
+     * предупреждением — запись разбора не падает.
+     */
+    it('риск-флаг без значения на портале пропускается с warn, остальные флаги пишутся', async () => {
+        const bitrix = makeBitrix();
+        const writer = new CallReportSmartWriterService(bitrix as never, {
+            ...SMART_INFO,
+            enumItems: {
+                ...SMART_INFO.enumItems,
+                RISK_FLAGS: { promise: 101, conflict: 102 },
+            },
+        });
+        const warn = jest
+            .spyOn(
+                (writer as unknown as { logger: { warn: () => void } }).logger,
+                'warn',
+            )
+            .mockImplementation(() => undefined);
+
+        const itemId = await writer.addItem({
+            activityId: '101',
+            riskFlags: ['conflict', 'door_closed'],
+        });
+
+        expect(itemId).toBe(7);
+        const fields = (
+            bitrix.item.add.mock.calls[0] as unknown[]
+        )[1] as Record<string, unknown>;
+        expect(fields.ufCrm128RiskFlags).toEqual([102]);
+        expect(
+            (warn.mock.calls as unknown as [string][]).some(([message]) =>
+                message.includes('"door_closed" для поля RISK_FLAGS'),
+            ),
+        ).toBe(true);
+        warn.mockRestore();
+    });
+
     it('неизвестный код enum пропускается, поле не пишется', async () => {
         const bitrix = makeBitrix();
         const writer = new CallReportSmartWriterService(

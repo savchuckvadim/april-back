@@ -1,6 +1,11 @@
 import { createHash } from 'crypto';
 import { CallReportProcessor } from '../queue/call-report.processor';
-import { comparableFromVersions, versionDate } from '@lib/sales-ai-analytics';
+import {
+    comparableFromVersions,
+    PROMPT_SERIES_START,
+    versionDate,
+    versionSeriesDate,
+} from '@lib/sales-ai-analytics';
 import {
     buildAnalysisVersions,
     buildRegistryHash,
@@ -236,23 +241,36 @@ describe('buildRegistryHash / buildAnalysisVersions', () => {
 /**
  * ГРАНИЦА СРАВНИМОЙ ИСТОРИИ. Правки промпта 25.09.2026 (расшифровка с
  * метками [mm:ss], таймкоды и реакция у возражений — Фаза 3, П6/П8)
- * меняют вход и схему ответа модели, поэтому ряды до и после смешивать
- * нельзя: comparableFrom обязан сдвинуться.
+ * меняют вход и схему ответа модели — ряд разорван с 25.09. Правка
+ * 20.10.2026 (v2.4: определения и доказательства риск-флагов, флаг
+ * door_closed) оценки разделов не меняет — МИНОРНАЯ: версия несёт свою
+ * дату, но входит в серию v2.3, и граница НЕ сдвигается.
  */
-describe('версия промпта 25.09.2026 (таймкоды + реакция на возражение)', () => {
-    /** Граница до правок — версия промпта focus-v2.2 от 08.09.2026. */
-    const PREVIOUS_BOUNDARY = '2026-09-08';
+describe('версия промпта 20.10.2026 (риск-флаги) — минорная, серия v2.3', () => {
+    /** Граница серии — версия промпта focus-v2.3 от 25.09.2026. */
+    const SERIES_BOUNDARY = '2026-09-25';
 
-    it('версия промпта поднята и несёт дату разрыва', () => {
-        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v2.3-2026-09-25');
-        expect(versionDate(CALL_REPORT_PROMPT_VERSION)).toBe('2026-09-25');
+    it('версия промпта поднята, несёт свою дату и записана в таблицу серий', () => {
+        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v2.4-2026-10-20');
+        expect(versionDate(CALL_REPORT_PROMPT_VERSION)).toBe('2026-10-20');
+        expect(PROMPT_SERIES_START[CALL_REPORT_PROMPT_VERSION]).toBe(
+            SERIES_BOUNDARY,
+        );
+        expect(versionSeriesDate(CALL_REPORT_PROMPT_VERSION)).toBe(
+            SERIES_BOUNDARY,
+        );
     });
 
-    it('граница сравнимой истории сдвинулась вперёд', () => {
+    it('граница сравнимой истории осталась на серии v2.3', () => {
         const boundary = comparableFromVersions(
             buildAnalysisVersions('deadbeef'),
         );
-        expect(boundary).toBe('2026-09-25');
-        expect(boundary > PREVIOUS_BOUNDARY).toBe(true);
+        expect(boundary).toBe(SERIES_BOUNDARY);
+        expect(
+            comparableFromVersions({
+                ...buildAnalysisVersions('deadbeef'),
+                prompt: 'focus-v2.3-2026-09-25',
+            }),
+        ).toBe(boundary);
     });
 });

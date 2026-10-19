@@ -25,6 +25,7 @@ import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { AiModule } from '@lib/call-lib';
 import { PbxAicallSmartModule } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
+import { ClosedSalesDaysLoader } from '../domain/loaders/closed-sales-days.loader';
 import { FinanceLoader } from '../domain/loaders/finance.loader';
 import { KpiLoader } from '../domain/loaders/kpi.loader';
 import { PlansLoader } from '../domain/loaders/plans.loader';
@@ -39,6 +40,9 @@ export const AI_ANALYTICS_CORE_PBX_PROVIDERS: Type<unknown>[] = [
     KpiLoader,
     SalesFinanceUseCaseFactory,
     FinanceLoader,
+    // Дни закрытия сделок для воспроизведения журнала прогноза по истории
+    // (тот же отчёт закрытых продаж и кэш, что у финансов).
+    ClosedSalesDaysLoader,
     PlansLoader,
     AiAnalyticsSettingsStore,
     StyleCrmLoader,

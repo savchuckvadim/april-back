@@ -128,11 +128,21 @@ export function mergeForecastLog(
     };
 }
 
-/** Журнал закрытого месяца с фактом продаж (ставит бэктест). */
+/**
+ * Журнал закрытого месяца с фактом продаж (ставит бэктест). Источник
+ * дней журнала (`meta.source`, его ставит воспроизведение по истории)
+ * сохраняется: бэктест меняет только факт, а не дни.
+ */
 export function withActual(
     log: ForecastLogSnapshot,
     actual: number,
     meta: AiSnapshotMeta,
 ): ForecastLogSnapshot {
-    return { ...log, actual, meta };
+    const source = log.meta.source;
+
+    return {
+        ...log,
+        actual,
+        meta: source === undefined ? meta : { ...meta, source },
+    };
 }

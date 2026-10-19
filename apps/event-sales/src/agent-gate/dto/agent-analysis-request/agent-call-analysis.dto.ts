@@ -15,6 +15,7 @@ import {
     CALL_REPORT_COACHING_CODES,
     CallReportCoachingCode,
 } from '@lib/call-lib';
+import { AgentAnalysisUsageDto } from './agent-analysis-usage.dto';
 import { AgentAnalysisVersionsDto } from './agent-analysis-versions.dto';
 import { AgentCallAnalysisContentDto } from './agent-call-analysis-content.dto';
 import { AgentFlowDraftDto } from './agent-flow-draft.dto';
@@ -192,6 +193,18 @@ export class AgentCallAnalysisDto extends AgentCallAnalysisContentDto {
     @ValidateNested()
     @Type(() => AgentFlowDraftDto)
     flow?: AgentFlowDraftDto;
+
+    @ApiPropertyOptional({
+        description:
+            'Расход модели на разбор (сумма токенов вызовов и модель ' +
+            'провайдера). Приём кладёт токены в ais.tokens_count, стоимость ' +
+            'по цене портала llm_price_per_1k — в ais.price.',
+        type: AgentAnalysisUsageDto,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => AgentAnalysisUsageDto)
+    usage?: AgentAnalysisUsageDto;
 
     @ApiPropertyOptional({
         description:

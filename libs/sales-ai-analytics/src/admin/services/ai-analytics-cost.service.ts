@@ -4,22 +4,36 @@
  * ais-записи (`tokens_count`, `price`), поэтому расход по всем типам
  * считается одним чтением окна.
  *
+ * Кроме снапшотов AI-аналитики учитываются записи глубокого разбора
+ * звонков (`agent-analysis`, с 20.10.2026 несут tokens_count / price) и
+ * его test-retest повторов (`agent-analysis-retest`): это основной
+ * расход контура, без него отчёт показывал бы только резюме.
+ *
  * Цена берётся из реестра параметров (`llm_price_per_1k`). Ноль означает
  * «цена не задана»: тогда стоимость считается только по колонке `price`
  * записей, а отсутствующая цена помечается `estimated = true` — ровно та
  * же трактовка, что у `brief-job.util.ts` приложения.
  */
 import { Injectable } from '@nestjs/common';
-import {
-    AI_ANALYTICS_SNAPSHOT_TYPES,
-    AiAnalyticsSnapshotType,
-} from '../../contracts/snapshot-kinds.const';
+import { AGENT_ANALYSIS_RETEST_TYPE, AGENT_ANALYSIS_TYPE } from '@lib/call-lib';
+import { AI_ANALYTICS_SNAPSHOT_TYPES } from '../../contracts/snapshot-kinds.const';
 import { registryDefault } from '../../params/registry.access';
 import { AiAnalyticsAdminSnapshotStore } from '../ai-analytics-admin-snapshot.store';
 
-/** Расход по одному типу снапшота. */
+/**
+ * Типы ais-записей, чей расход считает ручка: снапшоты AI-аналитики (в
+ * порядке таблицы §3.1), затем разбор звонков и его повторы.
+ */
+export const AI_ANALYTICS_COST_TYPES = [
+    ...AI_ANALYTICS_SNAPSHOT_TYPES,
+    AGENT_ANALYSIS_TYPE,
+    AGENT_ANALYSIS_RETEST_TYPE,
+] as const;
+export type AiAnalyticsCostType = (typeof AI_ANALYTICS_COST_TYPES)[number];
+
+/** Расход по одному типу записи. */
 export interface CostByType {
-    type: string;
+    type: AiAnalyticsCostType;
     /** Записей с вызовом модели (tokens_count > 0). */
     calls: number;
     tokens: number;
@@ -64,11 +78,11 @@ export class AiAnalyticsCostService {
         const { from, to } = monthBounds(month);
         const records = await this.store.readRaw(
             domain,
-            AI_ANALYTICS_SNAPSHOT_TYPES,
+            AI_ANALYTICS_COST_TYPES,
             { from, to },
         );
         const pricePerThousand = registryDefault('llm_price_per_1k');
-        const byType = AI_ANALYTICS_SNAPSHOT_TYPES.flatMap(type =>
+        const byType = AI_ANALYTICS_COST_TYPES.flatMap(type =>
             costOfType(
                 type,
                 records.filter(
@@ -94,7 +108,7 @@ export class AiAnalyticsCostService {
 }
 
 function costOfType(
-    type: AiAnalyticsSnapshotType,
+    type: AiAnalyticsCostType,
     records: readonly { tokensCount: number; price: number }[],
     pricePerThousand: number,
 ): CostByType[] {

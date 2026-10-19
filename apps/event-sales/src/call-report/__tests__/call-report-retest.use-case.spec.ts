@@ -1,4 +1,5 @@
 import { CALL_REPORT_PROMPT_VERSION } from '../contracts/call-report-versions.const';
+import { CallAnalysisRerunService } from '../services/call-analysis-rerun.service';
 import {
     CallReportRetestUseCase,
     RETEST_DEFAULTS,
@@ -22,6 +23,16 @@ const analysis = (score: number, callType = 'presentation') => ({
     versions: { prompt: CALL_REPORT_PROMPT_VERSION },
     summary: 'резюме',
 });
+
+/** Расход повтора: 4 вызова по 300 токенов. */
+const USAGE = {
+    tokens: 1200,
+    promptTokens: 1000,
+    completionTokens: 200,
+    calls: 4,
+    callsWithUsage: 4,
+    model: 'gpt-x',
+};
 
 const original = (id: string, transcriptionId: string, score = 70) => ({
     id,
@@ -83,9 +94,15 @@ function makeUseCase(options: Options = {}) {
         run: jest
             .fn()
             .mockImplementation(() =>
-                Promise.resolve(options.focusFails ? null : analysis(60)),
+                Promise.resolve(
+                    options.focusFails
+                        ? null
+                        : { ...analysis(60), usage: USAGE },
+                ),
             ),
     };
+    // Цена 1 000 токенов портала — 1.5 ₽.
+    const llmPrice = { resolvePerThousand: jest.fn().mockResolvedValue(1.5) };
     const contextBuilder = {
         build: jest.fn().mockResolvedValue({ certainty: 'high' }),
         renderForPrompt: jest.fn().mockReturnValue('ПАСПОРТ'),
@@ -98,16 +115,28 @@ function makeUseCase(options: Options = {}) {
             .fn()
             .mockResolvedValue({ codes: ['cold', 'presentation'] }),
     };
-    const useCase = new CallReportRetestUseCase(
-        aiService as never,
+    // Повторный прогон — общий сервис с переразбором истории.
+    const rerunService = new CallAnalysisRerunService(
         transcriptionStore as never,
         focusAnalysis as never,
         contextBuilder as never,
+        llmPrice as never,
+    );
+    const useCase = new CallReportRetestUseCase(
+        aiService as never,
+        rerunService,
         settingsService as never,
         callTypeRegistry as never,
     );
 
-    return { useCase, aiService, focusAnalysis, transcriptionStore, created };
+    return {
+        useCase,
+        aiService,
+        focusAnalysis,
+        transcriptionStore,
+        created,
+        llmPrice,
+    };
 }
 
 describe('CallReportRetestUseCase', () => {
@@ -129,10 +158,13 @@ describe('CallReportRetestUseCase', () => {
         // Два повтора + отчёт согласия; в Битрикс ничего не пишется.
         expect(created).toHaveLength(3);
         // Выборка идёт свежими первыми (id по убыванию): первым повторён t-2.
+        // Расход повтора — в колонках ais: 1200 токенов × 1.5 ₽ / 1000.
         expect(created[0]).toMatchObject({
             type: 'agent-analysis-retest',
             transcription_id: 't-2',
             domain: DOMAIN,
+            tokens_count: 1200,
+            price: 1.8,
         });
         const report = created[2] as {
             type: string;

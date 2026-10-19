@@ -91,6 +91,26 @@ describe('CallTypeStatsService', () => {
         ]);
     });
 
+    it('замещённый переразбором разбор не считается: итог — по активной записи', async () => {
+        const { service } = makeService([
+            classify('1', 'call', 0.9),
+            {
+                ...analysis('1', 'other', null),
+                id: 'a-old',
+                status: 'superseded',
+            },
+            {
+                ...analysis('1', 'presentation', null),
+                id: 'a-new',
+                status: 'done',
+            },
+        ]);
+        const stats = await service.collect(DOMAIN, new Date(0), new Date());
+        expect(stats.total).toBe(1);
+        expect(stats.finalByType).toEqual({ presentation: 1 });
+        expect(stats.samples).toEqual([]);
+    });
+
     it('разбор без классификации: тип из разбора; пустая выборка — нули', async () => {
         const { service } = makeService([analysis('9', 'cold', null)]);
         const stats = await service.collect(DOMAIN, new Date(0), new Date());

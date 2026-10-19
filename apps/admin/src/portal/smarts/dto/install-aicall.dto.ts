@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
 
 /** Установка смарта «AI-анализ звонков» на портал (прокси в event-sales). */
@@ -49,4 +49,15 @@ export class InstallAicallResponseDto {
         type: [String],
     })
     fieldsFailed: string[];
+
+    @ApiPropertyOptional({
+        description:
+            'Существующие поля-перечисления, которым долиты недостающие ' +
+            'значения справочника (например, новый риск-флаг): ' +
+            '«UF-имя поля: коды значений». Только у смарта «AI-анализ ' +
+            'звонков»; у остальных const-смартов поля нет.',
+        example: ['UF_CRM_128_RISK_FLAGS: door_closed'],
+        type: [String],
+    })
+    enumItemsAdded?: string[];
 }

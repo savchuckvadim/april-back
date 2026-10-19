@@ -13,6 +13,11 @@ import {
     TranscriptionPipelineView,
 } from '@lib/call-lib';
 import { AgentAnalysisIntakeService } from '../../agent-gate/services/agent-analysis-intake.service';
+import type { ReanalysisJobData } from '@lib/sales-ai-analytics';
+import {
+    CallReportReanalyzeUseCase,
+    type CallReportReanalyzeResult,
+} from '../use-cases/call-report-reanalyze.use-case';
 import {
     CallReportRetestUseCase,
     type CallReportRetestJobData,
@@ -96,7 +101,33 @@ export class CallReportProcessor {
         private readonly callTypeRegistry: CallTypeRegistryService,
         private readonly alerts: CallReportAlertService,
         @Optional() private readonly retest?: CallReportRetestUseCase,
+        @Optional() private readonly reanalyze?: CallReportReanalyzeUseCase,
     ) {}
+
+    /**
+     * Переразбор истории текущей версией промпта (этап 1B плана
+     * 2026-10-19-ai-focus-plan): кандидаты по сериям версий, новая запись
+     * agent-analysis + superseded старой, Битрикс не трогается; при
+     * остатке кандидатов use-case сам ставит продолжение. Ставит админ-ручка
+     * admin/ai-analytics/reanalyze (и dryRun — тоже через джобу).
+     */
+    @Process(JobNames.CALL_REPORT_REANALYZE)
+    async handleReanalyze(
+        job: Job<ReanalysisJobData>,
+    ): Promise<CallReportReanalyzeResult> {
+        if (!this.reanalyze) {
+            throw new Error(
+                'Переразбор истории не подключён: нет провайдера CallReportReanalyzeUseCase',
+            );
+        }
+        const { domain, from, to, part, dryRun } = job.data;
+        this.logger.log(
+            `CALL_REPORT_REANALYZE: ${domain} ${from}..${to} часть ${part ?? 1}` +
+                (dryRun ? ' (dry-run)' : ''),
+        );
+
+        return this.reanalyze.execute(job.data);
+    }
 
     /**
      * Test-retest оценщика (Фаза 3 AI-аналитики, П7): повторный разбор

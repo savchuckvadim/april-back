@@ -31,6 +31,7 @@ import { AiAnalyticsFeedbackSummaryService } from './services/ai-analytics-feedb
 import { AiAnalyticsGoldenSetService } from './services/ai-analytics-golden-set.service';
 import { AiAnalyticsPhase4StatusService } from './services/ai-analytics-phase4-status.service';
 import { AiAnalyticsPipelineAdminService } from './services/ai-analytics-pipeline-admin.service';
+import { AiAnalyticsReanalyzeService } from './services/ai-analytics-reanalyze.service';
 import { AiAnalyticsRetentionService } from './services/ai-analytics-retention.service';
 
 @Module({
@@ -44,6 +45,8 @@ import { AiAnalyticsRetentionService } from './services/ai-analytics-retention.s
         AiAnalyticsFeedbackSummaryService,
         AiAnalyticsGoldenSetService,
         AiAnalyticsPhase4StatusService,
+        // Переразбор истории (этап 1B): джоба CALL_REPORT_REANALYZE + статус
+        AiAnalyticsReanalyzeService,
     ],
     exports: [
         AiAnalyticsAdminSnapshotStore,
@@ -54,6 +57,7 @@ import { AiAnalyticsRetentionService } from './services/ai-analytics-retention.s
         AiAnalyticsFeedbackSummaryService,
         AiAnalyticsGoldenSetService,
         AiAnalyticsPhase4StatusService,
+        AiAnalyticsReanalyzeService,
     ],
 })
 export class SalesAiAnalyticsOpsModule {}

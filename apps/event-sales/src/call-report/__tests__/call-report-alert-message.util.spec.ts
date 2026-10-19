@@ -21,13 +21,40 @@ const section = (
     }) as never;
 
 describe('resolveAlertKind — вид алерта по разбору', () => {
-    it('первый риск-флаг разбора (в его порядке)', () => {
+    it('первый риск-флаг ДНЯ в порядке разбора (conflict / compliance)', () => {
+        expect(
+            resolveAlertKind({
+                riskFlags: ['promise', 'compliance', 'conflict'],
+                coachingPriority: 'urgent',
+            }),
+        ).toBe('compliance');
         expect(
             resolveAlertKind({
                 riskFlags: ['conflict', 'promise'],
                 coachingPriority: 'urgent',
             }),
         ).toBe('conflict');
+    });
+
+    /**
+     * Решение владельца 19.10.2026: обещание, негатив клиента и «не
+     * оставил дверь открытой» в день звонка РОПа не дёргают — они идут в
+     * повестку недели.
+     */
+    it('promise, client_negative и door_closed уведомления в день звонка не дают', () => {
+        expect(
+            resolveAlertKind({
+                riskFlags: ['promise', 'client_negative', 'door_closed'],
+                coachingPriority: 'planned',
+            }),
+        ).toBeNull();
+        // …но срочный коучинг при них по-прежнему даёт urgent.
+        expect(
+            resolveAlertKind({
+                riskFlags: ['promise'],
+                coachingPriority: 'urgent',
+            }),
+        ).toBe('urgent');
     });
 
     it('без флагов — urgent по приоритету коучинга', () => {
@@ -148,16 +175,16 @@ describe('buildAlertMessage — текст уведомления', () => {
         const message = buildAlertMessage({
             managerName: 'Иванов Иван',
             callType: 'cold',
-            kind: 'client_negative',
-            quote: 'Не звоните больше',
+            kind: 'conflict',
+            quote: 'Вы меня вообще слушаете?',
             link: 'https://test.bitrix24.ru/crm/type/1056/details/7/',
         });
         expect(message.split('\n')).toEqual([
             '[B]AI-разбор звонка: сигнал руководителю[/B]',
             'Менеджер: Иванов Иван',
             'Тип звонка: Холодный (выход на ЛПР)',
-            'Сигнал: Сильный негатив клиента',
-            'Цитата: «Не звоните больше»',
+            'Сигнал: Конфликт / грубость',
+            'Цитата: «Вы меня вообще слушаете?»',
             'Разбор: https://test.bitrix24.ru/crm/type/1056/details/7/',
         ]);
     });

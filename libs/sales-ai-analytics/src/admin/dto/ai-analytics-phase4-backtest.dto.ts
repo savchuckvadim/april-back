@@ -58,6 +58,17 @@ export class AiAnalyticsForecastBacktestDto implements Phase4BacktestView {
     shadowMinMonths: number;
 
     @ApiProperty({
+        description:
+            'Из теневых месяцев восстановлено по истории шагом ' +
+            'forecast-log-replay (хотя бы один день журнала воспроизведён ' +
+            'задним числом); 0 — все месяцы записаны ночным прогоном или ' +
+            'запись старее воспроизведения.',
+        example: 7,
+        type: Number,
+    })
+    replayedMonths: number;
+
+    @ApiProperty({
         description: 'Месяцев в проверке; 0 — журналов с фактом нет.',
         example: 4,
         type: Number,

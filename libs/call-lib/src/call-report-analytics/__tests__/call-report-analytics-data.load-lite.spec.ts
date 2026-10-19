@@ -48,6 +48,19 @@ const FULL_ANALYSIS = {
     score: 7,
     nextStep: { set: true, description: 'Демо по Zoom', date: '2026-08-12' },
     riskFlags: ['promise', 'conflict'],
+    riskEvidence: [
+        {
+            flag: 'conflict',
+            quote: 'Вы меня не слушаете',
+            speaker: 'manager',
+            startSec: 42,
+            endSec: 47,
+        },
+        // Без цитаты — не доказательство, в проекцию не идёт.
+        { flag: 'promise', quote: '', speaker: 'manager' },
+        // Без кода флага — пропускается.
+        { quote: 'что-то', speaker: 'client' },
+    ],
     coachingPriority: 'urgent',
     sections: [
         {
@@ -145,6 +158,14 @@ describe('CallReportAnalyticsDataService.loadLite', () => {
                 score: 62,
                 nextStep: { set: true, date: '2026-08-12' },
                 riskFlags: ['promise', 'conflict'],
+                riskEvidence: [
+                    {
+                        flag: 'conflict',
+                        quote: 'Вы меня не слушаете',
+                        speaker: 'manager',
+                        at: 42,
+                    },
+                ],
                 coachingPriority: 'urgent',
                 sections: [
                     {
@@ -268,6 +289,7 @@ describe('CallReportAnalyticsDataService.loadLite', () => {
                     score: null,
                     nextStep: null,
                     riskFlags: [],
+                    riskEvidence: [],
                     coachingPriority: null,
                     sections: [],
                     objections: [],
@@ -277,6 +299,7 @@ describe('CallReportAnalyticsDataService.loadLite', () => {
         }
         // Пустые списки — свои у каждой строки, а не общий экземпляр.
         expect(rows[0].riskFlags).not.toBe(rows[1].riskFlags);
+        expect(rows[0].riskEvidence).not.toBe(rows[1].riskEvidence);
     });
 
     it('старый разбор: score 1–10 приводится к 0–100, nextStep без set → set=false', async () => {
@@ -302,6 +325,8 @@ describe('CallReportAnalyticsDataService.loadLite', () => {
                 nextStep: { set: false, date: null },
                 sections: [],
                 objections: [],
+                // Старый разбор без доказательств — пустой список, не null.
+                riskEvidence: [],
                 versions: null,
             }),
         );

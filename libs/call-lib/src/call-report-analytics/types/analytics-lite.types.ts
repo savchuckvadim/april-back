@@ -40,6 +40,20 @@ export interface AnalyticsLiteNextStep {
     date: string | null;
 }
 
+/**
+ * Доказательство риск-флага (разбор focus-v2.4, 20.10.2026): код флага,
+ * дословная цитата, чья реплика и секунда начала в записи. Текста
+ * транскрипта в проекции нет — только цитата, которую покажет витрина.
+ */
+export interface AnalyticsLiteRiskEvidence {
+    flag: string;
+    quote: string;
+    /** manager / client (строкой — справочник агента); null — нет. */
+    speaker: string | null;
+    /** Секунда начала цитаты в записи; null — таймкода нет. */
+    at: number | null;
+}
+
 export interface AnalyticsCallLiteRow {
     transcriptionId: string;
     /** Bitrix-id менеджера (null — звонок обработан до сохранения менеджера). */
@@ -59,6 +73,12 @@ export interface AnalyticsCallLiteRow {
     score: number | null;
     nextStep: AnalyticsLiteNextStep | null;
     riskFlags: string[];
+    /**
+     * Доказательства риск-флагов (цитаты). Поле необязательное: выборка
+     * `loadLite` заполняет его всегда, старые сериализованные строки
+     * (кэш, фикстуры) его не несут — читатель готов к `undefined`.
+     */
+    riskEvidence?: AnalyticsLiteRiskEvidence[];
     coachingPriority: string | null;
     sections: AnalyticsLiteSection[];
     objections: AnalyticsLiteObjection[];

@@ -37,6 +37,32 @@ export const AI_FORECAST_BACKTEST_WINDOW_MONTHS = 12;
 /** Простое среднее считается по трём последним замороженным месяцам. */
 export const AI_FORECAST_MEAN_MONTHS = 3;
 
+/**
+ * Код шага воспроизведения теневого журнала по истории: для каждого
+ * рабочего дня закрытого месяца прогноз отдела считается так, как он был
+ * бы посчитан в ночь на этот день, — чтобы бэктесту не ждать девять
+ * живых месяцев.
+ */
+export const AI_FORECAST_LOG_REPLAY_STEP_CODE = 'forecast-log-replay' as const;
+
+/**
+ * Воспроизведение — в тех же ритмах, что бэктест, и ПЕРЕД ним: месячный
+ * ритм добирает недостающие дни закрытого месяца, догон истории
+ * восстанавливает месяц целиком.
+ */
+export const AI_FORECAST_LOG_REPLAY_RHYTHMS = [
+    'monthly',
+    'backfill',
+] as const satisfies readonly AiPipelineRhythm[];
+
+/**
+ * Месяцы менеджеров, нужные воспроизведению одного месяца: сам месяц
+ * (факт, план, уровень), прошлый (наивная база, темп, оценка) и три
+ * замороженных для простого среднего — до 3-го числа окно среднего
+ * сдвинуто ещё на месяц назад.
+ */
+export const AI_FORECAST_LOG_REPLAY_MONTHS = 5;
+
 /** Причины пропуска шагов прогноза отдела (журнал прогона). */
 export const AI_FORECAST_LOG_REASONS = {
     /** Ростер ОП пуст: считать нечего. */
@@ -47,6 +73,10 @@ export const AI_FORECAST_LOG_REASONS = {
     logMissing: 'forecast-log-missing',
     /** Месячных снапшотов менеджеров за закрытый месяц нет — факта нет. */
     actualMissing: 'forecast-actual-missing',
+    /** Месяц прогона ещё не закрыт — воспроизводить нечего. */
+    replayMonthOpen: 'forecast-replay-month-open',
+    /** Все рабочие дни месяца уже записаны ночным прогоном. */
+    replayNothingToDo: 'forecast-replay-nothing-to-do',
 } as const;
 export type AiForecastLogReason =
     (typeof AI_FORECAST_LOG_REASONS)[keyof typeof AI_FORECAST_LOG_REASONS];

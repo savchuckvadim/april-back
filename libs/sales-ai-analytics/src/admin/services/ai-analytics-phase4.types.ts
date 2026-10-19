@@ -107,6 +107,8 @@ export interface Phase4BacktestView extends Phase4SnapshotRef {
     reasons: string[];
     shadowMonths: number;
     shadowMinMonths: number;
+    /** Из теневых месяцев восстановлено по истории (`forecast-log-replay`). */
+    replayedMonths: number;
     /** Месяцев и дней в проверке; 0 — журналов с фактом нет. */
     months: number;
     days: number;

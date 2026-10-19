@@ -100,6 +100,8 @@ export enum JobNames {
     CALL_REPORT_ANALYZE = 'call-report-analyze',
     /** Test-retest оценщика (Фаза 3 AI-аналитики, П7): повтор выборки той же версией промпта */
     CALL_REPORT_RETEST = 'call-report-retest',
+    /** Переразбор истории текущей версией промпта (этап 1B, 2026-10-19-ai-focus-plan): части с продолжением */
+    CALL_REPORT_REANALYZE = 'call-report-reanalyze',
 
     /** Импорт СКАП: один run-джоб на домен (скан Диска + обработка файлов с тайм-бюджетом) */
     SKAP_IMPORT_RUN = 'skap-import-run',

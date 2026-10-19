@@ -3,7 +3,7 @@ import { Prisma } from 'generated/prisma';
 import { PBXService } from '@lib/pbx/pbx.service';
 import {
     AiService,
-    AGENT_ANALYSIS_TYPE,
+    pickActiveAnalysis,
     CALL_COMPLIANCE_REVIEW_TYPE,
     KnowledgeMaterialsService,
     renderMaterialBlock,
@@ -89,9 +89,10 @@ export class CallComplianceReviewService {
                 );
                 return null;
             }
-            const analysis = records.find(
-                record => record.type === AGENT_ANALYSIS_TYPE,
-            )?.user_result as AgentCallAnalysisDto | undefined;
+            // Активный разбор звонка (после переразбора старый — superseded).
+            const analysis = pickActiveAnalysis(records)?.user_result as
+                | AgentCallAnalysisDto
+                | undefined;
             if (!analysis) {
                 this.logger.log(
                     `Разбора нет (transcription ${row.id}) — проверять нечего`,

@@ -253,6 +253,23 @@ export type {
     TostOptions,
     TostResult,
 } from './model/agreement';
+// Переразбор истории текущей версией (этап 1B, 2026-10-19-ai-focus-plan):
+// контракт джобы CALL_REPORT_REANALYZE, запись-статус прогона и отчёт
+// согласия старой и новой версии промпта на парах «разбор — переразбор».
+export * from './contracts/reanalysis.types';
+export {
+    buildVersionAgreementReport,
+    isVersionAgreementReportLike,
+    scaleShiftOf,
+    VERSION_AGREEMENT_NO_VERSION,
+} from './model/agreement';
+export type {
+    ScaleShift,
+    VersionAgreementBreakdown,
+    VersionAgreementInput,
+    VersionAgreementPair,
+    VersionAgreementReport,
+} from './model/agreement';
 export { isGoldenReportLike } from './contracts/golden-report.types';
 export type {
     GoldenCategoryAgreement,

@@ -61,6 +61,11 @@ export interface ForecastBacktestView {
     readonly shadowMonths: number;
     /** Порог теневых месяцев, с которым считали; null — не записан. */
     readonly shadowMinMonths: number | null;
+    /**
+     * Из теневых месяцев восстановлено по истории; нет поля — запись
+     * старее воспроизведения (витрина читает как «не восстанавливали»).
+     */
+    readonly replayedMonths?: number;
     /** null — журналов с фактом нет, чисел нет. */
     readonly numbers: ForecastBacktestNumbers | null;
 }
@@ -186,6 +191,7 @@ export function readForecastBacktest(
         ? payload.reasons.filter(isReason)
         : [];
     const minMonths = num(payload.shadowMinMonths);
+    const replayed = num(payload.replayedMonths);
     return {
         monthKey:
             typeof payload.monthKey === 'string' ? payload.monthKey : periodKey,
@@ -193,6 +199,7 @@ export function readForecastBacktest(
         reasons,
         shadowMonths: count(payload.shadowMonths),
         shadowMinMonths: minMonths !== null && minMonths > 0 ? minMonths : null,
+        ...(replayed === null ? {} : { replayedMonths: count(replayed) }),
         numbers: numbersOf(payload.backtest),
     };
 }

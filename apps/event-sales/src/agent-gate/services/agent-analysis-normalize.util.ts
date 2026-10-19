@@ -1,4 +1,3 @@
-import { isTimecodeWithinDuration } from '@lib/call-lib';
 import { Logger } from '@nestjs/common';
 import { AgentCallAnalysisDto } from '../dto/agent-analysis-request.dto';
 import {
@@ -6,12 +5,17 @@ import {
     hasChecklistAnswer,
     hvostChecklistLines,
 } from './agent-analysis-checklist.util';
+import {
+    isTimecodeRangeValid,
+    reconcileRiskFlags,
+} from './agent-analysis-risk.util';
 import { computeSpeechMetrics } from './speech-metrics.util';
 import { sanitizeLatexDeep } from './text-sanitize.util';
 
 /**
  * Разбор и проверка входящего анализа агента (гигиена строк, метрики кодом,
  * консистентность, достройка разборов) — вынесены из intake по лимиту файла.
+ * Риск-флаги (доказательства, таймкоды) — agent-analysis-risk.util.
  */
 
 /** Вся входная нормализация — в прежнем порядке шагов intake. */
@@ -25,7 +29,9 @@ export function normalizeAgentAnalysis(
     // и литеральные "null"-строки (боевые кейсы 2026-07-30).
     const sanitized = sanitizeLatexDeep(dto);
     warnStaleChecklistShape(transcriptionId, agentName, sanitized, logger);
-    const withMetrics = applySpeechMetrics(transcriptionId, sanitized, logger);
+    // Флаг без доказательства-цитаты снимается (решение владельца 19.10.2026).
+    const proven = reconcileRiskFlags(transcriptionId, sanitized, logger);
+    const withMetrics = applySpeechMetrics(transcriptionId, proven, logger);
     const consistent = enforceConsistency(transcriptionId, withMetrics, logger);
     return fillMethodologyAnalysis(consistent, logger);
 }
@@ -81,15 +87,15 @@ export function clampObjectionTimecodes(
     if (!dto.objections?.length) return dto;
     let dropped = 0;
     const objections = dto.objections.map(objection => {
-        const start = objection.startSec ?? null;
-        const end = objection.endSec ?? null;
-        const startOk =
-            start === null || isTimecodeWithinDuration(start, durationSec);
-        const endOk =
-            end === null ||
-            (isTimecodeWithinDuration(end, durationSec) &&
-                (start === null || end >= start));
-        if (startOk && endOk) return objection;
+        if (
+            isTimecodeRangeValid(
+                objection.startSec,
+                objection.endSec,
+                durationSec,
+            )
+        ) {
+            return objection;
+        }
         dropped += 1;
 
         return { ...objection, startSec: null, endSec: null };

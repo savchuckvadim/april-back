@@ -31,6 +31,7 @@ import {
 } from '@lib/call-lib';
 import { AgentDialogTurnDto } from './agent-dialog-turn.dto';
 import { AgentNextStepDto } from './agent-next-step.dto';
+import { AgentRiskEvidenceDto } from './agent-risk-evidence.dto';
 
 /**
  * Первый слой AgentCallAnalysisDto (классификация и сигналы разговора) —
@@ -200,8 +201,11 @@ export class AgentCallAnalysisClassificationDto {
 
     @ApiPropertyOptional({
         description:
-            'Риск-флаги для немедленного внимания руководителя: обещание, ' +
-            'конфликт, нарушение регламента, сильный негатив клиента.',
+            'Риск-флаги — сигналы руководителю: необоснованное обещание, ' +
+            'конфликт / грубость, нарушение регламента, сильный негатив ' +
+            'клиента, после отказа не оставил дверь открытой. Каждый флаг ' +
+            'обязан иметь доказательство в riskEvidence с непустой цитатой — ' +
+            'иначе приём разбора его снимает. Пустой массив — норма.',
         enum: CALL_REPORT_RISK_FLAG_CODES,
         isArray: true,
         example: [],
@@ -211,6 +215,19 @@ export class AgentCallAnalysisClassificationDto {
     @IsString({ each: true })
     @IsIn(CALL_REPORT_RISK_FLAG_CODES as unknown as string[], { each: true })
     riskFlags?: CallReportRiskFlagCode[];
+
+    @ApiPropertyOptional({
+        description:
+            'Доказательства риск-флагов: дословная цитата, чья реплика и ' +
+            'таймкоды по расшифровке. Флаг без доказательства с непустой ' +
+            'цитатой из riskFlags удаляется (решение владельца 19.10.2026).',
+        type: [AgentRiskEvidenceDto],
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => AgentRiskEvidenceDto)
+    riskEvidence?: AgentRiskEvidenceDto[];
 
     @ApiPropertyOptional({
         description:

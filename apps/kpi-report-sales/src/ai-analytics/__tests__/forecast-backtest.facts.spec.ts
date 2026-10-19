@@ -101,6 +101,61 @@ describe('forecast-backtest.facts', () => {
         expect(months[0].days[0].mean3).toBe(4);
     });
 
+    it('восстановленные журналы входят в бэктест, число таких месяцев — replayedMonths', () => {
+        const replayed = (
+            monthKey: string,
+            index: number,
+        ): ForecastLogSnapshot =>
+            forecastLog(
+                monthKey,
+                [
+                    logDay(`${monthKey}-05`, 9 + index, { replayed: true }),
+                    logDay(`${monthKey}-20`, 10, { replayed: true }),
+                ],
+                10,
+            );
+        const logs = new Map<string, ForecastLogSnapshot>([
+            ['2026-03', replayed('2026-03', 0)],
+            ['2026-04', replayed('2026-04', 1)],
+            // Смешанный месяц: начало восстановлено, конец — живой.
+            [
+                '2026-05',
+                forecastLog(
+                    '2026-05',
+                    [
+                        logDay('2026-05-05', 9, { replayed: true }),
+                        logDay('2026-05-20', 10),
+                    ],
+                    11,
+                ),
+            ],
+            ['2026-06', forecastLog('2026-06', [logDay('2026-06-05', 9)], 10)],
+            // Без факта — не теневой месяц и не восстановленный.
+            [
+                '2026-07',
+                forecastLog('2026-07', [
+                    logDay('2026-07-05', 9, { replayed: true }),
+                ]),
+            ],
+        ]);
+        const snapshot = buildBacktestSnapshot({
+            monthKey: '2026-07',
+            logs,
+            params: backtestParamsOf({}),
+            seed: 1,
+            meta: { ...FIXTURE_META },
+        });
+        expect(snapshot.shadowMonths).toBe(4);
+        expect(snapshot.replayedMonths).toBe(3);
+        expect(snapshot.backtest?.months).toEqual([
+            '2026-03',
+            '2026-04',
+            '2026-05',
+            '2026-06',
+        ]);
+        expect(snapshot.backtest?.days).toBe(7);
+    });
+
     it('параметры гейта: переопределение портала побеждает дефолт', () => {
         expect(backtestParamsOf({}).level).toBe(
             registryDefault('forecast_interval_level'),

@@ -6,9 +6,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsNotEmpty, IsString, Matches } from 'class-validator';
-import type {
-    CostByType,
-    CostSummary,
+import {
+    AI_ANALYTICS_COST_TYPES,
+    type AiAnalyticsCostType,
+    type CostByType,
+    type CostSummary,
 } from '../services/ai-analytics-cost.service';
 import { AI_ANALYTICS_KEY_PATTERNS } from './ai-analytics-pipeline-admin.dto';
 
@@ -39,14 +41,18 @@ export class AiAnalyticsCostQueryDto {
     })
     month: string;
 }
-/** Расход по одному типу снапшота. */
+/** Расход по одному типу ais-записи. */
 export class AiAnalyticsCostTypeDto implements CostByType {
     @ApiProperty({
-        description: 'Тип снапшота, чьи записи несли вызов модели.',
-        example: 'ai-analytics-brief',
-        type: String,
+        description:
+            'Тип ais-записи, чьи записи несли вызов модели: снапшот ' +
+            'AI-аналитики (резюме и др.), глубокий разбор звонка ' +
+            '(agent-analysis) или его test-retest повтор ' +
+            '(agent-analysis-retest).',
+        enum: AI_ANALYTICS_COST_TYPES,
+        example: 'agent-analysis',
     })
-    type: string;
+    type: AiAnalyticsCostType;
 
     @ApiProperty({
         description: 'Записей с вызовом модели (tokens_count > 0).',
@@ -144,7 +150,9 @@ export class AiAnalyticsCostResultDto implements CostSummary {
     estimatedPrice: number | null;
 
     @ApiProperty({
-        description: 'Разрез по типам снапшотов; типы без вызовов опущены.',
+        description:
+            'Разрез по типам записей (снапшоты AI-аналитики, разбор ' +
+            'звонков и его повторы); типы без вызовов опущены.',
         type: [AiAnalyticsCostTypeDto],
     })
     byType: AiAnalyticsCostTypeDto[];

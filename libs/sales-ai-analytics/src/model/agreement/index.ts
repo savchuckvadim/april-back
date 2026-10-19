@@ -43,3 +43,16 @@ export type {
     AgreementReportInput,
     AgreementRun,
 } from './agreement-report';
+export {
+    buildVersionAgreementReport,
+    isVersionAgreementReportLike,
+    scaleShiftOf,
+    VERSION_AGREEMENT_NO_VERSION,
+} from './version-agreement-report';
+export type {
+    ScaleShift,
+    VersionAgreementBreakdown,
+    VersionAgreementInput,
+    VersionAgreementPair,
+    VersionAgreementReport,
+} from './version-agreement-report';

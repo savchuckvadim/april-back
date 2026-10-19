@@ -21,7 +21,7 @@ const row = (overrides: Record<string, unknown> = {}) =>
 const analysis = (overrides: Record<string, unknown> = {}) =>
     ({
         callType: 'presentation',
-        riskFlags: ['promise'],
+        riskFlags: ['conflict'],
         coachingPriority: 'planned',
         objections: [
             { objection: 'Дорого', quote: 'Да у нас Консультант стоит' },
@@ -95,7 +95,7 @@ describe('CallReportAlertService — алерт РОПу в день звонк�
 
         expect(outcome).toEqual({
             status: 'sent',
-            kind: 'promise',
+            kind: 'conflict',
             delivered: [1, 42],
         });
         expect(appSettings.resolve).toHaveBeenCalledWith(DOMAIN, 'kpi-sales');
@@ -127,7 +127,7 @@ describe('CallReportAlertService — алерт РОПу в день звонк�
                     transcriptionId: '42',
                     requesterUserId: null,
                     reason: null,
-                    payload: { alertKind: 'promise', ropUserIds: [1, 42] },
+                    payload: { alertKind: 'conflict', ropUserIds: [1, 42] },
                 },
             }),
         );
@@ -190,7 +190,7 @@ describe('CallReportAlertService — алерт РОПу в день звонк�
 
         expect(outcome).toEqual({
             status: 'skipped',
-            kind: 'promise',
+            kind: 'conflict',
             delivered: [],
             reason: 'alerts-disabled',
         });
@@ -204,6 +204,32 @@ describe('CallReportAlertService — алерт РОПу в день звонк�
         const outcome = await service.notifyIfNeeded(
             DOMAIN,
             analysis({ riskFlags: [], coachingPriority: 'planned' }),
+            row(),
+            777,
+        );
+
+        expect(outcome).toEqual({
+            status: 'skipped',
+            kind: null,
+            delivered: [],
+            reason: 'no-risk',
+        });
+        expect(appSettings.resolve).not.toHaveBeenCalled();
+        expect(systemAdd).not.toHaveBeenCalled();
+    });
+
+    /**
+     * Решение владельца 19.10.2026: обещание, негатив клиента и «не
+     * оставил дверь открытой» в день звонка не шлются — повестка недели.
+     */
+    it('флаги promise / client_negative / door_closed без urgent — нет (настройки не читаются)', async () => {
+        const { service, systemAdd, appSettings } = makeService();
+        const outcome = await service.notifyIfNeeded(
+            DOMAIN,
+            analysis({
+                riskFlags: ['promise', 'client_negative', 'door_closed'],
+                coachingPriority: 'planned',
+            }),
             row(),
             777,
         );
@@ -256,7 +282,7 @@ describe('CallReportAlertService — алерт РОПу в день звонк�
         const message = sentMessage(systemAdd);
         expect(message).toContain('Менеджер: Иванов Иван');
         expect(message).toContain('Тип звонка: Презентация');
-        expect(message).toContain('Сигнал: Необоснованное обещание клиенту');
+        expect(message).toContain('Сигнал: Конфликт / грубость');
         expect(message).toContain('Цитата: «Да у нас Консультант стоит»');
         expect(message).toContain(
             'Разбор: https://test.bitrix24.ru/crm/type/1056/details/777/',
@@ -300,12 +326,12 @@ describe('CallReportAlertService — алерт РОПу в день звонк�
 
         expect(outcome).toEqual({
             status: 'sent',
-            kind: 'promise',
+            kind: 'conflict',
             delivered: [42],
         });
         expect(createdRecord(aiService.create).user_result).toMatchObject({
             kind: 'alert_sent',
-            payload: { alertKind: 'promise', ropUserIds: [42] },
+            payload: { alertKind: 'conflict', ropUserIds: [42] },
         });
     });
 

@@ -175,6 +175,7 @@ export function toBacktestView(
         reasons: codes(snapshot.reasons),
         shadowMonths: snapshot.shadowMonths ?? 0,
         shadowMinMonths: snapshot.shadowMinMonths ?? 0,
+        replayedMonths: snapshot.replayedMonths ?? 0,
         months: result?.months.length ?? 0,
         days: result?.days ?? 0,
         coverageShare: result?.coverage.share ?? null,

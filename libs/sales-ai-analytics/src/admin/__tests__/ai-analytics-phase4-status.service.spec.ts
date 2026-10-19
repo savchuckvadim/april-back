@@ -192,6 +192,8 @@ describe('AiAnalyticsPhase4StatusService — проверка точности �
         expect(result.items[0]).toMatchObject({
             shadowMonths: 4,
             shadowMinMonths: 9,
+            // Запись без поля воспроизведения — восстановленных месяцев нет.
+            replayedMonths: 0,
             months: 2,
             days: 40,
             coverageShare: 0.8,

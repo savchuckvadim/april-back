@@ -7,13 +7,16 @@ const focusResult = (overrides?: Record<string, unknown>) => ({
     ...overrides,
 });
 
+/** usage провайдера одного вызова: 100 токенов промпта, 20 — ответа. */
+const USAGE = { promptTokens: 100, completionTokens: 20, totalTokens: 120 };
+
 const makeDeps = (options?: {
     /** schemaName → ответ (или Error для падения прохода). */
     responses?: Record<string, Record<string, unknown> | Error>;
 }) => {
     const responses = options?.responses ?? {};
     const vibeCodeClient = {
-        structuredCompletion: jest.fn(
+        structuredCompletionWithUsage: jest.fn(
             (
                 _system: string,
                 _user: string,
@@ -21,7 +24,11 @@ const makeDeps = (options?: {
             ): Promise<unknown> => {
                 const answer = responses[schemaName];
                 if (answer instanceof Error) return Promise.reject(answer);
-                return Promise.resolve(answer ?? focusResult());
+                return Promise.resolve({
+                    result: answer ?? focusResult(),
+                    usage: USAGE,
+                    model: 'bitrix/bitrixgpt-5.5',
+                });
             },
         ),
     };
@@ -132,12 +139,22 @@ describe('CallFocusAnalysisService', () => {
         expect(dto?.callTypeReason).toBe('показали систему');
         expect(dto?.priceDiscussed).toBe(false);
         // Все четыре вызова получили паспорт в user-контенте.
-        for (const call of vibeCodeClient.structuredCompletion.mock.calls) {
+        for (const call of vibeCodeClient.structuredCompletionWithUsage.mock
+            .calls) {
             expect(String(call[1])).toContain('ПАСПОРТ');
         }
+        // Расход — сумма четырёх вызовов (3 фокуса + синтез).
+        expect(dto?.usage).toEqual({
+            tokens: 480,
+            promptTokens: 400,
+            completionTokens: 80,
+            calls: 4,
+            callsWithUsage: 4,
+            model: 'bitrix/bitrixgpt-5.5',
+        });
     });
 
-    it('один упавший фокус не роняет разбор; его разделы отсутствуют', async () => {
+    it('один упавший фокус не роняет разбор; его разделы отсутствуют, расход — только по удавшимся', async () => {
         const { service } = makeDeps({
             responses: {
                 call_focus_content: new Error('vibecode down'),
@@ -151,6 +168,28 @@ describe('CallFocusAnalysisService', () => {
                 ['NEEDS', 'PRESENTATION'].includes(section.section),
             ),
         ).toBe(false);
+        expect(dto?.usage).toMatchObject({ tokens: 360, calls: 3 });
+    });
+
+    it('промпт «движения сделки» несёт блок сигналов руководителю с критериями флагов и доказательствами', async () => {
+        const { service, vibeCodeClient } = makeDeps();
+        await service.run('test.bitrix24.ru', 'текст', 'cold');
+
+        const movement =
+            vibeCodeClient.structuredCompletionWithUsage.mock.calls.find(
+                call => (call as unknown[])[2] === 'call_focus_movement',
+            ) as unknown[];
+        const prompt = String(movement[0]);
+        expect(prompt).toContain('СИГНАЛЫ РУКОВОДИТЕЛЮ');
+        expect(prompt).toContain('сомневаешься — не ставь');
+        expect(prompt).toContain('door_closed');
+        expect(prompt).toContain('riskEvidence');
+        const schema = movement[3] as {
+            properties: Record<string, unknown>;
+            required: string[];
+        };
+        expect(schema.required).toContain('riskEvidence');
+        expect(schema.properties.riskEvidence).toBeDefined();
     });
 
     it('два упавших фокуса → результат отброшен (null)', async () => {
@@ -191,9 +230,10 @@ describe('CallFocusAnalysisService', () => {
 
         await service.run('test.bitrix24.ru', 'текст', 'call');
 
-        const prompts = vibeCodeClient.structuredCompletion.mock.calls.map(
-            call => String((call as unknown[])[0]),
-        );
+        const prompts =
+            vibeCodeClient.structuredCompletionWithUsage.mock.calls.map(call =>
+                String((call as unknown[])[0]),
+            );
         expect(prompts).toHaveLength(4);
         // Скрипт компании — в каждом проходе и в синтезе.
         for (const prompt of prompts) {
@@ -237,9 +277,10 @@ describe('CallFocusAnalysisService', () => {
         );
         expect(playbook?.budgetChars).toBe(6000);
 
-        const prompts = vibeCodeClient.structuredCompletion.mock.calls.map(
-            call => String((call as unknown[])[0]),
-        );
+        const prompts =
+            vibeCodeClient.structuredCompletionWithUsage.mock.calls.map(call =>
+                String((call as unknown[])[0]),
+            );
         for (const prompt of prompts) {
             expect(prompt).toContain('МЕТОДОЛОГИЯ ПОКАЗА');
         }

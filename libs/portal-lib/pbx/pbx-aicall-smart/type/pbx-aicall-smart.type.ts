@@ -477,12 +477,24 @@ export const CALL_REPORT_COMPETITOR_ITEMS = [
     CODE: CallReportCompetitorCode;
 })[];
 
-/** Риск-флаги (алерты РОПу). */
+/**
+ * Риск-флаги — сигналы руководителю. Каждый флаг разбор обязан подтвердить
+ * дословной цитатой (riskEvidence, промпт focus-v2.4 от 20.10.2026); флаг без
+ * цитаты приём разбора снимает. В день звонка уходят только conflict и
+ * compliance (решение владельца 19.10.2026), остальные — в повестку недели.
+ *
+ * `door_closed` — «после отказа не оставил дверь открытой» (19.10.2026):
+ * клиент отказал, а менеджер завершил разговор, не договорившись о будущем
+ * (ни разрешения вернуться, ни альтернативы). Новое значение перечисления
+ * доливает повторный POST /call-report/install-smart; writer на портале
+ * без значения код пропускает с предупреждением.
+ */
 export const CALL_REPORT_RISK_FLAG_CODES = [
     'promise',
     'conflict',
     'compliance',
     'client_negative',
+    'door_closed',
 ] as const;
 export type CallReportRiskFlagCode =
     (typeof CALL_REPORT_RISK_FLAG_CODES)[number];
@@ -491,6 +503,11 @@ export const CALL_REPORT_RISK_FLAG_ITEMS = [
     { CODE: 'conflict', VALUE: 'Конфликт / грубость', SORT: 200 },
     { CODE: 'compliance', VALUE: 'Нарушение регламента', SORT: 300 },
     { CODE: 'client_negative', VALUE: 'Сильный негатив клиента', SORT: 400 },
+    {
+        CODE: 'door_closed',
+        VALUE: 'После отказа не оставил дверь открытой',
+        SORT: 500,
+    },
 ] as const satisfies readonly (CallReportSmartEnumItem & {
     CODE: CallReportRiskFlagCode;
 })[];

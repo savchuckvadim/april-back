@@ -1,8 +1,13 @@
-import { AiEntityDto } from '@lib/call-lib';
+import {
+    AGENT_ANALYSIS_RETEST_TYPE,
+    AGENT_ANALYSIS_TYPE,
+    AiEntityDto,
+} from '@lib/call-lib';
 import { AI_ANALYTICS_SNAPSHOT_TYPE } from '../../contracts/snapshot-kinds.const';
 import { registryDefault } from '../../params/registry.access';
 import { AiAnalyticsAdminSnapshotStore } from '../ai-analytics-admin-snapshot.store';
 import {
+    AI_ANALYTICS_COST_TYPES,
     AiAnalyticsCostService,
     monthBounds,
 } from '../services/ai-analytics-cost.service';
@@ -90,6 +95,71 @@ describe('AiAnalyticsCostService', () => {
             .calls[0] as [string, string[], Date, Date];
         expect(from).toEqual(new Date('2026-09-01T00:00:00.000Z'));
         expect(to).toEqual(new Date('2026-10-01T00:00:00.000Z'));
+    });
+
+    /**
+     * Разбор звонков — основной расход контура: с 20.10.2026 записи
+     * agent-analysis (и повторы test-retest) несут tokens_count / price
+     * и считаются вместе со снапшотами одним чтением месяца.
+     */
+    it('учитывает записи глубокого разбора и его повторов отдельными типами', async () => {
+        const { service, aiService } = makeService([
+            aisRecord({
+                id: '1',
+                type: AI_ANALYTICS_SNAPSHOT_TYPE.brief,
+                tokens: 1000,
+                price: 2,
+            }),
+            aisRecord({
+                id: '2',
+                type: AGENT_ANALYSIS_TYPE,
+                tokens: 18000,
+                price: 36,
+            }),
+            aisRecord({
+                id: '3',
+                type: AGENT_ANALYSIS_TYPE,
+                tokens: 12000,
+                price: 24,
+            }),
+            aisRecord({
+                id: '4',
+                type: AGENT_ANALYSIS_RETEST_TYPE,
+                tokens: 1200,
+                price: 1.8,
+            }),
+            // Старый разбор без учёта токенов в расход не входит.
+            aisRecord({
+                id: '5',
+                type: AGENT_ANALYSIS_TYPE,
+                tokens: 0,
+                price: 0,
+            }),
+        ]);
+        const result = await service.summary(DOMAIN, '2026-09');
+
+        expect(result.calls).toBe(4);
+        expect(result.tokens).toBe(1000 + 18000 + 12000 + 1200);
+        expect(result.price).toBeCloseTo(2 + 36 + 24 + 1.8);
+        expect(result.byType.map(entry => entry.type)).toEqual([
+            AI_ANALYTICS_SNAPSHOT_TYPE.brief,
+            AGENT_ANALYSIS_TYPE,
+            AGENT_ANALYSIS_RETEST_TYPE,
+        ]);
+        expect(result.byType[1]).toMatchObject({
+            type: AGENT_ANALYSIS_TYPE,
+            calls: 2,
+            tokens: 30000,
+            price: 60,
+        });
+        // Чтение запрашивает и типы разбора.
+        const [, types] = aiService.findByDomainTypesInPeriod.mock.calls[0] as [
+            string,
+            string[],
+        ];
+        expect(types).toEqual([...AI_ANALYTICS_COST_TYPES]);
+        expect(types).toContain(AGENT_ANALYSIS_TYPE);
+        expect(types).toContain(AGENT_ANALYSIS_RETEST_TYPE);
     });
 
     it('цена реестра 0 («не задана») — оценки нет, ответ помечен estimated', async () => {

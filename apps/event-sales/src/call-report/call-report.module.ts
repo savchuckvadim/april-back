@@ -1,4 +1,7 @@
 import { CallReportRetestUseCase } from './use-cases/call-report-retest.use-case';
+import { CallReportReanalyzeUseCase } from './use-cases/call-report-reanalyze.use-case';
+import { CallAnalysisRerunService } from './services/call-analysis-rerun.service';
+import { CallReportReanalysisReportService } from './services/call-report-reanalysis-report.service';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PBXModule } from '@lib/pbx/pbx.module';
@@ -103,8 +106,14 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         CallComplianceReviewService,
         CallReportAnalyzeUseCase,
         CallReportPipelineUseCase,
+        // Повторный фокус-разбор звонка — общий шаг test-retest и переразбора
+        CallAnalysisRerunService,
         // Test-retest оценщика (Фаза 3 AI-аналитики, П7): джоба CALL_REPORT_RETEST
         CallReportRetestUseCase,
+        // Переразбор истории текущей версией (этап 1B): джоба
+        // CALL_REPORT_REANALYZE, статус и отчёт согласия версий в ais
+        CallReportReanalysisReportService,
+        CallReportReanalyzeUseCase,
         CallReportScanUseCase,
         CallReportProcessor,
         CallReportDomainRosterService,

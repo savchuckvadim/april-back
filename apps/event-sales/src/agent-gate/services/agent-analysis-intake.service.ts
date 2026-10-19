@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PBXService } from '@lib/pbx/pbx.service';
 import {
     AiService,
+    pickActiveAnalysis,
     TranscriptionPipelineView,
     TranscriptionStoreService,
 } from '@lib/call-lib';
@@ -22,9 +23,9 @@ import {
 import { SmartItemWriteResult } from './agent-analysis-intake.types';
 import { AgentAnalysisLinkResolver } from './agent-analysis-link.resolver';
 import {
-    clampObjectionTimecodes,
-    normalizeAgentAnalysis,
-} from './agent-analysis-normalize.util';
+    durationSecOf,
+    prepareAgentAnalysis,
+} from './agent-analysis-prepare.util';
 import {
     buildAgentAnalysisRecord,
     buildAgentSmartItemInput,
@@ -32,6 +33,11 @@ import {
     resolveCallDirection,
 } from './agent-analysis-smart-input.mapper';
 import { AgentAnalysisTimelineWriter } from './agent-analysis-timeline.writer';
+import {
+    analysisUsageColumns,
+    AnalysisUsageColumns,
+} from './agent-analysis-usage.util';
+import { LlmPriceResolverService } from './llm-price-resolver.service';
 
 /**
  * Приём результата глубокого анализа от внешнего агента:
@@ -44,8 +50,10 @@ import { AgentAnalysisTimelineWriter } from './agent-analysis-timeline.writer';
  * (graceful: конвейер не падает, клиент ставит смарт позже).
  *
  * Оркестратор (лимит файла): нормализация — agent-analysis-normalize,
- * CRM-контекст — crm-context.loader, связи — link.resolver, раскладка в
- * ais/поля — smart-input.mapper, таймлайны — timeline.writer.
+ * риск-флаги — agent-analysis-risk, CRM-контекст — crm-context.loader,
+ * связи — link.resolver, раскладка в ais/поля — smart-input.mapper,
+ * таймлайны — timeline.writer, расход модели — agent-analysis-usage
+ * (колонки tokens_count / price по цене портала llm_price_per_1k).
  */
 @Injectable()
 export class AgentAnalysisIntakeService {
@@ -58,6 +66,7 @@ export class AgentAnalysisIntakeService {
         private readonly smartResolver: CallReportSmartResolverService,
         private readonly dealFamily: CallReportDealFamilyService,
         private readonly dealVerify: CallReportDealVerifyService,
+        private readonly llmPrice: LlmPriceResolverService,
     ) {}
 
     async intake(
@@ -66,12 +75,6 @@ export class AgentAnalysisIntakeService {
         dto: AgentCallAnalysisDto,
         allowedDomains: string[] | null = null,
     ): Promise<AgentAnalysisResponseDto> {
-        dto = normalizeAgentAnalysis(
-            transcriptionId,
-            agentName,
-            dto,
-            this.logger,
-        );
         const row =
             await this.transcriptionStore.findPipelineById(transcriptionId);
         if (!row.domain) {
@@ -89,20 +92,24 @@ export class AgentAnalysisIntakeService {
             );
         }
 
-        // Таймкоды цитат (П6) — только внутри длительности записи.
-        dto = clampObjectionTimecodes(
+        // Нормализация и таймкоды цитат (П6) в пределах записи — общий
+        // шаг с переразбором истории (agent-analysis-prepare.util).
+        dto = prepareAgentAnalysis(
             transcriptionId,
+            agentName,
             dto,
-            row.durationSec === null ? null : Number(row.durationSec),
+            durationSecOf(row),
             this.logger,
         );
 
         // Идемпотентность: ретрай push-back (потерянный ответ, повтор скилла)
         // не должен плодить дубликаты ais-записей и смарт-элементов.
+        // Предпочитается АКТИВНАЯ запись (после переразбора старая —
+        // superseded); замещённая без преемника тоже держит идемпотентность.
         const records = await this.aiService.findByTranscriptionIds([row.id]);
-        const existing = records.find(
-            record => record.type === AGENT_ANALYSIS_TYPE,
-        );
+        const existing =
+            pickActiveAnalysis(records) ??
+            records.find(record => record.type === AGENT_ANALYSIS_TYPE);
         if (existing) {
             return this.completeExisting(existing, row, agentName, dto);
         }
@@ -130,6 +137,7 @@ export class AgentAnalysisIntakeService {
                 dto,
                 classifierCallType,
                 classifierMismatch,
+                usage: await this.usageColumns(row.domain, dto),
             }),
         );
 
@@ -149,6 +157,21 @@ export class AgentAnalysisIntakeService {
             smartItemId: written?.itemId ?? null,
             smartInstalled: written !== null,
         };
+    }
+
+    /**
+     * Колонки расхода ais по учёту токенов разбора и цене портала; без
+     * учёта (внешний агент старого контракта) — пусто, цена не читается.
+     */
+    private async usageColumns(
+        domain: string,
+        dto: AgentCallAnalysisDto,
+    ): Promise<AnalysisUsageColumns> {
+        if (!dto.usage) return {};
+        return analysisUsageColumns(
+            dto.usage,
+            await this.llmPrice.resolvePerThousand(domain),
+        );
     }
 
     /**

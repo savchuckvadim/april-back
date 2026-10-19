@@ -14,7 +14,9 @@
  *   выборку; бюджет времени джобы — `RETEST_DEFAULTS.timeBudgetMs`: что
  *   не успели, в отчёт не входит (withinQuota честно показывает объём);
  * - вход повтора тот же, что у штатного разбора: расшифровка с
- *   таймкодами (П6) и паспорт звонка.
+ *   таймкодами (П6) и паспорт звонка;
+ * - расход модели повтора пишется в колонки ais (tokens_count / price по
+ *   цене портала) — повторы видны в GET admin/ai-analytics/cost.
  *
  * `@Injectable` без bitrix-состояния: Битрикс здесь не нужен вовсе.
  */
@@ -25,9 +27,6 @@ import {
     AGENT_ANALYSIS_TYPE,
     AiService,
     CallTypeRegistryService,
-    renderTranscriptWithTimecodes,
-    TranscriptionStoreService,
-    type TranscriptionPipelineView,
 } from '@lib/call-lib';
 import {
     AGREEMENT_DEFAULTS,
@@ -44,8 +43,7 @@ import {
     buildRegistryHash,
     CALL_REPORT_REGISTRY_BUILTIN,
 } from '../contracts/call-report-versions.const';
-import { CallContextBuilderService } from '../services/call-context-builder.service';
-import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
+import { CallAnalysisRerunService } from '../services/call-analysis-rerun.service';
 import { CallReportSettingsService } from '../services/call-report-settings.service';
 import {
     latestPerTranscription,
@@ -111,9 +109,9 @@ export class CallReportRetestUseCase {
 
     constructor(
         private readonly aiService: AiService,
-        private readonly transcriptionStore: TranscriptionStoreService,
-        private readonly focusAnalysis: CallFocusAnalysisService,
-        private readonly contextBuilder: CallContextBuilderService,
+        // Общий с переразбором истории шаг: расшифровка с таймкодами,
+        // паспорт, тип звонка из старой записи, модель портала, расход.
+        private readonly rerunService: CallAnalysisRerunService,
         private readonly settingsService: CallReportSettingsService,
         private readonly callTypeRegistry: CallTypeRegistryService,
     ) {}
@@ -258,27 +256,13 @@ export class CallReportRetestUseCase {
     ): Promise<unknown> {
         const transcriptionId = original.transcription_id as string;
         try {
-            const row =
-                await this.transcriptionStore.findPipelineById(transcriptionId);
-            const transcript =
-                renderTranscriptWithTimecodes(row.segments ?? []) ||
-                (row.text ?? '');
-            if (!transcript.trim()) return null;
-            const source = original.user_result as Record<string, unknown>;
-            const callType =
-                typeof source.classifierCallType === 'string'
-                    ? source.classifierCallType
-                    : typeof source.callType === 'string'
-                      ? source.callType
-                      : null;
-            const dto = await this.focusAnalysis.run(
-                row.domain as string,
-                transcript,
-                callType,
-                await this.passportBlock(row),
-                model === null ? undefined : { model },
-            );
-            if (dto === null) return null;
+            const outcome = await this.rerunService.rerun({
+                transcriptionId,
+                source: original.user_result,
+                model,
+            });
+            if (outcome === null) return null;
+            const { row, dto, usage } = outcome;
             const payload = JSON.parse(
                 JSON.stringify({
                     ...dto,
@@ -293,6 +277,7 @@ export class CallReportRetestUseCase {
                 type: AGENT_ANALYSIS_RETEST_TYPE,
                 status: 'done',
                 result: dto.summary,
+                ...usage,
                 user_result: payload,
                 activity_id: row.activityId ?? undefined,
                 entity_type: row.entityType ?? undefined,
@@ -309,19 +294,6 @@ export class CallReportRetestUseCase {
             );
 
             return null;
-        }
-    }
-
-    /** Паспорт звонка тем же построителем, что у штатного разбора; сбой — без паспорта. */
-    private async passportBlock(
-        row: TranscriptionPipelineView,
-    ): Promise<string | undefined> {
-        try {
-            const passport = await this.contextBuilder.build(row);
-
-            return this.contextBuilder.renderForPrompt(passport) || undefined;
-        } catch {
-            return undefined;
         }
     }
 

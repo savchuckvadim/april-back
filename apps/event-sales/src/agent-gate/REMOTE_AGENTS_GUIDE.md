@@ -113,7 +113,10 @@ bx-department; выключается env `CALL_REPORT_SALES_ONLY=0`).
   "priceDiscussed": false,
   "competitors": ["consultant"],        // закрытый справочник конкурентов
   "objectionCategories": ["price"],     // price|timing|need|trust|authority|hidden
-  "riskFlags": [],                      // promise|conflict|compliance|client_negative
+  "riskFlags": [],                      // promise|conflict|compliance|client_negative|door_closed
+  // С 20.10.2026 каждый флаг обязан иметь доказательство с ДОСЛОВНОЙ цитатой —
+  // флаг без записи в riskEvidence приём снимает (см. AgentRiskEvidenceDto).
+  "riskEvidence": [],                   // [{flag, quote, startSec|null, endSec|null, speaker: manager|client}]
   "refusalCategory": null,              // price|competitor|no_decision|qualification_issue|execution_issue
   "talkRatioPct": 52,
   "questionsCount": 9,

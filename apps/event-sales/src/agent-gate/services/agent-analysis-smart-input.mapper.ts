@@ -11,6 +11,7 @@ import {
     AgentGigachatResults,
 } from './agent-analysis-intake.types';
 import { renderDialogText } from './agent-analysis-text-render.util';
+import { AnalysisUsageColumns } from './agent-analysis-usage.util';
 
 /**
  * Раскладка разбора агента в запись ais и в поля/связи элемента смарта
@@ -24,6 +25,8 @@ export function buildAgentAnalysisRecord(source: {
     dto: AgentCallAnalysisDto;
     classifierCallType: string | null;
     classifierMismatch: boolean;
+    /** Колонки расхода (tokens_count / price); нет учёта — пусто. */
+    usage?: AnalysisUsageColumns;
 }): Parameters<AiService['create']>[0] {
     const { row, agentName, dto, classifierCallType, classifierMismatch } =
         source;
@@ -33,6 +36,7 @@ export function buildAgentAnalysisRecord(source: {
         type: AGENT_ANALYSIS_TYPE,
         status: 'done',
         result: dto.summary,
+        ...(source.usage ?? {}),
         // Черновик события (plan+report) для будущего /event-sales/flow —
         // копится в БД, в endpoint сейчас не отправляется.
         report_result: dto.flow ? JSON.stringify(dto.flow) : undefined,

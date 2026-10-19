@@ -21,6 +21,10 @@ import {
     CallReportSmartFieldDef,
 } from '../config/call-report-smart.config';
 import { CallReportSmartResolverService } from '../services/call-report-smart-resolver.service';
+import {
+    buildEnumRepairField,
+    missingEnumCodes,
+} from './install-smart-enum-repair';
 
 export interface InstallCallReportSmartResult {
     entityTypeId: number;
@@ -28,6 +32,11 @@ export interface InstallCallReportSmartResult {
     fieldsAdded: string[];
     fieldsExisting: string[];
     fieldsFailed: string[];
+    /**
+     * Существующие enum-поля, которым долиты недостающие значения
+     * справочника (например, новый риск-флаг): «UF_…_RISK_FLAGS: door_closed».
+     */
+    enumItemsAdded: string[];
 }
 
 /**
@@ -151,8 +160,9 @@ export class InstallCallReportSmartUseCase {
             );
         }
 
-        // 2. Поля: добавить отсутствующие (идемпотентно).
-        const { fieldsAdded, fieldsExisting, fieldsFailed } =
+        // 2. Поля: добавить отсутствующие (идемпотентно); у существующих
+        // enum-полей долить недостающие значения справочников.
+        const { fieldsAdded, fieldsExisting, fieldsFailed, enumItemsAdded } =
             await this.installFields(bitrix, typeId);
 
         // 3. Канонический шаг pbx-flow — зеркало полей в PortalDB
@@ -192,6 +202,7 @@ export class InstallCallReportSmartUseCase {
             fieldsAdded,
             fieldsExisting,
             fieldsFailed,
+            enumItemsAdded,
         };
     }
 
@@ -240,7 +251,7 @@ export class InstallCallReportSmartUseCase {
     ): Promise<
         Pick<
             InstallCallReportSmartResult,
-            'fieldsAdded' | 'fieldsExisting' | 'fieldsFailed'
+            'fieldsAdded' | 'fieldsExisting' | 'fieldsFailed' | 'enumItemsAdded'
         >
     > {
         let existing: IUserFieldConfig[];
@@ -282,6 +293,7 @@ export class InstallCallReportSmartUseCase {
         const fieldsAdded: string[] = [];
         const fieldsExisting: string[] = [];
         const fieldsFailed: string[] = [];
+        const enumItemsAdded: string[] = [];
 
         for (const def of CALL_REPORT_SMART_FIELDS) {
             const fieldName = buildCallReportUfName(typeId, def.code);
@@ -293,6 +305,15 @@ export class InstallCallReportSmartUseCase {
                 // ['D_123'], и «Сделка (основная)» вечно пустая. Пропуск
                 // существующего поля этого не чинил: доводим настройку.
                 await this.repairCrmFieldSettings(bitrix, def, existingField);
+                // Справочники растут (новый риск-флаг): доливаем значения.
+                const added = await this.repairEnumItems(
+                    bitrix,
+                    def,
+                    existingField,
+                );
+                if (added.length) {
+                    enumItemsAdded.push(`${fieldName}: ${added.join(', ')}`);
+                }
                 continue;
             }
             try {
@@ -309,7 +330,41 @@ export class InstallCallReportSmartUseCase {
             }
         }
 
-        return { fieldsAdded, fieldsExisting, fieldsFailed };
+        return { fieldsAdded, fieldsExisting, fieldsFailed, enumItemsAdded };
+    }
+
+    /**
+     * Долив недостающих значений перечисления существующему enum-полю
+     * (см. install-smart-enum-repair): возвращает коды долитых значений.
+     * Fail-open: сбой одного поля не валит установку — writer на таком
+     * портале пропустит код с предупреждением, а не уронит запись разбора.
+     */
+    private async repairEnumItems(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        def: CallReportSmartFieldDef,
+        field: IUserFieldConfig,
+    ): Promise<string[]> {
+        if (field.id === undefined) return [];
+        const payload = buildEnumRepairField(def, field);
+        if (!payload) return [];
+        const missing = missingEnumCodes(def, field);
+        try {
+            await bitrix.userFieldConfig.update({
+                moduleId: 'crm',
+                id: field.id,
+                field: payload,
+            });
+            this.logger.log(
+                `Поле ${field.fieldName}: долиты значения [${missing.join(', ')}]`,
+            );
+            return missing;
+        } catch (error) {
+            this.logger.warn(
+                `Поле ${field.fieldName}: значения [${missing.join(', ')}] долить не удалось: ` +
+                    (error as Error).message,
+            );
+            return [];
+        }
     }
 
     /**

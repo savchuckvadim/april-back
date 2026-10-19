@@ -11,7 +11,6 @@ import {
     CALL_REPORT_INTERLOCUTOR_CODES,
     CALL_REPORT_OBJECTION_CODES,
     CALL_REPORT_REFUSAL_CODES,
-    CALL_REPORT_RISK_FLAG_CODES,
     CALL_REPORT_SENTIMENT_CODES,
     CALL_REPORT_SPECIALIST_CODES,
 } from '@lib/call-lib';
@@ -20,6 +19,12 @@ import {
     AGENT_FLOW_PLAN_TYPES,
     AGENT_FLOW_RESULT_STATUSES,
 } from '../../agent-gate/dto/agent-analysis-request.dto';
+import { QUOTE_TIMECODE_SPEC } from './call-quote-timecode.contract';
+import {
+    RISK_EVIDENCE_LIST_SCHEMA,
+    RISK_FLAGS_SCHEMA,
+    RISK_FLAGS_SPEC,
+} from './call-risk-flags.contract';
 
 /**
  * Контракт ГЛУБОКОГО разбора звонка: strict JSON-схема ответа модели +
@@ -150,10 +155,13 @@ export const OBJECTION_SCHEMA = {
     additionalProperties: false,
 } as const;
 
-/** Подсказка модели по таймкодам и реакции — одна на все проходы разбора. */
+/**
+ * Подсказка модели по таймкодам и реакции — одна на все проходы разбора.
+ * Таймкоды — общий лист QUOTE_TIMECODE_SPEC (его же используют
+ * доказательства риск-флагов), реакция — только у возражений.
+ */
 export const OBJECTION_TIMECODE_SPEC =
-    'startSec/endSec — секунды начала и конца цитаты по меткам [mm:ss] в\n' +
-    '  расшифровке (null, если меток нет); reaction — ПЕРВАЯ реакция менеджера\n' +
+    `${QUOTE_TIMECODE_SPEC}; reaction — ПЕРВАЯ реакция менеджера\n` +
     '  на возражение: answer — ответил по существу, clarify — уточнил вопросом,\n' +
     '  other — иное или не отреагировал.';
 
@@ -283,10 +291,9 @@ export const CALL_DEEP_ANALYSIS_SCHEMA: Record<string, unknown> = {
             type: 'array',
             items: { type: 'string', enum: [...CALL_REPORT_COMPETITOR_CODES] },
         },
-        riskFlags: {
-            type: 'array',
-            items: { type: 'string', enum: [...CALL_REPORT_RISK_FLAG_CODES] },
-        },
+        riskFlags: RISK_FLAGS_SCHEMA,
+        // Доказательства флагов (focus-v2.4): флаг без цитаты снимается.
+        riskEvidence: RISK_EVIDENCE_LIST_SCHEMA,
         refusalCategory: {
             type: ['string', 'null'],
             enum: [...CALL_REPORT_REFUSAL_CODES, null],
@@ -336,6 +343,7 @@ export const CALL_DEEP_ANALYSIS_SCHEMA: Record<string, unknown> = {
         'objections',
         'competitors',
         'riskFlags',
+        'riskEvidence',
         'refusalCategory',
         'refusalReason',
         'recommendations',
@@ -648,8 +656,6 @@ ${FIVE_K_CHECKLIST_SPEC}
   ${OBJECTION_TIMECODE_SPEC}
 - competitors — какие конкурирующие системы упомянул клиент (только коды из
   справочника, пустой массив если не упоминал).
-- riskFlags — что должно попасть на стол руководителю: данное клиенту обещание,
-  конфликт, нарушение регламента, сильный негатив. Пустой массив, если ничего.
 - refusalCategory — если звонок закончился отказом, отдели РЫНОЧНУЮ причину
   (цена, конкурент, нет потребности) от ИСПОЛНИТЕЛЬСКОЙ (менеджер не дожал, не
   дошёл до ЛПР, не отработал возражение). Это разные управленческие выводы:
@@ -680,6 +686,8 @@ ${FIVE_K_CHECKLIST_SPEC}
 - coachingPriority — насколько срочно менеджеру нужен разбор с руководителем.
 - employeeRecommendations — что этому сотруднику развивать на дистанции, а не
   в этом конкретном звонке.
+
+${RISK_FLAGS_SPEC}
 
 ЧЕРНОВИК ОТЧЁТА МЕНЕДЖЕРА (поле flow)
 Заполни его так, как заполнил бы сам менеджер по итогам этого звонка — это
@@ -715,8 +723,8 @@ flow.plan.deadlineDate — дата YYYY-MM-DD, если она прозвуча
 
 /**
  * Системный промпт ЦЕЛЬНОГО разбора (single-режим) — конкатенация ядра,
- * каталога разделов и спецификаций; байт-в-байт эквивалентен прежнему
- * монолитному промпту.
+ * каталога разделов и спецификаций (с 20.10.2026 — включая блок «СИГНАЛЫ
+ * РУКОВОДИТЕЛЮ», общий с фокусом «движение сделки»).
  */
 export const CALL_DEEP_ANALYSIS_SYSTEM_PROMPT = `${DEEP_ANALYSIS_CORE_RULES}
 

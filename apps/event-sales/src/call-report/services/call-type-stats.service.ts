@@ -4,6 +4,7 @@ import {
     AiEntityDto,
     AiService,
     CALL_CLASSIFY_TYPE,
+    isSupersededRecord,
 } from '@lib/call-lib';
 import { CLASSIFY_ESCALATION_CONFIDENCE } from './call-classify-step.service';
 import {
@@ -55,6 +56,9 @@ export class CallTypeStatsService {
         const classify = new Map<string, ClassifyFacts>();
         const analysis = new Map<string, AnalysisFacts>();
         for (const record of records) {
+            // Замещённый переразбором разбор не считается: активная запись
+            // того же звонка идёт позже (created_at по возрастанию).
+            if (isSupersededRecord(record)) continue;
             const key = record.transcription_id ?? `ai:${record.id}`;
             if (record.type === CALL_CLASSIFY_TYPE) {
                 classify.set(key, this.readClassify(record));

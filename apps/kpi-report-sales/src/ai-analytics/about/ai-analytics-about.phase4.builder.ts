@@ -118,6 +118,9 @@ export function aboutForecastAccuracyOf(
         reasons: [...snapshot.reasons],
         shadowMonths: snapshot.shadowMonths,
         shadowMinMonths: snapshot.shadowMinMonths,
+        ...(snapshot.replayedMonths === undefined
+            ? {}
+            : { replayedMonths: snapshot.replayedMonths }),
         coverage:
             backtest === null
                 ? null

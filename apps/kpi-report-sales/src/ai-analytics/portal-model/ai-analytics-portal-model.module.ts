@@ -29,6 +29,7 @@ import { PortalModelLoader } from '../domain/loaders/portal-model.loader';
 import { PortalModelUseCase } from '../domain/use-cases/portal-model.use-case';
 import { DepartmentForecastStep } from '../steps/department-forecast.step';
 import { ForecastBacktestStep } from '../steps/forecast-backtest.step';
+import { ForecastLogReplayStep } from '../steps/forecast-log-replay.step';
 import { ForecastStep } from '../steps/forecast.step';
 import { PortalModelStep } from '../steps/portal-model.step';
 import { RecommendationEffectStep } from '../steps/recommendation-effect.step';
@@ -40,8 +41,10 @@ import { RecommendationEffectStep } from '../steps/recommendation-effect.step';
         PortalModelUseCase,
         PortalModelStep,
         ForecastStep,
-        // Фаза 4, П21/П23: шаги читают модель и месяцы через PortalModelLoader.
+        // Фаза 4, П21/П23: шаги читают модель и месяцы через PortalModelLoader;
+        // воспроизведение журнала — ещё и дни закрытия сделок (ядро PBX).
         DepartmentForecastStep,
+        ForecastLogReplayStep,
         ForecastBacktestStep,
         RecommendationEffectStep,
     ],
@@ -50,6 +53,7 @@ import { RecommendationEffectStep } from '../steps/recommendation-effect.step';
         ForecastStep,
         PortalModelUseCase,
         DepartmentForecastStep,
+        ForecastLogReplayStep,
         ForecastBacktestStep,
         RecommendationEffectStep,
     ],

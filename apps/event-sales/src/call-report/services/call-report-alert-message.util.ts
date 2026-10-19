@@ -1,15 +1,28 @@
 import {
     CALL_REPORT_CALL_TYPE_ITEMS,
     CALL_REPORT_COACHING_ITEMS,
-    CALL_REPORT_RISK_FLAG_CODES,
     CALL_REPORT_RISK_FLAG_ITEMS,
     CallReportCoachingCode,
     CallReportRiskFlagCode,
 } from '@lib/call-lib';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 
-/** Вид алерта: риск-флаг разбора либо срочный приоритет коучинга. */
-export type CallReportAlertKind = CallReportRiskFlagCode | 'urgent';
+/**
+ * Риск-флаги, по которым РОП получает уведомление В ДЕНЬ ЗВОНКА (решение
+ * владельца 19.10.2026 — флаги понижены в приоритете): только конфликт /
+ * грубость менеджера и нарушение регламента. Обещание, негатив клиента и
+ * «не оставил дверь открытой» в тот же день не шлются — они идут в
+ * повестку недели (следующий этап плана ai/tasks/2026-10-19-ai-focus-plan.md).
+ */
+export const CALL_REPORT_SAME_DAY_ALERT_FLAGS = [
+    'conflict',
+    'compliance',
+] as const satisfies readonly CallReportRiskFlagCode[];
+export type CallReportSameDayAlertFlag =
+    (typeof CALL_REPORT_SAME_DAY_ALERT_FLAGS)[number];
+
+/** Вид алерта: риск-флаг дня либо срочный приоритет коучинга. */
+export type CallReportAlertKind = CallReportSameDayAlertFlag | 'urgent';
 
 /** Срочный приоритет разбора — сам по себе повод для алерта. */
 const URGENT_COACHING: CallReportCoachingCode = 'urgent';
@@ -32,18 +45,19 @@ export interface CallReportAlertMessageInput {
     link: string | null;
 }
 
+const isSameDayFlag = (code: string): code is CallReportSameDayAlertFlag =>
+    (CALL_REPORT_SAME_DAY_ALERT_FLAGS as readonly string[]).includes(code);
+
 /**
- * Вид алерта по разбору: первый риск-флаг из справочника смарта (в порядке,
- * как их поставил разбор), иначе срочный приоритет коучинга, иначе null —
- * алерт не нужен.
+ * Вид алерта по разбору: первый риск-флаг ДНЯ (conflict / compliance) в
+ * порядке, как их поставил разбор; иначе срочный приоритет коучинга;
+ * иначе null — алерт не нужен. Прочие флаги (promise, client_negative,
+ * door_closed) уведомление в день звонка не дают.
  */
 export function resolveAlertKind(
     analysis: AlertAnalysisView,
 ): CallReportAlertKind | null {
-    const alertFlags: readonly string[] = CALL_REPORT_RISK_FLAG_CODES;
-    const flag = (analysis.riskFlags ?? []).find(code =>
-        alertFlags.includes(code),
-    );
+    const flag = (analysis.riskFlags ?? []).find(isSameDayFlag);
     if (flag) return flag;
     return analysis.coachingPriority === URGENT_COACHING ? 'urgent' : null;
 }

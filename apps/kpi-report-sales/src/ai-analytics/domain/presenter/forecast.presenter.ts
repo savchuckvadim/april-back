@@ -145,6 +145,10 @@ export function presentForecast(sources: ForecastSources): AiForecastDto {
         shadow: {
             monthsLogged: sources.backtest?.shadowMonths ?? 0,
             minMonths,
+            // Поле необязательное: у проверок до воспроизведения его нет.
+            ...(sources.backtest?.replayedMonths === undefined
+                ? {}
+                : { replayedMonths: sources.backtest.replayedMonths }),
             backtest: backtestSummary(sources.backtest),
         },
         reasons,

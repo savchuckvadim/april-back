@@ -9,7 +9,9 @@ import {
     AnalysisVersions,
     comparableFrom,
     comparableFromVersions,
+    PROMPT_SERIES_START,
     versionDate,
+    versionSeriesDate,
 } from '../contracts/versions.types';
 import {
     SkillSnapshot,
@@ -42,6 +44,33 @@ describe('versions.types', () => {
     it('нет дат → пустая строка', () => {
         expect(comparableFrom([])).toBe('');
         expect(comparableFrom(['sections-7-v1'])).toBe('');
+    });
+
+    /**
+     * Серии сравнимости (решение владельца 19.10.2026): минорная версия
+     * несёт свою дату, но граница берётся из таблицы серий.
+     */
+    it('versionSeriesDate — дата серии из таблицы, иначе дата из строки', () => {
+        expect(PROMPT_SERIES_START['focus-v2.4-2026-10-20']).toBe('2026-09-25');
+        expect(versionSeriesDate('focus-v2.4-2026-10-20')).toBe('2026-09-25');
+        expect(versionDate('focus-v2.4-2026-10-20')).toBe('2026-10-20');
+        // Версия без записи — прежнее поведение.
+        expect(versionSeriesDate('focus-v2.3-2026-09-25')).toBe('2026-09-25');
+        expect(versionSeriesDate('sections-7-v1')).toBeNull();
+    });
+
+    it('comparableFrom: минорная v2.4 не сдвигает границу относительно v2.3', () => {
+        const base = ['sections-7-v1', '2026-08-24', '2026-09-05'];
+        expect(comparableFrom([...base, 'focus-v2.3-2026-09-25'])).toBe(
+            '2026-09-25',
+        );
+        expect(comparableFrom([...base, 'focus-v2.4-2026-10-20'])).toBe(
+            '2026-09-25',
+        );
+        // Правка по существу (нет записи в таблице) — рвёт ряд как раньше.
+        expect(comparableFrom([...base, 'focus-v3.0-2026-11-01'])).toBe(
+            '2026-11-01',
+        );
     });
 
     it('comparableFromVersions — по всем пяти полям', () => {

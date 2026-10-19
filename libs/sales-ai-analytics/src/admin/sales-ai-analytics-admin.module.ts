@@ -4,6 +4,7 @@ import { AiAnalyticsFeedbackCostAdminController } from './controllers/feedback-c
 import { AiAnalyticsGoldenSetAdminController } from './controllers/golden-set.admin.controller';
 import { AiAnalyticsPhase4AdminController } from './controllers/phase4.admin.controller';
 import { AiAnalyticsPipelineAdminController } from './controllers/pipeline.admin.controller';
+import { AiAnalyticsReanalyzeAdminController } from './controllers/reanalyze.admin.controller';
 import { AiAnalyticsRetentionAdminController } from './controllers/retention.admin.controller';
 import { SalesAiAnalyticsAuditModule } from './sales-ai-analytics-audit.module';
 import { SalesAiAnalyticsOpsModule } from './sales-ai-analytics-ops.module';
@@ -42,6 +43,8 @@ import { SalesAiAnalyticsProbeModule } from './sales-ai-analytics-probe.module';
         AiAnalyticsFeedbackCostAdminController,
         AiAnalyticsGoldenSetAdminController,
         AiAnalyticsPhase4AdminController,
+        // Переразбор истории текущей версией промпта (этап 1B)
+        AiAnalyticsReanalyzeAdminController,
     ],
 })
 export class SalesAiAnalyticsAdminModule {}

@@ -21,6 +21,7 @@ import { RecommendationEffectStep } from '../steps/recommendation-effect.step';
 import { RecommendationLogStep } from '../steps/recommendation-log.step';
 import { DepartmentForecastStep } from '../steps/department-forecast.step';
 import { ForecastBacktestStep } from '../steps/forecast-backtest.step';
+import { ForecastLogReplayStep } from '../steps/forecast-log-replay.step';
 import { PoolPortalsLoader } from '../domain/loaders/pool-portals.loader';
 import { PortalModelStep } from '../steps/portal-model.step';
 import { RopMarkStep } from '../steps/rop-mark.step';
@@ -104,10 +105,13 @@ export const AI_ANALYTICS_PIPELINE_STEP_ORDER: Type<AiAnalyticsPipelineStep>[] =
         StyleStep,
         PlansStep,
         FinanceStep,
-        // Фаза 4 (monthly/backfill): оценка β, пул, точность прогноза и
+        // Фаза 4 (monthly/backfill): оценка β, пул, воспроизведение журнала
+        // прогноза по истории (читает episodes/chain/calls.rows и месяцы
+        // финансов — после них), точность прогноза по этому журналу и
         // эффект советов — до модели портала, которая читает их итоги.
         QualityLinkStep,
         PoolStep,
+        ForecastLogReplayStep,
         ForecastBacktestStep,
         RecommendationEffectStep,
         RopMarkStep,

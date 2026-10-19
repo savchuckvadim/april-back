@@ -12,7 +12,11 @@ import {
     EnumPortalAppCode,
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
-import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
+import {
+    VibeCodeClient,
+    VibeKeyResolverService,
+    type VibecodeStructuredCompletionWithUsage,
+} from '@lib/vibecode';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 import {
     AFTER_PRESENTATION_STRICT_BLOCK,
@@ -21,6 +25,7 @@ import {
     renderCallTypeProfile,
     renderPresentationStrictnessBlock,
 } from '../contracts/call-deep-analysis.contract';
+import { sumCompletionUsage } from './call-analysis-usage.util';
 import { CallReportSettingsService } from './call-report-settings.service';
 import {
     CallFocusKey,
@@ -102,6 +107,10 @@ const FOCUS_PASSES: FocusPass[] = [
  * Устойчивость: упавший фокус не роняет разбор (его разделы просто
  * отсутствуют); минимум два фокуса обязаны выжить, иначе null. Ошибка
  * синтеза тоже не фатальна — итоговые поля остаются пустыми.
+ *
+ * Учёт токенов: каждый удавшийся вызов (фокусы и синтез) возвращает usage
+ * провайдера; сумма едет в dto.usage — приём разбора кладёт её в колонки
+ * ais (tokens_count / price), и расход виден в GET admin/ai-analytics/cost.
  *
  * Включение: CALL_REPORT_ANALYSIS_MODE=focus (processor выбирает между
  * этим сервисом и цельным CallDeepAnalysisService).
@@ -199,7 +208,7 @@ export class CallFocusAnalysisService {
                 passportBlock,
             );
 
-            const results = await Promise.all(
+            const responses = await Promise.all(
                 FOCUS_PASSES.map(pass =>
                     this.runFocus(
                         pass,
@@ -212,7 +221,10 @@ export class CallFocusAnalysisService {
                 ),
             );
             const byKey = Object.fromEntries(
-                FOCUS_PASSES.map((pass, index) => [pass.key, results[index]]),
+                FOCUS_PASSES.map((pass, index) => [
+                    pass.key,
+                    resultOf(responses[index]),
+                ]),
             ) as Record<CallFocusKey, Record<string, unknown> | null>;
 
             const survived = Object.values(byKey).filter(Boolean).length;
@@ -228,7 +240,7 @@ export class CallFocusAnalysisService {
             const synthesisContext = materials.synthesis
                 ? `${materials.shared}\n\n${materials.synthesis}${commonTail}`
                 : materials.shared + commonTail;
-            const synthesis = await this.runSynthesis(
+            const synthesisResponse = await this.runSynthesis(
                 byKey,
                 synthesisContext,
                 userContent,
@@ -236,6 +248,7 @@ export class CallFocusAnalysisService {
                 domain,
                 options?.model,
             );
+            const synthesis = resultOf(synthesisResponse);
 
             const merged: Record<string, unknown> = {
                 ...(byKey.form ?? {}),
@@ -248,6 +261,15 @@ export class CallFocusAnalysisService {
                     ...this.sectionsOf(byKey.movement),
                 ],
                 callType: callType ?? FALLBACK_CALL_TYPE,
+                // Расход всех удавшихся вызовов (фокусы + синтез).
+                usage: sumCompletionUsage(
+                    [...responses, synthesisResponse].filter(
+                        (
+                            response,
+                        ): response is VibecodeStructuredCompletionWithUsage =>
+                            response !== null,
+                    ),
+                ),
             };
             const dto = plainToInstance(AgentCallAnalysisDto, merged);
             this.logger.log(
@@ -412,7 +434,7 @@ export class CallFocusAnalysisService {
         return `${typeLine}${passport}Разбери звонок по расшифровке:\n\n${transcript}`;
     }
 
-    /** Один фокус-проход; ошибка → null (разбор продолжается без него). */
+    /** Один фокус-проход (ответ + usage); ошибка → null (разбор продолжается без него). */
     private async runFocus(
         pass: FocusPass,
         sharedContext: string,
@@ -420,9 +442,9 @@ export class CallFocusAnalysisService {
         apiKey: string,
         domain: string,
         model?: string,
-    ): Promise<Record<string, unknown> | null> {
+    ): Promise<VibecodeStructuredCompletionWithUsage | null> {
         try {
-            const parsed = await this.vibeCodeClient.structuredCompletion(
+            return await this.vibeCodeClient.structuredCompletionWithUsage(
                 `${pass.prompt}${sharedContext ? `\n${sharedContext}` : ''}`,
                 userContent,
                 `call_focus_${pass.key}`,
@@ -430,7 +452,6 @@ export class CallFocusAnalysisService {
                 apiKey,
                 { model },
             );
-            return parsed as Record<string, unknown>;
         } catch (error) {
             this.logger.warn(
                 `Фокус «${pass.label}» не выполнен (${domain}): ${(error as Error).message}`,
@@ -439,7 +460,7 @@ export class CallFocusAnalysisService {
         }
     }
 
-    /** Синтез итоговых полей по выжимкам фокусов; ошибка → null. */
+    /** Синтез итоговых полей по выжимкам фокусов (ответ + usage); ошибка → null. */
     private async runSynthesis(
         byKey: Record<CallFocusKey, Record<string, unknown> | null>,
         sharedContext: string,
@@ -447,14 +468,14 @@ export class CallFocusAnalysisService {
         apiKey: string,
         domain: string,
         model?: string,
-    ): Promise<Record<string, unknown> | null> {
+    ): Promise<VibecodeStructuredCompletionWithUsage | null> {
         const digests = [
             renderFocusDigest('ФОРМА РАЗГОВОРА', byKey.form),
             renderFocusDigest('СОДЕРЖАНИЕ ПРОДАЖИ', byKey.content),
             renderFocusDigest('ДВИЖЕНИЕ СДЕЛКИ', byKey.movement),
         ].join('\n\n');
         try {
-            const parsed = await this.vibeCodeClient.structuredCompletion(
+            return await this.vibeCodeClient.structuredCompletionWithUsage(
                 `${FOCUS_SYNTHESIS_PROMPT}${sharedContext ? `\n${sharedContext}` : ''}`,
                 `ВЫВОДЫ СПЕЦИАЛИЗИРОВАННЫХ РАЗБОРОВ:\n\n${digests}\n\n${userContent}`,
                 'call_focus_synthesis',
@@ -462,7 +483,6 @@ export class CallFocusAnalysisService {
                 apiKey,
                 { model },
             );
-            return parsed as Record<string, unknown>;
         } catch (error) {
             this.logger.warn(
                 `Синтез фокус-разбора не выполнен (${domain}): ${(error as Error).message}`,
@@ -478,4 +498,11 @@ export class CallFocusAnalysisService {
             ? (result.sections as Record<string, unknown>[])
             : [];
     }
+}
+
+/** Разобранный JSON ответа провайдера; вызов не удался — null. */
+function resultOf(
+    response: VibecodeStructuredCompletionWithUsage | null,
+): Record<string, unknown> | null {
+    return response ? (response.result as Record<string, unknown>) : null;
 }
