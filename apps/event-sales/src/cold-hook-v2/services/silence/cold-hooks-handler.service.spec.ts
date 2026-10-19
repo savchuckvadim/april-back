@@ -59,6 +59,7 @@ const FIELDS: Record<string, string> = {
     call_next_date: 'CALL_NEXT_DATE',
     xo_date: 'XO_DATE',
     op_xo_revive_sent_at: 'OP_XO_REVIVE_SENT_AT',
+    op_xo_is_force: 'OP_XO_IS_FORCE',
     xo_responsible: 'XO_RESPONSIBLE',
     xo_created: 'XO_CREATED',
     xo_name: 'XO_NAME',
@@ -541,6 +542,13 @@ describe('ColdHooksHandlerV2Service — сделка без компании', (
             // Уступили — но хук отработал, и подстраховка это фиксирует.
             'xo2_sent_h2',
         ]);
+        // Вместе с отметкой «отправлен» сбрасывается разовый «с очищением».
+        const sent = of(journal, 'deal.update').find(
+            ([, key]) => key === 'xo2_sent_h2',
+        );
+        const sentFields = sent?.[3] as Record<string, unknown> | undefined;
+        expect(sentFields?.UF_CRM_OP_XO_IS_FORCE).toBe('0');
+        expect(typeof sentFields?.UF_CRM_OP_XO_REVIVE_SENT_AT).toBe('string');
         expect(of(journal, 'task.complete').map(([, , id]) => id)).toEqual([
             41,
         ]);

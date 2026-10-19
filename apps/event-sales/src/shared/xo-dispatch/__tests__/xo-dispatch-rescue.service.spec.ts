@@ -19,6 +19,7 @@ const FIELDS: Record<string, string> = {
     xo_name: 'XO_NAME',
     xo_responsible: 'XO_RESPONSIBLE',
     xo_created: 'XO_CREATED',
+    op_xo_is_force: 'OP_XO_IS_FORCE',
 };
 
 const UF = (code: string) => `UF_CRM_${FIELDS[code]}`;
@@ -175,6 +176,54 @@ describe('XoDispatchRescueService — досылка по метке робот�
                 name: 'ООО Ромашка',
             }),
         );
+    });
+
+    it('«с очищением» берётся из карточки — и у компании, и у сделки (решение 19.10.2026)', async () => {
+        const { service, coldHook } = makeDeps({
+            companies: [{ ...stuckCompany(), [UF('op_xo_is_force')]: '1' }],
+            deals: [
+                {
+                    ...stuckCompany('600'),
+                    COMPANY_ID: '5',
+                    [UF('op_xo_is_force')]: 'Y',
+                },
+            ],
+        });
+
+        await service.runForDomain(DOMAIN, options());
+
+        expect(coldHook.createColdCallHook).toHaveBeenCalledWith(
+            DOMAIN,
+            expect.objectContaining({
+                entityType: 'company',
+                entityId: '77',
+                force: 'Y',
+            }),
+        );
+        expect(coldHook.createColdCallHook).toHaveBeenCalledWith(
+            DOMAIN,
+            expect.objectContaining({
+                entityType: 'deal',
+                entityId: '600',
+                force: 'Y',
+            }),
+        );
+    });
+
+    it('«с очищением» пусто или «нет» — досылает без очищения', async () => {
+        const { service, coldHook } = makeDeps({
+            companies: [
+                stuckCompany(),
+                { ...stuckCompany('78'), [UF('op_xo_is_force')]: '0' },
+            ],
+        });
+
+        await service.runForDomain(DOMAIN, options());
+
+        expect(coldHook.createColdCallHook).toHaveBeenCalledTimes(2);
+        for (const [, data] of coldHook.createColdCallHook.mock.calls) {
+            expect(data).toEqual(expect.objectContaining({ force: 'N' }));
+        }
     });
 
     it('метка поставлена до «учитывать метки начиная с» — не досылает: это работа до включения', async () => {

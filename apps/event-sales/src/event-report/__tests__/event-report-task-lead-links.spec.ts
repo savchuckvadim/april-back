@@ -131,4 +131,27 @@ describe('EventReportTaskFlowService — наследование L_* в нов�
             .UF_CRM_TASK as string[];
         expect(links).toEqual(['D_500']);
     });
+
+    it('внеплановая презентация в задачу не попадает, запланированная — да (как legacy)', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new EventReportTaskFlowService(
+            bitrix as never,
+            makePortal() as never,
+        );
+
+        service.queue(baseCtx(), {
+            baseDealId: '600',
+            newPlanPresDealId: '$result[set_plan_pres_deal]',
+            newUnplannedPresDealId: '$result[set_unplanned_pres_deal]',
+        });
+
+        const add = calls.find(c => c.method === 'task.add');
+        const links = (add?.args[0] as Record<string, unknown>)
+            .UF_CRM_TASK as string[];
+        expect(links).toEqual([
+            'D_500',
+            'D_600',
+            'D_$result[set_plan_pres_deal]',
+        ]);
+    });
 });

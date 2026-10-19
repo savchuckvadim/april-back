@@ -600,7 +600,11 @@ export class EventReportTaskFlowService {
     /**
      * Порядок ссылок в `UF_CRM_TASK` повторяет legacy:
      *   L_<lead> → C_<planContact> → D_<владелец> → D_<base> →
-     *   D_<plannedPres> → D_<unplannedPres> → CO_<company>.
+     *   D_<plannedPres> → CO_<company>.
+     *
+     * Внеплановую презентацию в задачу НЕ кладём, как и legacy (в задачу шли
+     * только planDeals): её сделка создаётся сразу закрытой, к следующему
+     * шагу отношения не имеет и связана с основной через поля сделок.
      */
     private buildCrmTaskLinks(
         ctx: EventReportContext,
@@ -655,9 +659,6 @@ export class EventReportTaskFlowService {
         }
         if (deals.newPlanPresDealId) {
             links.push(`D_${deals.newPlanPresDealId}`);
-        }
-        if (deals.newUnplannedPresDealId) {
-            links.push(`D_${deals.newUnplannedPresDealId}`);
         }
 
         if (ctx.entityType === EEventReportEntityType.COMPANY && ctx.entityId) {

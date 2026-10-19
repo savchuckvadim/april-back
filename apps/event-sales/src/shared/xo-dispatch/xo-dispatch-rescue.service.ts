@@ -7,7 +7,6 @@ import { ETimeZone, parsePortalInput } from '@lib/shared/lib/date';
 import { ColdHookSilinceEndpointV2Service } from '../../cold-hook-v2/services/silence/cold-hook-silince-endpoint.service';
 import {
     EnumColdCallEntityType,
-    EnumColdCallForce,
     EnumColdCallIsTmc,
 } from '../../cold-hook-v2/dto/cold.dto';
 import { resolveColdCallData } from '../../cold-hook-v2/lib/cold-call-intent';
@@ -257,9 +256,10 @@ export class XoDispatchRescueService {
                         ? EnumColdCallEntityType.COMPANY
                         : EnumColdCallEntityType.DEAL,
                 entityId: String(item.entityId),
-                // Крон не забирает клиента у другого сотрудника: решение
-                // владельца 12.09.2026 — force=Y только у ручной отправки.
-                force: EnumColdCallForce.N,
+                // force НЕ задаём: резолвер возьмёт «ОП ХО с очищением?» из
+                // карточки — крон повторяет то, что выбрал отправивший, а
+                // пустое поле даёт дефолт хука (N). Решение владельца
+                // 19.10.2026 (прежде, с 12.09, крон слал только N).
                 isTmc: EnumColdCallIsTmc.N,
             },
             entityRow: item.row,

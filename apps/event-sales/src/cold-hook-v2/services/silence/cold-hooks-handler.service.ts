@@ -24,6 +24,7 @@ import {
 } from '../../lib/cold-call-intent';
 import { BitrixEntityType } from '@lib/bitrix/domain/enums/bitrix-constants.enum';
 import { XoDispatchMarkerModel } from '../../../shared/xo-dispatch/xo-dispatch-marker.model';
+import { XO_INTENT_FIELD_CODES } from '@lib/portal-lib/pbx/pbx-lead-request/type/pbx-xo-event.enum';
 import { EnumColdCallEntityType } from '../../dto/cold.dto';
 import dayjs from 'dayjs';
 import {
@@ -286,7 +287,20 @@ export class ColdHooksHandlerV2Service {
                     .tz(PortalModel.getTimezone())
                     .format('DD.MM.YYYY HH:mm:ss');
                 const cmd = `xo2_sent_${target.hookKey}`;
-                const fields = { [fieldName]: stamp };
+                const fields: Record<string, string> = { [fieldName]: stamp };
+                /*
+                 * «ОП ХО с очищением?» — разовый выбор отправившего: после
+                 * отработки сбрасываем, иначе следующий ХО по карточке
+                 * (подстраховка берёт признак оттуда) снова забрал бы клиента
+                 * у коллеги (решение владельца 19.10.2026).
+                 */
+                const forceField = PortalModel.getEntityFieldByCode(
+                    entityType,
+                    XO_INTENT_FIELD_CODES.isForce,
+                );
+                if (forceField) {
+                    fields[PortalModel.getFieldBitrixId(forceField)] = '0';
+                }
                 buffer.queue(() =>
                     entityType === 'company'
                         ? bitrix.batch.company.update(
