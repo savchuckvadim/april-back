@@ -141,14 +141,17 @@ export function analysisByTranscription<T extends ReanalysisRecordView>(
 
 /**
  * Кандидаты переразбора: транскрипции окна × сотрудники списка, у которых
- * активный разбор другой серии промпта (или без версий). Без разбора —
- * пропуск (короткие/нерелевантные заново не разбираем); активный разбор
- * текущей серии — пропуск (повтор запуска безопасен).
+ * активный разбор ДРУГОЙ ВЕРСИИ промпта (строка `versions.prompt` ≠
+ * текущей) или без версий — серия тут не важна: владелец просил
+ * пересчитать историю именно текущей версией, а серии накопленной
+ * истории объединены (AI_ANALYSIS_SERIES_START). Без разбора — пропуск
+ * (короткие/нерелевантные заново не разбираем); активный разбор текущей
+ * версии — пропуск (повтор запуска безопасен).
  */
 export function selectReanalysisCandidates(input: {
     transcriptions: readonly ReanalysisTranscriptionView[];
     records: readonly ReanalysisRecordView[];
-    currentSeries: string | null;
+    currentPromptVersion: string;
     roster: readonly number[] | null;
 }): ReanalysisSelection {
     const grouped = analysisByTranscription(input.records);
@@ -170,14 +173,14 @@ export function selectReanalysisCandidates(input: {
             continue;
         }
         const oldPromptVersion = promptVersionOf(old.user_result);
+        if (oldPromptVersion === input.currentPromptVersion) {
+            skippedBy.upToDate += 1;
+            continue;
+        }
         const oldSeries =
             oldPromptVersion === null
                 ? null
                 : versionSeriesDate(oldPromptVersion);
-        if (oldSeries !== null && oldSeries === input.currentSeries) {
-            skippedBy.upToDate += 1;
-            continue;
-        }
         candidates.push({
             transcriptionId: transcription.id,
             userId: transcription.userId,

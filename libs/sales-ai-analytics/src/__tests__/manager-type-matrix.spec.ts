@@ -39,6 +39,15 @@ const others = liteRows('o', 2, {
     callType: 'other',
     score: 30,
 });
+/**
+ * Приглашения на мероприятие m2 (решение владельца 19.10.2026): своя
+ * колонка с n и оценкой, но вне корзин, средней менеджера и «прочего».
+ */
+const invites = liteRows('e', 9, {
+    managerId: 'm2',
+    callType: 'event_invite',
+    score: 40,
+});
 const excludedRows = [
     liteRow({ transcriptionId: 'x1', analysisPresent: false, score: null }),
     liteRow({ transcriptionId: 'x2', managerId: null }),
@@ -49,6 +58,7 @@ const rows = [
     ...presentations,
     ...colds,
     ...payments,
+    ...invites,
     ...others,
     ...excludedRows,
 ];
@@ -68,10 +78,13 @@ describe('buildManagerTypeMatrix', () => {
         ]);
         expect(matrix.managers[1].byType.map(cell => cell.callType)).toEqual([
             'payment',
+            'event_invite',
             'other',
         ]);
-        expect(matrix.analyzed).toBe(24);
-        expect(matrix.noBucket).toBe(2);
+        expect(matrix.analyzed).toBe(33);
+        // Без корзины — приглашения и other; без колонки («прочее») — только other.
+        expect(matrix.noBucket).toBe(11);
+        expect(matrix.noColumn).toBe(2);
         expect(matrix.comparableFrom).toBeNull();
         expect(matrix.comparableVersionFrom).toBeNull();
         expect(matrix.seriesBreakFrom).toBeNull();
@@ -173,10 +186,29 @@ describe('buildManagerTypeMatrix', () => {
         ]);
         expect(m1.buckets[1].score.value).toBeCloseTo(7.25, 9);
         const m2 = matrix.managers[1];
-        expect(m2.n).toBe(11);
+        expect(m2.n).toBe(20);
+        // Средняя менеджера — только по оплатам: приглашения (оценка 4) и
+        // other (оценка 3) без корзины и в неё не входят.
         expect(m2.score.n).toBe(9);
         expect(m2.score.value).toBeCloseTo(6, 9);
+        expect(m2.buckets.map(item => [item.bucket, item.n])).toEqual([
+            ['contact', 0],
+            ['presentation', 0],
+            ['closing', 9],
+        ]);
         expect(m2.byType[1].bucket).toBeNull();
+        expect(m2.byType[2].bucket).toBeNull();
+    });
+
+    it('приглашение на мероприятие: своя ячейка с n и оценкой, вне корзин', () => {
+        const invite = matrix.managers[1].byType.find(
+            cell => cell.callType === 'event_invite',
+        );
+        expect(invite?.n).toBe(9);
+        expect(invite?.bucket).toBeNull();
+        expect(invite?.score.n).toBe(9);
+        expect(invite?.score.value).toBeCloseTo(4, 9);
+        expect(invite?.evidenceCallIds.best).toBe('e1');
     });
 
     it('итоги по типам и корзины отдела', () => {
@@ -186,9 +218,13 @@ describe('buildManagerTypeMatrix', () => {
             ['cold', 3, 1],
             ['presentation', 10, 1],
             ['payment', 9, 1],
+            ['event_invite', 9, 1],
             ['other', 2, 1],
         ]);
         expect(matrix.totals[1].score.value).toBeCloseTo(7.25, 9);
+        // Итог приглашений — своя оценка, но корзины отдела его не видят.
+        expect(matrix.totals[3].score.value).toBeCloseTo(4, 9);
+        expect(matrix.totals[3].bucket).toBeNull();
         expect(matrix.buckets.map(item => [item.bucket, item.n])).toEqual([
             ['contact', 3],
             ['presentation', 10],
@@ -256,13 +292,13 @@ describe('buildManagerTypeMatrix', () => {
         ]);
         expect(open.analyzed).toBe(1);
         // прежняя опция comparableFrom — граница ВЕРСИЙ: все строки разобраны
-        // набором от 05.09, поэтому сравнимы при любой дате звонка
+        // набором общей серии (от 25.06), поэтому сравнимы при любой дате звонка
         const byVersion = buildManagerTypeMatrix(
             [...rows, liteRow({ transcriptionId: 'nd', callStartedAt: null })],
-            { comparableFrom: '2026-09-05' },
+            { comparableFrom: '2026-06-25' },
         );
         expect(byVersion.excluded.beforeComparable).toBe(0);
-        expect(byVersion.analyzed).toBe(25);
+        expect(byVersion.analyzed).toBe(34);
     });
 
     it('день звонка сравнивается с границей в TZ портала', () => {
@@ -289,7 +325,7 @@ describe('buildManagerTypeMatrix', () => {
             thresholds: { shortCallSec: 60 },
         });
         expect(lenient.excluded.short).toBe(0);
-        expect(lenient.analyzed).toBe(25);
+        expect(lenient.analyzed).toBe(34);
     });
 
     describe('порог по типам (min_duration_sec_by_type, решение А.1)', () => {

@@ -3,9 +3,9 @@
  *
  * 1. Версия разбора (`comparableVersionFrom`, прежнее имя `comparableFrom`).
  *    Строка сравнима, если дата её СОБСТВЕННОГО набора versions (prompt /
- *    rubric / registry / attribution / classifier — та же функция
- *    `comparableFrom`, что считает границу периода по версиям) не раньше
- *    границы. День звонка не участвует: звонок 24.09, разобранный версией
+ *    rubric / registry / attribution / classifier с учётом таблиц серий —
+ *    та же функция `comparableFromVersions`, что считает границу периода
+ *    по версиям) не раньше границы. День звонка не участвует: звонок 24.09, разобранный версией
  *    от 25.09, сравним; звонок 26.09, разобранный старой версией, — нет.
  *    Строка без versions или без дат в них — прежнее правило, по дню звонка.
  * 2. Разрыв ряда сменой настроек портала (`seriesBreakFrom`) — по дню
@@ -14,7 +14,7 @@
  *
  * Звонок без даты там, где сравнивается день, — до границы. Чистые функции.
  */
-import { comparableFrom } from '../contracts/versions.types';
+import { comparableFromVersions } from '../contracts/versions.types';
 import type {
     MatrixCallRow,
     MatrixComparability,
@@ -41,12 +41,15 @@ export function matrixComparability(
     };
 }
 
-/** Дата набора версий строки: max дат в значениях versions; дат нет — null. */
+/**
+ * Дата набора версий строки: max дат СЕРИЙ по полям versions (таблицы серий
+ * промпта, атрибуции и классификатора); дат нет — null.
+ */
 export function rowVersionsDate(
     row: Pick<MatrixCallRow, 'versions'>,
 ): string | null {
     if (!row.versions) return null;
-    return comparableFrom(Object.values(row.versions)) || null;
+    return comparableFromVersions(row.versions) || null;
 }
 
 /** День звонка в TZ портала раньше границы; звонок без даты — раньше. */

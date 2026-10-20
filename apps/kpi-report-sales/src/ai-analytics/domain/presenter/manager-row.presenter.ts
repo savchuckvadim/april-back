@@ -149,6 +149,7 @@ export function buildManagerRow(input: ManagerRowInput): AiManagerRowDto {
             ...call,
             link: null,
         })),
+        quality: input.callFacts.quality,
         recommendations: [],
         ...(since === null ? {} : { since }),
         ...(sinceSource === null ? {} : { sinceSource }),

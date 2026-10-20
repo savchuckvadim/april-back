@@ -83,7 +83,7 @@ const pulse = () => ({
         {
             managerId: '10',
             transcriptionId: '10-r0',
-            kind: 'promise',
+            kind: 'conflict',
             handled: false,
             link: LINK,
         },

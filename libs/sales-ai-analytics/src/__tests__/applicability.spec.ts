@@ -1,4 +1,7 @@
-import { CALL_REPORT_TYPE_PROFILES } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-smart.type';
+import {
+    CALL_REPORT_CALL_TYPE_CODES,
+    CALL_REPORT_TYPE_PROFILES,
+} from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-smart.type';
 import {
     APPLICABILITY_DEFAULTS,
     applicableSections,
@@ -59,6 +62,23 @@ describe('buildApplicability', () => {
             'REFUSAL',
         ]);
         expect(countApplicableSections(table, 'cold')).toBe(5);
+    });
+
+    it('таблица покрывает каждый тип справочника; приглашение на мероприятие — без цены', () => {
+        const table = buildApplicability();
+
+        expect(Object.keys(table.byType).sort()).toEqual(
+            [...CALL_REPORT_CALL_TYPE_CODES].sort(),
+        );
+        expect(applicableSections(table, 'event_invite')).toEqual([
+            'GREETING',
+            'NEEDS',
+            'PRESENTATION',
+            'OBJECTIONS',
+            'CLOSING',
+            'REFUSAL',
+        ]);
+        expect(isSectionApplicable(table, 'event_invite', 'PRICE')).toBe(false);
     });
 
     it('тип звонка неизвестен — гейт не вычёркивает разделы', () => {

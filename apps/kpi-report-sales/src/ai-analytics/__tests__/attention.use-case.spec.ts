@@ -3,6 +3,7 @@ import { applyOverviewPerimeter } from '../domain/presenter/overview.presenter';
 import { AttentionUseCase } from '../domain/use-cases/attention.use-case';
 import { OverviewLookup } from '../domain/use-cases/overview-lookup.use-case';
 import { AiOverviewDto } from '../dto/ai-overview.dto';
+import { provenRisk } from './fixtures/lite-row.fixture';
 import {
     callsOf,
     OVERVIEW_DOMAIN,
@@ -20,11 +21,14 @@ const request = {
 };
 const leader: RequesterAccess = { role: 'cup', visibleManagerIds: null };
 
-/** 10 менеджеров с риск-звонками и малым n — кандидатов заведомо больше 7. */
+/**
+ * 10 менеджеров с риск-звонками (действующий флаг с цитатой) — кандидатов
+ * заведомо больше 7; n ≥ 8, чтобы «нет данных» не заслоняло риск.
+ */
 function noisyOverview(): AiOverviewDto {
     const ids = Array.from({ length: 10 }, (_, index) => 100 + index);
     const rows = ids.flatMap(id =>
-        callsOf(String(id), 3, { riskFlags: ['promise'] }),
+        callsOf(String(id), 8, provenRisk('conflict')),
     );
     return overviewFixture(rows, ids);
 }

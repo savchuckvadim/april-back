@@ -64,8 +64,19 @@ export interface AiAnalyticsEventKind {
      */
     readonly stagePriorCodes: readonly PbxDealSalesBaseStageCode[];
     readonly tone: AiAnalyticsTone;
-    /** null — тип не участвует в оценках (доля уходит в `meta`). */
+    /**
+     * null — тип не участвует в оценках: корзины, средняя менеджера и
+     * отдела, нормы, план дня и советы его не видят.
+     */
     readonly bucket: AiAnalyticsBucket | null;
+    /**
+     * Тип показывается отдельной колонкой матриц и подвкладкой витрины
+     * (свои n, средняя оценка, KPI-факт). false — other / irrelevant: доля
+     * таких звонков уходит в `meta.otherSharePct` («прочее»). Колонка с
+     * `bucket: null` (приглашение на мероприятие) считается отдельно и в
+     * общую оценку не входит.
+     */
+    readonly column: boolean;
 }
 
 export const AI_ANALYTICS_EVENT_KINDS = {
@@ -77,6 +88,7 @@ export const AI_ANALYTICS_EVENT_KINDS = {
         stagePriorCodes: [PBX_DEAL_SALES_BASE_STAGE_CODE.cold],
         tone: 'event-cold',
         bucket: 'contact',
+        column: true,
     },
     // Заявка с сайта — тёплый вход со своим регламентом: KPI-событие `site`
     // принадлежит ему, а не «Звонку», иначе факт по заявкам считался бы
@@ -89,6 +101,7 @@ export const AI_ANALYTICS_EVENT_KINDS = {
         stagePriorCodes: [],
         tone: 'info',
         bucket: 'contact',
+        column: true,
     },
     call: {
         title: 'Звонок',
@@ -101,6 +114,7 @@ export const AI_ANALYTICS_EVENT_KINDS = {
         ],
         tone: 'info',
         bucket: 'contact',
+        column: true,
     },
     // Три среза презентаций складывать нельзя (баг 21.07: 130 вместо 65) —
     // канон один: presentation_uniq.
@@ -116,6 +130,7 @@ export const AI_ANALYTICS_EVENT_KINDS = {
         stagePriorCodes: [PBX_DEAL_SALES_BASE_STAGE_CODE.presentation],
         tone: 'event-pres',
         bucket: 'presentation',
+        column: true,
     },
     // В сводный KPI-список доработка пишется как `call` (маппинг
     // refine→call в event-report), свой item `refine` есть только в
@@ -128,6 +143,7 @@ export const AI_ANALYTICS_EVENT_KINDS = {
         stagePriorCodes: [PBX_DEAL_SALES_BASE_STAGE_CODE.refine],
         tone: 'event-refine',
         bucket: 'closing',
+        column: true,
     },
     // Документные события (ev_offer*, ev_invoice*) в items `event_type`
     // sales_kpi не заведены — до их установки факт решения считается по
@@ -143,6 +159,7 @@ export const AI_ANALYTICS_EVENT_KINDS = {
         ],
         tone: 'event-hot',
         bucket: 'closing',
+        column: true,
     },
     payment: {
         title: 'Оплата',
@@ -156,6 +173,21 @@ export const AI_ANALYTICS_EVENT_KINDS = {
         ],
         tone: 'event-money',
         bucket: 'closing',
+        column: true,
+    },
+    // Приглашение на мероприятие (решение владельца 19.10.2026): своя
+    // колонка с n и оценкой и KPI-факт «Приглашение на семинар», но вне
+    // средней оценки качества (bucket null) и вне доли «прочее». Приора по
+    // стадии нет: позвать на форум можно с любой стадии сделки.
+    event_invite: {
+        title: 'Приглашение на мероприятие',
+        kpiEventTypeCodes: ['seminar'],
+        kpiPrimaryEventTypeCode: 'seminar',
+        kpiReason: null,
+        stagePriorCodes: [],
+        tone: 'info',
+        bucket: null,
+        column: true,
     },
     other: {
         title: 'Другое',
@@ -165,6 +197,7 @@ export const AI_ANALYTICS_EVENT_KINDS = {
         stagePriorCodes: [],
         tone: 'neutral',
         bucket: null,
+        column: false,
     },
     irrelevant: {
         title: 'Нерелевантный',
@@ -174,6 +207,7 @@ export const AI_ANALYTICS_EVENT_KINDS = {
         stagePriorCodes: [],
         tone: 'neutral',
         bucket: null,
+        column: false,
     },
 } as const satisfies Record<CallReportCallTypeCode, AiAnalyticsEventKind>;
 
@@ -186,7 +220,6 @@ export type AiAnalyticsEventKindsMap = typeof AI_ANALYTICS_EVENT_KINDS;
  */
 export const AI_ANALYTICS_UNMAPPED_KPI_EVENT_TYPES = {
     info: 'информационное событие — не звонок этапа',
-    seminar: 'приглашение на семинар — не звонок этапа',
     ev_fail: 'исход «Отказ» — сверка сделок, не звонок',
     refine: 'свой item только в истории; в сводке доработка пишется как call',
 } as const satisfies Partial<Record<AiAnalyticsKpiEventTypeCode, string>>;

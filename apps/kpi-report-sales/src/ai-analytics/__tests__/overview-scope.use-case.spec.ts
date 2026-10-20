@@ -199,7 +199,8 @@ describe('OverviewUseCase: исключения матрицы и порог д�
         });
     });
 
-    it('возражения считаются по тем же разборам, что n матрицы: старая версия разбора не идёт', async () => {
+    // Версии по существу (без записи в таблице серий): граница — дата в строке.
+    it('возражения считаются по тем же разборам, что n матрицы: разбор старой версии по существу не идёт', async () => {
         const objection: AnalyticsCallLiteRow['objections'][number] = {
             category: 'price',
             quote: 'Дорого',
@@ -210,13 +211,13 @@ describe('OverviewUseCase: исключения матрицы и порог д�
             roster: [10],
             rows: [
                 ...callsOf('10', 10, {
-                    versions: { prompt: 'focus-v2.3-2026-09-25' },
+                    versions: { prompt: 'focus-v9.0-2026-09-25' },
                     objections: [objection],
                 }),
                 ...['old-1', 'old-2', 'old-3'].flatMap(id =>
                     rowOf(id, {
                         managerId: '10',
-                        versions: { prompt: 'focus-v2.2-2026-09-08' },
+                        versions: { prompt: 'focus-v8.0-2026-09-08' },
                         objections: [objection],
                     }),
                 ),

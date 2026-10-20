@@ -27,6 +27,7 @@ import type {
 import { AiAnalyticsRopMarkStore } from '../../store/ai-analytics-rop-mark.store';
 import type { RequesterAccess } from '../access/perimeter.util';
 import { RequesterAccessService } from '../access/requester-access.service';
+import { attentionThresholdsOf } from '../loaders/attention-thresholds.util';
 import { CallsLoader } from '../loaders/calls.loader';
 import { isoWeekKey, portalRangeUtc } from '../loaders/period.util';
 import { SmartLinkLoader } from '../loaders/smart-link.loader';
@@ -44,13 +45,15 @@ import {
 export const AI_ROP_MARK_SUPER_USER_FORBIDDEN_MESSAGE =
     AI_ROP_MARK_MESSAGES.superUserReadOnly;
 
-/** Границы недели проверки в TZ портала. */
+/** Границы недели проверки в TZ портала и порог низкой оценки портала. */
 interface RopMarkWeek {
     weekKey: string;
     /** Понедельник и воскресенье недели, 'YYYY-MM-DD'. */
     from: string;
     to: string;
     timeZone: string;
+    /** Порог низкой оценки (реестр low_score_call_max) — предпочтение случайного слота. */
+    lowScoreMax: number;
 }
 
 /**
@@ -118,6 +121,7 @@ export class RopMarkUseCase {
             {
                 seed,
                 limit: AI_ROP_MARK_WEEKLY_LIMIT,
+                lowScoreMax: week.lowScoreMax,
             },
         );
         const generatedAt = now.toISOString();
@@ -216,7 +220,8 @@ export class RopMarkUseCase {
         dto: AiRopMarkWeekRequestDto,
         now: Date,
     ): Promise<RopMarkWeek> {
-        const { calendar } = await this.settings.load(dto.domain);
+        const settings = await this.settings.load(dto.domain);
+        const { calendar } = settings;
         const day = dto.date ?? toPortalDate(now, calendar.timeZone);
         const weekKey = dto.weekKey ?? isoWeekKey(day);
         const from = mondayOfIsoWeek(weekKey);
@@ -225,6 +230,7 @@ export class RopMarkUseCase {
             from,
             to: shiftDate(from, 6),
             timeZone: calendar.timeZone,
+            lowScoreMax: attentionThresholdsOf(settings).lowScoreCallMax,
         };
     }
 

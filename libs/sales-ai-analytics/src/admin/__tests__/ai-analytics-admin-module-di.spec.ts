@@ -5,6 +5,8 @@ import { SalesAiAnalyticsOpsModule } from '../sales-ai-analytics-ops.module';
 import { SalesAiAnalyticsRetentionCronModule } from '../sales-ai-analytics-retention-cron.module';
 import { AiAnalyticsPhase4AdminController } from '../controllers/phase4.admin.controller';
 import { AiAnalyticsPhase4StatusService } from '../services/ai-analytics-phase4-status.service';
+import { AiAnalyticsLaunchAdminController } from '../launch/ai-analytics-launch.admin.controller';
+import { SalesAiAnalyticsLaunchModule } from '../launch/sales-ai-analytics-launch.module';
 
 /**
  * Статическая проверка DI-графа админ-слоя AI-аналитики: каждая
@@ -124,6 +126,16 @@ describe('DI-граф админ-слоя AI-аналитики', () => {
         expect(
             metadataOf(SalesAiAnalyticsAdminModule, 'controllers'),
         ).toContain(AiAnalyticsPhase4AdminController);
+    });
+
+    it('панель запуска: сервисный модуль без контроллеров получает все зависимости, контроллер — в админ-модуле', () => {
+        expect(missingIn(SalesAiAnalyticsLaunchModule)).toEqual([]);
+        expect(metadataOf(SalesAiAnalyticsLaunchModule, 'controllers')).toEqual(
+            [],
+        );
+        expect(
+            metadataOf(SalesAiAnalyticsAdminModule, 'controllers'),
+        ).toContain(AiAnalyticsLaunchAdminController);
     });
 
     it('сервисный модуль аудита остаётся самодостаточным', () => {

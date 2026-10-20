@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { AI_ANALYTICS_CALC_VERSION } from '../constants/ai-overview.const';
 import {
+    callsOf,
     OVERVIEW_DOMAIN,
     OVERVIEW_FROM,
     OVERVIEW_NOW,
@@ -176,6 +177,39 @@ describe('OverviewUseCase', () => {
             OVERVIEW_NOW,
         );
         expect(dto.meta.disagreementsCount).toBe(1);
+    });
+
+    /**
+     * Решение владельца 19.10.2026: приглашение на мероприятие — отдельная
+     * колонка со своими n и оценкой, но вне средней оценки менеджера,
+     * корзин и доли «прочее».
+     */
+    it('приглашение на мероприятие: своя ячейка с n и оценкой, вне keyMetric, корзин и «прочего»', async () => {
+        const rows = [
+            ...callsOf('10', 10),
+            ...callsOf('10', 9, { callType: 'event_invite', score: 30 }),
+            ...callsOf('10', 2, { callType: 'other', score: 30 }),
+        ];
+        const { useCase } = makeUseCase(rows, [10]);
+        const dto = await useCase.execute(input, { now: OVERVIEW_NOW });
+        const row = dto.managers[0];
+        const invite = row.byType.find(
+            cell => cell.callType === 'event_invite',
+        );
+
+        expect(invite?.n).toBe(9);
+        expect(invite?.bucket).toBeNull();
+        expect(invite?.score.value).toBeCloseTo(3, 9);
+        expect(invite?.title).toBe('Приглашение на мероприятие');
+        // Средняя менеджера — только по презентациям (оценки 50…90).
+        expect(row.keyMetric.n).toBe(10);
+        expect(row.keyMetric.value).toBeCloseTo(7, 9);
+        expect(row.buckets.map(bucket => bucket.n)).toEqual([0, 10, 0]);
+        // «Прочее» — только other: 2 из 21 разобранных.
+        expect(dto.meta.otherSharePct).toBeCloseTo(9.5, 9);
+        const total = dto.totals.find(cell => cell.callType === 'event_invite');
+        expect(total?.n).toBe(9);
+        expect(total?.managers).toBe(1);
     });
 
     it('менеджер ростера без звонков получает пустую строку', async () => {

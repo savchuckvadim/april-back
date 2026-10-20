@@ -21,6 +21,7 @@ import { CallsLoader } from '../loaders/calls.loader';
 import { FinanceLoader } from '../loaders/finance.loader';
 import { KpiLoader } from '../loaders/kpi.loader';
 import { ManagerOrgLoader } from '../loaders/manager-org.loader';
+import { attentionThresholdsOf } from '../loaders/attention-thresholds.util';
 import { portalMinDurationByType } from '../loaders/min-duration.util';
 import { OverviewSnapshotsLoader } from '../loaders/overview-snapshots.loader';
 import { portalRangeUtc } from '../loaders/period.util';
@@ -181,6 +182,8 @@ export class OverviewUseCase {
             },
             // Порог «короткого» портала — тот же, что у пульса.
             minDurationSecByType: portalMinDurationByType(settings),
+            // Пороги сигналов этапа 2 — те же, что у повестки планёрки.
+            attentionThresholds: attentionThresholdsOf(settings),
             rows,
             kpi,
             finance,

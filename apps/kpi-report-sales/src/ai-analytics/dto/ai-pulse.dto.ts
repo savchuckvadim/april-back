@@ -112,18 +112,22 @@ export class AiPulseAlertDto {
 
     @ApiProperty({
         description:
-            'Вид сигнала: риск-флаг разбора (promise/conflict/compliance/' +
-            'client_negative) либо urgent — срочный приоритет коучинга.',
+            'Вид сигнала: действующий риск-флаг разбора с цитатой (conflict — ' +
+            'конфликт / грубость, compliance — нарушение регламента, door_closed — ' +
+            'после отказа не оставил дверь открытой) либо urgent — срочный ' +
+            'приоритет коучинга. Отменённые флаги (promise, client_negative) ' +
+            'сигналом не считаются даже в старых данных.',
         enum: AI_ANALYTICS_ALERT_KINDS,
-        example: 'promise',
+        example: 'conflict',
     })
     kind: AiAnalyticsAlertKind;
 
     @ApiProperty({
         description:
-            'Цитата из разбора (возражение или худший раздел); может быть пустой.',
+            'Цитата: доказательство риск-флага, иначе возражение или худший ' +
+            'раздел разбора; может быть пустой.',
         type: String,
-        example: 'Я сегодня же вышлю договор и согласую скидку',
+        example: 'Да вы меня вообще не слушаете',
     })
     quote: string;
 

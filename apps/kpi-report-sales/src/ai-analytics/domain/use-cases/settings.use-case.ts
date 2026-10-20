@@ -53,6 +53,7 @@ export function buildCallTypes(): AiCallTypeDto[] {
             title: kind.title,
             tone: kind.tone,
             bucket: kind.bucket,
+            column: kind.column,
             kpiPrimaryEventTypeCode: kind.kpiPrimaryEventTypeCode,
         };
     });

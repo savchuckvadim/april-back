@@ -1,5 +1,8 @@
 import type { MinDurationSecByType } from '@lib/sales-ai-analytics';
-import type { OverviewSources } from '../assembler/overview-model.types';
+import type {
+    AttentionThresholds,
+    OverviewSources,
+} from '../assembler/overview-model.types';
 import type { LevelPassport } from './level.util';
 import type { ReadinessStageSources } from './readiness-stages.util';
 
@@ -37,4 +40,9 @@ export interface OverviewPresenterSources extends OverviewSources {
      * тот же, что у пульса); не задан — дефолт матрицы 300 с.
      */
     minDurationSecByType?: MinDurationSecByType;
+    /**
+     * Пороги сигналов этапа 2 (слабые презентации, слабая доработка, низкая
+     * оценка) со слоя портала; не заданы — дефолты реестра.
+     */
+    attentionThresholds?: AttentionThresholds;
 }

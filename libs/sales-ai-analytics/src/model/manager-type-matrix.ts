@@ -3,6 +3,7 @@ import {
     aggregateBucketScores,
     bucketOfCallType,
     compareCallTypes,
+    hasTypeColumn,
 } from './buckets';
 import {
     effectiveComparableFrom,
@@ -284,6 +285,7 @@ export function buildManagerTypeMatrix(
         analyzed: ok.length,
         noBucket: ok.filter(row => bucketOfCallType(row.callType) === null)
             .length,
+        noColumn: ok.filter(row => !hasTypeColumn(row.callType)).length,
         comparableFrom: effectiveComparableFrom(comparability),
         comparableVersionFrom: comparability.versionFrom,
         seriesBreakFrom: comparability.seriesBreakFrom,

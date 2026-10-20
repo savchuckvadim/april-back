@@ -6,6 +6,9 @@ import { AiAnalyticsPhase4AdminController } from './controllers/phase4.admin.con
 import { AiAnalyticsPipelineAdminController } from './controllers/pipeline.admin.controller';
 import { AiAnalyticsReanalyzeAdminController } from './controllers/reanalyze.admin.controller';
 import { AiAnalyticsRetentionAdminController } from './controllers/retention.admin.controller';
+import { AiAnalyticsGuideAdminController } from './guide/ai-guide.admin.controller';
+import { AiAnalyticsLaunchAdminController } from './launch/ai-analytics-launch.admin.controller';
+import { SalesAiAnalyticsLaunchModule } from './launch/sales-ai-analytics-launch.module';
 import { SalesAiAnalyticsAuditModule } from './sales-ai-analytics-audit.module';
 import { SalesAiAnalyticsOpsModule } from './sales-ai-analytics-ops.module';
 import { SalesAiAnalyticsProbeModule } from './sales-ai-analytics-probe.module';
@@ -29,12 +32,17 @@ import { SalesAiAnalyticsProbeModule } from './sales-ai-analytics-probe.module';
  *
  * Крона ретенции здесь нет: он требует ScheduleModule.forRoot(), которого
  * в apps/admin нет — см. `sales-ai-analytics-retention-cron.module.ts`.
+ *
+ * Панель «Запуск AI после выкладки» (21.10.2026): сброс кэша витрины,
+ * флаги ступеней и сводка запуска — сервисы в
+ * `SalesAiAnalyticsLaunchModule`, контроллер здесь.
  */
 @Module({
     imports: [
         SalesAiAnalyticsAuditModule,
         SalesAiAnalyticsProbeModule,
         SalesAiAnalyticsOpsModule,
+        SalesAiAnalyticsLaunchModule,
     ],
     controllers: [
         AiAnalyticsAuditAdminController,
@@ -45,6 +53,11 @@ import { SalesAiAnalyticsProbeModule } from './sales-ai-analytics-probe.module';
         AiAnalyticsPhase4AdminController,
         // Переразбор истории текущей версией промпта (этап 1B)
         AiAnalyticsReanalyzeAdminController,
+        // Путеводитель: теория и связи настроек, параметров, kind'ов, ручек
+        // (статический каталог, зависимостей нет)
+        AiAnalyticsGuideAdminController,
+        // Панель запуска: кэш витрины, флаги ступеней, сводка состояния
+        AiAnalyticsLaunchAdminController,
     ],
 })
 export class SalesAiAnalyticsAdminModule {}

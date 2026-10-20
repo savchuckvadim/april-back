@@ -158,7 +158,8 @@ describe('CallReportReanalysisReportService', () => {
         expect(aiService.update).toHaveBeenCalledWith('55', {
             status: 'superseded',
         });
-        const key = `2026-09-08->${CALL_REPORT_PROMPT_VERSION}`;
+        // v2.2 — в общей серии накопленной истории от 25.06.
+        const key = `2026-06-25->${CALL_REPORT_PROMPT_VERSION}`;
         expect(created[0]).toMatchObject({
             type: 'ai-analytics-version-agreement',
             provider: 'ai-analytics',
@@ -170,7 +171,7 @@ describe('CallReportReanalysisReportService', () => {
                 generatedAt: NOW.toISOString(),
                 payload: {
                     key,
-                    fromSeries: '2026-09-08',
+                    fromSeries: '2026-06-25',
                     pairs: 1,
                     byOldPromptVersion: [
                         {

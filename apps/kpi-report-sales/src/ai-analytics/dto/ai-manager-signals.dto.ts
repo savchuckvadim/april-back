@@ -25,9 +25,11 @@ export class AiRiskCallDto {
     transcriptionId: string;
 
     @ApiProperty({
-        description: 'Вид сигнала.',
+        description:
+            'Вид сигнала: действующий риск-флаг с цитатой (conflict / ' +
+            'compliance / door_closed) либо urgent — срочный коучинг.',
         enum: AI_ANALYTICS_ALERT_KINDS,
-        example: 'promise',
+        example: 'conflict',
     })
     kind: AiAnalyticsAlertKind;
 

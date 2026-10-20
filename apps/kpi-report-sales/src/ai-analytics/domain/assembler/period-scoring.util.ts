@@ -14,6 +14,7 @@
 import {
     applyScoringCaps,
     findStopWords,
+    provenRiskFlagCodes,
     type AiScoringSettings,
     type ScoringCapSkipped,
     type ScoringFacts,
@@ -49,7 +50,10 @@ export function scoringFactsOf(row: DatedLiteRow): ScoringFacts {
         callType: row.callType,
         score: row.score,
         analysisPresent: row.analysisPresent,
-        'riskFlags.count': row.riskFlags.length,
+        // Только действующие флаги с цитатой: отменённые и бездоказательные
+        // — не сигнал (решение владельца 19–20.10.2026).
+        'riskFlags.count': provenRiskFlagCodes(row.riskFlags, row.riskEvidence)
+            .length,
         'objections.count': row.objections.length,
     };
 }

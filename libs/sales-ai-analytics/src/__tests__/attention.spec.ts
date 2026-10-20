@@ -34,8 +34,8 @@ describe('buildAttention: правила Фазы 1', () => {
             managers: [
                 manager({
                     riskCalls: [
-                        { transcriptionId: 't2', kind: 'conflict' },
-                        { transcriptionId: 't1', kind: 'promise' },
+                        { transcriptionId: 't2', kind: 'door_closed' },
+                        { transcriptionId: 't1', kind: 'conflict' },
                     ],
                 }),
             ],
@@ -46,10 +46,36 @@ describe('buildAttention: правила Фазы 1', () => {
             signal: 'risk',
             availableFrom: 1,
             headline:
-                'Сигналы риска: 2 (конфликт / грубость; необоснованное обещание клиенту)',
+                'Сигналы риска: 2 (конфликт / грубость; после отказа не оставил дверь открытой)',
             basis: [{ code: 'risk_calls', value: 2, n: 30 }],
             link: { managerId: 'm1', transcriptionIds: ['t1', 't2'] },
         });
+    });
+
+    it('risk — отменённые виды (обещание, негатив клиента) не считаются; urgent считается', () => {
+        expect(
+            signalsOf([
+                manager({
+                    riskCalls: [
+                        { transcriptionId: 't1', kind: 'promise' },
+                        { transcriptionId: 't2', kind: 'client_negative' },
+                    ],
+                }),
+            ]),
+        ).toEqual([]);
+        const [item] = buildAttention({
+            managers: [
+                manager({
+                    riskCalls: [
+                        { transcriptionId: 't1', kind: 'promise' },
+                        { transcriptionId: 't2', kind: 'urgent' },
+                    ],
+                }),
+            ],
+        });
+        expect(item.signal).toBe('risk');
+        expect(item.headline).toBe('Сигналы риска: 1 (срочно на разбор)');
+        expect(item.link.transcriptionIds).toEqual(['t2']);
     });
 
     it('no_data — n < 8 при звонках в телефонии; при callsTotal = 0 не ставится', () => {
@@ -254,7 +280,9 @@ describe('buildAttention: лимиты, порядок, детерминизм',
             managerId,
             n: 3,
             callsTotal: 20,
-            riskCalls: [{ transcriptionId: `${managerId}-r`, kind: 'promise' }],
+            riskCalls: [
+                { transcriptionId: `${managerId}-r`, kind: 'conflict' },
+            ],
             discipline: { ...quiet, callPlan: 20, callDone: 2 },
             nextStepRate: {
                 current: rateMetric(10, 40),
@@ -263,35 +291,49 @@ describe('buildAttention: лимиты, порядок, детерминизм',
             planGap: { norm: 10, planHead: 30 },
         });
 
-    it('≤ 3 карточек на менеджера в порядке приоритета сигналов', () => {
+    it('≤ 3 карточек на менеджера в порядке приоритета сигналов (риск — последним)', () => {
         const items = buildAttention({ managers: [everything('m1')] });
         expect(items.map(item => item.signal)).toEqual([
-            'risk',
             'no_data',
             'discipline',
+            'next_step_drop',
         ]);
         expect(items.map(item => item.rank)).toEqual([1, 2, 3]);
         expect(ATTENTION_DEFAULT_RULES.maxPerManager).toBe(3);
     });
 
-    it('≤ 7 карточек всего; сначала все risk, тяжесть, затем managerId', () => {
+    it('≤ 7 карточек всего; сначала весь старший сигнал, тяжесть, затем managerId', () => {
         const managers = ['m5', 'm3', 'm1', 'm4', 'm2'].map(everything);
-        managers[1].riskCalls.push({
-            transcriptionId: 'm3-r2',
-            kind: 'conflict',
-        });
         const items = buildAttention({ managers });
         expect(items).toHaveLength(7);
         expect(items.map(item => item.rank)).toEqual([1, 2, 3, 4, 5, 6, 7]);
         expect(items.map(item => `${item.signal}:${item.managerId}`)).toEqual([
-            'risk:m3',
-            'risk:m1',
-            'risk:m2',
-            'risk:m4',
-            'risk:m5',
             'no_data:m1',
             'no_data:m2',
+            'no_data:m3',
+            'no_data:m4',
+            'no_data:m5',
+            'discipline:m1',
+            'discipline:m2',
         ]);
+    });
+
+    it('внутри risk — тяжесть по числу звонков, затем managerId', () => {
+        const managers = ['m5', 'm3', 'm1'].map(id =>
+            manager({
+                managerId: id,
+                riskCalls: [{ transcriptionId: `${id}-r`, kind: 'conflict' }],
+            }),
+        );
+        managers[1].riskCalls.push({
+            transcriptionId: 'm3-r2',
+            kind: 'compliance',
+        });
+        expect(
+            buildAttention({ managers }).map(
+                item => `${item.signal}:${item.managerId}`,
+            ),
+        ).toEqual(['risk:m3', 'risk:m1', 'risk:m5']);
     });
 
     it('лимиты настраиваются через rules', () => {
@@ -300,8 +342,8 @@ describe('buildAttention: лимиты, порядок, детерминизм',
             { maxItems: 3, maxPerManager: 1 },
         );
         expect(items.map(item => `${item.signal}:${item.managerId}`)).toEqual([
-            'risk:m1',
-            'risk:m2',
+            'no_data:m1',
+            'no_data:m2',
         ]);
     });
 
@@ -350,11 +392,11 @@ describe('buildAttention: лимиты, порядок, детерминизм',
             { maxItems: 10, maxPerManager: 10 },
         );
         expect(items.map(item => item.signal)).toEqual([
-            'risk',
             'no_data',
             'discipline',
             'next_step_drop',
             'plan_gap',
+            'risk',
         ]);
         for (const item of items) {
             // Единственное исключение (решение владельца 30.09.2026):

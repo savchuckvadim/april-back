@@ -6,11 +6,13 @@ import {
     isAiAnalyticsFeedbackKind,
 } from '../contracts/feedback.types';
 import {
+    AI_ANALYSIS_SERIES_START,
     AnalysisVersions,
     comparableFrom,
     comparableFromVersions,
     PROMPT_SERIES_START,
     versionDate,
+    versionFieldSeriesDate,
     versionSeriesDate,
 } from '../contracts/versions.types';
 import {
@@ -29,9 +31,10 @@ describe('versions.types', () => {
     });
 
     it('принимает строки версий с датой внутри, игнорирует строки без даты', () => {
+        // Версия по существу без записи в таблице серий — дата из строки.
         expect(
             comparableFrom([
-                'focus-v2.1-2026-09-05',
+                'focus-v9.0-2026-09-05',
                 'sections-7-v1',
                 '2026-08-24',
                 'abc123hash',
@@ -47,33 +50,68 @@ describe('versions.types', () => {
     });
 
     /**
-     * Серии сравнимости (решение владельца 19.10.2026): минорная версия
-     * несёт свою дату, но граница берётся из таблицы серий.
+     * Серии сравнимости (решения владельца 19–20.10.2026): вся накопленная
+     * история — одна серия от 25.06.2026; минорная версия несёт свою дату,
+     * но граница берётся из таблицы серий.
      */
     it('versionSeriesDate — дата серии из таблицы, иначе дата из строки', () => {
-        expect(PROMPT_SERIES_START['focus-v2.4-2026-10-20']).toBe('2026-09-25');
-        expect(versionSeriesDate('focus-v2.4-2026-10-20')).toBe('2026-09-25');
-        expect(versionDate('focus-v2.4-2026-10-20')).toBe('2026-10-20');
-        // Версия без записи — прежнее поведение.
-        expect(versionSeriesDate('focus-v2.3-2026-09-25')).toBe('2026-09-25');
+        expect(AI_ANALYSIS_SERIES_START).toBe('2026-06-25');
+        for (const version of Object.keys(PROMPT_SERIES_START)) {
+            expect(versionSeriesDate(version)).toBe(AI_ANALYSIS_SERIES_START);
+        }
+        expect(Object.keys(PROMPT_SERIES_START)).toEqual([
+            'focus-v2.1-2026-09-05',
+            'focus-v2.2-2026-09-08',
+            'focus-v2.3-2026-09-25',
+            'focus-v2.4-2026-10-20',
+            // v2.5 (21.10.2026): отменены флаги promise и client_negative —
+            // минорная правка, та же серия.
+            'focus-v2.5-2026-10-21',
+            // v2.6 (21.10.2026): блок приглашения на мероприятие — только
+            // для звонков нового типа, оценки остальных не меняются.
+            'focus-v2.6-2026-10-21',
+        ]);
+        expect(versionDate('focus-v2.6-2026-10-21')).toBe('2026-10-21');
+        // Версия без записи — прежнее поведение: дата из строки.
+        expect(versionSeriesDate('focus-v3.0-2026-11-01')).toBe('2026-11-01');
         expect(versionSeriesDate('sections-7-v1')).toBeNull();
     });
 
-    it('comparableFrom: минорная v2.4 не сдвигает границу относительно v2.3', () => {
-        const base = ['sections-7-v1', '2026-08-24', '2026-09-05'];
-        expect(comparableFrom([...base, 'focus-v2.3-2026-09-25'])).toBe(
-            '2026-09-25',
+    it('comparableFrom: версии общей серии не сдвигают границу, правка по существу — рвёт', () => {
+        expect(comparableFrom(['sections-7-v1', 'focus-v2.3-2026-09-25'])).toBe(
+            AI_ANALYSIS_SERIES_START,
         );
-        expect(comparableFrom([...base, 'focus-v2.4-2026-10-20'])).toBe(
-            '2026-09-25',
+        expect(comparableFrom(['sections-7-v1', 'focus-v2.4-2026-10-20'])).toBe(
+            AI_ANALYSIS_SERIES_START,
         );
         // Правка по существу (нет записи в таблице) — рвёт ряд как раньше.
-        expect(comparableFrom([...base, 'focus-v3.0-2026-11-01'])).toBe(
+        expect(comparableFrom(['sections-7-v1', 'focus-v3.0-2026-11-01'])).toBe(
             '2026-11-01',
         );
     });
 
-    it('comparableFromVersions — по всем пяти полям', () => {
+    it('голая дата события настроек в comparableFrom не попадает под таблицы полей', () => {
+        // 05.09 — дата классификатора в таблице поля, но как дата события
+        // настроек она остаётся собой.
+        expect(comparableFrom(['2026-09-05'])).toBe('2026-09-05');
+        expect(versionFieldSeriesDate('classifier', '2026-09-05')).toBe(
+            AI_ANALYSIS_SERIES_START,
+        );
+        // 21.10.2026: новый код event_invite у классификатора — минорная.
+        expect(versionFieldSeriesDate('classifier', '2026-10-21')).toBe(
+            AI_ANALYSIS_SERIES_START,
+        );
+        expect(comparableFrom(['2026-10-21'])).toBe('2026-10-21');
+        expect(versionFieldSeriesDate('attribution', '2026-08-24')).toBe(
+            AI_ANALYSIS_SERIES_START,
+        );
+        expect(versionFieldSeriesDate('attribution', '2026-11-01')).toBe(
+            '2026-11-01',
+        );
+        expect(versionFieldSeriesDate('rubric', 'sections-7-v1')).toBeNull();
+    });
+
+    it('comparableFromVersions — по всем пяти полям с учётом серий', () => {
         const versions: AnalysisVersions = {
             prompt: 'focus-v2.1-2026-09-05',
             rubric: 'sections-7-v1',
@@ -81,10 +119,15 @@ describe('versions.types', () => {
             attribution: '2026-08-24',
             classifier: '2026-09-05',
         };
-        expect(comparableFromVersions(versions)).toBe('2026-09-05');
+        expect(comparableFromVersions(versions)).toBe(AI_ANALYSIS_SERIES_START);
         expect(
             comparableFromVersions({ ...versions, attribution: '2026-10-01' }),
         ).toBe('2026-10-01');
+        // Неполный набор и версия по существу — дата из строки.
+        expect(
+            comparableFromVersions({ prompt: 'focus-v9.0-2026-09-25' }),
+        ).toBe('2026-09-25');
+        expect(comparableFromVersions({})).toBe('');
     });
 });
 

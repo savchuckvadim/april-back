@@ -30,7 +30,6 @@ const VERDICT = {
     entitySummary: 'Сделка движется к КП.',
     unkeptPromises: ['Обещали КП в среду — не отправлено'],
     dealRecommendations: ['Отправить КП до пятницы'],
-    riskFlags: ['promise'],
     coachingPriority: 'planned',
     kpiItemId: null,
     kpiItemStatus: null,
@@ -232,7 +231,6 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
         expect(updateExisting).toHaveBeenCalledWith(
             expect.objectContaining({
                 activityId: '102',
-                riskFlags: ['promise'],
                 coachingPriority: 'planned',
                 // Пересчёт связей и ОТВЕТСТВЕННОГО у существующего
                 // элемента: родитель-сделка ставится из «ОП Основная»
@@ -258,6 +256,37 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
                 COMMENT: expect.stringContaining('Ночная ревизия') as string,
             }),
         );
+    });
+
+    /**
+     * Этап 2 плана 2026-10-19-ai-focus-plan: флаг ставится только разбором
+     * звонка с цитатой-доказательством. Ревизор смотрит на выжимки без
+     * расшифровок — он не спрашивает флаги у модели и не перезаписывает
+     * поле RISK_FLAGS карточки, даже если модель что-то вернула.
+     */
+    it('риск-флаги ревизор не запрашивает у модели и не пишет в карточку', async () => {
+        const { service, vibeCodeClient, updateExisting } = makeDeps({
+            verdict: { ...VERDICT, riskFlags: ['conflict'] },
+        });
+
+        await service.runForDomain(DOMAIN, new Date(0), new Date());
+
+        const [systemPrompt, , , schema] = vibeCodeClient.structuredCompletion
+            .mock.calls[0] as [string, string, string, Record<string, unknown>];
+        const properties = schema.properties as Record<string, unknown>;
+        expect(properties).not.toHaveProperty('riskFlags');
+        expect(schema.required).not.toContain('riskFlags');
+        // В промпте нет пункта про riskFlags (общие правила разбора лишь
+        // запрещают коды в текстах — это другое упоминание).
+        expect(systemPrompt).not.toMatch(/^- riskFlags/m);
+        expect(systemPrompt).not.toContain('это риск promise');
+
+        expect(updateExisting).toHaveBeenCalledTimes(1);
+        const input = (
+            updateExisting.mock.calls[0] as [Record<string, unknown>]
+        )[0];
+        expect(input).not.toHaveProperty('riskFlags');
+        expect(input.coachingPriority).toBe('planned');
     });
 
     // Долг 29 волны C: без лида-владельца, владельца звонка и типа шаг 0

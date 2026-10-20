@@ -90,6 +90,9 @@ export function buildOverviewDto(
     const callFacts = assembleCallFacts(rows, {
         to: sources.to,
         timeZone: calendar.timeZone,
+        ...(sources.attentionThresholds
+            ? { thresholds: sources.attentionThresholds }
+            : {}),
     });
     const kpiByManager = sumKpiMonths(sources.kpi);
     const financeByManager = new Map(
@@ -125,7 +128,12 @@ export function buildOverviewDto(
                 level: sources.levels.get(Number(managerId)),
                 passport: sources.passports?.get(managerId) ?? null,
                 callFacts:
-                    callFacts.get(managerId) ?? emptyCallFacts(managerId),
+                    callFacts.get(managerId) ??
+                    emptyCallFacts(
+                        managerId,
+                        undefined,
+                        sources.attentionThresholds,
+                    ),
                 workdays,
                 periodTo: sources.to,
                 teamMedians,

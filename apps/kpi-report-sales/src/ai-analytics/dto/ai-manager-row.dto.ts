@@ -16,6 +16,7 @@ import { AiDisciplineDto } from './ai-discipline.dto';
 import { AiFinanceTailDto } from './ai-finance-tail.dto';
 import { AiFunnelEdgeDto } from './ai-funnel-edge.dto';
 import { AiManagerRowTenureDto } from './ai-manager-row-tenure.dto';
+import { AiManagerQualityFactsDto } from './ai-manager-quality.dto';
 import { AiManagerTypeCellDto } from './ai-manager-type-cell.dto';
 import { AiNextStepRateDto, AiRiskCallDto } from './ai-manager-signals.dto';
 import { AiPlanTargetCellDto } from './ai-plan-target-cell.dto';
@@ -47,6 +48,7 @@ export { AiPlanTargetCellDto } from './ai-plan-target-cell.dto';
 export { AiFunnelEdgeDto } from './ai-funnel-edge.dto';
 export { AiManagerRowTenureDto } from './ai-manager-row-tenure.dto';
 export { AiNextStepRateDto, AiRiskCallDto } from './ai-manager-signals.dto';
+export * from './ai-manager-quality.dto';
 export { AiRecommendationDto } from './ai-recommendation.dto';
 export { AiStyleProfileDto, AiStyleTagDto } from './ai-style-profile.dto';
 export { AiManagerTrendsDto, AiTrendSignalDto } from './ai-trend.dto';
@@ -237,10 +239,19 @@ export class AiManagerRowDto extends AiManagerRowTenureDto {
     nextStepRate: AiNextStepRateDto;
 
     @ApiProperty({
-        description: 'Риск-звонки периода.',
+        description:
+            'Риск-звонки периода: действующий риск-флаг с цитатой либо срочный коучинг.',
         type: [AiRiskCallDto],
     })
     riskCalls: AiRiskCallDto[];
+
+    @ApiPropertyOptional({
+        description:
+            'Факты качества для сигналов «слабые презентации», «слабая доработка», ' +
+            '«звонки с низкой оценкой»; у строк старого кэша поля нет.',
+        type: AiManagerQualityFactsDto,
+    })
+    quality?: AiManagerQualityFactsDto;
 
     @ApiProperty({
         description:

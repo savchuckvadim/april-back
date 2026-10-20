@@ -265,7 +265,7 @@ export class CallReportObjectionsReportDto {
     @ApiProperty({
         description: 'Частоты риск-флагов (алерты РОПу).',
         type: Object,
-        example: { promise: 2, client_negative: 1 },
+        example: { conflict: 2, door_closed: 1 },
     })
     riskFlags: Record<string, number>;
 

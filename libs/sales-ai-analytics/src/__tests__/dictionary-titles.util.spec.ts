@@ -34,6 +34,9 @@ describe('dictionary-titles — названия кодов справочник
 
     it('тип звонка и lowerFirst', () => {
         expect(callTypeTitleOf('presentation')).toBe('Презентация');
+        expect(callTypeTitleOf('event_invite')).toBe(
+            'Приглашение на мероприятие',
+        );
         expect(callTypeTitleOf('x')).toBe('x');
         expect(lowerFirst('Звонок → презентация')).toBe('звонок → презентация');
         expect(lowerFirst('')).toBe('');

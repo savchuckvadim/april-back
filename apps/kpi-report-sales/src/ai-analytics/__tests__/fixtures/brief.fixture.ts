@@ -81,7 +81,7 @@ export function weekRow(
         managerId,
         periodKey: '2026-W37',
         payload: {
-            flags: options.flags ?? ['promise'],
+            flags: options.flags ?? ['conflict'],
             byType: [
                 {
                     callType: 'presentation',
@@ -307,7 +307,7 @@ export function briefOverviewRow(
             { length: options.riskCalls ?? 0 },
             (_, index) => ({
                 transcriptionId: `${managerId}-r${index}`,
-                kind: 'promise',
+                kind: 'conflict',
                 callStartedAt: '2026-09-02T08:00:00.000Z',
             }),
         ),

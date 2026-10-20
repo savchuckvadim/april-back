@@ -240,7 +240,7 @@ describe('buildAttention с сигналами Фазы 3', () => {
         const items = buildAttention({
             managers: [
                 manager({
-                    riskCalls: [{ transcriptionId: 't1', kind: 'promise' }],
+                    riskCalls: [{ transcriptionId: 't1', kind: 'conflict' }],
                     goodhart: [flag()],
                     trendSignals: [
                         signal({ kind: 'drift' }),

@@ -1,13 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AgendaReasonKind } from '@lib/sales-ai-analytics';
+import { AGENDA_REASON_KINDS, AgendaReasonKind } from '@lib/sales-ai-analytics';
 import { AiRequestBaseDto } from './ai-request-base.dto';
 import { AiAnalyticsEnvelopeDto } from './ai-response-envelope.dto';
-
-const AGENDA_REASON_KINDS: readonly AgendaReasonKind[] = [
-    'risk',
-    'objection',
-    'section',
-];
 
 /** Запрос повестки РОПа на неделю. */
 export class AiAgendaRequestDto extends AiRequestBaseDto {}
@@ -39,23 +33,30 @@ export class AiAgendaItemDto {
 
     @ApiProperty({
         description:
-            'Класс причины: риск-флаг → спорное возражение → слабый раздел.',
+            'Класс причины в порядке приоритета (решение владельца 19.10.2026): ' +
+            'weak_presentation — у презентации слаб раздел потребностей или ' +
+            'презентации; weak_followup — у доработки возражение не отработано, ' +
+            'шаг без даты или слаб раздел возражений / закрытия; low_score — ' +
+            'общая оценка не выше порога; risk — действующий риск-флаг с цитатой; ' +
+            'затем запасные: objection — спорное возражение, section — худший раздел.',
         enum: AGENDA_REASON_KINDS,
-        example: 'objection',
+        example: 'weak_presentation',
     })
     kind: AgendaReasonKind;
 
     @ApiProperty({
         description: 'Причина попадания в повестку (текст для РОПа).',
         type: String,
-        example: 'Спорное возражение «Цена»: не отработано',
+        example: 'Слабая презентация: «Выявление потребностей» 4 из 10',
     })
     reason: string;
 
     @ApiProperty({
-        description: 'Цитата из разбора.',
+        description:
+            'Цитата из разбора: «как было» слабого раздела, неотработанное ' +
+            'возражение или доказательство риск-флага; может быть пустой.',
         type: String,
-        example: 'У вас дорого, в другой системе то же самое дешевле',
+        example: 'Ну, расскажу про систему',
     })
     quote: string;
 
@@ -124,7 +125,8 @@ export class AiAgendaDto {
 
     @ApiProperty({
         description:
-            'Звонки повестки: прошлая полная ISO-неделя (пн–вс, TZ портала).',
+            'Звонки повестки: прошлая полная ISO-неделя (пн–вс, TZ портала), ' +
+            'порядок — слабая презентация → слабая доработка → низкая оценка → риск.',
         type: [AiAgendaItemDto],
     })
     items: AiAgendaItemDto[];

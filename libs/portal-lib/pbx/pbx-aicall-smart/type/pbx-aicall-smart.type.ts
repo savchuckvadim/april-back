@@ -82,6 +82,11 @@ export const CALL_REPORT_CALL_TYPE_CODES = [
     'refine',
     'decision',
     'payment',
+    // Приглашение на мероприятие (решение владельца 19.10.2026): форум,
+    // онлайн-семинар, вебинар, конференция, своё мероприятие портала.
+    // Отдельная колонка витрины со своим n и оценкой, вне средней оценки
+    // качества и корзин; KPI-факт — item `seminar` списка sales_kpi.
+    'event_invite',
     'other',
     // Гейт нерелевантности: разговор вообще не про работу менеджера
     // (звонок в стороннюю организацию, личный, ошибочный) — конвейер
@@ -100,6 +105,7 @@ export const CALL_REPORT_CALL_TYPE_ITEMS = [
     { CODE: 'refine', VALUE: 'Доработка (после презентации)', SORT: 350 },
     { CODE: 'decision', VALUE: 'Звонок по решению', SORT: 400 },
     { CODE: 'payment', VALUE: 'Звонок по оплате', SORT: 500 },
+    { CODE: 'event_invite', VALUE: 'Приглашение на мероприятие', SORT: 550 },
     { CODE: 'other', VALUE: 'Другое', SORT: 600 },
     { CODE: 'irrelevant', VALUE: 'Нерелевантный (не наш разговор)', SORT: 700 },
 ] as const satisfies readonly (CallReportSmartEnumItem & {
@@ -266,6 +272,28 @@ export const CALL_REPORT_TYPE_PROFILES: Record<
         talkRatioNorm: null,
         questionsNorm: null,
         knowledgeKind: 'call-analysis-payment',
+    },
+    /**
+     * ПРИГЛАШЕНИЕ НА МЕРОПРИЯТИЕ — продукт здесь повод, а не предмет:
+     * оценивается польза мероприятия для специалиста, квалификация
+     * интереса и договорённость (регистрация, дата, напоминание). Своя
+     * инструкция и список мероприятий портала — документ базы знаний
+     * kind `call-analysis-event-invite`. Хвост/5К к типу не применимы.
+     */
+    event_invite: {
+        focus: 'Приглашение на мероприятие (форум, семинар, вебинар, своё мероприятие компании): польза мероприятия для этого специалиста, квалификация интереса, регистрация или договорённость с датой, напоминание; продукт — повод, не предмет; после мероприятия — дверь к разговору о продукте.',
+        sectionRelevance: {
+            GREETING: 80,
+            NEEDS: 60,
+            PRESENTATION: 30,
+            OBJECTIONS: 70,
+            PRICE: 10,
+            CLOSING: 100,
+            REFUSAL: 50,
+        },
+        talkRatioNorm: { min: 40, max: 60 },
+        questionsNorm: { min: 3, max: 8 },
+        knowledgeKind: 'call-analysis-event-invite',
     },
     other: {
         focus: 'Нетиповой звонок: оценивать только фактически применимые разделы.',
@@ -482,6 +510,9 @@ export const CALL_REPORT_COMPETITOR_ITEMS = [
  * дословной цитатой (riskEvidence, промпт focus-v2.4 от 20.10.2026); флаг без
  * цитаты приём разбора снимает. В день звонка уходят только conflict и
  * compliance (решение владельца 19.10.2026), остальные — в повестку недели.
+ * Полный справочник — для поля смарта и старых разборов; действующие и
+ * отменённые коды — CALL_REPORT_ACTIVE_RISK_FLAG_CODES /
+ * CALL_REPORT_RETIRED_RISK_FLAG_CODES ниже.
  *
  * `door_closed` — «после отказа не оставил дверь открытой» (19.10.2026):
  * клиент отказал, а менеджер завершил разговор, не договорившись о будущем
@@ -498,6 +529,33 @@ export const CALL_REPORT_RISK_FLAG_CODES = [
 ] as const;
 export type CallReportRiskFlagCode =
     (typeof CALL_REPORT_RISK_FLAG_CODES)[number];
+
+/**
+ * ДЕЙСТВУЮЩИЕ флаги (решение владельца 19–20.10.2026, этап 2 плана
+ * ai/tasks/2026-10-19-ai-focus-plan.md): только их спрашивают у модели и
+ * показывают руководителю — и только с доказательством-цитатой.
+ */
+export const CALL_REPORT_ACTIVE_RISK_FLAG_CODES = [
+    'conflict',
+    'compliance',
+    'door_closed',
+] as const satisfies readonly CallReportRiskFlagCode[];
+export type CallReportActiveRiskFlagCode =
+    (typeof CALL_REPORT_ACTIVE_RISK_FLAG_CODES)[number];
+
+/**
+ * ОТМЕНЁННЫЕ флаги: обещание клиенту и недовольство клиента — обычная
+ * работа менеджера, а не сигнал руководителю. У модели не спрашиваются,
+ * при приёме разбора отбрасываются, в сигналах витрины не участвуют даже
+ * в старых данных. В полном справочнике остаются ради значений поля
+ * RISK_FLAGS смарта и уже записанных разборов.
+ */
+export const CALL_REPORT_RETIRED_RISK_FLAG_CODES = [
+    'promise',
+    'client_negative',
+] as const satisfies readonly CallReportRiskFlagCode[];
+export type CallReportRetiredRiskFlagCode =
+    (typeof CALL_REPORT_RETIRED_RISK_FLAG_CODES)[number];
 export const CALL_REPORT_RISK_FLAG_ITEMS = [
     { CODE: 'promise', VALUE: 'Необоснованное обещание клиенту', SORT: 100 },
     { CODE: 'conflict', VALUE: 'Конфликт / грубость', SORT: 200 },

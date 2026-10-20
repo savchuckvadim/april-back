@@ -142,7 +142,9 @@ describe('SettingsUseCase', () => {
         expect(dto.digestEnabled).toBe(false);
         expect(dto.pipelineEnabled).toBe(true);
         expect(dto.ropUserIds).toEqual([447]);
-        expect(dto.comparableFrom).toBe('2026-09-05');
+        // Все версии накопленной истории — одна серия от 25.06 (решение
+        // владельца 20.10.2026), поэтому граница — начало серии.
+        expect(dto.comparableFrom).toBe('2026-06-25');
         // Фаза 2: заглушки «продажи не считаются» больше нет; режим норм
         // требует ≥ 100 презентаций, подтверждённого состава и — кап §5.4
         // — снапшота модели портала (календарь дефолтный, без праздников).
@@ -151,7 +153,7 @@ describe('SettingsUseCase', () => {
             historyMonths: 3,
             presentations: 70,
             sales: 0,
-            comparableFrom: '2026-09-05',
+            comparableFrom: '2026-06-25',
             reasons: [
                 READINESS_REASONS.normsPresentationsFew,
                 READINESS_REASONS.calendarMissing,
@@ -169,8 +171,24 @@ describe('SettingsUseCase', () => {
             title: 'Холодный выход на ЛПР',
             tone: 'event-cold',
             bucket: 'contact',
+            column: true,
             kpiPrimaryEventTypeCode: 'xo',
         });
+        // Приглашение на мероприятие: своя колонка и KPI-факт, но вне
+        // средней оценки (корзины нет) — фронт не должен его отбрасывать.
+        expect(
+            dto.callTypes.find(type => type.code === 'event_invite'),
+        ).toEqual({
+            code: 'event_invite',
+            title: 'Приглашение на мероприятие',
+            tone: 'info',
+            bucket: null,
+            column: true,
+            kpiPrimaryEventTypeCode: 'seminar',
+        });
+        expect(
+            dto.callTypes.filter(type => !type.column).map(type => type.code),
+        ).toEqual(['other', 'irrelevant']);
     });
 
     it('нет разборов за 30 дней при включённой аналитике → kpi-only', async () => {
@@ -202,19 +220,29 @@ describe('SettingsUseCase', () => {
         ]);
     });
 
-    it('comparableFrom — max по датам версий; без версий — пусто', () => {
+    it('comparableFrom — max по датам серий версий; без версий — пусто', () => {
         const rows = [
+            // Версия по существу без записи в таблице серий — дата из строки.
             liteRow({
                 transcriptionId: '1',
                 versions: { prompt: 'focus-v1-2026-08-01' },
             }),
+            // Атрибуция 24.08 записана в таблицу серий поля → 25.06.
             liteRow({
                 transcriptionId: '2',
                 versions: { attribution: '2026-08-24' },
             }),
             liteRow({ transcriptionId: '3', versions: null }),
         ].filter(hasCallDate);
-        expect(resolveComparableFrom(rows)).toBe('2026-08-24');
+        expect(resolveComparableFrom(rows)).toBe('2026-08-01');
+        expect(
+            resolveComparableFrom(
+                rows.map(row => ({
+                    ...row,
+                    versions: { attribution: '2026-11-01' },
+                })),
+            ),
+        ).toBe('2026-11-01');
         expect(resolveComparableFrom([])).toBe('');
         expect(buildCallTypes()).toHaveLength(
             CALL_REPORT_CALL_TYPE_CODES.length,

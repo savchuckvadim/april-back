@@ -1,7 +1,8 @@
 import { Logger } from '@nestjs/common';
 import {
-    CALL_REPORT_RISK_FLAG_CODES,
-    CallReportRiskFlagCode,
+    CALL_REPORT_ACTIVE_RISK_FLAG_CODES,
+    CALL_REPORT_RETIRED_RISK_FLAG_CODES,
+    CallReportActiveRiskFlagCode,
     isTimecodeWithinDuration,
 } from '@lib/call-lib';
 import {
@@ -10,24 +11,31 @@ import {
 } from '../dto/agent-analysis-request.dto';
 
 /**
- * Риск-флаги при приёме разбора (решение владельца 19.10.2026): флаг
- * без доказательства с непустой цитатой снимается, дубли схлопываются,
- * доказательства чужих или снятых флагов отбрасываются. Чистые функции.
+ * Риск-флаги при приёме разбора (решения владельца 19–20.10.2026):
+ * отменённые флаги (обещание, негатив клиента) отбрасываются, даже если
+ * модель их вернула; флаг без доказательства с непустой цитатой снимается,
+ * дубли схлопываются, доказательства чужих или снятых флагов
+ * отбрасываются. Чистые функции.
  */
 
-const isKnownFlag = (value: unknown): value is CallReportRiskFlagCode =>
+const isActiveFlag = (value: unknown): value is CallReportActiveRiskFlagCode =>
     typeof value === 'string' &&
-    (CALL_REPORT_RISK_FLAG_CODES as readonly string[]).includes(value);
+    (CALL_REPORT_ACTIVE_RISK_FLAG_CODES as readonly string[]).includes(value);
 
-/** Доказательство засчитывается: известный код и непустая цитата. */
+const isRetiredFlag = (value: unknown): boolean =>
+    typeof value === 'string' &&
+    (CALL_REPORT_RETIRED_RISK_FLAG_CODES as readonly string[]).includes(value);
+
+/** Доказательство засчитывается: действующий код и непустая цитата. */
 function isProven(item: AgentRiskEvidenceDto): boolean {
-    return isKnownFlag(item.flag) && Boolean(item.quote?.trim());
+    return isActiveFlag(item.flag) && Boolean(item.quote?.trim());
 }
 
 /**
- * Сверка riskFlags с riskEvidence: остаются только флаги, у которых есть
- * доказательство с цитатой; снятые и повторы считаются в лог. Разбор без
- * обоих полей не трогается (старый контракт без флагов).
+ * Сверка riskFlags с riskEvidence: отменённые коды отбрасываются
+ * (счётчик в лог), из остальных остаются только флаги с доказательством
+ * с цитатой; снятые и повторы считаются в лог. Разбор без обоих полей не
+ * трогается (старый контракт без флагов).
  */
 export function reconcileRiskFlags(
     transcriptionId: string,
@@ -37,10 +45,18 @@ export function reconcileRiskFlags(
     if (dto.riskFlags === undefined && dto.riskEvidence === undefined) {
         return dto;
     }
+    const retired = (dto.riskFlags ?? []).filter(isRetiredFlag);
+    if (retired.length) {
+        logger.log(
+            `Отменённые риск-флаги отброшены (${retired.length}): ` +
+                `${[...new Set(retired)].join(', ')} (transcription ${transcriptionId})`,
+        );
+    }
+    const current = (dto.riskFlags ?? []).filter(flag => !isRetiredFlag(flag));
     const evidence = (dto.riskEvidence ?? []).filter(isProven);
-    const proven = new Set(evidence.map(item => item.flag));
-    const unique = Array.from(new Set(dto.riskFlags ?? []));
-    const duplicates = (dto.riskFlags?.length ?? 0) - unique.length;
+    const proven = new Set<string>(evidence.map(item => item.flag));
+    const unique = Array.from(new Set(current));
+    const duplicates = current.length - unique.length;
     const kept = unique.filter(flag => proven.has(flag));
     const dropped = unique.filter(flag => !proven.has(flag));
     const keptSet = new Set(kept);

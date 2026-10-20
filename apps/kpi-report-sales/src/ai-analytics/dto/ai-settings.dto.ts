@@ -43,12 +43,24 @@ export class AiCallTypeDto {
     @ApiProperty({
         description:
             'Корзина оценок (contact/presentation/closing); null — тип не ' +
-            'участвует в оценках.',
+            'участвует в общей оценке (средняя менеджера и отдела, нормы, ' +
+            'план дня, советы): приглашение на мероприятие, other, irrelevant.',
         enum: AI_ANALYTICS_BUCKETS,
         nullable: true,
         example: 'presentation',
     })
     bucket: AiAnalyticsBucket | null;
+
+    @ApiProperty({
+        description:
+            'У типа своя колонка матриц и подвкладка витрины (свои n, оценка ' +
+            'и KPI-факт). false — other / irrelevant: их доля уходит в ' +
+            '«прочее» сводки. Колонка с bucket = null (приглашение на ' +
+            'мероприятие) считается отдельно и в среднюю оценку не входит.',
+        type: Boolean,
+        example: true,
+    })
+    column: boolean;
 
     @ApiProperty({
         description:

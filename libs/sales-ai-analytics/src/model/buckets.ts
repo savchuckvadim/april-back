@@ -35,7 +35,7 @@ export function isCallTypeCode(
 /**
  * Корзина типа по карте алфавитов (план §2.2): контакт —
  * cold + site_lead + call; презентация; закрытие — refine + decision +
- * payment. other / irrelevant и неизвестные типы → null.
+ * payment. event_invite, other / irrelevant и неизвестные типы → null.
  */
 export function bucketOfCallType(
     callType: string | null | undefined,
@@ -43,6 +43,17 @@ export function bucketOfCallType(
     return isCallTypeCode(callType)
         ? AI_ANALYTICS_EVENT_KINDS[callType].bucket
         : null;
+}
+
+/**
+ * У типа своя колонка витрины (карта `column`): все этапы и приглашение
+ * на мероприятие. other / irrelevant и неизвестные типы — нет: их доля
+ * уходит в «прочее» (`otherSharePct`), колонки они не получают.
+ */
+export function hasTypeColumn(callType: string | null | undefined): boolean {
+    return (
+        isCallTypeCode(callType) && AI_ANALYTICS_EVENT_KINDS[callType].column
+    );
 }
 
 /** Типы корзины в порядке справочника. */

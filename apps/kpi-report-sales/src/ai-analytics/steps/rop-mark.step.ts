@@ -27,6 +27,7 @@ import {
     AI_ROP_MARK_STEP_RHYTHMS,
     AI_ROP_MARK_WEEKLY_LIMIT,
 } from '../constants/ai-rop-mark.const';
+import { attentionThresholdsOf } from '../domain/loaders/attention-thresholds.util';
 import { AiAnalyticsRopMarkStore } from '../store/ai-analytics-rop-mark.store';
 import {
     AiAnalyticsPipelineStep,
@@ -105,6 +106,9 @@ export class RopMarkStep implements AiAnalyticsPipelineStep {
         const calls = pickRopMarkCalls(candidates, {
             seed,
             limit: AI_ROP_MARK_WEEKLY_LIMIT,
+            // Случайный слот предпочитает презентации и доработку с низкой
+            // оценкой — порог портала тот же, что у «Внимания» и повестки.
+            lowScoreMax: attentionThresholdsOf(ctx.settings).lowScoreCallMax,
         });
         await this.store.savePick({
             domain: ctx.domain,

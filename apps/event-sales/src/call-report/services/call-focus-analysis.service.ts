@@ -21,6 +21,7 @@ import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-reques
 import {
     AFTER_PRESENTATION_STRICT_BLOCK,
     DECISION_CALL_BLOCK,
+    EVENT_INVITE_CALL_BLOCK,
     REFINE_CALL_BLOCK,
     renderCallTypeProfile,
     renderPresentationStrictnessBlock,
@@ -132,11 +133,14 @@ export class CallFocusAnalysisService {
      * Блок этапа воронки: доработка и звонок по решению разбираются
      * иначе, чем презентация (доменные правила от владельца 27.08.2026).
      * Доработка — вытащить настоящее возражение из-под «подумаю»;
-     * решение — воссоздать ценность и продать цену/предложение.
+     * решение — воссоздать ценность и продать цену/предложение;
+     * приглашение на мероприятие — польза для специалиста и договорённость,
+     * продукт лишь повод (решение владельца 19.10.2026).
      */
     private buildStageBlock(callType: string | null): string {
         if (callType === 'refine') return REFINE_CALL_BLOCK;
         if (callType === 'decision') return DECISION_CALL_BLOCK;
+        if (callType === 'event_invite') return EVENT_INVITE_CALL_BLOCK;
         return '';
     }
 

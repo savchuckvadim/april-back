@@ -11,6 +11,7 @@ import type { AiOverviewDto } from '../dto/ai-overview.dto';
 import {
     callsLoaderWith,
     liteRow,
+    provenRisk,
     settingsLoaderWith,
 } from './fixtures/lite-row.fixture';
 import { scopeResolverWith } from './fixtures/manager-scope.fixture';
@@ -54,7 +55,7 @@ function riskRow(
         transcriptionId,
         managerId,
         callStartedAt: new Date(`${day}T08:00:00Z`),
-        riskFlags: ['promise'],
+        ...provenRisk('conflict'),
         ...overrides,
     });
 }
@@ -72,7 +73,7 @@ function rowsWithRiskCalls(): AnalyticsCallLiteRow[] {
             riskFlags: [],
             coachingPriority: 'urgent',
         }),
-        riskRow('r3', '20', '2026-08-14', { riskFlags: ['conflict'] }),
+        riskRow('r3', '20', '2026-08-14', provenRisk('conflict')),
         riskRow('short', '20', '2026-08-15', {
             durationSec: AI_ANALYTICS_THRESHOLDS.shortCallSec - 1,
         }),
@@ -137,7 +138,7 @@ describe('OverviewUseCase: ссылки риск-звонков на карто�
                 call.link,
             ]),
         ).toEqual([
-            ['r1', 'promise', smartLink(77)],
+            ['r1', 'conflict', smartLink(77)],
             ['r2', 'urgent', null],
         ]);
         expect(riskCallsOf(dto, '20')).toEqual([

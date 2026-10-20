@@ -11,6 +11,9 @@ export * from './model/lever-basis.util';
 // Фаза 3, П10: локальный час портала для кронов (тик ежечасный, слот — по поясу).
 export * from './model/local-clock';
 export * from './model/sections.util';
+// Этап 2 плана 2026-10-19-ai-focus-plan: действующие и отменённые
+// риск-флаги, флаг с цитатой — единственный сигнал риска.
+export * from './model/risk-flags.util';
 export * from './model/pulse';
 export * from './model/agenda';
 export * from './model/morning-digest';
@@ -28,6 +31,7 @@ export * from './model/objections';
 export * from './model/explanation-template';
 export * from './model/attention.types';
 export * from './model/attention.rules';
+export * from './model/attention.rules.quality';
 export * from './model/attention.rules.phase3';
 export * from './model/attention';
 // Фаза 3, П9: детектор Гудхарта — пары «метрика ↔ противовес» на
@@ -257,6 +261,9 @@ export type {
 // контракт джобы CALL_REPORT_REANALYZE, запись-статус прогона и отчёт
 // согласия старой и новой версии промпта на парах «разбор — переразбор».
 export * from './contracts/reanalysis.types';
+// Адрес кэша витрины в AppCache: один префикс для kpi-report-sales (пишет и
+// сбрасывает) и админки (кнопка «Сбросить кэш витрины AI»).
+export * from './contracts/cache.const';
 export {
     buildVersionAgreementReport,
     isVersionAgreementReportLike,

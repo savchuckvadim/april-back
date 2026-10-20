@@ -5,19 +5,27 @@
  * (@IsIn + Swagger enum). Магических строк в остальном коде модуля нет
  * (ai/rules/pbx-typing.md).
  */
-import { CALL_REPORT_RISK_FLAG_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart';
+import { CALL_REPORT_ACTIVE_RISK_FLAG_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import {
+    AI_ANALYTICS_CACHE_PREFIX,
+    AI_ANALYTICS_CACHE_SCOPES,
     AI_ANALYTICS_SNAPSHOT_APP,
     AI_ANALYTICS_SNAPSHOT_PROVIDER,
     AI_ANALYTICS_SNAPSHOT_TYPE,
+    type AiAnalyticsCacheScope,
     PULSE_DEFAULTS,
 } from '@lib/sales-ai-analytics';
 
 export const AI_ANALYTICS_SWAGGER_TAG = 'Sales AI Analytics' as const;
 export const AI_ANALYTICS_ROUTE_PREFIX = 'ai-analytics' as const;
 
-/** Префикс ключей кэша (app в AppCache). Смена версии инвалидирует всё. */
-export const AI_ANALYTICS_CACHE_PREFIX = 'sales-ai-analytics:v1' as const;
+/**
+ * Префикс ключей кэша (app в AppCache) и области его сброса живут в
+ * библиотеке (`@lib/sales-ai-analytics`, contracts/cache.const.ts): тот же
+ * кэш сбрасывает кнопка админки. Здесь — реэкспорт для кода модуля.
+ */
+export { AI_ANALYTICS_CACHE_PREFIX, AI_ANALYTICS_CACHE_SCOPES };
+export type { AiAnalyticsCacheScope };
 
 /** TTL, секунды: настройки/готовность, пульс, периметр requester'а. */
 export const AI_ANALYTICS_SETTINGS_TTL_SECONDS = 300;
@@ -79,25 +87,6 @@ export const AI_ANALYTICS_RESPONSE_STATUSES = [
 export type AiAnalyticsResponseStatus =
     (typeof AI_ANALYTICS_RESPONSE_STATUSES)[number];
 
-export const AI_ANALYTICS_CACHE_SCOPES = [
-    'all',
-    'pulse',
-    'agenda',
-    'settings',
-    'overview',
-    'attention',
-    'kpi-month',
-    'plans',
-    // Фаза 2: секции модели, плана дня, резюме и тяжёлых источников.
-    'model',
-    'plan',
-    'brief',
-    'brief-quota',
-    'stage-history',
-    'calendar',
-] as const;
-export type AiAnalyticsCacheScope = (typeof AI_ANALYTICS_CACHE_SCOPES)[number];
-
 /**
  * Что сбрасывает `settings/save` (план §3.4): решение человека меняет
  * нормы, план и «Внимание», поэтому обзор, модель и план пересчитываются
@@ -136,9 +125,14 @@ export const AI_ANALYTICS_SELF_VIEW_FORBIDDEN_MESSAGE =
     'свои данные, попросите разработчика включить настройку «Менеджер ' +
     'видит свою аналитику»';
 
-/** Виды алерта пульса: риск-флаг разбора либо срочный приоритет коучинга. */
+/**
+ * Виды алерта пульса: ДЕЙСТВУЮЩИЙ риск-флаг разбора (с цитатой) либо
+ * срочный приоритет коучинга. Отменённые флаги (promise, client_negative —
+ * решение владельца 19–20.10.2026) сигналом не считаются даже в старых
+ * данных; старый кэш с такими видами фронт показывает как «прочий сигнал».
+ */
 export const AI_ANALYTICS_ALERT_KINDS = [
-    ...CALL_REPORT_RISK_FLAG_CODES,
+    ...CALL_REPORT_ACTIVE_RISK_FLAG_CODES,
     'urgent',
 ] as const;
 export type AiAnalyticsAlertKind = (typeof AI_ANALYTICS_ALERT_KINDS)[number];

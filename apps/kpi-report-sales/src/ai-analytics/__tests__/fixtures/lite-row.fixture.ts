@@ -10,6 +10,20 @@ import {
     defaultTargets,
 } from '@lib/sales-ai-analytics/settings/ai-settings.defaults';
 
+/**
+ * Доказанный риск-флаг для фикстур: сигнал считается только по действующему
+ * флагу с цитатой (решение владельца 19–20.10.2026).
+ */
+export function provenRisk(
+    flag: 'conflict' | 'compliance' | 'door_closed',
+    quote = 'Да вы меня вообще не слушаете',
+): Pick<AnalyticsCallLiteRow, 'riskFlags' | 'riskEvidence'> {
+    return {
+        riskFlags: [flag],
+        riskEvidence: [{ flag, quote, speaker: 'manager', at: null }],
+    };
+}
+
 /** Lite-строка звонка с разбором; переопределяй нужные поля. */
 export function liteRow(
     overrides: Partial<AnalyticsCallLiteRow> & { transcriptionId: string },

@@ -127,6 +127,16 @@ export const KNOWN_KNOWLEDGE_KINDS: readonly KnowledgeKindInfo[] = [
         clientEditable: true,
     },
     {
+        kind: 'call-analysis-refine',
+        title: 'Анализ: доработка после презентации',
+        description:
+            'Инструкция анализа звонков доработки после презентации: ' +
+            'вытащить настоящее возражение, вернуть ценность, договориться ' +
+            'о звонке по решению с датой.',
+        consumer: 'ночной агент (tier-3)',
+        clientEditable: true,
+    },
+    {
         kind: 'call-analysis-decision',
         title: 'Анализ: звонок по решению',
         description: 'Инструкция анализа звонков стадии принятия решения.',
@@ -137,6 +147,19 @@ export const KNOWN_KNOWLEDGE_KINDS: readonly KnowledgeKindInfo[] = [
         kind: 'call-analysis-payment',
         title: 'Анализ: звонок по оплате',
         description: 'Инструкция анализа звонков по оплате.',
+        consumer: 'ночной агент (tier-3)',
+        clientEditable: true,
+    },
+    {
+        kind: 'call-analysis-event-invite',
+        title: 'Анализ: приглашение на мероприятие',
+        description:
+            'Инструкция анализа звонков-приглашений на мероприятие (форум, ' +
+            'онлайн-семинар, вебинар, конференция, своё мероприятие ' +
+            'компании): что считать хорошим приглашением, сценарий звонка и ' +
+            'СПИСОК МЕРОПРИЯТИЙ ПОРТАЛА с названиями и датами — по нему разбор ' +
+            'узнаёт мероприятие в разговоре. Клиентский документ дополняет ' +
+            'общий.',
         consumer: 'ночной агент (tier-3)',
         clientEditable: true,
     },

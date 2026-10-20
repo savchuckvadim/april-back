@@ -7,6 +7,7 @@ import { AiAnalyticsFeedbackStore } from '../store/ai-analytics-feedback.store';
 import {
     callsLoaderWith,
     liteRow,
+    provenRisk,
     settingsLoaderWith,
 } from './fixtures/lite-row.fixture';
 
@@ -19,15 +20,18 @@ const NOW = new Date('2026-09-03T12:00:00Z');
 
 function weekRows(): AnalyticsCallLiteRow[] {
     return [
+        // Риск с цитатой у холодного звонка: у презентации слабый раздел
+        // потребностей перебил бы риск («слабая презентация» старше).
         liteRow({
             transcriptionId: 'r1',
             managerId: '10',
-            riskFlags: ['promise'],
+            callType: 'cold',
+            ...provenRisk('door_closed', 'Ладно, тогда до свидания'),
             sections: [
                 {
                     section: 'NEEDS',
                     relevance: 1,
-                    score: 4,
+                    score: 6,
                     asWas: 'Мы вам перезвоним',
                     alternatives: [],
                 },

@@ -1,16 +1,17 @@
 /**
- * Сигналы руководителю для пульса: звонки окна с риск-флагом разбора или
- * срочным приоритетом коучинга, плюс звонки, по которым event-sales уже
- * отправил алерт (ais kind = alert_sent). handled — есть alert_handled.
+ * Сигналы руководителю для пульса: звонки окна с ДЕЙСТВУЮЩИМ риск-флагом
+ * разбора, подтверждённым цитатой (conflict / compliance / door_closed),
+ * или срочным приоритетом коучинга, плюс звонки, по которым event-sales
+ * уже отправил алерт (ais kind = alert_sent). handled — есть alert_handled.
+ * Отменённые флаги (promise, client_negative) и флаги без цитаты сигналом
+ * не считаются даже в старых данных (решение владельца 19–20.10.2026).
  * Чистые функции над lite-строками.
  */
 import {
-    CALL_REPORT_RISK_FLAG_CODES,
-    CallReportRiskFlagCode,
-} from '@lib/portal-lib/pbx/pbx-aicall-smart';
-import {
+    isActiveRiskKind,
     nonEmptyText,
     pickWorstSection,
+    provenRiskFlags,
     toPortalDate,
 } from '@lib/sales-ai-analytics';
 import {
@@ -22,33 +23,44 @@ import { DatedLiteRow } from '../loaders/lite-row.mapper';
 
 export const ALERT_QUOTE_MAX_LENGTH = 300;
 
-const isRiskFlag = (value: string): value is CallReportRiskFlagCode =>
-    (CALL_REPORT_RISK_FLAG_CODES as readonly string[]).includes(value);
+/** Вид сигнала считается: действующий флаг либо urgent (старый кэш может нести отменённые). */
+export const isActiveAlertKind = (kind: string): kind is AiAnalyticsAlertKind =>
+    isActiveRiskKind(kind);
 
-/** Вид сигнала: первый риск-флаг по порядку справочника, иначе urgent, иначе null. */
+/**
+ * Вид сигнала: первый действующий риск-флаг с цитатой по порядку
+ * справочника, иначе urgent, иначе null.
+ */
 export function resolveAlertKind(
-    row: Pick<DatedLiteRow, 'riskFlags' | 'coachingPriority'>,
+    row: Pick<DatedLiteRow, 'riskFlags' | 'riskEvidence' | 'coachingPriority'>,
 ): AiAnalyticsAlertKind | null {
-    const flag = CALL_REPORT_RISK_FLAG_CODES.find(code =>
-        row.riskFlags.some(item => item === code && isRiskFlag(item)),
-    );
-    if (flag) return flag;
+    const [proven] = provenRiskFlags(row.riskFlags, row.riskEvidence);
+    if (proven) return proven.flag;
     return row.coachingPriority === AI_ANALYTICS_URGENT_COACHING
         ? AI_ANALYTICS_URGENT_COACHING
         : null;
 }
 
-/** Цитата: первое возражение с текстом, иначе «как было» худшего раздела. */
+const truncate = (quote: string): string =>
+    quote.length > ALERT_QUOTE_MAX_LENGTH
+        ? `${quote.slice(0, ALERT_QUOTE_MAX_LENGTH - 1)}…`
+        : quote;
+
+/**
+ * Цитата сигнала: доказательство флага (если сигнал по флагу), иначе первое
+ * возражение с текстом, иначе «как было» худшего раздела.
+ */
 export function pickAlertQuote(
-    row: Pick<DatedLiteRow, 'objections' | 'sections'>,
+    row: Pick<DatedLiteRow, 'objections' | 'sections'> &
+        Partial<Pick<DatedLiteRow, 'riskFlags' | 'riskEvidence'>>,
 ): string {
+    const [proven] = provenRiskFlags(row.riskFlags, row.riskEvidence);
+    if (proven) return truncate(proven.quote);
     const objection = row.objections
         .map(item => nonEmptyText(item.quote))
         .find((quote): quote is string => quote !== null);
     const quote = objection ?? pickWorstSection(row.sections)?.asWas ?? '';
-    return quote.length > ALERT_QUOTE_MAX_LENGTH
-        ? `${quote.slice(0, ALERT_QUOTE_MAX_LENGTH - 1)}…`
-        : quote;
+    return truncate(quote);
 }
 
 /**

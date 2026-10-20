@@ -91,22 +91,18 @@ export function buildApplicability(
             };
         }),
     );
-    const of = (callType: CallReportCallTypeCode) =>
-        applicableFor(cells, callType);
+    // По справочнику, а не литералом: новый тип звонка (event_invite,
+    // 19.10.2026) попадает в таблицу сам, без правки этого места.
+    const byType = Object.fromEntries(
+        CALL_REPORT_CALL_TYPE_CODES.map(callType => [
+            callType,
+            applicableFor(cells, callType),
+        ]),
+    ) as Record<CallReportCallTypeCode, readonly CallReportSectionCode[]>;
     return {
         minRelevance: threshold,
         cells,
-        byType: {
-            cold: of('cold'),
-            site_lead: of('site_lead'),
-            call: of('call'),
-            presentation: of('presentation'),
-            refine: of('refine'),
-            decision: of('decision'),
-            payment: of('payment'),
-            other: of('other'),
-            irrelevant: of('irrelevant'),
-        },
+        byType,
     };
 }
 

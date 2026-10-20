@@ -8,6 +8,7 @@ import { PushAgendaUseCase } from '../domain/use-cases/push-agenda.use-case';
 import { AiAnalyticsPushLogStore } from '../store/ai-analytics-push-log.store';
 import {
     liteRow,
+    provenRisk,
     portalSettings,
     settingsLoaderWith,
 } from './fixtures/lite-row.fixture';
@@ -121,14 +122,14 @@ describe('PushAgendaUseCase + AgendaUseCase: понедельничная рас
             liteRow({
                 transcriptionId: 'r1',
                 managerId: '10',
-                riskFlags: ['promise'],
+                ...provenRisk('conflict'),
                 callStartedAt: new Date('2026-09-02T08:00:00Z'),
             }),
             // Звонок утра понедельника в повестку этой недели не попадает.
             liteRow({
                 transcriptionId: 'today',
                 managerId: '20',
-                riskFlags: ['promise'],
+                ...provenRisk('conflict'),
                 callStartedAt: new Date('2026-09-07T05:00:00Z'),
             }),
         ]);

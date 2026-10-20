@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { buildAgenda, shiftDate, toPortalDate } from '@lib/sales-ai-analytics';
 import { AiAgendaDto } from '../../dto/ai-agenda.dto';
 import { AiAnalyticsFeedbackStore } from '../../store/ai-analytics-feedback.store';
+import { attentionThresholdsOf } from '../loaders/attention-thresholds.util';
 import { CallsLoader } from '../loaders/calls.loader';
 import { toAgendaRow } from '../loaders/lite-row.mapper';
 import {
@@ -46,8 +47,10 @@ export function agendaWindows(now: Date, timeZone: string): AgendaWindows {
 
 /**
  * Повестка планёрки РОПа (план, 6.2/6.3): 3 звонка прошлой полной
- * ISO-недели по приоритету риск → спорное возражение → слабый раздел
- * (buildAgenda, детерминированно), ссылка на карточку разбора в смарте и
+ * ISO-недели по приоритету решения владельца 19.10.2026 — слабая
+ * презентация → слабая доработка → низкая оценка → риск с цитатой →
+ * запасные причины (buildAgenda, детерминированно; пороги — слой портала
+ * `weak_section_score_max` / `low_score_call_max`), ссылка на карточку разбора в смарте и
  * несогласия (feedback kind = disagree) с понедельника прошлой недели по
  * момент запроса. Ключ — текущая неделя: понедельничная рассылка в 08:30
  * и витрина в течение недели показывают одну и ту же повестку.
@@ -83,8 +86,10 @@ export class AgendaUseCase {
         options: AgendaUseCaseOptions = {},
     ): Promise<AiAgendaDto> {
         const now = options.now ?? new Date();
-        const { calendar } = await this.settings.load(domain);
+        const settings = await this.settings.load(domain);
+        const { calendar } = settings;
         const windows = agendaWindows(now, calendar.timeZone);
+        const thresholds = attentionThresholdsOf(settings);
 
         const [rows, feedback] = await Promise.all([
             this.calls.loadLite(domain, windows.calls.from, windows.calls.to),
@@ -94,7 +99,10 @@ export class AgendaUseCase {
                 windows.disagreements.to,
             ),
         ]);
-        const picked = buildAgenda(rows.map(toAgendaRow));
+        const picked = buildAgenda(rows.map(toAgendaRow), {
+            weakSectionScoreMax: thresholds.weakSectionScoreMax,
+            lowScoreCallMax: thresholds.lowScoreCallMax,
+        });
         const links = await this.smartLinks.resolveLinks(
             domain,
             picked.map(item => item.transcriptionId),

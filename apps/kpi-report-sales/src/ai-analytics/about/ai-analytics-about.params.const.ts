@@ -31,6 +31,19 @@ export const AI_ABOUT_SHARED_PARAMS = [
     'pool_min_portals_beta',
 ] as const satisfies readonly AiAnalyticsParamCode[];
 
+/**
+ * Пороги сигналов руководителю этапа 2 (решение владельца 19.10.2026):
+ * слабые презентации и слабая доработка — по средним разделов, прочие
+ * звонки — по общей оценке. Их читают обзор («Внимание»), резюме (пакет
+ * фактов над «Вниманием») и досье (строка обзора).
+ */
+export const AI_ABOUT_ATTENTION_PARAMS = [
+    'weak_section_score_max',
+    'weak_section_gap',
+    'low_score_call_max',
+    'weak_followup_share_min',
+] as const satisfies readonly AiAnalyticsParamCode[];
+
 /** Коды норм и советов, общие для обзора и плана дня. */
 export const AI_ABOUT_NORM_PARAMS = [
     'kappa_edge_early',

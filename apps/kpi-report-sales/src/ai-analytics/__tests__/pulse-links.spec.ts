@@ -5,6 +5,7 @@ import type { AiAnalyticsFeedbackStore } from '../store/ai-analytics-feedback.st
 import {
     callsLoaderWith,
     liteRow,
+    provenRisk,
     settingsLoaderWith,
 } from './fixtures/lite-row.fixture';
 import {
@@ -31,7 +32,7 @@ const emptyFeedback = (): AiAnalyticsFeedbackStore =>
 const rowsWithAlerts = () => [
     liteRow({
         transcriptionId: 'risk',
-        riskFlags: ['promise'],
+        ...provenRisk('conflict'),
         callStartedAt: new Date('2026-09-01T07:00:00Z'),
     }),
     liteRow({
@@ -42,7 +43,7 @@ const rowsWithAlerts = () => [
     }),
     liteRow({
         transcriptionId: 'fresh',
-        riskFlags: ['conflict'],
+        ...provenRisk('conflict'),
         callStartedAt: new Date('2026-09-03T07:00:00Z'),
     }),
     liteRow({ transcriptionId: 'calm' }),
@@ -120,7 +121,7 @@ describe('PulseUseCase: ссылки сигналов на карточки ра
         const dto = await useCase.execute('d', { now: NOW });
 
         expect(dto.alerts.map(alert => alert.kind)).toEqual([
-            'promise',
+            'conflict',
             'urgent',
             'conflict',
         ]);
@@ -136,7 +137,7 @@ describe('withPulseAlertLinks', () => {
         const draft = {
             managerId: '10',
             transcriptionId: 'a',
-            kind: 'promise' as const,
+            kind: 'conflict' as const,
             quote: 'Дорого',
             callStartedAt: '2026-09-01T07:00:00.000Z',
             handled: false,

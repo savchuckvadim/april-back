@@ -4,7 +4,13 @@ import type { OverviewYoySnapshots } from '../loaders/overview-snapshots.loader'
  * presenter'ом). В DTO не уезжает — presenter переводит её в
  * AiOverviewDto.
  */
-import type { MetricValue, WorkCalendar } from '@lib/sales-ai-analytics';
+import type {
+    AttentionLowScoreCall,
+    AttentionRules,
+    AttentionSectionMean,
+    MetricValue,
+    WorkCalendar,
+} from '@lib/sales-ai-analytics';
 import type { CallReportCallTypeCode } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import type { AiAnalyticsAlertKind } from '../../constants/ai-analytics.const';
 import type { AiManagerLevelRecord } from '../../store/ai-analytics-settings.store';
@@ -119,6 +125,49 @@ export interface ManagerNextStepRates {
     previous: MetricValue;
 }
 
+/**
+ * Пороги сигналов этапа 2 (реестр `weak_section_score_max`,
+ * `weak_section_gap`, `low_score_call_max`, `weak_followup_share_min`, слой
+ * портала): по ним собраны факты качества, по ним же правила «Внимания»
+ * читают кэш обзора.
+ */
+export type AttentionThresholds = Pick<
+    AttentionRules,
+    | 'weakSectionScoreMax'
+    | 'weakSectionGap'
+    | 'lowScoreCallMax'
+    | 'weakFollowupShareMin'
+>;
+
+/** Презентации менеджера за период: средние разделов и слабые звонки. */
+export interface ManagerPresentationFacts {
+    n: number;
+    sections: AttentionSectionMean[];
+    weakCallIds: string[];
+}
+
+/** Доработка (refine / decision) за период. */
+export interface ManagerFollowupFacts {
+    n: number;
+    objectionsKnown: number;
+    objectionsUnhandled: number;
+    nextStepSet: number;
+    nextStepNoDate: number;
+    sections: AttentionSectionMean[];
+    weakCallIds: string[];
+}
+
+/**
+ * Факты качества для сигналов этапа 2 (решение владельца 19.10.2026):
+ * слабые презентации, слабая доработка, звонки с низкой оценкой.
+ */
+export interface ManagerQualityFacts {
+    thresholds: AttentionThresholds;
+    presentation: ManagerPresentationFacts;
+    followup: ManagerFollowupFacts;
+    lowScoreCalls: AttentionLowScoreCall[];
+}
+
 /** Факты по звонкам менеджера, не входящие в матрицу. */
 export interface ManagerCallFacts {
     managerId: string;
@@ -128,4 +177,6 @@ export interface ManagerCallFacts {
     nextStepRate: ManagerNextStepRates;
     /** Доля отработанных возражений по всем типам, %; null — возражений нет. */
     handledRatePct: MetricValue | null;
+    /** Факты качества для сигналов этапа 2 (по звонкам слоя качества). */
+    quality: ManagerQualityFacts;
 }

@@ -1,3 +1,4 @@
+import { ATTENTION_QUALITY_RULES } from './attention.rules.quality';
 import {
     AttentionBasis,
     AttentionCandidate,
@@ -5,6 +6,7 @@ import {
     AttentionRules,
 } from './attention.types';
 import { riskTitleOf } from './dictionary-titles.util';
+import { isActiveRiskFlag } from './risk-flags.util';
 import {
     RU_FORMS,
     ruCount,
@@ -49,9 +51,20 @@ export function isCloser(manager: AttentionManagerInput): boolean {
     );
 }
 
-/** risk — риск-звонки окна (алерты); тяжесть — их число. */
+/** Срочный приоритет коучинга — вид риск-звонка наравне с флагами. */
+export const ATTENTION_URGENT_RISK_KIND = 'urgent';
+
+/** Риск-звонок считается: действующий флаг либо срочный коучинг. */
+export const isActiveRiskKind = (kind: string): boolean =>
+    kind === ATTENTION_URGENT_RISK_KIND || isActiveRiskFlag(kind);
+
+/**
+ * risk — риск-звонки окна (алерты); тяжесть — их число. Идёт ПОСЛЕДНИМ
+ * среди правил Фазы 1 (решение владельца 19.10.2026); отменённые виды
+ * (обещание, негатив клиента) в старых данных не считаются.
+ */
 export const riskRule: AttentionRule = manager => {
-    const calls = manager.riskCalls;
+    const calls = manager.riskCalls.filter(call => isActiveRiskKind(call.kind));
     if (calls.length === 0) {
         return null;
     }
@@ -237,11 +250,17 @@ export const planGapRule: AttentionRule = (manager, rules) => {
     };
 };
 
-/** Правила Фазы 1 в порядке приоритета сигналов. */
+/**
+ * Правила Фазы 1 в порядке приоритета сигналов (решение владельца
+ * 19.10.2026): слабые презентации → слабая доработка → звонки с низкой
+ * оценкой → нет данных → дисциплина → реже шаг с датой → разрыв плана →
+ * риск последним. Сами правила этапа 2 — attention.rules.quality.ts.
+ */
 export const ATTENTION_PHASE1_RULES: readonly AttentionRule[] = [
-    riskRule,
+    ...ATTENTION_QUALITY_RULES,
     noDataRule,
     disciplineRule,
     nextStepDropRule,
     planGapRule,
+    riskRule,
 ];

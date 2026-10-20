@@ -258,6 +258,10 @@ export const AI_ANALYTICS_PARAM_MAPPING: Readonly<
         'attention_discipline_pct',
         'attention_n_plan_min',
         'attention_no_next_step_streak',
+        'weak_section_score_max',
+        'weak_section_gap',
+        'low_score_call_max',
+        'weak_followup_share_min',
     ],
     alert_params: [
         'alert_max_per_day',

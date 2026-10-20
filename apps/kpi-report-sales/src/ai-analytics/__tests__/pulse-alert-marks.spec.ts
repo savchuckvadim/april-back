@@ -3,6 +3,7 @@ import type { AiAnalyticsFeedbackRecord } from '../store/ai-analytics-feedback.s
 import {
     callsLoaderWith,
     liteRow,
+    provenRisk,
     settingsLoaderWith,
 } from './fixtures/lite-row.fixture';
 import { smartLinksWith } from './fixtures/smart-links.fixture';
@@ -50,7 +51,7 @@ function feedbackByPeriod(records: AiAnalyticsFeedbackRecord[]) {
 
 const riskyCall = liteRow({
     transcriptionId: 'risk',
-    riskFlags: ['promise'],
+    ...provenRisk('conflict'),
     callStartedAt: new Date('2026-09-01T07:00:00Z'),
 });
 

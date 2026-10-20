@@ -34,7 +34,6 @@ import {
     REANALYSIS_PROVIDER,
     reanalyzeJobId,
     resolveTimeZone,
-    versionSeriesDate,
     type AnalysisVersions,
     type ReanalysisJobData,
 } from '@lib/sales-ai-analytics';
@@ -105,7 +104,7 @@ export class CallReportReanalyzeUseCase {
                 data.domain,
                 transcriptionIds,
             ),
-            currentSeries: versionSeriesDate(versions.prompt),
+            currentPromptVersion: versions.prompt,
             roster,
         });
         const previous = await this.reports.loadStatus(

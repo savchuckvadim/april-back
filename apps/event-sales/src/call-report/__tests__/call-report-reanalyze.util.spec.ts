@@ -10,15 +10,16 @@ import {
 import { versionSeriesDate } from '@lib/sales-ai-analytics';
 
 /**
- * Отбор кандидатов переразбора: чужая серия промпта → кандидат; текущая
- * серия → пропуск; без разбора → пропуск; не пилот → пропуск; явный
- * userIds перекрывает пилот; окно дат — по дням в поясе портала.
+ * Отбор кандидатов переразбора: другая ВЕРСИЯ промпта (в том числе той же
+ * серии) → кандидат; текущая версия → пропуск; без разбора → пропуск; не
+ * пилот → пропуск; явный userIds перекрывает пилот; окно дат — по дням в
+ * поясе портала.
  */
 const CURRENT_SERIES = versionSeriesDate(CALL_REPORT_PROMPT_VERSION);
-/** v2.2 — другая серия (разрыв ряда). */
+/** v2.2 — старая версия промпта. */
 const OLD_VERSION = 'focus-v2.2-2026-09-08';
-/** v2.3 — та же серия, что у текущей v2.4 (минорная правка). */
-const SAME_SERIES_VERSION = 'focus-v2.3-2026-09-25';
+/** v2.3 — предыдущая версия той же серии: тоже пересчитывается. */
+const PREVIOUS_VERSION = 'focus-v2.3-2026-09-25';
 
 const row = (id: string, userId: string | null) => ({
     id,
@@ -45,7 +46,7 @@ const record = (
 });
 
 describe('selectReanalysisCandidates', () => {
-    it('чужая серия и разбор без версий — кандидаты; текущая серия, без разбора и не пилот — пропуски', () => {
+    it('другая версия (и той же серии) и разбор без версий — кандидаты; текущая версия, без разбора и не пилот — пропуски', () => {
         const selection = selectReanalysisCandidates({
             transcriptions: [
                 row('t-1', '317'),
@@ -53,27 +54,34 @@ describe('selectReanalysisCandidates', () => {
                 row('t-3', '317'),
                 row('t-4', '999'),
                 row('t-5', '317'),
+                row('t-6', '317'),
             ],
             records: [
                 record('1', 't-1', OLD_VERSION),
-                record('2', 't-2', SAME_SERIES_VERSION),
+                record('2', 't-2', PREVIOUS_VERSION),
                 record('4', 't-4', OLD_VERSION),
                 record('5', 't-5', null),
+                record('6', 't-6', CALL_REPORT_PROMPT_VERSION),
             ],
-            currentSeries: CURRENT_SERIES,
+            currentPromptVersion: CALL_REPORT_PROMPT_VERSION,
             roster: [317],
         });
 
         expect(selection.candidates.map(c => c.transcriptionId)).toEqual([
             't-1',
+            't-2',
             't-5',
         ]);
         expect(selection.candidates[0]).toMatchObject({
             oldPromptVersion: OLD_VERSION,
-            oldSeries: '2026-09-08',
+            oldSeries: versionSeriesDate(OLD_VERSION),
             old: { id: '1' },
         });
         expect(selection.candidates[1]).toMatchObject({
+            oldPromptVersion: PREVIOUS_VERSION,
+            oldSeries: CURRENT_SERIES,
+        });
+        expect(selection.candidates[2]).toMatchObject({
             oldPromptVersion: null,
             oldSeries: null,
         });
@@ -85,7 +93,7 @@ describe('selectReanalysisCandidates', () => {
         });
     });
 
-    it('повтор запуска безопасен: активная запись текущей серии поверх superseded старой — пропуск; только superseded — noActive', () => {
+    it('повтор запуска безопасен: активная запись текущей версии поверх superseded старой — пропуск; только superseded — noActive', () => {
         const selection = selectReanalysisCandidates({
             transcriptions: [row('t-1', '317'), row('t-2', '317')],
             records: [
@@ -93,7 +101,7 @@ describe('selectReanalysisCandidates', () => {
                 record('9', 't-1', CALL_REPORT_PROMPT_VERSION),
                 record('2', 't-2', OLD_VERSION, 'superseded'),
             ],
-            currentSeries: CURRENT_SERIES,
+            currentPromptVersion: CALL_REPORT_PROMPT_VERSION,
             roster: null,
         });
 

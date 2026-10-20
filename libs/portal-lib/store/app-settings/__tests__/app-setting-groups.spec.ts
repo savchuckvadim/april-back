@@ -152,12 +152,46 @@ describe('категории настроек приложений', () => {
         ]);
     });
 
-    it('ссылки ведут в разделы карточки портала', () => {
+    it('ссылки ведут в разделы карточки портала или на глобальные страницы админки', () => {
         for (const group of Object.values(PORTAL_APP_SETTING_GROUPS)) {
             for (const item of group.links) {
-                expect(item.href.startsWith('/portal/{portalId}/')).toBe(true);
+                // С плейсхолдером — только карточка портала; без него —
+                // абсолютный путь админки (resolveSettingsLink фронта
+                // оставляет его как есть).
+                if (item.href.includes('{portalId}')) {
+                    expect(item.href.startsWith('/portal/{portalId}/')).toBe(
+                        true,
+                    );
+                } else {
+                    expect(item.href.startsWith('/')).toBe(true);
+                }
                 expect(item.title.length).toBeGreaterThan(0);
             }
         }
+    });
+
+    it('AI-категории ссылаются на путеводитель, настройки AI портала и страницы AI-аналитики', () => {
+        const hrefs = (
+            code:
+                | 'ai_analytics_main'
+                | 'ai_analytics_people'
+                | 'ai_analytics_model',
+        ) => PORTAL_APP_SETTING_GROUPS[code].links.map(item => item.href);
+        expect(hrefs('ai_analytics_main')).toEqual(
+            expect.arrayContaining([
+                '/ai-analytics/guide#enable-and-push',
+                '/portal/{portalId}/ai-settings',
+                '/ai-analytics/model',
+            ]),
+        );
+        expect(hrefs('ai_analytics_people')).toContain(
+            '/ai-analytics/guide#people-and-targets',
+        );
+        expect(hrefs('ai_analytics_model')).toEqual(
+            expect.arrayContaining([
+                '/ai-analytics/guide#model-and-data',
+                '/portal/{portalId}/ai-settings?tab=knowledge',
+            ]),
+        );
     });
 });

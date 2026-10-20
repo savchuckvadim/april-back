@@ -202,9 +202,10 @@ describe('pairsBySeries', () => {
             },
         ]);
 
-        expect([...pairs.keys()]).toEqual(['2026-09-08', null]);
-        expect(pairs.get('2026-09-08')).toHaveLength(1);
-        expect(pairs.get('2026-09-08')?.[0]).toMatchObject({
+        // v2.2 — в общей серии накопленной истории от 25.06.
+        expect([...pairs.keys()]).toEqual(['2026-06-25', null]);
+        expect(pairs.get('2026-06-25')).toHaveLength(1);
+        expect(pairs.get('2026-06-25')?.[0]).toMatchObject({
             key: 't-1',
             firstPromptVersion: 'focus-v2.2-2026-09-08',
             first: { scales: { score: 7 } },

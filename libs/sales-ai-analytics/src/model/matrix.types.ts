@@ -101,8 +101,16 @@ export interface ManagerTypeMatrix {
     buckets: BucketScore[];
     /** Разобранных сравнимых звонков всего. */
     analyzed: number;
-    /** Из них без корзины (other / irrelevant / неизвестный тип). */
+    /**
+     * Из них без корзины — в оценки не входят (event_invite, other /
+     * irrelevant, неизвестный тип).
+     */
     noBucket: number;
+    /**
+     * Из них без своей колонки — доля «прочее» (other / irrelevant /
+     * неизвестный тип); event_invite сюда не входит: у него своя колонка.
+     */
+    noColumn: number;
     /**
      * Действующая граница сравнимости: поздняя из границы версий и разрыва
      * ряда настройками; null — ни одна не задана.

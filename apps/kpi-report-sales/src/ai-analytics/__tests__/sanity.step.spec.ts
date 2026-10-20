@@ -421,13 +421,23 @@ describe('Разбор шины, стора и настроек', () => {
         ).toEqual({ [STAGE.refine]: 14 });
     });
 
-    it('строки звонков берутся из шины, чужая форма отбрасывается', () => {
+    it('строки звонков берутся из шины, чужая форма отбрасывается; сигнал — действующий флаг с цитатой', () => {
         const rows = callFacts([
             {
                 managerId: 10,
                 callType: 'cold',
                 durationSec: 120,
-                riskFlags: ['no_next_step'],
+                riskFlags: ['conflict'],
+                riskEvidence: [{ flag: 'conflict', quote: 'Слушайте сюда' }],
+                coachingPriority: null,
+            },
+            // Отменённый флаг и флаг без цитаты — не сигнал.
+            {
+                managerId: 11,
+                callType: 'cold',
+                durationSec: 120,
+                riskFlags: ['promise', 'compliance'],
+                riskEvidence: [{ flag: 'promise', quote: 'Завтра' }],
                 coachingPriority: null,
             },
             'мусор',
@@ -439,6 +449,12 @@ describe('Разбор шины, стора и настроек', () => {
                 callType: 'cold',
                 durationSec: 120,
                 alert: true,
+            },
+            {
+                managerId: '11',
+                callType: 'cold',
+                durationSec: 120,
+                alert: false,
             },
         ]);
     });

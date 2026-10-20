@@ -17,7 +17,7 @@ import {
  * бюджет времени и сбои — call-report-reanalyze.use-case.flow.spec.ts.
  */
 describe('CallReportReanalyzeUseCase: запись переразбора', () => {
-    it('переразбирает только чужую серию и разборы без версий у пилота; новая запись копирует ссылки, старая — superseded; отчёт согласия по сериям', async () => {
+    it('переразбирает разборы других версий (и той же серии) и без версий у пилота; новая запись копирует ссылки, старая — superseded; отчёт согласия по сериям', async () => {
         const { useCase, db, ofType, rerunService } = makeUseCase({
             rows: [
                 liteRow('t-1', '317'),
@@ -36,7 +36,7 @@ describe('CallReportReanalyzeUseCase: запись переразбора', () =
 
         const result = await useCase.execute(PERIOD, NOW);
 
-        expect(rerunService.rerun).toHaveBeenCalledTimes(2);
+        expect(rerunService.rerun).toHaveBeenCalledTimes(3);
         expect(rerunService.rerun).toHaveBeenCalledWith({
             transcriptionId: 't-1',
             source: containing({ weightedScore: 70 }),
@@ -47,7 +47,7 @@ describe('CallReportReanalyzeUseCase: запись переразбора', () =
                 record.status === 'done' &&
                 record.provider === 'call-report-reanalyzer',
         );
-        expect(fresh).toHaveLength(2);
+        expect(fresh).toHaveLength(3);
         expect(fresh[0]).toMatchObject({
             transcription_id: 't-1',
             app: 'call-report',
@@ -68,17 +68,18 @@ describe('CallReportReanalyzeUseCase: запись переразбора', () =
         });
         expect(db.find(record => record.id === '1')?.status).toBe('superseded');
         expect(db.find(record => record.id === '5')?.status).toBe('superseded');
-        expect(db.find(record => record.id === '2')?.status).toBe('done');
+        // v2.3 — та же серия, но другая версия: тоже пересчитан.
+        expect(db.find(record => record.id === '2')?.status).toBe('superseded');
 
         expect(result).toMatchObject({
-            candidates: 2,
-            processed: 2,
-            done: 2,
+            candidates: 3,
+            processed: 3,
+            done: 3,
             failed: 0,
-            skipped: 3,
+            skipped: 2,
             continuedWith: null,
-            tokens: 2400,
-            price: 3.6,
+            tokens: 3600,
+            price: 5.4,
         });
         const status = ofType('call-report-reanalysis-run');
         expect(status).toHaveLength(1);
@@ -86,9 +87,9 @@ describe('CallReportReanalyzeUseCase: запись переразбора', () =
             activity_id: '2026-09-01..2026-09-30',
             user_result: containing({
                 finished: true,
-                done: 2,
+                done: 3,
                 skippedBy: {
-                    upToDate: 1,
+                    upToDate: 0,
                     noAnalysis: 1,
                     notInRoster: 1,
                     noActive: 0,
@@ -96,10 +97,11 @@ describe('CallReportReanalyzeUseCase: запись переразбора', () =
                 userIds: [317],
             }),
         });
-        // Отчёт согласия: серия v2.2 и «без версий» — по ключу на серию.
+        // Отчёт согласия: общая серия накопленной истории (v2.2 и v2.3 —
+        // одна серия от 25.06) и «без версий» — по ключу на серию.
         const reports = ofType('ai-analytics-version-agreement');
         expect(reports.map(record => record.activity_id).sort()).toEqual([
-            `2026-09-08->${CALL_REPORT_PROMPT_VERSION}`,
+            `2026-06-25->${CALL_REPORT_PROMPT_VERSION}`,
             `none->${CALL_REPORT_PROMPT_VERSION}`,
         ]);
         expect(result.reportIds).toHaveLength(2);

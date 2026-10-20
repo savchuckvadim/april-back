@@ -27,6 +27,7 @@ import { AiAnalyticsFeedbackStore } from '../store/ai-analytics-feedback.store';
 import {
     callsLoaderWith,
     liteRow,
+    provenRisk,
     portalSettings,
     settingsLoaderWith,
 } from './fixtures/lite-row.fixture';
@@ -143,7 +144,23 @@ describe('PulseUseCase', () => {
         const rows = [
             liteRow({
                 transcriptionId: 'risk',
-                riskFlags: ['client_negative', 'promise'],
+                // Два действующих флага с цитатами: вид — первый по
+                // справочнику (conflict), цитата — его доказательство.
+                riskFlags: ['door_closed', 'conflict'],
+                riskEvidence: [
+                    {
+                        flag: 'door_closed',
+                        quote: 'Ну и ладно',
+                        speaker: 'manager',
+                        at: null,
+                    },
+                    {
+                        flag: 'conflict',
+                        quote: 'Вы меня не слушаете',
+                        speaker: 'manager',
+                        at: 12,
+                    },
+                ],
                 objections: [
                     {
                         category: 'price',
@@ -166,7 +183,7 @@ describe('PulseUseCase', () => {
             }),
             liteRow({
                 transcriptionId: 'outside',
-                riskFlags: ['promise'],
+                ...provenRisk('conflict'),
                 callStartedAt: new Date('2026-08-20T07:00:00Z'),
             }),
             liteRow({ transcriptionId: 'calm' }),
@@ -190,11 +207,13 @@ describe('PulseUseCase', () => {
                 alert.handled,
             ]),
         ).toEqual([
-            ['risk', 'promise', true],
+            ['risk', 'conflict', true],
             ['urgent', 'urgent', false],
             ['sent', 'urgent', false],
         ]);
-        expect(dto.alerts[0].quote).toBe('Дорого');
+        expect(dto.alerts[0].quote).toBe('Вы меня не слушаете');
+        // У urgent без флагов цитата — возражение или худший раздел.
+        expect(dto.alerts[1].quote).toBe('');
     });
 
     it('applyPulsePerimeter: менеджер видит только свои строки byManager и alerts', async () => {
@@ -203,7 +222,7 @@ describe('PulseUseCase', () => {
             liteRow({
                 transcriptionId: 'x',
                 managerId: '20',
-                riskFlags: ['conflict'],
+                ...provenRisk('conflict'),
             }),
         ];
         const useCase = new PulseUseCase(
@@ -231,13 +250,48 @@ describe('PulseUseCase', () => {
 });
 
 describe('pulse-alerts.util', () => {
-    it('вид сигнала — по порядку справочника риск-флагов, иначе urgent, иначе null', () => {
+    it('вид сигнала — действующий флаг с цитатой по порядку справочника, иначе urgent, иначе null', () => {
         expect(
             resolveAlertKind({
-                riskFlags: ['compliance', 'promise'],
+                riskFlags: ['door_closed', 'compliance'],
+                riskEvidence: [
+                    {
+                        flag: 'door_closed',
+                        quote: 'Ладно',
+                        speaker: 'manager',
+                        at: null,
+                    },
+                    {
+                        flag: 'compliance',
+                        quote: 'Не представился',
+                        speaker: 'manager',
+                        at: null,
+                    },
+                ],
                 coachingPriority: null,
             }),
-        ).toBe('promise');
+        ).toBe('compliance');
+        // Отменённые флаги и флаг без цитаты — не сигнал.
+        expect(
+            resolveAlertKind({
+                riskFlags: ['promise', 'client_negative', 'conflict'],
+                riskEvidence: [
+                    {
+                        flag: 'promise',
+                        quote: 'Завтра',
+                        speaker: 'manager',
+                        at: null,
+                    },
+                    {
+                        flag: 'client_negative',
+                        quote: 'Не звоните',
+                        speaker: 'client',
+                        at: null,
+                    },
+                ],
+                coachingPriority: null,
+            }),
+        ).toBeNull();
         expect(
             resolveAlertKind({
                 riskFlags: ['unknown'],
@@ -280,7 +334,7 @@ describe('pulse-alerts.util', () => {
     it('collectPulseAlerts фильтрует по дням окна в TZ портала', () => {
         const row = liteRow({
             transcriptionId: 'edge',
-            riskFlags: ['promise'],
+            ...provenRisk('conflict'),
             // 31.08 23:30 MSK = 31.08 20:30Z — в окне, хотя UTC-дата та же
             callStartedAt: new Date('2026-08-30T21:30:00Z'),
         });

@@ -8,7 +8,12 @@
  * `sanity.sources.ts` (записи стора менеджер-месяцев и плацебо-тест):
  * каждый файл — одна ответственность и лимит 300 строк.
  */
-import type { AiModelParams, StageSlaFact } from '@lib/sales-ai-analytics';
+import {
+    provenRiskFlagCodes,
+    type AiModelParams,
+    type RiskEvidenceLike,
+    type StageSlaFact,
+} from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_URGENT_COACHING } from '../constants/ai-analytics.const';
 import {
     AI_SANITY_SLA_STAGES,
@@ -42,13 +47,39 @@ export function agreedSla(params: AiModelParams): Record<string, number> {
     return agreed;
 }
 
-/** Строки звонков из шины в объёме панели (чужая форма отбрасывается). */
+const stringsOf = (value: unknown): string[] =>
+    Array.isArray(value)
+        ? value.filter((item): item is string => typeof item === 'string')
+        : [];
+
+/** Доказательства флагов из строки шины (чужая форма отбрасывается). */
+const riskEvidenceOf = (value: unknown): RiskEvidenceLike[] =>
+    Array.isArray(value)
+        ? value.flatMap((item: unknown) => {
+              const record = asRecord(item);
+              return record && typeof record.flag === 'string'
+                  ? [
+                        {
+                            flag: record.flag,
+                            quote:
+                                typeof record.quote === 'string'
+                                    ? record.quote
+                                    : null,
+                        },
+                    ]
+                  : [];
+          })
+        : [];
+
+/**
+ * Строки звонков из шины в объёме панели (чужая форма отбрасывается).
+ * Сигнал — действующий риск-флаг с цитатой либо срочный коучинг.
+ */
 export function callFacts(value: unknown): SanityCallFact[] {
     if (!Array.isArray(value)) return [];
     return value.flatMap((item: unknown) => {
         const row = asRecord(item);
         if (!row) return [];
-        const flags = row.riskFlags;
         return [
             {
                 managerId: idOf(row.managerId),
@@ -58,7 +89,10 @@ export function callFacts(value: unknown): SanityCallFact[] {
                         ? row.durationSec
                         : null,
                 alert:
-                    (Array.isArray(flags) && flags.length > 0) ||
+                    provenRiskFlagCodes(
+                        stringsOf(row.riskFlags),
+                        riskEvidenceOf(row.riskEvidence),
+                    ).length > 0 ||
                     row.coachingPriority === AI_ANALYTICS_URGENT_COACHING,
             },
         ];

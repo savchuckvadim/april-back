@@ -1,3 +1,4 @@
+import { CALL_REPORT_CALL_TYPE_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import { CallTypeRegistryService } from '../services/call-type-registry.service';
 
 const DOMAIN = 'test.bitrix24.ru';
@@ -51,10 +52,19 @@ describe('CallTypeRegistryService', () => {
             'refine',
             'decision',
             'payment',
+            // Приглашение на мероприятие (19.10.2026): свой kind базы знаний
+            // со сценарием и списком мероприятий портала.
+            'event_invite',
             'other',
             'irrelevant',
         ]);
         expect(registry.types.cold.knowledgeKind).toBe('call-analysis-cold');
+        expect(registry.types.event_invite.knowledgeKind).toBe(
+            'call-analysis-event-invite',
+        );
+        expect(registry.types.event_invite.title).toBe(
+            'Приглашение на мероприятие',
+        );
         expect(registry.types.cold.title).toContain('Холодный');
     });
 
@@ -125,7 +135,7 @@ describe('CallTypeRegistryService', () => {
         const { service } = makeService({ readError: true });
         const registry = await service.resolve(DOMAIN);
         expect(registry.source).toBe('builtin');
-        expect(registry.codes).toHaveLength(9);
+        expect(registry.codes).toHaveLength(CALL_REPORT_CALL_TYPE_CODES.length);
     });
 
     it('кэш: одно чтение на серию вызовов; invalidate сбрасывает', async () => {

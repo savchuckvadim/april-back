@@ -1,4 +1,7 @@
-import { comparableFrom } from '../contracts/versions.types';
+import {
+    AI_ANALYSIS_SERIES_START,
+    comparableFromVersions,
+} from '../contracts/versions.types';
 import * as publicApi from '../index';
 import {
     effectiveComparableFrom,
@@ -10,13 +13,21 @@ import { buildManagerTypeMatrix } from '../model/manager-type-matrix';
 import type { MatrixCallRow } from '../model/matrix.types';
 import { FIXTURE_VERSIONS, liteRow } from './lite-row.fixture';
 
-/** Наборы версий разбора: v2.2 (промпт от 08.09) и v2.3 (от 25.09). */
-const V22 = { ...FIXTURE_VERSIONS, prompt: 'focus-v2.2-2026-09-08' };
+/**
+ * Гипотетические версии ПО СУЩЕСТВУ (записи в таблице серий нет): дата
+ * серии = дата в строке — на них проверяется само правило разрыва.
+ */
+const V_OLD = { ...FIXTURE_VERSIONS, prompt: 'focus-v8.0-2026-09-08' };
+const V_NEW = { ...FIXTURE_VERSIONS, prompt: 'focus-v9.0-2026-09-25' };
+/** Дата выхода гипотетической новой версии — граница периода с её разборами. */
+const NEW_FROM = '2026-09-25';
+/**
+ * Реальные версии промпта: вся накопленная история — одна серия от
+ * 25.06.2026 (решение владельца 20.10.2026), v2.4 — минорная правка.
+ */
+const V21 = { ...FIXTURE_VERSIONS, prompt: 'focus-v2.1-2026-09-05' };
 const V23 = { ...FIXTURE_VERSIONS, prompt: 'focus-v2.3-2026-09-25' };
-/** v2.4 (20.10) — минорная правка, серия v2.3 (PROMPT_SERIES_START). */
 const V24 = { ...FIXTURE_VERSIONS, prompt: 'focus-v2.4-2026-10-20' };
-/** Дата выхода v2.3 — граница периода, в котором есть её разборы. */
-const V23_FROM = '2026-09-25';
 const SETTINGS_BREAK = '2026-09-20';
 
 /** Разбор звонка дня `day` (12:00 МСК) набором версий `versions`. */
@@ -31,33 +42,40 @@ const reviewed = (
         versions,
     });
 
-/** Граница периода по версиям — как у обзора: max дат версий всех строк. */
+/** Граница периода по версиям — как у обзора: max дат серий версий строк. */
 const periodBoundary = (rows: readonly MatrixCallRow[]): string =>
-    comparableFrom(
-        rows.flatMap(row => (row.versions ? Object.values(row.versions) : [])),
-    );
+    rows.reduce((max, row) => {
+        const date = row.versions ? comparableFromVersions(row.versions) : '';
+        return date > max ? date : max;
+    }, '');
 
-/** Августовские звонки с 10.08 подряд, разобранные набором v2.2. */
-const augustV22 = (count: number): MatrixCallRow[] =>
+/** Августовские звонки с 10.08 подряд, разобранные старой версией по существу. */
+const augustOld = (count: number): MatrixCallRow[] =>
     Array.from({ length: count }, (_, index) =>
         reviewed(
             `a${index + 1}`,
             `2026-08-${String(10 + index).padStart(2, '0')}`,
-            V22,
+            V_OLD,
         ),
     );
 
 describe('rowVersionsDate — дата собственного набора версий разбора', () => {
-    it('max дат по всем полям versions — та же функция, что граница периода', () => {
-        expect(rowVersionsDate({ versions: V23 })).toBe(V23_FROM);
-        expect(rowVersionsDate({ versions: V22 })).toBe('2026-09-08');
+    it('max дат серий по полям versions — та же функция, что граница периода', () => {
+        expect(rowVersionsDate({ versions: V_NEW })).toBe(NEW_FROM);
+        expect(rowVersionsDate({ versions: V_OLD })).toBe('2026-09-08');
+        // Атрибуция 24.08 и классификатор 05.09 записаны в таблицы серий
+        // полей, поэтому дату реальной v2.1 выше 25.06 не поднимают.
         expect(rowVersionsDate({ versions: FIXTURE_VERSIONS })).toBe(
-            '2026-09-05',
+            AI_ANALYSIS_SERIES_START,
         );
     });
 
-    it('минорная версия v2.4 даёт дату серии v2.3, а не свою', () => {
-        expect(rowVersionsDate({ versions: V24 })).toBe(V23_FROM);
+    it('реальные версии v2.1, v2.3 и минорная v2.4 — одна серия от 25.06', () => {
+        for (const versions of [V21, V23, V24]) {
+            expect(rowVersionsDate({ versions })).toBe(
+                AI_ANALYSIS_SERIES_START,
+            );
+        }
     });
 
     it('нет versions или дат в них — null', () => {
@@ -72,20 +90,20 @@ describe('rowVersionsDate — дата собственного набора в�
 
 describe('matrixComparability — границы из опций матрицы', () => {
     it('прежний comparableFrom — граница версий; comparableVersionFrom главнее; пустая строка — границы нет', () => {
-        expect(matrixComparability({ comparableFrom: V23_FROM })).toEqual({
-            versionFrom: V23_FROM,
+        expect(matrixComparability({ comparableFrom: NEW_FROM })).toEqual({
+            versionFrom: NEW_FROM,
             seriesBreakFrom: null,
             timeZone: 'Europe/Moscow',
         });
         expect(
             matrixComparability({
                 comparableFrom: '2026-09-08',
-                comparableVersionFrom: V23_FROM,
+                comparableVersionFrom: NEW_FROM,
                 seriesBreakFrom: SETTINGS_BREAK,
                 timeZone: 'UTC',
             }),
         ).toEqual({
-            versionFrom: V23_FROM,
+            versionFrom: NEW_FROM,
             seriesBreakFrom: SETTINGS_BREAK,
             timeZone: 'UTC',
         });
@@ -108,10 +126,10 @@ describe('matrixComparability — границы из опций матрицы'
                 seriesBreakFrom,
                 timeZone: 'UTC',
             });
-        expect(of(V23_FROM, SETTINGS_BREAK)).toBe(V23_FROM);
+        expect(of(NEW_FROM, SETTINGS_BREAK)).toBe(NEW_FROM);
         expect(of('2026-09-08', SETTINGS_BREAK)).toBe(SETTINGS_BREAK);
         expect(of(null, SETTINGS_BREAK)).toBe(SETTINGS_BREAK);
-        expect(of(V23_FROM, null)).toBe(V23_FROM);
+        expect(of(NEW_FROM, null)).toBe(NEW_FROM);
         expect(of(null, null)).toBeNull();
     });
 
@@ -123,9 +141,9 @@ describe('matrixComparability — границы из опций матрицы'
 
 describe('Сравнимость по версии разбора', () => {
     it('звонок до даты новой версии, разобранный новой версией, — сравним', () => {
-        const tail = reviewed('tail', '2026-09-24', V23);
+        const tail = reviewed('tail', '2026-09-24', V_NEW);
         const matrix = buildManagerTypeMatrix([tail], {
-            comparableFrom: V23_FROM,
+            comparableFrom: NEW_FROM,
         });
 
         expect(matrix.analyzed).toBe(1);
@@ -133,15 +151,15 @@ describe('Сравнимость по версии разбора', () => {
         expect(
             isBeforeComparable(
                 tail,
-                matrixComparability({ comparableFrom: V23_FROM }),
+                matrixComparability({ comparableFrom: NEW_FROM }),
             ),
         ).toBe(false);
     });
 
     it('звонок после даты, но разобранный старой версией, — не сравним', () => {
         const matrix = buildManagerTypeMatrix(
-            [reviewed('stale', '2026-09-26', V22)],
-            { comparableFrom: V23_FROM },
+            [reviewed('stale', '2026-09-26', V_OLD)],
+            { comparableFrom: NEW_FROM },
         );
 
         expect(matrix.analyzed).toBe(0);
@@ -151,7 +169,7 @@ describe('Сравнимость по версии разбора', () => {
     });
 
     it('период из одних старых разборов даёт свою дату сравнимости — в оценке все разборы', () => {
-        const august = augustV22(9);
+        const august = augustOld(9);
         const boundary = periodBoundary(august);
         const matrix = buildManagerTypeMatrix(august, {
             comparableFrom: boundary,
@@ -169,13 +187,13 @@ describe('Сравнимость по версии разбора', () => {
     });
 
     it('один переразобранный новой версией звонок не опустошает период', () => {
-        const period = [...augustV22(8), reviewed('re', '2026-08-15', V23)];
+        const period = [...augustOld(8), reviewed('re', '2026-08-15', V_NEW)];
         const boundary = periodBoundary(period);
         const matrix = buildManagerTypeMatrix(period, {
             comparableFrom: boundary,
         });
 
-        expect(boundary).toBe(V23_FROM);
+        expect(boundary).toBe(NEW_FROM);
         expect(matrix.analyzed).toBe(1);
         expect(matrix.managers[0].byType[0]).toEqual(
             expect.objectContaining({ n: 1, nBeforeComparable: 8 }),
@@ -188,12 +206,13 @@ describe('Сравнимость по версии разбора', () => {
     });
 
     /**
-     * Серии сравнимости (19.10.2026): правка промпта без смены оценок
-     * разделов не должна рвать ряд — разборы v2.3 и v2.4 в одной матрице
-     * сравнимы, и граница периода остаётся на 25.09.
+     * Серии сравнимости (решения владельца 19–20.10.2026): вся накопленная
+     * история — одна серия, минорная правка промпта ряд не рвёт — разборы
+     * v2.1, v2.3 и v2.4 в одной матрице сравнимы, граница периода — 25.06.
      */
-    it('разборы v2.3 и минорной v2.4 сравнимы в одной матрице, граница не сдвигается', () => {
+    it('реальные разборы v2.1, v2.3 и минорной v2.4 сравнимы вместе, граница — начало общей серии', () => {
         const rows = [
+            reviewed('jul', '2026-07-25', V21),
             reviewed('old', '2026-10-01', V23),
             reviewed('new', '2026-10-21', V24),
         ];
@@ -202,26 +221,21 @@ describe('Сравнимость по версии разбора', () => {
             comparableFrom: boundary,
         });
 
-        expect(boundary).toBe(V23_FROM);
-        expect(matrix.analyzed).toBe(2);
+        expect(boundary).toBe(AI_ANALYSIS_SERIES_START);
+        expect(matrix.analyzed).toBe(3);
         expect(matrix.excluded.beforeComparable).toBe(0);
-        // Переразбор v2.4 не выкидывает период, разобранный v2.3.
-        expect(
-            buildManagerTypeMatrix([...augustV22(3), ...rows], {
-                comparableFrom: boundary,
-            }).analyzed,
-        ).toBe(2);
+        expect(matrix.comparableFrom).toBe(AI_ANALYSIS_SERIES_START);
     });
 
     it('строка с версиями и без даты звонка судится по версии', () => {
         const undated = liteRow({
             transcriptionId: 'u',
             callStartedAt: null,
-            versions: V23,
+            versions: V_NEW,
         });
 
         expect(
-            buildManagerTypeMatrix([undated], { comparableFrom: V23_FROM })
+            buildManagerTypeMatrix([undated], { comparableFrom: NEW_FROM })
                 .analyzed,
         ).toBe(1);
     });
@@ -243,7 +257,7 @@ describe('Строки без версий — прежнее поведение
                     versions: null,
                 }),
             ],
-            { comparableFrom: V23_FROM },
+            { comparableFrom: NEW_FROM },
         );
 
         expect(matrix.analyzed).toBe(1);
@@ -261,11 +275,11 @@ describe('Строки без версий — прежнее поведение
         ];
 
         expect(
-            buildManagerTypeMatrix(edge, { comparableFrom: V23_FROM }).analyzed,
+            buildManagerTypeMatrix(edge, { comparableFrom: NEW_FROM }).analyzed,
         ).toBe(1);
         expect(
             buildManagerTypeMatrix(edge, {
-                comparableFrom: V23_FROM,
+                comparableFrom: NEW_FROM,
                 timeZone: 'UTC',
             }).analyzed,
         ).toBe(0);
@@ -276,8 +290,8 @@ describe('Разрыв ряда настройками — по дню звон�
     it('новая версия не спасает звонок до разрыва, старая — не топит звонок после', () => {
         const matrix = buildManagerTypeMatrix(
             [
-                reviewed('before-break', '2026-09-18', V23),
-                reviewed('after-break', '2026-09-22', V22),
+                reviewed('before-break', '2026-09-18', V_NEW),
+                reviewed('after-break', '2026-09-22', V_OLD),
             ],
             { seriesBreakFrom: SETTINGS_BREAK },
         );
@@ -292,12 +306,12 @@ describe('Разрыв ряда настройками — по дню звон�
     it('оба основания вместе: строка до любой из границ — вне оценки', () => {
         const matrix = buildManagerTypeMatrix(
             [
-                reviewed('fresh', '2026-09-22', V23),
-                reviewed('before-break', '2026-09-18', V23),
-                reviewed('stale', '2026-09-26', V22),
+                reviewed('fresh', '2026-09-22', V_NEW),
+                reviewed('before-break', '2026-09-18', V_NEW),
+                reviewed('stale', '2026-09-26', V_OLD),
             ],
             {
-                comparableVersionFrom: V23_FROM,
+                comparableVersionFrom: NEW_FROM,
                 seriesBreakFrom: SETTINGS_BREAK,
             },
         );
@@ -306,8 +320,8 @@ describe('Разрыв ряда настройками — по дню звон�
         expect(matrix.excluded.beforeComparable).toBe(2);
         expect(matrix).toEqual(
             expect.objectContaining({
-                comparableFrom: V23_FROM,
-                comparableVersionFrom: V23_FROM,
+                comparableFrom: NEW_FROM,
+                comparableVersionFrom: NEW_FROM,
                 seriesBreakFrom: SETTINGS_BREAK,
             }),
         );
@@ -315,15 +329,15 @@ describe('Разрыв ряда настройками — по дню звон�
 
     it('прежний comparableFrom — синоним comparableVersionFrom', () => {
         const rows = [
-            ...augustV22(8),
-            reviewed('re', '2026-08-15', V23),
-            reviewed('tail', '2026-09-24', V23),
+            ...augustOld(8),
+            reviewed('re', '2026-08-15', V_NEW),
+            reviewed('tail', '2026-09-24', V_NEW),
         ];
 
         expect(
-            buildManagerTypeMatrix(rows, { comparableFrom: V23_FROM }),
+            buildManagerTypeMatrix(rows, { comparableFrom: NEW_FROM }),
         ).toEqual(
-            buildManagerTypeMatrix(rows, { comparableVersionFrom: V23_FROM }),
+            buildManagerTypeMatrix(rows, { comparableVersionFrom: NEW_FROM }),
         );
     });
 });

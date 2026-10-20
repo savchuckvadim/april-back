@@ -10,12 +10,19 @@
  * KPI-фактах ячейки типа. Ничего доучитывать не нужно, поэтому и ручка
  * «Внимания» поверх кэша обзора получает сигнал `plan_gap` без своих
  * загрузок.
+ *
+ * Этап 2 (решение владельца 19.10.2026): факты качества строки
+ * (`quality` — презентации, доработка, звонки с низкой оценкой) уходят в
+ * правила weak_presentation / weak_followup / low_score_calls, пороги —
+ * из той же строки (ими факты и собраны); риск-звонки — только
+ * действующие виды (отменённые в старом кэше отбрасываются).
  */
 import {
     AttentionLevelNorms,
     AttentionManagerInput,
     AttentionOutcomes,
     AttentionPlanGap,
+    AttentionRules,
     buildAttention,
 } from '@lib/sales-ai-analytics';
 import {
@@ -27,6 +34,20 @@ import { AiFunnelEdgeDto } from '../../dto/ai-funnel-edge.dto';
 import { AiManagerRowDto } from '../../dto/ai-manager-row.dto';
 import { AiOverviewDto } from '../../dto/ai-overview.dto';
 import { goodhartOf, trendSignalsOf } from './attention-trends.presenter';
+import { isActiveAlertKind } from './pulse-alerts.util';
+
+/** Факты качества строки для правил этапа 2; у старого кэша их нет. */
+function qualityInputOf(
+    row: AiManagerRowDto,
+): Pick<AttentionManagerInput, 'presentation' | 'followup' | 'lowScoreCalls'> {
+    const quality = row.quality;
+    if (!quality) return {};
+    return {
+        presentation: quality.presentation,
+        followup: quality.followup,
+        lowScoreCalls: quality.lowScoreCalls,
+    };
+}
 
 export function toAttentionInput(row: AiManagerRowDto): AttentionManagerInput {
     return {
@@ -37,12 +58,26 @@ export function toAttentionInput(row: AiManagerRowDto): AttentionManagerInput {
             current: row.nextStepRate.current,
             previous: row.nextStepRate.previous,
         },
-        riskCalls: row.riskCalls.map(call => ({
-            transcriptionId: call.transcriptionId,
-            kind: call.kind,
-        })),
+        riskCalls: row.riskCalls
+            .filter(call => isActiveAlertKind(call.kind))
+            .map(call => ({
+                transcriptionId: call.transcriptionId,
+                kind: call.kind,
+            })),
         discipline: row.discipline,
+        ...qualityInputOf(row),
     };
+}
+
+/**
+ * Пороги правил этапа 2 — из строк обзора (одни на портал): факты
+ * собраны по ним, по ним же и читаются. Строк с фактами нет — дефолты.
+ */
+export function attentionRulesOf(
+    rows: readonly AiManagerRowDto[],
+): Partial<AttentionRules> {
+    const thresholds = rows.find(row => row.quality)?.quality?.thresholds;
+    return thresholds ? { ...thresholds } : {};
 }
 
 /** Ребро воронки строки по коду; нет ребра — undefined. */
@@ -143,7 +178,10 @@ export function toAttentionInputPhase2(
 export function buildAttentionItems(
     rows: readonly AiManagerRowDto[],
 ): AiAttentionItemDto[] {
-    return buildAttention({ managers: rows.map(toAttentionInputPhase2) });
+    return buildAttention(
+        { managers: rows.map(toAttentionInputPhase2) },
+        attentionRulesOf(rows),
+    );
 }
 
 /** Старшая (по рангу) карточка каждого менеджера — для signal строки. */
@@ -168,8 +206,7 @@ export function withSignals(
     }));
 }
 
-/** «Внимание» из обзора, уже отфильтрованного по периметру. */
-/** Уникальные id транскрипций риск-звонков всех карточек (для ссылок на разборы). */
+/** Уникальные id транскрипций звонков всех карточек (для ссылок на разборы). */
 export function attentionTranscriptionIds(data: AiAttentionDto): string[] {
     return [
         ...new Set(
@@ -179,9 +216,9 @@ export function attentionTranscriptionIds(data: AiAttentionDto): string[] {
 }
 
 /**
- * Ссылки на разборы риск-звонков: id из link.transcriptionIds → карточка
- * смарт-элемента (null — элемента нет). Карточки без риск-звонков не
- * меняются.
+ * Ссылки на разборы звонков карточки (риск, слабые презентации и
+ * доработка, низкая оценка): id из link.transcriptionIds → карточка
+ * смарт-элемента (null — элемента нет). Карточки без звонков не меняются.
  */
 export function withAttentionCallLinks(
     data: AiAttentionDto,

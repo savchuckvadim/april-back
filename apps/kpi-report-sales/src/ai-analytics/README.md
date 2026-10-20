@@ -229,7 +229,9 @@ primaryKpi, finance}`, тип строки — `cell.callType`.
 пары «менеджер × ячейка `byType`» в порядке менеджеров обзора и типов
 справочника (`row.byType` уже упорядочен `compareCallTypes` — как ключи
 `AI_ANALYTICS_EVENT_KINDS` и `settings.callTypes[]`); `other` / `irrelevant` не
-отбрасываются — ячейки по ним в обзоре есть (`bucket = null`). `wide` — строка на
+отбрасываются — ячейки по ним в обзоре есть (`bucket = null`); приглашение на
+мероприятие (`event_invite`, `bucket = null`, `column = true`) — своя ячейка с n
+и оценкой вне средней (см. раздел «Тип «Приглашение на мероприятие»»). `wide` — строка на
 пару, `long` — те же строки, что у одиночного типа, с `callType` строки;
 `title = «Все типы»`, `totals = null`, `totalsByType = overview.totals` (для
 остальных `callType` — `totals` по типу и `totalsByType = null`),
@@ -728,7 +730,7 @@ ai-analytics/rop-mark/pick` (подбор, `forceRefresh` пересобирае
 
 **Где живёт.** Воркер — `apps/event-sales/src/call-report`: `CallReportReanalyzeUseCase` (джоба `JobNames.CALL_REPORT_REANALYZE`, очередь `CALL_REPORT`, обработчик в `CallReportProcessor`), общий с test-retest шаг повторного прогона `CallAnalysisRerunService` (расшифровка с таймкодами, паспорт, тип звонка из старой записи, модель портала, расход в колонки ais), записи статуса и отчёта — `CallReportReanalysisReportService`; нормализация записи — та же, что у штатного приёма (`agent-gate/services/agent-analysis-prepare.util.ts`). Админ-ручки — `@lib/sales-ai-analytics` (`admin/controllers/reanalyze.admin.controller.ts`), контракт джобы и ключей — `contracts/reanalysis.types.ts`, отчёт согласия версий — `model/agreement/version-agreement-report.ts`.
 
-**Что делает прогон.** Кандидаты = готовые транскрипции домена за период (даты портала `from..to` включительно, пояс `timeZone`, по умолчанию Europe/Moscow) × сотрудники списка (`userIds`, иначе пилот `allowedUserIds` из настроек конвейера; `null` там — все), у которых АКТИВНАЯ запись `agent-analysis` другой серии промпта (`versionSeriesDate(versions.prompt)` ≠ серии текущей) или без версий. Пропуски считаются по причинам: `upToDate` (уже текущая серия — повтор запуска безопасен), `noAnalysis` (разбора не было: короткие/нерелевантные заново не разбираем), `notInRoster`, `noActive`. Для каждого кандидата: новая запись `agent-analysis` (`status: done`, provider/agentName `call-report-reanalyzer`, `app: call-report`, текущие `versions`, `reanalysisOf: <id старой>`, `tokens_count`/`price` по цене портала) с копией `report_item_id`, `activity_id`, `entity_type`, `entity_id`, `user_id` старой записи; старая → `status: superseded` (нагрузка сохраняется). Битрикс не вызывается вовсе.
+**Что делает прогон.** Кандидаты = готовые транскрипции домена за период (даты портала `from..to` включительно, пояс `timeZone`, по умолчанию Europe/Moscow) × сотрудники списка (`userIds`, иначе пилот `allowedUserIds` из настроек конвейера; `null` там — все), у которых АКТИВНАЯ запись `agent-analysis` другой ВЕРСИИ промпта (строка `versions.prompt` ≠ текущей; серии накопленной истории объединены — `AI_ANALYSIS_SERIES_START`) или без версий. Пропуски считаются по причинам: `upToDate` (уже текущая серия — повтор запуска безопасен), `noAnalysis` (разбора не было: короткие/нерелевантные заново не разбираем), `notInRoster`, `noActive`. Для каждого кандидата: новая запись `agent-analysis` (`status: done`, provider/agentName `call-report-reanalyzer`, `app: call-report`, текущие `versions`, `reanalysisOf: <id старой>`, `tokens_count`/`price` по цене портала) с копией `report_item_id`, `activity_id`, `entity_type`, `entity_id`, `user_id` старой записи; старая → `status: superseded` (нагрузка сохраняется). Битрикс не вызывается вовсе.
 
 **Читатели берут активную запись.** Общий хелпер `pickActiveAnalysis` / `activeAnalysisByTranscription` (`@lib/call-lib`, `ai/lib/ai-active-record.util.ts`): `status ≠ superseded`, при нескольких — наибольший числовой id. Применён в выборке аналитики (`CallReportAnalyticsDataService`), `SmartLinkLoader`, идемпотентности приёма, статистике типов, недельном Excel, сверках презентаций/отказов/регламента, ночном ревизоре и контексте раскладки.
 
@@ -739,6 +741,62 @@ ai-analytics/rop-mark/pick` (подбор, `forceRefresh` пересобирае
 2. `POST admin/ai-analytics/reanalyze {domain, from, to}` (при необходимости `userIds`, `quota`); следить по `reanalyze-status` до `run.finished: true` (продолжения ставятся сами; `failed` повторяются следующей частью, упорные сбои видны в `lastError`).
 3. После окончания — `POST admin/ai-analytics/backfill {domain, from: 'YYYY-MM', to: 'YYYY-MM'}` за месяцы периода (ритм `backfill` идёт с `forceRefresh`) и `POST ai-analytics/cache/reset {domain, scope: 'all'}` в kpi-report-sales, чтобы недели/месяцы и обзор пересобрались по новым разборам.
 4. Отчёт согласия — в `reanalyze-status.agreement`: по разбивке `byOldPromptVersion` решить про совместимость серий.
+
+## Сигналы руководителю после решения владельца 19.10.2026 (этап 2, 21.10.2026)
+
+Порядок сигналов везде один: **слабые презентации → слабая доработка → прочие звонки с низкой оценкой → риск последним и только с цитатой**. Флаги `promise` («необоснованное обещание») и `client_negative` («сильный негатив клиента») отменены: у модели не спрашиваются (`CALL_REPORT_ACTIVE_RISK_FLAG_CODES` = conflict / compliance / door_closed, `CALL_REPORT_RETIRED_RISK_FLAG_CODES`), приём разбора их отбрасывает, витрина не показывает даже в старых данных (`provenRiskFlags` из `@lib/sales-ai-analytics`: сигнал риска = действующий флаг с непустой цитатой `riskEvidence`).
+
+- **«Внимание»** (`attention.presenter` → `buildAttention`): новые правила `weak_presentation`, `weak_followup`, `low_score_calls` впереди `no_data` / `discipline` / `next_step_drop` / `plan_gap`, `risk` — последним среди правил Фазы 1 (Фаза 3 после). Факты для правил собирает `domain/assembler/call-quality-facts.assembler.ts` по звонкам слоя качества и кладёт в строку обзора `quality` (`AiManagerQualityFactsDto`: `presentation {n, sections NEEDS/PRESENTATION, weakCallIds}`, `followup {n, objectionsKnown/Unhandled, nextStepSet/NoDate, sections OBJECTIONS/CLOSING, weakCallIds}`, `lowScoreCalls[] {transcriptionId, callType, score 1–10}`, `thresholds`). Средние разделов по отделу считает библиотека по всем строкам периметра. Пороги — реестр со слоем портала (`attentionThresholdsOf(settings)`): `weak_section_score_max` (5, [3; 7]) — средняя раздела не выше; `weak_section_gap` (1, [0,5; 3]) — ниже отдела на столько баллов; `low_score_call_max` (4, [2; 6]) — звонок слабый при общей оценке не выше; n раздела — не меньше `n_min_none`. Пороги едут в строке (`quality.thresholds`), чтобы правила читали кэш теми же числами; строки старого кэша без `quality` сигналов этапа 2 не дают, их риск-звонки с отменёнными видами отбрасываются. Ключ обзора — v6.
+- **Повестка понедельника** (`agenda.use-case` → `buildAgenda`): виды `weak_presentation` → `weak_followup` → `low_score` → `risk` → запасные `objection` / `section`; причина и цитата — худший из разделов NEEDS/PRESENTATION у презентации, неотработанное возражение или «следующий шаг без даты» у refine / decision, худший раздел у низкой оценки, доказательство флага у риска. Пороги — те же коды реестра.
+- **Пульс** (`pulse-alerts.util`): сигнал = действующий флаг с цитатой (вид — первый по справочнику, цитата — доказательство) либо `urgent`; `AI_ANALYTICS_ALERT_KINDS` = действующие коды + urgent.
+- **Три звонка недели** (`rop-mark`): случайный слот сначала смотрит на презентации и доработку с общей оценкой не выше `low_score_call_max`, без них — случайный среди всех (`isPreferredLowScoreCall`).
+- Санити-панель и потолки оценивания (`riskFlags.count`) тоже считают только действующие флаги с цитатой; сумма риск-звонков в пакете резюме — только действующие виды.
+
+## Тип «Приглашение на мероприятие» (этап 3, 21.10.2026)
+
+Решение владельца 19.10.2026: звонки-приглашения на мероприятие (Всероссийский
+юридический форум, онлайн-семинары, вебинары, конференции, собственные онлайн /
+офлайн мероприятия портала) — отдельный AI-тип `event_invite` («Приглашение на
+мероприятие», карта `AI_ANALYTICS_EVENT_KINDS`), а не `call` / `other` /
+`presentation` с оценкой по чужой рубрике.
+
+- **Отдельная колонка, вне средней оценки.** У типа `bucket: null` и новый
+  признак карты `column: true` (`AiAnalyticsEventKind.column`, в DTO —
+  `settings.callTypes[].column`). Колонка матрицы и подвкладка by-type со своим
+  `n`, своей оценкой и KPI-фактом есть (ячейка `byType`, итог `totals`), но тип
+  не входит в корзины (`buckets`), среднюю менеджера (`keyMetric`) и отдела,
+  нормы, план дня, советы и тренды корзин. Доля «прочее» (`meta.otherSharePct`)
+  считается по типам **без колонки** (`column: false` — `other` / `irrelevant`,
+  плюс неизвестные коды): в библиотеке это `hasTypeColumn` (`model/buckets.ts`)
+  и счётчик `noColumn` матрицы; `noBucket` по-прежнему считает все типы без
+  корзины. Фронт помечает колонку подсказкой «Не входит в среднюю оценку;
+  считается отдельно» (звёздочка в шапке и у чипа, пометка в CSV и у итогов).
+- **KPI-факт** — item `seminar` («Приглашение на семинар») списка `sales_kpi`:
+  `kpiEventTypeCodes: ['seminar']`, `kpiPrimaryEventTypeCode: 'seminar'`;
+  `seminar` убран из `AI_ANALYTICS_UNMAPPED_KPI_EVENT_TYPES`. Приора по стадии
+  сделки нет: пригласить на форум можно с любой стадии.
+- **Разбор (event-sales).** Профиль `CALL_REPORT_TYPE_PROFILES.event_invite`
+  (CLOSING 100, GREETING 80, OBJECTIONS 70, NEEDS 60, REFUSAL 50, PRESENTATION
+  30, PRICE 10; речь 40–60 %, 3–8 вопросов), kind базы знаний
+  `call-analysis-event-invite`, блок промпта `EVENT_INVITE_CALL_BLOCK` (польза
+  мероприятия для специалиста, квалификация интереса, регистрация или
+  договорённость с датой, дверь к продукту после мероприятия; хвост / 5К —
+  null). Классификатор знает код (`DEFAULT_CLASSIFICATION_SYSTEM_PROMPT`), синтез
+  может уточнить тип в `callTypeRefined`. Версии: промпт `focus-v2.6-2026-10-21`
+  и классификатор `2026-10-21` — минорные, записаны в серии
+  (`PROMPT_SERIES_START`, `VERSION_FIELD_SERIES_START.classifier`), ряд
+  сравнимости не рвётся.
+- **Свои мероприятия портала.** Названия, даты и формат своих мероприятий и
+  сценарий звонка-приглашения портал кладёт документом базы знаний kind
+  `call-analysis-event-invite` (клиентский документ дополняет общий; редактор
+  материалов в админке показывает kind человеческим названием «Анализ:
+  приглашение на мероприятие»). Критерии определения типа при необходимости
+  переопределяются документом kind `call-classify`.
+- **После выкладки** на каждом портале один раз выполнить
+  `POST call-report/install-smart`: он дольёт значение `event_invite` в enum-поле
+  CALL_TYPE смарта «AI-анализ звонков» (`enumItemsAdded`). До этого writer пишет
+  элемент без CALL_TYPE с предупреждением в логе, разбор и витрина работают.
+  Кэш витрины сбрасывать не обязательно: в старых разборах этого типа нет.
 
 ## Проверка
 

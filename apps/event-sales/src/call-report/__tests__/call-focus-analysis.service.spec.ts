@@ -192,6 +192,42 @@ describe('CallFocusAnalysisService', () => {
         expect(schema.properties.riskEvidence).toBeDefined();
     });
 
+    /**
+     * Тип «Приглашение на мероприятие» (решение владельца 19.10.2026):
+     * блок подключается так же, как блоки доработки и решения — ко всем
+     * фокусам и синтезу, и только для звонков этого типа.
+     */
+    it('приглашение на мероприятие: блок EVENT_INVITE идёт во все проходы и синтез, другим типам — нет', async () => {
+        const { service, vibeCodeClient } = makeDeps();
+        await service.run('test.bitrix24.ru', 'текст', 'event_invite');
+        const prompts =
+            vibeCodeClient.structuredCompletionWithUsage.mock.calls.map(call =>
+                String((call as unknown[])[0]),
+            );
+        expect(prompts).toHaveLength(4);
+        for (const prompt of prompts) {
+            expect(prompt).toContain('ЗВОНОК-ПРИГЛАШЕНИЕ НА МЕРОПРИЯТИЕ');
+            expect(prompt).toContain(
+                'ЧЕК-ЛИСТЫ ПРЕЗЕНТАЦИИ К ЭТОМУ ЗВОНКУ НЕ ПРИМЕНИМЫ',
+            );
+        }
+        // Синтез знает про новый код в callTypeRefined.
+        const synthesis =
+            vibeCodeClient.structuredCompletionWithUsage.mock.calls.find(
+                call => (call as unknown[])[2] === 'call_focus_synthesis',
+            ) as unknown[];
+        expect(String(synthesis[0])).toContain("'event_invite'");
+
+        const other = makeDeps();
+        await other.service.run('test.bitrix24.ru', 'текст', 'presentation');
+        for (const call of other.vibeCodeClient.structuredCompletionWithUsage
+            .mock.calls) {
+            expect(String((call as unknown[])[0])).not.toContain(
+                'ЗВОНОК-ПРИГЛАШЕНИЕ НА МЕРОПРИЯТИЕ',
+            );
+        }
+    });
+
     it('два упавших фокуса → результат отброшен (null)', async () => {
         const { service } = makeDeps({
             responses: {

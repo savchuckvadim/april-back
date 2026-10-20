@@ -282,14 +282,14 @@ describe('фокус, неотработанные сигналы и повес�
             {
                 managerId: '10',
                 transcriptionId: '10-r1',
-                kind: 'promise',
+                kind: 'conflict',
                 handled: false,
                 link: LINK,
             },
             {
                 managerId: '10',
                 transcriptionId: '10-r0',
-                kind: 'promise',
+                kind: 'conflict',
                 handled: true,
                 link: null,
             },

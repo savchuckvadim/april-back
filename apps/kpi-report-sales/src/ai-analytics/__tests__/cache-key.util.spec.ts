@@ -33,7 +33,7 @@ describe('cache-key.util (ai-analytics)', () => {
         );
     });
 
-    it('ключ обзора (= jobId = requestKey): версия формы v5 (периметр разбора, meta.scope), период, ростер, confirmedOnly', () => {
+    it('ключ обзора (= jobId = requestKey): версия формы v6 (факты качества строки, риск только по действующим флагам), период, ростер, confirmedOnly', () => {
         expect(
             buildOverviewKey(
                 DOMAIN,
@@ -43,12 +43,12 @@ describe('cache-key.util (ai-analytics)', () => {
                 false,
             ),
         ).toBe(
-            'sales-ai-analytics:v1:april.bitrix24.ru:overview:v5:2026-08-10_2026-09-06:10_20:0',
+            'sales-ai-analytics:v1:april.bitrix24.ru:overview:v6:2026-08-10_2026-09-06:10_20:0',
         );
         expect(
             buildOverviewKey(DOMAIN, '2026-08-10', '2026-09-06', '10_20', true),
         ).toBe(
-            'sales-ai-analytics:v1:april.bitrix24.ru:overview:v5:2026-08-10_2026-09-06:10_20:1',
+            'sales-ai-analytics:v1:april.bitrix24.ru:overview:v6:2026-08-10_2026-09-06:10_20:1',
         );
     });
 
@@ -65,7 +65,7 @@ describe('cache-key.util (ai-analytics)', () => {
                 false,
             ),
         ).toBe(
-            'sales-ai-analytics:v1:april.bitrix24.ru:overview:v5:2026-08-10_2026-09-06:none:0',
+            'sales-ai-analytics:v1:april.bitrix24.ru:overview:v6:2026-08-10_2026-09-06:none:0',
         );
     });
 

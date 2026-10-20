@@ -9,6 +9,7 @@ import {
     buildAttentionItems,
     topSignalByManager,
 } from '../domain/presenter/attention.presenter';
+import { isActiveAlertKind } from '../domain/presenter/pulse-alerts.util';
 import type { AiManagerRowDto } from '../dto/ai-manager-row.dto';
 import type { AiOverviewDto } from '../dto/ai-overview.dto';
 import type { MetricDto } from '../dto/metric.dto';
@@ -32,9 +33,15 @@ export function rowsInScope(
     return overview.managers.filter(row => inScope(row.managerId, managerIds));
 }
 
-/** Риск-звонки периода по строкам. */
+/** Риск-звонки периода по строкам (только действующие виды сигнала). */
 export function sumRiskCalls(rows: readonly AiManagerRowDto[]): number {
-    return sum(rows.map(row => row.riskCalls.length));
+    return sum(
+        rows.map(
+            row =>
+                row.riskCalls.filter(call => isActiveAlertKind(call.kind))
+                    .length,
+        ),
+    );
 }
 
 /** Закрытые продажи периода по строкам. */

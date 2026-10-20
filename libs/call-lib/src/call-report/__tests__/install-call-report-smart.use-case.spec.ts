@@ -224,6 +224,67 @@ describe('InstallCallReportSmartUseCase', () => {
         ]);
     });
 
+    /**
+     * Новый тип звонка «Приглашение на мероприятие» (19.10.2026) попадает
+     * на уже установленные порталы повторным install-smart: поле CALL_TYPE
+     * получает недостающее значение, существующие — по id.
+     */
+    it('доливает значение event_invite полю CALL_TYPE на портале со старым справочником типов', async () => {
+        const { useCase, bitrix } = makeDeps({ existingType: true });
+        const existing = [
+            'cold',
+            'site_lead',
+            'call',
+            'presentation',
+            'refine',
+            'decision',
+            'payment',
+            'other',
+            'irrelevant',
+        ];
+        bitrix.userFieldConfig.getAllWithItems.mockResolvedValue([
+            {
+                id: 930,
+                fieldName: 'UF_CRM_128_CALL_TYPE',
+                enum: existing.map((xmlId, index) => ({
+                    id: index + 1,
+                    xmlId,
+                    value: xmlId,
+                    sort: (index + 1) * 100,
+                })),
+            },
+        ]);
+
+        const result = await useCase.execute(DOMAIN);
+
+        expect(bitrix.userFieldConfig.update).toHaveBeenCalledTimes(1);
+        const [call] = bitrix.userFieldConfig.update.mock.calls as [
+            [
+                {
+                    id: number;
+                    field: {
+                        enum: { id?: number; xmlId: string; sort?: number }[];
+                    };
+                },
+            ],
+        ];
+        expect(call[0].id).toBe(930);
+        expect(call[0].field.enum.map(item => item.xmlId)).toEqual([
+            ...existing,
+            'event_invite',
+        ]);
+        expect(call[0].field.enum[call[0].field.enum.length - 1]).toMatchObject(
+            {
+                xmlId: 'event_invite',
+                value: 'Приглашение на мероприятие',
+                sort: 550,
+            },
+        );
+        expect(result.enumItemsAdded).toEqual([
+            'UF_CRM_128_CALL_TYPE: event_invite',
+        ]);
+    });
+
     it('enum-поле со всеми значениями не обновляется (идемпотентно), сбой долива не роняет установку', async () => {
         const { useCase, bitrix } = makeDeps({ existingType: true });
         bitrix.userFieldConfig.getAllWithItems.mockResolvedValue([

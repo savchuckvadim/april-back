@@ -1,7 +1,4 @@
-import {
-    CALL_REPORT_COACHING_CODES,
-    CALL_REPORT_RISK_FLAG_CODES,
-} from '@lib/call-lib';
+import { CALL_REPORT_COACHING_CODES } from '@lib/call-lib';
 import { DEEP_ANALYSIS_CORE_RULES } from './call-deep-analysis.contract';
 
 /**
@@ -10,7 +7,13 @@ import { DEEP_ANALYSIS_CORE_RULES } from './call-deep-analysis.contract';
  * СУЩНОСТИ (сделке/лиду), а не по звонку. Онлайн-разбор оценивает звонок
  * сам по себе; ревизор смотрит на клиента ЦЕЛИКОМ: все разборы за окно +
  * история — и корректирует картину: невыполненные обещания, рекомендации
- * по сделке, риски, приоритет разбора.
+ * по сделке, приоритет разбора.
+ *
+ * РИСК-ФЛАГИ РЕВИЗОР НЕ ТРОГАЕТ (этап 2 плана 2026-10-19-ai-focus-plan,
+ * решение владельца 19.10.2026): флаг ставится только разбором звонка и
+ * только с дословной цитатой-доказательством; ревизор смотрит на выжимки
+ * без расшифровок, цитаты дать не может — поэтому не спрашивает флаги у
+ * модели и не перезаписывает поле RISK_FLAGS карточки.
  */
 
 export const CALL_REVISION_SCHEMA: Record<string, unknown> = {
@@ -25,10 +28,6 @@ export const CALL_REVISION_SCHEMA: Record<string, unknown> = {
         unkeptPromises: { type: 'array', items: { type: 'string' } },
         /** Рекомендации ПО СДЕЛКЕ (не по технике менеджера): что делать дальше. */
         dealRecommendations: { type: 'array', items: { type: 'string' } },
-        riskFlags: {
-            type: 'array',
-            items: { type: 'string', enum: [...CALL_REPORT_RISK_FLAG_CODES] },
-        },
         coachingPriority: {
             type: ['string', 'null'],
             enum: [...CALL_REPORT_COACHING_CODES, null],
@@ -52,7 +51,6 @@ export const CALL_REVISION_SCHEMA: Record<string, unknown> = {
         'entitySummary',
         'unkeptPromises',
         'dealRecommendations',
-        'riskFlags',
         'coachingPriority',
         'kpiItemId',
         'kpiItemStatus',
@@ -71,9 +69,8 @@ export const CALL_REVISION_PROMPT = `${DEEP_ANALYSIS_CORE_RULES}
   (что обещали, когда, чем закончилось);
 - собери рекомендации ПО СДЕЛКЕ: не «как менеджеру говорить», а что делать
   дальше с ЭТИМ клиентом, с конкретикой из разговоров (первым пунктом —
-  заготовка первой фразы следующего контакта);
-- riskFlags — что должно попасть на стол руководителю по итогам ДНЯ у этого
-  клиента (невыполненное обещание — это риск promise);
+  заготовка первой фразы следующего контакта); невыполненное обещание —
+  это пункт unkeptPromises и рекомендация, а не сигнал руководителю;
 - coachingPriority — вырос ли приоритет разбора менеджера с руководителем
   с учётом повторяющихся проблем; null — если по дневным разборам менять
   нечего;
@@ -88,7 +85,8 @@ export const CALL_REVISION_PROMPT = `${DEEP_ANALYSIS_CORE_RULES}
 иначе 'suspected'. Id бери СТРОГО из списка кандидатов — никаких выдуманных.
 Ничего не подходит или кандидатов нет — все четыре поля null. Комментарии
 кандидатов можешь использовать как контекст (отчёт менеджера о том же
-событии), противоречия отчёта и разборов — это материал для riskFlags.
+событии), противоречия отчёта и разборов — это материал для
+dealRecommendations и entitySummary.
 
 НЕ пересматривай оценки отдельных звонков — они уже выставлены. Не выдумывай:
 каждое утверждение опирается на приложенные разборы и историю.`;

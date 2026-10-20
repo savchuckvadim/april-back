@@ -14,10 +14,14 @@ import { AiAnalyticsEnvelopeDto } from './ai-response-envelope.dto';
 export class AiAttentionBasisDto implements AttentionBasis {
     @ApiProperty({
         description:
-            'Код опоры: risk_calls, analyzed_calls, calls_total, ' +
-            'call_plan_done_share, next_step_date_rate, plan_head, …',
+            'Код опоры: needs_section_mean, presentation_section_mean, ' +
+            'objections_section_mean, closing_section_mean (средняя раздела ' +
+            '1–10, норма — порог или средняя отдела), objection_unhandled_share, ' +
+            'next_step_no_date_share (доли 0..1), low_score_calls (число ' +
+            'звонков, норма — порог оценки), risk_calls, analyzed_calls, ' +
+            'calls_total, call_plan_done_share, next_step_date_rate, plan_head, …',
         type: String,
-        example: 'call_plan_done_share',
+        example: 'needs_section_mean',
     })
     code: string;
 
@@ -50,10 +54,10 @@ export class AiAttentionBasisDto implements AttentionBasis {
     ci90?: [number, number];
 }
 
-/** Риск-звонок карточки со ссылкой на его разбор. */
+/** Звонок карточки (риск, слабая презентация / доработка, низкая оценка) со ссылкой на разбор. */
 export class AiAttentionCallLinkDto {
     @ApiProperty({
-        description: 'Id транскрипции риск-звонка.',
+        description: 'Id транскрипции звонка карточки.',
         type: String,
         example: '10245',
     })
@@ -80,14 +84,19 @@ export class AiAttentionLinkDto implements AttentionLink {
     managerId: string;
 
     @ApiPropertyOptional({
-        description: 'AI-тип звонка (подвкладка), если сигнал про тип.',
+        description:
+            'AI-тип звонка (подвкладка), если сигнал про тип: presentation у ' +
+            'слабых презентаций, refine у слабой доработки, call у дисциплины.',
         type: String,
-        example: 'call',
+        example: 'presentation',
     })
     callType?: string;
 
     @ApiPropertyOptional({
-        description: 'Id транскрипций риск-звонков (сигнал risk).',
+        description:
+            'Id транскрипций звонков карточки: риск-звонки (risk), слабые ' +
+            'презентации (weak_presentation), слабая доработка (weak_followup), ' +
+            'звонки с низкой оценкой (low_score_calls).',
         type: [String],
         example: ['10245', '10301'],
     })
@@ -95,8 +104,8 @@ export class AiAttentionLinkDto implements AttentionLink {
 
     @ApiPropertyOptional({
         description:
-            'Риск-звонки со ссылками на разборы (те же id, что в transcriptionIds) — ' +
-            'кнопка «Открыть разбор» на карточке. Только у сигнала risk.',
+            'Звонки карточки со ссылками на разборы (те же id, что в ' +
+            'transcriptionIds) — кнопка «Открыть разбор» на карточке.',
         type: [AiAttentionCallLinkDto],
     })
     calls?: AiAttentionCallLinkDto[];
@@ -120,15 +129,22 @@ export class AiAttentionItemDto implements AttentionItem {
 
     @ApiProperty({
         description:
-            'Сигнал Фазы 1: risk — риск-звонки; no_data — n < 8 при звонках; ' +
-            'discipline — < 50 % плана CRM при плане ≥ 10; next_step_drop — ' +
-            'падение доли «шаг с датой» при n ≥ 20 в обоих окнах; plan_gap — ' +
-            'план руководителя vs норма (с Фазы 2). Фаза 3: goodhart — ' +
-            'метрика давления растёт, противовес падает (goodhart_drop за ' +
-            'goodhart_window_months); trend_shift / trend_drift — сдвиг ' +
-            'уровня или дрейф ряда вниз.',
+            'Сигнал в порядке приоритета (решение владельца 19.10.2026): ' +
+            'weak_presentation — у презентаций слабы «Выявление потребностей» ' +
+            'или «Презентация под потребности» (средняя ≤ weak_section_score_max ' +
+            'либо ниже отдела на weak_section_gap при n ≥ 8); weak_followup — у ' +
+            'доработки (refine / decision) возражения не отработаны или шаг без ' +
+            'даты в половине случаев и чаще либо слабы «Работа с возражениями» / ' +
+            '«Закрытие разговора»; low_score_calls — звонки с общей оценкой ≤ ' +
+            'low_score_call_max; no_data — n < 8 при звонках; discipline — < 50 % ' +
+            'плана CRM при плане ≥ 10; next_step_drop — падение доли «шаг с ' +
+            'датой» при n ≥ 20 в обоих окнах; plan_gap — план руководителя vs ' +
+            'норма (с Фазы 2); risk — последним: действующие риск-флаги с цитатой ' +
+            '(conflict / compliance / door_closed) и срочный коучинг. Фаза 3: ' +
+            'goodhart — метрика давления растёт, противовес падает; ' +
+            'trend_shift / trend_drift — сдвиг уровня или дрейф ряда вниз.',
         enum: ATTENTION_SIGNALS,
-        example: 'discipline',
+        example: 'weak_presentation',
     })
     signal: AttentionSignal;
 
@@ -143,9 +159,10 @@ export class AiAttentionItemDto implements AttentionItem {
     availableFrom: AttentionAvailableFrom;
 
     @ApiProperty({
-        description: 'Заголовок карточки с числами.',
+        description: 'Заголовок карточки с числами (по-русски, без кодов).',
         type: String,
-        example: 'Дисциплина CRM: звонки 4 из 20 (20 %)',
+        example:
+            'Слабые презентации: «Выявление потребностей» 4,3 из 10 — в среднем по 12 разборам презентаций',
     })
     headline: string;
 

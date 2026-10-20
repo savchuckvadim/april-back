@@ -38,6 +38,17 @@ const link = (title: string, path: string): PortalAppSettingLink => ({
     href: `/portal/{portalId}${path}`,
 });
 
+/** Глобальная страница админки (без портала). */
+const globalLink = (title: string, href: string): PortalAppSettingLink => ({
+    title,
+    href,
+});
+
+/** Путеводитель по AI-аналитике: якорь — код раздела. */
+const AI_GUIDE_PATH = '/ai-analytics/guide';
+const guideLink = (title: string, section: string): PortalAppSettingLink =>
+    globalLink(title, `${AI_GUIDE_PATH}#${section}`);
+
 const LINK = {
     dealFields: link('Поля и стадии сделки', '/pbx/deal'),
     companyFields: link('Поля компании', '/pbx/company'),
@@ -48,6 +59,28 @@ const LINK = {
     lists: link('Списки (KPI)', '/pbx/list'),
     questionnaires: link('Анкеты', '/questionnaires'),
     superUsers: link('Суперпользователи', '/vendor-super-users'),
+    // --- AI-аналитика ОП ---
+    aiSettings: link('Настройки AI портала (конвейер разбора)', '/ai-settings'),
+    aiKnowledge: link('База знаний портала', '/ai-settings?tab=knowledge'),
+    aiModel: globalLink(
+        'AI-аналитика → Модель и обратная связь',
+        '/ai-analytics/model',
+    ),
+    aiAudit: globalLink('AI-аналитика → Аудит данных', '/ai-analytics/audit'),
+    aiGuideEnable: guideLink(
+        'Путеводитель: включение и рассылки',
+        'enable-and-push',
+    ),
+    aiGuidePeople: guideLink(
+        'Путеводитель: сотрудники и цели',
+        'people-and-targets',
+    ),
+    aiGuideModel: guideLink('Путеводитель: модель и данные', 'model-and-data'),
+    aiGuideForecast: guideLink('Путеводитель: прогноз отдела', 'forecast'),
+    aiGuideLaunch: guideLink(
+        'Путеводитель: запуск после выкладки',
+        'launch-after-release',
+    ),
 } as const;
 
 /** Справочник групп. Порядок ключей = порядок секций в админке. */
@@ -78,21 +111,38 @@ export const PORTAL_APP_SETTING_GROUPS = {
         description:
             'Включение AI-аналитики, алерты, утренние разборы, витрины и кому ' +
             'приходят сводки.',
-        links: [],
+        links: [
+            LINK.aiGuideEnable,
+            LINK.aiGuideLaunch,
+            LINK.aiSettings,
+            LINK.aiModel,
+            LINK.aiAudit,
+        ],
     },
     ai_analytics_people: {
         title: 'AI-аналитика: сотрудники и цели',
         description:
             'Уровни менеджеров, цели, отсутствия, согласия и параметры по ' +
             'сотрудникам.',
-        links: [LINK.departments],
+        links: [
+            LINK.aiGuidePeople,
+            LINK.departments,
+            LINK.aiSettings,
+            LINK.aiAudit,
+        ],
     },
     ai_analytics_model: {
         title: 'AI-аналитика: модель и данные',
         description:
             'Параметры модели, определения и журнал событий, оценивание, ' +
             'календарь и гипотезы.',
-        links: [],
+        links: [
+            LINK.aiGuideModel,
+            LINK.aiGuideForecast,
+            LINK.aiKnowledge,
+            LINK.aiModel,
+            LINK.aiAudit,
+        ],
     },
     // --- event-sales ---
     lead_sla: {

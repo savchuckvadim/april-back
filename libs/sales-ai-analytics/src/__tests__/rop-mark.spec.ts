@@ -1,4 +1,5 @@
 import {
+    isPreferredLowScoreCall,
     isRopMarkReason,
     isUncertainCallType,
     pickRopMarkCalls,
@@ -191,5 +192,58 @@ describe('pickRopMarkCalls — состав подбора недели', () => 
         expect(isRopMarkReason('best_score')).toBe(true);
         expect(isRopMarkReason('worst_score')).toBe(false);
         expect(isRopMarkReason(3)).toBe(false);
+    });
+
+    /**
+     * Решение владельца 19.10.2026 (фокус на презентациях и доработке):
+     * случайный слот сначала смотрит на презентации и доработку с низкой
+     * оценкой (порог `low_score_call_max`, дефолт 4 из 10 при балле 0–100),
+     * и лишь без них остаётся случайным среди всех.
+     */
+    it('случайный слот предпочитает презентации и доработку с низкой оценкой', () => {
+        const rows = [
+            candidate({
+                transcriptionId: '501',
+                managerId: '11',
+                callType: 'other',
+            }),
+            candidate({ transcriptionId: '502', managerId: '12', score: 95 }),
+            // Холодный звонок с низкой оценкой — не предпочтительный тип.
+            candidate({
+                transcriptionId: '503',
+                managerId: '13',
+                callType: 'cold',
+                score: 20,
+            }),
+            candidate({ transcriptionId: '504', managerId: '14', score: 70 }),
+            // Доработка с низкой оценкой — единственный предпочтительный.
+            candidate({
+                transcriptionId: '505',
+                managerId: '15',
+                callType: 'refine',
+                score: 38,
+            }),
+        ];
+        for (const seed of [SEED, ropMarkSeed(DOMAIN, '2026-W40')]) {
+            const random = pickRopMarkCalls(rows, { seed }).find(
+                pick => pick.reason === 'random',
+            );
+            expect(random?.transcriptionId).toBe('505');
+        }
+        // Порог ниже — предпочтительных нет, слот снова случайный среди всех.
+        const strict = pickRopMarkCalls(rows, { seed: SEED, lowScoreMax: 3 });
+        expect(strict.map(pick => pick.reason)).toEqual([...ROP_MARK_REASONS]);
+        expect(
+            isPreferredLowScoreCall({ callType: 'presentation', score: 40 }, 4),
+        ).toBe(true);
+        expect(
+            isPreferredLowScoreCall({ callType: 'presentation', score: 41 }, 4),
+        ).toBe(false);
+        expect(
+            isPreferredLowScoreCall({ callType: 'cold', score: 10 }, 4),
+        ).toBe(false);
+        expect(
+            isPreferredLowScoreCall({ callType: 'refine', score: null }, 4),
+        ).toBe(false);
     });
 });

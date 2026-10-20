@@ -258,8 +258,9 @@ export class AiManagerTypeCellDto {
 
     @ApiProperty({
         description:
-            'Корзина оценок типа; null — тип в оценках не участвует ' +
-            '(other / irrelevant).',
+            'Корзина оценок типа; null — тип в общую оценку не входит ' +
+            '(приглашение на мероприятие — своя колонка со своей оценкой; ' +
+            'other / irrelevant — доля «прочее»).',
         enum: AI_ANALYTICS_BUCKETS,
         nullable: true,
         example: 'presentation',

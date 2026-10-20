@@ -20,6 +20,7 @@ import {
     CALL_REPORT_CALL_TYPE_CODES,
     CallReportCallTypeCode,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-smart.type';
+import { registryDefault } from '../params/registry.access';
 import { mulberry32, seedOf } from './prng';
 
 /** Причина попадания звонка в подбор недели (порядок значим — он же план). */
@@ -81,6 +82,38 @@ export interface RopMarkPickOptions {
     seed: number;
     /** Сколько звонков подобрать; по умолчанию три (бюджет недели). */
     limit?: number;
+    /**
+     * Порог низкой оценки 1–10 для предпочтения случайного слота (реестр
+     * `low_score_call_max`, слой портала); нет — дефолт реестра.
+     */
+    lowScoreMax?: number;
+}
+
+/**
+ * Типы, которым отдаётся предпочтение в случайном слоте (решение владельца
+ * 19.10.2026 — фокус на презентациях и доработке): презентации и доработка
+ * с низкой оценкой проверяются руководителем в первую очередь; таких
+ * звонков за неделю нет — слот остаётся случайным среди всех.
+ */
+export const ROP_MARK_PREFERRED_CALL_TYPES = [
+    'presentation',
+    'refine',
+    'decision',
+] as const satisfies readonly CallReportCallTypeCode[];
+
+/** Презентация или доработка с общей оценкой не выше порога (балл 0–100 → 1–10). */
+export function isPreferredLowScoreCall(
+    candidate: Pick<RopMarkCandidate, 'callType' | 'score'>,
+    lowScoreMax: number,
+): boolean {
+    return (
+        candidate.callType !== null &&
+        (ROP_MARK_PREFERRED_CALL_TYPES as readonly string[]).includes(
+            candidate.callType,
+        ) &&
+        candidate.score !== null &&
+        candidate.score / 10 <= lowScoreMax
+    );
 }
 
 /** Зерно подбора: домен и ключ недели — больше в него ничего не входит. */
@@ -155,6 +188,8 @@ function bestScored(pool: readonly RopMarkCandidate[]): RopMarkCandidate {
  * Выбор одного звонка под причину. Пока у других менеджеров есть
  * подходящие кандидаты, второй звонок того же менеджера не берём —
  * иначе неделя уходит в одного человека, а проверка теряет смысл.
+ * Случайный слот сначала смотрит на презентации и доработку с низкой
+ * оценкой (ROP_MARK_PREFERRED_CALL_TYPES), и лишь без них — на всех.
  */
 function chooseOne(
     reason: RopMarkReason,
@@ -162,6 +197,7 @@ function chooseOne(
     usedCalls: ReadonlySet<string>,
     usedManagers: ReadonlySet<string>,
     random: () => number,
+    lowScoreMax: number,
 ): RopMarkCandidate | null {
     const available = pool.filter(
         candidate =>
@@ -174,8 +210,15 @@ function chooseOne(
     );
     const from = fresh.length ? fresh : available;
     if (reason === 'best_score') return bestScored(from);
-    const index = Math.min(from.length - 1, Math.floor(random() * from.length));
-    return from[index];
+    const preferred =
+        reason === 'random'
+            ? from.filter(candidate =>
+                  isPreferredLowScoreCall(candidate, lowScoreMax),
+              )
+            : [];
+    const draw = preferred.length ? preferred : from;
+    const index = Math.min(draw.length - 1, Math.floor(random() * draw.length));
+    return draw[index];
 }
 
 /** Порядок причин под запрошенный размер: сверх трёх добираем случайными. */
@@ -198,12 +241,21 @@ export function pickRopMarkCalls(
 ): RopMarkPick[] {
     const pool = normalizeCandidates(candidates);
     const limit = Math.max(0, Math.floor(options.limit ?? ROP_MARK_WEEK_LIMIT));
+    const lowScoreMax =
+        options.lowScoreMax ?? registryDefault('low_score_call_max');
     const random = mulberry32(options.seed);
     const usedCalls = new Set<string>();
     const usedManagers = new Set<string>();
     const picks: RopMarkPick[] = [];
     for (const reason of reasonPlan(limit)) {
-        const chosen = chooseOne(reason, pool, usedCalls, usedManagers, random);
+        const chosen = chooseOne(
+            reason,
+            pool,
+            usedCalls,
+            usedManagers,
+            random,
+            lowScoreMax,
+        );
         if (!chosen) continue;
         picks.push({ ...chosen, reason });
         usedCalls.add(chosen.transcriptionId);

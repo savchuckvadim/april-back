@@ -7,8 +7,9 @@ import {
 } from '../services/agent-analysis-risk.util';
 
 /**
- * Риск-флаги при приёме разбора (решение владельца 19.10.2026): флаг
- * без доказательства-цитаты снимается, дубли схлопываются, чужие
+ * Риск-флаги при приёме разбора (решения владельца 19–20.10.2026):
+ * отменённые коды (promise, client_negative) отбрасываются даже с цитатой,
+ * флаг без доказательства-цитаты снимается, дубли схлопываются, чужие
  * доказательства отбрасываются; таймкоды доказательств — внутри записи.
  */
 const dto = (patch: Partial<AgentCallAnalysisDto>): AgentCallAnalysisDto =>
@@ -32,7 +33,7 @@ describe('reconcileRiskFlags', () => {
         const result = reconcileRiskFlags(
             't-1',
             dto({
-                riskFlags: ['conflict', 'promise', 'door_closed'],
+                riskFlags: ['conflict', 'compliance', 'door_closed'],
                 riskEvidence: [
                     {
                         flag: 'conflict',
@@ -42,7 +43,7 @@ describe('reconcileRiskFlags', () => {
                         endSec: 14,
                     },
                     // Пустая цитата — доказательства нет.
-                    { flag: 'promise', quote: '   ', speaker: 'manager' },
+                    { flag: 'compliance', quote: '   ', speaker: 'manager' },
                 ],
             }),
             logger,
@@ -60,7 +61,49 @@ describe('reconcileRiskFlags', () => {
         ]);
         expect(warn).toHaveBeenCalledTimes(1);
         expect(warn.mock.calls[0]?.[0]).toContain('сняты (2)');
-        expect(warn.mock.calls[0]?.[0]).toContain('promise, door_closed');
+        expect(warn.mock.calls[0]?.[0]).toContain('compliance, door_closed');
+    });
+
+    it('отменённые флаги отбрасываются даже с цитатой — со счётчиком в лог, без warn', () => {
+        const { logger, log, warn } = makeLogger();
+        const result = reconcileRiskFlags(
+            't-1',
+            dto({
+                riskFlags: [
+                    'promise',
+                    'client_negative',
+                    'promise',
+                    'conflict',
+                ],
+                riskEvidence: [
+                    {
+                        flag: 'promise',
+                        quote: 'Завтра всё сделаем бесплатно',
+                        speaker: 'manager',
+                    },
+                    {
+                        flag: 'client_negative',
+                        quote: 'Не звоните мне больше',
+                        speaker: 'client',
+                    },
+                    {
+                        flag: 'conflict',
+                        quote: 'Вы меня не слушаете',
+                        speaker: 'manager',
+                    },
+                ],
+            }),
+            logger,
+        );
+
+        expect(result.riskFlags).toEqual(['conflict']);
+        expect(result.riskEvidence?.map(item => item.flag)).toEqual([
+            'conflict',
+        ]);
+        expect(warn).not.toHaveBeenCalled();
+        const logged = log.mock.calls.map(call => call[0]).join('\n');
+        expect(logged).toContain('Отменённые риск-флаги отброшены (3)');
+        expect(logged).toContain('promise, client_negative');
     });
 
     it('дубли флагов и доказательств схлопываются, доказательства чужих флагов отбрасываются', () => {
@@ -68,17 +111,17 @@ describe('reconcileRiskFlags', () => {
         const result = reconcileRiskFlags(
             't-1',
             dto({
-                riskFlags: ['client_negative', 'client_negative'],
+                riskFlags: ['door_closed', 'door_closed'],
                 riskEvidence: [
                     {
-                        flag: 'client_negative',
-                        quote: 'Не звоните',
-                        speaker: 'client',
+                        flag: 'door_closed',
+                        quote: 'Ладно, до свидания',
+                        speaker: 'manager',
                     },
                     {
-                        flag: 'client_negative',
-                        quote: 'Не звоните',
-                        speaker: 'client',
+                        flag: 'door_closed',
+                        quote: 'Ладно, до свидания',
+                        speaker: 'manager',
                     },
                     {
                         flag: 'conflict',
@@ -90,7 +133,7 @@ describe('reconcileRiskFlags', () => {
             logger,
         );
 
-        expect(result.riskFlags).toEqual(['client_negative']);
+        expect(result.riskFlags).toEqual(['door_closed']);
         expect(result.riskEvidence).toHaveLength(1);
         expect(warn).not.toHaveBeenCalled();
         expect(log.mock.calls.map(call => call[0]).join('\n')).toContain(
@@ -105,12 +148,24 @@ describe('reconcileRiskFlags', () => {
 
         const result = reconcileRiskFlags(
             't-1',
-            dto({ riskFlags: ['promise'] }),
+            dto({ riskFlags: ['conflict'] }),
             logger,
         );
         expect(result.riskFlags).toEqual([]);
         expect(result.riskEvidence).toEqual([]);
         expect(warn).toHaveBeenCalledTimes(1);
+    });
+
+    it('только отменённые флаги без доказательств — пусто и без warn', () => {
+        const { logger, warn } = makeLogger();
+        const result = reconcileRiskFlags(
+            't-1',
+            dto({ riskFlags: ['promise'] }),
+            logger,
+        );
+        expect(result.riskFlags).toEqual([]);
+        expect(result.riskEvidence).toEqual([]);
+        expect(warn).not.toHaveBeenCalled();
     });
 
     it('сверка встроена в общую нормализацию приёма', () => {
@@ -181,7 +236,7 @@ describe('clampRiskEvidenceTimecodes', () => {
         const input = dto({
             riskEvidence: [
                 {
-                    flag: 'promise',
+                    flag: 'door_closed',
                     quote: 'x',
                     speaker: 'manager',
                     startSec: 9999,

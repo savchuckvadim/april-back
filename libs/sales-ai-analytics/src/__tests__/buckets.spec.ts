@@ -5,11 +5,12 @@ import {
     bucketOfCallType,
     callTypesOfBucket,
     compareCallTypes,
+    hasTypeColumn,
     isCallTypeCode,
 } from '../model/buckets';
 
 describe('bucketOfCallType', () => {
-    it('карта §2.2: контакт / презентация / закрытие, other и irrelevant — null', () => {
+    it('карта §2.2: контакт / презентация / закрытие; event_invite, other и irrelevant — null', () => {
         expect(bucketOfCallType('cold')).toBe('contact');
         expect(bucketOfCallType('site_lead')).toBe('contact');
         expect(bucketOfCallType('call')).toBe('contact');
@@ -17,8 +18,19 @@ describe('bucketOfCallType', () => {
         expect(bucketOfCallType('refine')).toBe('closing');
         expect(bucketOfCallType('decision')).toBe('closing');
         expect(bucketOfCallType('payment')).toBe('closing');
+        expect(bucketOfCallType('event_invite')).toBeNull();
         expect(bucketOfCallType('other')).toBeNull();
         expect(bucketOfCallType('irrelevant')).toBeNull();
+    });
+
+    it('своя колонка — у всех этапов и у приглашения на мероприятие; other / irrelevant / чужой код — нет', () => {
+        expect(hasTypeColumn('presentation')).toBe(true);
+        expect(hasTypeColumn('event_invite')).toBe(true);
+        expect(hasTypeColumn('other')).toBe(false);
+        expect(hasTypeColumn('irrelevant')).toBe(false);
+        expect(hasTypeColumn('bogus')).toBe(false);
+        expect(hasTypeColumn(null)).toBe(false);
+        expect(hasTypeColumn(undefined)).toBe(false);
     });
 
     it('неизвестный тип, null и undefined → null', () => {

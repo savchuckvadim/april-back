@@ -25,7 +25,7 @@ import {
     AI_READINESS_QUALITY_REASON_CODES,
     AI_READINESS_REASON_CODES,
     buildWindowedReadiness,
-    comparableFrom,
+    comparableFromVersions,
     elevateReadiness,
     readinessReason,
     type AiBetaSource,
@@ -72,12 +72,15 @@ export const READINESS_REASONS = {
     timestampLeak: AI_READINESS_QUALITY_REASON_CODES.timestampLeak,
 } as const;
 
-/** Дата сопоставимости: max по датам версий всех разборов окна. */
+/**
+ * Дата сопоставимости: max по датам СЕРИЙ версий всех разборов окна
+ * (таблицы серий промпта, атрибуции и классификатора учитываются по полю).
+ */
 export function resolveComparableFrom(rows: readonly DatedLiteRow[]): string {
-    const versionValues = rows.flatMap(row =>
-        row.versions ? Object.values(row.versions) : [],
-    );
-    return comparableFrom(versionValues);
+    return rows.reduce((max, row) => {
+        const date = row.versions ? comparableFromVersions(row.versions) : '';
+        return date > max ? date : max;
+    }, '');
 }
 
 /** Счётчики ПЕРИОДА витрины: месяцы истории и разобранные презентации. */

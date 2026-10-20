@@ -1,8 +1,9 @@
 /**
  * Факты по звонкам менеджера вне матрицы (для строки обзора и «Внимания»):
- * всего звонков в телефонии, риск-звонки (риск-флаг разбора / срочный
- * коучинг), доля «шаг с датой» за два последних окна периода, доля
- * отработанных возражений. Чистые функции над lite-строками.
+ * всего звонков в телефонии, риск-звонки (действующий риск-флаг разбора с
+ * цитатой / срочный коучинг), доля «шаг с датой» за два последних окна
+ * периода, доля отработанных возражений, факты качества этапа 2
+ * (call-quality-facts.assembler). Чистые функции над lite-строками.
  */
 import {
     AI_ANALYTICS_THRESHOLDS,
@@ -14,9 +15,15 @@ import {
     toPortalDate,
 } from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_ATTENTION_WINDOW_DAYS } from '../../constants/ai-overview.const';
+import { defaultAttentionThresholds } from '../loaders/attention-thresholds.util';
 import type { DatedLiteRow } from '../loaders/lite-row.mapper';
 import { resolveAlertKind } from '../presenter/pulse-alerts.util';
+import {
+    assembleQualityFacts,
+    emptyQualityFacts,
+} from './call-quality-facts.assembler';
 import type {
+    AttentionThresholds,
     ManagerCallFacts,
     ManagerNextStepRates,
     ManagerRiskCall,
@@ -30,6 +37,8 @@ export interface CallFactsOptions {
     windowDays?: number;
     /** Звонок короче — вне слоя качества (по умолчанию shortCallSec). */
     shortCallSec?: number;
+    /** Пороги сигналов этапа 2 (слой портала); нет — дефолты реестра. */
+    thresholds?: AttentionThresholds;
 }
 
 /** Разобранный звонок слоя качества: разбор есть и не короткий. */
@@ -132,6 +141,7 @@ export function assembleCallFacts(
     const shortCallSec =
         options.shortCallSec ?? AI_ANALYTICS_THRESHOLDS.shortCallSec;
     const windowDays = options.windowDays ?? AI_ANALYTICS_ATTENTION_WINDOW_DAYS;
+    const thresholds = options.thresholds ?? defaultAttentionThresholds();
     const byManager = new Map<string, DatedLiteRow[]>();
     for (const row of rows) {
         if (row.managerId === null || row.managerId === '') continue;
@@ -152,6 +162,7 @@ export function assembleCallFacts(
                     riskCalls: toRiskCalls(quality),
                     nextStepRate: toNextStepRates(quality, options, windowDays),
                     handledRatePct: toHandledRatePct(quality),
+                    quality: assembleQualityFacts(quality, thresholds),
                 },
             ];
         }),
@@ -162,6 +173,7 @@ export function assembleCallFacts(
 export function emptyCallFacts(
     managerId: string,
     windowDays = AI_ANALYTICS_ATTENTION_WINDOW_DAYS,
+    thresholds: AttentionThresholds = defaultAttentionThresholds(),
 ): ManagerCallFacts {
     return {
         managerId,
@@ -173,5 +185,6 @@ export function emptyCallFacts(
             previous: rateMetric(0, 0),
         },
         handledRatePct: null,
+        quality: emptyQualityFacts(thresholds),
     };
 }

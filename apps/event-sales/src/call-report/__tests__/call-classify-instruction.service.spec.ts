@@ -1,3 +1,4 @@
+import { CALL_REPORT_CALL_TYPE_CODES } from '@lib/call-lib';
 import { DEFAULT_CLASSIFICATION_SYSTEM_PROMPT } from '@lib/vibecode';
 import {
     CALL_CLASSIFY_KNOWLEDGE_KIND,
@@ -8,6 +9,28 @@ const DOMAIN = 'test.bitrix24.ru';
 
 const makeService = (readAll: jest.Mock): CallClassifyInstructionService =>
     new CallClassifyInstructionService({ readAll } as never);
+
+describe('дефолтная инструкция классификатора', () => {
+    it('описывает каждый код справочника типов — новый тип без определения в инструкцию не попадёт молча', () => {
+        for (const code of CALL_REPORT_CALL_TYPE_CODES) {
+            expect(DEFAULT_CLASSIFICATION_SYSTEM_PROMPT).toContain(
+                `- '${code}' —`,
+            );
+        }
+    });
+
+    it('приглашение на мероприятие: граница с презентацией и с упоминанием мимоходом', () => {
+        expect(DEFAULT_CLASSIFICATION_SYSTEM_PROMPT).toContain(
+            'ПРИГЛАШЕНИЕ НА МЕРОПРИЯТИЕ',
+        );
+        expect(DEFAULT_CLASSIFICATION_SYSTEM_PROMPT).toContain(
+            'Всероссийский юридический форум',
+        );
+        expect(DEFAULT_CLASSIFICATION_SYSTEM_PROMPT).toContain(
+            'упомянутое мимоходом',
+        );
+    });
+});
 
 describe('CallClassifyInstructionService', () => {
     it('без документов kind — дефолтная инструкция из кода', async () => {

@@ -1,9 +1,11 @@
 import { createHash } from 'crypto';
 import { CallReportProcessor } from '../queue/call-report.processor';
 import {
+    AI_ANALYSIS_SERIES_START,
     comparableFromVersions,
     PROMPT_SERIES_START,
     versionDate,
+    versionFieldSeriesDate,
     versionSeriesDate,
 } from '@lib/sales-ai-analytics';
 import {
@@ -191,7 +193,7 @@ describe('CallReportProcessor — версии разбора (план AI-ан�
     it('алерт РОПу вызывается после intake с id смарт-элемента', async () => {
         const { processor, analysisIntake, alerts } = makeDeps({
             callType: 'presentation',
-            riskFlags: ['promise'],
+            riskFlags: ['conflict'],
         });
         await processor.handleAnalyze(makeJob());
 
@@ -241,27 +243,51 @@ describe('buildRegistryHash / buildAnalysisVersions', () => {
 /**
  * ГРАНИЦА СРАВНИМОЙ ИСТОРИИ. Правки промпта 25.09.2026 (расшифровка с
  * метками [mm:ss], таймкоды и реакция у возражений — Фаза 3, П6/П8)
- * меняют вход и схему ответа модели — ряд разорван с 25.09. Правка
+ * меняют вход и схему ответа модели — ряд разорван с 25.09. Правки
  * 20.10.2026 (v2.4: определения и доказательства риск-флагов, флаг
- * door_closed) оценки разделов не меняет — МИНОРНАЯ: версия несёт свою
- * дату, но входит в серию v2.3, и граница НЕ сдвигается.
+ * door_closed) и 21.10.2026 (v2.5: флаги promise и client_negative убраны
+ * совсем) оценки разделов не меняют — МИНОРНЫЕ: версия несёт свою дату,
+ * но входит в общую серию накопленной истории (решение владельца
+ * 20.10.2026: одна серия от 25.06.2026), и граница НЕ сдвигается.
  */
-describe('версия промпта 20.10.2026 (риск-флаги) — минорная, серия v2.3', () => {
-    /** Граница серии — версия промпта focus-v2.3 от 25.09.2026. */
-    const SERIES_BOUNDARY = '2026-09-25';
+describe('версии промпта и классификатора 21.10.2026 — минорные, общая серия', () => {
+    /** Начало общей серии накопленной истории. */
+    const SERIES_BOUNDARY = AI_ANALYSIS_SERIES_START;
 
     it('версия промпта поднята, несёт свою дату и записана в таблицу серий', () => {
-        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v2.4-2026-10-20');
-        expect(versionDate(CALL_REPORT_PROMPT_VERSION)).toBe('2026-10-20');
+        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v2.6-2026-10-21');
+        expect(versionDate(CALL_REPORT_PROMPT_VERSION)).toBe('2026-10-21');
         expect(PROMPT_SERIES_START[CALL_REPORT_PROMPT_VERSION]).toBe(
             SERIES_BOUNDARY,
         );
         expect(versionSeriesDate(CALL_REPORT_PROMPT_VERSION)).toBe(
             SERIES_BOUNDARY,
         );
+        // Предыдущие минорные версии тоже в серии — строки v2.4, v2.5 и
+        // v2.6 сравнимы в одной матрице.
+        expect(PROMPT_SERIES_START['focus-v2.4-2026-10-20']).toBe(
+            SERIES_BOUNDARY,
+        );
+        expect(PROMPT_SERIES_START['focus-v2.5-2026-10-21']).toBe(
+            SERIES_BOUNDARY,
+        );
     });
 
-    it('граница сравнимой истории осталась на серии v2.3', () => {
+    it('классификатор 21.10.2026 (тип «Приглашение на мероприятие») — минорная: записан в серию поля', () => {
+        expect(CALL_REPORT_CLASSIFIER_VERSION).toBe('2026-10-21');
+        expect(
+            versionFieldSeriesDate(
+                'classifier',
+                CALL_REPORT_CLASSIFIER_VERSION,
+            ),
+        ).toBe(SERIES_BOUNDARY);
+        // Прежний классификатор остаётся в той же серии.
+        expect(versionFieldSeriesDate('classifier', '2026-09-05')).toBe(
+            SERIES_BOUNDARY,
+        );
+    });
+
+    it('граница сравнимой истории осталась в начале общей серии', () => {
         const boundary = comparableFromVersions(
             buildAnalysisVersions('deadbeef'),
         );

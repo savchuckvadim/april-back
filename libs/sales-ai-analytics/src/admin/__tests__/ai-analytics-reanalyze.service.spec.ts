@@ -251,3 +251,41 @@ describe('AiAnalyticsReanalyzeService.status', () => {
         });
     });
 });
+
+describe('AiAnalyticsReanalyzeService.latest', () => {
+    it('последний прогон по любому периоду — по свежему updatedAt; замещённые и чужая форма пропускаются', async () => {
+        const older = { ...runStatus, updatedAt: '2026-10-19T10:00:00.000Z' };
+        const newer = {
+            ...runStatus,
+            from: '2026-07-21',
+            updatedAt: '2026-10-20T09:00:00.000Z',
+        };
+        const store = {
+            readRaw: jest.fn().mockResolvedValue([
+                raw({ id: '1', userResult: older }),
+                raw({
+                    id: '2',
+                    status: 'superseded',
+                    userResult: {
+                        ...runStatus,
+                        updatedAt: '2026-10-21T00:00:00.000Z',
+                    },
+                }),
+                raw({ id: '3', userResult: { что: 'угодно' } }),
+                raw({ id: '4', userResult: newer }),
+            ]),
+        };
+        const service = new AiAnalyticsReanalyzeService(store as never);
+
+        await expect(service.latest(DOMAIN)).resolves.toEqual(newer);
+        expect(store.readRaw).toHaveBeenCalledWith(DOMAIN, [
+            'call-report-reanalysis-run',
+        ]);
+    });
+
+    it('прогонов не было — null', async () => {
+        const store = { readRaw: jest.fn().mockResolvedValue([]) };
+        const service = new AiAnalyticsReanalyzeService(store as never);
+        await expect(service.latest(DOMAIN)).resolves.toBeNull();
+    });
+});

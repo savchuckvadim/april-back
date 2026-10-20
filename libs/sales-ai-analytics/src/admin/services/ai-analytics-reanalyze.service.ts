@@ -224,6 +224,29 @@ export class AiAnalyticsReanalyzeService {
             hint: REANALYZE_MESSAGES.hint,
         };
     }
+
+    /**
+     * Последний прогон переразбора домена по любому периоду (панель
+     * запуска в админке): запись с самым свежим updatedAt; замещённые и
+     * записи чужой формы пропускаются. null — прогонов не было.
+     */
+    async latest(domain: string): Promise<ReanalysisRunStatus | null> {
+        const records = await this.store.readRaw(domain, [
+            CALL_REPORT_REANALYSIS_RUN_TYPE,
+        ]);
+        let latest: ReanalysisRunStatus | null = null;
+        for (const record of records) {
+            if (record.status === AI_ANALYTICS_SNAPSHOT_STATUS.superseded) {
+                continue;
+            }
+            const value = record.userResult;
+            if (!isReanalysisRunStatusLike(value)) continue;
+            if (latest === null || value.updatedAt > latest.updatedAt) {
+                latest = value;
+            }
+        }
+        return latest;
+    }
 }
 
 function toEntry(

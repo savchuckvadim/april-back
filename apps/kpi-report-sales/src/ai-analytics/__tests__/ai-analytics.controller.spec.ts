@@ -24,7 +24,7 @@ const pulse: AiPulseDto = {
         {
             managerId: '10',
             transcriptionId: 'a',
-            kind: 'promise',
+            kind: 'conflict',
             quote: '',
             callStartedAt: '2026-09-01T07:00:00.000Z',
             handled: false,

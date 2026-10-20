@@ -1,18 +1,25 @@
+import { registryDefault } from '../params/registry.access';
 import { ConfidenceLevel, MetricValue } from './metric';
 import { AI_ANALYTICS_THRESHOLDS } from './thresholds.const';
 import type { TrendDirection, TrendSignalKind } from './trend/trend.types';
 
 /**
- * Сигналы «Внимания» в порядке приоритета: Фаза 1 (план §3, ТЗ FR-12),
- * затем Фаза 3 — расхождение «метрика ↔ противовес» (П9) и сдвиг /
- * дрейф ряда вниз (П1).
+ * Сигналы «Внимания» в порядке приоритета (решение владельца 19.10.2026,
+ * этап 2 плана ai/tasks/2026-10-19-ai-focus-plan.md): сначала слабые
+ * презентации и слабая доработка, затем прочие звонки с низкой оценкой,
+ * потом правила Фазы 1 про данные и план, риск — ПОСЛЕДНИМ и только с
+ * цитатой; дальше Фаза 3 — расхождение «метрика ↔ противовес» (П9) и
+ * сдвиг / дрейф ряда вниз (П1).
  */
 export const ATTENTION_SIGNALS = [
-    'risk',
+    'weak_presentation',
+    'weak_followup',
+    'low_score_calls',
     'no_data',
     'discipline',
     'next_step_drop',
     'plan_gap',
+    'risk',
     'goodhart',
     'trend_shift',
     'trend_drift',
@@ -70,8 +77,56 @@ export interface AttentionGoodhartFlag {
 
 export interface AttentionRiskCall {
     transcriptionId: string;
-    /** Вид сигнала: promise / conflict / compliance / client_negative / urgent. */
+    /**
+     * Вид сигнала: действующий риск-флаг (conflict / compliance /
+     * door_closed) либо urgent. Отменённые коды правило отбрасывает.
+     */
     kind: string;
+}
+
+/** Средняя оценка раздела (шкала 1–10) по n оценённым звонкам. */
+export interface AttentionSectionMean {
+    section: string;
+    mean: number;
+    n: number;
+}
+
+/**
+ * Презентации менеджера за период: средние разделов «Выявление
+ * потребностей» и «Презентация под потребности» и звонки, где один из
+ * разделов слабый (для ссылки карточки).
+ */
+export interface AttentionPresentationFacts {
+    /** Звонков-презентаций с разбором. */
+    n: number;
+    sections: AttentionSectionMean[];
+    /** Id звонков со слабым разделом (оценка не выше порога). */
+    weakCallIds: string[];
+}
+
+/**
+ * Доработка (refine / decision) за период: возражения без отработки,
+ * следующий шаг без даты, средние разделов «Работа с возражениями» и
+ * «Закрытие разговора», звонки с любым из этих признаков.
+ */
+export interface AttentionFollowupFacts {
+    /** Звонков доработки с разбором. */
+    n: number;
+    /** Возражений с известным исходом отработки; из них не отработано. */
+    objectionsKnown: number;
+    objectionsUnhandled: number;
+    /** Звонков с назначенным следующим шагом; из них без даты. */
+    nextStepSet: number;
+    nextStepNoDate: number;
+    sections: AttentionSectionMean[];
+    weakCallIds: string[];
+}
+
+/** Звонок с низкой общей оценкой (шкала 1–10). */
+export interface AttentionLowScoreCall {
+    transcriptionId: string;
+    callType: string | null;
+    score: number;
 }
 
 /** План CRM (сделано / запланировано) за окно. */
@@ -115,6 +170,17 @@ export interface AttentionManagerInput {
     trendSignals?: AttentionTrendSignal[];
     /** Флаги детектора Гудхарта, худший противовес первым (Фаза 3, П9). */
     goodhart?: AttentionGoodhartFlag[];
+    /** Презентации периода (этап 2); нет фактов — правило молчит. */
+    presentation?: AttentionPresentationFacts;
+    /** Доработка периода (этап 2); нет фактов — правило молчит. */
+    followup?: AttentionFollowupFacts;
+    /** Звонки с низкой оценкой (этап 2); нет списка — правило молчит. */
+    lowScoreCalls?: AttentionLowScoreCall[];
+    /**
+     * Средние разделов по отделу для сравнения («ниже отдела на …»); нет —
+     * buildAttention считает их сам по всем менеджерам входа.
+     */
+    sectionBenchmarks?: AttentionSectionMean[];
 }
 
 export interface AttentionInput {
@@ -165,6 +231,19 @@ export interface AttentionRules {
     nextStepMinN: number;
     /** plan_gap при |planHead/norm − 1| ≥ planGapRatio. */
     planGapRatio: number;
+    /** Раздел слабый, если средняя не выше (реестр weak_section_score_max). */
+    weakSectionScoreMax: number;
+    /** …или ниже среднего по отделу на столько баллов (weak_section_gap). */
+    weakSectionGap: number;
+    /** Средняя раздела считается только при n раздела не меньше. */
+    weakSectionMinN: number;
+    /** Звонок слабый при общей оценке не выше (low_score_call_max). */
+    lowScoreCallMax: number;
+    /**
+     * Доля «не отработано» / «без даты» у доработки, с которой сигнал
+     * срабатывает (weak_followup_share_min).
+     */
+    weakFollowupShareMin: number;
 }
 
 export const ATTENTION_DEFAULT_RULES: AttentionRules = {
@@ -175,4 +254,9 @@ export const ATTENTION_DEFAULT_RULES: AttentionRules = {
     disciplineMinShare: 0.5,
     nextStepMinN: 20,
     planGapRatio: 0.5,
+    weakSectionScoreMax: registryDefault('weak_section_score_max'),
+    weakSectionGap: registryDefault('weak_section_gap'),
+    weakSectionMinN: AI_ANALYTICS_THRESHOLDS.scoreNone,
+    lowScoreCallMax: registryDefault('low_score_call_max'),
+    weakFollowupShareMin: registryDefault('weak_followup_share_min'),
 };

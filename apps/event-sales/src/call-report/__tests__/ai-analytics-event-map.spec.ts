@@ -155,7 +155,41 @@ describe('AI_ANALYTICS_EVENT_KINDS — карта трёх алфавитов (�
         expect(byBucket('contact')).toEqual(['call', 'cold', 'site_lead']);
         expect(byBucket('presentation')).toEqual(['presentation']);
         expect(byBucket('closing')).toEqual(['decision', 'payment', 'refine']);
-        expect(byBucket(null)).toEqual(['irrelevant', 'other']);
+        expect(byBucket(null)).toEqual(['event_invite', 'irrelevant', 'other']);
+    });
+
+    /**
+     * Решение владельца 19.10.2026: приглашение на мероприятие — отдельная
+     * колонка со своим n, оценкой и KPI-фактом «Приглашение на семинар», но
+     * вне средней оценки (корзины нет) и вне доли «прочее».
+     */
+    it('event_invite: своя колонка, KPI seminar, без корзины и без приора по стадии', () => {
+        const kind = AI_ANALYTICS_EVENT_KINDS.event_invite;
+        expect(kind.column).toBe(true);
+        expect(kind.bucket).toBeNull();
+        expect(kind.kpiPrimaryEventTypeCode).toBe('seminar');
+        expect(kind.kpiEventTypeCodes).toEqual(['seminar']);
+        expect(kind.kpiReason).toBeNull();
+        expect(kind.stagePriorCodes).toEqual([]);
+        expect('seminar' in AI_ANALYTICS_UNMAPPED_KPI_EVENT_TYPES).toBe(false);
+        for (const { code } of PBX_DEAL_SALES_BASE_STAGES) {
+            expect(priorOfStage(code)?.callType).not.toBe('event_invite');
+        }
+    });
+
+    it('колонку не получают только other и irrelevant — их доля уходит в «прочее»', () => {
+        const noColumn = kinds
+            .filter(([, kind]) => !kind.column)
+            .map(([callType]) => callType)
+            .sort();
+        expect(noColumn).toEqual(['irrelevant', 'other']);
+        // Тип без колонки не может быть в корзине: иначе его оценка
+        // участвовала бы в средней, не имея своего места в матрице.
+        for (const [callType, kind] of kinds) {
+            expect(`${callType}:${kind.column || kind.bucket === null}`).toBe(
+                `${callType}:true`,
+            );
+        }
     });
 
     it('тон и корзина — из реестров, подпись непустая', () => {

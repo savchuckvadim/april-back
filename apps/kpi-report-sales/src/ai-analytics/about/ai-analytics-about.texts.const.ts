@@ -6,6 +6,7 @@ import {
     type AiAboutNumbers,
 } from './ai-analytics-about.const';
 import {
+    AI_ABOUT_ATTENTION_PARAMS as ATTENTION_PARAMS,
     AI_ABOUT_NORM_PARAMS as NORM_PARAMS,
     AI_ABOUT_SHARED_PARAMS as SHARED_PARAMS,
     AI_ABOUT_STAGE_PARAMS as STAGE_PARAMS,
@@ -98,6 +99,7 @@ export const AI_ABOUT_ENDPOINT_TEXTS: Readonly<
             ...SHARED_PARAMS,
             ...NORM_PARAMS,
             ...STAGE_PARAMS,
+            ...ATTENTION_PARAMS,
             'kappa_boot_ratio',
             'calibration_min_months',
             'calibration_min_presentations',
@@ -179,7 +181,12 @@ export const AI_ABOUT_ENDPOINT_TEXTS: Readonly<
             'не считает новых чисел: только те, что есть в фактах',
             'не пишет о менеджерах вне вашего отдела',
         ],
-        params: [...SHARED_PARAMS, 'brief_quota_per_day', 'llm_price_per_1k'],
+        params: [
+            ...SHARED_PARAMS,
+            ...ATTENTION_PARAMS,
+            'brief_quota_per_day',
+            'llm_price_per_1k',
+        ],
     },
     'plan-fact': {
         endpoint: 'plan-fact',
@@ -234,7 +241,12 @@ export const AI_ABOUT_ENDPOINT_TEXTS: Readonly<
             'ничего не пересчитывает сам: только читает готовые срезы и записи',
             'не сравнивает людей между собой и не ставит рейтинг',
         ],
-        params: [...SHARED_PARAMS, 'plan_day_ceiling', 'delta_prac_pct'],
+        params: [
+            ...SHARED_PARAMS,
+            ...ATTENTION_PARAMS,
+            'plan_day_ceiling',
+            'delta_prac_pct',
+        ],
     },
     'manager/style': {
         endpoint: 'manager/style',

@@ -28,7 +28,12 @@ export function toPulseRow(row: DatedLiteRow): PulseCallRow {
     };
 }
 
-/** Текст транскрипта lite-выборка не грузит → text = null, charOffset = null. */
+/**
+ * Текст транскрипта lite-выборка не грузит → text = null, charOffset = null.
+ * Доказательства флагов и следующий шаг — для пунктов «риск с цитатой» и
+ * «слабая доработка» (этап 2); у старых строк без доказательств риск-пункта
+ * не будет.
+ */
 export function toAgendaRow(row: DatedLiteRow): AgendaCallRow {
     return {
         transcriptionId: row.transcriptionId,
@@ -39,6 +44,11 @@ export function toAgendaRow(row: DatedLiteRow): AgendaCallRow {
         sections: row.sections,
         objections: row.objections,
         riskFlags: row.riskFlags,
+        riskEvidence: (row.riskEvidence ?? []).map(item => ({
+            flag: item.flag,
+            quote: item.quote,
+        })),
+        nextStep: row.nextStep,
         text: null,
     };
 }

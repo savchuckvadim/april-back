@@ -24,6 +24,12 @@ import {
     AiAnalyticsReanalyzeAdminController,
 } from '../controllers/reanalyze.admin.controller';
 import { AiAnalyticsRetentionAdminController } from '../controllers/retention.admin.controller';
+import {
+    AI_GUIDE_ROUTES,
+    AiAnalyticsGuideAdminController,
+} from '../guide/ai-guide.admin.controller';
+import { AiAnalyticsLaunchAdminController } from '../launch/ai-analytics-launch.admin.controller';
+import { SalesAiAnalyticsLaunchModule } from '../launch/sales-ai-analytics-launch.module';
 import { SalesAiAnalyticsAdminModule } from '../sales-ai-analytics-admin.module';
 import { SalesAiAnalyticsAuditModule } from '../sales-ai-analytics-audit.module';
 import { SalesAiAnalyticsOpsModule } from '../sales-ai-analytics-ops.module';
@@ -42,6 +48,8 @@ const ADMIN_CONTROLLERS = [
     AiAnalyticsGoldenSetAdminController,
     AiAnalyticsPhase4AdminController,
     AiAnalyticsReanalyzeAdminController,
+    AiAnalyticsGuideAdminController,
+    AiAnalyticsLaunchAdminController,
 ];
 
 const metadataOf = (key: string, target: unknown): unknown[] =>
@@ -184,6 +192,25 @@ describe('роуты переразбора истории (этап 1B): reanal
     });
 });
 
+describe('роуты путеводителя: guide, guide/:code', () => {
+    it('GET guide — оглавление, GET guide/:code — раздел', () => {
+        const list = handlerOf(AiAnalyticsGuideAdminController, 'list');
+        expect(Reflect.getMetadata(PATH_METADATA, list)).toBe(
+            AI_GUIDE_ROUTES.list,
+        );
+        expect(Reflect.getMetadata(METHOD_METADATA, list)).toBe(
+            RequestMethod.GET,
+        );
+        const entry = handlerOf(AiAnalyticsGuideAdminController, 'entry');
+        expect(Reflect.getMetadata(PATH_METADATA, entry)).toBe(
+            AI_GUIDE_ROUTES.entry,
+        );
+        expect(Reflect.getMetadata(METHOD_METADATA, entry)).toBe(
+            RequestMethod.GET,
+        );
+    });
+});
+
 describe('роуты Фазы 4: pool-status, forecast-backtest, recommendation-effect, quality-link', () => {
     it.each([
         ['poolStatus', 'pool-status'],
@@ -216,6 +243,9 @@ describe('раскол модулей (ai/rules/app-api-surface.md)', () => {
         expect(metadataOf('controllers', SalesAiAnalyticsOpsModule)).toEqual(
             [],
         );
+        expect(metadataOf('controllers', SalesAiAnalyticsLaunchModule)).toEqual(
+            [],
+        );
         expect(
             metadataOf('controllers', SalesAiAnalyticsRetentionCronModule),
         ).toEqual([]);
@@ -224,11 +254,12 @@ describe('раскол модулей (ai/rules/app-api-surface.md)', () => {
         );
     });
 
-    it('admin-модуль импортирует ровно три сервисных модуля', () => {
+    it('admin-модуль импортирует ровно четыре сервисных модуля', () => {
         expect(metadataOf('imports', SalesAiAnalyticsAdminModule)).toEqual([
             SalesAiAnalyticsAuditModule,
             SalesAiAnalyticsProbeModule,
             SalesAiAnalyticsOpsModule,
+            SalesAiAnalyticsLaunchModule,
         ]);
     });
 

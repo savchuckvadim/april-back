@@ -414,6 +414,44 @@ describe('CallReportSmartWriterService', () => {
         expect(fields.ufCrm128CallType).toBeUndefined();
     });
 
+    /**
+     * Портал ещё не прошёл повторный install-smart после появления типа
+     * «Приглашение на мероприятие»: значение CALL_TYPE пропускается с
+     * предупреждением, элемент пишется, разбор не теряется.
+     */
+    it('тип event_invite без значения CALL_TYPE на портале — пропуск с warn, элемент создаётся', async () => {
+        const bitrix = makeBitrix();
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        const warn = jest
+            .spyOn(
+                (writer as unknown as { logger: { warn: () => void } }).logger,
+                'warn',
+            )
+            .mockImplementation(() => undefined);
+
+        const itemId = await writer.addItem({
+            activityId: '101',
+            callType: 'event_invite',
+            summary: 'Пригласили на форум',
+        });
+
+        expect(itemId).toBe(7);
+        const fields = (
+            bitrix.item.add.mock.calls[0] as unknown[]
+        )[1] as Record<string, unknown>;
+        expect(fields.ufCrm128CallType).toBeUndefined();
+        expect(fields.ufCrm128Summary).toBe('Пригласили на форум');
+        expect(
+            (warn.mock.calls as unknown as [string][]).some(([message]) =>
+                message.includes('"event_invite" для поля CALL_TYPE'),
+            ),
+        ).toBe(true);
+        warn.mockRestore();
+    });
+
     it('дедуп по xmlId: пишет aicall_{activityId} и не создаёт дубль', async () => {
         const bitrix = makeBitrix();
         const writer = new CallReportSmartWriterService(

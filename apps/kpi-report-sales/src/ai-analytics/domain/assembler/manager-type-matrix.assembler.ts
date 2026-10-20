@@ -57,10 +57,14 @@ export function toMatrixRow(row: DatedLiteRow): MatrixCallRow {
     };
 }
 
-/** Доля строк без корзины среди разобранных сравнимых, %. */
+/**
+ * Доля строк без своей колонки (other / irrelevant / неизвестный тип)
+ * среди разобранных сравнимых, %. Приглашение на мероприятие вне корзин,
+ * но со своей колонкой — в «прочее» не считается.
+ */
 export function otherSharePct(matrix: ManagerTypeMatrix): number {
     if (matrix.analyzed === 0) return 0;
-    return round1((matrix.noBucket / matrix.analyzed) * 100);
+    return round1((matrix.noColumn / matrix.analyzed) * 100);
 }
 
 /**
