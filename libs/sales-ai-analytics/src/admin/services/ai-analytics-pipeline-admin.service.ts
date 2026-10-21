@@ -9,9 +9,9 @@
  *
  * Идемпотентность. У ритмов jobId детерминирован по периоду, и Bull молча
  * игнорирует повтор существующего id. Поэтому у `recompute` (сознательный
- * пересчёт) ключ несёт метку момента — иначе повторный запуск тихо
- * пропал бы; у `backfill` ключ обычный, повтор за тот же период дубля не
- * создаёт.
+ * пересчёт) и у `backfill` с `force` ключ несёт метку момента — иначе
+ * повторный запуск тихо пропал бы; у обычного `backfill` ключ — месяц,
+ * повтор за тот же период дубля не создаёт.
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { JobNames, QueueDispatcherService, QueueNames } from '@lib/queue';
@@ -46,6 +46,14 @@ export interface BackfillInput {
     /** Последний месяц диапазона 'YYYY-MM' включительно. */
     to: string;
     steps?: string[];
+    /**
+     * Пересчитать заново и уже посчитанные месяцы: `forceRefresh` и ключ
+     * с меткой момента. Без него повтор месяца молча теряется — Bull хранит
+     * завершённые джобы (`removeOnComplete: 50`) и тот же jobId не ставит,
+     * поэтому восстановление прогноза по истории на портале с прошлыми
+     * догонами не доходило до старых месяцев (gsr 21.10.2026: «1 из 9»).
+     */
+    force?: boolean;
 }
 
 /** Поставленная джоба: id и её ключ периода. */
@@ -115,8 +123,15 @@ export class AiAnalyticsPipelineAdminService {
         return { domain: input.domain, job: dispatched, forceRefresh: true };
     }
 
-    /** Догон диапазона месяцев: по джобе ритма backfill на месяц. */
-    async backfill(input: BackfillInput): Promise<BackfillResult> {
+    /**
+     * Догон диапазона месяцев: по джобе ритма backfill на месяц, от старых
+     * к свежим (воркер берёт джобы по очереди — модель месяца M считается
+     * до восстановления прогноза M + 1). `force` — пересчитать заново.
+     */
+    async backfill(
+        input: BackfillInput,
+        now: Date = new Date(),
+    ): Promise<BackfillResult> {
         const monthKeys = monthRange(input.from, input.to);
         if (monthKeys.length === 0) {
             return {
@@ -135,6 +150,7 @@ export class AiAnalyticsPipelineAdminService {
             };
         }
         const jobs: DispatchedJob[] = [];
+        const stamp = String(now.getTime());
         for (const monthKey of monthKeys) {
             const job: AiAnalyticsAdminSnapshotJob = {
                 domain: input.domain,
@@ -142,11 +158,16 @@ export class AiAnalyticsPipelineAdminService {
                 monthKey,
                 day: monthLastDay(monthKey),
                 ...(input.steps?.length ? { steps: [...input.steps] } : {}),
+                ...(input.force ? { forceRefresh: true } : {}),
             };
-            jobs.push(await this.enqueue(job, monthKey));
+            const key = input.force
+                ? recomputeJobKey(monthKey, stamp)
+                : monthKey;
+            jobs.push(await this.enqueue(job, key));
         }
         this.logger.log(
-            `Ручной догон ${input.domain}: месяцев ${monthKeys.length}`,
+            `Ручной догон ${input.domain}: месяцев ${monthKeys.length}` +
+                (input.force ? ' (заново, forceRefresh)' : ''),
         );
         return { domain: input.domain, monthKeys, jobs, reason: null };
     }

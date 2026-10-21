@@ -92,21 +92,32 @@ export function evaluateBetaGate(
     return { passedNow, streak, published: streak >= gateMonths, reasons };
 }
 
-const sampleSd = (values: readonly number[]): number => {
+/**
+ * Вес ориентиров плана в дизайне выборки, в условных презентациях: доля
+ * исхода и разброс оценки усаживаются к ориентирам `n/(n + k)`. Без усадки
+ * два десятка презентаций пилота (исходов почти нет, оценки одинаковые)
+ * раздували нужный объём до десятков тысяч, а счётчик — до тысяч лет
+ * (прод 21.10.2026). Ориентир формулы мощности плана §4.4, не параметр
+ * реестра.
+ */
+export const BETA_DESIGN_PRIOR_N = 50;
+
+/** Сумма квадратов отклонений от среднего; меньше двух значений — 0. */
+const sumOfSquares = (values: readonly number[]): number => {
     if (values.length < 2) {
         return 0;
     }
     const mean = values.reduce((acc, value) => acc + value, 0) / values.length;
-    const ss = values.reduce((acc, value) => acc + (value - mean) ** 2, 0);
 
-    return Math.sqrt(ss / (values.length - 1));
+    return values.reduce((acc, value) => acc + (value - mean) ** 2, 0);
 };
 
 /**
- * Фактический дизайн выборки для формулы мощности: `p̄ = events/n`,
- * `σ_S` — выборочное СКО S, `r` — надёжность (`icc_form` по умолчанию),
- * `d_eff` — ориентир плана либо свой множитель. Пустая выборка отдаёт
- * ориентиры плана.
+ * Фактический дизайн выборки для формулы мощности с усадкой к ориентирам
+ * плана весом `BETA_DESIGN_PRIOR_N`: `p̄ = (events + k·p̄₀)/(n + k)`,
+ * `σ_S² = (SS + k·σ₀²)/((n − 1) + k)`; `r` — надёжность (`icc_form` по
+ * умолчанию), `d_eff` — ориентир плана либо свой множитель. Пустая выборка
+ * отдаёт ориентиры плана; на большой выборке вклад ориентиров исчезает.
  */
 export function betaDesignFromSample(
     sample: BetaSample,
@@ -131,11 +142,16 @@ export function betaDesignFromSample(
             designEffect,
         };
     }
-    const sd = sampleSd(sample.rows.map(row => row.score));
+    const k = BETA_DESIGN_PRIOR_N;
+    const scores = sample.rows.map(row => row.score);
+    const dof = Math.max(0, scores.length - 1);
+    const priorSd = BETA_POWER_DEFAULTS.sdScore;
 
     return {
-        pBar: sample.events / sample.n,
-        sdScore: sd > 0 ? sd : BETA_POWER_DEFAULTS.sdScore,
+        pBar: (sample.events + k * BETA_POWER_DEFAULTS.pBar) / (sample.n + k),
+        sdScore: Math.sqrt(
+            (sumOfSquares(scores) + k * priorSd * priorSd) / (dof + k),
+        ),
         reliability,
         designEffect,
     };

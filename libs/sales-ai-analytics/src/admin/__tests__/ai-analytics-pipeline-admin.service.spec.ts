@@ -200,6 +200,42 @@ describe('AiAnalyticsPipelineAdminService.backfill', () => {
         expect(first.jobs[0].jobId).toBe(second.jobs[0].jobId);
     });
 
+    /**
+     * gsr 21.10.2026: месяцы уже догонялись, завершённые джобы с теми же id
+     * хранятся в очереди — повтор молча терялся, и прогноз по истории
+     * восстановился только за последний месяц («1 из 9»).
+     */
+    it('force — пересчёт заново: forceRefresh и метка момента в jobId, порядок от старых к свежим', async () => {
+        const { service, dispatch } = makeService();
+        const result = await service.backfill(
+            { domain: DOMAIN, from: '2026-07', to: '2026-09', force: true },
+            NOW,
+        );
+        const stamp = String(NOW.getTime());
+        expect(result.jobs.map(job => job.key)).toEqual([
+            `2026-07:recompute:${stamp}`,
+            `2026-08:recompute:${stamp}`,
+            `2026-09:recompute:${stamp}`,
+        ]);
+        expect(dispatch.mock.calls.map(call => call[2].monthKey)).toEqual([
+            '2026-07',
+            '2026-08',
+            '2026-09',
+        ]);
+        expect(dispatch.mock.calls[0][2]).toEqual({
+            domain: DOMAIN,
+            kind: 'backfill',
+            monthKey: '2026-07',
+            day: '2026-07-31',
+            forceRefresh: true,
+        });
+        const again = await service.backfill(
+            { domain: DOMAIN, from: '2026-07', to: '2026-07', force: true },
+            new Date(NOW.getTime() + 1000),
+        );
+        expect(again.jobs[0].jobId).not.toBe(result.jobs[0].jobId);
+    });
+
     it('пустой диапазон — отказ без постановки джоб', async () => {
         const { service, dispatch } = makeService();
         const result = await service.backfill({

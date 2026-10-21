@@ -1,10 +1,12 @@
 import {
     AI_BETA_GATE_REASONS,
+    BETA_DESIGN_PRIOR_N,
     BETA_GATE_DEFAULTS,
     betaCountdownFromSample,
     betaDesignFromSample,
     evaluateBetaGate,
 } from '../model/beta-gate';
+import type { BetaSample } from '../model/beta-sample.types';
 import { BETA_POWER_DEFAULTS, betaGateCountdown } from '../model/beta-power';
 import { registryDefault } from '../params/registry.access';
 import {
@@ -123,9 +125,15 @@ describe('evaluateBetaGate — гейт β с гистерезисом (план
 describe('betaDesignFromSample — фактический дизайн для счётчика', () => {
     const { sample } = syntheticBetaSample(DEFAULT_SYNTHETIC);
 
-    it('p̄ = events/n, σ_S — выборочное СКО, r и d_eff — дефолты либо свои', () => {
+    it('p̄ и σ_S — по выборке с усадкой к ориентирам плана, r и d_eff — дефолты либо свои', () => {
         const design = betaDesignFromSample(sample);
-        expect(design.pBar).toBeCloseTo(sample.events / sample.n, 12);
+        const k = BETA_DESIGN_PRIOR_N;
+        expect(design.pBar).toBeCloseTo(
+            (sample.events + k * BETA_POWER_DEFAULTS.pBar) / (sample.n + k),
+            12,
+        );
+        // На большой выборке вклад ориентиров мал: близко к events/n.
+        expect(design.pBar as number).toBeCloseTo(sample.events / sample.n, 1);
         expect(design.sdScore as number).toBeGreaterThan(1);
         expect(design.sdScore as number).toBeLessThan(2);
         expect(design.reliability).toBe(BETA_POWER_DEFAULTS.reliability);
@@ -149,6 +157,39 @@ describe('betaDesignFromSample — фактический дизайн для с
             reliability: BETA_POWER_DEFAULTS.reliability,
             designEffect: BETA_POWER_DEFAULTS.designEffect,
         });
+    });
+
+    /**
+     * Прод 21.10.2026: пилот из одного менеджера, два десятка презентаций,
+     * исходов почти нет, оценки одинаковые — без усадки нужный объём рос до
+     * десятков тысяч, а срок — до тысяч лет («ждём ≈ 21.04.6891»).
+     */
+    it('малая выборка без исходов и разброса не раздувает счётчик', () => {
+        const flat: BetaSample = {
+            ...sample,
+            rows: sample.rows
+                .slice(0, 20)
+                .map(row => ({ ...row, score: 6, outcome: 0 as const })),
+            n: 20,
+            events: 0,
+        };
+        const design = betaDesignFromSample(flat);
+        expect(design.pBar as number).toBeGreaterThan(0.25);
+        expect(design.sdScore as number).toBeGreaterThan(1.2);
+        const countdown = betaCountdownFromSample(flat, {
+            presentationsPerMonth: 10,
+        });
+        const plan = betaGateCountdown({
+            presentations: 20,
+            presentationsPerMonth: 10,
+        });
+        // Не дальше чем вдвое от ориентира плана при тех же объёме и темпе.
+        expect(countdown.presentationsLeft).toBeLessThan(
+            plan.presentationsLeft * 2,
+        );
+        expect(countdown.monthsLeft as number).toBeLessThan(
+            (plan.monthsLeft as number) * 2,
+        );
     });
 
     it('счётчик по выборке совпадает с betaGateCountdown на том же дизайне', () => {

@@ -153,7 +153,10 @@ describe('buildLaunchStatus', () => {
             backfillRunning: true,
             lastNightly: null,
         });
-        expect(fresh.pipeline.text).toContain('ещё раз через час');
+        expect(fresh.pipeline.text).toContain('по одному, от старых к свежим');
+        expect(fresh.pipeline.text).toContain(
+            'Восстановить прогноз по истории',
+        );
 
         const stale = buildLaunchStatus(
             launchInput({

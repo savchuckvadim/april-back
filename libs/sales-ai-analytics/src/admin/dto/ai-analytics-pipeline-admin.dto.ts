@@ -8,6 +8,7 @@ import { Transform } from 'class-transformer';
 import {
     ArrayMaxSize,
     IsArray,
+    IsBoolean,
     IsIn,
     IsNotEmpty,
     IsOptional,
@@ -159,4 +160,18 @@ export class AiAnalyticsBackfillDto extends AiAnalyticsDomainBodyDto {
     @ArrayMaxSize(AI_ANALYTICS_STEPS_MAX)
     @IsString({ each: true, message: 'steps: коды шагов строками' })
     steps?: string[];
+
+    @ApiPropertyOptional({
+        description:
+            'Пересчитать заново и уже посчитанные месяцы: джобы получают ' +
+            'forceRefresh и ключ с меткой момента. Без флага повтор месяца ' +
+            'молча отбрасывается очередью (завершённая джоба с тем же id ' +
+            'хранится), и, например, прогноз по истории не восстанавливается ' +
+            'для старых месяцев. Тяжелее для Битрикса: запросы за каждый месяц.',
+        example: true,
+        type: Boolean,
+    })
+    @IsOptional()
+    @IsBoolean({ message: 'force: ожидается true или false' })
+    force?: boolean;
 }

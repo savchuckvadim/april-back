@@ -238,10 +238,10 @@ export function pipelineBlock(input: LaunchStatusInput): LaunchPipelineBlock {
         head = `История догнана: ${ruCount(months, RU_FORMS.months)} в журнале.`;
     } else if (running) {
         state = 'running';
-        head = `Догон истории идёт: посчитано ${months} из ${target} месяцев. Запустите кнопку ещё раз через час — дорисуются первые месяцы.`;
+        head = `Догон истории идёт: посчитано ${months} из ${target} месяцев — месяцы считаются по одному, от старых к свежим. Когда закончится, нажмите «Восстановить прогноз по истории».`;
     } else if (months > 0) {
         state = 'todo';
-        head = `Догнано ${months} из ${target} месяцев — запустите «Догнать историю» ещё раз (посчитанное пропускается).`;
+        head = `Догнано ${months} из ${target} месяцев — нажмите «Догнать историю» ещё раз: месяцы пересчитаются заново по очереди.`;
     } else {
         state = 'todo';
         head =
