@@ -30,7 +30,11 @@ class PlacementDto {
     @ApiProperty({ description: 'Placement of the contract' })
     @IsString()
     placement: string;
-    @ApiProperty({ description: 'Options of the placement', type: Object })
+    @ApiProperty({
+        description: 'Options of the placement',
+        type: Object,
+        additionalProperties: true,
+    })
     @IsObject()
     options: { ID: number };
 }
@@ -44,14 +48,20 @@ export class ContractGenerateDto {
     @IsString()
     companyId: string;
 
-    @ApiProperty({ description: 'Placement of the contract' })
+    @ApiProperty({
+        description: 'Placement of the contract',
+        type: PlacementDto,
+        required: false,
+    })
+    @IsOptional()
     @ValidateNested()
     @Type(() => PlacementDto)
-    placement: PlacementDto;
+    placement?: PlacementDto;
 
-    @ApiProperty({ description: 'Is the contract a product' })
+    @ApiProperty({ description: 'Is the contract a product', required: false })
+    @IsOptional()
     @IsBoolean()
-    isProd: boolean;
+    isProd?: boolean;
 
     @ApiProperty({ description: 'ID of the deal' })
     @IsString()
@@ -89,10 +99,16 @@ export class ContractGenerateDto {
     @Type(() => ProductRowSupplyDto)
     supply: ProductRowSupplyDto;
 
-    @ApiProperty({ description: 'Price of the contract', type: PriceDto })
+    @ApiProperty({
+        description:
+            'Price of the contract (легаси HTML-КП, в договор не идёт)',
+        type: PriceDto,
+        required: false,
+    })
+    @IsOptional()
     @ValidateNested()
     @Type(() => PriceDto)
-    price: PriceDto;
+    price?: PriceDto;
 
     @ApiProperty({ description: 'Contract of the contract', type: ContractDto })
     @ValidateNested()
@@ -104,10 +120,15 @@ export class ContractGenerateDto {
     @Type(() => RegionsDto)
     regions: RegionsDto;
 
-    @ApiProperty({ description: 'Region of the contract', type: RegionDto })
+    @ApiProperty({
+        description: 'Region of the contract',
+        type: RegionDto,
+        required: false,
+    })
+    @IsOptional()
     @ValidateNested()
     @Type(() => RegionDto)
-    region: RegionDto;
+    region?: RegionDto;
 
     @ApiProperty({ description: 'Rows of the contract', type: [ProductRowDto] })
     @IsArray()
@@ -123,44 +144,65 @@ export class ContractGenerateDto {
     @ApiProperty({
         description: 'Product set of the contract',
         type: ProductRowSetDto,
+        required: false,
     })
+    @IsOptional()
     @ValidateNested()
     @Type(() => ProductRowSetDto)
-    productSet: ProductRowSetDto;
+    productSet?: ProductRowSetDto;
 
-    @ApiProperty({ description: 'Contract start of the contract' })
+    @ApiProperty({
+        description: 'Contract start of the contract',
+        required: false,
+    })
     @IsOptional()
     @IsString()
     contractStart?: string;
 
-    @ApiProperty({ description: 'Contract end of the contract' })
+    @ApiProperty({
+        description: 'Contract end of the contract',
+        required: false,
+    })
     @IsOptional()
     @IsString()
     contractEnd?: string;
 
-    @ApiProperty({ description: 'Contract number of the contract' })
+    @ApiProperty({
+        description: 'Contract number of the contract',
+        required: false,
+    })
     @IsOptional()
     @IsString()
     contractNumber?: string;
 
-    @ApiProperty({ description: 'Contract create date of the contract' })
+    @ApiProperty({
+        description: 'Contract create date of the contract',
+        required: false,
+    })
     @IsOptional()
     @IsString()
     contractCreateDate?: string;
 
-    @ApiProperty({ description: 'Garant client assigned name of the contract' })
+    @ApiProperty({
+        description: 'Garant client assigned name of the contract',
+        required: false,
+    })
     @IsOptional()
     @IsString()
     garantClientAssignedName?: string;
 
     @ApiProperty({
         description: 'Garant client assigned email of the contract',
+        required: false,
     })
     @IsOptional()
     @IsString()
     garantClientEmail?: string;
 
-    @ApiProperty({ description: 'First pay date of the contract' })
+    @ApiProperty({
+        description: 'First pay date of the contract',
+        required: false,
+    })
     @IsOptional()
     @IsString()
     firstPayDate?: string;
@@ -174,6 +216,8 @@ export class ContractGenerateDto {
 
     @ApiProperty({ description: 'BxRQ of the contract', type: BxRqDto })
     @IsObject()
+    @ValidateNested()
+    @Type(() => BxRqDto)
     bxrq: BxRqDto;
 
     @ApiProperty({

@@ -11,7 +11,7 @@ import {
     ValidateNested,
 } from 'class-validator';
 import { ERqPresetCode } from '@lib/portal-lib/pbx-domain';
-import type { RqFieldTemplate, RqPresetTemplate } from '@/apps/rq/install';
+import type { RqFieldTemplate, RqPresetTemplate } from '@lib/rq-lib/install';
 
 /** Пресет реквизита для установки (тело POST). */
 export class InstallRqPresetDto implements RqPresetTemplate {

@@ -5,6 +5,7 @@ import { DocumentClientBxRqService } from './bx-client-rq/bx-client-rq.service';
 import { InfoblocksRenderDataService } from './infoblocks/infoblock-render-data.service';
 import { GarantModule } from '@lib/garant';
 import { DocumentProductRowService } from './product-rows/product-row.service';
+import { SupplyPayloadEnricherService } from './supply/supply-payload-enricher.service';
 @Module({
     imports: [GarantModule],
     providers: [
@@ -13,6 +14,7 @@ import { DocumentProductRowService } from './product-rows/product-row.service';
         DocumentClientBxRqService,
         InfoblocksRenderDataService,
         DocumentProductRowService,
+        SupplyPayloadEnricherService,
     ],
     exports: [
         DocumentTotalRowService,
@@ -20,6 +22,7 @@ import { DocumentProductRowService } from './product-rows/product-row.service';
         DocumentClientBxRqService,
         InfoblocksRenderDataService,
         DocumentProductRowService,
+        SupplyPayloadEnricherService,
     ],
 })
 export class DocumentGenerateModule {}

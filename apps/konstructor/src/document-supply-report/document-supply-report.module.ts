@@ -12,6 +12,7 @@ import { SupplyReportTemplateService } from './services/template/supply-report-t
 import { FileLinkModule } from '@lib/core/file-link/file-link.module';
 import { DocumentTemplateModule } from '@lib/portal-lib/konstructor/document-template';
 import { SupplyReportTemplateSourceService } from './services/template/supply-report-template-source.service';
+import { ContractSpecificationFormModule } from '../contract/specification-form/contract-specification-form.module';
 
 /**
  * `DocumentTemplateModule` — подбор шаблона отчёта из БД под флагом
@@ -27,6 +28,8 @@ import { SupplyReportTemplateSourceService } from './services/template/supply-re
         ProviderModule,
         FileLinkModule,
         DocumentTemplateModule,
+        // общая форма договора и спецификация — одним кодом с contract/specification-form
+        ContractSpecificationFormModule,
     ],
     controllers: [DocumentSupplyReportController],
     providers: [

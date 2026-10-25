@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import { IsNumber } from 'class-validator';
 import { IsString } from 'class-validator';
 import { ValidateNested } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 import { ContractDto } from '../../../dto/contract.dto';
 import { SupplyDto } from '@app/konstructor/dto';
 
@@ -15,32 +16,67 @@ export enum ProductTypeEnum {
     academy = 'academy',
 }
 
+/** Справочный продукт строки (легаси ProductType): комплект × поставка × договор */
 export class ProductDto {
-    @IsNumber() number: number;
-    @IsString() name: string;
-    @IsOptional() productId: any;
+    @ApiProperty({ description: 'Легаси-номер продукта', type: Number })
+    @IsNumber()
+    number: number;
+    @ApiProperty({ type: String })
+    @IsString()
+    name: string;
+    @ApiProperty({
+        description: 'ID товара каталога Bitrix (bitrixItemId договора)',
+        required: false,
+        nullable: true,
+        oneOf: [{ type: 'number' }, { type: 'string' }],
+    })
+    @IsOptional()
+    productId: number | string | null;
 
-    @IsNumber() complectNumber: number;
-    @IsString() complectName: string;
-    @IsBoolean() withConsalting: boolean;
-    @IsString() complectType: string;
-    @IsBoolean() abs: boolean;
-    @IsNumber() supplyNumber: number;
-    @IsString() supplyName: string;
-    @IsString() supplyType: string;
-    @IsString() quantityForKp: string;
-    @IsNumber() contractCoefficient: 1 | 6 | 12;
+    @ApiProperty({ description: 'Легаси-номер комплекта', type: Number })
+    @IsNumber()
+    complectNumber: number;
+    @ApiProperty({ type: String })
+    @IsString()
+    complectName: string;
+    @ApiProperty({ type: Boolean })
+    @IsBoolean()
+    withConsalting: boolean;
+    @ApiProperty({ description: 'prof | universal', type: String })
+    @IsString()
+    complectType: string;
+    @ApiProperty({ description: 'Цена по АБС (универсал)', type: Boolean })
+    @IsBoolean()
+    abs: boolean;
+    @ApiProperty({ description: 'Легаси-номер поставки', type: Number })
+    @IsNumber()
+    supplyNumber: number;
+    @ApiProperty({ type: String })
+    @IsString()
+    supplyName: string;
+    @ApiProperty({ description: 'internet | proxima', type: String })
+    @IsString()
+    supplyType: string;
+    @ApiProperty({ description: 'Подпись поставки для КП', type: String })
+    @IsString()
+    quantityForKp: string;
+    @ApiProperty({ description: 'Множитель договора: 1 / 6 / 12 (24)', type: Number })
+    @IsNumber()
+    contractCoefficient: number;
 
+    @ApiProperty({ type: ContractDto })
     @ValidateNested()
     @Type(() => ContractDto)
     contract: ContractDto;
 
+    @ApiProperty({ type: SupplyDto, required: false, nullable: true })
     @IsOptional()
     @ValidateIf((o: ProductDto) => o.supply !== false)
     @ValidateNested()
     @Type(() => SupplyDto)
     supply: SupplyDto | false | null;
 
-    @IsEnum(ProductTypeEnum) type: ProductTypeEnum;
-    // остальные поля по аналогии (можно расширить)
+    @ApiProperty({ enum: ProductTypeEnum, enumName: 'ProductType' })
+    @IsEnum(ProductTypeEnum)
+    type: ProductTypeEnum;
 }

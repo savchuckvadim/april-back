@@ -96886,6 +96886,13 @@ export namespace Prisma {
     lcontractName: string | null
     lcontractPropComment: string | null
     lcontractPropEmail: string | null
+    contractProp1: string | null
+    contractProp2: string | null
+    contractPropSuppliesQuantity: string | null
+    quantityForKp: string | null
+    lcontractProp2: string | null
+    acontractName: string | null
+    acontractPropComment: string | null
   }
 
   export type SuppliesMaxAggregateOutputType = {
@@ -96911,6 +96918,13 @@ export namespace Prisma {
     lcontractName: string | null
     lcontractPropComment: string | null
     lcontractPropEmail: string | null
+    contractProp1: string | null
+    contractProp2: string | null
+    contractPropSuppliesQuantity: string | null
+    quantityForKp: string | null
+    lcontractProp2: string | null
+    acontractName: string | null
+    acontractPropComment: string | null
   }
 
   export type SuppliesCountAggregateOutputType = {
@@ -96936,6 +96950,13 @@ export namespace Prisma {
     lcontractName: number
     lcontractPropComment: number
     lcontractPropEmail: number
+    contractProp1: number
+    contractProp2: number
+    contractPropSuppliesQuantity: number
+    quantityForKp: number
+    lcontractProp2: number
+    acontractName: number
+    acontractPropComment: number
     _all: number
   }
 
@@ -96975,6 +96996,13 @@ export namespace Prisma {
     lcontractName?: true
     lcontractPropComment?: true
     lcontractPropEmail?: true
+    contractProp1?: true
+    contractProp2?: true
+    contractPropSuppliesQuantity?: true
+    quantityForKp?: true
+    lcontractProp2?: true
+    acontractName?: true
+    acontractPropComment?: true
   }
 
   export type SuppliesMaxAggregateInputType = {
@@ -97000,6 +97028,13 @@ export namespace Prisma {
     lcontractName?: true
     lcontractPropComment?: true
     lcontractPropEmail?: true
+    contractProp1?: true
+    contractProp2?: true
+    contractPropSuppliesQuantity?: true
+    quantityForKp?: true
+    lcontractProp2?: true
+    acontractName?: true
+    acontractPropComment?: true
   }
 
   export type SuppliesCountAggregateInputType = {
@@ -97025,6 +97060,13 @@ export namespace Prisma {
     lcontractName?: true
     lcontractPropComment?: true
     lcontractPropEmail?: true
+    contractProp1?: true
+    contractProp2?: true
+    contractPropSuppliesQuantity?: true
+    quantityForKp?: true
+    lcontractProp2?: true
+    acontractName?: true
+    acontractPropComment?: true
     _all?: true
   }
 
@@ -97137,6 +97179,13 @@ export namespace Prisma {
     lcontractName: string | null
     lcontractPropComment: string | null
     lcontractPropEmail: string | null
+    contractProp1: string | null
+    contractProp2: string | null
+    contractPropSuppliesQuantity: string | null
+    quantityForKp: string | null
+    lcontractProp2: string | null
+    acontractName: string | null
+    acontractPropComment: string | null
     _count: SuppliesCountAggregateOutputType | null
     _avg: SuppliesAvgAggregateOutputType | null
     _sum: SuppliesSumAggregateOutputType | null
@@ -97181,6 +97230,13 @@ export namespace Prisma {
     lcontractName?: boolean
     lcontractPropComment?: boolean
     lcontractPropEmail?: boolean
+    contractProp1?: boolean
+    contractProp2?: boolean
+    contractPropSuppliesQuantity?: boolean
+    quantityForKp?: boolean
+    lcontractProp2?: boolean
+    acontractName?: boolean
+    acontractPropComment?: boolean
     garant_prof_prices?: boolean | supplies$garant_prof_pricesArgs<ExtArgs>
     _count?: boolean | SuppliesCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["supplies"]>
@@ -97210,9 +97266,16 @@ export namespace Prisma {
     lcontractName?: boolean
     lcontractPropComment?: boolean
     lcontractPropEmail?: boolean
+    contractProp1?: boolean
+    contractProp2?: boolean
+    contractPropSuppliesQuantity?: boolean
+    quantityForKp?: boolean
+    lcontractProp2?: boolean
+    acontractName?: boolean
+    acontractPropComment?: boolean
   }
 
-  export type suppliesOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "name" | "fullName" | "shortName" | "saleName_1" | "saleName_2" | "saleName_3" | "usersQuantity" | "description" | "code" | "type" | "color" | "coefficient" | "contractName" | "contractPropComment" | "contractPropEmail" | "contractPropLoginsQuantity" | "lcontractName" | "lcontractPropComment" | "lcontractPropEmail", ExtArgs["result"]["supplies"]>
+  export type suppliesOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "name" | "fullName" | "shortName" | "saleName_1" | "saleName_2" | "saleName_3" | "usersQuantity" | "description" | "code" | "type" | "color" | "coefficient" | "contractName" | "contractPropComment" | "contractPropEmail" | "contractPropLoginsQuantity" | "lcontractName" | "lcontractPropComment" | "lcontractPropEmail" | "contractProp1" | "contractProp2" | "contractPropSuppliesQuantity" | "quantityForKp" | "lcontractProp2" | "acontractName" | "acontractPropComment", ExtArgs["result"]["supplies"]>
   export type suppliesInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     garant_prof_prices?: boolean | supplies$garant_prof_pricesArgs<ExtArgs>
     _count?: boolean | SuppliesCountOutputTypeDefaultArgs<ExtArgs>
@@ -97246,6 +97309,13 @@ export namespace Prisma {
       lcontractName: string | null
       lcontractPropComment: string | null
       lcontractPropEmail: string | null
+      contractProp1: string | null
+      contractProp2: string | null
+      contractPropSuppliesQuantity: string | null
+      quantityForKp: string | null
+      lcontractProp2: string | null
+      acontractName: string | null
+      acontractPropComment: string | null
     }, ExtArgs["result"]["supplies"]>
     composites: {}
   }
@@ -97638,6 +97708,13 @@ export namespace Prisma {
     readonly lcontractName: FieldRef<"supplies", 'String'>
     readonly lcontractPropComment: FieldRef<"supplies", 'String'>
     readonly lcontractPropEmail: FieldRef<"supplies", 'String'>
+    readonly contractProp1: FieldRef<"supplies", 'String'>
+    readonly contractProp2: FieldRef<"supplies", 'String'>
+    readonly contractPropSuppliesQuantity: FieldRef<"supplies", 'String'>
+    readonly quantityForKp: FieldRef<"supplies", 'String'>
+    readonly lcontractProp2: FieldRef<"supplies", 'String'>
+    readonly acontractName: FieldRef<"supplies", 'String'>
+    readonly acontractPropComment: FieldRef<"supplies", 'String'>
   }
     
 
@@ -122310,7 +122387,14 @@ export namespace Prisma {
     contractPropLoginsQuantity: 'contractPropLoginsQuantity',
     lcontractName: 'lcontractName',
     lcontractPropComment: 'lcontractPropComment',
-    lcontractPropEmail: 'lcontractPropEmail'
+    lcontractPropEmail: 'lcontractPropEmail',
+    contractProp1: 'contractProp1',
+    contractProp2: 'contractProp2',
+    contractPropSuppliesQuantity: 'contractPropSuppliesQuantity',
+    quantityForKp: 'quantityForKp',
+    lcontractProp2: 'lcontractProp2',
+    acontractName: 'acontractName',
+    acontractPropComment: 'acontractPropComment'
   };
 
   export type SuppliesScalarFieldEnum = (typeof SuppliesScalarFieldEnum)[keyof typeof SuppliesScalarFieldEnum]
@@ -123800,7 +123884,14 @@ export namespace Prisma {
     contractPropLoginsQuantity: 'contractPropLoginsQuantity',
     lcontractName: 'lcontractName',
     lcontractPropComment: 'lcontractPropComment',
-    lcontractPropEmail: 'lcontractPropEmail'
+    lcontractPropEmail: 'lcontractPropEmail',
+    contractProp1: 'contractProp1',
+    contractProp2: 'contractProp2',
+    contractPropSuppliesQuantity: 'contractPropSuppliesQuantity',
+    quantityForKp: 'quantityForKp',
+    lcontractProp2: 'lcontractProp2',
+    acontractName: 'acontractName',
+    acontractPropComment: 'acontractPropComment'
   };
 
   export type suppliesOrderByRelevanceFieldEnum = (typeof suppliesOrderByRelevanceFieldEnum)[keyof typeof suppliesOrderByRelevanceFieldEnum]
@@ -132348,6 +132439,13 @@ export namespace Prisma {
     lcontractName?: StringNullableFilter<"supplies"> | string | null
     lcontractPropComment?: StringNullableFilter<"supplies"> | string | null
     lcontractPropEmail?: StringNullableFilter<"supplies"> | string | null
+    contractProp1?: StringNullableFilter<"supplies"> | string | null
+    contractProp2?: StringNullableFilter<"supplies"> | string | null
+    contractPropSuppliesQuantity?: StringNullableFilter<"supplies"> | string | null
+    quantityForKp?: StringNullableFilter<"supplies"> | string | null
+    lcontractProp2?: StringNullableFilter<"supplies"> | string | null
+    acontractName?: StringNullableFilter<"supplies"> | string | null
+    acontractPropComment?: StringNullableFilter<"supplies"> | string | null
     garant_prof_prices?: Garant_prof_pricesListRelationFilter
   }
 
@@ -132374,6 +132472,13 @@ export namespace Prisma {
     lcontractName?: SortOrderInput | SortOrder
     lcontractPropComment?: SortOrderInput | SortOrder
     lcontractPropEmail?: SortOrderInput | SortOrder
+    contractProp1?: SortOrderInput | SortOrder
+    contractProp2?: SortOrderInput | SortOrder
+    contractPropSuppliesQuantity?: SortOrderInput | SortOrder
+    quantityForKp?: SortOrderInput | SortOrder
+    lcontractProp2?: SortOrderInput | SortOrder
+    acontractName?: SortOrderInput | SortOrder
+    acontractPropComment?: SortOrderInput | SortOrder
     garant_prof_prices?: garant_prof_pricesOrderByRelationAggregateInput
     _relevance?: suppliesOrderByRelevanceInput
   }
@@ -132404,6 +132509,13 @@ export namespace Prisma {
     lcontractName?: StringNullableFilter<"supplies"> | string | null
     lcontractPropComment?: StringNullableFilter<"supplies"> | string | null
     lcontractPropEmail?: StringNullableFilter<"supplies"> | string | null
+    contractProp1?: StringNullableFilter<"supplies"> | string | null
+    contractProp2?: StringNullableFilter<"supplies"> | string | null
+    contractPropSuppliesQuantity?: StringNullableFilter<"supplies"> | string | null
+    quantityForKp?: StringNullableFilter<"supplies"> | string | null
+    lcontractProp2?: StringNullableFilter<"supplies"> | string | null
+    acontractName?: StringNullableFilter<"supplies"> | string | null
+    acontractPropComment?: StringNullableFilter<"supplies"> | string | null
     garant_prof_prices?: Garant_prof_pricesListRelationFilter
   }, "id">
 
@@ -132430,6 +132542,13 @@ export namespace Prisma {
     lcontractName?: SortOrderInput | SortOrder
     lcontractPropComment?: SortOrderInput | SortOrder
     lcontractPropEmail?: SortOrderInput | SortOrder
+    contractProp1?: SortOrderInput | SortOrder
+    contractProp2?: SortOrderInput | SortOrder
+    contractPropSuppliesQuantity?: SortOrderInput | SortOrder
+    quantityForKp?: SortOrderInput | SortOrder
+    lcontractProp2?: SortOrderInput | SortOrder
+    acontractName?: SortOrderInput | SortOrder
+    acontractPropComment?: SortOrderInput | SortOrder
     _count?: suppliesCountOrderByAggregateInput
     _avg?: suppliesAvgOrderByAggregateInput
     _max?: suppliesMaxOrderByAggregateInput
@@ -132463,6 +132582,13 @@ export namespace Prisma {
     lcontractName?: StringNullableWithAggregatesFilter<"supplies"> | string | null
     lcontractPropComment?: StringNullableWithAggregatesFilter<"supplies"> | string | null
     lcontractPropEmail?: StringNullableWithAggregatesFilter<"supplies"> | string | null
+    contractProp1?: StringNullableWithAggregatesFilter<"supplies"> | string | null
+    contractProp2?: StringNullableWithAggregatesFilter<"supplies"> | string | null
+    contractPropSuppliesQuantity?: StringNullableWithAggregatesFilter<"supplies"> | string | null
+    quantityForKp?: StringNullableWithAggregatesFilter<"supplies"> | string | null
+    lcontractProp2?: StringNullableWithAggregatesFilter<"supplies"> | string | null
+    acontractName?: StringNullableWithAggregatesFilter<"supplies"> | string | null
+    acontractPropComment?: StringNullableWithAggregatesFilter<"supplies"> | string | null
   }
 
   export type TranscriptionWhereInput = {
@@ -144083,6 +144209,13 @@ export namespace Prisma {
     lcontractName?: string | null
     lcontractPropComment?: string | null
     lcontractPropEmail?: string | null
+    contractProp1?: string | null
+    contractProp2?: string | null
+    contractPropSuppliesQuantity?: string | null
+    quantityForKp?: string | null
+    lcontractProp2?: string | null
+    acontractName?: string | null
+    acontractPropComment?: string | null
     garant_prof_prices?: garant_prof_pricesCreateNestedManyWithoutSuppliesInput
   }
 
@@ -144109,6 +144242,13 @@ export namespace Prisma {
     lcontractName?: string | null
     lcontractPropComment?: string | null
     lcontractPropEmail?: string | null
+    contractProp1?: string | null
+    contractProp2?: string | null
+    contractPropSuppliesQuantity?: string | null
+    quantityForKp?: string | null
+    lcontractProp2?: string | null
+    acontractName?: string | null
+    acontractPropComment?: string | null
     garant_prof_prices?: garant_prof_pricesUncheckedCreateNestedManyWithoutSuppliesInput
   }
 
@@ -144135,6 +144275,13 @@ export namespace Prisma {
     lcontractName?: NullableStringFieldUpdateOperationsInput | string | null
     lcontractPropComment?: NullableStringFieldUpdateOperationsInput | string | null
     lcontractPropEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    contractProp1?: NullableStringFieldUpdateOperationsInput | string | null
+    contractProp2?: NullableStringFieldUpdateOperationsInput | string | null
+    contractPropSuppliesQuantity?: NullableStringFieldUpdateOperationsInput | string | null
+    quantityForKp?: NullableStringFieldUpdateOperationsInput | string | null
+    lcontractProp2?: NullableStringFieldUpdateOperationsInput | string | null
+    acontractName?: NullableStringFieldUpdateOperationsInput | string | null
+    acontractPropComment?: NullableStringFieldUpdateOperationsInput | string | null
     garant_prof_prices?: garant_prof_pricesUpdateManyWithoutSuppliesNestedInput
   }
 
@@ -144161,6 +144308,13 @@ export namespace Prisma {
     lcontractName?: NullableStringFieldUpdateOperationsInput | string | null
     lcontractPropComment?: NullableStringFieldUpdateOperationsInput | string | null
     lcontractPropEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    contractProp1?: NullableStringFieldUpdateOperationsInput | string | null
+    contractProp2?: NullableStringFieldUpdateOperationsInput | string | null
+    contractPropSuppliesQuantity?: NullableStringFieldUpdateOperationsInput | string | null
+    quantityForKp?: NullableStringFieldUpdateOperationsInput | string | null
+    lcontractProp2?: NullableStringFieldUpdateOperationsInput | string | null
+    acontractName?: NullableStringFieldUpdateOperationsInput | string | null
+    acontractPropComment?: NullableStringFieldUpdateOperationsInput | string | null
     garant_prof_prices?: garant_prof_pricesUncheckedUpdateManyWithoutSuppliesNestedInput
   }
 
@@ -144187,6 +144341,13 @@ export namespace Prisma {
     lcontractName?: string | null
     lcontractPropComment?: string | null
     lcontractPropEmail?: string | null
+    contractProp1?: string | null
+    contractProp2?: string | null
+    contractPropSuppliesQuantity?: string | null
+    quantityForKp?: string | null
+    lcontractProp2?: string | null
+    acontractName?: string | null
+    acontractPropComment?: string | null
   }
 
   export type suppliesUpdateManyMutationInput = {
@@ -144212,6 +144373,13 @@ export namespace Prisma {
     lcontractName?: NullableStringFieldUpdateOperationsInput | string | null
     lcontractPropComment?: NullableStringFieldUpdateOperationsInput | string | null
     lcontractPropEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    contractProp1?: NullableStringFieldUpdateOperationsInput | string | null
+    contractProp2?: NullableStringFieldUpdateOperationsInput | string | null
+    contractPropSuppliesQuantity?: NullableStringFieldUpdateOperationsInput | string | null
+    quantityForKp?: NullableStringFieldUpdateOperationsInput | string | null
+    lcontractProp2?: NullableStringFieldUpdateOperationsInput | string | null
+    acontractName?: NullableStringFieldUpdateOperationsInput | string | null
+    acontractPropComment?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type suppliesUncheckedUpdateManyInput = {
@@ -144237,6 +144405,13 @@ export namespace Prisma {
     lcontractName?: NullableStringFieldUpdateOperationsInput | string | null
     lcontractPropComment?: NullableStringFieldUpdateOperationsInput | string | null
     lcontractPropEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    contractProp1?: NullableStringFieldUpdateOperationsInput | string | null
+    contractProp2?: NullableStringFieldUpdateOperationsInput | string | null
+    contractPropSuppliesQuantity?: NullableStringFieldUpdateOperationsInput | string | null
+    quantityForKp?: NullableStringFieldUpdateOperationsInput | string | null
+    lcontractProp2?: NullableStringFieldUpdateOperationsInput | string | null
+    acontractName?: NullableStringFieldUpdateOperationsInput | string | null
+    acontractPropComment?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type TranscriptionCreateInput = {
@@ -153336,6 +153511,13 @@ export namespace Prisma {
     lcontractName?: SortOrder
     lcontractPropComment?: SortOrder
     lcontractPropEmail?: SortOrder
+    contractProp1?: SortOrder
+    contractProp2?: SortOrder
+    contractPropSuppliesQuantity?: SortOrder
+    quantityForKp?: SortOrder
+    lcontractProp2?: SortOrder
+    acontractName?: SortOrder
+    acontractPropComment?: SortOrder
   }
 
   export type suppliesAvgOrderByAggregateInput = {
@@ -153367,6 +153549,13 @@ export namespace Prisma {
     lcontractName?: SortOrder
     lcontractPropComment?: SortOrder
     lcontractPropEmail?: SortOrder
+    contractProp1?: SortOrder
+    contractProp2?: SortOrder
+    contractPropSuppliesQuantity?: SortOrder
+    quantityForKp?: SortOrder
+    lcontractProp2?: SortOrder
+    acontractName?: SortOrder
+    acontractPropComment?: SortOrder
   }
 
   export type suppliesMinOrderByAggregateInput = {
@@ -153392,6 +153581,13 @@ export namespace Prisma {
     lcontractName?: SortOrder
     lcontractPropComment?: SortOrder
     lcontractPropEmail?: SortOrder
+    contractProp1?: SortOrder
+    contractProp2?: SortOrder
+    contractPropSuppliesQuantity?: SortOrder
+    quantityForKp?: SortOrder
+    lcontractProp2?: SortOrder
+    acontractName?: SortOrder
+    acontractPropComment?: SortOrder
   }
 
   export type suppliesSumOrderByAggregateInput = {
@@ -177995,6 +178191,13 @@ export namespace Prisma {
     lcontractName?: string | null
     lcontractPropComment?: string | null
     lcontractPropEmail?: string | null
+    contractProp1?: string | null
+    contractProp2?: string | null
+    contractPropSuppliesQuantity?: string | null
+    quantityForKp?: string | null
+    lcontractProp2?: string | null
+    acontractName?: string | null
+    acontractPropComment?: string | null
   }
 
   export type suppliesUncheckedCreateWithoutGarant_prof_pricesInput = {
@@ -178020,6 +178223,13 @@ export namespace Prisma {
     lcontractName?: string | null
     lcontractPropComment?: string | null
     lcontractPropEmail?: string | null
+    contractProp1?: string | null
+    contractProp2?: string | null
+    contractPropSuppliesQuantity?: string | null
+    quantityForKp?: string | null
+    lcontractProp2?: string | null
+    acontractName?: string | null
+    acontractPropComment?: string | null
   }
 
   export type suppliesCreateOrConnectWithoutGarant_prof_pricesInput = {
@@ -178175,6 +178385,13 @@ export namespace Prisma {
     lcontractName?: NullableStringFieldUpdateOperationsInput | string | null
     lcontractPropComment?: NullableStringFieldUpdateOperationsInput | string | null
     lcontractPropEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    contractProp1?: NullableStringFieldUpdateOperationsInput | string | null
+    contractProp2?: NullableStringFieldUpdateOperationsInput | string | null
+    contractPropSuppliesQuantity?: NullableStringFieldUpdateOperationsInput | string | null
+    quantityForKp?: NullableStringFieldUpdateOperationsInput | string | null
+    lcontractProp2?: NullableStringFieldUpdateOperationsInput | string | null
+    acontractName?: NullableStringFieldUpdateOperationsInput | string | null
+    acontractPropComment?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type suppliesUncheckedUpdateWithoutGarant_prof_pricesInput = {
@@ -178200,6 +178417,13 @@ export namespace Prisma {
     lcontractName?: NullableStringFieldUpdateOperationsInput | string | null
     lcontractPropComment?: NullableStringFieldUpdateOperationsInput | string | null
     lcontractPropEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    contractProp1?: NullableStringFieldUpdateOperationsInput | string | null
+    contractProp2?: NullableStringFieldUpdateOperationsInput | string | null
+    contractPropSuppliesQuantity?: NullableStringFieldUpdateOperationsInput | string | null
+    quantityForKp?: NullableStringFieldUpdateOperationsInput | string | null
+    lcontractProp2?: NullableStringFieldUpdateOperationsInput | string | null
+    acontractName?: NullableStringFieldUpdateOperationsInput | string | null
+    acontractPropComment?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type info_groupsCreateWithoutInfoblock_info_groupInput = {

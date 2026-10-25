@@ -35,6 +35,19 @@ describe('baseDealTitle', () => {
         ).toBe('Иванов Иван');
     });
 
+    it('ИНН в «Название компании» лида — берётся название лида (garant, лид 196219)', () => {
+        expect(
+            baseDealTitle({
+                company: null,
+                lead: {
+                    COMPANY_TITLE: '4703142743',
+                    TITLE: 'ГАНПОУ ЛО "МЦ СИТИ"',
+                },
+                leadId: 196219,
+            }),
+        ).toBe('ГАНПОУ ЛО "МЦ СИТИ"');
+    });
+
     it('совсем пусто — «Лид N»', () => {
         expect(baseDealTitle({ company: null, lead: {}, leadId: 42 })).toBe(
             'Лид 42',

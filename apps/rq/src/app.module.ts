@@ -4,7 +4,7 @@ import { LoggerModule } from '@lib/logger';
 import { MetricsModule } from '@lib/metrics';
 import { PrismaModule } from '@/core/prisma/prisma.module';
 import { GlobalExceptionFilter, HealthModule } from '@/core';
-import { RqModule } from '../rq.module';
+import { RqModule } from '@lib/rq-lib';
 
 /**
  * Корневой модуль приложения «Реквизиты» (rq).

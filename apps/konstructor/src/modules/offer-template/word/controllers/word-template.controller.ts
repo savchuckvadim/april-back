@@ -295,7 +295,8 @@ export class WordTemplateController {
         description: 'Delete word template and its DOCX file',
     })
     @ApiResponse({
-        status: 204,
+        status: 200,
+        type: Boolean,
         description: 'Word template deleted successfully',
     })
     @Delete(':id')
@@ -303,11 +304,21 @@ export class WordTemplateController {
         return await this.wordTemplateService.delete(BigInt(params.id));
     }
 
+    @ApiOperation({
+        summary: 'Архивировать шаблон (GET, легаси)',
+        deprecated: true,
+    })
+    @ApiResponse({ status: 200, type: Boolean })
     @Get(':id/archive')
     async archive(@Param() params: WordTemplateIdParamsDto): Promise<boolean> {
         return await this.wordTemplateService.archive(BigInt(params.id));
     }
 
+    @ApiOperation({
+        summary: 'Вернуть шаблон из архива (GET, легаси)',
+        deprecated: true,
+    })
+    @ApiResponse({ status: 200, type: Boolean })
     @Get(':id/unarchive')
     async unarchive(
         @Param() params: WordTemplateIdParamsDto,
@@ -321,6 +332,7 @@ export class WordTemplateController {
             'Та же операция, что GET :id/archive, но без мутирующего GET — ' +
             'его может дёрнуть предпросмотр ссылки или краулер. GET оставлен ради легаси-фронта.',
     })
+    @ApiResponse({ status: 200, type: Boolean })
     @Patch(':id/archive')
     async archivePatch(
         @Param() params: WordTemplateIdParamsDto,
@@ -329,6 +341,7 @@ export class WordTemplateController {
     }
 
     @ApiOperation({ summary: 'Вернуть шаблон из архива (PATCH)' })
+    @ApiResponse({ status: 200, type: Boolean })
     @Patch(':id/unarchive')
     async unarchivePatch(
         @Param() params: WordTemplateIdParamsDto,

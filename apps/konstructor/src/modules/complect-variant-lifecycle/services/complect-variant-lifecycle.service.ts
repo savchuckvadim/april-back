@@ -3,11 +3,31 @@ import { BitrixService } from '@lib/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import {
     buildComplectVariantStageId,
+    COMPLECT_VARIANT_FINAL_STAGES,
+    COMPLECT_VARIANT_SMART_STAGES,
     COMPLECT_VARIANT_SMART_TYPE,
     COMPLECT_VARIANT_STAGE,
     ComplectVariantStageCode,
     resolveComplectVariantStageCode,
 } from '@lib/portal-lib/pbx/pbx-complect-variant-smart';
+
+/** Порядок стадии в воронке; неизвестная — 0 (как черновик). */
+const stageSort = (stage: ComplectVariantStageCode | null): number =>
+    COMPLECT_VARIANT_SMART_STAGES.find(item => item.code === stage)?.sort ?? 0;
+
+/**
+ * Можно ли ставить стадию «только вперёд»: вариант уже дальше по воронке или
+ * закрыт — не откатываем. КП перегенерируют по многу раз, и «Договор» не
+ * должен превращаться обратно в «КП».
+ */
+export const isForwardMove = (
+    current: ComplectVariantStageCode | null,
+    target: ComplectVariantStageCode,
+): boolean => {
+    if (current && COMPLECT_VARIANT_FINAL_STAGES.includes(current))
+        return false;
+    return stageSort(target) > stageSort(current);
+};
 
 /** Итог перевода пачки вариантов на стадию. */
 export interface ComplectVariantLifecycleResult {
@@ -94,10 +114,24 @@ export class ComplectVariantLifecycleService {
      * ничего не делает и пишет в лог. Ни одно из этих состояний не должно
      * ронять робота, который его позвал.
      */
+    /**
+     * Стадия продажи «только вперёд» (КП → счёт → договор → поставка):
+     * элемент дальше по воронке или закрытый остаётся где был. Это и есть
+     * правило из README для переделок: откат — только руками.
+     */
+    async markStageForward(
+        domain: string,
+        variantSmartIds: readonly number[],
+        stage: ComplectVariantStageCode,
+    ): Promise<ComplectVariantLifecycleResult> {
+        return this.markStage(domain, variantSmartIds, stage, true);
+    }
+
     async markStage(
         domain: string,
         variantSmartIds: readonly number[],
         stage: ComplectVariantStageCode,
+        forwardOnly = false,
     ): Promise<ComplectVariantLifecycleResult> {
         const ids = this.normalizeIds(variantSmartIds);
         if (!ids.length) {
@@ -119,7 +153,12 @@ export class ComplectVariantLifecycleService {
         let moved = 0;
 
         for (const id of ids) {
-            const isMoved = await this.moveOne(entityTypeId, id, stage);
+            const isMoved = await this.moveOne(
+                entityTypeId,
+                id,
+                stage,
+                forwardOnly,
+            );
             if (isMoved) {
                 moved += 1;
             }
@@ -136,6 +175,7 @@ export class ComplectVariantLifecycleService {
         entityTypeId: number,
         itemId: number,
         stage: ComplectVariantStageCode,
+        forwardOnly = false,
     ): Promise<boolean> {
         try {
             const response = await this.bitrix.item.get(
@@ -151,8 +191,16 @@ export class ComplectVariantLifecycleService {
 
             const currentStageId =
                 typeof item.stageId === 'string' ? item.stageId : null;
-            if (resolveComplectVariantStageCode(currentStageId) === stage) {
+            const currentStage =
+                resolveComplectVariantStageCode(currentStageId);
+            if (currentStage === stage) {
                 // уже там: лишний update засоряет историю карточки
+                return false;
+            }
+            if (forwardOnly && !isForwardMove(currentStage, stage)) {
+                this.logger.debug(
+                    `Вариант ${itemId}: стадия ${currentStage ?? '?'} дальше ${stage} — не откатываем`,
+                );
                 return false;
             }
 

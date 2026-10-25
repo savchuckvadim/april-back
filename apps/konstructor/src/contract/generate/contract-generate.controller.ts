@@ -1,7 +1,8 @@
-import { Controller, Post, Body } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
-import { ContractGenerateService } from './services/contract-generate.service';
+import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ContractGenerateDto } from './dto/contract-generate.dto';
+import { ContractGenerateResponseDto } from './dto/contract-generate-response.dto';
+import type { ContractGenerateResult } from './type/contract-generate.type';
 import { ContractGenerateUseCase } from './use-case/contract-generate.use-case';
 
 @ApiTags('Konstructor')
@@ -10,12 +11,21 @@ export class ContractGenerateController {
     constructor(private readonly contractUseCase: ContractGenerateUseCase) {}
 
     @Post('generate')
-    async generateContract(@Body() dto: ContractGenerateDto) {
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Сформировать договор',
+        description:
+            'Собирает DOCX договора по шаблону поставщика, кладёт ссылку в ' +
+            'таймлайн компании и сделки. Один договор за вызов.',
+    })
+    @ApiBody({ type: ContractGenerateDto })
+    @ApiOkResponse({
+        type: ContractGenerateResponseDto,
+        description: 'Ссылка на документ и данные, ушедшие в шаблон.',
+    })
+    async generateContract(
+        @Body() dto: ContractGenerateDto,
+    ): Promise<ContractGenerateResult> {
         return this.contractUseCase.getContract(dto);
     }
-
-    // @Post('document')
-    // async getDocument(@Body() dto: ContractGenerateDto) {
-    //     return this.contractGenerateService.getDocument(dto);
-    // }
 }

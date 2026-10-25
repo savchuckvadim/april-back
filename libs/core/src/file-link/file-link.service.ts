@@ -25,6 +25,7 @@ export class FileLinkService {
             | 'offer-word'
             | 'contract'
             | 'supply'
+            | 'description'
             | 'invoice-document',
         year: string,
         fileName: string,
@@ -50,7 +51,8 @@ export class FileLinkService {
             | 'provider/logo'
             | 'offer-word'
             | 'contract'
-            | 'supply',
+            | 'supply'
+            | 'description',
         year: string,
         fileName: string,
     ): Promise<string | null> {

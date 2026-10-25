@@ -6,7 +6,7 @@ import {
     RQ_PRESET_TEMPLATE,
     RqFieldTemplate,
     RqPresetTemplate,
-} from '@/apps/rq/install';
+} from '@lib/rq-lib/install';
 import { InstallRqPresetSyncService } from '../services/install-rq-preset-sync.service';
 import { InstallRqFieldSyncService } from '../services/install-rq-field-sync.service';
 import {

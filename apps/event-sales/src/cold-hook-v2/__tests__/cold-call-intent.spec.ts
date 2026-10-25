@@ -146,6 +146,42 @@ describe('resolveColdCallData', () => {
         });
     });
 
+    describe('заглушка в «Название ХО» (garant, компания 177317)', () => {
+        it('«Холодный обзвон» → название карточки', () => {
+            const { data, signals } = resolve(
+                {},
+                {
+                    ...CARD,
+                    TITLE: 'Финансовое управление',
+                    UF_CRM_XO_NAME: 'Холодный обзвон',
+                },
+            );
+            expect(data?.name).toBe('Финансовое управление');
+            expect(signals.join(' ')).toContain('заглушка');
+        });
+
+        it('заглушка из запроса — тоже название карточки', () => {
+            const { data } = resolve(
+                { name: 'ХОЛОДНЫЙ ОБЗВОН' },
+                { ...CARD, TITLE: 'ООО Ромашка' },
+            );
+            expect(data?.name).toBe('ООО Ромашка');
+        });
+
+        it('у карточки названия нет — остаётся как было', () => {
+            const { data } = resolve(
+                {},
+                { ...CARD, UF_CRM_XO_NAME: 'Холодный обзвон' },
+            );
+            expect(data?.name).toBe('Холодный обзвон');
+        });
+
+        it('настоящее название ХО не трогаем', () => {
+            const { data } = resolve({}, { ...CARD, TITLE: 'Другое' });
+            expect(data?.name).toBe('ООО Ромашка');
+        });
+    });
+
     describe('force из поля op_xo_is_force', () => {
         it('поле поднято → Y', () => {
             const { data } = resolve(

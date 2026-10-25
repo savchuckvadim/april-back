@@ -25,7 +25,8 @@ export class FilesController {
                 | 'provider/logo'
                 | 'offer-word'
                 | 'contract'
-                | 'supply';
+                | 'supply'
+                | 'description';
             year: string;
             fileName: string;
         };

@@ -33,6 +33,13 @@ export class SupplyPrismaRepository implements SupplyRepository {
                     lcontractName: supply.lcontractName,
                     lcontractPropComment: supply.lcontractPropComment,
                     lcontractPropEmail: supply.lcontractPropEmail,
+                    contractProp1: supply.contractProp1,
+                    contractProp2: supply.contractProp2,
+                    contractPropSuppliesQuantity: supply.contractPropSuppliesQuantity,
+                    quantityForKp: supply.quantityForKp,
+                    lcontractProp2: supply.lcontractProp2,
+                    acontractName: supply.acontractName,
+                    acontractPropComment: supply.acontractPropComment,
                 },
             });
             return createSupplyEntityFromPrisma(result);

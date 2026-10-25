@@ -1896,6 +1896,14 @@ model supplies {
   lcontractName              String?              @db.Text
   lcontractPropComment       String?              @db.Text
   lcontractPropEmail         String?              @db.Text
+  // Шаблоны текстов договоров/КП по числу ОД ({n}, {words}, {plural:..}) — supply-template.util.ts
+  contractProp1              String?              @db.Text
+  contractProp2              String?              @db.Text
+  contractPropSuppliesQuantity String?             @db.Text
+  quantityForKp              String?              @db.Text
+  lcontractProp2             String?              @db.Text
+  acontractName              String?              @db.Text
+  acontractPropComment       String?              @db.Text
   garant_prof_prices         garant_prof_prices[]
 }
 

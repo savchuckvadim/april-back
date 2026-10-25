@@ -14,8 +14,15 @@ import { CreateUserSelectedTemplateDto } from '../dtos/create-user-selected-temp
 import { UserSelectedTemplate } from '../entities/user-selected-template.entity';
 import { UserSelectedTemplateIdParamsDto } from '../dtos/user-selected-template-params.dto';
 import { UserSelectedTemplateEntityDto } from '../dtos/user-selected-entity.dto';
-import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
+import {
+    ApiBody,
+    ApiOperation,
+    ApiParam,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 
+@ApiTags('KonstructorUserSelectedTemplate')
 @Controller('user-selected-templates')
 export class UserSelectedTemplateController {
     constructor(
@@ -27,6 +34,7 @@ export class UserSelectedTemplateController {
     })
     @ApiResponse({
         status: 201,
+        type: UserSelectedTemplateEntityDto,
         description: 'User selected template created successfully',
     })
     @ApiBody({
@@ -36,10 +44,11 @@ export class UserSelectedTemplateController {
     @Post()
     async createUserSelectedTemplate(
         @Body() createUserSelectedTemplateDto: CreateUserSelectedTemplateDto,
-    ): Promise<UserSelectedTemplate> {
-        return await this.userSelectedTemplateService.create(
+    ): Promise<UserSelectedTemplateEntityDto> {
+        const created = await this.userSelectedTemplateService.create(
             createUserSelectedTemplateDto,
         );
+        return new UserSelectedTemplateEntityDto(created);
     }
     @ApiOperation({
         summary: 'Delete user selected template',
@@ -66,10 +75,7 @@ export class UserSelectedTemplateController {
         summary: 'Set current user selected template',
         description: 'Set the current user selected template',
     })
-    @ApiResponse({
-        status: 200,
-        description: 'Current user selected template set successfully',
-    })
+    @HttpCode(HttpStatus.OK)
     @Post('current')
     @ApiBody({
         type: CreateUserSelectedTemplateDto,
@@ -99,10 +105,7 @@ export class UserSelectedTemplateController {
         summary: 'Set favorite user selected template',
         description: 'Set the favorite user selected template',
     })
-    @ApiResponse({
-        status: 200,
-        description: 'Favorite user selected template set successfully',
-    })
+    @HttpCode(HttpStatus.OK)
     @Post('favorite')
     @ApiBody({
         type: CreateUserSelectedTemplateDto,
@@ -133,10 +136,7 @@ export class UserSelectedTemplateController {
         summary: 'Set active user selected template',
         description: 'Set the active user selected template',
     })
-    @ApiResponse({
-        status: 200,
-        description: 'Active user selected template set successfully',
-    })
+    @HttpCode(HttpStatus.OK)
     @ApiBody({
         type: CreateUserSelectedTemplateDto,
         description: 'User selected template data',

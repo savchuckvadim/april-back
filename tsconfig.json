@@ -145,9 +145,9 @@
       "src/apps/kpi-report/*": ["apps/kpi-report-sales/src/*"],
 
       // ---- Приложение rq (apps/rq) ----
-      // самодостаточные внутренние импорты приложения реквизитов
-      "@/apps/rq": ["apps/rq"],
-      "@/apps/rq/*": ["apps/rq/*"],
+      // реквизиты (RqModule): пакет, монтируется в apps/rq и apps/konstructor
+      "@lib/rq-lib": ["libs/rq-lib/src"],
+      "@lib/rq-lib/*": ["libs/rq-lib/src/*"],
 
       // ---- Сгенерированный Prisma client ----
       "@prisma": ["./generated/prisma/index.ts"],

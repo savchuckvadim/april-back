@@ -3,6 +3,7 @@ import {
     ForbiddenException,
     UnauthorizedException,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { AuthModuleOptions } from '../../config/auth.config';
 import { AuthTokenService } from '../../services/auth-token.service';
 import { AuthJwtPayload } from '../../types/auth-user.interface';
@@ -163,6 +164,59 @@ describe('PortalSessionGuard', () => {
             });
 
             expect(guard.canActivate(ctx)).toBe(true);
+        });
+    });
+
+    describe('ручка «проверять всегда» (enforce: true)', () => {
+        const makeEnforcedGuard = (mode: PortalSessionGuardMode) => {
+            const reflector = {
+                getAllAndOverride: jest.fn(() => true),
+            } as unknown as Reflector;
+            return new PortalSessionGuard(
+                {
+                    verify: jest.fn(() => CLIENT),
+                } as unknown as AuthTokenService,
+                buildOptions(mode),
+                reflector,
+            );
+        };
+        const withHandler = (init: RequestInit) => {
+            const { ctx, request } = makeContext(init);
+            const full = {
+                ...ctx,
+                getHandler: () => () => undefined,
+                getClass: () => class {},
+            } as unknown as ExecutionContext;
+            return { ctx: full, request };
+        };
+
+        it.each(['off', 'report'] as const)(
+            'режим %s — без токена всё равно 401',
+            mode => {
+                const { ctx } = withHandler({ body: OWN_BODY });
+                expect(() => makeEnforcedGuard(mode).canActivate(ctx)).toThrow(
+                    UnauthorizedException,
+                );
+            },
+        );
+
+        it('чужой домен в режиме off → 403', () => {
+            const { ctx } = withHandler({
+                authorization: 'Bearer t',
+                body: { ...OWN_BODY, domain: 'other.bitrix24.ru' },
+            });
+            expect(() => makeEnforcedGuard('off').canActivate(ctx)).toThrow(
+                ForbiddenException,
+            );
+        });
+
+        it('своя сессия — пропуск и user в request', () => {
+            const { ctx, request } = withHandler({
+                authorization: 'Bearer t',
+                body: OWN_BODY,
+            });
+            expect(makeEnforcedGuard('off').canActivate(ctx)).toBe(true);
+            expect(request.user?.bitrixUserId).toBe('447');
         });
     });
 

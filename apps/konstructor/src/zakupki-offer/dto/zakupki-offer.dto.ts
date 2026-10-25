@@ -1,9 +1,11 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
     IsArray,
     IsBoolean,
     IsNumber,
     IsObject,
+    IsOptional,
     IsString,
     ValidateNested,
 } from 'class-validator';
@@ -29,19 +31,40 @@ class PlacementDto {
 }
 
 export class CreateOfferDto {
-    @IsString() domain: string;
-    @IsString() companyId: string;
-    @ValidateNested() @Type(() => PlacementDto) placement: PlacementDto;
-    @IsBoolean() isProd: boolean;
-    @IsString() dealId: string;
+    @ApiProperty({ type: String }) @IsString() domain: string;
+    @ApiProperty({ type: String }) @IsString() companyId: string;
+    @ApiProperty({ type: PlacementDto, required: false })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => PlacementDto)
+    placement?: PlacementDto;
+    @ApiProperty({ type: Boolean, required: false })
+    @IsOptional()
+    @IsBoolean()
+    isProd?: boolean;
+    @ApiProperty({ type: String }) @IsString() dealId: string;
     // @ValidateNested() @Type(() => TemplateDto) template: TemplateDto;
-    @ValidateNested({ each: true })
+    /** Поставщик целиком (легаси-фронт); новый фронт шлёт providerId, бэк грузит сам */
+    @ApiProperty({ type: ProviderDto, required: false })
+    @IsOptional()
+    @ValidateNested()
     @Type(() => ProviderDto)
-    provider: ProviderDto;
-    @ValidateNested() @Type(() => RecipientDto) recipient: RecipientDto;
-    @IsNumber() userId: number;
-    @IsString() contractStart: string;
-    @IsString() contractEnd: string;
+    provider?: ProviderDto;
+    @ApiProperty({
+        description: 'Наш поставщик документов (agents.id) — вместо provider',
+        type: Number,
+        required: false,
+    })
+    @IsOptional()
+    @IsNumber()
+    providerId?: number;
+    @ApiProperty({ type: RecipientDto })
+    @ValidateNested()
+    @Type(() => RecipientDto)
+    recipient: RecipientDto;
+    @ApiProperty({ type: Number }) @IsNumber() userId: number;
+    @ApiProperty({ type: String }) @IsString() contractStart: string;
+    @ApiProperty({ type: String }) @IsString() contractEnd: string;
     // @IsBoolean() isOffer: boolean;
     // @IsBoolean() isInvoice: boolean;
     // @IsBoolean() isPublic: boolean;
@@ -50,24 +73,52 @@ export class CreateOfferDto {
     // @IsOptional() @IsBoolean() isWord: boolean;
     // @IsOptional() @IsString() invoiceDate: string;
     // @IsOptional() @IsString() withStamps: string;
+    @ApiProperty({ type: [ComplectDto] })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => ComplectDto)
     complect: ComplectDto[];
-    @ValidateNested() @Type(() => SupplyDto) supply: SupplyDto;
-    @ValidateNested() @Type(() => PriceDto) price: PriceDto;
-    @ValidateNested() @Type(() => ContractDto) contract: ContractDto;
-    @ValidateNested() @Type(() => RegionsDto) regions: RegionsDto;
-    @ValidateNested() @Type(() => RegionDto) region: RegionDto;
+    @ApiProperty({ type: SupplyDto, required: false })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => SupplyDto)
+    supply?: SupplyDto;
+    @ApiProperty({ type: PriceDto, required: false })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => PriceDto)
+    price?: PriceDto;
+    @ApiProperty({ type: ContractDto, required: false })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => ContractDto)
+    contract?: ContractDto;
+    @ApiProperty({ type: RegionsDto })
+    @ValidateNested()
+    @Type(() => RegionsDto)
+    regions: RegionsDto;
+    @ApiProperty({ type: RegionDto, required: false })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => RegionDto)
+    region?: RegionDto;
+    @ApiProperty({ type: OtherProvidersDto })
     @ValidateNested()
     @Type(() => OtherProvidersDto)
     otherProviders: OtherProvidersDto;
+    @ApiProperty({ type: ProductRowsItemsDto, required: false })
+    @IsOptional()
     @ValidateNested()
     @Type(() => ProductRowsItemsDto)
-    rows: ProductRowsItemsDto;
-    @ValidateNested() @Type(() => ProductRowDto) total: ProductRowDto;
+    rows?: ProductRowsItemsDto;
+    @ApiProperty({ type: ProductRowDto })
+    @ValidateNested()
+    @Type(() => ProductRowDto)
+    total: ProductRowDto;
+    @ApiProperty({ type: ProductRowSetDto, required: false })
+    @IsOptional()
     @ValidateNested()
     @Type(() => ProductRowSetDto)
-    productSet: ProductRowSetDto;
+    productSet?: ProductRowSetDto;
 }
 export class ZakupkiOfferCreateDto extends CreateOfferDto {}

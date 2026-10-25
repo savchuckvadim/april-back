@@ -16,7 +16,9 @@ import {
 } from '@lib/call-lib';
 import { CallReportModule } from './call-report/call-report.module';
 import { AgentGateModule } from './agent-gate/agent-gate.module';
+import { PortalSessionApiModule } from '@lib/auth';
 import { BitrixProxyModule } from './bitrix-proxy/bitrix-proxy.module';
+import { FrameProxyModule } from './bitrix-proxy/frame/frame-proxy.module';
 import { MergeDealsModule } from './merge-deals/merge-deals.module';
 import { DuplicatesModule } from './duplicates/duplicates.module';
 import { AppCacheServiceModule } from '@lib/app-cache';
@@ -56,6 +58,10 @@ import { InnModule } from './inn/inn.module';
         AgentGateModule,
         // Agent API: прокси произвольных методов Bitrix (те же ключи агентов)
         BitrixProxyModule,
+        // Сессия фрейма (POST auth/portal-session) и работа «Звонков» через
+        // сервер, когда у сотрудника не хватает прав на портале.
+        PortalSessionApiModule,
+        FrameProxyModule,
         // Объединение сделок: пока заглушка — маршруты и Swagger без логики
         MergeDealsModule,
         // Центральный кэш: сервисный модуль без контроллера, чтобы роуты

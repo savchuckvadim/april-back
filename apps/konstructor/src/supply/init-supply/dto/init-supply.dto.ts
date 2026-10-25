@@ -78,22 +78,37 @@ export class InitSupplyDto {
     @IsString({ message: 'domain must be a string' })
     domain: string;
 
-    @ApiProperty({ description: 'RPA ID of the supply' })
+    @ApiProperty({
+        description: 'RPA ID of the supply',
+        type: Number,
+        nullable: true,
+        required: false,
+    })
     @IsOptional()
     @IsNumber()
     rpa_id: number | null;
 
-    @ApiProperty({ description: 'ID of the provider' })
+    @ApiProperty({ description: 'ID of the provider', type: Number })
     @IsOptional()
     @IsNumber()
     providerId: number;
 
-    @ApiProperty({ description: 'User ID of the supply' })
+    @ApiProperty({
+        description: 'User ID of the supply',
+        type: Number,
+        nullable: true,
+        required: false,
+    })
     @IsOptional()
     @IsNumber()
     userId: number | null;
 
-    @ApiProperty({ description: 'Company ID of the supply' })
+    @ApiProperty({
+        description: 'Company ID of the supply',
+        type: Number,
+        nullable: true,
+        required: false,
+    })
     @IsOptional()
     @IsNumber()
     companyId: number | null;
@@ -103,17 +118,27 @@ export class InitSupplyDto {
     @IsString()
     companyName: string = '';
 
-    @ApiProperty({ description: 'Base deal ID of the supply' })
+    @ApiProperty({
+        description: 'Base deal ID of the supply',
+        type: Number,
+        nullable: true,
+        required: false,
+    })
     @IsOptional()
     @IsNumber()
     dealId: number | null;
 
-    @ApiProperty({ description: 'Service smart ID of the supply' })
+    @ApiProperty({
+        description: 'Service smart ID of the supply',
+        type: Number,
+        nullable: true,
+        required: false,
+    })
     @IsOptional()
     @IsNumber()
     serviceSmartId: number | null;
 
-    @ApiProperty({ description: 'Contacts ', type: ContactIdDto })
+    @ApiProperty({ description: 'Contacts ', type: [ContactIdDto] })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => ContactIdDto)
@@ -162,7 +187,7 @@ export class InitSupplyDto {
 
     @ApiProperty({
         description: 'Supply report form fields',
-        type: SupplyReportDto,
+        type: [SupplyReportDto],
     })
     @IsArray()
     @ValidateNested({ each: true })
@@ -198,12 +223,15 @@ export class InitSupplyDto {
     @IsString({ message: 'clientArmId must be a string' })
     clientArmId: string;
 
-    @ApiProperty({ description: 'Supply', type: ProductRowSupplyDto })
+    @ApiProperty({ description: 'Supply', type: SupplyDto })
     @ValidateNested()
     @Type(() => SupplyDto)
     supply: SupplyDto;
 
-    @ApiProperty({ description: 'Total sum', type: Number })
+    @ApiProperty({
+        description: 'Итоговая строка (массив из одной)',
+        type: [ProductRowDto],
+    })
     @IsArray()
     @ValidateNested({
         each: true,

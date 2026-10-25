@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
-import type { RqFieldTemplate } from '@/apps/rq/install';
+import type { RqFieldTemplate } from '@lib/rq-lib/install';
 import { RqFieldSyncResultDto } from '../dto/rq-response.dto';
 
 /**

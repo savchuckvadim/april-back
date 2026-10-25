@@ -68,7 +68,11 @@ export class ContracPortaltDto {
     @IsString({ message: 'ContracPortaltDto created_at must be a string' })
     created_at: string;
 
-    @ApiProperty({ description: 'Updated at of the contract' })
+    @ApiProperty({
+        description: 'Updated at of the contract',
+        type: String,
+        nullable: true,
+    })
     @IsOptional()
     @IsString({ message: 'ContracPortaltDto updated_at must be a string' })
     updated_at: string | null;
@@ -140,7 +144,10 @@ export class ContractDto {
     @Type(() => ContractMeasureDto)
     portalMeasure: ContractMeasureDto;
 
-    @ApiProperty({ description: 'Measure code of the contract' })
+    @ApiProperty({
+        description:
+            'Код единицы измерения в Bitrix портала (portal_measure.bitrixId) — уходит в productRows сделки',
+    })
     @IsNumber()
     measureCode: number;
 

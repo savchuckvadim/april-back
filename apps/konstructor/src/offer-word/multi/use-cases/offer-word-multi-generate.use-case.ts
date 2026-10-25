@@ -1,4 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { PBXService } from '@lib/pbx';
+import { COMPLECT_VARIANT_STAGE } from '@lib/portal-lib/pbx/pbx-complect-variant-smart';
+import { ComplectVariantLifecycleService } from '@app/konstructor/modules/complect-variant-lifecycle';
 import { InnerDealService } from '@app/konstructor/modules/inner-deal/services/inner-deal.service';
 import { OfferTemplateService } from '@app/konstructor/modules/offer-template/offer-template';
 import { OfferBxTimelineService } from '../../services/bitrix/offer-bx-timeline.service';
@@ -18,7 +21,10 @@ import {
  */
 @Injectable()
 export class OfferWordMultiGenerateUseCase {
+    private readonly logger = new Logger(OfferWordMultiGenerateUseCase.name);
+
     constructor(
+        private readonly pbx: PBXService,
         private readonly buildService: OfferWordMultiBuildService,
         private readonly innerDealService: InnerDealService,
         private readonly timelineService: OfferBxTimelineService,
@@ -26,6 +32,37 @@ export class OfferWordMultiGenerateUseCase {
         private readonly offerWordCoreGenerate: OfferWordCoreGenerateService,
         private readonly offerTemplateService: OfferTemplateService,
     ) {}
+
+    /**
+     * Стадия `cvar_offer` участникам КП (README lifecycle, п.1): точка одна —
+     * ручка генерации, она знает итоговый состав. Best-effort: сбой стадий не
+     * ломает КП, он уже сохранён в Битрикс.
+     */
+    private async markVariantsOffer(
+        domain: string,
+        dto: OfferWordMultiGenerateDto,
+    ): Promise<void> {
+        const ids = (dto.variants ?? [])
+            .map(variant => Number(variant.variantSmartId))
+            .filter(id => Number.isFinite(id) && id > 0);
+        if (!ids.length) return;
+        try {
+            const { bitrix, PortalModel } = await this.pbx.init(domain);
+            const lifecycle = new ComplectVariantLifecycleService(
+                bitrix,
+                PortalModel,
+            );
+            await lifecycle.markStageForward(
+                domain,
+                ids,
+                COMPLECT_VARIANT_STAGE.OFFER,
+            );
+        } catch (error) {
+            this.logger.warn(
+                `${domain}: стадия КП вариантам не проставлена: ${error instanceof Error ? error.message : String(error)}`,
+            );
+        }
+    }
 
     async execute(
         dto: OfferWordMultiGenerateDto,
@@ -44,6 +81,8 @@ export class OfferWordMultiGenerateUseCase {
             ];
 
             await this.saveTemplateInDeal(domain, dealId, dto.templateId);
+            // участники получают стадию «КП» (только вперёд: договор обратно в КП не уходит)
+            await this.markVariantsOffer(domain, dto);
 
             const saveResult =
                 await this.bxDocumentSaveFlowService.saveDocuments({

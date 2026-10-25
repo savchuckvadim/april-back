@@ -1,5 +1,9 @@
 import { IBXDeal, IBXProductRowRow } from '@lib/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import type {
+    IField,
+    IPSmart,
+} from '@lib/portal-lib/portal/interfaces/portal.interface';
 import {
     PBX_SALES_KONSTRUCTOR_FIELDS,
     PbxSalesKonstructorFieldCode,
@@ -39,6 +43,53 @@ export interface ResolvedDealFields {
  */
 export class DealFieldResolverService {
     constructor(private readonly portalModel: PortalModel) {}
+
+    /**
+     * Поля элемента смарта: ключи — camelCase (`ufCrm…`), как их принимает
+     * crm.item.update; поле ищется по коду в `bitrixfields` смарта. Неоднозначный
+     * код (consalting) разбирается по appType через канон, как у сделки.
+     */
+    resolveSmartFields(
+        fields: DealSendFieldDto[],
+        smart: IPSmart,
+    ): {
+        fields: Record<string, DealSendFieldDto['value']>;
+        skipped: SkippedDealField[];
+    } {
+        const resolved: Record<string, DealSendFieldDto['value']> = {};
+        const skipped: SkippedDealField[] = [];
+        for (const field of fields) {
+            const candidates = smart.bitrixfields.filter(
+                item => item.code === field.code,
+            );
+            let portalField: IField | undefined = candidates[0];
+            if (candidates.length > 1) {
+                const canon = PBX_SALES_KONSTRUCTOR_FIELDS.find(
+                    entry =>
+                        entry.code === field.code &&
+                        entry.appType === field.appType,
+                );
+                portalField = canon
+                    ? (candidates.find(
+                          item => String(item.bitrixId) === String(canon.smart),
+                      ) ?? candidates[0])
+                    : undefined;
+                if (!portalField) {
+                    skipped.push({
+                        code: field.code,
+                        reason: 'ambiguous_code',
+                    });
+                    continue;
+                }
+            }
+            if (!portalField?.bitrixCamelId) {
+                skipped.push({ code: field.code, reason: 'not_on_portal' });
+                continue;
+            }
+            resolved[portalField.bitrixCamelId] = field.value;
+        }
+        return { fields: resolved, skipped };
+    }
 
     resolve(fields: DealSendFieldDto[]): ResolvedDealFields {
         const resolved: Partial<IBXDeal> = {};

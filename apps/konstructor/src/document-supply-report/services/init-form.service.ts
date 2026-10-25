@@ -4,6 +4,7 @@ import { PBXService } from '@lib/pbx';
 import { ProviderService } from '@lib/portal-lib/konstructor/provider';
 import { getErrorString } from '@lib/shared';
 import { DocumentSupplyInitFormDto } from '../dto/document-supply-init-form.dto';
+import { SupplyReportFormRequestDto } from '../dto/supply-report-form.dto';
 import { CONTRACT_LTYPE } from '../../document-generate/type/contract.type';
 import { ProductRowDto } from '../../document-generate/dto/product-row/product-row.dto';
 import { ProductDto } from '../../document-generate/dto/product/product.dto';
@@ -15,6 +16,10 @@ import {
     SupplyReportFormField,
 } from '../lib/supply-report-form';
 import { SupplyReportTemplateSourceService } from './template/supply-report-template-source.service';
+import { ContractSpecificationFormService } from '../../contract/specification-form/services/contract-specification-form.service';
+import { ComplectDto } from '../../document-generate/dto/complect/complect.dto';
+import { FormFieldDto } from '../../document-generate/dto/form-field/form-field.dto';
+import { ContractSpecificationItemDto } from '../../document-generate/dto/specification/specification.dto';
 
 /** Реквизит компании из битрикса, в том виде, в котором его отдаёт REST. */
 interface BxRequisiteRaw {
@@ -47,6 +52,7 @@ export class InitFormService {
         private readonly pbx: PBXService,
         private readonly provider: ProviderService,
         private readonly templateSource: SupplyReportTemplateSourceService,
+        private readonly contractForm: ContractSpecificationFormService,
     ) {}
 
     /**
@@ -135,6 +141,22 @@ export class InitFormService {
     }
 
     /**
+     * Состав формы отчёта о поставке без легаси-слепка конструктора: новый
+     * фронт присылает только то, что нужно подбору портальной настройки.
+     */
+    async formFields(dto: SupplyReportFormRequestDto): Promise<SupplyReportFormField[]> {
+        return getSupplyReportFormFields(
+            await this.getFieldOverrides({
+                domain: dto.domain,
+                providerId: dto.providerId,
+                contractType: dto.contractType,
+                clientType: dto.clientType,
+                supplyType: dto.supplyType,
+            }),
+        );
+    }
+
+    /**
      * Портальная настройка состава формы отчёта.
      *
      * Меняет ТОЛЬКО `isRequired` у полей, которые и так есть в коде
@@ -147,7 +169,10 @@ export class InitFormService {
      * флаге резолвер не вызывается вовсе.
      */
     private async getFieldOverrides(
-        dto: DocumentSupplyInitFormDto,
+        dto: Pick<
+            DocumentSupplyInitFormDto,
+            'domain' | 'providerId' | 'contractType' | 'clientType' | 'supplyType'
+        >,
     ): Promise<SupplyReportFieldOverrides | undefined> {
         if (!this.templateSource.isDbLookupEnabled()) {
             return undefined;
@@ -228,28 +253,18 @@ export class InitFormService {
         }
     }
 
-    /**
-     * Общая форма договора.
-     *
-     * НЕ ПЕРЕНЕСЕНО из Laravel (`SupplyController::getContractGeneralForm`,
-     * строки 2531-2712). Пока пусто — фронт получит пустой блок «Договор».
-     */
+    /** Общая форма договора — порт Laravel getContractGeneralForm (ContractSpecificationFormService). */
     private getContractGeneralForm(
         arows: ProductRowDto[],
         contractQuantity?: number,
-    ): unknown[] {
-        void arows;
-        void contractQuantity;
-        return [];
+    ): FormFieldDto[] {
+        return this.contractForm.legacyContractForm(arows, contractQuantity);
     }
 
     /**
-     * Спецификация договора.
-     *
-     * НЕ ПЕРЕНЕСЕНО из Laravel (`SupplyController::getSpecification`,
-     * строки 2712-3512, ~800 строк). `paymentLtPacketString` принимается уже
-     * сейчас — это тринадцатый аргумент Laravel-версии, чтобы при переносе не
-     * пришлось снова трогать DTO и фронт.
+     * Спецификация договора — порт Laravel getSpecification
+     * (ContractSpecificationFormService.legacySpecification). Состав и порядок
+     * строк легаси, фильтра нет — его делал старый фронт.
      */
     private getSpecification(
         currentComplect: string,
@@ -265,21 +280,22 @@ export class InitFormService {
         contractProductName?: string,
         total?: ProductRowDto,
         paymentLtPacketString?: string,
-    ): unknown[] {
+    ): ContractSpecificationItemDto[] {
         void currentComplect;
-        void products;
-        void consaltingProduct;
         void lt;
         void starProduct;
-        void contractType;
         void contract;
-        void arows;
-        void contractQuantity;
-        void documentInfoblocks;
         void contractProductName;
         void total;
-        void paymentLtPacketString;
-        return [];
+        return this.contractForm.legacySpecification({
+            products: products as unknown as Array<Record<string, unknown>>,
+            consaltingProduct,
+            contractType,
+            rows: arows,
+            contractCoefficient: Number(contractQuantity) || 1,
+            documentInfoblocks: (documentInfoblocks ?? []) as ComplectDto[],
+            paymentLtPacketString,
+        });
     }
 
     /**

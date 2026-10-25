@@ -60,6 +60,12 @@ export abstract class InnerDealRepository {
         domain: string,
         dealId: number,
     ): Promise<BxDocumentDeal[]>;
+    /**
+     * Библиотека заготовок портала: избранное и акции (kind favorite|promotion,
+     * легаси-избранное isFavorite без kind) + глобальные акции (portalId IS NULL).
+     * Видимость по пользователю фильтрует сервис.
+     */
+    abstract listLibrary(portalId: bigint | null): Promise<BxDocumentDeal[]>;
     abstract findPortalIdByDomain(domain: string): Promise<bigint | null>;
     abstract findByDomain(domain: string): Promise<BxDocumentDeal[] | null>;
 

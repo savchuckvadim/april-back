@@ -1,3 +1,5 @@
+import { clientTitleOrNull } from '../../../shared/client-title';
+
 type BxRow = Record<string, unknown>;
 
 const text = (raw: unknown): string | null => {
@@ -19,6 +21,8 @@ const text = (raw: unknown): string | null => {
  * остаётся у ХО-сделки «ОП Холодные» и у задачи обзвона.
  *
  * Порядок: компания клиента → название компании из лида → название лида.
+ * Номер вместо названия (ИНН в «Название компании» лида) пропускается —
+ * см. {@link clientTitleOrNull}.
  * Существующей сделке название не меняется вовсе.
  */
 export const baseDealTitle = (input: {
@@ -26,7 +30,7 @@ export const baseDealTitle = (input: {
     lead: BxRow | null;
     leadId: number;
 }): string =>
-    text(input.company?.TITLE) ??
-    text(input.lead?.COMPANY_TITLE) ??
+    clientTitleOrNull(input.company?.TITLE) ??
+    clientTitleOrNull(input.lead?.COMPANY_TITLE) ??
     text(input.lead?.TITLE) ??
     `Лид ${input.leadId}`;

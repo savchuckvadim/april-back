@@ -158,4 +158,73 @@ export class CreateSupplyDto {
     @IsString()
     @IsOptional()
     lcontractPropEmail?: string | null;
+    @ApiProperty({
+        description: 'Договор услуг: носитель (prop1), шаблон',
+        required: false,
+        nullable: true,
+        type: String,
+    })
+    @IsString()
+    @IsOptional()
+    contractProp1?: string | null;
+
+    @ApiProperty({
+        description: 'Договор услуг: способ доставки (prop2), шаблон',
+        required: false,
+        nullable: true,
+        type: String,
+    })
+    @IsString()
+    @IsOptional()
+    contractProp2?: string | null;
+
+    @ApiProperty({
+        description: 'Договор услуг: количество поставок ({n} или «Флэш»)',
+        required: false,
+        nullable: true,
+        type: String,
+    })
+    @IsString()
+    @IsOptional()
+    contractPropSuppliesQuantity?: string | null;
+
+    @ApiProperty({
+        description: 'Текст поставки для КП, шаблон («на {n} {plural:…}»)',
+        required: false,
+        nullable: true,
+        type: String,
+    })
+    @IsString()
+    @IsOptional()
+    quantityForKp?: string | null;
+
+    @ApiProperty({
+        description: 'Лицензионный договор: prop2, шаблон',
+        required: false,
+        nullable: true,
+        type: String,
+    })
+    @IsString()
+    @IsOptional()
+    lcontractProp2?: string | null;
+
+    @ApiProperty({
+        description: 'Абонентский договор: название поставки, шаблон',
+        required: false,
+        nullable: true,
+        type: String,
+    })
+    @IsString()
+    @IsOptional()
+    acontractName?: string | null;
+
+    @ApiProperty({
+        description: 'Абонентский договор: комментарий, шаблон',
+        required: false,
+        nullable: true,
+        type: String,
+    })
+    @IsString()
+    @IsOptional()
+    acontractPropComment?: string | null;
 }

@@ -22,7 +22,10 @@ import { RecipientDto } from '@app/konstructor/document-generate';
 import { formatRuble } from '../../document-generate/lib/rubles.util';
 import { PBXService } from '@lib/pbx/pbx.service';
 
-import { ProviderDto } from '@lib/portal-lib/konstructor/provider';
+import {
+    ProviderDto,
+    ProviderService,
+} from '@lib/portal-lib/konstructor/provider';
 import { DocumentTotalRowService } from '../../document-generate';
 import { BxTimelinePusherService } from '../../bx-timeliene-pusher/bx-timeline-pusher.service';
 import { InfoblocksRenderDataService } from '../../document-generate/infoblocks/infoblock-render-data.service';
@@ -46,6 +49,7 @@ export class ZakupkiOfferCreateService {
         // private readonly documentInfoblockService: DocumentInfoblockService,
         private readonly infoblocksRenderDataService: InfoblocksRenderDataService,
         private readonly totalRowService: DocumentTotalRowService,
+        private readonly providerService: ProviderService,
     ) {
         dayjs.extend(localizedFormat);
         dayjs.extend(utc);
@@ -82,7 +86,9 @@ export class ZakupkiOfferCreateService {
         this.documentNumber = documentNumber;
         this.documentName = `3 КП ${dto.total.shortName} ${documentNumber}.docx`;
 
-        const providerData = this.getProviderData(dto.provider);
+        const providerData = this.getProviderData(
+            await this.resolveProvider(dto),
+        );
         const otherProvider1Data = this.getProviderOtherData(
             dto.otherProviders,
             'provider1',
@@ -181,7 +187,29 @@ export class ZakupkiOfferCreateService {
         const link = `${this.baseUrl}${rootLink}`;
         return link;
     }
-    private getProviderData(providerInitData: ProviderDto) {
+    /**
+     * Наш поставщик: легаси-фронт присылает его целиком, новый — только
+     * providerId (реквизиты поставщика на фронте не нужны).
+     */
+    private async resolveProvider(
+        dto: ZakupkiOfferCreateDto,
+    ): Promise<Pick<ProviderDto, 'rq'>> {
+        if (dto.provider) return dto.provider;
+        if (!dto.providerId) {
+            throw new Error(
+                'zakupki-offer: не передан ни provider, ни providerId',
+            );
+        }
+        const rq = await this.providerService.findById(dto.providerId);
+        if (!rq) {
+            throw new Error(
+                `zakupki-offer: поставщик ${dto.providerId} не найден`,
+            );
+        }
+        return { rq: rq as unknown as ProviderDto['rq'] };
+    }
+
+    private getProviderData(providerInitData: Pick<ProviderDto, 'rq'>) {
         const rq = providerInitData.rq;
         const fullname = rq.shortname;
         const address = rq.registredAdress;

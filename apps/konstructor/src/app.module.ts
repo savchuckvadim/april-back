@@ -9,6 +9,8 @@ import { TelegramModule } from '@lib/telegram/telegram.module';
 import { KonstructorModule } from './konstructor.module';
 import { OfferWordModule } from './offer-word/offer-word.module';
 import { DocumentSupplyReportModule } from './document-supply-report/document-supply-report.module';
+import { ZakupkiSettingsModule } from './modules/zakupki-settings/zakupki-settings.module';
+import { KonstructorAppSettingsModule } from './modules/app-settings/app-settings.module';
 // Справочник шаблонов отчёта о поставке (CRUD для админки). Подбор шаблона
 // при генерации живёт в общем резолвере document-template, здесь — только
 // ведение справочника; строка шаблона в этом домене опциональна.
@@ -32,6 +34,10 @@ import { ContractTemplateModule } from './modules/contract-template';
 // зовёт его на этом хосте, а админке он нужен для выбора пользователя,
 // от лица которого настраиваются шаблоны КП.
 import { BxDepartmentModule } from '@lib/bx-department/bx-department.module';
+import { AppCacheModule } from '@lib/app-cache';
+// Реквизиты компании (rq/get_rq|store_rq|update_address|case): тот же модуль,
+// что в apps/rq; фронт конструктора ходит сюда через nest-konstructor-api.
+import { RqModule } from '@lib/rq-lib';
 // Read-only роуты «какой шаблон будет выбран и почему» + диагностика
 // неоднозначности (konstructor/templates/resolve/*, /diagnostics/ambiguous).
 // Только контроллер: сам резолвер живёт в DocumentTemplateModule, который
@@ -76,6 +82,10 @@ import { DocumentTemplatePublicModule } from '@lib/portal-lib/konstructor/docume
         KonstructorModule,
         OfferWordModule,
         DocumentSupplyReportModule,
+        // «3 КП для торгов»: настройки поставщиков 1/2 (замена Laravel zakupki/*)
+        ZakupkiSettingsModule,
+        // портальные настройки приложения для фрейма (флаги вроде zakupki_enabled)
+        KonstructorAppSettingsModule,
         SupplyReportTemplateModule,
         ProviderPublicModule,
         TemplateBasePublicModule,
@@ -83,6 +93,10 @@ import { DocumentTemplatePublicModule } from '@lib/portal-lib/konstructor/docume
         ContractTemplateModule,
         BxDepartmentModule,
         DocumentTemplatePublicModule,
+        // Центральный кэш настроек (Redis + app_cache): поставщик по умолчанию,
+        // опции КП и прочие пользовательские настройки конструктора
+        AppCacheModule,
+        RqModule,
     ],
     providers: [GlobalExceptionFilter],
 })

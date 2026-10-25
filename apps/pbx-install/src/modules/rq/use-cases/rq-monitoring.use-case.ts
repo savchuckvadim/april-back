@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
 import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
 import { PortalRqService } from '@lib/portal-lib/pbx-domain/portal-rq';
-import { RQ_FIELD_TEMPLATE, RQ_PRESET_TEMPLATE } from '@/apps/rq/install';
+import { RQ_FIELD_TEMPLATE, RQ_PRESET_TEMPLATE } from '@lib/rq-lib/install';
 import {
     RqFieldMonitorRowDto,
     RqMonitoringResponseDto,

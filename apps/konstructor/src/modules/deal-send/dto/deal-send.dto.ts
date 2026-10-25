@@ -50,6 +50,14 @@ export const DEAL_SEND_FIELD_APP_TYPES = Object.values(
 );
 
 const DEAL_CATEGORY_CODES = Object.values(PbxDealCategoryCodeEnum);
+/** Вид договора главной строки — выбирает тексты поставки (услуги / лицензионный / абонентский). */
+export const DEAL_SEND_CONTRACT_KINDS = [
+    'service',
+    'lic',
+    'abon',
+    'key',
+] as const;
+export type DealSendContractKind = (typeof DEAL_SEND_CONTRACT_KINDS)[number];
 
 /**
  * Значение поля сделки в семантике конструктора: код из pbx-канона, а не
@@ -191,6 +199,51 @@ export class DealSendProductRowDto {
     sort?: number;
 }
 
+/** Куда писать: сделка (по умолчанию) или элемент смарта, привязанный к сделке. */
+export const DEAL_SEND_TARGET_KINDS = ['deal', 'smart'] as const;
+export type DealSendTargetKind = (typeof DEAL_SEND_TARGET_KINDS)[number];
+
+export class DealSendTargetDto {
+    @ApiProperty({
+        description:
+            'deal — поля и строки в сделку; smart — в элемент смарта (сервисный отдел: «предложение на будущий период»)',
+        enum: DEAL_SEND_TARGET_KINDS,
+        example: 'smart',
+    })
+    @IsIn(DEAL_SEND_TARGET_KINDS)
+    kind: DealSendTargetKind;
+
+    @ApiProperty({
+        description: 'Тип смарта в портальной схеме (service_offer)',
+        type: String,
+        required: false,
+    })
+    @IsOptional()
+    @IsString()
+    smartType?: string;
+
+    @ApiProperty({
+        description:
+            'Элемент смарта; не передан — будет создан и привязан к сделке (parentId2)',
+        type: Number,
+        nullable: true,
+        required: false,
+    })
+    @IsOptional()
+    @IsNumber()
+    smartId?: number | null;
+
+    @ApiProperty({
+        description:
+            'Название элемента смарта («Комплект · поставка · договор»)',
+        type: String,
+        required: false,
+    })
+    @IsOptional()
+    @IsString()
+    title?: string;
+}
+
 /**
  * Отправка сделки из конструктора в Bitrix.
  *
@@ -208,6 +261,7 @@ export class DealSendDto {
         description: 'Сделка. Не передана — сделка будет создана',
         required: false,
         nullable: true,
+        type: Number,
     })
     @IsOptional()
     @IsInt()
@@ -218,13 +272,19 @@ export class DealSendDto {
         description: 'Ответственный',
         required: false,
         nullable: true,
+        type: Number,
     })
     @IsOptional()
     @IsInt()
     @Type(() => Number)
     userId?: number | null;
 
-    @ApiProperty({ description: 'Компания', required: false, nullable: true })
+    @ApiProperty({
+        description: 'Компания',
+        required: false,
+        nullable: true,
+        type: Number,
+    })
     @IsOptional()
     @IsInt()
     @Type(() => Number)
@@ -255,6 +315,23 @@ export class DealSendDto {
     @IsBoolean()
     opened?: boolean;
 
+    @ApiProperty({
+        description:
+            'Код поставки главной строки (internet_5, proxima_flash, X-ОД x_internet_7): по нему бэк подставляет договорные тексты поставки (supply_for_contract, note, note_3, hdd, way, logins_quantity, contract_supply_prop_q, quantity_for_kp), если они не присланы в fields',
+        required: false,
+    })
+    @IsOptional()
+    @IsString()
+    supplyCode?: string;
+    @ApiProperty({
+        description:
+            'Вид договора главной строки — какие тексты поставки брать; по умолчанию service',
+        enum: DEAL_SEND_CONTRACT_KINDS,
+        required: false,
+    })
+    @IsOptional()
+    @IsIn(DEAL_SEND_CONTRACT_KINDS)
+    contractKind?: DealSendContractKind;
     @ApiProperty({ type: [DealSendFieldDto], description: 'Поля сделки' })
     @IsArray()
     @ValidateNested({ each: true })
@@ -271,6 +348,16 @@ export class DealSendDto {
     @ValidateNested({ each: true })
     @Type(() => DealSendProductRowDto)
     productRows?: DealSendProductRowDto[];
+
+    @ApiProperty({
+        description: 'Куда писать; не передан — в сделку',
+        type: DealSendTargetDto,
+        required: false,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => DealSendTargetDto)
+    target?: DealSendTargetDto;
 }
 
 /**
@@ -318,4 +405,13 @@ export class DealSendResponseDto {
         type: [SkippedDealFieldDto],
     })
     skipped: SkippedDealFieldDto[];
+
+    @ApiProperty({
+        description:
+            'Элемент смарта, в который записали (target.kind = smart); иначе null',
+        type: Number,
+        nullable: true,
+        required: false,
+    })
+    smartId?: number | null;
 }

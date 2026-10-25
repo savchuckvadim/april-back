@@ -8,6 +8,7 @@ import { LibreOfficeModule } from '@app/konstructor/modules/libre-office/libre-o
 import { DocumentGenerateModule } from '../document-generate/document-generate.module';
 import { GarantModule } from '@lib/garant/garant.module';
 import { QueueModule } from '@lib/queue/queue.module';
+import { ProviderModule } from '@lib/portal-lib/konstructor/provider';
 import { ZakupkiOfferProcessor } from './queue/zakupki-offer.processor';
 import { ZakupkiOfferQueueService } from './services/zukupki-offer.queue-service';
 @Module({
@@ -19,6 +20,8 @@ import { ZakupkiOfferQueueService } from './services/zukupki-offer.queue-service
         GarantModule,
         LibreOfficeModule,
         DocumentGenerateModule,
+        // наш поставщик по providerId (новый фронт не шлёт его целиком)
+        ProviderModule,
     ],
     controllers: [ZakupkiOfferController],
     providers: [

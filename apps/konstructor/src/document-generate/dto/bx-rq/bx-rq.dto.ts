@@ -12,7 +12,7 @@ import { FormFieldDto } from '../form-field/form-field.dto';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RQFieldDto extends FormFieldDto implements RqItem<RQ_ITEM_CODE> {
-    @ApiProperty({ description: 'Code of the RQ' })
+    @ApiProperty({ description: 'Code of the RQ', enum: RQ_ITEM_CODE, enumName: 'RqItemCode' })
     @IsEnum(RQ_ITEM_CODE, {
         message: 'RQFieldDto code must be a valid RQ_ITEM_CODE',
     })
@@ -23,7 +23,7 @@ export class ARQFieldDto
     extends FormFieldDto
     implements RqItem<ADDRESS_RQ_ITEM_CODE>
 {
-    @ApiProperty({ description: 'Code of the RQ' })
+    @ApiProperty({ description: 'Code of the RQ', enum: ADDRESS_RQ_ITEM_CODE, enumName: 'AddressRqItemCode' })
     @IsEnum(ADDRESS_RQ_ITEM_CODE, {
         message: 'ARQFieldDto code must be a valid ADDRESS_RQ_ITEM_CODE',
     })
@@ -34,7 +34,7 @@ export class BRQFieldDto
     extends FormFieldDto
     implements RqItem<BANK_RQ_ITEM_CODE>
 {
-    @ApiProperty({ description: 'Code of the RQ' })
+    @ApiProperty({ description: 'Code of the RQ', enum: BANK_RQ_ITEM_CODE, enumName: 'BankRqItemCode' })
     @IsEnum(BANK_RQ_ITEM_CODE, {
         message: 'BRQFieldDto code must be a valid BANK_RQ_ITEM_CODE',
     })
@@ -42,23 +42,21 @@ export class BRQFieldDto
 }
 
 export class AddressRqItemDto {
-    @ApiProperty({ description: 'AddressRqItemDto anchor_id must be a number' })
+    @ApiProperty({ description: 'ID реквизита-владельца адреса', type: Number })
     @IsNumber()
     anchor_id: number;
 
-    @ApiProperty({
-        description: 'AddressRqItemDto type_id must be a valid BX_ADDRESS_TYPE',
-    })
+    @ApiProperty({ description: 'Тип адреса Bitrix', enum: BX_ADDRESS_TYPE, enumName: 'BxAddressType' })
     @IsEnum(BX_ADDRESS_TYPE, {
         message: 'AddressRqItemDto type_id must be a valid BX_ADDRESS_TYPE',
     })
     type_id: BX_ADDRESS_TYPE;
 
-    @ApiProperty({ description: 'AddressRqItemDto name_type must be a string' })
+    @ApiProperty({ description: 'Название типа адреса', type: String })
     @IsString({ message: 'AddressRqItemDto name_type must be a string' })
     name_type: string;
 
-    @ApiProperty({ description: 'AddressRqItemDto fields must be an array' })
+    @ApiProperty({ description: 'Поля адреса', type: [ARQFieldDto] })
     @IsArray({ message: 'AddressRqItemDto fields must be an array' })
     @ValidateNested({
         each: true,
@@ -70,7 +68,7 @@ export class AddressRqItemDto {
 }
 
 export class BxRqAddressDto {
-    @ApiProperty({ description: 'Items of the RQ' })
+    @ApiProperty({ description: 'Адреса реквизита', type: [AddressRqItemDto] })
     @IsArray({ message: 'BxRqAddressDto items must be an array' })
     @ValidateNested({
         each: true,
@@ -86,7 +84,7 @@ export class BxRqBankItemDto {
     @IsNumber()
     id: number;
 
-    @ApiProperty({ description: 'Fields of the RQ' })
+    @ApiProperty({ description: 'Поля банка', type: [BRQFieldDto] })
     @IsArray({ message: 'BxRqBankDto fields must be an array' })
     @ValidateNested({
         each: true,
@@ -97,7 +95,7 @@ export class BxRqBankItemDto {
 }
 
 export class BxRqBankDto {
-    @ApiProperty({ description: 'Current of the RQ' })
+    @ApiProperty({ description: 'Текущий банк', type: BxRqBankItemDto })
     @IsObject()
     @ValidateNested({
         message: 'BxRqBankDto current must be a valid BxRqBankItemDto',
@@ -105,7 +103,7 @@ export class BxRqBankDto {
     @Type(() => BxRqBankItemDto)
     current: BxRqBankItemDto;
 
-    @ApiProperty({ description: 'Items of the RQ' })
+    @ApiProperty({ description: 'Банки реквизита', type: [BxRqBankItemDto] })
     @IsArray({ message: 'BxRqBankDto items must be an array' })
     @ValidateNested({
         each: true,
@@ -116,7 +114,7 @@ export class BxRqBankDto {
 }
 
 export class BxRqDto {
-    @ApiProperty({ description: 'Address of the RQ' })
+    @ApiProperty({ description: 'Адреса', type: BxRqAddressDto })
     @IsObject()
     @ValidateNested({
         message: 'BxRqDto address must be a valid BxRqAddressDto',
@@ -124,7 +122,7 @@ export class BxRqDto {
     @Type(() => BxRqAddressDto)
     address: BxRqAddressDto;
 
-    @ApiProperty({ description: 'Bank of the RQ' })
+    @ApiProperty({ description: 'Банки', type: BxRqBankDto })
     @IsObject()
     @ValidateNested({ message: 'BxRqDto bank must be a valid BxRqBankDto' })
     @Type(() => BxRqBankDto)
@@ -134,7 +132,7 @@ export class BxRqDto {
     @IsNumber()
     preset_id: number;
 
-    @ApiProperty({ description: 'Fields of the RQ' })
+    @ApiProperty({ description: 'Базовые поля реквизита', type: [RQFieldDto] })
     @IsArray({ message: 'BxRqDto fields must be an array' })
     @ValidateNested({
         each: true,

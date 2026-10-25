@@ -74,6 +74,11 @@ describe('ContractGenerateService', () => {
             { findById } as never,
             { getInfoblocks: jest.fn().mockReturnValue({}) } as never,
             { getProducts: jest.fn().mockReturnValue([]) } as never,
+            // тексты поставок: payload проходит как есть
+            {
+                enrichRows: jest.fn(async (rows: unknown[]) => rows),
+                enrichRow: jest.fn(async (row: unknown) => row),
+            } as never,
             { getContractHeaderText: jest.fn().mockReturnValue('') } as never,
             { getRqs: jest.fn().mockReturnValue({}) } as never,
             { getSpecification: jest.fn().mockReturnValue({}) } as never,

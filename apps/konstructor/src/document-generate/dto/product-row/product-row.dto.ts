@@ -8,73 +8,128 @@ import {
     IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
 import { SupplyDto } from '../../../dto/supply.dto';
 import { ProductDto, ProductTypeEnum } from '../product/product.dto';
 import { RowPriceDto } from './product-row-price.dto';
 
 export class RowComplectDto {
-    @IsString() type: string;
-    @IsNumber() number: number;
+    @ApiProperty({ description: 'prof | universal', type: String })
+    @IsString()
+    type: string;
+    @ApiProperty({ description: 'Легаси-номер комплекта', type: Number })
+    @IsNumber()
+    number: number;
 }
 
 export class ProductRowContractDto {
-    @IsString() name: string;
-    @IsNumber() number: number;
+    @ApiProperty({ type: String })
+    @IsString()
+    name: string;
+    @ApiProperty({ description: 'Легаси-номер договора', type: Number })
+    @IsNumber()
+    number: number;
 }
 
 export class ProductRowSupplyDto {
-    @IsString() name: string;
-    @IsString() forkp: string;
-    @IsNumber() number: number;
-    @IsString() type: 'internet' | 'proxima';
+    @ApiProperty({ type: String })
+    @IsString()
+    name: string;
+    @ApiProperty({ description: 'Подпись поставки для КП (quantityForKp)', type: String })
+    @IsString()
+    forkp: string;
+    @ApiProperty({ description: 'Легаси-номер поставки', type: Number })
+    @IsNumber()
+    number: number;
+    @ApiProperty({ description: 'internet | proxima', type: String })
+    @IsString()
+    type: 'internet' | 'proxima';
 
+    @ApiProperty({ type: String, required: false })
     @IsOptional()
     @IsString()
     defaultName?: string;
 
+    @ApiProperty({ type: String, required: false })
     @IsOptional()
     @IsString()
     alternativeName?: string;
 }
 
+/** Строка таблицы конструктора (легаси ProductRowType) — единица документов */
 export class ProductRowDto {
-    @IsNumber() number: number;
-    @IsString() name: string;
-    @IsString() shortName: string;
+    @ApiProperty({ description: 'Легаси-номер строки', type: Number })
+    @IsNumber()
+    number: number;
+    @ApiProperty({ type: String })
+    @IsString()
+    name: string;
+    @ApiProperty({ type: String })
+    @IsString()
+    shortName: string;
+    @ApiProperty({ type: String, required: false })
     @IsOptional()
     @IsString()
     defaultName?: string;
+    @ApiProperty({ type: String, required: false })
     @IsOptional()
     @IsString()
     defaultShortName?: string;
+    @ApiProperty({ type: String, required: false })
     @IsOptional()
     @IsString()
     alternativeName?: string;
+    @ApiProperty({ type: String, required: false })
     @IsOptional()
     @IsString()
     alternativeShortName?: string;
 
-    @IsString() type: string;
+    @ApiProperty({ description: 'general | alternative', type: String })
+    @IsString()
+    type: string;
 
-    @IsNumber() id: number;
-    @IsNumber() setId: number;
-    @IsBoolean() isUpdating: boolean;
-    @IsOptional() @IsEnum(ProductTypeEnum) productType?: ProductTypeEnum;
-    @ValidateNested() @Type(() => RowComplectDto) complect: RowComplectDto;
+    @ApiProperty({ description: 'id строки в сете (0 — главный товар)', type: Number })
+    @IsNumber()
+    id: number;
+    @ApiProperty({ type: Number })
+    @IsNumber()
+    setId: number;
+    @ApiProperty({ type: Boolean })
+    @IsBoolean()
+    isUpdating: boolean;
+    @ApiProperty({ enum: ProductTypeEnum, enumName: 'ProductType', required: false })
+    @IsOptional()
+    @IsEnum(ProductTypeEnum)
+    productType?: ProductTypeEnum;
+    @ApiProperty({ type: RowComplectDto })
+    @ValidateNested()
+    @Type(() => RowComplectDto)
+    complect: RowComplectDto;
+    @ApiProperty({ type: ProductRowContractDto })
     @ValidateNested()
     @Type(() => ProductRowContractDto)
     contract: ProductRowContractDto;
-
+    @ApiProperty({ type: ProductRowSupplyDto, required: false })
     @ValidateNested()
     @IsOptional()
     @Type(() => ProductRowSupplyDto)
     supply?: ProductRowSupplyDto;
-    @ValidateNested() @Type(() => RowPriceDto) price: RowPriceDto;
-    @ValidateNested() @Type(() => ProductDto) product: ProductDto;
-    @ValidateNested() @Type(() => SupplyDto) currentSupply: SupplyDto;
+    @ApiProperty({ type: RowPriceDto })
+    @ValidateNested()
+    @Type(() => RowPriceDto)
+    price: RowPriceDto;
+    @ApiProperty({ type: ProductDto })
+    @ValidateNested()
+    @Type(() => ProductDto)
+    product: ProductDto;
+    @ApiProperty({ type: SupplyDto })
+    @ValidateNested()
+    @Type(() => SupplyDto)
+    currentSupply: SupplyDto;
 }
 
 export class ProductRowsItemsDto {
+    @ApiProperty({ type: [ProductRowDto] })
     @ValidateNested({ each: true })
     @Type(() => ProductRowDto)
     items: ProductRowDto[];

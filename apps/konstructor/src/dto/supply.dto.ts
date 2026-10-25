@@ -4,50 +4,87 @@ import { IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNumberOrString } from '@lib/core/decorators/dto/number-or-string.decorator';
 
+/**
+ * Поставка в payload генерации. Легаси-фронт присылает все тексты договоров
+ * готовыми; новый — только code/type/usersQuantity, тексты бэк резолвит
+ * сам (SupplyTextService), поэтому текстовые поля необязательны.
+ */
 export class SupplyDto {
-    @ApiProperty({ description: 'Contract prop supplies quantity' })
-    @IsNumberOrString()
-    contractPropSuppliesQuantity: number | string;
-
-    @ApiProperty({ description: 'Contract prop 2' })
+    @ApiProperty({
+        description:
+            'Код поставки (internet_5, proxima_flash, X-ОД: x_internet_7)',
+        required: false,
+    })
     @IsOptional()
     @IsString()
-    lcontractProp2: string;
+    code?: string;
 
-    @ApiProperty({ description: 'Contract name' })
-    @IsString()
-    lcontractName: string;
+    @ApiProperty({
+        description: 'Число одновременных доступов',
+        required: false,
+    })
+    @IsOptional()
+    @IsNumber()
+    usersQuantity?: number;
 
-    @ApiProperty({ description: 'Contract prop email' })
+    @ApiProperty({
+        description: 'Contract prop supplies quantity',
+        required: false,
+        oneOf: [{ type: 'number' }, { type: 'string' }],
+    })
+    @IsOptional()
+    @IsNumberOrString()
+    contractPropSuppliesQuantity?: number | string;
+
+    @ApiProperty({ description: 'Contract prop 2', required: false })
+    @IsOptional()
     @IsString()
-    lcontractPropEmail: string;
+    lcontractProp2?: string;
+
+    @ApiProperty({ description: 'Contract name', required: false })
+    @IsOptional()
+    @IsString()
+    lcontractName?: string;
+
+    @ApiProperty({ description: 'Contract prop email', required: false })
+    @IsOptional()
+    @IsString()
+    lcontractPropEmail?: string;
     @ApiProperty({ description: 'Type' })
     @IsString()
     type: string;
 
-    @ApiProperty({ description: 'Contract prop logins quantity' })
+    @ApiProperty({
+        description: 'Contract prop logins quantity',
+        required: false,
+    })
+    @IsOptional()
     @IsString()
-    contractPropLoginsQuantity: string;
+    contractPropLoginsQuantity?: string;
 
     @ApiProperty({ description: 'Number' })
     @IsNumber()
     number: number;
 
-    @ApiProperty({ description: 'Acontract name' })
+    @ApiProperty({ description: 'Acontract name', required: false })
+    @IsOptional()
     @IsString()
-    acontractName: string;
+    acontractName?: string;
 
-    @ApiProperty({ description: 'Contract prop comment' })
+    @ApiProperty({ description: 'Contract prop comment', required: false })
+    @IsOptional()
     @IsString()
-    contractPropComment: string;
+    contractPropComment?: string;
 
-    @ApiProperty({ description: 'Contract prop email' })
+    @ApiProperty({ description: 'Contract prop email', required: false })
+    @IsOptional()
     @IsString()
-    contractPropEmail: string;
+    contractPropEmail?: string;
 
-    @ApiProperty({ description: 'Quantity for KP' })
+    @ApiProperty({ description: 'Quantity for KP', required: false })
+    @IsOptional()
     @IsString()
-    quantityForKp: string;
+    quantityForKp?: string;
 
     @ApiProperty({ description: 'Name' })
     @IsString()
@@ -56,19 +93,22 @@ export class SupplyDto {
     @IsNumber()
     coefficient: number;
 
-    @ApiProperty({ description: 'Acontract prop comment' })
-    @IsString()
-    acontractPropComment: string;
-
-    @ApiProperty({ description: 'Contract name' })
-    @IsString()
-    contractName: string;
-
-    @ApiProperty({ description: 'Contract prop comment' })
-    @IsString()
-    lcontractPropComment: string;
-    @ApiProperty({ description: 'Contract prop 1' })
+    @ApiProperty({ description: 'Acontract prop comment', required: false })
     @IsOptional()
     @IsString()
-    contractProp1: string;
+    acontractPropComment?: string;
+
+    @ApiProperty({ description: 'Contract name', required: false })
+    @IsOptional()
+    @IsString()
+    contractName?: string;
+
+    @ApiProperty({ description: 'Contract prop comment', required: false })
+    @IsOptional()
+    @IsString()
+    lcontractPropComment?: string;
+    @ApiProperty({ description: 'Contract prop 1', required: false })
+    @IsOptional()
+    @IsString()
+    contractProp1?: string;
 }

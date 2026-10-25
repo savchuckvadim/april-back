@@ -42,6 +42,8 @@ export {
 } from './portal-session/portal-session.guard';
 export {
     PortalSessionProtected,
+    type PortalSessionProtectedOptions,
+    PORTAL_SESSION_ENFORCED_UNAUTHORIZED_DESCRIPTION,
     PORTAL_SESSION_UNAUTHORIZED_DESCRIPTION,
     PORTAL_SESSION_FORBIDDEN_DESCRIPTION,
 } from './portal-session/portal-session.decorator';

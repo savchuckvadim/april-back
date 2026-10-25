@@ -5,7 +5,7 @@ import {
     PortalRqResponseDto,
     PortalRqService,
 } from '@lib/portal-lib/pbx-domain/portal-rq';
-import { RQ_PRESET_TEMPLATE } from '@/apps/rq/install';
+import { RQ_PRESET_TEMPLATE } from '@lib/rq-lib/install';
 import { SetRqPresetBitrixIdDto } from '../dto/set-rq-preset-bitrix-id.dto';
 
 /**

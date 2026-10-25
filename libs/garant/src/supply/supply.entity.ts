@@ -19,6 +19,13 @@ export class SupplyEntity {
     lcontractName: string | null;
     lcontractPropComment: string | null;
     lcontractPropEmail: string | null;
+    contractProp1: string | null;
+    contractProp2: string | null;
+    contractPropSuppliesQuantity: string | null;
+    quantityForKp: string | null;
+    lcontractProp2: string | null;
+    acontractName: string | null;
+    acontractPropComment: string | null;
     created_at: Date | null;
     updated_at: Date | null;
 }

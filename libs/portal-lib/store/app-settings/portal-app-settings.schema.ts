@@ -1536,7 +1536,18 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             default: 3,
         }),
     },
-    [EnumPortalAppCode.konstructor]: {},
+    [EnumPortalAppCode.konstructor]: {
+        zakupkiEnabled: setting({
+            code: 'zakupki_enabled',
+            name: '«3 КП для торгов»',
+            description:
+                'Показывать в конструкторе блок «3 КП для торгов»: КП от двух ' +
+                'вымышленных поставщиков рядом с нашим (zakupki-offer). ' +
+                'В легаси было включено только на april-garant.bitrix24.ru.',
+            type: 'boolean',
+            default: false,
+        }),
+    },
     [EnumPortalAppCode.skap]: {
         enabled: setting({
             code: 'enabled',

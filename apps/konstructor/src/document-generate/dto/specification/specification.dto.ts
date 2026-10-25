@@ -1,4 +1,5 @@
-import { IsArray, IsString } from 'class-validator';
+import { IsArray, IsEnum } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 import { RqItem } from '../../type/bx-rq.type';
 import { FormFieldDto } from '../form-field/form-field.dto';
 import { Type } from 'class-transformer';
@@ -34,16 +35,24 @@ export enum ContractSpecificationCodeEnum {
     PK_COMMENT1 = 'specification_pk_comment1',
     PK_COMMENT = 'specification_pk_comment',
     COMPLECT_NAME = 'complect_name',
+    /** «Вид поставки» — подпись quantityForKp (легаси contract_spec_products_names_comment) */
+    PRODUCTS_NAMES_COMMENT = 'contract_spec_products_names_comment',
 }
 export class ContractSpecificationItemDto
     extends FormFieldDto
     implements RqItem<ContractSpecificationCodeEnum>
 {
-    @IsString()
+    @ApiProperty({
+        description: 'Код строки спецификации',
+        enum: ContractSpecificationCodeEnum,
+        enumName: 'ContractSpecificationCode',
+    })
+    @IsEnum(ContractSpecificationCodeEnum)
     code: ContractSpecificationCodeEnum;
 }
 
 export class ContractSpecificationDto {
+    @ApiProperty({ description: 'Строки спецификации', type: [ContractSpecificationItemDto] })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => ContractSpecificationItemDto)

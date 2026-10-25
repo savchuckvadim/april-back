@@ -1,4 +1,13 @@
-import { IsString } from 'class-validator';
+import {
+    IsArray,
+    IsEnum,
+    IsNumber,
+    IsOptional,
+    IsString,
+    ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
 import { FormFieldDto } from '@app/konstructor/document-generate/dto/form-field/form-field.dto';
 import { RqItem } from '@app/konstructor/document-generate/type/bx-rq.type';
 
@@ -18,10 +27,45 @@ export enum SupplyReportCodeEnum {
     invoice_result = 'invoice_result',
     current_invoice = 'current_invoice',
 }
+/** Вариант select-поля формы (легаси SelectItem). */
+export class SupplyReportSelectItemDto {
+    @ApiProperty({ type: Number })
+    @IsNumber()
+    id: number;
+
+    @ApiProperty({ type: String })
+    @IsString()
+    code: string;
+
+    @ApiProperty({ type: String })
+    @IsString()
+    name: string;
+
+    @ApiProperty({ type: String })
+    @IsString()
+    title: string;
+}
+
 export class SupplyReportDto
     extends FormFieldDto
     implements RqItem<SupplyReportCodeEnum>
 {
-    @IsString()
+    @ApiProperty({
+        description: 'Код поля формы отчёта о поставке',
+        enum: SupplyReportCodeEnum,
+        enumName: 'SupplyReportCode',
+    })
+    @IsEnum(SupplyReportCodeEnum)
     code: SupplyReportCodeEnum;
+
+    @ApiProperty({
+        description: 'Варианты select-поля',
+        type: [SupplyReportSelectItemDto],
+        required: false,
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => SupplyReportSelectItemDto)
+    items?: SupplyReportSelectItemDto[];
 }

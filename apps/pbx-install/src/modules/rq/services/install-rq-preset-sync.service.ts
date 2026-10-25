@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix';
 import { PortalRqService } from '@lib/portal-lib/pbx-domain/portal-rq';
-import type { RqPresetTemplate } from '@/apps/rq/install';
+import type { RqPresetTemplate } from '@lib/rq-lib/install';
 import { RqPresetSyncResultDto } from '../dto/rq-response.dto';
 import { matchBitrixPreset } from '../utils/rq-preset-match.util';
 

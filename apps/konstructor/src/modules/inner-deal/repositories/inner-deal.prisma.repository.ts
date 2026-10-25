@@ -23,8 +23,9 @@ export class InnerDealPrismaRepository implements InnerDealRepository {
         domain: string,
         dealId: number,
     ): Promise<BxDocumentDeal | null> {
+        // fallback Laravel getDeal — любая запись сделки, но не вариант КП
         return this.prisma.bxDocumentDeal.findFirst({
-            where: { domain, dealId },
+            where: { domain, dealId, smartId: null },
         });
     }
     async findSnapshot(
@@ -33,9 +34,12 @@ export class InnerDealPrismaRepository implements InnerDealRepository {
         serviceSmartId: number | null,
         order: InnerDealSnapshotOrder = 'oldest',
     ): Promise<BxDocumentDeal | null> {
-        // serviceSmartId: null матчит SQL NULL — обычные (не смарт) записи
+        // serviceSmartId: null матчит SQL NULL — обычные (не смарт) записи.
+        // smartId: null обязателен: у сделки, где есть только варианты КП
+        // (строки с smartId), обычный upsert/settings иначе перезаписал бы
+        // строку варианта (баг §2.3 плана переезда).
         return this.prisma.bxDocumentDeal.findFirst({
-            where: { domain, dealId, serviceSmartId },
+            where: { domain, dealId, serviceSmartId, smartId: null },
             orderBy: orderById(order),
         });
     }
@@ -68,6 +72,26 @@ export class InnerDealPrismaRepository implements InnerDealRepository {
         return this.prisma.bxDocumentDeal.findMany({
             where: { domain, dealId, smartId: { not: null } },
             orderBy: { id: 'asc' },
+        });
+    }
+    async listLibrary(portalId: bigint | null): Promise<BxDocumentDeal[]> {
+        const portalRows = portalId
+            ? [
+                  { portalId, kind: { in: ['favorite', 'promotion'] } },
+                  // легаси-избранное Laravel: kind ещё не проставлен
+                  { portalId, kind: null, isFavorite: true },
+              ]
+            : [];
+        return this.prisma.bxDocumentDeal.findMany({
+            where: {
+                isArchived: false,
+                OR: [
+                    ...portalRows,
+                    // акции вендора на все порталы
+                    { portalId: null, kind: 'promotion', visibility: { in: ['global', 'all'] } },
+                ],
+            },
+            orderBy: { id: 'desc' },
         });
     }
     async findPortalIdByDomain(domain: string): Promise<bigint | null> {

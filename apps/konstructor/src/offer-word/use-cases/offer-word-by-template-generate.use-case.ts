@@ -9,6 +9,7 @@ import { BitrixDocumentSaveFlowService } from '../services/bitrix/bitrix-documen
 import { DocumentBuildService } from '../services/document-build.service';
 import { OfferWordCoreGenerateService } from '../services/offer-word-core/offer-word-core-generate.service';
 import { OfferTemplateService } from '@app/konstructor/modules/offer-template/offer-template';
+import { SupplyPayloadEnricherService } from '@app/konstructor/document-generate/supply/supply-payload-enricher.service';
 
 @Injectable()
 export class OfferWordByTemplateGenerateUseCase {
@@ -19,15 +20,23 @@ export class OfferWordByTemplateGenerateUseCase {
         private readonly bxDocumentSaveFlowService: BitrixDocumentSaveFlowService,
         private readonly offerWordCoreGenerate: OfferWordCoreGenerateService,
         private readonly offerTemplateService: OfferTemplateService, // для инкремента счетчика шаблона
+        private readonly supplyEnricher: SupplyPayloadEnricherService,
     ) {}
 
-    async execute(dto: OfferWordByTemplateGenerateDto): Promise<{
+    async execute(input: OfferWordByTemplateGenerateDto): Promise<{
         template: WordTemplate;
         link: IResultDocumentLink;
         renderData: OfferWordCoreGenerateResult['renderData'];
         invoiceLinks: IResultDocumentLink[];
         portalFolderId: number;
     }> {
+        // Подписи поставок для КП — с бэка по code (легаси-тексты сильнее).
+        const dto: OfferWordByTemplateGenerateDto = {
+            ...input,
+            supply: await this.supplyEnricher.enrichSupply(input.supply),
+            rows: await this.supplyEnricher.enrichRows(input.rows),
+            total: await this.supplyEnricher.enrichRow(input.total),
+        };
         const dealId = Number(dto.dealId);
         const domain = dto.domain;
         const onlyBitrixSave = Boolean(dto.onlyBitrixSave) || true;

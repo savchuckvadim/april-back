@@ -5,6 +5,7 @@ import {
 import { BATCH_LINE_BREAK_SYMBOL } from '@lib/bitrix/consts/batch.consts';
 import { BitrixDateTime } from '@lib/shared/lib/date';
 import { bxFieldBool } from '@lib/shared/lib/utils';
+import { clientTitleOrNull } from '../../shared/client-title';
 import { XoIntentModel } from '../../lead-request/intake/xo-intent.model';
 import { XoRoutingModel } from '../../lead-request/intake/xo-routing.model';
 import { COLD_CALL_FORCE_DEFAULT, EnumColdCallForce } from '../dto/cold.dto';
@@ -98,7 +99,20 @@ export function resolveColdCallData(params: {
         'created',
         'xo_created',
     );
-    const name = pick(hook.name, routing?.name, 'name', 'xo_name');
+    const rawName = pick(hook.name, routing?.name, 'name', 'xo_name');
+    /*
+     * Заглушка вместо названия («Холодный обзвон» в поле ХО, ИНН) — берём
+     * название карточки: иначе сделка ХО и задача называются «Холодный
+     * обзвон Холодный обзвон» (garant, 961 сделка за 05–23.10.2026).
+     */
+    const cardTitle = clientTitleOrNull(entityRow?.TITLE);
+    const name =
+        rawName && !clientTitleOrNull(rawName) && cardTitle
+            ? cardTitle
+            : rawName;
+    if (name !== rawName) {
+        signals.push(`name «${rawName}» — заглушка, взято название карточки`);
+    }
 
     let deadline = hook.deadline ?? null;
     if (deadline) {

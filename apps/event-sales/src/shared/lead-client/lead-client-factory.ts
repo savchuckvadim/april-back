@@ -9,6 +9,7 @@ import {
     resultOf,
     Row,
 } from './lead-client.types';
+import { clientTitleOrNull } from '../client-title';
 import { LeadClientCommMatcher } from './lead-client-comm-matcher';
 
 const COMMUNICATION_FIELDS = ['PHONE', 'EMAIL'] as const;
@@ -216,11 +217,8 @@ export class LeadClientFactory {
      * не теряется: его подбирает сбор ИНН по графу сделки.
      */
     private companyTitle(lead: Row): string {
-        const companyTitle = bxFieldText(lead.COMPANY_TITLE);
-        const named =
-            companyTitle && !/^\d+$/.test(companyTitle.replace(/\s/g, ''));
         return (
-            (named ? companyTitle : null) ??
+            clientTitleOrNull(bxFieldText(lead.COMPANY_TITLE)) ??
             bxFieldText(lead.TITLE) ??
             `Лид ${String(lead.ID)}`
         );

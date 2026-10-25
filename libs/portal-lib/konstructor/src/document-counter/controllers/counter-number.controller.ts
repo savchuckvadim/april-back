@@ -13,7 +13,7 @@ import { CounterType } from '../lib/counter-type.enum';
 import { DocumentNumberResponseDto } from '../dto/counter-response.dto';
 import { SetCurrentCounterDto } from '../dto/set-current-counter.dto';
 
-@ApiTags('Document Counter — Numbers')
+@ApiTags('DocumentCounterNumbers')
 @Controller('document-counter')
 export class CounterNumberController {
     constructor(private readonly numberService: CounterNumberService) {}

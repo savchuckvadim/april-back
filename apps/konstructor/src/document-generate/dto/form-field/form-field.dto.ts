@@ -38,22 +38,34 @@ export class DealFieldDto {
     downLoadUrl: string;
 }
 export class FormFieldDto {
-    @ApiProperty({ description: 'Type of the FormFieldDto' })
+    @ApiProperty({
+        description: 'Type of the FormFieldDto',
+        enum: FormFieldTypeEnum,
+        enumName: 'FormFieldType',
+    })
     @IsEnum(FormFieldTypeEnum, {
         message: 'FormFieldDto type must be a valid type',
     })
     type: FormFieldTypeEnum;
 
-    @ApiProperty({ description: 'Name of the FormFieldDto' })
+    @ApiProperty({ description: 'Name of the FormFieldDto', type: String })
     @IsString({ message: 'FormFieldDto name must be a string' })
     name: string;
 
-    @ApiProperty({ description: 'IsRequired of the FormFieldDto' })
+    @ApiProperty({
+        description: 'IsRequired of the FormFieldDto',
+        type: Boolean,
+    })
     @IsOptional()
     @IsBoolean({ message: 'FormFieldDto isRequired must be a boolean' })
     isRequired: boolean;
 
-    @ApiProperty({ description: 'Includes of the FormFieldDto' })
+    @ApiProperty({
+        description: 'Includes of the FormFieldDto',
+        enum: RQ_TYPE,
+        enumName: 'RqClientType',
+        isArray: true,
+    })
     @IsOptional()
     @IsArray({ message: 'FormFieldDto includes must be an array' })
     @IsEnum(RQ_TYPE, {
@@ -62,7 +74,13 @@ export class FormFieldDto {
     })
     includes: RQ_TYPE[]; // You can replace with enum RQ_TYPE if available
 
-    @ApiProperty({ description: 'Supplies of the FormFieldDto' })
+    @ApiProperty({
+        description: 'Supplies of the FormFieldDto',
+        enum: SupplyTypeEnum,
+        enumName: 'SupplyType',
+        isArray: true,
+        required: false,
+    })
     @IsOptional()
     @IsArray({ message: 'FormFieldDto supplies must be an array' })
     @IsEnum(SupplyTypeEnum, {
@@ -72,7 +90,13 @@ export class FormFieldDto {
     })
     supplies?: SupplyTypeEnum[]; // Replace with enum SupplyTypesType if defined
 
-    @ApiProperty({ description: 'ContractType of the FormFieldDto' })
+    @ApiProperty({
+        description: 'ContractType of the FormFieldDto',
+        enum: CONTRACT_LTYPE,
+        enumName: 'CONTRACT_LTYPE',
+        isArray: true,
+        required: false,
+    })
     @IsOptional()
     @IsArray({ message: 'FormFieldDto contractType must be an array' })
     @IsEnum(CONTRACT_LTYPE, {
@@ -82,27 +106,38 @@ export class FormFieldDto {
     })
     contractType?: CONTRACT_LTYPE[]; // Replace with enum CONTRACT_LTYPE if defined
 
-    @ApiProperty({ description: 'Group of the FormFieldDto' })
+    @ApiProperty({
+        description: 'Group of the FormFieldDto',
+        enum: CONTRACT_RQ_GROUP,
+        enumName: 'ContractRqGroup',
+    })
     @IsOptional()
     @IsEnum(CONTRACT_RQ_GROUP, {
         message: 'FormFieldDto group must be a valid CONTRACT_RQ_GROUP',
     })
     group: CONTRACT_RQ_GROUP;
 
-    @ApiProperty({ description: 'IsActive of the FormFieldDto' })
+    @ApiProperty({ description: 'IsActive of the FormFieldDto', type: Boolean })
     @IsBoolean({ message: 'FormFieldDto isActive must be a boolean' })
     isActive: boolean;
 
-    @ApiProperty({ description: 'IsDisable of the FormFieldDto' })
+    @ApiProperty({
+        description: 'IsDisable of the FormFieldDto',
+        type: Boolean,
+    })
     @IsBoolean({ message: 'FormFieldDto isDisable must be a boolean' })
     isDisable: boolean;
 
-    @ApiProperty({ description: 'Order of the FormFieldDto' })
+    @ApiProperty({ description: 'Order of the FormFieldDto', type: Number })
     @IsOptional()
     @IsNumber()
     order: number;
 
-    @ApiProperty({ description: 'Component of the FormFieldDto' })
+    @ApiProperty({
+        description: 'Component of the FormFieldDto',
+        type: String,
+        required: false,
+    })
     @IsOptional()
     @IsString({
         message:
@@ -110,12 +145,24 @@ export class FormFieldDto {
     })
     component?: 'base' | 'contract' | 'invoice' | 'client';
 
-    @ApiProperty({ description: 'IsHidden of the FormFieldDto' })
+    @ApiProperty({
+        description: 'IsHidden of the FormFieldDto',
+        type: Boolean,
+        required: false,
+    })
     @IsOptional()
     @IsBoolean({ message: 'FormFieldDto isHidden must be a boolean' })
     isHidden?: boolean;
 
-    @ApiProperty({ description: 'Value of the FormFieldDto' })
+    @ApiProperty({
+        description:
+            'Value of the FormFieldDto: строка либо объект (select / файл)',
+        nullable: true,
+        oneOf: [
+            { type: 'string' },
+            { type: 'object', additionalProperties: true },
+        ],
+    })
     @IsOptional()
     @IsObjectOrStringOrNull()
     value: string | null | SmartFieldDto | DealFieldDto | PbxFieldItemDto;

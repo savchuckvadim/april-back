@@ -27,6 +27,13 @@ export function createSupplyEntityFromPrisma(
     entity.lcontractName = data.lcontractName;
     entity.lcontractPropComment = data.lcontractPropComment;
     entity.lcontractPropEmail = data.lcontractPropEmail;
+    entity.contractProp1 = data.contractProp1;
+    entity.contractProp2 = data.contractProp2;
+    entity.contractPropSuppliesQuantity = data.contractPropSuppliesQuantity;
+    entity.quantityForKp = data.quantityForKp;
+    entity.lcontractProp2 = data.lcontractProp2;
+    entity.acontractName = data.acontractName;
+    entity.acontractPropComment = data.acontractPropComment;
     entity.created_at = data.created_at;
     entity.updated_at = data.updated_at;
     return entity;

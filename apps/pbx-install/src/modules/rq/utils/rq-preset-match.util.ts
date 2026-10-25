@@ -1,5 +1,5 @@
 import { IBXRequisitePreset } from '@/modules/bitrix';
-import type { RqPresetTemplate } from '@/apps/rq/install';
+import type { RqPresetTemplate } from '@lib/rq-lib/install';
 
 /** По какому правилу пресет сматчился с Bitrix (для логов/диагностики). */
 export type RqPresetMatchRule = 'db-id' | 'xml-id' | 'name';

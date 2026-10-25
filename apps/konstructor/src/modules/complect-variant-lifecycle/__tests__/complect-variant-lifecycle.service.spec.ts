@@ -1,7 +1,10 @@
 import { BitrixService } from '@lib/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { COMPLECT_VARIANT_STAGE } from '@lib/portal-lib/pbx/pbx-complect-variant-smart';
-import { ComplectVariantLifecycleService } from '../services/complect-variant-lifecycle.service';
+import {
+    ComplectVariantLifecycleService,
+    isForwardMove,
+} from '../services/complect-variant-lifecycle.service';
 
 /**
  * Судьба варианта: уехал в поставку — «Успех», остался — «Не состоялся».
@@ -169,5 +172,40 @@ describe('ComplectVariantLifecycleService', () => {
             { stageId: string },
         ];
         expect(fields.stageId).toBe('DT1046_3:OFFER');
+    });
+    it('только вперёд: черновик → КП ставится, договор и закрытые остаются, порядок по sort', async () => {
+        const { bitrix, itemUpdate } = makeBitrix({
+            7001: 'DT1046_3:DRAFT',
+            7002: 'DT1046_3:CONTRACT',
+            7003: 'DT1046_3:SUCCESS',
+        });
+        const service = makeService(bitrix);
+        const result = await service.markStageForward(
+            'd.ru',
+            [7001, 7002, 7003],
+            COMPLECT_VARIANT_STAGE.OFFER,
+        );
+        expect(result).toEqual({ requested: 3, moved: 1, skipped: 2 });
+        expect(itemUpdate).toHaveBeenCalledTimes(1);
+        const [id, , fields] = itemUpdate.mock.calls[0] as [
+            number,
+            number,
+            { stageId: string },
+        ];
+        expect(id).toBe(7001);
+        expect(fields.stageId).toBe('DT1046_3:OFFER');
+        expect(
+            isForwardMove(
+                COMPLECT_VARIANT_STAGE.OFFER,
+                COMPLECT_VARIANT_STAGE.SUPPLY,
+            ),
+        ).toBe(true);
+        expect(
+            isForwardMove(
+                COMPLECT_VARIANT_STAGE.REJECTED,
+                COMPLECT_VARIANT_STAGE.SUPPLY,
+            ),
+        ).toBe(false);
+        expect(isForwardMove(null, COMPLECT_VARIANT_STAGE.OFFER)).toBe(true);
     });
 });

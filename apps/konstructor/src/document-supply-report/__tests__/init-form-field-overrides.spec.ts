@@ -51,6 +51,11 @@ describe('InitFormService — состав формы отчёта', () => {
             } as never,
             { findByDomain: jest.fn().mockResolvedValue([]) } as never,
             { isDbLookupEnabled, resolve: resolveTemplate } as never,
+            // общая форма и спецификация — отдельный сервис, здесь не проверяются
+            {
+                legacyContractForm: jest.fn().mockReturnValue([]),
+                legacySpecification: jest.fn().mockReturnValue([]),
+            } as never,
         );
     });
 

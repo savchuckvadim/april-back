@@ -1,13 +1,20 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@lib/pbx';
-import { IBXDeal } from '@lib/bitrix';
+import { BitrixService, IBXDeal } from '@lib/bitrix';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { QueueDispatcherService } from '@lib/queue/dispatch/queue-dispatcher.service';
 import { JobNames } from '@lib/queue/constants/job-names.enum';
 import { QueueNames } from '@lib/queue/constants/queue-names.enum';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
-import { DealSendDto, DealSendResponseDto } from '../dto/deal-send.dto';
+import {
+    DealSendDto,
+    DealSendFieldDto,
+    DealSendTargetDto,
+    DealSendResponseDto,
+} from '../dto/deal-send.dto';
 import { DealFieldResolverService } from '../services/deal-field-resolver.service';
 import { DealSendJobDto } from '../dto/deal-send-job.dto';
+import { DealSendSupplyTextsService } from '../services/deal-send-supply-texts.service';
 
 /**
  * Отправка сделки из конструктора.
@@ -24,13 +31,29 @@ export class DealSendUseCase {
     constructor(
         private readonly pbx: PBXService,
         private readonly dispatcher: QueueDispatcherService,
+        private readonly supplyTexts: DealSendSupplyTextsService,
     ) {}
 
     async execute(dto: DealSendDto): Promise<DealSendResponseDto> {
         const { bitrix, PortalModel } = await this.pbx.init(dto.domain);
 
+        // тексты поставки — с бэка по supplyCode (новый фронт); присланные поля сильнее
+        const enrichedFields = await this.supplyTexts.enrich(
+            dto.fields,
+            dto.supplyCode,
+            dto.contractKind,
+        );
         const resolver = new DealFieldResolverService(PortalModel);
-        const { fields, skipped } = resolver.resolve(dto.fields);
+        if (dto.target?.kind === 'smart') {
+            return this.executeSmart(
+                dto,
+                enrichedFields,
+                resolver,
+                bitrix,
+                PortalModel,
+            );
+        }
+        const { fields, skipped } = resolver.resolve(enrichedFields);
 
         if (skipped.length) {
             const details = skipped
@@ -90,6 +113,94 @@ export class DealSendUseCase {
             job,
         );
 
-        return { dealId, created, skipped };
+        return { dealId, created, skipped, smartId: null };
+    }
+
+    /**
+     * Сервисный отдел, «предложение на будущий период»: поля и строки идут в
+     * элемент смарта (service_offer), привязанный к сделке. Элемента нет —
+     * создаём (title, parentId2 = сделка, компания, ответственный).
+     */
+    private async executeSmart(
+        dto: DealSendDto,
+        fields: DealSendFieldDto[],
+        resolver: DealFieldResolverService,
+        bitrix: BitrixService,
+        PortalModel: PortalModel,
+    ): Promise<DealSendResponseDto> {
+        const target = dto.target as DealSendTargetDto;
+        const smartType = target.smartType ?? 'service_offer';
+        const smart = PortalModel.getSmartByType(smartType as never);
+        if (!smart?.entityTypeId) {
+            throw new BadRequestException(
+                `На портале ${dto.domain} не установлен смарт "${smartType}"`,
+            );
+        }
+        if (!dto.dealId) {
+            throw new BadRequestException(
+                'Элемент смарта привязывается к сделке — сначала сохраните сделку',
+            );
+        }
+        const entityTypeId = Number(smart.entityTypeId);
+        let smartId = target.smartId ?? null;
+        if (!smartId) {
+            const created = (await bitrix.item.add(String(entityTypeId), {
+                title: target.title || smart.title || smart.name,
+                parentId2: dto.dealId,
+                ...(dto.companyId ? { companyId: dto.companyId } : {}),
+                ...(dto.userId ? { assignedById: dto.userId } : {}),
+            })) as {
+                result?: { item?: { id?: number } };
+                item?: { id?: number };
+            } | null;
+            smartId =
+                Number(created?.result?.item?.id ?? created?.item?.id) || null;
+            if (!smartId) {
+                throw new BadRequestException(
+                    `Bitrix не создал элемент смарта "${smartType}" на портале ${dto.domain}`,
+                );
+            }
+        }
+        const { fields: smartFields, skipped } = resolver.resolveSmartFields(
+            fields,
+            smart,
+        );
+        if (skipped.length) {
+            this.logger.warn(
+                `${dto.domain}: не записаны поля смарта — ${skipped.map(item => `${item.code} (${item.reason})`).join(', ')}`,
+            );
+        }
+        const job: DealSendJobDto = {
+            domain: dto.domain,
+            dealId: dto.dealId,
+            fields: {
+                ...(target.title ? { title: target.title } : {}),
+                ...smartFields,
+            } as DealSendJobDto['fields'],
+            productRows: dto.productRows
+                ? resolver.resolveProductRows(dto.productRows)
+                : undefined,
+            target: {
+                kind: 'smart',
+                entityTypeId,
+                smartId,
+                ownerType: smartOwnerType(smart.crm, entityTypeId),
+            },
+        };
+        await this.dispatcher.dispatch(
+            QueueNames.KONSTRUCTOR,
+            JobNames.KONSTRUCTOR_DEAL_SEND,
+            job,
+        );
+        return { dealId: dto.dealId, created: false, skipped, smartId };
     }
 }
+
+/**
+ * ownerType товарных строк динамического типа: `T{hex(entityTypeId)}`; в
+ * портальной схеме он лежит в smarts.crm с хвостовым подчёркиванием.
+ */
+export const smartOwnerType = (
+    crm: string | null | undefined,
+    entityTypeId: number,
+): string => (crm ? crm.replace(/_$/, '') : `T${entityTypeId.toString(16)}`);

@@ -5,15 +5,21 @@ import {
     Inject,
     Injectable,
     Logger,
+    Optional,
     UnauthorizedException,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { AUTH_OPTIONS } from '../config/auth.constants';
 import { AuthModuleOptions } from '../config/auth.config';
 import { AuthTokenService } from '../services/auth-token.service';
 import { AuthJwtPayload, AuthUser } from '../types/auth-user.interface';
 import { Role } from '../types/role.enum';
-import { PortalSessionRejectReason } from './portal-session.const';
+import {
+    PORTAL_SESSION_ENFORCE_KEY,
+    PortalSessionGuardMode,
+    PortalSessionRejectReason,
+} from './portal-session.const';
 
 /** Запрос с portal-context сессией: guard кладёт payload в `user`. */
 export interface PortalSessionRequest extends Request {
@@ -38,6 +44,10 @@ interface PortalSessionRejection {
  * portal-session.const. Проверка не зависит от AUTH_ENABLED: как и
  * PortalSessionGuard маркетплейса, при выключенной общей авторизации
  * сессионные ручки открытыми быть не должны.
+ *
+ * Ручка с `@PortalSessionProtected({ enforce: true })` проверяется всегда,
+ * в любом режиме: так помечаются ручки, которые нельзя оставить открытыми
+ * ни на время выкатки (прокси Битрикса от имени портала).
  */
 @Injectable()
 export class PortalSessionGuard implements CanActivate {
@@ -46,10 +56,11 @@ export class PortalSessionGuard implements CanActivate {
     constructor(
         private readonly tokens: AuthTokenService,
         @Inject(AUTH_OPTIONS) private readonly options: AuthModuleOptions,
+        @Optional() private readonly reflector?: Reflector,
     ) {}
 
     canActivate(context: ExecutionContext): boolean {
-        const mode = this.options.portalSession.guardMode;
+        const mode = this.modeFor(context);
         if (mode === 'off') return true;
 
         const request = context
@@ -70,6 +81,17 @@ export class PortalSessionGuard implements CanActivate {
             rejection.reason === 'invalid_token'
             ? new UnauthorizedException(rejection.message)
             : new ForbiddenException(rejection.message);
+    }
+
+    /** Режим проверки: пометка ручки «всегда проверять» главнее окружения. */
+    private modeFor(context: ExecutionContext): PortalSessionGuardMode {
+        const enforced = this.reflector?.getAllAndOverride<boolean>(
+            PORTAL_SESSION_ENFORCE_KEY,
+            [context.getHandler(), context.getClass()],
+        );
+        return enforced === true
+            ? 'enforce'
+            : this.options.portalSession.guardMode;
     }
 
     /** null — запрос прошёл (user положен в request); иначе причина отказа. */

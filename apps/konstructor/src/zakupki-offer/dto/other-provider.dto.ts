@@ -6,6 +6,7 @@ import {
     IsBoolean,
     IsOptional,
 } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { ValidateNested, IsArray } from 'class-validator';
 /** Тип содержимого поля */
@@ -43,31 +44,41 @@ export enum Provider2FieldCode {
 /* field.dto.ts */
 export class ProviderOtherFieldDto<TCode extends string> {
     /** ID поля (порядковый) */
+    @ApiProperty({ type: Number })
     @IsNumber()
     id: number;
 
     /** Человеко-читаемое название поля */
+    @ApiProperty({ type: String })
     @IsString()
     name: string;
 
     /** Placeholder для UI */
+    @ApiProperty({ type: String })
     @IsString()
     placeholder: string;
 
     /** Код (enum) */
     // @IsEnum(Object)
+    @ApiProperty({
+        description: 'provider1_shortname, provider2_letter_text, …',
+        type: String,
+    })
     @IsString()
     code: TCode | string;
 
     /** Значение (string | number | null) */
+    @ApiProperty({ type: String, nullable: true })
     @IsOptional()
     value: string | number | null;
 
     /** Тип ввода */
+    @ApiProperty({ enum: FieldInputType, enumName: 'ZakupkiFieldInputType' })
     @IsEnum(FieldInputType)
     type: FieldInputType;
 
     /** Обязательность */
+    @ApiProperty({ type: Boolean })
     @IsBoolean()
     isRequired: boolean;
 }
@@ -84,11 +95,19 @@ export class ProviderOtherFieldDto<TCode extends string> {
 
 /** Итоговый DTO для тела запроса */
 export class OtherProvidersDto {
+    @ApiProperty({
+        description: 'Поля поставщика 1',
+        type: [ProviderOtherFieldDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => ProviderOtherFieldDto)
     provider1: ProviderOtherFieldDto<Provider1FieldCode>[];
 
+    @ApiProperty({
+        description: 'Поля поставщика 2',
+        type: [ProviderOtherFieldDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => ProviderOtherFieldDto)

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ZakupkiOfferModule } from './zakupki-offer/zakupki-offer.module';
 import { ContractGenerateModule } from './contract/generate/contract-generate.module';
+import { ContractSpecificationFormModule } from './contract/specification-form/contract-specification-form.module';
 import { OfferModule } from './offer/offer.module';
 import { GarantModule } from '@lib/garant/garant.module';
 import { KonstructorInitModule } from './init/konstructor-init.module';
@@ -12,10 +13,12 @@ import { InnerDealModule } from './modules/inner-deal/inner-deal.module';
 import { DealSendModule } from './modules/deal-send/deal-send.module';
 import { DirectServiceDealModule } from './supply/direct-service-deal/direct-service-deal.module';
 import { BitrixHelperModule } from './modules/bitrix-helper/bitrix-helper.module';
+import { ComplectDescriptionModule } from './modules/complect-description/complect-description.module';
 @Module({
     imports: [
         ZakupkiOfferModule,
         ContractGenerateModule,
+        ContractSpecificationFormModule,
         OfferModule,
         GarantModule,
         KonstructorInitModule,
@@ -27,11 +30,13 @@ import { BitrixHelperModule } from './modules/bitrix-helper/bitrix-helper.module
         DealSendModule,
         DirectServiceDealModule,
         BitrixHelperModule,
+        ComplectDescriptionModule,
     ],
 
     exports: [
         ZakupkiOfferModule,
         ContractGenerateModule,
+        ContractSpecificationFormModule,
         OfferModule,
         KonstructorInitModule,
         SupplyInitDealModule,

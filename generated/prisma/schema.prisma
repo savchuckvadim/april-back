@@ -1874,29 +1874,37 @@ model report_settings {
 }
 
 model supplies {
-  id                         BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
-  created_at                 DateTime?            @db.Timestamp(0)
-  updated_at                 DateTime?            @db.Timestamp(0)
-  name                       String               @db.VarChar(255)
-  fullName                   String               @db.VarChar(255)
-  shortName                  String               @db.VarChar(255)
-  saleName_1                 String?              @db.Text
-  saleName_2                 String?              @db.Text
-  saleName_3                 String?              @db.Text
-  usersQuantity              Int
-  description                String?              @db.LongText
-  code                       String               @db.VarChar(255)
-  type                       String               @db.VarChar(255)
-  color                      String?              @db.VarChar(255)
-  coefficient                Float
-  contractName               String?              @db.Text
-  contractPropComment        String?              @db.Text
-  contractPropEmail          String?              @db.Text
-  contractPropLoginsQuantity String?              @db.Text
-  lcontractName              String?              @db.Text
-  lcontractPropComment       String?              @db.Text
-  lcontractPropEmail         String?              @db.Text
-  garant_prof_prices         garant_prof_prices[]
+  id                           BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at                   DateTime?            @db.Timestamp(0)
+  updated_at                   DateTime?            @db.Timestamp(0)
+  name                         String               @db.VarChar(255)
+  fullName                     String               @db.VarChar(255)
+  shortName                    String               @db.VarChar(255)
+  saleName_1                   String?              @db.Text
+  saleName_2                   String?              @db.Text
+  saleName_3                   String?              @db.Text
+  usersQuantity                Int
+  description                  String?              @db.LongText
+  code                         String               @db.VarChar(255)
+  type                         String               @db.VarChar(255)
+  color                        String?              @db.VarChar(255)
+  coefficient                  Float
+  contractName                 String?              @db.Text
+  contractPropComment          String?              @db.Text
+  contractPropEmail            String?              @db.Text
+  contractPropLoginsQuantity   String?              @db.Text
+  lcontractName                String?              @db.Text
+  lcontractPropComment         String?              @db.Text
+  lcontractPropEmail           String?              @db.Text
+  // Шаблоны текстов договоров/КП по числу ОД ({n}, {words}, {plural:..}) — supply-template.util.ts
+  contractProp1                String?              @db.Text
+  contractProp2                String?              @db.Text
+  contractPropSuppliesQuantity String?              @db.Text
+  quantityForKp                String?              @db.Text
+  lcontractProp2               String?              @db.Text
+  acontractName                String?              @db.Text
+  acontractPropComment         String?              @db.Text
+  garant_prof_prices           garant_prof_prices[]
 }
 
 model Transcription {

@@ -24,7 +24,11 @@ import { ClientTypeEnum } from '../../document-generate/type/client.type';
 import { BxRqDto } from '../../document-generate/dto/bx-rq/bx-rq.dto';
 import { ContractSpecificationDto } from '../../document-generate/dto/specification/specification.dto';
 import { CONTRACT_LTYPE } from '../../document-generate/type/contract.type';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+    ApiProperty,
+    ApiPropertyOptional,
+    ApiExtraModels,
+} from '@nestjs/swagger';
 import { ContractDto } from '../../dto/contract.dto';
 import {
     ConsaltingPayload,
@@ -69,6 +73,8 @@ export class ClientTypeSelectDto {
     title?: string;
 }
 
+// oneOf в clientType ссылается на схему по $ref — без регистрации orval её не видит
+@ApiExtraModels(ClientTypeSelectDto)
 export class DocumentSupplyReportGenerateDto {
     @ApiProperty({ description: 'Domain of the company' })
     @IsString()
@@ -78,14 +84,20 @@ export class DocumentSupplyReportGenerateDto {
     @IsString()
     companyId: string;
 
-    @ApiProperty({ description: 'Placement of the contract' })
+    @ApiProperty({
+        description: 'Placement of the contract',
+        type: PlacementDto,
+        required: false,
+    })
+    @IsOptional()
     @ValidateNested()
     @Type(() => PlacementDto)
-    placement: PlacementDto;
+    placement?: PlacementDto;
 
-    @ApiProperty({ description: 'Is the contract a product' })
+    @ApiProperty({ description: 'Is the contract a product', required: false })
+    @IsOptional()
     @IsBoolean()
-    isProd: boolean;
+    isProd?: boolean;
 
     @ApiProperty({ description: 'ID of the deal' })
     @IsString()
@@ -148,11 +160,16 @@ export class DocumentSupplyReportGenerateDto {
     @Type(() => RegionDto)
     region: RegionDto;
 
-    @ApiProperty({ description: 'Rows of the contract', type: [ProductRowDto] })
+    @ApiProperty({
+        description: 'Rows of the contract (легаси; отчёт читает arows)',
+        type: [ProductRowDto],
+        required: false,
+    })
+    @IsOptional()
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => ProductRowDto)
-    rows: ProductRowDto[];
+    rows?: ProductRowDto[];
 
     @ApiProperty({ description: 'Total of the contract', type: ProductRowDto })
     @ValidateNested()
@@ -162,10 +179,12 @@ export class DocumentSupplyReportGenerateDto {
     @ApiProperty({
         description: 'Product set of the contract',
         type: ProductRowSetDto,
+        required: false,
     })
+    @IsOptional()
     @ValidateNested()
     @Type(() => ProductRowSetDto)
-    productSet: ProductRowSetDto;
+    productSet?: ProductRowSetDto;
 
     @ApiProperty({ description: 'Contract start of the contract' })
     @IsOptional()
@@ -278,18 +297,22 @@ export class DocumentSupplyReportGenerateDto {
     contractProviderState: ContractProviderStatePayload;
 
     @ApiProperty({
-        description: 'Contract base state',
+        description: 'Contract base state (легаси, не читается)',
         type: Object,
+        required: false,
     })
+    @IsOptional()
     @IsObject()
-    contractBaseState: any;
+    contractBaseState?: unknown;
 
     @ApiProperty({
-        description: 'Contract client state',
+        description: 'Contract client state (легаси, не читается)',
         type: Object,
+        required: false,
     })
+    @IsOptional()
     @IsObject()
-    contractClientState: any;
+    contractClientState?: unknown;
 
     @ApiProperty({
         description: 'Consalting data',

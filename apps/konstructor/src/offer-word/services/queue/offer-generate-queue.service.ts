@@ -6,6 +6,11 @@ import { JobNames } from '@lib/queue/constants/job-names.enum';
 import { OfferWordByTemplateGenerateDto } from '../../dto/offer-word-generate-request.dto';
 import { OfferWordByTemplateGenerateUseCase } from '../../use-cases/offer-word-by-template-generate.use-case';
 
+/** Синхронный результат генерации (withoutQueue) либо operationId джобы. */
+export type OfferWordGenerateStartResult =
+    | string
+    | Awaited<ReturnType<OfferWordByTemplateGenerateUseCase['execute']>>;
+
 @Injectable()
 export class OfferGenerateQueueService {
     constructor(
@@ -13,7 +18,9 @@ export class OfferGenerateQueueService {
         private readonly useCase: OfferWordByTemplateGenerateUseCase,
     ) {}
 
-    async start(dto: OfferWordByTemplateGenerateDto): Promise<any> {
+    async start(
+        dto: OfferWordByTemplateGenerateDto,
+    ): Promise<OfferWordGenerateStartResult> {
         if (dto.withoutQueue) {
             return await this.useCase.execute(dto);
         }

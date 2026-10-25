@@ -47,7 +47,7 @@ export class DocumentTotalRowService {
 
         const totalProductName = total.name;
         const supplyShortName = total.currentSupply.name;
-        const supplyFullName = total.currentSupply.quantityForKp;
+        const supplyFullName = total.currentSupply.quantityForKp ?? '';
         const totalSumMonth = Number(
             (totalPrice.month / total.product.contractCoefficient).toFixed(2),
         );

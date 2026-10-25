@@ -18,6 +18,7 @@ import {
 import { ContractGenerateTemplateProps } from '../type/contract-generate.type';
 import { DocumentInfoblockService } from '../../../document-generate/infoblocks/infoblock.service';
 import { DocumentProductRowService } from '../../../document-generate/product-rows/product-row.service';
+import { SupplyPayloadEnricherService } from '../../../document-generate/supply/supply-payload-enricher.service';
 import { ContractRqHeaderService } from './contract-rq-header.service';
 import { ContractRqService } from './contract-rq.service';
 import { ContractSpecificationService } from './contract-specification.service';
@@ -42,6 +43,7 @@ export class ContractGenerateService {
         private readonly documentInfoblockService: DocumentInfoblockService,
 
         private readonly documentProductRowService: DocumentProductRowService,
+        private readonly supplyEnricher: SupplyPayloadEnricherService,
         private readonly headerService: ContractRqHeaderService,
         private readonly rqService: ContractRqService,
         private readonly specificationService: ContractSpecificationService,
@@ -54,8 +56,15 @@ export class ContractGenerateService {
     }
 
     async generateContract(
-        dto: ContractGenerateDto,
+        input: ContractGenerateDto,
     ): Promise<ContractGenerateResult> {
+        // Тексты поставки (договор услуг/лицензионный/абонентский) — с бэка по
+        // code; готовые тексты легаси-payload остаются как есть.
+        const dto: ContractGenerateDto = {
+            ...input,
+            rows: await this.supplyEnricher.enrichRows(input.rows),
+            total: await this.supplyEnricher.enrichRow(input.total),
+        };
         const provider = await this.providerService.findById(dto.providerId);
         if (!provider) {
             throw new Error('Provider not found');

@@ -31,6 +31,7 @@ import { LeadFlowService, xoPrevResponsible } from './flows/lead-flow.service';
 import { TaskFlowService } from './flows/task-flow.service';
 import { CrmRelationsReassignService } from '../../../shared/crm-relations';
 import { WorkTakeoverService } from '../../../shared/work-takeover';
+import { clientTitleOrNull } from '../../../shared/client-title';
 
 export { CALL_TASK_PREFIX, XO_TASK_PREFIX };
 
@@ -567,12 +568,16 @@ export class LeadToWorkFlowService {
         return buildColdTaskTitle(XO_TASK_PREFIX, detection.kind, eventName);
     }
 
-    /** Название события: имя из хука → название компании → название лида. */
+    /**
+     * Название события: имя из хука → название компании → название лида.
+     * Заглушки вместо названия («Холодный обзвон», ИНН в «Название
+     * компании» — лид 196219) пропускаются, см. clientTitleOrNull.
+     */
     private eventName(item: ResolvedLeadToWorkItem, lead: IBXLead): string {
         const row = lead as unknown as BxRow;
         return (
-            this.text(item.name) ??
-            this.text(row.COMPANY_TITLE) ??
+            clientTitleOrNull(item.name) ??
+            clientTitleOrNull(row.COMPANY_TITLE) ??
             this.text(row.TITLE) ??
             `Лид ${item.leadId}`
         );

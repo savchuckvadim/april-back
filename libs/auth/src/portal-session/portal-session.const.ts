@@ -21,6 +21,9 @@ export const PORTAL_SESSION_GUARD_MODE_DEFAULT: PortalSessionGuardMode =
 
 export const PORTAL_SESSION_GUARD_MODE_ENV = 'PORTAL_SESSION_GUARD_MODE';
 
+/** Метаданные ручки: проверять сессию всегда, независимо от режима. */
+export const PORTAL_SESSION_ENFORCE_KEY = 'portalSession:enforce';
+
 /** Разбор значения переменной окружения; неизвестное → режим по умолчанию. */
 export function parsePortalSessionGuardMode(
     raw: string | undefined,

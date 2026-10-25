@@ -19,7 +19,7 @@ import {
     DeleteCounterResponseDto,
 } from '../dto/counter-response.dto';
 
-@ApiTags('Document Counter — Admin')
+@ApiTags('DocumentCounterAdmin')
 @Controller('document-counter/admin')
 export class CounterAdminController {
     constructor(private readonly adminService: CounterAdminService) {}

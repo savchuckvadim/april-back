@@ -13,6 +13,7 @@ import {
     PriceEntity,
     PriceService,
     RegionEntity,
+    renderSupplyTemplate,
     SupplyEntity,
     SupplyService,
 } from '@lib/garant';
@@ -22,6 +23,7 @@ import {
     InfoblockDto,
     InfoGroupsDto,
     KonstructorInitDataDto,
+    MeasureInitDto,
     PriceInitDto,
     RegionInitDto,
     ServicesInitDto,
@@ -33,6 +35,8 @@ import { ContractDto } from '../dto/contract.dto';
 import { PortalContractEntity } from '@lib/garant/contract/portal-contract.entity';
 import { CONTRACT_CODE } from '../document-generate/type/contract.type';
 import { InitServicesService } from './services/init-services.service';
+import { MeasureService } from '@lib/portal-lib/konstructor/measure/measure.service';
+import { PortalMeasureService } from '@lib/portal-lib/konstructor/portal-measure/portal-measure.service';
 
 export interface IKonstruktorInit {
     complects: IComplects | null;
@@ -42,6 +46,7 @@ export interface IKonstruktorInit {
     supplies: SupplyInitDto[];
     prices: PriceInitDto[];
     services: ServicesInitDto;
+    measures: MeasureInitDto[];
 }
 @Injectable()
 export class KonstructorInitUseCase {
@@ -54,6 +59,8 @@ export class KonstructorInitUseCase {
         private readonly supplyService: SupplyService,
         private readonly priceService: PriceService,
         private readonly servicesService: InitServicesService,
+        private readonly measureService: MeasureService,
+        private readonly portalMeasureService: PortalMeasureService,
     ) {}
 
     async init(domain: string): Promise<KonstructorInitDataDto> {
@@ -63,13 +70,13 @@ export class KonstructorInitUseCase {
         }
         const complects = await this.complect.get();
         const infoblocks = await this.infoblock.get();
-        const regions = await this.region.get();
-        const contracts = await this.contract.findByPortalId(
-            Number(portal?.id),
-        );
+        const portalId = Number(portal.id);
+        const regions = await this.region.get(portalId);
+        const contracts = await this.contract.findByPortalId(portalId);
         const supplies = await this.supplyService.findMany();
         const prices = await this.priceService.findMany();
         const services = await this.servicesService.get();
+        const measures = await this.getMeasures(portalId);
 
         return {
             complects: this.getComplectsDto(
@@ -86,6 +93,7 @@ export class KonstructorInitUseCase {
             supplies: (supplies || []).map(supply => this.getSupply(supply)),
             prices: (prices || []).map(price => this.getPrice(price)),
             services,
+            measures,
         };
     }
 
@@ -104,7 +112,43 @@ export class KonstructorInitUseCase {
             saleName_1: supply.saleName_1,
             saleName_2: supply.saleName_2,
             saleName_3: supply.saleName_3,
+            // Тексты договоров остаются на бэке (резолв по code при генерации);
+            // фронту — только то, что он показывает: подпись КП и сводка.
+            quantityForKp: renderSupplyTemplate(
+                supply.quantityForKp,
+                supply.usersQuantity,
+            ),
+            contractPropSuppliesQuantity: renderSupplyTemplate(
+                supply.contractPropSuppliesQuantity,
+                supply.usersQuantity,
+            ),
         };
+    }
+
+    /**
+     * Меры (ед. изм.) портала: справочник measures + bitrixId из portal_measure.
+     * Нужны productRows сделки и КП; раньше жили только вложенно в contracts.
+     */
+    private async getMeasures(portalId: number): Promise<MeasureInitDto[]> {
+        const [measures, portalMeasures] = await Promise.all([
+            this.measureService.findMany(),
+            this.portalMeasureService.findByPortalId(portalId),
+        ]);
+        return measures.map(measure => {
+            const portalMeasure = portalMeasures.find(
+                item => item.measure_id === measure.id,
+            );
+            return {
+                id: Number(measure.id),
+                code: measure.code,
+                type: measure.type,
+                name: portalMeasure?.name || measure.name,
+                shortName: portalMeasure?.shortName || measure.shortName,
+                fullName: portalMeasure?.fullName || measure.fullName,
+                bitrixId: portalMeasure?.bitrixId ?? null,
+                portalMeasureId: portalMeasure ? Number(portalMeasure.id) : null,
+            };
+        });
     }
 
     private getPrice(price: PriceEntity): PriceInitDto {
@@ -164,7 +208,9 @@ export class KonstructorInitUseCase {
                     : '',
                 measure: contract.portal_measure?.measure || null,
             },
-            measureCode: Number(contract.portal_measure?.measure?.code) || 0,
+            // Код единицы для productRows Bitrix — bitrixId портальной меры;
+            // measures.code — строковый код «для APP», его Number() давал 0.
+            measureCode: Number(contract.portal_measure?.bitrixId) || 0,
             measureFullName: contract.portal_measure?.fullName || '',
             measureId: Number(contract.portal_measure?.id) || 0,
             measureName: contract.portal_measure?.name || '',
@@ -227,10 +273,8 @@ export class KonstructorInitUseCase {
     private getRegion(region: RegionEntity): RegionInitDto {
         return {
             id: region.id,
-            // name — код региона ('msk', 'spb'), как в легаси-init
-            name: region.code,
             code: region.code,
-            // каждый регион в составе комплекта весит 0.5
+            // каждый регион в составе комплекта весит 0.5 (колонки в БД нет)
             weight: 0.5,
             number: region.number,
             title: region.title,

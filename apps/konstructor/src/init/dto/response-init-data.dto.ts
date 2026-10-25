@@ -142,8 +142,6 @@ export class InfoGroupsDto implements IInfoGroups {
 export class RegionInitDto implements RegionEntity {
     @ApiProperty({ description: 'Id', type: String })
     id: string;
-    @ApiProperty({ description: 'Name', type: String })
-    name: string;
     @ApiProperty({ description: 'Code', type: String })
     code: string;
     @ApiProperty({ description: 'Weight', type: Number })
@@ -208,7 +206,11 @@ export class RegionInitDto implements RegionEntity {
 // }
 
 export class ContractsDto {
-    @ApiProperty({ description: 'Current', type: [Number] })
+    @ApiProperty({
+        description:
+            'id строк portal_contracts этого портала (какие договоры подключены); состав items — те же договоры',
+        type: [Number],
+    })
     current: number[];
     @ApiProperty({ description: 'Items', type: [ContractDto] })
     items: ContractDto[];
@@ -259,6 +261,20 @@ export class SupplyInitDto {
         nullable: true,
     })
     saleName_3: string | null;
+    @ApiProperty({
+        description:
+            'Текст поставки для КП под её число ОД (шаблон quantityForKp уже отрендерен)',
+        type: String,
+        nullable: true,
+    })
+    quantityForKp: string | null;
+
+    @ApiProperty({
+        description: 'Количество поставок для договора (число ОД или «Флэш»), отрендерено',
+        type: String,
+        nullable: true,
+    })
+    contractPropSuppliesQuantity: string | null;
 }
 
 export class PriceInitDto {
@@ -341,6 +357,29 @@ export class ServicesInitDto implements IKServices {
     star: KServiceItemDto[];
 }
 
+export class MeasureInitDto {
+    @ApiProperty({ description: 'Id меры (measures)', type: Number })
+    id: number;
+    @ApiProperty({ description: 'Код меры «для APP» (month, piece…)', type: String })
+    code: string;
+    @ApiProperty({ description: 'Тип меры', type: String, nullable: true })
+    type: string | null;
+    @ApiProperty({ description: 'Название (портальное, иначе общее)', type: String })
+    name: string;
+    @ApiProperty({ description: 'Короткое название', type: String })
+    shortName: string;
+    @ApiProperty({ description: 'Полное название', type: String })
+    fullName: string;
+    @ApiProperty({
+        description: 'Код единицы в Bitrix портала (crm.measure) — для productRows',
+        type: String,
+        nullable: true,
+    })
+    bitrixId: string | null;
+    @ApiProperty({ description: 'Id строки portal_measure', type: Number, nullable: true })
+    portalMeasureId: number | null;
+}
+
 export class KonstructorInitDataDto implements IKonstruktorInit {
     @ApiProperty({ description: 'Complects', type: ComplectsDto })
     complects: ComplectsDto;
@@ -362,4 +401,9 @@ export class KonstructorInitDataDto implements IKonstruktorInit {
         type: ServicesInitDto,
     })
     services: ServicesInitDto;
+    @ApiProperty({
+        description: 'Меры портала (ед. изм.) с bitrixId для productRows и КП',
+        type: [MeasureInitDto],
+    })
+    measures: MeasureInitDto[];
 }

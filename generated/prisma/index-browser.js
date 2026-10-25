@@ -1436,7 +1436,14 @@ exports.Prisma.SuppliesScalarFieldEnum = {
   contractPropLoginsQuantity: 'contractPropLoginsQuantity',
   lcontractName: 'lcontractName',
   lcontractPropComment: 'lcontractPropComment',
-  lcontractPropEmail: 'lcontractPropEmail'
+  lcontractPropEmail: 'lcontractPropEmail',
+  contractProp1: 'contractProp1',
+  contractProp2: 'contractProp2',
+  contractPropSuppliesQuantity: 'contractPropSuppliesQuantity',
+  quantityForKp: 'quantityForKp',
+  lcontractProp2: 'lcontractProp2',
+  acontractName: 'acontractName',
+  acontractPropComment: 'acontractPropComment'
 };
 
 exports.Prisma.TranscriptionScalarFieldEnum = {
@@ -2626,7 +2633,14 @@ exports.Prisma.suppliesOrderByRelevanceFieldEnum = {
   contractPropLoginsQuantity: 'contractPropLoginsQuantity',
   lcontractName: 'lcontractName',
   lcontractPropComment: 'lcontractPropComment',
-  lcontractPropEmail: 'lcontractPropEmail'
+  lcontractPropEmail: 'lcontractPropEmail',
+  contractProp1: 'contractProp1',
+  contractProp2: 'contractProp2',
+  contractPropSuppliesQuantity: 'contractPropSuppliesQuantity',
+  quantityForKp: 'quantityForKp',
+  lcontractProp2: 'lcontractProp2',
+  acontractName: 'acontractName',
+  acontractPropComment: 'acontractPropComment'
 };
 
 exports.Prisma.TranscriptionOrderByRelevanceFieldEnum = {

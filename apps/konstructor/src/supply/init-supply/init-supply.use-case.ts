@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InitSupplyDto, InitSupplyFlow } from './dto/init-supply.dto';
 import { InitSupplyTimelineCommentService } from './services/rpa-timeline-comment/init-supply-timeline-comment.service';
 import { InitSupplyRpaFieldsService } from './services/rpa-fields/init-supply-rpa-fields.service';
@@ -6,9 +6,14 @@ import { PBXService } from '@lib/pbx/pbx.service';
 import { IBxRpaItem } from '@lib/bitrix/domain/rpa/item/interface/bx-rpa-item.interface';
 import { EBXEntity, IBXDeal } from '@lib/bitrix';
 import { InitSupplyDealFileFieldsService } from './services/file/init-supply-deal-file-fields.service';
+import { InitSupplyResponseDto } from './dto/init-supply-response.dto';
+import { COMPLECT_VARIANT_STAGE } from '@lib/portal-lib/pbx/pbx-complect-variant-smart';
+import { ComplectVariantLifecycleService } from '../../modules/complect-variant-lifecycle';
 
 @Injectable()
 export class InitSupplyUseCase {
+    private readonly logger = new Logger(InitSupplyUseCase.name);
+
     constructor(
         private readonly pbx: PBXService,
         private readonly initSupplyRpaFieldsService: InitSupplyRpaFieldsService,
@@ -16,7 +21,7 @@ export class InitSupplyUseCase {
         private readonly initSupplyDealFileFieldsService: InitSupplyDealFileFieldsService,
     ) {}
 
-    async initSupply(dto: InitSupplyDto): Promise<any> {
+    async initSupply(dto: InitSupplyDto): Promise<InitSupplyResponseDto> {
         /*
          1. получаем данные из smart - или из сделки
          2. Создаем или обновляем rpa
@@ -54,6 +59,27 @@ export class InitSupplyUseCase {
                 .then(res => res.result.item);
         }
         const rpaId = dto.rpa_id || rpaResponse?.id;
+
+        // участники заявки → стадия «Поставка» (README lifecycle, п.4; только вперёд)
+        const variantIds = (dto.variants ?? [])
+            .map(variant => Number(variant.variantSmartId))
+            .filter(id => Number.isFinite(id) && id > 0);
+        if (variantIds.length) {
+            try {
+                await new ComplectVariantLifecycleService(
+                    bitrix,
+                    PortalModel,
+                ).markStageForward(
+                    dto.domain,
+                    variantIds,
+                    COMPLECT_VARIANT_STAGE.SUPPLY,
+                );
+            } catch (error) {
+                this.logger.warn(
+                    `${dto.domain}: стадия «Поставка» вариантам не проставлена: ${error instanceof Error ? error.message : String(error)}`,
+                );
+            }
+        }
 
         // Договор и счёт, приложенные менеджером в конструкторе, кладём ещё и
         // в саму сделку: в RPA они ушли вместе с rpaFields. Файл, который уже
@@ -109,8 +135,8 @@ export class InitSupplyUseCase {
         }
         return {
             // id_rpa — контракт легаси-ручки /rpa/init_supply, фронт читает его
-            id_rpa: rpaId,
-            rpaDb: rpaType,
+            id_rpa: rpaId ?? null,
+            rpaDb: rpaType ?? null,
             rpaTypeId,
             rpaResponse,
             dealFileFields: Object.keys(dealFileFields),

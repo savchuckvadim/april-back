@@ -7,6 +7,11 @@ import {
     DocumentSupplyReportGenerateResponseDto,
 } from '../dto/document-supply-report-response.dto';
 import { InitFormService } from '../services/init-form.service';
+import {
+    SupplyReportFormRequestDto,
+    SupplyReportFormResponseDto,
+} from '../dto/supply-report-form.dto';
+import { SupplyReportDto } from '../../supply/init-supply/dto/supply-fields/supply-fields.dto';
 import { GenerateUseCase } from '../use-cases/generate.use-case';
 
 /**
@@ -46,6 +51,22 @@ export class DocumentSupplyReportController {
     ): Promise<DocumentSupplyInitFormResponseDto> {
         const init = await this.initFormService.frontInit(dto);
         return { init: init as unknown as Record<string, unknown> };
+    }
+
+    @Post('form')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Состав формы отчёта о поставке',
+        description:
+            '15 полей формы (с портальной настройкой обязательности) по домену, поставщику, типу договора, типу клиента и виду поставки. Замена init-form для нового фронта: без легаси-слепка конструктора.',
+    })
+    @ApiBody({ type: SupplyReportFormRequestDto })
+    @ApiOkResponse({ type: SupplyReportFormResponseDto })
+    async form(
+        @Body() dto: SupplyReportFormRequestDto,
+    ): Promise<SupplyReportFormResponseDto> {
+        const supply = await this.initFormService.formFields(dto);
+        return { supply: supply as unknown as SupplyReportDto[] };
     }
 
     @Post('generate-document')

@@ -315,6 +315,15 @@
       "compilerOptions": {
         "tsConfigPath": "libs/metrics/tsconfig.lib.json"
       }
+    },
+    "rq-lib": {
+      "type": "library",
+      "root": "libs/rq-lib",
+      "entryFile": "index",
+      "sourceRoot": "libs/rq-lib/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/rq-lib/tsconfig.lib.json"
+      }
     }
   }
 }

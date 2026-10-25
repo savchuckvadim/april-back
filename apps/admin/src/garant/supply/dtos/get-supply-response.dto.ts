@@ -23,6 +23,13 @@ export class GetSupplyResponseDto {
         this.lcontractName = supply.lcontractName;
         this.lcontractPropComment = supply.lcontractPropComment;
         this.lcontractPropEmail = supply.lcontractPropEmail;
+        this.contractProp1 = supply.contractProp1;
+        this.contractProp2 = supply.contractProp2;
+        this.contractPropSuppliesQuantity = supply.contractPropSuppliesQuantity;
+        this.quantityForKp = supply.quantityForKp;
+        this.lcontractProp2 = supply.lcontractProp2;
+        this.acontractName = supply.acontractName;
+        this.acontractPropComment = supply.acontractPropComment;
         this.created_at = supply.created_at;
         this.updated_at = supply.updated_at;
     }
@@ -173,4 +180,59 @@ export class GetSupplyResponseDto {
         required: false,
     })
     updated_at: Date | null;
+    @ApiProperty({
+        description: 'Договор услуг: носитель (prop1), шаблон',
+        required: false,
+        nullable: true,
+        type: String,
+    })
+    contractProp1: string | null;
+
+    @ApiProperty({
+        description: 'Договор услуг: способ доставки (prop2), шаблон',
+        required: false,
+        nullable: true,
+        type: String,
+    })
+    contractProp2: string | null;
+
+    @ApiProperty({
+        description: 'Договор услуг: количество поставок ({n} или «Флэш»)',
+        required: false,
+        nullable: true,
+        type: String,
+    })
+    contractPropSuppliesQuantity: string | null;
+
+    @ApiProperty({
+        description: 'Текст поставки для КП, шаблон («на {n} {plural:…}»)',
+        required: false,
+        nullable: true,
+        type: String,
+    })
+    quantityForKp: string | null;
+
+    @ApiProperty({
+        description: 'Лицензионный договор: prop2, шаблон',
+        required: false,
+        nullable: true,
+        type: String,
+    })
+    lcontractProp2: string | null;
+
+    @ApiProperty({
+        description: 'Абонентский договор: название поставки, шаблон',
+        required: false,
+        nullable: true,
+        type: String,
+    })
+    acontractName: string | null;
+
+    @ApiProperty({
+        description: 'Абонентский договор: комментарий, шаблон',
+        required: false,
+        nullable: true,
+        type: String,
+    })
+    acontractPropComment: string | null;
 }
