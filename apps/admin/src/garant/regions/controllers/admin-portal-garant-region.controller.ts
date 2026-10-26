@@ -73,7 +73,11 @@ export class AdminPortalGarantRegionController {
     }
 
     @Put('bulk')
-    @ApiBody({ type: BulkSetPortalRegionsDto })
+    @ApiBody({
+        type: BulkSetPortalRegionsDto,
+        description:
+            'ID портала и изменённые строки регионов (чекбокс + собственный рабс).',
+    })
     @ApiOperation({
         summary: 'Массово применить чекбоксы регионов портала',
         description:

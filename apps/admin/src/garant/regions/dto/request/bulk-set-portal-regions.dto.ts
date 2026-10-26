@@ -17,6 +17,7 @@ export class BulkPortalRegionItemDto {
     @ApiProperty({
         description: 'ID региона из справочника regions.',
         example: 12,
+        type: Number,
     })
     @IsInt()
     regionId: number;
@@ -25,6 +26,7 @@ export class BulkPortalRegionItemDto {
         description:
             'Чекбокс региона на портале: true — регион включён (связь создаётся), false — выключен (связь удаляется).',
         example: true,
+        type: Boolean,
     })
     @IsBoolean()
     enabled: boolean;
@@ -36,6 +38,7 @@ export class BulkPortalRegionItemDto {
             'own_tax (1.20) и own_tax_abs считаются на бэке.',
         example: '4177.20',
         oneOf: [{ type: 'string' }, { type: 'number' }],
+        nullable: true,
     })
     @IsOptional()
     @TransformToDecimalString()
@@ -47,6 +50,7 @@ export class BulkSetPortalRegionsDto {
     @ApiProperty({
         description: 'ID портала, чьи регионы настраиваются.',
         example: 3,
+        type: Number,
     })
     @IsInt()
     portalId: number;
@@ -67,12 +71,14 @@ export class BulkPortalRegionSkippedDto {
     @ApiProperty({
         description: 'ID региона, который не удалось обработать.',
         example: 12,
+        type: Number,
     })
     regionId: number;
 
     @ApiProperty({
         description: 'Причина пропуска.',
         example: 'не удалось включить регион',
+        type: String,
     })
     reason: string;
 }
@@ -81,18 +87,21 @@ export class BulkSetPortalRegionsResultDto {
     @ApiProperty({
         description: 'Сколько регионов включено на портале.',
         example: 5,
+        type: Number,
     })
     enabled: number;
 
     @ApiProperty({
         description: 'Сколько регионов выключено.',
         example: 2,
+        type: Number,
     })
     disabled: number;
 
     @ApiProperty({
         description: 'Скольким регионам обновлён собственный рабс.',
         example: 3,
+        type: Number,
     })
     updatedOwn: number;
 

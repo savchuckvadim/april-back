@@ -40,8 +40,8 @@ export class UpdateContractDto {
         enumName: 'ContractCode',
         example: CONTRACT_CODE.LIC12,
     })
-    @IsEnum(CONTRACT_CODE)
     @IsOptional()
+    @IsEnum(CONTRACT_CODE)
     code?: CONTRACT_CODE;
 
     @ApiPropertyOptional({

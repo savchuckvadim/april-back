@@ -1,5 +1,5 @@
 import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { GarantFeedImportService } from '../services/garant-feed-import.service';
 import {
     GarantFeedImportRequestDto,
@@ -23,6 +23,11 @@ export class GarantFeedImportAdminController {
             'рабсы регионов, цены prof-линейки, цены LT/СТАР. Опционально досоздаёт ' +
             'отсутствующие справочники (поставки, универсальные комплекты, пакеты услуг). ' +
             'dryRun=true считает изменения без записи.',
+    })
+    @ApiBody({
+        type: GarantFeedImportRequestDto,
+        description:
+            'Выбор секций импорта (sections), сидов справочников (seed) и флага пробного прогона (dryRun).',
     })
     @ApiOkResponse({
         description: 'Отчёт импорта по секциям.',

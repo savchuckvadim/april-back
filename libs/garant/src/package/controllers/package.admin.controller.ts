@@ -96,7 +96,11 @@ export class AdminGarantPackageController {
     }
 
     @Delete(':id')
-    @ApiOperation({ summary: 'Удалить пакет' })
+    @ApiOperation({
+        summary: 'Удалить пакет',
+        description:
+            'Удаляет пакет услуг по ID. Возвращает true, если пакет найден и удалён.',
+    })
     @ApiResponse({
         status: 200,
         description: 'Пакет успешно удалён',
