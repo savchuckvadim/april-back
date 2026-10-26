@@ -39,7 +39,10 @@ export class InnerDealLibraryService {
         private readonly structure: BxDepartmentStructureService,
     ) {}
 
-    async rights(domain: string, userId: number): Promise<InnerDealLibraryRightsDto> {
+    async rights(
+        domain: string,
+        userId: number,
+    ): Promise<InnerDealLibraryRightsDto> {
         const actor = await this.resolveActor(domain, userId);
         return {
             isHead: actor.isHead,
@@ -68,7 +71,11 @@ export class InnerDealLibraryService {
     }
 
     /** Полный слепок заготовки — для загрузки в конструктор. Чужое невидимое — 404. */
-    async get(domain: string, userId: number, id: number): Promise<BxDocumentDeal> {
+    async get(
+        domain: string,
+        userId: number,
+        id: number,
+    ): Promise<BxDocumentDeal> {
         const [actor, row] = await Promise.all([
             this.resolveActor(domain, userId),
             this.repository.findById(BigInt(id)),
@@ -108,7 +115,8 @@ export class InnerDealLibraryService {
             isActive: true,
             isArchived: false,
             templateId:
-                snapshot.templateId === null || snapshot.templateId === undefined
+                snapshot.templateId === null ||
+                snapshot.templateId === undefined
                     ? null
                     : BigInt(snapshot.templateId),
             dealName: snapshot.dealName ?? null,
@@ -126,8 +134,15 @@ export class InnerDealLibraryService {
         });
     }
 
-    async patch(id: number, dto: InnerDealLibraryPatchDto): Promise<BxDocumentDeal> {
-        const { actor, row } = await this.requireEditable(dto.domain, dto.userId, id);
+    async patch(
+        id: number,
+        dto: InnerDealLibraryPatchDto,
+    ): Promise<BxDocumentDeal> {
+        const { actor, row } = await this.requireEditable(
+            dto.domain,
+            dto.userId,
+            id,
+        );
         const data: Partial<BxDocumentDeal> = {};
         if (dto.title !== undefined) data.title = dto.title;
         if (dto.visibility !== undefined) {
@@ -170,12 +185,17 @@ export class InnerDealLibraryService {
             throw new NotFoundException(`Заготовка ${id} не найдена`);
         }
         if (!canEdit(row, actor)) {
-            throw new ForbiddenException(`Заготовку ${id} может править только автор или руководитель`);
+            throw new ForbiddenException(
+                `Заготовку ${id} может править только автор или руководитель`,
+            );
         }
         return { actor, row };
     }
 
-    private toItem(row: BxDocumentDeal, actor: LibraryActor): InnerDealLibraryItemDto {
+    private toItem(
+        row: BxDocumentDeal,
+        actor: LibraryActor,
+    ): InnerDealLibraryItemDto {
         return {
             id: Number(row.id),
             kind: effectiveKind(row) ?? 'favorite',
@@ -196,7 +216,10 @@ export class InnerDealLibraryService {
      * сервисный отдел, REST недоступен) — обычный сотрудник без отдела:
      * библиотека работает, просто без отдельских заготовок.
      */
-    private async resolveActor(domain: string, userId: number): Promise<LibraryActor> {
+    private async resolveActor(
+        domain: string,
+        userId: number,
+    ): Promise<LibraryActor> {
         try {
             const structure = await this.structure.getStructure(
                 domain,
@@ -210,7 +233,9 @@ export class InnerDealLibraryService {
                 )?.department.ID ?? null;
             const departmentId =
                 ownDepartment ??
-                (structure.department.department > 0 ? structure.department.department : null);
+                (structure.department.department > 0
+                    ? structure.department.department
+                    : null);
             return {
                 userId,
                 departmentId,
@@ -226,7 +251,12 @@ export class InnerDealLibraryService {
                     error instanceof Error ? error.message : String(error)
                 })`,
             );
-            return { userId, departmentId: null, isHead: false, isSuperUser: false };
+            return {
+                userId,
+                departmentId: null,
+                isHead: false,
+                isSuperUser: false,
+            };
         }
     }
 }

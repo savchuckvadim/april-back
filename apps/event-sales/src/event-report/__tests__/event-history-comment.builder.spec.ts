@@ -1,4 +1,8 @@
-import { buildEventHistoryParts } from '../services/history/event-history-comment.builder';
+import {
+    buildEventHistoryEntry,
+    buildEventHistoryParts,
+} from '../services/history/event-history-comment.builder';
+import { toBatchSafeText } from '@lib/bitrix/consts/batch.consts';
 
 /**
  * Формат записи истории события (op_history / op_mhistory карточки и
@@ -68,5 +72,43 @@ describe('buildEventHistoryParts', () => {
                 planDeadline: null,
             }),
         ).toEqual(['Запланирован Холодный звонок']);
+    });
+});
+
+/*
+ * Владелец 26.10.2026: «ОП История» — с переносами. Многострочный
+ * комментарий раньше превращался в «12 — 312 — 3 — …».
+ */
+describe('buildEventHistoryEntry', () => {
+    const deadline = { toRuHumanDateTime: () => '27 октября 10:00' } as never;
+
+    it('дата и что сделано — первой строкой, комментарий построчно, план — последней', () => {
+        const entry = buildEventHistoryEntry('26.10.2026 11:06:59', {
+            reportEventType: 'warm',
+            planEventType: 'warm',
+            reportComment:
+                'Говорил с бухгалтером\n\n  перезвонить после 10  \nнужен счёт',
+            planDeadline: deadline,
+        });
+
+        expect(entry).toBe(
+            '26.10.2026 11:06:59 — Звонок совершён: Говорил с бухгалтером\n' +
+                'перезвонить после 10\n' +
+                'нужен счёт\n' +
+                'Запланирован Звонок на 27 октября 10:00',
+        );
+        // На провод переносы уезжают batch-символом %0A.
+        expect(toBatchSafeText(entry)).toContain('бухгалтером%0Aперезвонить');
+    });
+
+    it('без комментария и плана — только дата и событие', () => {
+        expect(
+            buildEventHistoryEntry('26.10.2026 11:00:00', {
+                reportEventType: 'warm',
+                planEventType: null,
+                reportComment: '',
+                planDeadline: null,
+            }),
+        ).toBe('26.10.2026 11:00:00 — Звонок совершён');
     });
 });

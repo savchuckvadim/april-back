@@ -25,7 +25,8 @@ export interface ResolvedSupplyTexts extends SupplyTexts {
 }
 
 /** Минимум, по которому payload генерации опознаёт поставку. */
-export interface SupplyTextsPayload extends Partial<Record<SupplyTextField, unknown>> {
+export interface SupplyTextsPayload
+    extends Partial<Record<SupplyTextField, unknown>> {
     code?: string | null;
     type?: string | null;
     usersQuantity?: number | null;
@@ -53,7 +54,8 @@ export class SupplyTextService {
             : await this.supplyService.findByCode(code);
         if (!source) return null;
 
-        const quantity = custom?.usersQuantity ?? usersQuantity ?? source.usersQuantity;
+        const quantity =
+            custom?.usersQuantity ?? usersQuantity ?? source.usersQuantity;
         return {
             ...renderSupplyTexts(source, quantity),
             code,
@@ -71,10 +73,15 @@ export class SupplyTextService {
      */
     async enrich<T extends SupplyTextsPayload>(payload: T): Promise<T> {
         if (!payload.code) return payload;
-        const missing = SUPPLY_TEXT_FIELDS.filter(field => isBlank(payload[field]));
+        const missing = SUPPLY_TEXT_FIELDS.filter(field =>
+            isBlank(payload[field]),
+        );
         if (!missing.length) return payload;
 
-        const resolved = await this.resolve(payload.code, payload.usersQuantity);
+        const resolved = await this.resolve(
+            payload.code,
+            payload.usersQuantity,
+        );
         if (!resolved) return payload;
 
         const patch: Partial<Record<SupplyTextField, string>> = {};
@@ -102,13 +109,17 @@ export class SupplyTextService {
             )
             .sort((a, b) => a.usersQuantity - b.usersQuantity);
         if (!candidates.length) return null;
-        const below = candidates.filter(supply => supply.usersQuantity <= usersQuantity);
+        const below = candidates.filter(
+            supply => supply.usersQuantity <= usersQuantity,
+        );
         return below[below.length - 1] ?? candidates[0] ?? null;
     }
 
     /** «Интернет 7 ОД» — по образцу справочного имени с заменой числа. */
     private customName(source: SupplyEntity, quantity: number): string {
         const replaced = source.name.replace(/\d+/, String(quantity));
-        return replaced === source.name ? `${source.name} ${quantity} ОД` : replaced;
+        return replaced === source.name
+            ? `${source.name} ${quantity} ОД`
+            : replaced;
     }
 }

@@ -9,7 +9,10 @@
  */
 import { KPI_DIGEST_COMMENT_LIMIT } from '../constants/digest.const';
 import type { KpiDigestRecordDto } from '../dto/digest-response.dto';
-import type { DigestListField, DigestListFields } from './digest-list-fields.util';
+import type {
+    DigestListField,
+    DigestListFields,
+} from './digest-list-fields.util';
 import type { ListElementRow } from './digest-page-loader';
 
 /** Сырое значение свойства → скаляры ({id: value}-объекты и массивы — в значения). */
@@ -31,8 +34,10 @@ export function scalarsOf(raw: unknown): string[] {
 export const firstScalar = (raw: unknown): string | null =>
     scalarsOf(raw)[0] ?? null;
 
-const LEGACY_DT_RE = /^(\d{2})\.(\d{2})\.(\d{4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
-const ISO_DT_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/;
+const LEGACY_DT_RE =
+    /^(\d{2})\.(\d{2})\.(\d{4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
+const ISO_DT_RE =
+    /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/;
 
 /**
  * `DD.MM.YYYY HH:mm:ss` | `DD.MM.YYYY` | ISO (с зоной или без) →

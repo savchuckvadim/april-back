@@ -270,7 +270,8 @@ export class SupplyInitDto {
     quantityForKp: string | null;
 
     @ApiProperty({
-        description: 'Количество поставок для договора (число ОД или «Флэш»), отрендерено',
+        description:
+            'Количество поставок для договора (число ОД или «Флэш»), отрендерено',
         type: String,
         nullable: true,
     })
@@ -360,23 +361,34 @@ export class ServicesInitDto implements IKServices {
 export class MeasureInitDto {
     @ApiProperty({ description: 'Id меры (measures)', type: Number })
     id: number;
-    @ApiProperty({ description: 'Код меры «для APP» (month, piece…)', type: String })
+    @ApiProperty({
+        description: 'Код меры «для APP» (month, piece…)',
+        type: String,
+    })
     code: string;
     @ApiProperty({ description: 'Тип меры', type: String, nullable: true })
     type: string | null;
-    @ApiProperty({ description: 'Название (портальное, иначе общее)', type: String })
+    @ApiProperty({
+        description: 'Название (портальное, иначе общее)',
+        type: String,
+    })
     name: string;
     @ApiProperty({ description: 'Короткое название', type: String })
     shortName: string;
     @ApiProperty({ description: 'Полное название', type: String })
     fullName: string;
     @ApiProperty({
-        description: 'Код единицы в Bitrix портала (crm.measure) — для productRows',
+        description:
+            'Код единицы в Bitrix портала (crm.measure) — для productRows',
         type: String,
         nullable: true,
     })
     bitrixId: string | null;
-    @ApiProperty({ description: 'Id строки portal_measure', type: Number, nullable: true })
+    @ApiProperty({
+        description: 'Id строки portal_measure',
+        type: Number,
+        nullable: true,
+    })
     portalMeasureId: number | null;
 }
 

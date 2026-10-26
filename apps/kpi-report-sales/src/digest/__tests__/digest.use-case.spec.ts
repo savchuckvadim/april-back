@@ -20,11 +20,13 @@ const listPage = (rows: Record<string, unknown>[]) => ({
     total: rows.length,
 });
 
-const createMocks = (options: {
-    dayRows?: Record<string, unknown>[];
-    plannedRows?: Record<string, unknown>[];
-    cache?: Record<string, unknown>;
-} = {}) => {
+const createMocks = (
+    options: {
+        dayRows?: Record<string, unknown>[];
+        plannedRows?: Record<string, unknown>[];
+        cache?: Record<string, unknown>;
+    } = {},
+) => {
     const api = {
         // Порядок вызовов: события дня, затем план на день.
         call: jest
@@ -48,12 +50,10 @@ const createMocks = (options: {
         get: jest.fn((_domain: string, key: string) =>
             Promise.resolve(store.get(key) ?? null),
         ),
-        set: jest.fn(
-            (_domain: string, key: string, data: unknown) => {
-                store.set(key, data);
-                return Promise.resolve();
-            },
-        ),
+        set: jest.fn((_domain: string, key: string, data: unknown) => {
+            store.set(key, data);
+            return Promise.resolve();
+        }),
     };
     const results = { setReady: jest.fn(() => Promise.resolve()) };
     return { api, pbx, partitions, results, store };
@@ -75,20 +75,58 @@ afterEach(() => jest.restoreAllMocks());
 describe('DigestUseCase', () => {
     it('промах кэша: выгружает события и план, звонки, пишет партиции и конверт', async () => {
         const fetchRows = voxRows([
-            { CALL_ID: '1', PORTAL_USER_ID: '42', CALL_DURATION: '90', CALL_TYPE: '1', CALL_START_DATE: '2026-10-14T10:00:00+03:00' },
+            {
+                CALL_ID: '1',
+                PORTAL_USER_ID: '42',
+                CALL_DURATION: '90',
+                CALL_TYPE: '1',
+                CALL_START_DATE: '2026-10-14T10:00:00+03:00',
+            },
         ]);
         const mocks = createMocks({
             dayRows: [
-                listElement({ id: 1, userId: 42, type: 21, action: 13, eventDate: '14.10.2026 10:00:00' }),
-                listElement({ id: 2, userId: 42, type: 23, action: 11, eventDate: '14.10.2026 11:00:00', planDate: '16.10.2026 12:00:00' }),
-                listElement({ id: 3, userId: 7, type: 21, action: 14, eventDate: '14.10.2026 12:00:00', reason: 41 }),
+                listElement({
+                    id: 1,
+                    userId: 42,
+                    type: 21,
+                    action: 13,
+                    eventDate: '14.10.2026 10:00:00',
+                }),
+                listElement({
+                    id: 2,
+                    userId: 42,
+                    type: 23,
+                    action: 11,
+                    eventDate: '14.10.2026 11:00:00',
+                    planDate: '16.10.2026 12:00:00',
+                }),
+                listElement({
+                    id: 3,
+                    userId: 7,
+                    type: 21,
+                    action: 14,
+                    eventDate: '14.10.2026 12:00:00',
+                    reason: 41,
+                }),
             ],
             plannedRows: [
-                listElement({ id: 4, userId: 42, type: 23, action: 11, eventDate: '12.10.2026 10:00:00', planDate: '14.10.2026 15:00:00' }),
+                listElement({
+                    id: 4,
+                    userId: 42,
+                    type: 23,
+                    action: 11,
+                    eventDate: '12.10.2026 10:00:00',
+                    planDate: '14.10.2026 15:00:00',
+                }),
             ],
         });
         const useCase = new DigestUseCase();
-        await useCase.init('example.bitrix24.ru', mocks.pbx as never, mocks.partitions as never, mocks.results as never);
+        await useCase.init(
+            'example.bitrix24.ru',
+            mocks.pbx as never,
+            mocks.partitions as never,
+            mocks.results as never,
+        );
 
         const report = await useCase.generate(filters(['42']), {
             now: new Date(2026, 9, 15, 10, 0, 0),
@@ -99,7 +137,10 @@ describe('DigestUseCase', () => {
         expect(mocks.api.call.mock.calls[0][1]).toEqual(
             expect.objectContaining({
                 IBLOCK_ID: '55',
-                filter: { '>PROPERTY_103': '14.10.2026', '<PROPERTY_103': '15.10.2026' },
+                filter: {
+                    '>PROPERTY_103': '14.10.2026',
+                    '<PROPERTY_103': '15.10.2026',
+                },
             }),
         );
         expect(mocks.api.call.mock.calls[1][1]).toEqual(
@@ -127,9 +168,15 @@ describe('DigestUseCase', () => {
         expect(employee.userId).toBe(42);
         expect(employee.name).toBe('Иван П42');
         expect(employee.done).toEqual({ total: 1, byType: { xo: 1 } });
-        expect(employee.planned).toEqual({ total: 1, byType: { presentation: 1 } });
+        expect(employee.planned).toEqual({
+            total: 1,
+            byType: { presentation: 1 },
+        });
         expect(employee.plannedBeyond.total).toBe(1);
-        expect(employee.plannedAtStart).toEqual({ total: 1, byType: { presentation: 1 } });
+        expect(employee.plannedAtStart).toEqual({
+            total: 1,
+            byType: { presentation: 1 },
+        });
         expect(employee.plannedAtStartRecords).toHaveLength(1);
         expect(employee.records).toHaveLength(2);
         expect(employee.calls?.callsCount).toBe(1);
@@ -142,13 +189,18 @@ describe('DigestUseCase', () => {
         expect(report.summary.calls?.callsCount).toBe(1);
         // Воронки сделок в фикстуре не настроены — презентации пустые с предупреждением.
         expect(report.warnings).toEqual(NO_FUNNEL_WARNINGS);
-        expect(report.presentations).toEqual({ items: [], sales: [], truncated: false });
+        expect(report.presentations).toEqual({
+            items: [],
+            sales: [],
+            truncated: false,
+        });
         expect(report.truncated).toBe(false);
         expect(report.catalog.types.length).toBeGreaterThan(0);
 
         // Партиции записаны: закрытый день — длинный TTL.
         expect(mocks.partitions.set).toHaveBeenCalledTimes(4);
-        const [, dayKey, , dayTtl, dayGroup] = mocks.partitions.set.mock.calls[0] as unknown[];
+        const [, dayKey, , dayTtl, dayGroup] = mocks.partitions.set.mock
+            .calls[0] as unknown[];
         expect(dayKey).toBe('v1:day:2026-10-14');
         expect(dayTtl).toBe(30 * 24 * 60 * 60);
         expect(dayGroup).toBe('day');
@@ -165,7 +217,12 @@ describe('DigestUseCase', () => {
         const fetchRows = voxRows([]);
         const cachedDay = {
             date: DAY,
-            byUser: { '42': { counters: { ...emptyCountersLike(), sales: 2 }, records: [] } },
+            byUser: {
+                '42': {
+                    counters: { ...emptyCountersLike(), sales: 2 },
+                    records: [],
+                },
+            },
             usersCount: 1,
             elements: 2,
             truncated: false,
@@ -174,13 +231,36 @@ describe('DigestUseCase', () => {
         const mocks = createMocks({
             cache: {
                 'v1:day:2026-10-14': cachedDay,
-                'v1:planned:2026-10-14': { date: DAY, byUser: {}, elements: 0, truncated: false, builtAt: 'x' },
-                'v1:calls:2026-10-14': { date: DAY, byUser: {}, rowsFetched: 0, truncated: false, builtAt: 'x' },
-                'v1:pres:2026-10-14': { date: DAY, items: [], sales: [], truncated: false, warnings: [], builtAt: 'x' },
+                'v1:planned:2026-10-14': {
+                    date: DAY,
+                    byUser: {},
+                    elements: 0,
+                    truncated: false,
+                    builtAt: 'x',
+                },
+                'v1:calls:2026-10-14': {
+                    date: DAY,
+                    byUser: {},
+                    rowsFetched: 0,
+                    truncated: false,
+                    builtAt: 'x',
+                },
+                'v1:pres:2026-10-14': {
+                    date: DAY,
+                    items: [],
+                    sales: [],
+                    truncated: false,
+                    warnings: [],
+                    builtAt: 'x',
+                },
             },
         });
         const useCase = new DigestUseCase();
-        await useCase.init('example.bitrix24.ru', mocks.pbx as never, mocks.partitions as never);
+        await useCase.init(
+            'example.bitrix24.ru',
+            mocks.pbx as never,
+            mocks.partitions as never,
+        );
 
         const report = await useCase.generate(filters(['42']));
 
@@ -195,11 +275,22 @@ describe('DigestUseCase', () => {
         voxRows([]);
         const mocks = createMocks({
             cache: {
-                'v1:day:2026-10-14': { date: DAY, byUser: {}, usersCount: 0, elements: 0, truncated: false, builtAt: 'x' },
+                'v1:day:2026-10-14': {
+                    date: DAY,
+                    byUser: {},
+                    usersCount: 0,
+                    elements: 0,
+                    truncated: false,
+                    builtAt: 'x',
+                },
             },
         });
         const useCase = new DigestUseCase();
-        await useCase.init('example.bitrix24.ru', mocks.pbx as never, mocks.partitions as never);
+        await useCase.init(
+            'example.bitrix24.ru',
+            mocks.pbx as never,
+            mocks.partitions as never,
+        );
 
         await useCase.generate(filters(['42']), { forceRefresh: true });
 
@@ -209,14 +300,26 @@ describe('DigestUseCase', () => {
     });
 
     it('недоступная телефония — warning и calls: null, события дня отдаются', async () => {
-        jest.spyOn(voximplant, 'fetchAirtimeRows').mockRejectedValue(new Error('vox down'));
+        jest.spyOn(voximplant, 'fetchAirtimeRows').mockRejectedValue(
+            new Error('vox down'),
+        );
         const mocks = createMocks({
             dayRows: [
-                listElement({ id: 1, userId: 42, type: 21, action: 13, eventDate: '14.10.2026 10:00:00' }),
+                listElement({
+                    id: 1,
+                    userId: 42,
+                    type: 21,
+                    action: 13,
+                    eventDate: '14.10.2026 10:00:00',
+                }),
             ],
         });
         const useCase = new DigestUseCase();
-        await useCase.init('example.bitrix24.ru', mocks.pbx as never, mocks.partitions as never);
+        await useCase.init(
+            'example.bitrix24.ru',
+            mocks.pbx as never,
+            mocks.partitions as never,
+        );
 
         const report = await useCase.generate(filters(['42']));
 
@@ -232,7 +335,11 @@ describe('DigestUseCase', () => {
         voxRows([], true);
         const mocks = createMocks();
         const useCase = new DigestUseCase();
-        await useCase.init('example.bitrix24.ru', mocks.pbx as never, mocks.partitions as never);
+        await useCase.init(
+            'example.bitrix24.ru',
+            mocks.pbx as never,
+            mocks.partitions as never,
+        );
 
         const report = await useCase.generate(filters(['42']), {
             now: new Date(2026, 9, 20),
@@ -249,7 +356,11 @@ describe('DigestUseCase', () => {
         voxRows([]);
         const mocks = createMocks();
         const useCase = new DigestUseCase();
-        await useCase.init('example.bitrix24.ru', mocks.pbx as never, mocks.partitions as never);
+        await useCase.init(
+            'example.bitrix24.ru',
+            mocks.pbx as never,
+            mocks.partitions as never,
+        );
 
         const report = await useCase.generate(filters(['42', '42', 'x', '']));
 

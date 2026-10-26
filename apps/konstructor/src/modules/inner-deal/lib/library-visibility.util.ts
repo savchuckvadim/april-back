@@ -15,7 +15,12 @@ export type LibraryKind = (typeof LIBRARY_KINDS)[number];
  * порталу; global — всем порталам (акции вендора, portalId IS NULL, заводит
  * админка April).
  */
-export const LIBRARY_VISIBILITIES = ['user', 'department', 'portal', 'global'] as const;
+export const LIBRARY_VISIBILITIES = [
+    'user',
+    'department',
+    'portal',
+    'global',
+] as const;
 export type LibraryVisibility = (typeof LIBRARY_VISIBILITIES)[number];
 
 /** Кто спрашивает: роль поверх структуры отделов портала. */
@@ -30,7 +35,8 @@ export interface LibraryActor {
 }
 
 const isLibraryKind = (value: unknown): value is LibraryKind =>
-    typeof value === 'string' && (LIBRARY_KINDS as readonly string[]).includes(value);
+    typeof value === 'string' &&
+    (LIBRARY_KINDS as readonly string[]).includes(value);
 
 const isLibraryVisibility = (value: unknown): value is LibraryVisibility =>
     typeof value === 'string' &&
@@ -83,7 +89,14 @@ export const allowedVisibilities = (
 export const isVisibleTo = (
     row: Pick<
         BxDocumentDeal,
-        'kind' | 'isFavorite' | 'visibility' | 'portalId' | 'creatorBxUserId' | 'userId' | 'department' | 'isArchived'
+        | 'kind'
+        | 'isFavorite'
+        | 'visibility'
+        | 'portalId'
+        | 'creatorBxUserId'
+        | 'userId'
+        | 'department'
+        | 'isArchived'
     >,
     actor: LibraryActor,
 ): boolean => {
@@ -111,7 +124,13 @@ export const isVisibleTo = (
 export const canEdit = (
     row: Pick<
         BxDocumentDeal,
-        'kind' | 'isFavorite' | 'visibility' | 'portalId' | 'creatorBxUserId' | 'userId' | 'department'
+        | 'kind'
+        | 'isFavorite'
+        | 'visibility'
+        | 'portalId'
+        | 'creatorBxUserId'
+        | 'userId'
+        | 'department'
     >,
     actor: LibraryActor,
 ): boolean => {

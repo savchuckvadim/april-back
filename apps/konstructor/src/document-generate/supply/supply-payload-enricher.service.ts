@@ -42,7 +42,11 @@ export class SupplyPayloadEnricherService {
             currentSupply,
             supply,
             product: row.product
-                ? { ...row.product, supply: productSupply ?? row.product.supply, quantityForKp }
+                ? {
+                      ...row.product,
+                      supply: productSupply ?? row.product.supply,
+                      quantityForKp,
+                  }
                 : row.product,
         };
     }

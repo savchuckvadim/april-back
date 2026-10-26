@@ -3,7 +3,6 @@ import { StorageModule } from 'src/core/storage/storage.module';
 import { PriceService } from './services/price.service';
 import { PriceRepository } from './repositories/price.repository';
 import { PricePrismaRepository } from './repositories/price.prisma.repository';
-import { PriceInstallService } from './services/install/price.install.service';
 import { PriceExcelService } from './services/excel/price-excel.service';
 import { PackageModule } from '../package';
 import { ServicesPriceService } from './services/packages-prices/services-price.service';
@@ -16,14 +15,13 @@ import { ComplectPriceExcelParseService } from './services/excel/complect-price-
 /**
  * Сервисный модуль цен гаранта. Админ-контроллер вынесен в
  * {@link AdminGarantProfPriceModule}, чтобы konstructor (импортит ради
- * PriceService/PriceInstallService) не тащил админские роуты в свой Swagger.
+ * PriceService) не тащил админские роуты в свой Swagger.
  * PriceExcelService экспортируется — он нужен админ-контроллеру.
  */
 @Module({
     imports: [StorageModule, PackageModule, ComplectModule, SupplyModule],
     providers: [
         PriceService,
-        PriceInstallService,
         PriceExcelService,
         ServicesPriceService,
         ServicesPriceExcelParseService,
@@ -35,11 +33,6 @@ import { ComplectPriceExcelParseService } from './services/excel/complect-price-
             useClass: PricePrismaRepository,
         },
     ],
-    exports: [
-        PriceService,
-        PriceInstallService,
-        ServicesPriceService,
-        PriceExcelService,
-    ],
+    exports: [PriceService, ServicesPriceService, PriceExcelService],
 })
 export class PriceModule {}

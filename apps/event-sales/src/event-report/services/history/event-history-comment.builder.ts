@@ -1,4 +1,7 @@
-import { toBatchText } from '@lib/bitrix/consts/batch.consts';
+import {
+    toBatchText,
+    toMultiFieldEntryLines,
+} from '@lib/bitrix/consts/batch.consts';
 import { BitrixDateTime } from '@/shared/lib/date';
 import {
     eventDonePhrase,
@@ -75,4 +78,21 @@ export const buildEventHistoryParts = (
     }
 
     return parts.map(toBatchText);
+};
+
+/**
+ * Запись «ОП Истории» (op_mhistory) С ПЕРЕНОСАМИ — владелец 26.10.2026:
+ * первая строка — когда и что сделано, дальше комментарий менеджера
+ * построчно (как он его написал), последними — чек-лист и план. Раньше
+ * части склеивались « — », и многострочный комментарий превращался в
+ * «12 — 312 — 3 — …».
+ */
+export const buildEventHistoryEntry = (
+    when: string,
+    src: IEventHistoryCommentSource,
+): string => {
+    const [first, ...rest] = buildEventHistoryParts(src);
+    return toMultiFieldEntryLines(
+        [first ? `${when} — ${first}` : when, ...rest].join('\n'),
+    );
 };

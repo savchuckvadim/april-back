@@ -14,7 +14,9 @@ export interface CustomSupplyCode {
 
 const CUSTOM_CODE_RE = /^x_(internet|proxima)_(\d+)$/;
 
-export const parseCustomSupplyCode = (code: string): CustomSupplyCode | null => {
+export const parseCustomSupplyCode = (
+    code: string,
+): CustomSupplyCode | null => {
     const match = CUSTOM_CODE_RE.exec(code);
     if (!match) return null;
     const usersQuantity = Number(match[2]);

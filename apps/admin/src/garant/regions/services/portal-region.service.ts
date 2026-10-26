@@ -4,7 +4,14 @@ import { GetPortalRegionResponseDto } from '../dto/request/get-portal-region-res
 import { Prisma } from 'generated/prisma';
 import { CreatePortalRegionDtoAdminRequest } from '../dto/request/create-portal-region-request.dto';
 import { UpdatePortalRegionDtoAdmin } from '../dto/request/update-portal-region-request.dto';
+import {
+    BulkSetPortalRegionsDto,
+    BulkSetPortalRegionsResultDto,
+} from '../dto/request/bulk-set-portal-regions.dto';
 import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
+
+/** НДС-множитель own_tax — тот же, что в updatePortalRegion */
+const OWN_TAX = '1.20';
 
 @Injectable()
 export class PortalRegionService {
@@ -96,6 +103,100 @@ export class PortalRegionService {
     }
     async deletePortalRegion(portalId: number, regionId: number) {
         return await this.regionService.deletePortalRegion(portalId, regionId);
+    }
+
+    /**
+     * Массовое применение чекбоксов регионов портала: enabled=true создаёт
+     * связь (идемпотентно) и, если передан ownAbs, ставит собственный рабс
+     * (own_tax 1.20, own_tax_abs считается); ownAbs=null сбрасывает own к
+     * общему рабсу; enabled=false удаляет связь. Невключённый регион при
+     * выключении — не ошибка, просто пропуск без причины в отчёте.
+     */
+    async bulkSetPortalRegions(
+        dto: BulkSetPortalRegionsDto,
+    ): Promise<BulkSetPortalRegionsResultDto> {
+        const result: BulkSetPortalRegionsResultDto = {
+            enabled: 0,
+            disabled: 0,
+            updatedOwn: 0,
+            skipped: [],
+        };
+        const current =
+            (await this.regionService.findByPortalId(dto.portalId)) ?? [];
+        const enabledIds = new Set(current.map(region => Number(region.id)));
+
+        for (const item of dto.items) {
+            if (!item.enabled) {
+                if (!enabledIds.has(item.regionId)) continue; // уже выключен
+                const deleted = await this.regionService.deletePortalRegion(
+                    dto.portalId,
+                    item.regionId,
+                );
+                if (deleted) {
+                    result.disabled += 1;
+                } else {
+                    result.skipped.push({
+                        regionId: item.regionId,
+                        reason: 'не удалось выключить регион',
+                    });
+                }
+                continue;
+            }
+
+            if (!enabledIds.has(item.regionId)) {
+                const created = await this.regionService.createPortalRegion(
+                    dto.portalId,
+                    item.regionId,
+                );
+                if (!created) {
+                    result.skipped.push({
+                        regionId: item.regionId,
+                        reason: 'не удалось включить регион',
+                    });
+                    continue;
+                }
+                result.enabled += 1;
+            }
+
+            if (item.ownAbs !== undefined) {
+                const updated = await this.applyOwnAbs(
+                    dto.portalId,
+                    item.regionId,
+                    item.ownAbs,
+                );
+                if (updated) {
+                    result.updatedOwn += 1;
+                } else {
+                    result.skipped.push({
+                        regionId: item.regionId,
+                        reason: 'не удалось обновить собственный рабс',
+                    });
+                }
+            }
+        }
+        return result;
+    }
+
+    /** Установка/сброс own-полей связи портал-регион */
+    private async applyOwnAbs(
+        portalId: number,
+        regionId: number,
+        ownAbs: string | null,
+    ): Promise<boolean> {
+        const zero = new Prisma.Decimal('0.00');
+        const abs = ownAbs ? new Prisma.Decimal(ownAbs) : zero;
+        const tax = ownAbs ? new Prisma.Decimal(OWN_TAX) : zero;
+        const taxAbs = ownAbs
+            ? new Prisma.Decimal((Number(ownAbs) * Number(OWN_TAX)).toFixed(2))
+            : zero;
+        const updated = await this.regionService.updatePortalRegion(
+            portalId,
+            regionId,
+            abs,
+            tax,
+            taxAbs,
+        );
+        return updated !== null;
     }
 
     // private prepareWithCheckedStatus(portalRegions: RegionEntity[], allRegions: RegionEntity[]) {

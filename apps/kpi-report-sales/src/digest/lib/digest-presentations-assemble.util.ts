@@ -43,10 +43,14 @@ export function indexPresentationRecords(
     return index;
 }
 
-const latest = (records: readonly KpiDigestRecordDto[]): KpiDigestRecordDto | null =>
+const latest = (
+    records: readonly KpiDigestRecordDto[],
+): KpiDigestRecordDto | null =>
     records.reduce<KpiDigestRecordDto | null>(
         (best, record) =>
-            !best || (record.eventDate ?? '') > (best.eventDate ?? '') ? record : best,
+            !best || (record.eventDate ?? '') > (best.eventDate ?? '')
+                ? record
+                : best,
         null,
     );
 
@@ -56,25 +60,37 @@ export function withRecords(
     dayRecords: readonly KpiDigestRecordDto[],
     plannedRecords: readonly KpiDigestRecordDto[],
 ): KpiDigestPresentationDto {
-    const report = latest(dayRecords.filter(record => REPORT_ACTIONS.has(record.actionCode ?? '')));
+    const report = latest(
+        dayRecords.filter(record =>
+            REPORT_ACTIONS.has(record.actionCode ?? ''),
+        ),
+    );
     const plan =
-        latest(plannedRecords.filter(record => PLAN_ACTIONS.has(record.actionCode ?? ''))) ??
+        latest(
+            plannedRecords.filter(record =>
+                PLAN_ACTIONS.has(record.actionCode ?? ''),
+            ),
+        ) ??
         latest(
             dayRecords.filter(
                 record =>
                     record.actionCode === 'plan' &&
-                    (!report || (record.eventDate ?? '') <= (report.eventDate ?? '')),
+                    (!report ||
+                        (record.eventDate ?? '') <= (report.eventDate ?? '')),
             ),
         );
 
     let dayStatus = item.dayStatus;
     if (report && dayStatus === 'pending') {
         if (report.actionCode === 'done') dayStatus = 'held';
-        else if (report.actionCode === 'act_noresult_fail') dayStatus = 'notHeld';
+        else if (report.actionCode === 'act_noresult_fail')
+            dayStatus = 'notHeld';
         else if (report.actionCode === 'pound') dayStatus = 'postponed';
     }
 
-    const hourOfReport = report?.eventDate ? Number(report.eventDate.slice(11, 13)) : null;
+    const hourOfReport = report?.eventDate
+        ? Number(report.eventDate.slice(11, 13))
+        : null;
     return {
         ...item,
         dayStatus,
@@ -96,7 +112,9 @@ export interface AssemblePresentationsInput {
     userIds: ReadonlySet<number>;
 }
 
-export function assemblePresentations(input: AssemblePresentationsInput): KpiDigestPresentationsDto {
+export function assemblePresentations(
+    input: AssemblePresentationsInput,
+): KpiDigestPresentationsDto {
     const { partition, day, planned, userIds } = input;
     const allowed = (id: number) => !userIds.size || userIds.has(id);
 
@@ -110,11 +128,17 @@ export function assemblePresentations(input: AssemblePresentationsInput): KpiDig
     const items = partition.items
         .filter(item => allowed(item.assignedId))
         .map(item =>
-            withRecords(item, dayIndex.get(item.dealId) ?? [], plannedIndex.get(item.dealId) ?? []),
+            withRecords(
+                item,
+                dayIndex.get(item.dealId) ?? [],
+                plannedIndex.get(item.dealId) ?? [],
+            ),
         )
         .sort(
             (a, b) =>
-                (a.hour ?? 99) - (b.hour ?? 99) || a.assignedId - b.assignedId || a.dealId - b.dealId,
+                (a.hour ?? 99) - (b.hour ?? 99) ||
+                a.assignedId - b.assignedId ||
+                a.dealId - b.dealId,
         );
 
     return {

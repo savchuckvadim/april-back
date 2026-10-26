@@ -89,7 +89,10 @@ function toField(list: IPBXList, field: IField): DigestListField {
     };
 }
 
-function findField(list: IPBXList, code: EnumSalesKpiFieldCode): IField | undefined {
+function findField(
+    list: IPBXList,
+    code: EnumSalesKpiFieldCode,
+): IField | undefined {
     return list.bitrixfields?.find(field => String(field.code) === code);
 }
 
@@ -134,7 +137,9 @@ export function resolveDigestListFields(
         }
         return toField(list, field);
     };
-    const optional = (code: EnumSalesKpiFieldCode): DigestListField | undefined => {
+    const optional = (
+        code: EnumSalesKpiFieldCode,
+    ): DigestListField | undefined => {
         const field = findField(list, code);
         return field && (field.bitrixCamelId || field.bitrixId)
             ? toField(list, field)
@@ -142,7 +147,10 @@ export function resolveDigestListFields(
     };
 
     const eventTypeField = findField(list, EnumSalesKpiFieldCode.event_type);
-    const eventActionField = findField(list, EnumSalesKpiFieldCode.event_action);
+    const eventActionField = findField(
+        list,
+        EnumSalesKpiFieldCode.event_action,
+    );
     const typeItems = toItems(list, eventTypeField);
     const actionItems = toItems(list, eventActionField);
     const resultItems = toItems(

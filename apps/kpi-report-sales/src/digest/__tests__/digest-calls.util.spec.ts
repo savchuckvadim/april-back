@@ -17,11 +17,40 @@ describe('digest-calls.util', () => {
         const partition = reduceCallRows(
             '2026-10-14',
             [
-                { CALL_ID: '1', PORTAL_USER_ID: '42', CALL_DURATION: '45', CALL_TYPE: '1', CALL_START_DATE: '2026-10-14T09:10:00+03:00' },
-                { CALL_ID: '2', PORTAL_USER_ID: 42, CALL_DURATION: 200, CALL_TYPE: 2, CALL_START_DATE: '2026-10-14T09:50:00+03:00' },
-                { CALL_ID: '3', PORTAL_USER_ID: '42', CALL_DURATION: '20', CALL_TYPE: '4', CALL_START_DATE: '2026-10-14T15:00:00+03:00' },
-                { CALL_ID: '4', PORTAL_USER_ID: '7', CALL_DURATION: '700', CALL_TYPE: '3', CALL_START_DATE: '2026-10-14T11:00:00+03:00' },
-                { CALL_ID: '5', PORTAL_USER_ID: '', CALL_DURATION: '10', CALL_TYPE: '1' },
+                {
+                    CALL_ID: '1',
+                    PORTAL_USER_ID: '42',
+                    CALL_DURATION: '45',
+                    CALL_TYPE: '1',
+                    CALL_START_DATE: '2026-10-14T09:10:00+03:00',
+                },
+                {
+                    CALL_ID: '2',
+                    PORTAL_USER_ID: 42,
+                    CALL_DURATION: 200,
+                    CALL_TYPE: 2,
+                    CALL_START_DATE: '2026-10-14T09:50:00+03:00',
+                },
+                {
+                    CALL_ID: '3',
+                    PORTAL_USER_ID: '42',
+                    CALL_DURATION: '20',
+                    CALL_TYPE: '4',
+                    CALL_START_DATE: '2026-10-14T15:00:00+03:00',
+                },
+                {
+                    CALL_ID: '4',
+                    PORTAL_USER_ID: '7',
+                    CALL_DURATION: '700',
+                    CALL_TYPE: '3',
+                    CALL_START_DATE: '2026-10-14T11:00:00+03:00',
+                },
+                {
+                    CALL_ID: '5',
+                    PORTAL_USER_ID: '',
+                    CALL_DURATION: '10',
+                    CALL_TYPE: '1',
+                },
             ],
             { truncated: false, builtAt: '2026-10-14T12:00:00.000Z' },
         );

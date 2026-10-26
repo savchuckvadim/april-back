@@ -16,7 +16,11 @@ import type {
 } from '../dto/digest-presentations.dto';
 import type { DigestDealFields } from './digest-deal-fields.util';
 import { stageSuffix } from './digest-deal-fields.util';
-import { firstScalar, normalizeBitrixDateTime, scalarsOf } from './digest-record.mapper';
+import {
+    firstScalar,
+    normalizeBitrixDateTime,
+    scalarsOf,
+} from './digest-record.mapper';
 import type { ListElementRow } from './digest-page-loader';
 
 const num = (raw: unknown): number => {
@@ -29,7 +33,8 @@ const idOrNull = (raw: unknown): number | null => {
     return value > 0 ? value : null;
 };
 
-const date = (raw: unknown): string | null => normalizeBitrixDateTime(firstScalar(raw));
+const date = (raw: unknown): string | null =>
+    normalizeBitrixDateTime(firstScalar(raw));
 
 /** `D_123`, `123`, `['D_123']` → 123; иначе null. */
 export const linkedDealId = (raw: unknown): number | null => {
@@ -50,9 +55,14 @@ const hourOf = (value: string | null): number | null => {
 };
 
 /** «YYYY-MM-DD HH:mm:ss» + N часов (без часовых поясов, по компонентам). */
-export const shiftDateTime = (value: string | null, hours: number): string | null => {
+export const shiftDateTime = (
+    value: string | null,
+    hours: number,
+): string | null => {
     if (!value || !hours) return value;
-    const match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/.exec(value);
+    const match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/.exec(
+        value,
+    );
     if (!match) return value;
     const [, y, mo, d, h, mi, se] = match.map(Number);
     const moment = new Date(Date.UTC(y, mo - 1, d, h + hours, mi, se));
@@ -84,7 +94,10 @@ const SKEW_MAX_HOURS = 12;
  * их разница по большинству сделок и есть сдвиг. Нет уверенного
  * большинства — 0.
  */
-export function detectUfSkewHours(rows: readonly ListElementRow[], fields: DigestDealFields): number {
+export function detectUfSkewHours(
+    rows: readonly ListElementRow[],
+    fields: DigestDealFields,
+): number {
     const doneKey = fields.uf.lastPresDoneDate;
     if (!doneKey) return 0;
     const counts = new Map<number, number>();
@@ -100,7 +113,9 @@ export function detectUfSkewHours(rows: readonly ListElementRow[], fields: Diges
         counts.set(diff, (counts.get(diff) ?? 0) + 1);
     }
     if (samples < SKEW_MIN_SAMPLES) return 0;
-    const [best, count] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0] ?? [0, 0];
+    const [best, count] = [...counts.entries()].sort(
+        (a, b) => b[1] - a[1],
+    )[0] ?? [0, 0];
     return count / samples >= SKEW_MIN_SHARE ? best : 0;
 }
 
@@ -124,18 +139,26 @@ export function presentationDayStatus(
     if (inDay(facts.doneDate, day)) return 'held';
     const movedToday = inDay(facts.movedAt, day);
     const plannedForDay = inDay(facts.planDate, day);
-    if (stageCode === 'spres_noresult' && (movedToday || plannedForDay)) return 'notHeld';
+    if (stageCode === 'spres_noresult' && (movedToday || plannedForDay))
+        return 'notHeld';
     if (stageCode === 'spres_fail' && movedToday) return 'refused';
     if (stageCode === 'spres_pending' && movedToday) return 'postponed';
-    if (plannedForDay && (stageCode === 'spres_plan' || stageCode === 'spres_new' || stageCode === 'spres_pending')) {
+    if (
+        plannedForDay &&
+        (stageCode === 'spres_plan' ||
+            stageCode === 'spres_new' ||
+            stageCode === 'spres_pending')
+    ) {
         return 'pending';
     }
-    const plannedToday = inDay(facts.planCreatedAt, day) || inDay(facts.createdAt, day);
+    const plannedToday =
+        inDay(facts.planCreatedAt, day) || inDay(facts.createdAt, day);
     if (plannedToday && !!facts.planDate && facts.planDate.slice(0, 10) > day) {
         return 'plannedNext';
     }
     // Спонтанная, созданная сразу проведённой, без даты проведения.
-    if (stageCode === 'spres_success' && inDay(facts.createdAt, day)) return 'held';
+    if (stageCode === 'spres_success' && inDay(facts.createdAt, day))
+        return 'held';
     return 'other';
 }
 
@@ -157,8 +180,13 @@ export function presentationHour(
 }
 
 export function isSpontaneous(facts: PresentationDealFacts): boolean {
-    if (facts.title.toLowerCase().includes(KPI_DIGEST_SPONTANEOUS_TITLE_MARK)) return true;
-    return facts.stageCode === 'spres_success' && !facts.planCreatedAt && !facts.planDate;
+    if (facts.title.toLowerCase().includes(KPI_DIGEST_SPONTANEOUS_TITLE_MARK))
+        return true;
+    return (
+        facts.stageCode === 'spres_success' &&
+        !facts.planCreatedAt &&
+        !facts.planDate
+    );
 }
 
 /** Строки истории сделки (multiple-поле), не больше лимита. */
@@ -176,7 +204,9 @@ export function mapPresentationDeal(
     const { uf } = fields;
     const ufDate = (key: string): string | null =>
         key ? shiftDateTime(date(row[key]), ufShiftHours) : null;
-    const stage = fields.presStages.get(stageSuffix(String(row.STAGE_ID ?? '')));
+    const stage = fields.presStages.get(
+        stageSuffix(String(row.STAGE_ID ?? '')),
+    );
     const facts: PresentationDealFacts = {
         stageCode: stage?.code ?? null,
         planDate: ufDate(uf.nextPresPlanDate),
@@ -191,12 +221,16 @@ export function mapPresentationDeal(
         !!(facts.planCreatedAt ?? facts.createdAt) &&
         (facts.planCreatedAt ?? facts.createdAt)!.slice(0, 10) < day;
     const dayStatus = presentationDayStatus(facts, day);
-    const complectName = uf.complectName ? firstScalar(row[uf.complectName]) : null;
+    const complectName = uf.complectName
+        ? firstScalar(row[uf.complectName])
+        : null;
     const opportunity = num(row.OPPORTUNITY);
     const companyId = idOrNull(row.COMPANY_ID);
     const contactId = idOrNull(row.CONTACT_ID);
     const leadId = idOrNull(row.LEAD_ID);
-    const baseDealId = uf.toBaseSales ? linkedDealId(row[uf.toBaseSales]) : null;
+    const baseDealId = uf.toBaseSales
+        ? linkedDealId(row[uf.toBaseSales])
+        : null;
 
     return {
         dealId: num(row.ID),
@@ -230,12 +264,17 @@ export function mapPresentationDeal(
 }
 
 /** Выигранная сделка «ОП Основная» → продажа дня (без имён и презентаций). */
-export function mapSaleDeal(row: ListElementRow, fields: DigestDealFields): KpiDigestSaleDto {
+export function mapSaleDeal(
+    row: ListElementRow,
+    fields: DigestDealFields,
+): KpiDigestSaleDto {
     const { uf } = fields;
     const companyId = idOrNull(row.COMPANY_ID);
     const contactId = idOrNull(row.CONTACT_ID);
     const leadId = idOrNull(row.LEAD_ID);
-    const complectName = uf.complectName ? firstScalar(row[uf.complectName]) : null;
+    const complectName = uf.complectName
+        ? firstScalar(row[uf.complectName])
+        : null;
     return {
         dealId: num(row.ID),
         title: typeof row.TITLE === 'string' ? row.TITLE : '',

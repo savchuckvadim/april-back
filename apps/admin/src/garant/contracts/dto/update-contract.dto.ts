@@ -1,5 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsNumber, IsBoolean } from 'class-validator';
+import {
+    IsString,
+    IsOptional,
+    IsNumber,
+    IsBoolean,
+    IsEnum,
+} from 'class-validator';
+import { CONTRACT_CODE } from '@lib/garant';
 
 export class UpdateContractDto {
     @ApiPropertyOptional({
@@ -27,12 +34,15 @@ export class UpdateContractDto {
     title?: string;
 
     @ApiPropertyOptional({
-        description: 'Contract code',
-        example: 'CONTRACT_CODE',
+        description:
+            'Код вида договора — по нему генерация резолвит шаблоны; произвольные строки запрещены (опечатка молча превращала договор в internet).',
+        enum: CONTRACT_CODE,
+        enumName: 'ContractCode',
+        example: CONTRACT_CODE.LIC12,
     })
-    @IsString()
+    @IsEnum(CONTRACT_CODE)
     @IsOptional()
-    code?: string;
+    code?: CONTRACT_CODE;
 
     @ApiPropertyOptional({
         description: 'Contract type',

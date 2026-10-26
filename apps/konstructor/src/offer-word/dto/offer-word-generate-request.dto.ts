@@ -85,12 +85,18 @@ export class IOfferWordGenerateManagerDto {
 }
 
 export class ProductRowFullSetsDto {
-    @ApiProperty({ description: 'General set of the product rows', type: [ProductRowSetDto] })
+    @ApiProperty({
+        description: 'General set of the product rows',
+        type: [ProductRowSetDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => ProductRowSetDto)
     general: ProductRowSetDto[];
-    @ApiProperty({ description: 'Alternative set of the product rows', type: [ProductRowSetDto] })
+    @ApiProperty({
+        description: 'Alternative set of the product rows',
+        type: [ProductRowSetDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => ProductRowSetDto)

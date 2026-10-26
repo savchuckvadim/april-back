@@ -7,7 +7,9 @@ import {
 } from '../lib/digest-presentations-assemble.util';
 import { emptyCounters } from '../lib/digest-reduce.util';
 
-const record = (overrides: Partial<KpiDigestRecordDto>): KpiDigestRecordDto => ({
+const record = (
+    overrides: Partial<KpiDigestRecordDto>,
+): KpiDigestRecordDto => ({
     id: '1',
     userId: 2077,
     typeCode: 'presentation',
@@ -25,7 +27,9 @@ const record = (overrides: Partial<KpiDigestRecordDto>): KpiDigestRecordDto => (
     ...overrides,
 });
 
-const item = (overrides: Partial<KpiDigestPresentationDto>): KpiDigestPresentationDto => ({
+const item = (
+    overrides: Partial<KpiDigestPresentationDto>,
+): KpiDigestPresentationDto => ({
     dealId: 501,
     title: 'Презентация',
     stageCode: 'spres_plan',
@@ -71,8 +75,21 @@ describe('withRecords', () => {
     it('комментарии плана и отчёта; отчёт уточняет статус pending и час', () => {
         const result = withRecords(
             item({}),
-            [record({ actionCode: 'act_noresult_fail', comment: 'Не дозвонились', noresultReason: 'nopickup', eventDate: '2026-10-14 15:30:00' })],
-            [record({ actionCode: 'plan', comment: 'Юрист, обсудить Искру', eventDate: '2026-10-12 09:00:00' })],
+            [
+                record({
+                    actionCode: 'act_noresult_fail',
+                    comment: 'Не дозвонились',
+                    noresultReason: 'nopickup',
+                    eventDate: '2026-10-14 15:30:00',
+                }),
+            ],
+            [
+                record({
+                    actionCode: 'plan',
+                    comment: 'Юрист, обсудить Искру',
+                    eventDate: '2026-10-12 09:00:00',
+                }),
+            ],
         );
         expect(result.dayStatus).toBe('notHeld');
         expect(result.hour).toBe(15);
@@ -85,8 +102,16 @@ describe('withRecords', () => {
         const result = withRecords(
             item({ dayStatus: 'held', hour: 11 }),
             [
-                record({ actionCode: 'plan', comment: 'Незапланированная', eventDate: '2026-10-14 11:00:01' }),
-                record({ actionCode: 'done', comment: 'Прошла хорошо', eventDate: '2026-10-14 11:00:02' }),
+                record({
+                    actionCode: 'plan',
+                    comment: 'Незапланированная',
+                    eventDate: '2026-10-14 11:00:01',
+                }),
+                record({
+                    actionCode: 'done',
+                    comment: 'Прошла хорошо',
+                    eventDate: '2026-10-14 11:00:02',
+                }),
             ],
             [],
         );
@@ -114,14 +139,37 @@ describe('assemblePresentations', () => {
             warnings: [],
             builtAt: 'x',
         };
-        const day = { date: '2026-10-14' as const, byUser: { '2077': { counters: emptyCounters(), records: [] } }, usersCount: 1, elements: 0, truncated: false, builtAt: 'x' };
-        const planned = { date: '2026-10-14' as const, byUser: {}, elements: 0, truncated: false, builtAt: 'x' };
+        const day = {
+            date: '2026-10-14' as const,
+            byUser: { '2077': { counters: emptyCounters(), records: [] } },
+            usersCount: 1,
+            elements: 0,
+            truncated: false,
+            builtAt: 'x',
+        };
+        const planned = {
+            date: '2026-10-14' as const,
+            byUser: {},
+            elements: 0,
+            truncated: false,
+            builtAt: 'x',
+        };
 
-        const result = assemblePresentations({ partition, day, planned, userIds: new Set([2077]) });
+        const result = assemblePresentations({
+            partition,
+            day,
+            planned,
+            userIds: new Set([2077]),
+        });
         expect(result.items.map(i => i.dealId)).toEqual([2, 3]);
         expect(result.sales.map(s => s.dealId)).toEqual([11]);
 
-        const all = assemblePresentations({ partition, day, planned, userIds: new Set() });
+        const all = assemblePresentations({
+            partition,
+            day,
+            planned,
+            userIds: new Set(),
+        });
         expect(all.items).toHaveLength(3);
     });
 });

@@ -35,7 +35,8 @@ export class SupplyPrismaRepository implements SupplyRepository {
                     lcontractPropEmail: supply.lcontractPropEmail,
                     contractProp1: supply.contractProp1,
                     contractProp2: supply.contractProp2,
-                    contractPropSuppliesQuantity: supply.contractPropSuppliesQuantity,
+                    contractPropSuppliesQuantity:
+                        supply.contractPropSuppliesQuantity,
                     quantityForKp: supply.quantityForKp,
                     lcontractProp2: supply.lcontractProp2,
                     acontractName: supply.acontractName,

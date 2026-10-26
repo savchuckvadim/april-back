@@ -65,7 +65,9 @@ export class DigestPresentationsLoader {
         const builtAt = new Date().toISOString();
         const warnings: string[] = [];
         if (!this.fields.presCategoryId) {
-            warnings.push('Воронка «ОП Презентации» не настроена на портале — презентации дня недоступны.');
+            warnings.push(
+                'Воронка «ОП Презентации» не настроена на портале — презентации дня недоступны.',
+            );
         }
 
         const pres = this.fields.presCategoryId
@@ -75,7 +77,9 @@ export class DigestPresentationsLoader {
             ? await this.loadDaySales(date)
             : { sales: [] as KpiDigestSaleDto[], truncated: false };
         if (!this.fields.baseCategoryId) {
-            warnings.push('Воронка «ОП Основная» не настроена — продажи дня недоступны.');
+            warnings.push(
+                'Воронка «ОП Основная» не настроена — продажи дня недоступны.',
+            );
         }
 
         await this.fillBaseDeals(pres.items, sales.sales);
@@ -108,10 +112,16 @@ export class DigestPresentationsLoader {
 
         const filters: Record<string, unknown>[] = [];
         if (uf.nextPresPlanDate) {
-            filters.push({ [`>=${uf.nextPresPlanDate}`]: ufFrom, [`<${uf.nextPresPlanDate}`]: ufTo });
+            filters.push({
+                [`>=${uf.nextPresPlanDate}`]: ufFrom,
+                [`<${uf.nextPresPlanDate}`]: ufTo,
+            });
         }
         if (uf.lastPresDoneDate) {
-            filters.push({ [`>=${uf.lastPresDoneDate}`]: ufFrom, [`<${uf.lastPresDoneDate}`]: ufTo });
+            filters.push({
+                [`>=${uf.lastPresDoneDate}`]: ufFrom,
+                [`<${uf.lastPresDoneDate}`]: ufTo,
+            });
         }
         filters.push({ '>=DATE_CREATE': isoFrom, '<DATE_CREATE': isoTo });
         filters.push({ '>=MOVED_TIME': isoFrom, '<MOVED_TIME': isoTo });
@@ -130,7 +140,10 @@ export class DigestPresentationsLoader {
             for (const row of result.rows) {
                 // Битрикс молча игнорирует фильтр по неустановленному полю —
                 // повторная проверка воронки отсекает чужие сделки.
-                if (String(row.CATEGORY_ID ?? '') !== this.fields.presCategoryId) continue;
+                if (
+                    String(row.CATEGORY_ID ?? '') !== this.fields.presCategoryId
+                )
+                    continue;
                 rows.set(Number(row.ID), row);
             }
         }
@@ -139,7 +152,9 @@ export class DigestPresentationsLoader {
         // системных дат, записей KPI и звонков (одна шкала часов в дайджесте).
         this.ufShiftHours = -detectUfSkewHours([...rows.values()], this.fields);
         const items = [...rows.values()]
-            .map(row => mapPresentationDeal(row, this.fields, date, this.ufShiftHours))
+            .map(row =>
+                mapPresentationDeal(row, this.fields, date, this.ufShiftHours),
+            )
             .filter(item => item.dealId > 0 && item.dayStatus !== 'other');
         return { items, truncated };
     }
@@ -165,14 +180,21 @@ export class DigestPresentationsLoader {
             `${KPI_DIGEST_BATCH_CONTEXT}: продажи ${date}`,
         );
         const sales = result.rows
-            .filter(row => String(row.CATEGORY_ID ?? '') === this.fields.baseCategoryId)
+            .filter(
+                row =>
+                    String(row.CATEGORY_ID ?? '') ===
+                    this.fields.baseCategoryId,
+            )
             .map(row => mapSaleDeal(row, this.fields))
             .filter(sale => sale.dealId > 0);
         await this.fillSalePresentations(sales, date);
         return { sales, truncated: result.truncated };
     }
 
-    private async fillSalePresentations(sales: KpiDigestSaleDto[], date: IsoDate): Promise<void> {
+    private async fillSalePresentations(
+        sales: KpiDigestSaleDto[],
+        date: IsoDate,
+    ): Promise<void> {
         const key = this.fields.uf.toBaseSales;
         if (!sales.length || !key || !this.fields.presCategoryId) return;
         const byId = new Map(sales.map(sale => [sale.dealId, sale]));
@@ -190,8 +212,17 @@ export class DigestPresentationsLoader {
             for (const row of result.rows) {
                 const baseId = linkedDealId(row[key]);
                 const sale = baseId ? byId.get(baseId) : undefined;
-                if (!sale || String(row.CATEGORY_ID ?? '') !== this.fields.presCategoryId) continue;
-                const item = mapPresentationDeal(row, this.fields, date, this.ufShiftHours);
+                if (
+                    !sale ||
+                    String(row.CATEGORY_ID ?? '') !== this.fields.presCategoryId
+                )
+                    continue;
+                const item = mapPresentationDeal(
+                    row,
+                    this.fields,
+                    date,
+                    this.ufShiftHours,
+                );
                 sale.presentations.push({
                     dealId: item.dealId,
                     title: item.title,
@@ -214,7 +245,11 @@ export class DigestPresentationsLoader {
         const known = new Map<number, BaseDealInfo>(
             sales.map(sale => [
                 sale.dealId,
-                { title: sale.title, opportunity: sale.opportunity, complectName: sale.complectName },
+                {
+                    title: sale.title,
+                    opportunity: sale.opportunity,
+                    complectName: sale.complectName,
+                },
             ]),
         );
         const missing = [
@@ -225,13 +260,24 @@ export class DigestPresentationsLoader {
             ),
         ];
         const complectKey = this.fields.uf.complectName;
-        const select = ['ID', 'TITLE', 'OPPORTUNITY', ...(complectKey ? [complectKey] : [])];
-        const commands: BatchCommand[] = chunk(missing, IDS_PER_CALL).map((ids, index) => ({
-            key: `base_${index}`,
-            method: 'crm.deal.list',
-            params: { filter: { ID: ids }, select, start: -1 },
-        }));
-        const result = await runBatch(this.api, commands, `${KPI_DIGEST_BATCH_CONTEXT}: основные сделки`);
+        const select = [
+            'ID',
+            'TITLE',
+            'OPPORTUNITY',
+            ...(complectKey ? [complectKey] : []),
+        ];
+        const commands: BatchCommand[] = chunk(missing, IDS_PER_CALL).map(
+            (ids, index) => ({
+                key: `base_${index}`,
+                method: 'crm.deal.list',
+                params: { filter: { ID: ids }, select, start: -1 },
+            }),
+        );
+        const result = await runBatch(
+            this.api,
+            commands,
+            `${KPI_DIGEST_BATCH_CONTEXT}: основные сделки`,
+        );
         for (const command of commands) {
             const rows = result[command.key];
             if (!Array.isArray(rows)) continue;
@@ -239,13 +285,17 @@ export class DigestPresentationsLoader {
                 known.set(Number(row.ID), {
                     title: typeof row.TITLE === 'string' ? row.TITLE : '',
                     opportunity: Number(row.OPPORTUNITY) || 0,
-                    complectName: complectKey ? firstScalar(row[complectKey]) || null : null,
+                    complectName: complectKey
+                        ? firstScalar(row[complectKey]) || null
+                        : null,
                 });
             }
         }
 
         for (const item of items) {
-            const base = item.baseDeal ? known.get(item.baseDeal.id) : undefined;
+            const base = item.baseDeal
+                ? known.get(item.baseDeal.id)
+                : undefined;
             if (!item.baseDeal || !base) continue;
             item.baseDeal.title = base.title;
             if (!item.complectName && base.complectName) {
@@ -281,7 +331,10 @@ export class DigestPresentationsLoader {
         for (const sale of sales) {
             if (sale.opportunity > 0) ownerOf.set(-sale.dealId, sale.dealId);
         }
-        const dealIds = [...new Set(ownerOf.values())].slice(0, PRODUCT_ROWS_CAP);
+        const dealIds = [...new Set(ownerOf.values())].slice(
+            0,
+            PRODUCT_ROWS_CAP,
+        );
         if (!dealIds.length) return;
 
         const commands: BatchCommand[] = dealIds.map(id => ({
@@ -289,9 +342,15 @@ export class DigestPresentationsLoader {
             method: 'crm.item.productrow.list',
             params: { filter: { '=ownerType': 'D', '=ownerId': id } },
         }));
-        const result = await runBatch(this.api, commands, `${KPI_DIGEST_BATCH_CONTEXT}: товарные строки`);
+        const result = await runBatch(
+            this.api,
+            commands,
+            `${KPI_DIGEST_BATCH_CONTEXT}: товарные строки`,
+        );
         const namesOf = (dealId: number): string[] => {
-            const payload = result[`rows_${dealId}`] as { productRows?: { productName?: unknown }[] } | undefined;
+            const payload = result[`rows_${dealId}`] as
+                | { productRows?: { productName?: unknown }[] }
+                | undefined;
             return [
                 ...new Set(
                     (payload?.productRows ?? [])
@@ -326,13 +385,35 @@ export class DigestPresentationsLoader {
         sales: KpiDigestSaleDto[],
     ): Promise<void> {
         const refs = [...items, ...sales];
-        const idsOf = (pick: (ref: (typeof refs)[number]) => KpiDigestEntityRefDto | null) => [
-            ...new Set(refs.map(pick).filter((ref): ref is KpiDigestEntityRefDto => !!ref).map(ref => ref.id)),
+        const idsOf = (
+            pick: (ref: (typeof refs)[number]) => KpiDigestEntityRefDto | null,
+        ) => [
+            ...new Set(
+                refs
+                    .map(pick)
+                    .filter((ref): ref is KpiDigestEntityRefDto => !!ref)
+                    .map(ref => ref.id),
+            ),
         ];
         const specs = [
-            { kind: 'co', method: 'crm.company.list', select: ['ID', 'TITLE'], ids: idsOf(ref => ref.company) },
-            { kind: 'c', method: 'crm.contact.list', select: ['ID', 'NAME', 'LAST_NAME'], ids: idsOf(ref => ref.contact) },
-            { kind: 'l', method: 'crm.lead.list', select: ['ID', 'TITLE'], ids: idsOf(ref => ref.lead) },
+            {
+                kind: 'co',
+                method: 'crm.company.list',
+                select: ['ID', 'TITLE'],
+                ids: idsOf(ref => ref.company),
+            },
+            {
+                kind: 'c',
+                method: 'crm.contact.list',
+                select: ['ID', 'NAME', 'LAST_NAME'],
+                ids: idsOf(ref => ref.contact),
+            },
+            {
+                kind: 'l',
+                method: 'crm.lead.list',
+                select: ['ID', 'TITLE'],
+                ids: idsOf(ref => ref.lead),
+            },
         ];
         const commands: BatchCommand[] = specs.flatMap(spec =>
             chunk(spec.ids, IDS_PER_CALL).map((ids, index) => ({
@@ -341,9 +422,17 @@ export class DigestPresentationsLoader {
                 params: { filter: { ID: ids }, select: spec.select, start: -1 },
             })),
         );
-        const result = await runBatch(this.api, commands, `${KPI_DIGEST_BATCH_CONTEXT}: названия`);
+        const result = await runBatch(
+            this.api,
+            commands,
+            `${KPI_DIGEST_BATCH_CONTEXT}: названия`,
+        );
 
-        const titles: Record<string, Map<number, string>> = { co: new Map(), c: new Map(), l: new Map() };
+        const titles: Record<string, Map<number, string>> = {
+            co: new Map(),
+            c: new Map(),
+            l: new Map(),
+        };
         for (const command of commands) {
             const kind = command.key.split('_')[0];
             const rows = result[command.key];

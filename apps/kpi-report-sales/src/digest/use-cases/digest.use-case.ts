@@ -127,7 +127,12 @@ export class DigestUseCase {
             () => this.buildPlannedPartition(date, warnings),
         );
         const calls = await this.loadCallsPartition(date, now, force, warnings);
-        const presentations = await this.loadPresentationsPartition(date, now, force, warnings);
+        const presentations = await this.loadPresentationsPartition(
+            date,
+            now,
+            force,
+            warnings,
+        );
 
         const report = assembleDigest({
             date,
@@ -172,7 +177,9 @@ export class DigestUseCase {
     }
 
     /** События дня: все элементы списка с event_date внутри дня, весь портал. */
-    private async buildDayPartition(date: IsoDate): Promise<DigestDayPartition> {
+    private async buildDayPartition(
+        date: IsoDate,
+    ): Promise<DigestDayPartition> {
         const { eventDate } = this.fields;
         const bounds = dayBounds(date);
         const { rows, total, truncated } = await loadListElements(this.api, {
@@ -186,7 +193,9 @@ export class DigestUseCase {
             context: `${KPI_DIGEST_BATCH_CONTEXT}: события ${date}`,
         });
         this.warnIfTruncated('события', date, total, truncated);
-        const records = rows.map(row => mapListElementToRecord(row, this.fields));
+        const records = rows.map(row =>
+            mapListElementToRecord(row, this.fields),
+        );
         return reduceDayRecords(date, records, {
             elements: total,
             truncated,
@@ -244,7 +253,9 @@ export class DigestUseCase {
             context: `${KPI_DIGEST_BATCH_CONTEXT}: план на ${date}`,
         });
         this.warnIfTruncated('план', date, total, truncated);
-        const records = rows.map(row => mapListElementToRecord(row, this.fields));
+        const records = rows.map(row =>
+            mapListElementToRecord(row, this.fields),
+        );
         return reducePlannedRecords(date, records, {
             elements: total,
             truncated,
@@ -274,7 +285,12 @@ export class DigestUseCase {
                         KPI_DIGEST_CALL_ROWS_CAP,
                         this.logger,
                     );
-                    this.warnIfTruncated('звонки', date, rows.length, truncated);
+                    this.warnIfTruncated(
+                        'звонки',
+                        date,
+                        rows.length,
+                        truncated,
+                    );
                     return reduceCallRows(date, rows, {
                         truncated,
                         builtAt: new Date().toISOString(),
@@ -282,9 +298,14 @@ export class DigestUseCase {
                 },
             );
         } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            this.logger.warn(`[${this.domain}] звонки за ${date} недоступны: ${message}`);
-            warnings.push(`Фактические звонки за ${date} недоступны: ${message}`);
+            const message =
+                error instanceof Error ? error.message : String(error);
+            this.logger.warn(
+                `[${this.domain}] звонки за ${date} недоступны: ${message}`,
+            );
+            warnings.push(
+                `Фактические звонки за ${date} недоступны: ${message}`,
+            );
             return null;
         }
     }
@@ -306,12 +327,21 @@ export class DigestUseCase {
                 date,
                 now,
                 force,
-                () => new DigestPresentationsLoader(this.api, this.dealFields).load(date),
+                () =>
+                    new DigestPresentationsLoader(
+                        this.api,
+                        this.dealFields,
+                    ).load(date),
             );
         } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            this.logger.warn(`[${this.domain}] презентации за ${date} недоступны: ${message}`);
-            warnings.push(`Презентации и продажи за ${date} недоступны: ${message}`);
+            const message =
+                error instanceof Error ? error.message : String(error);
+            this.logger.warn(
+                `[${this.domain}] презентации за ${date} недоступны: ${message}`,
+            );
+            warnings.push(
+                `Презентации и продажи за ${date} недоступны: ${message}`,
+            );
             return null;
         }
     }

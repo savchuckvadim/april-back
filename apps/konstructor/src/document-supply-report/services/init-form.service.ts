@@ -144,7 +144,9 @@ export class InitFormService {
      * Состав формы отчёта о поставке без легаси-слепка конструктора: новый
      * фронт присылает только то, что нужно подбору портальной настройки.
      */
-    async formFields(dto: SupplyReportFormRequestDto): Promise<SupplyReportFormField[]> {
+    async formFields(
+        dto: SupplyReportFormRequestDto,
+    ): Promise<SupplyReportFormField[]> {
         return getSupplyReportFormFields(
             await this.getFieldOverrides({
                 domain: dto.domain,
@@ -171,7 +173,11 @@ export class InitFormService {
     private async getFieldOverrides(
         dto: Pick<
             DocumentSupplyInitFormDto,
-            'domain' | 'providerId' | 'contractType' | 'clientType' | 'supplyType'
+            | 'domain'
+            | 'providerId'
+            | 'contractType'
+            | 'clientType'
+            | 'supplyType'
         >,
     ): Promise<SupplyReportFieldOverrides | undefined> {
         if (!this.templateSource.isDbLookupEnabled()) {

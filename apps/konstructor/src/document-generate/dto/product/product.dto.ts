@@ -60,7 +60,10 @@ export class ProductDto {
     @ApiProperty({ description: 'Подпись поставки для КП', type: String })
     @IsString()
     quantityForKp: string;
-    @ApiProperty({ description: 'Множитель договора: 1 / 6 / 12 (24)', type: Number })
+    @ApiProperty({
+        description: 'Множитель договора: 1 / 6 / 12 (24)',
+        type: Number,
+    })
     @IsNumber()
     contractCoefficient: number;
 

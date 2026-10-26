@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import {
+    toMultiFieldEntryLines,
     toMultiFieldEntryText,
     toBatchSafeText,
 } from '@lib/bitrix/consts/batch.consts';
@@ -10,7 +11,7 @@ import {
     presentationSurveyAnswersByCode,
     PresentationSurveyValues,
 } from '../../../shared/presentation-survey';
-import { buildEventHistoryParts } from '../history/event-history-comment.builder';
+import { buildEventHistoryEntry } from '../history/event-history-comment.builder';
 import {
     EVENT_TASK_CHECKLIST_ITEM,
     isChecklistItemDone,
@@ -1365,17 +1366,16 @@ export class EventReportEntityFieldsModel {
         code: string,
         line: string,
         limit: number,
+        toEntry: (text: string) => string = toMultiFieldEntryText,
     ): void {
         const field = this.portal.getEntityFieldByCode(this.entityType, code);
         if (!field) return;
         const key = this.bitrixKey(field);
         const previous = this.readMultiple(this.entityRecord(), field);
         /*
-         * Запись множественного поля — ВСЕГДА одна строка: батч уходит
-         * JSON-телом, %0A декодируется в настоящий 
-, а грид multiple-поля
-         * рисует внутренние переносы подчёркиванием (инцидент 31.08,
-         * «ОП История» в _). Разделитель частей — видимое « — ».
+         * Вид записи задаёт вызывающий: по умолчанию одна строка с « — »
+         * (ленты комментариев), «ОП История» — с переносами
+         * (toMultiFieldEntryLines, владелец 26.10.2026).
          */
         /*
          * ЭКРАНИРУЕТ ЗДЕСЬ, И ТОЛЬКО ЗДЕСЬ.
@@ -1402,7 +1402,7 @@ export class EventReportEntityFieldsModel {
          */
         const next = fitMultipleEntries(
             [
-                toBatchSafeText(toMultiFieldEntryText(line)),
+                toBatchSafeText(toEntry(line)),
                 ...previous.map(entry => toBatchSafeText(entry)),
             ],
             limit,
@@ -1415,21 +1415,19 @@ export class EventReportEntityFieldsModel {
             ? HISTORY_LIMIT_GSIRK
             : HISTORY_LIMIT_DEFAULT;
         /*
-         * Запись — ОДНОЙ строкой с разделителем « — »: значения этих полей
-         * уезжают batch-командой JSON-телом, где и сырой `\n`, и `%0A`
-         * (декодируется сервером) доезжают до карточки настоящим переносом,
-         * а грид полей карточки рисует его ПОДЧЁРКИВАНИЕМ (инцидент 31.08:
-         * «ОП История» вся в `_`). См. toMultiFieldEntryText. Формат частей
-         * (склонение типов, без слова «Отчёт») — buildEventHistoryParts;
-         * первым — когда событие произошло.
+         * «ОП История» — с переносами (владелец 26.10.2026, проверено на
+         * карточках): дата и что сделано, комментарий построчно, план.
+         * Скаляр op_history остаётся одной строкой через « — ».
          */
-        const line = toMultiFieldEntryText(
-            [this.nowCrmDate(), ...buildEventHistoryParts(this.ctx)].join(
-                ' — ',
-            ),
+        const entry = buildEventHistoryEntry(this.nowCrmDate(), this.ctx);
+        this.appendMultiple(
+            out,
+            'op_mhistory',
+            entry,
+            limit,
+            toMultiFieldEntryLines,
         );
-        this.appendMultiple(out, 'op_mhistory', line, limit);
-        this.appendScalarHistory(out, line);
+        this.appendScalarHistory(out, toMultiFieldEntryText(entry));
     }
 
     /**

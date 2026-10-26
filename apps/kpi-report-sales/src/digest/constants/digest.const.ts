@@ -32,14 +32,15 @@ export const KPI_DIGEST_DEALS_CAP = 2_000;
 export const KPI_DIGEST_HISTORY_LINES = 3;
 
 /** Суффиксы STAGE_ID воронки «ОП Презентации» → код стадии реестра. */
-export const KPI_DIGEST_PRES_STAGE_BY_SUFFIX: Readonly<Record<string, string>> = {
-    NEW: 'spres_new',
-    PLAN: 'spres_plan',
-    PENDING: 'spres_pending',
-    WON: 'spres_success',
-    LOSE: 'spres_fail',
-    APOLOGY: 'spres_noresult',
-};
+export const KPI_DIGEST_PRES_STAGE_BY_SUFFIX: Readonly<Record<string, string>> =
+    {
+        NEW: 'spres_new',
+        PLAN: 'spres_plan',
+        PENDING: 'spres_pending',
+        WON: 'spres_success',
+        LOSE: 'spres_fail',
+        APOLOGY: 'spres_noresult',
+    };
 
 /**
  * Статус презентации в выбранном дне:
@@ -60,11 +61,13 @@ export const KPI_DIGEST_PRES_DAY_STATUSES = [
     'plannedNext',
     'other',
 ] as const;
-export type KpiDigestPresDayStatus = (typeof KPI_DIGEST_PRES_DAY_STATUSES)[number];
+export type KpiDigestPresDayStatus =
+    (typeof KPI_DIGEST_PRES_DAY_STATUSES)[number];
 
 /** Откуда взят комплект/сумма презентации. */
 export const KPI_DIGEST_COMPLECT_SOURCES = ['presentation', 'base'] as const;
-export type KpiDigestComplectSource = (typeof KPI_DIGEST_COMPLECT_SOURCES)[number];
+export type KpiDigestComplectSource =
+    (typeof KPI_DIGEST_COMPLECT_SOURCES)[number];
 
 /** Маркер названия спонтанной презентации (event-sales). */
 export const KPI_DIGEST_SPONTANEOUS_TITLE_MARK = 'незапланированн';
@@ -91,7 +94,11 @@ export const KPI_DIGEST_WS_EVENTS = {
 } as const;
 
 /** Статусы ответа очереди (тот же конверт, что у kpi-report/get). */
-export const KPI_DIGEST_RESPONSE_STATUSES = ['ready', 'queued', 'error'] as const;
+export const KPI_DIGEST_RESPONSE_STATUSES = [
+    'ready',
+    'queued',
+    'error',
+] as const;
 export type KpiDigestResponseStatus =
     (typeof KPI_DIGEST_RESPONSE_STATUSES)[number];
 
@@ -121,7 +128,9 @@ export const KPI_DIGEST_CALL_ROWS_CAP = 20_000;
 export const KPI_DIGEST_COMMENT_LIMIT = 400;
 
 /** Бакеты длительности звонка, секунд (зеркало CALLING_TYPES calling-statistic). */
-export const KPI_DIGEST_CALL_DURATION_BUCKETS = [30, 60, 180, 300, 600] as const;
+export const KPI_DIGEST_CALL_DURATION_BUCKETS = [
+    30, 60, 180, 300, 600,
+] as const;
 /** Ключ бакета «все наборы номера» в byDuration. */
 export const KPI_DIGEST_CALL_BUCKET_ALL = 'all' as const;
 

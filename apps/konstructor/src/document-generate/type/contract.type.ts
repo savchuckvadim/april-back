@@ -1,3 +1,9 @@
+// Единственный источник кодов договоров — @lib/garant (contract-code.enum):
+// тот же enum валидирует код в админке, здесь остаётся реэкспорт для
+// существующих импортов конструктора.
+import { CONTRACT_CODE } from '@lib/garant/contract/contract-code.enum';
+export { CONTRACT_CODE } from '@lib/garant/contract/contract-code.enum';
+
 export type Contract = {
     number: ContractNumberType;
     aprilName: ContractNamesType;
@@ -14,19 +20,6 @@ export type Contract = {
     type: ContractsType;
     productName: string; // 'услуги по сопровождениюб лицензияб услуга по прдоставлению ключа'
 };
-
-export enum CONTRACT_CODE {
-    INTERNET = 'internet',
-    PROXIMA = 'proxima',
-    ABON6 = 'abonHalf',
-    ABON12 = 'abonYear',
-    ABON24 = 'abonTwoYears',
-    LIC = 'lic',
-    LIC6 = 'licHalf',
-    LIC12 = 'licYear',
-    LIC24 = 'licTwoYears',
-    KEY = 'key',
-}
 
 export type ContractNumberType = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 

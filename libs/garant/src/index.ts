@@ -1,4 +1,6 @@
 export * from './garant.module';
+export * from './feed-import';
+export * from './contract/contract-code.enum';
 export * from './region';
 export * from './infoblock';
 export * from './complect';

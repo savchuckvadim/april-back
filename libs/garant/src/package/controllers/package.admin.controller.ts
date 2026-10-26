@@ -5,7 +5,7 @@ import {
     Body,
     Param,
     Put,
-    Query,
+    Delete,
     NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -93,5 +93,20 @@ export class AdminGarantPackageController {
         @Body() updatePackageDto: PackageUpdateDto,
     ): Promise<PackageEntityDto> {
         return this.packageService.update(id, updatePackageDto);
+    }
+
+    @Delete(':id')
+    @ApiOperation({ summary: 'Удалить пакет' })
+    @ApiResponse({
+        status: 200,
+        description: 'Пакет успешно удалён',
+        type: Boolean,
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Пакет не найден',
+    })
+    async delete(@Param('id') id: string): Promise<boolean> {
+        return this.packageService.delete(id);
     }
 }

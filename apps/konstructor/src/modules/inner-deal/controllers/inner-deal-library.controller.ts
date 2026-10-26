@@ -42,28 +42,37 @@ export class InnerDealLibraryController {
             'Своё + отдел + портал + глобальные акции; без kind — избранное и акции вместе. Архив скрыт.',
     })
     @ApiOkResponse({ type: InnerDealLibraryItemDto, isArray: true })
-    async list(@Query() query: InnerDealLibraryQueryDto): Promise<InnerDealLibraryItemDto[]> {
+    async list(
+        @Query() query: InnerDealLibraryQueryDto,
+    ): Promise<InnerDealLibraryItemDto[]> {
         return this.service.list(query.domain, query.userId, query.kind);
     }
 
     @Get('rights')
     @ApiOperation({
         summary: 'Что пользователю можно в библиотеке',
-        description: 'Доступные видимости для избранного и акций — для формы «Сохранить в избранное».',
+        description:
+            'Доступные видимости для избранного и акций — для формы «Сохранить в избранное».',
     })
     @ApiOkResponse({ type: InnerDealLibraryRightsDto })
-    async rights(@Query() query: InnerDealLibraryActorQueryDto): Promise<InnerDealLibraryRightsDto> {
+    async rights(
+        @Query() query: InnerDealLibraryActorQueryDto,
+    ): Promise<InnerDealLibraryRightsDto> {
         return this.service.rights(query.domain, query.userId);
     }
 
     @Get(':id')
-    @ApiOperation({ summary: 'Полный слепок заготовки — для загрузки в конструктор' })
+    @ApiOperation({
+        summary: 'Полный слепок заготовки — для загрузки в конструктор',
+    })
     @ApiOkResponse({ type: InnerDealSnapshotDto })
     async get(
         @Param('id', ParseIntPipe) id: number,
         @Query() query: InnerDealLibraryActorQueryDto,
     ): Promise<InnerDealSnapshotDto> {
-        return toInnerDealSnapshotDto(await this.service.get(query.domain, query.userId, id));
+        return toInnerDealSnapshotDto(
+            await this.service.get(query.domain, query.userId, id),
+        );
     }
 
     @Post()
@@ -73,12 +82,16 @@ export class InnerDealLibraryController {
             'Видимость проверяется по роли: сотрудник — user; руководитель/суперпользователь — user|department|portal. global заводит админка.',
     })
     @ApiOkResponse({ type: InnerDealSnapshotDto })
-    async create(@Body() body: InnerDealLibraryCreateDto): Promise<InnerDealSnapshotDto> {
+    async create(
+        @Body() body: InnerDealLibraryCreateDto,
+    ): Promise<InnerDealSnapshotDto> {
         return toInnerDealSnapshotDto(await this.service.create(body));
     }
 
     @Patch(':id')
-    @ApiOperation({ summary: 'Переименовать / сменить видимость / архивировать' })
+    @ApiOperation({
+        summary: 'Переименовать / сменить видимость / архивировать',
+    })
     @ApiOkResponse({ type: InnerDealSnapshotDto })
     async patch(
         @Param('id', ParseIntPipe) id: number,
@@ -95,6 +108,8 @@ export class InnerDealLibraryController {
         @Param('id', ParseIntPipe) id: number,
         @Query() query: InnerDealLibraryActorQueryDto,
     ): Promise<InnerDealLibraryDeleteResponseDto> {
-        return { deleted: await this.service.delete(query.domain, query.userId, id) };
+        return {
+            deleted: await this.service.delete(query.domain, query.userId, id),
+        };
     }
 }

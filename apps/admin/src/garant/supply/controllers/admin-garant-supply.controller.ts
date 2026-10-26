@@ -83,7 +83,7 @@ export class AdminGarantSupplyController {
         },
     })
     async downloadExample(@Res() res: Response): Promise<void> {
-        const filePath = await this.supplyExcelService.getExampleFilePath();
+        const filePath = this.supplyExcelService.getExampleFilePath();
         const fileExists = await this.storageService.fileExists(filePath);
 
         if (!fileExists) {

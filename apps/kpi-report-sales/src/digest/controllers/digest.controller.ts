@@ -70,7 +70,9 @@ export class KpiDigestController {
         type: KpiDigestResponseDto,
         description: 'Конверт {status, data?, requestKey, message?}.',
     })
-    async getDigest(@Body() dto: KpiDigestRequestDto): Promise<KpiDigestResponseDto> {
+    async getDigest(
+        @Body() dto: KpiDigestRequestDto,
+    ): Promise<KpiDigestResponseDto> {
         const date = this.dateOr400(dto.filters.date);
         const usersKey = buildReportUsersKey(
             dto.filters.departament.map(user => user.ID),
@@ -79,16 +81,21 @@ export class KpiDigestController {
         const requestKey = buildDigestRequestKey(date, usersKey);
 
         if (dto.forceRefresh !== true) {
-            const envelope = await this.resultCache.getEnvelope<KpiDigestReportDto>(
-                KPI_DIGEST_CACHE_APP,
-                dto.domain,
-                resultKey,
-            );
+            const envelope =
+                await this.resultCache.getEnvelope<KpiDigestReportDto>(
+                    KPI_DIGEST_CACHE_APP,
+                    dto.domain,
+                    resultKey,
+                );
             if (envelope?.status === 'ready') {
                 return { status: 'ready', data: envelope.data, requestKey };
             }
             if (envelope?.status === 'error') {
-                return { status: 'error', message: envelope.message, requestKey };
+                return {
+                    status: 'error',
+                    message: envelope.message,
+                    requestKey,
+                };
             }
         }
 

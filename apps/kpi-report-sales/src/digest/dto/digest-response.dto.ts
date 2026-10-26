@@ -20,7 +20,8 @@ export class KpiDigestCountDto {
     total: number;
 
     @ApiProperty({
-        description: 'Разбивка по кодам типов события (xo, call, presentation…).',
+        description:
+            'Разбивка по кодам типов события (xo, call, presentation…).',
         type: 'object',
         additionalProperties: { type: 'number' },
         example: { xo: 4, call: 2, presentation: 1 },
@@ -53,7 +54,8 @@ export class KpiDigestRecordDto {
     typeName: string | null;
 
     @ApiProperty({
-        description: 'Код действия (plan / pound / done / act_noresult_fail / expired / act_send).',
+        description:
+            'Код действия (plan / pound / done / act_noresult_fail / expired / act_send).',
         type: String,
         nullable: true,
         example: 'done',
@@ -79,7 +81,8 @@ export class KpiDigestRecordDto {
     eventDate: string | null;
 
     @ApiProperty({
-        description: 'Дедлайн плана (следующая коммуникация), YYYY-MM-DD HH:mm:ss.',
+        description:
+            'Дедлайн плана (следующая коммуникация), YYYY-MM-DD HH:mm:ss.',
         type: String,
         nullable: true,
         example: '2026-10-16 12:00:00',
@@ -87,7 +90,8 @@ export class KpiDigestRecordDto {
     planDate: string | null;
 
     @ApiProperty({
-        description: 'Результативность (op_call_result_yes / op_call_result_no).',
+        description:
+            'Результативность (op_call_result_yes / op_call_result_no).',
         type: String,
         nullable: true,
         example: 'op_call_result_yes',
@@ -108,11 +112,15 @@ export class KpiDigestRecordDto {
     })
     comment: string;
 
-    @ApiProperty({ description: 'NAME элемента (заголовок события).', example: 'Звонок ООО Ромашка' })
+    @ApiProperty({
+        description: 'NAME элемента (заголовок события).',
+        example: 'Звонок ООО Ромашка',
+    })
     name: string;
 
     @ApiProperty({
-        description: 'CRM-ссылки записи: D_{id} сделка, CO_{id} компания, C_{id} контакт, L_{id} лид.',
+        description:
+            'CRM-ссылки записи: D_{id} сделка, CO_{id} компания, C_{id} контакт, L_{id} лид.',
         type: [String],
         example: ['CO_15', 'D_1024'],
     })
@@ -129,27 +137,42 @@ export class KpiDigestRecordDto {
 
 /** Корзина часа: звонки и эфир. */
 export class KpiDigestHourDto {
-    @ApiProperty({ description: 'Час суток 0..23 (время портала).', example: 10 })
+    @ApiProperty({
+        description: 'Час суток 0..23 (время портала).',
+        example: 10,
+    })
     hour: number;
 
     @ApiProperty({ description: 'Звонков, начатых в этот час.', example: 6 })
     calls: number;
 
-    @ApiProperty({ description: 'Эфирное время звонков этого часа, секунд.', example: 920 })
+    @ApiProperty({
+        description: 'Эфирное время звонков этого часа, секунд.',
+        example: 920,
+    })
     seconds: number;
 }
 
 export class KpiDigestDirectionDto {
-    @ApiProperty({ description: 'Количество звонков направления.', example: 12 })
+    @ApiProperty({
+        description: 'Количество звонков направления.',
+        example: 12,
+    })
     count: number;
 
-    @ApiProperty({ description: 'Эфирное время направления, секунд.', example: 1800 })
+    @ApiProperty({
+        description: 'Эфирное время направления, секунд.',
+        example: 1800,
+    })
     seconds: number;
 }
 
 /** Фактические звонки сотрудника за день (voximplant.statistic.get). */
 export class KpiDigestCallsDto {
-    @ApiProperty({ description: 'Наборов номера (все звонки с длительностью > 0).', example: 25 })
+    @ApiProperty({
+        description: 'Наборов номера (все звонки с длительностью > 0).',
+        example: 25,
+    })
     callsCount: number;
 
     @ApiProperty({ description: 'Эфирное время, секунд.', example: 3650 })
@@ -188,7 +211,10 @@ export class KpiDigestCountersDto {
     })
     plannedAtStart: KpiDigestCountDto;
 
-    @ApiProperty({ description: 'Новые планы, созданные в этот день (action plan).', type: KpiDigestCountDto })
+    @ApiProperty({
+        description: 'Новые планы, созданные в этот день (action plan).',
+        type: KpiDigestCountDto,
+    })
     planned: KpiDigestCountDto;
 
     @ApiProperty({
@@ -199,19 +225,34 @@ export class KpiDigestCountersDto {
     })
     plannedBeyond: KpiDigestCountDto;
 
-    @ApiProperty({ description: 'Проведено результативно (action done).', type: KpiDigestCountDto })
+    @ApiProperty({
+        description: 'Проведено результативно (action done).',
+        type: KpiDigestCountDto,
+    })
     done: KpiDigestCountDto;
 
-    @ApiProperty({ description: 'Не состоялось (action act_noresult_fail).', type: KpiDigestCountDto })
+    @ApiProperty({
+        description: 'Не состоялось (action act_noresult_fail).',
+        type: KpiDigestCountDto,
+    })
     notHeld: KpiDigestCountDto;
 
-    @ApiProperty({ description: 'Перенесено (action pound).', type: KpiDigestCountDto })
+    @ApiProperty({
+        description: 'Перенесено (action pound).',
+        type: KpiDigestCountDto,
+    })
     postponed: KpiDigestCountDto;
 
-    @ApiProperty({ description: 'Просрочено (action expired).', type: KpiDigestCountDto })
+    @ApiProperty({
+        description: 'Просрочено (action expired).',
+        type: KpiDigestCountDto,
+    })
     expired: KpiDigestCountDto;
 
-    @ApiProperty({ description: 'Отправленные документы по типам (КП, счета, договоры).', type: KpiDigestCountDto })
+    @ApiProperty({
+        description: 'Отправленные документы по типам (КП, счета, договоры).',
+        type: KpiDigestCountDto,
+    })
     documents: KpiDigestCountDto;
 
     @ApiProperty({ description: 'Продажи (ev_success + done).', example: 1 })
@@ -221,7 +262,8 @@ export class KpiDigestCountersDto {
     refusals: number;
 
     @ApiProperty({
-        description: 'Причины нерезультата (код → количество) у несостоявшихся и перенесённых.',
+        description:
+            'Причины нерезультата (код → количество) у несостоявшихся и перенесённых.',
         type: 'object',
         additionalProperties: { type: 'number' },
         example: { nopickup: 3, secretar: 1 },
@@ -234,24 +276,30 @@ export class KpiDigestEmployeeDto extends KpiDigestCountersDto {
     @ApiProperty({ description: 'ID сотрудника Bitrix.', example: 42 })
     userId: number;
 
-    @ApiProperty({ description: 'Имя Фамилия сотрудника (из запроса).', example: 'Иван Петров' })
+    @ApiProperty({
+        description: 'Имя Фамилия сотрудника (из запроса).',
+        example: 'Иван Петров',
+    })
     name: string;
 
     @ApiProperty({
-        description: 'Фактические звонки и эфир за день; null — статистика звонков недоступна.',
+        description:
+            'Фактические звонки и эфир за день; null — статистика звонков недоступна.',
         type: KpiDigestCallsDto,
         nullable: true,
     })
     calls: KpiDigestCallsDto | null;
 
     @ApiProperty({
-        description: 'События дня сотрудника (все действия) в хронологическом порядке.',
+        description:
+            'События дня сотрудника (все действия) в хронологическом порядке.',
         type: [KpiDigestRecordDto],
     })
     records: KpiDigestRecordDto[];
 
     @ApiProperty({
-        description: 'Записи плана/переноса, запланированные на этот день ранее.',
+        description:
+            'Записи плана/переноса, запланированные на этот день ранее.',
         type: [KpiDigestRecordDto],
     })
     plannedAtStartRecords: KpiDigestRecordDto[];
@@ -259,28 +307,44 @@ export class KpiDigestEmployeeDto extends KpiDigestCountersDto {
 
 /** Сводка по всем ответственным портала за день (база для «Ø все»). */
 export class KpiDigestSummaryDto {
-    @ApiProperty({ description: 'Сотрудников портала с активностью/планом за день.', example: 18 })
+    @ApiProperty({
+        description: 'Сотрудников портала с активностью/планом за день.',
+        example: 18,
+    })
     usersCount: number;
 
-    @ApiProperty({ description: 'Суммарные счётчики по всем сотрудникам портала.', type: KpiDigestCountersDto })
+    @ApiProperty({
+        description: 'Суммарные счётчики по всем сотрудникам портала.',
+        type: KpiDigestCountersDto,
+    })
     totals: KpiDigestCountersDto;
 
     @ApiProperty({
-        description: 'Суммарные звонки по всем сотрудникам; null — статистика недоступна.',
+        description:
+            'Суммарные звонки по всем сотрудникам; null — статистика недоступна.',
         type: KpiDigestCallsDto,
         nullable: true,
     })
     calls: KpiDigestCallsDto | null;
 
-    @ApiProperty({ description: 'Сотрудников портала со звонками за день.', example: 16 })
+    @ApiProperty({
+        description: 'Сотрудников портала со звонками за день.',
+        example: 16,
+    })
     callsUsersCount: number;
 }
 
 export class KpiDigestCatalogItemDto {
-    @ApiProperty({ description: 'Код item\'а без префикса списка.', example: 'xo' })
+    @ApiProperty({
+        description: "Код item'а без префикса списка.",
+        example: 'xo',
+    })
     code: string;
 
-    @ApiProperty({ description: 'Название с портала.', example: 'Холодный звонок' })
+    @ApiProperty({
+        description: 'Название с портала.',
+        example: 'Холодный звонок',
+    })
     name: string;
 
     @ApiPropertyOptional({
@@ -307,10 +371,16 @@ export class KpiDigestPeriodDto {
     @ApiProperty({ enum: KPI_DIGEST_PERIOD_KINDS, example: 'day' })
     kind: KpiDigestPeriodKind;
 
-    @ApiProperty({ description: 'Начало периода, YYYY-MM-DD.', example: '2026-10-14' })
+    @ApiProperty({
+        description: 'Начало периода, YYYY-MM-DD.',
+        example: '2026-10-14',
+    })
     from: string;
 
-    @ApiProperty({ description: 'Конец периода (включительно), YYYY-MM-DD.', example: '2026-10-14' })
+    @ApiProperty({
+        description: 'Конец периода (включительно), YYYY-MM-DD.',
+        example: '2026-10-14',
+    })
     to: string;
 }
 
@@ -318,7 +388,10 @@ export class KpiDigestReportDto {
     @ApiProperty({ type: KpiDigestPeriodDto })
     period: KpiDigestPeriodDto;
 
-    @ApiProperty({ description: 'Момент формирования, ISO.', example: '2026-10-14T15:00:00.000Z' })
+    @ApiProperty({
+        description: 'Момент формирования, ISO.',
+        example: '2026-10-14T15:00:00.000Z',
+    })
     generatedAt: string;
 
     @ApiProperty({ type: KpiDigestCatalogDto })
@@ -330,21 +403,26 @@ export class KpiDigestReportDto {
     })
     listId: string;
 
-    @ApiProperty({ description: 'Строки по запрошенным сотрудникам.', type: [KpiDigestEmployeeDto] })
+    @ApiProperty({
+        description: 'Строки по запрошенным сотрудникам.',
+        type: [KpiDigestEmployeeDto],
+    })
     employees: KpiDigestEmployeeDto[];
 
     @ApiProperty({ type: KpiDigestSummaryDto })
     summary: KpiDigestSummaryDto;
 
     @ApiProperty({
-        description: 'Некритичные проблемы сборки (например, звонки недоступны).',
+        description:
+            'Некритичные проблемы сборки (например, звонки недоступны).',
         type: [String],
         example: [],
     })
     warnings: string[];
 
     @ApiProperty({
-        description: 'Какая-то из партиций обрезана по лимиту строк — данные неполные.',
+        description:
+            'Какая-то из партиций обрезана по лимиту строк — данные неполные.',
         example: false,
     })
     truncated: boolean;
@@ -375,12 +453,16 @@ export class KpiDigestResponseDto {
     data?: KpiDigestReportDto;
 
     @ApiPropertyOptional({
-        description: 'Эхо ключа запроса `day|{date}|{date}|{sortedUserIds}` для матчинга WS/поллинга.',
+        description:
+            'Эхо ключа запроса `day|{date}|{date}|{sortedUserIds}` для матчинга WS/поллинга.',
         type: String,
         example: 'day|2026-10-14|2026-10-14|12_34',
     })
     requestKey?: string;
 
-    @ApiPropertyOptional({ description: 'Текст ошибки расчёта (status error).', type: String })
+    @ApiPropertyOptional({
+        description: 'Текст ошибки расчёта (status error).',
+        type: String,
+    })
     message?: string;
 }

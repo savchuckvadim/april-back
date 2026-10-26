@@ -40,7 +40,10 @@ export class ProductRowSetDto {
     @ApiProperty({ type: Number })
     @IsNumber()
     id: number;
-    @ApiProperty({ description: 'Сет показан свёрнуто (одной строкой)', type: Boolean })
+    @ApiProperty({
+        description: 'Сет показан свёрнуто (одной строкой)',
+        type: Boolean,
+    })
     @IsBoolean()
     show: boolean;
     @ApiProperty({ type: ProductRowSetItemDto })

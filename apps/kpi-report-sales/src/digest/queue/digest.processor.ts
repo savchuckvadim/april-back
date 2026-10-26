@@ -39,7 +39,8 @@ export class KpiDigestQueueProcessor {
 
     @Process(JobNames.SALES_DIGEST_GENERATE)
     async handleDigest(job: Job<KpiDigestJob>): Promise<void> {
-        const { domain, filters, socketId, requestKey, forceRefresh } = job.data;
+        const { domain, filters, socketId, requestKey, forceRefresh } =
+            job.data;
         this.logger.log(`SALES_DIGEST_GENERATE: ${domain} ${filters.date}`);
         try {
             const useCase = new DigestUseCase();
@@ -50,7 +51,10 @@ export class KpiDigestQueueProcessor {
                 this.resultCache,
             );
             const data = await useCase.generate(filters, { forceRefresh });
-            this.notify(socketId, KPI_DIGEST_WS_EVENTS.DONE, { requestKey, data });
+            this.notify(socketId, KPI_DIGEST_WS_EVENTS.DONE, {
+                requestKey,
+                data,
+            });
         } catch (error) {
             await this.handleFailure(job, error);
             throw error;
@@ -66,7 +70,10 @@ export class KpiDigestQueueProcessor {
         this.ws.sendToClient(socketId, { event, data });
     }
 
-    private async handleFailure(job: Job<KpiDigestJob>, error: unknown): Promise<void> {
+    private async handleFailure(
+        job: Job<KpiDigestJob>,
+        error: unknown,
+    ): Promise<void> {
         const { domain, socketId, requestKey, resultKey } = job.data;
         const message = error instanceof Error ? error.message : String(error);
         const attempts = job.opts.attempts ?? 1;
@@ -84,6 +91,9 @@ export class KpiDigestQueueProcessor {
             message,
             KPI_DIGEST_RESULT_ERROR_TTL_SECONDS,
         );
-        this.notify(socketId, KPI_DIGEST_WS_EVENTS.ERROR, { requestKey, message });
+        this.notify(socketId, KPI_DIGEST_WS_EVENTS.ERROR, {
+            requestKey,
+            message,
+        });
     }
 }

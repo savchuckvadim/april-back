@@ -15,7 +15,8 @@ describe('supply-template.util', () => {
     });
 
     it('форма слова по числу (1 / 2–4 / 5+, с учётом 11–14)', () => {
-        const form = (n: number) => pluralize(n, 'доступ', 'доступа', 'доступов');
+        const form = (n: number) =>
+            pluralize(n, 'доступ', 'доступа', 'доступов');
         expect(form(1)).toBe('доступ');
         expect(form(3)).toBe('доступа');
         expect(form(5)).toBe('доступов');

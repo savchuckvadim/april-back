@@ -16,15 +16,27 @@ export class ComplectInfoblockValueDto {
     @ApiProperty({ description: 'Название блока', type: String })
     @IsString()
     name: string;
-    @ApiProperty({ description: 'Заголовок для документа (регион — название инфоблока)', type: String, required: false })
+    @ApiProperty({
+        description: 'Заголовок для документа (регион — название инфоблока)',
+        type: String,
+        required: false,
+    })
     @IsOptional()
     @IsString()
     title?: string;
-    @ApiProperty({ description: 'Легаси-номер блока', type: Number, required: false })
+    @ApiProperty({
+        description: 'Легаси-номер блока',
+        type: Number,
+        required: false,
+    })
     @IsOptional()
     @IsNumber()
     number?: number;
-    @ApiProperty({ description: 'Код блока (pbx/каталог)', type: String, required: false })
+    @ApiProperty({
+        description: 'Код блока (pbx/каталог)',
+        type: String,
+        required: false,
+    })
     @IsOptional()
     @IsString()
     code?: string;
@@ -34,21 +46,39 @@ export class ComplectInfoblockValueDto {
     @ApiProperty({ description: 'Вес блока', type: Number })
     @IsNumber()
     weight: number;
-    @ApiProperty({ description: 'Описание блока для КП', type: String, required: false, nullable: true })
+    @ApiProperty({
+        description: 'Описание блока для КП',
+        type: String,
+        required: false,
+        nullable: true,
+    })
     @IsOptional()
     @IsString()
     description?: string | null;
-    @ApiProperty({ description: 'Судебная практика (онлайн-архив)', type: Boolean, required: false })
+    @ApiProperty({
+        description: 'Судебная практика (онлайн-архив)',
+        type: Boolean,
+        required: false,
+    })
     @IsOptional()
     @IsBoolean()
     isLa?: boolean;
 
-    @ApiProperty({ description: 'Региональный блок', type: Boolean, required: false })
+    @ApiProperty({
+        description: 'Региональный блок',
+        type: Boolean,
+        required: false,
+    })
     @IsBoolean()
     @IsOptional()
     isRegion?: boolean;
 
-    @ApiProperty({ description: 'Подзаголовок (например, «N запросов в день» у Искры)', type: String, required: false, nullable: true })
+    @ApiProperty({
+        description: 'Подзаголовок (например, «N запросов в день» у Искры)',
+        type: String,
+        required: false,
+        nullable: true,
+    })
     @IsOptional()
     @IsString()
     subtitle?: string | null | undefined;
@@ -56,7 +86,10 @@ export class ComplectInfoblockValueDto {
 
 /** Группа инфоблоков наполнения: НПА, судебная практика, ЭР, LT, бесплатные и т.д. */
 export class ComplectDto {
-    @ApiProperty({ description: 'Название группы (легаси groupsName)', type: String })
+    @ApiProperty({
+        description: 'Название группы (легаси groupsName)',
+        type: String,
+    })
     @IsString()
     groupsName: string;
     @ApiProperty({

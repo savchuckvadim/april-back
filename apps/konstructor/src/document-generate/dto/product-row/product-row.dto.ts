@@ -35,7 +35,10 @@ export class ProductRowSupplyDto {
     @ApiProperty({ type: String })
     @IsString()
     name: string;
-    @ApiProperty({ description: 'Подпись поставки для КП (quantityForKp)', type: String })
+    @ApiProperty({
+        description: 'Подпись поставки для КП (quantityForKp)',
+        type: String,
+    })
     @IsString()
     forkp: string;
     @ApiProperty({ description: 'Легаси-номер поставки', type: Number })
@@ -88,7 +91,10 @@ export class ProductRowDto {
     @IsString()
     type: string;
 
-    @ApiProperty({ description: 'id строки в сете (0 — главный товар)', type: Number })
+    @ApiProperty({
+        description: 'id строки в сете (0 — главный товар)',
+        type: Number,
+    })
     @IsNumber()
     id: number;
     @ApiProperty({ type: Number })
@@ -97,7 +103,11 @@ export class ProductRowDto {
     @ApiProperty({ type: Boolean })
     @IsBoolean()
     isUpdating: boolean;
-    @ApiProperty({ enum: ProductTypeEnum, enumName: 'ProductType', required: false })
+    @ApiProperty({
+        enum: ProductTypeEnum,
+        enumName: 'ProductType',
+        required: false,
+    })
     @IsOptional()
     @IsEnum(ProductTypeEnum)
     productType?: ProductTypeEnum;

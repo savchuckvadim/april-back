@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { PackageEntity } from '../entity/package.entity';
-import { PackageProductTypeEnum, PackageTypeEnum } from '../types/package.type';
+import { PackageProductTypeEnum } from '../types/package.type';
 import { PackageCreateDto } from './package-create.dto';
 
 export class PackageEntityDto extends PackageCreateDto {

@@ -23,8 +23,12 @@ describe('resolveDigestListFields', () => {
             bitrixId: '23',
         });
         expect(fields.actionItemsByCode.get('pound')?.bitrixId).toBe('12');
-        expect(fields.catalog.types.find(t => t.code === 'xo')?.group).toBe('call');
-        expect(fields.catalog.types.find(t => t.code === 'ev_offer')?.group).toBe('document');
+        expect(fields.catalog.types.find(t => t.code === 'xo')?.group).toBe(
+            'call',
+        );
+        expect(
+            fields.catalog.types.find(t => t.code === 'ev_offer')?.group,
+        ).toBe('document');
         expect(fields.catalog.noresultReasons).toEqual([
             { code: 'nopickup', name: 'Не берут трубку' },
             { code: 'secretar', name: 'Секретарь' },
@@ -48,7 +52,9 @@ describe('resolveDigestListFields', () => {
 
     it('без списка или обязательного поля — DigestListConfigError', () => {
         expect(() =>
-            resolveDigestListFields({ getListByCode: () => undefined } as never),
+            resolveDigestListFields({
+                getListByCode: () => undefined,
+            } as never),
         ).toThrow(DigestListConfigError);
         expect(() =>
             resolveDigestListFields({
@@ -65,10 +71,18 @@ describe('resolveDigestListFields', () => {
 
 describe('normalizeBitrixDateTime', () => {
     it('легаси, дата без времени и ISO с зоной — в YYYY-MM-DD HH:mm:ss без пересчёта', () => {
-        expect(normalizeBitrixDateTime('14.10.2026 10:15:07')).toBe('2026-10-14 10:15:07');
-        expect(normalizeBitrixDateTime('14.10.2026')).toBe('2026-10-14 00:00:00');
-        expect(normalizeBitrixDateTime('2026-10-14T18:30:00+03:00')).toBe('2026-10-14 18:30:00');
-        expect(normalizeBitrixDateTime('2026-10-14 09:05:00')).toBe('2026-10-14 09:05:00');
+        expect(normalizeBitrixDateTime('14.10.2026 10:15:07')).toBe(
+            '2026-10-14 10:15:07',
+        );
+        expect(normalizeBitrixDateTime('14.10.2026')).toBe(
+            '2026-10-14 00:00:00',
+        );
+        expect(normalizeBitrixDateTime('2026-10-14T18:30:00+03:00')).toBe(
+            '2026-10-14 18:30:00',
+        );
+        expect(normalizeBitrixDateTime('2026-10-14 09:05:00')).toBe(
+            '2026-10-14 09:05:00',
+        );
         expect(normalizeBitrixDateTime('')).toBeNull();
         expect(normalizeBitrixDateTime('вчера')).toBeNull();
     });
@@ -134,7 +148,11 @@ describe('mapListElementToRecord', () => {
     });
 
     it('scalarsOf: массивы, объекты и пустые значения', () => {
-        expect(scalarsOf({ a: '1', b: ['2', { c: 3 }] })).toEqual(['1', '2', '3']);
+        expect(scalarsOf({ a: '1', b: ['2', { c: 3 }] })).toEqual([
+            '1',
+            '2',
+            '3',
+        ]);
         expect(scalarsOf('  ')).toEqual([]);
         expect(scalarsOf(null)).toEqual([]);
     });

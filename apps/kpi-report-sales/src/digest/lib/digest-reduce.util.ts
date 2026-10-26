@@ -50,13 +50,19 @@ export const emptyCounters = (): KpiDigestCountersDto => ({
 
 const UNKNOWN_TYPE = 'unknown';
 
-export const bumpCount = (count: KpiDigestCountDto, type: string | null): void => {
+export const bumpCount = (
+    count: KpiDigestCountDto,
+    type: string | null,
+): void => {
     const key = type || UNKNOWN_TYPE;
     count.total += 1;
     count.byType[key] = (count.byType[key] ?? 0) + 1;
 };
 
-export const addCount = (target: KpiDigestCountDto, source: KpiDigestCountDto): void => {
+export const addCount = (
+    target: KpiDigestCountDto,
+    source: KpiDigestCountDto,
+): void => {
     target.total += source.total;
     for (const [type, value] of Object.entries(source.byType)) {
         target.byType[type] = (target.byType[type] ?? 0) + value;
@@ -180,7 +186,10 @@ export function reduceDayRecords(
     for (const record of records) {
         if (!isCountableRecord(record)) continue;
         const key = String(record.userId);
-        const user = (byUser[key] ??= { counters: emptyCounters(), records: [] });
+        const user = (byUser[key] ??= {
+            counters: emptyCounters(),
+            records: [],
+        });
         applyRecord(user.counters, record, date);
         user.records.push(record);
     }

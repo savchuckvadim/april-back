@@ -1,12 +1,4 @@
-import {
-    Controller,
-    Get,
-    Post,
-    Put,
-    Body,
-    Param,
-    ParseIntPipe,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param } from '@nestjs/common';
 import { ContractService } from './contract.service';
 import { ContractEntity } from './contract.entity';
 import { PortalContractEntity } from './portal-contract.entity';

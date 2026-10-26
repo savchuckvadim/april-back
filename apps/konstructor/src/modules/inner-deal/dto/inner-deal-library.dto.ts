@@ -30,12 +30,20 @@ export class InnerDealLibraryQueryDto {
     @IsString()
     domain: string;
 
-    @ApiProperty({ type: Number, example: 447, description: 'Пользователь Bitrix, кто спрашивает' })
+    @ApiProperty({
+        type: Number,
+        example: 447,
+        description: 'Пользователь Bitrix, кто спрашивает',
+    })
     @IsInt()
     @Type(() => Number)
     userId: number;
 
-    @ApiProperty({ enum: LIBRARY_KINDS, required: false, description: 'Без kind — и избранное, и акции' })
+    @ApiProperty({
+        enum: LIBRARY_KINDS,
+        required: false,
+        description: 'Без kind — и избранное, и акции',
+    })
     @IsOptional()
     @IsIn(LIBRARY_KINDS)
     kind?: LibraryKind;
@@ -183,7 +191,11 @@ export class InnerDealLibraryPatchDto {
     @IsIn(LIBRARY_VISIBILITIES)
     visibility?: LibraryVisibility;
 
-    @ApiProperty({ type: Boolean, required: false, description: 'Архив скрывает заготовку у всех, история сделок остаётся' })
+    @ApiProperty({
+        type: Boolean,
+        required: false,
+        description: 'Архив скрывает заготовку у всех, история сделок остаётся',
+    })
     @IsOptional()
     @IsBoolean()
     isArchived?: boolean;
@@ -203,16 +215,33 @@ export class InnerDealLibraryItemDto {
     @ApiProperty({ type: String, nullable: true })
     title: string | null;
 
-    @ApiProperty({ type: String, nullable: true, description: 'Имя сделки-источника (легаси-избранное без title)' })
+    @ApiProperty({
+        type: String,
+        nullable: true,
+        description: 'Имя сделки-источника (легаси-избранное без title)',
+    })
     dealName: string | null;
 
-    @ApiProperty({ type: Number, nullable: true, description: 'Автор (Bitrix user id)' })
+    @ApiProperty({
+        type: Number,
+        nullable: true,
+        description: 'Автор (Bitrix user id)',
+    })
     authorId: number | null;
 
-    @ApiProperty({ type: String, nullable: true, description: 'Отдел продаж автора (id Bitrix) для visibility=department' })
+    @ApiProperty({
+        type: String,
+        nullable: true,
+        description:
+            'Отдел продаж автора (id Bitrix) для visibility=department',
+    })
     departmentId: string | null;
 
-    @ApiProperty({ type: Boolean, description: 'Текущий пользователь может переименовать/сменить видимость/удалить' })
+    @ApiProperty({
+        type: Boolean,
+        description:
+            'Текущий пользователь может переименовать/сменить видимость/удалить',
+    })
     canEdit: boolean;
 
     @ApiProperty({ type: Boolean })

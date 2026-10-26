@@ -146,7 +146,9 @@ export class KonstructorInitUseCase {
                 shortName: portalMeasure?.shortName || measure.shortName,
                 fullName: portalMeasure?.fullName || measure.fullName,
                 bitrixId: portalMeasure?.bitrixId ?? null,
-                portalMeasureId: portalMeasure ? Number(portalMeasure.id) : null,
+                portalMeasureId: portalMeasure
+                    ? Number(portalMeasure.id)
+                    : null,
             };
         });
     }

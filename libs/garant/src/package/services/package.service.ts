@@ -3,7 +3,6 @@ import { PackageEntity } from '../entity/package.entity';
 import { PackageRepository } from '../repository/package.repository';
 import { PackageCreateDto } from '../dto/package-create.dto';
 import { PackageEntityDto } from '../dto/package-entity.dto';
-import { PackageProductTypeEnum, PackageTypeEnum } from '../types/package.type';
 import { PackageUpdateDto } from '../dto/package-update.dto';
 
 @Injectable()
@@ -47,5 +46,11 @@ export class PackageService {
         const packageEntity = await this.packageRepository.findByCode(code);
         if (!packageEntity) return null;
         return new PackageEntityDto(packageEntity);
+    }
+
+    async delete(id: string): Promise<boolean> {
+        const existing = await this.packageRepository.findById(id);
+        if (!existing) throw new NotFoundException('Package not found');
+        return await this.packageRepository.delete(id);
     }
 }

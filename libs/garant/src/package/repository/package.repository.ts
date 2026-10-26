@@ -10,4 +10,5 @@ export abstract class PackageRepository {
     abstract findById(id: string): Promise<PackageEntity | null>;
     abstract findMany(): Promise<PackageEntity[] | null>;
     abstract findByCode(code: string): Promise<PackageEntity | null>;
+    abstract delete(id: string): Promise<boolean>;
 }

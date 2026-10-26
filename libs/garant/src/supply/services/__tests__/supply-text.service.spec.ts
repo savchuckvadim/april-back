@@ -58,13 +58,18 @@ const SUPPLIES: SupplyEntity[] = [
     supply('internet_1', 'internet', 1, INTERNET_TEMPLATES),
     supply('internet_5', 'internet', 5, INTERNET_TEMPLATES),
     supply('internet_10', 'internet', 10, INTERNET_TEMPLATES),
-    supply('proxima_flash', 'proxima', 1, { contractName: 'Проксима мобильная онлайн с РРД**' }),
-    supply('proxima_1', 'proxima', 1, { contractName: 'на одном сервере … {words:gen} пользователей*' }),
+    supply('proxima_flash', 'proxima', 1, {
+        contractName: 'Проксима мобильная онлайн с РРД**',
+    }),
+    supply('proxima_1', 'proxima', 1, {
+        contractName: 'на одном сервере … {words:gen} пользователей*',
+    }),
 ];
 
 const fakeSupplyService = {
-    findByCode: async (code: string) => SUPPLIES.find(s => s.code === code) ?? null,
-    findMany: async () => SUPPLIES,
+    findByCode: (code: string) =>
+        Promise.resolve(SUPPLIES.find(s => s.code === code) ?? null),
+    findMany: () => Promise.resolve(SUPPLIES),
 } as unknown as SupplyService;
 
 describe('SupplyTextService', () => {
@@ -72,7 +77,9 @@ describe('SupplyTextService', () => {
 
     it('справочная поставка: тексты под её число ОД', async () => {
         const texts = await service.resolve('internet_5');
-        expect(texts?.contractName).toBe('Многопользовательская Интернет-версия 5');
+        expect(texts?.contractName).toBe(
+            'Многопользовательская Интернет-версия 5',
+        );
         expect(texts?.quantityForKp).toBe(
             'Интернет версия на 5 одновременных доступов к системе',
         );
@@ -85,7 +92,9 @@ describe('SupplyTextService', () => {
         expect(texts?.sourceCode).toBe('internet_5');
         expect(texts?.usersQuantity).toBe(7);
         expect(texts?.name).toBe('Интернет 7 ОД');
-        expect(texts?.contractName).toBe('Многопользовательская Интернет-версия 7');
+        expect(texts?.contractName).toBe(
+            'Многопользовательская Интернет-версия 7',
+        );
         expect(texts?.contractPropLoginsQuantity).toBe(
             'Неограниченно с возможностью одновременной работы семи Пользователей',
         );
@@ -96,7 +105,9 @@ describe('SupplyTextService', () => {
         expect(internet?.sourceCode).toBe('internet_1');
         const proxima = await service.resolve('x_proxima_3');
         expect(proxima?.sourceCode).toBe('proxima_1');
-        expect(proxima?.contractName).toBe('на одном сервере … трёх пользователей*');
+        expect(proxima?.contractName).toBe(
+            'на одном сервере … трёх пользователей*',
+        );
     });
 
     it('неизвестный код — null', async () => {

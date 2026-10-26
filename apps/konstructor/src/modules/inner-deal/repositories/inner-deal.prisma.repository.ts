@@ -88,7 +88,11 @@ export class InnerDealPrismaRepository implements InnerDealRepository {
                 OR: [
                     ...portalRows,
                     // акции вендора на все порталы
-                    { portalId: null, kind: 'promotion', visibility: { in: ['global', 'all'] } },
+                    {
+                        portalId: null,
+                        kind: 'promotion',
+                        visibility: { in: ['global', 'all'] },
+                    },
                 ],
             },
             orderBy: { id: 'desc' },

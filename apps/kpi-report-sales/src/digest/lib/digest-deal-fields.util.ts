@@ -47,9 +47,15 @@ export const stageSuffix = (stageId: string): string => {
     return index >= 0 ? stageId.slice(index + 1) : stageId;
 };
 
-export function resolveDigestDealFields(portal: PortalModelLike): DigestDealFields {
-    const pres = portal.getDealCategoryByCode(PbxDealCategoryCodeEnum.sales_presentation);
-    const base = portal.getDealCategoryByCode(PbxDealCategoryCodeEnum.sales_base);
+export function resolveDigestDealFields(
+    portal: PortalModelLike,
+): DigestDealFields {
+    const pres = portal.getDealCategoryByCode(
+        PbxDealCategoryCodeEnum.sales_presentation,
+    );
+    const base = portal.getDealCategoryByCode(
+        PbxDealCategoryCodeEnum.sales_base,
+    );
     const field = (code: string): string => {
         try {
             return portal.getDealFieldBitrixIdByCode(code) || '';
@@ -63,13 +69,17 @@ export function resolveDigestDealFields(portal: PortalModelLike): DigestDealFiel
         const suffix = stageSuffix(String(stage.bitrixId ?? ''));
         if (!suffix) continue;
         presStages.set(suffix, {
-            code: stage.code || KPI_DIGEST_PRES_STAGE_BY_SUFFIX[suffix] || suffix,
+            code:
+                stage.code || KPI_DIGEST_PRES_STAGE_BY_SUFFIX[suffix] || suffix,
             name: stage.name || stage.title || suffix,
         });
     }
     // Стадии, которых нет в слепке, — из реестра (имя = код).
-    for (const [suffix, code] of Object.entries(KPI_DIGEST_PRES_STAGE_BY_SUFFIX)) {
-        if (!presStages.has(suffix)) presStages.set(suffix, { code, name: code });
+    for (const [suffix, code] of Object.entries(
+        KPI_DIGEST_PRES_STAGE_BY_SUFFIX,
+    )) {
+        if (!presStages.has(suffix))
+            presStages.set(suffix, { code, name: code });
     }
 
     const ev = PBX_SALES_EVENT_FIELD_CODES;
@@ -83,7 +93,9 @@ export function resolveDigestDealFields(portal: PortalModelLike): DigestDealFiel
             lastPresPlanDate: field(ev.last_pres_plan_date),
             lastPresDoneDate: field(ev.last_pres_done_date),
             opMhistory: field(ev.op_mhistory),
-            complectName: field(PBX_SALES_KONSTRUCTOR_FIELD_CODES.complect_name),
+            complectName: field(
+                PBX_SALES_KONSTRUCTOR_FIELD_CODES.complect_name,
+            ),
             xoCreated: field(ev.xo_created),
         },
     };

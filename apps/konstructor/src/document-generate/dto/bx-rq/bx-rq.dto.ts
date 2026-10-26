@@ -12,7 +12,11 @@ import { FormFieldDto } from '../form-field/form-field.dto';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RQFieldDto extends FormFieldDto implements RqItem<RQ_ITEM_CODE> {
-    @ApiProperty({ description: 'Code of the RQ', enum: RQ_ITEM_CODE, enumName: 'RqItemCode' })
+    @ApiProperty({
+        description: 'Code of the RQ',
+        enum: RQ_ITEM_CODE,
+        enumName: 'RqItemCode',
+    })
     @IsEnum(RQ_ITEM_CODE, {
         message: 'RQFieldDto code must be a valid RQ_ITEM_CODE',
     })
@@ -23,7 +27,11 @@ export class ARQFieldDto
     extends FormFieldDto
     implements RqItem<ADDRESS_RQ_ITEM_CODE>
 {
-    @ApiProperty({ description: 'Code of the RQ', enum: ADDRESS_RQ_ITEM_CODE, enumName: 'AddressRqItemCode' })
+    @ApiProperty({
+        description: 'Code of the RQ',
+        enum: ADDRESS_RQ_ITEM_CODE,
+        enumName: 'AddressRqItemCode',
+    })
     @IsEnum(ADDRESS_RQ_ITEM_CODE, {
         message: 'ARQFieldDto code must be a valid ADDRESS_RQ_ITEM_CODE',
     })
@@ -34,7 +42,11 @@ export class BRQFieldDto
     extends FormFieldDto
     implements RqItem<BANK_RQ_ITEM_CODE>
 {
-    @ApiProperty({ description: 'Code of the RQ', enum: BANK_RQ_ITEM_CODE, enumName: 'BankRqItemCode' })
+    @ApiProperty({
+        description: 'Code of the RQ',
+        enum: BANK_RQ_ITEM_CODE,
+        enumName: 'BankRqItemCode',
+    })
     @IsEnum(BANK_RQ_ITEM_CODE, {
         message: 'BRQFieldDto code must be a valid BANK_RQ_ITEM_CODE',
     })
@@ -46,7 +58,11 @@ export class AddressRqItemDto {
     @IsNumber()
     anchor_id: number;
 
-    @ApiProperty({ description: 'Тип адреса Bitrix', enum: BX_ADDRESS_TYPE, enumName: 'BxAddressType' })
+    @ApiProperty({
+        description: 'Тип адреса Bitrix',
+        enum: BX_ADDRESS_TYPE,
+        enumName: 'BxAddressType',
+    })
     @IsEnum(BX_ADDRESS_TYPE, {
         message: 'AddressRqItemDto type_id must be a valid BX_ADDRESS_TYPE',
     })

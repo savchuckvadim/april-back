@@ -5,7 +5,9 @@ import {
     IsNumber,
     IsOptional,
     IsBoolean,
+    IsEnum,
 } from 'class-validator';
+import { CONTRACT_CODE } from '@lib/garant';
 
 export class CreateContractDto {
     @ApiProperty({
@@ -33,12 +35,15 @@ export class CreateContractDto {
     title: string;
 
     @ApiProperty({
-        description: 'Contract code',
-        example: 'CONTRACT_CODE',
+        description:
+            'Код вида договора — по нему генерация резолвит шаблоны; произвольные строки запрещены (опечатка молча превращала договор в internet).',
+        enum: CONTRACT_CODE,
+        enumName: 'ContractCode',
+        example: CONTRACT_CODE.LIC12,
     })
-    @IsString()
+    @IsEnum(CONTRACT_CODE)
     @IsNotEmpty()
-    code: string;
+    code: CONTRACT_CODE;
 
     @ApiProperty({
         description: 'Contract type',

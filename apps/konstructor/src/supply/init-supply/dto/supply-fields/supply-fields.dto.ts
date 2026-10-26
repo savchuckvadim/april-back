@@ -11,6 +11,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { FormFieldDto } from '@app/konstructor/document-generate/dto/form-field/form-field.dto';
 import { RqItem } from '@app/konstructor/document-generate/type/bx-rq.type';
 
+/**
+ * Коды полей формы отчёта о поставке. Должны покрывать ВСЕ поля
+ * `document-supply-report/lib/supply-report-form.ts`: фронт шлёт форму целиком,
+ * и один неизвестный код роняет весь init-supply в 400 — RPA не создаётся.
+ */
 export enum SupplyReportCodeEnum {
     situation_comments = 'situation_comments',
     sale_date = 'sale_date',
@@ -24,6 +29,7 @@ export enum SupplyReportCodeEnum {
     contract_result = 'contract_result',
     current_contract = 'current_contract',
     is_invoice_done = 'is_invoice_done',
+    invoice_number = 'invoice_number',
     invoice_result = 'invoice_result',
     current_invoice = 'current_invoice',
 }

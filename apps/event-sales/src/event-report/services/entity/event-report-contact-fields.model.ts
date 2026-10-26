@@ -1,5 +1,6 @@
 import {
     toBatchSafeText,
+    toMultiFieldEntryLines,
     toMultiFieldEntryText,
 } from '@lib/bitrix/consts/batch.consts';
 import { IField } from '@lib/portal-lib/portal/interfaces/portal.interface';
@@ -9,7 +10,7 @@ import {
     PRESENTATION_SURVEY_SUMMARY_CODES,
 } from '../../../shared/presentation-survey';
 import { EventReportContext } from '../context/event-report.context';
-import { buildEventHistoryParts } from '../history/event-history-comment.builder';
+import { buildEventHistoryEntry } from '../history/event-history-comment.builder';
 import { EventReportContactMirrorModel } from './event-report-contact-mirror.model';
 import { fitMultipleEntries, joinScalarHistory } from './history-text';
 
@@ -96,21 +97,27 @@ export class EventReportContactFieldsModel {
      * и длине, `op_history` скаляром через « | ».
      */
     private appendHistory(out: ContactFieldsMap): void {
-        const line = toMultiFieldEntryText(
-            [this.nowCrmDate(), ...buildEventHistoryParts(this.ctx)].join(
-                ' — ',
-            ),
-        );
+        // «ОП История» с переносами (26.10.2026), скаляр — одной строкой.
+        const entry = buildEventHistoryEntry(this.nowCrmDate(), this.ctx);
         const limit = this.ctx.isGsirk
             ? HISTORY_LIMIT_GSIRK
             : HISTORY_LIMIT_DEFAULT;
-        this.appendMultiple(out, 'op_mhistory', line, limit);
+        this.appendMultiple(
+            out,
+            'op_mhistory',
+            entry,
+            limit,
+            toMultiFieldEntryLines,
+        );
 
         const field = this.field('op_history');
         if (!field) return;
         const raw = this.contact[this.key(field)];
         out[this.key(field)] = toBatchSafeText(
-            joinScalarHistory(line, typeof raw === 'string' ? raw : ''),
+            joinScalarHistory(
+                toMultiFieldEntryText(entry),
+                typeof raw === 'string' ? raw : '',
+            ),
         );
     }
 
@@ -248,18 +255,22 @@ export class EventReportContactFieldsModel {
         out[this.key(field)] = item.bitrixId;
     }
 
-    /** Запись ленты — одной строкой, экранирование здесь и только здесь. */
+    /**
+     * Запись ленты: вид задаёт вызывающий (по умолчанию одна строка),
+     * экранирование здесь и только здесь.
+     */
     private appendMultiple(
         out: ContactFieldsMap,
         code: string,
         line: string,
         limit: number,
+        toEntry: (text: string) => string = toMultiFieldEntryText,
     ): void {
         const field = this.field(code);
         if (!field) return;
         out[this.key(field)] = fitMultipleEntries(
             [
-                toBatchSafeText(toMultiFieldEntryText(line)),
+                toBatchSafeText(toEntry(line)),
                 ...this.readMultiple(field).map(entry =>
                     toBatchSafeText(entry),
                 ),

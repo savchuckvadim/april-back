@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from 'generated/prisma';
 import { PrismaService } from 'src/core/prisma';
 import { PackageRepository } from './package.repository';
 import { PackageEntity } from '../entity/package.entity';
@@ -49,20 +50,27 @@ export class PackagePrismaRepository implements PackageRepository {
         packageEntity: Partial<PackageEntity>,
     ): Promise<PackageEntity | null> {
         try {
-            const { id, ...data } = packageEntity;
-            const updateData: any = {
+            // Relations и служебные даты в update не отправляются,
+            // FK-поля приводятся к BigInt только когда переданы.
+            const { id, infoblock_id, info_group_id, ...rest } = packageEntity;
+            const data = { ...rest };
+            delete data.infoblock;
+            delete data.info_group;
+            delete data.created_at;
+            delete data.updated_at;
+            const updateData: Prisma.garant_packagesUncheckedUpdateInput = {
                 ...data,
             };
 
-            if (data.infoblock_id !== undefined) {
-                updateData.infoblock_id = data.infoblock_id
-                    ? BigInt(data.infoblock_id)
+            if (infoblock_id !== undefined) {
+                updateData.infoblock_id = infoblock_id
+                    ? BigInt(infoblock_id)
                     : null;
             }
 
-            if (data.info_group_id !== undefined) {
-                updateData.info_group_id = data.info_group_id
-                    ? BigInt(data.info_group_id)
+            if (info_group_id !== undefined) {
+                updateData.info_group_id = info_group_id
+                    ? BigInt(info_group_id)
                     : null;
             }
 
@@ -204,6 +212,18 @@ export class PackagePrismaRepository implements PackageRepository {
         } catch (error) {
             console.error('Error finding package by code:', error);
             return null;
+        }
+    }
+
+    async delete(id: string): Promise<boolean> {
+        try {
+            await this.prisma.garant_packages.delete({
+                where: { id: BigInt(id) },
+            });
+            return true;
+        } catch (error) {
+            console.error('Error deleting package:', error);
+            return false;
         }
     }
 }

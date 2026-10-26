@@ -1,7 +1,7 @@
 import { CreatePriceDto } from '../dtos/create-price.dto';
 import { PriceService } from '@lib/garant/price';
 import { PriceExcelService } from '@lib/garant/price/services/excel/price-excel.service';
-import { StorageService, StorageType } from '@/core/storage';
+import { StorageService } from '@/core/storage';
 import {
     Controller,
     Get,
@@ -84,7 +84,7 @@ export class AdminGarantProfPriceController {
         },
     })
     async downloadExample(@Res() res: Response): Promise<void> {
-        const filePath = await this.priceExcelService.getExampleFilePath();
+        const filePath = this.priceExcelService.getExampleFilePath();
         const fileExists = await this.storageService.fileExists(filePath);
 
         if (!fileExists) {
@@ -211,6 +211,8 @@ export class AdminGarantProfPriceController {
         return new PriceEntityDto(price);
     }
 
+    // Статические DELETE-роуты обязаны идти до ':id', иначе Nest матчит
+    // 'many'/'all' как id и BigInt('many') падает.
     @Delete('all')
     @ApiOperation({ summary: 'Удалить все цены' })
     @ApiResponse({
@@ -221,16 +223,6 @@ export class AdminGarantProfPriceController {
         return await this.priceService.deleteAll();
     }
 
-    @Delete(':id')
-    @ApiOperation({ summary: 'Удалить цену по ID' })
-    @ApiResponse({
-        status: 200,
-        description: 'Цена успешно удалена',
-    })
-    async delete(@Param('id') id: number): Promise<boolean> {
-        return await this.priceService.delete(id);
-    }
-
     @Delete('many')
     @ApiOperation({ summary: 'Удалить несколько цен' })
     @ApiResponse({
@@ -239,5 +231,15 @@ export class AdminGarantProfPriceController {
     })
     async deleteMany(@Body() ids: number[]): Promise<boolean> {
         return await this.priceService.deleteMany(ids);
+    }
+
+    @Delete(':id')
+    @ApiOperation({ summary: 'Удалить цену по ID' })
+    @ApiResponse({
+        status: 200,
+        description: 'Цена успешно удалена',
+    })
+    async delete(@Param('id') id: number): Promise<boolean> {
+        return await this.priceService.delete(id);
     }
 }

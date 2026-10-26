@@ -4,11 +4,31 @@ export const DEAL_PORTAL = {
         sales_presentation: {
             bitrixId: '12',
             stages: [
-                { code: 'spres_plan', bitrixId: 'C12:PLAN', name: 'Запланирована' },
-                { code: 'spres_pending', bitrixId: 'C12:PENDING', name: 'Перенос' },
-                { code: 'spres_success', bitrixId: 'C12:WON', name: 'Презентация проведена' },
-                { code: 'spres_noresult', bitrixId: 'C12:APOLOGY', name: 'Не состоялась' },
-                { code: 'spres_fail', bitrixId: 'C12:LOSE', name: 'Отказ после презентации' },
+                {
+                    code: 'spres_plan',
+                    bitrixId: 'C12:PLAN',
+                    name: 'Запланирована',
+                },
+                {
+                    code: 'spres_pending',
+                    bitrixId: 'C12:PENDING',
+                    name: 'Перенос',
+                },
+                {
+                    code: 'spres_success',
+                    bitrixId: 'C12:WON',
+                    name: 'Презентация проведена',
+                },
+                {
+                    code: 'spres_noresult',
+                    bitrixId: 'C12:APOLOGY',
+                    name: 'Не состоялась',
+                },
+                {
+                    code: 'spres_fail',
+                    bitrixId: 'C12:LOSE',
+                    name: 'Отказ после презентации',
+                },
             ],
         },
         sales_base: { bitrixId: '0', stages: [] },
@@ -23,4 +43,3 @@ export const DEAL_PORTAL = {
         xo_created: 'UF_CRM_XO_CREATED',
     },
 };
-

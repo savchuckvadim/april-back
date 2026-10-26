@@ -77,7 +77,9 @@ describe('BxSuperUserService', () => {
         const service = new BxSuperUserService(repository, makeRedis().service);
 
         await expect(service.isSuperUser('example.ru', 0)).resolves.toBe(false);
-        await expect(service.isSuperUser('example.ru', -5)).resolves.toBe(false);
+        await expect(service.isSuperUser('example.ru', -5)).resolves.toBe(
+            false,
+        );
         await expect(service.isSuperUser('example.ru', 1.5)).resolves.toBe(
             false,
         );
@@ -93,7 +95,9 @@ describe('BxSuperUserService', () => {
     });
 
     it('второй вызов берёт список из кэша, а не из БД', async () => {
-        const { repository, findActiveBitrixIdsByDomain } = makeRepository([42]);
+        const { repository, findActiveBitrixIdsByDomain } = makeRepository([
+            42,
+        ]);
         const redis = makeRedis();
         const service = new BxSuperUserService(repository, redis.service);
 
@@ -105,7 +109,9 @@ describe('BxSuperUserService', () => {
     });
 
     it('invalidate убирает ключ, следующий вызов снова читает БД', async () => {
-        const { repository, findActiveBitrixIdsByDomain } = makeRepository([42]);
+        const { repository, findActiveBitrixIdsByDomain } = makeRepository([
+            42,
+        ]);
         const redis = makeRedis();
         const service = new BxSuperUserService(repository, redis.service);
 

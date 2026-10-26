@@ -21,6 +21,10 @@ import { PortalRegionService } from '../services/portal-region.service';
 import { GetPortalRegionResponseDto } from '../dto/request/get-portal-region-response.dto';
 import { CreatePortalRegionDtoAdminRequest } from '../dto/request/create-portal-region-request.dto';
 import { UpdatePortalRegionDtoAdmin } from '../dto/request/update-portal-region-request.dto';
+import {
+    BulkSetPortalRegionsDto,
+    BulkSetPortalRegionsResultDto,
+} from '../dto/request/bulk-set-portal-regions.dto';
 
 @ApiTags('Admin Portal Garant Region')
 @Controller('admin/portal/garant/regions')
@@ -66,6 +70,26 @@ export class AdminPortalGarantRegionController {
             throw new BadRequestException('Region not created');
         }
         return new GetPortalRegionResponseDto(region, true);
+    }
+
+    @Put('bulk')
+    @ApiBody({ type: BulkSetPortalRegionsDto })
+    @ApiOperation({
+        summary: 'Массово применить чекбоксы регионов портала',
+        description:
+            'Включает/выключает регионы портала и ставит собственный рабс ' +
+            '(own_abs) одним запросом — под интерфейс с чекбоксами. ' +
+            'Достаточно передавать только изменившиеся строки.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Счётчики применённых изменений и пропуски с причинами.',
+        type: BulkSetPortalRegionsResultDto,
+    })
+    async bulkSet(
+        @Body() dto: BulkSetPortalRegionsDto,
+    ): Promise<BulkSetPortalRegionsResultDto> {
+        return await this.portalRegionService.bulkSetPortalRegions(dto);
     }
 
     @Get('update-initial-data/:portalId/:regionId')

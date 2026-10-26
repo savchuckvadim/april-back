@@ -40,8 +40,10 @@ export const buildDigestJobId = (
  * Эхо-ключ запроса для фронта: формат отчёта `${from}|${to}|${usersKey}`
  * с префиксом вида периода — ключ однозначен и для будущих видов.
  */
-export const buildDigestRequestKey = (date: IsoDate, usersKey: string): string =>
-    `day|${date}|${date}|${usersKey}`;
+export const buildDigestRequestKey = (
+    date: IsoDate,
+    usersKey: string,
+): string => `day|${date}|${date}|${usersKey}`;
 
 /** Префикс ключей всех партиций одного дня — для точечного сброса. */
 export const buildDigestDayKeyPrefixes = (date: IsoDate): string[] => [

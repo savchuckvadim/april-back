@@ -21,7 +21,12 @@ import type {
 import { addCalls, emptyCalls } from './digest-calls.util';
 import { assemblePresentations } from './digest-presentations-assemble.util';
 import type { DigestPresentationsPartition } from '../types/digest-presentations.type';
-import { addCount, addCounters, emptyCount, emptyCounters } from './digest-reduce.util';
+import {
+    addCount,
+    addCounters,
+    emptyCount,
+    emptyCounters,
+} from './digest-reduce.util';
 
 export interface AssembleDigestInput {
     date: IsoDate;
@@ -44,7 +49,9 @@ interface RequestedUser {
 }
 
 /** Числовые id > 0, дедуп с сохранением порядка; имя — «Имя Фамилия». */
-export function requestedUsers(departament: readonly BXUserDto[]): RequestedUser[] {
+export function requestedUsers(
+    departament: readonly BXUserDto[],
+): RequestedUser[] {
     const seen = new Set<number>();
     const users: RequestedUser[] = [];
     for (const user of departament) {
@@ -71,7 +78,10 @@ function countersFor(
     if (dayUser) addCounters(counters, dayUser.counters);
     const plannedUser = planned.byUser[String(userId)];
     counters.plannedAtStart = plannedUser
-        ? { total: plannedUser.count.total, byType: { ...plannedUser.count.byType } }
+        ? {
+              total: plannedUser.count.total,
+              byType: { ...plannedUser.count.byType },
+          }
         : emptyCount();
     return counters;
 }
@@ -111,21 +121,21 @@ function buildSummary(
 export function assembleDigest(input: AssembleDigestInput): KpiDigestReportDto {
     const { date, day, planned, calls } = input;
 
-    const employees: KpiDigestEmployeeDto[] = requestedUsers(input.departament).map(
-        user => {
-            const key = String(user.id);
-            const dayUser = day.byUser[key];
-            const plannedUser = planned.byUser[key];
-            return {
-                userId: user.id,
-                name: user.name,
-                ...countersFor(user.id, day, planned),
-                calls: calls ? (calls.byUser[key] ?? emptyCalls()) : null,
-                records: dayUser?.records ?? [],
-                plannedAtStartRecords: plannedUser?.records ?? [],
-            };
-        },
-    );
+    const employees: KpiDigestEmployeeDto[] = requestedUsers(
+        input.departament,
+    ).map(user => {
+        const key = String(user.id);
+        const dayUser = day.byUser[key];
+        const plannedUser = planned.byUser[key];
+        return {
+            userId: user.id,
+            name: user.name,
+            ...countersFor(user.id, day, planned),
+            calls: calls ? (calls.byUser[key] ?? emptyCalls()) : null,
+            records: dayUser?.records ?? [],
+            plannedAtStartRecords: plannedUser?.records ?? [],
+        };
+    });
 
     return {
         period: { kind: 'day', from: date, to: date },
@@ -145,7 +155,9 @@ export function assembleDigest(input: AssembleDigestInput): KpiDigestReportDto {
                   partition: input.presentations,
                   day,
                   planned,
-                  userIds: new Set(requestedUsers(input.departament).map(user => user.id)),
+                  userIds: new Set(
+                      requestedUsers(input.departament).map(user => user.id),
+                  ),
               })
             : null,
     };

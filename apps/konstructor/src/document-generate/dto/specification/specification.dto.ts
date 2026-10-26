@@ -52,7 +52,10 @@ export class ContractSpecificationItemDto
 }
 
 export class ContractSpecificationDto {
-    @ApiProperty({ description: 'Строки спецификации', type: [ContractSpecificationItemDto] })
+    @ApiProperty({
+        description: 'Строки спецификации',
+        type: [ContractSpecificationItemDto],
+    })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => ContractSpecificationItemDto)

@@ -39,6 +39,7 @@ import { AiRagAdminModule } from '@lib/ai-rag';
 import { SalesAiAnalyticsAdminModule } from '@lib/sales-ai-analytics';
 import { AdminGarantPackageModule } from '@lib/garant/package';
 import { AdminGarantProfPriceModule } from '@lib/garant/price';
+import { GarantFeedImportAdminModule } from '@lib/garant/feed-import';
 import { ProviderAdminModule } from '@lib/portal-lib/konstructor/provider';
 import { PortalKeysAdminModule } from '@lib/portal-lib/store/keys/portal-keys.admin.module';
 import { PortalAiSettingsAdminModule } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.admin.module';
@@ -101,6 +102,9 @@ import { HooksAdminModule } from '@lib/portal-lib/hooks';
         // (чтобы не протекали в Swagger konstructor).
         AdminGarantPackageModule,
         AdminGarantProfPriceModule,
+        // Импорт каталога (рабсы регионов, цены prof/LT/СТАР, сиды
+        // справочников) из Google-фида цен владельца — env GARANT_FEED_URL.
+        GarantFeedImportAdminModule,
         ProviderAdminModule,
         PortalKeysAdminModule,
         // Настройки AI-конвейера на портал (пороги, модели, расписание).

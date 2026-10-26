@@ -59,7 +59,10 @@ const directionOf = (
     return null;
 };
 
-export function addCallRow(cell: KpiDigestCallsDto, row: VoximplantAirtimeRow): void {
+export function addCallRow(
+    cell: KpiDigestCallsDto,
+    row: VoximplantAirtimeRow,
+): void {
     const seconds = Number(row.CALL_DURATION) || 0;
     cell.callsCount += 1;
     cell.airtimeSeconds += seconds;
@@ -85,7 +88,10 @@ export function addCallRow(cell: KpiDigestCallsDto, row: VoximplantAirtimeRow): 
 }
 
 /** Σ звонков (сводка «по всем»). */
-export function addCalls(target: KpiDigestCallsDto, source: KpiDigestCallsDto): void {
+export function addCalls(
+    target: KpiDigestCallsDto,
+    source: KpiDigestCallsDto,
+): void {
     target.callsCount += source.callsCount;
     target.airtimeSeconds += source.airtimeSeconds;
     target.incoming.count += source.incoming.count;

@@ -21,6 +21,40 @@ export class PriceService {
         return await this.repo.create(price);
     }
 
+    /** Upsert prof-цены по (complect_code, supply_code, region_type) */
+    async storeByComplect(price: PriceCreateType): Promise<PriceEntity> {
+        return await this.repo.storeByComplect(price);
+    }
+
+    /** Upsert цены пакета по (garant_package_code, region_type) */
+    async storeByPackage(price: PriceCreateType): Promise<PriceEntity> {
+        return await this.repo.storeByPackage(price);
+    }
+
+    /** Prof-цена по уникальному ключу (complect_code, supply_code, region_type) */
+    async findByUnique(
+        complectCode: string,
+        supplyCode: string,
+        regionType: '0' | '1',
+    ): Promise<PriceEntity | null> {
+        return await this.repo.findByUniqueFromComplect(
+            complectCode,
+            supplyCode,
+            regionType,
+        );
+    }
+
+    /** Цена пакета по уникальному ключу (garant_package_code, region_type) */
+    async findPackagePrice(
+        packageCode: string,
+        regionType: '0' | '1',
+    ): Promise<PriceEntity | null> {
+        return await this.repo.findByUniqueFromGarantPackage(
+            packageCode,
+            regionType,
+        );
+    }
+
     async update(id: bigint, price: PriceCreateType): Promise<PriceEntity> {
         return await this.repo.update(id, price);
     }

@@ -3,7 +3,6 @@ import { ContractController } from './contract.controller';
 import { ContractService } from './contract.service';
 import { ContractRepository } from './contract.repository';
 import { ContractPrismaRepository } from './contract.prisma.repository';
-import { PrismaService } from 'src/core/prisma';
 import { PrismaModule } from '@/core/prisma/prisma.module';
 
 @Module({

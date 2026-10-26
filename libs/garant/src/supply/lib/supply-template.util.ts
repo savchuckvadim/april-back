@@ -29,14 +29,21 @@ export const SUPPLY_TEXT_FIELDS = [
 export type SupplyTextField = (typeof SUPPLY_TEXT_FIELDS)[number];
 export type SupplyTexts = Record<SupplyTextField, string | null>;
 /** Шаблоны — те же поля, но до подстановки числа. */
-export type SupplyTextTemplates = Partial<Record<SupplyTextField, string | null>>;
+export type SupplyTextTemplates = Partial<
+    Record<SupplyTextField, string | null>
+>;
 
 type CaseKey = 'nom' | 'gen' | 'dat' | 'acc' | 'ins' | 'pre';
 type GenderKey = 'm' | 'f' | 'n';
 
 const DECLENSION: Record<
     CaseKey,
-    'nominative' | 'genitive' | 'dative' | 'accusative' | 'instrumental' | 'prepositional'
+    | 'nominative'
+    | 'genitive'
+    | 'dative'
+    | 'accusative'
+    | 'instrumental'
+    | 'prepositional'
 > = {
     nom: 'nominative',
     gen: 'genitive',
@@ -97,7 +104,8 @@ export const pluralize = (
 const capitalize = (text: string) =>
     text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
 
-const WORDS_RE = /\{(words|Words)(?::(nom|gen|dat|acc|ins|pre))?(?::(m|f|n))?\}/g;
+const WORDS_RE =
+    /\{(words|Words)(?::(nom|gen|dat|acc|ins|pre))?(?::(m|f|n))?\}/g;
 const PLURAL_RE = /\{plural:([^|}]*)\|([^|}]*)\|([^|}]*)\}/g;
 const NUMBER_RE = /\{n\}/g;
 
@@ -112,14 +120,17 @@ export const renderSupplyTemplate = (
     if (template === null || template === undefined) return null;
     return template
         .replace(NUMBER_RE, String(quantity))
-        .replace(WORDS_RE, (_match, form: string, caseKey?: string, gender?: string) => {
-            const words = numberToWords(
-                quantity,
-                (caseKey as CaseKey | undefined) ?? 'nom',
-                (gender as GenderKey | undefined) ?? 'm',
-            );
-            return form === 'Words' ? capitalize(words) : words;
-        })
+        .replace(
+            WORDS_RE,
+            (_match, form: string, caseKey?: string, gender?: string) => {
+                const words = numberToWords(
+                    quantity,
+                    (caseKey as CaseKey | undefined) ?? 'nom',
+                    (gender as GenderKey | undefined) ?? 'm',
+                );
+                return form === 'Words' ? capitalize(words) : words;
+            },
+        )
         .replace(PLURAL_RE, (_match, one: string, few: string, many: string) =>
             pluralize(quantity, one, few, many),
         );

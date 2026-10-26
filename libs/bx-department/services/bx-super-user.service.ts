@@ -86,7 +86,8 @@ export class BxSuperUserService {
             const value: unknown = JSON.parse(raw);
             if (!Array.isArray(value)) return null;
             return value.filter(
-                (id): id is number => Number.isInteger(id) && (id as number) > 0,
+                (id): id is number =>
+                    Number.isInteger(id) && (id as number) > 0,
             );
         } catch {
             return null;

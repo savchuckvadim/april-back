@@ -2,15 +2,11 @@ import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
 import { SupplyEntity } from './supply.entity';
 import { SupplyService } from './services/api/supply.service';
 import { ApiTags } from '@nestjs/swagger';
-import { SupplyUpdateService } from './services/update/supply-update.service';
 
 @ApiTags('Garant Supply')
 @Controller('supply')
 export class SupplyController {
-    constructor(
-        private readonly supplyService: SupplyService,
-        private readonly supplyUpdateService: SupplyUpdateService,
-    ) {}
+    constructor(private readonly supplyService: SupplyService) {}
 
     @Post()
     async create(
@@ -34,9 +30,5 @@ export class SupplyController {
     @Get()
     async findMany(): Promise<SupplyEntity[] | null> {
         return this.supplyService.findMany();
-    }
-    @Get('update-all')
-    async updateAll(): Promise<SupplyEntity[] | null> {
-        return this.supplyUpdateService.updateAll();
     }
 }

@@ -15,27 +15,44 @@ export class SupplyReportFormRequestDto {
     @IsString()
     domain: string;
 
-    @ApiProperty({ description: 'Поставщик документов', type: Number, required: false })
+    @ApiProperty({
+        description: 'Поставщик документов',
+        type: Number,
+        required: false,
+    })
     @IsOptional()
     @IsNumber()
     providerId?: number;
 
-    @ApiProperty({ description: 'Тип договора', enum: CONTRACT_LTYPE, enumName: 'CONTRACT_LTYPE' })
+    @ApiProperty({
+        description: 'Тип договора',
+        enum: CONTRACT_LTYPE,
+        enumName: 'CONTRACT_LTYPE',
+    })
     @IsEnum(CONTRACT_LTYPE)
     contractType: CONTRACT_LTYPE;
 
-    @ApiProperty({ description: 'Тип клиента', enum: ClientTypeEnum, enumName: 'ClientType' })
+    @ApiProperty({
+        description: 'Тип клиента',
+        enum: ClientTypeEnum,
+        enumName: 'ClientType',
+    })
     @IsEnum(ClientTypeEnum)
     clientType: ClientTypeEnum;
 
-    @ApiProperty({ description: 'Вид поставки', enum: SupplyTypeEnum, enumName: 'SupplyType' })
+    @ApiProperty({
+        description: 'Вид поставки',
+        enum: SupplyTypeEnum,
+        enumName: 'SupplyType',
+    })
     @IsEnum(SupplyTypeEnum)
     supplyType: SupplyTypeEnum;
 }
 
 export class SupplyReportFormResponseDto {
     @ApiProperty({
-        description: '15 полей формы отчёта о поставке с портальной настройкой обязательности',
+        description:
+            '15 полей формы отчёта о поставке с портальной настройкой обязательности',
         type: [SupplyReportDto],
     })
     supply: SupplyReportDto[];
