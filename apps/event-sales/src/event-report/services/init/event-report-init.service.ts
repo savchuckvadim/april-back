@@ -387,6 +387,8 @@ export class EventReportInitService {
             planContact,
             reopenedBaseDeal: Boolean(launchDecision.reopen),
             closedLaunchBaseDeal: launchDecision.closed,
+            // Своей основной нет, чужие есть — перехват (22.10.2026).
+            foreignBaseDeal: currentBaseDeal ? null : (baseDeals[0] ?? null),
         };
     }
 

@@ -162,6 +162,20 @@ export class SomeRepository {
   + `start: -1`, как `BxItemRepository.listAll`. Фильтр типизирован `CrmFilterType<T>`
   (`domain/crm/type/crm-request.type.ts`) — ключи с модификаторами без magic strings.
 
+Домены поддержки клиентов (2026-10, `@lib/support`):
+
+- `imopenlines.v2.Session.list` — `BxImOpenlinesV2SessionService` / `BxImOpenlinesV2SessionBatchService`
+  (`bitrix.imOpenlinesV2Session.list/listAll`, `bitrix.batch.imOpenlinesV2Session.list`). Namespace
+  `IMOPENLINES_V2` + entity `SESSION_V2` (`'Session'`, PascalCase как в REST). Параметры и ответ — по MCP.
+  Статус `answered` = «взят оператором», а не «клиенту ответили».
+- `im.v2.Chat.Message.tail` — `BxImV2ChatMessageService` / `BxImV2ChatMessageBatchService`
+  (`bitrix.imV2ChatMessage.tail`, `bitrix.batch.imV2ChatMessage.tail`). **Метода нет в официальной
+  документации (MCP, 26.10.2026)**, но портал отвечает и пускает его в batch; типы сняты с живого
+  april-dev. Правило владельца: где у Битрикса есть v2 — берём v2, поэтому вместо `im.dialog.messages.get`.
+- `imopenlines.session.join` — `BxImOpenlinesOperatorSessionService` / `...BatchService`
+  (`bitrix.imOpenlinesOperatorSession.join`). Entity `SESSION` (`'session'`) + method `JOIN`.
+  Пользователь ключа присоединяется к диалогу линии, оператор не меняется (ответ клиенту из Support API).
+
 ## 6) Как использовать в командах
 
 ### Bridge (IM)

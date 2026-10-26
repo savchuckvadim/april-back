@@ -14,6 +14,10 @@
  *   контакт по ссылкам из карточек и списков, и каждый читатель штатно
  *   принимает «нет» (14.09.2026: четырнадцать одинаковых алертов за день на
  *   одну удалённую сделку).
+ * - Access denied у чтения реквизитов (crm.requisite.list, .link.list,
+ *   .preset.list) — у учётки нет прав на реквизиты; читатель ИНН штатно
+ *   показывает «реквизиты недоступны» и помнит отказ час. Раньше каждое
+ *   открытие сделки на таком портале слало алерт в Telegram.
  */
 
 export const BITRIX_BENIGN_MARKERS = [
@@ -27,6 +31,16 @@ const CRM_ENTITY_GET_METHOD = /^crm\.(deal|lead|contact|company)\.get$/;
 const NOT_FOUND_TEXT = /not found/i;
 
 export const BITRIX_NOT_FOUND_MARKER = 'Not found';
+
+/** Чтение реквизитов: отказ в правах обрабатывает читатель ИНН. */
+const REQUISITE_READ_METHOD =
+    /^crm\.requisite\.(list|link\.list|preset\.list)$/;
+
+/** Отказ в правах: код Битрикса или текст описания (рус./англ.). */
+export const BITRIX_ACCESS_DENIED_TEXT =
+    /ACCESS_DENIED|access denied|недостаточно прав/i;
+
+export const BITRIX_ACCESS_DENIED_MARKER = 'Access denied';
 
 /**
  * Маркер ожидаемой ошибки либо null, если ошибка настоящая и заслуживает
@@ -48,6 +62,12 @@ export function benignBitrixErrorMarker(
         NOT_FOUND_TEXT.test(responseJson)
     ) {
         return BITRIX_NOT_FOUND_MARKER;
+    }
+    if (
+        REQUISITE_READ_METHOD.test(method) &&
+        BITRIX_ACCESS_DENIED_TEXT.test(responseJson)
+    ) {
+        return BITRIX_ACCESS_DENIED_MARKER;
     }
     return null;
 }

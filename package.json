@@ -194,6 +194,7 @@
             "^@lib/rq-lib(|/.*)$": "<rootDir>/libs/rq-lib/src/$1",
             "^@lib/bitrix-setup(|/.*)$": "<rootDir>/libs/bitrix-setup/src/$1",
             "^@lib/telegram(|/.*)$": "<rootDir>/libs/telegram/src/$1",
+            "^@lib/support(|/.*)$": "<rootDir>/libs/support/src/$1",
             "^@lib/online(|/.*)$": "<rootDir>/libs/online/src/$1",
             "^@lib/garant(|/.*)$": "<rootDir>/libs/garant/src/$1",
             "^@lib/queue(|/.*)$": "<rootDir>/libs/queue/src/$1",

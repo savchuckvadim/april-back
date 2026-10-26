@@ -87,6 +87,33 @@ export class JoinToMainItemResultDto {
 
     @ApiProperty({
         description:
+            'Сколько открытых сделок ХО дубля закрыто в «Не состоялся».',
+        example: 1,
+        type: Number,
+    })
+    @IsInt()
+    xoClosed: number;
+
+    @ApiProperty({
+        description:
+            'Сколько сделок презентаций дубля (открытых и закрытых) ' +
+            'перешло к основной.',
+        example: 1,
+        type: Number,
+    })
+    @IsInt()
+    presentationsRelinked: number;
+
+    @ApiProperty({
+        description: 'Сколько открытых ЗПР дубля перешло к основной.',
+        example: 0,
+        type: Number,
+    })
+    @IsInt()
+    zprRelinked: number;
+
+    @ApiProperty({
+        description:
             'Присоединение не выполнено (чужая воронка, основная закрыта, ' +
             'сделка не найдена) — причина в warnings.',
         example: false,

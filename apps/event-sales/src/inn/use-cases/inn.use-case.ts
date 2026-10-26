@@ -12,6 +12,8 @@ import {
     InnDealService,
     InnHideCurrentError,
     InnInvalidValueError,
+    InnManualSetService,
+    InnNoTargetError,
     InnVersionConflictError,
 } from '@lib/portal-lib/pbx-inn';
 import {
@@ -20,6 +22,7 @@ import {
     InnAlignResponseDto,
     InnSnapshotResponseDto,
 } from '../dto/inn.dto';
+import { InnSetResponseDto, SetInnRequestDto } from '../dto/inn-set.dto';
 
 /** Инстанс Битрикса ровно в том виде, в каком его отдаёт `PBXService`. */
 type PbxBitrix = Awaited<ReturnType<PBXService['init']>>['bitrix'];
@@ -70,6 +73,31 @@ export class InnUseCase {
                 version: dto.version,
                 actor,
             }),
+        );
+    }
+
+    /**
+     * ИНН из шапки «Звонков»: открытая сделка — как «Выбрать» во вкладке,
+     * иначе компания или заявка (InnManualSetService).
+     */
+    async set(dto: SetInnRequestDto): Promise<InnSetResponseDto> {
+        const { bitrix, PortalModel } = await this.pbx.init(dto.domain);
+        const actor = await this.actor(bitrix, dto.userId);
+        const service = new InnManualSetService(
+            bitrix,
+            PortalModel,
+            dto.domain,
+        );
+        return this.run(() =>
+            service.set(
+                {
+                    dealId: dto.dealId,
+                    companyId: dto.companyId,
+                    leadId: dto.leadId,
+                },
+                dto.inn,
+                actor,
+            ),
         );
     }
 
@@ -149,7 +177,10 @@ export class InnUseCase {
             ) {
                 throw new ConflictException(error.message);
             }
-            if (error instanceof InnInvalidValueError) {
+            if (
+                error instanceof InnInvalidValueError ||
+                error instanceof InnNoTargetError
+            ) {
                 throw new BadRequestException(error.message);
             }
             throw error;

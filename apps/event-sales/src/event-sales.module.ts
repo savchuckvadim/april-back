@@ -27,6 +27,8 @@ import { EventSalesQuestionnairesModule } from './questionnaires/questionnaires.
 import { DealAuditModule } from './deal-audit/deal-audit.module';
 import { DuplicateReportModule } from './duplicate-report/duplicate-report.module';
 import { InnModule } from './inn/inn.module';
+import { ClientTypeModule } from './client-type/client-type.module';
+import { DealOwnerModule } from './deal-owner/deal-owner.module';
 
 @Module({
     imports: [
@@ -73,6 +75,10 @@ import { InnModule } from './inn/inn.module';
         // скрытие лишних вариантов. Единственный писатель op_inn —
         // библиотека @lib/portal-lib/pbx-inn.
         InnModule,
+        // Тип клиента в шапке: один на сделку и компанию, как ИНН.
+        ClientTypeModule,
+        // Компания и контакты за ответственным своей сделки (22.10.2026).
+        DealOwnerModule,
         // Чтение настроек приложений фронтами (замена хардкода domain-config)
         EventSalesAppSettingsModule,
         // Портальный каталог анкет плана/отчёта — читается фреймом на старте

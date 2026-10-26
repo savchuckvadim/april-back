@@ -23,6 +23,7 @@ import {
 } from '../../../shared/work-takeover';
 import { setManagerOp } from '../../../shared/lead-request/manager-op.util';
 import { dealLeadIds } from '../../../cold-hook-v2/lib/deal-link-fields';
+import { dealFailStageId } from '../../../shared/deal-stage';
 
 type BxRow = Record<string, unknown>;
 
@@ -481,11 +482,9 @@ export class TransferWorkUseCase
         ctx: SalesHookExecutionContext,
         scoped: ScopedDeal,
     ): string | null {
-        if (!scoped.categoryCode) return null;
-        const category = ctx.portal.getDealCategoryByCode(scoped.categoryCode);
-        if (!category) return null;
-        const stage = category.stages.find(st => st.code.endsWith('_fail'));
-        return stage ? `C${category.bitrixId}:${stage.bitrixId}` : null;
+        return scoped.categoryCode
+            ? dealFailStageId(ctx.portal, scoped.categoryCode)
+            : null;
     }
 
     private refListOf(raw: unknown): string[] {

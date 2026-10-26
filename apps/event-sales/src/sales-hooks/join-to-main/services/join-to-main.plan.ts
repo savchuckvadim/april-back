@@ -53,7 +53,13 @@ export type JoinOp =
     | { kind: 'dealContact'; dealId: number; contactId: number }
     | { kind: 'dealUpdate'; dealId: number; fields: BxRow }
     | { kind: 'leadUpdate'; leadId: number; fields: BxRow }
-    | { kind: 'timeline'; dealId: number; comment: string };
+    | { kind: 'timeline'; dealId: number; comment: string; key?: string }
+    | {
+          kind: 'itemUpdate';
+          entityTypeId: number;
+          itemId: number;
+          fields: BxRow;
+      };
 
 export interface IJoinPlan {
     ops: JoinOp[];

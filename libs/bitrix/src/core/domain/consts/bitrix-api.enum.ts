@@ -15,6 +15,8 @@ export enum EBxNamespace {
     IMBOT = 'imbot',
     IMBOT_V2 = 'imbot.v2',
     IMOPENLINES = 'imopenlines',
+    /** imopenlines.v2.* — статистика открытых линий (Session.list). */
+    IMOPENLINES_V2 = 'imopenlines.v2',
     SONET_GROUP = 'sonet_group',
     /** calendar.* — производственный календарь портала (calendar.settings.get). */
     CALENDAR = 'calendar',
@@ -160,4 +162,8 @@ export enum EBxMethod {
     SESSION_TRANSFER = 'transfer',
     SESSION_OPERATOR = 'operator',
     SESSION_MESSAGE_SEND = 'message.send',
+    /** im.v2.Chat.Message.tail — последние сообщения чата (от новых к старым). */
+    TAIL = 'tail',
+    /** imopenlines.session.join — оператор присоединяется к диалогу линии. */
+    JOIN = 'join',
 }

@@ -134,7 +134,8 @@ export class InnDealStateReader {
      * её реквизиты и привязка реквизита к сделке — около пяти запросов
      * вместо полного снимка. Заявки, контакты, аудит и поиск по порталу не
      * читаются: выравниванию (inn-sync.plan) хватает текущих ИНН сделки и
-     * компании, пула и реквизитов компании.
+     * компании, пула и реквизитов компании. Id заявок берутся из строки
+     * сделки без запросов — их ждёт запись ИНН из шапки (пустым заявкам).
      */
     async readLight(dealId: number): Promise<IInnDealState | null> {
         const deal = innRow(
@@ -167,7 +168,7 @@ export class InnDealStateReader {
             companyId,
             companyTitle: innText(company?.TITLE),
             company,
-            leadIds: [],
+            leadIds: this.leadIdsOf(deal),
             leads: [],
             observations: [],
             requisites: cards.cards,

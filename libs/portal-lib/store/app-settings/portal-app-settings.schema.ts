@@ -150,6 +150,95 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             type: 'number',
             default: 600,
         }),
+        // --- Мониторинг линии поддержки (план 26.10.2026,
+        // ai/tasks/2026-10-26-support-plan.md). Задаётся на портале, где
+        // живёт открытая линия (april-dev); крон — в apps/bot, правила —
+        // @lib/support. Telegram-бот и чат — в env приложения bot.
+        supportMonitorEnabled: setting({
+            code: 'support_monitor_enabled',
+            name: 'Поддержка: следить за диалогами линии',
+            description:
+                'Раз в несколько минут бот смотрит открытую линию портала: ' +
+                'новый диалог, клиент ждёт ответа — оповещение в колокольчик ' +
+                'выбранным сотрудникам и в Telegram-чат поддержки.',
+            type: 'boolean',
+            default: false,
+        }),
+        supportMonitorDryRun: setting({
+            code: 'support_monitor_dry_run',
+            name: 'Поддержка: только считать, не оповещать',
+            description:
+                'Бот разбирает диалоги и пишет в журнал, что отправил бы, ' +
+                'но никого не оповещает. Включено по умолчанию: сначала ' +
+                'проверить на живой линии, потом выключить.',
+            type: 'boolean',
+            default: true,
+        }),
+        supportMonitorLineId: setting({
+            code: 'support_monitor_line_id',
+            name: 'Поддержка: номер открытой линии',
+            description:
+                'Номер линии в Битриксе (CONFIG_ID), а не название из ' +
+                'интерфейса: «Поддержка Апрель» на april-dev — линия 9. ' +
+                '0 — все линии портала.',
+            type: 'number',
+            default: 0,
+        }),
+        supportMonitorNotifyDomain: setting({
+            code: 'support_monitor_notify_domain',
+            name: 'Поддержка: портал для колокольчика',
+            description:
+                'Адрес портала, где сотрудники получают колокольчик, ' +
+                'например april-garant.bitrix24.ru. Пусто — этот же портал.',
+            type: 'string',
+            default: '',
+        }),
+        supportMonitorNotifyUserIds: setting({
+            code: 'support_monitor_notify_user_ids',
+            name: 'Поддержка: кому колокольчик (ID на том портале)',
+            description:
+                'ID сотрудников через запятую на портале колокольчика. ' +
+                'Пусто — колокольчик не отправляется, остаётся Telegram.',
+            type: 'string',
+            default: '',
+        }),
+        supportMonitorRemindMinutes: setting({
+            code: 'support_monitor_remind_minutes',
+            name: 'Поддержка: напомнить, если клиент ждёт, мин',
+            description:
+                'Сколько минут клиент ждёт ответа до первого напоминания. ' +
+                'Отсчёт — от первого сообщения клиента, на которое ещё ' +
+                'не ответили. По умолчанию 10.',
+            type: 'number',
+            default: 10,
+        }),
+        supportMonitorEscalateMinutes: setting({
+            code: 'support_monitor_escalate_minutes',
+            name: 'Поддержка: повторить тревогу, мин',
+            description:
+                'Сколько минут ожидания до повторного, срочного оповещения. ' +
+                'Должно быть больше времени напоминания. По умолчанию 30.',
+            type: 'number',
+            default: 30,
+        }),
+        supportMonitorPollMinutes: setting({
+            code: 'support_monitor_poll_minutes',
+            name: 'Поддержка: как часто смотреть линию, мин',
+            description:
+                'Каждый просмотр — два запроса к Битриксу. Чем реже, тем ' +
+                'позже приходят оповещения. По умолчанию 3, от 1 до 30.',
+            type: 'number',
+            default: 3,
+        }),
+        supportMonitorTelegramEnabled: setting({
+            code: 'support_monitor_telegram_enabled',
+            name: 'Поддержка: дублировать в Telegram-чат',
+            description:
+                'Все оповещения уходят и в Telegram-чат поддержки. Бот и ' +
+                'чат задаёт разработчик в настройках сервера.',
+            type: 'boolean',
+            default: true,
+        }),
     },
     [EnumPortalAppCode.sales]: {
         // --- Принудительная видимость в отчётах продаж (kpi-sales и др.).

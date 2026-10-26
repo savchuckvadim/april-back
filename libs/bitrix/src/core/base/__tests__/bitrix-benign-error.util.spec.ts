@@ -1,4 +1,5 @@
 import {
+    BITRIX_ACCESS_DENIED_MARKER,
     BITRIX_NOT_FOUND_MARKER,
     benignBitrixErrorMarker,
     requestedEntityId,
@@ -44,6 +45,29 @@ describe('benignBitrixErrorMarker', () => {
             error_description: 'Access denied',
         });
         expect(benignBitrixErrorMarker('crm.deal.get', forbidden)).toBeNull();
+    });
+
+    it.each([
+        'crm.requisite.list',
+        'crm.requisite.link.list',
+        'crm.requisite.preset.list',
+    ])('%s с Access denied — ожидаемая ошибка без алерта', method => {
+        const forbidden = JSON.stringify({
+            error: 'ACCESS_DENIED',
+            error_description: 'Access denied',
+        });
+        expect(benignBitrixErrorMarker(method, forbidden)).toBe(
+            BITRIX_ACCESS_DENIED_MARKER,
+        );
+    });
+
+    it('Access denied у записи реквизита — настоящая ошибка', () => {
+        expect(
+            benignBitrixErrorMarker(
+                'crm.requisite.update',
+                '{"error_description":"Access denied"}',
+            ),
+        ).toBeNull();
     });
 
     it('прежние маркеры не зависят от метода', () => {

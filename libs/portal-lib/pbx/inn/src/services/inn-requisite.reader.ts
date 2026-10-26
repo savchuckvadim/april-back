@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { BitrixService } from '@lib/bitrix';
+import { BitrixService, isBitrixAccessDenied } from '@lib/bitrix';
 import { normalizeInn } from '@lib/portal-lib/pbx-duplicate';
 import {
     IInnRequisiteCard,
@@ -31,9 +31,13 @@ const MAX_OTHER_COMPANY_LOOKUPS = 6;
 /**
  * Память об отказе в правах на реквизиты — на процесс, на час.
  *
- * Без неё каждое открытие вкладки на портале без прав слало бы в телеграм
- * по алерту: ошибка `Access denied` для `crm.requisite.list` не входит в
- * список «ожидаемых» в ядре Битрикс-клиента.
+ * Без неё каждое открытие сделки на портале без прав повторяло бы чтение,
+ * которое заведомо упадёт. Алерта в телеграм нет: отказ на чтении
+ * реквизитов ядро считает ожидаемым (bitrix-benign-error.util).
+ *
+ * Отказ узнаём по ТЕЛУ ответа (`isBitrixAccessDenied`): до 26.10.2026 тут
+ * смотрели `error.message`, а у ошибки axios там только «Request failed
+ * with status code 403» — память не срабатывала ни разу.
  */
 const DENIED_UNTIL = new Map<string, number>();
 const DENIED_TTL_MS = 60 * 60 * 1000;
@@ -118,6 +122,7 @@ export class InnRequisiteReader {
 
     /** Id реквизита, привязанного к сделке (0 — привязки нет). */
     async linkedRequisiteId(dealId: number): Promise<number> {
+        if (this.isDenied()) return 0;
         try {
             const response = await this.bitrix.requisiteLink.getList(
                 {
@@ -133,10 +138,7 @@ export class InnRequisiteReader {
                 if (id) return id;
             }
         } catch (error) {
-            this.logger.warn(
-                `Привязка реквизита сделки ${dealId} не прочитана ` +
-                    `(${this.domain}): ${(error as Error).message}`,
-            );
+            this.remember(error);
         }
         return 0;
     }
@@ -151,6 +153,7 @@ export class InnRequisiteReader {
         exceptDealId: number,
     ): Promise<Map<number, number[]>> {
         const map = new Map<number, number[]>();
+        if (this.isDenied()) return map;
         for (const requisiteId of requisiteIds.slice(0, MAX_LINK_LOOKUPS)) {
             try {
                 const response = await this.bitrix.requisiteLink.getList(
@@ -177,10 +180,8 @@ export class InnRequisiteReader {
                     .filter(id => id && id !== exceptDealId);
                 if (deals.length) map.set(requisiteId, [...new Set(deals)]);
             } catch (error) {
-                this.logger.warn(
-                    `Связи реквизита ${requisiteId} не прочитаны ` +
-                        `(${this.domain}): ${(error as Error).message}`,
-                );
+                this.remember(error);
+                if (this.isDenied()) break;
             }
         }
         return map;
@@ -286,17 +287,13 @@ export class InnRequisiteReader {
         return false;
     }
 
-    /** «Access denied» запоминаем на час — иначе телеграм заливает алертами. */
+    /** «Access denied» запоминаем на час: повторять заведомый отказ незачем. */
     private remember(error: unknown): void {
-        const message = (error as Error).message ?? '';
+        const denied = isBitrixAccessDenied(error);
         this.logger.warn(
-            `Реквизиты недоступны (${this.domain}): ${message || 'ошибка'}`,
+            `Реквизиты недоступны (${this.domain}): ` +
+                (denied ? 'нет прав' : (error as Error)?.message || 'ошибка'),
         );
-        if (
-            /access denied/i.test(message) ||
-            /Недостаточно прав/i.test(message)
-        ) {
-            DENIED_UNTIL.set(this.domain, Date.now() + DENIED_TTL_MS);
-        }
+        if (denied) DENIED_UNTIL.set(this.domain, Date.now() + DENIED_TTL_MS);
     }
 }

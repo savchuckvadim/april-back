@@ -9,6 +9,7 @@ import {
     Query,
 } from '@nestjs/common';
 import {
+    ApiBadRequestResponse,
     ApiBody,
     ApiConflictResponse,
     ApiNotFoundResponse,
@@ -25,6 +26,7 @@ import {
     InnSnapshotQueryDto,
     InnSnapshotResponseDto,
 } from '../dto/inn.dto';
+import { InnSetResponseDto, SetInnRequestDto } from '../dto/inn-set.dto';
 import { InnUseCase } from '../use-cases/inn.use-case';
 
 /**
@@ -149,6 +151,39 @@ export class InnController {
         @Body() dto: HideInnRequestDto,
     ): Promise<InnSnapshotResponseDto> {
         return this.useCase.hide(dealId, dto);
+    }
+
+    @Post('set')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Записать ИНН из шапки «Звонков»',
+        description:
+            'ИНН, введённый руками в шапке. Есть открытая сделка — запись как ' +
+            'при «Выбрать» во вкладке «ИНН»: сделка, её пул, компания поверх ' +
+            'прежнего, пустые заявки и запись в ленте сделки. Сделки нет или ' +
+            'она закрыта — пишется компания, без неё заявка: текущий ИНН ' +
+            'поверх прежнего, пул объединением. Пишет сервер, поэтому права ' +
+            'сотрудника на компанию не нужны.',
+    })
+    @ApiBody({
+        type: SetInnRequestDto,
+        description: 'Домен, ИНН, открытые сущности и автор.',
+    })
+    @ApiOkResponse({
+        type: InnSetResponseDto,
+        description: 'Куда записан ИНН и что записать не удалось.',
+    })
+    @ApiBadRequestResponse({
+        description:
+            'Значение не ИНН либо записать некуда (поля ИНН нет у сущности).',
+    })
+    @ApiConflictResponse({
+        description:
+            'Сделка закрыта, а компании и заявки нет: ИНН договора только ' +
+            'читается.',
+    })
+    set(@Body() dto: SetInnRequestDto): Promise<InnSetResponseDto> {
+        return this.useCase.set(dto);
     }
 
     @Post('deal/:dealId/align')

@@ -8,6 +8,21 @@ import {
     innText,
 } from '../lib/inn-row.util';
 
+/** Владельцы ИНН помимо сделки: компания и заявка. */
+export type InnOwnerEntity = 'company' | 'lead';
+
+const OWNER_METHODS: Record<
+    InnOwnerEntity,
+    { get: string; update: string; label: string }
+> = {
+    company: {
+        get: 'crm.company.get',
+        update: 'crm.company.update',
+        label: 'компании',
+    },
+    lead: { get: 'crm.lead.get', update: 'crm.lead.update', label: 'заявки' },
+};
+
 /**
  * Запись ИНН в КОМПАНИЮ и ЗАЯВКИ — отражения текущего ИНН сделки.
  *
@@ -91,28 +106,54 @@ export class InnMirrorWriter {
         inn: string,
         warnings: string[],
     ): Promise<void> {
-        const innName = this.fields.inn('lead');
-        if (!innName || !leadIds.length) return;
-        const poolName = this.fields.pool('lead');
         for (const leadId of leadIds) {
-            try {
-                const lead = innRow(
-                    await this.bitrix.api.call('crm.lead.get', { id: leadId }),
-                );
-                if (!lead || innText(lead[innName])) continue;
-                const fields: InnRow = { [innName]: inn };
-                if (poolName) {
-                    fields[poolName] = uniq([...innList(lead[poolName]), inn]);
-                }
-                await this.bitrix.api.call('crm.lead.update', {
-                    id: leadId,
-                    fields,
-                });
-            } catch (error) {
-                warnings.push(
-                    `ИНН заявки ${leadId} не записан: ${(error as Error).message}`,
-                );
-            }
+            await this.write('lead', leadId, inn, warnings, true);
+        }
+    }
+
+    /**
+     * Человек указал ИНН компании или заявки в шапке «Звонков», а открытой
+     * сделки рядом нет: текущий — поверх прежнего, пул — объединением.
+     * false — поля нет на портале, сущность не нашлась или запись упала
+     * (причина — в предупреждениях).
+     */
+    async setCurrent(
+        entity: InnOwnerEntity,
+        id: number,
+        inn: string,
+        warnings: string[],
+    ): Promise<boolean> {
+        return this.write(entity, id, inn, warnings, false);
+    }
+
+    private async write(
+        entity: InnOwnerEntity,
+        id: number,
+        inn: string,
+        warnings: string[],
+        onlyEmpty: boolean,
+    ): Promise<boolean> {
+        const innName = this.fields.inn(entity);
+        if (!innName) return false;
+        const poolName = this.fields.pool(entity);
+        const methods = OWNER_METHODS[entity];
+        try {
+            const row = innRow(await this.bitrix.api.call(methods.get, { id }));
+            if (!row) return false;
+            const current = innText(row[innName]);
+            if (onlyEmpty && current) return false;
+            const pool = poolName ? innList(row[poolName]) : [];
+            const nextPool = uniq([...pool, inn]);
+            if (current === inn && nextPool.length === pool.length) return true;
+            const fields: InnRow = { [innName]: inn };
+            if (poolName) fields[poolName] = nextPool;
+            await this.bitrix.api.call(methods.update, { id, fields });
+            return true;
+        } catch (error) {
+            warnings.push(
+                `ИНН ${methods.label} ${id} не записан: ${(error as Error).message}`,
+            );
+            return false;
         }
     }
 }

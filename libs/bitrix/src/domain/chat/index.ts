@@ -15,3 +15,4 @@ export * from './im-v2-event/interface/bx-im-v2-event.interface';
 export * from './im-v2-event/schema/bx-im-v2-event.schema';
 export * from './im-v2-event/services/bx-im-v2-event.service';
 export * from './im-v2-event/services/bx-im-v2-event.batch.service';
+export * from './im-v2-chat-message';

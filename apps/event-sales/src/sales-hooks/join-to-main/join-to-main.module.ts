@@ -1,4 +1,5 @@
 import { Module, OnModuleInit } from '@nestjs/common';
+import { PbxZprSmartModule } from '@lib/portal-lib/pbx/pbx-zpr-smart';
 import { HeadAccessModule } from '../../shared/head-access/head-access.module';
 import { SalesHookCoreModule } from '../core/sales-hook-core.module';
 import { SalesHookRegistryService } from '../core/services/sales-hook-registry.service';
@@ -11,7 +12,8 @@ import { JoinToMainUseCase } from './use-cases/join-to-main.use-case';
  */
 @Module({
     // HeadAccessModule — кнопка фрейма только руководителю (проверка на сервере).
-    imports: [SalesHookCoreModule, HeadAccessModule],
+    // PbxZprSmartModule — спутники дубля: открытые ЗПР переходят к основной.
+    imports: [SalesHookCoreModule, HeadAccessModule, PbxZprSmartModule],
     controllers: [JoinToMainController],
     providers: [JoinToMainUseCase],
 })

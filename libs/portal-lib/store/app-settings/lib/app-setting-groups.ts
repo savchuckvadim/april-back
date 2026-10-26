@@ -98,6 +98,13 @@ export const PORTAL_APP_SETTING_GROUPS = {
             'сколько ждать. Защищает портал от перегрузки нашими запросами.',
         links: [],
     },
+    support_monitor: {
+        title: 'Поддержка: оповещения о диалогах линии',
+        description:
+            'Бот следит за открытой линией портала и оповещает сотрудников ' +
+            'и Telegram-чат: новый вопрос, клиент ждёт ответа.',
+        links: [],
+    },
     // --- sales ---
     sales_visibility: {
         title: 'Видимость структуры',
@@ -280,6 +287,7 @@ const GROUP_RULES: Record<EnumPortalAppCode, readonly GroupRule[]> = {
     [EnumPortalAppCode.portal]: [
         { group: 'portal_product', codes: ['product_version'] },
         { group: 'portal_bitrix_limits', prefixes: ['bitrix_'] },
+        { group: 'support_monitor', prefixes: ['support_monitor_'] },
     ],
     [EnumPortalAppCode.sales]: [
         { group: 'sales_visibility', prefixes: ['visibility_'] },

@@ -136,6 +136,10 @@ export class EventReportContext {
     get closedLaunchBaseDeal(): IBXDeal | null {
         return this.init.closedLaunchBaseDeal ?? null;
     }
+    /** Своей основной нет, открыта чужая — отчёт заведёт свою (перехват). */
+    get foreignBaseDeal(): IBXDeal | null {
+        return this.init.foreignBaseDeal ?? null;
+    }
     get currentXoDeal(): IBXDeal | null {
         return this.init.currentXoDeal;
     }

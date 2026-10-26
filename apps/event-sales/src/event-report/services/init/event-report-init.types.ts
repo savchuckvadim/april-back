@@ -75,4 +75,11 @@ export interface IEventReportInitContext {
      * идёт в другой сделке; о ней пишем в ленту обеих и уведомляем.
      */
     closedLaunchBaseDeal?: IBXDeal | null;
+
+    /**
+     * Своей открытой «ОП Основная» нет, а чужая есть (правило 25.08 её не
+     * подхватывает) — отчёт заведёт свою, а об этом напишем в ленту обеих и
+     * уведомим владельца чужой (base-deal-takeover.notice).
+     */
+    foreignBaseDeal?: IBXDeal | null;
 }

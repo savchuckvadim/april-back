@@ -48,6 +48,8 @@
       "@lib/online/*": ["libs/online/src/*"],
       "@lib/telegram": ["libs/telegram/src"],
       "@lib/telegram/*": ["libs/telegram/src/*"],
+      "@lib/support": ["libs/support/src"],
+      "@lib/support/*": ["libs/support/src/*"],
       "@lib/garant": ["libs/garant/src"],
       "@lib/garant/*": ["libs/garant/src/*"],
       "@lib/bitrix-setup": ["libs/bitrix-setup/src"],

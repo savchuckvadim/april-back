@@ -52,6 +52,7 @@ import { MarketplaceModerationModule } from './marketplace-moderation/marketplac
 import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.module';
 import { MaintenanceModule } from './maintenance';
 import { HooksAdminModule } from '@lib/portal-lib/hooks';
+import { SupportMonitorAdminModule } from '@lib/support';
 
 @Module({
     imports: [
@@ -136,6 +137,8 @@ import { HooksAdminModule } from '@lib/portal-lib/hooks';
         // Каталог хуков и автоматики ОП: теория, параметры, готовность
         // портала (поля, стадии, настройки) и мониторинг операций.
         HooksAdminModule,
+        // Предпросмотр монитора линии поддержки (крон — в apps/bot)
+        SupportMonitorAdminModule,
     ],
 })
 export class AdminAddModule {}

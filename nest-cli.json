@@ -271,6 +271,15 @@
         "tsConfigPath": "libs/telegram/tsconfig.lib.json"
       }
     },
+    "support": {
+      "type": "library",
+      "root": "libs/support",
+      "entryFile": "index",
+      "sourceRoot": "libs/support/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/support/tsconfig.lib.json"
+      }
+    },
     "garant": {
       "type": "library",
       "root": "libs/garant",

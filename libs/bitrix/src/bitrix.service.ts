@@ -105,6 +105,12 @@ import { BxImBotV2RevisionService } from './domain/imbot-v2/revision/services/bx
 import { BxImBotV2RevisionBatchService } from './domain/imbot-v2/revision/services/bx-imbot-v2-revision.batch.service';
 import { BxImOpenlinesBotSessionService } from './domain/imopenlines/bot-session/services/bx-imopenlines-bot-session.service';
 import { BxImOpenlinesBotSessionBatchService } from './domain/imopenlines/bot-session/services/bx-imopenlines-bot-session.batch.service';
+import { BxImOpenlinesV2SessionService } from './domain/imopenlines/session/services/bx-imopenlines-v2-session.service';
+import { BxImOpenlinesV2SessionBatchService } from './domain/imopenlines/session/services/bx-imopenlines-v2-session.batch.service';
+import { BxImOpenlinesOperatorSessionService } from './domain/imopenlines/operator-session/services/bx-imopenlines-operator-session.service';
+import { BxImOpenlinesOperatorSessionBatchService } from './domain/imopenlines/operator-session/services/bx-imopenlines-operator-session.batch.service';
+import { BxImV2ChatMessageService } from './domain/chat/im-v2-chat-message/services/bx-im-v2-chat-message.service';
+import { BxImV2ChatMessageBatchService } from './domain/chat/im-v2-chat-message/services/bx-im-v2-chat-message.batch.service';
 import { BxCalendarService } from './domain/calendar/services/bx-calendar.service';
 import { BxSonetGroupService } from './domain/sonet-group/services/sonet-group.service';
 import { BxSonetGroupBatchService } from './domain/sonet-group/services/sonet-group.batch.service';
@@ -172,6 +178,12 @@ export class BitrixService {
     public imBotV2Event: BxImBotV2EventService;
     public imBotV2Revision: BxImBotV2RevisionService;
     public imOpenlinesSession: BxImOpenlinesBotSessionService;
+    /** imopenlines.v2.Session.list — диалоги открытых линий (мониторинг поддержки). */
+    public imOpenlinesV2Session: BxImOpenlinesV2SessionService;
+    /** imopenlines.session.join — пользователь ключа присоединяется к диалогу линии. */
+    public imOpenlinesOperatorSession: BxImOpenlinesOperatorSessionService;
+    /** im.v2.Chat.Message.tail — последние сообщения чата. */
+    public imV2ChatMessage: BxImV2ChatMessageService;
     public sonetGroup: BxSonetGroupService;
     /** calendar.settings.get — производственный календарь портала (выходные, праздники, рабочий день). */
     public calendar: BxCalendarService;
@@ -223,6 +235,11 @@ export class BitrixService {
         imBotV2Revision: null as unknown as BxImBotV2RevisionBatchService,
         imOpenlinesSession:
             null as unknown as BxImOpenlinesBotSessionBatchService,
+        imOpenlinesV2Session:
+            null as unknown as BxImOpenlinesV2SessionBatchService,
+        imOpenlinesOperatorSession:
+            null as unknown as BxImOpenlinesOperatorSessionBatchService,
+        imV2ChatMessage: null as unknown as BxImV2ChatMessageBatchService,
         sonetGroup: null as unknown as BxSonetGroupBatchService,
     };
     constructor(
@@ -285,6 +302,9 @@ export class BitrixService {
         this.initImBotV2Event();
         this.initImBotV2Revision();
         this.initImOpenlinesSession();
+        this.initImOpenlinesV2Session();
+        this.initImOpenlinesOperatorSession();
+        this.initImV2ChatMessage();
         this.initSonetGroup();
         this.initCalendar();
     }
@@ -621,6 +641,39 @@ export class BitrixService {
         );
         this.batch.imOpenlinesSession = this.cloner.clone(
             BxImOpenlinesBotSessionBatchService,
+            this.api,
+        );
+    }
+
+    private initImOpenlinesV2Session() {
+        this.imOpenlinesV2Session = this.cloner.clone(
+            BxImOpenlinesV2SessionService,
+            this.api,
+        );
+        this.batch.imOpenlinesV2Session = this.cloner.clone(
+            BxImOpenlinesV2SessionBatchService,
+            this.api,
+        );
+    }
+
+    private initImOpenlinesOperatorSession() {
+        this.imOpenlinesOperatorSession = this.cloner.clone(
+            BxImOpenlinesOperatorSessionService,
+            this.api,
+        );
+        this.batch.imOpenlinesOperatorSession = this.cloner.clone(
+            BxImOpenlinesOperatorSessionBatchService,
+            this.api,
+        );
+    }
+
+    private initImV2ChatMessage() {
+        this.imV2ChatMessage = this.cloner.clone(
+            BxImV2ChatMessageService,
+            this.api,
+        );
+        this.batch.imV2ChatMessage = this.cloner.clone(
+            BxImV2ChatMessageBatchService,
             this.api,
         );
     }

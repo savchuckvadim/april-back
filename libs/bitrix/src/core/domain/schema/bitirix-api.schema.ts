@@ -43,6 +43,7 @@ import { DialogSchema } from '@/modules/bitrix/domain/chat/dialog/schema/bx-dial
 import { DialogMessageSchema } from '@/modules/bitrix/domain/chat/dialog-message/schema/bx-dialog-message.schema';
 import { ImV2EventSchema } from '@/modules/bitrix/domain/chat/im-v2-event/schema/bx-im-v2-event.schema';
 import { ImV2FileSchema } from '../../../domain/chat/im-v2-file/schema/bx-im-v2-file.schema';
+import { ImV2ChatMessageSchema } from '../../../domain/chat/im-v2-chat-message/schema/bx-im-v2-chat-message.schema';
 import {
     BxDiskFileSchema,
     BxDiskFolderSchema,
@@ -64,6 +65,8 @@ import { ImBotV2FileSchema } from '../../../domain/imbot-v2/file/schema/bx-imbot
 import { ImBotV2EventSchema } from '../../../domain/imbot-v2/event/schema/bx-imbot-v2-event.schema';
 import { ImBotV2RevisionSchema } from '../../../domain/imbot-v2/revision/schema/bx-imbot-v2-revision.schema';
 import { ImOpenlinesBotSessionSchema } from '../../../domain/imopenlines/bot-session/schema/bx-imopenlines-bot-session.schema';
+import { ImOpenlinesV2SessionSchema } from '../../../domain/imopenlines/session/schema/bx-imopenlines-v2-session.schema';
+import { ImOpenlinesOperatorSessionSchema } from '../../../domain/imopenlines/operator-session/schema/bx-imopenlines-operator-session.schema';
 import { SonetGroupSchema } from '../../../domain/sonet-group/schema/sonet-group.schema';
 import { BxCalendarSettingsSchema } from '../../../domain/calendar/schema/bx-calendar.schema';
 
@@ -132,6 +135,7 @@ export type BXApiSchema = {
     [EBxNamespace.IMV2]: {
         [EBXEntity.EVENT]: ImV2EventSchema;
         [EBXEntity.FILE]: ImV2FileSchema;
+        [EBXEntity.CHAT_MESSAGE_V2]: ImV2ChatMessageSchema;
     };
     [EBxNamespace.IMBOT]: {
         [EBXEntity.BOT_LIFECYCLE]: ImBotLifecycleSchema;
@@ -152,6 +156,10 @@ export type BXApiSchema = {
     };
     [EBxNamespace.IMOPENLINES]: {
         [EBXEntity.BOT_SESSION]: ImOpenlinesBotSessionSchema;
+        [EBXEntity.SESSION]: ImOpenlinesOperatorSessionSchema;
+    };
+    [EBxNamespace.IMOPENLINES_V2]: {
+        [EBXEntity.SESSION_V2]: ImOpenlinesV2SessionSchema;
     };
     [EBxNamespace.SONET_GROUP]: {
         [EBXEntity.SONET_GROUP]: SonetGroupSchema;

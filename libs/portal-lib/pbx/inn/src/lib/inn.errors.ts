@@ -59,3 +59,18 @@ export class InnHideCurrentError extends Error {
         this.name = 'InnHideCurrentError';
     }
 }
+
+/**
+ * ИНН из шапки некуда записать: открытой сделки нет, а у компании или
+ * заявки поле ИНН не установлено либо запись не удалась.
+ */
+export class InnNoTargetError extends Error {
+    constructor(details: readonly string[] = []) {
+        super(
+            'ИНН не записан: у этой сущности нет поля ИНН или Битрикс не ' +
+                'принял запись.' +
+                (details.length ? ` ${details.join('; ')}` : ''),
+        );
+        this.name = 'InnNoTargetError';
+    }
+}

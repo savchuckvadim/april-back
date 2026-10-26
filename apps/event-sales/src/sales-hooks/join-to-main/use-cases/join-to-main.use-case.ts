@@ -18,8 +18,20 @@ import {
     JoinToMainItemResultDto,
     JoinToMainResultDto,
 } from '../dto/join-to-main-result.dto';
+import {
+    PbxZprSmartService,
+    ZprSmartInfo,
+} from '@lib/portal-lib/pbx/pbx-zpr-smart';
 import { buildJoinPlan, JoinOp } from '../services/join-to-main.plan';
 import { JoinToMainReader } from '../services/join-to-main.reader';
+import {
+    EMPTY_JOIN_SATELLITES,
+    JoinSatellitesReader,
+} from '../services/join-satellites.reader';
+import { buildJoinSatellitesPlan } from '../services/join-satellites.plan';
+
+/** Команд спутников в одной группе буфера (лимит batch — 50). */
+const SATELLITE_GROUP_SIZE = 40;
 
 /**
  * Хук «присоединить к основной»: сделка-дубль → работа клиента, БЕЗ
@@ -41,14 +53,20 @@ export class JoinToMainUseCase
     readonly hook = EnumSalesHookCode.JOIN_TO_MAIN;
     private readonly logger = new Logger(JoinToMainUseCase.name);
 
+    constructor(private readonly zprSmart: PbxZprSmartService) {}
+
     async execute(
         ctx: SalesHookExecutionContext,
         items: IJoinToMainItem[],
     ): Promise<JoinToMainResultDto> {
         const results: JoinToMainItemResultDto[] = [];
+        // Смарт ЗПР домена — один раз на прогон; не установлен — null.
+        let zpr: Promise<ZprSmartInfo | null> | null = null;
+        const zprInfo = (): Promise<ZprSmartInfo | null> =>
+            (zpr ??= this.zprSmart.resolveInfo(ctx.domain).catch(() => null));
         for (const item of items) {
             try {
-                results.push(await this.joinOne(ctx, item));
+                results.push(await this.joinOne(ctx, item, zprInfo));
             } catch (error) {
                 const { message } = getErrorDetails(error);
                 this.logger.warn(
@@ -74,6 +92,7 @@ export class JoinToMainUseCase
     private async joinOne(
         ctx: SalesHookExecutionContext,
         item: IJoinToMainItem,
+        zprInfo: () => Promise<ZprSmartInfo | null>,
     ): Promise<JoinToMainItemResultDto> {
         /*
          * Прошлые элементы пачки лежат в карте batch-команд (endGroup кладёт,
@@ -96,6 +115,15 @@ export class JoinToMainUseCase
                   'batch',
               )
             : [];
+
+        // Спутники дубля (ХО, презентации, ЗПР) — тоже до первой записи.
+        const satellites =
+            snapshot.source && snapshot.main
+                ? await new JoinSatellitesReader(ctx.bitrix, ctx.portal).read(
+                      snapshot.source.id,
+                      await zprInfo(),
+                  )
+                : EMPTY_JOIN_SATELLITES;
 
         const plan = buildJoinPlan(ctx.portal, ctx.domain, snapshot);
         if (plan.skipped) {
@@ -124,6 +152,18 @@ export class JoinToMainUseCase
         for (const op of plan.ops) this.queueOp(ctx, op);
         await ctx.buffer.endGroup();
 
+        const sat = plan.mainDealId
+            ? buildJoinSatellitesPlan(ctx.portal, satellites, plan.mainDealId)
+            : null;
+        // Своими группами: вместе с основными командами могли бы не
+        // уместиться в 50.
+        for (let i = 0; sat && i < sat.ops.length; i += SATELLITE_GROUP_SIZE) {
+            for (const op of sat.ops.slice(i, i + SATELLITE_GROUP_SIZE)) {
+                this.queueOp(ctx, op);
+            }
+            await ctx.buffer.endGroup();
+        }
+
         let taken: IWorkTakeoverOutcome = { tasksMoved: 0, activitiesMoved: 0 };
         if (plan.mainDealId && plan.responsibleId) {
             taken = takeover.queue(
@@ -140,6 +180,8 @@ export class JoinToMainUseCase
             `join-to-main: ${item.dealId} → ${plan.mainDealId ?? 'основной нет'}: ` +
                 `контактов ${plan.contactsLinked}, лидов ${plan.leadsRelinked}, ` +
                 `задач ${taken.tasksMoved}, дел ${taken.activitiesMoved}, ` +
+                `ХО закрыто ${sat?.xoClosed ?? 0}, презентаций ` +
+                `${sat?.presentationsRelinked ?? 0}, ЗПР ${sat?.zprRelinked ?? 0}, ` +
                 `дубль закрыт: ${plan.closesAsDuplicate ? 'да' : 'нет'}`,
         );
         return {
@@ -151,8 +193,15 @@ export class JoinToMainUseCase
             tasksMoved: taken.tasksMoved,
             activitiesMoved: taken.activitiesMoved,
             closedAsDuplicate: plan.closesAsDuplicate,
+            xoClosed: sat?.xoClosed ?? 0,
+            presentationsRelinked: sat?.presentationsRelinked ?? 0,
+            zprRelinked: sat?.zprRelinked ?? 0,
             skipped: false,
-            warnings: [...plan.warnings, ...work.warnings],
+            warnings: [
+                ...plan.warnings,
+                ...work.warnings,
+                ...(sat?.warnings ?? []),
+            ],
         };
     }
 
@@ -198,10 +247,23 @@ export class JoinToMainUseCase
                     ),
                 );
                 return;
+            case 'itemUpdate':
+                ctx.buffer.queue(() =>
+                    ctx.bitrix.api.addCmdBatch(
+                        `jm_item_${op.entityTypeId}_${op.itemId}`,
+                        'crm.item.update',
+                        {
+                            entityTypeId: op.entityTypeId,
+                            id: op.itemId,
+                            fields: op.fields,
+                        },
+                    ),
+                );
+                return;
             case 'timeline':
                 ctx.buffer.queue(() =>
                     ctx.bitrix.batch.timeline.addTimelineComment(
-                        `jm_tl_${op.dealId}`,
+                        op.key ?? `jm_tl_${op.dealId}`,
                         {
                             ENTITY_TYPE: 'deal',
                             ENTITY_ID: op.dealId,
@@ -224,6 +286,9 @@ export class JoinToMainUseCase
             tasksMoved: 0,
             activitiesMoved: 0,
             closedAsDuplicate: false,
+            xoClosed: 0,
+            presentationsRelinked: 0,
+            zprRelinked: 0,
             skipped: false,
             warnings: [],
         };

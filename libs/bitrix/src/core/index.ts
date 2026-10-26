@@ -3,6 +3,7 @@ export * from './domain';
 export * from './queue/bitrix-api.factory.service';
 // export * from './queue/bitrix-queue-api.service';
 export * from './base/bitrix-base-api';
+export { isBitrixAccessDenied } from './base/bitrix-response.util';
 export * from './http/bitrix-request-api.service';
 
 export * from './domain/consts/bitrix-api.enum';

@@ -1,10 +1,59 @@
 import {
+    isBitrixAccessDenied,
     isBitrixQueryLimitExceeded,
     isBitrixTimeout,
     readBitrixTime,
 } from '../bitrix-response.util';
 
 describe('разбор ответов Битрикса', () => {
+    describe('isBitrixAccessDenied', () => {
+        it('ошибка axios: отказ в теле ответа, в сообщении только статус', () => {
+            expect(
+                isBitrixAccessDenied({
+                    message: 'Request failed with status code 403',
+                    response: {
+                        data: {
+                            error: 'ACCESS_DENIED',
+                            error_description: 'Access denied',
+                        },
+                    },
+                }),
+            ).toBe(true);
+        });
+
+        it('только описание, без кода; русский текст; строковое тело', () => {
+            expect(
+                isBitrixAccessDenied({
+                    response: {
+                        data: {
+                            error: '',
+                            error_description: 'Access denied.',
+                        },
+                    },
+                }),
+            ).toBe(true);
+            expect(
+                isBitrixAccessDenied({
+                    response: {
+                        data: '{"error_description":"Недостаточно прав"}',
+                    },
+                }),
+            ).toBe(true);
+            expect(isBitrixAccessDenied(new Error('Access denied'))).toBe(true);
+        });
+
+        it('прочие ошибки — не отказ в правах', () => {
+            expect(
+                isBitrixAccessDenied({
+                    message: 'Request failed with status code 400',
+                    response: { data: { error: 'NOT_FOUND' } },
+                }),
+            ).toBe(false);
+            expect(isBitrixAccessDenied(null)).toBe(false);
+            expect(isBitrixAccessDenied(undefined)).toBe(false);
+        });
+    });
+
     describe('isBitrixTimeout', () => {
         it.each(['ECONNABORTED', 'ETIMEDOUT'])('код %s — таймаут', code => {
             expect(isBitrixTimeout({ code })).toBe(true);

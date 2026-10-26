@@ -1,4 +1,5 @@
 import type { AxiosError } from 'axios';
+import { BITRIX_ACCESS_DENIED_TEXT } from './bitrix-benign-error.util';
 
 /**
  * Разбор ответов и ошибок Битрикса — чистые функции ядра (BitrixCore).
@@ -30,6 +31,28 @@ export const isBitrixQueryLimitExceeded = (error: unknown): boolean => {
         typeof body === 'object' &&
         body !== null &&
         (body as { error?: unknown }).error === QUERY_LIMIT_EXCEEDED
+    );
+};
+
+/**
+ * Битрикс отказал в правах. Ядро бросает ошибку axios, и «Access denied»
+ * лежит в ТЕЛЕ ответа (`{ error, error_description }`), а не в
+ * `error.message` — там только «Request failed with status code 403».
+ * Сообщение тоже проверяем: обёртки выше по стеку кладут текст туда.
+ */
+export const isBitrixAccessDenied = (error: unknown): boolean => {
+    const e = error as { message?: unknown; response?: { data?: unknown } };
+    const body = e?.response?.data;
+    const bodyText =
+        typeof body === 'string'
+            ? body
+            : body && typeof body === 'object'
+              ? JSON.stringify(body)
+              : '';
+    const message = typeof e?.message === 'string' ? e.message : '';
+    return (
+        BITRIX_ACCESS_DENIED_TEXT.test(bodyText) ||
+        BITRIX_ACCESS_DENIED_TEXT.test(message)
     );
 };
 

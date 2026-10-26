@@ -7,7 +7,7 @@ import {
     pickAutoInn,
 } from '../lib/inn-candidate.util';
 import { InnFieldMap } from '../lib/inn-fields';
-import { InnMirrorWriter } from './inn-mirror.writer';
+import { InnMirrorWriter, InnOwnerEntity } from './inn-mirror.writer';
 import { InnAuditWriter } from './inn-audit.writer';
 import { InnCurrentSyncWriter } from './inn-current-sync.writer';
 import { InnSyncPlan } from '../lib/inn-sync.plan';
@@ -261,6 +261,19 @@ export class InnPoolService {
             userName: actor.name,
         });
         return warnings;
+    }
+
+    /**
+     * ИНН компании или заявки из шапки «Звонков», когда открытой сделки
+     * рядом нет — см. InnMirrorWriter.setCurrent.
+     */
+    async setOwner(
+        entity: InnOwnerEntity,
+        id: number,
+        inn: string,
+        warnings: string[],
+    ): Promise<boolean> {
+        return this.mirror.setCurrent(entity, id, inn, warnings);
     }
 
     /** Пул и текущий ИНН компании — см. InnMirrorWriter.syncCompany. */

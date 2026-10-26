@@ -7,24 +7,15 @@ import {
     timelineBold,
     timelineLink,
     toTimelineComment,
-    toTimelineCommentDirect,
 } from '@lib/bitrix/consts/timeline.consts';
 import { findBatchResult } from '../../../shared/bitrix/prepare-batch-results.util';
 import { EventReportContext } from '../context/event-report.context';
 import { DealFlowResult } from './event-report-deal-flow.service';
 import { SET_BASE_DEAL_CMD } from './sales-base-deal.service';
+import { addDealComment, positiveId, pushLink } from './deal-notice.util';
 
 /** Тег уведомления: повтор по той же паре сделок схлопывается в один. */
 const NOTIFY_TAG_PREFIX = 'event-report-base-continuity';
-
-const positiveId = (raw: unknown): number | null => {
-    const id = Number(raw);
-    return Number.isInteger(id) && id > 0 ? id : null;
-};
-
-/** Ссылка на сделку в push (BB-код: в уведомлении рендерится он, не HTML). */
-const pushLink = (url: string, text: string): string =>
-    `[URL=${url}]${text}[/URL]`;
 
 /**
  * Что сказать менеджеру, когда сделка запуска «ОП Основная» была закрыта
@@ -115,21 +106,7 @@ export class BaseDealContinuityNotice {
         }
     }
 
-    private async comment(
-        dealId: number,
-        lines: readonly string[],
-    ): Promise<void> {
-        try {
-            await this.bitrix.timeline.addTimelineComment({
-                ENTITY_TYPE: BitrixEntityType.DEAL,
-                ENTITY_ID: dealId,
-                COMMENT: toTimelineCommentDirect(lines),
-            });
-        } catch (error) {
-            this.logger.warn(
-                `запись в ленту сделки #${dealId} не добавлена: ` +
-                    (error as Error).message,
-            );
-        }
+    private comment(dealId: number, lines: readonly string[]): Promise<void> {
+        return addDealComment(this.bitrix, this.logger, dealId, lines);
     }
 }

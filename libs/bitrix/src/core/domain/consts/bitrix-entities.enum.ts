@@ -57,6 +57,10 @@ export enum EBXEntity {
     REVISION = 'Revision',
     // imopenlines
     BOT_SESSION = 'bot.session',
+    /** imopenlines.v2.Session.* — сессии (диалоги) открытых линий, PascalCase как в REST. */
+    SESSION_V2 = 'Session',
+    /** imopenlines.session.* — действия оператора с диалогом (join). */
+    SESSION = 'session',
     // sonet_group — entity-less методы: sonet_group.create / update / get / delete
     // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- намеренно '' как у BOT_LIFECYCLE (entity-less)
     SONET_GROUP = '',

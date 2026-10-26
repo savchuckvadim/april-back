@@ -21,3 +21,4 @@ export * from './services/inn-requisite.reader';
 export * from './services/inn-audit.reader';
 export * from './services/inn-deal-state.reader';
 export * from './services/inn-deal.service';
+export * from './services/inn-manual-set.service';
