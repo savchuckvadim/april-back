@@ -53,6 +53,7 @@ import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.
 import { MaintenanceModule } from './maintenance';
 import { HooksAdminModule } from '@lib/portal-lib/hooks';
 import { SupportMonitorAdminModule } from '@lib/support';
+import { LogsAdminModule } from '@lib/logger/query';
 
 @Module({
     imports: [
@@ -139,6 +140,8 @@ import { SupportMonitorAdminModule } from '@lib/support';
         HooksAdminModule,
         // Предпросмотр монитора линии поддержки (крон — в apps/bot)
         SupportMonitorAdminModule,
+        // Журналы всех приложений из ClickHouse: сводка с выводами и строки
+        LogsAdminModule,
     ],
 })
 export class AdminAddModule {}

@@ -13,11 +13,15 @@ export interface IDealOwnerAlignInput {
     contacts: readonly IOwnedEntity[];
 }
 
-/** Причина, по которой выравнивать нечего. */
+/**
+ * Причина, по которой выравнивать нечего. `recent` — сервер недавно уже
+ * выравнивал эту сделку для сотрудника (ставит сценарий, не план).
+ */
 export const DEAL_OWNER_SKIP_REASONS = [
     'not_own',
     'closed',
     'aligned',
+    'recent',
 ] as const;
 export type DealOwnerSkipReason = (typeof DEAL_OWNER_SKIP_REASONS)[number];
 

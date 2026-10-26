@@ -44,7 +44,8 @@ export class DealOwnerAlignResultDto implements IDealOwnerAlignResult {
         description:
             'Почему ничего не менялось: `not_own` — сделка не этого ' +
             'сотрудника, `closed` — сделка закрыта, `aligned` — компания и ' +
-            'контакты уже на нём.',
+            'контакты уже на нём, `recent` — сервер недавно уже выравнивал ' +
+            '(в течение 15 минут).',
         enum: DEAL_OWNER_SKIP_REASONS,
         nullable: true,
         example: null,

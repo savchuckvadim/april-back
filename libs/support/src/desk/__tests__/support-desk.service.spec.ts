@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { LogQueryService } from '@lib/logger/query';
 import { SupportDeskService } from '../application/support-desk.service';
 import { SupportMonitorSettingsService } from '../../monitor/application/support-monitor-settings.service';
 import { SupportMonitorOptions } from '../../monitor/application/support-monitor-options';
@@ -51,12 +52,17 @@ function setup(enabledDomains: string[] = ['april-dev.bitrix24.ru']) {
         resolveOptions: jest.fn().mockResolvedValue(options),
     };
     const telegram = { send: jest.fn().mockResolvedValue(true) };
+    const logs = {
+        summary: jest.fn().mockResolvedValue({ conclusions: ['тихо'] }),
+        rows: jest.fn().mockResolvedValue([]),
+    };
     const service = new SupportDeskService(
         pbx as never,
         settings as unknown as SupportMonitorSettingsService,
         telegram as unknown as SupportTelegramNotifier,
+        logs as unknown as LogQueryService,
     );
-    return { service, pbx, lineBitrix, notifyBitrix, telegram, settings };
+    return { service, pbx, lineBitrix, notifyBitrix, telegram, settings, logs };
 }
 
 describe('SupportDeskService', () => {
@@ -118,6 +124,26 @@ describe('SupportDeskService', () => {
             taskId: 120345,
             url: 'https://april-garant.bitrix24.ru/company/personal/user/0/tasks/task/view/120345/',
         });
+    });
+
+    it('ошибки портала клиента: сводка и последние ошибки по нормализованному домену', async () => {
+        const { service, logs } = setup();
+        const result = await service.clientErrors(
+            'https://AlfaCentr.bitrix24.ru/',
+            48,
+        );
+        expect(logs.summary).toHaveBeenCalledWith({
+            hours: 48,
+            domain: 'alfacentr.bitrix24.ru',
+        });
+        expect(logs.rows).toHaveBeenCalledWith(
+            { hours: 48, domain: 'alfacentr.bitrix24.ru', level: 'error' },
+            20,
+        );
+        expect(result.domain).toBe('alfacentr.bitrix24.ru');
+        await expect(service.clientErrors('  ', 24)).rejects.toBeInstanceOf(
+            BadRequestException,
+        );
     });
 
     it('задача без номера от Битрикса — ошибка', async () => {

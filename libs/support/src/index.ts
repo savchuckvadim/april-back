@@ -17,3 +17,7 @@ export * from './desk/domain/support-desk.types';
 export * from './desk/domain/support-desk.text';
 export * from './desk/application/support-desk.service';
 export * from './desk/support-desk.module';
+// Путеводитель по поддержке для админки: тексты и чек-лист готовности.
+export * from './guide/support-guide.types';
+export * from './guide/support-guide.content';
+export * from './guide/support-guide.service';

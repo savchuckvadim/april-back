@@ -23,6 +23,7 @@ import {
     InnSnapshotResponseDto,
 } from '../dto/inn.dto';
 import { InnSetResponseDto, SetInnRequestDto } from '../dto/inn-set.dto';
+import { OpenCardOnceGuard } from '../../shared/open-card-once';
 
 /** Инстанс Битрикса ровно в том виде, в каком его отдаёт `PBXService`. */
 type PbxBitrix = Awaited<ReturnType<PBXService['init']>>['bitrix'];
@@ -39,7 +40,10 @@ type PbxBitrix = Awaited<ReturnType<PBXService['init']>>['bitrix'];
  */
 @Injectable()
 export class InnUseCase {
-    constructor(private readonly pbx: PBXService) {}
+    constructor(
+        private readonly pbx: PBXService,
+        private readonly once: OpenCardOnceGuard,
+    ) {}
 
     /**
      * Снимок ИНН сделки. Пустую сторону текущего ИНН дописывает (с 06.10),
@@ -53,11 +57,23 @@ export class InnUseCase {
         return this.run(() => service.snapshot(dealId));
     }
 
-    /** Выровнять текущий ИНН сделки без вкладки (лёгкое чтение). */
+    /**
+     * Выровнять текущий ИНН сделки без вкладки (лёгкое чтение). Недавно
+     * выравнивали — не повторяем (OpenCardOnceGuard), отметка после успеха.
+     */
     async align(dealId: number, domain: string): Promise<InnAlignResponseDto> {
+        const scope = { action: 'inn-align' as const, domain, dealId };
+        if (await this.once.isRecent(scope)) {
+            return { current: null, warnings: [], skipped: true };
+        }
         const { service } = await this.context(domain);
         const result = await this.run(() => service.align(dealId));
-        return { current: result.current || null, warnings: result.warnings };
+        await this.once.remember(scope);
+        return {
+            current: result.current || null,
+            warnings: result.warnings,
+            skipped: false,
+        };
     }
 
     /** Выбрать текущий ИНН договора (или добавить новый и выбрать его). */

@@ -114,3 +114,15 @@ export class ClientTypeStateDto implements IClientTypeState {
     })
     warnings: string[];
 }
+
+/** Ответ выравнивания при открытии сделки. */
+export class ClientTypeAlignResponseDto extends ClientTypeStateDto {
+    @ApiProperty({
+        description:
+            'Сервер недавно уже выравнивал эту сделку (в течение 15 минут) и ' +
+            'не повторял: значения тогда null, шапку не трогать.',
+        type: Boolean,
+        example: false,
+    })
+    skipped: boolean;
+}

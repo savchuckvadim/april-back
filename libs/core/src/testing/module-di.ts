@@ -50,9 +50,20 @@ function exportsOf(module: Ctor, seen = new Set<Ctor>()): Set<Ctor> {
     return result;
 }
 
+/** Токены провайдеров вида `{ provide: AbstractRepo, useClass: … }`. */
+const providedTokensOf = (module: Ctor): Ctor[] =>
+    ((Reflect.getMetadata('providers', module) as unknown[] | undefined) ?? [])
+        .map(item =>
+            item && typeof item === 'object' && 'provide' in item
+                ? (item as { provide: unknown }).provide
+                : null,
+        )
+        .filter((token): token is Ctor => typeof token === 'function');
+
 function availableIn(module: Ctor, globals: readonly Ctor[]): Set<Ctor> {
     const available = new Set<Ctor>([
         ...ctorsOf(module, 'providers'),
+        ...providedTokensOf(module),
         ...globals,
     ]);
     for (const imported of ctorsOf(module, 'imports')) {

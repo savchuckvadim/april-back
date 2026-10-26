@@ -17,6 +17,7 @@ import {
 } from '@nestjs/swagger';
 import {
     AlignClientTypeRequestDto,
+    ClientTypeAlignResponseDto,
     ClientTypeStateDto,
     SetClientTypeRequestDto,
 } from '../dto/client-type.dto';
@@ -49,8 +50,10 @@ export class ClientTypeController {
     })
     @ApiBody({ type: AlignClientTypeRequestDto, description: 'Домен портала.' })
     @ApiOkResponse({
-        type: ClientTypeStateDto,
-        description: 'Тип клиента у сделки и компании после выравнивания.',
+        type: ClientTypeAlignResponseDto,
+        description:
+            'Тип клиента у сделки и компании после выравнивания; skipped — ' +
+            'сервер недавно уже выравнивал.',
     })
     @ApiNotFoundResponse({
         description: 'Сделка не найдена или недоступна интеграции.',
@@ -58,7 +61,7 @@ export class ClientTypeController {
     align(
         @Param('dealId', ParseIntPipe) dealId: number,
         @Body() dto: AlignClientTypeRequestDto,
-    ): Promise<ClientTypeStateDto> {
+    ): Promise<ClientTypeAlignResponseDto> {
         return this.useCase.align(dealId, dto);
     }
 

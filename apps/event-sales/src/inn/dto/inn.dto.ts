@@ -73,6 +73,15 @@ export class InnAlignResponseDto {
         example: [],
     })
     warnings: string[];
+
+    @ApiProperty({
+        description:
+            'Сервер недавно уже выравнивал эту сделку (в течение 15 минут) и ' +
+            'не повторял: current тогда null, шапку не трогать.',
+        type: Boolean,
+        example: false,
+    })
+    skipped: boolean;
 }
 
 export class ChooseInnRequestDto {

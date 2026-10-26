@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PBXModule } from '@lib/pbx';
+import { OpenCardOnceModule } from '../shared/open-card-once';
 import { ClientTypeController } from './controllers/client-type.controller';
 import { ClientTypeUseCase } from './use-cases/client-type.use-case';
 
@@ -9,7 +10,7 @@ import { ClientTypeUseCase } from './use-cases/client-type.use-case';
  * (ai/rules/app-api-surface.md).
  */
 @Module({
-    imports: [PBXModule],
+    imports: [PBXModule, OpenCardOnceModule],
     controllers: [ClientTypeController],
     providers: [ClientTypeUseCase],
 })

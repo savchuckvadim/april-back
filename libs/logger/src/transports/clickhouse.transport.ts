@@ -24,7 +24,9 @@ export interface ClickHouseSink {
     close(): Promise<void>;
 }
 
-const TABLE = 'app_logs';
+/** Таблица журналов (БД — CLICKHOUSE_DB); её же читает LogQueryRepository. */
+export const APP_LOGS_TABLE = 'app_logs';
+const TABLE = APP_LOGS_TABLE;
 /** Жёсткий потолок буфера (записей): при недоступном ClickHouse старые выкидываются. */
 const MAX_BUFFER = 5_000;
 /** Потолок буфера в байтах (~символах) — гарантия, что память не переполнится. */

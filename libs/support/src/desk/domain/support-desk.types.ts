@@ -1,3 +1,4 @@
+import type { LogRowView, LogSummary } from '@lib/logger/query';
 import type {
     SupportAuthorRole,
     SupportClient,
@@ -47,4 +48,13 @@ export interface SupportTaskResult {
     domain: string;
     taskId: number;
     url: string;
+}
+
+/** Ошибки наших приложений по порталу клиента — контекст разбора для ИИ. */
+export interface SupportClientErrors {
+    /** Портал клиента. */
+    domain: string;
+    summary: LogSummary;
+    /** Последние ошибки по порталу, новые сверху. */
+    recent: LogRowView[];
 }

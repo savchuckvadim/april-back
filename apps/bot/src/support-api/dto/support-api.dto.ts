@@ -11,9 +11,11 @@ import {
     Min,
 } from 'class-validator';
 import { SUPPORT_REPLY_MAX_LENGTH, SupportDialogReportDto } from '@lib/support';
+import { LogRowDto, LogsSummaryResponseDto } from '@lib/logger/query';
 import type {
     SupportAuthorRole,
     SupportChatView,
+    SupportClientErrors,
     SupportClient,
     SupportMessage,
     SupportReplyResult,
@@ -328,4 +330,55 @@ export class SupportTaskResponseDto implements SupportTaskResult {
             'https://april-garant.bitrix24.ru/company/personal/user/0/tasks/task/view/120345/',
     })
     url: string;
+}
+
+export class SupportClientErrorsQueryDto {
+    @ApiProperty({
+        description:
+            'Портал клиента без протокола — из диалога (clientPortal), не портал линии.',
+        type: String,
+        example: 'alfacentr.bitrix24.ru',
+    })
+    @IsString()
+    @IsNotEmpty()
+    @Matches(DOMAIN_PATTERN, {
+        message: 'domain — адрес портала без протокола',
+    })
+    domain: string;
+
+    @ApiPropertyOptional({
+        description: 'Окно в часах: от 1 до 720.',
+        type: Number,
+        minimum: 1,
+        maximum: 720,
+        default: 24,
+        example: 24,
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    @Max(720)
+    hours?: number;
+}
+
+export class SupportClientErrorsResponseDto implements SupportClientErrors {
+    @ApiProperty({
+        description: 'Портал клиента.',
+        type: String,
+        example: 'alfacentr.bitrix24.ru',
+    })
+    domain: string;
+
+    @ApiProperty({
+        description: 'Сводка журналов по порталу с выводами словами.',
+        type: LogsSummaryResponseDto,
+    })
+    summary: LogsSummaryResponseDto;
+
+    @ApiProperty({
+        description: 'Последние ошибки по порталу, новые сверху.',
+        type: [LogRowDto],
+    })
+    recent: LogRowDto[];
 }

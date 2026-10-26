@@ -6,9 +6,11 @@ import {
 import { PBXService } from '@lib/pbx';
 import {
     AlignClientTypeRequestDto,
+    ClientTypeAlignResponseDto,
     ClientTypeStateDto,
     SetClientTypeRequestDto,
 } from '../dto/client-type.dto';
+import { OpenCardOnceGuard } from '../../shared/open-card-once';
 import {
     ClientTypeDealNotFoundError,
     ClientTypeNoTargetError,
@@ -24,14 +26,35 @@ import { ClientTypeService } from '../services/client-type.service';
  */
 @Injectable()
 export class ClientTypeUseCase {
-    constructor(private readonly pbx: PBXService) {}
+    constructor(
+        private readonly pbx: PBXService,
+        private readonly once: OpenCardOnceGuard,
+    ) {}
 
+    /** Недавно выравнивали — не повторяем; отметка — после успеха. */
     async align(
         dealId: number,
         dto: AlignClientTypeRequestDto,
-    ): Promise<ClientTypeStateDto> {
+    ): Promise<ClientTypeAlignResponseDto> {
+        const scope = {
+            action: 'client-type-align' as const,
+            domain: dto.domain,
+            dealId,
+        };
+        if (await this.once.isRecent(scope)) {
+            return {
+                current: null,
+                deal: null,
+                company: null,
+                conflict: false,
+                warnings: [],
+                skipped: true,
+            };
+        }
         const service = await this.service(dto.domain);
-        return this.run(() => service.align(dealId));
+        const state = await this.run(() => service.align(dealId));
+        await this.once.remember(scope);
+        return { ...state, skipped: false };
     }
 
     async set(dto: SetClientTypeRequestDto): Promise<ClientTypeStateDto> {

@@ -27,6 +27,8 @@ import {
 } from './guards/support-api-key.guard';
 import {
     SupportChatViewResponseDto,
+    SupportClientErrorsQueryDto,
+    SupportClientErrorsResponseDto,
     SupportDialogReadQueryDto,
     SupportDialogsResponseDto,
     SupportDomainQueryDto,
@@ -95,6 +97,24 @@ export class SupportApiController {
         @Query() query: SupportDialogReadQueryDto,
     ): Promise<SupportChatViewResponseDto> {
         return this.desk.readDialog(chatId, query.limit ?? 30, query.domain);
+    }
+
+    @Get('errors')
+    @ApiOperation({
+        summary: 'Ошибки наших приложений по порталу клиента',
+        description:
+            'Журналы всех приложений April из ClickHouse по порталу клиента: ' +
+            'сводка с выводами (всплески, частые ошибки) и последние ошибки. ' +
+            'Контекст разбора диалога: что сломалось у клиента.',
+    })
+    @ApiOkResponse({
+        type: SupportClientErrorsResponseDto,
+        description: 'Ошибки портала клиента.',
+    })
+    async errors(
+        @Query() query: SupportClientErrorsQueryDto,
+    ): Promise<SupportClientErrorsResponseDto> {
+        return this.desk.clientErrors(query.domain, query.hours ?? 24);
     }
 
     @Post('dialogs/:chatId/reply')

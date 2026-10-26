@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PBXModule } from '@lib/pbx';
+import { LogQueryModule } from '@lib/logger/query';
 import { SupportMonitorModule } from '../monitor/support-monitor.module';
 import { SupportDeskService } from './application/support-desk.service';
 
@@ -9,7 +10,7 @@ import { SupportDeskService } from './application/support-desk.service';
  * и Telegram-чат поддержки — из модуля мониторинга.
  */
 @Module({
-    imports: [PBXModule, SupportMonitorModule],
+    imports: [PBXModule, SupportMonitorModule, LogQueryModule],
     providers: [SupportDeskService],
     exports: [SupportDeskService],
 })

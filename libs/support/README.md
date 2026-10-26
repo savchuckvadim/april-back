@@ -79,6 +79,12 @@ MCP для Claude Code — `scripts/mcp/april-support.mjs` (без зависи�
 
 Контекст клиента сейчас: портал клиента, карточка CRM на april-dev и переписка. Журналов ошибок по порталу клиента нет: читателя журналов ClickHouse в бэке пока нет.
 
+## Путеводитель в админке (`src/guide`)
+
+`GET /api/admin/support/guide` — тексты раздела «Поддержка» админки (концепция, как пользоваться, алгоритм, ключи, что не сделано) и чек-лист «что осталось, чтобы заработало» по настройкам портала линии. Тексты — `support-guide.content.ts`, коды настроек в них проверяет тест. Страница — `front/apps/admin/modules/entities/support`.
+
+Ошибки портала клиента для ИИ — `GET /api/support/errors?domain=` (журналы ClickHouse через `@lib/logger/query`).
+
 ### Проверка на живой линии
 
 - `POST admin/support-monitor/preview { "domain": "april-dev.bitrix24.ru" }` — что ушло бы сейчас. Ничего не шлёт и не запоминает.

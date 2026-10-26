@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import type { BitrixService } from '@lib/bitrix';
 import { PBXService } from '@lib/pbx';
+import { LogQueryService } from '@lib/logger/query';
 import { normalizeSupportDomain } from '../../monitor/application/support-monitor-options';
 import { SupportMonitorSettingsService } from '../../monitor/application/support-monitor-settings.service';
 import {
@@ -11,6 +12,7 @@ import { SupportLineReader } from '../../monitor/infrastructure/support-line.rea
 import { SupportTelegramNotifier } from '../../monitor/infrastructure/support-telegram.notifier';
 import {
     SupportChatView,
+    SupportClientErrors,
     SupportReplyResult,
     SupportTaskInput,
     SupportTaskResult,
@@ -45,7 +47,28 @@ export class SupportDeskService {
         private readonly pbx: PBXService,
         private readonly settings: SupportMonitorSettingsService,
         private readonly telegram: SupportTelegramNotifier,
+        private readonly logs: LogQueryService,
     ) {}
+
+    /**
+     * Ошибки наших приложений по порталу клиента из журналов ClickHouse:
+     * сводка с выводами и последние ошибки. Портал — из диалога
+     * (`clientPortal`), не портал линии.
+     */
+    async clientErrors(
+        clientDomain: string,
+        hours: number,
+    ): Promise<SupportClientErrors> {
+        const domain = normalizeSupportDomain(clientDomain);
+        if (!domain) {
+            throw new BadRequestException('Укажите портал клиента');
+        }
+        const [summary, recent] = await Promise.all([
+            this.logs.summary({ hours, domain }),
+            this.logs.rows({ hours, domain, level: 'error' }, 20),
+        ]);
+        return { domain, summary, recent };
+    }
 
     /** Открытые диалоги линии: кто ждёт и сколько. */
     async listDialogs(domain?: string): Promise<SupportDialogsList> {

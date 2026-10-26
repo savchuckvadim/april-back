@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PBXModule } from '@lib/pbx';
+import { OpenCardOnceModule } from '../shared/open-card-once';
 import { InnController } from './controllers/inn.controller';
 import { InnUseCase } from './use-cases/inn.use-case';
 
@@ -13,7 +14,7 @@ import { InnUseCase } from './use-cases/inn.use-case';
  * сможет выставить те же сервисы своими эндпоинтами, не копируя код.
  */
 @Module({
-    imports: [PBXModule],
+    imports: [PBXModule, OpenCardOnceModule],
     controllers: [InnController],
     providers: [InnUseCase],
 })

@@ -4,6 +4,13 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { InnUseCase } from '../use-cases/inn.use-case';
+import { OpenCardOnceGuard } from '../../shared/open-card-once';
+
+/** Страж «недавно делали» — всегда пропускает: его правила проверены отдельно. */
+const ONCE = {
+    isRecent: () => Promise.resolve(false),
+    remember: () => Promise.resolve(),
+} as unknown as OpenCardOnceGuard;
 
 const INN = '7707083893';
 
@@ -75,7 +82,7 @@ describe('InnUseCase', () => {
 
     it('снимок берёт инстанс Битрикса по домену запроса', async () => {
         const { pbx, domains } = makePbx({ ID: '100', COMPANY_ID: '55' });
-        const useCase = new InnUseCase(pbx);
+        const useCase = new InnUseCase(pbx, ONCE);
 
         const snapshot = await useCase.snapshot(100, DOMAIN);
 
@@ -85,7 +92,7 @@ describe('InnUseCase', () => {
 
     it('сделки нет — 404 вместо пустого ответа', async () => {
         const { pbx } = makePbx(null);
-        const useCase = new InnUseCase(pbx);
+        const useCase = new InnUseCase(pbx, ONCE);
 
         await expect(useCase.snapshot(100, DOMAIN)).rejects.toBeInstanceOf(
             NotFoundException,
@@ -94,7 +101,7 @@ describe('InnUseCase', () => {
 
     it('устаревшая версия снимка — 409', async () => {
         const { pbx } = makePbx({ ID: '100', COMPANY_ID: '55' });
-        const useCase = new InnUseCase(pbx);
+        const useCase = new InnUseCase(pbx, ONCE);
 
         await expect(
             useCase.choose(100, {
@@ -108,7 +115,7 @@ describe('InnUseCase', () => {
 
     it('закрытая сделка — 409 на попытку выбрать', async () => {
         const { pbx } = makePbx({ ID: '100', COMPANY_ID: '55', CLOSED: 'Y' });
-        const useCase = new InnUseCase(pbx);
+        const useCase = new InnUseCase(pbx, ONCE);
         const snapshot = await useCase.snapshot(100, DOMAIN);
 
         await expect(
@@ -123,7 +130,7 @@ describe('InnUseCase', () => {
 
     it('невалидный ИНН — 400', async () => {
         const { pbx } = makePbx({ ID: '100', COMPANY_ID: '55' });
-        const useCase = new InnUseCase(pbx);
+        const useCase = new InnUseCase(pbx, ONCE);
 
         await expect(
             useCase.choose(100, {
@@ -141,7 +148,7 @@ describe('InnUseCase', () => {
      */
     it('имя автора подставляется из портала', async () => {
         const { pbx, calls } = makePbx({ ID: '100', COMPANY_ID: '55' });
-        const useCase = new InnUseCase(pbx);
+        const useCase = new InnUseCase(pbx, ONCE);
         const snapshot = await useCase.snapshot(100, DOMAIN);
 
         const after = await useCase.choose(100, {
