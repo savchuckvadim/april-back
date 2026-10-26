@@ -2,16 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { PriceRepository } from '../repositories/price.repository';
 import { PriceEntity } from '../entity/price.entity';
 import { PriceCreateType } from '../types/price-from-excel.type';
-import { ComplectExcelService } from './complect-prices/complect-excel-service';
-import { ServicesPriceService } from './packages-prices/services-price.service';
 
+/**
+ * Цены каталога. Массовое обновление живёт в эталонных таблицах
+ * (libs/garant/src/catalog-table) — здесь только доменные операции.
+ */
 @Injectable()
 export class PriceService {
-    constructor(
-        private readonly repo: PriceRepository,
-        private readonly complectExcelService: ComplectExcelService,
-        private readonly servicesPriceService: ServicesPriceService,
-    ) {}
+    constructor(private readonly repo: PriceRepository) {}
 
     async getAll() {
         return await this.repo.findMany();
@@ -71,15 +69,6 @@ export class PriceService {
         return await this.repo.findMany();
     }
 
-    async updateFromExcel(): Promise<PriceEntity[] | null> {
-        // Читаем данные из Excel
-        const prices = await this.complectExcelService.updateFromExcel();
-        const servicesPrices =
-            await this.servicesPriceService.updateFromExcel();
-
-        return [...prices, ...servicesPrices];
-    }
-
     async deleteAll(): Promise<boolean> {
         return await this.repo.deleteAll();
     }
@@ -87,6 +76,7 @@ export class PriceService {
     async delete(id: number): Promise<boolean> {
         return await this.repo.delete(id);
     }
+
     async deleteMany(ids: number[]): Promise<boolean> {
         return await this.repo.deleteMany(ids);
     }

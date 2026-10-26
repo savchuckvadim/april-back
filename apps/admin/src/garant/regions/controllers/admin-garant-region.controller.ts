@@ -96,21 +96,6 @@ export class AdminGarantRegionController {
         return new GetRegionResponseDto(region);
     }
 
-    @Post('update-from-excel')
-    @ApiOperation({ summary: 'Обновить регионы из Excel файла' })
-    @ApiResponse({
-        status: 200,
-        description: 'Регионы успешно обновлены',
-        type: [GetRegionResponseDto],
-    })
-    async updateFromExcel(): Promise<GetRegionResponseDto[] | null> {
-        const regions = await this.regionService.updateFromExcel();
-        if (!regions) {
-            throw new NotFoundException('Regions not updated');
-        }
-        return regions.map(region => new GetRegionResponseDto(region));
-    }
-
     @Delete(':id')
     @ApiOperation({ summary: 'Удалить регион' })
     @ApiResponse({

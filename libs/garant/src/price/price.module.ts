@@ -1,38 +1,26 @@
 import { Module } from '@nestjs/common';
-import { StorageModule } from 'src/core/storage/storage.module';
 import { PriceService } from './services/price.service';
 import { PriceRepository } from './repositories/price.repository';
 import { PricePrismaRepository } from './repositories/price.prisma.repository';
-import { PriceExcelService } from './services/excel/price-excel.service';
 import { PackageModule } from '../package';
-import { ServicesPriceService } from './services/packages-prices/services-price.service';
 import { ComplectModule } from '../complect';
 import { SupplyModule } from '../supply';
-import { ServicesPriceExcelParseService } from './services/excel/services-price-excel-parse.service';
-import { ComplectExcelService } from './services/complect-prices/complect-excel-service';
-import { ComplectPriceExcelParseService } from './services/excel/complect-price-excel-parse.service';
 
 /**
  * Сервисный модуль цен гаранта. Админ-контроллер вынесен в
  * {@link AdminGarantProfPriceModule}, чтобы konstructor (импортит ради
- * PriceService) не тащил админские роуты в свой Swagger.
- * PriceExcelService экспортируется — он нужен админ-контроллеру.
+ * PriceService) не тащил админские роуты в свой Swagger. Массовое
+ * обновление цен — в модуле эталонных таблиц каталога.
  */
 @Module({
-    imports: [StorageModule, PackageModule, ComplectModule, SupplyModule],
+    imports: [PackageModule, ComplectModule, SupplyModule],
     providers: [
         PriceService,
-        PriceExcelService,
-        ServicesPriceService,
-        ServicesPriceExcelParseService,
-        ComplectExcelService,
-        ComplectPriceExcelParseService,
-
         {
             provide: PriceRepository,
             useClass: PricePrismaRepository,
         },
     ],
-    exports: [PriceService, ServicesPriceService, PriceExcelService],
+    exports: [PriceService],
 })
 export class PriceModule {}

@@ -3,7 +3,6 @@ import { SupplyController } from './supply.controller';
 import { SupplyService } from './services/api/supply.service';
 import { SupplyRepository } from './supply.repository';
 import { SupplyPrismaRepository } from './supply.prisma.repository';
-import { SupplyExcelService } from './services/supply-excel.service';
 import { SupplyTextService } from './services/supply-text.service';
 import { StorageModule } from 'src/core/storage/storage.module';
 
@@ -12,7 +11,6 @@ import { StorageModule } from 'src/core/storage/storage.module';
     controllers: [SupplyController],
     providers: [
         SupplyService,
-        SupplyExcelService,
         SupplyTextService,
         {
             provide: SupplyRepository,

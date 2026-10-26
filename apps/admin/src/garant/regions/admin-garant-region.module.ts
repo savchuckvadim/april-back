@@ -1,4 +1,4 @@
-import { RegionExcelService, RegionModule, RegionService } from '@lib/garant';
+import { RegionModule, RegionService } from '@lib/garant';
 import { Module } from '@nestjs/common';
 import { AdminGarantRegionController } from './controllers/admin-garant-region.controller';
 import { RegionRepository } from '@lib/garant/region/region.repository';
@@ -20,7 +20,6 @@ import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
             provide: RegionRepository,
             useClass: RegionPrismaRepository,
         },
-        RegionExcelService,
     ],
 })
 export class AdminGarantRegionModule {}

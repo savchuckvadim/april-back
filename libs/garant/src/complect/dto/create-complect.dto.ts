@@ -56,7 +56,7 @@ export class CreateComplectDto {
         enum: ComplectTypeEnum,
     })
     @IsEnum(ComplectTypeEnum)
-    type: string;
+    type: ComplectTypeEnum;
 
     @ApiProperty({
         description: 'Цвет комплекта',
@@ -96,7 +96,7 @@ export class CreateComplectDto {
         enum: ComplectProductTypeEnum,
     })
     @IsEnum(ComplectProductTypeEnum)
-    productType: string;
+    productType: ComplectProductTypeEnum;
 
     @ApiProperty({
         description: 'Наличие ABS',

@@ -1,7 +1,5 @@
 import { CreateSupplyDto } from '../dtos/create-supply.dto';
 import { SupplyService } from '@lib/garant/supply';
-import { SupplyExcelService } from '@lib/garant/supply/services/supply-excel.service';
-import { StorageService } from '@/core/storage';
 import {
     Controller,
     Get,
@@ -11,29 +9,14 @@ import {
     Put,
     BadRequestException,
     NotFoundException,
-    UseInterceptors,
-    UploadedFile,
-    Res,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import {
-    ApiTags,
-    ApiOperation,
-    ApiResponse,
-    ApiConsumes,
-    ApiBody,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { GetSupplyResponseDto } from '../dtos/get-supply-response.dto';
-import { Response } from 'express';
 
 @ApiTags('Admin Garant Supply')
 @Controller('admin/garant/supplies')
 export class AdminGarantSupplyController {
-    constructor(
-        private readonly supplyService: SupplyService,
-        private readonly supplyExcelService: SupplyExcelService,
-        private readonly storageService: StorageService,
-    ) {}
+    constructor(private readonly supplyService: SupplyService) {}
 
     @Post()
     @ApiOperation({ summary: 'Создать новую поставку' })
@@ -65,107 +48,6 @@ export class AdminGarantSupplyController {
             throw new NotFoundException('Supplies not found');
         }
         return supplies.map(supply => new GetSupplyResponseDto(supply));
-    }
-
-    @Get('download-example')
-    @ApiOperation({ summary: 'Скачать пример таблицы поставок' })
-    @ApiResponse({
-        status: 200,
-        description: 'Файл для скачивания',
-        content: {
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-                {
-                    schema: {
-                        type: 'string',
-                        format: 'binary',
-                    },
-                },
-        },
-    })
-    async downloadExample(@Res() res: Response): Promise<void> {
-        const filePath = this.supplyExcelService.getExampleFilePath();
-        const fileExists = await this.storageService.fileExists(filePath);
-
-        if (!fileExists) {
-            throw new NotFoundException('Example file not found');
-        }
-
-        const fileBuffer = await this.storageService.readFile(filePath);
-
-        res.setHeader(
-            'Content-Type',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        );
-        res.setHeader(
-            'Content-Disposition',
-            'attachment; filename="supply-example.xlsx"',
-        );
-        res.send(fileBuffer);
-    }
-
-    @Post('update-from-excel')
-    @ApiOperation({ summary: 'Обновить поставки из Excel файла' })
-    @ApiResponse({
-        status: 200,
-        description: 'Поставки успешно обновлены',
-        type: [GetSupplyResponseDto],
-    })
-    async updateFromExcel(): Promise<GetSupplyResponseDto[] | null> {
-        const supplies = await this.supplyService.updateFromExcel();
-        if (!supplies) {
-            throw new NotFoundException('Supplies not updated');
-        }
-        return supplies.map(supply => new GetSupplyResponseDto(supply));
-    }
-
-    @Post('upload-excel')
-    @UseInterceptors(FileInterceptor('file'))
-    @ApiConsumes('multipart/form-data')
-    @ApiOperation({
-        summary: 'Загрузить таблицу поставок и обновить существующие',
-    })
-    @ApiBody({
-        schema: {
-            type: 'object',
-            properties: {
-                file: {
-                    type: 'string',
-                    format: 'binary',
-                },
-            },
-        },
-    })
-    @ApiResponse({
-        status: 200,
-        description: 'Поставки успешно обновлены из загруженного файла',
-        type: [GetSupplyResponseDto],
-    })
-    async uploadExcel(
-        @UploadedFile() file: Express.Multer.File,
-    ): Promise<GetSupplyResponseDto[] | null> {
-        if (!file) {
-            throw new BadRequestException('File is required');
-        }
-
-        try {
-            // Сохраняем загруженный файл
-            await this.supplyExcelService.saveUploadedFile(file.buffer);
-
-            // Обновляем поставки из файла
-            const supplies = await this.supplyService.updateFromExcel();
-            if (!supplies) {
-                throw new NotFoundException('Supplies not updated');
-            }
-
-            return supplies.map(supply => new GetSupplyResponseDto(supply));
-        } catch (error) {
-            console.error('Error uploading Excel file:', error);
-            throw new BadRequestException(
-                error instanceof Error
-                    ? error.message
-                    : 'Failed to upload and process Excel file',
-            );
-        }
     }
 
     @Get(':id')

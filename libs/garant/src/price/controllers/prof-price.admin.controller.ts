@@ -1,7 +1,5 @@
 import { CreatePriceDto } from '../dtos/create-price.dto';
 import { PriceService } from '@lib/garant/price';
-import { PriceExcelService } from '@lib/garant/price/services/excel/price-excel.service';
-import { StorageService } from '@/core/storage';
 import {
     Controller,
     Get,
@@ -11,30 +9,19 @@ import {
     Put,
     BadRequestException,
     NotFoundException,
-    UseInterceptors,
-    UploadedFile,
-    Res,
     Delete,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import {
-    ApiTags,
-    ApiOperation,
-    ApiResponse,
-    ApiConsumes,
-    ApiBody,
-} from '@nestjs/swagger';
-import { Response } from 'express';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PriceEntityDto } from '../dtos/price-entity.dto';
 
+/**
+ * Точечный CRUD цен. Массовое обновление — эталонной таблицей
+ * (admin/garant/tables/prices/export → правка → .../import).
+ */
 @ApiTags('Admin Garant Prof Price')
 @Controller('admin/garant/prof-prices')
 export class AdminGarantProfPriceController {
-    constructor(
-        private readonly priceService: PriceService,
-        private readonly priceExcelService: PriceExcelService,
-        private readonly storageService: StorageService,
-    ) {}
+    constructor(private readonly priceService: PriceService) {}
 
     @Post()
     @ApiOperation({ summary: 'Создать новую цену' })
@@ -66,105 +53,6 @@ export class AdminGarantProfPriceController {
             throw new NotFoundException('Prices not found');
         }
         return prices.map(price => new PriceEntityDto(price));
-    }
-
-    @Get('download-example')
-    @ApiOperation({ summary: 'Скачать пример таблицы цен' })
-    @ApiResponse({
-        status: 200,
-        description: 'Файл для скачивания',
-        content: {
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-                {
-                    schema: {
-                        type: 'string',
-                        format: 'binary',
-                    },
-                },
-        },
-    })
-    async downloadExample(@Res() res: Response): Promise<void> {
-        const filePath = this.priceExcelService.getExampleFilePath();
-        const fileExists = await this.storageService.fileExists(filePath);
-
-        if (!fileExists) {
-            throw new NotFoundException('Example file not found');
-        }
-
-        const fileBuffer = await this.storageService.readFile(filePath);
-
-        res.setHeader(
-            'Content-Type',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        );
-        res.setHeader(
-            'Content-Disposition',
-            'attachment; filename="prices-example.xlsx"',
-        );
-        res.send(fileBuffer);
-    }
-
-    @Post('update-from-excel')
-    @ApiOperation({ summary: 'Обновить цены из Excel файла' })
-    @ApiResponse({
-        status: 200,
-        description: 'Цены успешно обновлены',
-        type: [PriceEntityDto],
-    })
-    async updateFromExcel(): Promise<PriceEntityDto[] | null> {
-        const prices = await this.priceService.updateFromExcel();
-        if (!prices) {
-            throw new NotFoundException('Prices not updated');
-        }
-        return prices.map(price => new PriceEntityDto(price));
-    }
-
-    @Post('upload-excel')
-    @UseInterceptors(FileInterceptor('file'))
-    @ApiConsumes('multipart/form-data')
-    @ApiOperation({ summary: 'Загрузить таблицу цен и обновить существующие' })
-    @ApiBody({
-        schema: {
-            type: 'object',
-            properties: {
-                file: {
-                    type: 'string',
-                    format: 'binary',
-                },
-            },
-        },
-    })
-    @ApiResponse({
-        status: 200,
-        description: 'Цены успешно обновлены из загруженного файла',
-        type: [PriceEntityDto],
-    })
-    async uploadExcel(
-        @UploadedFile() file: Express.Multer.File,
-    ): Promise<PriceEntityDto[] | null> {
-        if (!file) {
-            throw new BadRequestException('File is required');
-        }
-
-        try {
-            // Сохраняем загруженный файл
-            await this.priceExcelService.saveUploadedFile(file.buffer);
-
-            // Обновляем цены из файла
-            const prices = await this.priceService.updateFromExcel();
-            if (!prices) {
-                throw new NotFoundException('Prices not updated');
-            }
-
-            return prices.map(price => new PriceEntityDto(price));
-        } catch (error) {
-            console.error('Error uploading Excel file:', error);
-            throw new BadRequestException(
-                error instanceof Error
-                    ? error.message
-                    : 'Failed to upload and process Excel file',
-            );
-        }
     }
 
     @Get(':id')

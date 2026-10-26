@@ -68,7 +68,7 @@ export class PackageUpdateDto {
     })
     @IsEnum(PackageTypeEnum)
     @IsOptional()
-    type?: string;
+    type?: PackageTypeEnum;
 
     @ApiProperty({
         description: 'Цвет пакета',
@@ -119,7 +119,7 @@ export class PackageUpdateDto {
     })
     @IsEnum(PackageProductTypeEnum)
     @IsOptional()
-    productType?: string;
+    productType?: PackageProductTypeEnum;
 
     @ApiProperty({
         description: 'Наличие ABS',

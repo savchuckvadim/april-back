@@ -65,15 +65,4 @@ export class RegionController {
     ): Promise<RegionEntity | null> {
         return this.regionService.update({ id, ...updateRegionDto });
     }
-
-    @Post('update-from-excel')
-    @ApiOperation({ summary: 'Обновить регионы из Excel файла' })
-    @ApiResponse({
-        status: 200,
-        description: 'Регионы успешно обновлены',
-        type: [RegionEntity],
-    })
-    async updateFromExcel(): Promise<RegionEntity[] | null> {
-        return this.regionService.updateFromExcel();
-    }
 }

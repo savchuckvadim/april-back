@@ -58,7 +58,7 @@ export class PackageCreateDto {
         enumName: 'PackageTypeEnum',
     })
     @IsEnum(PackageTypeEnum)
-    type: string;
+    type: PackageTypeEnum;
 
     @ApiProperty({
         description: 'Цвет пакета',
@@ -107,7 +107,7 @@ export class PackageCreateDto {
     })
     @IsEnum(PackageProductTypeEnum)
     @IsOptional()
-    productType?: string;
+    productType?: PackageProductTypeEnum;
 
     @ApiProperty({
         description: 'Наличие ABS',
