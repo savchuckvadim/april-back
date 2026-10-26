@@ -37,7 +37,7 @@ export class ColdTaskFlowService {
         const tasksGroupId = this.portal.getSalesTaskGroupId();
         this.logger.log(`Tasks group id: ${tasksGroupId}`);
         const ufCrms = this.getUfCrms(companyId, baseDealId, xoDealId);
-        const taskDeadline = deadline.toTaskDeadline();
+        const taskDeadline = deadline.toFutureTaskDeadline();
         this.logger.log(
             `[deadline][task] company=${companyId} DEADLINE="${taskDeadline}" ` +
                 `(server-time Москва) debug=${JSON.stringify(deadline.debug())}`,

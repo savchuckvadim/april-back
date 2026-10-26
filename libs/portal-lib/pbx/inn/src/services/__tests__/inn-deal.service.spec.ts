@@ -88,13 +88,29 @@ const COMPANY_REQUISITE: Row = {
     RQ_COMPANY_NAME: 'ООО «Ромашка»',
 };
 
+/**
+ * Второй реквизит компании с другим ИНН: без привязки к сделке текущий ИНН
+ * выбирает человек — снимок сам не пишет (единственный ИНН реквизита
+ * ставится автоматически, см. inn-deal.service.sync.spec).
+ */
+const SECOND_REQUISITE: Row = {
+    ...COMPANY_REQUISITE,
+    ID: '813',
+    NAME: 'ИП',
+    RQ_INN: OTHER,
+};
+
 describe('InnDealService', () => {
-    it('снимок собирает кандидатов из реквизитов и ничего не пишет', async () => {
-        const fixture = service({ requisites: [COMPANY_REQUISITE] });
+    it('снимок собирает кандидатов из реквизитов; разные ИНН — ничего не пишет', async () => {
+        const fixture = service({
+            requisites: [COMPANY_REQUISITE, SECOND_REQUISITE],
+        });
 
         const snapshot = await fixture.service.snapshot(100);
 
-        expect(snapshot.candidates.map(item => item.inn)).toEqual([INN]);
+        expect(snapshot.candidates.map(item => item.inn)).toEqual(
+            expect.arrayContaining([INN, OTHER]),
+        );
         expect(snapshot.requisites[0].inn).toBe(INN);
         expect(snapshot.current).toBeNull();
         expect(
@@ -111,7 +127,9 @@ describe('InnDealService', () => {
     });
 
     it('выбор пишется и возвращает уже обновлённый снимок', async () => {
-        const fixture = service({ requisites: [COMPANY_REQUISITE] });
+        const fixture = service({
+            requisites: [COMPANY_REQUISITE, SECOND_REQUISITE],
+        });
         const before = await fixture.service.snapshot(100);
 
         const after = await fixture.service.choose(100, {

@@ -44,6 +44,37 @@ export class InnSnapshotQueryDto {
     domain: string;
 }
 
+export class AlignInnRequestDto {
+    @ApiProperty({
+        description: 'Домен портала Битрикс, в котором живёт сделка.',
+        type: String,
+        example: 'garantservisvoronezh.bitrix24.ru',
+    })
+    @IsString()
+    @IsNotEmpty()
+    domain: string;
+}
+
+/** Итог выравнивания текущего ИНН сделки без вкладки «ИНН». */
+export class InnAlignResponseDto {
+    @ApiPropertyOptional({
+        description:
+            'Текущий ИНН сделки после выравнивания; null — ИНН так и не ' +
+            'нашёлся (у компании нет реквизита с ИНН или реквизитов несколько).',
+        type: String,
+        nullable: true,
+        example: '4703142743',
+    })
+    current: string | null;
+
+    @ApiProperty({
+        description: 'Что не удалось записать — показывается как есть.',
+        type: [String],
+        example: [],
+    })
+    warnings: string[];
+}
+
 export class ChooseInnRequestDto {
     @ApiProperty({
         description: 'Домен портала Битрикс, в котором живёт сделка.',

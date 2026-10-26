@@ -2,6 +2,7 @@ import { isValidInn, normalizeInn } from '@lib/portal-lib/pbx-duplicate';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { innText } from '../lib/inn-row.util';
 import { composeInnSnapshot } from '../lib/inn-snapshot.composer';
+import { innCompanyRequisites, innDealPool } from '../lib/inn-sync.input';
 import {
     INN_SYNC_KINDS,
     INN_SYNC_SOURCES,
@@ -61,6 +62,21 @@ export class InnDealService {
         const snapshot = this.compose(state);
         snapshot.warnings.push(...warnings);
         return snapshot;
+    }
+
+    /**
+     * Выровнять текущий ИНН сделки без вкладки «ИНН» (владелец 25.10.2026):
+     * фрейм зовёт это, когда у сделки с компанией ИНН пуст. Чтение лёгкое
+     * (сделка, компания, её реквизиты) — правило то же, что у снимка.
+     * Возвращает текущий ИНН сделки после выравнивания (пусто — не нашли).
+     */
+    async align(
+        dealId: number,
+    ): Promise<{ current: string; warnings: string[] }> {
+        const state = await this.reader.readLight(dealId);
+        if (!state) throw new InnDealNotFoundError(dealId);
+        const warnings = await this.syncCurrent(state);
+        return { current: this.currentInn(state), warnings };
     }
 
     /**
@@ -144,6 +160,8 @@ export class InnDealService {
             hasCompany:
                 Boolean(state.company) && Boolean(state.fields.inn('company')),
             leadInns: this.leadInns(state),
+            dealPool: innDealPool(state),
+            requisites: innCompanyRequisites(state),
         });
         if (
             plan.kind !== INN_SYNC_KINDS.toCompany &&
@@ -171,7 +189,7 @@ export class InnDealService {
         }
         if (
             plan.kind === INN_SYNC_KINDS.toCompany ||
-            plan.from === INN_SYNC_SOURCES.lead
+            plan.from !== INN_SYNC_SOURCES.company
         ) {
             this.applyCompanyInn(state, plan.inn, true);
         }

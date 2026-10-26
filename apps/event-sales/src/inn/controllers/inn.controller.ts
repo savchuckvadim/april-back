@@ -18,8 +18,10 @@ import {
     ApiTags,
 } from '@nestjs/swagger';
 import {
+    AlignInnRequestDto,
     ChooseInnRequestDto,
     HideInnRequestDto,
+    InnAlignResponseDto,
     InnSnapshotQueryDto,
     InnSnapshotResponseDto,
 } from '../dto/inn.dto';
@@ -46,7 +48,9 @@ export class InnController {
             'кандидатов с источниками и человеческими подписями, реквизиты ' +
             'компании и контактов, расхождения плашками, признаки ' +
             'доступности полей и прав, версия снимка и признак «сделка ' +
-            'закрыта — только чтение». Ничего не пишет.',
+            'закрыта — только чтение». Пустую сторону текущего ИНН ' +
+            '(сделка или компания) дописывает из другой, из реквизита ' +
+            'компании или заявки — один раз, с записью в таймлайне.',
     })
     @ApiParam({
         name: 'dealId',
@@ -145,5 +149,38 @@ export class InnController {
         @Body() dto: HideInnRequestDto,
     ): Promise<InnSnapshotResponseDto> {
         return this.useCase.hide(dealId, dto);
+    }
+
+    @Post('deal/:dealId/align')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Выровнять текущий ИНН сделки без вкладки «ИНН»',
+        description:
+            'Фрейм зовёт, когда у сделки с компанией текущий ИНН пуст. Лёгкое ' +
+            'чтение (сделка, компания, её реквизиты) и то же правило, что у ' +
+            'снимка: пусто в сделке — берётся ИНН компании, иначе ИНН ' +
+            'реквизита компании (привязанного к сделке или единственного), ' +
+            'и записывается в сделку, её пул и пустое поле компании с ' +
+            'записью в таймлайне. Закрытую сделку не трогает.',
+    })
+    @ApiParam({
+        name: 'dealId',
+        description: 'Id сделки в Битриксе.',
+        type: Number,
+        example: 25221,
+    })
+    @ApiBody({ type: AlignInnRequestDto, description: 'Домен портала.' })
+    @ApiOkResponse({
+        type: InnAlignResponseDto,
+        description: 'Текущий ИНН сделки после выравнивания.',
+    })
+    @ApiNotFoundResponse({
+        description: 'Сделка не найдена или недоступна интеграции.',
+    })
+    align(
+        @Param('dealId', ParseIntPipe) dealId: number,
+        @Body() dto: AlignInnRequestDto,
+    ): Promise<InnAlignResponseDto> {
+        return this.useCase.align(dealId, dto.domain);
     }
 }

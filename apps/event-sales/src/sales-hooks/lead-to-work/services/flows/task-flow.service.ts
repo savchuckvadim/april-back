@@ -171,7 +171,7 @@ export class TaskFlowService extends LeadToWorkFlowBase {
             ...(groupId ? { GROUP_ID: groupId } : {}),
         };
         const deadline = this.parseDeadline(item.deadline);
-        if (deadline) payload.DEADLINE = deadline.toTaskDeadline();
+        if (deadline) payload.DEADLINE = deadline.toFutureTaskDeadline();
 
         buffer.queue(() => this.bitrix.batch.task.add(cmd, payload as never));
         result.addCmd = cmd;
@@ -247,7 +247,7 @@ export class TaskFlowService extends LeadToWorkFlowBase {
             ...(groupId ? { GROUP_ID: groupId } : {}),
         };
         const deadline = this.parseDeadline(item.deadline);
-        if (deadline) payload.DEADLINE = deadline.toTaskDeadline();
+        if (deadline) payload.DEADLINE = deadline.toFutureTaskDeadline();
         buffer.queue(() => this.bitrix.batch.task.add(cmd, payload as never));
         result.addCmd = cmd;
         return result;

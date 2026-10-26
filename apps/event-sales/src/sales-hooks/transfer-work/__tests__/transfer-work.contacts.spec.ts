@@ -16,10 +16,11 @@ const portal = {
  * запись копится в журнал. Порядок событий — чтобы проверить, что чтение
  * контактов идёт до первой записи.
  */
-function makeCtx(contacts: Row[]) {
+function makeCtx(contacts: Row[], ctxPortal: typeof portal = portal) {
     const events: string[] = [];
     const contactUpdates: { id: number; fields: Row }[] = [];
-    const record = (name: string) => () => events.push(name);
+    const dealUpdates: { id: number; fields: Row }[] = [];
+    const companyUpdates: { id: number; fields: Row }[] = [];
     const buffer = {
         queue: (enqueue: () => void) => enqueue(),
         endGroup: jest.fn().mockResolvedValue(undefined),
@@ -34,11 +35,17 @@ function makeCtx(contacts: Row[]) {
                 get: jest.fn(),
                 getList: jest.fn(),
                 contactItemsGet: jest.fn(),
-                update: record('deal.update'),
+                update: (_cmd: string, id: number, fields: Row) => {
+                    events.push('deal.update');
+                    dealUpdates.push({ id, fields });
+                },
             },
             company: {
                 contactItemsGet: jest.fn(),
-                update: record('company.update'),
+                update: (_cmd: string, id: number, fields: Row) => {
+                    events.push('company.update');
+                    companyUpdates.push({ id, fields });
+                },
             },
             contact: {
                 update: (_cmd: string, id: number, fields: Row) => {
@@ -76,9 +83,11 @@ function makeCtx(contacts: Row[]) {
         }),
     };
     return {
-        ctx: { bitrix, portal, buffer, domain: 'd.b24.ru' },
+        ctx: { bitrix, portal: ctxPortal, buffer, domain: 'd.b24.ru' },
         events,
         contactUpdates,
+        dealUpdates,
+        companyUpdates,
         useCase: new TransferWorkUseCase(userNames as never),
     };
 }
@@ -143,7 +152,7 @@ describe('TransferWorkUseCase — контакты клиента', () => {
         expect(names).toBeLessThan(firstWrite);
     });
 
-    it('больше десяти контактов — первые десять и предупреждение', async () => {
+    it('больше десяти контактов — переезжают все, остальные своими группами', async () => {
         const many = Array.from({ length: 12 }, (_, i) => ({
             CONTACT_ID: String(400 + i),
         }));
@@ -151,7 +160,37 @@ describe('TransferWorkUseCase — контакты клиента', () => {
 
         const result = await useCase.execute(ctx as never, [ITEM]);
 
-        expect(contactUpdates).toHaveLength(10);
-        expect(result.warnings.join(' ')).toContain('первых 10');
+        // 12 контактов сделки + контакт компании 302.
+        expect(contactUpdates).toHaveLength(13);
+        expect(result.warnings.join(' ')).not.toContain('первых');
+    });
+
+    /*
+     * 25.10.2026: «Менеджер по продажам Гарант» идёт за ответственным —
+     * у сделок и компании, как уже было у лидов.
+     */
+    it('сделке и компании — новый ответственный и менеджер по продажам', async () => {
+        const withManagerOp = {
+            ...portal,
+            getEntityFieldByCode: (_entity: string, code: string) =>
+                code === 'manager_op'
+                    ? { bitrixId: 'UF_CRM_MANAGER_OP' }
+                    : undefined,
+        } as unknown as typeof portal;
+        const { ctx, dealUpdates, companyUpdates, useCase } = makeCtx(
+            [{ CONTACT_ID: '301' }],
+            withManagerOp,
+        );
+
+        await useCase.execute(ctx as never, [ITEM]);
+
+        expect(dealUpdates[0]?.fields).toMatchObject({
+            ASSIGNED_BY_ID: '8',
+            UF_CRM_MANAGER_OP: 8,
+        });
+        expect(companyUpdates[0]?.fields).toEqual({
+            ASSIGNED_BY_ID: '8',
+            UF_CRM_MANAGER_OP: 8,
+        });
     });
 });

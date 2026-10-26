@@ -129,6 +129,56 @@ export class InnDealStateReader {
         };
     }
 
+    /**
+     * Лёгкое чтение для выравнивания без вкладки «ИНН»: сделка, компания,
+     * её реквизиты и привязка реквизита к сделке — около пяти запросов
+     * вместо полного снимка. Заявки, контакты, аудит и поиск по порталу не
+     * читаются: выравниванию (inn-sync.plan) хватает текущих ИНН сделки и
+     * компании, пула и реквизитов компании.
+     */
+    async readLight(dealId: number): Promise<IInnDealState | null> {
+        const deal = innRow(
+            await this.bitrix.api.call('crm.deal.get', { id: dealId }),
+        );
+        if (!deal) return null;
+
+        const companyId = innId(deal.COMPANY_ID);
+        const [company, linkedRequisiteId] = await Promise.all([
+            companyId ? this.company(companyId) : Promise.resolve(null),
+            companyId
+                ? this.requisites.linkedRequisiteId(dealId)
+                : Promise.resolve(0),
+        ]);
+        const cards = companyId
+            ? await this.requisites.cards({
+                  companyId,
+                  companyTitle: innText(company?.TITLE),
+                  contacts: [],
+              })
+            : { cards: [], readable: true };
+        for (const card of cards.cards) {
+            card.linked = card.id === linkedRequisiteId;
+        }
+
+        return {
+            dealId,
+            deal,
+            closed: innText(deal.CLOSED).toUpperCase() === 'Y',
+            companyId,
+            companyTitle: innText(company?.TITLE),
+            company,
+            leadIds: [],
+            leads: [],
+            observations: [],
+            requisites: cards.cards,
+            requisitesReadable: cards.readable,
+            linkedRequisiteId,
+            audit: [],
+            otherCompanies: new Map(),
+            fields: this.fields,
+        };
+    }
+
     /** Заявки сделки: штатный `LEAD_ID` и наши поля-связи. */
     private leadIdsOf(deal: InnRow): number[] {
         const ids = innRefIds(deal.LEAD_ID);

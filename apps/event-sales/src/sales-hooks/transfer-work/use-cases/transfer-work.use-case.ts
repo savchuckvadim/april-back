@@ -35,6 +35,9 @@ const CALL_TASK_PREFIX = 'Звонок';
  */
 const MAX_CONTACTS_REASSIGN = 10;
 
+/** Остальные контакты — отдельными группами, по размеру одного batch. */
+const CONTACTS_GROUP_SIZE = 50;
+
 /** Заголовок задачи, которую ставим новому ответственному при передаче. */
 const TRANSFER_TASK_TITLE = `${CALL_TASK_PREFIX} по переданной работе`;
 
@@ -197,6 +200,8 @@ export class TransferWorkUseCase
             if (scoped.categoryCode === PbxDealCategoryCodeEnum.sales_base) {
                 mainDealId = mainDealId ?? dealId;
                 const fields: BxRow = { ASSIGNED_BY_ID: newResponsible };
+                // «Менеджер по продажам Гарант» идёт за ответственным (25.10).
+                setManagerOp(ctx.portal, 'deal', fields, item.newResponsibleId);
                 if (item.moveMainDealToCold) {
                     const stageId = this.stageId(ctx, scoped, 'sales_cold');
                     if (stageId) fields.STAGE_ID = stageId;
@@ -239,8 +244,14 @@ export class TransferWorkUseCase
                 continue;
             }
 
-            // tmc/service и прочие наши: только новый ответственный.
+            // tmc/service и прочие наши: новый ответственный и менеджер.
             const otherFields: BxRow = { ASSIGNED_BY_ID: newResponsible };
+            setManagerOp(
+                ctx.portal,
+                'deal',
+                otherFields,
+                item.newResponsibleId,
+            );
             startWaiting(scoped, otherFields);
             ctx.buffer.queue(() =>
                 ctx.bitrix.batch.deal.update(
@@ -251,31 +262,33 @@ export class TransferWorkUseCase
             );
         }
 
-        // Компания — новому ответственному.
+        // Компания — новому ответственному и менеджеру.
         if (item.companyId) {
             const companyId = item.companyId;
+            const companyFields: BxRow = { ASSIGNED_BY_ID: newResponsible };
+            setManagerOp(
+                ctx.portal,
+                'company',
+                companyFields,
+                item.newResponsibleId,
+            );
             ctx.buffer.queue(() =>
                 ctx.bitrix.batch.company.update(
                     `tw_company_${companyId}`,
                     companyId,
-                    {
-                        ASSIGNED_BY_ID: newResponsible,
-                    } as never,
+                    companyFields as never,
                 ),
             );
         }
 
+        // Первые контакты — в основной группе, остальные — своими группами
+        // после неё (см. queueRestContacts): переезжают все.
         relations.queueContactsResponsible(
             ctx.buffer,
             contactIds.slice(0, MAX_CONTACTS_REASSIGN),
             item.newResponsibleId,
             'tw_ct',
         );
-        if (contactIds.length > MAX_CONTACTS_REASSIGN) {
-            warnings.push(
-                `Контактов клиента ${contactIds.length} — ответственный сменён у первых ${MAX_CONTACTS_REASSIGN}`,
-            );
-        }
 
         // Задачи: целевые значения, идемпотентный префикс, заметка о закрытом.
         // Перенос строки через BATCH_LINE_BREAK_SYMBOL: задача обновляется
@@ -398,9 +411,23 @@ export class TransferWorkUseCase
         );
         await ctx.buffer.endGroup();
 
+        // Остальные контакты клиента — «ответственный новый везде» (17.09),
+        // все до одного (25.10), группами по размеру batch.
+        const restContacts = contactIds.slice(MAX_CONTACTS_REASSIGN);
+        for (let i = 0; i < restContacts.length; i += CONTACTS_GROUP_SIZE) {
+            relations.queueContactsResponsible(
+                ctx.buffer,
+                restContacts.slice(i, i + CONTACTS_GROUP_SIZE),
+                item.newResponsibleId,
+                `tw_ct${i}`,
+            );
+            await ctx.buffer.endGroup();
+        }
+
         this.logger.log(
             `transfer-work: сделок ${scope.deals.length}, задач ${movedTasks}, ` +
                 `лидов ${openLeadIds.length}, дел ${taken.activitiesMoved}, ` +
+                `контактов ${contactIds.length}, ` +
                 `сателлитов закрыто ${closedSatellites.length}`,
         );
         return warnings;

@@ -17,6 +17,7 @@ import {
 import {
     ChooseInnRequestDto,
     HideInnRequestDto,
+    InnAlignResponseDto,
     InnSnapshotResponseDto,
 } from '../dto/inn.dto';
 
@@ -37,13 +38,23 @@ type PbxBitrix = Awaited<ReturnType<PBXService['init']>>['bitrix'];
 export class InnUseCase {
     constructor(private readonly pbx: PBXService) {}
 
-    /** Снимок ИНН сделки. Чтение: ничего не пишет. */
+    /**
+     * Снимок ИНН сделки. Пустую сторону текущего ИНН дописывает (с 06.10),
+     * остальное — чтение.
+     */
     async snapshot(
         dealId: number,
         domain: string,
     ): Promise<InnSnapshotResponseDto> {
         const { service } = await this.context(domain);
         return this.run(() => service.snapshot(dealId));
+    }
+
+    /** Выровнять текущий ИНН сделки без вкладки (лёгкое чтение). */
+    async align(dealId: number, domain: string): Promise<InnAlignResponseDto> {
+        const { service } = await this.context(domain);
+        const result = await this.run(() => service.align(dealId));
+        return { current: result.current || null, warnings: result.warnings };
     }
 
     /** Выбрать текущий ИНН договора (или добавить новый и выбрать его). */
@@ -124,9 +135,7 @@ export class InnUseCase {
     }
 
     /** Доменные ошибки → коды ответа: 404, 409, 400. */
-    private async run(
-        action: () => Promise<InnSnapshotResponseDto>,
-    ): Promise<InnSnapshotResponseDto> {
+    private async run<T>(action: () => Promise<T>): Promise<T> {
         try {
             return await action();
         } catch (error) {

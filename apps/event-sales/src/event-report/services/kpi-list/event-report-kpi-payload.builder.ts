@@ -127,8 +127,13 @@ function withRefineMark(
     // Имени нет (заголовок задачи его не нёс) — пишем «Доработка» без
     // двоеточия: висячее «Доработка: » выглядело обрывом записи (todo3108
     // №3), а сама пометка типа нужна и без названия.
+    // Имя подставилось типом события (фолбэк пустого имени) — повторять
+    // «Доработка: Доработка» незачем.
     const trimmed = name.trim();
-    return trimmed ? `Доработка: ${trimmed}` : 'Доработка';
+    const typeName = eventTypeName('refine');
+    return trimmed && trimmed.toLowerCase() !== typeName.toLowerCase()
+        ? `${typeName}: ${trimmed}`
+        : typeName;
 }
 
 /**

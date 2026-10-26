@@ -8,6 +8,8 @@ const logger = new Logger('BitrixDateTime');
 
 const TASK_SERVER_TIMEZONE: ETimeZone = ETimeZone.EUROPE_MOSCOW;
 const TASK_DEADLINE_FORMAT = 'YYYY-MM-DD HH:mm:ss';
+/** На сколько минут вперёд ставим срок задачи, если он уже прошёл. */
+export const TASK_DEADLINE_MIN_AHEAD_MINUTES = 10;
 const CRM_DATETIME_FORMAT = 'DD.MM.YYYY HH:mm:ss';
 /** Формат date-полей CRM (без времени): «На доработке с», плановые даты. */
 const CRM_DATE_FORMAT = 'DD.MM.YYYY';
@@ -134,6 +136,30 @@ export class BitrixDateTime {
                 `(формат для tasks.task.add — server-time Москва)`,
         );
         return taskDeadline;
+    }
+
+    /**
+     * DEADLINE задачи, но НЕ В ПРОШЛОМ: момент раньше «сейчас +
+     * {@link TASK_DEADLINE_MIN_AHEAD_MINUTES} минут» заменяется на него.
+     *
+     * garant 26.10.2026: портал стирает срок у задачи, созданной со сроком в
+     * прошлом (за 0–1 с после создания, от имени ответственного) — 61 из 63
+     * таких задач за час; со сроком в будущем — ни одной. А в прошлом срок
+     * оказывается штатно: дата ХО — «сейчас» в момент запуска, задача
+     * создаётся через минуты, когда до неё доходит очередь.
+     */
+    toFutureTaskDeadline(now: Date = new Date()): string {
+        const floor = dayjs(now).add(TASK_DEADLINE_MIN_AHEAD_MINUTES, 'minute');
+        if (!this.instant.isBefore(floor)) return this.toTaskDeadline();
+        logger.debug(
+            `[DEADLINE][toFutureTaskDeadline] "${this.instant.toISOString()}" ` +
+                `в прошлом — срок задачи «сейчас + ${TASK_DEADLINE_MIN_AHEAD_MINUTES} мин»`,
+        );
+        return new BitrixDateTime(
+            floor,
+            this.portalTz,
+            this.rawInput,
+        ).toTaskDeadline();
     }
 
     /**

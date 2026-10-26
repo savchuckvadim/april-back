@@ -11,11 +11,19 @@ import {
     INN_SYNC_KINDS,
     INN_SYNC_SOURCES,
     InnSyncPlan,
+    InnSyncSource,
 } from '../lib/inn-sync.plan';
 import { INN_AUDIT_ACTIONS } from '../type/inn.type';
 import { InnAuditWriter } from './inn-audit.writer';
 import { InnMirrorWriter } from './inn-mirror.writer';
 import type { IInnChooseResult } from './inn-pool.service';
+
+/** Откуда взят ИНН — подпись записи в ленте сделки. */
+const SOURCE_LABEL: Record<InnSyncSource, string> = {
+    [INN_SYNC_SOURCES.company]: 'ИНН компании',
+    [INN_SYNC_SOURCES.requisite]: 'ИНН из реквизитов компании',
+    [INN_SYNC_SOURCES.lead]: 'ИНН заявки',
+};
 
 /**
  * Выровнять текущий ИНН сделки и компании по плану (inn-sync.plan):
@@ -81,13 +89,11 @@ export class InnCurrentSyncWriter {
         await this.audit.write(dealId, result.warnings, {
             action: INN_AUDIT_ACTIONS.auto,
             inn: plan.inn,
-            sourceLabel:
-                plan.from === INN_SYNC_SOURCES.company
-                    ? 'ИНН компании'
-                    : 'ИНН заявки',
+            sourceLabel: SOURCE_LABEL[plan.from],
         });
-        // ИНН пришёл с заявкой — компании (если она есть и пуста) тоже.
-        if (plan.from === INN_SYNC_SOURCES.lead && companyId) {
+        // ИНН пришёл с заявкой или из реквизита — компании (если она есть и
+        // пуста) тоже: текущий ИНН один в сделке и компании.
+        if (plan.from !== INN_SYNC_SOURCES.company && companyId) {
             await this.mirror.syncCompany(
                 companyId,
                 [plan.inn],

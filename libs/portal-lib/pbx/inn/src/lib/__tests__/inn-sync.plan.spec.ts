@@ -12,13 +12,71 @@ const plan = (over: {
     companyInn?: string;
     hasCompany?: boolean;
     leadInns?: string[];
+    dealPool?: string[];
+    linkedInn?: string;
+    companyInns?: string[];
 }) =>
     planInnSync({
         dealInn: over.dealInn ?? '',
         companyInn: over.companyInn ?? '',
         hasCompany: over.hasCompany ?? true,
         leadInns: over.leadInns ?? [],
+        dealPool: over.dealPool ?? [],
+        requisites: {
+            linkedInn: over.linkedInn ?? '',
+            companyInns: over.companyInns ?? [],
+        },
     });
+
+describe('planInnSync: реквизит компании (владелец 25.10.2026)', () => {
+    const fromRequisite = {
+        kind: INN_SYNC_KINDS.toDeal,
+        inn: INN,
+        from: INN_SYNC_SOURCES.requisite,
+    };
+
+    it('пусто в сделке и компании, у компании один ИНН в реквизитах — берём его', () => {
+        expect(plan({ companyInns: [INN, INN] })).toEqual(fromRequisite);
+    });
+
+    it('несколько разных ИНН — привязанный к сделке, без привязки — никакой', () => {
+        expect(plan({ companyInns: [INN, OTHER], linkedInn: INN })).toEqual(
+            fromRequisite,
+        );
+        expect(plan({ companyInns: [INN, OTHER] }).kind).toBe(
+            INN_SYNC_KINDS.none,
+        );
+    });
+
+    it('в пуле сделки только этот ИНН — можно, другой — нельзя', () => {
+        expect(plan({ companyInns: [INN], dealPool: [INN] })).toEqual(
+            fromRequisite,
+        );
+        expect(plan({ companyInns: [INN], dealPool: [OTHER] }).kind).toBe(
+            INN_SYNC_KINDS.none,
+        );
+    });
+
+    it('реквизит компании важнее заявки, ИНН компании важнее реквизита', () => {
+        expect(plan({ companyInns: [INN], leadInns: [OTHER] })).toEqual(
+            fromRequisite,
+        );
+        expect(plan({ companyInn: OTHER, companyInns: [INN] })).toEqual({
+            kind: INN_SYNC_KINDS.toDeal,
+            inn: OTHER,
+            from: INN_SYNC_SOURCES.company,
+        });
+    });
+
+    it('без компании реквизиты не в счёт; невалидный ИНН — тоже', () => {
+        expect(plan({ hasCompany: false, companyInns: [INN] }).kind).toBe(
+            INN_SYNC_KINDS.none,
+        );
+        expect(plan({ companyInns: ['1234567890'] }).kind).toBe(
+            INN_SYNC_KINDS.none,
+        );
+    });
+});
 
 /**
  * Текущий ИНН — один в сделке и в компании (владелец, 06.10.2026), в каком

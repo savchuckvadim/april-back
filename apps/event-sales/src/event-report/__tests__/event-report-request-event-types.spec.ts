@@ -324,7 +324,7 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
                 planResponsibleId: 5,
                 planCreatedById: 5,
                 planDeadline: BitrixDateTime.fromPortalInput(
-                    '2026-08-20T10:00:00',
+                    '2099-08-20T10:00:00',
                     ETimeZone.EUROPE_MOSCOW,
                 ),
                 planEventName: 'ООО Ромашка',
@@ -347,7 +347,7 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
         const fields = calls[0].args[1] as Record<string, unknown>;
         // Дедлайн уходит в server-time Москва (формат tasks.task.*), а не
         // сырой строкой фронта.
-        expect(fields.DEADLINE).toBe('2026-08-20 10:00:00');
+        expect(fields.DEADLINE).toBe('2099-08-20 10:00:00');
         expect(fields.TITLE).toBeUndefined();
     });
 
@@ -388,7 +388,7 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
                 planResponsibleId: 5,
                 planCreatedById: 5,
                 planDeadline: BitrixDateTime.fromPortalInput(
-                    '2026-08-20T10:00:00',
+                    '2099-08-20T10:00:00',
                     ETimeZone.EUROPE_MOSCOW,
                 ),
                 planEventName: 'Созвон по договору',
@@ -410,7 +410,7 @@ describe('Типы события «заявка» (xoRequest / xoLead)', () => 
         expect(fields.TITLE).toBe(
             'Холодный обзвон. Заявка.  Созвон по договору  Пётр',
         );
-        expect(fields.DEADLINE).toBe('2026-08-20 10:00:00');
+        expect(fields.DEADLINE).toBe('2099-08-20 10:00:00');
     });
 
     /*

@@ -9,6 +9,11 @@ import { isValidInn, normalizeInn, uniq } from '@lib/portal-lib/pbx-duplicate';
  * выровнять, — один раз на сделку):
  *  - в сделке есть, в компании пусто — переносим в компанию;
  *  - в сделке пусто, в компании есть — переносим в сделку;
+ *  - пусто в обеих и пул сделки пуст (или в нём только этот ИНН), а у
+ *    компании есть реквизит — ставим ИНН реквизита в сделку и компанию
+ *    (владелец 25.10.2026): реквизит, привязанный к сделке, а без привязки —
+ *    единственный ИНН среди реквизитов компании. Разные ИНН без привязки —
+ *    выбирает человек;
  *  - пусто в обеих, а в заявках ровно один ИНН — ставим его в сделку и
  *    компанию (ИНН мог прийти только с заявкой);
  *  - в обеих есть, но разные — сами не решаем: какой текущий, выбирает
@@ -24,6 +29,8 @@ export const INN_SYNC_KINDS = {
 /** Откуда переносим ИНН в сделку — для записи в ленте. */
 export const INN_SYNC_SOURCES = {
     company: 'company',
+    /** Реквизит компании (RQ_INN): привязанный к сделке или единственный. */
+    requisite: 'requisite',
     lead: 'lead',
 } as const;
 
@@ -47,6 +54,32 @@ const valid = (raw: string): string => {
     return inn && isValidInn(inn) ? inn : '';
 };
 
+/** ИНН реквизитов компании для выравнивания — без лишних чтений. */
+export interface InnSyncRequisites {
+    /** ИНН реквизита, привязанного к сделке (`crm.requisite.link`). */
+    linkedInn: string;
+    /** ИНН всех реквизитов компании. */
+    companyInns: readonly string[];
+}
+
+const NO_REQUISITES: InnSyncRequisites = { linkedInn: '', companyInns: [] };
+
+/**
+ * ИНН из реквизитов компании: привязанный к сделке, иначе единственный.
+ * Пул сделки уже с другими ИНН — не решаем за человека.
+ */
+const requisiteInn = (
+    requisites: InnSyncRequisites,
+    dealPool: readonly string[],
+): string => {
+    const linked = valid(requisites.linkedInn);
+    const distinct = uniq(requisites.companyInns.map(valid).filter(Boolean));
+    const inn = linked || (distinct.length === 1 ? distinct[0] : '');
+    if (!inn) return '';
+    const pool = uniq(dealPool.map(valid).filter(Boolean));
+    return pool.every(item => item === inn) ? inn : '';
+};
+
 export const planInnSync = (input: {
     /** Текущий ИНН сделки (`op_inn`). */
     dealInn: string;
@@ -56,6 +89,10 @@ export const planInnSync = (input: {
     hasCompany: boolean;
     /** Текущие ИНН заявок сделки. */
     leadInns: readonly string[];
+    /** Пул ИНН сделки (`op_inn_pool`). */
+    dealPool?: readonly string[];
+    /** Реквизиты компании; не прочитаны — пусто. */
+    requisites?: InnSyncRequisites;
 }): InnSyncPlan => {
     const dealInn = valid(input.dealInn);
     const companyInn = input.hasCompany ? valid(input.companyInn) : '';
@@ -75,6 +112,16 @@ export const planInnSync = (input: {
             kind: INN_SYNC_KINDS.toDeal,
             inn: companyInn,
             from: INN_SYNC_SOURCES.company,
+        };
+    }
+    const fromRequisite = input.hasCompany
+        ? requisiteInn(input.requisites ?? NO_REQUISITES, input.dealPool ?? [])
+        : '';
+    if (fromRequisite) {
+        return {
+            kind: INN_SYNC_KINDS.toDeal,
+            inn: fromRequisite,
+            from: INN_SYNC_SOURCES.requisite,
         };
     }
     const leadInns = uniq(input.leadInns.map(valid).filter(Boolean));

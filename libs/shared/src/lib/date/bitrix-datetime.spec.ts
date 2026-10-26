@@ -2,6 +2,38 @@ import { ETimeZone } from './timezone';
 import { BitrixDateTime, nowCrmDateTime } from './bitrix-datetime';
 
 describe('BitrixDateTime', () => {
+    /*
+     * garant 26.10.2026: портал стирает срок у задачи, созданной со сроком в
+     * прошлом, — срок задачи не бывает раньше «сейчас + 10 минут».
+     */
+    describe('toFutureTaskDeadline', () => {
+        const NOW = new Date('2026-10-26T08:40:00.000Z'); // 11:40 МСК
+
+        it('срок уже прошёл — «сейчас + 10 минут» по Москве', () => {
+            const d = BitrixDateTime.fromPortalInput(
+                '26.10.2026 11:38:00',
+                ETimeZone.EUROPE_MOSCOW,
+            );
+            expect(d.toFutureTaskDeadline(NOW)).toBe('2026-10-26 11:50:00');
+        });
+
+        it('срок наступит раньше, чем через 10 минут, — тоже сдвигаем', () => {
+            const d = BitrixDateTime.fromPortalInput(
+                '26.10.2026 11:45:00',
+                ETimeZone.EUROPE_MOSCOW,
+            );
+            expect(d.toFutureTaskDeadline(NOW)).toBe('2026-10-26 11:50:00');
+        });
+
+        it('срок в будущем — как есть', () => {
+            const d = BitrixDateTime.fromPortalInput(
+                '27.10.2026 10:00:00',
+                ETimeZone.EUROPE_MOSCOW,
+            );
+            expect(d.toFutureTaskDeadline(NOW)).toBe('2026-10-27 10:00:00');
+        });
+    });
+
     describe('toTaskDeadline (server-time Москва)', () => {
         it('Иркутск 02:14 → Москва 21:14 предыдущего дня', () => {
             const d = BitrixDateTime.fromPortalInput(

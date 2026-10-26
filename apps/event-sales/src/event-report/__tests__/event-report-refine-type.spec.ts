@@ -371,6 +371,7 @@ describe('Доработка — DTO и задача плана', () => {
                 planCreatedById: 5,
                 planDeadline: {
                     toTaskDeadline: () => '2026-08-25 10:00:00',
+                    toFutureTaskDeadline: () => '2026-08-25 10:00:00',
                     toCrmDateTime: () => '25.08.2026 10:00:00',
                 },
                 planEventName: 'Дозакрыть возражения',
