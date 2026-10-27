@@ -4,9 +4,8 @@ import { RegionModule } from '../region/region.module';
 import { ComplectModule } from '../complect';
 import { SupplyModule } from '../supply';
 import { PackageModule } from '../package';
-import { PriceTableExportService } from './services/price-table-export.service';
-import { PriceTableImportService } from './services/price-table-import.service';
-import { RegionTableService } from './services/region-table.service';
+import { PriceBookExportService } from './services/price-book-export.service';
+import { PriceBookImportService } from './services/price-book-import.service';
 import { SupplyTableService } from './services/supply-table.service';
 import { ComplectTableService } from './services/complect-table.service';
 import { CatalogTableRegistry } from './services/catalog-table.registry';
@@ -26,9 +25,8 @@ import { CatalogTableRegistry } from './services/catalog-table.registry';
         PackageModule,
     ],
     providers: [
-        PriceTableExportService,
-        PriceTableImportService,
-        RegionTableService,
+        PriceBookExportService,
+        PriceBookImportService,
         SupplyTableService,
         ComplectTableService,
         CatalogTableRegistry,

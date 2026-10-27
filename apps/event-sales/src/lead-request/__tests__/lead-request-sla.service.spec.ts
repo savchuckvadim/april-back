@@ -64,7 +64,17 @@ const makePortal = (withAssignedAt = false) => ({
     getTimezone: () => 'Europe/Moscow',
     getDealCategoryByCode: () => ({
         bitrixId: '3',
-        stages: [{ code: 'sales_new', bitrixId: 'NEW' }],
+        stages: [
+            { code: 'sales_new', bitrixId: 'NEW' },
+            { code: 'sales_cold', bitrixId: 'COLD' },
+            // Нужны, чтобы проход отличал живую работу от брошенной сделки.
+            { code: 'sales_warm', bitrixId: 'WARM', name: 'Переговоры' },
+            {
+                code: 'sales_offer_create',
+                bitrixId: 'OFFER',
+                name: 'Документы',
+            },
+        ],
     }),
 });
 
@@ -399,10 +409,16 @@ describe('LeadRequestSlaService', () => {
      * ВТОРОЙ ПРОХОД — сделки со своим таймером подтверждения.
      * ------------------------------------------------------------------ */
 
+    /*
+     * Брошенная сделка: стоит в «Новой», работа по ней не начиналась —
+     * только такие второй проход и передаёт (garant 27.10.2026). Стадия
+     * обязательна: по ней проход отличает брошенную от живой.
+     */
     const OVERDUE_DEAL = {
         ID: '1024',
         TITLE: 'ООО Ромашка',
         ASSIGNED_BY_ID: '5',
+        STAGE_ID: 'C3:NEW',
     };
 
     it('сделки: отбор по НЕПУСТОМУ op_lead_assigned_at старше порога', async () => {
@@ -516,6 +532,43 @@ describe('LeadRequestSlaService', () => {
         expect(run.dealCandidates).toBe(0);
         expect(run.dealsTransferred).toBe(0);
         expect(dispatch.accept).not.toHaveBeenCalled();
+    });
+
+    /*
+     * ГЛАВНАЯ ПРАВКА 27.10.2026 (garant). Таймер `op_lead_assigned_at` гасит
+     * только кнопка «принять заявку», а менеджеры её часто не нажимают:
+     * просто звонят и двигают сделку. Проход видел висящую метку и отдавал
+     * работу другому — сделка 99717 уехала из «Документов» в «Холодные»,
+     * за день так пострадало 32 сделки. Теперь живую работу не отбираем.
+     */
+    it.each([
+        ['Переговоры', 'C3:WARM'],
+        ['Документы', 'C3:OFFER'],
+    ])('сделка в «%s» не отбирается — работа идёт', async (_name, stageId) => {
+        const { service, dispatch } = makeDeps({
+            leads: [],
+            deals: [{ ...OVERDUE_DEAL, STAGE_ID: stageId }],
+            withAssignedAt: true,
+        });
+
+        const run = await service.runForDomain('d.b24.ru', 60, 30);
+
+        expect(run.dealCandidates).toBe(0);
+        expect(run.dealsTransferred).toBe(0);
+        expect(dispatch.accept).not.toHaveBeenCalled();
+    });
+
+    // Стадия не распознана — безопаснее не отбирать: вдруг работа идёт.
+    it('сделка без стадии не отбирается', async () => {
+        const { service } = makeDeps({
+            leads: [],
+            deals: [{ ID: '1024', TITLE: 'ООО Ромашка', ASSIGNED_BY_ID: '5' }],
+            withAssignedAt: true,
+        });
+
+        const run = await service.runForDomain('d.b24.ru', 60, 30);
+
+        expect(run.dealsTransferred).toBe(0);
     });
 
     /*

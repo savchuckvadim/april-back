@@ -75,7 +75,7 @@ export class SupportDeskService {
         const lineDomain = await this.resolveLineDomain(domain);
         const options = await this.settings.resolveOptions(lineDomain);
         const now = new Date();
-        const { bitrix } = await this.pbx.init(lineDomain);
+        const { bitrix } = await this.pbx.initWebhook(lineDomain);
         const { dialogs, warnings } = await new SupportLineReader(
             bitrix,
         ).readOpenDialogs({ lineId: options.lineId, now });
@@ -95,7 +95,7 @@ export class SupportDeskService {
         domain?: string,
     ): Promise<SupportChatView> {
         const lineDomain = await this.resolveLineDomain(domain);
-        const { bitrix } = await this.pbx.init(lineDomain);
+        const { bitrix } = await this.pbx.initWebhook(lineDomain);
         return new SupportChatReader(bitrix, lineDomain).read(chatId, limit);
     }
 
@@ -111,7 +111,7 @@ export class SupportDeskService {
         domain?: string,
     ): Promise<SupportReplyResult> {
         const lineDomain = await this.resolveLineDomain(domain);
-        const { bitrix } = await this.pbx.init(lineDomain);
+        const { bitrix } = await this.pbx.initWebhook(lineDomain);
         const outcome = await new SupportReplySender(bitrix).send(chatId, text);
 
         this.logger.log(
@@ -137,7 +137,7 @@ export class SupportDeskService {
     ): Promise<SupportTaskResult> {
         const lineDomain = await this.resolveLineDomain(domain);
         const options = await this.settings.resolveOptions(lineDomain);
-        const { bitrix } = await this.pbx.init(options.notifyDomain);
+        const { bitrix } = await this.pbx.initWebhook(options.notifyDomain);
         const response = await bitrix.task.add({
             TITLE: input.title.trim(),
             DESCRIPTION: buildSupportTaskDescription({

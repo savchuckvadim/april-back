@@ -32,7 +32,7 @@ const signal: SupportSignal = {
 function setup({ telegramConfigured = true, telegramSent = true } = {}) {
     const systemAdd = jest.fn().mockResolvedValue({ result: 1 });
     const pbx = {
-        init: jest
+        initWebhook: jest
             .fn()
             .mockResolvedValue({ bitrix: { imNotify: { systemAdd } } }),
     };
@@ -52,7 +52,9 @@ describe('SupportSignalDispatcher', () => {
         const { dispatcher, pbx } = setup();
         const warnings: string[] = [];
         const channels = await dispatcher.openChannels(options(), warnings);
-        expect(pbx.init).toHaveBeenCalledWith('april-garant.bitrix24.ru');
+        expect(pbx.initWebhook).toHaveBeenCalledWith(
+            'april-garant.bitrix24.ru',
+        );
         expect(channels.bell).toBeInstanceOf(SupportBellNotifier);
         expect(channels.telegram).toBe(true);
         expect(warnings).toEqual([]);
@@ -65,7 +67,7 @@ describe('SupportSignalDispatcher', () => {
             options({ notifyUserIds: [] }),
             warnings,
         );
-        expect(pbx.init).not.toHaveBeenCalled();
+        expect(pbx.initWebhook).not.toHaveBeenCalled();
         expect(channels).toEqual({ bell: null, telegram: false });
         expect(warnings[0]).toContain('некуда отправить');
     });
@@ -81,7 +83,7 @@ describe('SupportSignalDispatcher', () => {
 
     it('портал колокольчика недоступен — замечание, Telegram работает', async () => {
         const { dispatcher, pbx } = setup();
-        pbx.init.mockRejectedValueOnce(new Error('нет ключа'));
+        pbx.initWebhook.mockRejectedValueOnce(new Error('нет ключа'));
         const warnings: string[] = [];
         const channels = await dispatcher.openChannels(options(), warnings);
         expect(channels).toEqual({ bell: null, telegram: true });

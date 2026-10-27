@@ -44,7 +44,9 @@ export class SupportSignalDispatcher {
         let bell: SupportBellNotifier | null = null;
         if (options.notifyUserIds.length) {
             try {
-                const { bitrix } = await this.pbx.init(options.notifyDomain);
+                const { bitrix } = await this.pbx.initWebhook(
+                    options.notifyDomain,
+                );
                 bell = new SupportBellNotifier(bitrix);
             } catch (error) {
                 warnings.push(

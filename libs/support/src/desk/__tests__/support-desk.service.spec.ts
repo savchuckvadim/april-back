@@ -38,7 +38,7 @@ function setup(enabledDomains: string[] = ['april-dev.bitrix24.ru']) {
         },
     };
     const pbx = {
-        init: jest.fn((domain: string) =>
+        initWebhook: jest.fn((domain: string) =>
             Promise.resolve({
                 bitrix:
                     domain === 'april-garant.bitrix24.ru'
@@ -69,13 +69,13 @@ describe('SupportDeskService', () => {
     it('портал линии по умолчанию — первый с включённым мониторингом', async () => {
         const { service, pbx } = setup();
         await service.readDialog(769, 30);
-        expect(pbx.init).toHaveBeenCalledWith('april-dev.bitrix24.ru');
+        expect(pbx.initWebhook).toHaveBeenCalledWith('april-dev.bitrix24.ru');
     });
 
     it('явный портал важнее настроек и нормализуется', async () => {
         const { service, pbx, settings } = setup();
         await service.readDialog(769, 30, 'https://GSR.bitrix24.ru/');
-        expect(pbx.init).toHaveBeenCalledWith('gsr.bitrix24.ru');
+        expect(pbx.initWebhook).toHaveBeenCalledWith('gsr.bitrix24.ru');
         expect(settings.listEnabledDomains).not.toHaveBeenCalled();
     });
 

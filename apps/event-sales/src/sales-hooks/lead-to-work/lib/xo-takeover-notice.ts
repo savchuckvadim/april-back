@@ -75,7 +75,5 @@ export function findSalesBaseStage(
     const known = PBX_DEAL_SALES_BASE_STAGES.find(
         item => item.code === stage.code,
     );
-    return known
-        ? { code: known.code, name: stage.name ?? null }
-        : null;
+    return known ? { code: known.code, name: stage.name ?? null } : null;
 }

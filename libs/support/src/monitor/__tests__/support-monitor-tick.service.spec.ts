@@ -38,7 +38,7 @@ function setup(memories: Map<number, SupportDialogMemory> = new Map()) {
             warnings: [],
         }),
     }));
-    const pbx = { init: jest.fn().mockResolvedValue({ bitrix: {} }) };
+    const pbx = { initWebhook: jest.fn().mockResolvedValue({ bitrix: {} }) };
     const store = {
         loadMemories: jest.fn().mockResolvedValue(memories),
         saveMemory: jest.fn().mockResolvedValue(undefined),
@@ -78,7 +78,7 @@ describe('SupportMonitorTickService.run', () => {
         const { service, pbx, store, dispatcher } = setup();
         const report = await service.run(LINE, options(), minutesAfter(1));
 
-        expect(pbx.init).toHaveBeenCalledWith(LINE);
+        expect(pbx.initWebhook).toHaveBeenCalledWith(LINE);
         expect(store.loadMemories).toHaveBeenCalledWith('live', LINE, [71, 72]);
         expect(dispatcher.openChannels).toHaveBeenCalledTimes(1);
         expect(dispatcher.dispatch).toHaveBeenCalledTimes(2);

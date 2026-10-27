@@ -43,7 +43,7 @@ export class SheetRow {
     }
 
     /** Все колонки строки, кроме перечисленных — для матричных листов */
-    columnsExcept(exclude: string[]): string[] {
+    columnsExcept(exclude: readonly string[]): string[] {
         const excluded = new Set(exclude.map(name => name.toLowerCase()));
         return [...this.cells.keys()].filter(
             name => !excluded.has(name.toLowerCase()),

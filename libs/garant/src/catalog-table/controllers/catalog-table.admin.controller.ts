@@ -5,6 +5,7 @@ import {
     Get,
     Param,
     Post,
+    Query,
     Res,
     UploadedFile,
     UseInterceptors,
@@ -16,14 +17,17 @@ import {
     ApiOkResponse,
     ApiOperation,
     ApiParam,
+    ApiQuery,
     ApiTags,
 } from '@nestjs/swagger';
 import { Response } from 'express';
 import {
     CATALOG_TABLE_KINDS,
+    CatalogTable,
     CatalogTableKind,
     CatalogTableRegistry,
 } from '../services/catalog-table.registry';
+import { PriceBookMode } from '../services/price-book-export.service';
 import {
     ImportTableRequestDto,
     TableImportReportDto,
@@ -33,9 +37,9 @@ const XLSX_MIME =
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 /**
- * Эталонные таблицы каталога «Гарант»: скачать текущее состояние,
- * поправить в редакторе, загрузить обратно. Контроллер живёт только в
- * админке (ai/rules/app-api-surface.md).
+ * Эталонные таблицы каталога «Гарант»: скачать текущее состояние (или
+ * пустой шаблон), поправить, загрузить обратно. Контроллер живёт только
+ * в админке (ai/rules/app-api-surface.md).
  */
 @ApiTags('Admin Garant Catalog Tables')
 @Controller('admin/garant/tables')
@@ -44,11 +48,14 @@ export class CatalogTableAdminController {
 
     @Get(':kind/export')
     @ApiOperation({
-        summary: 'Скачать эталонную таблицу каталога',
+        summary: 'Скачать таблицу каталога',
         description:
-            'Отдаёт xlsx с текущим состоянием БД в том же формате, который читает загрузка: ' +
-            'prices — цены (листы prof-regions, prof-msk, services), regions — рабсы регионов, ' +
-            'supplies — виды поставок с текстами договоров, complects — карточки комплектов и пакетов.',
+            'Отдаёт xlsx в том же формате, который читает загрузка. ' +
+            'prices — книга цен (рабсы регионов, веса и АБС универсальной линейки, ' +
+            'прайс PROF по числу ОД, пакеты услуг, АБС консалтинга); ' +
+            'supplies — виды поставок с текстами договоров; ' +
+            'complects — карточки комплектов и пакетов. ' +
+            'mode=blank отдаёт тот же файл с пустыми значениями (только строки-ключи).',
     })
     @ApiParam({
         name: 'kind',
@@ -56,22 +63,39 @@ export class CatalogTableAdminController {
         enum: CATALOG_TABLE_KINDS,
         example: 'prices',
     })
+    @ApiQuery({
+        name: 'mode',
+        required: false,
+        enum: ['current', 'blank'],
+        description:
+            'current (по умолчанию) — с текущими данными; blank — пустой шаблон для внесения прайса с нуля.',
+        example: 'current',
+    })
     @ApiOkResponse({
-        description: 'Файл xlsx с текущими данными каталога.',
+        description: 'Файл xlsx.',
         content: {
             [XLSX_MIME]: { schema: { type: 'string', format: 'binary' } },
         },
     })
     async export(
         @Param('kind') kind: string,
+        @Query('mode') mode: string | undefined,
         @Res() res: Response,
     ): Promise<void> {
         const table = this.resolve(kind);
-        const buffer = await table.export();
+        const exportMode: PriceBookMode =
+            mode === 'blank' ? 'blank' : 'current';
+        if (exportMode === 'blank' && !table.supportsBlank) {
+            throw new BadRequestException(
+                `Для таблицы «${kind}» пустой шаблон не предусмотрен — скачайте текущие данные`,
+            );
+        }
+        const buffer = await table.export(exportMode);
+        const suffix = exportMode === 'blank' ? '-blank' : '';
         res.setHeader('Content-Type', XLSX_MIME);
         res.setHeader(
             'Content-Disposition',
-            `attachment; filename="garant-${kind}.xlsx"`,
+            `attachment; filename="garant-${kind}${suffix}.xlsx"`,
         );
         res.send(buffer);
     }
@@ -82,7 +106,7 @@ export class CatalogTableAdminController {
     @ApiOperation({
         summary: 'Загрузить заполненную таблицу каталога',
         description:
-            'Читает лист(ы) по заголовкам колонок и применяет изменения upsert-ом по кодам. ' +
+            'Читает листы по именам и колонки по заголовкам, применяет изменения по кодам. ' +
             'Пустая ячейка означает «не менять», строки, которых нет в файле, не удаляются. ' +
             'dryRun=true показывает отчёт без записи.',
     })
@@ -128,13 +152,7 @@ export class CatalogTableAdminController {
         }
     }
 
-    private resolve(kind: string): {
-        export: () => Promise<Buffer>;
-        import: (
-            buffer: Buffer,
-            dryRun: boolean,
-        ) => Promise<TableImportReportDto[]>;
-    } {
+    private resolve(kind: string): CatalogTable {
         const table = this.registry.get(kind as CatalogTableKind);
         if (!table) {
             throw new BadRequestException(

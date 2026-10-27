@@ -96,17 +96,38 @@ export class PBXService {
         );
     }
 
+    /**
+     * Только вебхук портала из online-API, даже если на портале есть
+     * установка маркетплейс-приложения.
+     *
+     * Нужен задачам, которым мало прав приложения: мониторинг линии
+     * поддержки читает все диалоги линии ключом администратора, а OAuth
+     * приложения их не видит (april-dev, 27.10.2026: OAuth-путь отдал
+     * NO_AUTH_FOUND на imopenlines.v2.Session.list).
+     */
+    async initWebhook(domain: string) {
+        countInit(domain);
+        return timeInitStep(PBX_INIT_STEP.total, () =>
+            this.initSteps(domain, BxAuthType.HOOK, false),
+        );
+    }
+
     /** Шаги init — каждый со своим замером (см. pbx-init-metrics). */
-    private async initSteps(domain: string, authType: BxAuthType) {
+    private async initSteps(
+        domain: string,
+        authType: BxAuthType,
+        allowMarketplace = true,
+    ) {
         const internalPortal = await timeInitStep(
             PBX_INIT_STEP.internalPortal,
             () => this.getInternalPortal(domain),
         );
 
-        const isMarketplace = await timeInitStep(
-            PBX_INIT_STEP.marketplaceCheck,
-            () => this.isMarketplacePortal(domain),
-        );
+        const isMarketplace =
+            allowMarketplace &&
+            (await timeInitStep(PBX_INIT_STEP.marketplaceCheck, () =>
+                this.isMarketplacePortal(domain),
+            ));
         if (isMarketplace) {
             return this.initMarketplace(domain, internalPortal);
         }

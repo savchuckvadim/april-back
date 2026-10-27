@@ -141,7 +141,7 @@ export class SupportMonitorTickService {
         options: SupportMonitorOptions,
         now: Date,
     ): Promise<SupportEvaluation> {
-        const { bitrix } = await this.pbx.init(domain);
+        const { bitrix } = await this.pbx.initWebhook(domain);
         const { dialogs, warnings } = await new SupportLineReader(
             bitrix,
         ).readOpenDialogs({ lineId: options.lineId, now });

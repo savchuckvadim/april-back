@@ -52,7 +52,16 @@ const makePortal = () => ({
         code === 'lead_taken_in_work' ? 'PBX_TAKEN_IN_WORK' : undefined,
     getDealCategoryByCode: () => ({
         bitrixId: '3',
-        stages: [{ code: 'sales_cold', bitrixId: 'COLD' }],
+        stages: [
+            { code: 'sales_cold', bitrixId: 'COLD' },
+            /*
+             * Стадии выше «Холодных» — чтобы принятие не возвращало сделку
+             * назад (garant 27.10.2026: 99717 уехала из «Документов»,
+             * а закрытые «Не ЦА»/«Отказ» открывались заново, 154 сделки).
+             */
+            { code: 'sales_offer_create', bitrixId: 'OFFER' },
+            { code: 'sales_not_ca', bitrixId: 'NOT_CA' },
+        ],
     }),
 });
 
@@ -216,6 +225,58 @@ describe('LeadRequestAcceptService', () => {
         // Multiple-поле перезаписывается целиком — прошлое обязано уцелеть.
         expect(dealHistory[0]).toBe('старое событие сделки');
         expect(dealHistory[1]).toContain('Заявка принята в работу: 5');
+    });
+
+    /*
+     * НАЗАД СДЕЛКУ НЕ ВОЗВРАЩАЕМ (garant 27.10.2026). Принятие ставило
+     * «Холодные» безусловно: сделка 99717 откатилась из «Документов», а
+     * закрытые в «Не ЦА»/«Отказ» открывались заново — за день 154 сделки.
+     * Защита была только для повторной заявки (op_return_stage) — теперь
+     * действует на всех путях.
+     */
+    it.each([
+        ['Документы', 'C3:OFFER'],
+        ['Не ЦА (закрытая)', 'C3:NOT_CA'],
+    ])('сделка в «%s» — стадию не трогаем', async (_name, stageId) => {
+        const { pbx, dealUpdate } = makePbx(
+            {
+                ID: '42',
+                UF_CRM_TO_BASE_SALES: 'D_1024',
+                UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
+            },
+            { ID: '1024', STAGE_ID: stageId },
+        );
+        const service = new LeadRequestAcceptService(
+            pbx as never,
+            noNames() as never,
+        );
+
+        await service.accept({ domain: 'd.b24.ru', leadId: 42, userId: 5 });
+
+        const [, fields] = dealUpdate.mock.calls[0];
+        expect(fields.STAGE_ID).toBeUndefined();
+        // Принятие всё равно состоялось: история и «кто принял» на месте.
+        expect(fields.UF_CRM_OP_MHISTORY).toBeDefined();
+    });
+
+    // Ниже «Холодных» — ставим, как раньше: это и есть принятие в работу.
+    it('сделка в «Новой» — стадия становится «Холодной»', async () => {
+        const { pbx, dealUpdate } = makePbx(
+            {
+                ID: '42',
+                UF_CRM_TO_BASE_SALES: 'D_1024',
+                UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [ASSIGNED_ENTRY],
+            },
+            { ID: '1024', STAGE_ID: 'C3:NEW' },
+        );
+        const service = new LeadRequestAcceptService(
+            pbx as never,
+            noNames() as never,
+        );
+
+        await service.accept({ domain: 'd.b24.ru', leadId: 42, userId: 5 });
+
+        expect(dealUpdate.mock.calls[0][1].STAGE_ID).toBe('C3:COLD');
     });
 
     /*

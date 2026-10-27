@@ -46,6 +46,7 @@ import { PortalKeysAdminModule } from '@lib/portal-lib/store/keys/portal-keys.ad
 import { PortalAiSettingsAdminModule } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.admin.module';
 import { PortalAppSettingsAdminModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.admin.module';
 import { PortalQuestionnairesAdminModule } from '@lib/portal-lib/store/questionnaires/portal-questionnaires.admin.module';
+import { PortalBadgesAdminModule } from '@lib/portal-lib/store/badges/portal-badges.admin.module';
 import { VendorSuperUserAdminModule } from '@lib/bx-department/vendor-super-user.admin.module';
 import { AdminQuestionnairesModule } from './portal/questionnaires/questionnaires.module';
 import { MarketplaceModerationModule } from './marketplace-moderation/marketplace-moderation.module';
@@ -125,6 +126,10 @@ import { LogsAdminModule } from '@lib/logger/query';
         // привязок — в AdminQuestionnairesModule (ему нужен PBXService).
         PortalQuestionnairesAdminModule,
         AdminQuestionnairesModule,
+        // Бейджики комментария и названия события: режим «общие/свои» и
+        // редактор своего набора портала (27.10.2026). Хранение — JSON-ключ
+        // в portal_app_settings, миграций нет.
+        PortalBadgesAdminModule,
         // Маркетплейс «Менеджер Гарант»: модерация заявок на подключение
         // (approve/block, прогресс установки) — этап 3 онбординга.
         MarketplaceModerationModule,

@@ -97,3 +97,46 @@ describe('findSalesBaseStage', () => {
         ).toBeNull();
     });
 });
+
+/*
+ * Порог «от Переговоров» переиспользуют две правки 27.10.2026 (garant):
+ *  - крон SLA не отбирает сделки, по которым идёт работа (99717 уехала из
+ *    «Документов», потому что метка подтверждения висела с 15.10);
+ *  - принятие заявки не опускает стадию назад и не открывает закрытые
+ *    (96737 из «Не ЦА» уехала в «Холодные» и открылась заново).
+ * Поэтому порядок стадий проверяем и для закрытых стадий тоже.
+ */
+describe('порядок стадий — закрытые стадии выше рабочих', () => {
+    it.each([
+        'sales_fail',
+        'sales_double',
+        'sales_not_ca',
+        'sales_success',
+    ] as const)(
+        'закрытая стадия %s выше «Холодных» — принятие не откроет',
+        code => {
+            expect(
+                isXoTakeoverWorthNotice({
+                    dealId: 96737,
+                    stageCode: code,
+                    clientTitle: null,
+                }),
+            ).toBe(true);
+        },
+    );
+
+    // Главный разбор дня: «Документы» и «Доработка» — живая работа.
+    it.each([
+        'sales_refine',
+        'sales_offer_create',
+        'sales_document_send',
+    ] as const)('%s — работа идёт, крон такую сделку не берёт', code => {
+        expect(
+            isXoTakeoverWorthNotice({
+                dealId: 99717,
+                stageCode: code,
+                clientTitle: null,
+            }),
+        ).toBe(true);
+    });
+});

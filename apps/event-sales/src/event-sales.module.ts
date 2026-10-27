@@ -24,6 +24,7 @@ import { DuplicatesModule } from './duplicates/duplicates.module';
 import { AppCacheServiceModule } from '@lib/app-cache';
 import { EventSalesAppSettingsModule } from './app-settings/app-settings.module';
 import { EventSalesQuestionnairesModule } from './questionnaires/questionnaires.module';
+import { EventSalesBadgesModule } from './badges/badges.module';
 import { DealAuditModule } from './deal-audit/deal-audit.module';
 import { DuplicateReportModule } from './duplicate-report/duplicate-report.module';
 import { InnModule } from './inn/inn.module';
@@ -83,6 +84,9 @@ import { DealOwnerModule } from './deal-owner/deal-owner.module';
         EventSalesAppSettingsModule,
         // Портальный каталог анкет плана/отчёта — читается фреймом на старте
         EventSalesQuestionnairesModule,
+        // Бейджики комментария и названия события: общий набор или свой
+        // набор портала из админки — читается фреймом на старте (27.10.2026).
+        EventSalesBadgesModule,
         // Аудит сделок: крон ищет «забытые» сделки и размечает их полями
         // op_audit_*. По умолчанию выключен на всех порталах.
         DealAuditModule,

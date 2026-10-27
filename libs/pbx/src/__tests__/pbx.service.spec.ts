@@ -153,6 +153,20 @@ describe('PBXService.init (marketplace-ветка vs legacy)', () => {
         );
     });
 
+    it('initWebhook: вебхук из online-API даже при активной маркетплейс-установке', async () => {
+        token.hasActiveInstall.mockResolvedValue(true);
+        const service = build();
+
+        await service.initWebhook('mp.bitrix24.ru');
+
+        expect(token.hasActiveInstall).not.toHaveBeenCalled();
+        expect(token.getFreshAccessToken).not.toHaveBeenCalled();
+        expect(factory.create).toHaveBeenCalledWith(
+            expect.objectContaining({ key: 'webhook-key' }),
+            BxAuthType.HOOK,
+        );
+    });
+
     it('сбой детекта (Redis/БД) → безопасный fallback на legacy', async () => {
         token.hasActiveInstall.mockRejectedValue(new Error('redis down'));
         const service = build();
