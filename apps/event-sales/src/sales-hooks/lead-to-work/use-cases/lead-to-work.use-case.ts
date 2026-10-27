@@ -32,7 +32,16 @@ import {
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import { LeadUfDefinitionsService } from '../../../shared/portal-fields';
 import { UserNameResolver } from '../../../shared/lead-request/user-name.resolver';
-import { LeadToWorkNotifyService } from '../services/lead-to-work-notify.service';
+import {
+    IXoTakeoverNotice,
+    LeadToWorkNotifyService,
+} from '../services/lead-to-work-notify.service';
+import {
+    findSalesBaseStage,
+    isXoTakeoverWorthNotice,
+} from '../lib/xo-takeover-notice';
+import { LeadToWorkContext } from '../services/lead-to-work-context.service';
+import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { leadToWorkNameIds } from './lead-to-work-name-ids';
 import { LeadToWorkDuplicateCheckService } from '../services/lead-to-work-duplicate-check.service';
 import { LeadDealCompletion } from '../../../shared/lead-client/lead-deal-completion';
@@ -78,6 +87,8 @@ interface IQueuedLead {
     leadTitle?: string;
     /** Прежний ответственный (передача) — ему уходит «работа ушла». */
     previousResponsibleId?: number | null;
+    /** ХО забрал клиента со сделкой — в текст уведомлений обеим сторонам. */
+    takeover?: IXoTakeoverNotice | null;
     /** Повторная заявка присоединена к сделке клиента. */
     repeat?: {
         mainDealId: number;
@@ -324,6 +335,53 @@ export class LeadToWorkUseCase
         if (item.excludeResponsible) return item.excludeResponsible;
         const current = Number(lead.ASSIGNED_BY_ID);
         return Number.isFinite(current) && current > 0 ? current : null;
+    }
+
+    /**
+     * Перехват клиента холодным обзвоном — данные для уведомлений.
+     *
+     * Только ХО-ветка: при isXo=N стадия не двигается и клиента никто не
+     * забирает. Молчим, когда терять нечего (стадия ниже «Переговоров») —
+     * решение владельца 27.10.2026, иначе поток ХО превратится в спам.
+     */
+    private takeoverOf(
+        ctx: SalesHookExecutionContext,
+        item: ILeadToWorkItem,
+        leadContext: LeadToWorkContext,
+    ): IXoTakeoverNotice | null {
+        if (item.isXo !== 'Y') return null;
+        const deal = leadContext.existingOurDeal as unknown as BxRow | null;
+        if (!deal) return null;
+
+        const category = ctx.portal.getDealCategoryByCode(
+            PbxDealCategoryCodeEnum.sales_base,
+        );
+        const stage = findSalesBaseStage(
+            category?.stages ?? [],
+            this.text(deal.STAGE_ID),
+        );
+        const dealId = Number(deal.ID);
+        if (
+            !Number.isFinite(dealId) ||
+            !isXoTakeoverWorthNotice({
+                dealId,
+                stageCode: stage?.code ?? null,
+                clientTitle: null,
+            })
+        ) {
+            return null;
+        }
+
+        const company = leadContext.company as unknown as BxRow | null;
+        const clientTitle =
+            this.text(company?.TITLE) ??
+            this.text((leadContext.lead as unknown as BxRow).TITLE) ??
+            `заявка ${item.leadId}`;
+        return {
+            dealId,
+            clientTitle,
+            previousStageName: stage?.name ?? null,
+        };
     }
 
     /** UF-имена полей-связей лида, для которых нужен фактический формат. */
@@ -634,6 +692,8 @@ export class LeadToWorkUseCase
                         item,
                         leadContext.lead as unknown as BxRow,
                     ),
+                    // Стадию снимаем ДО отправки батча: он её перезапишет.
+                    takeover: this.takeoverOf(ctx, item, leadContext),
                     warnings: [
                         ...assignee.warnings,
                         ...leadContext.warnings,
@@ -685,6 +745,7 @@ export class LeadToWorkUseCase
                 previousResponsibleId: entry.previousResponsibleId ?? null,
                 transferredById: entry.item.transferredBy ?? null,
                 requiresAccept: entry.item.isXo === 'Y',
+                takeover: entry.takeover ?? null,
             });
             entry.warnings.push(...warnings);
         }

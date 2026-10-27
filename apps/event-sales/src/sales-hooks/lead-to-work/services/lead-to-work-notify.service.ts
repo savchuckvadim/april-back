@@ -16,6 +16,21 @@ export interface ILeadAssignNotifyInput {
     transferredById: number | null;
     /** Нужно ли подтверждение (ХО-ветка) — от этого зависит текст. */
     requiresAccept: boolean;
+    /**
+     * Холодный обзвон ЗАБРАЛ клиента вместе со сделкой: прежний теряет
+     * не только заявку. null — обычное назначение заявки (текст прежний).
+     */
+    takeover?: IXoTakeoverNotice | null;
+}
+
+/** Что сказать о перехвате клиента холодным обзвоном. */
+export interface IXoTakeoverNotice {
+    /** Сделка, перешедшая новому ответственному. */
+    dealId: number;
+    /** Клиент (компания, иначе заявка) — чтобы узнать его в тексте. */
+    clientTitle: string;
+    /** Название стадии ДО перехвата; null — не определилась. */
+    previousStageName: string | null;
 }
 
 /**
@@ -54,26 +69,87 @@ export class LeadToWorkNotifyService {
          * (менеджер сам её и запустил).
          */
         if (changed || input.requiresAccept) {
-            const action = input.requiresAccept
-                ? ' Подтвердите принятие в приложении «Звонки» — до подтверждения работа по заявке заблокирована.'
-                : '';
             await this.send(
                 input.responsibleId,
-                `Вам назначена заявка ${link}.${action}`,
+                this.messageToNew(input, link),
                 warnings,
             );
         }
 
         // 2. Прежнему — почему работа ушла (сам отдал или передали за него).
         if (previous && previous !== input.responsibleId) {
-            const to = historyActor(this.names, input.responsibleId);
-            const message =
-                input.transferredById === previous
-                    ? `Вы передали заявку ${link} сотруднику ${to}.`
-                    : `Заявка ${link} передана другому сотруднику (${to}).`;
-            await this.send(previous, message, warnings);
+            await this.send(
+                previous,
+                this.messageToPrevious(input, link, previous),
+                warnings,
+            );
         }
         return warnings;
+    }
+
+    /** Новому ответственному — что он получил и что делать сейчас. */
+    private messageToNew(input: ILeadAssignNotifyInput, link: string): string {
+        const action = input.requiresAccept
+            ? ' Подтвердите принятие в приложении «Звонки» — до подтверждения работа по заявке заблокирована.'
+            : '';
+        const { takeover } = input;
+        if (!takeover) return `Вам назначена заявка ${link}.${action}`;
+
+        /*
+         * Перехват: забравший должен понимать, что взял не пустую заявку, а
+         * клиента с историей — иначе он начинает разговор с нуля там, где
+         * уже шли переговоры.
+         */
+        const from = historyActor(this.names, input.previousResponsibleId);
+        const was =
+            input.previousResponsibleId && from
+                ? ` Раньше по нему работал(а) ${from}` +
+                  (takeover.previousStageName
+                      ? `, сделка была на стадии «${takeover.previousStageName}».`
+                      : '.')
+                : '';
+        return (
+            `Вам передан клиент ${takeover.clientTitle} по холодному обзвону.` +
+            `${was} Сделка ${this.dealLink(input.domain, takeover.dealId)}` +
+            ` переведена в «Холодные» и теперь за вами.${action}` +
+            ` Заявка: ${link}`
+        );
+    }
+
+    /** Прежнему — что именно у него забрали и что делать, если это ошибка. */
+    private messageToPrevious(
+        input: ILeadAssignNotifyInput,
+        link: string,
+        previous: number,
+    ): string {
+        const to = historyActor(this.names, input.responsibleId);
+        const { takeover } = input;
+        if (!takeover) {
+            return input.transferredById === previous
+                ? `Вы передали заявку ${link} сотруднику ${to}.`
+                : `Заявка ${link} передана другому сотруднику (${to}).`;
+        }
+
+        /*
+         * Главная правка 27.10.2026: прежний видел «заявка передана» и не
+         * понимал, что потерял клиента, сделку и прогресс по ней. Теперь
+         * названы клиент, сделка и стадия, с которой её откатили.
+         */
+        const stage = takeover.previousStageName
+            ? ` Сделка ${this.dealLink(input.domain, takeover.dealId)} была на стадии «${takeover.previousStageName}» и вернулась в «Холодные».`
+            : ` Сделка ${this.dealLink(input.domain, takeover.dealId)} вернулась в «Холодные».`;
+        return (
+            `По клиенту ${takeover.clientTitle} запущен холодный обзвон —` +
+            ` работа перешла к ${to}.${stage}` +
+            ' Компания и контакты теперь за новым ответственным.' +
+            ` Заявка: ${link}` +
+            ' Если это ошибка — напишите руководителю, работу вернут.'
+        );
+    }
+
+    /** Ссылка на сделку в формате уведомлений Битрикса. */
+    private dealLink(domain: string, dealId: number): string {
+        return `[URL=https://${domain}/crm/deal/details/${dealId}/]№${dealId}[/URL]`;
     }
 
     private async send(

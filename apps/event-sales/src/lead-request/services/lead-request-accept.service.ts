@@ -45,6 +45,8 @@ import {
     LeadRequestAcceptResultDto,
 } from '../dto/lead-request-accept.dto';
 import { alreadyAcceptedPlan, LeadAcceptPlan } from './lead-accept-plan';
+import { findSalesBaseStage } from '../../sales-hooks/lead-to-work/lib/xo-takeover-notice';
+import { getSalesBaseStageOrder } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
 
 type BxRow = Record<string, unknown>;
 type Bitrix = Awaited<ReturnType<PBXService['init']>>['bitrix'];
@@ -571,7 +573,26 @@ export class LeadRequestAcceptService {
             }
             fields[returned.fieldName] = '';
         } else if (category && stage) {
-            fields.STAGE_ID = `C${category.bitrixId}:${stage.bitrixId}`;
+            /*
+             * НАЗАД СДЕЛКУ НЕ ВОЗВРАЩАЕМ (garant 27.10.2026, сделки 99717 и
+             * 31545). Принятие ставило «Холодные» безусловно: сделка в
+             * «Документах» откатывалась в начало воронки, и менеджер
+             * возвращал стадию руками. Защита была только для повторной
+             * заявки (op_return_stage, решение владельца 28.09.2026 «из
+             * Оплаты в Холодную не съезжает») — распространяем её на все
+             * пути: ниже «Холодных» ставим, выше — оставляем как есть.
+             */
+            const current = findSalesBaseStage(
+                category.stages,
+                this.text(dealRow?.STAGE_ID),
+            );
+            const movedOn =
+                current &&
+                getSalesBaseStageOrder(current.code) >
+                    getSalesBaseStageOrder(stage.code as never);
+            if (!movedOn) {
+                fields.STAGE_ID = `C${category.bitrixId}:${stage.bitrixId}`;
+            }
         } else {
             warnings.push(
                 'Стадия «Холодная» воронки ОП не сконфигурирована — сделка не передвинута',

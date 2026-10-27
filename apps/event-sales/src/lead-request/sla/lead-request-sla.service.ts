@@ -19,6 +19,11 @@ import { LeadToWorkAssigneeService } from '../../sales-hooks/lead-to-work/servic
 import { ActiveStaffService } from '../../shared/active-staff';
 import { dealAssignedAtName } from '../../shared/lead-request/deal-work-timer.util';
 import { isRepeatRequestDeal } from '../../shared/lead-request/repeat-request.util';
+import { findSalesBaseStage } from '../../sales-hooks/lead-to-work/lib/xo-takeover-notice';
+import {
+    getSalesBaseStageOrder,
+    PBX_DEAL_SALES_BASE_STAGE_CODE,
+} from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
 import {
     appendLeadRequestHistory,
     buildLeadRequestHistoryEntry,
@@ -350,12 +355,41 @@ export class LeadRequestSlaService {
                 [`<${assignedAtName}`]: threshold,
                 CLOSED: 'N',
             } as never,
-            ['ID', 'TITLE', 'ASSIGNED_BY_ID', 'COMPANY_ID', 'LEAD_ID'],
+            [
+                'ID',
+                'TITLE',
+                'ASSIGNED_BY_ID',
+                'COMPANY_ID',
+                'LEAD_ID',
+                // Нужна, чтобы не отбирать сделки, по которым идёт работа.
+                'STAGE_ID',
+            ],
         );
         const overdue = (deals ?? []).slice(0, maxPerRun) as unknown as BxRow[];
+        /*
+         * РАБОТУ, КОТОРАЯ ИДЁТ, НЕ ОТБИРАЕМ (garant 27.10.2026, сделка
+         * 99717). Таймер `op_lead_assigned_at` гасит ТОЛЬКО кнопка «принять
+         * заявку», а менеджеры её часто не нажимают: просто звонят и двигают
+         * сделку. У 99717 метка висела с 15.10 при живой работе, сделка
+         * стояла в «Документах» — и этот проход отдал её другому сотруднику.
+         *
+         * Лидовый проход такой ошибки не делает: он проверяет `base.moved`
+         * (сделка ушла со «Новой» → работают, принятие доводится задним
+         * числом). Здесь проверки не было вовсе — добавляем её же по смыслу:
+         * страховка остаётся только для сделок, которые с места не двигались.
+         */
         const candidates = overdue.filter(
-            deal => !handledDealIds.has(Number(deal.ID)),
+            deal =>
+                !handledDealIds.has(Number(deal.ID)) &&
+                !this.dealInProgress(portal, deal),
         );
+        const working = overdue.length - candidates.length;
+        if (working > 0) {
+            this.logger.log(
+                `[sla] пропущено сделок с идущей работой: ${working} ` +
+                    '(стадия выше «Холодных» — работу не отбираем)',
+            );
+        }
         result.dealCandidates = candidates.length;
         if (!candidates.length) return;
 
@@ -671,6 +705,29 @@ export class LeadRequestSlaService {
             responsibleId,
             isRepeat: isRepeatRequestDeal(portal, deal, Number(lead.ID)),
         };
+    }
+
+    /**
+     * По сделке ИДЁТ РАБОТА: стадия выше «Холодных» (от «Переговоров»).
+     *
+     * Такую сделку крон не отбирает, даже если таймер подтверждения висит:
+     * метку гасит только кнопка «принять заявку», а работу ведут и без неё.
+     * Стадия не распознана → считаем, что работа идёт: отобрать живую сделку
+     * хуже, чем не отобрать брошенную (её догонит лидовый проход).
+     */
+    private dealInProgress(portal: PortalModel, deal: BxRow): boolean {
+        const category = portal.getDealCategoryByCode(
+            PbxDealCategoryCodeEnum.sales_base,
+        );
+        const stage = findSalesBaseStage(
+            category?.stages ?? [],
+            typeof deal.STAGE_ID === 'string' ? deal.STAGE_ID : null,
+        );
+        if (!stage) return true;
+        return (
+            getSalesBaseStageOrder(stage.code) >
+            getSalesBaseStageOrder(PBX_DEAL_SALES_BASE_STAGE_CODE.cold)
+        );
     }
 
     /** Отметка времени не позже границы; мусор/пусто → «старше» (не держим). */
