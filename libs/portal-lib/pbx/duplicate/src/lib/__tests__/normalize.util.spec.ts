@@ -165,6 +165,40 @@ describe('signalsCacheKey', () => {
         });
         expect(a).toBe(b);
     });
+
+    it('длина фиксированная — у крупной компании десятки сигналов, а колонка key в app_cache всего 255 символов', () => {
+        const phones = Array.from(
+            { length: 80 },
+            (_, i) => `999${1000000 + i}`,
+        );
+        const emails = Array.from(
+            { length: 40 },
+            (_, i) => `user${i}@example.com`,
+        );
+        const key = signalsCacheKey({
+            phones,
+            emails,
+            inns: [INN_10],
+            titles: ['ромашка'],
+        });
+        expect(key).toMatch(/^[0-9a-f]{40}$/);
+    });
+
+    it('разные наборы сигналов дают разные ключи', () => {
+        const a = signalsCacheKey({
+            phones: ['9991234567'],
+            emails: [],
+            inns: [],
+            titles: [],
+        });
+        const b = signalsCacheKey({
+            phones: ['9991234568'],
+            emails: [],
+            inns: [],
+            titles: [],
+        });
+        expect(a).not.toBe(b);
+    });
 });
 
 describe('emailDomain / corporateEmailDomain', () => {

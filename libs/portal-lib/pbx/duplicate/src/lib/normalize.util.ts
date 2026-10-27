@@ -3,6 +3,7 @@
  * телефон записан как `+7 (999) 123-45-67`, `89991234567` и `9991234567`,
  * а ИНН может быть вписан в название компании вперемешку с текстом.
  */
+import { createHash } from 'crypto';
 
 /**
  * Организационно-правовые формы, которые не несут смысла при сравнении
@@ -301,6 +302,11 @@ export function uniq<T>(items: readonly T[]): T[] {
 /**
  * Стабильный ключ набора сигналов — им кэшируем результат поиска, чтобы
  * повторный вызов из фрейма в пределах TTL не ходил в Битрикс вообще.
+ *
+ * Набор сворачивается в sha1: у крупной компании десятки телефонов и почт,
+ * а колонка `key` в app_cache — 255 символов (компания 68269 на garant
+ * 27.10.2026 падала с «value too long for column key»). Хэш фиксированной
+ * длины; порядок значений на него не влияет.
  */
 export function signalsCacheKey(signals: {
     phones: string[];
@@ -309,12 +315,13 @@ export function signalsCacheKey(signals: {
     titles: string[];
 }): string {
     const part = (items: string[]) => [...items].sort().join(',');
-    return [
+    const raw = [
         part(signals.phones),
         part(signals.emails),
         part(signals.inns),
         part(signals.titles),
     ].join('|');
+    return createHash('sha1').update(raw).digest('hex');
 }
 
 /**
