@@ -53,17 +53,24 @@ export const suppliesForOd = (
 export const odForSupply = (supply: SupplyTarget): number =>
     isSpecialSupplyCode(supply.code) ? 1 : supply.usersQuantity;
 
+/** Эталонная сетка ОД — на случай пустого справочника поставок */
+export const DEFAULT_OD_GRID: readonly number[] = [1, 2, 3, 5, 10, 20, 30, 50];
+
 /**
- * Числа ОД, которые реально есть в справочнике поставок — колонки
- * прайса строятся по ним (эталонная сетка 1, 2, 3, 5, 10, 20, 30, 50).
+ * Числа ОД, по которым строятся колонки прайса: берутся из справочника
+ * поставок. Если справочник ещё пуст (чистая база), отдаётся эталонная
+ * сетка — иначе файл пришёл бы вообще без колонок и цены было бы некуда
+ * вписать.
  */
 export const odColumnsFromSupplies = (
     supplies: readonly SupplyTarget[],
-): number[] =>
-    [
+): number[] => {
+    const fromSupplies = [
         ...new Set(
             supplies
                 .map(odForSupply)
                 .filter(quantity => Number.isFinite(quantity) && quantity > 0),
         ),
     ].sort((a, b) => a - b);
+    return fromSupplies.length > 0 ? fromSupplies : [...DEFAULT_OD_GRID];
+};

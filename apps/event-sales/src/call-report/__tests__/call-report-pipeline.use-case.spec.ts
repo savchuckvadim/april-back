@@ -25,6 +25,8 @@ const makeDeps = (overrides?: {
     classification?: Record<string, unknown>;
     /** Карта порогов портала; нет — гейт порога типа не применяется. */
     minDurationSecByType?: Record<string, number>;
+    /** Запасная модель контура 1 (env CALL_REPORT_LLM_FALLBACK_MODEL). */
+    fallbackLlmModel?: string;
 }) => {
     const bitrix = {
         activity: {
@@ -123,6 +125,14 @@ const makeDeps = (overrides?: {
         arrayBuffer: () => Promise.resolve(new ArrayBuffer(4)),
     }) as never;
 
+    // Единственный env, который читает use-case, — запасная модель контура 1.
+    const config = {
+        get: jest.fn((key: string) =>
+            key === 'CALL_REPORT_LLM_FALLBACK_MODEL'
+                ? overrides?.fallbackLlmModel
+                : undefined,
+        ),
+    };
     const useCase = new CallReportPipelineUseCase(
         pbxService as never,
         router as never,
@@ -132,6 +142,7 @@ const makeDeps = (overrides?: {
         classifyStep as never,
         contextBuilder as never,
         settingsService as never,
+        config as never,
     );
     return {
         useCase,
@@ -194,6 +205,46 @@ describe('CallReportPipelineUseCase', () => {
             callType: 'cold',
             classifyConfidence: 0.9,
         });
+    });
+
+    /**
+     * План устойчивости к провайдерам (28.10.2026): GigaChat упал — контур 1
+     * один раз повторяется запасной моделью из env, записи несут её код.
+     */
+    it('основная модель контура 1 упала — повтор запасной из CALL_REPORT_LLM_FALLBACK_MODEL, записи с её кодом', async () => {
+        const { useCase, aiService, llm } = makeDeps({
+            fallbackLlmModel: 'cloudru',
+        });
+        llm.analyzeCall
+            .mockRejectedValueOnce(new Error('gigachat down'))
+            .mockResolvedValueOnce({
+                resume: 'резюме',
+                recomendation: 'рекомендации',
+            });
+
+        const result = await useCase.execute(PAYLOAD);
+
+        expect(llm.analyzeCall).toHaveBeenCalledTimes(2);
+        expect((llm.analyzeCall.mock.calls[0] as string[])[0]).toBe('gigachat');
+        expect((llm.analyzeCall.mock.calls[1] as string[])[0]).toBe('cloudru');
+        expect(aiService.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'call-resume',
+                provider: 'cloudru',
+                model: 'cloudru',
+            }),
+        );
+        expect(result.resumeSaved).toBe(true);
+    });
+
+    it('запасная модель совпадает с основной или не задана — повтора нет', async () => {
+        const same = makeDeps({ llmError: true, fallbackLlmModel: 'gigachat' });
+        await same.useCase.execute(PAYLOAD);
+        expect(same.llm.analyzeCall).toHaveBeenCalledTimes(1);
+
+        const none = makeDeps({ llmError: true });
+        await none.useCase.execute(PAYLOAD);
+        expect(none.llm.analyzeCall).toHaveBeenCalledTimes(1);
     });
 
     it('звонок числится за ТЕМ, КТО ЗВОНИЛ, а не за владельцем сделки', async () => {

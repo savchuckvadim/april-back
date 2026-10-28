@@ -8,6 +8,13 @@ const FAKE_RESUME = `Я провел презентацию нашего про�
 
 const FAKE_RECOMENDATION = `Менеджеру стоит сначала зафиксировать ценность для собеседника, затем задавать уточняющие вопросы по процессам клиента, и только после этого переходить к презентации. При возражении "зачем" лучше коротко объяснить пользу на языке клиента и предложить конкретный следующий шаг: демо, кейс или короткий повторный звонок.`;
 
+/**
+ * Ответ произвольного вызова: пустой JSON-объект — годится и как заглушка
+ * текста, и как «ответ по схеме» для шлюза структурных вызовов (разбор
+ * JSON проходит, валидацию потребителя — нет, что и ожидается от заглушки).
+ */
+export const FAKE_COMPLETION = '{}';
+
 @Injectable()
 export class FakeProvider implements LlmProvider {
     resume(query: string, domain?: string): Promise<string> {
@@ -29,5 +36,11 @@ export class FakeProvider implements LlmProvider {
             resume: FAKE_RESUME,
             recomendation: FAKE_RECOMENDATION,
         });
+    }
+
+    complete(systemPrompt: string, userContent: string): Promise<string> {
+        void systemPrompt;
+        void userContent;
+        return Promise.resolve(FAKE_COMPLETION);
     }
 }

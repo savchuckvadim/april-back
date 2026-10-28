@@ -202,6 +202,18 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             type: 'string',
             default: '',
         }),
+        supportMonitorOperatorMap: setting({
+            code: 'support_monitor_operator_map',
+            name: 'Поддержка: оператор линии → сотрудник колокольчика',
+            description:
+                'Пары «ID оператора на портале линии: ID сотрудника на портале ' +
+                'колокольчика» через запятую, например «135:77, 1:1». ' +
+                'Напоминание «клиент ждёт» идёт только оператору, который взял ' +
+                'диалог; новый диалог и срочный повтор — всем получателям. ' +
+                'Пусто или оператор не сопоставлен — напоминание всем.',
+            type: 'string',
+            default: '',
+        }),
         supportMonitorRemindMinutes: setting({
             code: 'support_monitor_remind_minutes',
             name: 'Поддержка: напомнить, если клиент ждёт, мин',

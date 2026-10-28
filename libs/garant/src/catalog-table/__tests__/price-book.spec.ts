@@ -640,3 +640,118 @@ describe('рабочий файл цен', () => {
         expect((prof?.created ?? 0) + (prof?.updated ?? 0)).toBeGreaterThan(0);
     });
 });
+
+/**
+ * Чистая база: справочников ещё нет. Файл должен остаться понятным —
+ * с сеткой ОД и подсказкой, что сделать, а не прийти без колонок.
+ */
+describe('книга цен на чистой базе', () => {
+    const makeEmptyServices = () => {
+        const priceService = {
+            findMany: jest.fn().mockResolvedValue([]),
+            findByUnique: jest.fn().mockResolvedValue(null),
+            findPackagePrice: jest.fn().mockResolvedValue(null),
+            storeByComplect: jest.fn().mockResolvedValue({}),
+            storeByPackage: jest.fn().mockResolvedValue({}),
+        };
+        const complectService = {
+            findAll: jest
+                .fn()
+                .mockResolvedValue(
+                    COMPLECTS.filter(
+                        complect => complect.type === ComplectTypeEnum.PROF,
+                    ),
+                ),
+            update: jest.fn().mockResolvedValue({}),
+        };
+        const packageService = {
+            findAll: jest.fn().mockResolvedValue([]),
+            update: jest.fn().mockResolvedValue({}),
+        };
+        const supplyService = { findMany: jest.fn().mockResolvedValue([]) };
+        const regionService = {
+            findAll: jest.fn().mockResolvedValue(REGIONS),
+            update: jest.fn().mockResolvedValue(REGIONS[0]),
+        };
+        return {
+            exportService: new PriceBookExportService(
+                priceService as never,
+                complectService as never,
+                packageService as never,
+                supplyService as never,
+                regionService as never,
+            ),
+            importService: new PriceBookImportService(
+                priceService as never,
+                complectService as never,
+                packageService as never,
+                supplyService as never,
+                regionService as never,
+            ),
+            priceService,
+        };
+    };
+
+    it('без справочника поставок колонки ОД берутся по стандартной сетке', async () => {
+        const { exportService } = makeEmptyServices();
+        const sheet = readSheet(
+            await readWorkbook(await exportService.export('current')),
+            PRICE_BOOK_SHEETS.profMsk,
+        );
+
+        expect(sheet.headers).toEqual([
+            'complectName',
+            'ComplectNumber',
+            'complectCode',
+            '1 ОД*',
+            '2 ОД*',
+            '3 ОД*',
+            '5 ОД*',
+            '10 ОД**',
+            '20 ОД**',
+            '30 ОД**',
+            '50 ОД**',
+        ]);
+    });
+
+    it('в файл добавляется лист с подсказкой, что сделать', async () => {
+        const { exportService } = makeEmptyServices();
+        const workbook = await readWorkbook(
+            await exportService.export('current'),
+        );
+        const hints = readSheet(workbook, 'сначала прочитайте');
+        const text = hints.rows
+            .map(row => row.string('что нужно сделать'))
+            .join(' ');
+
+        expect(text).toMatch(/Первое наполнение/);
+        expect(text).toMatch(/Виды поставок/);
+    });
+
+    it('лист подсказок не мешает загрузке того же файла обратно', async () => {
+        const { exportService, importService } = makeEmptyServices();
+        const reports = await importService.import(
+            await exportService.export('current'),
+            true,
+        );
+        const sections = reports.map(report => report.section);
+
+        expect(sections).not.toContain('сначала прочитайте');
+        expect(sections).toContain(PRICE_BOOK_SHEETS.profMsk);
+    });
+
+    it('без видов поставок цена не теряется молча — в отчёте причина', async () => {
+        const { importService, priceService } = makeEmptyServices();
+        const reports = await importService.import(
+            await buildBook({ profMsk: [['Бухгалтер', 0, 'buh', 8587, null]] }),
+            false,
+        );
+        const prof = reports.find(
+            report => report.section === PRICE_BOOK_SHEETS.profMsk,
+        );
+
+        expect(priceService.storeByComplect).not.toHaveBeenCalled();
+        expect(prof?.skipped).toHaveLength(1);
+        expect(prof?.skipped[0].reason).toMatch(/нет видов поставки/);
+    });
+});

@@ -15,6 +15,7 @@ import {
     LAUNCH_RUN_STATUS,
     LAUNCH_SMART_REQUIRED_VALUES,
 } from './launch.const';
+import { closedMonthKeys, missingMonthsText } from './launch-months.util';
 import type {
     LaunchLoaded,
     LaunchPipelineBlock,
@@ -221,11 +222,20 @@ export function pipelineBlock(input: LaunchStatusInput): LaunchPipelineBlock {
     const backfill = latestOf(runs, LAUNCH_RHYTHM.backfill);
     const monthly = latestOf(runs, LAUNCH_RHYTHM.monthly);
     const nightly = latestOf(runs, LAUNCH_RHYTHM.nightly);
-    const months = new Set(
+    const journal = new Set(
         runs
             .filter(run => run.rhythm === LAUNCH_RHYTHM.backfill)
             .map(run => run.day.slice(0, 7)),
-    ).size;
+    );
+    // Считаем только месяцы окна кнопки: записи журнала о месяцах за его
+    // пределами не маскируют недостающие, а владелец видит, каких нет.
+    const expected = closedMonthKeys(
+        input.now,
+        LAUNCH_DEFAULTS.timeZone,
+        target,
+    );
+    const missing = expected.filter(month => !journal.has(month));
+    const months = expected.length - missing.length;
     const lastBackfill = backfill ? toRef(backfill) : null;
     const running = isFreshRun(lastBackfill, input.now) && months < target;
     const nightlyText = nightly
@@ -241,7 +251,7 @@ export function pipelineBlock(input: LaunchStatusInput): LaunchPipelineBlock {
         head = `Догон истории идёт: посчитано ${months} из ${target} месяцев — месяцы считаются по одному, от старых к свежим. Когда закончится, нажмите «Восстановить прогноз по истории».`;
     } else if (months > 0) {
         state = 'todo';
-        head = `Догнано ${months} из ${target} месяцев — нажмите «Догнать историю» ещё раз: месяцы пересчитаются заново по очереди.`;
+        head = `Догнано ${months} из ${target} месяцев, не хватает: ${missingMonthsText(missing)} — нажмите «Догнать историю» ещё раз: месяцы пересчитаются заново по очереди.`;
     } else {
         state = 'todo';
         head =

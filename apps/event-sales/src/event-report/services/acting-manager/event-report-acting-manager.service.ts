@@ -6,6 +6,8 @@ import { EDepartamentGroup } from '@lib/portal-lib/portal/interfaces/portal.inte
 import { entityTitleOr } from '../../../shared/bitrix/crm-entity-name.util';
 import { EventSalesFlowDto } from '../../dto/event-sale-flow/event-sales-flow.dto';
 import { EventReportContext } from '../context/event-report.context';
+import { EventReportImpersonationService } from '../impersonation/event-report-impersonation.service';
+import { impersonationVisibleMark } from '../impersonation/impersonation.mark';
 import { ActingManagerMark } from './acting-manager.mark';
 import {
     buildActingManagerNotification,
@@ -32,6 +34,9 @@ interface INamedUser {
  *
  * Отчёт по делу сотрудника идёт от имени сотрудника — фронт присылает его
  * в `plan.responsibility`, а руководителя отдельным полем `actingManager`.
+ * Режим «работать как» (поле `impersonatedBy`) сюда же: подтверждённый
+ * суперпользователь невидим, неподтверждённый подписывается как
+ * «Отчёт отправил».
  * Поэтому чувствительные алгоритмы потока (сделки, задачи, KPI, ключ
  * финала) здесь НЕ меняются вовсе. Сервис отвечает только за два шага:
  *  - {@link resolve} — проверить пометку по структуре отдела продаж;
@@ -48,10 +53,21 @@ interface INamedUser {
 export class EventReportActingManagerService {
     private readonly logger = new Logger(EventReportActingManagerService.name);
 
-    constructor(private readonly structure: BxDepartmentStructureService) {}
+    constructor(
+        private readonly structure: BxDepartmentStructureService,
+        // «Работать как»: подтверждённый суперпользователь пометок не
+        // оставляет, неподтверждённый — получает видимую.
+        private readonly impersonation: EventReportImpersonationService,
+    ) {}
 
     /** Пометка отчёта; null — отчёт обычный (за себя или без поля). */
     async resolve(dto: EventSalesFlowDto): Promise<ActingManagerMark | null> {
+        const impersonation = await this.impersonation.check(dto);
+        const visible = impersonation
+            ? impersonationVisibleMark(impersonation)
+            : null;
+        if (visible) return visible;
+
         const managerId = toId(dto.actingManager?.ID);
         if (!managerId) return null;
 

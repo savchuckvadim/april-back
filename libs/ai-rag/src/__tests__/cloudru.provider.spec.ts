@@ -91,4 +91,46 @@ describe('CloudRuProvider', () => {
             'resume',
         );
     });
+
+    /** План устойчивости к провайдерам (28.10.2026): любой промпт без RAG. */
+    it('complete зовёт модель напрямую — без цепочек и ретривера — и отдаёт текст ответа', async () => {
+        const provider = makeProvider({ CLOUDRU_API_KEY: 'test-key' });
+        const invoke = jest.fn().mockResolvedValue({ content: '{"score": 7}' });
+        jest.spyOn(
+            provider as unknown as { getLlm: () => unknown },
+            'getLlm',
+        ).mockReturnValue({ invoke });
+
+        const result = await provider.complete('система', 'текст');
+
+        expect(result).toBe('{"score": 7}');
+        const [messages] = invoke.mock.calls[0] as [{ content: string }[]];
+        expect(messages.map(message => message.content)).toEqual([
+            'система',
+            'текст',
+        ]);
+        expect(chainBuilder.buildResumeChain).not.toHaveBeenCalled();
+        expect(vectorStore.getRetriever).not.toHaveBeenCalled();
+    });
+
+    it('complete без ключа и при ошибке модели — понятная ошибка с причиной', async () => {
+        await expect(makeProvider({}).complete('с', 'т')).rejects.toThrow(
+            'CLOUDRU_API_KEY',
+        );
+
+        const provider = makeProvider({ CLOUDRU_API_KEY: 'k' });
+        jest.spyOn(
+            provider as unknown as { getLlm: () => unknown },
+            'getLlm',
+        ).mockReturnValue({
+            invoke: jest
+                .fn()
+                .mockRejectedValue(
+                    new Error('Request failed with status code 503'),
+                ),
+        });
+        await expect(provider.complete('с', 'т')).rejects.toThrow(
+            'status code 503',
+        );
+    });
 });

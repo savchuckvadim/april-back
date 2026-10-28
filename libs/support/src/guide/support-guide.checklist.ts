@@ -57,7 +57,9 @@ export function buildSupportChecklist(
             status: done(options.notifyUserIds.length > 0),
             hint:
                 `Портал колокольчика сейчас: ${options.notifyDomain}. На april-garant Вадим Савчук — ID 1. ` +
-                'Юлии Муравьевой на april-garant нет: пригласить или выбрать другую учётку.',
+                'Юлия Муравьева на april-garant — ID 77. Чтобы напоминание «клиент ждёт» шло только ' +
+                'взявшему диалог оператору, заполните «оператор линии → сотрудник колокольчика» ' +
+                '(на april-dev Юлия — 135, Вадим — 1): «135:77, 1:1».',
             link: settings,
         },
         {

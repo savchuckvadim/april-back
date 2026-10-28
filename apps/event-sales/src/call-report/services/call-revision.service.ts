@@ -15,7 +15,7 @@ import {
     CallReportLinkRepairService,
 } from '@lib/call-lib/call-report/services/call-report-link-repair.service';
 import { resolveCallManagerId } from '@lib/call-lib/call-report/services/call-manager.util';
-import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
+import { StructuredLlmGateway } from '@lib/llm-gateway';
 import {
     buildRevisionUserContent,
     CALL_REVISION_PROMPT,
@@ -83,8 +83,7 @@ export class CallRevisionService {
         private readonly aiService: AiService,
         private readonly contextBuilder: CallContextBuilderService,
         private readonly smartResolver: CallReportSmartResolverService,
-        private readonly vibeCodeClient: VibeCodeClient,
-        private readonly vibeKeyResolver: VibeKeyResolverService,
+        private readonly llm: StructuredLlmGateway,
         private readonly dealFamily: CallReportDealFamilyService,
     ) {}
 
@@ -191,8 +190,7 @@ export class CallRevisionService {
             portalModel,
         );
 
-        const apiKey = await this.vibeKeyResolver.resolve(domain);
-        const verdict = (await this.vibeCodeClient.structuredCompletion(
+        const verdict = (await this.llm.structuredCompletion(
             CALL_REVISION_PROMPT,
             buildRevisionUserContent(
                 this.contextBuilder.renderForPrompt(passport),
@@ -202,7 +200,7 @@ export class CallRevisionService {
             ),
             'call_revision',
             CALL_REVISION_SCHEMA,
-            apiKey,
+            domain,
         )) as RevisionVerdict;
 
         await this.applyVerdict(

@@ -13,6 +13,7 @@ import {
 import { MemoryVectorStoreService } from '../vector-store/memory-vector-store.service';
 import { extractResult } from '../../application/extract-result.util';
 import { CombinedCallAnalysisService } from '../../application/combined-call-analysis.service';
+import { invokeChat } from '../../application/invoke-chat.util';
 
 const DEFAULT_OLLAMA_BASE_URL = 'http://45.12.74.239:11434';
 
@@ -41,6 +42,20 @@ export class OllamaProvider implements LlmProvider {
 
     async recomendation(query: string, domain?: string): Promise<string> {
         return this.run(query, 'recomendation', domain);
+    }
+
+    /** Произвольный вызов без RAG. */
+    async complete(systemPrompt: string, userContent: string): Promise<string> {
+        try {
+            return await invokeChat(this.getLlm(), systemPrompt, userContent);
+        } catch (error) {
+            this.logger.error(
+                `Ollama complete error: ${(error as Error).message}`,
+            );
+            throw new InternalServerErrorException(
+                `Ollama: ${(error as Error).message}`,
+            );
+        }
     }
 
     /** Резюме + рекомендации одним вызовом; при сбое — два раздельных. */

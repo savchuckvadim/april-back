@@ -61,6 +61,14 @@ export class PriceBookExportService {
             complect => complect.type === ComplectTypeEnum.UNIVERSAL,
         );
         const odColumns = odColumnsFromSupplies(supplies ?? []);
+        // Чистая база: часть справочников ещё не заведена — предупреждаем
+        // в файле, иначе пустые листы выглядят поломкой выгрузки.
+        const emptyHints = this.emptyCatalogHints({
+            supplies: (supplies ?? []).length,
+            universal: universalComplects.length,
+            prof: profComplects.length,
+            packages: packages.length,
+        });
 
         // Цены PROF: ключ «комплект|ОД|регион». Одна цена приходится на
         // несколько видов поставки с тем же числом ОД — берём любую.
@@ -199,7 +207,55 @@ export class PriceBookExportService {
             },
         ];
 
+        if (emptyHints.length > 0) {
+            sheets.unshift({
+                name: 'сначала прочитайте',
+                headers: ['что нужно сделать'],
+                widths: [160],
+                rows: emptyHints.map((hint): ExportCellValue[] => [hint]),
+            });
+        }
+
         return await writeWorkbook(sheets);
+    }
+
+    /**
+     * Подсказки для чистой базы: какие справочники ещё не заведены и
+     * почему соответствующие листы пришли пустыми.
+     */
+    private emptyCatalogHints(counts: {
+        supplies: number;
+        universal: number;
+        prof: number;
+        packages: number;
+    }): string[] {
+        const hints: string[] = [];
+        if (counts.supplies === 0) {
+            hints.push(
+                'Виды поставок ещё не заведены, поэтому колонки прайса показаны по стандартной сетке ' +
+                    '(1, 2, 3, 5, 10, 20, 30, 50 ОД). Чтобы цены сохранились, сначала выполните ' +
+                    '«Первое наполнение» на странице таблиц каталога — иначе цену будет некуда записать.',
+            );
+        }
+        if (counts.universal === 0) {
+            hints.push(
+                'Лист «universal-weights» пуст: универсальная линейка ещё не заведена. ' +
+                    'Она создаётся в «Первом наполнении» вместе с весами и АБС.',
+            );
+        }
+        if (counts.packages === 0) {
+            hints.push(
+                'Листы «lt», «star» и «consalting» пусты: пакеты услуг ещё не заведены. ' +
+                    'Они создаются в «Первом наполнении».',
+            );
+        }
+        if (counts.prof === 0) {
+            hints.push(
+                'Комплекты PROF ещё не заведены — прайс заполнять не на что. ' +
+                    'Добавьте комплекты в разделе «Комплекты» или таблицей комплектов.',
+            );
+        }
+        return hints;
     }
 
     /** Лист PROF-прайса: строка — комплект, колонка — число ОД */

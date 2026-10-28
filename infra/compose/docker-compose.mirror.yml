@@ -12,13 +12,19 @@
 #   - каталог репо на каждом деплое клонируется заново, поэтому всё, что
 #     должно пережить деплой (keys, storage, конфиги реплик), лежит в
 #     каталоге files Dokploy (MIRROR_FILES_DIR), а не в репо;
-#   - образы — те же, что на проде (их собирает deploy-mirror.yml), но под
-#     тегом mirror: прод-деплой с тегом latest зеркало не трогает.
+#   - образы — ровно те, что крутятся на проде: после успешного прод-деплоя
+#     deploy-mirror.yml перетегирует их в mirror. Тег подвижный, поэтому
+#     pull_policy: always — иначе compose оставил бы старый локальный образ;
+#   - сеть default у приложений задана явно: добавляя домен, Dokploy
+#     дописывает сервису dokploy-network, и без явного default приложение
+#     осталось бы только в ней — без доступа к redis и mysql-replica.
 #
-# Переменные (задаются в Dokploy → Environment; см. README, раздел 3):
-#   GHCR_OWNER, IMAGE_TAG=mirror, APP_ROLE=standby|active,
-#   MIRROR_DATABASE_URL, MIRROR_MYSQL_ROOT_PASSWORD, MYSQL_IMAGE,
-#   MIRROR_FILES_DIR, GOTENBERG_REPLICAS, MYSQL_REPLICA_BIND
+# Имена переменных образа (MIRROR_*) не пересекаются с прод-.env, который
+# целиком вставляется в Environment: там есть свои GHCR_OWNER/IMAGE_TAG=latest.
+# Переменные (Dokploy → Environment; см. README, раздел 3):
+#   APP_ROLE=standby|active, MIRROR_DATABASE_URL, MIRROR_MYSQL_ROOT_PASSWORD,
+#   MYSQL_IMAGE, MIRROR_FILES_DIR, GOTENBERG_REPLICAS, MYSQL_REPLICA_BIND,
+#   необязательно MIRROR_GHCR_OWNER, MIRROR_IMAGE_TAG
 # ============================================================
 
 x-logging: &default-logging
@@ -43,6 +49,9 @@ x-app-common: &app-common
     - ${MIRROR_FILES_DIR:-../../../files}/storage:/app/storage
   expose:
     - '3000'
+  pull_policy: always
+  networks:
+    - default
 
 # environment перекрывает env_file: сюда — то, что на зеркале ДОЛЖНО
 # отличаться от скопированного прод-.env.
@@ -83,35 +92,35 @@ x-app: &app-service
 services:
   back:
     <<: *app-service
-    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER не задан}/april-back:${IMAGE_TAG:-mirror}
+    image: ghcr.io/${MIRROR_GHCR_OWNER:-savchuckvadim}/april-back:${MIRROR_IMAGE_TAG:-mirror}
 
   kpi-report-sales:
     <<: *app-service
-    image: ghcr.io/${GHCR_OWNER}/april-kpi-report-sales:${IMAGE_TAG:-mirror}
+    image: ghcr.io/${MIRROR_GHCR_OWNER:-savchuckvadim}/april-kpi-report-sales:${MIRROR_IMAGE_TAG:-mirror}
 
   pbx-install:
     <<: *app-service
-    image: ghcr.io/${GHCR_OWNER}/april-pbx-install:${IMAGE_TAG:-mirror}
+    image: ghcr.io/${MIRROR_GHCR_OWNER:-savchuckvadim}/april-pbx-install:${MIRROR_IMAGE_TAG:-mirror}
 
   kpi-report-service:
     <<: *app-service
-    image: ghcr.io/${GHCR_OWNER}/april-kpi-report-service:${IMAGE_TAG:-mirror}
+    image: ghcr.io/${MIRROR_GHCR_OWNER:-savchuckvadim}/april-kpi-report-service:${MIRROR_IMAGE_TAG:-mirror}
 
   admin:
     <<: *app-service
-    image: ghcr.io/${GHCR_OWNER}/april-admin:${IMAGE_TAG:-mirror}
+    image: ghcr.io/${MIRROR_GHCR_OWNER:-savchuckvadim}/april-admin:${MIRROR_IMAGE_TAG:-mirror}
 
   event-sales:
     <<: *app-service
-    image: ghcr.io/${GHCR_OWNER}/april-event-sales:${IMAGE_TAG:-mirror}
+    image: ghcr.io/${MIRROR_GHCR_OWNER:-savchuckvadim}/april-event-sales:${MIRROR_IMAGE_TAG:-mirror}
 
   event-service:
     <<: *app-service
-    image: ghcr.io/${GHCR_OWNER}/april-event-service:${IMAGE_TAG:-mirror}
+    image: ghcr.io/${MIRROR_GHCR_OWNER:-savchuckvadim}/april-event-service:${MIRROR_IMAGE_TAG:-mirror}
 
   konstructor:
     <<: *app-service
-    image: ghcr.io/${GHCR_OWNER}/april-konstructor:${IMAGE_TAG:-mirror}
+    image: ghcr.io/${MIRROR_GHCR_OWNER:-savchuckvadim}/april-konstructor:${MIRROR_IMAGE_TAG:-mirror}
     # Топология Gotenberg как на проде: имя сервиса резолвится во все реплики.
     environment:
       <<: *app-env
@@ -121,19 +130,19 @@ services:
 
   rq:
     <<: *app-service
-    image: ghcr.io/${GHCR_OWNER}/april-rq:${IMAGE_TAG:-mirror}
+    image: ghcr.io/${MIRROR_GHCR_OWNER:-savchuckvadim}/april-rq:${MIRROR_IMAGE_TAG:-mirror}
 
   pbx:
     <<: *app-service
-    image: ghcr.io/${GHCR_OWNER}/april-pbx:${IMAGE_TAG:-mirror}
+    image: ghcr.io/${MIRROR_GHCR_OWNER:-savchuckvadim}/april-pbx:${MIRROR_IMAGE_TAG:-mirror}
 
   bot:
     <<: *app-service
-    image: ghcr.io/${GHCR_OWNER}/april-bot:${IMAGE_TAG:-mirror}
+    image: ghcr.io/${MIRROR_GHCR_OWNER:-savchuckvadim}/april-bot:${MIRROR_IMAGE_TAG:-mirror}
 
   bitrix-app-client:
     <<: *app-service
-    image: ghcr.io/${GHCR_OWNER}/april-bitrix-app-client:${IMAGE_TAG:-mirror}
+    image: ghcr.io/${MIRROR_GHCR_OWNER:-savchuckvadim}/april-bitrix-app-client:${MIRROR_IMAGE_TAG:-mirror}
 
   # ---------------- Инфраструктура ----------------
   # Redis: до фазы данных — обычный мастер с персистентностью; в фазе данных

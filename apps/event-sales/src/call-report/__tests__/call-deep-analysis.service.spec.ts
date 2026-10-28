@@ -42,7 +42,7 @@ const makeDeps = (options?: {
     registryError?: boolean;
     completionError?: boolean;
 }) => {
-    const vibeCodeClient = {
+    const llm = {
         structuredCompletionWithUsage: options?.completionError
             ? jest.fn().mockRejectedValue(new Error('vibecode down'))
             : jest.fn().mockResolvedValue({
@@ -55,7 +55,6 @@ const makeDeps = (options?: {
                   model: 'bitrix/bitrixgpt-5.5',
               }),
     };
-    const vibeKeyResolver = { resolve: jest.fn().mockResolvedValue('key-1') };
     const knowledgeContent = {
         readAll: jest.fn().mockResolvedValue(options?.documents ?? []),
     };
@@ -79,8 +78,7 @@ const makeDeps = (options?: {
             .mockResolvedValue({ presentationStrictness: 'strict' }),
     };
     const service = new CallDeepAnalysisService(
-        vibeCodeClient as never,
-        vibeKeyResolver as never,
+        llm as never,
         knowledgeContent as never,
         callTypeRegistry as never,
         appSettings as never,
@@ -88,7 +86,7 @@ const makeDeps = (options?: {
     );
     return {
         service,
-        vibeCodeClient,
+        llm,
         knowledgeContent,
         callTypeRegistry,
         appSettings,
@@ -107,10 +105,10 @@ describe('CallDeepAnalysisService', () => {
     afterEach(() => jest.clearAllMocks());
 
     it('промпт калибруется профилем этапа: фокус и приоры разделов', async () => {
-        const { service, vibeCodeClient } = makeDeps();
+        const { service, llm } = makeDeps();
         await service.run('test.bitrix24.ru', 'алло', 'cold');
 
-        const prompt = systemPromptOf(vibeCodeClient);
+        const prompt = systemPromptOf(llm);
         expect(prompt).toContain('Холодный звонок');
         expect(prompt).toContain('проход секретаря');
         // Приор PRESENTATION=20 — в холодном презентовать не требуется.
@@ -129,7 +127,7 @@ describe('CallDeepAnalysisService', () => {
     });
 
     it('методички компании подмешиваются в промпт', async () => {
-        const { service, vibeCodeClient } = makeDeps({
+        const { service, llm } = makeDeps({
             documents: [
                 {
                     kind: 'call-analysis-cold',
@@ -141,7 +139,7 @@ describe('CallDeepAnalysisService', () => {
         });
         await service.run('test.bitrix24.ru', 'алло', 'cold');
 
-        const prompt = systemPromptOf(vibeCodeClient);
+        const prompt = systemPromptOf(llm);
         expect(prompt).toContain('Скрипт прохода секретаря');
         expect(prompt).not.toContain('Каталог продуктов');
     });
@@ -155,7 +153,7 @@ describe('CallDeepAnalysisService', () => {
     });
 
     it('расход единственного вызова едет в dto.usage; промпт несёт блок сигналов руководителю и схема — riskEvidence', async () => {
-        const { service, vibeCodeClient } = makeDeps();
+        const { service, llm } = makeDeps();
         const result = await service.run('test.bitrix24.ru', 'алло', 'cold');
 
         expect(result?.usage).toEqual({
@@ -166,12 +164,9 @@ describe('CallDeepAnalysisService', () => {
             callsWithUsage: 1,
             model: 'bitrix/bitrixgpt-5.5',
         });
-        expect(systemPromptOf(vibeCodeClient)).toContain(
-            'СИГНАЛЫ РУКОВОДИТЕЛЮ',
-        );
+        expect(systemPromptOf(llm)).toContain('СИГНАЛЫ РУКОВОДИТЕЛЮ');
         const schema = (
-            vibeCodeClient.structuredCompletionWithUsage.mock
-                .calls[0] as unknown[]
+            llm.structuredCompletionWithUsage.mock.calls[0] as unknown[]
         )[3] as { required: string[] };
         expect(schema.required).toContain('riskEvidence');
     });
@@ -186,21 +181,21 @@ describe('CallDeepAnalysisService', () => {
     });
 
     it('в промпте расшифрованы коды flow — модель не выдумывает свои', async () => {
-        const { service, vibeCodeClient } = makeDeps();
+        const { service, llm } = makeDeps();
         await service.run('test.bitrix24.ru', 'алло', 'cold');
 
-        const prompt = systemPromptOf(vibeCodeClient);
+        const prompt = systemPromptOf(llm);
         expect(prompt).toContain('noresultReasonCode');
         expect(prompt).toContain('secretar');
         expect(prompt).toContain('moneyAwait');
     });
 
     it('тип вне реестра — разбор идёт без калибровки, но идёт', async () => {
-        const { service, vibeCodeClient } = makeDeps({ profileMissing: true });
+        const { service, llm } = makeDeps({ profileMissing: true });
         const result = await service.run('test.bitrix24.ru', 'алло', 'exotic');
 
         expect(result).not.toBeNull();
-        expect(systemPromptOf(vibeCodeClient)).not.toContain('ЭТАП РАЗГОВОРА');
+        expect(systemPromptOf(llm)).not.toContain('ЭТАП РАЗГОВОРА');
     });
 
     it('недоступный реестр не роняет разбор', async () => {
@@ -220,48 +215,45 @@ describe('CallDeepAnalysisService', () => {
     });
 
     it('пустой транскрипт — разбор не запускается', async () => {
-        const { service, vibeCodeClient } = makeDeps();
+        const { service, llm } = makeDeps();
         const result = await service.run('test.bitrix24.ru', '   ', 'cold');
 
         expect(result).toBeNull();
-        expect(
-            vibeCodeClient.structuredCompletionWithUsage,
-        ).not.toHaveBeenCalled();
+        expect(llm.structuredCompletionWithUsage).not.toHaveBeenCalled();
     });
 
     // Выключатель шага живёт в processor (настройки портала → env → дефолт,
     // CallReportSettingsService) — см. call-report.processor.spec.
 
     it('withCheckPresentation ужесточает промпт презентации блоком «5К и хвост»', async () => {
-        const { service, vibeCodeClient, appSettings } = makeDeps({
+        const { service, llm, appSettings } = makeDeps({
             profileMissing: true,
         });
         appSettings.resolve.mockResolvedValue({
             withCheckPresentation: true,
         });
         await service.run('test.bitrix24.ru', 'алло', 'presentation');
-        expect(systemPromptOf(vibeCodeClient)).toContain(
+        expect(systemPromptOf(llm)).toContain(
             'ОБЯЗАТЕЛЬНАЯ ОТЧЁТНОСТЬ ПОСЛЕ ПРЕЗЕНТАЦИИ',
         );
 
         // Для холодного звонка блок не добавляется даже при включённой
         // настройке (хвост — требование к презентации/решению).
-        vibeCodeClient.structuredCompletionWithUsage.mockClear();
+        llm.structuredCompletionWithUsage.mockClear();
         await service.run('test.bitrix24.ru', 'алло', 'cold');
-        expect(systemPromptOf(vibeCodeClient)).not.toContain(
+        expect(systemPromptOf(llm)).not.toContain(
             'ОБЯЗАТЕЛЬНАЯ ОТЧЁТНОСТЬ ПОСЛЕ ПРЕЗЕНТАЦИИ',
         );
     });
 
     it('модель из настроек портала уезжает в structuredCompletionWithUsage', async () => {
-        const { service, vibeCodeClient } = makeDeps();
+        const { service, llm } = makeDeps();
         await service.run('test.bitrix24.ru', 'алло', 'cold', undefined, {
             model: 'bitrix/custom-model',
         });
 
         const options = (
-            vibeCodeClient.structuredCompletionWithUsage.mock
-                .calls[0] as unknown[]
+            llm.structuredCompletionWithUsage.mock.calls[0] as unknown[]
         )[5];
         expect(options).toEqual({ model: 'bitrix/custom-model' });
     });

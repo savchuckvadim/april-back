@@ -15,6 +15,8 @@ export interface SupportMonitorOptions {
     /** Портал колокольчика (уже с подставленным порталом линии). */
     notifyDomain: string;
     notifyUserIds: number[];
+    /** Оператор линии → сотрудник портала колокольчика (адресные напоминания). */
+    operatorMap: ReadonlyMap<number, number>;
     thresholds: SupportWaitThresholds;
     pollMinutes: number;
     telegramEnabled: boolean;
@@ -28,6 +30,29 @@ const positiveInt = (raw: unknown, fallback: number): number => {
     const value = Math.floor(Number(raw));
     return Number.isFinite(value) && value > 0 ? value : fallback;
 };
+
+/**
+ * «135:77, 1:1» → Map(135 → 77, 1 → 1). Мусор, нули и повторы оператора
+ * отбрасываются; разделители пар — запятая, точка с запятой, пробелы.
+ */
+export function parseOperatorMap(
+    raw: string | null | undefined,
+): ReadonlyMap<number, number> {
+    const map = new Map<number, number>();
+    for (const pair of String(raw ?? '').split(/[,;\s]+/)) {
+        const [operator, recipient] = pair.split(':').map(Number);
+        if (
+            Number.isInteger(operator) &&
+            operator > 0 &&
+            Number.isInteger(recipient) &&
+            recipient > 0 &&
+            !map.has(operator)
+        ) {
+            map.set(operator, recipient);
+        }
+    }
+    return map;
+}
 
 /** `https://April-Garant.bitrix24.ru/` → `april-garant.bitrix24.ru`. */
 export function normalizeSupportDomain(raw: string | null | undefined): string {
@@ -55,6 +80,7 @@ export function toSupportMonitorOptions(
         | 'supportMonitorLineId'
         | 'supportMonitorNotifyDomain'
         | 'supportMonitorNotifyUserIds'
+        | 'supportMonitorOperatorMap'
         | 'supportMonitorRemindMinutes'
         | 'supportMonitorEscalateMinutes'
         | 'supportMonitorPollMinutes'
@@ -92,6 +118,7 @@ export function toSupportMonitorOptions(
             normalizeSupportDomain(values.supportMonitorNotifyDomain) ||
             normalizeSupportDomain(lineDomain),
         notifyUserIds: parseUserIds(values.supportMonitorNotifyUserIds),
+        operatorMap: parseOperatorMap(values.supportMonitorOperatorMap),
         thresholds: { remindMinutes, escalateMinutes },
         pollMinutes,
         telegramEnabled: Boolean(values.supportMonitorTelegramEnabled),

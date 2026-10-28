@@ -20,6 +20,7 @@ const options = (
     lineId: 0,
     notifyDomain: 'april-dev.bitrix24.ru',
     notifyUserIds: [],
+    operatorMap: new Map<number, number>(),
     thresholds: { remindMinutes: 10, escalateMinutes: 30 },
     pollMinutes: 3,
     telegramEnabled: true,

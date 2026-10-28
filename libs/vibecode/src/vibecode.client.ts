@@ -8,7 +8,7 @@ import {
     CALL_ANALYSIS_SCHEMA,
 } from './contracts/call-analysis.contract';
 import {
-    CALL_CLASSIFICATION_SCHEMA,
+    classificationSchemaFor,
     CLASSIFICATION_TRANSCRIPT_LIMIT,
     DEFAULT_CLASSIFICATION_SYSTEM_PROMPT,
 } from './contracts/call-classification.contract';
@@ -233,19 +233,12 @@ export class VibeCodeClient {
         return plainToInstance(CallClassificationResultDto, parsed);
     }
 
-    /** Схема классификации с динамическим enum типов из реестра. */
+    /** Схема классификации с динамическим enum типов из реестра (общая со шлюзом LLM). */
     // (сэмплирование транскрипта — sampleTranscriptForClassification ниже)
     private buildClassificationSchema(
         allowedCallTypes?: string[],
     ): Record<string, unknown> {
-        if (!allowedCallTypes?.length) return CALL_CLASSIFICATION_SCHEMA;
-        const schema = JSON.parse(
-            JSON.stringify(CALL_CLASSIFICATION_SCHEMA),
-        ) as {
-            properties: { callType: { enum: string[] } };
-        };
-        schema.properties.callType.enum = allowedCallTypes;
-        return schema as unknown as Record<string, unknown>;
+        return classificationSchemaFor(allowedCallTypes);
     }
 
     /**

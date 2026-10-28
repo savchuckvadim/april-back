@@ -94,7 +94,7 @@ export interface LaunchPipelineBlock extends LaunchBlock {
     lastBackfill: LaunchRunRef | null;
     lastMonthly: LaunchRunRef | null;
     lastNightly: LaunchRunRef | null;
-    /** Разных месяцев, догнанных backfill за окно журнала. */
+    /** Месяцев окна кнопки (24 закрытых), догнанных backfill за окно журнала. */
     backfillMonths: number;
     /** Сколько месяцев догоняет кнопка (24). */
     backfillMonthsTarget: number;

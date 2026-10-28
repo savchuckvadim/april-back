@@ -6,7 +6,7 @@ import {
     EnumPortalAppCode,
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
-import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
+import { StructuredLlmGateway } from '@lib/llm-gateway';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 import {
     AFTER_PRESENTATION_STRICT_BLOCK,
@@ -50,8 +50,7 @@ export class CallDeepAnalysisService {
     private readonly logger = new Logger(CallDeepAnalysisService.name);
 
     constructor(
-        private readonly vibeCodeClient: VibeCodeClient,
-        private readonly vibeKeyResolver: VibeKeyResolverService,
+        private readonly llm: StructuredLlmGateway,
         private readonly knowledgeContent: KnowledgeContentService,
         private readonly callTypeRegistry: CallTypeRegistryService,
         private readonly appSettings: PortalAppSettingsService,
@@ -119,20 +118,18 @@ export class CallDeepAnalysisService {
                 (await this.buildSystemPrompt(domain, callType)) +
                 (await this.buildAfterPresentationBlock(domain, callType)) +
                 (await this.buildStrictnessBlock(domain));
-            const apiKey = await this.vibeKeyResolver.resolve(domain);
-            const response =
-                await this.vibeCodeClient.structuredCompletionWithUsage(
-                    systemPrompt,
-                    buildDeepAnalysisUserContent(
-                        transcript,
-                        callType,
-                        passportBlock,
-                    ),
-                    'call_deep_analysis',
-                    CALL_DEEP_ANALYSIS_SCHEMA,
-                    apiKey,
-                    { model: options?.model },
-                );
+            const response = await this.llm.structuredCompletionWithUsage(
+                systemPrompt,
+                buildDeepAnalysisUserContent(
+                    transcript,
+                    callType,
+                    passportBlock,
+                ),
+                'call_deep_analysis',
+                CALL_DEEP_ANALYSIS_SCHEMA,
+                domain,
+                { model: options?.model },
+            );
 
             const dto = plainToInstance(AgentCallAnalysisDto, {
                 ...(response.result as Record<string, unknown>),

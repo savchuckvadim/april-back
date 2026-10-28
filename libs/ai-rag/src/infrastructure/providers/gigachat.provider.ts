@@ -18,6 +18,7 @@ import { MemoryVectorStoreService } from '../vector-store/memory-vector-store.se
 import { extractResult } from '../../application/extract-result.util';
 import { LongDialogueService } from '../../application/long-dialogue.service';
 import { CombinedCallAnalysisService } from '../../application/combined-call-analysis.service';
+import { invokeChat } from '../../application/invoke-chat.util';
 
 /** Дефолтный лимит одновременных обращений к GigaChat (env GIGACHAT_CONCURRENCY). */
 const DEFAULT_GIGACHAT_CONCURRENCY = 2;
@@ -99,6 +100,26 @@ export class GigaChatProvider implements LlmProvider {
 
     async recomendation(query: string, domain?: string): Promise<string> {
         return this.limiter.run(() => this.run(query, 'recomendation', domain));
+    }
+
+    /** Произвольный вызов без RAG: лимитер и понятная ошибка — как у остальных методов. */
+    async complete(systemPrompt: string, userContent: string): Promise<string> {
+        try {
+            return await this.limiter.run(() =>
+                invokeChat(
+                    this.getLlm() as unknown as BaseChatModel,
+                    systemPrompt,
+                    userContent,
+                ),
+            );
+        } catch (error) {
+            this.logger.error(
+                `GigaChat complete error: ${(error as Error).message}`,
+            );
+            throw new InternalServerErrorException(
+                `GigaChat: ${(error as Error).message}`,
+            );
+        }
     }
 
     /**

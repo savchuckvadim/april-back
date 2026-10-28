@@ -14,6 +14,7 @@ import {
 import { MemoryVectorStoreService } from '../vector-store/memory-vector-store.service';
 import { extractResult } from '../../application/extract-result.util';
 import { CombinedCallAnalysisService } from '../../application/combined-call-analysis.service';
+import { invokeChat } from '../../application/invoke-chat.util';
 
 /** OpenAI-совместимый endpoint Cloud.ru Evolution Foundation Models. */
 const DEFAULT_CLOUDRU_BASE_URL = 'https://foundation-models.api.cloud.ru/v1';
@@ -83,6 +84,22 @@ export class CloudRuProvider implements LlmProvider {
 
     async recomendation(query: string, domain?: string): Promise<string> {
         return this.limiter.run(() => this.run(query, 'recomendation', domain));
+    }
+
+    /** Произвольный вызов без RAG; лимитер общий с остальными методами. */
+    async complete(systemPrompt: string, userContent: string): Promise<string> {
+        try {
+            return await this.limiter.run(() =>
+                invokeChat(this.getLlm(), systemPrompt, userContent),
+            );
+        } catch (error) {
+            this.logger.error(
+                `Cloud.ru complete error: ${(error as Error).message}`,
+            );
+            throw new InternalServerErrorException(
+                `Cloud.ru: ${(error as Error).message}`,
+            );
+        }
     }
 
     /** Резюме + рекомендации одним вызовом; при сбое — два раздельных. */

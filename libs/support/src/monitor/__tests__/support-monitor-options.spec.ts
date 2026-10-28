@@ -4,6 +4,7 @@ import {
 } from '@lib/portal-lib/store/app-settings';
 import {
     normalizeSupportDomain,
+    parseOperatorMap,
     toSupportMonitorOptions,
 } from '../application/support-monitor-options';
 
@@ -18,10 +19,23 @@ describe('toSupportMonitorOptions', () => {
             lineId: 0,
             notifyDomain: LINE,
             notifyUserIds: [],
+            operatorMap: new Map<number, number>(),
             thresholds: { remindMinutes: 10, escalateMinutes: 30 },
             pollMinutes: 3,
             telegramEnabled: true,
         });
+    });
+
+    it('сопоставление операторов: пары, мусор и повторы', () => {
+        const options = toSupportMonitorOptions(LINE, {
+            ...defaults,
+            supportMonitorOperatorMap: '135:77, 1:1; x:2, 5:, 135:99 0:3',
+        });
+        expect([...options.operatorMap.entries()]).toEqual([
+            [135, 77],
+            [1, 1],
+        ]);
+        expect(parseOperatorMap(undefined).size).toBe(0);
     });
 
     it('боевые настройки april-dev: линия 9, колокольчик в april-garant', () => {

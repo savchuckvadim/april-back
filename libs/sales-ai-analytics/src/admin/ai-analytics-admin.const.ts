@@ -73,6 +73,23 @@ export interface AiAnalyticsAdminSnapshotJob {
     steps?: string[];
     /** Пересчитать, даже если данные уже посчитаны (ручка recompute). */
     forceRefresh?: boolean;
+    /**
+     * Догон цепочкой: месяцы, которые воркер поставит ПО ОДНОМУ после
+     * этого прогона (форма `AiSnapshotChainLink` приложения). В очередь
+     * встаёт только первый месяц диапазона: слот конвейера на портал один,
+     * и 24 джобы разом перекладывались каждую минуту, а после предела
+     * перекладок тихо завершались без журнала — хвост месяцев терялся
+     * (gsr 28.10.2026: «18 из 24» не менялось от нажатия к нажатию).
+     */
+    chain?: AiAnalyticsAdminChainLink[];
+}
+
+/** Звено цепочки догона: месяц и ключ периода его jobId. */
+export interface AiAnalyticsAdminChainLink {
+    /** Месяц 'YYYY-MM' в TZ портала. */
+    monthKey: string;
+    /** Ключ периода в jobId: месяц или `recomputeJobKey(месяц, метка)`. */
+    jobKey: string;
 }
 
 /** jobId прогона: 'ai-analytics:snapshot:{rhythm}:{domain}:{key}'. */

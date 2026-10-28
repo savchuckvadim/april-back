@@ -1,115 +1,96 @@
-name: Deploy mirror (Dokploy, ветка mirror)
+name: Deploy mirror (Dokploy, после прод-деплоя)
 
 # Зеркало (тёплый резерв) на Dokploy у второго хостера. Прод-workflow
-# deploy-monorepo.yml не трогаем — это отдельный конвейер:
-#  - detect: изменённые приложения (как на проде; shared → все);
-#  - build:  если для этого коммита прод уже собрал образ :<sha> — только
-#            перетегировать его в :mirror (те же байты, что на проде);
-#            иначе собрать и запушить под тегами :mirror и :mirror-<sha>;
-#  - deploy: POST /api/compose.deploy в Dokploy (x-api-key) и, если заданы
-#            MIRROR_HEALTH_URLS, дождаться health на тестовых доменах.
-# Ветка mirror = копия monorepo после удачного прод-деплоя
-# (git push origin monorepo:mirror); Auto Deploy в Dokploy выключен —
-# деплой идёт отсюда, когда образы уже в GHCR. Runbook: infra/mirror/README.md.
+# deploy-monorepo.yml не трогаем — этот конвейер идёт следом за ним:
+#  - wait-prod: на push в monorepo ждёт, пока прод-деплой ЭТОГО ЖЕ коммита
+#               закончится. Прод упал — зеркало не трогаем (на нём остаётся
+#               последняя рабочая версия);
+#  - retag:     зеркало крутит ровно прод-образы. Для каждого приложения:
+#               есть :<sha> (прод только что собрал) — он; тега :mirror ещё
+#               нет (первый запуск) — :latest; иначе приложение не менялось.
+#               Прошлый :mirror сохраняется как :mirror-prev (откат);
+#  - deploy:    POST /api/compose.deploy в Dokploy (x-api-key) и, если заданы
+#               MIRROR_HEALTH_URLS, ожидание health.
+# Сборки здесь нет: на зеркало попадает только то, что прошло прод.
+# workflow_run не используем — он срабатывает лишь для файла в ветке по
+# умолчанию (main), а push в main запускает старый deploy.yml.
 #
-# Секреты репо: DOKPLOY_URL (https://панель), DOKPLOY_API_KEY,
+# Ручной запуск (Actions → Run workflow):
+#  - sync=changed — как на push (по образам :<sha> выбранного коммита);
+#  - sync=latest  — выровнять зеркало по текущему проду (все :latest);
+#  - sync=none    — только redeploy стека (поменяли env/домены в Dokploy).
+#
+# Секреты репо: DOKPLOY_URL (https://домен панели), DOKPLOY_API_KEY,
 # DOKPLOY_COMPOSE_ID. Переменная (vars) MIRROR_HEALTH_URLS — URL health
-# через пробел, необязательно.
+# через пробел, необязательно. Runbook: infra/mirror/README.md.
 
 on:
     push:
         branches:
-            - mirror
+            - monorepo # та же ветка, что у прода; Dokploy тоже смотрит в неё
     workflow_dispatch:
         inputs:
-            apps:
-                description: 'Что собрать: "all", "none" (только redeploy стека) или список через пробел/запятую (напр. "admin pbx").'
+            sync:
+                description: 'changed — образы этого коммита; latest — выровнять по текущему проду; none — только redeploy'
                 required: false
-                default: 'all'
+                default: 'changed'
+                type: choice
+                options: [changed, latest, none]
 
 permissions:
     contents: read
-    packages: write
+    actions: read # статус прод-workflow
+    packages: write # перетегирование образов в ghcr.io
 
 concurrency:
     group: deploy-mirror
     cancel-in-progress: false
 
 env:
-    IMAGE_TAG: mirror
+    MIRROR_TAG: mirror
+    PROD_WORKFLOW: deploy-monorepo.yml
+    APPS: back kpi-report-sales pbx-install kpi-report-service admin event-sales event-service konstructor rq pbx bot bitrix-app-client
 
 jobs:
     # ---------------------------------------------------------------
-    detect:
+    wait-prod:
+        if: github.event_name == 'push'
         runs-on: ubuntu-latest
-        outputs:
-            apps: ${{ steps.set.outputs.apps }}
+        timeout-minutes: 110
         steps:
-            - uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
-
-            - uses: dorny/paths-filter@v3
-              id: filter
-              with:
-                  filters: |
-                      shared:
-                        - 'libs/**'
-                        - 'package*.json'
-                        - 'prisma/**'
-                        - 'tsconfig*.json'
-                        - 'nest-cli.json'
-                        - 'infra/docker/**'
-                        - '.dockerignore'
-                      back: ['apps/back/**']
-                      kpi-report-sales: ['apps/kpi-report-sales/**']
-                      pbx-install: ['apps/pbx-install/**']
-                      kpi-report-service: ['apps/kpi-report-service/**']
-                      admin: ['apps/admin/**']
-                      event-sales: ['apps/event-sales/**']
-                      event-service: ['apps/event-service/**']
-                      konstructor: ['apps/konstructor/**']
-                      rq: ['apps/rq/**']
-                      pbx: ['apps/pbx/**']
-                      bot: ['apps/bot/**']
-                      bitrix-app-client: ['apps/bitrix-app-client/**']
-
-            - name: Вычислить список приложений
-              id: set
+            - name: Дождаться прод-деплоя коммита ${{ github.sha }}
               env:
-                  MANUAL_APPS: ${{ github.event.inputs.apps }}
+                  GH_TOKEN: ${{ github.token }}
               run: |
-                  ALL='["back","kpi-report-sales","pbx-install","kpi-report-service","admin","event-sales","event-service","konstructor","rq","pbx","bot","bitrix-app-client"]'
-                  if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-                    if [ -z "$MANUAL_APPS" ] || [ "$MANUAL_APPS" = "all" ]; then
-                      echo "apps=$ALL" >> "$GITHUB_OUTPUT"
-                    elif [ "$MANUAL_APPS" = "none" ]; then
-                      echo "apps=[]" >> "$GITHUB_OUTPUT"
+                  api="repos/${{ github.repository }}/actions/workflows/$PROD_WORKFLOW/runs?head_sha=${{ github.sha }}&event=push&per_page=1"
+                  started=$(date +%s)
+                  while true; do
+                    run=$(gh api "$api" --jq '.workflow_runs[0] // empty | "\(.status) \(.conclusion) \(.html_url)"')
+                    elapsed=$(( $(date +%s) - started ))
+                    if [ -z "$run" ]; then
+                      if [ "$elapsed" -ge 300 ]; then
+                        echo "❌ Прод-workflow для ${{ github.sha }} так и не запустился за 5 минут"; exit 1
+                      fi
+                      echo "⌛ прод-workflow ещё не появился (${elapsed}s)"
                     else
-                      ARR=$(echo "$MANUAL_APPS" | tr ', ' '\n' | sed '/^$/d' | sed 's/.*/"&"/' | paste -sd, -)
-                      echo "apps=[$ARR]" >> "$GITHUB_OUTPUT"
+                      read -r status conclusion url <<<"$run"
+                      if [ "$status" = "completed" ]; then
+                        echo "Прод: $conclusion — $url"
+                        if [ "$conclusion" = "success" ]; then exit 0; fi
+                        echo "❌ Прод-деплой не успешен — зеркало остаётся на прошлой версии"; exit 1
+                      fi
+                      echo "⌛ прод: $status (${elapsed}s) — $url"
                     fi
-                  elif [ "${{ steps.filter.outputs.shared }}" = "true" ]; then
-                    echo "apps=$ALL" >> "$GITHUB_OUTPUT"
-                  else
-                    echo "apps=${{ steps.filter.outputs.changes }}" >> "$GITHUB_OUTPUT"
-                  fi
-
-            - name: Показать решение detect
-              run: echo "apps=${{ steps.set.outputs.apps }}"
+                    sleep 30
+                  done
 
     # ---------------------------------------------------------------
-    build:
-        needs: detect
-        if: needs.detect.outputs.apps != '[]'
+    retag:
+        needs: wait-prod
+        # На ручном запуске wait-prod пропущен — retag идёт сразу.
+        if: always() && (needs.wait-prod.result == 'success' || needs.wait-prod.result == 'skipped') && github.event.inputs.sync != 'none'
         runs-on: ubuntu-latest
-        strategy:
-            fail-fast: false
-            matrix:
-                app: ${{ fromJSON(needs.detect.outputs.apps) }}
         steps:
-            - uses: actions/checkout@v4
-
             - uses: docker/setup-buildx-action@v3
 
             - uses: docker/login-action@v3
@@ -118,60 +99,36 @@ jobs:
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Owner в нижнем регистре
-              id: owner
-              run: echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
-
-            # Прод-деплой (deploy-monorepo.yml) пушит образы с тегом :<sha>.
-            # Если ветка mirror указывает на тот же коммит — переиспользуем
-            # ровно тот же образ, что крутится на проде.
-            - name: Переиспользовать прод-образ :<sha>, если он есть
-              id: reuse
+            - name: Перетегировать прод-образы в :${{ env.MIRROR_TAG }}
               env:
-                  IMAGE: ghcr.io/${{ steps.owner.outputs.owner }}/april-${{ matrix.app }}
+                  SYNC: ${{ github.event.inputs.sync || 'changed' }}
               run: |
-                  if docker manifest inspect "$IMAGE:${{ github.sha }}" >/dev/null 2>&1; then
-                    echo "♻️ Найден $IMAGE:${{ github.sha }} — перетегирую в :$IMAGE_TAG"
-                    docker buildx imagetools create \
-                      -t "$IMAGE:$IMAGE_TAG" \
-                      -t "$IMAGE:$IMAGE_TAG-${{ github.sha }}" \
-                      "$IMAGE:${{ github.sha }}"
-                    echo "reused=true" >> "$GITHUB_OUTPUT"
-                  else
-                    echo "🔨 Образа для ${{ github.sha }} нет — собираю"
-                    echo "reused=false" >> "$GITHUB_OUTPUT"
-                  fi
-
-            - name: Выбрать Dockerfile (override или общий)
-              if: steps.reuse.outputs.reused != 'true'
-              id: df
-              run: |
-                  f="infra/docker/${{ matrix.app }}/Dockerfile"
-                  [ -f "$f" ] || f="infra/docker/Dockerfile"
-                  echo "file=$f" >> "$GITHUB_OUTPUT"
-
-            - name: Build & push ${{ matrix.app }}
-              if: steps.reuse.outputs.reused != 'true'
-              uses: docker/build-push-action@v6
-              with:
-                  context: .
-                  file: ${{ steps.df.outputs.file }}
-                  build-args: APP=${{ matrix.app }}
-                  push: true
-                  tags: |
-                      ghcr.io/${{ steps.owner.outputs.owner }}/april-${{ matrix.app }}:${{ env.IMAGE_TAG }}
-                      ghcr.io/${{ steps.owner.outputs.owner }}/april-${{ matrix.app }}:${{ env.IMAGE_TAG }}-${{ github.sha }}
-                  # Читаем кэш прода (общие слои npm ci), пишем в свой — прод-кэш не трогаем.
-                  cache-from: |
-                      type=registry,ref=ghcr.io/${{ steps.owner.outputs.owner }}/april-${{ matrix.app }}:buildcache
-                      type=registry,ref=ghcr.io/${{ steps.owner.outputs.owner }}/april-${{ matrix.app }}:buildcache-mirror
-                  cache-to: type=registry,ref=ghcr.io/${{ steps.owner.outputs.owner }}/april-${{ matrix.app }}:buildcache-mirror,mode=max
+                  set -e
+                  owner="${GITHUB_REPOSITORY_OWNER,,}"
+                  exists () { docker buildx imagetools inspect "$1" >/dev/null 2>&1; }
+                  for app in $APPS; do
+                    img="ghcr.io/$owner/april-$app"
+                    if [ "$SYNC" = "latest" ]; then
+                      src="$img:latest"
+                    elif exists "$img:${{ github.sha }}"; then
+                      src="$img:${{ github.sha }}"
+                    elif ! exists "$img:$MIRROR_TAG"; then
+                      src="$img:latest"   # первый запуск: зеркало = текущий прод
+                    else
+                      echo "= $app: не менялся в этом коммите"
+                      continue
+                    fi
+                    if exists "$img:$MIRROR_TAG"; then
+                      docker buildx imagetools create -t "$img:$MIRROR_TAG-prev" "$img:$MIRROR_TAG"
+                    fi
+                    docker buildx imagetools create -t "$img:$MIRROR_TAG" "$src"
+                    echo "♻️ $app: $src → :$MIRROR_TAG"
+                  done
 
     # ---------------------------------------------------------------
     deploy:
-        needs: [detect, build]
-        # Деплоим и когда build пропущен (apps=[]: менялся только compose/README).
-        if: always() && needs.detect.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'skipped')
+        needs: [wait-prod, retag]
+        if: always() && (needs.wait-prod.result == 'success' || needs.wait-prod.result == 'skipped') && (needs.retag.result == 'success' || needs.retag.result == 'skipped')
         runs-on: ubuntu-latest
         steps:
             - name: Запустить деплой compose-стека в Dokploy
@@ -185,16 +142,16 @@ jobs:
                   curl -fsS -X POST "${DOKPLOY_URL%/}/api/compose.deploy" \
                     -H "x-api-key: ${DOKPLOY_API_KEY}" \
                     -H 'Content-Type: application/json' \
-                    -d "{\"composeId\":\"${DOKPLOY_COMPOSE_ID}\"}"
+                    -d "{\"composeId\":\"${DOKPLOY_COMPOSE_ID}\",\"title\":\"CI ${GITHUB_SHA::7}\"}"
                   echo
-                  echo "🚀 Деплой зеркала поставлен в очередь Dokploy (tag=$IMAGE_TAG, sha=${{ github.sha }})"
+                  echo "🚀 Деплой зеркала поставлен в очередь Dokploy (sha=${{ github.sha }})"
 
-            - name: Дождаться health на тестовых доменах (если заданы)
+            - name: Дождаться health (если заданы MIRROR_HEALTH_URLS)
               if: vars.MIRROR_HEALTH_URLS != ''
               env:
                   URLS: ${{ vars.MIRROR_HEALTH_URLS }}
               run: |
-                  # Dokploy сначала клонирует репо и тянет образы — даём до 15 минут.
+                  # Dokploy клонирует репо и тянет образы — даём до 15 минут.
                   timeout=900; elapsed=0
                   for url in $URLS; do
                     echo "⌛ $url"

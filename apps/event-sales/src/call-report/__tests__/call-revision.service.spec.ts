@@ -161,12 +161,11 @@ const makeDeps = (options?: {
                     : { entityTypeId: 1056, typeId: 128 },
             ),
     };
-    const vibeCodeClient = {
+    const llm = {
         structuredCompletion: options?.llmError
             ? jest.fn().mockRejectedValue(new Error('llm down'))
             : jest.fn().mockResolvedValue(options?.verdict ?? VERDICT),
     };
-    const vibeKeyResolver = { resolve: jest.fn().mockResolvedValue('key-1') };
     const addItem = jest.fn().mockResolvedValue(7);
     // Ревизор ТОЛЬКО обновляет существующие элементы (updateExisting);
     // addItem в моке — для контроля, что создание не вызывается.
@@ -187,8 +186,7 @@ const makeDeps = (options?: {
         aiService as never,
         contextBuilder as never,
         smartResolver as never,
-        vibeCodeClient as never,
-        vibeKeyResolver as never,
+        llm as never,
         dealFamily as never,
     );
     return {
@@ -196,7 +194,7 @@ const makeDeps = (options?: {
         transcriptionStore,
         aiService,
         contextBuilder,
-        vibeCodeClient,
+        llm,
         addItem,
         updateExisting,
         timeline,
@@ -209,8 +207,7 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
     afterEach(() => jest.clearAllMocks());
 
     it('сущность с двумя звонками ревизуется одним LLM-запросом и пишется в смарт + таймлайн', async () => {
-        const { service, vibeCodeClient, addItem, updateExisting, timeline } =
-            makeDeps();
+        const { service, llm, addItem, updateExisting, timeline } = makeDeps();
 
         const result = await service.runForDomain(
             DOMAIN,
@@ -224,7 +221,7 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
             entitiesRevised: 1,
             entitiesFailed: 0,
         });
-        expect(vibeCodeClient.structuredCompletion).toHaveBeenCalledTimes(1);
+        expect(llm.structuredCompletion).toHaveBeenCalledTimes(1);
         // Только ОБНОВЛЕНИЕ существующего элемента (создание запрещено),
         // носитель — ПОСЛЕДНИЙ звонок сущности (activityId 102).
         expect(addItem).not.toHaveBeenCalled();
@@ -265,14 +262,14 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
      * поле RISK_FLAGS карточки, даже если модель что-то вернула.
      */
     it('риск-флаги ревизор не запрашивает у модели и не пишет в карточку', async () => {
-        const { service, vibeCodeClient, updateExisting } = makeDeps({
+        const { service, llm, updateExisting } = makeDeps({
             verdict: { ...VERDICT, riskFlags: ['conflict'] },
         });
 
         await service.runForDomain(DOMAIN, new Date(0), new Date());
 
-        const [systemPrompt, , , schema] = vibeCodeClient.structuredCompletion
-            .mock.calls[0] as [string, string, string, Record<string, unknown>];
+        const [systemPrompt, , , schema] = llm.structuredCompletion.mock
+            .calls[0] as [string, string, string, Record<string, unknown>];
         const properties = schema.properties as Record<string, unknown>;
         expect(properties).not.toHaveProperty('riskFlags');
         expect(schema.required).not.toContain('riskFlags');
@@ -431,7 +428,7 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
     });
 
     it('кандидаты списков уходят в LLM, валидная привязка пишется в смарт и таймлайн', async () => {
-        const { service, vibeCodeClient, updateExisting, timeline } = makeDeps({
+        const { service, llm, updateExisting, timeline } = makeDeps({
             listItems: [
                 {
                     ID: 9001,
@@ -454,7 +451,7 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
 
         // Кандидаты (id + комментарий записи) видны модели.
         const userContent = (
-            vibeCodeClient.structuredCompletion.mock.calls[0] as string[]
+            llm.structuredCompletion.mock.calls[0] as string[]
         )[1];
         expect(userContent).toContain('id=9001');
         expect(userContent).toContain('Показал Искру, просили КП');
@@ -502,13 +499,13 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
     });
 
     it('в LLM уходят паспорт, свежие разборы (agent-analysis либо gigachat) и история', async () => {
-        const { service, vibeCodeClient, contextBuilder } = makeDeps();
+        const { service, llm, contextBuilder } = makeDeps();
 
         await service.runForDomain(DOMAIN, new Date(0), new Date());
 
         expect(contextBuilder.renderForPrompt).toHaveBeenCalled();
         const userContent = (
-            vibeCodeClient.structuredCompletion.mock.calls[0] as string[]
+            llm.structuredCompletion.mock.calls[0] as string[]
         )[1];
         expect(userContent).toContain('ПАСПОРТ ЗВОНКА: тест');
         expect(userContent).toContain('Разбор второго звонка');
@@ -517,7 +514,7 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
     });
 
     it('строки без привязки к сущности не ревизуются', async () => {
-        const { service, vibeCodeClient } = makeDeps({
+        const { service, llm } = makeDeps({
             rows: [row({ entityType: null, entityId: null })],
         });
 
@@ -528,11 +525,11 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
         );
 
         expect(result.entitiesTotal).toBe(0);
-        expect(vibeCodeClient.structuredCompletion).not.toHaveBeenCalled();
+        expect(llm.structuredCompletion).not.toHaveBeenCalled();
     });
 
     it('лимит maxEntities режет прогон, но entitiesTotal показывает всё', async () => {
-        const { service, vibeCodeClient } = makeDeps({
+        const { service, llm } = makeDeps({
             rows: [
                 row({ id: '1', entityId: '1' }),
                 row({ id: '2', entityId: '2' }),
@@ -549,7 +546,7 @@ describe('CallRevisionService (ночной ревизор, Фаза 3)', () => 
 
         expect(result.entitiesTotal).toBe(3);
         expect(result.entitiesRevised).toBe(2);
-        expect(vibeCodeClient.structuredCompletion).toHaveBeenCalledTimes(2);
+        expect(llm.structuredCompletion).toHaveBeenCalledTimes(2);
     });
 
     it('ошибка LLM по сущности не роняет прогон — она уходит в entitiesFailed', async () => {

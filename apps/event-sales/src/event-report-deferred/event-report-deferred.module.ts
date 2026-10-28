@@ -7,6 +7,7 @@ import { PortalQuestionnairesModule } from '@lib/portal-lib/store/questionnaires
 import { PortalFieldsModule } from '../shared/portal-fields';
 import { BxDepartmentModule } from '@lib/bx-department';
 import { EventReportActingManagerService } from '../event-report/services/acting-manager/event-report-acting-manager.service';
+import { EventReportImpersonationService } from '../event-report/services/impersonation/event-report-impersonation.service';
 import { EventReportInitService } from '../event-report/services/init/event-report-init.service';
 import { QuestionnaireSmartContextLoader } from '../event-report/services/post-flow/questionnaire-smart-context.loader';
 import { EventReportDeferredController } from './controllers/event-report-deferred.controller';
@@ -60,6 +61,7 @@ import { DeferredStepDedupStore } from './services/deferred-step-dedup.store';
         QuestionnaireSmartContextLoader,
         // Второй экземпляр безопасен: bitrix приходит параметром.
         EventReportActingManagerService,
+        EventReportImpersonationService,
     ],
 })
 export class EventReportDeferredModule {}

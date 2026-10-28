@@ -160,7 +160,12 @@ describe('AiAnalyticsPipelineAdminService.recompute', () => {
 });
 
 describe('AiAnalyticsPipelineAdminService.backfill', () => {
-    it('ставит по джобе ритма backfill на каждый месяц диапазона', async () => {
+    /**
+     * gsr 28.10.2026: 24 джобы разом перекладывались из-за единственного
+     * слота портала и после предела перекладок терялись — «18 из 24» не
+     * менялось. Теперь в очереди один месяц, остальные — звенья цепочки.
+     */
+    it('ставит цепочку: в очереди первый месяц, остальные в chain, в ответе все джобы', async () => {
         const { service, dispatch } = makeService();
         const result = await service.backfill({
             domain: DOMAIN,
@@ -169,19 +174,45 @@ describe('AiAnalyticsPipelineAdminService.backfill', () => {
         });
         expect(result.monthKeys).toEqual(['2026-01', '2026-02', '2026-03']);
         expect(result.reason).toBeNull();
-        expect(dispatch).toHaveBeenCalledTimes(3);
+        expect(dispatch).toHaveBeenCalledTimes(1);
         expect(result.jobs).toHaveLength(3);
         expect(result.jobs[0]).toEqual({
             jobId: `${AI_ANALYTICS_ADMIN_JOB_ID_PREFIX}:backfill:${DOMAIN}:2026-01`,
             key: '2026-01',
             rhythm: 'backfill',
         });
-        // День прогона — последний день месяца; forceRefresh не ставится.
+        expect(result.jobs[2]).toEqual({
+            jobId: `${AI_ANALYTICS_ADMIN_JOB_ID_PREFIX}:backfill:${DOMAIN}:2026-03`,
+            key: '2026-03',
+            rhythm: 'backfill',
+        });
+        // День прогона — последний день месяца; forceRefresh не ставится;
+        // остальные месяцы — звенья цепочки с ключами своих jobId.
         expect(dispatch.mock.calls[0][2]).toEqual({
             domain: DOMAIN,
             kind: 'backfill',
             monthKey: '2026-01',
             day: '2026-01-31',
+            chain: [
+                { monthKey: '2026-02', jobKey: '2026-02' },
+                { monthKey: '2026-03', jobKey: '2026-03' },
+            ],
+        });
+        expect(dispatch.mock.calls[0][3]).toBe(result.jobs[0].jobId);
+    });
+
+    it('один месяц — джоба без chain', async () => {
+        const { service, dispatch } = makeService();
+        await service.backfill({
+            domain: DOMAIN,
+            from: '2026-02',
+            to: '2026-02',
+        });
+        expect(dispatch.mock.calls[0][2]).toEqual({
+            domain: DOMAIN,
+            kind: 'backfill',
+            monthKey: '2026-02',
+            day: '2026-02-28',
         });
     });
 
@@ -217,17 +248,19 @@ describe('AiAnalyticsPipelineAdminService.backfill', () => {
             `2026-08:recompute:${stamp}`,
             `2026-09:recompute:${stamp}`,
         ]);
-        expect(dispatch.mock.calls.map(call => call[2].monthKey)).toEqual([
-            '2026-07',
-            '2026-08',
-            '2026-09',
-        ]);
+        // В очереди только первый месяц; у звеньев цепочки — ключи с той
+        // же меткой, чтобы jobId в ответе совпали с теми, что поставит воркер.
+        expect(dispatch).toHaveBeenCalledTimes(1);
         expect(dispatch.mock.calls[0][2]).toEqual({
             domain: DOMAIN,
             kind: 'backfill',
             monthKey: '2026-07',
             day: '2026-07-31',
             forceRefresh: true,
+            chain: [
+                { monthKey: '2026-08', jobKey: `2026-08:recompute:${stamp}` },
+                { monthKey: '2026-09', jobKey: `2026-09:recompute:${stamp}` },
+            ],
         });
         const again = await service.backfill(
             { domain: DOMAIN, from: '2026-07', to: '2026-07', force: true },

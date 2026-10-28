@@ -13,6 +13,7 @@ import {
 import { MemoryVectorStoreService } from '../vector-store/memory-vector-store.service';
 import { extractResult } from '../../application/extract-result.util';
 import { CombinedCallAnalysisService } from '../../application/combined-call-analysis.service';
+import { invokeChat } from '../../application/invoke-chat.util';
 
 @Injectable()
 export class OpenAiProvider implements LlmProvider {
@@ -37,6 +38,20 @@ export class OpenAiProvider implements LlmProvider {
 
     async recomendation(query: string, domain?: string): Promise<string> {
         return this.run(query, 'recomendation', domain);
+    }
+
+    /** Произвольный вызов без RAG. */
+    async complete(systemPrompt: string, userContent: string): Promise<string> {
+        try {
+            return await invokeChat(this.getLlm(), systemPrompt, userContent);
+        } catch (error) {
+            this.logger.error(
+                `OpenAI complete error: ${(error as Error).message}`,
+            );
+            throw new InternalServerErrorException(
+                `OpenAI: ${(error as Error).message}`,
+            );
+        }
     }
 
     /** Резюме + рекомендации одним вызовом; при сбое — два раздельных. */

@@ -181,6 +181,15 @@
         "tsConfigPath": "libs/vibecode/tsconfig.lib.json"
       }
     },
+    "llm-gateway": {
+      "type": "library",
+      "root": "libs/llm-gateway",
+      "entryFile": "index",
+      "sourceRoot": "libs/llm-gateway/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/llm-gateway/tsconfig.lib.json"
+      }
+    },
     "call-lib": {
       "type": "library",
       "root": "libs/call-lib",

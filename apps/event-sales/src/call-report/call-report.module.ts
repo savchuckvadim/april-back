@@ -18,6 +18,7 @@ import {
 } from '@lib/call-lib';
 import { CallReportWeeklyModule } from '@lib/call-lib/call-report/weekly-report/call-report-weekly.module';
 import { AiRagModule } from '@lib/ai-rag';
+import { LlmGatewayModule } from '@lib/llm-gateway';
 import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
 import { BxDepartmentModule } from 'libs/bx-department';
@@ -68,6 +69,9 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         TranscriptionProviderModule,
         AiModule,
         AiRagModule,
+        // Шлюз структурных LLM-вызовов: VibeCode + запасной OpenAI-совместимый
+        // endpoint, предохранитель (план устойчивости к провайдерам 28.10.2026)
+        LlmGatewayModule,
         CallReportSmartModule,
         // Недельный Excel-отчёт: всё, что не помещается в карточку смарта
         CallReportWeeklyModule,

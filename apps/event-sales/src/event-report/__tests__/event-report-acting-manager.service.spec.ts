@@ -1,6 +1,7 @@
 import { EventReportActingManagerService } from '../services/acting-manager/event-report-acting-manager.service';
 import { EventReportContext } from '../services/context/event-report.context';
 import { ActingManagerMark } from '../services/acting-manager/acting-manager.mark';
+import { EventReportImpersonationService } from '../services/impersonation/event-report-impersonation.service';
 
 /**
  * РЕЖИМ РУКОВОДИТЕЛЯ: проверка пометки по структуре отдела и уведомление.
@@ -23,9 +24,14 @@ const makeService = (
     getStructure: jest.Mock = jest
         .fn()
         .mockResolvedValue(structureResponse([231, 465])),
+    isSuperUser: jest.Mock = jest.fn().mockResolvedValue(false),
 ) => ({
     getStructure,
-    service: new EventReportActingManagerService({ getStructure } as never),
+    isSuperUser,
+    service: new EventReportActingManagerService(
+        { getStructure } as never,
+        new EventReportImpersonationService({ isSuperUser } as never),
+    ),
 });
 
 const dto = (over: Record<string, unknown> = {}) =>
@@ -94,6 +100,57 @@ describe('EventReportActingManagerService.resolve', () => {
             id: 481,
             name: 'Имя с клиента',
             isConfirmedHead: true,
+        });
+    });
+
+    describe('«работать как»', () => {
+        const asEmployee = (over: Record<string, unknown> = {}) =>
+            dto({
+                actingManager: undefined,
+                impersonatedBy: { ID: 447, NAME: 'Петров Пётр' },
+                ...over,
+            });
+
+        it('подтверждённый суперпользователь — отчёт без пометки, как у сотрудника', async () => {
+            const { service, getStructure, isSuperUser } = makeService(
+                undefined,
+                jest.fn().mockResolvedValue(true),
+            );
+            await expect(service.resolve(asEmployee())).resolves.toBeNull();
+            expect(isSuperUser).toHaveBeenCalledWith(DOMAIN, 447);
+            expect(getStructure).not.toHaveBeenCalled();
+        });
+
+        it('сотрудник-руководитель отчитался за подчинённого — пометка самого сотрудника', async () => {
+            const { service } = makeService(
+                undefined,
+                jest.fn().mockResolvedValue(true),
+            );
+            const mark = await service.resolve(
+                asEmployee({ actingManager: { ID: 481 } }),
+            );
+            expect(mark).toMatchObject({ id: 481, isConfirmedHead: true });
+        });
+
+        it('не суперпользователь — видимая пометка «Отчёт отправил», себя не спрятать', async () => {
+            const { service, getStructure } = makeService();
+            await expect(service.resolve(asEmployee())).resolves.toEqual({
+                id: 447,
+                name: 'Петров Пётр',
+                isConfirmedHead: false,
+            });
+            expect(getStructure).not.toHaveBeenCalled();
+        });
+
+        it('проверка роли упала — считается неподтверждённой', async () => {
+            const { service } = makeService(
+                undefined,
+                jest.fn().mockRejectedValue(new Error('db down')),
+            );
+            await expect(service.resolve(asEmployee())).resolves.toMatchObject({
+                id: 447,
+                isConfirmedHead: false,
+            });
         });
     });
 

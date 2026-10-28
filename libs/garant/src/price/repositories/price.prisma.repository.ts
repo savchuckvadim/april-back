@@ -82,8 +82,6 @@ export class PricePrismaRepository implements PriceRepository {
                 'garantPackageCode code and region type are required',
             );
         }
-        console.log(price.garantPackageCode);
-        console.log(price.code);
         const existingPrice = await this.findByUniqueFromGarantPackage(
             price.garantPackageCode,
             price.region_type,

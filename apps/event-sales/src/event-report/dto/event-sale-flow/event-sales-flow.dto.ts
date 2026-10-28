@@ -33,6 +33,7 @@ import { LeadDto } from './lead.dto';
 import { PresentationDto } from './presentation.dto';
 import { QuestionnaireAnswerDto } from './questionnaire-answer.dto';
 import { ActingManagerDto } from './acting-manager.dto';
+import { ImpersonatorDto } from './impersonator.dto';
 
 /**
  * TMC-сделка для возврата (legacy-тип фронта `TmcDealsForReturn`:
@@ -382,6 +383,21 @@ export class EventSalesFlowDto {
     @ValidateNested()
     @Type(() => ActingManagerDto)
     actingManager?: ActingManagerDto;
+
+    @ApiPropertyOptional({
+        description:
+            'Режим «работать как»: суперпользователь April, который открыл ' +
+            '«Звонки» от имени сотрудника. Отчёт идёт как обычный отчёт ' +
+            'сотрудника — без пометок на портале и без уведомлений; запись ' +
+            'остаётся только в журнале сервера. Роль не подтвердилась — ' +
+            'отчёт получает видимую пометку «Отчёт отправил». Поле не ' +
+            'передано — обычный отчёт.',
+        type: ImpersonatorDto,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => ImpersonatorDto)
+    impersonatedBy?: ImpersonatorDto;
 
     @ApiPropertyOptional({
         description:

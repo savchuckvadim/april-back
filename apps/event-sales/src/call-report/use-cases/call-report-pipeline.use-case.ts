@@ -1,5 +1,6 @@
 import { renderTranscriptWithTimecodes } from '@lib/call-lib/transcription/types/transcript-segment.types';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Prisma } from 'generated/prisma';
 import { PBXService } from '@lib/pbx/pbx.service';
 import {
@@ -27,6 +28,23 @@ import {
     resolveAnalysisStop,
 } from '../services/call-duration-gate.util';
 import { CallReportSettingsService } from '../services/call-report-settings.service';
+
+/** Итог контура 1: тексты (null — не посчитано) и модель, которой считали. */
+interface LlmAnalysisOutcome {
+    resume: string | null;
+    recomendation: string | null;
+    model: LlmModel;
+}
+
+/** Запасная модель контура 1 из env CALL_REPORT_LLM_FALLBACK_MODEL: только известный код, иначе null. */
+export function resolveFallbackLlmModel(
+    raw: string | undefined,
+): LlmModel | null {
+    const value = raw?.trim();
+    return value && LLM_MODELS.includes(value as LlmModel)
+        ? (value as LlmModel)
+        : null;
+}
 
 /** Задача конвейера: один звонок (по сделке или лиду) на обработку. */
 export interface CallReportJobPayload {
@@ -126,6 +144,12 @@ const APP_NAME = 'call-report';
 @Injectable()
 export class CallReportPipelineUseCase {
     private readonly logger = new Logger(CallReportPipelineUseCase.name);
+    /**
+     * Запасная модель контура 1 (env CALL_REPORT_LLM_FALLBACK_MODEL): упала
+     * основная (GigaChat) — один повтор ею; null — повтора нет (план
+     * устойчивости к провайдерам 28.10.2026).
+     */
+    private readonly fallbackLlmModel: LlmModel | null;
 
     constructor(
         private readonly pbxService: PBXService,
@@ -136,7 +160,12 @@ export class CallReportPipelineUseCase {
         private readonly classifyStep: CallClassifyStepService,
         private readonly contextBuilder: CallContextBuilderService,
         private readonly settingsService: CallReportSettingsService,
-    ) {}
+        configService: ConfigService,
+    ) {
+        this.fallbackLlmModel = resolveFallbackLlmModel(
+            configService.get<string>('CALL_REPORT_LLM_FALLBACK_MODEL'),
+        );
+    }
 
     /** Обе стадии подряд (синхронный путь POST /call-report/analyze). */
     async execute(
@@ -336,25 +365,30 @@ export class CallReportPipelineUseCase {
             ? this.contextBuilder.renderForPrompt(passport)
             : null;
         const llmModel = this.resolveLlmModel(settings.llmModel);
-        const { resume, recomendation } = await this.runLlmAnalysis(
+        const {
+            resume,
+            recomendation,
+            model: usedModel,
+        } = await this.runLlmAnalysis(
             passportBlock ? `${passportBlock}\n\n${transcript}` : transcript,
             payload,
             llmModel,
         );
 
+        // В записях — модель, которой реально посчитано (могла быть запасная).
         const resumeSaved = await this.saveAiRecord(
             CALL_RESUME_TYPE,
             resume,
             payload,
             payload.transcriptionId,
-            llmModel,
+            usedModel,
         );
         const recomendationSaved = await this.saveAiRecord(
             CALL_RECOMENDATION_TYPE,
             recomendation,
             payload,
             payload.transcriptionId,
-            llmModel,
+            usedModel,
         );
 
         if (resume) {
@@ -394,25 +428,46 @@ export class CallReportPipelineUseCase {
     /**
      * Резюме + рекомендации ОДНИМ объединённым вызовом LLM (провайдер сам
      * откатывается на два вызова при непарсибельном ответе; отдельного
-     * kill-switch больше нет). Ошибка анализа не роняет конвейер —
-     * транскрипт уже сохранён.
+     * kill-switch больше нет). Упала основная модель — один повтор запасной
+     * из env, если она задана и отличается. Ошибка анализа не роняет
+     * конвейер — транскрипт уже сохранён; `model` в ответе — чем посчитано.
      */
     private async runLlmAnalysis(
         text: string,
         payload: CallReportJobPayload,
         model: LlmModel,
-    ): Promise<{ resume: string | null; recomendation: string | null }> {
+    ): Promise<LlmAnalysisOutcome> {
         try {
-            return await this.llmOrchestrator.analyzeCall(
+            const pair = await this.llmOrchestrator.analyzeCall(
                 model,
                 text,
                 payload.domain,
             );
+            return { ...pair, model };
         } catch (error) {
+            const fallback = this.fallbackLlmModel;
+            if (fallback === null || fallback === model) {
+                this.logger.warn(
+                    `LLM-анализ не выполнен (activity ${payload.activityId}): ${(error as Error).message}`,
+                );
+                return { resume: null, recomendation: null, model };
+            }
             this.logger.warn(
-                `LLM-анализ не выполнен (activity ${payload.activityId}): ${(error as Error).message}`,
+                `LLM ${model} не ответила (activity ${payload.activityId}): ${(error as Error).message} — повтор через ${fallback}`,
             );
-            return { resume: null, recomendation: null };
+            try {
+                const pair = await this.llmOrchestrator.analyzeCall(
+                    fallback,
+                    text,
+                    payload.domain,
+                );
+                return { ...pair, model: fallback };
+            } catch (second) {
+                this.logger.warn(
+                    `LLM-анализ не выполнен и запасной моделью ${fallback} (activity ${payload.activityId}): ${(second as Error).message}`,
+                );
+                return { resume: null, recomendation: null, model };
+            }
         }
     }
 

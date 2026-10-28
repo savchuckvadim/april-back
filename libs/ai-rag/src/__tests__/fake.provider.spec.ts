@@ -19,4 +19,9 @@ describe('FakeProvider', () => {
         await expect(provider.resume('')).resolves.toBeDefined();
         await expect(provider.recomendation('')).resolves.toBeDefined();
     });
+
+    it('complete отдаёт пустой JSON-объект — заглушка годится шлюзу структурных вызовов', async () => {
+        const result = await provider.complete('система', 'текст');
+        expect(JSON.parse(result)).toEqual({});
+    });
 });

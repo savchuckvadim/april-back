@@ -117,7 +117,7 @@ const makeDeps = (options?: {
     const smartResolver = {
         resolve: jest.fn().mockResolvedValue({ entityTypeId: 1064 }),
     };
-    const vibeCodeClient = {
+    const llm = {
         structuredCompletion: jest.fn().mockResolvedValue(
             options?.verdict ?? {
                 comparison: 'Отчёт менеджера не заполнен, а звонок состоялся',
@@ -126,7 +126,6 @@ const makeDeps = (options?: {
             },
         ),
     };
-    const vibeKeyResolver = { resolve: jest.fn().mockResolvedValue('key') };
     // Сделка-отчёт берётся из раскладки связей (проверена по воронке),
     // а не из сырого ответа агента: комментарий о расхождении уходит в
     // таймлайн этой сделки.
@@ -143,19 +142,18 @@ const makeDeps = (options?: {
         transcriptionStore as never,
         aiService as never,
         smartResolver as never,
-        vibeCodeClient as never,
-        vibeKeyResolver as never,
+        llm as never,
         dealFamily as never,
         dealVerify as never,
     );
-    return { service, timeline, api, aiService, vibeCodeClient, dealVerify };
+    return { service, timeline, api, aiService, llm, dealVerify };
 };
 
 describe('PresentationAuditService (сверка отчёта менеджера с разбором)', () => {
     afterEach(() => jest.clearAllMocks());
 
     it('сверяет разбор презентации: ais-запись + таймлайн элемента + сделки при mismatch', async () => {
-        const { service, timeline, aiService, vibeCodeClient } = makeDeps();
+        const { service, timeline, aiService, llm } = makeDeps();
 
         const result = await service.runForDomain(
             DOMAIN,
@@ -168,7 +166,7 @@ describe('PresentationAuditService (сверка отчёта менеджера
         expect(result.mismatched).toBe(1);
         // Выжимка разбора и отчёт менеджера уходят в LLM.
         const userContent = (
-            vibeCodeClient.structuredCompletion.mock.calls[0] as string[]
+            llm.structuredCompletion.mock.calls[0] as string[]
         )[1];
         expect(userContent).toContain('Хвост пройден: нет');
         expect(userContent).toContain('ОТЧЁТ МЕНЕДЖЕРА');
@@ -211,7 +209,7 @@ describe('PresentationAuditService (сверка отчёта менеджера
     });
 
     it('второй источник отчёта: запись списка «Презентация» уходит в промпт сверки', async () => {
-        const { service, vibeCodeClient } = makeDeps({
+        const { service, llm } = makeDeps({
             listItems: [
                 {
                     ID: 7001,
@@ -228,7 +226,7 @@ describe('PresentationAuditService (сверка отчёта менеджера
         await service.runForDomain(DOMAIN, new Date(0), new Date());
 
         const userContent = (
-            vibeCodeClient.structuredCompletion.mock.calls[0] as string[]
+            llm.structuredCompletion.mock.calls[0] as string[]
         )[1];
         expect(userContent).toContain('СПИСКАХ ОТЧЁТНОСТИ');
         expect(userContent).toContain('id=7001');
@@ -239,10 +237,10 @@ describe('PresentationAuditService (сверка отчёта менеджера
     });
 
     it('записей в списках нет — в промпте честное «записей не найдено»', async () => {
-        const { service, vibeCodeClient } = makeDeps();
+        const { service, llm } = makeDeps();
         await service.runForDomain(DOMAIN, new Date(0), new Date());
         const userContent = (
-            vibeCodeClient.structuredCompletion.mock.calls[0] as string[]
+            llm.structuredCompletion.mock.calls[0] as string[]
         )[1];
         expect(userContent).toContain('записей не найдено');
     });
@@ -299,7 +297,7 @@ describe('PresentationAuditService (сверка отчёта менеджера
     });
 
     it('уже сверенная транскрипция пропускается (идемпотентность)', async () => {
-        const { service, vibeCodeClient } = makeDeps({
+        const { service, llm } = makeDeps({
             records: [
                 analysisRecord(),
                 { transcription_id: '42', type: 'presentation-audit' },
@@ -312,11 +310,11 @@ describe('PresentationAuditService (сверка отчёта менеджера
         );
         expect(result.skippedDone).toBe(1);
         expect(result.candidates).toBe(0);
-        expect(vibeCodeClient.structuredCompletion).not.toHaveBeenCalled();
+        expect(llm.structuredCompletion).not.toHaveBeenCalled();
     });
 
     it('не-презентационные разборы не сверяются', async () => {
-        const { service, vibeCodeClient } = makeDeps({
+        const { service, llm } = makeDeps({
             records: [
                 analysisRecord({ callType: 'cold', relatedDeals: undefined }),
             ],
@@ -327,14 +325,12 @@ describe('PresentationAuditService (сверка отчёта менеджера
             new Date(),
         );
         expect(result.candidates).toBe(0);
-        expect(vibeCodeClient.structuredCompletion).not.toHaveBeenCalled();
+        expect(llm.structuredCompletion).not.toHaveBeenCalled();
     });
 
     it('ошибка одной сверки не роняет прогон', async () => {
-        const { service, vibeCodeClient } = makeDeps();
-        vibeCodeClient.structuredCompletion.mockRejectedValue(
-            new Error('llm down'),
-        );
+        const { service, llm } = makeDeps();
+        llm.structuredCompletion.mockRejectedValue(new Error('llm down'));
         const result = await service.runForDomain(
             DOMAIN,
             new Date(0),

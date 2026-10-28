@@ -15,6 +15,7 @@ const options = (
     lineId: 9,
     notifyDomain: 'april-garant.bitrix24.ru',
     notifyUserIds: [1, 135],
+    operatorMap: new Map<number, number>(),
     thresholds: { remindMinutes: 10, escalateMinutes: 30 },
     pollMinutes: 3,
     telegramEnabled: true,
@@ -119,6 +120,41 @@ describe('SupportSignalDispatcher', () => {
                 remembered: true,
             }),
         );
+    });
+
+    it('напоминание «клиент ждёт» — только оператору, который взял диалог', async () => {
+        const { dispatcher, systemAdd } = setup();
+        const channels = await dispatcher.openChannels(options(), []);
+        const mapped = options({
+            operatorMap: new Map<number, number>([[135, 77]]),
+        });
+        // диалог signal взят оператором 135 (фикстура)
+        await dispatcher.dispatch(signal, LINE, mapped, channels);
+        expect(systemAdd).toHaveBeenCalledTimes(1);
+        expect(systemAdd).toHaveBeenCalledWith(
+            expect.objectContaining({ USER_ID: 77 }),
+        );
+
+        systemAdd.mockClear();
+        await dispatcher.dispatch(
+            { ...signal, kind: 'escalation', waitedMinutes: 31 },
+            LINE,
+            mapped,
+            channels,
+        );
+        expect(systemAdd).toHaveBeenCalledTimes(2);
+    });
+
+    it('оператор не сопоставлен — напоминание всем получателям', async () => {
+        const { dispatcher, systemAdd } = setup();
+        const channels = await dispatcher.openChannels(options(), []);
+        await dispatcher.dispatch(
+            signal,
+            LINE,
+            options({ operatorMap: new Map<number, number>([[500, 9]]) }),
+            channels,
+        );
+        expect(systemAdd).toHaveBeenCalledTimes(2);
     });
 
     it('колокольчик одному сотруднику упал — остальным доставлен', async () => {

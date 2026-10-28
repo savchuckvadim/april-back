@@ -12,7 +12,7 @@ import {
 import { KNOWLEDGE_KINDS } from '@lib/ai-rag';
 import { CallReportSmartResolverService } from '@lib/call-lib/call-report/services/call-report-smart-resolver.service';
 import { CallReportSmartWriterService } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
-import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
+import { StructuredLlmGateway } from '@lib/llm-gateway';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 import {
     buildComplianceUserContent,
@@ -55,8 +55,7 @@ export class CallComplianceReviewService {
         private readonly aiService: AiService,
         private readonly smartResolver: CallReportSmartResolverService,
         private readonly materials: KnowledgeMaterialsService,
-        private readonly vibeCodeClient: VibeCodeClient,
-        private readonly vibeKeyResolver: VibeKeyResolverService,
+        private readonly llm: StructuredLlmGateway,
     ) {}
 
     /**
@@ -116,13 +115,12 @@ export class CallComplianceReviewService {
                 return null;
             }
 
-            const apiKey = await this.vibeKeyResolver.resolve(domain);
             const prompt =
                 (isPresentation
                     ? COMPLIANCE_REVIEW_PROMPT + PRESENTATION_COMPLIANCE_BLOCK
                     : COMPLIANCE_REVIEW_PROMPT) +
                 renderOwnOrgNamesBlock(ownOrgNames);
-            const raw = (await this.vibeCodeClient.structuredCompletion(
+            const raw = (await this.llm.structuredCompletion(
                 prompt,
                 buildComplianceUserContent({
                     transcript: row.text,
@@ -132,7 +130,7 @@ export class CallComplianceReviewService {
                 }),
                 'call_compliance_review',
                 COMPLIANCE_REVIEW_SCHEMA,
-                apiKey,
+                domain,
                 { model },
             )) as ComplianceReviewResult;
 

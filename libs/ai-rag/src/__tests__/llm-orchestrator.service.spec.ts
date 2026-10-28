@@ -9,6 +9,7 @@ function makeProvider(label: string): jest.Mocked<LlmProvider> {
             resume: `${label}:resume`,
             recomendation: `${label}:recomendation`,
         }),
+        complete: jest.fn().mockResolvedValue(`${label}:complete`),
     };
 }
 
@@ -87,6 +88,31 @@ describe('LlmOrchestratorService', () => {
                 resume: `${label}:resume`,
                 recomendation: `${label}:recomendation`,
             });
+        },
+    );
+
+    it.each([
+        ['gigachat', giga],
+        ['cloudru', cloudru],
+        ['openai', openai],
+        ['ollama', ollama],
+        ['fake', fake],
+    ] as const)(
+        'complete (любой промпт, без RAG) делегирует провайдеру %s',
+        async (model, provider) => {
+            const result = await orchestrator.complete(
+                model,
+                'системный промпт',
+                'сообщение',
+            );
+            // eslint-disable-next-line @typescript-eslint/unbound-method
+            expect(provider.complete).toHaveBeenCalledWith(
+                'системный промпт',
+                'сообщение',
+            );
+            expect(result).toBe(
+                `${model === 'gigachat' ? 'giga' : model}:complete`,
+            );
         },
     );
 });

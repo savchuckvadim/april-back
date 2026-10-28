@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { VibecodeModule } from '@lib/vibecode';
 import { YandexModule } from '@lib/call-lib/yandex/yandex.module';
 import { StreamingTranscriptionService } from '../services/streaming-transcription.service';
+import { WhisperCompatibleTranscriptionService } from '../services/whisper-compatible-transcription.service';
 import { TranscriptionRouterService } from './transcription-router.service';
 
 /**
@@ -16,7 +17,13 @@ import { TranscriptionRouterService } from './transcription-router.service';
  */
 @Module({
     imports: [ConfigModule, YandexModule, VibecodeModule],
-    providers: [StreamingTranscriptionService, TranscriptionRouterService],
+    providers: [
+        StreamingTranscriptionService,
+        // Свой Whisper — третий транскрибатор; без TRANSCRIPTION_WHISPER_BASE_URL
+        // просто не участвует в маршрутизации
+        WhisperCompatibleTranscriptionService,
+        TranscriptionRouterService,
+    ],
     exports: [TranscriptionRouterService, VibecodeModule],
 })
 export class TranscriptionProviderModule {}

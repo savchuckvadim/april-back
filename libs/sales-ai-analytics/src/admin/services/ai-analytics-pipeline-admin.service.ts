@@ -12,11 +12,19 @@
  * пересчёт) и у `backfill` с `force` ключ несёт метку момента — иначе
  * повторный запуск тихо пропал бы; у обычного `backfill` ключ — месяц,
  * повтор за тот же период дубля не создаёт.
+ *
+ * Догон — цепочкой. Слот конвейера на портал один, а воркер берёт джобы
+ * очереди пачкой: 24 месяца разом перекладывались каждую минуту и после
+ * предела перекладок тихо завершались без журнала — хвост месяцев терялся
+ * при каждом нажатии (gsr 28.10.2026: «18 из 24»). Поэтому в очередь
+ * встаёт первый месяц с `chain` остальных, а следующий ставит сам воркер
+ * после предыдущего; jobId всех месяцев известны заранее и возвращаются.
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { JobNames, QueueDispatcherService, QueueNames } from '@lib/queue';
 import {
     AI_ANALYTICS_ADMIN_JOB_OPTIONS,
+    AiAnalyticsAdminChainLink,
     AiAnalyticsAdminRhythm,
     AiAnalyticsAdminSnapshotJob,
     adminPipelineKey,
@@ -56,7 +64,7 @@ export interface BackfillInput {
     force?: boolean;
 }
 
-/** Поставленная джоба: id и её ключ периода. */
+/** Поставленная (у догона — запланированная цепочкой) джоба: id и ключ периода. */
 export interface DispatchedJob {
     jobId: string;
     /** Ключ периода джобы ('2026-09', '2026-W36', '2026-09-21'). */
@@ -77,7 +85,10 @@ export interface BackfillResult {
     domain: string;
     /** Месяцы диапазона, по одному на джобу. */
     monthKeys: string[];
-    /** Сколько джоб поставлено (= числу месяцев). */
+    /**
+     * Джобы цепочки по одной на месяц: первая уже в очереди, остальные
+     * воркер ставит по одной после предыдущей; jobId известны заранее.
+     */
     jobs: DispatchedJob[];
     /** Отказ: диапазон пуст или перевёрнут; иначе null. */
     reason: string | null;
@@ -124,9 +135,10 @@ export class AiAnalyticsPipelineAdminService {
     }
 
     /**
-     * Догон диапазона месяцев: по джобе ритма backfill на месяц, от старых
-     * к свежим (воркер берёт джобы по очереди — модель месяца M считается
-     * до восстановления прогноза M + 1). `force` — пересчитать заново.
+     * Догон диапазона месяцев цепочкой ритма backfill, от старых к свежим
+     * (модель месяца M считается до восстановления прогноза M + 1): в
+     * очередь встаёт первый месяц с остальными в `chain`, следующий ставит
+     * воркер после предыдущего. `force` — пересчитать заново.
      */
     async backfill(
         input: BackfillInput,
@@ -149,24 +161,27 @@ export class AiAnalyticsPipelineAdminService {
                 reason: AI_ANALYTICS_ADMIN_BACKFILL_REASONS.tooWide,
             };
         }
-        const jobs: DispatchedJob[] = [];
         const stamp = String(now.getTime());
-        for (const monthKey of monthKeys) {
-            const job: AiAnalyticsAdminSnapshotJob = {
-                domain: input.domain,
-                kind: 'backfill',
-                monthKey,
-                day: monthLastDay(monthKey),
-                ...(input.steps?.length ? { steps: [...input.steps] } : {}),
-                ...(input.force ? { forceRefresh: true } : {}),
-            };
-            const key = input.force
-                ? recomputeJobKey(monthKey, stamp)
-                : monthKey;
-            jobs.push(await this.enqueue(job, key));
-        }
+        const links: AiAnalyticsAdminChainLink[] = monthKeys.map(monthKey => ({
+            monthKey,
+            jobKey: input.force ? recomputeJobKey(monthKey, stamp) : monthKey,
+        }));
+        const [first, ...rest] = links;
+        const job: AiAnalyticsAdminSnapshotJob = {
+            domain: input.domain,
+            kind: 'backfill',
+            monthKey: first.monthKey,
+            day: monthLastDay(first.monthKey),
+            ...(input.steps?.length ? { steps: [...input.steps] } : {}),
+            ...(input.force ? { forceRefresh: true } : {}),
+            ...(rest.length ? { chain: rest } : {}),
+        };
+        await this.enqueue(job, first.jobKey);
+        const jobs = links.map(link =>
+            plannedJob(job.kind, input.domain, link.jobKey),
+        );
         this.logger.log(
-            `Ручной догон ${input.domain}: месяцев ${monthKeys.length}` +
+            `Ручной догон ${input.domain}: месяцев ${monthKeys.length} цепочкой` +
                 (input.force ? ' (заново, forceRefresh)' : ''),
         );
         return { domain: input.domain, monthKeys, jobs, reason: null };
@@ -176,16 +191,25 @@ export class AiAnalyticsPipelineAdminService {
         job: AiAnalyticsAdminSnapshotJob,
         key: string,
     ): Promise<DispatchedJob> {
-        const jobId = buildAdminPipelineJobId(job.kind, job.domain, key);
+        const planned = plannedJob(job.kind, job.domain, key);
         await this.dispatcher.dispatch<AiAnalyticsAdminSnapshotJob>(
             QueueNames.SALES_KPI_REPORT,
             JobNames.SALES_AI_ANALYTICS_SNAPSHOT,
             job,
-            jobId,
+            planned.jobId,
             AI_ANALYTICS_ADMIN_JOB_OPTIONS,
         );
-        return { jobId, key, rhythm: job.kind };
+        return planned;
     }
+}
+
+/** Джоба по ритму, домену и ключу периода — её jobId детерминирован. */
+function plannedJob(
+    rhythm: AiAnalyticsAdminRhythm,
+    domain: string,
+    key: string,
+): DispatchedJob {
+    return { jobId: buildAdminPipelineJobId(rhythm, domain, key), key, rhythm };
 }
 
 /** Месяцы 'YYYY-MM' от `from` до `to` включительно; перевёрнутый — пусто. */

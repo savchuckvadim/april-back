@@ -9,9 +9,12 @@ import {
 } from '@lib/call-lib';
 import {
     CallClassificationResultDto,
-    VibeCodeClient,
-    VibeKeyResolverService,
+    CLASSIFICATION_TRANSCRIPT_LIMIT,
+    classificationSchemaFor,
+    sampleTranscriptForClassification,
 } from '@lib/vibecode';
+import { LLM_PROVIDER_AIS_CODE, StructuredLlmGateway } from '@lib/llm-gateway';
+import { plainToInstance } from 'class-transformer';
 import { CallClassifyInstructionService } from './call-classify-instruction.service';
 import { CallTypePrior } from './call-type-prior.util';
 import { CallReportJobPayload } from '../use-cases/call-report-pipeline.use-case';
@@ -65,8 +68,7 @@ export class CallClassifyStepService {
     private readonly escalationConfidence = CLASSIFY_ESCALATION_CONFIDENCE;
 
     constructor(
-        private readonly vibeCodeClient: VibeCodeClient,
-        private readonly vibeKeyResolver: VibeKeyResolverService,
+        private readonly llm: StructuredLlmGateway,
         private readonly instructionService: CallClassifyInstructionService,
         private readonly callTypeRegistry: CallTypeRegistryService,
         private readonly aiService: AiService,
@@ -98,12 +100,19 @@ export class CallClassifyStepService {
                 (await this.instructionService.resolve(payload.domain)) +
                 this.renderTypeCatalog(registry) +
                 (crmHint ?? '');
-            const apiKey = await this.vibeKeyResolver.resolve(payload.domain);
-            const modelAnswer = await this.vibeCodeClient.classifyCall(
-                text,
+            // Длинный разговор — начало и конец (презентация, решение и
+            // закрытие проявляются ближе к концу); схема — с enum кодов
+            // реестра; провайдера и ключ выбирает шлюз LLM.
+            const response = await this.llm.structuredCompletionWithUsage(
                 instruction,
-                apiKey,
-                registry.codes,
+                `Классифицируй звонок по расшифровке:\n\n${sampleTranscriptForClassification(text, CLASSIFICATION_TRANSCRIPT_LIMIT)}`,
+                'call_classification',
+                classificationSchemaFor(registry.codes),
+                payload.domain,
+            );
+            const modelAnswer = plainToInstance(
+                CallClassificationResultDto,
+                response.result,
             );
             const classification = this.applyPrior(
                 modelAnswer,
@@ -122,8 +131,8 @@ export class CallClassifyStepService {
             }
 
             await this.aiService.create({
-                provider: 'bitrix-vibecode',
-                model: 'bitrix-vibecode',
+                provider: LLM_PROVIDER_AIS_CODE[response.provider],
+                model: LLM_PROVIDER_AIS_CODE[response.provider],
                 type: CALL_CLASSIFY_TYPE,
                 status: 'done',
                 result: classification.callType,

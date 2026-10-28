@@ -3,12 +3,14 @@ import { QueueConcurrencyService } from '@/modules/queue';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import {
+    AI_PIPELINE_JOB_OPTIONS,
     AI_PIPELINE_LOCK_KEY,
     AI_PIPELINE_MAX_PER_DOMAIN,
     AI_PIPELINE_MAX_SLOT_RETRIES,
     AI_PIPELINE_OPTIONAL_STEP_FAILED,
     AI_PIPELINE_RETRY_DELAY_MS,
     AiPipelineRhythm,
+    buildPipelineJobId,
     isAiPipelineRhythm,
 } from '../constants/ai-snapshot.const';
 import {
@@ -26,6 +28,7 @@ import {
     stepFailed,
     stepSkipped,
 } from '../steps/step.types';
+import { monthLastDay } from './backfill.service';
 import { EtlRunWriter } from './etl-run.writer';
 import { AiPipelineRunContextFactory } from './run-context.factory';
 
@@ -46,6 +49,10 @@ interface StepsRun {
  * останавливает, но журнал пишется и исключение пробрасывается; шаги
  * инжектятся токеном (иначе срезы замкнулись бы в цикл); `@Injectable` без
  * bitrix-состояния — инстанс Битрикс берут сами шаги (PBXService.init).
+ *
+ * Догон цепочкой (`data.chain`): следующий месяц встаёт в очередь только
+ * после этого прогона — у портала одна джоба в полёте, слот не делится и
+ * перекладки не исчерпываются (28.10.2026: 24 джобы разом теряли хвост).
  */
 @Injectable()
 export class SnapshotPipelineService implements AiSnapshotRunner {
@@ -75,11 +82,68 @@ export class SnapshotPipelineService implements AiSnapshotRunner {
             maxPerDomain: AI_PIPELINE_MAX_PER_DOMAIN,
         });
         if (!slot.acquired) return this.requeue(job, kind, slot.reason);
+        let failed = false;
         try {
             return await this.execute(job.data, kind, now);
+        } catch (error) {
+            failed = true;
+            throw error;
         } finally {
             await slot.release();
+            // Упавший месяц Bull повторит сам: цепочку продолжает попытка,
+            // после которой повторов не будет — иначе следующий месяц
+            // встал бы дважды.
+            if (!failed || this.isLastAttempt(job)) {
+                await this.continueChain(job, kind);
+            }
         }
+    }
+
+    /**
+     * Следующий месяц цепочки догона: payload наследует вид, шаги,
+     * forceRefresh и план, день — последний день месяца (ключи недели
+     * раннер считает сам), jobId — тот, что админка уже показала в ответе.
+     * Отказ постановки — телеграм: иначе цепочка оборвалась бы молча.
+     */
+    private async continueChain(
+        job: AiPipelineJobLike,
+        rhythm: AiPipelineRhythm,
+    ): Promise<void> {
+        const chain = job.data.chain ?? [];
+        if (chain.length === 0) return;
+        const [next, ...rest] = chain;
+        const { domain, steps, forceRefresh, backfill } = job.data;
+        const data: AiSnapshotJobData = {
+            domain,
+            kind: rhythm,
+            monthKey: next.monthKey,
+            day: monthLastDay(next.monthKey),
+            ...(steps?.length ? { steps: [...steps] } : {}),
+            ...(forceRefresh ? { forceRefresh: true } : {}),
+            ...(backfill ? { backfill } : {}),
+            ...(rest.length ? { chain: rest } : {}),
+        };
+        const jobId = buildPipelineJobId(rhythm, domain, next.jobKey);
+        try {
+            await job.queue.add(JobNames.SALES_AI_ANALYTICS_SNAPSHOT, data, {
+                ...AI_PIPELINE_JOB_OPTIONS,
+                jobId,
+            });
+            this.logger.log(
+                `Догон ${domain}: следующий месяц ${next.monthKey} → ${jobId}, в цепочке ещё ${rest.length}`,
+            );
+        } catch (error) {
+            this.logger.error(
+                `Догон ${domain}: месяц ${next.monthKey} не поставлен, цепочка оборвана (${(error as Error).message})`,
+                { telegram: true, domain },
+            );
+        }
+    }
+
+    /** Попытка последняя — после неё Bull джобу не повторит. */
+    private isLastAttempt(job: AiPipelineJobLike): boolean {
+        const attempts = job.opts?.attempts ?? 1;
+        return (job.attemptsMade ?? 0) + 1 >= attempts;
     }
 
     /** Контекст → шаги → журнал; падение шага пробрасывается после журнала. */
@@ -230,6 +294,10 @@ export class SnapshotPipelineService implements AiSnapshotRunner {
                 `Конвейер ${domain}: слот не освободился за ${AI_PIPELINE_MAX_SLOT_RETRIES} попыток (${reason})`,
                 { telegram: true, domain },
             );
+            // Этот месяц потерян (телеграм выше), но остальные месяцы
+            // цепочки не должны пропасть вместе с ним: протухший лок
+            // снимет TTL, и следующий дождётся слота.
+            await this.continueChain(job, rhythm);
         } else {
             this.logger.log(
                 `Конвейер ${domain}: слот занят (${reason}), перекладка #${retries}`,

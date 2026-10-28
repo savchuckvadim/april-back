@@ -19,7 +19,7 @@ import { CallReportSmartResolverService } from '@lib/call-lib/call-report/servic
 import { CallReportSmartWriterService } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
 import { CallReportDealFamilyService } from '@lib/call-lib/call-report/services/call-report-deal-family.service';
 import { CallReportDealVerifyService } from '@lib/call-lib/call-report/services/call-report-deal-verify.service';
-import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
+import { StructuredLlmGateway } from '@lib/llm-gateway';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 import {
     buildPresentationAuditUserContent,
@@ -106,8 +106,7 @@ export class PresentationAuditService {
         private readonly transcriptionStore: TranscriptionStoreService,
         private readonly aiService: AiService,
         private readonly smartResolver: CallReportSmartResolverService,
-        private readonly vibeCodeClient: VibeCodeClient,
-        private readonly vibeKeyResolver: VibeKeyResolverService,
+        private readonly llm: StructuredLlmGateway,
         private readonly dealFamily: CallReportDealFamilyService,
         private readonly dealVerify: CallReportDealVerifyService,
     ) {}
@@ -213,8 +212,7 @@ export class PresentationAuditService {
             candidate,
         );
 
-        const apiKey = await this.vibeKeyResolver.resolve(domain);
-        const verdict = (await this.vibeCodeClient.structuredCompletion(
+        const verdict = (await this.llm.structuredCompletion(
             PRESENTATION_AUDIT_PROMPT,
             buildPresentationAuditUserContent({
                 analysisDigest: this.renderAnalysisDigest(dto),
@@ -223,7 +221,7 @@ export class PresentationAuditService {
             }),
             'presentation_audit',
             PRESENTATION_AUDIT_SCHEMA,
-            apiKey,
+            domain,
         )) as AuditVerdict;
 
         // Запись сверки в ais — и результат, и маркер идемпотентности.

@@ -10,6 +10,7 @@ import { SupportBellNotifier } from '../infrastructure/support-bell.notifier';
 import { SupportTelegramNotifier } from '../infrastructure/support-telegram.notifier';
 import { SupportMonitorOptions } from './support-monitor-options';
 import { SupportSignalReport } from './support-monitor.report';
+import { bellRecipientsFor } from './support-recipients';
 
 /** Каналы одного просмотра линии: колокольчик готов, Telegram настроен. */
 export interface SupportChannels {
@@ -75,7 +76,7 @@ export class SupportSignalDispatcher {
     ): Promise<SupportSignalReport> {
         const bellDelivered = channels.bell
             ? await channels.bell.notify(
-                  options.notifyUserIds,
+                  bellRecipientsFor(signal, options),
                   formatSupportBell(signal, lineDomain),
                   supportBellTag(lineDomain, signal.dialog.sessionId),
               )

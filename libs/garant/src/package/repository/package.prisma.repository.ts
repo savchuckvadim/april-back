@@ -173,7 +173,6 @@ export class PackagePrismaRepository implements PackageRepository {
 
     async findByCode(code: string): Promise<PackageEntity | null> {
         try {
-            console.log(code);
             const result = await this.prisma.garant_packages.findFirst({
                 where: { code },
                 include: {
@@ -185,7 +184,6 @@ export class PackagePrismaRepository implements PackageRepository {
                     info_groups: true,
                 },
             });
-            console.log(result);
             if (!result) return null;
 
             const entity = createPackageEntityFromPrisma(result);

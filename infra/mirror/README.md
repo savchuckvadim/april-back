@@ -21,86 +21,90 @@ infra/
     scripts/                          # → /opt/mirror/scripts на сервере зеркала
       mirror.env.example              # → /etc/mirror/mirror.env
       lib.sh                          # общие функции
+      dokploy-domains.sh              # домены всех приложений (test | prod)
+      dokploy-deploy.sh               # ручной деплой через API
       seed-replica.sh                 # первичная заливка + START REPLICA
       check-lag.sh                    # cron: контроль репликации → Telegram
       sync-storage.sh                 # cron: rsync storage/ и keys/ с прода
       backup-dump.sh                  # cron: дамп с реплики (+S3)
       promote.sh                      # переключение: реплики → главные
       demote-prod.sh                  # переключение: прод → только чтение (на проде)
-      dokploy-deploy.sh               # ручной деплой через API
-.github/workflows/deploy-mirror.yml   # образы :mirror + compose.deploy
+.github/workflows/deploy-mirror.yml   # после прод-деплоя: образы → :mirror + compose.deploy
 ```
 
 ---
 
-## 1. Что сделать в Dokploy (чеклист владельца)
+## 0. Что уже настроено (28.10.2026)
 
-Порядок важен: сервис создаётся до секретов workflow, а домены — до
-первого деплоя.
+| Что | Значение |
+|---|---|
+| Сервер | `62.113.100.217` (Beget), Ubuntu 26.04, 6 vCPU / 11 GB / 145 GB |
+| SSH | только ключи (`/etc/ssh/sshd_config.d/00-keys-only.conf`), пароль выключен |
+| Dokploy | v0.30.10, панель `https://m.dockploy.april-app.ru` (Let’s Encrypt), прямой порт 3000 закрыт; проект «April Mirror Backend», окружение `production` |
+| Compose-сервис | `back-mirror`, composeId `FakrccxrHqpOXbUvDLKs5`, appName `back-mirror-phxj10` |
+| Источник | `git@github.com:savchuckvadim/april-back.git`, ветка `monorepo`, путь `./infra/compose/docker-compose.mirror.yml`, Auto Deploy выключен |
+| Ключ к репо | SSH-ключ Dokploy `github-april-back-ro` — добавить в GitHub как deploy key только на чтение |
+| Каталог files | `/etc/dokploy/compose/back-mirror-phxj10/files` (mysql, redis, keys, storage) |
+| Домены | 12 тестовых `{short}.m.april-app.ru` (`dokploy-domains.sh test`) |
+| Скрипты | `/opt/mirror/scripts`, настройки `/etc/mirror/mirror.env` |
+| Реестр | не нужен, пока пакеты GHCR публичные (см. раздел 10) |
 
-1. **VPS у второго хостера.** Ориентир: 8 vCPU, 16 GB RAM, NVMe от
-   2× размера БД + 60 GB, Ubuntu 24.04, публичный IP. Открыть 80/443 и
-   SSH; 3306/6379 наружу не открывать.
-2. **Установить Dokploy** официальным инсталлером
-   (`curl -sSL https://dokploy.com/install.sh | sh`), зайти на
-   `http://<ip>:3000`, создать админа, повесить домен панели
-   (Settings → Server → Domain) с Let's Encrypt.
-3. **API-токен:** Settings → Profile → API/CLI → Generate. Сохранить —
-   он пойдёт в секрет `DOKPLOY_API_KEY` репозитория.
-4. **GitHub-провайдер:** Settings → Git → GitHub → установить GitHub App
-   на репозиторий бэка (нужен доступ только к этому репо).
-5. **Реестр образов:** Settings → Registry → Add: Registry URL
-   `https://ghcr.io`, username — логин GitHub, password — classic PAT
-   с `read:packages` (кнопка Test должна пройти).
-6. **Проект и сервис:** Projects → Create `april-mirror` → в окружении
-   `production` → Create Service → **Compose**. Имя `back-mirror`.
-   Провайдер GitHub: репозиторий бэка, ветка `mirror`, Compose Path
-   `infra/compose/docker-compose.mirror.yml`. **Auto Deploy — выключить**
-   (деплой запускает workflow, когда образы уже в GHCR).
-7. **Environment сервиса:** вставить `.env` прода целиком и добавить
-   переменные из раздела 3 (`APP_ROLE=standby`, `MIRROR_DATABASE_URL`,
-   `MIRROR_MYSQL_ROOT_PASSWORD`, `MYSQL_IMAGE`, `GHCR_OWNER`, `IMAGE_TAG`).
-   `CORS_ORIGIN` дополнить тестовыми доменами зеркала.
-8. **Файлы на сервере** (раздел 4): по SSH создать в каталоге `files`
-   сервиса `mysql/replica.cnf`, `redis/redis.conf`, `keys/key.json`,
-   пустой `storage/`. Путь каталога виден в Advanced → Volumes/Mounts или
-   в логе деплоя; записать его в `MIRROR_FILES_DIR` (env) и в
-   `/etc/mirror/mirror.env`.
-9. **Домены:** вкладка Domains сервиса → Add Domain для каждого
-   приложения: тестовый host (например `api.event-sales.m.april-app.ru`),
-   Service `event-sales`, Container Port `3000`, HTTPS + Let's Encrypt.
-   Повторить для 12 приложений. Боевые `api.<app>.april-app.ru` добавить
-   сразу вторыми записями на те же сервисы — сертификаты на них появятся
-   только после переключения DNS, это нормально.
-   В DNS: A-записи тестовых доменов → IP зеркала.
-10. **ID compose-сервиса:** из URL страницы сервиса
-    (`.../services/compose/<composeId>`) — в секрет `DOKPLOY_COMPOSE_ID`.
-11. **Секреты GitHub** репозитория бэка: `DOKPLOY_URL`
-    (`https://<домен панели>`), `DOKPLOY_API_KEY`, `DOKPLOY_COMPOSE_ID`.
-    Переменная `MIRROR_HEALTH_URLS` (Variables, не Secrets) — health
-    тестовых доменов через пробел, например
-    `https://api.event-sales.m.april-app.ru/api/health https://api.admin.m.april-app.ru/api/health`.
-12. **Ветка и первый деплой:** `git push origin monorepo:mirror` → workflow
-    «Deploy mirror» соберёт (или перетегирует) образы и дёрнет
-    `compose.deploy`. Проверка — раздел 5.
-13. **Скрипты на сервере зеркала:** `infra/mirror/scripts/` →
-    `/opt/mirror/scripts`, `chmod +x`, `mirror.env.example` →
-    `/etc/mirror/mirror.env` (`chmod 600`), заполнить.
+---
+
+## 1. Что осталось сделать владельцу
+
+1. **DNS в Selectel.** DNS домена обслуживает Selectel, хостер сервера
+   роли не играет:
+   - `A  m.dockploy.april-app.ru → 62.113.100.217` — панель (сделано 28.10);
+   - `A  *.m.april-app.ru      → 62.113.100.217` — все 12 тестовых доменов
+     одной записью. Wildcard покрывает один уровень, поэтому тестовые
+     домены вида `event-sales.m.april-app.ru`, без `api.`. В Selectel в поле
+     «Имя группы» вводится только `*.m` — зона `.april-app.ru.` дописывается
+     сама; полное имя или пробел в конце дают ошибку.
+2. **Deploy key в GitHub:** april-back → Settings → Deploy keys → Add,
+   без галки «Allow write access». Публичный ключ — в Dokploy:
+   Settings → SSH Keys → `github-april-back-ro`.
+3. **Прод-`.env`** вставить в Dokploy → сервис `back-mirror` →
+   Environment, в верхний блок (нижний с переменными зеркала уже
+   заполнен). Взять с прод-сервера `/var/www/html/back-mono.april-app/.env`.
+   Значения `apps/<app>/.env` прода, если там есть что-то кроме `SWAGGER_*`,
+   — туда же.
+4. **`keys/key.json`** с прода → `/etc/dokploy/compose/back-mirror-phxj10/files/keys/`.
+5. **Секреты GitHub** april-back → Settings → Secrets and variables → Actions:
+   `DOKPLOY_URL=https://m.dockploy.april-app.ru`, `DOKPLOY_API_KEY` (токен
+   панели), `DOKPLOY_COMPOSE_ID=FakrccxrHqpOXbUvDLKs5`. Переменная
+   (Variables) `MIRROR_HEALTH_URLS`, например
+   `https://event-sales.m.april-app.ru/api/health https://admin.m.april-app.ru/api/health`.
+6. **Закоммитить и запушить** правки зеркала от 28.10 в `monorepo`. Прод ничего
+   не пересоберёт: меняются только workflow зеркала и infra, а основной код
+   зеркала уже на проде с 14.10. После прод-workflow «Deploy mirror» сам
+   возьмёт текущие прод-образы `:latest` и задеплоит зеркало. Руками —
+   Actions → Deploy mirror → `sync=latest`.
+
+Панель уже на домене, порт 3000 закрыт (`docker service update
+--publish-rm` у сервиса dokploy; вернуть — `--publish-add
+"published=3000,target=3000,mode=host"`).
 
 ---
 
 ## 2. Как это работает
 
-- **Образы.** `deploy-mirror.yml` (ветка `mirror`) ищет в GHCR образ
-  `:<sha>` этого коммита, собранный прод-конвейером; если есть —
-  перетегирует в `:mirror` (на зеркале крутится ровно прод-сборка), иначе
-  собирает сам. Прод-тег `:latest` зеркало не использует.
+- **Образы.** `deploy-mirror.yml` срабатывает на тот же push в `monorepo`,
+  ждёт, пока прод-деплой этого коммита закончится, и только при успехе
+  перетегирует прод-образы в `:mirror` (прошлый — в `:mirror-prev`).
+  Сборки у зеркала нет: на нём крутится ровно то, что прошло прод.
+  Прод упал — зеркало остаётся на последней рабочей версии.
+  `workflow_run` не подходит: он срабатывает только для файла в ветке по
+  умолчанию (`main`), а push в `main` запускает старый `deploy.yml`.
 - **Compose под Dokploy.** У приложений нет `container_name` и host-портов:
-  наружу их выводит Traefik через вкладку Domains (labels и
-  `dokploy-network` Dokploy дописывает сам, видно в Preview Compose).
-  Переменные Dokploy пишет в `.env` рядом с compose → `env_file: .env`.
-  Каталог репо при каждом деплое клонируется заново → всё долгоживущее в
-  `files` (`MIRROR_FILES_DIR`).
+  наружу их выводит Traefik через Domains (labels и `dokploy-network`
+  Dokploy дописывает при деплое). Сеть `default` задана явно, иначе после
+  добавления домена приложение оказалось бы только в `dokploy-network`,
+  без доступа к redis и mysql-replica. Тег `:mirror` подвижный, поэтому
+  `pull_policy: always`. Переменные Dokploy пишет в `.env` рядом с
+  compose, отсюда `env_file: .env`. Каталог репо при каждом деплое
+  клонируется заново, поэтому всё долгоживущее лежит в `files`
+  (`MIRROR_FILES_DIR`).
 - **Режим ожидания.** `APP_ROLE=standby`: после инициализации
   `bootstrapApp` останавливает все кроны/интервалы/таймауты и ставит
   очереди Bull на локальную паузу; `/api/health` отдаёт `role`.
@@ -110,26 +114,26 @@ infra/
 
 ## 3. Переменные окружения сервиса (Dokploy → Environment)
 
-Сначала — `.env` прода целиком (значения `APP_KEY`, `AUTH_JWT_SECRET`,
+Верхний блок — `.env` прода целиком: значения `APP_KEY`, `AUTH_JWT_SECRET`,
 `APP_SECRET_KEY`, `MARKETPLACE_ADMIN_KEY`, `ADMIN_KEY` должны совпадать
-побайтово: ими расшифровываются токены установок). Затем:
+побайтово, ими расшифровываются токены установок. Нижний блок уже
+заполнен; его имена с прод-`.env` не пересекаются, порядок не важен.
 
 | Переменная | Значение | Зачем |
 |---|---|---|
 | `APP_ROLE` | `standby` (при переключении — `active`) | режим ожидания |
-| `GHCR_OWNER` | владелец пакетов GHCR в нижнем регистре | образы |
-| `IMAGE_TAG` | `mirror` | образы |
-| `MIRROR_DATABASE_URL` | `mysql://root:<MIRROR_MYSQL_ROOT_PASSWORD>@mysql-replica:3306/bitrix` | перекрывает прод-`DATABASE_URL` |
-| `MIRROR_MYSQL_ROOT_PASSWORD` | сильный пароль | root реплики |
-| `MYSQL_IMAGE` | `mysql:8.0.NN` — точная версия прода | реплика той же версии |
-| `MIRROR_FILES_DIR` | путь каталога `files` сервиса (абсолютный надёжнее) | keys, storage, конфиги |
+| `MIRROR_DATABASE_URL` | `mysql://root:<пароль>@mysql-replica:3306/<имя базы прода>` | перекрывает прод-`DATABASE_URL` |
+| `MIRROR_MYSQL_ROOT_PASSWORD` | сгенерирован при настройке | root реплики |
+| `MYSQL_IMAGE` | `mysql:8.0` → заменить на точную версию прода | реплика той же версии |
+| `MIRROR_FILES_DIR` | `/etc/dokploy/compose/back-mirror-phxj10/files` | keys, storage, конфиги |
 | `GOTENBERG_REPLICAS` | `2` (после переключения — по ядрам) | конвертация |
 | `MYSQL_REPLICA_BIND` | `127.0.0.1` (для обратной репликации — IP WireGuard зеркала) | порт реплики |
-| `CORS_ORIGIN` | прод-список + тестовые домены зеркала | фронты |
+| `MIRROR_GHCR_OWNER`, `MIRROR_IMAGE_TAG` | не задавать (дефолт `savchuckvadim`, `mirror`) | образы |
+| `CORS_ORIGIN` | из прод-`.env`; тестовые домены — только если фронт будет ходить в зеркало | фронты |
 | `LOG_CLICKHOUSE_ENABLED` | compose ставит `false`; ClickHouse на зеркале нет | логи |
 
-Если приложения на проде ходят в БД не root'ом — заведите того же
-пользователя на реплике (`MIRROR_DB_APP_USER` в `mirror.env`,
+Если приложения на проде ходят в БД не root-пользователем — заведите
+того же пользователя на реплике (`MIRROR_DB_APP_USER` в `mirror.env`,
 создаётся `seed-replica.sh`) и подставьте его в `MIRROR_DATABASE_URL`.
 
 ---
@@ -137,7 +141,7 @@ infra/
 ## 4. Файлы на сервере зеркала (`<files>`)
 
 ```
-<files>/
+/etc/dokploy/compose/back-mirror-phxj10/files/
   keys/key.json          # сервисный аккаунт Yandex — копия с прода
   storage/               # пусто; наполнит sync-storage.sh
   mysql/replica.cnf      # из infra/mirror/mysql/replica.cnf
@@ -145,23 +149,25 @@ infra/
 ```
 
 Владелец — root (контейнеры приложений работают от root). `redis.conf`
-монтируется на запись: `promote.sh` делает `CONFIG REWRITE`.
+монтируется на запись: `promote.sh` делает `CONFIG REWRITE`. Поменяли
+конфиг в репо — скопировать на сервер заново (`scp`), Dokploy его не трогает.
 
 ---
 
 ## 5. Первый деплой и проверка (ожидание, без данных)
 
-1. Actions → «Deploy mirror» → Run workflow (`apps=all`) или push в `mirror`.
+1. Actions → «Deploy mirror» → Run workflow, `sync=latest` (или дождаться
+   прод-деплоя после пуша в `monorepo`).
 2. В Dokploy: Deployments → лог без ошибок; Preview Compose показывает
    labels Traefik у приложений с доменами.
-3. `curl https://api.<app>.m.april-app.ru/api/health` для всех 12 →
+3. `curl https://<short>.m.april-app.ru/api/health` для всех 12 →
    `{"status":"ok","role":"standby"}` (ответ может быть обёрнут
    `ResponseInterceptor`).
-4. Swagger: `https://api.<app>.m.april-app.ru/docs/api`.
+4. Swagger: `https://<short>.m.april-app.ru/docs/api`.
 5. Логи приложений: предупреждение «Режим ожидания (APP_ROLE=standby)» с
    перечнем остановленных кронов и очередей; ошибок записи в БД при
    старте быть не должно. Если какое-то приложение пишет на старте — это
-   дефект для фазы 1 (обернуть под `APP_ROLE`), заводим задачу.
+   дефект (обернуть под `APP_ROLE`), заводим задачу.
 6. Redis и MySQL пока «пустые мастера» — это ожидаемо до раздела 6.
 
 ---
@@ -250,19 +256,23 @@ Redis прода>` (и `masterauth`, если на проде включён `re
    но при его возвращении сразу выполнить, пока DNS не вернули.
 3. **На зеркале** `promote.sh --yes`: MySQL `STOP REPLICA; RESET REPLICA
    ALL`, запись разрешена; Redis `REPLICAOF NO ONE`.
-4. **Dokploy → Environment:** `APP_ROLE=active` (при необходимости
+4. **Боевые домены:** `dokploy-domains.sh prod` — заводит
+   `api.<short>.april-app.ru` на те же сервисы. Заранее их не добавляем:
+   пока DNS смотрит на прод, Let's Encrypt сертификат не выпустит, а
+   повторные неудачные попытки упираются в лимиты.
+5. **Dokploy → Environment:** `APP_ROLE=active` (при необходимости
    `GOTENBERG_REPLICAS` по ядрам) → **Redeploy**. Кроны и очереди
    включаются; в логах/Telegram — отчёт о кронах без предупреждения о
    режиме ожидания.
-5. **DNS:** A-записи `api.<app>.april-app.ru` → IP зеркала. Traefik
-   выпустит сертификаты на боевые домены через 1–3 минуты после того, как
-   DNS начнёт отвечать новым адресом.
-6. **Отключить cron `sync-storage.sh`** на зеркале (иначе он перезапишет
+6. **DNS в Selectel:** A-записи `api.<short>.april-app.ru` → `62.113.100.217`.
+   Traefik выпустит сертификаты на боевые домены через 1–3 минуты после
+   того, как DNS начнёт отвечать новым адресом.
+7. **Отключить cron `sync-storage.sh`** на зеркале (иначе он перезапишет
    новые файлы старыми с прода).
-7. **Проверки:** health всех приложений (`role: active`); тестовый
+8. **Проверки:** health всех приложений (`role: active`); тестовый
    исходящий вебхук Битрикса (например, ХО v2 на тестовой сделке); отчёт в
    kpi-report-sales; вход в админку; рефреш OAuth-установки маркетплейса.
-8. Сообщить команде. Вебхуки Битрикса, пришедшие в окно переключения,
+9. Сообщить команде. Вебхуки Битрикса, пришедшие в окно переключения,
    потеряны (роботы не повторяют) — ХО дошлёт «подстраховка ХО» в
    пределах 24 часов.
 
@@ -285,20 +295,39 @@ Redis прода>` (и `masterauth`, если на проде включён `re
    `STOP REPLICA; RESET REPLICA ALL`, снять read-only, `REPLICAOF NO ONE`,
    поднять приложения, DNS обратно.
 4. Снова настроить репликацию прод → зеркало (раздел 6.3–6.4), включить
-   cron'ы.
+   cron-задачи.
 
 ---
 
 ## 9. Учения и регламент
 
-- **Ветка `mirror` догоняет `monorepo`** после каждого удачного
-  прод-деплоя: `git push origin monorepo:mirror` (позже — workflow на
-  `workflow_run`). Иначе при переключении поедет старый код.
+- **Код зеркала догоняет прод сам:** каждый успешный прод-деплой
+  `monorepo` запускает «Deploy mirror». Проверять раз в неделю, что
+  последний запуск зелёный (Actions → Deploy mirror). Красный из-за
+  упавшего прода — нормально, зеркало остаётся на прошлой версии.
+- **Откат зеркала:** образы `:mirror-prev` хранят предыдущую версию;
+  перетегировать их в `:mirror` и Redeploy.
 - **Раз в квартал — учения без повышения реплики:** на зеркале
   восстановить последний дамп в отдельный временный MySQL (`docker run
   mysql:<ver>`), поднять один тестовый стек с `APP_ROLE=active` и
   `MIRROR_DATABASE_URL` на него, прогнать smoke на тестовых доменах,
   снести. Реплику при учениях не трогать.
 - **Ежемесячно:** `check-lag.sh` зелёный, свежий дамп в `BACKUP_DIR`/S3,
-  `sync-storage.sh` без ошибок, срок PAT GHCR, место на диске под
-  binlog/relay-log, версия MySQL на проде не ушла вперёд реплики.
+  `sync-storage.sh` без ошибок, место на диске под binlog/relay-log,
+  версия MySQL на проде не ушла вперёд реплики.
+
+---
+
+## 10. Когда закроем репозитории (private)
+
+План — в `ai/tasks/2026-10-14-mirror-dokploy-dr-plan.md`, раздел 10.
+Что затрагивает зеркало:
+
+- **Код:** Dokploy уже ходит в репо по deploy key, при закрытии ничего
+  не меняется (если deploy key добавлен).
+- **Образы:** видимость пакетов GHCR от видимости репо не зависит. Если
+  пакеты тоже закрыть — в Dokploy Settings → Registry добавить
+  `https://ghcr.io` с classic PAT `read:packages` (кнопка Test), а на
+  проде задать секрет `GHCR_PAT` (прод-workflow уже умеет логиниться).
+- **Минуты Actions:** у приватного репо они платные сверх лимита тарифа;
+  job `wait-prod` занимает раннер на всё время прод-деплоя.

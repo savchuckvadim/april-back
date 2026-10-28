@@ -168,6 +168,11 @@ describe('buildLaunchStatus', () => {
         );
         expect(stale.pipeline.state).toBe('todo');
         expect(stale.pipeline.text).toContain('10 из 24');
+        // Каких месяцев не хватает — владелец видит без чтения журнала
+        // (gsr 28.10.2026: «18 из 24» без объяснения, каких).
+        expect(stale.pipeline.text).toContain(
+            'не хватает: 2025-08, 2025-09, 2025-10, 2025-11, 2025-12, 2026-01 и ещё 8',
+        );
 
         const none = buildLaunchStatus(
             launchInput({ etlRuns: { ok: true, value: [etlRun({})] } }),

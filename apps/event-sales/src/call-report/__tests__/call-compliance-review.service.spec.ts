@@ -124,20 +124,18 @@ const makeDeps = (options?: {
                     ),
             ),
     };
-    const vibeCodeClient = {
+    const llm = {
         structuredCompletion: jest
             .fn()
             .mockResolvedValue(options?.modelResult ?? MODEL_RESULT),
     };
-    const vibeKeyResolver = { resolve: jest.fn().mockResolvedValue('key') };
 
     const service = new CallComplianceReviewService(
         pbxService as never,
         aiService as never,
         smartResolver as never,
         materials as never,
-        vibeCodeClient as never,
-        vibeKeyResolver as never,
+        llm as never,
     );
     return {
         service,
@@ -145,7 +143,7 @@ const makeDeps = (options?: {
         updateExisting,
         timeline,
         materials,
-        vibeCodeClient,
+        llm,
     };
 };
 
@@ -218,7 +216,7 @@ describe('CallComplianceReviewService', () => {
     });
 
     it('повторный прогон не тратит вызов модели (идемпотентность)', async () => {
-        const { service, vibeCodeClient } = makeDeps({
+        const { service, llm } = makeDeps({
             aiRecords: [
                 { type: 'agent-analysis', user_result: { callType: 'cold' } },
                 { type: 'call-compliance-review', user_result: {} },
@@ -228,29 +226,29 @@ describe('CallComplianceReviewService', () => {
         const result = await service.run(ROW, 'cold');
 
         expect(result).toBeNull();
-        expect(vibeCodeClient.structuredCompletion).not.toHaveBeenCalled();
+        expect(llm.structuredCompletion).not.toHaveBeenCalled();
     });
 
     it('без документов компании модель не вызывается', async () => {
-        const { service, vibeCodeClient } = makeDeps({ materials: '' });
+        const { service, llm } = makeDeps({ materials: '' });
 
         const result = await service.run(ROW, 'cold');
 
         expect(result).toBeNull();
-        expect(vibeCodeClient.structuredCompletion).not.toHaveBeenCalled();
+        expect(llm.structuredCompletion).not.toHaveBeenCalled();
     });
 
     it('без разбора звонка проверять нечего', async () => {
-        const { service, vibeCodeClient } = makeDeps({ aiRecords: [] });
+        const { service, llm } = makeDeps({ aiRecords: [] });
 
         const result = await service.run(ROW, 'cold');
 
         expect(result).toBeNull();
-        expect(vibeCodeClient.structuredCompletion).not.toHaveBeenCalled();
+        expect(llm.structuredCompletion).not.toHaveBeenCalled();
     });
 
     it('ПРЕЗЕНТАЦИЯ по содержанию: тип «другое», но есть хвост — методология подмешивается', async () => {
-        const { service, materials, vibeCodeClient } = makeDeps({
+        const { service, materials, llm } = makeDeps({
             aiRecords: [
                 {
                     type: 'agent-analysis',
@@ -275,13 +273,13 @@ describe('CallComplianceReviewService', () => {
         expect(playbook?.budgetChars).toBe(6000);
         // В промпт ушёл презентационный блок проверки.
         const prompt = String(
-            (vibeCodeClient.structuredCompletion.mock.calls[0] as unknown[])[0],
+            (llm.structuredCompletion.mock.calls[0] as unknown[])[0],
         );
         expect(prompt).toContain('ОСОБОЕ ВНИМАНИЕ — ПРЕЗЕНТАЦИЯ');
     });
 
     it('обычный холодный звонок презентационный блок не получает', async () => {
-        const { service, vibeCodeClient } = makeDeps({
+        const { service, llm } = makeDeps({
             aiRecords: [
                 {
                     type: 'agent-analysis',
@@ -293,18 +291,18 @@ describe('CallComplianceReviewService', () => {
         await service.run(ROW, 'cold');
 
         const prompt = String(
-            (vibeCodeClient.structuredCompletion.mock.calls[0] as unknown[])[0],
+            (llm.structuredCompletion.mock.calls[0] as unknown[])[0],
         );
         expect(prompt).not.toContain('ОСОБОЕ ВНИМАНИЕ — ПРЕЗЕНТАЦИЯ');
     });
 
     it('названия своих организаций уходят в промпт проверки по регламенту', async () => {
-        const { service, vibeCodeClient } = makeDeps();
+        const { service, llm } = makeDeps();
 
         await service.run(ROW, 'cold', undefined, ['Альфа-центр', 'Апрель']);
 
         const prompt = String(
-            (vibeCodeClient.structuredCompletion.mock.calls[0] as unknown[])[0],
+            (llm.structuredCompletion.mock.calls[0] as unknown[])[0],
         );
         expect(prompt).toContain('НАШИ СОБСТВЕННЫЕ НАЗВАНИЯ');
         expect(prompt).toContain('«Альфа-центр»');
@@ -313,20 +311,18 @@ describe('CallComplianceReviewService', () => {
     });
 
     it('без настройки промпт проверки прежний — ни строчки про названия', async () => {
-        const { service, vibeCodeClient } = makeDeps();
+        const { service, llm } = makeDeps();
 
         await service.run(ROW, 'cold');
 
         const prompt = String(
-            (vibeCodeClient.structuredCompletion.mock.calls[0] as unknown[])[0],
+            (llm.structuredCompletion.mock.calls[0] as unknown[])[0],
         );
         expect(prompt).not.toContain('НАШИ СОБСТВЕННЫЕ НАЗВАНИЯ');
     });
     it('ошибка модели не роняет конвейер', async () => {
-        const { service, vibeCodeClient } = makeDeps();
-        vibeCodeClient.structuredCompletion.mockRejectedValue(
-            new Error('vibecode down'),
-        );
+        const { service, llm } = makeDeps();
+        llm.structuredCompletion.mockRejectedValue(new Error('vibecode down'));
 
         await expect(service.run(ROW, 'cold')).resolves.toBeNull();
     });

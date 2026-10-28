@@ -14,21 +14,29 @@ const CLASSIFICATION = {
 };
 
 const makeDeps = (overrides?: {
-    vibecodeError?: boolean;
+    llmError?: boolean;
     confidence?: number;
     callType?: string;
 }) => {
-    const vibecode = {
-        classifyCall: overrides?.vibecodeError
-            ? jest.fn().mockRejectedValue(new Error('vibecode down'))
+    // Шлюз LLM: провайдера шаг не знает — получает разобранный JSON,
+    // расход и код ответившего провайдера.
+    const llm = {
+        structuredCompletionWithUsage: overrides?.llmError
+            ? jest.fn().mockRejectedValue(new Error('LLM недоступна'))
             : jest.fn().mockResolvedValue({
-                  ...CLASSIFICATION,
-                  callType: overrides?.callType ?? CLASSIFICATION.callType,
-                  confidence: overrides?.confidence ?? 0.9,
+                  result: {
+                      ...CLASSIFICATION,
+                      callType: overrides?.callType ?? CLASSIFICATION.callType,
+                      confidence: overrides?.confidence ?? 0.9,
+                  },
+                  usage: {
+                      promptTokens: 1,
+                      completionTokens: 1,
+                      totalTokens: 2,
+                  },
+                  model: 'bitrix/bitrixgpt-5.5',
+                  provider: 'vibecode',
               }),
-    };
-    const keyResolver = {
-        resolve: jest.fn().mockResolvedValue('portal-vibe-key'),
     };
     const instruction = {
         resolve: jest.fn().mockResolvedValue('инструкция классификации'),
@@ -53,16 +61,14 @@ const makeDeps = (overrides?: {
     };
     const aiService = { create: jest.fn().mockResolvedValue({ id: '1' }) };
     const service = new CallClassifyStepService(
-        vibecode as never,
-        keyResolver as never,
+        llm as never,
         instruction as never,
         typeRegistry as never,
         aiService as never,
     );
     return {
         service,
-        vibecode,
-        keyResolver,
+        llm,
         instruction,
         typeRegistry,
         aiService,
@@ -72,24 +78,30 @@ const makeDeps = (overrides?: {
 describe('CallClassifyStepService', () => {
     afterEach(() => jest.clearAllMocks());
 
-    it('классифицирует с подменной инструкцией, каталогом типов и ключом портала', async () => {
-        const { service, vibecode, keyResolver, instruction, aiService } =
-            makeDeps();
+    it('классифицирует через шлюз LLM: подменная инструкция, каталог типов, схема с кодами реестра, домен портала', async () => {
+        const { service, llm, instruction, aiService } = makeDeps();
         const result = await service.run('текст', PAYLOAD as never, '42');
 
         expect(instruction.resolve).toHaveBeenCalledWith('test.bitrix24.ru');
-        expect(keyResolver.resolve).toHaveBeenCalledWith('test.bitrix24.ru');
-        // Инструкция дополняется каталогом типов из реестра, схема
-        // получает динамический список кодов.
-        expect(vibecode.classifyCall).toHaveBeenCalledWith(
-            'текст',
+        // Инструкция дополняется каталогом типов из реестра, схема получает
+        // динамический список кодов; ключ провайдера шаг не трогает — пятый
+        // аргумент шлюза — домен портала.
+        expect(llm.structuredCompletionWithUsage).toHaveBeenCalledWith(
             expect.stringContaining("'renewal' — Перезаключение"),
-            'portal-vibe-key',
-            ['cold', 'renewal'],
+            expect.stringContaining('текст'),
+            'call_classification',
+            expect.objectContaining({
+                properties: expect.objectContaining({
+                    callType: { type: 'string', enum: ['cold', 'renewal'] },
+                }) as object,
+            }),
+            'test.bitrix24.ru',
         );
+        // Код провайдера в ais — исторический bitrix-vibecode.
         expect(aiService.create).toHaveBeenCalledWith(
             expect.objectContaining({
                 type: 'call-classify',
+                provider: 'bitrix-vibecode',
                 result: 'cold',
                 transcription_id: '42',
             }),
@@ -122,7 +134,7 @@ describe('CallClassifyStepService', () => {
     });
 
     it('enabledOverride=false из настроек портала пропускает шаг', async () => {
-        const { service, vibecode } = makeDeps();
+        const { service, llm } = makeDeps();
         const result = await service.run(
             'текст',
             PAYLOAD as never,
@@ -130,11 +142,11 @@ describe('CallClassifyStepService', () => {
             false,
         );
         expect(result).toBeNull();
-        expect(vibecode.classifyCall).not.toHaveBeenCalled();
+        expect(llm.structuredCompletionWithUsage).not.toHaveBeenCalled();
     });
 
-    it('ошибка VibeCode — null, без исключения', async () => {
-        const { service, aiService } = makeDeps({ vibecodeError: true });
+    it('ошибка шлюза LLM — null, без исключения', async () => {
+        const { service, aiService } = makeDeps({ llmError: true });
         const result = await service.run('текст', PAYLOAD as never, '42');
         expect(result).toBeNull();
         expect(aiService.create).not.toHaveBeenCalled();

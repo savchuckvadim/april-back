@@ -12,11 +12,8 @@ import {
     EnumPortalAppCode,
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
-import {
-    VibeCodeClient,
-    VibeKeyResolverService,
-    type VibecodeStructuredCompletionWithUsage,
-} from '@lib/vibecode';
+import type { VibecodeStructuredCompletionWithUsage } from '@lib/vibecode';
+import { StructuredLlmGateway } from '@lib/llm-gateway';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 import {
     AFTER_PRESENTATION_STRICT_BLOCK,
@@ -121,8 +118,7 @@ export class CallFocusAnalysisService {
     private readonly logger = new Logger(CallFocusAnalysisService.name);
 
     constructor(
-        private readonly vibeCodeClient: VibeCodeClient,
-        private readonly vibeKeyResolver: VibeKeyResolverService,
+        private readonly llm: StructuredLlmGateway,
         private readonly materials: KnowledgeMaterialsService,
         private readonly callTypeRegistry: CallTypeRegistryService,
         private readonly appSettings: PortalAppSettingsService,
@@ -198,7 +194,6 @@ export class CallFocusAnalysisService {
             return null;
         }
         try {
-            const apiKey = await this.vibeKeyResolver.resolve(domain);
             const materials = await this.buildMaterials(domain, callType);
             // Общие поправки разбора (строгость презентации, требование
             // закрытия хвоста/5К) идут в КАЖДЫЙ проход вместе с материалами.
@@ -218,7 +213,6 @@ export class CallFocusAnalysisService {
                         pass,
                         this.contextFor(materials, pass.key) + commonTail,
                         userContent,
-                        apiKey,
                         domain,
                         options?.model,
                     ),
@@ -248,7 +242,6 @@ export class CallFocusAnalysisService {
                 byKey,
                 synthesisContext,
                 userContent,
-                apiKey,
                 domain,
                 options?.model,
             );
@@ -443,17 +436,16 @@ export class CallFocusAnalysisService {
         pass: FocusPass,
         sharedContext: string,
         userContent: string,
-        apiKey: string,
         domain: string,
         model?: string,
     ): Promise<VibecodeStructuredCompletionWithUsage | null> {
         try {
-            return await this.vibeCodeClient.structuredCompletionWithUsage(
+            return await this.llm.structuredCompletionWithUsage(
                 `${pass.prompt}${sharedContext ? `\n${sharedContext}` : ''}`,
                 userContent,
                 `call_focus_${pass.key}`,
                 pass.schema,
-                apiKey,
+                domain,
                 { model },
             );
         } catch (error) {
@@ -469,7 +461,6 @@ export class CallFocusAnalysisService {
         byKey: Record<CallFocusKey, Record<string, unknown> | null>,
         sharedContext: string,
         userContent: string,
-        apiKey: string,
         domain: string,
         model?: string,
     ): Promise<VibecodeStructuredCompletionWithUsage | null> {
@@ -479,12 +470,12 @@ export class CallFocusAnalysisService {
             renderFocusDigest('ДВИЖЕНИЕ СДЕЛКИ', byKey.movement),
         ].join('\n\n');
         try {
-            return await this.vibeCodeClient.structuredCompletionWithUsage(
+            return await this.llm.structuredCompletionWithUsage(
                 `${FOCUS_SYNTHESIS_PROMPT}${sharedContext ? `\n${sharedContext}` : ''}`,
                 `ВЫВОДЫ СПЕЦИАЛИЗИРОВАННЫХ РАЗБОРОВ:\n\n${digests}\n\n${userContent}`,
                 'call_focus_synthesis',
                 FOCUS_SYNTHESIS_SCHEMA,
-                apiKey,
+                domain,
                 { model },
             );
         } catch (error) {

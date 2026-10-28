@@ -15,7 +15,7 @@ const makeDeps = (options?: {
     responses?: Record<string, Record<string, unknown> | Error>;
 }) => {
     const responses = options?.responses ?? {};
-    const vibeCodeClient = {
+    const llm = {
         structuredCompletionWithUsage: jest.fn(
             (
                 _system: string,
@@ -32,7 +32,6 @@ const makeDeps = (options?: {
             },
         ),
     };
-    const vibeKeyResolver = { resolve: jest.fn().mockResolvedValue('key') };
     // Сервис материалов по ролям: по умолчанию база пуста.
     const materials = {
         collect: jest
@@ -63,8 +62,7 @@ const makeDeps = (options?: {
             .mockResolvedValue({ presentationStrictness: 'strict' }),
     };
     const service = new CallFocusAnalysisService(
-        vibeCodeClient as never,
-        vibeKeyResolver as never,
+        llm as never,
         materials as never,
         callTypeRegistry as never,
         appSettings as never,
@@ -72,7 +70,7 @@ const makeDeps = (options?: {
     );
     return {
         service,
-        vibeCodeClient,
+        llm,
         appSettings,
         reportSettings,
         materials,
@@ -91,7 +89,7 @@ describe('контракт фокусов', () => {
 
 describe('CallFocusAnalysisService', () => {
     it('собирает dto из трёх фокусов и синтеза; секции объединяются', async () => {
-        const { service, vibeCodeClient } = makeDeps({
+        const { service, llm } = makeDeps({
             responses: {
                 call_focus_form: focusResult({
                     sections: [
@@ -139,8 +137,7 @@ describe('CallFocusAnalysisService', () => {
         expect(dto?.callTypeReason).toBe('показали систему');
         expect(dto?.priceDiscussed).toBe(false);
         // Все четыре вызова получили паспорт в user-контенте.
-        for (const call of vibeCodeClient.structuredCompletionWithUsage.mock
-            .calls) {
+        for (const call of llm.structuredCompletionWithUsage.mock.calls) {
             expect(String(call[1])).toContain('ПАСПОРТ');
         }
         // Расход — сумма четырёх вызовов (3 фокуса + синтез).
@@ -172,13 +169,12 @@ describe('CallFocusAnalysisService', () => {
     });
 
     it('промпт «движения сделки» несёт блок сигналов руководителю с критериями флагов и доказательствами', async () => {
-        const { service, vibeCodeClient } = makeDeps();
+        const { service, llm } = makeDeps();
         await service.run('test.bitrix24.ru', 'текст', 'cold');
 
-        const movement =
-            vibeCodeClient.structuredCompletionWithUsage.mock.calls.find(
-                call => (call as unknown[])[2] === 'call_focus_movement',
-            ) as unknown[];
+        const movement = llm.structuredCompletionWithUsage.mock.calls.find(
+            call => (call as unknown[])[2] === 'call_focus_movement',
+        ) as unknown[];
         const prompt = String(movement[0]);
         expect(prompt).toContain('СИГНАЛЫ РУКОВОДИТЕЛЮ');
         expect(prompt).toContain('сомневаешься — не ставь');
@@ -198,12 +194,11 @@ describe('CallFocusAnalysisService', () => {
      * фокусам и синтезу, и только для звонков этого типа.
      */
     it('приглашение на мероприятие: блок EVENT_INVITE идёт во все проходы и синтез, другим типам — нет', async () => {
-        const { service, vibeCodeClient } = makeDeps();
+        const { service, llm } = makeDeps();
         await service.run('test.bitrix24.ru', 'текст', 'event_invite');
-        const prompts =
-            vibeCodeClient.structuredCompletionWithUsage.mock.calls.map(call =>
-                String((call as unknown[])[0]),
-            );
+        const prompts = llm.structuredCompletionWithUsage.mock.calls.map(call =>
+            String((call as unknown[])[0]),
+        );
         expect(prompts).toHaveLength(4);
         for (const prompt of prompts) {
             expect(prompt).toContain('ЗВОНОК-ПРИГЛАШЕНИЕ НА МЕРОПРИЯТИЕ');
@@ -212,16 +207,14 @@ describe('CallFocusAnalysisService', () => {
             );
         }
         // Синтез знает про новый код в callTypeRefined.
-        const synthesis =
-            vibeCodeClient.structuredCompletionWithUsage.mock.calls.find(
-                call => (call as unknown[])[2] === 'call_focus_synthesis',
-            ) as unknown[];
+        const synthesis = llm.structuredCompletionWithUsage.mock.calls.find(
+            call => (call as unknown[])[2] === 'call_focus_synthesis',
+        ) as unknown[];
         expect(String(synthesis[0])).toContain("'event_invite'");
 
         const other = makeDeps();
         await other.service.run('test.bitrix24.ru', 'текст', 'presentation');
-        for (const call of other.vibeCodeClient.structuredCompletionWithUsage
-            .mock.calls) {
+        for (const call of other.llm.structuredCompletionWithUsage.mock.calls) {
             expect(String((call as unknown[])[0])).not.toContain(
                 'ЗВОНОК-ПРИГЛАШЕНИЕ НА МЕРОПРИЯТИЕ',
             );
@@ -251,7 +244,7 @@ describe('CallFocusAnalysisService', () => {
     });
 
     it('материалы по ролям: скрипт во всех проходах, возражения — в «содержании», регламент — в «движении», эталоны — в синтезе', async () => {
-        const { service, vibeCodeClient, materials } = makeDeps();
+        const { service, llm, materials } = makeDeps();
         materials.collect.mockImplementation(
             (_domain: string, requests: { kind: string }[]) =>
                 Promise.resolve(
@@ -266,10 +259,9 @@ describe('CallFocusAnalysisService', () => {
 
         await service.run('test.bitrix24.ru', 'текст', 'call');
 
-        const prompts =
-            vibeCodeClient.structuredCompletionWithUsage.mock.calls.map(call =>
-                String((call as unknown[])[0]),
-            );
+        const prompts = llm.structuredCompletionWithUsage.mock.calls.map(call =>
+            String((call as unknown[])[0]),
+        );
         expect(prompts).toHaveLength(4);
         // Скрипт компании — в каждом проходе и в синтезе.
         for (const prompt of prompts) {
@@ -286,7 +278,7 @@ describe('CallFocusAnalysisService', () => {
     });
 
     it('презентация: методология показа запрашивается с увеличенным бюджетом и идёт во все проходы', async () => {
-        const { service, vibeCodeClient, materials } = makeDeps();
+        const { service, llm, materials } = makeDeps();
         materials.collect.mockImplementation(
             (_domain: string, requests: { kind: string }[]) =>
                 Promise.resolve(
@@ -313,10 +305,9 @@ describe('CallFocusAnalysisService', () => {
         );
         expect(playbook?.budgetChars).toBe(6000);
 
-        const prompts =
-            vibeCodeClient.structuredCompletionWithUsage.mock.calls.map(call =>
-                String((call as unknown[])[0]),
-            );
+        const prompts = llm.structuredCompletionWithUsage.mock.calls.map(call =>
+            String((call as unknown[])[0]),
+        );
         for (const prompt of prompts) {
             expect(prompt).toContain('МЕТОДОЛОГИЯ ПОКАЗА');
         }

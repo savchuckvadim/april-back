@@ -31,6 +31,20 @@ export const CALL_CLASSIFICATION_SCHEMA = {
     additionalProperties: false,
 };
 
+/** Схема классификации с enum кодов из реестра типов; пусто — встроенные коды. */
+export function classificationSchemaFor(
+    allowedCallTypes?: readonly string[],
+): Record<string, unknown> {
+    if (!allowedCallTypes?.length) return CALL_CLASSIFICATION_SCHEMA;
+    return {
+        ...CALL_CLASSIFICATION_SCHEMA,
+        properties: {
+            ...CALL_CLASSIFICATION_SCHEMA.properties,
+            callType: { type: 'string', enum: [...allowedCallTypes] },
+        },
+    };
+}
+
 /**
  * Дефолтная инструкция классификации. Подменяется без деплоя: положите
  * документ в базу знаний kind='call-classify' (общую или домена) — конвейер

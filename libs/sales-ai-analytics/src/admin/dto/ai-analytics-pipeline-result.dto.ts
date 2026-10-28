@@ -92,7 +92,9 @@ export class AiAnalyticsBackfillResultDto implements BackfillResult {
 
     @ApiProperty({
         description:
-            'Поставленные джобы догона. Пусто при отказе (см. reason).',
+            'Джобы догона цепочкой, по одной на месяц: первая уже в ' +
+            'очереди, остальные воркер ставит по одной после предыдущей ' +
+            '(jobId известны заранее). Пусто при отказе (см. reason).',
         type: [AiAnalyticsDispatchedJobDto],
     })
     jobs: AiAnalyticsDispatchedJobDto[];

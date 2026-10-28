@@ -44,6 +44,19 @@ export class LlmOrchestratorService {
         return this.resolveProvider(model).analyzeCall(query, domain);
     }
 
+    /**
+     * Произвольный вызов «системный промпт + сообщение» → текст, без RAG:
+     * любая модель оркестратора как исполнитель чужого промпта (шлюз
+     * структурных вызовов, ручка «любой промпт»).
+     */
+    complete(
+        model: LlmModel,
+        systemPrompt: string,
+        userContent: string,
+    ): Promise<string> {
+        return this.resolveProvider(model).complete(systemPrompt, userContent);
+    }
+
     private resolveProvider(model: LlmModel): LlmProvider {
         switch (model) {
             case 'gigachat':

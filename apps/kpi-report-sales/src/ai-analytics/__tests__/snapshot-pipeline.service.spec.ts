@@ -7,6 +7,8 @@ import {
 } from '@lib/sales-ai-analytics';
 import {
     AI_PIPELINE_BUS_KEYS,
+    AI_PIPELINE_JOB_OPTIONS,
+    AI_PIPELINE_MAX_SLOT_RETRIES,
     AI_PIPELINE_METRICS,
     AI_PIPELINE_OPTIONAL_STEP_FAILED,
     AI_PIPELINE_RETRY_DELAY_MS,
@@ -522,6 +524,149 @@ function exportsOf(module: unknown, seen = new Set<unknown>()): Set<unknown> {
     }
     return result;
 }
+
+/**
+ * Догон цепочкой (gsr 28.10.2026): 24 джобы разом перекладывались из-за
+ * единственного слота портала и после предела перекладок завершались без
+ * журнала — «18 из 24» не менялось. Теперь следующий месяц ставит сам
+ * раннер после предыдущего.
+ */
+describe('SnapshotPipelineService — догон цепочкой', () => {
+    const chainJob = (over: Partial<AiSnapshotJobData> = {}) =>
+        makeJob({
+            kind: 'backfill',
+            monthKey: '2026-01',
+            day: '2026-01-31',
+            forceRefresh: true,
+            chain: [
+                { monthKey: '2026-02', jobKey: '2026-02:recompute:7' },
+                { monthKey: '2026-03', jobKey: '2026-03:recompute:7' },
+            ],
+            ...over,
+        });
+    const addedData = (job: ReturnType<typeof makeJob>): AiSnapshotJobData =>
+        (job.queue.add.mock.calls[0] as [string, AiSnapshotJobData])[1];
+
+    it('после прогона месяца следующий встаёт в очередь: тот же вид, forceRefresh, остаток цепочки, jobId по ключу звена', async () => {
+        const step = fakeStep('calls', ['backfill']);
+        const { service } = makeService([step]);
+        const job = chainJob();
+
+        const summary = await service.run(job, NOW);
+
+        expect(summary.status).toBe('ok');
+        expect(job.queue.add).toHaveBeenCalledTimes(1);
+        expect(job.queue.add).toHaveBeenCalledWith(
+            'sales-ai-analytics-snapshot',
+            {
+                domain: DOMAIN,
+                kind: 'backfill',
+                monthKey: '2026-02',
+                day: '2026-02-28',
+                forceRefresh: true,
+                chain: [{ monthKey: '2026-03', jobKey: '2026-03:recompute:7' }],
+            },
+            {
+                ...AI_PIPELINE_JOB_OPTIONS,
+                jobId: `ai-analytics:snapshot:backfill:${DOMAIN}:2026-02:recompute:7`,
+            },
+        );
+    });
+
+    it('последнее звено ставится без chain; джоба без цепочки очередь не растит', async () => {
+        const step = fakeStep('calls', ['backfill']);
+        const { service } = makeService([step]);
+        const job = chainJob({
+            chain: [{ monthKey: '2026-02', jobKey: '2026-02' }],
+        });
+        await service.run(job, NOW);
+        expect(addedData(job)).toEqual({
+            domain: DOMAIN,
+            kind: 'backfill',
+            monthKey: '2026-02',
+            day: '2026-02-28',
+            forceRefresh: true,
+        });
+
+        const last = chainJob({ chain: undefined });
+        await service.run(last, NOW);
+        expect(last.queue.add).not.toHaveBeenCalled();
+    });
+
+    it('слот занят: перекладка везёт цепочку с собой, следующий месяц не ставится', async () => {
+        const step = fakeStep('calls', ['backfill']);
+        const { service } = makeService([step], false);
+        const job = chainJob();
+
+        await service.run(job, NOW);
+
+        expect(job.queue.add).toHaveBeenCalledTimes(1);
+        expect(addedData(job)).toEqual({ ...job.data, slotRetries: 1 });
+    });
+
+    it('перекладки исчерпаны: месяц потерян с телеграмом, но цепочка идёт дальше', async () => {
+        const error = jest
+            .spyOn(Logger.prototype, 'error')
+            .mockImplementation(() => undefined);
+        const step = fakeStep('calls', ['backfill']);
+        const { service } = makeService([step], false);
+        const job = chainJob({ slotRetries: AI_PIPELINE_MAX_SLOT_RETRIES });
+
+        const summary = await service.run(job, NOW);
+
+        expect(summary.reason).toBe('slot-retries-exhausted');
+        expect(job.queue.add).toHaveBeenCalledTimes(1);
+        expect(addedData(job).monthKey).toBe('2026-02');
+        expect(error).toHaveBeenCalledWith(
+            expect.stringContaining('слот не освободился'),
+            { telegram: true, domain: DOMAIN },
+        );
+        error.mockRestore();
+    });
+
+    it('падение месяца: с запасом попыток Bull цепочка ждёт повтора, на последней попытке — продолжается', async () => {
+        const error = jest
+            .spyOn(Logger.prototype, 'error')
+            .mockImplementation(() => undefined);
+        const failing = fakeStep('calls', ['backfill'], () => {
+            throw new Error('Битрикс недоступен');
+        });
+        const { service } = makeService([failing]);
+
+        const first = { ...chainJob(), attemptsMade: 0, opts: { attempts: 2 } };
+        await expect(service.run(first, NOW)).rejects.toThrow(
+            'Битрикс недоступен',
+        );
+        expect(first.queue.add).not.toHaveBeenCalled();
+
+        const retry = { ...chainJob(), attemptsMade: 1, opts: { attempts: 2 } };
+        await expect(service.run(retry, NOW)).rejects.toThrow(
+            'Битрикс недоступен',
+        );
+        expect(retry.queue.add).toHaveBeenCalledTimes(1);
+        expect(addedData(retry).monthKey).toBe('2026-02');
+        error.mockRestore();
+    });
+
+    it('отказ постановки следующего месяца — телеграм, сам прогон не падает', async () => {
+        const error = jest
+            .spyOn(Logger.prototype, 'error')
+            .mockImplementation(() => undefined);
+        const step = fakeStep('calls', ['backfill']);
+        const { service } = makeService([step]);
+        const job = chainJob();
+        job.queue.add.mockRejectedValueOnce(new Error('Redis недоступен'));
+
+        await expect(service.run(job, NOW)).resolves.toMatchObject({
+            status: 'ok',
+        });
+        expect(error).toHaveBeenCalledWith(
+            expect.stringContaining('цепочка оборвана'),
+            { telegram: true, domain: DOMAIN },
+        );
+        error.mockRestore();
+    });
+});
 
 describe('AiAnalyticsPipelineModule — самодостаточность среза', () => {
     it('каждая зависимость провайдеров доступна в модуле или его импортах', () => {

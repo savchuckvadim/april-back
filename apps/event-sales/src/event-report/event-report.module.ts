@@ -19,6 +19,7 @@ import { EventSalesController } from './controllers/event-sales.controller';
 import { PortalFieldsModule } from '../shared/portal-fields';
 import { BxDepartmentModule } from '@lib/bx-department';
 import { EventReportActingManagerService } from './services/acting-manager/event-report-acting-manager.service';
+import { EventReportImpersonationService } from './services/impersonation/event-report-impersonation.service';
 
 /**
  * Модуль event-report flow. Подключается родительским `EventSalesModule`.
@@ -73,6 +74,7 @@ import { EventReportActingManagerService } from './services/acting-manager/event
         EventFlowDuplicateGuardService,
         // Режим руководителя: bitrix приходит параметром, в полях не живёт.
         EventReportActingManagerService,
+        EventReportImpersonationService,
     ],
 })
 export class EventReportModule {}

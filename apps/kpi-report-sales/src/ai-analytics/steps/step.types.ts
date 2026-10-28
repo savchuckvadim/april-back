@@ -210,6 +210,10 @@ export interface AiPipelineJobLike {
             opts: JobOptions,
         ): Promise<unknown>;
     };
+    /** Сколько попыток Bull уже провалил (0 — первая); нет — 0. */
+    attemptsMade?: number;
+    /** Опции джобы — нужен только предел попыток для цепочки догона. */
+    opts?: Pick<JobOptions, 'attempts'>;
 }
 
 /** Раннер конвейера глазами процессора (см. AI_ANALYTICS_SNAPSHOT_RUNNER). */
