@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { LlmGatewayModule } from '@lib/llm-gateway';
 import { PortalRepository } from '@lib/portal-lib/store/portal.repository';
 import { PortalPrismaRepository } from '@lib/portal-lib/store/portal.prisma.repository';
 import { SupportMonitorAdminController } from './admin/support-monitor-admin.controller';
@@ -12,10 +13,11 @@ import { SupportMonitorModule } from './support-monitor.module';
  * (ai/rules/app-api-surface.md), чтобы ручки не попали в Swagger apps/bot.
  *
  * PortalRepository — ради id портала линии в ссылках путеводителя
- * (Prisma — глобальный модуль приложения admin).
+ * (Prisma — глобальный модуль приложения admin). LlmGatewayModule — пункт
+ * чек-листа «модель серверного ИИ-помощника настроена».
  */
 @Module({
-    imports: [SupportMonitorModule],
+    imports: [SupportMonitorModule, LlmGatewayModule],
     controllers: [SupportMonitorAdminController, SupportGuideAdminController],
     providers: [
         { provide: PortalRepository, useClass: PortalPrismaRepository },

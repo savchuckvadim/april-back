@@ -73,6 +73,22 @@ export class StructuredLlmGateway {
         return this.adapters.map(adapter => adapter.code);
     }
 
+    /**
+     * Настроен ли каждый провайдер для домена: `issue` null — настроен,
+     * иначе причина (нет ключа портала, нет endpoint'а). Для чек-листов
+     * админки; сеть не трогает.
+     */
+    availability(
+        domain: string,
+    ): Promise<{ code: LlmProviderCode; issue: string | null }[]> {
+        return Promise.all(
+            this.adapters.map(async adapter => ({
+                code: adapter.code,
+                issue: await adapter.configurationIssue(domain),
+            })),
+        );
+    }
+
     /** Strict-JSON вызов: только разобранный результат (как VibeCodeClient.structuredCompletion, 5-й аргумент — домен). */
     async structuredCompletion(
         systemPrompt: string,

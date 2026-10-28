@@ -11,6 +11,11 @@ export interface SupportChecklistContext {
     /** Настройки приложений портала линии в админке; null — портала нет в БД. */
     settingsLink: SupportGuideLink | null;
     kbRootUrl: string | null;
+    /**
+     * Почему серверному ИИ-помощнику не на чём работать (ни один провайдер
+     * шлюза LLM не настроен для портала линии); null — провайдер есть.
+     */
+    llmIssue: string | null;
 }
 
 const done = (ok: boolean): SupportGuideCheckStatus => (ok ? 'done' : 'todo');
@@ -106,8 +111,32 @@ export function buildSupportChecklist(
             link: null,
         },
         {
+            key: 'assistant_llm',
+            title: 'Серверный ИИ-помощник: модель настроена для портала линии',
+            status: done(context.llmIssue === null),
+            hint:
+                context.llmIssue ??
+                'Шлюз LLM готов: разбор диалогов работает в Telegram-боте и через `POST /api/support/dialogs/:chatId/analyze`.',
+            link: context.portalId
+                ? {
+                      title: 'Ключи портала линии (VibeCode)',
+                      href: `/portal/${context.portalId}/keys`,
+                  }
+                : null,
+        },
+        {
+            key: 'telegram_webhook',
+            title: 'Telegram-бот принимает команды (вебхук)',
+            status: 'manual',
+            hint:
+                '`SUPPORT_TELEGRAM_WEBHOOK_URL` и `SUPPORT_TELEGRAM_WEBHOOK_SECRET` в env bot; при старте bot пишет ' +
+                '«вебхук установлен». Проверка: написать боту «помощь». В группе бот видит только команды вида ' +
+                '`/analyze 769`, пока в BotFather не выключен режим приватности (`/setprivacy` → Disable).',
+            link: null,
+        },
+        {
             key: 'reply_tested',
-            title: 'Ответ клиенту из Claude Code проверен вживую',
+            title: 'Ответ клиенту проверен вживую (Claude Code или кнопка в Telegram)',
             status: 'manual',
             hint: 'Первую отправку — в тестовом диалоге №71 (клиент — сам Вадим с портала alfacentr).',
             link: null,

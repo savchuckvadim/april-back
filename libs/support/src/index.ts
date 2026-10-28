@@ -21,3 +21,16 @@ export * from './desk/support-desk.module';
 export * from './guide/support-guide.types';
 export * from './guide/support-guide.content';
 export * from './guide/support-guide.service';
+// ИИ-помощник: разбор диалога, черновик, отправка только после «да».
+export * from './assistant/domain/support-assistant.types';
+export * from './assistant/domain/support-assistant.schema';
+export * from './assistant/domain/support-assistant.format';
+export * from './assistant/domain/support-dialog.lookup';
+export * from './assistant/application/support-assistant.service';
+export * from './assistant/infrastructure/support-draft.store';
+export * from './assistant/support-assistant.module';
+// Telegram-бот поддержки: команды, кнопки, обработка обновлений.
+export * from './telegram-bot/domain/support-telegram.update';
+export * from './telegram-bot/domain/support-telegram.commands';
+export * from './telegram-bot/application/support-telegram-bot.service';
+export * from './telegram-bot/support-telegram-bot.module';

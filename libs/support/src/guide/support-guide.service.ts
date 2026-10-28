@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLlmGateway } from '@lib/llm-gateway';
 import { PortalRepository } from '@lib/portal-lib/store/portal.repository';
 import { normalizeSupportDomain } from '../monitor/application/support-monitor-options';
 import { SupportMonitorSettingsService } from '../monitor/application/support-monitor-settings.service';
@@ -16,21 +17,39 @@ const contactCenterUrl = (domain: string): string =>
     `https://${domain}/contact_center/`;
 
 /**
+ * Ни один провайдер шлюза не настроен — одна строка с причинами по каждому;
+ * хоть один настроен — null.
+ */
+export function describeLlmIssue(
+    availability: readonly { code: string; issue: string | null }[],
+): string | null {
+    if (availability.some(item => item.issue === null)) return null;
+    return availability.length
+        ? availability.map(item => `${item.code}: ${item.issue}`).join('; ')
+        : 'в шлюзе LLM нет ни одного провайдера';
+}
+
+/**
  * Путеводитель по поддержке для админки: тексты + живой чек-лист
- * готовности по настройкам портала линии.
+ * готовности по настройкам портала линии и шлюзу LLM.
  */
 @Injectable()
 export class SupportGuideService {
     constructor(
         private readonly settings: SupportMonitorSettingsService,
         private readonly portals: PortalRepository,
+        private readonly llm: StructuredLlmGateway,
     ) {}
 
     async build(domain?: string): Promise<SupportGuide> {
         const lineDomain = await this.resolveLineDomain(domain);
-        const [options, portal] = await Promise.all([
+        const [options, portal, llmIssue] = await Promise.all([
             this.settings.resolveOptions(lineDomain),
             this.portals.findByDomain(lineDomain),
+            this.llm
+                .availability(lineDomain)
+                .then(describeLlmIssue)
+                .catch((error: Error) => `шлюз LLM: ${error.message}`),
         ]);
         // id портала в сущности — строка (BigInt из Prisma), в ссылках — число.
         const portalId = Number(portal?.id) || null;
@@ -68,6 +87,7 @@ export class SupportGuideService {
                 portalId,
                 settingsLink,
                 kbRootUrl: SUPPORT_KB_ROOT_URL,
+                llmIssue,
             }),
             sections: [...SUPPORT_GUIDE_SECTIONS],
             links,

@@ -57,19 +57,43 @@ infra/
    роли не играет:
    - `A  m.dockploy.april-app.ru → 62.113.100.217` — панель (сделано 28.10);
    - `A  *.m.april-app.ru      → 62.113.100.217` — все 12 тестовых доменов
-     одной записью. Wildcard покрывает один уровень, поэтому тестовые
+     одной записью (сделано 28.10). Wildcard покрывает один уровень, поэтому тестовые
      домены вида `event-sales.m.april-app.ru`, без `api.`. В Selectel в поле
      «Имя группы» вводится только `*.m` — зона `.april-app.ru.` дописывается
      сама; полное имя или пробел в конце дают ошибку.
-2. **Deploy key в GitHub:** april-back → Settings → Deploy keys → Add,
-   без галки «Allow write access». Публичный ключ — в Dokploy:
-   Settings → SSH Keys → `github-april-back-ro`.
+2. **Deploy key в GitHub.** Dokploy при каждом деплое скачивает репозиторий
+   (из него берётся compose-файл). Пускает его SSH-ключ: закрытая половина
+   хранится в Dokploy (Settings → SSH Keys → `github-april-back-ro`),
+   открытую надо разрешить в репозитории — только чтение, только april-back.
+   - https://github.com/savchuckvadim/april-back/settings/keys/new
+     (это настройки репозитория, не профиля: Settings → SSH keys профиля
+     не подходит);
+   - Title — `dokploy-mirror`; Key — публичный ключ одной строкой, от
+     `ssh-ed25519` до `dokploy`;
+   - галку «Allow write access» не ставить → Add key.
+
+   Проверка: `git ls-remote` с этим ключом отдаёт sha ветки `monorepo`.
+   Один deploy key — на один репозиторий: фронту понадобится свой.
 3. **Прод-`.env`** вставить в Dokploy → сервис `back-mirror` →
    Environment, в верхний блок (нижний с переменными зеркала уже
    заполнен). Взять с прод-сервера `/var/www/html/back-mono.april-app/.env`.
    Значения `apps/<app>/.env` прода, если там есть что-то кроме `SWAGGER_*`,
    — туда же.
-4. **`keys/key.json`** с прода → `/etc/dokploy/compose/back-mirror-phxj10/files/keys/`.
+4. **`keys/key.json`** (сервисный аккаунт Yandex) с прода
+   `/var/www/html/back-mono.april-app/keys/key.json` → на зеркало
+   `/etc/dokploy/compose/back-mirror-phxj10/files/keys/key.json`. Через
+   компьютер (PowerShell; `<логин>` — тот, которым заходишь на прод):
+
+   ```powershell
+   scp <логин>@176.114.65.190:/var/www/html/back-mono.april-app/keys/key.json $env:TEMP\key.json
+   scp $env:TEMP\key.json april-mirror:/etc/dokploy/compose/back-mirror-phxj10/files/keys/key.json
+   Remove-Item $env:TEMP\key.json
+   ```
+
+   Без scp — текстом: на проде `cat …/keys/key.json`, скопировать всё; на
+   зеркале `ssh april-mirror`, `nano /etc/dokploy/compose/back-mirror-phxj10/files/keys/key.json`,
+   вставить, Ctrl+O, Enter, Ctrl+X. В чаты и задачи файл не вставлять — это
+   секрет. Позже `sync-storage.sh` по cron будет держать `keys/` в синхроне.
 5. **Секреты GitHub** april-back → Settings → Secrets and variables → Actions:
    `DOKPLOY_URL=https://m.dockploy.april-app.ru`, `DOKPLOY_API_KEY` (токен
    панели), `DOKPLOY_COMPOSE_ID=FakrccxrHqpOXbUvDLKs5`. Переменная

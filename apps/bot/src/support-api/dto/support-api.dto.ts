@@ -13,15 +13,18 @@ import {
 import { SUPPORT_REPLY_MAX_LENGTH, SupportDialogReportDto } from '@lib/support';
 import { LogRowDto, LogsSummaryResponseDto } from '@lib/logger/query';
 import type {
+    SupportAnalysis,
     SupportAuthorRole,
     SupportChatView,
     SupportClientErrors,
     SupportClient,
+    SupportConfidence,
+    SupportDraft,
     SupportMessage,
     SupportReplyResult,
     SupportTaskResult,
 } from '@lib/support';
-import { SUPPORT_AUTHOR_ROLES } from '@lib/support';
+import { SUPPORT_AUTHOR_ROLES, SUPPORT_CONFIDENCE_LEVELS } from '@lib/support';
 
 const DOMAIN_PATTERN = /^[a-z0-9.-]+$/i;
 
@@ -381,4 +384,129 @@ export class SupportClientErrorsResponseDto implements SupportClientErrors {
         type: [LogRowDto],
     })
     recent: LogRowDto[];
+}
+
+export class SupportAnalysisDto implements SupportAnalysis {
+    @ApiProperty({
+        description: 'Суть обращения одной-двумя фразами — для сотрудника.',
+        type: String,
+        example: 'Отчёт о звонке висит в «Отправляется» у одного менеджера.',
+    })
+    summary: string;
+
+    @ApiProperty({
+        description: 'Вероятная причина — для сотрудника, можно технически.',
+        type: String,
+        example:
+            'Похоже на карточку «Отчёт о звонке не отправился»: в журнале портала ошибки очереди за это время.',
+    })
+    cause: string;
+
+    @ApiProperty({
+        description: 'Черновик ответа клиенту по правилам базы знаний.',
+        type: String,
+        example:
+            'Отчёт не потерялся, он отправится сам. Если через час всё ещё «Отправляется», пришлите скриншот экрана.',
+    })
+    draftReply: string;
+
+    @ApiProperty({
+        description: 'Уверенность в причине и черновике.',
+        type: String,
+        enum: SUPPORT_CONFIDENCE_LEVELS,
+        example: 'medium',
+    })
+    confidence: SupportConfidence;
+
+    @ApiProperty({
+        description:
+            'Нужен разработчик: данные, повторяющаяся ошибка, настройка.',
+        type: Boolean,
+        example: false,
+    })
+    needsDeveloper: boolean;
+
+    @ApiPropertyOptional({
+        description: 'Название задачи разработчику; null — задача не нужна.',
+        type: String,
+        nullable: true,
+        example: 'Не отправляется отчёт о звонке у клиента',
+    })
+    taskTitle: string | null;
+
+    @ApiProperty({
+        description: 'Чего не хватает от клиента; вопросы уже в черновике.',
+        type: [String],
+        example: ['ссылка на сделку', 'скриншот экрана'],
+    })
+    missingInfo: string[];
+}
+
+export class SupportDraftResponseDto implements SupportDraft {
+    @ApiProperty({
+        description: 'Идентификатор черновика (живёт сутки).',
+        type: String,
+        example: 'a1b2c3d4e5f6',
+    })
+    id: string;
+
+    @ApiProperty({
+        description: 'Портал линии.',
+        type: String,
+        example: 'april-dev.bitrix24.ru',
+    })
+    lineDomain: string;
+
+    @ApiProperty({ description: 'Чат диалога.', type: Number, example: 769 })
+    chatId: number;
+
+    @ApiPropertyOptional({
+        description: 'Имя клиента; null — в переписке не видно.',
+        type: String,
+        nullable: true,
+        example: 'Савчук Вадим',
+    })
+    clientName: string | null;
+
+    @ApiPropertyOptional({
+        description: 'Портал клиента; null — неизвестен.',
+        type: String,
+        nullable: true,
+        example: 'alfacentr.bitrix24.ru',
+    })
+    clientPortal: string | null;
+
+    @ApiProperty({ description: 'Разбор моделью.', type: SupportAnalysisDto })
+    analysis: SupportAnalysisDto;
+
+    @ApiProperty({
+        description:
+            'Текст, который уйдёт клиенту после «да»: черновик модели или правка человека.',
+        type: String,
+        example: 'Отчёт не потерялся, он отправится сам.',
+    })
+    replyText: string;
+
+    @ApiProperty({
+        description: 'Когда сделан разбор (ISO 8601).',
+        type: String,
+        format: 'date-time',
+        example: '2026-10-28T12:00:00.000Z',
+    })
+    createdAt: string;
+
+    @ApiProperty({
+        description: 'Провайдер шлюза LLM, который ответил.',
+        type: String,
+        example: 'vibecode',
+    })
+    provider: string;
+
+    @ApiPropertyOptional({
+        description: 'Фактическая модель; null — провайдер не вернул.',
+        type: String,
+        nullable: true,
+        example: 'BitrixGPT',
+    })
+    model: string | null;
 }

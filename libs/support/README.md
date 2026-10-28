@@ -91,3 +91,42 @@ MCP для Claude Code — `scripts/mcp/april-support.mjs` (без зависи�
 
 - `POST admin/support-monitor/preview { "domain": "april-dev.bitrix24.ru" }` — что ушло бы сейчас. Ничего не шлёт и не запоминает.
 - Режим «только считать» пишет каждое событие в журнал bot один раз.
+
+## ИИ-помощник на сервере (`src/assistant`) и Telegram-вход (`src/telegram-bot`)
+
+Решение владельца 28.10.2026: OpenClaw не нужен; подписка Claude — только в Claude Code на компьютере техспециалиста (с телефона — Remote Control или Channels); в сервер подписку не кладём (правила Anthropic). Серверный «мозг» — шлюз LLM `@lib/llm-gateway`: VibeCode Битрикса по ключу портала линии (april-dev, рубли), запасной OpenAI-совместимый — env `LLM_FALLBACK_*`, Anthropic по ключу — позже, через евро-сервер владельца. Контракт, который не меняется при смене провайдера, — стойка поддержки и Support API.
+
+```
+assistant/
+  domain/
+    support-assistant.types.ts    разбор (SupportAnalysis) и черновик (SupportDraft)
+    support-assistant.schema.ts   strict JSON-схема support_dialog_analysis + parseSupportAnalysis
+    support-assistant.prompt.ts   системный промпт (правила ответа из базы знаний, карточки частых проблем) и сборка контекста
+    support-assistant.format.ts   HTML для Telegram: черновик, список диалогов, подсказки
+    support-dialog.lookup.ts      «разбери Соломатову»: номер чата/сессии, имя в любом падеже, портал
+  application/support-assistant.service.ts  analyze → черновик в Redis; revise; send (ТОЛЬКО после «да»); createTask; discard
+  infrastructure/support-draft.store.ts     Redis: черновики (сутки) и привязка «сообщение Telegram → черновик»
+  support-assistant.module.ts              ТОЛЬКО сервисы
+telegram-bot/
+  domain/support-telegram.update.ts    типы обновления Telegram (snake_case, как в Bot API)
+  domain/support-telegram.commands.ts  команды: /help, /dialogs, «что в поддержке», /analyze, «разбери …»; callback_data `sa:<action>:<draftId>`
+  domain/support-telegram.keyboard.ts  кнопки: «Отправить клиенту», «Задача разработчику» (если нужен), «Убрать»
+  application/support-telegram-bot.service.ts  обработка обновлений
+  support-telegram-bot.module.ts       ТОЛЬКО сервис; вебхук — apps/bot/src/support-telegram
+```
+
+Правила:
+
+- Клиенту пишет только `send` после явного «да» человека: в Telegram это кнопка «Отправить клиенту» (в журнал и копию в чат уходит имя нажавшего), в Claude Code — слово «да». Правка черновика — ответом на сообщение с ним; бот показывает новый черновик с кнопками.
+- Команды принимаются из чата поддержки (`SUPPORT_TELEGRAM_CHAT_ID`) и в личке от его участников (`getChatMember`, кэш 10 минут). Чужие чаты молча пропускаются.
+- Контекст разбора: переписка (`im.v2.Chat.Message.tail`, 30 сообщений) и ошибки наших приложений по порталу клиента за 24 ч (`LogQueryService`); журналов нет — разбираем без них.
+- Модель не знает текстов базы знаний — только названия карточек частых проблем (`SUPPORT_FREQUENT_PROBLEMS`); тексты статей — следующий шаг.
+- Telegram ждёт быстрый ответ: вебхук отвечает сразу, обработка в фоне; ошибка — «Не получилось: …» в тот же чат.
+
+Вебхук (apps/bot): `POST /api/support/telegram/webhook`, секрет в заголовке `X-Telegram-Bot-Api-Secret-Token` (env `SUPPORT_TELEGRAM_WEBHOOK_SECRET`); `SupportTelegramWebhookRegistrar` при старте регистрирует `SUPPORT_TELEGRAM_WEBHOOK_URL` в Telegram (не на `APP_ROLE=standby`). В группе без выключенного режима приватности (BotFather `/setprivacy`) бот видит только команды вида `/analyze 769`.
+
+Support API: `POST /api/support/dialogs/:chatId/analyze` — тот же разбор для Claude Code; MCP-инструмент `support_dialog_analyze`.
+
+Чек-лист админки: пункт «модель настроена» — `StructuredLlmGateway.availability(lineDomain)`; ссылка на ключи портала.
+
+**Вживую не проверялось** (28.10.2026): разбор моделью и кнопки — нужны VibeCode-ключ на april-dev и env вебхука на сервере.

@@ -19,7 +19,7 @@ import {
     ApiTags,
 } from '@nestjs/swagger';
 import { BackgroundCalls } from '@lib/core/call-context';
-import { SupportDeskService } from '@lib/support';
+import { SupportAssistantService, SupportDeskService } from '@lib/support';
 import {
     SUPPORT_API_KEY_HEADER,
     SupportApiKeyGuard,
@@ -32,6 +32,7 @@ import {
     SupportDialogReadQueryDto,
     SupportDialogsResponseDto,
     SupportDomainQueryDto,
+    SupportDraftResponseDto,
     SupportReplyRequestDto,
     SupportReplyResponseDto,
     SupportTaskRequestDto,
@@ -60,7 +61,10 @@ const CHAT_ID_PARAM = {
 @UseGuards(SupportApiKeyGuard)
 @Controller('support')
 export class SupportApiController {
-    constructor(private readonly desk: SupportDeskService) {}
+    constructor(
+        private readonly desk: SupportDeskService,
+        private readonly assistant: SupportAssistantService,
+    ) {}
 
     @Get('dialogs')
     @ApiOperation({
@@ -115,6 +119,28 @@ export class SupportApiController {
         @Query() query: SupportClientErrorsQueryDto,
     ): Promise<SupportClientErrorsResponseDto> {
         return this.desk.clientErrors(query.domain, query.hours ?? 24);
+    }
+
+    @Post('dialogs/:chatId/analyze')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Разбор диалога ИИ-помощником на сервере',
+        description:
+            'Переписку и ошибки наших приложений по порталу клиента разбирает ' +
+            'модель через шлюз LLM (VibeCode портала линии, запасной провайдер ' +
+            '— настройкой): суть, вероятная причина, черновик ответа, нужен ли ' +
+            'разработчик. Клиенту ничего не отправляет; черновик хранится сутки.',
+    })
+    @ApiParam(CHAT_ID_PARAM)
+    @ApiOkResponse({
+        type: SupportDraftResponseDto,
+        description: 'Разбор и черновик ответа.',
+    })
+    async analyze(
+        @Param('chatId', ParseIntPipe) chatId: number,
+        @Query() query: SupportDomainQueryDto,
+    ): Promise<SupportDraftResponseDto> {
+        return this.assistant.analyze(chatId, query.domain);
     }
 
     @Post('dialogs/:chatId/reply')

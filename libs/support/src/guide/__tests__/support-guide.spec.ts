@@ -1,4 +1,5 @@
 import { findMissingModuleDependencies } from '@lib/core/testing/module-di';
+import { StructuredLlmGateway } from '@lib/llm-gateway';
 import {
     EnumPortalAppCode,
     PORTAL_APP_SETTINGS_SCHEMA,
@@ -10,7 +11,10 @@ import { SupportMonitorOptions } from '../../monitor/application/support-monitor
 import { SupportMonitorAdminModule } from '../../monitor/support-monitor.admin.module';
 import { SUPPORT_GUIDE_SECTIONS } from '../support-guide.content';
 import { buildSupportChecklist } from '../support-guide.checklist';
-import { SupportGuideService } from '../support-guide.service';
+import {
+    describeLlmIssue,
+    SupportGuideService,
+} from '../support-guide.service';
 
 const options = (
     overrides: Partial<SupportMonitorOptions> = {},
@@ -38,6 +42,7 @@ describe('buildSupportChecklist', () => {
         portalId: 7,
         settingsLink: { title: 'Настройки', href: '/portal/7/app-settings' },
         kbRootUrl: null,
+        llmIssue: 'vibecode: ключ не заведён',
     };
 
     it('по умолчанию: монитор выключен, линия и получатели не заданы', () => {
@@ -49,6 +54,21 @@ describe('buildSupportChecklist', () => {
         expect(statusOf(checks, 'live_mode')).toBe('todo');
         expect(statusOf(checks, 'knowledge_base')).toBe('todo');
         expect(statusOf(checks, 'telegram_chat')).toBe('manual');
+        expect(statusOf(checks, 'assistant_llm')).toBe('todo');
+        expect(statusOf(checks, 'telegram_webhook')).toBe('manual');
+    });
+
+    it('серверный ИИ-помощник: провайдер шлюза настроен — сделано, ссылка на ключи портала', () => {
+        const checks = buildSupportChecklist(options(), {
+            ...context,
+            llmIssue: null,
+        });
+        const check = checks.find(item => item.key === 'assistant_llm');
+        expect(check?.status).toBe('done');
+        expect(check?.link).toEqual({
+            title: 'Ключи портала линии (VibeCode)',
+            href: '/portal/7/keys',
+        });
     });
 
     it('боевая настройка april-dev: всё, что видно по настройкам, сделано', () => {
@@ -63,6 +83,7 @@ describe('buildSupportChecklist', () => {
             {
                 ...context,
                 kbRootUrl: 'https://april-dev.bitrix24.ru/note/document/5/',
+                llmIssue: null,
             },
         );
         for (const key of [
@@ -71,6 +92,7 @@ describe('buildSupportChecklist', () => {
             'bell_recipients',
             'live_mode',
             'knowledge_base',
+            'assistant_llm',
         ]) {
             expect(statusOf(checks, key)).toBe('done');
         }
@@ -130,19 +152,74 @@ describe('тексты путеводителя', () => {
     });
 });
 
+describe('describeLlmIssue', () => {
+    it('хоть один провайдер настроен — замечания нет', () => {
+        expect(
+            describeLlmIssue([
+                { code: 'vibecode', issue: 'нет ключа' },
+                { code: 'openai-compatible', issue: null },
+            ]),
+        ).toBeNull();
+    });
+
+    it('никто не настроен — причины по каждому провайдеру одной строкой', () => {
+        expect(
+            describeLlmIssue([
+                { code: 'vibecode', issue: 'нет ключа' },
+                { code: 'openai-compatible', issue: 'нет endpoint' },
+            ]),
+        ).toBe('vibecode: нет ключа; openai-compatible: нет endpoint');
+        expect(describeLlmIssue([])).toContain('ни одного провайдера');
+    });
+});
+
 describe('SupportGuideService', () => {
-    function setup(enabled: string[], portal: { id: string } | null) {
+    function setup(
+        enabled: string[],
+        portal: { id: string } | null,
+        availability: { code: string; issue: string | null }[] = [
+            { code: 'vibecode', issue: null },
+        ],
+    ) {
         const settings = {
             listEnabledDomains: jest.fn().mockResolvedValue(enabled),
             resolveOptions: jest.fn().mockResolvedValue(options()),
         };
         const portals = { findByDomain: jest.fn().mockResolvedValue(portal) };
+        const llm = {
+            availability: jest.fn().mockResolvedValue(availability),
+        };
         const service = new SupportGuideService(
             settings as unknown as SupportMonitorSettingsService,
             portals as unknown as PortalRepository,
+            llm as unknown as StructuredLlmGateway,
         );
-        return { service, settings, portals };
+        return { service, settings, portals, llm };
     }
+
+    it('шлюз LLM не настроен для портала линии — пункт чек-листа «не сделано» с причиной', async () => {
+        const { service, llm } = setup([], { id: '7' }, [
+            { code: 'vibecode', issue: 'VibeCode-ключ не заведён' },
+        ]);
+        const guide = await service.build();
+        expect(llm.availability).toHaveBeenCalledWith('april-dev.bitrix24.ru');
+        const check = guide.checklist.find(
+            item => item.key === 'assistant_llm',
+        );
+        expect(check?.status).toBe('todo');
+        expect(check?.hint).toContain('VibeCode-ключ не заведён');
+    });
+
+    it('шлюз LLM упал — путеводитель всё равно строится, причина в подсказке', async () => {
+        const { service, llm } = setup([], { id: '7' });
+        llm.availability.mockRejectedValueOnce(new Error('Redis недоступен'));
+        const guide = await service.build();
+        const check = guide.checklist.find(
+            item => item.key === 'assistant_llm',
+        );
+        expect(check?.status).toBe('todo');
+        expect(check?.hint).toContain('Redis недоступен');
+    });
 
     it('портал линии по умолчанию — april-dev; id портала строкой → число', async () => {
         const { service, portals } = setup([], { id: '7' });
