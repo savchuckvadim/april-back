@@ -3,6 +3,7 @@ import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { TelegramService } from '@lib/telegram';
+import { EgressProxyModule } from '@lib/egress-proxy';
 import { MailService } from '@lib/mail';
 import { StorageService } from '@lib/core/storage';
 import { getMailerConfig } from '@lib/core/config/mail/mailer.config';
@@ -39,6 +40,8 @@ import { MarketplaceInvitePrismaRepository } from './repositories/marketplace-in
     imports: [
         PrismaModule,
         HttpModule,
+        // Для TelegramService-провайдера: Bot API только через исходящий прокси.
+        EgressProxyModule,
         MailerModule.forRootAsync({
             imports: [ConfigModule],
             useFactory: getMailerConfig,

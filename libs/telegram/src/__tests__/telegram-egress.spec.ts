@@ -1,5 +1,4 @@
 import { of } from 'rxjs';
-import { TelegramOriginalService } from '../telegram-original.service';
 import { TelegramService } from '../telegram.service';
 
 const CFG: Record<string, string> = {
@@ -11,35 +10,71 @@ const CFG: Record<string, string> = {
 
 const configService = { get: (key: string) => CFG[key] };
 
-/** Как EgressProxyService с api.telegram.org в EGRESS_PROXY_HOSTS. */
-const proxiedEgress = {
-    route: (url: string) => ({
+interface EgressStub {
+    route: (url: string) => {
+        url: string;
+        headers: Record<string, string>;
+        viaProxy: boolean;
+    };
+    status: () => {
+        enabled: boolean;
+        proxyHost: string | null;
+        hosts: string[];
+    };
+}
+
+/** Как EgressProxyService с api.telegram.org в списке хостов. */
+const proxiedEgress: EgressStub = {
+    route: url => ({
         url: `https://eu-proxy.example.com/p/api.telegram.org${new URL(url).pathname}`,
         headers: { 'X-Egress-Token': 'secret' },
         viaProxy: true,
     }),
+    status: () => ({
+        enabled: true,
+        proxyHost: 'eu-proxy.example.com',
+        hosts: ['api.telegram.org'],
+    }),
 };
 
-const directEgress = {
-    route: (url: string) => ({ url, headers: {}, viaProxy: false }),
+/** Прокси включён, но Telegram в список хостов не добавили. */
+const proxyWithoutTelegram: EgressStub = {
+    route: url => ({ url, headers: {}, viaProxy: false }),
+    status: () => ({
+        enabled: true,
+        proxyHost: 'eu-proxy.example.com',
+        hosts: ['api.groq.com'],
+    }),
 };
 
-const makePost = () => jest.fn().mockReturnValue(of({ data: {} }));
+/** Прокси не настроен вовсе. */
+const noProxy: EgressStub = {
+    route: url => ({ url, headers: {}, viaProxy: false }),
+    status: () => ({ enabled: false, proxyHost: null, hosts: [] }),
+};
+
+const makeService = (egress: EgressStub) => {
+    const post = jest.fn().mockReturnValue(of({ data: {} }));
+    const service = new TelegramService(
+        { post } as never,
+        configService as never,
+        egress as never,
+    );
+    const warn = jest
+        .spyOn(service['logger'], 'warn')
+        .mockImplementation(() => undefined);
+    return { service, post, warn };
+};
 
 /**
  * Тревоги в Telegram через исходящий прокси: при включённом прокси адрес
- * Bot API переписывается и токен прокси едет заголовком; при выключенном
- * или не подключённом (модули без TelegramModule) — вызов прежний, двумя
- * аргументами, чтобы ничего не менять для существующих потребителей.
+ * Bot API переписывается и токен прокси едет заголовком. Прямой путь
+ * остаётся (например, дев-машина вне РФ), но сопровождается одним
+ * предупреждением — с российского сервера такие сообщения пропадут.
  */
 describe('Telegram — исходящий прокси', () => {
-    it('TelegramService через прокси: адрес переписан, заголовок с токеном', async () => {
-        const post = makePost();
-        const service = new TelegramService(
-            { post } as never,
-            configService as never,
-            proxiedEgress as never,
-        );
+    it('через прокси: адрес переписан, заголовок с токеном, предупреждений нет', async () => {
+        const { service, post, warn } = makeService(proxiedEgress);
         await service.sendMessage('hi');
         const [url, , options] = post.mock.calls[0] as [
             string,
@@ -50,50 +85,28 @@ describe('Telegram — исходящий прокси', () => {
             'https://eu-proxy.example.com/p/api.telegram.org/bott0k/sendMessage',
         );
         expect(options.headers).toEqual({ 'X-Egress-Token': 'secret' });
+        expect(warn).not.toHaveBeenCalled();
     });
 
-    it('TelegramService: прокси выключен — прямой адрес и два аргумента', async () => {
-        const post = makePost();
-        const service = new TelegramService(
-            { post } as never,
-            configService as never,
-            directEgress as never,
-        );
+    it('прокси есть, но api.telegram.org не в списке — напрямую двумя аргументами и одно предупреждение про список', async () => {
+        const { service, post, warn } = makeService(proxyWithoutTelegram);
         await service.sendMessage('hi');
+        await service.sendMessage('again');
         expect(post.mock.calls[0]).toHaveLength(2);
         const [url] = post.mock.calls[0] as [string, unknown];
         expect(url).toBe('https://api.telegram.org/bott0k/sendMessage');
+        expect(warn).toHaveBeenCalledTimes(1);
+        expect(String(warn.mock.calls[0][0])).toContain(
+            'нет в списке хостов прокси (api.groq.com)',
+        );
     });
 
-    it('TelegramService без EgressProxyService (модуль без прокси) — напрямую', async () => {
-        const post = makePost();
-        const service = new TelegramService(
-            { post } as never,
-            configService as never,
-        );
+    it('прокси не настроен — напрямую и предупреждение «прокси не настроен»', async () => {
+        const { service, post, warn } = makeService(noProxy);
         await service.sendMessage('hi');
         expect(post.mock.calls[0]).toHaveLength(2);
-    });
-
-    it('TelegramOriginalService через прокси и без него', async () => {
-        const proxiedPost = makePost();
-        await new TelegramOriginalService(
-            { post: proxiedPost } as never,
-            configService as never,
-            proxiedEgress as never,
-        ).sendMessage('hi');
-        const [proxiedUrl] = proxiedPost.mock.calls[0] as [string, unknown];
-        expect(proxiedUrl).toBe(
-            'https://eu-proxy.example.com/p/api.telegram.org/bott0k/sendMessage',
+        expect(String(warn.mock.calls[0][0])).toContain(
+            'исходящий прокси не настроен',
         );
-
-        const directPost = makePost();
-        await new TelegramOriginalService(
-            { post: directPost } as never,
-            configService as never,
-        ).sendMessage('hi');
-        expect(directPost.mock.calls[0]).toHaveLength(2);
-        const [directUrl] = directPost.mock.calls[0] as [string, unknown];
-        expect(directUrl).toBe('https://api.telegram.org/bott0k/sendMessage');
     });
 });

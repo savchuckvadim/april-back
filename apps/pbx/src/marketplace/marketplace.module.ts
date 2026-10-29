@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { AuthModule } from '@lib/auth';
 import { TelegramService } from '@lib/telegram';
+import { EgressProxyModule } from '@lib/egress-proxy';
 import { MarketplaceCoreModule } from '@lib/marketplace-core';
 import { QueueModule } from '@lib/queue';
 import { RedisModule } from '@/core/redis/redis.module';
@@ -56,8 +57,11 @@ import { AdminKeyGuard } from './lib/admin-key.guard';
         MarketplaceCoreModule,
         // Очередь provisioning pbx-сущностей (продюсер; воркер — pbx-install)
         QueueModule,
-        // HttpModule — для TelegramService (см. providers)
+        // HttpModule и EgressProxyModule — для TelegramService (см. providers):
+        // api.telegram.org с российских серверов доступен только через
+        // исходящий прокси, без него сервис не соберётся — и это правильно.
         HttpModule,
+        EgressProxyModule,
     ],
     controllers: [
         MarketplaceInstallController,
