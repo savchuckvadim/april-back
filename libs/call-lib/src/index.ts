@@ -5,6 +5,8 @@ export * from './transcription/services/transcription.service';
 export * from './transcription/services/transcription.store.service';
 export * from './transcription/provider/transcription-provider.module';
 export * from './transcription/provider/transcription-router.service';
+export * from './transcription/provider/transcription-prefs.util';
+export * from './transcription/services/whisper-compatible-transcription.service';
 export * from './transcription/types/transcription-pipeline.types';
 export * from './transcription/types/transcript-segment.types';
 export * from './ai/services/ai.service';

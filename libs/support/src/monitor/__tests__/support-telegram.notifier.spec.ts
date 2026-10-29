@@ -3,7 +3,10 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { SupportTelegramNotifier } from '../infrastructure/support-telegram.notifier';
 
-function setup(env: Record<string, string | undefined>) {
+function setup(
+    env: Record<string, string | undefined>,
+    egress: { route: (url: string) => unknown } = directEgress,
+) {
     const http = {
         post: jest.fn().mockReturnValue(of({ data: { ok: true } })),
     };
@@ -11,9 +14,15 @@ function setup(env: Record<string, string | undefined>) {
     const notifier = new SupportTelegramNotifier(
         http as unknown as HttpService,
         config as unknown as ConfigService,
+        egress as never,
     );
     return { notifier, http };
 }
+
+/** Прокси выключен: адрес как есть, без заголовков (прокси — в отдельной спеке). */
+const directEgress = {
+    route: (url: string) => ({ url, headers: {}, viaProxy: false }),
+};
 
 const CONFIGURED = {
     SUPPORT_TELEGRAM_BOT_TOKEN: '123:abc',

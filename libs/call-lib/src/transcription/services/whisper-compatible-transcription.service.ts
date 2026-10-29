@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { GROQ_BASE_URL, groqPresetOf } from '@lib/ai-presets';
+import { EgressProxyService } from '@lib/egress-proxy';
 
 /** Текст и сырые сегменты verbose_json; segments null — сервер их не дал. */
 export interface WhisperTranscriptionDetailed {
@@ -27,15 +29,60 @@ const DEFAULT_LANGUAGE = 'ru';
 const isClientError = (error: unknown): boolean =>
     /\[4\d\d\]/.test((error as Error)?.message ?? '');
 
+/** Общий Whisper-совместимый endpoint приложения из env и модель по умолчанию. */
+export interface WhisperEnvSettings {
+    /** null — нет ни TRANSCRIPTION_WHISPER_BASE_URL, ни GROQ_API_KEY. */
+    endpoint: WhisperEndpoint | null;
+    defaultModel: string;
+}
+
 /**
- * Третий транскрибатор: любой OpenAI-совместимый `/audio/transcriptions`
- * (faster-whisper-server, speaches, vLLM-whisper на своём GPU или в
- * РФ-облаке). Общий endpoint приложения — env TRANSCRIPTION_WHISPER_BASE_URL
- * (без него роутер провайдера не видит); у портала может быть свой —
- * роутер передаёт его параметром (настройки AI портала: whisperBaseUrl /
- * whisperModel / whisperApiKey). Последний резерв, когда Яндекс и VibeCode
- * отказали оба, либо основной при режиме whisper (план устойчивости к
- * провайдерам, 28–29.10.2026).
+ * Разбор env TRANSCRIPTION_WHISPER_* — одна функция на сервис и чек-лист
+ * готовности в админке (он не поднимает Yandex-модули ради этих трёх строк).
+ * Явного адреса нет, но есть GROQ_API_KEY — общий резерв становится Groq
+ * (@lib/ai-presets): тот же ключ, что у запасного LLM.
+ */
+export function whisperEnvSettingsOf(
+    get: (key: string) => string | undefined,
+): WhisperEnvSettings {
+    const read = (key: string): string => (get(key) ?? '').trim();
+    const defaultModel = read('TRANSCRIPTION_WHISPER_MODEL') || DEFAULT_MODEL;
+    const baseUrl = read('TRANSCRIPTION_WHISPER_BASE_URL').replace(/\/+$/, '');
+    if (baseUrl) {
+        return {
+            endpoint: {
+                baseUrl,
+                apiKey: read('TRANSCRIPTION_WHISPER_API_KEY') || null,
+                model: defaultModel,
+            },
+            defaultModel,
+        };
+    }
+    const groq = groqPresetOf(get);
+    return {
+        endpoint: groq
+            ? {
+                  baseUrl: GROQ_BASE_URL,
+                  apiKey: groq.apiKey,
+                  model: groq.whisperModel,
+              }
+            : null,
+        defaultModel,
+    };
+}
+
+/**
+ * Третий транскрибатор: любой OpenAI-совместимый `/audio/transcriptions` —
+ * свой сервер (faster-whisper-server, speaches, vLLM-whisper на GPU) или
+ * облако по ключу (OpenAI `whisper-1`, Groq `whisper-large-v3-turbo`;
+ * зарубежные хосты идут через исходящий прокси @lib/egress-proxy). Общий
+ * endpoint приложения — env TRANSCRIPTION_WHISPER_BASE_URL, иначе Groq по
+ * GROQ_API_KEY (без них роутер провайдера не видит); у портала может быть
+ * свой — роутер передаёт его
+ * параметром (настройки AI портала: whisperBaseUrl / whisperModel /
+ * whisperApiKey). Последний резерв, когда Яндекс и VibeCode отказали оба,
+ * либо основной при режиме whisper (план устойчивости к провайдерам,
+ * 28–29.10.2026).
  */
 @Injectable()
 export class WhisperCompatibleTranscriptionService {
@@ -49,22 +96,15 @@ export class WhisperCompatibleTranscriptionService {
     private readonly language: string;
     private readonly timeoutMs: number;
 
-    constructor(configService: ConfigService) {
+    constructor(
+        configService: ConfigService,
+        private readonly egress: EgressProxyService,
+    ) {
         const read = (key: string): string =>
             (configService.get<string>(key) ?? '').trim();
-        this.defaultModel =
-            read('TRANSCRIPTION_WHISPER_MODEL') || DEFAULT_MODEL;
-        const baseUrl = read('TRANSCRIPTION_WHISPER_BASE_URL').replace(
-            /\/+$/,
-            '',
-        );
-        this.envEndpoint = baseUrl
-            ? {
-                  baseUrl,
-                  apiKey: read('TRANSCRIPTION_WHISPER_API_KEY') || null,
-                  model: this.defaultModel,
-              }
-            : null;
+        const env = whisperEnvSettingsOf(key => configService.get<string>(key));
+        this.defaultModel = env.defaultModel;
+        this.envEndpoint = env.endpoint;
         this.language =
             read('TRANSCRIPTION_WHISPER_LANGUAGE') || DEFAULT_LANGUAGE;
         const timeout = Number(read('TRANSCRIPTION_WHISPER_TIMEOUT_MS') || NaN);
@@ -90,7 +130,7 @@ export class WhisperCompatibleTranscriptionService {
     ): Promise<WhisperTranscriptionDetailed> {
         if (!endpoint) {
             throw new Error(
-                'Свой Whisper не настроен: нет TRANSCRIPTION_WHISPER_BASE_URL и адреса у портала',
+                'Whisper-совместимый сервис не настроен: нет TRANSCRIPTION_WHISPER_BASE_URL или GROQ_API_KEY в env и адреса у портала',
             );
         }
         try {
@@ -125,14 +165,19 @@ export class WhisperCompatibleTranscriptionService {
 
         let response: Response;
         try {
-            response = await fetch(`${endpoint.baseUrl}/audio/transcriptions`, {
-                method: 'POST',
-                headers: endpoint.apiKey
-                    ? { Authorization: `Bearer ${endpoint.apiKey}` }
-                    : {},
-                body: formData,
-                signal: AbortSignal.timeout(this.timeoutMs),
-            });
+            // Через исходящий прокси, если хост в списке EGRESS_PROXY_HOSTS
+            // (облачный Whisper за рубежом); иначе напрямую.
+            response = await this.egress.fetch(
+                `${endpoint.baseUrl}/audio/transcriptions`,
+                {
+                    method: 'POST',
+                    headers: endpoint.apiKey
+                        ? { Authorization: `Bearer ${endpoint.apiKey}` }
+                        : {},
+                    body: formData,
+                    signal: AbortSignal.timeout(this.timeoutMs),
+                },
+            );
         } catch (error) {
             throw new Error(
                 `${where}: сеть или таймаут — ${(error as Error).message}`,

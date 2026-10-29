@@ -1,7 +1,8 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
+import { EgressProxyService, directRoute } from '@lib/egress-proxy';
 import { TelegramSendMessageDto } from './telegram.dto';
 import {
     TelegramSendWindow,
@@ -33,6 +34,9 @@ export class TelegramService {
     constructor(
         private readonly httpService: HttpService,
         private readonly configService: ConfigService,
+        // Optional: модули, которые заводят TelegramService провайдером без
+        // TelegramModule (маркетплейс), прокси не подключают — шлют напрямую.
+        @Optional() private readonly egress?: EgressProxyService,
     ) {
         this.withTelegram =
             this.configService.get<string>('WITH_TELEGRAM') === 'true';
@@ -81,8 +85,17 @@ export class TelegramService {
             );
             return;
         }
+        // api.telegram.org из РФ может не отвечать — через исходящий прокси,
+        // если его хост в EGRESS_PROXY_HOSTS; иначе вызов прежний, напрямую.
+        const route = this.egress?.route(this.url) ?? directRoute(this.url);
         try {
-            await firstValueFrom(this.httpService.post(this.url, payload));
+            await firstValueFrom(
+                route.viaProxy
+                    ? this.httpService.post(route.url, payload, {
+                          headers: { ...route.headers },
+                      })
+                    : this.httpService.post(this.url, payload),
+            );
         } catch (error) {
             // console, не this.logger.error: у логгера есть Telegram-транспорт,
             // и лог об ошибке отправки в Telegram зациклил бы отправку.

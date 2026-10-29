@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule } from '@nestjs/config';
+import { EgressProxyModule } from '@lib/egress-proxy';
 import { PBXModule } from '@lib/pbx';
 import { RedisModule } from '@lib/core/redis/redis.module';
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.module';
@@ -25,6 +26,8 @@ import { SupportTelegramNotifier } from './infrastructure/support-telegram.notif
         PBXModule,
         RedisModule,
         PortalAppSettingsModule,
+        // Бот поддержки ходит в api.telegram.org через исходящий прокси (env EGRESS_PROXY_*)
+        EgressProxyModule,
     ],
     providers: [
         SupportMonitorStore,

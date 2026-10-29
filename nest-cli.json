@@ -190,6 +190,24 @@
         "tsConfigPath": "libs/llm-gateway/tsconfig.lib.json"
       }
     },
+    "egress-proxy": {
+      "type": "library",
+      "root": "libs/egress-proxy",
+      "entryFile": "index",
+      "sourceRoot": "libs/egress-proxy/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/egress-proxy/tsconfig.lib.json"
+      }
+    },
+    "ai-presets": {
+      "type": "library",
+      "root": "libs/ai-presets",
+      "entryFile": "index",
+      "sourceRoot": "libs/ai-presets/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/ai-presets/tsconfig.lib.json"
+      }
+    },
     "call-lib": {
       "type": "library",
       "root": "libs/call-lib",

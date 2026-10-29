@@ -28,7 +28,7 @@ const { result, usage, model, provider } =
 | Код | Что это | Настройка |
 |---|---|---|
 | `vibecode` | VibeCode Битрикса, BitrixGPT | `Portal.keys.vibeKey` (админка → ключи портала) |
-| `openai-compatible` | любой OpenAI-совместимый endpoint: Cloud.ru Evolution, Yandex AI Studio, свой vLLM/Ollama | креды портала `llmBaseUrl / llmKey / llmModelName` важнее env `LLM_FALLBACK_BASE_URL / LLM_FALLBACK_API_KEY / LLM_FALLBACK_MODEL`, а тот — важнее `CLOUDRU_API_KEY` контура 1 |
+| `openai-compatible` | любой OpenAI-совместимый endpoint: Cloud.ru Evolution, Groq, Yandex AI Studio, свой vLLM/Ollama | креды портала `llmBaseUrl / llmKey / llmModelName` важнее env `LLM_FALLBACK_BASE_URL / LLM_FALLBACK_API_KEY / LLM_FALLBACK_MODEL`, а тот — важнее `CLOUDRU_API_KEY` контура 1; последним — `GROQ_API_KEY` (Groq, `openai/gpt-oss-120b`, за рубежом — через прокси; пресет в `@lib/ai-presets`) |
 | `ai-rag` | модели оркестратора контура 1 (GigaChat, Cloud.ru, Ollama, OpenAI) через `LlmOrchestratorService.complete`: без RAG, схема дописывается в промпт, ответ разбирается как JSON | модель — `LLM_AI_RAG_MODEL`, иначе `llmModel` портала, иначе gigachat; **в порядок по умолчанию не входит** — `LLM_PROVIDER_ORDER=vibecode,openai-compatible,ai-rag` после проверки согласия на выборке |
 
 Порядок — настройка портала `llmProviderOrder` (админка → настройки AI портала;
@@ -55,3 +55,13 @@ const { result, usage, model, provider } =
   состояние): попытка лучше гарантированного отказа.
 - Без Redis состояние предохранителя живёт в памяти процесса; ошибка Redis —
   провайдер считается включённым.
+
+## Прокси за рубеж
+
+Адаптер `openai-compatible` ходит через `EgressProxyService` (@lib/egress-proxy):
+если хост endpoint'а (например, `api.openai.com`, `api.groq.com`) перечислен в
+`EGRESS_PROXY_HOSTS`, запрос уходит на наш прокси на европейском сервере;
+Cloud.ru, Yandex AI Studio и свои vLLM — напрямую. Чек-лист готовности в админке
+(`GET admin/portal/:portalId/ai-providers/readiness`, apps/admin) показывает для
+каждого провайдера портала: настроен ли, чей ключ, хост и пойдёт ли через прокси;
+`?probe=true` дополнительно делает GET /models.

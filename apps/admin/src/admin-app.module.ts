@@ -44,6 +44,7 @@ import { CatalogSeedAdminModule } from '@lib/garant/catalog-install';
 import { ProviderAdminModule } from '@lib/portal-lib/konstructor/provider';
 import { PortalKeysAdminModule } from '@lib/portal-lib/store/keys/portal-keys.admin.module';
 import { PortalAiSettingsAdminModule } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.admin.module';
+import { PortalAiProvidersAdminModule } from './portal/ai-providers/ai-providers.module';
 import { PortalAppSettingsAdminModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.admin.module';
 import { PortalQuestionnairesAdminModule } from '@lib/portal-lib/store/questionnaires/portal-questionnaires.admin.module';
 import { PortalBadgesAdminModule } from '@lib/portal-lib/store/badges/portal-badges.admin.module';
@@ -115,6 +116,9 @@ import { LogsAdminModule } from '@lib/logger/query';
         // Настройки AI-конвейера на портал (пороги, модели, расписание).
         // Незаданные значения падают в глобальные env приложения.
         PortalAiSettingsAdminModule,
+        // Чек-лист готовности провайдеров AI портала (LLM, транскрибаторы,
+        // прокси за рубеж) для формы «Поставщики AI» (29.10.2026).
+        PortalAiProvidersAdminModule,
         PortalAppSettingsAdminModule,
         // Суперпользователи April на порталах клиентов: видимость all,
         // «Смотреть как…», служебные ссылки. Раньше задавались env

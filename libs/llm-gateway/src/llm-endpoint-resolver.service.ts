@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { GROQ_BASE_URL, groqPresetOf } from '@lib/ai-presets';
 import { PortalKeysService } from '@lib/portal-lib/store/keys/portal-keys.service';
 import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
 
@@ -28,7 +29,11 @@ const CACHE_TTL_MS = 60_000;
 const CLOUDRU_DEFAULT_BASE_URL = 'https://foundation-models.api.cloud.ru/v1';
 const CLOUDRU_DEFAULT_MODEL = 'Qwen/Qwen3-235B-A22B-Instruct-2507';
 
-/** Запасной endpoint из env: явные LLM_FALLBACK_*, иначе Cloud.ru контура 1. */
+/**
+ * Запасной endpoint из env: явные LLM_FALLBACK_*, иначе Cloud.ru контура 1
+ * (в РФ — важнее), иначе Groq по одному ключу GROQ_API_KEY (@lib/ai-presets;
+ * за рубежом — через исходящий прокси).
+ */
 export function envEndpointOf(
     get: (key: string) => string | undefined,
 ): LlmEndpoint | null {
@@ -40,13 +45,18 @@ export function envEndpointOf(
     );
     if (explicit) return explicit;
     const cloudRuKey = get('CLOUDRU_API_KEY');
-    if (!cloudRuKey?.trim()) return null;
-    return endpointOf(
-        get('CLOUDRU_BASE_URL') ?? CLOUDRU_DEFAULT_BASE_URL,
-        cloudRuKey,
-        get('CLOUDRU_MODEL') ?? CLOUDRU_DEFAULT_MODEL,
-        'env',
-    );
+    if (cloudRuKey?.trim()) {
+        return endpointOf(
+            get('CLOUDRU_BASE_URL') ?? CLOUDRU_DEFAULT_BASE_URL,
+            cloudRuKey,
+            get('CLOUDRU_MODEL') ?? CLOUDRU_DEFAULT_MODEL,
+            'env',
+        );
+    }
+    const groq = groqPresetOf(get);
+    return groq
+        ? endpointOf(GROQ_BASE_URL, groq.apiKey, groq.llmModel, 'env')
+        : null;
 }
 
 /**
@@ -71,8 +81,8 @@ export function endpointOf(
  * (Portal.keys.llmBaseUrl / llmKey / llmModelName — колонки заведены под
  * «собственную LLM клиента») важнее общего env LLM_FALLBACK_BASE_URL /
  * LLM_FALLBACK_API_KEY / LLM_FALLBACK_MODEL, а тот — важнее Cloud.ru
- * контура 1 (CLOUDRU_API_KEY). Ничего нет — null, и шлюз провайдера
- * пропускает.
+ * контура 1 (CLOUDRU_API_KEY), последним идёт Groq (GROQ_API_KEY).
+ * Ничего нет — null, и шлюз провайдера пропускает.
  *
  * `@Injectable` без bitrix-состояния: домен приходит параметром.
  */

@@ -36,9 +36,15 @@ const okResponse = (content: string, extra: Record<string, unknown> = {}) =>
         { status: 200 },
     );
 
+/** Прокси выключен: fetch глобальный (его подменяют тесты), адрес как есть. */
+const directEgress = {
+    fetch: (url: string, init?: RequestInit) => fetch(url, init),
+};
+
 const makeAdapter = (
     values: Record<string, string> = {},
     endpoint: LlmEndpoint | null = ENDPOINT,
+    egress: { fetch: typeof directEgress.fetch } = directEgress,
 ) => {
     const endpoints = { resolve: jest.fn().mockResolvedValue(endpoint) };
     const config = { get: (key: string) => values[key] };
@@ -46,6 +52,7 @@ const makeAdapter = (
         adapter: new OpenAiCompatibleStructuredAdapter(
             config as never,
             endpoints as never,
+            egress as never,
         ),
         endpoints,
     };

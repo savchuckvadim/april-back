@@ -388,9 +388,10 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
 
     @ApiProperty({
         description:
-            'Адрес своего Whisper портала (OpenAI-совместимый ' +
-            '/audio/transcriptions): сервер клиента или наш GPU, выделенный ' +
-            'порталу. null — общий Whisper приложения.',
+            'Адрес Whisper-совместимого сервиса портала (OpenAI-совместимый ' +
+            '/audio/transcriptions): свой сервер клиента, наш GPU или облако ' +
+            'по ключу (OpenAI, Groq — через исходящий прокси). null — общий ' +
+            'сервис приложения.',
         example: 'http://whisper.client.local:8000/v1',
         type: String,
         nullable: true,
@@ -398,7 +399,9 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
     whisperBaseUrl: string | null;
 
     @ApiProperty({
-        description: 'Модель своего Whisper; null — модель приложения.',
+        description:
+            'Модель Whisper-совместимого сервиса (у OpenAI — whisper-1, у ' +
+            'Groq — whisper-large-v3-turbo); null — модель приложения.',
         example: 'Systran/faster-whisper-large-v3',
         type: String,
         nullable: true,
@@ -407,8 +410,8 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
 
     @ApiProperty({
         description:
-            'Ключ своего Whisper. В ответе — только маска «••••••», если ' +
-            'ключ задан; сам ключ наружу не отдаётся.',
+            'Ключ Whisper-совместимого сервиса. В ответе — только маска ' +
+            '«••••••», если ключ задан; сам ключ наружу не отдаётся.',
         example: '••••••',
         type: String,
         nullable: true,
@@ -767,8 +770,9 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
 
     @ApiPropertyOptional({
         description:
-            'Адрес своего Whisper портала (http:// или https://, без ' +
-            'пробелов). Пусто или null — общий Whisper приложения.',
+            'Адрес Whisper-совместимого сервиса портала (http:// или ' +
+            'https://, без пробелов): свой сервер или облако по ключу. Пусто ' +
+            'или null — общий сервис приложения.',
         example: 'http://whisper.client.local:8000/v1',
         type: String,
         nullable: true,
@@ -779,7 +783,8 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
 
     @ApiPropertyOptional({
         description:
-            'Модель своего Whisper. Пусто или null — модель приложения.',
+            'Модель Whisper-совместимого сервиса (OpenAI — whisper-1, Groq — ' +
+            'whisper-large-v3-turbo). Пусто или null — модель приложения.',
         example: 'Systran/faster-whisper-large-v3',
         type: String,
         nullable: true,
@@ -790,8 +795,9 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
 
     @ApiPropertyOptional({
         description:
-            'Ключ своего Whisper: сохраняется зашифрованным. Маска «••••••» ' +
-            'из ответа — оставить прежний ключ; пусто или null — убрать ключ.',
+            'Ключ Whisper-совместимого сервиса: сохраняется зашифрованным. ' +
+            'Маска «••••••» из ответа — оставить прежний ключ; пусто или ' +
+            'null — убрать ключ.',
         example: 'sk-…',
         type: String,
         nullable: true,

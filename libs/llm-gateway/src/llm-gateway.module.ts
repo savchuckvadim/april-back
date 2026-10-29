@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AiRagCoreModule } from '@lib/ai-rag';
+import { EgressProxyModule } from '@lib/egress-proxy';
 import { RedisModule } from '@lib/core/redis/redis.module';
 import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { VibecodeModule } from '@lib/vibecode';
@@ -28,6 +29,8 @@ import { StructuredLlmGateway } from './structured-llm.gateway';
         PortalStoreModule,
         RedisModule,
         AiRagCoreModule,
+        // Зарубежные OpenAI-совместимые endpoint'ы — через исходящий прокси
+        EgressProxyModule,
     ],
     providers: [
         LlmCircuitBreakerService,

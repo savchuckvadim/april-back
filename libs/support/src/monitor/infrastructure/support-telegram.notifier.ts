@@ -2,6 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
+import { EgressProxyService } from '@lib/egress-proxy';
 
 /** Токен отдельного бота поддержки (BotFather), не общий бот тревог. */
 export const SUPPORT_TELEGRAM_BOT_TOKEN_ENV = 'SUPPORT_TELEGRAM_BOT_TOKEN';
@@ -55,6 +56,8 @@ export class SupportTelegramNotifier {
     constructor(
         private readonly http: HttpService,
         private readonly config: ConfigService,
+        /** api.telegram.org через исходящий прокси, если он настроен в env. */
+        private readonly egress: EgressProxyService,
     ) {}
 
     isConfigured(): boolean {
@@ -191,12 +194,14 @@ export class SupportTelegramNotifier {
         if (!token) {
             throw new Error(`не задан ${SUPPORT_TELEGRAM_BOT_TOKEN_ENV}`);
         }
+        const route = this.egress.route(
+            `https://api.telegram.org/bot${token}/${method}`,
+        );
         const response = await firstValueFrom(
-            this.http.post<TelegramApiResponse<T>>(
-                `https://api.telegram.org/bot${token}/${method}`,
-                payload,
-                { timeout: TELEGRAM_TIMEOUT_MS },
-            ),
+            this.http.post<TelegramApiResponse<T>>(route.url, payload, {
+                timeout: TELEGRAM_TIMEOUT_MS,
+                ...(route.viaProxy ? { headers: { ...route.headers } } : {}),
+            }),
         );
         return response.data?.result;
     }

@@ -112,6 +112,33 @@ describe('LlmEndpointResolverService', () => {
         });
     });
 
+    it('GROQ_API_KEY — запасной Groq, когда нет ни LLM_FALLBACK_*, ни Cloud.ru; GROQ_MODEL меняет модель', async () => {
+        const { resolver } = makeResolver({ GROQ_API_KEY: 'gsk' });
+        expect(await resolver.resolve(DOMAIN)).toEqual({
+            baseUrl: 'https://api.groq.com/openai/v1',
+            apiKey: 'gsk',
+            model: 'openai/gpt-oss-120b',
+            source: 'env',
+        });
+
+        const custom = makeResolver({
+            GROQ_API_KEY: 'gsk',
+            GROQ_MODEL: 'moonshotai/kimi-k2-instruct-0905',
+        });
+        expect(await custom.resolver.resolve(DOMAIN)).toMatchObject({
+            model: 'moonshotai/kimi-k2-instruct-0905',
+        });
+
+        // Cloud.ru в РФ важнее Groq за рубежом.
+        const both = makeResolver({
+            GROQ_API_KEY: 'gsk',
+            CLOUDRU_API_KEY: 'ck',
+        });
+        expect(await both.resolver.resolve(DOMAIN)).toMatchObject({
+            baseUrl: 'https://foundation-models.api.cloud.ru/v1',
+        });
+    });
+
     it('ошибка чтения кредов портала не роняет вызов — берётся env', async () => {
         const { resolver, portalStore } = makeResolver({
             LLM_FALLBACK_BASE_URL: 'https://env/v1',

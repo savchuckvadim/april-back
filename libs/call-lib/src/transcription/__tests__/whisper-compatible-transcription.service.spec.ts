@@ -1,10 +1,19 @@
 import { Logger } from '@nestjs/common';
 import { WhisperCompatibleTranscriptionService } from '../services/whisper-compatible-transcription.service';
 
-const makeService = (values: Record<string, string> = {}) =>
-    new WhisperCompatibleTranscriptionService({
-        get: (key: string) => values[key],
-    } as never);
+/** Прокси выключен: fetch глобальный (его подменяют тесты), адрес как есть. */
+const directEgress = {
+    fetch: (url: string, init?: RequestInit) => fetch(url, init),
+};
+
+const makeService = (
+    values: Record<string, string> = {},
+    egress: { fetch: typeof directEgress.fetch } = directEgress,
+) =>
+    new WhisperCompatibleTranscriptionService(
+        { get: (key: string) => values[key] } as never,
+        egress as never,
+    );
 
 const CONFIGURED = {
     TRANSCRIPTION_WHISPER_BASE_URL: 'http://whisper:8000/v1/',
@@ -71,6 +80,26 @@ describe('WhisperCompatibleTranscriptionService — свой Whisper', () => {
             service.transcribeDetailed(Buffer.from('a'), 'call.mp3'),
         ).rejects.toThrow('TRANSCRIPTION_WHISPER_BASE_URL');
         expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('GROQ_API_KEY без явного адреса — общий резерв Groq с его моделью; явный адрес важнее', () => {
+        const groq = makeService({ GROQ_API_KEY: 'gsk' });
+        expect(groq.configured).toBe(true);
+        expect(groq.envEndpoint).toEqual({
+            baseUrl: 'https://api.groq.com/openai/v1',
+            apiKey: 'gsk',
+            model: 'whisper-large-v3-turbo',
+        });
+        expect(groq.defaultModel).toBe('Systran/faster-whisper-large-v3');
+
+        const custom = makeService({
+            GROQ_API_KEY: 'gsk',
+            GROQ_WHISPER_MODEL: 'whisper-large-v3',
+        });
+        expect(custom.envEndpoint?.model).toBe('whisper-large-v3');
+
+        const explicit = makeService({ ...CONFIGURED, GROQ_API_KEY: 'gsk' });
+        expect(explicit.envEndpoint?.baseUrl).toBe('http://whisper:8000/v1');
     });
 
     it('verbose_json: адрес без двойного слэша, Bearer-ключ, модель и язык в форме, сегменты наружу', async () => {

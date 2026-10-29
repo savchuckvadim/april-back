@@ -66,7 +66,8 @@ export interface VibecodeStructuredCompletionOptions {
     model?: string;
 }
 
-const VIBECODE_BASE_URL = 'https://vibecode.bitrix24.tech/v1';
+/** Базовый адрес VibeCode; экспортируется ради чек-листа провайдеров в админке. */
+export const VIBECODE_BASE_URL = 'https://vibecode.bitrix24.tech/v1';
 const TRANSCRIPTION_MODEL = 'bitrix/deepdml/faster-whisper-large-v3-turbo-ct2';
 const ANALYSIS_MODEL = 'bitrix/bitrixgpt-5.5';
 

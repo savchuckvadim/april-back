@@ -205,6 +205,8 @@
             "^@lib/skap-lib(|/.*)$": "<rootDir>/libs/skap-lib/src/$1",
             "^@lib/vibecode(|/.*)$": "<rootDir>/libs/vibecode/src/$1",
             "^@lib/llm-gateway(|/.*)$": "<rootDir>/libs/llm-gateway/src/$1",
+            "^@lib/egress-proxy(|/.*)$": "<rootDir>/libs/egress-proxy/src/$1",
+            "^@lib/ai-presets(|/.*)$": "<rootDir>/libs/ai-presets/src/$1",
             "^@lib/pbx-user-fields(|/.*)$": "<rootDir>/libs/pbx-user-fields/src/$1",
             "^@lib/sales-ai-analytics(|/.*)$": "<rootDir>/libs/sales-ai-analytics/src/$1",
             "^@lib/pbx(|/.*)$": "<rootDir>/libs/pbx/src/$1",

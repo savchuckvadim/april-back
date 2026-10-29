@@ -1,7 +1,8 @@
 import { HttpService } from '@nestjs/axios';
-import { Global, Injectable, Logger } from '@nestjs/common';
+import { Global, Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
+import { EgressProxyService, directRoute } from '@lib/egress-proxy';
 import { TelegramSendMessageDto } from './telegram.dto';
 import {
     TelegramSendWindow,
@@ -25,6 +26,8 @@ export class TelegramOriginalService {
     constructor(
         private readonly httpService: HttpService,
         private readonly configService: ConfigService,
+        /** Исходящий прокси для api.telegram.org; без него — напрямую. */
+        @Optional() private readonly egress?: EgressProxyService,
     ) {
         this.botToken = this.configService.get<string>(
             'TELEGRAM_BOT_TOKEN',
@@ -71,8 +74,15 @@ export class TelegramOriginalService {
             return;
         }
         const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
+        const route = this.egress?.route(url) ?? directRoute(url);
         try {
-            await firstValueFrom(this.httpService.post(url, payload));
+            await firstValueFrom(
+                route.viaProxy
+                    ? this.httpService.post(route.url, payload, {
+                          headers: { ...route.headers },
+                      })
+                    : this.httpService.post(url, payload),
+            );
         } catch (error) {
             // console, не this.logger.error: лог об ошибке отправки в
             // Telegram зациклил бы отправку через логгер-транспорт.

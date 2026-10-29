@@ -15,23 +15,20 @@ import {
 import type { TranscriptSegment } from '../types/transcript-segment.types';
 import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
+import {
+    parseTranscriptionRouterMode,
+    type TranscriptionProvider,
+    type TranscriptionRouterMode,
+} from './transcription-provider.types';
+import {
+    resolveTranscriptionPrefs,
+    type TranscriptionEnvPrefs,
+    type TranscriptionPrefs,
+} from './transcription-prefs.util';
 
-export const TRANSCRIPTION_PROVIDERS = [
-    'yandex',
-    'bitrix-vibecode',
-    'local-whisper',
-] as const;
-export type TranscriptionProvider = (typeof TRANSCRIPTION_PROVIDERS)[number];
-
-/** Режим выбора провайдера: auto — по длительности, иначе принудительно. */
-export const TRANSCRIPTION_ROUTER_MODES = [
-    'auto',
-    'yandex',
-    'vibecode',
-    'whisper',
-] as const;
-export type TranscriptionRouterMode =
-    (typeof TRANSCRIPTION_ROUTER_MODES)[number];
+// Коды провайдеров и режимов живут отдельно (их читает и чек-лист админки);
+// ре-экспорт — чтобы потребители роутера не меняли импорты.
+export * from './transcription-provider.types';
 
 export interface TranscribeCallInput {
     buffer: Buffer;
@@ -52,12 +49,6 @@ export interface TranscribeCallResult {
 const nonEmpty = (
     segments: readonly TranscriptSegment[],
 ): TranscriptSegment[] | null => (segments.length ? [...segments] : null);
-
-/** Что у портала своего: режим и endpoint Whisper (null — общего тоже нет). */
-interface PortalTranscriptionPrefs {
-    mode: TranscriptionRouterMode;
-    whisper: WhisperEndpoint | null;
-}
 
 /**
  * Маршрутизатор транскрибации: длинные звонки → Yandex SpeechKit
@@ -117,12 +108,9 @@ export class TranscriptionRouterService {
                 1,
             ),
         );
-        const mode = this.configService.get<string>('TRANSCRIPTION_PROVIDER');
-        this.mode = TRANSCRIPTION_ROUTER_MODES.includes(
-            mode as TranscriptionRouterMode,
-        )
-            ? (mode as TranscriptionRouterMode)
-            : 'auto';
+        this.mode = parseTranscriptionRouterMode(
+            this.configService.get<string>('TRANSCRIPTION_PROVIDER'),
+        );
         this.yandexMinSec = Number(
             this.configService.get<string>('TRANSCRIPTION_YANDEX_MIN_SEC') ??
                 600,
@@ -197,34 +185,20 @@ export class TranscriptionRouterService {
      * Настройки портала поверх env: режим транскрибации и свой Whisper.
      * Нет строки или ошибка чтения — общие значения приложения.
      */
-    private async portalPrefs(
-        domain: string,
-    ): Promise<PortalTranscriptionPrefs> {
-        const shared: PortalTranscriptionPrefs = {
+    private async portalPrefs(domain: string): Promise<TranscriptionPrefs> {
+        const env: TranscriptionEnvPrefs = {
             mode: this.mode,
             whisper: this.whisper.envEndpoint,
+            defaultWhisperModel: this.whisper.defaultModel,
         };
         try {
             const record = await this.portalAiSettings.getByDomain(domain);
-            if (!record) return shared;
-            const mode =
-                record.transcriptionMode &&
-                TRANSCRIPTION_ROUTER_MODES.includes(record.transcriptionMode)
-                    ? record.transcriptionMode
-                    : this.mode;
-            const whisper: WhisperEndpoint | null = record.whisperBaseUrl
-                ? {
-                      baseUrl: record.whisperBaseUrl.replace(/\/+$/, ''),
-                      apiKey: record.whisperApiKey ?? null,
-                      model: record.whisperModel ?? this.whisper.defaultModel,
-                  }
-                : this.whisper.envEndpoint;
-            return { mode, whisper };
+            return resolveTranscriptionPrefs(record, env);
         } catch (error) {
             this.logger.warn(
                 `Настройки транскрибации портала ${domain} не прочитаны (${(error as Error).message}) — общие`,
             );
-            return shared;
+            return resolveTranscriptionPrefs(null, env);
         }
     }
 

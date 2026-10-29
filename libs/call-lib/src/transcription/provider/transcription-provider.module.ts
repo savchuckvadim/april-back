@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { EgressProxyModule } from '@lib/egress-proxy';
 import { PortalStoreModule } from '@lib/portal-lib/store/portal-store.module';
 import { VibecodeModule } from '@lib/vibecode';
 import { YandexModule } from '@lib/call-lib/yandex/yandex.module';
@@ -17,8 +18,15 @@ import { TranscriptionRouterService } from './transcription-router.service';
  * одним импортом.
  */
 @Module({
-    // PortalStoreModule — настройки AI портала (режим транскрибации, свой Whisper)
-    imports: [ConfigModule, YandexModule, VibecodeModule, PortalStoreModule],
+    // PortalStoreModule — настройки AI портала (режим транскрибации, свой Whisper);
+    // EgressProxyModule — зарубежный Whisper-сервис через исходящий прокси
+    imports: [
+        ConfigModule,
+        YandexModule,
+        VibecodeModule,
+        PortalStoreModule,
+        EgressProxyModule,
+    ],
     providers: [
         StreamingTranscriptionService,
         // Свой Whisper — третий транскрибатор; без TRANSCRIPTION_WHISPER_BASE_URL

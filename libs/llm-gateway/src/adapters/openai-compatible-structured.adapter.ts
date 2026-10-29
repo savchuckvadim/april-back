@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EgressProxyService } from '@lib/egress-proxy';
 import { withJsonInstruction } from '../json-instruction.util';
 import { LlmEndpointResolverService } from '../llm-endpoint-resolver.service';
 import type {
@@ -80,7 +81,7 @@ const usageOf = (
 
 /**
  * Любой OpenAI-совместимый endpoint как запасной (или свой) провайдер:
- * Cloud.ru Evolution, Yandex AI Studio, vLLM/Ollama на своём GPU. Адрес,
+ * Cloud.ru Evolution, Groq, Yandex AI Studio, vLLM/Ollama на своём GPU. Адрес,
  * ключ и модель — из кредов портала или env (LlmEndpointResolverService);
  * режим JSON — env LLM_FALLBACK_JSON_MODE, таймаут — LLM_FALLBACK_TIMEOUT_MS.
  */
@@ -96,6 +97,7 @@ export class OpenAiCompatibleStructuredAdapter implements StructuredLlmAdapter {
     constructor(
         configService: ConfigService,
         private readonly endpoints: LlmEndpointResolverService,
+        private readonly egress: EgressProxyService,
     ) {
         const mode = configService.get<string>('LLM_FALLBACK_JSON_MODE');
         this.jsonMode = (LLM_JSON_MODES as readonly string[]).includes(
@@ -115,7 +117,7 @@ export class OpenAiCompatibleStructuredAdapter implements StructuredLlmAdapter {
     async configurationIssue(domain: string): Promise<string | null> {
         return (await this.endpoints.resolve(domain))
             ? null
-            : 'не настроен (LLM_FALLBACK_BASE_URL / LLM_FALLBACK_MODEL или креды LLM портала)';
+            : 'не настроен (LLM_FALLBACK_BASE_URL / LLM_FALLBACK_MODEL, CLOUDRU_API_KEY или GROQ_API_KEY в env, либо креды LLM портала)';
     }
 
     async complete(
@@ -130,23 +132,28 @@ export class OpenAiCompatibleStructuredAdapter implements StructuredLlmAdapter {
         const where = `LLM (${endpoint.source}, ${endpoint.model}) ${request.schemaName}`;
         let response: Response;
         try {
-            response = await fetch(`${endpoint.baseUrl}/chat/completions`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(endpoint.apiKey
-                        ? { Authorization: `Bearer ${endpoint.apiKey}` }
-                        : {}),
-                },
-                body: JSON.stringify(
-                    buildChatCompletionBody(
-                        endpoint.model,
-                        request,
-                        this.jsonMode,
+            // Зарубежный endpoint (OpenAI, Groq…) — через исходящий прокси,
+            // если его хост в EGRESS_PROXY_HOSTS; Cloud.ru и свои — напрямую.
+            response = await this.egress.fetch(
+                `${endpoint.baseUrl}/chat/completions`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(endpoint.apiKey
+                            ? { Authorization: `Bearer ${endpoint.apiKey}` }
+                            : {}),
+                    },
+                    body: JSON.stringify(
+                        buildChatCompletionBody(
+                            endpoint.model,
+                            request,
+                            this.jsonMode,
+                        ),
                     ),
-                ),
-                signal: AbortSignal.timeout(this.timeoutMs),
-            });
+                    signal: AbortSignal.timeout(this.timeoutMs),
+                },
+            );
         } catch (error) {
             throw new Error(
                 `${where}: сеть или таймаут — ${(error as Error).message}`,
