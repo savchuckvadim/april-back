@@ -18,7 +18,7 @@ https://api.openai.com/v1/chat/completions
 | Переменная | Что |
 |---|---|
 | `EGRESS_PROXY_URL` | адрес прокси с префиксом пути, например `https://eu-proxy.example.com/p` |
-| `EGRESS_PROXY_TOKEN` | токен из `/opt/ai-egress-proxy/.env` на сервере прокси |
+| `EGRESS_PROXY_TOKEN` | токен из вкладки Environment сервиса `ai-egress-proxy` в Dokploy (проект `april`, panel.divan.group) |
 | `EGRESS_PROXY_HOSTS` | хосты через запятую: `api.telegram.org,api.openai.com,api.groq.com`; `.googleapis.com` — вместе с поддоменами |
 
 Нет адреса или списка — прокси выключен, поведение прежнее. Список на
@@ -40,3 +40,12 @@ await firstValueFrom(this.http.post(route.url, payload, { headers: { ...route.he
 Потребители: адаптер `openai-compatible` шлюза LLM, Whisper-совместимая
 транскрибация, Telegram (тревоги и бот поддержки). Чек-лист готовности
 провайдеров в админке показывает, какие endpoint'ы пойдут через прокси.
+
+## Настройки из админки
+
+Адрес, токен и список хостов можно задать на странице «Настройки приложения»
+в админке (таблица `vendor_settings`, контракт `@lib/vendor-settings`): значение
+из админки важнее env. `EgressProxyService` инжектит читатель настроек
+`@Optional()` и перечитывает снимок раз в минуту: `fetch()` ждёт свежий,
+синхронный `route()` отдаёт текущий и обновляет в фоне. Без глобального
+`VendorSettingsModule` в приложении действует только env.

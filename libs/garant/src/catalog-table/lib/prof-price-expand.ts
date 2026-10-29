@@ -37,10 +37,10 @@ export const isSpecialSupplyCode = (code: string): boolean =>
  * Виды поставок, которым достаётся цена колонки с данным числом ОД.
  * Для 1 ОД это ещё и особые поставки.
  */
-export const suppliesForOd = (
-    supplies: readonly SupplyTarget[],
+export const suppliesForOd = <T extends SupplyTarget>(
+    supplies: readonly T[],
     usersQuantity: number,
-): SupplyTarget[] =>
+): T[] =>
     supplies.filter(supply => {
         if (isSpecialSupplyCode(supply.code)) return usersQuantity === 1;
         return supply.usersQuantity === usersQuantity;

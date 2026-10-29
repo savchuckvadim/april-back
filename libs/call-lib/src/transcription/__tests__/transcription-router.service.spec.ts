@@ -40,8 +40,10 @@ const ENV_WHISPER = {
 
 /** Свой Whisper: по умолчанию общий endpoint не задан — в маршрутах его нет. */
 const makeWhisper = (configured = false) => ({
-    configured,
-    envEndpoint: configured ? ENV_WHISPER : null,
+    envSettings: jest.fn().mockResolvedValue({
+        endpoint: configured ? ENV_WHISPER : null,
+        defaultModel: 'Systran/faster-whisper-large-v3',
+    }),
     defaultModel: 'Systran/faster-whisper-large-v3',
     transcribeDetailed: jest
         .fn()
@@ -108,6 +110,7 @@ describe('TranscriptionRouterService', () => {
         });
         expect(yandex.transcribeAudio).toHaveBeenCalledWith(
             'https://s3/audio.mp3',
+            1,
         );
         expect(vibecode.transcribeAudioDetailed).not.toHaveBeenCalled();
     });
@@ -160,6 +163,89 @@ describe('TranscriptionRouterService', () => {
             segments: null,
         });
         expect(yandex.transcribeAudio).toHaveBeenCalled();
+    });
+
+    describe('стерео-записи для Yandex (gsr 29.10.2026)', () => {
+        /** Кадр MPEG-1 Layer III: четвёртый байт — режим каналов (0x00 стерео, 0xc0 моно). */
+        const STEREO_FRAME = Buffer.from([0xff, 0xfb, 0x90, 0x00, 0, 0, 0, 0]);
+        const MONO_FRAME = Buffer.from([0xff, 0xfb, 0x90, 0xc0, 0, 0, 0, 0]);
+        const ENV = { TRANSCRIPTION_YANDEX_MIN_SEC: '600' };
+
+        it('число каналов в спецификации — по заголовку MP3: стерео 2, моно 1, не распознан — 1', async () => {
+            const stereo = makeRouter(ENV);
+            await stereo.router.transcribe({
+                ...input,
+                buffer: STEREO_FRAME,
+                durationSec: 700,
+            });
+            expect(stereo.yandex.transcribeAudio).toHaveBeenCalledWith(
+                'https://s3/audio.mp3',
+                2,
+            );
+
+            const mono = makeRouter(ENV);
+            await mono.router.transcribe({
+                ...input,
+                buffer: MONO_FRAME,
+                durationSec: 700,
+            });
+            expect(mono.yandex.transcribeAudio).toHaveBeenCalledWith(
+                'https://s3/audio.mp3',
+                1,
+            );
+
+            const unknown = makeRouter(ENV);
+            await unknown.router.transcribe({ ...input, durationSec: 700 });
+            expect(unknown.yandex.transcribeAudio).toHaveBeenCalledWith(
+                'https://s3/audio.mp3',
+                1,
+            );
+        });
+
+        it('Яндекс отверг число каналов — один повтор с числом из его ответа, без ухода на Vibecode', async () => {
+            const yandex = makeYandex();
+            yandex.getTranscriptionDetailed
+                .mockRejectedValueOnce(
+                    new Error(
+                        'Яндекс завершил операцию e03 ошибкой: 3 Audio has 2 channels, but 1 requested in specification',
+                    ),
+                )
+                .mockResolvedValueOnce({ text: 'стерео текст', segments: [] });
+            const { router, vibecode } = makeRouter(ENV, { yandex });
+
+            const result = await router.transcribe({
+                ...input,
+                durationSec: 700,
+            });
+
+            expect(result).toMatchObject({
+                provider: 'yandex',
+                text: 'стерео текст',
+            });
+            expect(yandex.transcribeAudio).toHaveBeenNthCalledWith(
+                1,
+                'https://s3/audio.mp3',
+                1,
+            );
+            expect(yandex.transcribeAudio).toHaveBeenNthCalledWith(
+                2,
+                'https://s3/audio.mp3',
+                2,
+            );
+            expect(vibecode.transcribeAudioDetailed).not.toHaveBeenCalled();
+        });
+
+        it('другая постоянная ошибка операции повтора не вызывает', async () => {
+            const yandex = makeYandex();
+            yandex.getTranscriptionDetailed.mockRejectedValue(
+                new Error('Яндекс вернул пустую расшифровку'),
+            );
+            const { router } = makeRouter(ENV, { yandex });
+            await expect(
+                router.transcribe({ ...input, durationSec: 700 }),
+            ).rejects.toThrow('пустую расшифровку');
+            expect(yandex.transcribeAudio).toHaveBeenCalledTimes(1);
+        });
     });
 
     describe('временный сбой Yandex (ночь 28.10.2026)', () => {

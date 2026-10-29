@@ -1,5 +1,8 @@
 import type { AxiosError } from 'axios';
-import { BITRIX_ACCESS_DENIED_TEXT } from './bitrix-benign-error.util';
+import {
+    BITRIX_ACCESS_DENIED_TEXT,
+    BITRIX_NOT_FOUND_TEXT,
+} from './bitrix-benign-error.util';
 
 /**
  * Разбор ответов и ошибок Битрикса — чистые функции ядра (BitrixCore).
@@ -35,12 +38,12 @@ export const isBitrixQueryLimitExceeded = (error: unknown): boolean => {
 };
 
 /**
- * Битрикс отказал в правах. Ядро бросает ошибку axios, и «Access denied»
- * лежит в ТЕЛЕ ответа (`{ error, error_description }`), а не в
- * `error.message` — там только «Request failed with status code 403».
- * Сообщение тоже проверяем: обёртки выше по стеку кладут текст туда.
+ * Тексты ошибки Битрикса: тело ответа и сообщение. Ядро бросает ошибку
+ * axios, и описание лежит в ТЕЛЕ (`{ error, error_description }`), а не в
+ * `error.message` — там только «Request failed with status code 4xx».
+ * Сообщение тоже смотрим: обёртки выше по стеку кладут текст туда.
  */
-export const isBitrixAccessDenied = (error: unknown): boolean => {
+const errorTexts = (error: unknown): string[] => {
     const e = error as { message?: unknown; response?: { data?: unknown } };
     const body = e?.response?.data;
     const bodyText =
@@ -50,11 +53,16 @@ export const isBitrixAccessDenied = (error: unknown): boolean => {
               ? JSON.stringify(body)
               : '';
     const message = typeof e?.message === 'string' ? e.message : '';
-    return (
-        BITRIX_ACCESS_DENIED_TEXT.test(bodyText) ||
-        BITRIX_ACCESS_DENIED_TEXT.test(message)
-    );
+    return [bodyText, message];
 };
+
+/** Битрикс отказал в правах. */
+export const isBitrixAccessDenied = (error: unknown): boolean =>
+    errorTexts(error).some(text => BITRIX_ACCESS_DENIED_TEXT.test(text));
+
+/** Битрикс не нашёл сущность (`crm.deal.get` удалённой сделки). */
+export const isBitrixNotFound = (error: unknown): boolean =>
+    errorTexts(error).some(text => BITRIX_NOT_FOUND_TEXT.test(text));
 
 /**
  * Поле `time` ответа Битрикса в секундах: `processing` — сколько он работал

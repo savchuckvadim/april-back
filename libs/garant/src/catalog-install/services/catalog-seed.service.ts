@@ -20,11 +20,14 @@ import {
     STAR_PACKAGE_CODE,
     STAR_PACKAGE_FULL_NAME,
     STAR_PACKAGE_NAME,
+    LT_PACKAGE_WEIGHTS,
     STAR_PACKAGE_WEIGHT,
+    SUPPLY_COEFFICIENTS,
     SUPPLY_NUMBER_TO_KEY,
     UNIVERSAL_COMPLECT_ABS,
     UNIVERSAL_COMPLECT_NAMES,
     UNIVERSAL_COMPLECT_NUMBERS,
+    UNIVERSAL_COMPLECT_WEIGHTS,
     supplyCodeFromNumber,
 } from '../lib/catalog-codes';
 import {
@@ -69,7 +72,7 @@ export class CatalogSeedService {
                     fullName: supply.name,
                     shortName: supply.name,
                     usersQuantity: supply.usersQuantity,
-                    coefficient: 1,
+                    coefficient: SUPPLY_COEFFICIENTS[Number(numberKey)] ?? 1,
                 });
                 if (!created) {
                     report.skipped.push({
@@ -115,7 +118,7 @@ export class CatalogSeedService {
                     code,
                     type: ComplectTypeEnum.UNIVERSAL,
                     color: '',
-                    weight: 0,
+                    weight: UNIVERSAL_COMPLECT_WEIGHTS[number] ?? 0,
                     abs: String(abs),
                     number,
                     productType: ComplectProductTypeEnum.GARANT,
@@ -156,6 +159,7 @@ export class CatalogSeedService {
                     code,
                     name: LT_PACKAGE_NAMES[code] ?? code,
                     number: Number(numberKey),
+                    weight: LT_PACKAGE_WEIGHTS[code],
                     productType: PackageProductTypeEnum.LT,
                 },
                 dryRun,

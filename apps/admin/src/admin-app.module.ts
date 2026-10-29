@@ -34,6 +34,8 @@ import { PortalCompanyAdminModule } from '@lib/portal-lib/pbx-domain/portal-comp
 import { PortalDealAdminModule } from '@lib/portal-lib/pbx-domain/portal-deal';
 import { PortalSmartAdminModule } from '@lib/portal-lib/pbx-domain/portal-smart';
 import { PortalStoreAdminModule } from '@lib/portal-lib/store/portal-store.admin.module';
+import { VendorSettingsModule } from '@lib/portal-lib/store/vendor-settings/vendor-settings.module';
+import { VendorSettingsAdminModule } from './vendor-settings/vendor-settings-admin.module';
 import { AiAdminModule, TranscriptionAdminModule } from '@lib/call-lib';
 import { AiRagAdminModule } from '@lib/ai-rag';
 import { SalesAiAnalyticsAdminModule } from '@lib/sales-ai-analytics';
@@ -120,6 +122,11 @@ import { LogsAdminModule } from '@lib/logger/query';
         // прокси за рубеж) для формы «Поставщики AI» (29.10.2026).
         PortalAiProvidersAdminModule,
         PortalAppSettingsAdminModule,
+        // Настройки уровня вендора (прокси за рубеж, ключи AI-сервисов
+        // приложения): глобальный читатель для библиотек + админ-роуты
+        // страницы «Настройки приложения» (29.10.2026).
+        VendorSettingsModule,
+        VendorSettingsAdminModule,
         // Суперпользователи April на порталах клиентов: видимость all,
         // «Смотреть как…», служебные ссылки. Раньше задавались env
         // BX_SUPER_USER_IDS без возможности править из интерфейса.

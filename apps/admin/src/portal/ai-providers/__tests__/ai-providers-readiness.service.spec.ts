@@ -29,6 +29,8 @@ interface SetupOptions {
     record?: Record<string, unknown> | null;
     vibeKeyIssue?: string;
     portal?: Record<string, unknown> | null;
+    /** Значения из админки (настройки вендора) поверх env. */
+    admin?: Record<string, string>;
 }
 
 const setup = (options: SetupOptions = {}) => {
@@ -80,6 +82,17 @@ const setup = (options: SetupOptions = {}) => {
             durationMs: 10,
         }),
     };
+    const read = (key: string): string | null =>
+        options.admin?.[key] ?? env[key] ?? null;
+    const settings = options.admin
+        ? {
+              get: (key: string) => Promise.resolve(read(key)),
+              getMany: (keys: readonly string[]) =>
+                  Promise.resolve(
+                      Object.fromEntries(keys.map(key => [key, read(key)])),
+                  ),
+          }
+        : undefined;
     const service = new PortalAiProvidersReadinessService(
         config as never,
         portalStore as never,
@@ -89,6 +102,7 @@ const setup = (options: SetupOptions = {}) => {
         vibeKeys as never,
         egress as never,
         probe as never,
+        settings,
     );
     return { service, gateway, endpoints, probe, portalStore };
 };
@@ -226,6 +240,21 @@ describe('PortalAiProvidersReadinessService', () => {
         const { service } = setup({
             record: null,
             env: { GROQ_API_KEY: 'gsk' },
+        });
+        const result = await service.build(5, false);
+        expect(byCode(result.transcription, 'local-whisper')).toMatchObject({
+            inUse: true,
+            configured: true,
+            source: 'env',
+            endpointHost: 'api.groq.com',
+            viaProxy: true,
+        });
+    });
+
+    it('ключ Groq из админки (настройки вендора) — резерв Whisper в чек-листе без env', async () => {
+        const { service } = setup({
+            record: null,
+            admin: { GROQ_API_KEY: 'admin-gsk' },
         });
         const result = await service.build(5, false);
         expect(byCode(result.transcription, 'local-whisper')).toMatchObject({

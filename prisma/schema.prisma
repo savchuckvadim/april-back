@@ -810,6 +810,29 @@ model VendorSuperUser {
   @@map("vendor_super_users")
 }
 
+/// Настройки уровня ВЕНДОРА (April), общие для всех порталов и приложений:
+/// исходящий прокси за рубеж и ключи AI-сервисов приложения. `key` = имя
+/// переменной окружения, которую настройка перекрывает (EGRESS_PROXY_URL,
+/// GROQ_API_KEY, ...): значение из таблицы важнее env, нет строки — действует
+/// env. Секреты (`is_secret`) зашифрованы PortalKeyCryptoService
+/// (AES-256-CBC на APP_SECRET_KEY) — открытый текст в БД не попадает.
+/// Реестр ключей, тексты админки и проверки — libs/vendor-settings; читает
+/// VendorSettingsService (portal-lib), пишет страница «Настройки приложения»
+/// в apps/admin. Таблица добавлена ручной правкой (db pull запрещён) —
+/// миграция online/database/migrations/2026_10_29_180000_create_vendor_settings_table.php
+model VendorSetting {
+  key       String    @id @db.VarChar(64)
+  /// Значение; у секретов — шифртекст `<iv hex>:<data hex>`.
+  value     String?   @db.LongText
+  isSecret  Boolean   @default(false) @map("is_secret")
+  /// Кто менял — логин администратора.
+  updatedBy String?   @map("updated_by") @db.VarChar(255)
+  createdAt DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime? @map("updated_at") @db.Timestamp(0)
+
+  @@map("vendor_settings")
+}
+
 /// Портальный каталог АНКЕТ: сама анкета (чек-лист) placement-приложения —
 /// назначение, где и как показываем, условия показа. Состав вопросов живёт
 /// в PortalQuestionnaireItem. Заранее знать, какие поля заведёт клиент,

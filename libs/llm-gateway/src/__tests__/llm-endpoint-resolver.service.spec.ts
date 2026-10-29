@@ -10,6 +10,8 @@ const makeResolver = (
     values: Record<string, string> = {},
     keys: Record<string, string | null> = {},
     portalFound = true,
+    /** Значения из админки (настройки вендора); env — запасной вариант, как в сервисе. */
+    admin?: Record<string, string>,
 ) => {
     const portalStore = {
         getPortalByDomain: jest
@@ -22,11 +24,23 @@ const makeResolver = (
         ),
     };
     const config = { get: (key: string) => values[key] };
+    const read = (key: string): string | null =>
+        admin?.[key] ?? values[key] ?? null;
+    const settings = admin
+        ? {
+              get: (key: string) => Promise.resolve(read(key)),
+              getMany: (list: readonly string[]) =>
+                  Promise.resolve(
+                      Object.fromEntries(list.map(key => [key, read(key)])),
+                  ),
+          }
+        : undefined;
     return {
         resolver: new LlmEndpointResolverService(
             config as never,
             portalStore as never,
             portalKeys as never,
+            settings,
         ),
         portalStore,
         portalKeys,
@@ -136,6 +150,23 @@ describe('LlmEndpointResolverService', () => {
         });
         expect(await both.resolver.resolve(DOMAIN)).toMatchObject({
             baseUrl: 'https://foundation-models.api.cloud.ru/v1',
+        });
+    });
+
+    it('ключи из админки (настройки вендора) важнее env: Groq при пустом env, Cloud.ru из админки впереди Groq из env', async () => {
+        const groq = makeResolver({}, {}, true, { GROQ_API_KEY: 'admin-gsk' });
+        expect(await groq.resolver.resolve(DOMAIN)).toMatchObject({
+            baseUrl: 'https://api.groq.com/openai/v1',
+            apiKey: 'admin-gsk',
+            source: 'env',
+        });
+
+        const cloud = makeResolver({ GROQ_API_KEY: 'env-gsk' }, {}, true, {
+            CLOUDRU_API_KEY: 'admin-ck',
+        });
+        expect(await cloud.resolver.resolve(DOMAIN)).toMatchObject({
+            baseUrl: 'https://foundation-models.api.cloud.ru/v1',
+            apiKey: 'admin-ck',
         });
     });
 

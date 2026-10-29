@@ -28,7 +28,8 @@ export const BITRIX_BENIGN_MARKERS = [
 /** Методы чтения одной CRM-сущности по id. */
 const CRM_ENTITY_GET_METHOD = /^crm\.(deal|lead|contact|company)\.get$/;
 
-const NOT_FOUND_TEXT = /not found/i;
+/** Сущность не найдена: удалена или недоступна. */
+export const BITRIX_NOT_FOUND_TEXT = /not found/i;
 
 export const BITRIX_NOT_FOUND_MARKER = 'Not found';
 
@@ -59,7 +60,7 @@ export function benignBitrixErrorMarker(
     if (marker) return marker;
     if (
         CRM_ENTITY_GET_METHOD.test(method) &&
-        NOT_FOUND_TEXT.test(responseJson)
+        BITRIX_NOT_FOUND_TEXT.test(responseJson)
     ) {
         return BITRIX_NOT_FOUND_MARKER;
     }

@@ -194,7 +194,7 @@ const buildBook = async (options: {
     if (options.universal) {
         sheets.push({
             name: PRICE_BOOK_SHEETS.universalWeights,
-            headers: ['Название', 'Вес', 'АБС'],
+            headers: ['Название', 'Вес', 'АБС', 'code'],
             rows: options.universal,
         });
     }
@@ -326,9 +326,31 @@ describe('PriceBookExportService', () => {
         );
         const sheet = readSheet(workbook, PRICE_BOOK_SHEETS.universalWeights);
 
-        expect(sheet.headers).toEqual(['Название', 'Вес', 'АБС']);
+        expect(sheet.headers).toEqual(['Название', 'Вес', 'АБС', 'code']);
         expect(sheet.rows[0].string('Название')).toBe('Классик');
         expect(sheet.rows[0].number('АБС')).toBe(2);
+        // Код виден в файле, чтобы было понятно, под чем лежит комплект
+        expect(sheet.rows[0].string('code')).toBe('classic');
+    });
+
+    it('опечатка в названии не теряет строку, если код верный', async () => {
+        const { importService, complectService } = makeServices();
+        const reports = await importService.import(
+            await buildBook({
+                universal: [['Классиик', 1, 3, 'classic']],
+            }),
+            false,
+        );
+        const universal = reports.find(
+            report => report.section === PRICE_BOOK_SHEETS.universalWeights,
+        );
+
+        expect(universal?.skipped).toHaveLength(0);
+        expect(universal?.updated).toBe(1);
+        expect(complectService.update).toHaveBeenCalledWith(
+            '2',
+            expect.objectContaining({ abs: '3' }),
+        );
     });
 
     it('консалтинг выгружается с АБС, цен в нём нет', async () => {
@@ -663,12 +685,33 @@ describe('книга цен на чистой базе', () => {
                     ),
                 ),
             update: jest.fn().mockResolvedValue({}),
+            create: jest
+                .fn()
+                .mockImplementation((dto: { code: string; name: string }) =>
+                    Promise.resolve({ id: '99', ...dto }),
+                ),
         };
         const packageService = {
             findAll: jest.fn().mockResolvedValue([]),
             update: jest.fn().mockResolvedValue({}),
+            create: jest
+                .fn()
+                .mockImplementation((dto: { code: string; name: string }) =>
+                    Promise.resolve({ id: '99', ...dto }),
+                ),
         };
-        const supplyService = { findMany: jest.fn().mockResolvedValue([]) };
+        const supplyService = {
+            findMany: jest.fn().mockResolvedValue([]),
+            create: jest
+                .fn()
+                .mockImplementation(
+                    (dto: {
+                        code: string;
+                        type: string;
+                        usersQuantity: number;
+                    }) => Promise.resolve({ id: '99', ...dto }),
+                ),
+        };
         const regionService = {
             findAll: jest.fn().mockResolvedValue(REGIONS),
             update: jest.fn().mockResolvedValue(REGIONS[0]),
@@ -689,6 +732,9 @@ describe('книга цен на чистой базе', () => {
                 regionService as never,
             ),
             priceService,
+            supplyService,
+            packageService,
+            complectService,
         };
     };
 
@@ -724,8 +770,35 @@ describe('книга цен на чистой базе', () => {
             .map(row => row.string('что нужно сделать'))
             .join(' ');
 
-        expect(text).toMatch(/Первое наполнение/);
+        expect(text).toMatch(/Загрузка сама создаст/);
         expect(text).toMatch(/Виды поставок/);
+        // Коды и названия в заготовках — ключ строки, менять их нельзя
+        expect(text).toMatch(/менять не нужно/);
+    });
+
+    it('на чистой базе листы приходят с заготовками, а не пустыми', async () => {
+        const { exportService } = makeEmptyServices();
+        const workbook = await readWorkbook(
+            await exportService.export('current'),
+        );
+
+        const universal = readSheet(
+            workbook,
+            PRICE_BOOK_SHEETS.universalWeights,
+        );
+        expect(universal.rows).toHaveLength(9);
+        expect(universal.rows[0].string('Название')).toBe('Гарант-Классик');
+        expect(universal.rows[0].number('АБС')).toBe(2);
+
+        // Коды пакетов — те, по которым конструктор ищет цену
+        const lt = readSheet(workbook, PRICE_BOOK_SHEETS.lt);
+        expect(lt.rows.map(row => row.string('code'))).toEqual(
+            expect.arrayContaining(['ltpackSmall', 'ltpackBig']),
+        );
+        const consalting = readSheet(workbook, PRICE_BOOK_SHEETS.consalting);
+        expect(consalting.rows.map(row => row.string('code'))).toEqual(
+            expect.arrayContaining(['hotline', 'sovex', 'pkpremium']),
+        );
     });
 
     it('лист подсказок не мешает загрузке того же файла обратно', async () => {
@@ -740,8 +813,9 @@ describe('книга цен на чистой базе', () => {
         expect(sections).toContain(PRICE_BOOK_SHEETS.profMsk);
     });
 
-    it('без видов поставок цена не теряется молча — в отчёте причина', async () => {
-        const { importService, priceService } = makeEmptyServices();
+    it('на чистой базе загрузка цены сама заводит виды поставки', async () => {
+        const { importService, priceService, supplyService } =
+            makeEmptyServices();
         const reports = await importService.import(
             await buildBook({ profMsk: [['Бухгалтер', 0, 'buh', 8587, null]] }),
             false,
@@ -750,8 +824,73 @@ describe('книга цен на чистой базе', () => {
             report => report.section === PRICE_BOOK_SHEETS.profMsk,
         );
 
-        expect(priceService.storeByComplect).not.toHaveBeenCalled();
-        expect(prof?.skipped).toHaveLength(1);
-        expect(prof?.skipped[0].reason).toMatch(/нет видов поставки/);
+        // Колонка «1 ОД» — это internet_1, proxima_1 и три особые поставки
+        const created = (
+            supplyService.create.mock.calls as Array<
+                [{ code: string; coefficient: number }]
+            >
+        ).map(call => call[0]);
+        expect(created.map(dto => dto.code)).toEqual(
+            expect.arrayContaining([
+                'internet_1',
+                'proxima_1',
+                'internet_std',
+                'proxima_local',
+                'proxima_flash',
+            ]),
+        );
+        // Коэффициент нужен цене универсальной линейки — берётся из эталона
+        expect(
+            created.find(dto => dto.code === 'internet_1')?.coefficient,
+        ).toBe(1.25);
+
+        expect(priceService.storeByComplect).toHaveBeenCalled();
+        expect(prof?.skipped).toHaveLength(0);
+    });
+
+    it('заведённые справочники считаются отдельно от цен', async () => {
+        const { importService } = makeEmptyServices();
+        const reports = await importService.import(
+            await buildBook({
+                profMsk: [['Бухгалтер', 0, 'buh', 8587, 27698]],
+            }),
+            false,
+        );
+        const prof = reports.find(
+            report => report.section === PRICE_BOOK_SHEETS.profMsk,
+        );
+
+        // 1 ОД → 5 цен, 10 ОД → 2 цены; виды поставки в «создано» не лезут
+        expect(prof?.created).toBe(7);
+        expect(prof?.createdRefs).toHaveLength(7);
+        expect(prof?.createdRefs?.[0].kind).toBe('вид поставки');
+    });
+
+    it('чужой код пакета из легаси-выгрузки ложится под код каталога', async () => {
+        const { importService, priceService, packageService } =
+            makeEmptyServices();
+        await importService.import(
+            await buildBook({
+                lt: [
+                    [
+                        13,
+                        'Гарант-LegalTech. Малый пакет',
+                        2,
+                        2000,
+                        1800,
+                        'lt_small_pac',
+                    ],
+                ],
+            }),
+            false,
+        );
+
+        // Создан под кодом фронта, а не под «lt_small_pac» из файла
+        expect(packageService.create).toHaveBeenCalledWith(
+            expect.objectContaining({ code: 'ltpackSmall' }),
+        );
+        expect(priceService.storeByPackage).toHaveBeenCalledWith(
+            expect.objectContaining({ garantPackageCode: 'ltpackSmall' }),
+        );
     });
 });

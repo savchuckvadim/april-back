@@ -68,6 +68,8 @@ function focusSectionsSchema(focus: CallFocusKey): Record<string, unknown> {
                 section: {
                     type: 'string',
                     enum: [...FOCUS_SECTION_CODES[focus]],
+                    description:
+                        'Код раздела; каждый код — не более одной записи в sections',
                 },
             },
         },

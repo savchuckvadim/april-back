@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { VendorSettingsModule } from '@lib/portal-lib/store/vendor-settings/vendor-settings.module';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -25,6 +26,8 @@ import { SkapPortalModule } from './skap/skap-portal.module';
  */
 @Module({
     imports: [
+        // Настройки вендора из админки (прокси за рубеж, ключи AI) для библиотек этого приложения.
+        VendorSettingsModule,
         ConfigModule.forRoot({
             isGlobal: true,
             envFilePath: ['apps/kpi-report-service/.env', '.env'],

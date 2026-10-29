@@ -1,5 +1,6 @@
 import {
     isBitrixAccessDenied,
+    isBitrixNotFound,
     isBitrixQueryLimitExceeded,
     isBitrixTimeout,
     readBitrixTime,
@@ -51,6 +52,38 @@ describe('разбор ответов Битрикса', () => {
             ).toBe(false);
             expect(isBitrixAccessDenied(null)).toBe(false);
             expect(isBitrixAccessDenied(undefined)).toBe(false);
+        });
+    });
+
+    describe('isBitrixNotFound', () => {
+        it('crm.deal.get удалённой сделки: «Not found» в теле ответа', () => {
+            expect(
+                isBitrixNotFound({
+                    message: 'Request failed with status code 400',
+                    response: {
+                        data: { error: '', error_description: 'Not found' },
+                    },
+                }),
+            ).toBe(true);
+        });
+
+        it('сеть, права и отсутствие метода — не «не найдено»', () => {
+            expect(
+                isBitrixNotFound({
+                    message: 'getaddrinfo ENOTFOUND example.bitrix24.ru',
+                }),
+            ).toBe(false);
+            expect(
+                isBitrixNotFound({
+                    response: { data: { error: 'ERROR_METHOD_NOT_FOUND' } },
+                }),
+            ).toBe(false);
+            expect(
+                isBitrixNotFound({
+                    response: { data: { error_description: 'Access denied' } },
+                }),
+            ).toBe(false);
+            expect(isBitrixNotFound(null)).toBe(false);
         });
     });
 

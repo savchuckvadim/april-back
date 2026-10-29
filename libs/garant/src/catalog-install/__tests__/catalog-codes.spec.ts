@@ -38,6 +38,7 @@ describe('catalog-codes', () => {
         expect(LT_PACKAGE_NUMBER_TO_CODE[13]).toBe('ltpackSmall');
         expect(LT_PACKAGE_NUMBER_TO_CODE[14]).toBe('ltpackMedium');
         expect(LT_PACKAGE_NUMBER_TO_CODE[15]).toBe('ltpackBig');
-        expect(LT_PACKAGE_NUMBER_TO_CODE[1020]).toBeUndefined();
+        // 1020 — «Средний Устаревший» из рабочего файла владельца
+        expect(LT_PACKAGE_NUMBER_TO_CODE[1020]).toBe('ltpackMediumOld');
     });
 });

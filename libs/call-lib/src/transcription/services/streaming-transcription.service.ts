@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { YandexAuthService } from '@lib/call-lib/yandex/yandex-auth.service';
-import { wordsToSegments, yandexWordsOf } from '../lib/segments.mapper';
+import {
+    wordsToSegments,
+    yandexSecondsOf,
+    yandexWordsOf,
+} from '../lib/segments.mapper';
 import type { TranscriptSegment } from '../types/transcript-segment.types';
 
 export interface IYAChanks {
@@ -25,6 +29,50 @@ export interface IYAResponse {
 
 /** Фаза обращения к Яндексу — для текста ошибки и логов. */
 export type YandexSttPhase = 'submit' | 'poll';
+
+/** Каналов в записи для спецификации Яндекса: моно или стерео телефонии. */
+export type YandexChannelCount = 1 | 2;
+
+const CHANNEL_MISMATCH_RE = /Audio has (\d+) channels?, but (\d+) requested/i;
+
+/**
+ * Яндекс отверг запись из-за числа каналов («Audio has 2 channels, but 1
+ * requested in specification») — сколько каналов в ней на самом деле;
+ * другая ошибка или число вне 1–2 — null.
+ */
+export function channelsRequiredByYandex(
+    error: unknown,
+): YandexChannelCount | null {
+    const match = CHANNEL_MISMATCH_RE.exec((error as Error)?.message ?? '');
+    if (!match) return null;
+    const actual = Number(match[1]);
+    return actual === 1 || actual === 2 ? actual : null;
+}
+
+/**
+ * Стерео: Яндекс отдаёт куски по каналам (сначала канал 1, затем 2) — для
+ * связного текста куски выстраиваются по времени первого слова; моно и
+ * куски без времени — в исходном порядке.
+ */
+export function orderChunksByTime(chunks: IYAChanks[]): IYAChanks[] {
+    const channels = new Set(chunks.map(chunk => chunk.channelTag ?? '1'));
+    if (channels.size < 2) return chunks;
+    const starts = chunks.map(chunk => {
+        const first = chunk.alternatives?.[0]?.words?.[0] as
+            | { startTime?: unknown }
+            | undefined;
+        return yandexSecondsOf(first?.startTime);
+    });
+    if (starts.some(start => start === null)) return chunks;
+    return chunks
+        .map((chunk, index) => ({
+            chunk,
+            start: starts[index] as number,
+            index,
+        }))
+        .sort((a, b) => a.start - b.start || a.index - b.index)
+        .map(entry => entry.chunk);
+}
 
 /**
  * Ошибка HTTP Яндекса: код, requestId (по нему поддержка Яндекса находит
@@ -128,8 +176,15 @@ export class StreamingTranscriptionService {
         };
     }
 
-    /** Отправка аудио на распознавание; временные сбои повторяются с паузой. */
-    async transcribeAudio(fileUri: string): Promise<string> {
+    /**
+     * Отправка аудио на распознавание; временные сбои повторяются с паузой.
+     * `channels` — число каналов записи (по заголовку MP3, mp3ChannelCount):
+     * Яндекс отвергает запись, если оно не совпадает со спецификацией.
+     */
+    async transcribeAudio(
+        fileUri: string,
+        channels: YandexChannelCount = 1,
+    ): Promise<string> {
         const body = JSON.stringify({
             config: {
                 folderId: this.folderId,
@@ -139,7 +194,7 @@ export class StreamingTranscriptionService {
                     profanityFilter: false,
                     audioEncoding: 'MP3',
                     sampleRateHertz: 48000,
-                    audioChannelCount: 1,
+                    audioChannelCount: channels,
                     rawResults: false,
                 },
             },
@@ -240,7 +295,7 @@ export class StreamingTranscriptionService {
                     `${data.error.code ?? '?'} ${data.error.message ?? ''}`.trim(),
             );
         }
-        const chunks = data.response?.chunks ?? [];
+        const chunks = orderChunksByTime(data.response?.chunks ?? []);
         if (chunks.length === 0) {
             this.logger.error(
                 `Операция ${operationId} без результата распознавания`,

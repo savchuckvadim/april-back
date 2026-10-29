@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { VendorSettingsModule } from '@lib/portal-lib/store/vendor-settings/vendor-settings.module';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CronJobsReportModule } from '@lib/core/schedule';
@@ -24,6 +25,8 @@ import { SupportTelegramAppModule } from './support-telegram/support-telegram-ap
  */
 @Module({
     imports: [
+        // Настройки вендора из админки (прокси за рубеж, ключи AI) для библиотек этого приложения.
+        VendorSettingsModule,
         ConfigModule.forRoot({
             isGlobal: true,
             envFilePath: ['apps/bot/.env', '.env'],

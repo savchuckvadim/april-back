@@ -8,13 +8,37 @@ import { RegionService } from '../../region/region.service';
 import { ComplectEntity } from '../../complect/complect.entity';
 import { RegionEntity } from '../../region/region.entity';
 import { SupplyEntity } from '../../supply/supply.entity';
-import { ComplectTypeEnum } from '../../complect/types/complect.type';
-import { PackageProductTypeEnum } from '../../package/types/package.type';
+import {
+    ComplectProductTypeEnum,
+    ComplectTypeEnum,
+} from '../../complect/types/complect.type';
+import {
+    PackageProductTypeEnum,
+    PackageTypeEnum,
+} from '../../package/types/package.type';
+import { PackageEntityDto } from '../../package/dto/package-entity.dto';
+import { PackageEntity } from '../../package/entity/package.entity';
 import {
     TableImportReport,
     emptyTableReport,
 } from '../types/table-import-report.type';
-import { hasSheet, readSheet, readWorkbook } from '../lib/sheet-reader';
+import {
+    SheetRow,
+    hasSheet,
+    readSheet,
+    readWorkbook,
+} from '../lib/sheet-reader';
+import {
+    CONSALTING_PACKAGE_REFS,
+    LT_PACKAGE_REFS,
+    PackageRef,
+    STAR_PACKAGE_REFS,
+    UNIVERSAL_COMPLECT_REFS,
+    nameKey,
+    packageRefByRow,
+    supplyRefsForOd,
+    universalRefByName,
+} from '../lib/catalog-row-resolve';
 import {
     CONSALTING_COLUMNS,
     PRICE_BOOK_SHEETS,
@@ -196,12 +220,23 @@ export class PriceBookImportService {
         for (const row of sheet.rows) {
             const name = row.string(UNIVERSAL_COLUMNS.name);
             if (name === '') continue;
-            const current = byName.get(name.toLowerCase());
+            // Сначала по коду (он в файле справочный и точный), затем по
+            // названию: так опечатка в названии не теряет строку.
+            const code = row.has(UNIVERSAL_COLUMNS.code)
+                ? row.string(UNIVERSAL_COLUMNS.code)
+                : '';
+            const current =
+                (code !== ''
+                    ? universal.find(complect => complect.code === code)
+                    : undefined) ??
+                byName.get(name.toLowerCase()) ??
+                universal.find(
+                    complect => nameKey(complect.name) === nameKey(name),
+                );
             if (!current) {
-                report.skipped.push({
-                    key: name,
-                    reason: 'комплекта с таким названием нет в универсальной линейке',
-                });
+                // Комплекта ещё нет — создаём по эталонной сетке, чтобы код
+                // совпал с тем, по которому конструктор ищет цену.
+                await this.createUniversalComplect(report, row, name, dryRun);
                 continue;
             }
             const weight = row.has(UNIVERSAL_COLUMNS.weight)
@@ -243,13 +278,78 @@ export class PriceBookImportService {
         return report;
     }
 
+    /**
+     * Создание отсутствующего универсального комплекта. Код и номер —
+     * из эталонной сетки (по имени), вес и АБС — из файла, если заданы.
+     */
+    private async createUniversalComplect(
+        report: TableImportReport,
+        row: SheetRow,
+        name: string,
+        dryRun: boolean,
+    ): Promise<void> {
+        // Код в файле точнее названия: по нему строка узнаётся даже с
+        // опечаткой в названии.
+        const code = row.has(UNIVERSAL_COLUMNS.code)
+            ? row.string(UNIVERSAL_COLUMNS.code)
+            : '';
+        const ref =
+            (code !== ''
+                ? UNIVERSAL_COMPLECT_REFS.find(item => item.code === code)
+                : undefined) ?? universalRefByName(name);
+        if (!ref) {
+            report.skipped.push({
+                key: name,
+                reason:
+                    'такого комплекта нет в универсальной линейке — проверьте название ' +
+                    `(ожидается одно из: ${UNIVERSAL_COMPLECT_REFS.map(item => item.name).join(', ')})`,
+            });
+            return;
+        }
+        const weight = row.has(UNIVERSAL_COLUMNS.weight)
+            ? row.number(UNIVERSAL_COLUMNS.weight)
+            : null;
+        const abs = row.has(UNIVERSAL_COLUMNS.abs)
+            ? row.number(UNIVERSAL_COLUMNS.abs)
+            : null;
+        if (!dryRun) {
+            const created = await this.complectService.create({
+                name: ref.name,
+                fullName: ref.name,
+                shortName: ref.name,
+                code: ref.code,
+                type: ComplectTypeEnum.UNIVERSAL,
+                color: '',
+                weight: weight ?? ref.weight,
+                abs: String(abs ?? ref.abs),
+                number: ref.number,
+                productType: ComplectProductTypeEnum.GARANT,
+                withABS: true,
+                withConsalting: false,
+                withServices: false,
+                withLt: false,
+                isChanging: false,
+                withDefault: false,
+                infoblockIds: [],
+            });
+            if (!created) {
+                report.skipped.push({
+                    key: name,
+                    reason: 'не удалось создать комплект',
+                });
+                return;
+            }
+        }
+        this.noteCreatedRef(report, 'комплект', ref.code, ref.name);
+    }
+
     /** Листы prof-prices-*: строка — комплект, колонка — число ОД */
     private async importProf(
         workbook: Awaited<ReturnType<typeof readWorkbook>>,
         sheetName: string,
         regionType: '0' | '1',
         complects: readonly ComplectEntity[],
-        supplies: readonly SupplyEntity[],
+        supplies: SupplyEntity[],
         dryRun: boolean,
     ): Promise<TableImportReport> {
         const sheet = readSheet(workbook, sheetName);
@@ -303,11 +403,18 @@ export class PriceBookImportService {
                     });
                     continue;
                 }
-                const targets = suppliesForOd(supplies, usersQuantity);
+                // Видов поставки на это число ОД ещё нет — заводим их по
+                // эталонной сетке, иначе цену некуда привязать.
+                const targets = await this.ensureSupplies(
+                    report,
+                    supplies,
+                    usersQuantity,
+                    dryRun,
+                );
                 if (targets.length === 0) {
                     report.skipped.push({
                         key,
-                        reason: `нет видов поставки на ${usersQuantity} ОД — добавьте их в разделе «Виды поставок»`,
+                        reason: `не удалось завести виды поставки на ${usersQuantity} ОД`,
                     });
                     continue;
                 }
@@ -326,6 +433,64 @@ export class PriceBookImportService {
         }
         this.log(report);
         return report;
+    }
+
+    /**
+     * Виды поставки для колонки прайса: существующие плюс заведённые
+     * сейчас по эталонной сетке (код и коэффициент — из неё, в таблице
+     * цен их нет). Созданные дописываются в общий список, чтобы
+     * следующие строки листа брали уже готовые.
+     */
+    private async ensureSupplies(
+        report: TableImportReport,
+        supplies: SupplyEntity[],
+        usersQuantity: number,
+        dryRun: boolean,
+    ): Promise<SupplyEntity[]> {
+        const existing = suppliesForOd(supplies, usersQuantity);
+        const existingCodes = new Set(existing.map(supply => supply.code));
+        const missing = supplyRefsForOd(usersQuantity).filter(
+            ref => !existingCodes.has(ref.code),
+        );
+        if (missing.length === 0) return existing;
+
+        const created: SupplyEntity[] = [];
+        for (const ref of missing) {
+            if (dryRun) {
+                // В пробном прогоне записи нет — показываем её как цель
+                const planned = new SupplyEntity();
+                planned.code = ref.code;
+                planned.type = ref.type;
+                planned.name = ref.name;
+                planned.fullName = ref.name;
+                planned.shortName = ref.name;
+                planned.usersQuantity = ref.usersQuantity;
+                planned.coefficient = ref.coefficient;
+                created.push(planned);
+                this.noteCreatedRef(report, 'вид поставки', ref.code, ref.name);
+                continue;
+            }
+            const supply = await this.supplyService.create({
+                code: ref.code,
+                type: ref.type,
+                name: ref.name,
+                fullName: ref.name,
+                shortName: ref.name,
+                usersQuantity: ref.usersQuantity,
+                coefficient: ref.coefficient,
+            });
+            if (!supply) {
+                report.skipped.push({
+                    key: ref.code,
+                    reason: 'не удалось создать вид поставки',
+                });
+                continue;
+            }
+            supplies.push(supply);
+            created.push(supply);
+            this.noteCreatedRef(report, 'вид поставки', ref.code, ref.name);
+        }
+        return [...existing, ...created];
     }
 
     private async storeProfPrice(
@@ -386,17 +551,35 @@ export class PriceBookImportService {
         const report = emptyTableReport(sheetName);
         const packages = await this.packageService.findAll();
         const byCode = new Map(packages.map(item => [item.code, item]));
+        const refs =
+            productType === PackageProductTypeEnum.LT
+                ? LT_PACKAGE_REFS
+                : STAR_PACKAGE_REFS;
 
         for (const row of sheet.rows) {
             const code = row.string(SERVICE_COLUMNS.code);
             if (code === '') continue;
-            const current = byCode.get(code);
+            const name = row.has(SERVICE_COLUMNS.name)
+                ? row.string(SERVICE_COLUMNS.name)
+                : '';
+            let current = byCode.get(code);
             if (!current) {
-                report.skipped.push({
-                    key: code,
-                    reason: 'пакета с таким кодом нет в системе — добавьте его в разделе «Пакеты»',
-                });
-                continue;
+                // Пакета ещё нет либо в файле чужой код из легаси-выгрузки:
+                // ищем эталон по коду и имени и создаём с кодом фронта.
+                const resolved = await this.ensurePackage(
+                    report,
+                    refs,
+                    byCode,
+                    code,
+                    name,
+                    productType,
+                    row.has(SERVICE_COLUMNS.weight)
+                        ? row.number(SERVICE_COLUMNS.weight)
+                        : null,
+                    dryRun,
+                );
+                if (!resolved) continue;
+                current = resolved;
             }
             if (current.productType !== productType) {
                 report.skipped.push({
@@ -446,10 +629,12 @@ export class PriceBookImportService {
                     });
                     continue;
                 }
+                // Цена пишется под кодом каталога, а не под кодом из файла:
+                // конструктор ищет её по package.code.
                 await this.storePackagePrice(
                     report,
                     key,
-                    code,
+                    current.code,
                     regionType,
                     value,
                     dryRun,
@@ -458,6 +643,89 @@ export class PriceBookImportService {
         }
         this.log(report);
         return report;
+    }
+
+    /**
+     * Пакет для строки таблицы: найденный по эталону существующий либо
+     * созданный. Код берётся из эталонной сетки — в файле может стоять
+     * чужой код из легаси-выгрузки, а конструктор ищет по коду фронта.
+     */
+    private async ensurePackage(
+        report: TableImportReport,
+        refs: readonly PackageRef[],
+        byCode: Map<string, PackageEntityDto>,
+        code: string,
+        name: string,
+        productType: PackageProductTypeEnum,
+        weight: number | null,
+        dryRun: boolean,
+    ): Promise<PackageEntityDto | null> {
+        const ref = packageRefByRow(refs, code, name);
+        if (!ref) {
+            report.skipped.push({
+                key: code,
+                reason:
+                    'такого пакета нет в каталоге — проверьте код или название ' +
+                    `(ожидается одно из: ${refs.map(item => item.name).join(', ')})`,
+            });
+            return null;
+        }
+        const existing = byCode.get(ref.code);
+        if (existing) return existing;
+
+        if (dryRun) {
+            // Пробный прогон: записи нет, отдаём её будущий вид, чтобы
+            // дальше посчитались цены этой строки.
+            this.noteCreatedRef(report, 'пакет', ref.code, ref.name);
+            const planned = new PackageEntity();
+            planned.id = '0';
+            planned.code = ref.code;
+            planned.name = ref.name;
+            planned.fullName = ref.fullName;
+            planned.shortName = ref.name;
+            planned.type = PackageTypeEnum.PROF;
+            planned.number = ref.number;
+            planned.weight = weight ?? ref.weight;
+            planned.productType = productType;
+            planned.withABS = productType === PackageProductTypeEnum.CONSALING;
+            planned.isChanging = false;
+            planned.withDefault = false;
+            return new PackageEntityDto(planned);
+        }
+        try {
+            const created = await this.packageService.create({
+                code: ref.code,
+                name: ref.name,
+                fullName: ref.fullName,
+                shortName: ref.name,
+                type: PackageTypeEnum.PROF,
+                number: ref.number,
+                weight: weight ?? ref.weight,
+                productType,
+                withABS: productType === PackageProductTypeEnum.CONSALING,
+                isChanging: false,
+                withDefault: false,
+            });
+            if (!created) {
+                report.skipped.push({
+                    key: code,
+                    reason: 'не удалось создать пакет',
+                });
+                return null;
+            }
+            byCode.set(created.code, created);
+            this.noteCreatedRef(report, 'пакет', ref.code, ref.name);
+            return created;
+        } catch (error) {
+            report.skipped.push({
+                key: code,
+                reason:
+                    error instanceof Error
+                        ? error.message
+                        : 'не удалось создать пакет',
+            });
+            return null;
+        }
     }
 
     private async storePackagePrice(
@@ -517,14 +785,22 @@ export class PriceBookImportService {
         for (const row of sheet.rows) {
             const code = row.string(CONSALTING_COLUMNS.code);
             if (code === '') continue;
-            const current = byCode.get(code);
-            if (!current) {
-                report.skipped.push({
-                    key: code,
-                    reason: 'продукта с таким кодом нет в системе — добавьте его в разделе «Пакеты»',
-                });
-                continue;
-            }
+            const name = row.has(CONSALTING_COLUMNS.name)
+                ? row.string(CONSALTING_COLUMNS.name)
+                : '';
+            const current =
+                byCode.get(code) ??
+                (await this.ensurePackage(
+                    report,
+                    CONSALTING_PACKAGE_REFS,
+                    byCode,
+                    code,
+                    name,
+                    PackageProductTypeEnum.CONSALING,
+                    null,
+                    dryRun,
+                ));
+            if (!current) continue;
             if (!row.has(CONSALTING_COLUMNS.abs)) {
                 report.unchanged += 1;
                 continue;
@@ -598,10 +874,25 @@ export class PriceBookImportService {
         };
     }
 
+    /** Запись справочника, заведённая попутно (считается отдельно от цен) */
+    private noteCreatedRef(
+        report: TableImportReport,
+        kind: string,
+        code: string,
+        name: string,
+    ): void {
+        report.createdRefs = [
+            ...(report.createdRefs ?? []),
+            { kind, code, name },
+        ];
+    }
+
     private log(report: TableImportReport): void {
+        const refs = report.createdRefs?.length ?? 0;
         this.logger.log(
             `${report.section}: создано ${report.created}, обновлено ${report.updated}, ` +
-                `без изменений ${report.unchanged}, пропущено ${report.skipped.length}`,
+                `без изменений ${report.unchanged}, пропущено ${report.skipped.length}` +
+                (refs > 0 ? `, заведено в справочниках ${refs}` : ''),
         );
     }
 }

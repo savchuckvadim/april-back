@@ -83,21 +83,65 @@ describe('CatalogSeedService', () => {
             expect.objectContaining({
                 code: 'classic',
                 type: 'universal',
-                abs: '200',
+                abs: '2',
                 withABS: true,
             }),
         );
         expect(complectService.create).toHaveBeenCalledWith(
-            expect.objectContaining({ code: 'maximum', abs: '1400' }),
+            expect.objectContaining({ code: 'maximum', abs: '14' }),
         );
+    });
+
+    it('у универсальных комплектов веса и рабсы из рабочего файла', async () => {
+        const { service, complectService } = makeService();
+        await service.seedUniversalComplects(false);
+
+        // Шкала рабсов — единицы, не сотни: цена = рабс × рабс региона
+        // (~3000 ₽) × коэффициент поставки. Сотни дали бы цену в 100 раз выше.
+        expect(complectService.create).toHaveBeenCalledWith(
+            expect.objectContaining({ code: 'classic', weight: 1, abs: '2' }),
+        );
+        expect(complectService.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                code: 'universalPlus',
+                weight: 3,
+                abs: '4.5',
+            }),
+        );
+        // У «Максимума» веса в рабочем файле нет
+        expect(complectService.create).toHaveBeenCalledWith(
+            expect.objectContaining({ code: 'maximum', weight: 0, abs: '14' }),
+        );
+    });
+
+    it('виды поставки создаются с коэффициентами легаси', async () => {
+        const { service, supplyService } = makeService();
+        await service.seedSupplies(false);
+
+        const created = (
+            supplyService.create.mock.calls as Array<
+                [{ code: string; coefficient: number }]
+            >
+        ).map(call => call[0]);
+        // Коэффициент участвует в цене универсальной линейки, единица
+        // для всех сделала бы её неверной
+        expect(
+            created.find(dto => dto.code === 'internet_1')?.coefficient,
+        ).toBe(1.25);
+        expect(
+            created.find(dto => dto.code === 'proxima_50')?.coefficient,
+        ).toBe(7);
+        expect(
+            created.find(dto => dto.code === 'proxima_flash')?.coefficient,
+        ).toBe(1.1);
     });
 
     it('сид пакетов создаёт LT, СТАР и консалтинг с рабсами', async () => {
         const { service, packageService } = makeService();
         const report = await service.seedServicePackages(false);
 
-        // 3 LT + starpack + 3 консалтинга
-        expect(report.created).toBe(7);
+        // 4 LT (включая устаревший средний) + starpack + 3 консалтинга
+        expect(report.created).toBe(8);
         expect(packageService.create).toHaveBeenCalledWith(
             expect.objectContaining({ code: 'ltpackSmall', productType: 'lt' }),
         );

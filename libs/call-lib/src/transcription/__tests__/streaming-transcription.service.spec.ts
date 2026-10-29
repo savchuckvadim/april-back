@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import {
     StreamingTranscriptionService,
     YandexSttHttpError,
+    channelsRequiredByYandex,
     isTransientYandexError,
 } from '../services/streaming-transcription.service';
 
@@ -72,6 +73,26 @@ describe('StreamingTranscriptionService — терпимость к сбоям �
     });
 
     describe('отправка аудио', () => {
+        it('число каналов уходит в спецификацию: по умолчанию 1, для стерео 2', async () => {
+            // Каждому вызову — свой Response: тело читается один раз.
+            fetchMock.mockImplementation(() =>
+                Promise.resolve(ok({ id: 'op-1' })),
+            );
+            const service = makeService();
+            await service.transcribeAudio('s3://a.mp3');
+            await service.transcribeAudio('s3://a.mp3', 2);
+            const channelsOf = (call: unknown[]): number =>
+                (
+                    JSON.parse((call[1] as { body: string }).body) as {
+                        config: {
+                            specification: { audioChannelCount: number };
+                        };
+                    }
+                ).config.specification.audioChannelCount;
+            expect(channelsOf(fetchMock.mock.calls[0] as unknown[])).toBe(1);
+            expect(channelsOf(fetchMock.mock.calls[1] as unknown[])).toBe(2);
+        });
+
         it('два 500 подряд, затем 200 — операция получена', async () => {
             fetchMock
                 .mockResolvedValueOnce(
@@ -124,6 +145,97 @@ describe('StreamingTranscriptionService — терпимость к сбоям �
             await expect(
                 makeService().transcribeAudio('https://s3/a.mp3'),
             ).resolves.toBe('op-2');
+        });
+    });
+
+    describe('стерео-запись (gsr 29.10.2026)', () => {
+        it('куски каналов выстраиваются по времени первого слова, сегменты режутся по каналу', async () => {
+            fetchMock.mockResolvedValueOnce(
+                ok({
+                    done: true,
+                    response: {
+                        chunks: [
+                            {
+                                channelTag: '1',
+                                alternatives: [
+                                    {
+                                        text: 'Чем могу помочь',
+                                        words: [
+                                            {
+                                                word: 'Чем',
+                                                startTime: '4.0s',
+                                                endTime: '4.3s',
+                                            },
+                                            {
+                                                word: 'могу',
+                                                startTime: '4.4s',
+                                                endTime: '4.7s',
+                                            },
+                                            {
+                                                word: 'помочь',
+                                                startTime: '4.8s',
+                                                endTime: '5.2s',
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                            {
+                                channelTag: '2',
+                                alternatives: [
+                                    {
+                                        text: 'Добрый день',
+                                        words: [
+                                            {
+                                                word: 'Добрый',
+                                                startTime: '0.5s',
+                                                endTime: '0.9s',
+                                            },
+                                            {
+                                                word: 'день',
+                                                startTime: '1.0s',
+                                                endTime: '1.4s',
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                }),
+            );
+            const result = await makeService().getTranscriptionDetailed('op-1');
+            expect(result.text).toBe('Добрый день Чем могу помочь');
+            expect(
+                result.segments.map(segment => [segment.speaker, segment.text]),
+            ).toEqual([
+                ['unknown', 'Добрый день'],
+                ['unknown', 'Чем могу помочь'],
+            ]);
+        });
+
+        it('channelsRequiredByYandex: число каналов из ошибки спецификации, иначе null', () => {
+            expect(
+                channelsRequiredByYandex(
+                    new Error(
+                        'Яндекс завершил операцию e03 ошибкой: 3 Audio has 2 channels, but 1 requested in specification',
+                    ),
+                ),
+            ).toBe(2);
+            expect(
+                channelsRequiredByYandex(
+                    new Error(
+                        'Audio has 1 channel, but 2 requested in specification',
+                    ),
+                ),
+            ).toBe(1);
+            expect(
+                channelsRequiredByYandex(
+                    new Error('Audio has 6 channels, but 1 requested'),
+                ),
+            ).toBeNull();
+            expect(channelsRequiredByYandex(new Error('Internal'))).toBeNull();
+            expect(channelsRequiredByYandex('строка')).toBeNull();
         });
     });
 

@@ -8,6 +8,7 @@ import {
     IsOptional,
 } from 'class-validator';
 import {
+    TableImportCreatedRef,
     TableImportReport,
     TableImportSkippedRow,
 } from '../types/table-import-report.type';
@@ -62,6 +63,29 @@ export class TableImportSkippedRowDto implements TableImportSkippedRow {
     reason: string;
 }
 
+export class TableImportCreatedRefDto implements TableImportCreatedRef {
+    @ApiProperty({
+        description: 'Что создано: «вид поставки», «комплект» или «пакет».',
+        example: 'вид поставки',
+        type: String,
+    })
+    kind: string;
+
+    @ApiProperty({
+        description: 'Код созданной записи в каталоге.',
+        example: 'internet_5',
+        type: String,
+    })
+    code: string;
+
+    @ApiProperty({
+        description: 'Название созданной записи.',
+        example: 'Интернет 5 ОД',
+        type: String,
+    })
+    name: string;
+}
+
 export class TableImportReportDto implements TableImportReport {
     @ApiProperty({
         description: 'Лист файла или секция, к которой относится отчёт.',
@@ -93,6 +117,13 @@ export class TableImportReportDto implements TableImportReport {
         type: Number,
     })
     unchanged: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Записи справочников, заведённые попутно: виды поставки, комплекты, пакеты. Считаются отдельно от цен.',
+        type: [TableImportCreatedRefDto],
+    })
+    createdRefs?: TableImportCreatedRefDto[];
 
     @ApiProperty({
         description: 'Строки, которые не применены, с причинами.',

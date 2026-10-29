@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { CALL_REPORT_SECTION_CODES } from '@lib/call-lib';
 import { FOCUS_SECTION_CODES } from '../contracts/call-focus-analysis.contract';
 import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
@@ -149,6 +150,50 @@ describe('CallFocusAnalysisService', () => {
             callsWithUsage: 4,
             model: 'bitrix/bitrixgpt-5.5',
         });
+    });
+
+    it('дубли кода внутри прохода схлопываются, чужие коды прохода отбрасываются (три «Приветствия» 29.10.2026)', async () => {
+        const warn = jest
+            .spyOn(Logger.prototype, 'warn')
+            .mockImplementation(() => undefined);
+        const { service } = makeDeps({
+            responses: {
+                call_focus_form: focusResult({
+                    sections: [
+                        { section: 'GREETING', relevance: 100, score: 1 },
+                        { section: 'GREETING', relevance: 40, score: 4 },
+                        { section: 'GREETING', relevance: 100, score: 1 },
+                        // Чужой для «формы» раздел — модель нарушила enum.
+                        { section: 'NEEDS', relevance: 50, score: 5 },
+                    ],
+                }),
+                call_focus_content: focusResult({
+                    sections: [{ section: 'NEEDS', relevance: 80, score: 6 }],
+                }),
+                call_focus_movement: focusResult({
+                    sections: [
+                        { section: 'PRICE', relevance: 100, score: 1 },
+                        { section: 'CLOSING', relevance: 100, score: 2 },
+                        { section: 'PRICE', relevance: 100, score: 1 },
+                    ],
+                }),
+                call_focus_synthesis: { summary: 'Итог', score: 3 },
+            },
+        });
+        const dto = await service.run('test.bitrix24.ru', 'текст', 'call');
+
+        expect(dto?.sections).toEqual([
+            { section: 'GREETING', relevance: 100, score: 1 },
+            { section: 'NEEDS', relevance: 80, score: 6 },
+            { section: 'PRICE', relevance: 100, score: 1 },
+            { section: 'CLOSING', relevance: 100, score: 2 },
+        ]);
+        const warnings = warn.mock.calls
+            .map(call => String(call[0]))
+            .join('\n');
+        expect(warnings).toContain('чужие разделы NEEDS отброшены');
+        expect(warnings).toContain('GREETING ×3, PRICE ×2');
+        warn.mockRestore();
     });
 
     it('один упавший фокус не роняет разбор; его разделы отсутствуют, расход — только по удавшимся', async () => {

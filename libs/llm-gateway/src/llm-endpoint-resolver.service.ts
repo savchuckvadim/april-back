@@ -1,8 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GROQ_BASE_URL, groqPresetOf } from '@lib/ai-presets';
 import { PortalKeysService } from '@lib/portal-lib/store/keys/portal-keys.service';
 import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
+import {
+    VENDOR_SETTINGS_READER,
+    envOnlyReader,
+    type VendorSettingsReader,
+} from '@lib/vendor-settings';
 
 /** Откуда взят endpoint: свои креды портала или общий env. */
 export type LlmEndpointSource = 'portal' | 'env';
@@ -28,6 +33,18 @@ const CACHE_TTL_MS = 60_000;
  */
 const CLOUDRU_DEFAULT_BASE_URL = 'https://foundation-models.api.cloud.ru/v1';
 const CLOUDRU_DEFAULT_MODEL = 'Qwen/Qwen3-235B-A22B-Instruct-2507';
+
+/** Переменные общего endpoint'а; ключи среди них можно задать и в админке. */
+export const LLM_ENV_ENDPOINT_KEYS = [
+    'LLM_FALLBACK_BASE_URL',
+    'LLM_FALLBACK_API_KEY',
+    'LLM_FALLBACK_MODEL',
+    'CLOUDRU_API_KEY',
+    'CLOUDRU_BASE_URL',
+    'CLOUDRU_MODEL',
+    'GROQ_API_KEY',
+    'GROQ_MODEL',
+] as const;
 
 /**
  * Запасной endpoint из env: явные LLM_FALLBACK_*, иначе Cloud.ru контура 1
@@ -81,15 +98,17 @@ export function endpointOf(
  * (Portal.keys.llmBaseUrl / llmKey / llmModelName — колонки заведены под
  * «собственную LLM клиента») важнее общего env LLM_FALLBACK_BASE_URL /
  * LLM_FALLBACK_API_KEY / LLM_FALLBACK_MODEL, а тот — важнее Cloud.ru
- * контура 1 (CLOUDRU_API_KEY), последним идёт Groq (GROQ_API_KEY).
- * Ничего нет — null, и шлюз провайдера пропускает.
+ * контура 1 (CLOUDRU_API_KEY), последним идёт Groq (GROQ_API_KEY). Ключи
+ * приложения можно задать в админке (настройки вендора) — они важнее env и
+ * перечитываются с кэшем домена. Ничего нет — null, и шлюз провайдера
+ * пропускает.
  *
  * `@Injectable` без bitrix-состояния: домен приходит параметром.
  */
 @Injectable()
 export class LlmEndpointResolverService {
     private readonly logger = new Logger(LlmEndpointResolverService.name);
-    private readonly env: LlmEndpoint | null;
+    private readonly settings: VendorSettingsReader;
     private readonly cache = new Map<
         string,
         { endpoint: LlmEndpoint | null; expiresAt: number }
@@ -99,8 +118,12 @@ export class LlmEndpointResolverService {
         configService: ConfigService,
         private readonly portalStore: PortalStoreService,
         private readonly portalKeys: PortalKeysService,
+        @Optional()
+        @Inject(VENDOR_SETTINGS_READER)
+        settings?: VendorSettingsReader,
     ) {
-        this.env = envEndpointOf(key => configService.get<string>(key));
+        this.settings =
+            settings ?? envOnlyReader(key => configService.get<string>(key));
     }
 
     /** Endpoint домена; null — запасной провайдер не настроен. */
@@ -108,7 +131,8 @@ export class LlmEndpointResolverService {
         const cached = this.cache.get(domain);
         if (cached && cached.expiresAt > Date.now()) return cached.endpoint;
 
-        const endpoint = (await this.portalEndpoint(domain)) ?? this.env;
+        const endpoint =
+            (await this.portalEndpoint(domain)) ?? (await this.envEndpoint());
         this.cache.set(domain, {
             endpoint,
             expiresAt: Date.now() + CACHE_TTL_MS,
@@ -120,6 +144,12 @@ export class LlmEndpointResolverService {
     invalidate(domain?: string): void {
         if (domain === undefined) this.cache.clear();
         else this.cache.delete(domain);
+    }
+
+    /** Общий endpoint приложения: значения из админки важнее env. */
+    private async envEndpoint(): Promise<LlmEndpoint | null> {
+        const values = await this.settings.getMany(LLM_ENV_ENDPOINT_KEYS);
+        return envEndpointOf(key => values[key] ?? undefined);
     }
 
     /** Свои креды портала; ошибка чтения не роняет вызов — берём env. */

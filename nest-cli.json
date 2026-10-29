@@ -208,6 +208,15 @@
         "tsConfigPath": "libs/ai-presets/tsconfig.lib.json"
       }
     },
+    "vendor-settings": {
+      "type": "library",
+      "root": "libs/vendor-settings",
+      "entryFile": "index",
+      "sourceRoot": "libs/vendor-settings/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/vendor-settings/tsconfig.lib.json"
+      }
+    },
     "call-lib": {
       "type": "library",
       "root": "libs/call-lib",

@@ -21,6 +21,13 @@ import {
     odColumnHeader,
 } from '../lib/price-book.schema';
 import { odColumnsFromSupplies, odForSupply } from '../lib/prof-price-expand';
+import {
+    LT_PACKAGE_REFS,
+    PackageRef,
+    STAR_PACKAGE_REFS,
+    UNIVERSAL_COMPLECT_REFS,
+} from '../lib/catalog-row-resolve';
+import { CONSALTING_PACKAGES } from '../../catalog-install/lib/catalog-codes';
 
 /** Что положить в ячейки: текущие данные или пустой шаблон */
 export type PriceBookMode = 'current' | 'blank';
@@ -127,19 +134,34 @@ export class PriceBookExportService {
                     UNIVERSAL_COLUMNS.name,
                     UNIVERSAL_COLUMNS.weight,
                     UNIVERSAL_COLUMNS.abs,
+                    UNIVERSAL_COLUMNS.code,
                 ],
-                widths: [28, 10, 10],
+                widths: [28, 10, 10, 18],
                 note:
                     'Универсальная линейка: вес комплекта и его АБС. ЦЕН ЗДЕСЬ НЕТ и не нужно — ' +
                     'цена считается как АБС × рабс региона × коэффициент вида поставки. ' +
-                    'Ключ строки — название комплекта.',
-                rows: universalComplects
-                    .sort((a, b) => a.number - b.number)
-                    .map((complect): ExportCellValue[] => [
-                        complect.name,
-                        value(complect.weight),
-                        value(complect.abs ?? null),
-                    ]),
+                    'Ключ строки — название комплекта, колонка «code» показывает, ' +
+                    'под каким кодом комплект лежит в каталоге (менять не нужно).',
+                // Линейки ещё нет — отдаём эталонные строки, чтобы файл
+                // можно было заполнить и загрузить (импорт их создаст).
+                rows:
+                    universalComplects.length > 0
+                        ? universalComplects
+                              .sort((a, b) => a.number - b.number)
+                              .map((complect): ExportCellValue[] => [
+                                  complect.name,
+                                  value(complect.weight),
+                                  value(complect.abs ?? null),
+                                  complect.code,
+                              ])
+                        : UNIVERSAL_COMPLECT_REFS.map(
+                              (ref): ExportCellValue[] => [
+                                  ref.name,
+                                  value(ref.weight > 0 ? ref.weight : null),
+                                  value(ref.abs),
+                                  ref.code,
+                              ],
+                          ),
             },
             this.profSheet(
                 PRICE_BOOK_SHEETS.profMsk,
@@ -164,6 +186,7 @@ export class PriceBookExportService {
                 PackageProductTypeEnum.LT,
                 'Пакеты ЛегалТех: вес пакета и цены для Москвы и регионов.',
                 packages,
+                LT_PACKAGE_REFS,
                 packagePrice,
                 blank,
             ),
@@ -172,6 +195,7 @@ export class PriceBookExportService {
                 PackageProductTypeEnum.STAR,
                 'СТАР: вес и цены для Москвы и регионов.',
                 packages,
+                STAR_PACKAGE_REFS,
                 packagePrice,
                 blank,
             ),
@@ -189,21 +213,7 @@ export class PriceBookExportService {
                 note:
                     'Консалтинг: АБС продукта. ЦЕН ЗДЕСЬ НЕТ — цена считается от рабса региона, ' +
                     'как у универсальной линейки. Ключ строки — колонка «code».',
-                rows: packages
-                    .filter(
-                        item =>
-                            item.productType ===
-                            PackageProductTypeEnum.CONSALING,
-                    )
-                    .sort((a, b) => a.number - b.number)
-                    .map((item): ExportCellValue[] => [
-                        item.number,
-                        item.name,
-                        item.fullName,
-                        item.description ?? null,
-                        value(item.abs ?? null),
-                        item.code,
-                    ]),
+                rows: this.consaltingRows(packages, value),
             },
         ];
 
@@ -230,32 +240,75 @@ export class PriceBookExportService {
         packages: number;
     }): string[] {
         const hints: string[] = [];
+        if (counts.supplies === 0 || counts.universal === 0) {
+            hints.push(
+                'Каталог ещё пустой, поэтому часть строк в файле — заготовки: заполните в них ' +
+                    'цены и рабсы и загрузите файл обратно. Загрузка сама создаст то, чего нет: ' +
+                    'виды поставок, универсальные комплекты и пакеты услуг.',
+            );
+        }
         if (counts.supplies === 0) {
             hints.push(
-                'Виды поставок ещё не заведены, поэтому колонки прайса показаны по стандартной сетке ' +
-                    '(1, 2, 3, 5, 10, 20, 30, 50 ОД). Чтобы цены сохранились, сначала выполните ' +
-                    '«Первое наполнение» на странице таблиц каталога — иначе цену будет некуда записать.',
-            );
-        }
-        if (counts.universal === 0) {
-            hints.push(
-                'Лист «universal-weights» пуст: универсальная линейка ещё не заведена. ' +
-                    'Она создаётся в «Первом наполнении» вместе с весами и АБС.',
-            );
-        }
-        if (counts.packages === 0) {
-            hints.push(
-                'Листы «lt», «star» и «consalting» пусты: пакеты услуг ещё не заведены. ' +
-                    'Они создаются в «Первом наполнении».',
+                'Виды поставок ещё не заведены, колонки прайса показаны по стандартной сетке ' +
+                    '(1, 2, 3, 5, 10, 20, 30, 50 ОД). Они появятся при загрузке файла с ценами.',
             );
         }
         if (counts.prof === 0) {
             hints.push(
                 'Комплекты PROF ещё не заведены — прайс заполнять не на что. ' +
-                    'Добавьте комплекты в разделе «Комплекты» или таблицей комплектов.',
+                    'Добавьте комплекты в разделе «Комплекты» или таблицей комплектов: ' +
+                    'их состав (инфоблоки) загрузка цен не создаёт.',
             );
         }
+        hints.push(
+            'Названия и коды в заготовках менять не нужно: по ним система узнаёт строку. ' +
+                'Меняйте только цифры — цены, рабсы и веса.',
+        );
         return hints;
+    }
+
+    /**
+     * Строки листа консалтинга: заведённые продукты, а если их ещё нет —
+     * эталонные с рабсами (импорт создаст их по коду).
+     */
+    private consaltingRows(
+        packages: ReadonlyArray<{
+            code: string;
+            name: string;
+            fullName: string;
+            number: number;
+            description?: string | null;
+            abs?: number;
+            productType?: string;
+        }>,
+        value: (actual: ExportCellValue) => ExportCellValue,
+    ): ExportCellValue[][] {
+        const own = packages
+            .filter(
+                item => item.productType === PackageProductTypeEnum.CONSALING,
+            )
+            .slice()
+            .sort((a, b) => a.number - b.number);
+        if (own.length === 0) {
+            return CONSALTING_PACKAGES.slice()
+                .sort((a, b) => a.number - b.number)
+                .map((ref): ExportCellValue[] => [
+                    ref.number,
+                    ref.name,
+                    ref.fullName,
+                    null,
+                    value(ref.abs),
+                    ref.code,
+                ]);
+        }
+        return own.map((item): ExportCellValue[] => [
+            item.number,
+            item.name,
+            item.fullName,
+            item.description ?? null,
+            value(item.abs ?? null),
+            item.code,
+        ]);
     }
 
     /** Лист PROF-прайса: строка — комплект, колонка — число ОД */
@@ -319,6 +372,7 @@ export class PriceBookExportService {
             weight?: number;
             productType?: string;
         }>,
+        refs: readonly PackageRef[],
         packagePrice: Map<string, number>,
         blank: boolean,
     ): ExportSheet {
@@ -334,18 +388,57 @@ export class PriceBookExportService {
             ],
             widths: [8, 30, 10, 13, 13, 20],
             note: `${note} Ключ строки — колонка «code». Пустая ячейка = не менять.`,
-            rows: packages
-                .filter(item => item.productType === productType)
+            rows: this.serviceRows(
+                packages,
+                productType,
+                refs,
+                packagePrice,
+                blank,
+            ),
+        };
+    }
+
+    /**
+     * Строки листа пакета: заведённые в каталоге, а если пакетов этого
+     * вида ещё нет — эталонные (импорт создаст их по коду).
+     */
+    private serviceRows(
+        packages: ReadonlyArray<{
+            code: string;
+            name: string;
+            number: number;
+            weight?: number;
+            productType?: string;
+        }>,
+        productType: PackageProductTypeEnum,
+        refs: readonly PackageRef[],
+        packagePrice: Map<string, number>,
+        blank: boolean,
+    ): ExportCellValue[][] {
+        const own = packages
+            .filter(item => item.productType === productType)
+            .slice()
+            .sort((a, b) => a.number - b.number);
+        if (own.length === 0) {
+            return refs
                 .slice()
                 .sort((a, b) => a.number - b.number)
-                .map((item): ExportCellValue[] => [
-                    item.number,
-                    item.name,
-                    blank ? null : (item.weight ?? null),
-                    blank ? null : (packagePrice.get(`${item.code}|1`) ?? null),
-                    blank ? null : (packagePrice.get(`${item.code}|0`) ?? null),
-                    item.code,
-                ]),
-        };
+                .map((ref): ExportCellValue[] => [
+                    ref.number,
+                    ref.name,
+                    blank ? null : (ref.weight ?? null),
+                    null,
+                    null,
+                    ref.code,
+                ]);
+        }
+        return own.map((item): ExportCellValue[] => [
+            item.number,
+            item.name,
+            blank ? null : (item.weight ?? null),
+            blank ? null : (packagePrice.get(`${item.code}|1`) ?? null),
+            blank ? null : (packagePrice.get(`${item.code}|0`) ?? null),
+            item.code,
+        ]);
     }
 }

@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+    Inject,
+    Injectable,
+    NotFoundException,
+    Optional,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
     forcedProviderOf,
@@ -10,8 +15,16 @@ import {
     type TranscriptionEnvPrefs,
     type TranscriptionPrefs,
 } from '@lib/call-lib/transcription/provider/transcription-prefs.util';
-import { whisperEnvSettingsOf } from '@lib/call-lib/transcription/services/whisper-compatible-transcription.service';
+import {
+    WHISPER_ENV_KEYS,
+    whisperEnvSettingsOf,
+} from '@lib/call-lib/transcription/services/whisper-compatible-transcription.service';
 import { EgressProxyService } from '@lib/egress-proxy';
+import {
+    VENDOR_SETTINGS_READER,
+    envOnlyReader,
+    type VendorSettingsReader,
+} from '@lib/vendor-settings';
 import {
     LlmEndpointResolverService,
     StructuredLlmGateway,
@@ -45,6 +58,8 @@ type Readiness<C extends string> = AiProviderReadiness & { code: C };
  */
 @Injectable()
 export class PortalAiProvidersReadinessService {
+    private readonly settings: VendorSettingsReader;
+
     constructor(
         private readonly configService: ConfigService,
         private readonly portalStore: PortalStoreService,
@@ -54,7 +69,13 @@ export class PortalAiProvidersReadinessService {
         private readonly vibeKeys: VibeKeyResolverService,
         private readonly egress: EgressProxyService,
         private readonly probe: AiEndpointProbeService,
-    ) {}
+        @Optional()
+        @Inject(VENDOR_SETTINGS_READER)
+        settings?: VendorSettingsReader,
+    ) {
+        this.settings =
+            settings ?? envOnlyReader(key => configService.get<string>(key));
+    }
 
     async build(
         portalId: number,
@@ -62,7 +83,7 @@ export class PortalAiProvidersReadinessService {
     ): Promise<PortalAiProvidersReadiness> {
         const domain = await this.requireDomain(portalId);
         const record = await this.aiSettings.get(portalId);
-        const prefs = resolveTranscriptionPrefs(record, this.envPrefs());
+        const prefs = resolveTranscriptionPrefs(record, await this.envPrefs());
         const [llmOrder, transcription] = await Promise.all([
             this.llmReadiness(domain, withProbe),
             this.transcriptionReadiness(domain, prefs, withProbe),
@@ -89,13 +110,14 @@ export class PortalAiProvidersReadinessService {
         return portal.domain;
     }
 
-    /** Общие значения транскрибации из env — те же переменные, что читает роутер. */
-    private envPrefs(): TranscriptionEnvPrefs {
-        const get = (key: string): string | undefined =>
-            this.configService.get<string>(key);
-        const whisper = whisperEnvSettingsOf(get);
+    /** Общие значения транскрибации — те же переменные, что читает роутер; ключи с учётом админки. */
+    private async envPrefs(): Promise<TranscriptionEnvPrefs> {
+        const values = await this.settings.getMany(WHISPER_ENV_KEYS);
+        const whisper = whisperEnvSettingsOf(key => values[key] ?? undefined);
         return {
-            mode: parseTranscriptionRouterMode(get('TRANSCRIPTION_PROVIDER')),
+            mode: parseTranscriptionRouterMode(
+                this.configService.get<string>('TRANSCRIPTION_PROVIDER'),
+            ),
             whisper: whisper.endpoint,
             defaultWhisperModel: whisper.defaultModel,
         };

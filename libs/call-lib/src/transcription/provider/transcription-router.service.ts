@@ -13,6 +13,7 @@ import {
     type WhisperEndpoint,
 } from '../services/whisper-compatible-transcription.service';
 import type { TranscriptSegment } from '../types/transcript-segment.types';
+import { YandexCallRecognizer } from './yandex-call-recognizer';
 import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 import {
@@ -90,6 +91,8 @@ export class TranscriptionRouterService {
     private readonly vibecodeLimiter: Semaphore;
     /** Свой Whisper — обычно один GPU: по умолчанию одна запись за раз. */
     private readonly whisperLimiter: Semaphore;
+    /** Yandex-путь: S3, число каналов по заголовку MP3, повтор по ответу Яндекса. */
+    private readonly yandexRecognizer: YandexCallRecognizer;
 
     constructor(
         private readonly configService: ConfigService,
@@ -100,6 +103,11 @@ export class TranscriptionRouterService {
         private readonly whisper: WhisperCompatibleTranscriptionService,
         private readonly portalAiSettings: PortalAiSettingsService,
     ) {
+        this.yandexRecognizer = new YandexCallRecognizer(
+            yandexStorage,
+            yandexTranscription,
+            this.logger,
+        );
         this.whisperLimiter = new Semaphore(
             parseConcurrency(
                 this.configService.get<string>(
@@ -186,10 +194,13 @@ export class TranscriptionRouterService {
      * Нет строки или ошибка чтения — общие значения приложения.
      */
     private async portalPrefs(domain: string): Promise<TranscriptionPrefs> {
+        // Общий Whisper-endpoint приложения читается при каждом звонке: ключ
+        // Groq из админки (настройки вендора) действует без перезапуска.
+        const whisper = await this.whisper.envSettings();
         const env: TranscriptionEnvPrefs = {
             mode: this.mode,
-            whisper: this.whisper.envEndpoint,
-            defaultWhisperModel: this.whisper.defaultModel,
+            whisper: whisper.endpoint,
+            defaultWhisperModel: whisper.defaultModel,
         };
         try {
             const record = await this.portalAiSettings.getByDomain(domain);
@@ -281,22 +292,12 @@ export class TranscriptionRouterService {
         return 'bitrix-vibecode';
     }
 
-    /** Yandex-путь: буфер → S3 → longRunningRecognize → поллинг результата. */
+    /** Yandex-путь под лимитером: S3 → распознавание с числом каналов по MP3 (YandexCallRecognizer). */
     private async transcribeYandex(
         input: TranscribeCallInput,
     ): Promise<YandexTranscriptionDetailed> {
-        return this.yandexLimiter.run(async () => {
-            const s3Key = `transcription/audio/${input.domain}/call-report/${input.fileName}`;
-            const fileUri = await this.yandexStorage.uploadFile(
-                input.buffer,
-                s3Key,
-                'audio/mpeg',
-            );
-            const operationId =
-                await this.yandexTranscription.transcribeAudio(fileUri);
-            return this.yandexTranscription.getTranscriptionDetailed(
-                operationId,
-            );
-        });
+        return this.yandexLimiter.run(() =>
+            this.yandexRecognizer.recognize(input),
+        );
     }
 }

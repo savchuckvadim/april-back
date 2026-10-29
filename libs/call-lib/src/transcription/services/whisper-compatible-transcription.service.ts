@@ -1,7 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GROQ_BASE_URL, groqPresetOf } from '@lib/ai-presets';
 import { EgressProxyService } from '@lib/egress-proxy';
+import {
+    VENDOR_SETTINGS_READER,
+    envOnlyReader,
+    type VendorSettingsReader,
+} from '@lib/vendor-settings';
 
 /** Текст и сырые сегменты verbose_json; segments null — сервер их не дал. */
 export interface WhisperTranscriptionDetailed {
@@ -35,6 +40,15 @@ export interface WhisperEnvSettings {
     endpoint: WhisperEndpoint | null;
     defaultModel: string;
 }
+
+/** Переменные общего endpoint'а; ключ Groq среди них можно задать и в админке. */
+export const WHISPER_ENV_KEYS = [
+    'TRANSCRIPTION_WHISPER_BASE_URL',
+    'TRANSCRIPTION_WHISPER_API_KEY',
+    'TRANSCRIPTION_WHISPER_MODEL',
+    'GROQ_API_KEY',
+    'GROQ_WHISPER_MODEL',
+] as const;
 
 /**
  * Разбор env TRANSCRIPTION_WHISPER_* — одна функция на сервис и чек-лист
@@ -89,22 +103,26 @@ export class WhisperCompatibleTranscriptionService {
     private readonly logger = new Logger(
         WhisperCompatibleTranscriptionService.name,
     );
-    /** Общий endpoint приложения из env; null — не задан. */
-    readonly envEndpoint: WhisperEndpoint | null;
-    /** Модель по умолчанию — для портала, задавшего только адрес. */
+    /** Модель по умолчанию — для портала, задавшего только адрес (только env). */
     readonly defaultModel: string;
     private readonly language: string;
     private readonly timeoutMs: number;
+    private readonly settings: VendorSettingsReader;
 
     constructor(
         configService: ConfigService,
         private readonly egress: EgressProxyService,
+        @Optional()
+        @Inject(VENDOR_SETTINGS_READER)
+        settings?: VendorSettingsReader,
     ) {
         const read = (key: string): string =>
             (configService.get<string>(key) ?? '').trim();
-        const env = whisperEnvSettingsOf(key => configService.get<string>(key));
-        this.defaultModel = env.defaultModel;
-        this.envEndpoint = env.endpoint;
+        this.settings =
+            settings ?? envOnlyReader(key => configService.get<string>(key));
+        this.defaultModel = whisperEnvSettingsOf(key =>
+            configService.get<string>(key),
+        ).defaultModel;
         this.language =
             read('TRANSCRIPTION_WHISPER_LANGUAGE') || DEFAULT_LANGUAGE;
         const timeout = Number(read('TRANSCRIPTION_WHISPER_TIMEOUT_MS') || NaN);
@@ -114,33 +132,44 @@ export class WhisperCompatibleTranscriptionService {
                 : DEFAULT_TIMEOUT_MS;
     }
 
-    /** Общий endpoint задан — провайдер участвует в маршрутизации у всех порталов. */
-    get configured(): boolean {
-        return this.envEndpoint !== null;
+    /**
+     * Общий endpoint приложения: явный адрес TRANSCRIPTION_WHISPER_* или Groq
+     * по ключу — из админки (настройки вендора) либо env; `endpoint` null —
+     * не задан, провайдера в маршрутах нет. Читается при каждом звонке:
+     * правка в админке действует в течение минуты.
+     */
+    async envSettings(): Promise<WhisperEnvSettings> {
+        const values = await this.settings.getMany(WHISPER_ENV_KEYS);
+        return whisperEnvSettingsOf(key => values[key] ?? undefined);
     }
 
     /**
      * Транскрибация с сегментами; сервер без verbose_json — повтор без них.
-     * `endpoint` — свой Whisper портала; не передан — общий из env.
+     * `endpoint` — свой Whisper портала; не передан — общий endpoint
+     * приложения (envSettings).
      */
     async transcribeDetailed(
         buffer: Buffer,
         fileName: string,
-        endpoint: WhisperEndpoint | null = this.envEndpoint,
+        endpoint?: WhisperEndpoint | null,
     ): Promise<WhisperTranscriptionDetailed> {
-        if (!endpoint) {
+        const target =
+            endpoint === undefined
+                ? (await this.envSettings()).endpoint
+                : endpoint;
+        if (!target) {
             throw new Error(
-                'Whisper-совместимый сервис не настроен: нет TRANSCRIPTION_WHISPER_BASE_URL или GROQ_API_KEY в env и адреса у портала',
+                'Whisper-совместимый сервис не настроен: нет TRANSCRIPTION_WHISPER_BASE_URL или GROQ_API_KEY (в админке или env) и адреса у портала',
             );
         }
         try {
-            return await this.post(buffer, fileName, 'verbose_json', endpoint);
+            return await this.post(buffer, fileName, 'verbose_json', target);
         } catch (error) {
             if (!isClientError(error)) throw error;
             this.logger.warn(
                 `verbose_json не принят (${(error as Error).message}) — повтор без сегментов`,
             );
-            return this.post(buffer, fileName, null, endpoint);
+            return this.post(buffer, fileName, null, target);
         }
     }
 

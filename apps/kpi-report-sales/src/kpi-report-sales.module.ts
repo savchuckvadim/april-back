@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { VendorSettingsModule } from '@lib/portal-lib/store/vendor-settings/vendor-settings.module';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from '@lib/logger';
 import { PortalSessionApiModule } from '@lib/auth';
@@ -57,6 +58,8 @@ import { DigestModule } from './digest';
  */
 @Module({
     imports: [
+        // Настройки вендора из админки (прокси за рубеж, ключи AI) для библиотек этого приложения.
+        VendorSettingsModule,
         ConfigModule.forRoot({
             isGlobal: true,
             envFilePath: ['apps/kpi-report-sales/.env', '.env'],

@@ -137,6 +137,11 @@ const makeDeps = (input: {
     const dealGetList = jest
         .fn()
         .mockResolvedValue({ result: input.deals ?? [] });
+    const dealGet = jest.fn().mockResolvedValue({
+        result: input.dealStage
+            ? { ID: '1024', STAGE_ID: input.dealStage, ...input.dealRow }
+            : undefined,
+    });
     const assignee = {
         resolve: jest.fn().mockResolvedValue({
             responsible: 3,
@@ -155,15 +160,7 @@ const makeDeps = (input: {
                 deal: {
                     getList: dealGetList,
                     update: dealUpdate,
-                    get: jest.fn().mockResolvedValue({
-                        result: input.dealStage
-                            ? {
-                                  ID: '1024',
-                                  STAGE_ID: input.dealStage,
-                                  ...input.dealRow,
-                              }
-                            : undefined,
-                    }),
+                    get: dealGet,
                 },
                 imNotify: { systemAdd: notify },
             },
@@ -210,6 +207,7 @@ const makeDeps = (input: {
         dispatch,
         leadGetList,
         dealGetList,
+        dealGet,
         assignee,
     };
 };
@@ -672,6 +670,132 @@ describe('LeadRequestSlaService', () => {
 
             expect(run.transferred).toBe(1);
             expect(dispatch.accept).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    /*
+     * 29.10.2026 (garantservisvoronezh): крон брал первые по номеру —
+     * лиды сентября с удалёнными сделками и живые сделки 2018 года — и до
+     * свежих заявок не доходил. Решение владельца: сначала свежие, старше
+     * 3 дней не трогаем, удалённую сделку не воскрешаем.
+     */
+    describe('очередь: свежие первыми, без хвостов и удалённых сделок', () => {
+        type ListCall = [Record<string, unknown>, unknown, unknown];
+
+        it('лиды и сделки: назначенное не раньше 3 дней, свежие первыми', async () => {
+            jest.useFakeTimers({ now: new Date('2026-10-01T09:30:00+03:00') });
+            try {
+                const { service, leadGetList, dealGetList } = makeDeps({
+                    leads: [],
+                    withAssignedAt: true,
+                    hours: OFFICE_HOURS,
+                });
+                await service.runForDomain('d.b24.ru', 60, 30);
+
+                const [leadFilter, , leadOrder] = (
+                    leadGetList.mock.calls as unknown as ListCall[]
+                )[0];
+                const [dealFilter, , dealOrder] = (
+                    dealGetList.mock.calls as unknown as ListCall[]
+                )[0];
+                for (const filter of [leadFilter, dealFilter]) {
+                    expect(filter['>UF_CRM_OP_LEAD_ASSIGNED_AT']).toBe(
+                        '28.09.2026 09:30:00',
+                    );
+                }
+                for (const order of [leadOrder, dealOrder]) {
+                    expect(order).toEqual({
+                        UF_CRM_OP_LEAD_ASSIGNED_AT: 'DESC',
+                    });
+                }
+            } finally {
+                jest.useRealTimers();
+            }
+        });
+
+        it('без поля таймера: та же давность и порядок по DATE_MODIFY', async () => {
+            const { service, leadGetList } = makeDeps({ leads: [] });
+            await service.runForDomain('d.b24.ru', 60, 30);
+
+            const [filter, , order] = (
+                leadGetList.mock.calls as unknown as ListCall[]
+            )[0];
+            expect(filter['>DATE_MODIFY']).toBeDefined();
+            expect(order).toEqual({ DATE_MODIFY: 'DESC' });
+        });
+
+        it.each([
+            ['Битрикс ответил «Not found»', true],
+            ['Битрикс вернул пустой результат', false],
+        ])(
+            'сделку заявки удалили (%s) → не передаём и не принимаем',
+            async (_title, throwsNotFound) => {
+                const {
+                    service,
+                    dispatch,
+                    acceptService,
+                    leadUpdate,
+                    dealGet,
+                } = makeDeps({ leads: [OVERDUE_LEAD], withAssignedAt: true });
+                if (throwsNotFound) {
+                    dealGet.mockRejectedValue({
+                        message: 'Request failed with status code 400',
+                        response: {
+                            data: { error: '', error_description: 'Not found' },
+                        },
+                    });
+                }
+
+                const run = await service.runForDomain('d.b24.ru', 60, 30);
+
+                expect(run.transferred).toBe(0);
+                expect(run.healed).toBe(0);
+                // Удалённая сделка — штатный пропуск, не сбой.
+                expect(run.warnings.join(' ')).not.toContain('Лид 42');
+                expect(dispatch.accept).not.toHaveBeenCalled();
+                expect(acceptService.accept).not.toHaveBeenCalled();
+                expect(leadUpdate).not.toHaveBeenCalled();
+            },
+        );
+
+        it('прочая ошибка чтения сделки — предупреждение, передачи нет', async () => {
+            const { service, dispatch, dealGet } = makeDeps({
+                leads: [OVERDUE_LEAD],
+            });
+            dealGet.mockRejectedValue(new Error('timeout of 60000ms exceeded'));
+
+            const run = await service.runForDomain('d.b24.ru', 60, 30);
+
+            expect(run.transferred).toBe(0);
+            expect(run.warnings.join(' ')).toContain('Лид 42');
+            expect(dispatch.accept).not.toHaveBeenCalled();
+        });
+
+        it('живые сделки не съедают лимит прохода: брошенная за ними передаётся', async () => {
+            const { service, dispatch } = makeDeps({
+                leads: [],
+                deals: [
+                    { ...OVERDUE_DEAL, ID: '1', STAGE_ID: 'C3:WARM' },
+                    { ...OVERDUE_DEAL, ID: '2', STAGE_ID: 'C3:OFFER' },
+                    OVERDUE_DEAL,
+                ],
+                withAssignedAt: true,
+            });
+
+            // Лимит 2: раньше он уходил на две живые сделки.
+            const run = await service.runForDomain('d.b24.ru', 60, 2);
+
+            expect(run.dealCandidates).toBe(1);
+            expect(run.dealsTransferred).toBe(1);
+            const envelope = (
+                dispatch.accept.mock.calls as unknown as [
+                    unknown,
+                    unknown,
+                    unknown,
+                    { data: Record<string, unknown> }[],
+                ][]
+            )[0][3];
+            expect(envelope[0].data.dealIds).toEqual([1024]);
         });
     });
 });

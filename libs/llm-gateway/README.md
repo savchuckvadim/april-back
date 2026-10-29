@@ -39,6 +39,9 @@ const { result, usage, model, provider } =
 переключить основной провайдер без выкладки.
 `LLM_FALLBACK_JSON_MODE=json_object` — для моделей без strict JSON schema
 (схема дописывается в системный промпт). `LLM_FALLBACK_TIMEOUT_MS` — таймаут (180 000).
+Ключи приложения `CLOUDRU_API_KEY` и `GROQ_API_KEY` можно задать в админке
+(«Настройки приложения», `@lib/vendor-settings`): значение из админки важнее
+env и подхватывается резолвером с кэшем домена, без выкладки.
 
 ## Поведение при сбоях
 

@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { RedisService } from '@lib/core/redis/redis.service';
+import { isBitrixNotFound } from '@lib/bitrix';
 import { PBXService } from '@/modules/pbx';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
@@ -19,6 +20,7 @@ import { LeadToWorkAssigneeService } from '../../sales-hooks/lead-to-work/servic
 import { ActiveStaffService } from '../../shared/active-staff';
 import { dealAssignedAtName } from '../../shared/lead-request/deal-work-timer.util';
 import { isRepeatRequestDeal } from '../../shared/lead-request/repeat-request.util';
+import { slaNotBefore } from '../../shared/lead-request/sla-threshold.util';
 import { findSalesBaseStage } from '../../sales-hooks/lead-to-work/lib/xo-takeover-notice';
 import {
     getSalesBaseStageOrder,
@@ -156,10 +158,13 @@ export class LeadRequestSlaService {
         const now = new Date();
         const overdueBefore = (limit: number): Date =>
             workingMinutesBefore(hours, now, limit, portal.getTimezone());
+        // Назначенное раньше — забытый хвост, не «ждёт принятия».
+        const notBefore = slaNotBefore(now);
 
         const filter = this.buildOverdueFilter(
             portal,
             overdueBefore(minutes),
+            notBefore,
             result,
         );
         const handledDealIds = new Set<number>();
@@ -178,9 +183,11 @@ export class LeadRequestSlaService {
                 select.push(portal.getFieldBitrixId(historyField));
             if (toBaseField) select.push(portal.getFieldBitrixId(toBaseField));
 
+            // Сначала свежие: лимит за проход не должен уходить на хвосты.
             const { result: leads } = await bitrix.lead.getList(
                 filter as never,
                 select,
+                { [assignedAtName ?? 'DATE_MODIFY']: 'DESC' } as never,
             );
             const overdue = (leads ?? []).slice(
                 0,
@@ -236,6 +243,14 @@ export class LeadRequestSlaService {
                         toBaseName,
                         newStageId,
                     );
+                    if (base.missing) {
+                        // Сделку заявки удалили на портале: удалённое не
+                        // воскрешаем (решение владельца 29.10.2026).
+                        this.logger.log(
+                            `[sla] лид ${leadId} пропущен: сделка ${baseDealId} удалена`,
+                        );
+                        continue;
+                    }
                     if (
                         base.isRepeat &&
                         !base.moved &&
@@ -296,6 +311,7 @@ export class LeadRequestSlaService {
             domain,
             minutes,
             overdueBefore(minutes),
+            notBefore,
             maxPerRun,
             handledDealIds,
             result,
@@ -332,6 +348,8 @@ export class LeadRequestSlaService {
         minutes: number,
         /** Граница просрочки в рабочих минутах (см. runForDomain). */
         overdueBefore: Date,
+        /** Назначенное раньше — забытый хвост (см. slaNotBefore). */
+        notBefore: Date,
         maxPerRun: number,
         handledDealIds: ReadonlySet<number>,
         result: LeadRequestSlaRunResult,
@@ -345,14 +363,11 @@ export class LeadRequestSlaService {
             return;
         }
 
-        const threshold = dayjs(overdueBefore)
-            .tz(portal.getTimezone())
-            .format(CRM_DATETIME_FORMAT);
-
         const { result: deals } = await bitrix.deal.getList(
             {
                 [`!${assignedAtName}`]: '',
-                [`<${assignedAtName}`]: threshold,
+                [`<${assignedAtName}`]: this.crmDateTime(portal, overdueBefore),
+                [`>${assignedAtName}`]: this.crmDateTime(portal, notBefore),
                 CLOSED: 'N',
             } as never,
             [
@@ -364,8 +379,10 @@ export class LeadRequestSlaService {
                 // Нужна, чтобы не отбирать сделки, по которым идёт работа.
                 'STAGE_ID',
             ],
+            // Сначала свежие (решение владельца 29.10.2026).
+            { [assignedAtName]: 'DESC' } as never,
         );
-        const overdue = (deals ?? []).slice(0, maxPerRun) as unknown as BxRow[];
+        const overdue = (deals ?? []) as unknown as BxRow[];
         /*
          * РАБОТУ, КОТОРАЯ ИДЁТ, НЕ ОТБИРАЕМ (garant 27.10.2026, сделка
          * 99717). Таймер `op_lead_assigned_at` гасит ТОЛЬКО кнопка «принять
@@ -377,13 +394,19 @@ export class LeadRequestSlaService {
          * (сделка ушла со «Новой» → работают, принятие доводится задним
          * числом). Здесь проверки не было вовсе — добавляем её же по смыслу:
          * страховка остаётся только для сделок, которые с места не двигались.
+         *
+         * Лимит за проход — ПОСЛЕ этого отбора: 29.10.2026 (gsr) первые 10
+         * были живыми сделками 2018 года, проход отбрасывал их и до
+         * брошенной 109183 не доходил никогда.
          */
-        const candidates = overdue.filter(
-            deal =>
-                !handledDealIds.has(Number(deal.ID)) &&
-                !this.dealInProgress(portal, deal),
+        const notHandled = overdue.filter(
+            deal => !handledDealIds.has(Number(deal.ID)),
         );
-        const working = overdue.length - candidates.length;
+        const abandoned = notHandled.filter(
+            deal => !this.dealInProgress(portal, deal),
+        );
+        const working = notHandled.length - abandoned.length;
+        const candidates = abandoned.slice(0, maxPerRun);
         if (working > 0) {
             this.logger.log(
                 `[sla] пропущено сделок с идущей работой: ${working} ` +
@@ -614,6 +637,8 @@ export class LeadRequestSlaService {
         portal: PortalModel,
         /** Граница просрочки в рабочих минутах (см. runForDomain). */
         overdueBefore: Date,
+        /** Назначенное раньше — забытый хвост (см. slaNotBefore). */
+        notBefore: Date,
         result: LeadRequestSlaRunResult,
     ): Record<string, unknown> | null {
         const assignedAtField = portal.getEntityFieldByCode(
@@ -627,12 +652,10 @@ export class LeadRequestSlaService {
 
         if (assignedAtField) {
             const assignedAtName = portal.getFieldBitrixId(assignedAtField);
-            const threshold = dayjs(overdueBefore)
-                .tz(portal.getTimezone())
-                .format(CRM_DATETIME_FORMAT);
             const filter: Record<string, unknown> = {
                 [`!${assignedAtName}`]: '',
-                [`<${assignedAtName}`]: threshold,
+                [`<${assignedAtName}`]: this.crmDateTime(portal, overdueBefore),
+                [`>${assignedAtName}`]: this.crmDateTime(portal, notBefore),
             };
 
             // Сужаем до заявок: метку статуса ставит только наш хук.
@@ -655,6 +678,7 @@ export class LeadRequestSlaService {
         return {
             STATUS_ID: assignedStatusId,
             '<DATE_MODIFY': overdueBefore.toISOString(),
+            '>DATE_MODIFY': notBefore.toISOString(),
         };
     }
 
@@ -671,8 +695,9 @@ export class LeadRequestSlaService {
 
     /**
      * Менеджер реально двинул свою сделку из «Новая»? Тогда он принял
-     * работу, просто сигнал не долетел. Сделки/стадии нет — считаем, что
-     * не двигал (передача по времени валидна).
+     * работу, просто сигнал не долетел. Ссылки на сделку нет — считаем, что
+     * не двигал (передача по времени валидна); ссылка есть, а сделку
+     * удалили — `missing`, заявку не передаём.
      *
      * Возвращает и ОТВЕТСТВЕННОГО сделки: именно он сделал работу, и именно
      * его надо записать в «Кто принял» — у лида ответственный может быть
@@ -689,22 +714,44 @@ export class LeadRequestSlaService {
         responsibleId: number | null;
         /** Лид присоединён к ЧУЖОЙ сделке клиента (повторная заявка). */
         isRepeat: boolean;
+        /** Ссылка на сделку есть, а сделки нет — её удалили на портале. */
+        missing: boolean;
     }> {
-        const none = { moved: false, responsibleId: null, isRepeat: false };
+        const none = {
+            moved: false,
+            responsibleId: null,
+            isRepeat: false,
+            missing: false,
+        };
         if (!toBaseBitrixId || !newStageId) return none;
         const dealId = this.parseRef(lead[toBaseBitrixId]);
         if (!dealId) return none;
-        const deal = (await bitrix.deal.get(dealId))?.result as
-            | BxRow
-            | undefined;
-        if (!deal) return none;
+        const deal = await this.readDeal(bitrix, dealId);
+        if (!deal) return { ...none, missing: true };
         const stage = typeof deal.STAGE_ID === 'string' ? deal.STAGE_ID : '';
         const responsibleId = Number(deal.ASSIGNED_BY_ID) || null;
         return {
             moved: stage !== '' && stage !== newStageId,
             responsibleId,
             isRepeat: isRepeatRequestDeal(portal, deal, Number(lead.ID)),
+            missing: false,
         };
+    }
+
+    /** Сделка по id; удалённая — null, прочие ошибки летят выше. */
+    private async readDeal(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        dealId: number,
+    ): Promise<BxRow | null> {
+        try {
+            const deal = (await bitrix.deal.get(dealId))?.result as
+                | BxRow
+                | undefined;
+            return deal ?? null;
+        } catch (error) {
+            if (isBitrixNotFound(error)) return null;
+            throw error;
+        }
     }
 
     /**
@@ -931,7 +978,12 @@ export class LeadRequestSlaService {
 
     /** «Сейчас» в формате CRM-даты портала. */
     private nowCrm(portal: PortalModel): string {
-        return dayjs().tz(portal.getTimezone()).format(CRM_DATETIME_FORMAT);
+        return this.crmDateTime(portal, new Date());
+    }
+
+    /** Момент в формате CRM-поля Битрикса (локальное время портала). */
+    private crmDateTime(portal: PortalModel, at: Date): string {
+        return dayjs(at).tz(portal.getTimezone()).format(CRM_DATETIME_FORMAT);
     }
 
     /** UF-имя таймера подтверждения на ЛИДЕ; null — поле не установлено. */

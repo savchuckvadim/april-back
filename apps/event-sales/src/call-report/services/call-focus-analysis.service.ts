@@ -15,6 +15,7 @@ import {
 import type { VibecodeStructuredCompletionWithUsage } from '@lib/vibecode';
 import { StructuredLlmGateway } from '@lib/llm-gateway';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
+import { dedupeSectionsWithLog } from '../../agent-gate/services/agent-analysis-sections.util';
 import {
     AFTER_PRESENTATION_STRICT_BLOCK,
     DECISION_CALL_BLOCK,
@@ -33,6 +34,7 @@ import {
     FOCUS_FORM_SCHEMA,
     FOCUS_MOVEMENT_PROMPT,
     FOCUS_MOVEMENT_SCHEMA,
+    FOCUS_SECTION_CODES,
     FOCUS_SYNTHESIS_PROMPT,
     FOCUS_SYNTHESIS_SCHEMA,
     renderFocusDigest,
@@ -252,11 +254,11 @@ export class CallFocusAnalysisService {
                 ...(byKey.content ?? {}),
                 ...(byKey.movement ?? {}),
                 ...(synthesis ?? {}),
-                sections: [
-                    ...this.sectionsOf(byKey.form),
-                    ...this.sectionsOf(byKey.content),
-                    ...this.sectionsOf(byKey.movement),
-                ],
+                // Каждый проход — только разделы своей зоны (чужие коды от
+                // модели отбрасываются); дубли кодов схлопываются ниже.
+                sections: FOCUS_PASSES.flatMap(pass =>
+                    this.sectionsOf(byKey[pass.key], pass, domain),
+                ),
                 callType: callType ?? FALLBACK_CALL_TYPE,
                 // Расход всех удавшихся вызовов (фокусы + синтез).
                 usage: sumCompletionUsage(
@@ -269,6 +271,14 @@ export class CallFocusAnalysisService {
                 ),
             };
             const dto = plainToInstance(AgentCallAnalysisDto, merged);
+            // Один раздел — одна запись: проход с единственным разрешённым
+            // кодом присылал «моменты» приветствия отдельными записями, и в
+            // ленту сделки уходили три «Приветствия» (29.10.2026).
+            dto.sections = dedupeSectionsWithLog(
+                dto.sections,
+                `Фокус-разбор (${domain})`,
+                this.logger,
+            );
             this.logger.log(
                 `Фокус-разбор (${domain}): проходов ${survived}/3, ` +
                     `разделов ${dto.sections?.length ?? 0}, оценка ${dto.score ?? '—'}`,
@@ -486,12 +496,32 @@ export class CallFocusAnalysisService {
         }
     }
 
+    /**
+     * Разделы прохода — только коды его зоны: чужой код (модель нарушила
+     * enum схемы) отбрасывается с предупреждением, иначе он задвоил бы
+     * раздел другого прохода.
+     */
     private sectionsOf(
         result: Record<string, unknown> | null,
+        pass: FocusPass,
+        domain: string,
     ): Record<string, unknown>[] {
-        return Array.isArray(result?.sections)
+        const raw = Array.isArray(result?.sections)
             ? (result.sections as Record<string, unknown>[])
             : [];
+        const allowed = FOCUS_SECTION_CODES[pass.key];
+        const own = raw.filter(section =>
+            allowed.includes(String(section.section)),
+        );
+        if (own.length !== raw.length) {
+            const foreign = raw
+                .filter(section => !allowed.includes(String(section.section)))
+                .map(section => String(section.section));
+            this.logger.warn(
+                `Фокус-разбор (${domain}), проход «${pass.label}»: чужие разделы ${foreign.join(', ')} отброшены`,
+            );
+        }
+        return own;
     }
 }
 

@@ -19,7 +19,21 @@ export interface TableImportReport {
     updated: number;
     /** Строки без изменений (повторная загрузка того же файла = всё здесь) */
     unchanged: number;
+    /**
+     * Справочные записи, заведённые попутно: виды поставки, комплекты,
+     * пакеты. Считаются отдельно от цен, иначе «создано» у прайса
+     * выглядит больше, чем в нём цен.
+     */
+    createdRefs?: TableImportCreatedRef[];
     skipped: TableImportSkippedRow[];
+}
+
+/** Запись справочника, созданная загрузкой */
+export interface TableImportCreatedRef {
+    /** Что создано: «вид поставки», «комплект», «пакет» */
+    kind: string;
+    code: string;
+    name: string;
 }
 
 export const emptyTableReport = (section: string): TableImportReport => ({
@@ -27,5 +41,6 @@ export const emptyTableReport = (section: string): TableImportReport => ({
     created: 0,
     updated: 0,
     unchanged: 0,
+    createdRefs: [],
     skipped: [],
 });
