@@ -14,6 +14,43 @@ const CONFIGURED = {
 const ok = (body: unknown): Response =>
     new Response(JSON.stringify(body), { status: 200 });
 
+describe('WhisperCompatibleTranscriptionService — endpoint портала', () => {
+    let fetchMock: jest.Mock;
+
+    beforeEach(() => {
+        fetchMock = jest.fn();
+        global.fetch = fetchMock as unknown as typeof fetch;
+        jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    });
+    afterEach(() => jest.restoreAllMocks());
+
+    it('переданный endpoint портала важнее общего из env: его адрес, ключ и модель', async () => {
+        fetchMock.mockResolvedValueOnce(ok({ text: 'свой' }));
+        const service = makeService(CONFIGURED);
+
+        const result = await service.transcribeDetailed(
+            Buffer.from('a'),
+            'c.mp3',
+            {
+                baseUrl: 'http://client-gpu:9000/v1',
+                apiKey: null,
+                model: 'large-v3-turbo',
+            },
+        );
+
+        expect(result.text).toBe('свой');
+        const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+        expect(url).toBe('http://client-gpu:9000/v1/audio/transcriptions');
+        expect(init.headers).toEqual({});
+        expect((init.body as FormData).get('model')).toBe('large-v3-turbo');
+        expect(service.envEndpoint).toEqual({
+            baseUrl: 'http://whisper:8000/v1',
+            apiKey: 'k',
+            model: 'Systran/faster-whisper-large-v3',
+        });
+    });
+});
+
 describe('WhisperCompatibleTranscriptionService — свой Whisper', () => {
     let fetchMock: jest.Mock;
 

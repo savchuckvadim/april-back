@@ -7,9 +7,12 @@ import {
 import { PortalRepository } from '../portal.repository';
 import { PortalAiSettingsRepository } from './portal-ai-settings.repository';
 import {
+    AI_LLM_PROVIDER_CODES,
+    AI_TRANSCRIPTION_MODES,
     PortalAiSettingsRecord,
     PortalAiSettingsUpdate,
     PortalAiSettingsWithDomain,
+    SECRET_MASK,
 } from './portal-ai-settings.types';
 
 /** Границы часа суток для ночного окна. */
@@ -56,12 +59,16 @@ export class PortalAiSettingsService {
         portalId: number,
         update: PortalAiSettingsUpdate,
     ): Promise<PortalAiSettingsRecord> {
-        this.assertValid(update);
+        // Маска секрета из ответа API вернулась обратно — это «не трогать»,
+        // а не новый ключ: иначе форма админки затирала бы сохранённый ключ.
+        const { whisperApiKey, ...withoutKey } = update;
+        const patch = whisperApiKey === SECRET_MASK ? withoutKey : update;
+        this.assertValid(patch);
         const domain = await this.requireDomain(portalId);
-        const saved = await this.repository.upsert(portalId, domain, update);
+        const saved = await this.repository.upsert(portalId, domain, patch);
         this.logger.log(
             `Настройки AI портала ${portalId} (${domain}) сохранены: ` +
-                `${Object.keys(update).join(', ') || 'без изменений'}`,
+                `${Object.keys(patch).join(', ') || 'без изменений'}`,
         );
         return saved;
     }
@@ -87,6 +94,7 @@ export class PortalAiSettingsService {
      * конвейера потом: отрицательные пороги и часы вне суток.
      */
     private assertValid(update: PortalAiSettingsUpdate): void {
+        this.assertProvidersValid(update);
         const positives: (keyof PortalAiSettingsUpdate)[] = [
             'minDurationSec',
             'windowHours',
@@ -126,6 +134,45 @@ export class PortalAiSettingsService {
         if (startSet !== endSet) {
             throw new BadRequestException(
                 'Ночное окно задаётся обеими границами: укажите и начало, и конец, либо очистите обе',
+            );
+        }
+    }
+
+    /**
+     * Провайдеры AI на портал: коды порядка LLM и режим транскрибации —
+     * только из списков, адрес своего Whisper — только http(s). Неверный
+     * код молча выпал бы при чтении, и портал считал бы не тем, чем ждут.
+     */
+    private assertProvidersValid(update: PortalAiSettingsUpdate): void {
+        if (Array.isArray(update.llmProviderOrder)) {
+            const unknown = update.llmProviderOrder.filter(
+                code =>
+                    !(AI_LLM_PROVIDER_CODES as readonly string[]).includes(
+                        code,
+                    ),
+            );
+            if (unknown.length) {
+                throw new BadRequestException(
+                    `Неизвестный провайдер LLM: ${unknown.join(', ')} ` +
+                        `(допустимы ${AI_LLM_PROVIDER_CODES.join(', ')})`,
+                );
+            }
+        }
+        if (
+            typeof update.transcriptionMode === 'string' &&
+            !(AI_TRANSCRIPTION_MODES as readonly string[]).includes(
+                update.transcriptionMode,
+            )
+        ) {
+            throw new BadRequestException(
+                `Неизвестный режим транскрибации «${update.transcriptionMode}» ` +
+                    `(допустимы ${AI_TRANSCRIPTION_MODES.join(', ')})`,
+            );
+        }
+        const url = update.whisperBaseUrl?.trim();
+        if (url && !/^https?:\/\/\S+$/i.test(url)) {
+            throw new BadRequestException(
+                'Адрес своего Whisper должен начинаться с http:// или https:// и не содержать пробелов',
             );
         }
     }

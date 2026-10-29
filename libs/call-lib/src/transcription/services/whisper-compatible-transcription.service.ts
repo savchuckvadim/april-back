@@ -7,6 +7,13 @@ export interface WhisperTranscriptionDetailed {
     segments: unknown;
 }
 
+/** Куда слать запись: адрес без хвостового слэша, ключ (null — без авторизации), модель. */
+export interface WhisperEndpoint {
+    baseUrl: string;
+    apiKey: string | null;
+    model: string;
+}
+
 interface WhisperResponse {
     text?: string;
     segments?: unknown;
@@ -23,70 +30,77 @@ const isClientError = (error: unknown): boolean =>
 /**
  * Третий транскрибатор: любой OpenAI-совместимый `/audio/transcriptions`
  * (faster-whisper-server, speaches, vLLM-whisper на своём GPU или в
- * РФ-облаке). Включается env TRANSCRIPTION_WHISPER_BASE_URL — без него
- * роутер провайдера не видит. Последний резерв, когда Яндекс и VibeCode
- * отказали оба, либо основной при TRANSCRIPTION_PROVIDER=whisper
- * (план устойчивости к провайдерам, 28.10.2026).
+ * РФ-облаке). Общий endpoint приложения — env TRANSCRIPTION_WHISPER_BASE_URL
+ * (без него роутер провайдера не видит); у портала может быть свой —
+ * роутер передаёт его параметром (настройки AI портала: whisperBaseUrl /
+ * whisperModel / whisperApiKey). Последний резерв, когда Яндекс и VibeCode
+ * отказали оба, либо основной при режиме whisper (план устойчивости к
+ * провайдерам, 28–29.10.2026).
  */
 @Injectable()
 export class WhisperCompatibleTranscriptionService {
     private readonly logger = new Logger(
         WhisperCompatibleTranscriptionService.name,
     );
-    private readonly baseUrl: string | null;
-    private readonly apiKey: string | null;
-    private readonly model: string;
+    /** Общий endpoint приложения из env; null — не задан. */
+    readonly envEndpoint: WhisperEndpoint | null;
+    /** Модель по умолчанию — для портала, задавшего только адрес. */
+    readonly defaultModel: string;
     private readonly language: string;
     private readonly timeoutMs: number;
 
     constructor(configService: ConfigService) {
-        const url = (
-            configService.get<string>('TRANSCRIPTION_WHISPER_BASE_URL') ?? ''
-        )
-            .trim()
-            .replace(/\/+$/, '');
-        this.baseUrl = url || null;
-        this.apiKey =
-            (
-                configService.get<string>('TRANSCRIPTION_WHISPER_API_KEY') ?? ''
-            ).trim() || null;
-        this.model =
-            (
-                configService.get<string>('TRANSCRIPTION_WHISPER_MODEL') ?? ''
-            ).trim() || DEFAULT_MODEL;
-        this.language =
-            (
-                configService.get<string>('TRANSCRIPTION_WHISPER_LANGUAGE') ??
-                ''
-            ).trim() || DEFAULT_LANGUAGE;
-        const timeout = Number(
-            configService.get<string>('TRANSCRIPTION_WHISPER_TIMEOUT_MS') ??
-                NaN,
+        const read = (key: string): string =>
+            (configService.get<string>(key) ?? '').trim();
+        this.defaultModel =
+            read('TRANSCRIPTION_WHISPER_MODEL') || DEFAULT_MODEL;
+        const baseUrl = read('TRANSCRIPTION_WHISPER_BASE_URL').replace(
+            /\/+$/,
+            '',
         );
+        this.envEndpoint = baseUrl
+            ? {
+                  baseUrl,
+                  apiKey: read('TRANSCRIPTION_WHISPER_API_KEY') || null,
+                  model: this.defaultModel,
+              }
+            : null;
+        this.language =
+            read('TRANSCRIPTION_WHISPER_LANGUAGE') || DEFAULT_LANGUAGE;
+        const timeout = Number(read('TRANSCRIPTION_WHISPER_TIMEOUT_MS') || NaN);
         this.timeoutMs =
             Number.isFinite(timeout) && timeout > 0
                 ? timeout
                 : DEFAULT_TIMEOUT_MS;
     }
 
-    /** Endpoint задан — провайдер участвует в маршрутизации. */
+    /** Общий endpoint задан — провайдер участвует в маршрутизации у всех порталов. */
     get configured(): boolean {
-        return this.baseUrl !== null;
+        return this.envEndpoint !== null;
     }
 
-    /** Транскрибация с сегментами; сервер без verbose_json — повтор без них. */
+    /**
+     * Транскрибация с сегментами; сервер без verbose_json — повтор без них.
+     * `endpoint` — свой Whisper портала; не передан — общий из env.
+     */
     async transcribeDetailed(
         buffer: Buffer,
         fileName: string,
+        endpoint: WhisperEndpoint | null = this.envEndpoint,
     ): Promise<WhisperTranscriptionDetailed> {
+        if (!endpoint) {
+            throw new Error(
+                'Свой Whisper не настроен: нет TRANSCRIPTION_WHISPER_BASE_URL и адреса у портала',
+            );
+        }
         try {
-            return await this.post(buffer, fileName, 'verbose_json');
+            return await this.post(buffer, fileName, 'verbose_json', endpoint);
         } catch (error) {
             if (!isClientError(error)) throw error;
             this.logger.warn(
                 `verbose_json не принят (${(error as Error).message}) — повтор без сегментов`,
             );
-            return this.post(buffer, fileName, null);
+            return this.post(buffer, fileName, null, endpoint);
         }
     }
 
@@ -94,15 +108,11 @@ export class WhisperCompatibleTranscriptionService {
         buffer: Buffer,
         fileName: string,
         responseFormat: 'verbose_json' | null,
+        endpoint: WhisperEndpoint,
     ): Promise<WhisperTranscriptionDetailed> {
-        if (!this.baseUrl) {
-            throw new Error(
-                'Свой Whisper не настроен: нет TRANSCRIPTION_WHISPER_BASE_URL',
-            );
-        }
-        const where = `Whisper (${this.model})`;
+        const where = `Whisper (${endpoint.model})`;
         const formData = new FormData();
-        formData.append('model', this.model);
+        formData.append('model', endpoint.model);
         formData.append('language', this.language);
         if (responseFormat !== null) {
             formData.append('response_format', responseFormat);
@@ -115,10 +125,10 @@ export class WhisperCompatibleTranscriptionService {
 
         let response: Response;
         try {
-            response = await fetch(`${this.baseUrl}/audio/transcriptions`, {
+            response = await fetch(`${endpoint.baseUrl}/audio/transcriptions`, {
                 method: 'POST',
-                headers: this.apiKey
-                    ? { Authorization: `Bearer ${this.apiKey}` }
+                headers: endpoint.apiKey
+                    ? { Authorization: `Bearer ${endpoint.apiKey}` }
                     : {},
                 body: formData,
                 signal: AbortSignal.timeout(this.timeoutMs),

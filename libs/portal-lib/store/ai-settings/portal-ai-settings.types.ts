@@ -121,7 +121,65 @@ export interface PortalAiSettingsRecord {
      * ни строчки, портал без настройки ничего не теряет.
      */
     ownOrgNames: string[] | null;
+
+    // --- Провайдеры AI на портал (план устойчивости к провайдерам 29.10.2026) ---
+
+    /**
+     * ПОРЯДОК ПРОВАЙДЕРОВ LLM для разборов этого портала (шлюз
+     * @lib/llm-gateway): коды из AI_LLM_PROVIDER_CODES от основного к
+     * запасным. Портал со своим ключом (llmKey / llmBaseUrl / llmModelName в
+     * ключах портала) считает разборы у себя и платит за токены сам:
+     * ['openai-compatible', 'vibecode']. NULL — общий порядок приложения
+     * (env LLM_PROVIDER_ORDER).
+     */
+    llmProviderOrder: AiLlmProviderCode[] | null;
+    /**
+     * ТРАНСКРИБАТОР портала: auto — по длительности (Яндекс длинные,
+     * VibeCode короткие), yandex / vibecode / whisper — принудительно.
+     * NULL — режим приложения (env TRANSCRIPTION_PROVIDER).
+     */
+    transcriptionMode: AiTranscriptionMode | null;
+    /**
+     * СВОЙ WHISPER портала: адрес OpenAI-совместимого /audio/transcriptions
+     * (сервер клиента или наш GPU, выделенный порталу). NULL — общий Whisper
+     * приложения (env TRANSCRIPTION_WHISPER_*).
+     */
+    whisperBaseUrl: string | null;
+    /** Модель своего Whisper; NULL — модель приложения. */
+    whisperModel: string | null;
+    /**
+     * Ключ своего Whisper. В БД — зашифрованным (как ключи портала), наружу
+     * отдаётся маской SECRET_MASK; маска в обновлении означает «не трогать».
+     */
+    whisperApiKey: string | null;
 }
+
+/**
+ * Коды провайдеров шлюза LLM — дубль LLM_PROVIDER_CODES из @lib/llm-gateway:
+ * шлюз зависит от этой библиотеки, обратная зависимость — цикл. Паритет
+ * держит спека шлюза.
+ */
+export const AI_LLM_PROVIDER_CODES = [
+    'vibecode',
+    'openai-compatible',
+    'ai-rag',
+] as const;
+export type AiLlmProviderCode = (typeof AI_LLM_PROVIDER_CODES)[number];
+
+/**
+ * Режимы транскрибации — дубль TRANSCRIPTION_ROUTER_MODES из @lib/call-lib
+ * (та же причина); паритет держит спека роутера.
+ */
+export const AI_TRANSCRIPTION_MODES = [
+    'auto',
+    'yandex',
+    'vibecode',
+    'whisper',
+] as const;
+export type AiTranscriptionMode = (typeof AI_TRANSCRIPTION_MODES)[number];
+
+/** Чем подменяется секрет в ответах API; пришла маска в обновлении — значение не трогаем. */
+export const SECRET_MASK = '••••••';
 
 /** Способы доставки недельного отчёта (runtime-константа для DTO). */
 export const WEEKLY_REPORT_DELIVERY_MODES = ['chat', 'task', 'notify'] as const;
@@ -175,6 +233,11 @@ export const EMPTY_PORTAL_AI_SETTINGS: PortalAiSettingsRecord = {
     weeklyReportDelivery: null,
     complianceReviewEnabled: null,
     ownOrgNames: null,
+    llmProviderOrder: null,
+    transcriptionMode: null,
+    whisperBaseUrl: null,
+    whisperModel: null,
+    whisperApiKey: null,
 };
 
 /** Настройки портала вместе с его идентификацией — для обхода в кроне. */

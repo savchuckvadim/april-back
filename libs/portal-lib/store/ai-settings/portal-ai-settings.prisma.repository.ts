@@ -1,9 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/core/prisma';
 import { Prisma, PortalAiSettings } from 'generated/prisma';
+import { PortalKeyCryptoService } from '../keys/portal-key-crypto.service';
 import { PortalAiSettingsRepository } from './portal-ai-settings.repository';
 import {
+    AI_LLM_PROVIDER_CODES,
+    AI_TRANSCRIPTION_MODES,
+    AiLlmProviderCode,
+    AiTranscriptionMode,
     PRESENTATION_STRICTNESS_LEVELS,
     PortalAiSettingsRecord,
     PortalAiSettingsUpdate,
@@ -52,7 +57,13 @@ type PortalAiSettingsColumns = Omit<
 export class PortalAiSettingsPrismaRepository
     implements PortalAiSettingsRepository
 {
-    constructor(private readonly prisma: PrismaService) {}
+    private readonly logger = new Logger(PortalAiSettingsPrismaRepository.name);
+
+    constructor(
+        private readonly prisma: PrismaService,
+        /** Ключ своего Whisper лежит в JSON `settings` зашифрованным — как ключи портала. */
+        private readonly crypto: PortalKeyCryptoService,
+    ) {}
 
     async findByPortalId(
         portalId: number,
@@ -147,7 +158,12 @@ export class PortalAiSettingsPrismaRepository
             update.weeklyReportFolderId !== undefined ||
             update.weeklyReportDelivery !== undefined ||
             update.complianceReviewEnabled !== undefined ||
-            update.ownOrgNames !== undefined
+            update.ownOrgNames !== undefined ||
+            update.llmProviderOrder !== undefined ||
+            update.transcriptionMode !== undefined ||
+            update.whisperBaseUrl !== undefined ||
+            update.whisperModel !== undefined ||
+            update.whisperApiKey !== undefined
         ) {
             const json = this.toJsonSettings(current?.settings);
             if (update.irrelevantConfidence !== undefined) {
@@ -192,11 +208,63 @@ export class PortalAiSettingsPrismaRepository
                     this.toOrgNames(update.ownOrgNames as Prisma.JsonValue) ??
                     undefined;
             }
+            if (update.llmProviderOrder !== undefined) {
+                // Пустой список — «сбросить на общий порядок», как у названий.
+                json.llmProviderOrder =
+                    this.toProviderOrder(
+                        update.llmProviderOrder as Prisma.JsonValue,
+                    ) ?? undefined;
+            }
+            if (update.transcriptionMode !== undefined) {
+                json.transcriptionMode = update.transcriptionMode ?? undefined;
+            }
+            if (update.whisperBaseUrl !== undefined) {
+                json.whisperBaseUrl =
+                    update.whisperBaseUrl?.trim().replace(/\/+$/, '') ||
+                    undefined;
+            }
+            if (update.whisperModel !== undefined) {
+                json.whisperModel = update.whisperModel?.trim() || undefined;
+            }
+            if (update.whisperApiKey !== undefined) {
+                // Пустая строка или null — убрать ключ; значение — зашифровать.
+                const key = update.whisperApiKey?.trim();
+                json.whisperApiKeyEncrypted = key
+                    ? this.crypto.encrypt(key)
+                    : undefined;
+            }
             data.settings = JSON.parse(
                 JSON.stringify(json),
             ) as Prisma.InputJsonValue;
         }
         return data;
+    }
+
+    /** Порядок провайдеров LLM: только известные коды, без дублей; пусто — null. */
+    private toProviderOrder(
+        value: Prisma.JsonValue,
+    ): AiLlmProviderCode[] | null {
+        if (!Array.isArray(value)) return null;
+        const codes = value.filter(
+            (item): item is AiLlmProviderCode =>
+                typeof item === 'string' &&
+                (AI_LLM_PROVIDER_CODES as readonly string[]).includes(item),
+        );
+        const unique = [...new Set(codes)];
+        return unique.length ? unique : null;
+    }
+
+    /** Ключ Whisper из шифртекста; битый шифртекст — null с предупреждением, чтение не падает. */
+    private decryptWhisperKey(encrypted: string | undefined): string | null {
+        if (!encrypted) return null;
+        try {
+            return this.crypto.decrypt(encrypted) || null;
+        } catch (error) {
+            this.logger.warn(
+                `Ключ Whisper портала не расшифрован (${(error as Error).message}) — считаем незаданным`,
+            );
+            return null;
+        }
     }
 
     /** JSON-колонка `settings` → объект (мусор из БД не роняет чтение). */
@@ -211,6 +279,11 @@ export class PortalAiSettingsPrismaRepository
         weeklyReportDelivery?: WeeklyReportDeliveryMode;
         complianceReviewEnabled?: boolean;
         ownOrgNames?: string[];
+        llmProviderOrder?: AiLlmProviderCode[];
+        transcriptionMode?: AiTranscriptionMode;
+        whisperBaseUrl?: string;
+        whisperModel?: string;
+        whisperApiKeyEncrypted?: string;
     } {
         if (!value || typeof value !== 'object' || Array.isArray(value)) {
             return {};
@@ -243,6 +316,20 @@ export class PortalAiSettingsPrismaRepository
             ownOrgNames:
                 this.toOrgNames(raw.ownOrgNames as Prisma.JsonValue) ??
                 undefined,
+            llmProviderOrder:
+                this.toProviderOrder(
+                    raw.llmProviderOrder as Prisma.JsonValue,
+                ) ?? undefined,
+            transcriptionMode: (
+                AI_TRANSCRIPTION_MODES as readonly string[]
+            ).includes(String(raw.transcriptionMode))
+                ? (raw.transcriptionMode as AiTranscriptionMode)
+                : undefined,
+            whisperBaseUrl: this.nonEmptyString(raw.whisperBaseUrl),
+            whisperModel: this.nonEmptyString(raw.whisperModel),
+            whisperApiKeyEncrypted: this.nonEmptyString(
+                raw.whisperApiKeyEncrypted,
+            ),
             weeklyReportDelivery: (
                 WEEKLY_REPORT_DELIVERY_MODES as readonly string[]
             ).includes(String(raw.weeklyReportDelivery))
@@ -311,7 +398,25 @@ export class PortalAiSettingsPrismaRepository
                 this.toJsonSettings(row.settings).complianceReviewEnabled ??
                 null,
             ownOrgNames: this.toJsonSettings(row.settings).ownOrgNames ?? null,
+            llmProviderOrder:
+                this.toJsonSettings(row.settings).llmProviderOrder ?? null,
+            transcriptionMode:
+                this.toJsonSettings(row.settings).transcriptionMode ?? null,
+            whisperBaseUrl:
+                this.toJsonSettings(row.settings).whisperBaseUrl ?? null,
+            whisperModel:
+                this.toJsonSettings(row.settings).whisperModel ?? null,
+            whisperApiKey: this.decryptWhisperKey(
+                this.toJsonSettings(row.settings).whisperApiKeyEncrypted,
+            ),
         };
+    }
+
+    /** Непустая строка из JSON; иначе undefined. */
+    private nonEmptyString(value: unknown): string | undefined {
+        return typeof value === 'string' && value.trim()
+            ? value.trim()
+            : undefined;
     }
 
     /**

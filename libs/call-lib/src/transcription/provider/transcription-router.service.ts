@@ -8,8 +8,12 @@ import {
     isTransientYandexError,
     type YandexTranscriptionDetailed,
 } from '../services/streaming-transcription.service';
-import { WhisperCompatibleTranscriptionService } from '../services/whisper-compatible-transcription.service';
+import {
+    WhisperCompatibleTranscriptionService,
+    type WhisperEndpoint,
+} from '../services/whisper-compatible-transcription.service';
 import type { TranscriptSegment } from '../types/transcript-segment.types';
+import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 
 export const TRANSCRIPTION_PROVIDERS = [
@@ -49,6 +53,12 @@ const nonEmpty = (
     segments: readonly TranscriptSegment[],
 ): TranscriptSegment[] | null => (segments.length ? [...segments] : null);
 
+/** Что у портала своего: режим и endpoint Whisper (null — общего тоже нет). */
+interface PortalTranscriptionPrefs {
+    mode: TranscriptionRouterMode;
+    whisper: WhisperEndpoint | null;
+}
+
 /**
  * Маршрутизатор транскрибации: длинные звонки → Yandex SpeechKit
  * (надёжен на больших записях, но дорогой), короткие → Vibecode Whisper
@@ -68,6 +78,11 @@ const nonEmpty = (
  * отказали оба, либо основной при TRANSCRIPTION_PROVIDER=whisper (без
  * запасных путей, как у yandex); не настроен — в маршрутах его нет (план
  * устойчивости к провайдерам 28.10.2026).
+ *
+ * Настройки портала важнее env: `transcriptionMode` и свой Whisper
+ * (`whisperBaseUrl / whisperModel / whisperApiKey`) из настроек AI портала
+ * (админка) — так клиент может считать на своём сервере и платить сам;
+ * ошибка чтения настроек — общие значения приложения (29.10.2026).
  */
 @Injectable()
 export class TranscriptionRouterService {
@@ -92,6 +107,7 @@ export class TranscriptionRouterService {
         private readonly yandexTranscription: StreamingTranscriptionService,
         private readonly yandexStorage: YandexStorageService,
         private readonly whisper: WhisperCompatibleTranscriptionService,
+        private readonly portalAiSettings: PortalAiSettingsService,
     ) {
         this.whisperLimiter = new Semaphore(
             parseConcurrency(
@@ -132,26 +148,29 @@ export class TranscriptionRouterService {
     async transcribe(
         input: TranscribeCallInput,
     ): Promise<TranscribeCallResult> {
-        const provider = this.resolveProvider(input.durationSec);
+        const prefs = await this.portalPrefs(input.domain);
+        const provider = this.resolveProvider(input.durationSec, prefs.mode);
         this.logger.log(
             `Транскрибация ${input.fileName} (${input.durationSec ?? '?'}с) через ${provider}`,
         );
 
         // Принудительный свой Whisper — без запасных путей (как у yandex).
-        if (provider === 'local-whisper') return this.transcribeWhisper(input);
+        if (provider === 'local-whisper') {
+            return this.transcribeWhisper(input, prefs.whisper);
+        }
 
         if (provider === 'yandex') {
             try {
                 return this.yandexResult(await this.transcribeYandex(input));
             } catch (error) {
-                if (this.mode !== 'auto' || !isTransientYandexError(error)) {
+                if (prefs.mode !== 'auto' || !isTransientYandexError(error)) {
                     throw error;
                 }
                 this.logger.warn(
                     `Yandex временно недоступен (${(error as Error).message}), fallback на Vibecode`,
                     { domain: input.domain, fileName: input.fileName },
                 );
-                return this.vibecodeThenWhisper(input);
+                return this.vibecodeThenWhisper(input, prefs.whisper);
             }
         }
 
@@ -164,38 +183,79 @@ export class TranscriptionRouterService {
             try {
                 return this.yandexResult(await this.transcribeYandex(input));
             } catch (yandexError) {
-                if (!this.whisper.configured) throw yandexError;
+                if (!prefs.whisper) throw yandexError;
                 this.logger.warn(
                     `Yandex тоже не справился (${(yandexError as Error).message}), fallback на свой Whisper`,
                     { domain: input.domain, fileName: input.fileName },
                 );
-                return this.transcribeWhisper(input);
+                return this.transcribeWhisper(input, prefs.whisper);
             }
         }
     }
 
-    /** Vibecode, а если и он отказал — свой Whisper (когда настроен). */
+    /**
+     * Настройки портала поверх env: режим транскрибации и свой Whisper.
+     * Нет строки или ошибка чтения — общие значения приложения.
+     */
+    private async portalPrefs(
+        domain: string,
+    ): Promise<PortalTranscriptionPrefs> {
+        const shared: PortalTranscriptionPrefs = {
+            mode: this.mode,
+            whisper: this.whisper.envEndpoint,
+        };
+        try {
+            const record = await this.portalAiSettings.getByDomain(domain);
+            if (!record) return shared;
+            const mode =
+                record.transcriptionMode &&
+                TRANSCRIPTION_ROUTER_MODES.includes(record.transcriptionMode)
+                    ? record.transcriptionMode
+                    : this.mode;
+            const whisper: WhisperEndpoint | null = record.whisperBaseUrl
+                ? {
+                      baseUrl: record.whisperBaseUrl.replace(/\/+$/, ''),
+                      apiKey: record.whisperApiKey ?? null,
+                      model: record.whisperModel ?? this.whisper.defaultModel,
+                  }
+                : this.whisper.envEndpoint;
+            return { mode, whisper };
+        } catch (error) {
+            this.logger.warn(
+                `Настройки транскрибации портала ${domain} не прочитаны (${(error as Error).message}) — общие`,
+            );
+            return shared;
+        }
+    }
+
+    /** Vibecode, а если и он отказал — свой Whisper (когда есть endpoint). */
     private async vibecodeThenWhisper(
         input: TranscribeCallInput,
+        whisper: WhisperEndpoint | null,
     ): Promise<TranscribeCallResult> {
         try {
             return await this.transcribeVibecode(input);
         } catch (error) {
-            if (!this.whisper.configured) throw error;
+            if (!whisper) throw error;
             this.logger.warn(
                 `Vibecode тоже не справился (${(error as Error).message}), fallback на свой Whisper`,
                 { domain: input.domain, fileName: input.fileName },
             );
-            return this.transcribeWhisper(input);
+            return this.transcribeWhisper(input, whisper);
         }
     }
 
-    /** Свой Whisper: буфер → OpenAI-совместимый /audio/transcriptions. */
+    /** Свой Whisper: буфер → OpenAI-совместимый /audio/transcriptions портала или общий. */
     private async transcribeWhisper(
         input: TranscribeCallInput,
+        endpoint: WhisperEndpoint | null,
     ): Promise<TranscribeCallResult> {
         const detailed = await this.whisperLimiter.run(() =>
-            this.whisper.transcribeDetailed(input.buffer, input.fileName),
+            this.whisper.transcribeDetailed(
+                input.buffer,
+                input.fileName,
+                endpoint,
+            ),
         );
         return {
             text: detailed.text,
@@ -234,10 +294,13 @@ export class TranscriptionRouterService {
         };
     }
 
-    private resolveProvider(durationSec?: number): TranscriptionProvider {
-        if (this.mode === 'yandex') return 'yandex';
-        if (this.mode === 'vibecode') return 'bitrix-vibecode';
-        if (this.mode === 'whisper') return 'local-whisper';
+    private resolveProvider(
+        durationSec: number | undefined,
+        mode: TranscriptionRouterMode,
+    ): TranscriptionProvider {
+        if (mode === 'yandex') return 'yandex';
+        if (mode === 'vibecode') return 'bitrix-vibecode';
+        if (mode === 'whisper') return 'local-whisper';
         if (durationSec !== undefined && durationSec >= this.yandexMinSec) {
             return 'yandex';
         }

@@ -1,12 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { AiRagStructuredAdapter } from './adapters/ai-rag-structured.adapter';
 import { OpenAiCompatibleStructuredAdapter } from './adapters/openai-compatible-structured.adapter';
 import { VibecodeStructuredAdapter } from './adapters/vibecode-structured.adapter';
 import { LlmCircuitBreakerService } from './llm-circuit-breaker.service';
 import { describeLlmError, isTransientLlmError } from './llm-error.util';
+import { LlmProviderOrderResolver } from './llm-provider-order.resolver';
 import {
-    isLlmProviderCode,
     type LlmProviderCode,
     type StructuredLlmAdapter,
     type StructuredLlmOptions,
@@ -14,77 +13,64 @@ import {
     type StructuredLlmResponse,
 } from './structured-llm.types';
 
-/**
- * Порядок провайдеров по умолчанию: VibeCode, затем OpenAI-совместимый
- * запасной. `ai-rag` (модели контура 1 со схемой в промпте) — только явно,
- * через LLM_PROVIDER_ORDER, после проверки согласия на выборке.
- */
-export const DEFAULT_LLM_PROVIDER_ORDER: readonly LlmProviderCode[] = [
-    'vibecode',
-    'openai-compatible',
-];
-
-/** Порядок из env LLM_PROVIDER_ORDER («openai-compatible,vibecode»); незнакомые коды отбрасываются, пусто — по умолчанию. */
-export function resolveProviderOrder(
-    raw: string | undefined,
-): LlmProviderCode[] {
-    const codes = (raw ?? '')
-        .split(',')
-        .map(code => code.trim())
-        .filter(isLlmProviderCode);
-    const unique = [...new Set(codes)];
-    return unique.length ? unique : [...DEFAULT_LLM_PROVIDER_ORDER];
-}
+export {
+    DEFAULT_LLM_PROVIDER_ORDER,
+    resolveProviderOrder,
+} from './llm-provider-order.util';
 
 /**
- * Шлюз структурных LLM-вызовов: провайдеры по порядку (env
- * LLM_PROVIDER_ORDER), пропуск ненастроенных и отключённых предохранителем,
- * переход к следующему при ошибке; отказали все — одна ошибка со всеми
- * причинами. Сигнатуры `structuredCompletion*` повторяют VibeCodeClient,
- * только вместо ключа — домен портала: потребители переехали на шлюз
- * заменой инъекции, а не переписыванием вызовов.
+ * Шлюз структурных LLM-вызовов: провайдеры по порядку (настройка портала,
+ * иначе env LLM_PROVIDER_ORDER — LlmProviderOrderResolver), пропуск
+ * ненастроенных и отключённых предохранителем, переход к следующему при
+ * ошибке; отказали все — одна ошибка со всеми причинами. Сигнатуры
+ * `structuredCompletion*` повторяют VibeCodeClient, только вместо ключа —
+ * домен портала: потребители переехали на шлюз заменой инъекции, а не
+ * переписыванием вызовов.
  *
  * `@Injectable` без bitrix-состояния: домен приходит параметром.
  */
 @Injectable()
 export class StructuredLlmGateway {
     private readonly logger = new Logger(StructuredLlmGateway.name);
-    private readonly adapters: readonly StructuredLlmAdapter[];
+    private readonly byCode: Record<LlmProviderCode, StructuredLlmAdapter>;
 
     constructor(
-        configService: ConfigService,
+        private readonly orderResolver: LlmProviderOrderResolver,
         private readonly breaker: LlmCircuitBreakerService,
         vibecode: VibecodeStructuredAdapter,
         openAiCompatible: OpenAiCompatibleStructuredAdapter,
         aiRag: AiRagStructuredAdapter,
     ) {
-        const byCode: Record<LlmProviderCode, StructuredLlmAdapter> = {
+        this.byCode = {
             vibecode,
             'openai-compatible': openAiCompatible,
             'ai-rag': aiRag,
         };
-        this.adapters = resolveProviderOrder(
-            configService.get<string>('LLM_PROVIDER_ORDER'),
-        ).map(code => byCode[code]);
     }
 
-    /** Коды провайдеров в порядке опроса — для логов и панели состояния. */
+    /** Общий порядок приложения (без учёта портала) — для логов и панели состояния. */
     get order(): LlmProviderCode[] {
-        return this.adapters.map(adapter => adapter.code);
+        return [...this.orderResolver.fallbackOrder];
+    }
+
+    /** Порядок провайдеров для домена: настройка портала, иначе общий. */
+    orderFor(domain: string): Promise<LlmProviderCode[]> {
+        return this.orderResolver.orderFor(domain);
     }
 
     /**
-     * Настроен ли каждый провайдер для домена: `issue` null — настроен,
-     * иначе причина (нет ключа портала, нет endpoint'а). Для чек-листов
-     * админки; сеть не трогает.
+     * Настроен ли каждый провайдер для домена (в его порядке): `issue`
+     * null — настроен, иначе причина (нет ключа портала, нет endpoint'а).
+     * Для чек-листов админки; сеть не трогает.
      */
-    availability(
+    async availability(
         domain: string,
     ): Promise<{ code: LlmProviderCode; issue: string | null }[]> {
+        const order = await this.orderResolver.orderFor(domain);
         return Promise.all(
-            this.adapters.map(async adapter => ({
-                code: adapter.code,
-                issue: await adapter.configurationIssue(domain),
+            order.map(async code => ({
+                code,
+                issue: await this.byCode[code].configurationIssue(domain),
             })),
         );
     }
@@ -135,7 +121,8 @@ export class StructuredLlmGateway {
     ): Promise<StructuredLlmResponse> {
         const notes: string[] = [];
         const paused: StructuredLlmAdapter[] = [];
-        for (const adapter of this.adapters) {
+        const order = await this.orderResolver.orderFor(request.domain);
+        for (const adapter of order.map(code => this.byCode[code])) {
             const issue = await adapter.configurationIssue(request.domain);
             if (issue !== null) {
                 notes.push(`${adapter.code} — ${issue}`);

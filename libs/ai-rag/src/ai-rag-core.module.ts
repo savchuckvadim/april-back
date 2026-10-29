@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { StorageModule } from '@lib/core/storage/storage.module';
 import { ChainBuilderService } from './application/chain-builder.service';
 import { CombinedCallAnalysisService } from './application/combined-call-analysis.service';
 import { LlmOrchestratorService } from './application/llm-orchestrator.service';
@@ -21,8 +22,13 @@ import { OpenAiProvider } from './infrastructure/providers/openai.provider';
  * (например, клиентское приложение bitrix-app-client: клиент не должен
  * писать в общую базу знаний). Полный AiRagModule (с контроллерами)
  * импортирует ядро и остаётся точкой входа для прикладных приложений.
+ *
+ * StorageModule импортируется явно: KnowledgeStorageService читает базу
+ * знаний через StorageService, а приложение не обязано подключать его само
+ * (прод-падение bot 29.10.2026, ядро пришло через @lib/llm-gateway).
  */
 @Module({
+    imports: [StorageModule],
     providers: [
         ChainBuilderService,
         CombinedCallAnalysisService,

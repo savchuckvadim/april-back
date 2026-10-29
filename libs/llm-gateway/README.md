@@ -31,8 +31,12 @@ const { result, usage, model, provider } =
 | `openai-compatible` | любой OpenAI-совместимый endpoint: Cloud.ru Evolution, Yandex AI Studio, свой vLLM/Ollama | креды портала `llmBaseUrl / llmKey / llmModelName` важнее env `LLM_FALLBACK_BASE_URL / LLM_FALLBACK_API_KEY / LLM_FALLBACK_MODEL`, а тот — важнее `CLOUDRU_API_KEY` контура 1 |
 | `ai-rag` | модели оркестратора контура 1 (GigaChat, Cloud.ru, Ollama, OpenAI) через `LlmOrchestratorService.complete`: без RAG, схема дописывается в промпт, ответ разбирается как JSON | модель — `LLM_AI_RAG_MODEL`, иначе `llmModel` портала, иначе gigachat; **в порядок по умолчанию не входит** — `LLM_PROVIDER_ORDER=vibecode,openai-compatible,ai-rag` после проверки согласия на выборке |
 
-Порядок — env `LLM_PROVIDER_ORDER` (по умолчанию `vibecode,openai-compatible`).
-Поменять местами = переключить основной провайдер без выкладки.
+Порядок — настройка портала `llmProviderOrder` (админка → настройки AI портала;
+`LlmProviderOrderResolver`), иначе env `LLM_PROVIDER_ORDER` (по умолчанию
+`vibecode,openai-compatible`). Портал со своим ключом в ключах портала
+(`llmKey / llmBaseUrl / llmModelName`) ставит `['openai-compatible', 'vibecode']`
+и платит за токены сам; остальные идут как приложение. Поменять порядок =
+переключить основной провайдер без выкладки.
 `LLM_FALLBACK_JSON_MODE=json_object` — для моделей без strict JSON schema
 (схема дописывается в системный промпт). `LLM_FALLBACK_TIMEOUT_MS` — таймаут (180 000).
 

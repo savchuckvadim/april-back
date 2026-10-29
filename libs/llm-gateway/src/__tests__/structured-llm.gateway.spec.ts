@@ -41,6 +41,19 @@ const fakeBreaker = (open: Partial<Record<LlmProviderCode, boolean>> = {}) => ({
     recordFailure: jest.fn().mockResolvedValue(undefined),
 });
 
+/** Порядок: общий из env, у портала — свой (как отдаёт LlmProviderOrderResolver). */
+const fakeOrderResolver = (
+    values: Record<string, string>,
+    portalOrder?: LlmProviderCode[],
+) => {
+    const fallbackOrder = resolveProviderOrder(values.LLM_PROVIDER_ORDER);
+    return {
+        fallbackOrder,
+        orderFor: jest.fn().mockResolvedValue(portalOrder ?? fallbackOrder),
+        invalidate: jest.fn(),
+    };
+};
+
 const makeGateway = (
     values: Record<string, string> = {},
     deps: {
@@ -48,21 +61,22 @@ const makeGateway = (
         openai?: FakeAdapter;
         aiRag?: FakeAdapter;
         breaker?: ReturnType<typeof fakeBreaker>;
+        portalOrder?: LlmProviderCode[];
     } = {},
 ) => {
     const vibecode = deps.vibecode ?? fakeAdapter('vibecode');
     const openai = deps.openai ?? fakeAdapter('openai-compatible');
     const aiRag = deps.aiRag ?? fakeAdapter('ai-rag');
     const breaker = deps.breaker ?? fakeBreaker();
-    const config = { get: (key: string) => values[key] };
+    const orderResolver = fakeOrderResolver(values, deps.portalOrder);
     const gateway = new StructuredLlmGateway(
-        config as never,
+        orderResolver as never,
         breaker as never,
         vibecode as never,
         openai as never,
         aiRag as never,
     );
-    return { gateway, vibecode, openai, aiRag, breaker };
+    return { gateway, vibecode, openai, aiRag, breaker, orderResolver };
 };
 
 const REQUEST = {
@@ -212,6 +226,24 @@ describe('StructuredLlmGateway — провайдеры по порядку с �
             },
         );
         expect(explicit.aiRag.complete).toHaveBeenCalledTimes(1);
+    });
+
+    it('порядок портала важнее общего: портал со своим ключом считает у себя, остальные — как приложение', async () => {
+        const own = makeGateway(
+            {},
+            { portalOrder: ['openai-compatible', 'vibecode'] },
+        );
+        const response = await own.gateway.complete(REQUEST);
+        expect(response.provider).toBe('openai-compatible');
+        expect(own.vibecode.complete).not.toHaveBeenCalled();
+        expect(own.orderResolver.orderFor).toHaveBeenCalledWith(DOMAIN);
+        expect(own.gateway.order).toEqual(['vibecode', 'openai-compatible']);
+
+        const availability = await own.gateway.availability(DOMAIN);
+        expect(availability.map(item => item.code)).toEqual([
+            'openai-compatible',
+            'vibecode',
+        ]);
     });
 
     it('LLM_PROVIDER_ORDER меняет основного без выкладки', async () => {

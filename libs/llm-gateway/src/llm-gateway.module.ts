@@ -9,6 +9,7 @@ import { OpenAiCompatibleStructuredAdapter } from './adapters/openai-compatible-
 import { VibecodeStructuredAdapter } from './adapters/vibecode-structured.adapter';
 import { LlmCircuitBreakerService } from './llm-circuit-breaker.service';
 import { LlmEndpointResolverService } from './llm-endpoint-resolver.service';
+import { LlmProviderOrderResolver } from './llm-provider-order.resolver';
 import { StructuredLlmGateway } from './structured-llm.gateway';
 
 /**
@@ -31,6 +32,7 @@ import { StructuredLlmGateway } from './structured-llm.gateway';
     providers: [
         LlmCircuitBreakerService,
         LlmEndpointResolverService,
+        LlmProviderOrderResolver,
         VibecodeStructuredAdapter,
         OpenAiCompatibleStructuredAdapter,
         AiRagStructuredAdapter,
@@ -40,6 +42,7 @@ import { StructuredLlmGateway } from './structured-llm.gateway';
         StructuredLlmGateway,
         LlmCircuitBreakerService,
         LlmEndpointResolverService,
+        LlmProviderOrderResolver,
     ],
 })
 export class LlmGatewayModule {}

@@ -11,10 +11,15 @@ import {
     Min,
 } from 'class-validator';
 import {
+    AI_LLM_PROVIDER_CODES,
+    AI_TRANSCRIPTION_MODES,
+    AiLlmProviderCode,
+    AiTranscriptionMode,
     PRESENTATION_STRICTNESS_LEVELS,
     PortalAiSettingsRecord,
     PortalAiSettingsUpdate,
     PresentationStrictnessLevel,
+    SECRET_MASK,
     WEEKLY_REPORT_DELIVERY_MODES,
     WeeklyReportDeliveryMode,
 } from '../portal-ai-settings.types';
@@ -54,6 +59,12 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         this.weeklyReportDelivery = source.weeklyReportDelivery ?? null;
         this.complianceReviewEnabled = source.complianceReviewEnabled ?? null;
         this.ownOrgNames = source.ownOrgNames ?? null;
+        this.llmProviderOrder = source.llmProviderOrder ?? null;
+        this.transcriptionMode = source.transcriptionMode ?? null;
+        this.whisperBaseUrl = source.whisperBaseUrl ?? null;
+        this.whisperModel = source.whisperModel ?? null;
+        // Секрет наружу не отдаём: маска показывает, что ключ задан.
+        this.whisperApiKey = source.whisperApiKey ? SECRET_MASK : null;
     }
 
     @ApiProperty({
@@ -346,6 +357,63 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         nullable: true,
     })
     ownOrgNames: string[] | null;
+
+    @ApiProperty({
+        description:
+            'Порядок провайдеров LLM для разборов портала, от основного к ' +
+            'запасным: vibecode — VibeCode Битрикса (ключ портала), ' +
+            'openai-compatible — свой или запасной OpenAI-совместимый ' +
+            'сервис (ключи портала llmKey / llmBaseUrl / llmModelName либо ' +
+            'общий запасной приложения), ai-rag — модели контура резюме ' +
+            '(GigaChat и др.). Портал со своим ключом первым ставит ' +
+            'openai-compatible и платит за токены сам. null — общий порядок ' +
+            'приложения.',
+        example: ['openai-compatible', 'vibecode'],
+        enum: AI_LLM_PROVIDER_CODES,
+        isArray: true,
+        nullable: true,
+    })
+    llmProviderOrder: AiLlmProviderCode[] | null;
+
+    @ApiProperty({
+        description:
+            'Транскрибатор портала: auto — по длительности (Яндекс для ' +
+            'длинных, VibeCode для коротких), yandex / vibecode / whisper — ' +
+            'принудительно. null — режим приложения.',
+        example: 'auto',
+        enum: AI_TRANSCRIPTION_MODES,
+        nullable: true,
+    })
+    transcriptionMode: AiTranscriptionMode | null;
+
+    @ApiProperty({
+        description:
+            'Адрес своего Whisper портала (OpenAI-совместимый ' +
+            '/audio/transcriptions): сервер клиента или наш GPU, выделенный ' +
+            'порталу. null — общий Whisper приложения.',
+        example: 'http://whisper.client.local:8000/v1',
+        type: String,
+        nullable: true,
+    })
+    whisperBaseUrl: string | null;
+
+    @ApiProperty({
+        description: 'Модель своего Whisper; null — модель приложения.',
+        example: 'Systran/faster-whisper-large-v3',
+        type: String,
+        nullable: true,
+    })
+    whisperModel: string | null;
+
+    @ApiProperty({
+        description:
+            'Ключ своего Whisper. В ответе — только маска «••••••», если ' +
+            'ключ задан; сам ключ наружу не отдаётся.',
+        example: '••••••',
+        type: String,
+        nullable: true,
+    })
+    whisperApiKey: string | null;
 }
 
 /**
@@ -668,4 +736,67 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
     @IsArray()
     @IsString({ each: true })
     ownOrgNames?: string[] | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Порядок провайдеров LLM портала от основного к запасным ' +
+            '(vibecode, openai-compatible, ai-rag). Пустой список или null — ' +
+            'сбросить на общий порядок приложения.',
+        example: ['openai-compatible', 'vibecode'],
+        enum: AI_LLM_PROVIDER_CODES,
+        isArray: true,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsArray()
+    @IsIn(AI_LLM_PROVIDER_CODES as unknown as string[], { each: true })
+    llmProviderOrder?: AiLlmProviderCode[] | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Транскрибатор портала: auto, yandex, vibecode или whisper. ' +
+            'null — режим приложения.',
+        example: 'whisper',
+        enum: AI_TRANSCRIPTION_MODES,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(AI_TRANSCRIPTION_MODES as unknown as string[])
+    transcriptionMode?: AiTranscriptionMode | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Адрес своего Whisper портала (http:// или https://, без ' +
+            'пробелов). Пусто или null — общий Whisper приложения.',
+        example: 'http://whisper.client.local:8000/v1',
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    whisperBaseUrl?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Модель своего Whisper. Пусто или null — модель приложения.',
+        example: 'Systran/faster-whisper-large-v3',
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    whisperModel?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Ключ своего Whisper: сохраняется зашифрованным. Маска «••••••» ' +
+            'из ответа — оставить прежний ключ; пусто или null — убрать ключ.',
+        example: 'sk-…',
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    whisperApiKey?: string | null;
 }

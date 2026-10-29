@@ -3,6 +3,7 @@ import { PortalAiSettingsService } from './portal-ai-settings.service';
 import {
     EMPTY_PORTAL_AI_SETTINGS,
     PortalAiSettingsRecord,
+    SECRET_MASK,
 } from './portal-ai-settings.types';
 
 const makeDeps = (options?: { portalDomain?: string | null }) => {
@@ -128,6 +129,59 @@ describe('PortalAiSettingsService', () => {
             });
 
             expect(repository.upsert).toHaveBeenCalled();
+        });
+
+        /** Провайдеры AI на портал (план устойчивости 29.10.2026). */
+        it('порядок провайдеров LLM — только известные коды', async () => {
+            const { service, repository } = makeDeps();
+
+            await expect(
+                service.save(5, {
+                    llmProviderOrder: ['vibecode', 'gpt-5'] as never,
+                }),
+            ).rejects.toThrow(BadRequestException);
+
+            await service.save(5, {
+                llmProviderOrder: ['openai-compatible', 'vibecode'],
+            });
+            expect(repository.upsert).toHaveBeenCalledTimes(1);
+        });
+
+        it('режим транскрибации — из списка; адрес Whisper — только http(s) без пробелов', async () => {
+            const { service, repository } = makeDeps();
+
+            await expect(
+                service.save(5, { transcriptionMode: 'deepgram' as never }),
+            ).rejects.toThrow(BadRequestException);
+            await expect(
+                service.save(5, { whisperBaseUrl: 'whisper:8000/v1' }),
+            ).rejects.toThrow(BadRequestException);
+            await expect(
+                service.save(5, { whisperBaseUrl: 'http://a b' }),
+            ).rejects.toThrow(BadRequestException);
+
+            await service.save(5, {
+                transcriptionMode: 'whisper',
+                whisperBaseUrl: 'http://whisper:8000/v1',
+            });
+            expect(repository.upsert).toHaveBeenCalledTimes(1);
+        });
+
+        it('маска ключа Whisper из ответа API не перезаписывает сохранённый ключ', async () => {
+            const { service, repository } = makeDeps();
+
+            await service.save(5, {
+                whisperApiKey: SECRET_MASK,
+                whisperModel: 'large-v3',
+            });
+
+            const [, , update] = repository.upsert.mock.calls[0] as [
+                number,
+                string,
+                Record<string, unknown>,
+            ];
+            expect(update).not.toHaveProperty('whisperApiKey');
+            expect(update.whisperModel).toBe('large-v3');
         });
     });
 

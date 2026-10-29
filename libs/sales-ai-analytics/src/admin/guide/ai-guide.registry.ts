@@ -154,6 +154,13 @@ export const AI_GUIDE_PORTAL_AI_SETTING_TITLES: Readonly<
     weeklyReportDelivery: 'Доставка недельного отчёта (chat / task / notify)',
     complianceReviewEnabled: 'Проверка по документам компании после разбора',
     ownOrgNames: 'Свои названия организации на портале («это мы»)',
+    llmProviderOrder:
+        'Порядок провайдеров LLM для разборов портала (основной → запасные)',
+    transcriptionMode:
+        'Транскрибатор портала (авто / Яндекс / VibeCode / свой Whisper)',
+    whisperBaseUrl: 'Адрес своего Whisper портала',
+    whisperModel: 'Модель своего Whisper портала',
+    whisperApiKey: 'Ключ своего Whisper портала (хранится зашифрованным)',
 };
 
 export interface AiGuideKpiSalesSetting {
