@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
     ArrayUnique,
     IsArray,
@@ -22,15 +22,30 @@ export const CATALOG_SEED_SECTIONS = [
 
 export type CatalogSeedSection = (typeof CATALOG_SEED_SECTIONS)[number];
 
-/** multipart-флаги приходят строками — приводим к boolean */
-const toBoolean = (): PropertyDecorator =>
-    Transform(({ value }: { value: unknown }) => {
+/**
+ * multipart-флаги приходят строками — приводим к boolean.
+ *
+ * ВАЖНО: глобальный ValidationPipe включает enableImplicitConversion,
+ * а оно для boolean-поля превращает в true ЛЮБУЮ непустую строку —
+ * включая 'false'. Поэтому @Type(() => String) обязателен: он
+ * отключает неявное приведение, и сюда попадает исходная строка.
+ * Без него «Сохранить в каталог» уходило как пробный прогон и
+ * ничего не записывало.
+ */
+const toBoolean = (): PropertyDecorator => {
+    const transform = Transform(({ value }: { value: unknown }) => {
         if (typeof value === 'boolean') return value;
         if (typeof value === 'string') {
             return ['1', 'true', 'yes', 'да'].includes(value.toLowerCase());
         }
         return false;
     });
+    const asString = Type(() => String);
+    return (target, key) => {
+        asString(target, key);
+        transform(target, key);
+    };
+};
 
 export class ImportTableRequestDto {
     @ApiPropertyOptional({
