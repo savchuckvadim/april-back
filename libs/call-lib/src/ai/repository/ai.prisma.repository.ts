@@ -14,6 +14,8 @@ import {
 } from '../lib/ai-record-keys.util';
 import {
     AiFindByKeysOptions,
+    AiSmartWriteCandidatesOptions,
+    AiSmartWriteCandidateView,
     AiRecordKeyColumn,
     AiRecordKeys,
 } from '../type/ai-record-keys.type';
@@ -166,6 +168,47 @@ export class AiPrismaRepository implements AiRepository {
             return result.map(ai => createAiEntityFromPrisma(ai));
         } catch (error) {
             console.error('Error finding AI by domain/types/period:', error);
+            return [];
+        }
+    }
+
+    async findSmartWriteCandidates(
+        domain: string,
+        type: string,
+        from: Date,
+        to: Date,
+        options?: AiSmartWriteCandidatesOptions,
+    ): Promise<AiSmartWriteCandidateView[]> {
+        try {
+            const rows = await this.prisma.ai.findMany({
+                where: {
+                    domain,
+                    type,
+                    created_at: { gte: from, lte: to },
+                    ...(options?.pendingOnly
+                        ? { in_report: false, report_item_id: { not: null } }
+                        : {}),
+                },
+                select: {
+                    id: true,
+                    transcription_id: true,
+                    report_item_id: true,
+                    in_report: true,
+                    status: true,
+                    created_at: true,
+                },
+                orderBy: { id: 'asc' },
+            });
+            return rows.map(row => ({
+                id: row.id.toString(),
+                transcription_id: row.transcription_id?.toString() ?? null,
+                report_item_id: row.report_item_id ?? null,
+                in_report: row.in_report,
+                status: row.status ?? null,
+                created_at: row.created_at ?? null,
+            }));
+        } catch (error) {
+            console.error('Error finding AI smart write candidates:', error);
             return [];
         }
     }

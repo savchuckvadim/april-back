@@ -690,3 +690,34 @@ describe('AgentAnalysisIntakeService', () => {
         });
     });
 });
+
+/**
+ * Элемент есть, а поля разбора в него не легли (writer.lastUpdateFailure):
+ * в ais честное in_report = false — ночное дописывание заберёт карточку.
+ */
+describe('AgentAnalysisIntakeService: in_report при неудаче записи полей', () => {
+    afterEach(() => jest.clearAllMocks());
+
+    it('addItem вернул id, но частичный update упал — report_item_id есть, in_report false', async () => {
+        const { service, aiService, addItem } = makeDeps();
+        MockedWriter.mockImplementation(
+            () =>
+                ({
+                    addItem,
+                    lastUpdateFailure: 'Request failed with status code 400',
+                }) as never,
+        );
+
+        const result = await service.intake('42', 'claw-main', DTO);
+
+        expect(aiService.update).toHaveBeenCalledWith('18', {
+            report_item_id: '7',
+            in_report: false,
+        });
+        expect(result).toEqual({
+            aiId: '18',
+            smartItemId: 7,
+            smartInstalled: true,
+        });
+    });
+});

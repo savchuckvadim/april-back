@@ -5,9 +5,27 @@ import {
 } from '../types/report-types';
 import {
     ReportTaskFlags,
+    isTaskClosed,
     reportClosesTask,
     reportTaskFlagsOf,
 } from '../services/task/report-closes-task';
+
+/**
+ * Закрытая задача второй раз не закрывается: Битрикс отвечает «Действие над
+ * задачей не разрешено», а тревога уходит в Telegram (gsr 30.10.2026).
+ */
+describe('isTaskClosed', () => {
+    it('завершённая и отклонённая — закрыты; новая, в работе и без статуса — нет', () => {
+        expect(isTaskClosed('5')).toBe(true);
+        expect(isTaskClosed('6')).toBe(true);
+        expect(isTaskClosed('7')).toBe(true);
+        expect(isTaskClosed('1')).toBe(false);
+        expect(isTaskClosed('3')).toBe(false);
+        expect(isTaskClosed('4')).toBe(false);
+        expect(isTaskClosed(undefined)).toBe(false);
+        expect(isTaskClosed(null)).toBe(false);
+    });
+});
 
 const flags = (over: Partial<ReportTaskFlags> = {}): ReportTaskFlags => ({
     isMove: false,

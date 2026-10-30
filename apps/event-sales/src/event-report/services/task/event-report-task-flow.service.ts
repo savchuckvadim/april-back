@@ -39,7 +39,7 @@ import {
 } from '../../../shared/event-title';
 import { EEventReportEntityType } from '../init/event-report-init.types';
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';
-import { reportClosesTask } from './report-closes-task';
+import { isTaskClosed, reportClosesTask } from './report-closes-task';
 
 /**
  * Эмодзи-маркеры «важных» планов (legacy `isPlannedImportant`).
@@ -307,6 +307,10 @@ export class EventReportTaskFlowService {
     private closingTaskId(ctx: EventReportContext): number | null {
         const taskId = ctx.currentTask?.id ? Number(ctx.currentTask.id) : null;
         if (!taskId) return null;
+        // Задачу уже закрыли (менеджер руками или другой хук): повторный
+        // complete Битрикс отвергает «Действие над задачей не разрешено» и
+        // шлёт лишнюю тревогу (gsr 30.10.2026) — закрывать нечего.
+        if (isTaskClosed(ctx.currentTask?.status)) return null;
         // Перенос (ветка update выше), новое событие, нерезультативный
         // звонок и быстрый «Недозвон» без финала дело не закрывают — это
         // попытка, а не итог: клиент не должен остаться без дела. Правило

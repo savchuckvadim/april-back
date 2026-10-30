@@ -13,6 +13,7 @@ export * from './ai/services/ai.service';
 export * from './ai/dto/ai-entity.dto';
 export * from './ai/ai-record-types.const';
 export * from './ai/lib/ai-active-record.util';
+export * from './ai/type/ai-record-keys.type';
 export * from './call-analysis/services/call-analysis-bitrix.service';
 export * from './call-analysis/clients/vibecode.client';
 export * from './call-analysis/services/vibe-key-resolver.service';

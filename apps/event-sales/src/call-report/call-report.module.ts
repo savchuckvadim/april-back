@@ -2,6 +2,9 @@ import { CallReportRetestUseCase } from './use-cases/call-report-retest.use-case
 import { CallReportReanalyzeUseCase } from './use-cases/call-report-reanalyze.use-case';
 import { CallAnalysisRerunService } from './services/call-analysis-rerun.service';
 import { CallReportReanalysisReportService } from './services/call-report-reanalysis-report.service';
+import { CallReportSmartBackfillStatusService } from './services/call-report-smart-backfill-status.service';
+import { CallReportSmartBackfillUseCase } from './use-cases/call-report-smart-backfill.use-case';
+import { CallReportSmartBackfillScheduler } from './cron/call-report-smart-backfill.scheduler';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PBXModule } from '@lib/pbx/pbx.module';
@@ -118,6 +121,12 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         // CALL_REPORT_REANALYZE, статус и отчёт согласия версий в ais
         CallReportReanalysisReportService,
         CallReportReanalyzeUseCase,
+        // Дописывание полей карточек из ais без модели: джоба
+        // CALL_REPORT_SMART_BACKFILL (кнопка в админке) и ночной крон
+        // режима pending (in_report = false)
+        CallReportSmartBackfillStatusService,
+        CallReportSmartBackfillUseCase,
+        CallReportSmartBackfillScheduler,
         CallReportScanUseCase,
         CallReportProcessor,
         CallReportDomainRosterService,

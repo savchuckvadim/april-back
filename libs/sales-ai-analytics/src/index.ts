@@ -261,6 +261,8 @@ export type {
 // контракт джобы CALL_REPORT_REANALYZE, запись-статус прогона и отчёт
 // согласия старой и новой версии промпта на парах «разбор — переразбор».
 export * from './contracts/reanalysis.types';
+// Дописывание полей карточек разборов из ais без модели (джоба, статус, окно крона)
+export * from './contracts/smart-backfill.types';
 // Адрес кэша витрины в AppCache: один префикс для kpi-report-sales (пишет и
 // сбрасывает) и админки (кнопка «Сбросить кэш витрины AI»).
 export * from './contracts/cache.const';

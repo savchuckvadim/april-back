@@ -32,6 +32,14 @@ export class CallReportSmartWriterService {
     private readonly logger = new Logger(CallReportSmartWriterService.name);
     private readonly degradation: CallReportSmartDegradation;
     private readonly timeline: CallReportSmartTimelineWriter;
+    /**
+     * Текст ошибки последнего частичного update (поля разбора не записались,
+     * элемент при этом есть); null — последняя запись прошла. Сбрасывается
+     * в начале addItem/updateExisting. Нужен приёму разбора, чтобы честно
+     * отметить в ais in_report = false, и дописыванию полей — чтобы не
+     * считать неудачу успехом (updateItem ошибку наружу не бросает).
+     */
+    private updateFailure: string | null = null;
 
     constructor(
         private readonly bitrix: BitrixService,
@@ -50,6 +58,10 @@ export class CallReportSmartWriterService {
         );
     }
 
+    get lastUpdateFailure(): string | null {
+        return this.updateFailure;
+    }
+
     /**
      * Создаёт элемент смарта, возвращает его id.
      *
@@ -59,6 +71,7 @@ export class CallReportSmartWriterService {
      * повторные push-back при потерянной связке в ais не плодят дубли.
      */
     async addItem(input: CallReportSmartItemInput): Promise<number> {
+        this.updateFailure = null;
         const xmlId = input.activityId
             ? `aicall_${input.activityId}`
             : undefined;
@@ -115,6 +128,7 @@ export class CallReportSmartWriterService {
     async updateExisting(
         input: CallReportSmartItemInput,
     ): Promise<number | null> {
+        this.updateFailure = null;
         if (!input.activityId) return null;
         const xmlId = `aicall_${input.activityId}`;
         const existingId = await this.findIdByXmlId(xmlId);
@@ -148,6 +162,7 @@ export class CallReportSmartWriterService {
             // Не фатально: транскрипт и ais уже в БД, разбор дольётся
             // повторным прогоном. { telegram: true } — алерт, иначе пустые
             // поля ищут неделями.
+            this.updateFailure = (error as Error).message;
             this.logger.error(
                 `Элемент #${existingId} не обновлён (${xmlId}): ${(error as Error).message}`,
                 { telegram: true, itemId: existingId },

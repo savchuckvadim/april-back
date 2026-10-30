@@ -24,6 +24,7 @@ import {
     AiAnalyticsReanalyzeAdminController,
 } from '../controllers/reanalyze.admin.controller';
 import { AiAnalyticsRetentionAdminController } from '../controllers/retention.admin.controller';
+import { AiAnalyticsSmartBackfillAdminController } from '../controllers/smart-backfill.admin.controller';
 import {
     AI_GUIDE_ROUTES,
     AiAnalyticsGuideAdminController,
@@ -48,6 +49,7 @@ const ADMIN_CONTROLLERS = [
     AiAnalyticsGoldenSetAdminController,
     AiAnalyticsPhase4AdminController,
     AiAnalyticsReanalyzeAdminController,
+    AiAnalyticsSmartBackfillAdminController,
     AiAnalyticsGuideAdminController,
     AiAnalyticsLaunchAdminController,
 ];

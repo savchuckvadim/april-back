@@ -31,3 +31,23 @@ export type AiRecordKeyColumn =
     | 'transcription_id'
     | 'entity_id'
     | 'report_item_id';
+
+/**
+ * Запись разбора в объёме отбора кандидатов на дописывание полей карточки
+ * смарта: без user_result (он тяжёлый, читается по одной записи в работе).
+ */
+export interface AiSmartWriteCandidateView {
+    id: string;
+    transcription_id: string | null;
+    /** id элемента смарта «AI-анализ звонков»; null — элемента нет. */
+    report_item_id: string | null;
+    /** false при наличии элемента — поля разбора в него не записались. */
+    in_report: boolean;
+    status: string | null;
+    created_at: Date | null;
+}
+
+export interface AiSmartWriteCandidatesOptions {
+    /** Только записи с элементом, у которых запись полей не удалась (in_report = false). */
+    pendingOnly?: boolean;
+}

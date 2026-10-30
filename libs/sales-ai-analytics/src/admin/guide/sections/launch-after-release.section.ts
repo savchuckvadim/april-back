@@ -88,6 +88,8 @@ export const LAUNCH_AFTER_RELEASE_SECTION: AiGuideSection = {
         AI_GUIDE_ENDPOINT.stageFlags,
         AI_GUIDE_ENDPOINT.reanalyze,
         AI_GUIDE_ENDPOINT.reanalyzeStatus,
+        AI_GUIDE_ENDPOINT.smartBackfill,
+        AI_GUIDE_ENDPOINT.smartBackfillStatus,
         AI_GUIDE_ENDPOINT.push,
     ],
     adminPages: [
@@ -151,6 +153,11 @@ export const LAUNCH_AFTER_RELEASE_SECTION: AiGuideSection = {
             code: 'reanalyze-rebuild',
             title: '9. Пересобрать витрину после переразбора',
             markdown: `Догон закрытых месяцев периода переразбора (\`backfill\`) и сброс кэша витрины: недели, месяцы и обзор пересоберутся по новым разборам. Текущий месяц пересоберёт ночной прогон. Кнопка активна, когда переразбор закончен.`,
+        },
+        {
+            code: 'smart-backfill',
+            title: 'Поля карточек разборов: дописать из сохранённых разборов',
+            markdown: `Карточка смарта может остаться без полей разбора, хотя разбор в БД цел: запись полей падает уже после сохранения (13–30.10.2026 Битрикс отдавал лимит строки безликим 400 — 422 карточки две с половиной недели стояли пустыми). Кнопка на карточке портала «Дописать поля карточек» (\`POST admin/ai-analytics/smart-backfill\`) перекладывает сохранённые разборы в существующие элементы без вызова модели: сначала «Посчитать» (dryRun), затем «Дописать»; период по умолчанию — 30 дней. Отдельно каждую ночь в 22:30 МСК крон подбирает карточки, у которых запись полей упала (в ais у них in_report = false), — вмешиваться не нужно, число таких карточек видно в статусе (\`GET admin/ai-analytics/smart-backfill-status\`, поле pending).`,
         },
         {
             code: 'push-check',

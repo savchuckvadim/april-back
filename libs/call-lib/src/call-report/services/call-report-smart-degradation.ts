@@ -80,15 +80,23 @@ export class CallReportSmartDegradation {
     }
 
     /**
-     * Детект «Row size too large» и в message, и в теле ответа Bitrix:
-     * AxiosError.message — это «Request failed with status code 400», сам
-     * текст MySQL-ошибки лежит в response.data.error_description
+     * Детект лимита строки. AxiosError.message — это «Request failed with
+     * status code 400», сам текст лежит в response.data.error_description
      * (прод-урок 06.08.2026: детект только по message деградацию не включал).
+     *
+     * До 12.10.2026 Битрикс отдавал текст MySQL «Row size too large»; с
+     * 13.10 тот же отказ приходит как 400 с безликим «Internal server
+     * error.» — деградация переставала срабатывать, и две с половиной недели
+     * поля разборов не записывались (найдено 30.10.2026 по журналам: записи
+     * «row size лимит» исчезли 12.10, с 13.10 только 400). Поэтому 400 с
+     * «Internal server error» тоже считаем лимитом строки: варианты лишь
+     * ужимают тексты, а если дело не в них — последний вариант бросит ту же
+     * ошибку наружу, как раньше.
      */
     private isRowSizeError(error: unknown): boolean {
         const axiosLike = error as {
             message?: string;
-            response?: { data?: unknown };
+            response?: { status?: number; data?: unknown };
         };
         let responseText = '';
         try {
@@ -97,9 +105,14 @@ export class CallReportSmartDegradation {
             // Циклическая структура в data — детектим только по message.
             responseText = '';
         }
-        return `${axiosLike?.message ?? ''} ${responseText}`.includes(
-            'Row size too large',
-        );
+        const message = axiosLike?.message ?? '';
+        if (`${message} ${responseText}`.includes('Row size too large')) {
+            return true;
+        }
+        const status =
+            axiosLike?.response?.status ??
+            (/status code 400/.test(message) ? 400 : null);
+        return status === 400 && /internal server error/i.test(responseText);
     }
 
     /** Варианты записи от полного к минимальному (для row size лимита). */

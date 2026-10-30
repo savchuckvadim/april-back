@@ -19,6 +19,12 @@ export interface SmartItemWriteResult {
     managerId?: number;
     /** Активность звонка (для binding записи и fallback-аудио). */
     activity?: AgentCallActivity;
+    /**
+     * Поля разбора записались в элемент. false — элемент есть, а частичный
+     * update упал (writer ошибку не бросает): ais получит in_report = false,
+     * и ночное дописывание полей заберёт карточку.
+     */
+    fieldsWritten?: boolean;
 }
 
 /** Компания/контакт/ответственный CRM-сущности звонка (лид или сделка). */

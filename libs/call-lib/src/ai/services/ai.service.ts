@@ -4,7 +4,12 @@ import { AiRepository } from '../repository/ai.repository';
 import { AiCreateDto } from '../dto/ai-create.dto';
 import { AiEntityDto } from '../dto/ai-entity.dto';
 import { AiUpdateDto } from '../dto/ai-update.dto';
-import { AiFindByKeysOptions, AiRecordKeys } from '../type/ai-record-keys.type';
+import {
+    AiFindByKeysOptions,
+    AiRecordKeys,
+    AiSmartWriteCandidatesOptions,
+    AiSmartWriteCandidateView,
+} from '../type/ai-record-keys.type';
 
 @Injectable()
 export class AiService {
@@ -110,5 +115,26 @@ export class AiService {
             options,
         );
         return aiRecords.map(ai => new AiEntityDto(ai));
+    }
+
+    /**
+     * Кандидаты на дописывание полей карточки смарта: записи домена и типа
+     * за период без user_result; pendingOnly — только с элементом и
+     * неудавшейся записью полей (in_report = false).
+     */
+    async findSmartWriteCandidates(
+        domain: string,
+        type: string,
+        from: Date,
+        to: Date,
+        options?: AiSmartWriteCandidatesOptions,
+    ): Promise<AiSmartWriteCandidateView[]> {
+        return this.aiRepository.findSmartWriteCandidates(
+            domain,
+            type,
+            from,
+            to,
+            options,
+        );
     }
 }

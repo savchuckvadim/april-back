@@ -33,6 +33,7 @@ import { AiAnalyticsPhase4StatusService } from './services/ai-analytics-phase4-s
 import { AiAnalyticsPipelineAdminService } from './services/ai-analytics-pipeline-admin.service';
 import { AiAnalyticsReanalyzeService } from './services/ai-analytics-reanalyze.service';
 import { AiAnalyticsRetentionService } from './services/ai-analytics-retention.service';
+import { AiAnalyticsSmartBackfillService } from './services/ai-analytics-smart-backfill.service';
 
 @Module({
     imports: [PrismaModule, AiModule, QueueModule, PortalAppSettingsModule],
@@ -47,6 +48,9 @@ import { AiAnalyticsRetentionService } from './services/ai-analytics-retention.s
         AiAnalyticsPhase4StatusService,
         // Переразбор истории (этап 1B): джоба CALL_REPORT_REANALYZE + статус
         AiAnalyticsReanalyzeService,
+        // Дописывание полей карточек из ais без модели: джоба
+        // CALL_REPORT_SMART_BACKFILL + статус и число ожидающих
+        AiAnalyticsSmartBackfillService,
     ],
     exports: [
         AiAnalyticsAdminSnapshotStore,
@@ -58,6 +62,7 @@ import { AiAnalyticsRetentionService } from './services/ai-analytics-retention.s
         AiAnalyticsGoldenSetService,
         AiAnalyticsPhase4StatusService,
         AiAnalyticsReanalyzeService,
+        AiAnalyticsSmartBackfillService,
     ],
 })
 export class SalesAiAnalyticsOpsModule {}

@@ -1,5 +1,10 @@
 import { AiEntity } from '../entity/ai.entity';
-import { AiFindByKeysOptions, AiRecordKeys } from '../type/ai-record-keys.type';
+import {
+    AiFindByKeysOptions,
+    AiRecordKeys,
+    AiSmartWriteCandidatesOptions,
+    AiSmartWriteCandidateView,
+} from '../type/ai-record-keys.type';
 
 export abstract class AiRepository {
     abstract create(aiEntity: Partial<AiEntity>): Promise<AiEntity | null>;
@@ -44,4 +49,17 @@ export abstract class AiRepository {
         keys: AiRecordKeys,
         options?: AiFindByKeysOptions,
     ): Promise<AiEntity[]>;
+    /**
+     * Записи домена и типа за период (по created_at) в объёме отбора
+     * кандидатов на дописывание полей карточки смарта — без user_result.
+     * pendingOnly — только записи с элементом, у которых запись полей не
+     * удалась (in_report = false).
+     */
+    abstract findSmartWriteCandidates(
+        domain: string,
+        type: string,
+        from: Date,
+        to: Date,
+        options?: AiSmartWriteCandidatesOptions,
+    ): Promise<AiSmartWriteCandidateView[]>;
 }

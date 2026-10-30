@@ -80,6 +80,24 @@ export const AI_GUIDE_ENDPOINT = {
         purpose:
             'Статус call-report-reanalysis-run по периоду (кандидаты, сделано, сбои, пропуски по причинам, токены и цена, оценка dryRun) и отчёты ai-analytics-version-agreement: по старой версии промпта — пары, ICC/σ, сдвиг общего балла и разделов.',
     },
+    smartBackfill: {
+        app: 'admin',
+        method: 'POST',
+        path: 'admin/ai-analytics/smart-backfill',
+        body: '{"domain":"{domain}","mode":"period","from":"2026-10-13","to":"2026-10-30","dryRun":true}',
+        when: 'Карточки разборов остались без полей при целых разборах в БД (запись полей упала — инцидент 13–30.10.2026) или нужно переложить старые разборы свежими правилами раскладки.',
+        purpose:
+            'Ставит джобу CALL_REPORT_SMART_BACKFILL (воркер event-sales): разбор берётся из записи ais и раскладывается по полям существующего элемента смарта так же, как при приёме; модель не вызывается, новые элементы не создаются. Режим period — все карточки периода, pending — только с неудавшейся записью полей (их же подбирает ночной крон 22:30 МСК). dryRun — только подсчёт.',
+    },
+    smartBackfillStatus: {
+        app: 'admin',
+        method: 'GET',
+        path: 'admin/ai-analytics/smart-backfill-status',
+        query: 'domain={domain}&mode=period&from=2026-10-13&to=2026-10-30',
+        when: 'После запуска — ждать finished: true; в любой момент — сколько карточек ждут записи полей (pending).',
+        purpose:
+            'Статус call-report-smart-backfill-run по ключу (кандидаты, записано, сбои, без элемента, пропуски по причинам), последний прогон домена и pending — карточки с элементом и in_report = false за окно крона.',
+    },
     cost: {
         app: 'admin',
         method: 'GET',

@@ -277,6 +277,72 @@ describe('CallReportSmartWriterService', () => {
         expect(total).toBe(50_000);
     });
 
+    /*
+     * С 13.10.2026 Битрикс отдаёт лимит строки как 400 с безликим «Internal
+     * server error.» вместо текста MySQL — без этого детекта деградация не
+     * включалась, и поля разборов две недели не записывались.
+     */
+    it('row size в новом виде: 400 с «Internal server error.» тоже включает деградацию', async () => {
+        const bitrix = makeBitrix();
+        const opaqueError = Object.assign(
+            new Error('Request failed with status code 400'),
+            {
+                response: {
+                    status: 400,
+                    data: {
+                        error: '400',
+                        error_description: 'Internal server error.',
+                    },
+                },
+            },
+        );
+        bitrix.item.add
+            .mockRejectedValueOnce(opaqueError)
+            .mockResolvedValue({ result: { item: { id: 8 } } });
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        await writer.addItem({
+            activityId: '102',
+            transcript: 'а'.repeat(20_000),
+        });
+
+        // Второй вариант (без транскрипта) прошёл, транскрипт ушёл в таймлайн.
+        expect(bitrix.item.add).toHaveBeenCalledTimes(2);
+        const comments = bitrix.timeline.addTimelineComment.mock
+            .calls as unknown as [{ COMMENT: string }][];
+        expect(
+            comments.some(([dto]) => dto.COMMENT.includes('Транскрипт звонка')),
+        ).toBe(true);
+    });
+
+    it('другая ошибка 400 (не internal server error) пробрасывается без повторов', async () => {
+        const bitrix = makeBitrix();
+        bitrix.item.add.mockRejectedValue(
+            Object.assign(new Error('Request failed with status code 400'), {
+                response: {
+                    status: 400,
+                    data: {
+                        error: 'ERROR_CORE',
+                        error_description: 'Access denied',
+                    },
+                },
+            }),
+        );
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        await expect(
+            writer.addItem({
+                activityId: '103',
+                transcript: 'а'.repeat(20_000),
+            }),
+        ).rejects.toThrow('status code 400');
+        expect(bitrix.item.add).toHaveBeenCalledTimes(1);
+    });
+
     it('row size на UPDATE существующего элемента: транскрипт НЕ постится повторно', async () => {
         const bitrix = makeBitrix();
         // Элемент уже существует (создан каркасом) — путь update.
@@ -808,5 +874,50 @@ describe('CallReportSmartWriterService', () => {
             'ACCESS_DENIED',
         );
         expect(bitrix.item.add).toHaveBeenCalledTimes(1);
+    });
+});
+
+/**
+ * Флаг неудачи частичного update: writer ошибку наружу не бросает (разбор
+ * дольётся повторным прогоном), но приём и дописывание полей должны знать,
+ * что поля в элемент не легли (инцидент 13–30.10.2026: 422 карточки с
+ * пустыми полями при in_report = true).
+ */
+describe('CallReportSmartWriterService: lastUpdateFailure', () => {
+    it('update существующего упал — текст ошибки доступен, следующий вызов сбрасывает', async () => {
+        const bitrix = makeBitrix();
+        bitrix.item.list.mockResolvedValue({ result: { items: [{ id: 42 }] } });
+        bitrix.item.update.mockRejectedValueOnce(
+            new Error('Request failed with status code 400'),
+        );
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        expect(writer.lastUpdateFailure).toBeNull();
+
+        const itemId = await writer.updateExisting({
+            activityId: '101',
+            summary: 'Итог',
+        });
+        expect(itemId).toBe(42);
+        expect(writer.lastUpdateFailure).toBe(
+            'Request failed with status code 400',
+        );
+
+        await writer.updateExisting({ activityId: '101', summary: 'Итог' });
+        expect(writer.lastUpdateFailure).toBeNull();
+    });
+
+    it('upsert через addItem по существующему элементу тоже помечает неудачу', async () => {
+        const bitrix = makeBitrix();
+        bitrix.item.list.mockResolvedValue({ result: { items: [{ id: 42 }] } });
+        bitrix.item.update.mockRejectedValue(new Error('boom'));
+        const writer = new CallReportSmartWriterService(
+            bitrix as never,
+            SMART_INFO,
+        );
+        await expect(writer.addItem({ activityId: '101' })).resolves.toBe(42);
+        expect(writer.lastUpdateFailure).toBe('boom');
     });
 });

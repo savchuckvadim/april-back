@@ -16,22 +16,13 @@ import {
     AGENT_ANALYSIS_TYPE,
     CALL_CLASSIFY_TYPE,
 } from './agent-call-package.service';
-import {
-    AgentAnalysisCrmContextLoader,
-    callOwnerIds,
-} from './agent-analysis-crm-context.loader';
 import { SmartItemWriteResult } from './agent-analysis-intake.types';
-import { AgentAnalysisLinkResolver } from './agent-analysis-link.resolver';
 import {
     durationSecOf,
     prepareAgentAnalysis,
 } from './agent-analysis-prepare.util';
-import {
-    buildAgentAnalysisRecord,
-    buildAgentSmartItemInput,
-    pickGigachatResults,
-    resolveCallDirection,
-} from './agent-analysis-smart-input.mapper';
+import { AgentAnalysisSmartInputAssembler } from './agent-analysis-smart-input.assembler';
+import { buildAgentAnalysisRecord } from './agent-analysis-smart-input.mapper';
 import { AgentAnalysisTimelineWriter } from './agent-analysis-timeline.writer';
 import {
     analysisUsageColumns,
@@ -50,8 +41,8 @@ import { LlmPriceResolverService } from './llm-price-resolver.service';
  * (graceful: конвейер не падает, клиент ставит смарт позже).
  *
  * Оркестратор (лимит файла): нормализация — agent-analysis-normalize,
- * риск-флаги — agent-analysis-risk, CRM-контекст — crm-context.loader,
- * связи — link.resolver, раскладка в ais/поля — smart-input.mapper,
+ * риск-флаги — agent-analysis-risk, сборка входа писателя (CRM-контекст,
+ * связи, раскладка) — smart-input.assembler (общая с дописыванием полей),
  * таймлайны — timeline.writer, расход модели — agent-analysis-usage
  * (колонки tokens_count / price по цене портала llm_price_per_1k).
  */
@@ -217,7 +208,9 @@ export class AgentAnalysisIntakeService {
         await this.aiService
             .update(aiId, {
                 report_item_id: String(written.itemId),
-                in_report: true,
+                // Поля не записались — in_report = false: кандидат для
+                // дописывания полей (ночной крон / кнопка в админке).
+                in_report: written.fieldsWritten !== false,
             })
             .catch(error =>
                 this.logger.warn(
@@ -248,38 +241,30 @@ export class AgentAnalysisIntakeService {
 
         const { bitrix } = await this.pbxService.init(domain);
         const writer = new CallReportSmartWriterService(bitrix, smartInfo);
-        const loader = new AgentAnalysisCrmContextLoader(bitrix, this.logger);
-        const links = new AgentAnalysisLinkResolver(
-            this.dealFamily,
-            this.dealVerify,
+        const assembler = new AgentAnalysisSmartInputAssembler(
+            bitrix,
+            this.logger,
+            {
+                aiService: this.aiService,
+                dealFamily: this.dealFamily,
+                dealVerify: this.dealVerify,
+            },
         );
-
-        const gigachat = pickGigachatResults(
-            await this.aiService.findByTranscriptionIds([row.id]),
-        );
-        const context = await loader.loadEntityContext(row);
-        const activity = await loader.loadActivity(row);
-        const { family, managerId } = await links.resolve(
+        const { input, managerId, activity } = await assembler.assemble(
             domain,
             row,
-            context,
+            agentName,
             dto,
         );
 
         try {
-            const itemId = await writer.addItem(
-                buildAgentSmartItemInput({
-                    row,
-                    rowLeadId: callOwnerIds(row).leadId,
-                    family,
-                    dealContext: { ...context, managerId },
-                    callDirection: resolveCallDirection(activity),
-                    gigachat,
-                    agentName,
-                    dto,
-                }),
-            );
-            return { itemId, managerId, activity };
+            const itemId = await writer.addItem(input);
+            return {
+                itemId,
+                managerId,
+                activity,
+                fieldsWritten: !writer.lastUpdateFailure,
+            };
         } catch (error) {
             // { telegram: true } — форс-алерт админам (транспорт логгера)
             this.logger.error(

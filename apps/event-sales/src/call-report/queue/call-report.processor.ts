@@ -13,11 +13,18 @@ import {
     TranscriptionPipelineView,
 } from '@lib/call-lib';
 import { AgentAnalysisIntakeService } from '../../agent-gate/services/agent-analysis-intake.service';
-import type { ReanalysisJobData } from '@lib/sales-ai-analytics';
+import type {
+    ReanalysisJobData,
+    SmartBackfillJobData,
+} from '@lib/sales-ai-analytics';
 import {
     CallReportReanalyzeUseCase,
     type CallReportReanalyzeResult,
 } from '../use-cases/call-report-reanalyze.use-case';
+import {
+    CallReportSmartBackfillUseCase,
+    type CallReportSmartBackfillResult,
+} from '../use-cases/call-report-smart-backfill.use-case';
 import {
     CallReportRetestUseCase,
     type CallReportRetestJobData,
@@ -102,7 +109,33 @@ export class CallReportProcessor {
         private readonly alerts: CallReportAlertService,
         @Optional() private readonly retest?: CallReportRetestUseCase,
         @Optional() private readonly reanalyze?: CallReportReanalyzeUseCase,
+        @Optional()
+        private readonly smartBackfill?: CallReportSmartBackfillUseCase,
     ) {}
+
+    /**
+     * Дописывание полей карточек разборов из ais без вызова модели:
+     * ставят админ-ручка admin/ai-analytics/smart-backfill и ночной крон
+     * (режим pending); при остатке кандидатов use-case сам ставит
+     * продолжение.
+     */
+    @Process(JobNames.CALL_REPORT_SMART_BACKFILL)
+    async handleSmartBackfill(
+        job: Job<SmartBackfillJobData>,
+    ): Promise<CallReportSmartBackfillResult> {
+        if (!this.smartBackfill) {
+            throw new Error(
+                'Дописывание полей карточек не подключено: нет провайдера CallReportSmartBackfillUseCase',
+            );
+        }
+        const { domain, mode, from, to, part, dryRun } = job.data;
+        this.logger.log(
+            `CALL_REPORT_SMART_BACKFILL: ${domain} ${mode} ${from}..${to} часть ${part ?? 1}` +
+                (dryRun ? ' (dry-run)' : ''),
+        );
+
+        return this.smartBackfill.execute(job.data);
+    }
 
     /**
      * Переразбор истории текущей версией промпта (этап 1B плана

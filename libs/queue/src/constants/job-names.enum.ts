@@ -102,6 +102,8 @@ export enum JobNames {
     CALL_REPORT_RETEST = 'call-report-retest',
     /** Переразбор истории текущей версией промпта (этап 1B, 2026-10-19-ai-focus-plan): части с продолжением */
     CALL_REPORT_REANALYZE = 'call-report-reanalyze',
+    /** Дописать поля карточек разборов из записей ais без вызова модели (кнопка в админке и ночной крон) */
+    CALL_REPORT_SMART_BACKFILL = 'call-report-smart-backfill',
 
     /** Импорт СКАП: один run-джоб на домен (скан Диска + обработка файлов с тайм-бюджетом) */
     SKAP_IMPORT_RUN = 'skap-import-run',

@@ -15,6 +15,7 @@ import { AgentKnowledgeController } from './controllers/agent-knowledge.controll
 import { AgentBitrixContextService } from './services/agent-bitrix-context.service';
 import { AgentCallPackageService } from './services/agent-call-package.service';
 import { AgentAnalysisIntakeService } from './services/agent-analysis-intake.service';
+import { AgentAnalysisSmartRewriteService } from './services/agent-analysis-smart-rewrite.service';
 import { LlmPriceResolverService } from './services/llm-price-resolver.service';
 
 /**
@@ -43,12 +44,19 @@ import { LlmPriceResolverService } from './services/llm-price-resolver.service';
         AgentBitrixContextService,
         AgentCallPackageService,
         AgentAnalysisIntakeService,
+        // Дописывание полей существующих карточек из ais без модели (джоба
+        // CALL_REPORT_SMART_BACKFILL в call-report, ночной крон)
+        AgentAnalysisSmartRewriteService,
         LlmPriceResolverService,
     ],
     // Приём разбора переиспользует внутренний конвейер (call-report):
     // запись ais, создание/дополнение смарт-элемента, таймлайн разделов и
     // идемпотентность живут здесь и не дублируются. Резолвер цены токенов
     // нужен и test-retest (call-report) для колонок расхода повторов.
-    exports: [AgentAnalysisIntakeService, LlmPriceResolverService],
+    exports: [
+        AgentAnalysisIntakeService,
+        AgentAnalysisSmartRewriteService,
+        LlmPriceResolverService,
+    ],
 })
 export class AgentGateModule {}

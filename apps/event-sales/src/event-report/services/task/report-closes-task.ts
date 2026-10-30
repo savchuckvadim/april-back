@@ -1,3 +1,4 @@
+import { EBXTaskStatus } from '@/modules/bitrix/domain/tasks/task/interface/task.interface';
 import { EventSalesFlowDto } from '../../dto/event-sale-flow/event-sales-flow.dto';
 import {
     EnumEventItemResultType,
@@ -63,3 +64,18 @@ export const reportTaskFlagsOf = (dto: EventSalesFlowDto): ReportTaskFlags => {
         isFinal,
     };
 };
+
+/** Статусы Битрикса, в которых задачу уже не закрыть: завершена или отклонена. */
+const CLOSED_TASK_STATUSES: readonly string[] = [
+    EBXTaskStatus.COMPLETED,
+    EBXTaskStatus.DEFERRED,
+    EBXTaskStatus.DECLINED,
+];
+
+/**
+ * Задача уже закрыта — повторный `tasks.task.complete` Битрикс отвергает
+ * («Действие над задачей не разрешено») и это уходило тревогой в Telegram
+ * (gsr 30.10.2026). Статус нет или неизвестен — считаем открытой.
+ */
+export const isTaskClosed = (status: unknown): boolean =>
+    typeof status === 'string' && CLOSED_TASK_STATUSES.includes(status);

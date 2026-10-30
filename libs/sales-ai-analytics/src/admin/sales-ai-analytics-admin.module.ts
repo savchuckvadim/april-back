@@ -6,6 +6,7 @@ import { AiAnalyticsPhase4AdminController } from './controllers/phase4.admin.con
 import { AiAnalyticsPipelineAdminController } from './controllers/pipeline.admin.controller';
 import { AiAnalyticsReanalyzeAdminController } from './controllers/reanalyze.admin.controller';
 import { AiAnalyticsRetentionAdminController } from './controllers/retention.admin.controller';
+import { AiAnalyticsSmartBackfillAdminController } from './controllers/smart-backfill.admin.controller';
 import { AiAnalyticsGuideAdminController } from './guide/ai-guide.admin.controller';
 import { AiAnalyticsLaunchAdminController } from './launch/ai-analytics-launch.admin.controller';
 import { SalesAiAnalyticsLaunchModule } from './launch/sales-ai-analytics-launch.module';
@@ -53,6 +54,8 @@ import { SalesAiAnalyticsProbeModule } from './sales-ai-analytics-probe.module';
         AiAnalyticsPhase4AdminController,
         // Переразбор истории текущей версией промпта (этап 1B)
         AiAnalyticsReanalyzeAdminController,
+        // Дописывание полей карточек разборов из ais без модели
+        AiAnalyticsSmartBackfillAdminController,
         // Путеводитель: теория и связи настроек, параметров, kind'ов, ручек
         // (статический каталог, зависимостей нет)
         AiAnalyticsGuideAdminController,
