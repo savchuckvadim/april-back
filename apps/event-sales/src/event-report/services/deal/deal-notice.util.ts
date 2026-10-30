@@ -18,6 +18,29 @@ export const positiveId = (raw: unknown): number | null => {
 export const pushLink = (url: string, text: string): string =>
     `[URL=${url}]${text}[/URL]`;
 
+/** Имя сотрудника для записи; не прочиталось — «сотрудник #id». */
+export const dealUserName = async (
+    bitrix: BitrixService,
+    userId: number | null,
+): Promise<string> => {
+    if (!userId) return 'другой сотрудник';
+    try {
+        const response = await bitrix.user.get({ ID: userId }, [
+            'ID',
+            'NAME',
+            'LAST_NAME',
+        ]);
+        const row = Array.isArray(response?.result) ? response.result[0] : null;
+        const name = [row?.NAME, row?.LAST_NAME]
+            .map(part => String(part ?? '').trim())
+            .filter(Boolean)
+            .join(' ');
+        return name || `сотрудник #${userId}`;
+    } catch {
+        return `сотрудник #${userId}`;
+    }
+};
+
 /**
  * Комментарий в ленту сделки прямым вызовом (после основного батча).
  * Ошибка не роняет отчёт — только строка в логе.

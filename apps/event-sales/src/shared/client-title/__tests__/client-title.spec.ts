@@ -1,6 +1,7 @@
 import {
     clientTitleOrNull,
     isCallKindTitle,
+    isCrmPlaceholderTitle,
     isNumberTitle,
 } from '../client-title';
 
@@ -30,6 +31,13 @@ describe('clientTitleOrNull', () => {
         expect(
             clientTitleOrNull('Холодный обзвон В работу Лиды-заявки с сайта'),
         ).toBe('Холодный обзвон В работу Лиды-заявки с сайта');
+    });
+
+    it('заглушка Битрикса вместо названия — null', () => {
+        expect(clientTitleOrNull('Сделка #110153')).toBeNull();
+        expect(clientTitleOrNull('сделка 110153')).toBeNull();
+        expect(clientTitleOrNull('Лид #42')).toBeNull();
+        expect(isCrmPlaceholderTitle('Сделка с ООО Ромашка')).toBe(false);
     });
 
     it('пусто и не строка — null', () => {

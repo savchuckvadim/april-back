@@ -32,6 +32,8 @@ export interface IEventHistoryCommentSource {
      * пусто/undefined — обычный отчёт.
      */
     actingManagerNote?: string;
+    /** «Назначено сотруднику: Имя» — кому руководитель записал шаг. */
+    actingManagerEmployeeNote?: string;
 }
 
 /**
@@ -65,6 +67,9 @@ export const buildEventHistoryParts = (
     // Кто отчитался за сотрудника — сразу за «что сделано»: это свойство
     // самого отчёта, а не плана.
     if (src.actingManagerNote) parts.push(src.actingManagerNote);
+    if (src.actingManagerEmployeeNote) {
+        parts.push(src.actingManagerEmployeeNote);
+    }
 
     // Чек-лист описывает ЗАКРЫВАЕМУЮ задачу — идёт после «что сделано» и
     // до «что запланировано»; нечего писать — строки не будет вовсе.

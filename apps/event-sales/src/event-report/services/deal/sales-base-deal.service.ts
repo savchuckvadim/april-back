@@ -13,6 +13,7 @@ import {
     detectEventFromBaseStage,
     getSalesBaseTargetStageCode,
 } from './deal-target-stage.calculator';
+import { newBaseDealClientFields } from './new-base-deal-client';
 
 /**
  * Ключ batch-команды создания основной сделки: по нему из ответа батча
@@ -97,7 +98,18 @@ export class SalesBaseDealService {
         }
 
         const cmd = SET_BASE_DEAL_CMD;
-        this.bitrix.batch.deal.set(cmd, baseFields);
+        this.bitrix.batch.deal.set(cmd, {
+            ...baseFields,
+            ...newBaseDealClientFields({
+                company: ctx.company,
+                lead: ctx.lead,
+                ownerDeal: ctx.ownerDeal,
+                ownerDealContactIds: ctx.ownerDealContactIds,
+                planContact: ctx.planContact,
+                reportContact: ctx.reportContact,
+                baseCategoryId: String(category.bitrixId),
+            }),
+        });
         return `$result[${cmd}]`;
     }
 

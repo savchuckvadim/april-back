@@ -94,6 +94,10 @@ export class EventReportActingManagerService {
                 id: managerId,
                 name: nameFromStructure(response, managerId) || fallbackName,
                 isConfirmedHead,
+                employee: {
+                    id: employeeId,
+                    name: nameFromStructure(response, employeeId),
+                },
             };
         } catch (error) {
             this.logger.warn(
@@ -104,6 +108,7 @@ export class EventReportActingManagerService {
                 id: managerId,
                 name: fallbackName,
                 isConfirmedHead: false,
+                employee: { id: employeeId, name: '' },
             };
         }
     }

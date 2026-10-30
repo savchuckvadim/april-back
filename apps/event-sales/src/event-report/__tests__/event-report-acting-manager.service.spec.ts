@@ -15,7 +15,10 @@ const DOMAIN = 'example.bitrix24.ru';
 const structureResponse = (subordinateIds: number[]) => ({
     currentUser: { subordinateIds },
     department: {
-        allUsers: [{ ID: 481, NAME: 'Иван', LAST_NAME: 'Иванов' }],
+        allUsers: [
+            { ID: 481, NAME: 'Иван', LAST_NAME: 'Иванов' },
+            { ID: 231, NAME: 'Анна', LAST_NAME: 'Зрелова' },
+        ],
     },
     salesDepartments: [],
 });
@@ -71,12 +74,14 @@ describe('EventReportActingManagerService.resolve', () => {
         ).resolves.toBeNull();
     });
 
-    it('сотрудник в подчинении — роль подтверждена, имя из структуры', async () => {
+    it('сотрудник в подчинении — роль подтверждена, имена из структуры', async () => {
         const { service, getStructure } = makeService();
         await expect(service.resolve(dto())).resolves.toEqual({
             id: 481,
             name: 'Иванов Иван',
             isConfirmedHead: true,
+            // Кому руководитель записал шаг (владелец 30.10.2026).
+            employee: { id: 231, name: 'Зрелова Анна' },
         });
         expect(getStructure).toHaveBeenCalledWith(DOMAIN, 'sales', 481);
     });
@@ -100,6 +105,8 @@ describe('EventReportActingManagerService.resolve', () => {
             id: 481,
             name: 'Имя с клиента',
             isConfirmedHead: true,
+            // Сотрудника в структуре тоже нет — подпись будет с id.
+            employee: { id: 231, name: '' },
         });
     });
 
@@ -162,6 +169,7 @@ describe('EventReportActingManagerService.resolve', () => {
             id: 481,
             name: 'Имя с клиента',
             isConfirmedHead: false,
+            employee: { id: 231, name: '' },
         });
     });
 });

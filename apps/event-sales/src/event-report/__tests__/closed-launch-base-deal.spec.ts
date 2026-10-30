@@ -1,5 +1,8 @@
 import { IBXDeal } from '@/modules/bitrix/domain/crm/deal/interface/bx-deal.interface';
-import { decideClosedLaunchBaseDeal } from '../services/init/closed-launch-base-deal';
+import {
+    decideClosedLaunchBaseDeal,
+    isClosedLaunchDealEntity,
+} from '../services/init/closed-launch-base-deal';
 
 const BASE = '31';
 
@@ -16,14 +19,12 @@ const deal = (over: Record<string, unknown> = {}): IBXDeal =>
 const decide = (over: {
     launchDeal?: IBXDeal | null;
     activeDeals?: IBXDeal[];
-    own?: number[];
     continuesWork?: boolean;
 }) =>
     decideClosedLaunchBaseDeal({
         launchDeal: over.launchDeal === undefined ? deal() : over.launchDeal,
         baseCategoryId: BASE,
         activeDeals: over.activeDeals ?? [],
-        ownResponsibleIds: new Set(over.own ?? [445]),
         continuesWork: over.continuesWork ?? true,
     });
 
@@ -60,17 +61,16 @@ describe('decideClosedLaunchBaseDeal', () => {
         });
     });
 
-    it('сделка другого сотрудника — свою не забираем, отмечаем', () => {
+    /*
+     * 30.10.2026 (garant #28477 → пустая #110153): закрытую сделку ДРУГОГО
+     * сотрудника тоже возвращаем — ответственного сменит SalesBaseDealService.
+     */
+    it('сделка другого сотрудника в отказе — возвращаем в работу, не дублируем', () => {
         const launch = deal({ ASSIGNED_BY_ID: '999' });
         expect(decide({ launchDeal: launch })).toEqual({
-            reopen: null,
-            closed: launch,
+            reopen: launch,
+            closed: null,
         });
-    });
-
-    it('«своих» не задано (старый отчёт) — фильтр не применяется', () => {
-        const launch = deal({ ASSIGNED_BY_ID: '999' });
-        expect(decide({ launchDeal: launch, own: [] }).reopen).toBe(launch);
     });
 
     it('итоговый отчёт (продажа или отказ) — решать нечего', () => {
@@ -87,5 +87,42 @@ describe('decideClosedLaunchBaseDeal', () => {
             none,
         );
         expect(decide({ launchDeal: null })).toEqual(none);
+    });
+});
+
+describe('isClosedLaunchDealEntity', () => {
+    it('якорь — закрытая сделка запуска, работа ушла в новую', () => {
+        expect(
+            isClosedLaunchDealEntity({
+                entityType: 'deal',
+                entityId: 28477,
+                closedLaunchBaseDeal: deal({ ID: '28477' }),
+            }),
+        ).toBe(true);
+    });
+
+    it('компания-якорь, другая сделка или ничего не закрыто — нет', () => {
+        const closed = deal({ ID: '28477' });
+        expect(
+            isClosedLaunchDealEntity({
+                entityType: 'company',
+                entityId: 28477,
+                closedLaunchBaseDeal: closed,
+            }),
+        ).toBe(false);
+        expect(
+            isClosedLaunchDealEntity({
+                entityType: 'deal',
+                entityId: 1,
+                closedLaunchBaseDeal: closed,
+            }),
+        ).toBe(false);
+        expect(
+            isClosedLaunchDealEntity({
+                entityType: 'deal',
+                entityId: 28477,
+                closedLaunchBaseDeal: null,
+            }),
+        ).toBe(false);
     });
 });

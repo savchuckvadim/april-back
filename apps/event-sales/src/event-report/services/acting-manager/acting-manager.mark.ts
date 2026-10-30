@@ -18,10 +18,24 @@ export interface ActingManagerMark {
      * роль не подтвердили, значило бы врать в истории клиента.
      */
     readonly isConfirmedHead: boolean;
+    /**
+     * Сотрудник, которому руководитель назначил следующий шаг
+     * (`plan.responsibility`). Владелец 30.10.2026: из истории должно быть
+     * видно не только кто отчитался, но и на кого записана работа. Нет —
+     * строки «Назначено сотруднику» не будет.
+     */
+    readonly employee?: ActingManagerEmployee;
+}
+
+export interface ActingManagerEmployee {
+    readonly id: number;
+    /** Имя из структуры отдела; пустое — подпись с ID. */
+    readonly name: string;
 }
 
 const LABEL_CONFIRMED = 'Отчитался руководитель';
 const LABEL_UNCONFIRMED = 'Отчёт отправил';
+const LABEL_EMPLOYEE = 'Назначено сотруднику';
 
 /** Подпись строки пометки — зависит от того, подтверждена ли роль. */
 export const actingManagerLabel = (mark: ActingManagerMark): string =>
@@ -34,6 +48,26 @@ export const actingManagerName = (mark: ActingManagerMark): string =>
 /** «Отчитался руководитель: Иванов Иван» — одной строкой, без разметки. */
 export const actingManagerNote = (mark: ActingManagerMark): string =>
     `${actingManagerLabel(mark)}: ${actingManagerName(mark)}`;
+
+/** Подпись строки о сотруднике — одна на историю, таймлайн и задачу. */
+export const actingManagerEmployeeLabel = (): string => LABEL_EMPLOYEE;
+
+/** Имя сотрудника для подписи; без имени — с идентификатором. */
+export const actingManagerEmployeeName = (
+    employee: ActingManagerEmployee,
+): string => employee.name.trim() || `сотрудник #${employee.id}`;
+
+/** «Назначено сотруднику: Зрелова Анна»; '' — сотрудник не известен. */
+export const actingManagerEmployeeNote = (mark: ActingManagerMark): string =>
+    mark.employee
+        ? `${LABEL_EMPLOYEE}: ${actingManagerEmployeeName(mark.employee)}`
+        : '';
+
+/** Обе строки пометки в одну — для мест без переносов (комментарий KPI). */
+export const actingManagerInlineNote = (mark: ActingManagerMark): string =>
+    [actingManagerNote(mark), actingManagerEmployeeNote(mark)]
+        .filter(Boolean)
+        .join(', ');
 
 /** Ссылка на профиль сотрудника на портале. */
 export const userProfileUrl = (domain: string, userId: number): string =>

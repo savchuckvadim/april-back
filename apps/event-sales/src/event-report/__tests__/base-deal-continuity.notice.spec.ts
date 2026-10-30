@@ -39,6 +39,12 @@ const setup = () => {
                 return Promise.resolve();
             },
         },
+        user: {
+            get: ({ ID }: { ID: number }) =>
+                Promise.resolve({
+                    result: [{ ID, NAME: 'Сотрудник', LAST_NAME: String(ID) }],
+                }),
+        },
     } as unknown as BitrixService;
     return {
         notice: new BaseDealContinuityNotice(bitrix),
@@ -70,25 +76,63 @@ const created = (id: number): IBitrixBatchResponseResult[] =>
     ] as unknown as IBitrixBatchResponseResult[];
 
 describe('BaseDealContinuityNotice', () => {
-    it('сделку вернули в работу — строка в её ленте тем же батчем', () => {
+    it('сделку вернули в работу — строка в её ленте тем же батчем', async () => {
         const { notice, batchComments } = setup();
 
-        notice.queueReopenNote(
-            ctx({ reopenedBaseDeal: true, currentBaseDeal: { ID: '95361' } }),
+        await notice.queueReopenNote(
+            ctx({
+                reopenedBaseDeal: true,
+                currentBaseDeal: { ID: '95361', ASSIGNED_BY_ID: '445' },
+            }),
         );
 
         expect(batchComments).toHaveLength(1);
         expect(batchComments[0].cmd).toBe('reopen_base_deal_95361');
         expect(batchComments[0].fields.ENTITY_ID).toBe(95361);
-        expect(decodeURIComponent(batchComments[0].fields.COMMENT)).toContain(
-            'Сделка возвращена в работу',
-        );
+        const text = decodeURIComponent(batchComments[0].fields.COMMENT);
+        expect(text).toContain('Сделка возвращена в работу');
+        // Свой ответственный — про смену ни слова.
+        expect(text).not.toContain('Ответственный сменён');
     });
 
-    it('не возвращали — в ленту ничего', () => {
-        const { notice, batchComments } = setup();
-        notice.queueReopenNote(ctx({ currentBaseDeal: { ID: '1' } }));
+    /*
+     * garant 30.10.2026 (#28477): закрытая сделка 459 возвращена на 433 —
+     * в ленте видно, от кого к кому, прежний получает уведомление.
+     */
+    it('чужую сделку вернули на другого — смена ответственного в ленте и уведомление прежнему', async () => {
+        const { notice, batchComments, notices } = setup();
+        const context = ctx({
+            reopenedBaseDeal: true,
+            workResponsibleId: 433,
+            currentBaseDeal: { ID: '28477', ASSIGNED_BY_ID: '459' },
+        });
+
+        await notice.queueReopenNote(context);
+        await notice.notifyReopenHandover(context);
+
+        expect(decodeURIComponent(batchComments[0].fields.COMMENT)).toContain(
+            'Ответственный сменён: Сотрудник 459 → Сотрудник 433',
+        );
+        expect(notices).toHaveLength(1);
+        expect(notices[0].USER_ID).toBe(459);
+        expect(notices[0].MESSAGE).toContain('/crm/deal/details/28477/');
+        expect(notices[0].MESSAGE).toContain('Сотрудник 433');
+    });
+
+    it('не возвращали или ответственный тот же — записи и уведомления нет', async () => {
+        const { notice, batchComments, notices } = setup();
+        await notice.queueReopenNote(ctx({ currentBaseDeal: { ID: '1' } }));
+        await notice.notifyReopenHandover(
+            ctx({ currentBaseDeal: { ID: '1' } }),
+        );
+        await notice.notifyReopenHandover(
+            ctx({
+                reopenedBaseDeal: true,
+                currentBaseDeal: { ID: '2', ASSIGNED_BY_ID: '445' },
+            }),
+        );
         expect(batchComments).toEqual([]);
+        expect(notices).toEqual([]);
     });
 
     it('работа ушла в новую сделку — записи в обеих и уведомление (случай 95361 → 95375)', async () => {

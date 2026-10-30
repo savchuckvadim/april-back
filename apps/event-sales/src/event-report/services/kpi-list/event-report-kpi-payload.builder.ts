@@ -830,7 +830,7 @@ export class EventReportKpiPayloadBuilder {
                 manager_comment: toBatchSafeText(
                     withActingManagerNote(
                         ctx.reportComment,
-                        ctx.actingManagerNote,
+                        ctx.actingManagerInlineNote,
                     ),
                 ),
             },

@@ -11,6 +11,7 @@ import {
     eventPlanPhrase,
     eventTypeName,
 } from '../../types/event-report.event-codes';
+import { actingManagerEmployeeLabel } from '../acting-manager/acting-manager.mark';
 
 /** Контакт события: id + готовая подпись ссылки. */
 export interface ITimelineContact {
@@ -34,6 +35,13 @@ export interface ITimelineActingManager {
     name: string;
     /** «Отчитался руководитель» / «Отчёт отправил». */
     label: string;
+    profileUrl: string;
+    /** Кому руководитель назначил следующий шаг; нет — строки не будет. */
+    employee?: ITimelineLinkedUser | null;
+}
+
+export interface ITimelineLinkedUser {
+    name: string;
     profileUrl: string;
 }
 
@@ -129,6 +137,15 @@ export const buildEventReportTimelineComment = (
                 src.actingManager.name,
             )}`,
         );
+        const employee = src.actingManager.employee;
+        if (employee) {
+            lines.push(
+                `${timelineText(actingManagerEmployeeLabel())}: ${timelineLink(
+                    employee.profileUrl,
+                    employee.name,
+                )}`,
+            );
+        }
     }
 
     const reportContact = contactLine(src.domain, src.reportContact);

@@ -23,6 +23,8 @@ import {
 import { EventTaskChecklistOutcome } from '../task/event-task-checklist.catalog';
 import {
     ActingManagerMark,
+    actingManagerEmployeeNote,
+    actingManagerInlineNote,
     actingManagerNote,
 } from '../acting-manager/acting-manager.mark';
 import {
@@ -124,6 +126,9 @@ export class EventReportContext {
     }
     get ownerDeal(): IBXDeal | null {
         return this.init.ownerDeal;
+    }
+    get ownerDealContactIds(): readonly number[] {
+        return this.init.ownerDealContactIds ?? [];
     }
     get currentBaseDeal(): IBXDeal | null {
         return this.init.currentBaseDeal;
@@ -477,6 +482,20 @@ export class EventReportContext {
     get actingManagerNote(): string {
         return this.actingManagerVo
             ? actingManagerNote(this.actingManagerVo)
+            : '';
+    }
+
+    /** «Назначено сотруднику: Имя» — кому руководитель записал шаг; '' — нет. */
+    get actingManagerEmployeeNote(): string {
+        return this.actingManagerVo
+            ? actingManagerEmployeeNote(this.actingManagerVo)
+            : '';
+    }
+
+    /** Обе строки пометки одной строкой — для комментария KPI. */
+    get actingManagerInlineNote(): string {
+        return this.actingManagerVo
+            ? actingManagerInlineNote(this.actingManagerVo)
             : '';
     }
 

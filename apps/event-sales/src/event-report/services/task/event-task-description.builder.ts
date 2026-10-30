@@ -5,6 +5,7 @@ import {
 } from '@lib/portal-lib/pbx-duplicate';
 import { entityCardUrl } from '../../../sales-hooks/duplicate-check/lib/duplicate-timeline.formatter';
 import { contactFullName as contactName } from '../../../shared/bitrix/crm-entity-name.util';
+import { actingManagerEmployeeLabel } from '../acting-manager/acting-manager.mark';
 
 /**
  * Каркас и палитра DESCRIPTION задачи обзвона.
@@ -74,6 +75,8 @@ export interface EventTaskDescriptionManager {
     label: string;
     name: string;
     profileUrl: string;
+    /** Кому руководитель назначил этот шаг; нет — строки не будет. */
+    employee?: { name: string; profileUrl: string } | null;
 }
 
 /**
@@ -217,10 +220,17 @@ export const buildEventTaskDescription = (
 const buildManagerBlock = (src: EventTaskDescriptionSource): string => {
     const manager = src.actingManager;
     if (!manager) return '';
-    return [
+    const lines = [
         heading(EVENT_TASK_DESCRIPTION_STYLE.icons.manager, manager.label),
         bb.url(manager.profileUrl, manager.name),
-    ].join('\n');
+    ];
+    if (manager.employee) {
+        lines.push(
+            `${actingManagerEmployeeLabel()}: ` +
+                bb.url(manager.employee.profileUrl, manager.employee.name),
+        );
+    }
+    return lines.join('\n');
 };
 
 /** Комментарий менеджера по прошлому событию; '' — комментария не было. */

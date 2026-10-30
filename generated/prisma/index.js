@@ -3046,7 +3046,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "c:\\Projects\\April\\april-next\\back\\generated\\prisma",
+      "value": "C:\\Projects\\April\\april-next\\back\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -3068,7 +3068,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "c:\\Projects\\April\\april-next\\back\\prisma\\schema.prisma",
+    "sourceFilePath": "C:\\Projects\\April\\april-next\\back\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

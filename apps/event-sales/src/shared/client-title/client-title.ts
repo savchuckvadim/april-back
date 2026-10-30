@@ -17,10 +17,21 @@ export const isNumberTitle = (value: string): boolean =>
 export const isCallKindTitle = (value: string): boolean =>
     /^холодн\S*\s+(обзвон|звонок)$/iu.test(value.trim().replace(/\s+/g, ' '));
 
+/** Заглушка Битрикса у карточки без названия: «Сделка #110153». */
+export const isCrmPlaceholderTitle = (value: string): boolean =>
+    /^(сделка|лид)\s*#?\s*\d+$/iu.test(value.trim());
+
 /** Текст поля — или null, если он пустой или это не название клиента. */
 export const clientTitleOrNull = (raw: unknown): string | null => {
     if (typeof raw !== 'string') return null;
     const value = raw.trim();
-    if (!value || isNumberTitle(value) || isCallKindTitle(value)) return null;
+    if (
+        !value ||
+        isNumberTitle(value) ||
+        isCallKindTitle(value) ||
+        isCrmPlaceholderTitle(value)
+    ) {
+        return null;
+    }
     return value;
 };

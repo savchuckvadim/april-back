@@ -13,6 +13,7 @@ import {
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';
 import {
     ActingManagerMark,
+    actingManagerEmployeeName,
     actingManagerLabel,
     actingManagerName,
     userProfileUrl,
@@ -254,6 +255,12 @@ const toTimelineActingManager = (
               name: actingManagerName(mark),
               label: actingManagerLabel(mark),
               profileUrl: userProfileUrl(domain, mark.id),
+              employee: mark.employee
+                  ? {
+                        name: actingManagerEmployeeName(mark.employee),
+                        profileUrl: userProfileUrl(domain, mark.employee.id),
+                    }
+                  : null,
           }
         : null;
 

@@ -12,6 +12,7 @@ import {
     resolveEventContacts,
 } from './event-report-contact-fields.model';
 import { EEventReportEntityType } from '../init/event-report-init.types';
+import { isClosedLaunchDealEntity } from '../init/closed-launch-base-deal';
 
 /**
  * Ставит в batch `update` сущности-ВЛАДЕЛЬЦА (company / lead / сделка без
@@ -52,6 +53,13 @@ export class EventReportEntityFlowService {
         }
         if (ctx.entityType === EEventReportEntityType.DEAL && !ctx.ownerDeal) {
             this.logger.warn('entity-flow: owner deal not loaded');
+            return;
+        }
+        if (isClosedLaunchDealEntity(ctx)) {
+            // Поля отчёта пишет новая основная сделка (SalesBaseDealService).
+            this.logger.log(
+                `entity-flow: сделка #${ctx.entityId} остаётся закрытой — её поля не трогаем`,
+            );
             return;
         }
 

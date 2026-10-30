@@ -154,4 +154,31 @@ describe('EventReportTaskFlowService — наследование L_* в нов�
             'D_$result[set_plan_pres_deal]',
         ]);
     });
+
+    /*
+     * garant 30.10.2026: доработка из закрытой #28477 ушла в новую #110153,
+     * а задача ссылалась на обе — две «основные» сделки путали менеджера.
+     */
+    it('сделка запуска осталась закрытой — задача ссылается только на новую', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new EventReportTaskFlowService(
+            bitrix as never,
+            makePortal() as never,
+        );
+
+        service.queue(
+            baseCtx({
+                entityId: 28477,
+                ownerDeal: { ID: '28477' },
+                closedLaunchBaseDeal: { ID: '28477' },
+            }),
+            { ...deals, baseDealId: '$result[set_base_deal]' },
+        );
+
+        const add = calls.find(c => c.method === 'task.add');
+        const links = (add?.args[0] as Record<string, unknown>)
+            .UF_CRM_TASK as string[];
+        expect(links).toContain('D_$result[set_base_deal]');
+        expect(links).not.toContain('D_28477');
+    });
 });

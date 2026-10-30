@@ -156,7 +156,7 @@ export class EventReportUseCase {
          * раньше команды комментария.
          */
         timeline.queue(ctx, deals);
-        continuity.queueReopenNote(ctx);
+        await continuity.queueReopenNote(ctx);
 
         // Коммитим KPI группу + flush'им буфер.
         //
@@ -210,6 +210,7 @@ export class EventReportUseCase {
         // Закрытая сделка запуска осталась закрытой, а работа ушла в другую:
         // id новой известен только из ответа батча (ошибки гасятся внутри).
         await continuity.notifyContinuation(ctx, deals, batchResults);
+        await continuity.notifyReopenHandover(ctx);
         await takeover.notify(ctx, deals, batchResults);
 
         // Считаем по СКЛЕЕННОМУ ответу — то есть по обоим источникам сразу.

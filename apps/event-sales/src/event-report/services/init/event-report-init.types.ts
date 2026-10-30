@@ -38,6 +38,11 @@ export interface IEventReportInitContext {
      * у которой нет компании. Для company/lead-владельцев всегда null.
      */
     ownerDeal: IBXDeal | null;
+    /**
+     * Все контакты сделки запуска, первичный первым: `crm.deal.get` отдаёт
+     * только один. Нужны новой основной сделке (new-base-deal-client).
+     */
+    ownerDealContactIds?: readonly number[];
 
     /** Базовая сделка ОП (категория sales_base), активная (≠ WON/LOSE) */
     currentBaseDeal: IBXDeal | null;

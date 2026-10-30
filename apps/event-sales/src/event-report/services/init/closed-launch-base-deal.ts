@@ -8,11 +8,17 @@ import { IBXDeal } from '@/modules/bitrix/domain/crm/deal/interface/bx-deal.inte
  * сделка (#95361 и #95375). В двух сделках клиента менеджер путается.
  *
  * Решение владельца:
- *  - вернуть закрытую в работу, если это сделка самого сотрудника, она
- *    закрыта именно провалом (отказ, «не ЦА», не отработан — не продажей) и
- *    других открытых сделок «ОП Основная» у клиента нет;
+ *  - вернуть закрытую в работу, если она закрыта именно провалом (отказ,
+ *    «не ЦА», не отработан — не продажей) и других открытых сделок
+ *    «ОП Основная» у клиента нет;
  *  - иначе работа уходит в другую сделку, как раньше, но об этом пишется в
  *    ленту обеих сделок и приходит уведомление.
+ *
+ * 30.10.2026 снято условие «сделка своя»: garant #28477 (сотрудник 459)
+ * закрыта в отказ, руководитель запланировал доработку на 433 — рядом
+ * выросла пустая #110153 без контактов. Чужую закрытую сделку теперь тоже
+ * возвращаем в работу и переводим на нового ответственного: закрытая
+ * сделка ничья, а дубль хуже смены ответственного.
  */
 export interface ClosedLaunchBaseDealDecision {
     /** Вернуть в работу — она и станет основной сделкой отчёта. */
@@ -33,8 +39,6 @@ export const decideClosedLaunchBaseDeal = (input: {
     baseCategoryId: string | null;
     /** Открытые сделки клиента. */
     activeDeals: readonly IBXDeal[];
-    /** «Свои» сотрудники отчёта; пусто — фильтр выключен (легаси-DTO). */
-    ownResponsibleIds: ReadonlySet<number>;
     /** Отчёт продолжает работу: не продажа и не отказ. */
     continuesWork: boolean;
 }): ClosedLaunchBaseDealDecision => {
@@ -45,14 +49,26 @@ export const decideClosedLaunchBaseDeal = (input: {
     if (closed !== 'Y' && closed !== true) return NONE;
 
     const isFailed = deal.STAGE_SEMANTIC_ID === FAILED_SEMANTIC;
-    const isOwn =
-        input.ownResponsibleIds.size === 0 ||
-        input.ownResponsibleIds.has(Number(deal.ASSIGNED_BY_ID));
     const hasOpenBase = input.activeDeals.some(
         active => String(active.CATEGORY_ID) === input.baseCategoryId,
     );
 
-    return isFailed && isOwn && !hasOpenBase
+    return isFailed && !hasOpenBase
         ? { reopen: deal, closed: null }
         : { reopen: null, closed: deal };
 };
+
+/**
+ * Сделка запуска остаётся закрытой, а отчёт идёт из неё (якорь — она):
+ * поля отчёта и привязка задачи ей не нужны — они уходят в новую сделку.
+ * Иначе метки доработки и история вставали на закрытую (#28477), а у
+ * задачи было две основные сделки.
+ */
+export const isClosedLaunchDealEntity = (ctx: {
+    entityType: string;
+    entityId: number;
+    closedLaunchBaseDeal: IBXDeal | null;
+}): boolean =>
+    ctx.entityType === 'deal' &&
+    !!ctx.closedLaunchBaseDeal &&
+    Number(ctx.closedLaunchBaseDeal.ID) === Number(ctx.entityId);

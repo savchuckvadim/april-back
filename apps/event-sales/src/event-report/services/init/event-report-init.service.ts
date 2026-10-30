@@ -6,6 +6,7 @@ import {
     IBXDeal,
     IBXLead,
 } from '@/modules/bitrix';
+import { IBXDealContactBinding } from '@/modules/bitrix/domain/crm/deal/interface/bx-deal.interface';
 import { IBXTask } from '@/modules/bitrix/domain/tasks/task/interface/task.interface';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
@@ -16,6 +17,7 @@ import {
     XVOST_DEAL_FIELD_CODES,
 } from '../entity/event-report-entity-fields.model';
 import { COMPANY_BACKFILL_CODES } from '../entity/event-report-company-backfill.model';
+import { parseDealContactItems } from '../deal/new-base-deal-client';
 import { isFinalWorkStatus } from '../task/report-closes-task';
 import { decideClosedLaunchBaseDeal } from './closed-launch-base-deal';
 import { dealsLinkedToBase, selectLinkedXoDeal } from './linked-xo-deal';
@@ -234,6 +236,12 @@ export class EventReportInitService {
         if (dtoLeadId && entityType !== EEventReportEntityType.LEAD) {
             bitrix.batch.lead.get('get_dto_lead', dtoLeadId);
         }
+        if (launchDealId && ownerDeal) {
+            bitrix.batch.deal.contactItemsGet(
+                'get_owner_deal_contacts',
+                launchDealId,
+            );
+        }
 
         // currentTask грузить из Bitrix не нужно — фронт уже передал
         // полное содержимое в DTO (включая ufCrmTask в camelCase).
@@ -302,7 +310,6 @@ export class EventReportInitService {
             launchDeal: ownerDeal,
             baseCategoryId: this.baseCategoryId(portal),
             activeDeals,
-            ownResponsibleIds,
             continuesWork: !isFinalWorkStatus(
                 dto.report?.workStatus?.current?.code,
             ),
@@ -377,6 +384,12 @@ export class EventReportInitService {
             company,
             lead,
             ownerDeal,
+            ownerDealContactIds: parseDealContactItems(
+                this.pick<IBXDealContactBinding[]>(
+                    flat,
+                    'get_owner_deal_contacts',
+                ),
+            ),
             currentBaseDeal,
             currentXoDeal,
             currentPresDeal,

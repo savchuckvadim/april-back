@@ -7,7 +7,9 @@ import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import { toBatchSafeText } from '@lib/bitrix/consts/batch.consts';
 import { EventReportContext } from '../context/event-report.context';
+import { isClosedLaunchDealEntity } from '../init/closed-launch-base-deal';
 import {
+    actingManagerEmployeeName,
     actingManagerLabel,
     actingManagerName,
     userProfileUrl,
@@ -263,6 +265,17 @@ export class EventReportTaskFlowService {
                               ctx.domain,
                               ctx.actingManager.id,
                           ),
+                          employee: ctx.actingManager.employee
+                              ? {
+                                    name: actingManagerEmployeeName(
+                                        ctx.actingManager.employee,
+                                    ),
+                                    profileUrl: userProfileUrl(
+                                        ctx.domain,
+                                        ctx.actingManager.employee.id,
+                                    ),
+                                }
+                              : null,
                       }
                     : null,
             });
@@ -651,7 +664,13 @@ export class EventReportTaskFlowService {
 
         // Владелец-сделка: задача обязана ссылаться на неё — иначе кейс
         // «сделка без компании» оставит задачу вообще без CRM-привязки.
-        if (ctx.entityType === EEventReportEntityType.DEAL && ctx.entityId) {
+        // Исключение — сделка запуска, оставшаяся закрытой: работа ушла в
+        // новую, и две основные сделки в задаче только путают (#28477).
+        if (
+            ctx.entityType === EEventReportEntityType.DEAL &&
+            ctx.entityId &&
+            !isClosedLaunchDealEntity(ctx)
+        ) {
             links.push(`D_${ctx.entityId}`);
         }
 

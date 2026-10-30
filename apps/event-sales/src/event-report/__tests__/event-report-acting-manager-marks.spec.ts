@@ -9,6 +9,8 @@ import { buildEventReportTimelineComment } from '../services/timeline/event-repo
 import { buildEventTaskDescription } from '../services/task/event-task-description.builder';
 import {
     ActingManagerMark,
+    actingManagerEmployeeNote,
+    actingManagerInlineNote,
     actingManagerLabel,
     actingManagerName,
     actingManagerNote,
@@ -35,6 +37,8 @@ const HEAD: ActingManagerMark = {
     id: 481,
     name: 'Иванов Иван',
     isConfirmedHead: true,
+    // Владелец 30.10.2026: видно, какому сотруднику руководитель записал шаг.
+    employee: { id: 231, name: 'Зрелова Анна' },
 };
 
 const makePortal = () => ({
@@ -94,6 +98,30 @@ describe('Пометка режима руководителя: подписи',
         );
     });
 
+    it('строка о сотруднике: имя, без имени — id, без сотрудника — пусто', () => {
+        expect(actingManagerEmployeeNote(HEAD)).toBe(
+            'Назначено сотруднику: Зрелова Анна',
+        );
+        expect(
+            actingManagerEmployeeNote({
+                ...HEAD,
+                employee: { id: 231, name: '' },
+            }),
+        ).toBe('Назначено сотруднику: сотрудник #231');
+        expect(
+            actingManagerEmployeeNote({ ...HEAD, employee: undefined }),
+        ).toBe('');
+    });
+
+    it('одной строкой (KPI): кто отчитался и кому назначено', () => {
+        expect(actingManagerInlineNote(HEAD)).toBe(
+            'Отчитался руководитель: Иванов Иван, Назначено сотруднику: Зрелова Анна',
+        );
+        expect(actingManagerInlineNote({ ...HEAD, employee: undefined })).toBe(
+            'Отчитался руководитель: Иванов Иван',
+        );
+    });
+
     it('ссылка на профиль ведёт на портал клиента', () => {
         expect(userProfileUrl(DOMAIN, 481)).toBe(
             'https://example.bitrix24.ru/company/personal/user/481/',
@@ -136,10 +164,18 @@ describe('Пометка режима руководителя: контекст
 });
 
 describe('Пометка режима руководителя: история карточки', () => {
-    it('пометка идёт сразу за «что сделано»', () => {
+    it('пометка идёт сразу за «что сделано», следом — кому назначено', () => {
         const parts = buildEventHistoryParts(makeCtx(HEAD));
         expect(parts[0]).toContain('Договорились о встрече');
         expect(parts[1]).toBe('Отчитался руководитель: Иванов Иван');
+        expect(parts[2]).toBe('Назначено сотруднику: Зрелова Анна');
+    });
+
+    it('сотрудник не известен — строки о нём нет', () => {
+        const parts = buildEventHistoryParts(
+            makeCtx({ ...HEAD, employee: undefined }),
+        );
+        expect(parts.join('|')).not.toContain('Назначено сотруднику');
     });
 
     it('обычный отчёт — строки пометки нет', () => {
@@ -176,6 +212,10 @@ describe('Пометка режима руководителя: таймлайн
                 name: 'Иванов Иван',
                 label: 'Отчитался руководитель',
                 profileUrl: userProfileUrl(DOMAIN, 481),
+                employee: {
+                    name: 'Зрелова Анна',
+                    profileUrl: userProfileUrl(DOMAIN, 231),
+                },
             },
         });
         const lines = comment.split('\n');
@@ -185,6 +225,11 @@ describe('Пометка режима руководителя: таймлайн
         expect(markLine).toBeDefined();
         expect(markLine).toContain('/company/personal/user/481/');
         expect(markLine).toContain('Иванов Иван');
+        // Следующей строкой — кому назначено, со ссылкой на сотрудника.
+        const employeeLine = lines[lines.indexOf(markLine as string) + 1];
+        expect(employeeLine).toContain('Назначено сотруднику:');
+        expect(employeeLine).toContain('/company/personal/user/231/');
+        expect(employeeLine).toContain('Зрелова Анна');
         // Пометка — до комментария: сначала «кто», потом «что сказал».
         expect(lines.indexOf(markLine as string)).toBeLessThan(
             lines.findIndex(line => line.startsWith('Комментарий:')),
@@ -215,11 +260,18 @@ describe('Пометка режима руководителя: описание
                 label: 'Отчитался руководитель',
                 name: 'Иванов Иван',
                 profileUrl: userProfileUrl(DOMAIN, 481),
+                employee: {
+                    name: 'Зрелова Анна',
+                    profileUrl: userProfileUrl(DOMAIN, 231),
+                },
             },
         });
         expect(description).toContain('Отчитался руководитель');
         expect(description).toContain(
             '[URL=https://example.bitrix24.ru/company/personal/user/481/]Иванов Иван[/URL]',
+        );
+        expect(description).toContain(
+            'Назначено сотруднику: [URL=https://example.bitrix24.ru/company/personal/user/231/]Зрелова Анна[/URL]',
         );
         expect(description.indexOf('Отчитался руководитель')).toBeGreaterThan(
             description.indexOf('Комментарий по прошлому событию'),
@@ -251,6 +303,9 @@ describe('Пометка режима руководителя: KPI', () => {
             expect(payload.values.su).toBe(231);
             expect(String(payload.values.manager_comment)).toContain(
                 'Иванов Иван',
+            );
+            expect(String(payload.values.manager_comment)).toContain(
+                'Зрелова Анна',
             );
         }
     });

@@ -10,7 +10,12 @@ import { findBatchResult } from '../../../shared/bitrix/prepare-batch-results.ut
 import { EventReportContext } from '../context/event-report.context';
 import { DealFlowResult } from './event-report-deal-flow.service';
 import { SET_BASE_DEAL_CMD } from './sales-base-deal.service';
-import { addDealComment, positiveId, pushLink } from './deal-notice.util';
+import {
+    addDealComment,
+    dealUserName,
+    positiveId,
+    pushLink,
+} from './deal-notice.util';
 
 /** Тег уведомления: повтор по той же паре сделок схлопывается в один. */
 const NOTIFY_TAG_PREFIX = 'event-report-base-takeover';
@@ -54,8 +59,8 @@ export class BaseDealTakeoverNotice {
         if (!newId || newId === foreignId || ownerId === takerId) return;
 
         const [ownerName, takerName] = await Promise.all([
-            this.userName(ownerId),
-            this.userName(takerId),
+            dealUserName(this.bitrix, ownerId),
+            dealUserName(this.bitrix, takerId),
         ]);
         const foreignUrl = crmCardUrl(ctx.domain, 'deal', foreignId);
         const newUrl = crmCardUrl(ctx.domain, 'deal', newId);
@@ -88,28 +93,6 @@ export class BaseDealTakeoverNotice {
                 `[${ctx.domain}] уведомление о перехвате #${foreignId} → ` +
                     `#${newId} не отправлено: ${(error as Error).message}`,
             );
-        }
-    }
-
-    /** Имя сотрудника для записи; не прочиталось — «сотрудник #id». */
-    private async userName(userId: number | null): Promise<string> {
-        if (!userId) return 'другой сотрудник';
-        try {
-            const response = await this.bitrix.user.get({ ID: userId }, [
-                'ID',
-                'NAME',
-                'LAST_NAME',
-            ]);
-            const row = Array.isArray(response?.result)
-                ? response.result[0]
-                : null;
-            const name = [row?.NAME, row?.LAST_NAME]
-                .map(part => String(part ?? '').trim())
-                .filter(Boolean)
-                .join(' ');
-            return name || `сотрудник #${userId}`;
-        } catch {
-            return `сотрудник #${userId}`;
         }
     }
 }
