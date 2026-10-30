@@ -146,3 +146,77 @@ describe('SupplyTableService', () => {
         expect(supplyService.update).not.toHaveBeenCalled();
     });
 });
+
+describe('SupplyTableService: легаси-выгрузка', () => {
+    /** Файл в формате старой выгрузки: лист «supply», ключ «number» */
+    const buildLegacyFile = async (
+        rows: (string | number | null)[][],
+        headers: string[],
+    ): Promise<Buffer> =>
+        await writeWorkbook([{ name: 'supply', headers, rows }]);
+
+    it('принимает лист «supply» с номерами вместо кодов', async () => {
+        const { service, supplyService } = makeService([
+            supply({ code: 'internet_5', contractName: null }),
+        ]);
+
+        // number 4 — это «Интернет 5 ОД», код internet_5
+        const reports = await service.import(
+            await buildLegacyFile(
+                [[4, 'Интернет 5 ОД', 'internet', 3, 'на {n} ОД']],
+                ['number', 'name', 'type', 'coefficient', 'contractName'],
+            ),
+            false,
+        );
+
+        expect(reports[0].section).toBe('supply');
+        expect(reports[0].skipped).toHaveLength(0);
+        expect(reports[0].updated).toBe(1);
+        expect(supplyService.update).toHaveBeenCalledWith(
+            expect.objectContaining({ contractName: 'на {n} ОД' }),
+        );
+    });
+
+    it('номер вне сетки 0–18 попадает в пропуски с понятной причиной', async () => {
+        const { service } = makeService([supply()]);
+
+        const reports = await service.import(
+            await buildLegacyFile(
+                [[99, 'Неизвестная', 'internet', 1]],
+                ['number', 'name', 'type', 'coefficient'],
+            ),
+            false,
+        );
+
+        expect(reports[0].skipped).toHaveLength(1);
+        expect(reports[0].skipped[0].reason).toMatch(
+            /не удалось определить код/,
+        );
+    });
+
+    it('все 19 номеров легаси-выгрузки раскрываются в коды каталога', async () => {
+        const { service } = makeService([]);
+        const rows = Array.from({ length: 19 }, (_, number) => [
+            number,
+            'Поставка ' + number,
+            number >= 9 && number !== 9 ? 'proxima' : 'internet',
+            1,
+        ]);
+
+        const reports = await service.import(
+            await buildLegacyFile(rows, [
+                'number',
+                'name',
+                'type',
+                'coefficient',
+            ]),
+            true,
+        );
+
+        // Ни одна строка не должна потеряться на сопоставлении номера с кодом
+        const lostOnCode = reports[0].skipped.filter(row =>
+            /не удалось определить код/.test(row.reason),
+        );
+        expect(lostOnCode).toHaveLength(0);
+    });
+});

@@ -7,9 +7,15 @@ import {
     TableImportReport,
     emptyTableReport,
 } from '../types/table-import-report.type';
+import { supplyCodeFromNumber } from '../../catalog-install/lib/catalog-codes';
+import { SUPPLY_REFS } from '../lib/catalog-row-resolve';
 
 const SHEET = 'supplies';
+/** Имя листа в легаси-выгрузке — единственное число */
+const SHEET_LEGACY = 'supply';
 const COLUMN_CODE = 'code';
+/** Номер поставки в легаси-выгрузке (0–18) — альтернативный ключ */
+const COLUMN_NUMBER = 'number';
 const COLUMN_TYPE = 'type';
 const COLUMN_USERS = 'usersQuantity';
 const COLUMN_COEFFICIENT = 'coefficient';
@@ -92,30 +98,50 @@ export class SupplyTableService {
         dryRun: boolean,
     ): Promise<TableImportReport[]> {
         const workbook = await readWorkbook(buffer);
-        const sheet = readSheet(workbook, SHEET);
-        sheet.requireColumns([COLUMN_CODE]);
+        // Лист «supply» (единственное число) — так он назван в легаси-выгрузке
+        const sheetName = workbook.worksheets.some(
+            worksheet => worksheet.name.trim().toLowerCase() === SHEET_LEGACY,
+        )
+            ? SHEET_LEGACY
+            : SHEET;
+        const sheet = readSheet(workbook, sheetName);
+        // Ключ — code, но принимаем и number: в легаси-выгрузках поставки
+        // пронумерованы 0–18, и такие файлы грузятся без переделки.
+        const hasCode = sheet.hasColumn(COLUMN_CODE);
+        if (!hasCode) sheet.requireColumns([COLUMN_NUMBER]);
 
-        const report = emptyTableReport(SHEET);
+        const report = emptyTableReport(sheetName);
         const existing = (await this.supplyService.findMany()) ?? [];
         const byCode = new Map<string, SupplyEntity>(
             existing.map(supply => [supply.code, supply]),
         );
 
         for (const row of sheet.rows) {
-            const code = row.string(COLUMN_CODE);
+            const code = hasCode
+                ? row.string(COLUMN_CODE)
+                : (supplyCodeFromNumber(row.number(COLUMN_NUMBER) ?? -1) ?? '');
             if (code === '') {
                 report.skipped.push({
                     key: `строка ${row.rowNumber}`,
-                    reason: `пустой ${COLUMN_CODE}`,
+                    reason: hasCode
+                        ? `пустой ${COLUMN_CODE}`
+                        : `по номеру в колонке «${COLUMN_NUMBER}» не удалось определить код поставки`,
                 });
                 continue;
             }
             const current = byCode.get(code);
 
             if (!current) {
-                const type = row.string(COLUMN_TYPE);
-                const name = row.nullableString('name');
-                const users = row.number(COLUMN_USERS);
+                // Эталон по коду: в легаси-выгрузке нет колонок
+                // usersQuantity и type — они однозначно выводятся из номера
+                const ref = SUPPLY_REFS.find(item => item.code === code);
+                const type = row.has(COLUMN_TYPE)
+                    ? row.string(COLUMN_TYPE)
+                    : (ref?.type ?? '');
+                const name = row.nullableString('name') ?? ref?.name ?? null;
+                const users = row.has(COLUMN_USERS)
+                    ? row.number(COLUMN_USERS)
+                    : (ref?.usersQuantity ?? null);
                 if (
                     (type !== 'internet' && type !== 'proxima') ||
                     !name ||
@@ -123,7 +149,7 @@ export class SupplyTableService {
                 ) {
                     report.skipped.push({
                         key: code,
-                        reason: 'новая поставка требует type (internet|proxima), name и usersQuantity',
+                        reason: 'новая поставка требует тип (internet или proxima), название и число одновременных доступов',
                     });
                     continue;
                 }

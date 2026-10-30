@@ -79,6 +79,13 @@ export class SheetTable {
         readonly rows: SheetRow[],
     ) {}
 
+    /** Есть ли колонка в листе (регистр не важен) */
+    hasColumn(column: string): boolean {
+        return this.headers.some(
+            header => header.toLowerCase() === column.toLowerCase(),
+        );
+    }
+
     /** Проверка обязательных колонок (регистр и пробелы не важны) */
     requireColumns(required: string[]): void {
         const present = new Set(

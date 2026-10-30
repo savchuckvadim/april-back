@@ -80,6 +80,15 @@ export class PriceBookImportService {
         buffer: Buffer,
         dryRun: boolean,
     ): Promise<TableImportReport[]> {
+        const startedAt = Date.now();
+        // Логи по ходу: если запрос оборвётся на полпути, по ним видно,
+        // на каком листе это случилось и сколько записей успело лечь.
+        this.logger.log(
+            `Загрузка книги цен начата: ${buffer.length} байт, ` +
+                (dryRun
+                    ? 'пробный прогон (без записи)'
+                    : 'с записью в каталог'),
+        );
         const workbook = await readWorkbook(buffer);
         const reports: TableImportReport[] = [];
 
@@ -134,6 +143,16 @@ export class PriceBookImportService {
                     `не меняя имена листов (${Object.values(PRICE_BOOK_SHEETS).join(', ')}).`,
             );
         }
+        const sum = (pick: (r: TableImportReport) => number): number =>
+            reports.reduce((acc, r) => acc + pick(r), 0);
+        this.logger.log(
+            `Загрузка книги цен завершена за ${Date.now() - startedAt} мс: ` +
+                `создано ${sum(r => r.created)}, обновлено ${sum(r => r.updated)}, ` +
+                `без изменений ${sum(r => r.unchanged)}, ` +
+                `пропущено ${sum(r => r.skipped.length)}, ` +
+                `заведено в справочниках ${sum(r => r.createdRefs?.length ?? 0)}` +
+                (dryRun ? ' (пробный прогон — в базу не писали)' : ''),
+        );
         return reports;
     }
 
@@ -367,6 +386,8 @@ export class PriceBookImportService {
                 )
                 .map(complect => complect.code),
         );
+        /** Цены копим и пишем одной транзакцией в конце листа */
+        const pending: PriceCreateType[] = [];
 
         for (const row of sheet.rows) {
             const complectCode = row.string(PROF_COLUMNS.complectCode);
@@ -419,20 +440,94 @@ export class PriceBookImportService {
                     continue;
                 }
                 for (const supply of targets) {
-                    await this.storeProfPrice(
-                        report,
-                        `${complectCode}/${supply.code}`,
-                        complectCode,
-                        supply,
-                        regionType,
-                        value,
-                        dryRun,
+                    pending.push(
+                        this.profPricePayload(
+                            complectCode,
+                            supply,
+                            regionType,
+                            value,
+                        ),
                     );
                 }
             }
         }
+
+        // Вся пачка — одной транзакцией. Поштучная запись это ~4 запроса
+        // на цену, на полный прайс под две тысячи подряд: именно на этом
+        // загрузка и не доходила до конца.
+        await this.flushProfPrices(report, pending, dryRun);
         this.log(report);
         return report;
+    }
+
+    /** Полезная нагрузка одной prof-цены (без обращения к базе) */
+    private profPricePayload(
+        complectCode: string,
+        supply: { code: string; type: string },
+        regionType: '0' | '1',
+        value: number,
+    ): PriceCreateType {
+        const supplyType = supply.type === 'proxima' ? 'proxima' : 'internet';
+        return {
+            code: `${complectCode}_${supply.code}_${regionType}`,
+            region_type: regionType,
+            value,
+            isSpecial: false,
+            discount: null,
+            complectCode,
+            supplyCode: supply.code,
+            supplyType,
+            supplyTypeCode: supplyType === 'internet' ? '0' : '1',
+            garantPackageCode: null,
+        };
+    }
+
+    /** Записать накопленные цены одной транзакцией и дополнить отчёт */
+    private async flushProfPrices(
+        report: TableImportReport,
+        pending: PriceCreateType[],
+        dryRun: boolean,
+    ): Promise<void> {
+        if (pending.length === 0) return;
+        if (dryRun) {
+            // Пробный прогон: сверяем с тем, что уже лежит, но не пишем
+            for (const price of pending) {
+                const existing = await this.priceService.findByUnique(
+                    price.complectCode as string,
+                    price.supplyCode as string,
+                    price.region_type,
+                );
+                if (!existing) report.created += 1;
+                else if (existing.value === price.value) report.unchanged += 1;
+                else report.updated += 1;
+            }
+            return;
+        }
+        try {
+            const written =
+                await this.priceService.storeManyByComplect(pending);
+            report.created += written.created;
+            report.updated += written.updated;
+            report.unchanged += written.unchanged;
+            for (const fail of written.failed) report.skipped.push(fail);
+            this.logger.log(
+                `${report.section}: записано пачкой — создано ${written.created}, ` +
+                    `обновлено ${written.updated}, без изменений ${written.unchanged}, ` +
+                    `не удалось ${written.failed.length}`,
+            );
+        } catch (error) {
+            // Транзакция не прошла целиком — говорим об этом прямо,
+            // иначе отчёт соврёт, что цены записаны.
+            const reason =
+                error instanceof Error ? error.message : 'ошибка записи';
+            this.logger.error(
+                `${report.section}: транзакция записи цен не прошла — ${reason}`,
+            );
+            report.skipped.push({
+                key: report.section,
+                reason: `цены не записаны, транзакция отменена: ${reason}`,
+            });
+        }
     }
 
     /**
@@ -470,15 +565,28 @@ export class PriceBookImportService {
                 this.noteCreatedRef(report, 'вид поставки', ref.code, ref.name);
                 continue;
             }
-            const supply = await this.supplyService.create({
-                code: ref.code,
-                type: ref.type,
-                name: ref.name,
-                fullName: ref.name,
-                shortName: ref.name,
-                usersQuantity: ref.usersQuantity,
-                coefficient: ref.coefficient,
-            });
+            let supply: SupplyEntity | null = null;
+            try {
+                supply = await this.supplyService.create({
+                    code: ref.code,
+                    type: ref.type,
+                    name: ref.name,
+                    fullName: ref.name,
+                    shortName: ref.name,
+                    usersQuantity: ref.usersQuantity,
+                    coefficient: ref.coefficient,
+                });
+            } catch (error) {
+                // Настоящая причина из БД — в отчёт, а не только в консоль
+                report.skipped.push({
+                    key: ref.code,
+                    reason:
+                        error instanceof Error
+                            ? `не удалось создать вид поставки: ${error.message}`
+                            : 'не удалось создать вид поставки',
+                });
+                continue;
+            }
             if (!supply) {
                 report.skipped.push({
                     key: ref.code,
@@ -491,52 +599,6 @@ export class PriceBookImportService {
             this.noteCreatedRef(report, 'вид поставки', ref.code, ref.name);
         }
         return [...existing, ...created];
-    }
-
-    private async storeProfPrice(
-        report: TableImportReport,
-        key: string,
-        complectCode: string,
-        supply: { code: string; type: string },
-        regionType: '0' | '1',
-        value: number,
-        dryRun: boolean,
-    ): Promise<void> {
-        const supplyType = supply.type === 'proxima' ? 'proxima' : 'internet';
-        const price: PriceCreateType = {
-            code: `${complectCode}_${supply.code}_${regionType}`,
-            region_type: regionType,
-            value,
-            isSpecial: false,
-            discount: null,
-            complectCode,
-            supplyCode: supply.code,
-            supplyType,
-            supplyTypeCode: supplyType === 'internet' ? '0' : '1',
-            garantPackageCode: null,
-        };
-        try {
-            const existing = await this.priceService.findByUnique(
-                complectCode,
-                supply.code,
-                regionType,
-            );
-            if (existing && existing.value === value) {
-                report.unchanged += 1;
-                return;
-            }
-            if (!dryRun) await this.priceService.storeByComplect(price);
-            if (existing) report.updated += 1;
-            else report.created += 1;
-        } catch (error) {
-            report.skipped.push({
-                key,
-                reason:
-                    error instanceof Error
-                        ? error.message
-                        : 'не удалось сохранить цену',
-            });
-        }
     }
 
     /** Листы lt и star: вес пакета и цены Москва/регионы */

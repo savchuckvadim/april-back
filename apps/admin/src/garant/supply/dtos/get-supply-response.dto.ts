@@ -44,18 +44,21 @@ export class GetSupplyResponseDto {
     @ApiProperty({
         description: 'Supply name',
         example: 'Гарант Бухгалтер',
+        type: String,
     })
     name: string;
 
     @ApiProperty({
         description: 'Supply full name',
         example: 'Гарант Бухгалтер',
+        type: String,
     })
     fullName: string;
 
     @ApiProperty({
         description: 'Supply short name',
         example: 'Бухгалтер',
+        type: String,
     })
     shortName: string;
 
@@ -63,6 +66,8 @@ export class GetSupplyResponseDto {
         description: 'Sale name 1',
         example: 'Sale Name 1',
         required: false,
+        type: String,
+        nullable: true,
     })
     saleName_1: string | null;
 
@@ -70,6 +75,8 @@ export class GetSupplyResponseDto {
         description: 'Sale name 2',
         example: 'Sale Name 2',
         required: false,
+        type: String,
+        nullable: true,
     })
     saleName_2: string | null;
 
@@ -77,6 +84,8 @@ export class GetSupplyResponseDto {
         description: 'Sale name 3',
         example: 'Sale Name 3',
         required: false,
+        type: String,
+        nullable: true,
     })
     saleName_3: string | null;
 
@@ -90,18 +99,22 @@ export class GetSupplyResponseDto {
         description: 'Supply description',
         example: 'Описание поставки',
         required: false,
+        type: String,
+        nullable: true,
     })
     description: string | null;
 
     @ApiProperty({
         description: 'Supply code',
         example: 'buh',
+        type: String,
     })
     code: string;
 
     @ApiProperty({
         description: 'Supply type',
         example: 'prof',
+        type: String,
     })
     type: string;
 
@@ -109,6 +122,8 @@ export class GetSupplyResponseDto {
         description: 'Supply color',
         example: '#FF0000',
         required: false,
+        type: String,
+        nullable: true,
     })
     color: string | null;
 
@@ -122,6 +137,8 @@ export class GetSupplyResponseDto {
         description: 'Contract name',
         example: 'Contract Name',
         required: false,
+        type: String,
+        nullable: true,
     })
     contractName: string | null;
 
@@ -129,6 +146,8 @@ export class GetSupplyResponseDto {
         description: 'Contract prop comment',
         example: 'Contract Comment',
         required: false,
+        type: String,
+        nullable: true,
     })
     contractPropComment: string | null;
 
@@ -136,6 +155,8 @@ export class GetSupplyResponseDto {
         description: 'Contract prop email',
         example: 'contract@example.com',
         required: false,
+        type: String,
+        nullable: true,
     })
     contractPropEmail: string | null;
 
@@ -143,6 +164,8 @@ export class GetSupplyResponseDto {
         description: 'Contract prop logins quantity',
         example: '10',
         required: false,
+        type: String,
+        nullable: true,
     })
     contractPropLoginsQuantity: string | null;
 
@@ -150,6 +173,8 @@ export class GetSupplyResponseDto {
         description: 'L contract name',
         example: 'L Contract Name',
         required: false,
+        type: String,
+        nullable: true,
     })
     lcontractName: string | null;
 
@@ -157,6 +182,8 @@ export class GetSupplyResponseDto {
         description: 'L contract prop comment',
         example: 'L Contract Comment',
         required: false,
+        type: String,
+        nullable: true,
     })
     lcontractPropComment: string | null;
 
@@ -164,6 +191,8 @@ export class GetSupplyResponseDto {
         description: 'L contract prop email',
         example: 'lcontract@example.com',
         required: false,
+        type: String,
+        nullable: true,
     })
     lcontractPropEmail: string | null;
 

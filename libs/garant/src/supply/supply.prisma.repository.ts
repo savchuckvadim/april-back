@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/core/prisma';
 import { SupplyRepository } from './supply.repository';
 import { SupplyEntity } from './supply.entity';
@@ -7,6 +7,8 @@ import { createSupplyEntityFromPrisma } from './lib/supply-entity.util';
 
 @Injectable()
 export class SupplyPrismaRepository implements SupplyRepository {
+    private readonly logger = new Logger(SupplyPrismaRepository.name);
+
     constructor(private readonly prisma: PrismaService) {}
 
     async create(supply: Partial<SupplyEntity>): Promise<SupplyEntity | null> {
@@ -45,8 +47,14 @@ export class SupplyPrismaRepository implements SupplyRepository {
             });
             return createSupplyEntityFromPrisma(result);
         } catch (error) {
-            console.error('Error creating supply:', error);
-            return null;
+            // Причину отдаём наверх: загрузка каталога пишет её в отчёт,
+            // иначе настоящая ошибка БД теряется и видно лишь «не удалось».
+            this.logger.error(
+                `Не удалось создать вид поставки «${supply.code ?? '?'}»: ${
+                    error instanceof Error ? error.message : String(error)
+                }`,
+            );
+            throw error;
         }
     }
 

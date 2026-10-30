@@ -136,6 +136,38 @@ const makeServices = (prices: PriceRow[] = []) => {
             ),
         storeByComplect: jest.fn().mockResolvedValue({}),
         storeByPackage: jest.fn().mockResolvedValue({}),
+        // Цены пишутся пачкой в транзакции: считаем, как это делает база
+        storeManyByComplect: jest.fn(
+            (
+                batch: Array<{
+                    complectCode: string;
+                    supplyCode: string;
+                    region_type: string;
+                    value: number;
+                }>,
+            ) => {
+                let created = 0;
+                let updated = 0;
+                let unchanged = 0;
+                for (const item of batch) {
+                    const was = prices.find(
+                        price =>
+                            price.complect_code === item.complectCode &&
+                            price.supply_code === item.supplyCode &&
+                            price.region_type === item.region_type,
+                    );
+                    if (!was) created += 1;
+                    else if (was.value === item.value) unchanged += 1;
+                    else updated += 1;
+                }
+                return Promise.resolve({
+                    created,
+                    updated,
+                    unchanged,
+                    failed: [],
+                });
+            },
+        ),
     };
     const complectService = {
         findAll: jest.fn().mockResolvedValue(COMPLECTS),
@@ -411,14 +443,13 @@ describe('PriceBookExportService', () => {
             await exportService.export('current'),
             false,
         );
-        const written =
-            priceService.storeByComplect.mock.calls.length +
-            priceService.storeByPackage.mock.calls.length;
-
-        expect(written).toBe(0);
+        // Цены уходят одной пачкой всегда, поэтому важно не «вызывали ли»,
+        // а что ни одна строка не записана: всё сошлось с базой.
+        expect(priceService.storeByPackage).not.toHaveBeenCalled();
         expect(
             reports.every(report => report.created + report.updated === 0),
         ).toBe(true);
+        expect(reports.every(report => report.skipped.length === 0)).toBe(true);
     });
 });
 
@@ -438,18 +469,17 @@ describe('PriceBookImportService', () => {
         // 1 ОД → internet_1, proxima_1, internet_std, proxima_local, proxima_flash (5)
         // 10 ОД → internet_10, proxima_10 (2)
         expect(prof?.created).toBe(7);
-        const codes = priceService.storeByComplect.mock.calls.map(
-            ([price]: [{ supplyCode: string; value: number }]) =>
-                price.supplyCode,
-        );
+        // Записано одной пачкой — разбираем её единственный аргумент
+        const batch = (
+            priceService.storeManyByComplect.mock.calls as Array<
+                [Array<{ supplyCode: string; value: number }>]
+            >
+        ).flatMap(call => call[0]);
+        const codes = batch.map(price => price.supplyCode);
         expect(codes).toContain('internet_1');
         expect(codes).toContain('proxima_flash');
         expect(codes).toContain('proxima_10');
-        const tenOd = priceService.storeByComplect.mock.calls
-            .map(([price]: [{ supplyCode: string; value: number }]) => price)
-            .filter((price: { supplyCode: string }) =>
-                price.supplyCode.endsWith('_10'),
-            );
+        const tenOd = batch.filter(price => price.supplyCode.endsWith('_10'));
         expect(
             tenOd.every((price: { value: number }) => price.value === 27698),
         ).toBe(true);
@@ -469,7 +499,7 @@ describe('PriceBookImportService', () => {
 
         expect(prof?.skipped).toHaveLength(1);
         expect(prof?.skipped[0].reason).toMatch(/универсальной линейки/);
-        expect(priceService.storeByComplect).not.toHaveBeenCalled();
+        expect(priceService.storeManyByComplect).not.toHaveBeenCalled();
     });
 
     it('лист universal-weights обновляет вес и АБС, а не цены', async () => {
@@ -562,7 +592,7 @@ describe('PriceBookImportService', () => {
             false,
         );
 
-        expect(priceService.storeByComplect).not.toHaveBeenCalled();
+        expect(priceService.storeManyByComplect).not.toHaveBeenCalled();
     });
 
     it('мусор в цене и неизвестный комплект попадают в отчёт', async () => {
@@ -603,7 +633,7 @@ describe('PriceBookImportService', () => {
         );
 
         expect(total).toBeGreaterThan(0);
-        expect(priceService.storeByComplect).not.toHaveBeenCalled();
+        expect(priceService.storeManyByComplect).not.toHaveBeenCalled();
         expect(regionService.update).not.toHaveBeenCalled();
     });
 
@@ -675,6 +705,15 @@ describe('книга цен на чистой базе', () => {
             findPackagePrice: jest.fn().mockResolvedValue(null),
             storeByComplect: jest.fn().mockResolvedValue({}),
             storeByPackage: jest.fn().mockResolvedValue({}),
+            // База пустая: всё, что пришло пачкой, — создание
+            storeManyByComplect: jest.fn((batch: unknown[]) =>
+                Promise.resolve({
+                    created: batch.length,
+                    updated: 0,
+                    unchanged: 0,
+                    failed: [],
+                }),
+            ),
         };
         const complectService = {
             findAll: jest
@@ -844,7 +883,7 @@ describe('книга цен на чистой базе', () => {
             created.find(dto => dto.code === 'internet_1')?.coefficient,
         ).toBe(1.25);
 
-        expect(priceService.storeByComplect).toHaveBeenCalled();
+        expect(priceService.storeManyByComplect).toHaveBeenCalled();
         expect(prof?.skipped).toHaveLength(0);
     });
 
@@ -892,5 +931,55 @@ describe('книга цен на чистой базе', () => {
         expect(priceService.storeByPackage).toHaveBeenCalledWith(
             expect.objectContaining({ garantPackageCode: 'ltpackSmall' }),
         );
+    });
+});
+
+describe('запись цен транзакцией', () => {
+    it('сорванная транзакция не выдаёт себя за записанные цены', async () => {
+        // Раньше отчёт говорил «обновлено», даже если в базу ничего не
+        // легло — из-за этого загрузку дважды считали успешной.
+        const { importService, priceService } = makeServices();
+        priceService.storeManyByComplect.mockRejectedValueOnce(
+            new Error('Lock wait timeout exceeded'),
+        );
+
+        const reports = await importService.import(
+            await buildBook({
+                profMsk: [['Бухгалтер', 0, 'buh', 8587, 27698]],
+            }),
+            false,
+        );
+        const prof = reports.find(
+            report => report.section === PRICE_BOOK_SHEETS.profMsk,
+        );
+
+        expect(prof?.created).toBe(0);
+        expect(prof?.updated).toBe(0);
+        expect(prof?.skipped).toHaveLength(1);
+        expect(prof?.skipped[0].reason).toMatch(/транзакция отменена/);
+        expect(prof?.skipped[0].reason).toMatch(/Lock wait timeout/);
+    });
+
+    it('цены уходят одной пачкой, а не по одной', async () => {
+        // 12 комплектов × 19 поставок — это ~1800 запросов поштучно,
+        // на чём загрузка и обрывалась
+        const { importService, priceService } = makeServices();
+        await importService.import(
+            await buildBook({
+                profMsk: [['Бухгалтер', 0, 'buh', 8587, 27698]],
+            }),
+            false,
+        );
+
+        // Один вызов на весь лист, а не по вызову на каждую цену
+        expect(priceService.storeManyByComplect).toHaveBeenCalledTimes(1);
+        const batch = (
+            priceService.storeManyByComplect.mock.calls as Array<
+                [Array<{ complectCode: string; supplyCode: string }>]
+            >
+        )[0][0];
+        // 1 ОД разворачивается на 5 поставок, 10 ОД — на 2
+        expect(batch.length).toBe(7);
+        expect(batch.every(price => price.complectCode === 'buh')).toBe(true);
     });
 });

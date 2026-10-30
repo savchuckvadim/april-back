@@ -5,6 +5,7 @@ export class CreateSupplyDto {
     @ApiProperty({
         description: 'Название поставки',
         example: 'Гарант Бухгалтер',
+        type: String,
     })
     @IsString()
     name: string;
@@ -12,6 +13,7 @@ export class CreateSupplyDto {
     @ApiProperty({
         description: 'Полное название поставки',
         example: 'Гарант Бухгалтер',
+        type: String,
     })
     @IsString()
     fullName: string;
@@ -19,6 +21,7 @@ export class CreateSupplyDto {
     @ApiProperty({
         description: 'Короткое название поставки',
         example: 'Бухгалтер',
+        type: String,
     })
     @IsString()
     shortName: string;
@@ -27,6 +30,8 @@ export class CreateSupplyDto {
         description: 'Название продажи 1',
         required: false,
         example: 'Sale Name 1',
+        type: String,
+        nullable: true,
     })
     @IsString()
     @IsOptional()
@@ -36,6 +41,8 @@ export class CreateSupplyDto {
         description: 'Название продажи 2',
         required: false,
         example: 'Sale Name 2',
+        type: String,
+        nullable: true,
     })
     @IsString()
     @IsOptional()
@@ -45,6 +52,8 @@ export class CreateSupplyDto {
         description: 'Название продажи 3',
         required: false,
         example: 'Sale Name 3',
+        type: String,
+        nullable: true,
     })
     @IsString()
     @IsOptional()
@@ -61,6 +70,8 @@ export class CreateSupplyDto {
         description: 'Описание поставки',
         required: false,
         example: 'Описание поставки',
+        type: String,
+        nullable: true,
     })
     @IsString()
     @IsOptional()
@@ -69,6 +80,7 @@ export class CreateSupplyDto {
     @ApiProperty({
         description: 'Код поставки',
         example: 'buh',
+        type: String,
     })
     @IsString()
     code: string;
@@ -76,6 +88,7 @@ export class CreateSupplyDto {
     @ApiProperty({
         description: 'Тип поставки',
         example: 'prof',
+        type: String,
     })
     @IsString()
     type: string;
@@ -84,6 +97,8 @@ export class CreateSupplyDto {
         description: 'Цвет поставки',
         required: false,
         example: '#FF0000',
+        type: String,
+        nullable: true,
     })
     @IsString()
     @IsOptional()
@@ -100,6 +115,8 @@ export class CreateSupplyDto {
         description: 'Название контракта',
         required: false,
         example: 'Contract Name',
+        type: String,
+        nullable: true,
     })
     @IsString()
     @IsOptional()
@@ -109,6 +126,8 @@ export class CreateSupplyDto {
         description: 'Комментарий к контракту',
         required: false,
         example: 'Contract Comment',
+        type: String,
+        nullable: true,
     })
     @IsString()
     @IsOptional()
@@ -118,6 +137,8 @@ export class CreateSupplyDto {
         description: 'Email контракта',
         required: false,
         example: 'contract@example.com',
+        type: String,
+        nullable: true,
     })
     @IsString()
     @IsOptional()
@@ -127,6 +148,8 @@ export class CreateSupplyDto {
         description: 'Количество логинов контракта',
         required: false,
         example: '10',
+        type: String,
+        nullable: true,
     })
     @IsString()
     @IsOptional()
@@ -136,6 +159,8 @@ export class CreateSupplyDto {
         description: 'Название L-контракта',
         required: false,
         example: 'L Contract Name',
+        type: String,
+        nullable: true,
     })
     @IsString()
     @IsOptional()
@@ -145,6 +170,8 @@ export class CreateSupplyDto {
         description: 'Комментарий L-контракта',
         required: false,
         example: 'L Contract Comment',
+        type: String,
+        nullable: true,
     })
     @IsString()
     @IsOptional()
@@ -154,6 +181,8 @@ export class CreateSupplyDto {
         description: 'Email L-контракта',
         required: false,
         example: 'lcontract@example.com',
+        type: String,
+        nullable: true,
     })
     @IsString()
     @IsOptional()

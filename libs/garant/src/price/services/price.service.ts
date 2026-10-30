@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { PriceRepository } from '../repositories/price.repository';
+import {
+    PriceRepository,
+    PriceStoreManyResult,
+} from '../repositories/price.repository';
 import { PriceEntity } from '../entity/price.entity';
 import { PriceCreateType } from '../types/price-from-excel.type';
 
@@ -27,6 +30,16 @@ export class PriceService {
     /** Upsert цены пакета по (garant_package_code, region_type) */
     async storeByPackage(price: PriceCreateType): Promise<PriceEntity> {
         return await this.repo.storeByPackage(price);
+    }
+
+    /**
+     * Запись пачки prof-цен одной транзакцией — для загрузки книги цен.
+     * Либо лягут все, либо ни одна: обрыв запроса не оставит полпрайса.
+     */
+    async storeManyByComplect(
+        prices: PriceCreateType[],
+    ): Promise<PriceStoreManyResult> {
+        return await this.repo.storeManyByComplect(prices);
     }
 
     /** Prof-цена по уникальному ключу (complect_code, supply_code, region_type) */
