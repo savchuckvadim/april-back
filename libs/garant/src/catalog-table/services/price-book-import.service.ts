@@ -99,8 +99,17 @@ export class PriceBookImportService {
             reports.push(await this.importUniversal(workbook, dryRun));
         }
 
-        const supplies = (await this.supplyService.findMany()) ?? [];
-        const complects = (await this.complectService.findAll()) ?? [];
+        // Справочники читаем строго с проверкой: на ошибке базы «пусто»
+        // означало бы, что ни один комплект и вид поставки не найден, и
+        // весь прайс ушёл бы в пропуски (или в мнимые создания).
+        const supplies = await this.readRequired(
+            () => this.supplyService.findMany(),
+            'виды поставок',
+        );
+        const complects = await this.readRequired(
+            () => this.complectService.findAll(),
+            'комплекты',
+        );
         for (const [sheetName, regionType] of [
             [PRICE_BOOK_SHEETS.profMsk, '1'],
             [PRICE_BOOK_SHEETS.profRegions, '0'],
@@ -458,6 +467,26 @@ export class PriceBookImportService {
         await this.flushProfPrices(report, pending, dryRun);
         this.log(report);
         return report;
+    }
+
+    /**
+     * Справочник, без которого прайс разбирать нельзя. Ошибку базы
+     * отдаём наверх с понятной причиной вместо пустого списка.
+     */
+    private async readRequired<T>(
+        read: () => Promise<T[] | null>,
+        title: string,
+    ): Promise<T[]> {
+        try {
+            return (await read()) ?? [];
+        } catch (error) {
+            const reason =
+                error instanceof Error ? error.message : 'ошибка чтения';
+            this.logger.error(`Справочник «${title}» не прочитан — ${reason}`);
+            throw new Error(
+                `Не удалось прочитать справочник «${title}», загрузка отменена: ${reason}`,
+            );
+        }
     }
 
     /** Полезная нагрузка одной prof-цены (без обращения к базе) */

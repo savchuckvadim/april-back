@@ -220,3 +220,59 @@ describe('SupplyTableService: легаси-выгрузка', () => {
         expect(lostOnCode).toHaveLength(0);
     });
 });
+
+describe('SupplyTableService: справочник не прочитался', () => {
+    it('не выдаёт ошибку базы за успешную загрузку', async () => {
+        // Регресс: findMany глушил ошибку и отдавал null, вызывающий код
+        // подставлял пустой список — все строки файла выглядели новыми, и
+        // отчёт показывал «создано 19», хотя в базу не уходило ничего.
+        const { service, supplyService } = makeService([]);
+        supplyService.findMany.mockRejectedValue(
+            new Error('The column `supplies.contractProp1` does not exist'),
+        );
+
+        await expect(
+            service.import(
+                await buildFile(
+                    [['internet_5', 'internet', 5, 3, 'Интернет 5 ОД']],
+                    ['code', 'type', 'usersQuantity', 'coefficient', 'name'],
+                ),
+                false,
+            ),
+        ).rejects.toThrow(/загрузка отменена/);
+    });
+
+    it('называет причину отказа, а не просто «не удалось»', async () => {
+        const { service, supplyService } = makeService([]);
+        supplyService.findMany.mockRejectedValue(
+            new Error('contractProp1 does not exist'),
+        );
+
+        await expect(
+            service.import(
+                await buildFile(
+                    [['internet_5', 'internet', 5, 3, 'Интернет 5 ОД']],
+                    ['code', 'type', 'usersQuantity', 'coefficient', 'name'],
+                ),
+                true,
+            ),
+        ).rejects.toThrow(/contractProp1/);
+    });
+
+    it('при сорванном чтении ничего не создаёт', async () => {
+        const { service, supplyService } = makeService([]);
+        supplyService.findMany.mockRejectedValue(new Error('база недоступна'));
+
+        await service
+            .import(
+                await buildFile(
+                    [['internet_5', 'internet', 5, 3, 'Интернет 5 ОД']],
+                    ['code', 'type', 'usersQuantity', 'coefficient', 'name'],
+                ),
+                false,
+            )
+            .catch(() => undefined);
+
+        expect(supplyService.create).not.toHaveBeenCalled();
+    });
+});

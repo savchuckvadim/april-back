@@ -71,7 +71,7 @@ export class SupplyTableService {
     constructor(private readonly supplyService: SupplyService) {}
 
     async export(): Promise<Buffer> {
-        const supplies = (await this.supplyService.findMany()) ?? [];
+        const supplies = await this.readExisting();
         const sorted = [...supplies].sort((a, b) =>
             a.type === b.type
                 ? a.usersQuantity - b.usersQuantity
@@ -111,7 +111,10 @@ export class SupplyTableService {
         if (!hasCode) sheet.requireColumns([COLUMN_NUMBER]);
 
         const report = emptyTableReport(sheetName);
-        const existing = (await this.supplyService.findMany()) ?? [];
+        // Читаем справочник ДО разбора файла: если он не прочитался,
+        // «пусто» означало бы, что все строки новые, и отчёт показал бы
+        // создание записей, которых не будет.
+        const existing = await this.readExisting();
         const byCode = new Map<string, SupplyEntity>(
             existing.map(supply => [supply.code, supply]),
         );
@@ -202,6 +205,26 @@ export class SupplyTableService {
                 `без изменений ${report.unchanged}, пропущено ${report.skipped.length}`,
         );
         return [report];
+    }
+
+    /**
+     * Текущий справочник видов поставок. Ошибку базы отдаём наверх с
+     * понятной причиной: загружать файл поверх непрочитанного
+     * справочника нельзя — все строки сойдут за новые.
+     */
+    private async readExisting(): Promise<SupplyEntity[]> {
+        try {
+            return (await this.supplyService.findMany()) ?? [];
+        } catch (error) {
+            const reason =
+                error instanceof Error ? error.message : 'ошибка чтения';
+            this.logger.error(
+                `Справочник видов поставок не прочитан — ${reason}`,
+            );
+            throw new Error(
+                `Не удалось прочитать текущие виды поставок, загрузка отменена: ${reason}`,
+            );
+        }
     }
 
     private toRow(supply: SupplyEntity): ExportCellValue[] {

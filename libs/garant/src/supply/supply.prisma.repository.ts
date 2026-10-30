@@ -86,14 +86,12 @@ export class SupplyPrismaRepository implements SupplyRepository {
     }
 
     async findMany(): Promise<SupplyEntity[] | null> {
-        try {
-            const result = await this.prisma.supplies.findMany();
-            if (!result) return null;
-            return result.map(supply => createSupplyEntityFromPrisma(supply));
-        } catch (error) {
-            console.error('Error finding supplies:', error);
-            return null;
-        }
+        // Ошибку базы НЕ глушим: вызывающий код подставляет на null
+        // пустой список, а «справочник пуст» и «справочник не
+        // прочитался» — разные вещи. Именно на этом загрузка каталога
+        // отчитывалась об успехе, не записав ни строки.
+        const result = await this.prisma.supplies.findMany();
+        return result.map(supply => createSupplyEntityFromPrisma(supply));
     }
 
     async findByCode(code: string): Promise<SupplyEntity | null> {
