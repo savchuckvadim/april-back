@@ -67,8 +67,15 @@ export class SupplyPrismaRepository implements SupplyRepository {
             });
             return createSupplyEntityFromPrisma(result);
         } catch (error) {
-            console.error('Error updating supply:', error);
-            return null;
+            // Причину отдаём наверх: загрузка каталога пишет её в отчёт.
+            // Пока ошибка глушилась, «обновлено 19» означало только то,
+            // что строку попытались обновить, а не что она сохранилась.
+            this.logger.error(
+                `Не удалось обновить вид поставки «${supply.code ?? supply.id ?? '?'}»: ${
+                    error instanceof Error ? error.message : String(error)
+                }`,
+            );
+            throw error;
         }
     }
 

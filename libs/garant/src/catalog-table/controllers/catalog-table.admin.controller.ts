@@ -3,6 +3,7 @@ import {
     Body,
     Controller,
     Get,
+    Logger,
     Param,
     Post,
     Query,
@@ -44,6 +45,8 @@ const XLSX_MIME =
 @ApiTags('Admin Garant Catalog Tables')
 @Controller('admin/garant/tables')
 export class CatalogTableAdminController {
+    private readonly logger = new Logger(CatalogTableAdminController.name);
+
     constructor(private readonly registry: CatalogTableRegistry) {}
 
     @Get(':kind/export')
@@ -137,13 +140,43 @@ export class CatalogTableAdminController {
         @UploadedFile() file: Express.Multer.File | undefined,
         @Body() dto: ImportTableRequestDto,
     ): Promise<TableImportReportDto[]> {
+        // Лог на входе — до любой логики: по нему видно, что запрос вообще
+        // доехал до приложения, какой файл пришёл и в каком режиме.
+        const dryRun = dto.dryRun ?? false;
+        this.logger.log(
+            `Загрузка таблицы «${kind}»: файл ${file?.originalname ?? 'НЕ ПЕРЕДАН'}, ` +
+                `${file?.buffer.length ?? 0} байт, dryRun=${String(dto.dryRun)} → ` +
+                `${dryRun ? 'пробный прогон' : 'ЗАПИСЬ В КАТАЛОГ'}`,
+        );
         const table = this.resolve(kind);
         if (!file) {
+            this.logger.error(`Загрузка «${kind}» отклонена: файл не передан`);
             throw new BadRequestException('Файл не передан (поле file)');
         }
         try {
-            return await table.import(file.buffer, dto.dryRun ?? false);
+            const reports = await table.import(file.buffer, dryRun);
+            for (const report of reports) {
+                this.logger.log(
+                    `Загрузка «${kind}», лист ${report.section}: создано ${report.created}, ` +
+                        `обновлено ${report.updated}, без изменений ${report.unchanged}, ` +
+                        `пропущено ${report.skipped.length}`,
+                );
+                for (const row of report.skipped) {
+                    this.logger.warn(
+                        `Загрузка «${kind}», лист ${report.section}: строка ${row.key} не применена — ${row.reason}`,
+                    );
+                }
+            }
+            return reports;
         } catch (error) {
+            // Причину пишем в лог целиком: наружу уходит только текст
+            // сообщения, а разбираться потом по нему одному невозможно.
+            this.logger.error(
+                `Загрузка «${kind}» не удалась: ${
+                    error instanceof Error ? error.message : String(error)
+                }`,
+                error instanceof Error ? error.stack : undefined,
+            );
             throw new BadRequestException(
                 error instanceof Error
                     ? error.message

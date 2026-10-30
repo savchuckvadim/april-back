@@ -185,14 +185,34 @@ export class SupplyTableService {
                 continue;
             }
             if (!dryRun) {
-                const updated = await this.supplyService.update({
-                    id: current.id,
-                    ...patch,
-                });
-                if (!updated) {
+                // Видно, какие именно поля меняем: «обновлено 19» без
+                // этого списка не отличить от пустого патча.
+                this.logger.log(
+                    `${code}: обновляем поля — ${Object.keys(patch).join(', ')}`,
+                );
+                try {
+                    const updated = await this.supplyService.update({
+                        id: current.id,
+                        ...patch,
+                    });
+                    if (!updated) {
+                        this.logger.error(
+                            `${code}: обновление не вернуло записи, поля не сохранены`,
+                        );
+                        report.skipped.push({
+                            key: code,
+                            reason: 'поля не сохранены: база не вернула обновлённую запись',
+                        });
+                        continue;
+                    }
+                } catch (error) {
                     report.skipped.push({
                         key: code,
-                        reason: 'ошибка обновления поставки',
+                        reason: `поля не сохранены: ${
+                            error instanceof Error
+                                ? error.message
+                                : 'ошибка записи'
+                        }`,
                     });
                     continue;
                 }
