@@ -2,11 +2,13 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
+import type { App } from 'supertest/types';
 import { AppCacheService } from '@lib/app-cache';
 import { GlobalExceptionFilter, ResponseInterceptor } from '@lib/core';
 import { FileLinkService } from '@lib/core/file-link/file-link.service';
 import { StorageService } from '@lib/core/storage';
 import { ComplectService, InfoblockService } from '@lib/garant';
+import type { KonstructorInitDataDto } from '../../../init/dto/response-init-data.dto';
 import { KonstructorInitUseCase } from '../../../init/konstructor-init.use-case';
 import { ComplectDescriptionService } from '../../complect-description/services/complect-description.service';
 import { PublicAccessController } from '../controllers/public-access.controller';
@@ -58,11 +60,18 @@ const DESCRIPTION = {
             name: 'Нормативно-правовые акты',
             infoblocks: [
                 { code: 'rus', name: 'Законодательство России' },
-                { code: 'alt', name: 'Алтайский край', description: 'С фронта' },
+                {
+                    code: 'alt',
+                    name: 'Алтайский край',
+                    description: 'С фронта',
+                },
             ],
         },
     ],
 };
+
+const dataOf = <T>(response: { body: unknown }): T =>
+    (response.body as { data: T }).data;
 
 describe('публичные ручки по токену', () => {
     let app: INestApplication;
@@ -140,14 +149,14 @@ describe('публичные ручки по токену', () => {
         await app.close();
     });
 
-    const server = () => request(app.getHttpServer());
+    const server = () => request(app.getHttpServer() as App);
 
     it('действующая ссылка: срок в конверте, служебного названия и домена нет', async () => {
         const response = await server()
             .get('/konstructor/public/live-token')
             .expect(200);
 
-        expect(response.body.data).toEqual({ expiresAt: null });
+        expect(dataOf(response)).toEqual({ expiresAt: null });
         expect(JSON.stringify(response.body)).not.toContain('april-garant');
     });
 
@@ -170,7 +179,8 @@ describe('публичные ручки по токену', () => {
             .get('/konstructor/public/live-token/catalog')
             .expect(200);
 
-        const { contracts, measures, prices } = response.body.data;
+        const { contracts, measures, prices } =
+            dataOf<KonstructorInitDataDto>(response);
         expect(contracts.items[0].itemId).toBe(0);
         expect(contracts.items[0].measureCode).toBe(0);
         expect(contracts.items[0].portalMeasure.bitrixId).toBe('');

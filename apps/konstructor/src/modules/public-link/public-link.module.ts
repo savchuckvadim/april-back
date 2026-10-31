@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '@lib/auth';
 import { KonstructorInitModule } from '../../init/konstructor-init.module';
 import { ComplectDescriptionModule } from '../complect-description/complect-description.module';
 import { PublicAccessController } from './controllers/public-access.controller';
@@ -13,7 +14,12 @@ import { PublicLinkService } from './services/public-link.service';
  * каталог и описание комплекта по токену. Правила домена — README модуля.
  */
 @Module({
-    imports: [KonstructorInitModule, ComplectDescriptionModule],
+    imports: [
+        // проверка токена админки на общем секрете, без глобальных гардов
+        AuthModule.forIssuer(),
+        KonstructorInitModule,
+        ComplectDescriptionModule,
+    ],
     controllers: [PublicLinkController, PublicAccessController],
     providers: [
         PublicLinkPrismaRepository,

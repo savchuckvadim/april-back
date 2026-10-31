@@ -6,8 +6,16 @@ import {
     Param,
     ParseUUIDPipe,
     Post,
+    UseGuards,
 } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiBody,
+    ApiOkResponse,
+    ApiOperation,
+    ApiTags,
+} from '@nestjs/swagger';
+import { JwtAuthGuard, Role, Roles, RolesGuard } from '@lib/auth';
 import {
     CreatePublicLinkDto,
     PublicLinkDto,
@@ -15,7 +23,14 @@ import {
 } from '../dto/public-link.dto';
 import { PublicLinkService } from '../services/public-link.service';
 
-/** Управление публичными ссылками: вызывается из админки. */
+/**
+ * Управление публичными ссылками: вызывается из админки, её токен проверяется
+ * здесь. Глобальных гардов у приложения нет (фрейм ходит без токена), поэтому
+ * защита точечная; выключатель общий — AUTH_ENABLED.
+ */
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.SUPER_USER)
 @ApiTags('KonstructorPublicLink')
 @Controller('konstructor/public-links')
 export class PublicLinkController {
