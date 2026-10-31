@@ -169,30 +169,30 @@ export class KonstructorInitUseCase {
     }
     private getContract(contract: PortalContractEntity): ContractDto {
         const code =
-            (contract.contract?.code as CONTRACT_CODE) ||
+            (contract.contracts?.code as CONTRACT_CODE) ||
             (CONTRACT_CODE.INTERNET as CONTRACT_CODE);
         return {
             id: Number(contract.id),
             contract: {
-                id: Number(contract.contract?.id),
-                name: contract.contract?.name || '',
+                id: Number(contract.contracts?.id),
+                name: contract.contracts?.name || '',
                 shortName: contract.portal_measure?.shortName || '',
                 fullName: contract.portal_measure?.fullName || '',
-                created_at: contract.contract?.created_at
-                    ? contract.contract?.created_at.toISOString()
+                created_at: contract.contracts?.created_at
+                    ? contract.contracts?.created_at.toISOString()
                     : '',
-                updated_at: contract.contract?.updated_at
-                    ? contract.contract?.updated_at.toISOString()
+                updated_at: contract.contracts?.updated_at
+                    ? contract.contracts?.updated_at.toISOString()
                     : null,
             },
             code: code,
             shortName: contract.portal_measure?.shortName || '',
             number: contract.order || 0,
-            aprilName: contract.contract?.name || '',
-            bitrixName: contract.contract?.name || '',
-            discount: contract.contract?.discount || 0,
+            aprilName: contract.contracts?.name || '',
+            bitrixName: contract.contracts?.name || '',
+            discount: contract.contracts?.discount || 0,
             itemId: Number(contract.bitrixfield_item_id) || 0,
-            prepayment: contract.contract?.prepayment || 0,
+            prepayment: contract.contracts?.prepayment || 0,
             order: contract.order || 0,
             portalMeasure: {
                 id: Number(contract.portal_measure?.id),
@@ -208,7 +208,7 @@ export class KonstructorInitUseCase {
                 updated_at: contract.portal_measure?.updated_at
                     ? contract.portal_measure?.updated_at.toISOString()
                     : '',
-                measure: contract.portal_measure?.measure || null,
+                measure: contract.portal_measure?.measures || null,
             },
             // Код единицы для productRows Bitrix — bitrixId портальной меры;
             // measures.code — строковый код «для APP», его Number() давал 0.

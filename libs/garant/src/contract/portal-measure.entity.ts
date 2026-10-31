@@ -12,5 +12,10 @@ export class PortalMeasureEntity {
     updated_at: Date | null;
 
     // Relations
-    measure?: MeasureEntity;
+    /**
+     * Единица измерения. Имя — как у связи в схеме Prisma (`measures`):
+     * под именем `measure` поле всегда было undefined и уходило во
+     * фронт как null, хотя include в репозитории есть.
+     */
+    measures?: MeasureEntity;
 }

@@ -17,6 +17,13 @@ export class PortalContractEntity {
     updated_at: Date | null;
 
     // Relations
-    contract?: ContractEntity;
+    /**
+     * Договор. Имя — как у связи в схеме Prisma (`contracts`), иначе
+     * репозиторий отдаёт Prisma-объект с полем `contracts`, а читающий
+     * код берёт `contract` и молча получает undefined: prepayment,
+     * discount и название уходили во фронт нулями и пустыми строками,
+     * а деление на prepayment давало NaN.
+     */
+    contracts?: ContractEntity;
     portal_measure?: PortalMeasureEntity;
 }
