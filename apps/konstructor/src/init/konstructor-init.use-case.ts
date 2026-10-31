@@ -33,6 +33,8 @@ import { ContractService } from '@lib/garant/contract/contract.service';
 import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
 import { ContractDto } from '../dto/contract.dto';
 import { PortalContractEntity } from '@lib/garant/contract/portal-contract.entity';
+import { MeasureEntity } from '@lib/garant/contract/measure.entity';
+import { bigintConvertToNumber } from '@lib/shared';
 import { CONTRACT_CODE } from '../document-generate/type/contract.type';
 import { InitServicesService } from './services/init-services.service';
 import { MeasureService } from '@lib/portal-lib/konstructor/measure/measure.service';
@@ -208,7 +210,10 @@ export class KonstructorInitUseCase {
                 updated_at: contract.portal_measure?.updated_at
                     ? contract.portal_measure?.updated_at.toISOString()
                     : '',
-                measure: contract.portal_measure?.measures || null,
+                // id в Prisma — BigInt, JSON его не сериализует: раньше
+                // связь читалась под неверным именем и всегда была null,
+                // поэтому поломка вылезла только теперь.
+                measure: this.getMeasure(contract.portal_measure?.measures),
             },
             // Код единицы для productRows Bitrix — bitrixId портальной меры;
             // measures.code — строковый код «для APP», его Number() давал 0.
@@ -219,6 +224,27 @@ export class KonstructorInitUseCase {
             measureNumber: Number(contract.portal_measure?.measure_id) || 0,
         };
     }
+    /** Единица измерения для JSON: BigInt → number, даты → строки */
+    private getMeasure(
+        measure: MeasureEntity | undefined,
+    ): Record<string, unknown> | null {
+        if (!measure) return null;
+        return {
+            id: bigintConvertToNumber(measure.id),
+            name: measure.name,
+            shortName: measure.shortName,
+            fullName: measure.fullName,
+            code: measure.code,
+            type: measure.type,
+            created_at: measure.created_at
+                ? measure.created_at.toISOString()
+                : null,
+            updated_at: measure.updated_at
+                ? measure.updated_at.toISOString()
+                : null,
+        };
+    }
+
     private getComplectsDto(complects: IComplects): ComplectsDto {
         return {
             prof: complects.prof.map(complect => ({
