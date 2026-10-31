@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { RegionRepository } from './region.repository';
-import { PortalRegionEntity, RegionEntity } from './region.entity';
-import { Prisma } from 'generated/prisma';
+import {
+    PortalRegionEntity,
+    PortalRegionLink,
+    PortalRegionOwnPatch,
+    RegionEntity,
+} from './region.entity';
 
 @Injectable()
 export class RegionService {
@@ -35,8 +39,14 @@ export class RegionService {
         return this.regionRepository.delete(id);
     }
 
+    /** Регионы портала с действующей для него ценой (источник → ручной → общий) */
     async findByPortalId(portalId: number): Promise<RegionEntity[] | null> {
         return this.regionRepository.findByPortalId(portalId);
+    }
+
+    /** Связи портал→регион как есть: ручной рабс и регион-источник */
+    async findPortalRegionLinks(portalId: number): Promise<PortalRegionLink[]> {
+        return this.regionRepository.findPortalRegionLinks(portalId);
     }
 
     async createPortalRegion(
@@ -57,20 +67,16 @@ export class RegionService {
         );
     }
 
+    /** Правка own-полей связи: ручной рабс или регион-источник */
     async updatePortalRegion(
         portalId: number,
         regionId: number,
-        own_abs: Prisma.Decimal,
-        own_tax: Prisma.Decimal,
-        own_tax_abs: Prisma.Decimal,
+        patch: PortalRegionOwnPatch,
     ): Promise<RegionEntity | null> {
-        // обновить поля связи pivot связь между порталом и регионом
         return this.regionRepository.updatePortalRegion(
             portalId,
             regionId,
-            own_abs,
-            own_tax,
-            own_tax_abs,
+            patch,
         );
     }
 

@@ -62,7 +62,8 @@
         "check:preflight": "npm run typecheck && npm run test:di",
         "hooks:install": "git config core.hooksPath .githooks",
         "typecheck:build": "tsc --noEmit -p tsconfig.build.json",
-        "audit:ai-analytics": "ts-node -T -r tsconfig-paths/register apps/kpi-report-sales/src/ai-analytics/audit/run-ai-analytics-audit.ts"
+        "audit:ai-analytics": "ts-node -T -r tsconfig-paths/register apps/kpi-report-sales/src/ai-analytics/audit/run-ai-analytics-audit.ts",
+        "offer-pdf:snapshot": "ts-node -T -r tsconfig-paths/register apps/konstructor/src/offer-pdf/dev/offer-pdf-snapshot.ts"
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.810.0",
@@ -89,6 +90,7 @@
         "@nestjs/websockets": "^11.1.0",
         "@prisma/client": "^6.16.3",
         "@react-email/components": "0.5.7",
+        "@react-pdf/renderer": "^4.9.0",
         "@types/bcrypt": "^6.0.0",
         "@types/jsonwebtoken": "^9.0.9",
         "@types/russian-nouns-js": "^1.2.5",
@@ -175,12 +177,13 @@
         "moduleFileExtensions": [
             "js",
             "json",
-            "ts"
+            "ts",
+            "tsx"
         ],
         "rootDir": ".",
         "testRegex": ".*\\.spec\\.ts$",
         "transform": {
-            "^.+\\.(t|j)s$": "ts-jest"
+            "^.+\\.(t|j)sx?$": "ts-jest"
         },
         "moduleNameMapper": {
             "^@lib/shared(|/.*)$": "<rootDir>/libs/shared/src/$1",

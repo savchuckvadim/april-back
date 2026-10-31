@@ -1516,7 +1516,8 @@ exports.Prisma.Portal_regionScalarFieldEnum = {
   region_id: 'region_id',
   own_abs: 'own_abs',
   own_tax: 'own_tax',
-  own_tax_abs: 'own_tax_abs'
+  own_tax_abs: 'own_tax_abs',
+  own_abs_region_id: 'own_abs_region_id'
 };
 
 exports.Prisma.RegionsScalarFieldEnum = {

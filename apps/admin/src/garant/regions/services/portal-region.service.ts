@@ -1,17 +1,19 @@
 import { RegionService } from '@lib/garant';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+    BadRequestException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
+import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
 import { GetPortalRegionResponseDto } from '../dto/request/get-portal-region-response.dto';
-import { Prisma } from 'generated/prisma';
 import { CreatePortalRegionDtoAdminRequest } from '../dto/request/create-portal-region-request.dto';
 import { UpdatePortalRegionDtoAdmin } from '../dto/request/update-portal-region-request.dto';
 import {
+    BulkPortalRegionItemDto,
     BulkSetPortalRegionsDto,
     BulkSetPortalRegionsResultDto,
 } from '../dto/request/bulk-set-portal-regions.dto';
-import { PortalStoreService } from '@lib/portal-lib/store/portal-store.service';
-
-/** НДС-множитель own_tax — тот же, что в updatePortalRegion */
-const OWN_TAX = '1.20';
+import { buildOwnPricePatch } from '../lib/own-price-patch.util';
 
 @Injectable()
 export class PortalRegionService {
@@ -20,39 +22,40 @@ export class PortalRegionService {
         private readonly portalService: PortalStoreService,
     ) {}
 
-    async getPortalRegions(portalId: number) {
-        //этот метод в поля региона
-        // tax_abs
-        // tax
-        // abs
-        // подставляет значения из pivot связи portal_region если они не пусты
-        const portalRegions = await this.regionService.findByPortalId(portalId);
-
-        const allRegions = await this.regionService.findAll();
+    /** Весь справочник регионов с признаком привязки и своей ценой портала */
+    async getPortalRegions(
+        portalId: number,
+    ): Promise<GetPortalRegionResponseDto[]> {
+        const [allRegions, links] = await Promise.all([
+            this.regionService.findAll(),
+            this.regionService.findPortalRegionLinks(Number(portalId)),
+        ]);
         if (!allRegions) {
             throw new NotFoundException(
                 'Regions not found! Something wrong with the database!',
             );
         }
-        const resultRegions = allRegions.map(region => {
-            const portalRegion =
-                portalRegions &&
-                portalRegions.find(
-                    portalRegion => portalRegion.id === region.id,
-                );
-            const serarchedRegion = portalRegion || region;
-            const isChecked = !!portalRegion;
-
-            return new GetPortalRegionResponseDto(serarchedRegion, isChecked);
-        });
-        return resultRegions;
+        const byRegion = new Map(links.map(link => [link.regionId, link]));
+        return allRegions.map(
+            region =>
+                new GetPortalRegionResponseDto(
+                    region,
+                    byRegion.get(Number(region.id)) ?? null,
+                ),
+        );
     }
-    async createPortalRegion(dto: CreatePortalRegionDtoAdminRequest) {
-        return await this.regionService.createPortalRegion(
+
+    async createPortalRegion(
+        dto: CreatePortalRegionDtoAdminRequest,
+    ): Promise<GetPortalRegionResponseDto | null> {
+        const created = await this.regionService.createPortalRegion(
             dto.portalId,
             dto.regionId,
         );
+        if (!created) return null;
+        return this.viewOne(dto.portalId, dto.regionId);
     }
+
     async getPortalRegionUpdateInitialData(
         portalId: number,
         regionId: number,
@@ -63,8 +66,8 @@ export class PortalRegionService {
         }
         const region =
             await this.regionService.getPortalRegionUpdateInitialData(
-                portalId,
-                regionId,
+                Number(portalId),
+                Number(regionId),
             );
         if (!region) {
             throw new NotFoundException('Region not found');
@@ -75,42 +78,50 @@ export class PortalRegionService {
             own_abs: region.own_abs.toString(),
             own_tax: region.own_tax.toString(),
             own_tax_abs: region.own_tax_abs.toString(),
+            own_abs_region_id: region.own_abs_region_id,
         };
     }
+
+    /** Форма одного региона: ручной рабс или регион-источник */
     async updatePortalRegion(
         portalId: number,
         regionId: number,
         dto: UpdatePortalRegionDtoAdmin,
-    ) {
-        const own_abs = dto.own_abs
-            ? new Prisma.Decimal(dto.own_abs)
-            : new Prisma.Decimal('0.00');
-        const own_tax = dto.own_abs
-            ? new Prisma.Decimal('1.20')
-            : new Prisma.Decimal('0.00');
-        const own_tax_absRaw = Number(dto.own_abs) * Number(own_tax);
-        const own_tax_abs = dto.own_abs
-            ? new Prisma.Decimal(own_tax_absRaw.toFixed(2))
-            : new Prisma.Decimal('0.00');
-
-        return await this.regionService.updatePortalRegion(
-            portalId,
-            regionId,
-            own_abs,
-            own_tax,
-            own_tax_abs,
+    ): Promise<GetPortalRegionResponseDto | null> {
+        const built = buildOwnPricePatch(
+            Number(regionId),
+            {
+                ownAbs: dto.own_abs ?? null,
+                ownAbsRegionId: dto.own_abs_region_id ?? null,
+            },
+            await this.knownRegionIds(),
         );
+        if (!built.ok) {
+            throw new BadRequestException(built.reason);
+        }
+        const updated = await this.regionService.updatePortalRegion(
+            Number(portalId),
+            Number(regionId),
+            built.patch,
+        );
+        if (!updated) return null;
+        return this.viewOne(Number(portalId), Number(regionId));
     }
+
     async deletePortalRegion(portalId: number, regionId: number) {
-        return await this.regionService.deletePortalRegion(portalId, regionId);
+        return await this.regionService.deletePortalRegion(
+            Number(portalId),
+            Number(regionId),
+        );
     }
 
     /**
      * Массовое применение чекбоксов регионов портала: enabled=true создаёт
-     * связь (идемпотентно) и, если передан ownAbs, ставит собственный рабс
-     * (own_tax 1.20, own_tax_abs считается); ownAbs=null сбрасывает own к
-     * общему рабсу; enabled=false удаляет связь. Невключённый регион при
-     * выключении — не ошибка, просто пропуск без причины в отчёте.
+     * связь (идемпотентно), enabled=false удаляет. Своя цена правится,
+     * только если передан ownAbs или ownAbsRegionId: число — ручной рабс
+     * (own_tax 1.20, own_tax_abs считается), id — регион-источник,
+     * null — сброс к общему рабсу. Невключённый регион при выключении —
+     * тихий пропуск, ошибки строк попадают в skipped и не ломают остальные.
      */
     async bulkSetPortalRegions(
         dto: BulkSetPortalRegionsDto,
@@ -121,9 +132,11 @@ export class PortalRegionService {
             updatedOwn: 0,
             skipped: [],
         };
-        const current =
-            (await this.regionService.findByPortalId(dto.portalId)) ?? [];
-        const enabledIds = new Set(current.map(region => Number(region.id)));
+        const [links, knownIds] = await Promise.all([
+            this.regionService.findPortalRegionLinks(dto.portalId),
+            this.knownRegionIds(),
+        ]);
+        const enabledIds = new Set(links.map(link => link.regionId));
 
         for (const item of dto.items) {
             if (!item.enabled) {
@@ -158,52 +171,60 @@ export class PortalRegionService {
                 result.enabled += 1;
             }
 
-            if (item.ownAbs !== undefined) {
-                const updated = await this.applyOwnAbs(
-                    dto.portalId,
-                    item.regionId,
-                    item.ownAbs,
-                );
-                if (updated) {
-                    result.updatedOwn += 1;
-                } else {
-                    result.skipped.push({
-                        regionId: item.regionId,
-                        reason: 'не удалось обновить собственный рабс',
-                    });
-                }
+            if (!this.hasOwnChange(item)) continue;
+            const built = buildOwnPricePatch(
+                item.regionId,
+                {
+                    ownAbs: item.ownAbs ?? null,
+                    ownAbsRegionId: item.ownAbsRegionId ?? null,
+                },
+                knownIds,
+            );
+            if (!built.ok) {
+                result.skipped.push({
+                    regionId: item.regionId,
+                    reason: built.reason,
+                });
+                continue;
+            }
+            const updated = await this.regionService.updatePortalRegion(
+                dto.portalId,
+                item.regionId,
+                built.patch,
+            );
+            if (updated) {
+                result.updatedOwn += 1;
+            } else {
+                result.skipped.push({
+                    regionId: item.regionId,
+                    reason: 'не удалось обновить собственный рабс',
+                });
             }
         }
         return result;
     }
 
-    /** Установка/сброс own-полей связи портал-регион */
-    private async applyOwnAbs(
-        portalId: number,
-        regionId: number,
-        ownAbs: string | null,
-    ): Promise<boolean> {
-        const zero = new Prisma.Decimal('0.00');
-        const abs = ownAbs ? new Prisma.Decimal(ownAbs) : zero;
-        const tax = ownAbs ? new Prisma.Decimal(OWN_TAX) : zero;
-        const taxAbs = ownAbs
-            ? new Prisma.Decimal((Number(ownAbs) * Number(OWN_TAX)).toFixed(2))
-            : zero;
-        const updated = await this.regionService.updatePortalRegion(
-            portalId,
-            regionId,
-            abs,
-            tax,
-            taxAbs,
-        );
-        return updated !== null;
+    /** Свою цену трогаем, только когда её явно прислали */
+    private hasOwnChange(item: BulkPortalRegionItemDto): boolean {
+        return item.ownAbs !== undefined || item.ownAbsRegionId !== undefined;
     }
 
-    // private prepareWithCheckedStatus(portalRegions: RegionEntity[], allRegions: RegionEntity[]) {
-    //     return allRegions.map(region => {
-    //         const portalRegion = portalRegions && portalRegions.find(portalRegion => portalRegion.id === region.id);
-    //         const serarchedRegion = portalRegion || region;
-    //         return new GetPortalRegionResponseDto(serarchedRegion, !!portalRegion);
-    //     });
-    // }
+    private async knownRegionIds(): Promise<Set<number>> {
+        const all = (await this.regionService.findAll()) ?? [];
+        return new Set(all.map(region => Number(region.id)));
+    }
+
+    /** Регион с текущей связью портала в формате списка */
+    private async viewOne(
+        portalId: number,
+        regionId: number,
+    ): Promise<GetPortalRegionResponseDto | null> {
+        const [region, links] = await Promise.all([
+            this.regionService.findById(String(regionId)),
+            this.regionService.findPortalRegionLinks(portalId),
+        ]);
+        if (!region) return null;
+        const link = links.find(row => row.regionId === regionId) ?? null;
+        return new GetPortalRegionResponseDto(region, link);
+    }
 }

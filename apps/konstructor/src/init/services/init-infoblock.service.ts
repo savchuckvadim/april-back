@@ -35,7 +35,8 @@ export class InitInfoblockService {
     constructor(private readonly infogroupService: InfogroupService) {}
 
     async get(): Promise<IInfoGroups[] | null> {
-        const infogroups = await this.infogroupService.findMany();
+        // с relations: иначе children пакетов ЭР пусты и правила не видят их состав
+        const infogroups = await this.infogroupService.findManyWithPackages();
         if (!infogroups) return null;
 
         return this.getGroups(infogroups);

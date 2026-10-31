@@ -8,7 +8,10 @@ import {
     IInfoGroups,
     InitInfoblockService,
 } from './services/init-infoblock.service';
-import { InitRegionService } from './services/init.region.service';
+import {
+    InitRegionService,
+    type IInitRegion,
+} from './services/init.region.service';
 import {
     PriceEntity,
     PriceService,
@@ -295,10 +298,10 @@ export class KonstructorInitUseCase {
             isLa: infoblock.isLa,
         } as InfoblockDto;
     }
-    private getRegions(regions: RegionEntity[]): RegionInitDto[] {
+    private getRegions(regions: IInitRegion[]): RegionInitDto[] {
         return regions.map(region => this.getRegion(region));
     }
-    private getRegion(region: RegionEntity): RegionInitDto {
+    private getRegion(region: IInitRegion): RegionInitDto {
         return {
             id: region.id,
             code: region.code,
@@ -310,6 +313,7 @@ export class KonstructorInitUseCase {
             abs: region.abs,
             tax: region.tax,
             tax_abs: region.tax_abs,
+            inPortal: region.inPortal,
         } as RegionInitDto;
     }
 }

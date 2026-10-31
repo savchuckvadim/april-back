@@ -74,6 +74,51 @@ export class InfogroupPrismaRepository implements InfogroupRepository {
         });
     }
 
+    async findManyWithPackages(): Promise<InfogroupEntity[] | null> {
+        const result = await this.prisma.info_groups.findMany({
+            include: {
+                infoblocks: {
+                    include: {
+                        infoblock_package_infoblock_idToinfoblocks: {
+                            include: {
+                                infoblocks_infoblock_package_package_idToinfoblocks: true,
+                            },
+                        },
+                        infoblock_package_package_idToinfoblocks: {
+                            include: {
+                                infoblocks_infoblock_package_infoblock_idToinfoblocks: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        if (!result) return null;
+
+        return result.map(group => {
+            const entity = createInfogroupEntityFromPrisma(group);
+            entity.infoblocks = group.infoblocks.map(infoblock => {
+                const block = createInfoblockEntityFromPrisma(infoblock);
+                block.packages =
+                    infoblock.infoblock_package_infoblock_idToinfoblocks.map(
+                        link =>
+                            createInfoblockEntityFromPrisma(
+                                link.infoblocks_infoblock_package_package_idToinfoblocks,
+                            ),
+                    );
+                block.packageInfoblocks =
+                    infoblock.infoblock_package_package_idToinfoblocks.map(
+                        link =>
+                            createInfoblockEntityFromPrisma(
+                                link.infoblocks_infoblock_package_infoblock_idToinfoblocks,
+                            ),
+                    );
+                return block;
+            });
+            return entity;
+        });
+    }
+
     async findByCode(code: string): Promise<InfogroupEntity | null> {
         const infogroup = await this.prisma.info_groups.findFirst({
             where: { code },

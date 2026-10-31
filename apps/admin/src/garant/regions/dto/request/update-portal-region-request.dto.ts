@@ -1,20 +1,17 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsOptional, IsInt } from 'class-validator';
 import {
     IsDecimal,
     TransformToDecimalString,
 } from '@/core/decorators/dto/decimal.decorator';
 
+/**
+ * Форма своей цены одного региона портала. Ручной рабс и регион-источник
+ * взаимоисключающие; оба пустые — возврат к общему рабсу региона.
+ */
 export class UpdatePortalRegionDtoAdmin {
-    // constructor(domain: string, regionCode: string, own_abs: number, own_tax: number, own_tax_abs: number) {
-    //     this.domain = domain;
-    //     this.regionCode = regionCode;
-    //     this.own_abs = own_abs.toString();
-    //     this.own_tax = own_tax.toString();
-    //     this.own_tax_abs = own_tax_abs.toString();
-    // }
     @ApiProperty({
-        description: 'Domain of the Bitrix24 portal',
+        description: 'Домен портала Bitrix24.',
         example: 'april-dev.bitrix24.ru',
         required: true,
     })
@@ -22,7 +19,7 @@ export class UpdatePortalRegionDtoAdmin {
     domain: string;
 
     @ApiProperty({
-        description: 'Code of the region',
+        description: 'Код региона из справочника.',
         example: 'kbr',
         required: true,
     })
@@ -31,7 +28,8 @@ export class UpdatePortalRegionDtoAdmin {
 
     @ApiProperty({
         description:
-            'Own AB (decimal value, max 8 digits with 2 decimal places). Can be sent as string or number from frontend.',
+            'Ручной рабс портала (decimal 8,2; строка или число). ' +
+            'Пусто или null — ручного рабса нет. own_tax и own_tax_abs считаются на бэке.',
         example: '1000.00',
         required: false,
         oneOf: [{ type: 'string' }, { type: 'number' }],
@@ -43,8 +41,8 @@ export class UpdatePortalRegionDtoAdmin {
 
     @ApiProperty({
         description:
-            'Own tax (decimal value, max 8 digits with 2 decimal places). Can be sent as string or number from frontend.',
-        example: '1000.00',
+            'Налоговый множитель ручного рабса. Отдаётся формой для показа, на запись не влияет.',
+        example: '1.20',
         required: false,
         oneOf: [{ type: 'string' }, { type: 'number' }],
     })
@@ -55,8 +53,8 @@ export class UpdatePortalRegionDtoAdmin {
 
     @ApiProperty({
         description:
-            'Own tax abs (decimal value, max 8 digits with 2 decimal places). Can be sent as string or number from frontend.',
-        example: '1000.00',
+            'Ручной рабс с налогом. Отдаётся формой для показа, на запись не влияет.',
+        example: '1200.00',
         required: false,
         oneOf: [{ type: 'string' }, { type: 'number' }],
     })
@@ -64,4 +62,16 @@ export class UpdatePortalRegionDtoAdmin {
     @TransformToDecimalString()
     @IsDecimal()
     own_tax_abs?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'ID региона-источника, чей рабс портал берёт за свой. ' +
+            'Задаётся вместо ручного рабса; null — ссылки нет.',
+        example: 47,
+        type: Number,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsInt()
+    own_abs_region_id?: number | null;
 }

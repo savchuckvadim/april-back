@@ -97,7 +97,13 @@
       "entryFile": "main",
       "sourceRoot": "apps/konstructor/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/konstructor/tsconfig.app.json"
+        "tsConfigPath": "apps/konstructor/tsconfig.app.json",
+        "assets": [
+          {
+            "include": "offer-pdf/fonts/files/*",
+            "outDir": "dist/apps/konstructor"
+          }
+        ]
       }
     },
     "kpi-report-sales": {

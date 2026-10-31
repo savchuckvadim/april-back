@@ -33,9 +33,9 @@ export class BulkPortalRegionItemDto {
 
     @ApiPropertyOptional({
         description:
-            'Собственный рабс портала для региона (часто берётся из рабса другого региона). ' +
-            'Не передан — own-значения не меняются; null — сбрасываются к общему рабсу региона. ' +
-            'own_tax (1.20) и own_tax_abs считаются на бэке.',
+            'Ручной рабс портала для региона. Не передан — не меняется; ' +
+            'null — сброс к общему рабсу региона. Ставится вместо регион-источника: ' +
+            'ссылка при этом снимается. own_tax (1.20) и own_tax_abs считаются на бэке.',
         example: '4177.20',
         oneOf: [{ type: 'string' }, { type: 'number' }],
         nullable: true,
@@ -44,6 +44,20 @@ export class BulkPortalRegionItemDto {
     @TransformToDecimalString()
     @IsDecimal()
     ownAbs?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Регион-источник, чей рабс портал берёт за свой (например, Алтайский край ' +
+            'по цене Ленинградской области). Не передан — не меняется; null — сброс. ' +
+            'Ставится вместо ручного рабса: own_abs при этом снимается. ' +
+            'Нельзя указывать сам регион; обновление цен источника подхватывается автоматически.',
+        example: 47,
+        type: Number,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsInt()
+    ownAbsRegionId?: number | null;
 }
 
 export class BulkSetPortalRegionsDto {
@@ -99,7 +113,8 @@ export class BulkSetPortalRegionsResultDto {
     disabled: number;
 
     @ApiProperty({
-        description: 'Скольким регионам обновлён собственный рабс.',
+        description:
+            'Скольким регионам обновлена своя цена: ручной рабс, регион-источник или сброс.',
         example: 3,
         type: Number,
     })

@@ -9,6 +9,7 @@ import { TelegramModule } from '@lib/telegram/telegram.module';
 
 import { KonstructorModule } from './konstructor.module';
 import { OfferWordModule } from './offer-word/offer-word.module';
+import { OfferPdfModule } from './offer-pdf/offer-pdf.module';
 import { DocumentSupplyReportModule } from './document-supply-report/document-supply-report.module';
 import { ZakupkiSettingsModule } from './modules/zakupki-settings/zakupki-settings.module';
 import { KonstructorAppSettingsModule } from './modules/app-settings/app-settings.module';
@@ -84,6 +85,8 @@ import { DocumentTemplatePublicModule } from '@lib/portal-lib/konstructor/docume
         HealthModule,
         KonstructorModule,
         OfferWordModule,
+        // КП в PDF из JSX-шаблонов: без Word и Gotenberg, данные те же
+        OfferPdfModule,
         DocumentSupplyReportModule,
         // «3 КП для торгов»: настройки поставщиков 1/2 (замена Laravel zakupki/*)
         ZakupkiSettingsModule,

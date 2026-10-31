@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OfferWordByTemplateGenerateDto } from '../../dto/offer-word-generate-request.dto';
+import { OfferRenderInput } from '../../types/offer-render-input.type';
 import { ComplectDto } from '../../../document-generate';
 import {
     IInfblockGroupsRenderData,
@@ -25,7 +25,7 @@ export class OfferRenderInfoblocksService {
     ) {}
 
     async renderInfoblocks(
-        dto: OfferWordByTemplateGenerateDto,
+        dto: OfferRenderInput,
     ): Promise<IInfoblocksRenderData> {
         const complect = dto.complect;
         // const infoblocks = await this.getComplectInfoblocks(complect);

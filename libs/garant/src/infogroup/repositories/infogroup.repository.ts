@@ -9,6 +9,8 @@ export abstract class InfogroupRepository {
     ): Promise<InfogroupEntity | null>;
     abstract findById(id: number): Promise<InfogroupEntity | null>;
     abstract findMany(): Promise<InfogroupEntity[] | null>;
+    /** Группы с инфоблоками и их связями «пакет ⇄ состав» (для init конструктора). */
+    abstract findManyWithPackages(): Promise<InfogroupEntity[] | null>;
 
     // Методы для управления связями с инфоблоками
     abstract addInfoblocks(

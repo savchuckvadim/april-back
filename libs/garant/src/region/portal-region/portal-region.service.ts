@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { RegionRepository } from '../region.repository';
-import { RegionEntity } from '../region.entity';
-import { Prisma } from 'generated/prisma';
+import { PortalRegionOwnPatch, RegionEntity } from '../region.entity';
 
 import {
     CreatePortalRegionDto,
@@ -30,26 +29,23 @@ export class PortalRegionService {
         return await this.repo.createPortalRegion(portalId, regionId);
     }
 
+    /**
+     * Ручные own-цены по domain и коду региона. Ручная цена и
+     * регион-источник взаимоисключающие, поэтому ссылка сбрасывается.
+     */
     async updatePortalRegion(
         dto: UpdatePortalRegionDto,
     ): Promise<RegionEntity | null> {
         const portalId = await this.getPortalId(dto.domain);
         const regionId = await this.getRegionId(dto.regionCode);
 
-        // Конвертируем строки в Decimal (Prisma может принимать строки, но лучше явно создать Decimal)
-        const own_abs = dto.own_abs ? new Prisma.Decimal(dto.own_abs) : null;
-        const own_tax = dto.own_tax ? new Prisma.Decimal(dto.own_tax) : null;
-        const own_tax_abs = dto.own_tax_abs
-            ? new Prisma.Decimal(dto.own_tax_abs)
-            : null;
-
-        return await this.repo.updatePortalRegion(
-            portalId,
-            regionId,
-            own_abs,
-            own_tax,
-            own_tax_abs,
-        );
+        const patch: PortalRegionOwnPatch = {
+            own_abs: dto.own_abs ?? null,
+            own_tax: dto.own_tax ?? null,
+            own_tax_abs: dto.own_tax_abs ?? null,
+            own_abs_region_id: null,
+        };
+        return await this.repo.updatePortalRegion(portalId, regionId, patch);
     }
 
     async deletePortalRegion(dto: DeletePortalRegionDto): Promise<boolean> {

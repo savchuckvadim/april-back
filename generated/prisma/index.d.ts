@@ -10771,10 +10771,12 @@ export namespace Prisma {
 
   export type RegionsCountOutputType = {
     portal_region: number
+    portal_region_own_abs: number
   }
 
   export type RegionsCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     portal_region?: boolean | RegionsCountOutputTypeCountPortal_regionArgs
+    portal_region_own_abs?: boolean | RegionsCountOutputTypeCountPortal_region_own_absArgs
   }
 
   // Custom InputTypes
@@ -10792,6 +10794,13 @@ export namespace Prisma {
    * RegionsCountOutputType without action
    */
   export type RegionsCountOutputTypeCountPortal_regionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: portal_regionWhereInput
+  }
+
+  /**
+   * RegionsCountOutputType without action
+   */
+  export type RegionsCountOutputTypeCountPortal_region_own_absArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: portal_regionWhereInput
   }
 
@@ -101436,6 +101445,7 @@ export namespace Prisma {
     own_abs: Decimal | null
     own_tax: Decimal | null
     own_tax_abs: Decimal | null
+    own_abs_region_id: number | null
   }
 
   export type Portal_regionSumAggregateOutputType = {
@@ -101444,6 +101454,7 @@ export namespace Prisma {
     own_abs: Decimal | null
     own_tax: Decimal | null
     own_tax_abs: Decimal | null
+    own_abs_region_id: bigint | null
   }
 
   export type Portal_regionMinAggregateOutputType = {
@@ -101452,6 +101463,7 @@ export namespace Prisma {
     own_abs: Decimal | null
     own_tax: Decimal | null
     own_tax_abs: Decimal | null
+    own_abs_region_id: bigint | null
   }
 
   export type Portal_regionMaxAggregateOutputType = {
@@ -101460,6 +101472,7 @@ export namespace Prisma {
     own_abs: Decimal | null
     own_tax: Decimal | null
     own_tax_abs: Decimal | null
+    own_abs_region_id: bigint | null
   }
 
   export type Portal_regionCountAggregateOutputType = {
@@ -101468,6 +101481,7 @@ export namespace Prisma {
     own_abs: number
     own_tax: number
     own_tax_abs: number
+    own_abs_region_id: number
     _all: number
   }
 
@@ -101478,6 +101492,7 @@ export namespace Prisma {
     own_abs?: true
     own_tax?: true
     own_tax_abs?: true
+    own_abs_region_id?: true
   }
 
   export type Portal_regionSumAggregateInputType = {
@@ -101486,6 +101501,7 @@ export namespace Prisma {
     own_abs?: true
     own_tax?: true
     own_tax_abs?: true
+    own_abs_region_id?: true
   }
 
   export type Portal_regionMinAggregateInputType = {
@@ -101494,6 +101510,7 @@ export namespace Prisma {
     own_abs?: true
     own_tax?: true
     own_tax_abs?: true
+    own_abs_region_id?: true
   }
 
   export type Portal_regionMaxAggregateInputType = {
@@ -101502,6 +101519,7 @@ export namespace Prisma {
     own_abs?: true
     own_tax?: true
     own_tax_abs?: true
+    own_abs_region_id?: true
   }
 
   export type Portal_regionCountAggregateInputType = {
@@ -101510,6 +101528,7 @@ export namespace Prisma {
     own_abs?: true
     own_tax?: true
     own_tax_abs?: true
+    own_abs_region_id?: true
     _all?: true
   }
 
@@ -101605,6 +101624,7 @@ export namespace Prisma {
     own_abs: Decimal | null
     own_tax: Decimal | null
     own_tax_abs: Decimal | null
+    own_abs_region_id: bigint | null
     _count: Portal_regionCountAggregateOutputType | null
     _avg: Portal_regionAvgAggregateOutputType | null
     _sum: Portal_regionSumAggregateOutputType | null
@@ -101632,8 +101652,10 @@ export namespace Prisma {
     own_abs?: boolean
     own_tax?: boolean
     own_tax_abs?: boolean
+    own_abs_region_id?: boolean
     portal?: boolean | PortalDefaultArgs<ExtArgs>
     region?: boolean | regionsDefaultArgs<ExtArgs>
+    own_abs_region?: boolean | portal_region$own_abs_regionArgs<ExtArgs>
   }, ExtArgs["result"]["portal_region"]>
 
 
@@ -101644,12 +101666,14 @@ export namespace Prisma {
     own_abs?: boolean
     own_tax?: boolean
     own_tax_abs?: boolean
+    own_abs_region_id?: boolean
   }
 
-  export type portal_regionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"portal_id" | "region_id" | "own_abs" | "own_tax" | "own_tax_abs", ExtArgs["result"]["portal_region"]>
+  export type portal_regionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"portal_id" | "region_id" | "own_abs" | "own_tax" | "own_tax_abs" | "own_abs_region_id", ExtArgs["result"]["portal_region"]>
   export type portal_regionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     portal?: boolean | PortalDefaultArgs<ExtArgs>
     region?: boolean | regionsDefaultArgs<ExtArgs>
+    own_abs_region?: boolean | portal_region$own_abs_regionArgs<ExtArgs>
   }
 
   export type $portal_regionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -101657,6 +101681,7 @@ export namespace Prisma {
     objects: {
       portal: Prisma.$PortalPayload<ExtArgs>
       region: Prisma.$regionsPayload<ExtArgs>
+      own_abs_region: Prisma.$regionsPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       portal_id: bigint
@@ -101664,6 +101689,10 @@ export namespace Prisma {
       own_abs: Prisma.Decimal | null
       own_tax: Prisma.Decimal | null
       own_tax_abs: Prisma.Decimal | null
+      /**
+       * Регион-источник своего рабса: действующий рабс портала берётся из его abs/tax/tax_abs
+       */
+      own_abs_region_id: bigint | null
     }, ExtArgs["result"]["portal_region"]>
     composites: {}
   }
@@ -102006,6 +102035,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     portal<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     region<T extends regionsDefaultArgs<ExtArgs> = {}>(args?: Subset<T, regionsDefaultArgs<ExtArgs>>): Prisma__regionsClient<$Result.GetResult<Prisma.$regionsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    own_abs_region<T extends portal_region$own_abs_regionArgs<ExtArgs> = {}>(args?: Subset<T, portal_region$own_abs_regionArgs<ExtArgs>>): Prisma__regionsClient<$Result.GetResult<Prisma.$regionsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -102040,6 +102070,7 @@ export namespace Prisma {
     readonly own_abs: FieldRef<"portal_region", 'Decimal'>
     readonly own_tax: FieldRef<"portal_region", 'Decimal'>
     readonly own_tax_abs: FieldRef<"portal_region", 'Decimal'>
+    readonly own_abs_region_id: FieldRef<"portal_region", 'BigInt'>
   }
     
 
@@ -102383,6 +102414,25 @@ export namespace Prisma {
   }
 
   /**
+   * portal_region.own_abs_region
+   */
+  export type portal_region$own_abs_regionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the regions
+     */
+    select?: regionsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the regions
+     */
+    omit?: regionsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: regionsInclude<ExtArgs> | null
+    where?: regionsWhereInput
+  }
+
+  /**
    * portal_region without action
    */
   export type portal_regionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -102656,6 +102706,7 @@ export namespace Prisma {
     tax?: boolean
     tax_abs?: boolean
     portal_region?: boolean | regions$portal_regionArgs<ExtArgs>
+    portal_region_own_abs?: boolean | regions$portal_region_own_absArgs<ExtArgs>
     _count?: boolean | RegionsCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["regions"]>
 
@@ -102677,6 +102728,7 @@ export namespace Prisma {
   export type regionsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "created_at" | "updated_at" | "number" | "title" | "code" | "infoblock" | "abs" | "tax" | "tax_abs", ExtArgs["result"]["regions"]>
   export type regionsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     portal_region?: boolean | regions$portal_regionArgs<ExtArgs>
+    portal_region_own_abs?: boolean | regions$portal_region_own_absArgs<ExtArgs>
     _count?: boolean | RegionsCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -102684,6 +102736,10 @@ export namespace Prisma {
     name: "regions"
     objects: {
       portal_region: Prisma.$portal_regionPayload<ExtArgs>[]
+      /**
+       * Связи портал→регион, для которых этот регион — источник своего рабса
+       */
+      portal_region_own_abs: Prisma.$portal_regionPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
@@ -103037,6 +103093,7 @@ export namespace Prisma {
   export interface Prisma__regionsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     portal_region<T extends regions$portal_regionArgs<ExtArgs> = {}>(args?: Subset<T, regions$portal_regionArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$portal_regionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    portal_region_own_abs<T extends regions$portal_region_own_absArgs<ExtArgs> = {}>(args?: Subset<T, regions$portal_region_own_absArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$portal_regionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -103422,6 +103479,30 @@ export namespace Prisma {
    * regions.portal_region
    */
   export type regions$portal_regionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the portal_region
+     */
+    select?: portal_regionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the portal_region
+     */
+    omit?: portal_regionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: portal_regionInclude<ExtArgs> | null
+    where?: portal_regionWhereInput
+    orderBy?: portal_regionOrderByWithRelationInput | portal_regionOrderByWithRelationInput[]
+    cursor?: portal_regionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: Portal_regionScalarFieldEnum | Portal_regionScalarFieldEnum[]
+  }
+
+  /**
+   * regions.portal_region_own_abs
+   */
+  export type regions$portal_region_own_absArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the portal_region
      */
@@ -123470,7 +123551,8 @@ export namespace Prisma {
     region_id: 'region_id',
     own_abs: 'own_abs',
     own_tax: 'own_tax',
-    own_tax_abs: 'own_tax_abs'
+    own_tax_abs: 'own_tax_abs',
+    own_abs_region_id: 'own_abs_region_id'
   };
 
   export type Portal_regionScalarFieldEnum = (typeof Portal_regionScalarFieldEnum)[keyof typeof Portal_regionScalarFieldEnum]
@@ -133986,8 +134068,10 @@ export namespace Prisma {
     own_abs?: DecimalNullableFilter<"portal_region"> | Decimal | DecimalJsLike | number | string | null
     own_tax?: DecimalNullableFilter<"portal_region"> | Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: DecimalNullableFilter<"portal_region"> | Decimal | DecimalJsLike | number | string | null
+    own_abs_region_id?: BigIntNullableFilter<"portal_region"> | bigint | number | null
     portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
     region?: XOR<RegionsScalarRelationFilter, regionsWhereInput>
+    own_abs_region?: XOR<RegionsNullableScalarRelationFilter, regionsWhereInput> | null
   }
 
   export type portal_regionOrderByWithRelationInput = {
@@ -133996,8 +134080,10 @@ export namespace Prisma {
     own_abs?: SortOrderInput | SortOrder
     own_tax?: SortOrderInput | SortOrder
     own_tax_abs?: SortOrderInput | SortOrder
+    own_abs_region_id?: SortOrderInput | SortOrder
     portal?: PortalOrderByWithRelationInput
     region?: regionsOrderByWithRelationInput
+    own_abs_region?: regionsOrderByWithRelationInput
   }
 
   export type portal_regionWhereUniqueInput = Prisma.AtLeast<{
@@ -134010,8 +134096,10 @@ export namespace Prisma {
     own_abs?: DecimalNullableFilter<"portal_region"> | Decimal | DecimalJsLike | number | string | null
     own_tax?: DecimalNullableFilter<"portal_region"> | Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: DecimalNullableFilter<"portal_region"> | Decimal | DecimalJsLike | number | string | null
+    own_abs_region_id?: BigIntNullableFilter<"portal_region"> | bigint | number | null
     portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
     region?: XOR<RegionsScalarRelationFilter, regionsWhereInput>
+    own_abs_region?: XOR<RegionsNullableScalarRelationFilter, regionsWhereInput> | null
   }, "portal_id_region_id">
 
   export type portal_regionOrderByWithAggregationInput = {
@@ -134020,6 +134108,7 @@ export namespace Prisma {
     own_abs?: SortOrderInput | SortOrder
     own_tax?: SortOrderInput | SortOrder
     own_tax_abs?: SortOrderInput | SortOrder
+    own_abs_region_id?: SortOrderInput | SortOrder
     _count?: portal_regionCountOrderByAggregateInput
     _avg?: portal_regionAvgOrderByAggregateInput
     _max?: portal_regionMaxOrderByAggregateInput
@@ -134036,6 +134125,7 @@ export namespace Prisma {
     own_abs?: DecimalNullableWithAggregatesFilter<"portal_region"> | Decimal | DecimalJsLike | number | string | null
     own_tax?: DecimalNullableWithAggregatesFilter<"portal_region"> | Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: DecimalNullableWithAggregatesFilter<"portal_region"> | Decimal | DecimalJsLike | number | string | null
+    own_abs_region_id?: BigIntNullableWithAggregatesFilter<"portal_region"> | bigint | number | null
   }
 
   export type regionsWhereInput = {
@@ -134053,6 +134143,7 @@ export namespace Prisma {
     tax?: DecimalFilter<"regions"> | Decimal | DecimalJsLike | number | string
     tax_abs?: DecimalFilter<"regions"> | Decimal | DecimalJsLike | number | string
     portal_region?: Portal_regionListRelationFilter
+    portal_region_own_abs?: Portal_regionListRelationFilter
   }
 
   export type regionsOrderByWithRelationInput = {
@@ -134067,6 +134158,7 @@ export namespace Prisma {
     tax?: SortOrder
     tax_abs?: SortOrder
     portal_region?: portal_regionOrderByRelationAggregateInput
+    portal_region_own_abs?: portal_regionOrderByRelationAggregateInput
     _relevance?: regionsOrderByRelevanceInput
   }
 
@@ -134085,6 +134177,7 @@ export namespace Prisma {
     tax?: DecimalFilter<"regions"> | Decimal | DecimalJsLike | number | string
     tax_abs?: DecimalFilter<"regions"> | Decimal | DecimalJsLike | number | string
     portal_region?: Portal_regionListRelationFilter
+    portal_region_own_abs?: Portal_regionListRelationFilter
   }, "id">
 
   export type regionsOrderByWithAggregationInput = {
@@ -145943,6 +146036,7 @@ export namespace Prisma {
     own_tax_abs?: Decimal | DecimalJsLike | number | string | null
     portal: PortalCreateNestedOneWithoutPortal_regionInput
     region: regionsCreateNestedOneWithoutPortal_regionInput
+    own_abs_region?: regionsCreateNestedOneWithoutPortal_region_own_absInput
   }
 
   export type portal_regionUncheckedCreateInput = {
@@ -145951,6 +146045,7 @@ export namespace Prisma {
     own_abs?: Decimal | DecimalJsLike | number | string | null
     own_tax?: Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: Decimal | DecimalJsLike | number | string | null
+    own_abs_region_id?: bigint | number | null
   }
 
   export type portal_regionUpdateInput = {
@@ -145959,6 +146054,7 @@ export namespace Prisma {
     own_tax_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     portal?: PortalUpdateOneRequiredWithoutPortal_regionNestedInput
     region?: regionsUpdateOneRequiredWithoutPortal_regionNestedInput
+    own_abs_region?: regionsUpdateOneWithoutPortal_region_own_absNestedInput
   }
 
   export type portal_regionUncheckedUpdateInput = {
@@ -145967,6 +146063,7 @@ export namespace Prisma {
     own_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     own_tax?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    own_abs_region_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   }
 
   export type portal_regionCreateManyInput = {
@@ -145975,6 +146072,7 @@ export namespace Prisma {
     own_abs?: Decimal | DecimalJsLike | number | string | null
     own_tax?: Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: Decimal | DecimalJsLike | number | string | null
+    own_abs_region_id?: bigint | number | null
   }
 
   export type portal_regionUpdateManyMutationInput = {
@@ -145989,6 +146087,7 @@ export namespace Prisma {
     own_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     own_tax?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    own_abs_region_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   }
 
   export type regionsCreateInput = {
@@ -146003,6 +146102,7 @@ export namespace Prisma {
     tax: Decimal | DecimalJsLike | number | string
     tax_abs: Decimal | DecimalJsLike | number | string
     portal_region?: portal_regionCreateNestedManyWithoutRegionInput
+    portal_region_own_abs?: portal_regionCreateNestedManyWithoutOwn_abs_regionInput
   }
 
   export type regionsUncheckedCreateInput = {
@@ -146017,6 +146117,7 @@ export namespace Prisma {
     tax: Decimal | DecimalJsLike | number | string
     tax_abs: Decimal | DecimalJsLike | number | string
     portal_region?: portal_regionUncheckedCreateNestedManyWithoutRegionInput
+    portal_region_own_abs?: portal_regionUncheckedCreateNestedManyWithoutOwn_abs_regionInput
   }
 
   export type regionsUpdateInput = {
@@ -146031,6 +146132,7 @@ export namespace Prisma {
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     tax_abs?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     portal_region?: portal_regionUpdateManyWithoutRegionNestedInput
+    portal_region_own_abs?: portal_regionUpdateManyWithoutOwn_abs_regionNestedInput
   }
 
   export type regionsUncheckedUpdateInput = {
@@ -146045,6 +146147,7 @@ export namespace Prisma {
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     tax_abs?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     portal_region?: portal_regionUncheckedUpdateManyWithoutRegionNestedInput
+    portal_region_own_abs?: portal_regionUncheckedUpdateManyWithoutOwn_abs_regionNestedInput
   }
 
   export type regionsCreateManyInput = {
@@ -154976,6 +155079,11 @@ export namespace Prisma {
     isNot?: regionsWhereInput
   }
 
+  export type RegionsNullableScalarRelationFilter = {
+    is?: regionsWhereInput | null
+    isNot?: regionsWhereInput | null
+  }
+
   export type portal_regionPortal_idRegion_idCompoundUniqueInput = {
     portal_id: bigint | number
     region_id: bigint | number
@@ -154987,6 +155095,7 @@ export namespace Prisma {
     own_abs?: SortOrder
     own_tax?: SortOrder
     own_tax_abs?: SortOrder
+    own_abs_region_id?: SortOrder
   }
 
   export type portal_regionAvgOrderByAggregateInput = {
@@ -154995,6 +155104,7 @@ export namespace Prisma {
     own_abs?: SortOrder
     own_tax?: SortOrder
     own_tax_abs?: SortOrder
+    own_abs_region_id?: SortOrder
   }
 
   export type portal_regionMaxOrderByAggregateInput = {
@@ -155003,6 +155113,7 @@ export namespace Prisma {
     own_abs?: SortOrder
     own_tax?: SortOrder
     own_tax_abs?: SortOrder
+    own_abs_region_id?: SortOrder
   }
 
   export type portal_regionMinOrderByAggregateInput = {
@@ -155011,6 +155122,7 @@ export namespace Prisma {
     own_abs?: SortOrder
     own_tax?: SortOrder
     own_tax_abs?: SortOrder
+    own_abs_region_id?: SortOrder
   }
 
   export type portal_regionSumOrderByAggregateInput = {
@@ -155019,6 +155131,7 @@ export namespace Prisma {
     own_abs?: SortOrder
     own_tax?: SortOrder
     own_tax_abs?: SortOrder
+    own_abs_region_id?: SortOrder
   }
 
   export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -161252,6 +161365,12 @@ export namespace Prisma {
     connect?: regionsWhereUniqueInput
   }
 
+  export type regionsCreateNestedOneWithoutPortal_region_own_absInput = {
+    create?: XOR<regionsCreateWithoutPortal_region_own_absInput, regionsUncheckedCreateWithoutPortal_region_own_absInput>
+    connectOrCreate?: regionsCreateOrConnectWithoutPortal_region_own_absInput
+    connect?: regionsWhereUniqueInput
+  }
+
   export type NullableDecimalFieldUpdateOperationsInput = {
     set?: Decimal | DecimalJsLike | number | string | null
     increment?: Decimal | DecimalJsLike | number | string
@@ -161276,6 +161395,16 @@ export namespace Prisma {
     update?: XOR<XOR<regionsUpdateToOneWithWhereWithoutPortal_regionInput, regionsUpdateWithoutPortal_regionInput>, regionsUncheckedUpdateWithoutPortal_regionInput>
   }
 
+  export type regionsUpdateOneWithoutPortal_region_own_absNestedInput = {
+    create?: XOR<regionsCreateWithoutPortal_region_own_absInput, regionsUncheckedCreateWithoutPortal_region_own_absInput>
+    connectOrCreate?: regionsCreateOrConnectWithoutPortal_region_own_absInput
+    upsert?: regionsUpsertWithoutPortal_region_own_absInput
+    disconnect?: regionsWhereInput | boolean
+    delete?: regionsWhereInput | boolean
+    connect?: regionsWhereUniqueInput
+    update?: XOR<XOR<regionsUpdateToOneWithWhereWithoutPortal_region_own_absInput, regionsUpdateWithoutPortal_region_own_absInput>, regionsUncheckedUpdateWithoutPortal_region_own_absInput>
+  }
+
   export type portal_regionCreateNestedManyWithoutRegionInput = {
     create?: XOR<portal_regionCreateWithoutRegionInput, portal_regionUncheckedCreateWithoutRegionInput> | portal_regionCreateWithoutRegionInput[] | portal_regionUncheckedCreateWithoutRegionInput[]
     connectOrCreate?: portal_regionCreateOrConnectWithoutRegionInput | portal_regionCreateOrConnectWithoutRegionInput[]
@@ -161283,10 +161412,24 @@ export namespace Prisma {
     connect?: portal_regionWhereUniqueInput | portal_regionWhereUniqueInput[]
   }
 
+  export type portal_regionCreateNestedManyWithoutOwn_abs_regionInput = {
+    create?: XOR<portal_regionCreateWithoutOwn_abs_regionInput, portal_regionUncheckedCreateWithoutOwn_abs_regionInput> | portal_regionCreateWithoutOwn_abs_regionInput[] | portal_regionUncheckedCreateWithoutOwn_abs_regionInput[]
+    connectOrCreate?: portal_regionCreateOrConnectWithoutOwn_abs_regionInput | portal_regionCreateOrConnectWithoutOwn_abs_regionInput[]
+    createMany?: portal_regionCreateManyOwn_abs_regionInputEnvelope
+    connect?: portal_regionWhereUniqueInput | portal_regionWhereUniqueInput[]
+  }
+
   export type portal_regionUncheckedCreateNestedManyWithoutRegionInput = {
     create?: XOR<portal_regionCreateWithoutRegionInput, portal_regionUncheckedCreateWithoutRegionInput> | portal_regionCreateWithoutRegionInput[] | portal_regionUncheckedCreateWithoutRegionInput[]
     connectOrCreate?: portal_regionCreateOrConnectWithoutRegionInput | portal_regionCreateOrConnectWithoutRegionInput[]
     createMany?: portal_regionCreateManyRegionInputEnvelope
+    connect?: portal_regionWhereUniqueInput | portal_regionWhereUniqueInput[]
+  }
+
+  export type portal_regionUncheckedCreateNestedManyWithoutOwn_abs_regionInput = {
+    create?: XOR<portal_regionCreateWithoutOwn_abs_regionInput, portal_regionUncheckedCreateWithoutOwn_abs_regionInput> | portal_regionCreateWithoutOwn_abs_regionInput[] | portal_regionUncheckedCreateWithoutOwn_abs_regionInput[]
+    connectOrCreate?: portal_regionCreateOrConnectWithoutOwn_abs_regionInput | portal_regionCreateOrConnectWithoutOwn_abs_regionInput[]
+    createMany?: portal_regionCreateManyOwn_abs_regionInputEnvelope
     connect?: portal_regionWhereUniqueInput | portal_regionWhereUniqueInput[]
   }
 
@@ -161312,6 +161455,20 @@ export namespace Prisma {
     deleteMany?: portal_regionScalarWhereInput | portal_regionScalarWhereInput[]
   }
 
+  export type portal_regionUpdateManyWithoutOwn_abs_regionNestedInput = {
+    create?: XOR<portal_regionCreateWithoutOwn_abs_regionInput, portal_regionUncheckedCreateWithoutOwn_abs_regionInput> | portal_regionCreateWithoutOwn_abs_regionInput[] | portal_regionUncheckedCreateWithoutOwn_abs_regionInput[]
+    connectOrCreate?: portal_regionCreateOrConnectWithoutOwn_abs_regionInput | portal_regionCreateOrConnectWithoutOwn_abs_regionInput[]
+    upsert?: portal_regionUpsertWithWhereUniqueWithoutOwn_abs_regionInput | portal_regionUpsertWithWhereUniqueWithoutOwn_abs_regionInput[]
+    createMany?: portal_regionCreateManyOwn_abs_regionInputEnvelope
+    set?: portal_regionWhereUniqueInput | portal_regionWhereUniqueInput[]
+    disconnect?: portal_regionWhereUniqueInput | portal_regionWhereUniqueInput[]
+    delete?: portal_regionWhereUniqueInput | portal_regionWhereUniqueInput[]
+    connect?: portal_regionWhereUniqueInput | portal_regionWhereUniqueInput[]
+    update?: portal_regionUpdateWithWhereUniqueWithoutOwn_abs_regionInput | portal_regionUpdateWithWhereUniqueWithoutOwn_abs_regionInput[]
+    updateMany?: portal_regionUpdateManyWithWhereWithoutOwn_abs_regionInput | portal_regionUpdateManyWithWhereWithoutOwn_abs_regionInput[]
+    deleteMany?: portal_regionScalarWhereInput | portal_regionScalarWhereInput[]
+  }
+
   export type portal_regionUncheckedUpdateManyWithoutRegionNestedInput = {
     create?: XOR<portal_regionCreateWithoutRegionInput, portal_regionUncheckedCreateWithoutRegionInput> | portal_regionCreateWithoutRegionInput[] | portal_regionUncheckedCreateWithoutRegionInput[]
     connectOrCreate?: portal_regionCreateOrConnectWithoutRegionInput | portal_regionCreateOrConnectWithoutRegionInput[]
@@ -161323,6 +161480,20 @@ export namespace Prisma {
     connect?: portal_regionWhereUniqueInput | portal_regionWhereUniqueInput[]
     update?: portal_regionUpdateWithWhereUniqueWithoutRegionInput | portal_regionUpdateWithWhereUniqueWithoutRegionInput[]
     updateMany?: portal_regionUpdateManyWithWhereWithoutRegionInput | portal_regionUpdateManyWithWhereWithoutRegionInput[]
+    deleteMany?: portal_regionScalarWhereInput | portal_regionScalarWhereInput[]
+  }
+
+  export type portal_regionUncheckedUpdateManyWithoutOwn_abs_regionNestedInput = {
+    create?: XOR<portal_regionCreateWithoutOwn_abs_regionInput, portal_regionUncheckedCreateWithoutOwn_abs_regionInput> | portal_regionCreateWithoutOwn_abs_regionInput[] | portal_regionUncheckedCreateWithoutOwn_abs_regionInput[]
+    connectOrCreate?: portal_regionCreateOrConnectWithoutOwn_abs_regionInput | portal_regionCreateOrConnectWithoutOwn_abs_regionInput[]
+    upsert?: portal_regionUpsertWithWhereUniqueWithoutOwn_abs_regionInput | portal_regionUpsertWithWhereUniqueWithoutOwn_abs_regionInput[]
+    createMany?: portal_regionCreateManyOwn_abs_regionInputEnvelope
+    set?: portal_regionWhereUniqueInput | portal_regionWhereUniqueInput[]
+    disconnect?: portal_regionWhereUniqueInput | portal_regionWhereUniqueInput[]
+    delete?: portal_regionWhereUniqueInput | portal_regionWhereUniqueInput[]
+    connect?: portal_regionWhereUniqueInput | portal_regionWhereUniqueInput[]
+    update?: portal_regionUpdateWithWhereUniqueWithoutOwn_abs_regionInput | portal_regionUpdateWithWhereUniqueWithoutOwn_abs_regionInput[]
+    updateMany?: portal_regionUpdateManyWithWhereWithoutOwn_abs_regionInput | portal_regionUpdateManyWithWhereWithoutOwn_abs_regionInput[]
     deleteMany?: portal_regionScalarWhereInput | portal_regionScalarWhereInput[]
   }
 
@@ -169325,6 +169496,7 @@ export namespace Prisma {
     own_tax?: Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: Decimal | DecimalJsLike | number | string | null
     region: regionsCreateNestedOneWithoutPortal_regionInput
+    own_abs_region?: regionsCreateNestedOneWithoutPortal_region_own_absInput
   }
 
   export type portal_regionUncheckedCreateWithoutPortalInput = {
@@ -169332,6 +169504,7 @@ export namespace Prisma {
     own_abs?: Decimal | DecimalJsLike | number | string | null
     own_tax?: Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: Decimal | DecimalJsLike | number | string | null
+    own_abs_region_id?: bigint | number | null
   }
 
   export type portal_regionCreateOrConnectWithoutPortalInput = {
@@ -170917,6 +171090,7 @@ export namespace Prisma {
     own_abs?: DecimalNullableFilter<"portal_region"> | Decimal | DecimalJsLike | number | string | null
     own_tax?: DecimalNullableFilter<"portal_region"> | Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: DecimalNullableFilter<"portal_region"> | Decimal | DecimalJsLike | number | string | null
+    own_abs_region_id?: BigIntNullableFilter<"portal_region"> | bigint | number | null
   }
 
   export type ClientUpsertWithoutPortalsInput = {
@@ -181828,6 +182002,7 @@ export namespace Prisma {
     abs: Decimal | DecimalJsLike | number | string
     tax: Decimal | DecimalJsLike | number | string
     tax_abs: Decimal | DecimalJsLike | number | string
+    portal_region_own_abs?: portal_regionCreateNestedManyWithoutOwn_abs_regionInput
   }
 
   export type regionsUncheckedCreateWithoutPortal_regionInput = {
@@ -181841,11 +182016,45 @@ export namespace Prisma {
     abs: Decimal | DecimalJsLike | number | string
     tax: Decimal | DecimalJsLike | number | string
     tax_abs: Decimal | DecimalJsLike | number | string
+    portal_region_own_abs?: portal_regionUncheckedCreateNestedManyWithoutOwn_abs_regionInput
   }
 
   export type regionsCreateOrConnectWithoutPortal_regionInput = {
     where: regionsWhereUniqueInput
     create: XOR<regionsCreateWithoutPortal_regionInput, regionsUncheckedCreateWithoutPortal_regionInput>
+  }
+
+  export type regionsCreateWithoutPortal_region_own_absInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    number: number
+    title: string
+    code: string
+    infoblock: string
+    abs: Decimal | DecimalJsLike | number | string
+    tax: Decimal | DecimalJsLike | number | string
+    tax_abs: Decimal | DecimalJsLike | number | string
+    portal_region?: portal_regionCreateNestedManyWithoutRegionInput
+  }
+
+  export type regionsUncheckedCreateWithoutPortal_region_own_absInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    number: number
+    title: string
+    code: string
+    infoblock: string
+    abs: Decimal | DecimalJsLike | number | string
+    tax: Decimal | DecimalJsLike | number | string
+    tax_abs: Decimal | DecimalJsLike | number | string
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutRegionInput
+  }
+
+  export type regionsCreateOrConnectWithoutPortal_region_own_absInput = {
+    where: regionsWhereUniqueInput
+    create: XOR<regionsCreateWithoutPortal_region_own_absInput, regionsUncheckedCreateWithoutPortal_region_own_absInput>
   }
 
   export type PortalUpsertWithoutPortal_regionInput = {
@@ -182015,6 +182224,7 @@ export namespace Prisma {
     abs?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     tax_abs?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    portal_region_own_abs?: portal_regionUpdateManyWithoutOwn_abs_regionNestedInput
   }
 
   export type regionsUncheckedUpdateWithoutPortal_regionInput = {
@@ -182028,6 +182238,46 @@ export namespace Prisma {
     abs?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     tax_abs?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    portal_region_own_abs?: portal_regionUncheckedUpdateManyWithoutOwn_abs_regionNestedInput
+  }
+
+  export type regionsUpsertWithoutPortal_region_own_absInput = {
+    update: XOR<regionsUpdateWithoutPortal_region_own_absInput, regionsUncheckedUpdateWithoutPortal_region_own_absInput>
+    create: XOR<regionsCreateWithoutPortal_region_own_absInput, regionsUncheckedCreateWithoutPortal_region_own_absInput>
+    where?: regionsWhereInput
+  }
+
+  export type regionsUpdateToOneWithWhereWithoutPortal_region_own_absInput = {
+    where?: regionsWhereInput
+    data: XOR<regionsUpdateWithoutPortal_region_own_absInput, regionsUncheckedUpdateWithoutPortal_region_own_absInput>
+  }
+
+  export type regionsUpdateWithoutPortal_region_own_absInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    infoblock?: StringFieldUpdateOperationsInput | string
+    abs?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    tax_abs?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    portal_region?: portal_regionUpdateManyWithoutRegionNestedInput
+  }
+
+  export type regionsUncheckedUpdateWithoutPortal_region_own_absInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    infoblock?: StringFieldUpdateOperationsInput | string
+    abs?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    tax_abs?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    portal_region?: portal_regionUncheckedUpdateManyWithoutRegionNestedInput
   }
 
   export type portal_regionCreateWithoutRegionInput = {
@@ -182035,6 +182285,7 @@ export namespace Prisma {
     own_tax?: Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: Decimal | DecimalJsLike | number | string | null
     portal: PortalCreateNestedOneWithoutPortal_regionInput
+    own_abs_region?: regionsCreateNestedOneWithoutPortal_region_own_absInput
   }
 
   export type portal_regionUncheckedCreateWithoutRegionInput = {
@@ -182042,6 +182293,7 @@ export namespace Prisma {
     own_abs?: Decimal | DecimalJsLike | number | string | null
     own_tax?: Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: Decimal | DecimalJsLike | number | string | null
+    own_abs_region_id?: bigint | number | null
   }
 
   export type portal_regionCreateOrConnectWithoutRegionInput = {
@@ -182051,6 +182303,32 @@ export namespace Prisma {
 
   export type portal_regionCreateManyRegionInputEnvelope = {
     data: portal_regionCreateManyRegionInput | portal_regionCreateManyRegionInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type portal_regionCreateWithoutOwn_abs_regionInput = {
+    own_abs?: Decimal | DecimalJsLike | number | string | null
+    own_tax?: Decimal | DecimalJsLike | number | string | null
+    own_tax_abs?: Decimal | DecimalJsLike | number | string | null
+    portal: PortalCreateNestedOneWithoutPortal_regionInput
+    region: regionsCreateNestedOneWithoutPortal_regionInput
+  }
+
+  export type portal_regionUncheckedCreateWithoutOwn_abs_regionInput = {
+    portal_id: bigint | number
+    region_id: bigint | number
+    own_abs?: Decimal | DecimalJsLike | number | string | null
+    own_tax?: Decimal | DecimalJsLike | number | string | null
+    own_tax_abs?: Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type portal_regionCreateOrConnectWithoutOwn_abs_regionInput = {
+    where: portal_regionWhereUniqueInput
+    create: XOR<portal_regionCreateWithoutOwn_abs_regionInput, portal_regionUncheckedCreateWithoutOwn_abs_regionInput>
+  }
+
+  export type portal_regionCreateManyOwn_abs_regionInputEnvelope = {
+    data: portal_regionCreateManyOwn_abs_regionInput | portal_regionCreateManyOwn_abs_regionInput[]
     skipDuplicates?: boolean
   }
 
@@ -182068,6 +182346,22 @@ export namespace Prisma {
   export type portal_regionUpdateManyWithWhereWithoutRegionInput = {
     where: portal_regionScalarWhereInput
     data: XOR<portal_regionUpdateManyMutationInput, portal_regionUncheckedUpdateManyWithoutRegionInput>
+  }
+
+  export type portal_regionUpsertWithWhereUniqueWithoutOwn_abs_regionInput = {
+    where: portal_regionWhereUniqueInput
+    update: XOR<portal_regionUpdateWithoutOwn_abs_regionInput, portal_regionUncheckedUpdateWithoutOwn_abs_regionInput>
+    create: XOR<portal_regionCreateWithoutOwn_abs_regionInput, portal_regionUncheckedCreateWithoutOwn_abs_regionInput>
+  }
+
+  export type portal_regionUpdateWithWhereUniqueWithoutOwn_abs_regionInput = {
+    where: portal_regionWhereUniqueInput
+    data: XOR<portal_regionUpdateWithoutOwn_abs_regionInput, portal_regionUncheckedUpdateWithoutOwn_abs_regionInput>
+  }
+
+  export type portal_regionUpdateManyWithWhereWithoutOwn_abs_regionInput = {
+    where: portal_regionScalarWhereInput
+    data: XOR<portal_regionUpdateManyMutationInput, portal_regionUncheckedUpdateManyWithoutOwn_abs_regionInput>
   }
 
   export type OfferTemplateCreateWithoutOfferTemplateFontsInput = {
@@ -188226,6 +188520,7 @@ export namespace Prisma {
     own_abs?: Decimal | DecimalJsLike | number | string | null
     own_tax?: Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: Decimal | DecimalJsLike | number | string | null
+    own_abs_region_id?: bigint | number | null
   }
 
   export type smartsCreateManyPortalsInput = {
@@ -189217,6 +189512,7 @@ export namespace Prisma {
     own_tax?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     region?: regionsUpdateOneRequiredWithoutPortal_regionNestedInput
+    own_abs_region?: regionsUpdateOneWithoutPortal_region_own_absNestedInput
   }
 
   export type portal_regionUncheckedUpdateWithoutPortalInput = {
@@ -189224,6 +189520,7 @@ export namespace Prisma {
     own_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     own_tax?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    own_abs_region_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   }
 
   export type portal_regionUncheckedUpdateManyWithoutPortalInput = {
@@ -189231,6 +189528,7 @@ export namespace Prisma {
     own_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     own_tax?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    own_abs_region_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   }
 
   export type smartsUpdateWithoutPortalsInput = {
@@ -191717,6 +192015,15 @@ export namespace Prisma {
     own_abs?: Decimal | DecimalJsLike | number | string | null
     own_tax?: Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: Decimal | DecimalJsLike | number | string | null
+    own_abs_region_id?: bigint | number | null
+  }
+
+  export type portal_regionCreateManyOwn_abs_regionInput = {
+    portal_id: bigint | number
+    region_id: bigint | number
+    own_abs?: Decimal | DecimalJsLike | number | string | null
+    own_tax?: Decimal | DecimalJsLike | number | string | null
+    own_tax_abs?: Decimal | DecimalJsLike | number | string | null
   }
 
   export type portal_regionUpdateWithoutRegionInput = {
@@ -191724,6 +192031,7 @@ export namespace Prisma {
     own_tax?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     portal?: PortalUpdateOneRequiredWithoutPortal_regionNestedInput
+    own_abs_region?: regionsUpdateOneWithoutPortal_region_own_absNestedInput
   }
 
   export type portal_regionUncheckedUpdateWithoutRegionInput = {
@@ -191731,10 +192039,36 @@ export namespace Prisma {
     own_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     own_tax?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    own_abs_region_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   }
 
   export type portal_regionUncheckedUpdateManyWithoutRegionInput = {
     portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    own_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    own_tax?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    own_tax_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    own_abs_region_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  }
+
+  export type portal_regionUpdateWithoutOwn_abs_regionInput = {
+    own_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    own_tax?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    own_tax_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    portal?: PortalUpdateOneRequiredWithoutPortal_regionNestedInput
+    region?: regionsUpdateOneRequiredWithoutPortal_regionNestedInput
+  }
+
+  export type portal_regionUncheckedUpdateWithoutOwn_abs_regionInput = {
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    region_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    own_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    own_tax?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    own_tax_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type portal_regionUncheckedUpdateManyWithoutOwn_abs_regionInput = {
+    portal_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    region_id?: BigIntFieldUpdateOperationsInput | bigint | number
     own_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     own_tax?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     own_tax_abs?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null

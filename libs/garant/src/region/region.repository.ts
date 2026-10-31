@@ -1,5 +1,9 @@
-import { Decimal } from '@prisma/client/runtime/library';
-import { PortalRegionEntity, RegionEntity } from './region.entity';
+import {
+    PortalRegionEntity,
+    PortalRegionLink,
+    PortalRegionOwnPatch,
+    RegionEntity,
+} from './region.entity';
 
 export abstract class RegionRepository {
     abstract create(
@@ -12,7 +16,12 @@ export abstract class RegionRepository {
     abstract findMany(): Promise<RegionEntity[] | null>;
     abstract findByCode(code: string): Promise<RegionEntity | null>;
     abstract findByCodes(codes: string[]): Promise<RegionEntity[] | null>;
+    /** Регионы портала с действующей для него ценой (источник → ручной → общий) */
     abstract findByPortalId(portalId: number): Promise<RegionEntity[] | null>;
+    /** Связи портал→регион как есть: ручной рабс и регион-источник */
+    abstract findPortalRegionLinks(
+        portalId: number,
+    ): Promise<PortalRegionLink[]>;
     abstract findByPortalIdPortalRegion(
         portalId: number,
         regionId: number,
@@ -25,9 +34,7 @@ export abstract class RegionRepository {
     abstract updatePortalRegion(
         portalId: number,
         regionId: number,
-        own_abs: Decimal | null,
-        own_tax: Decimal | null,
-        own_tax_abs: Decimal | null,
+        patch: PortalRegionOwnPatch,
     ): Promise<RegionEntity | null>;
     abstract deletePortalRegion(
         portalId: number,

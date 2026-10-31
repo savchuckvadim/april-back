@@ -1,4 +1,4 @@
-import { OfferWordByTemplateGenerateDto } from '../../dto/offer-word-generate-request.dto';
+import { OfferRenderInput } from '../../types/offer-render-input.type';
 import { Injectable } from '@nestjs/common';
 import { ProviderService } from '@lib/portal-lib/konstructor/provider';
 
@@ -29,7 +29,7 @@ import {
 } from './offer-render-general-product.service';
 import { getWithTax } from '@app/konstructor/document-generate/lib/get-with-tax.util';
 
-type IOfferWordRenderData = IInfoblocksRenderData &
+export type IOfferWordRenderData = IInfoblocksRenderData &
     IProductRenderData &
     IProviderRqRenderData &
     IOfferRenderRecipientData &
@@ -50,7 +50,7 @@ export class OfferRenderDataService {
     ) {}
 
     public async getOfferRenderData(
-        dto: OfferWordByTemplateGenerateDto,
+        dto: OfferRenderInput,
     ): Promise<IOfferWordRenderData> {
         const withTotal = this.getWithTotalFlag(dto);
 
@@ -124,12 +124,12 @@ export class OfferRenderDataService {
     }
 
     private async renderDoumentInfoblocks(
-        dto: OfferWordByTemplateGenerateDto,
+        dto: OfferRenderInput,
     ): Promise<IInfoblocksRenderData> {
         return await this.offerRenderInfoblocksService.renderInfoblocks(dto);
     }
 
-    private getWithTotalFlag(dto: OfferWordByTemplateGenerateDto): boolean {
+    private getWithTotalFlag(dto: OfferRenderInput): boolean {
         const withAlternative = dto.sets.alternative.length > 0;
         return !withAlternative;
     }

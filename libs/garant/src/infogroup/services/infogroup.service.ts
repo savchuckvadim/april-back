@@ -26,6 +26,10 @@ export class InfogroupService {
         return this.infogroupRepository.findMany();
     }
 
+    async findManyWithPackages(): Promise<InfogroupEntity[] | null> {
+        return this.infogroupRepository.findManyWithPackages();
+    }
+
     async addInfoblocks(
         infogroupId: string,
         infoblockIds: string[],

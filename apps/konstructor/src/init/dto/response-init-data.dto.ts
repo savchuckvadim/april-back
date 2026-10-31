@@ -159,6 +159,11 @@ export class RegionInitDto implements RegionEntity {
     tax: number;
     @ApiProperty({ description: 'Tax Abs', type: Number })
     tax_abs: number;
+    @ApiProperty({
+        description: 'Регион привязан к порталу (portal_region)',
+        type: Boolean,
+    })
+    inPortal: boolean;
 }
 
 // export class ContractDto {

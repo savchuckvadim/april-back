@@ -164,12 +164,19 @@ export class InitComplectService {
         return { filling, infoblocks };
     }
 
+    /**
+     * Отдельные ЭР комплекта. Группа пакетов (`per`) тоже имеет type = er:
+     * без исключения пакет попадал сюда и считался в весе дважды — как ЭР и
+     * как пакет.
+     */
     private getErs(iblocks: InfoblockEntity[]): {
         numbers: number[];
         codes: string[];
     } {
         const filtredInfoblocks = iblocks.filter(
-            iblock => iblock.group?.type === InfogroupType.ER,
+            iblock =>
+                iblock.group?.type === InfogroupType.ER &&
+                iblock.group?.code !== 'per',
         );
         const numbers = filtredInfoblocks.map(iblock => iblock.number);
         const codes = filtredInfoblocks.map(iblock => iblock.code);
@@ -201,9 +208,11 @@ export class InitComplectService {
             iblock => iblock.group?.code === 'per',
         );
 
+        // ЭР из двух пакетов (Офис) считается один раз
         filtredInfoblocks.map(iblock => {
             iblock.packageInfoblocks &&
                 iblock.packageInfoblocks.map((piblock: InfoblockEntity) => {
+                    if (codes.includes(piblock.code)) return;
                     numbers.push(piblock.number);
                     codes.push(piblock.code);
                 });

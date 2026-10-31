@@ -38,7 +38,12 @@ export class AdminPortalGarantRegionController {
         required: true,
         description: 'ID портала',
     })
-    @ApiOperation({ summary: 'Получить все регионы' })
+    @ApiOperation({
+        summary: 'Все регионы справочника с привязкой и своей ценой портала',
+        description:
+            'abs/tax/tax_abs — общий рабс региона, own_* — свои настройки портала ' +
+            '(ручной рабс или регион-источник), effective_* — действующая цена.',
+    })
     @ApiResponse({
         status: 200,
         description: 'Список всех регионов',
@@ -46,20 +51,16 @@ export class AdminPortalGarantRegionController {
     })
     async list(
         @Query('portalId') portalId: number,
-    ): Promise<GetPortalRegionResponseDto[] | null> {
-        const regions =
-            await this.portalRegionService.getPortalRegions(portalId);
-        if (!regions) {
-            throw new NotFoundException('Regions not found');
-        }
-        return regions;
+    ): Promise<GetPortalRegionResponseDto[]> {
+        return await this.portalRegionService.getPortalRegions(portalId);
     }
+
     @Post()
     @ApiBody({ type: CreatePortalRegionDtoAdminRequest })
-    @ApiOperation({ summary: 'Создать регион для портала' })
+    @ApiOperation({ summary: 'Привязать регион к порталу' })
     @ApiResponse({
         status: 200,
-        description: 'Регион успешно создан',
+        description: 'Регион успешно привязан',
         type: GetPortalRegionResponseDto,
     })
     async create(
@@ -69,21 +70,21 @@ export class AdminPortalGarantRegionController {
         if (!region) {
             throw new BadRequestException('Region not created');
         }
-        return new GetPortalRegionResponseDto(region, true);
+        return region;
     }
 
     @Put('bulk')
     @ApiBody({
         type: BulkSetPortalRegionsDto,
         description:
-            'ID портала и изменённые строки регионов (чекбокс + собственный рабс).',
+            'ID портала и изменённые строки регионов (чекбокс, ручной рабс или регион-источник).',
     })
     @ApiOperation({
-        summary: 'Массово применить чекбоксы регионов портала',
+        summary: 'Массово применить чекбоксы и свои цены регионов портала',
         description:
-            'Включает/выключает регионы портала и ставит собственный рабс ' +
-            '(own_abs) одним запросом — под интерфейс с чекбоксами. ' +
-            'Достаточно передавать только изменившиеся строки.',
+            'Включает/выключает регионы портала и ставит свою цену одним запросом: ' +
+            'ручной рабс (ownAbs) или регион-источник (ownAbsRegionId), чей рабс ' +
+            'портал берёт за свой. Достаточно передавать только изменившиеся строки.',
     })
     @ApiResponse({
         status: 200,
@@ -97,17 +98,17 @@ export class AdminPortalGarantRegionController {
     }
 
     @Get('update-initial-data/:portalId/:regionId')
-    @ApiOperation({ summary: 'Получить регион для портала' })
+    @ApiOperation({ summary: 'Данные формы своей цены региона портала' })
     @ApiResponse({
         status: 200,
-        description: 'Регион успешно получен',
+        description: 'Данные формы получены',
         type: UpdatePortalRegionDtoAdmin,
     })
     async getUpdateInitialData(
         @Param('portalId') portalId: number,
         @Param('regionId') regionId: number,
     ): Promise<UpdatePortalRegionDtoAdmin> {
-        const region: UpdatePortalRegionDtoAdmin | null =
+        const region =
             await this.portalRegionService.getPortalRegionUpdateInitialData(
                 portalId,
                 regionId,
@@ -120,10 +121,14 @@ export class AdminPortalGarantRegionController {
 
     @Put(':portalId/:regionId')
     @ApiBody({ type: UpdatePortalRegionDtoAdmin })
-    @ApiOperation({ summary: 'Обновить регион для портала' })
+    @ApiOperation({
+        summary: 'Обновить свою цену региона портала',
+        description:
+            'Ручной рабс или регион-источник; оба пустые — возврат к общему рабсу.',
+    })
     @ApiResponse({
         status: 200,
-        description: 'Регион успешно обновлен',
+        description: 'Регион успешно обновлён',
         type: GetPortalRegionResponseDto,
     })
     async update(
@@ -131,7 +136,6 @@ export class AdminPortalGarantRegionController {
         @Param('regionId') regionId: number,
         @Body() dto: UpdatePortalRegionDtoAdmin,
     ): Promise<GetPortalRegionResponseDto> {
-        console.log(dto);
         const region = await this.portalRegionService.updatePortalRegion(
             portalId,
             regionId,
@@ -140,14 +144,14 @@ export class AdminPortalGarantRegionController {
         if (!region) {
             throw new BadRequestException('Region not updated');
         }
-        return new GetPortalRegionResponseDto(region, true);
+        return region;
     }
 
     @Delete(':portalId/:regionId')
-    @ApiOperation({ summary: 'Удалить регион для портала' })
+    @ApiOperation({ summary: 'Отвязать регион от портала' })
     @ApiResponse({
         status: 200,
-        description: 'Регион успешно удален',
+        description: 'Регион успешно отвязан',
         type: Boolean,
     })
     async delete(

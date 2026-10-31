@@ -1,11 +1,18 @@
 import { PortalRegionService } from '../services/portal-region.service';
 
+const KNOWN_REGION_IDS = [12, 13, 47, 99];
+
 const makeService = (enabledRegionIds: number[]) => {
     const regionService = {
-        findByPortalId: jest
+        findPortalRegionLinks: jest
             .fn()
             .mockResolvedValue(
-                enabledRegionIds.map(id => ({ id: String(id) })),
+                enabledRegionIds.map(regionId => ({ regionId })),
+            ),
+        findAll: jest
+            .fn()
+            .mockResolvedValue(
+                KNOWN_REGION_IDS.map(id => ({ id: String(id) })),
             ),
         createPortalRegion: jest.fn().mockResolvedValue({ id: '1' }),
         deletePortalRegion: jest.fn().mockResolvedValue(true),
@@ -19,8 +26,15 @@ const makeService = (enabledRegionIds: number[]) => {
     return { service, regionService };
 };
 
+const lastPatch = (regionService: { updatePortalRegion: jest.Mock }) => {
+    const [call] = regionService.updatePortalRegion.mock.calls as [
+        [number, number, Record<string, unknown>],
+    ];
+    return call[2];
+};
+
 describe('PortalRegionService.bulkSetPortalRegions', () => {
-    it('включает невключённый регион и ставит собственный рабс', async () => {
+    it('включает невключённый регион и ставит ручной рабс', async () => {
         const { service, regionService } = makeService([]);
         const result = await service.bulkSetPortalRegions({
             portalId: 3,
@@ -30,17 +44,12 @@ describe('PortalRegionService.bulkSetPortalRegions', () => {
         expect(result.enabled).toBe(1);
         expect(result.updatedOwn).toBe(1);
         expect(regionService.createPortalRegion).toHaveBeenCalledWith(3, 12);
-        const [, , abs, tax, taxAbs] = regionService.updatePortalRegion.mock
-            .calls[0] as [
-            number,
-            number,
-            { toString(): string },
-            { toString(): string },
-            { toString(): string },
-        ];
-        expect(abs.toString()).toBe('5000');
-        expect(tax.toString()).toBe('1.2');
-        expect(taxAbs.toString()).toBe('6000');
+        expect(lastPatch(regionService)).toEqual({
+            own_abs: '5000.00',
+            own_tax: '1.20',
+            own_tax_abs: '6000.00',
+            own_abs_region_id: null,
+        });
     });
 
     it('уже включённый регион не создаётся повторно, но own обновляется', async () => {
@@ -55,7 +64,7 @@ describe('PortalRegionService.bulkSetPortalRegions', () => {
         expect(regionService.createPortalRegion).not.toHaveBeenCalled();
     });
 
-    it('без ownAbs собственный рабс не трогается', async () => {
+    it('без ownAbs и ownAbsRegionId своя цена не трогается', async () => {
         const { service, regionService } = makeService([]);
         await service.bulkSetPortalRegions({
             portalId: 3,
@@ -65,7 +74,7 @@ describe('PortalRegionService.bulkSetPortalRegions', () => {
         expect(regionService.updatePortalRegion).not.toHaveBeenCalled();
     });
 
-    it('ownAbs: null сбрасывает own-поля в 0', async () => {
+    it('ownAbs: null сбрасывает own-поля и источник в NULL', async () => {
         const { service, regionService } = makeService([12]);
         const result = await service.bulkSetPortalRegions({
             portalId: 3,
@@ -73,17 +82,43 @@ describe('PortalRegionService.bulkSetPortalRegions', () => {
         });
 
         expect(result.updatedOwn).toBe(1);
-        const [, , abs, tax, taxAbs] = regionService.updatePortalRegion.mock
-            .calls[0] as [
-            number,
-            number,
-            { toString(): string },
-            { toString(): string },
-            { toString(): string },
-        ];
-        expect(abs.toString()).toBe('0');
-        expect(tax.toString()).toBe('0');
-        expect(taxAbs.toString()).toBe('0');
+        expect(lastPatch(regionService)).toEqual({
+            own_abs: null,
+            own_tax: null,
+            own_tax_abs: null,
+            own_abs_region_id: null,
+        });
+    });
+
+    it('регион-источник: ссылка ставится, ручные поля сбрасываются', async () => {
+        const { service, regionService } = makeService([12]);
+        const result = await service.bulkSetPortalRegions({
+            portalId: 3,
+            items: [{ regionId: 12, enabled: true, ownAbsRegionId: 47 }],
+        });
+
+        expect(result.updatedOwn).toBe(1);
+        expect(lastPatch(regionService)).toEqual({
+            own_abs: null,
+            own_tax: null,
+            own_tax_abs: null,
+            own_abs_region_id: 47,
+        });
+    });
+
+    it('источник сам на себя или неизвестный — строка в skipped', async () => {
+        const { service, regionService } = makeService([12, 13]);
+        const result = await service.bulkSetPortalRegions({
+            portalId: 3,
+            items: [
+                { regionId: 12, enabled: true, ownAbsRegionId: 12 },
+                { regionId: 13, enabled: true, ownAbsRegionId: 555 },
+            ],
+        });
+
+        expect(result.updatedOwn).toBe(0);
+        expect(regionService.updatePortalRegion).not.toHaveBeenCalled();
+        expect(result.skipped.map(row => row.regionId)).toEqual([12, 13]);
     });
 
     it('выключение включённого удаляет связь, невключённого — тихий пропуск', async () => {
