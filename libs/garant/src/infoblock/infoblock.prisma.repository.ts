@@ -353,10 +353,11 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
                 data: {
                     number: data.number,
                     name: data.name,
-                    title: data.title ?? null,
-                    description: data.description ?? null,
-                    descriptionForSale: data.descriptionForSale ?? null,
-                    shortDescription: data.shortDescription ?? null,
+                    // undefined — поле не прислали, не трогаем; null — очистить
+                    title: data.title,
+                    description: data.description,
+                    descriptionForSale: data.descriptionForSale,
+                    shortDescription: data.shortDescription,
                     weight: data.weight,
                     code: data.code,
                     inGroupId: data.inGroupId
@@ -371,9 +372,9 @@ export class InfoblockPrismaRepository implements InfoblockRepository {
                     isFree: data.isFree,
                     isShowing: data.isShowing,
                     isSet: data.isSet,
-                    isProduct: data.isProduct ?? null,
-                    isPackage: data.isPackage ?? null,
-                    tag: data.tag ?? null,
+                    isProduct: data.isProduct,
+                    isPackage: data.isPackage,
+                    tag: data.tag,
                     parent_id: data.parent_id
                         ? BigInt(data.parent_id)
                         : data.parent_id === null

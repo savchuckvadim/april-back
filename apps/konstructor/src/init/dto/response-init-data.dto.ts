@@ -16,6 +16,18 @@ export class ComplectCodesDto {
     packetsEr: string[];
     @ApiProperty({ description: 'Коды ЭР внутри пакетов', type: [String] })
     ersInPacket: string[];
+    @ApiProperty({
+        description: 'Коды сервисов LT, входящих в комплект',
+        type: [String],
+    })
+    lt: string[];
+    @ApiProperty({ description: 'Коды бесплатных блоков', type: [String] })
+    freeBlocks: string[];
+    @ApiProperty({
+        description: 'Коды блоков СТАР; непустой список — СТАР встроен',
+        type: [String],
+    })
+    star: string[];
 }
 
 export class InitComplectDto implements IComplect {

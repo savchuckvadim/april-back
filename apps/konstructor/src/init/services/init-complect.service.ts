@@ -9,6 +9,9 @@ import {
 import { ComplectProductTypeEnum } from '@lib/garant/complect/types/complect.type';
 import { Injectable } from '@nestjs/common';
 
+/** В перечислении InfogroupType этого типа нет, в БД группа СТАР есть */
+const STAR_GROUP_TYPE = 'star';
+
 export interface IComplects {
     prof: IComplect[];
     universal: IComplect[];
@@ -44,6 +47,12 @@ export interface IComplect {
         ers: string[];
         packetsEr: string[];
         ersInPacket: string[];
+        /** Сервисы LT, входящие в комплект */
+        lt: string[];
+        /** Бесплатные блоки комплекта */
+        freeBlocks: string[];
+        /** Блоки СТАР, входящие в комплект; непустой список — СТАР встроен */
+        star: string[];
     };
     type: 'prof' | 'universal';
 }
@@ -122,22 +131,30 @@ export class InitComplectService {
             ers: this.getErs(complect.infoblocks).numbers,
             packetsEr: this.getPacketsErs(complect.infoblocks).numbers,
             ersInPacket: this.getErsInPacket(complect.infoblocks).numbers,
-            // lt: this.getLt(complect.infoblocks).numbers,
-            // ltInPacket: this.getLtInPacket(complect.infoblocks).numbers,
-            // freeBlocks: this.getFreeBlocks(complect.infoblocks).numbers,
-            // consalting: this.getConsalting(complect.infoblocks).numbers,
             codes: {
                 filling: infoblocks,
                 ers: this.getErs(complect.infoblocks).codes,
                 packetsEr: this.getPacketsErs(complect.infoblocks).codes,
                 ersInPacket: this.getErsInPacket(complect.infoblocks).codes,
-                // lt: this.getLt(complect.infoblocks).codes,
-                // ltInPacket: this.getLtInPacket(complect.infoblocks).codes,
-                // freeBlocks: this.getFreeBlocks(complect.infoblocks).codes,
-                // consalting: this.getConsalting(complect.infoblocks).codes,
-                // star: this.getStar(complect.infoblocks).codes,
+                lt: this.codesOfGroupType(complect.infoblocks, InfogroupType.LT),
+                freeBlocks: this.codesOfGroupType(
+                    complect.infoblocks,
+                    InfogroupType.FREE,
+                ),
+                star: this.codesOfGroupType(complect.infoblocks, STAR_GROUP_TYPE),
             },
         };
+    }
+
+    /** Коды блоков комплекта из групп этого типа, в порядке каталога */
+    private codesOfGroupType(
+        iblocks: InfoblockEntity[],
+        type: string,
+    ): string[] {
+        return iblocks
+            .filter(iblock => iblock.group?.type === type)
+            .sort((a, b) => a.number - b.number)
+            .map(iblock => iblock.code);
     }
 
     private getAbs(abs: string | undefined | null): number | null {

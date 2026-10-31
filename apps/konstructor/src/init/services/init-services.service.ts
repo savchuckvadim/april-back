@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { ComplectEntity, ComplectService } from '@lib/garant';
+import {
+    ComplectEntity,
+    ComplectService,
+    InfogroupEntity,
+    InfogroupService,
+    InfogroupType,
+} from '@lib/garant';
 import { ComplectProductTypeEnum } from '@lib/garant/complect/types/complect.type';
 import { PackageService } from '@lib/garant/package';
 import { PackageEntityDto } from '@lib/garant/package/dto/package-entity.dto';
@@ -7,8 +13,9 @@ import { PackageProductTypeEnum } from '@lib/garant/package/types/package.type';
 
 /**
  * Дополнительные сервисы конструктора: продукты и пакеты Legal Tech,
- * консалтинг, СТАР. Живут в таблицах complects и garant_packages,
- * различаются по productType — здесь собираются в единый блок init.
+ * консалтинг, СТАР. Пакеты и консалтинг/СТАР живут в complects и
+ * garant_packages (различаются по productType), сервисы LT — инфоблоки группы
+ * `lt`. Здесь всё собирается в единый блок init.
  */
 export interface IKServiceItem {
     id: number;
@@ -37,14 +44,16 @@ export class InitServicesService {
     constructor(
         private readonly complectService: ComplectService,
         private readonly packageService: PackageService,
+        private readonly infogroupService: InfogroupService,
     ) {}
 
     async get(): Promise<IKServices> {
         const complects = (await this.complectService.findAll()) || [];
         const packages = (await this.packageService.findAll()) || [];
+        const groups = (await this.infogroupService.findMany()) || [];
 
         return {
-            lt: this.fromComplects(complects, ComplectProductTypeEnum.LT),
+            lt: this.ltServices(groups),
             ltPackages: this.fromPackages(packages, PackageProductTypeEnum.LT),
             consalting: [
                 ...this.fromComplects(
@@ -61,6 +70,27 @@ export class InitServicesService {
                 ...this.fromPackages(packages, PackageProductTypeEnum.STAR),
             ],
         };
+    }
+
+    /** Сервисы LT: вес каждого — его доля в пакете (2 / 5 / 10) */
+    private ltServices(groups: InfogroupEntity[]): IKServiceItem[] {
+        return groups
+            .filter(group => group.type === InfogroupType.LT)
+            .flatMap(group => group.infoblocks ?? [])
+            .sort((a, b) => a.number - b.number)
+            .map(block => ({
+                id: Number(block.id),
+                code: block.code,
+                name: block.name,
+                fullName: block.title || block.name,
+                shortName: block.name,
+                number: block.number,
+                weight: Number(block.weight) || 0,
+                abs: null,
+                color: null,
+                productType: PackageProductTypeEnum.LT,
+                isPackage: false,
+            }));
     }
 
     private fromComplects(
