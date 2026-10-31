@@ -155,3 +155,54 @@ describe('PortalRegionService.bulkSetPortalRegions', () => {
         ]);
     });
 });
+
+describe('PortalRegionService.getPortalRegionUpdateInitialData', () => {
+    const makeInitialService = (row: Record<string, unknown>) => {
+        const regionService = {
+            getPortalRegionUpdateInitialData: jest.fn().mockResolvedValue(row),
+        };
+        const portalService = {
+            getPortal: jest.fn().mockResolvedValue({ domain: 'a.bitrix24.ru' }),
+        };
+        return new PortalRegionService(
+            regionService as never,
+            portalService as never,
+        );
+    };
+
+    it('незаданная своя цена приходит пустой, а не нулём', async () => {
+        const service = makeInitialService({
+            regionCode: 'alt',
+            own_abs: 0,
+            own_tax: 0,
+            own_tax_abs: 0,
+            own_abs_region_id: 47,
+        });
+
+        await expect(
+            service.getPortalRegionUpdateInitialData(3, 12),
+        ).resolves.toEqual({
+            domain: 'a.bitrix24.ru',
+            regionCode: 'alt',
+            own_abs: null,
+            own_tax: null,
+            own_tax_abs: null,
+            own_abs_region_id: 47,
+        });
+    });
+
+    it('заданный ручной рабс приходит строкой', async () => {
+        const service = makeInitialService({
+            regionCode: 'alt',
+            own_abs: 5000,
+            own_tax: 1.2,
+            own_tax_abs: 6000,
+            own_abs_region_id: null,
+        });
+
+        const data = await service.getPortalRegionUpdateInitialData(3, 12);
+
+        expect(data?.own_abs).toBe('5000');
+        expect(data?.own_abs_region_id).toBeNull();
+    });
+});

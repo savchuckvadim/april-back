@@ -1,7 +1,7 @@
 import {
     DocumentFieldDescriptionMode,
     DocumentFieldViewMode,
-} from '../../offer/type/offer-settings.type';
+} from '../model/offer-document-settings.type';
 import {
     OFFER_PDF_DEFAULT_SETTINGS,
     resolveOfferPdfSettings,

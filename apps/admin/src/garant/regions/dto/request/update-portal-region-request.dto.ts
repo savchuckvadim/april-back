@@ -33,6 +33,7 @@ export class UpdatePortalRegionDtoAdmin {
         example: '1000.00',
         required: false,
         oneOf: [{ type: 'string' }, { type: 'number' }],
+        nullable: true,
     })
     @IsOptional()
     @TransformToDecimalString()
@@ -45,6 +46,7 @@ export class UpdatePortalRegionDtoAdmin {
         example: '1.20',
         required: false,
         oneOf: [{ type: 'string' }, { type: 'number' }],
+        nullable: true,
     })
     @IsOptional()
     @TransformToDecimalString()
@@ -57,6 +59,7 @@ export class UpdatePortalRegionDtoAdmin {
         example: '1200.00',
         required: false,
         oneOf: [{ type: 'string' }, { type: 'number' }],
+        nullable: true,
     })
     @IsOptional()
     @TransformToDecimalString()

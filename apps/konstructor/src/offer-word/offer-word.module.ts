@@ -97,6 +97,10 @@ import { OfferGenerateMultiProcessor } from './multi/queue/offer-generate-multi.
         OfferGenerateMultiProcessor,
     ],
     // Данные КП нужны и PDF-генерации (offer-pdf): один расчёт на оба формата
-    exports: [OfferRenderDataService],
+    exports: [
+        OfferRenderDataService,
+        BitrixDocumentSaveFlowService,
+        OfferBxTimelineService,
+    ],
 })
 export class OfferWordModule {}

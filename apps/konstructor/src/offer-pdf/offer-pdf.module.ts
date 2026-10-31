@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { FileLinkModule } from '@lib/core/file-link/file-link.module';
 import { StorageModule } from '@lib/core/storage/storage.module';
 import { ProviderModule } from '@lib/portal-lib/konstructor/provider';
+import { DocumentGenerateModule } from '../document-generate/document-generate.module';
 import { OfferWordModule } from '../offer-word/offer-word.module';
 import { OfferPdfController } from './controllers/offer-pdf.controller';
 import { OfferPdfDocumentModelService } from './services/offer-pdf-document-model.service';
@@ -13,7 +14,13 @@ import { OfferPdfRenderService } from './services/offer-pdf-render.service';
  * (OfferRenderDataService) — один расчёт цен и наполнения на оба формата.
  */
 @Module({
-    imports: [OfferWordModule, ProviderModule, StorageModule, FileLinkModule],
+    imports: [
+        OfferWordModule,
+        DocumentGenerateModule,
+        ProviderModule,
+        StorageModule,
+        FileLinkModule,
+    ],
     controllers: [OfferPdfController],
     providers: [
         OfferPdfDocumentModelService,

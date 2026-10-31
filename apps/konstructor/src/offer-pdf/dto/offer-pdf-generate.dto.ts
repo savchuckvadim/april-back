@@ -12,7 +12,7 @@ import { OfferWordByTemplateGenerateDto } from '../../offer-word/dto/offer-word-
 import {
     DocumentFieldDescriptionMode,
     DocumentFieldViewMode,
-} from '../../offer/type/offer-settings.type';
+} from '../model/offer-document-settings.type';
 import { OfferPdfSettingsInput } from '../model/offer-pdf-settings';
 import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
 
@@ -157,4 +157,15 @@ export class OfferPdfGenerateDto extends OmitType(
     @IsString()
     @MaxLength(50)
     documentNumber?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Загрузить файл на Диск Битрикса и написать в таймлайн сделки. По умолчанию — да; false — только файл и ссылка на сервере.',
+        type: Boolean,
+        default: true,
+        example: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    saveToDeal?: boolean;
 }

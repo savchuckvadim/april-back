@@ -1,7 +1,8 @@
 import { OfferWordByTemplateGenerateDto } from '../dto/offer-word-generate-request.dto';
 
+/** Название файла КП по главной строке. Нужны только sets — чтобы PDF-поток звал с тем же запросом. */
 export const getOfferDocumentProductName = (
-    dto: OfferWordByTemplateGenerateDto,
+    dto: Pick<OfferWordByTemplateGenerateDto, 'sets'>,
 ) => {
     try {
         const firstGeneralRow = dto.sets.general[0]?.rows.garant[0];

@@ -9,7 +9,7 @@ jest.mock('@react-pdf/renderer', () =>
 import {
     DocumentFieldDescriptionMode,
     DocumentFieldViewMode,
-} from '../../offer/type/offer-settings.type';
+} from '../model/offer-document-settings.type';
 import { OfferPdfDocumentModel } from '../model/offer-pdf-document.model';
 import {
     OFFER_PDF_DEFAULT_SETTINGS,

@@ -7,7 +7,6 @@ import { AuthModule } from '@lib/auth';
 import { AdminController } from './admin.controller';
 import { AdminAddModule } from './admin-app.module';
 import { OfferWordModule } from '@app/konstructor/offer-word/offer-word.module';
-import { OfferModule } from '@app/konstructor/offer/offer.module';
 import { GarantModule } from '@lib/garant';
 // import { MailModule } from '@lib/mail';
 
@@ -25,12 +24,11 @@ import { GarantModule } from '@lib/garant';
         AuthModule.forRoot(),
         AdminAddModule,
         OfferWordModule,
-        OfferModule,
         GarantModule,
         // MailModule,
     ],
     controllers: [AdminController],
     providers: [GlobalExceptionFilter],
-    exports: [OfferWordModule, OfferModule, GarantModule],
+    exports: [OfferWordModule, GarantModule],
 })
 export class AdminModule {}

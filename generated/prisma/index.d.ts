@@ -574,6 +574,12 @@ export type AppCache = $Result.DefaultSelection<Prisma.$AppCachePayload>
  */
 export type ShareLink = $Result.DefaultSelection<Prisma.$ShareLinkPayload>
 /**
+ * Model KonstructorPublicLink
+ * Публичная ссылка на конструктор (миграция 2026_10_31_110000): создаётся и
+ * отзывается в админке, портал задаёт каталог. expiresAt = NULL — до отзыва.
+ */
+export type KonstructorPublicLink = $Result.DefaultSelection<Prisma.$KonstructorPublicLinkPayload>
+/**
  * Model ContractTemplate
  * Шаблон договора (миграция 2026_09_15_100100).
  * У КП и счёта шаблоны лежат в базе, у договора был один файл из storage на
@@ -1854,6 +1860,16 @@ export class PrismaClient<
   get shareLink(): Prisma.ShareLinkDelegate<ExtArgs, ClientOptions>;
 
   /**
+   * `prisma.konstructorPublicLink`: Exposes CRUD operations for the **KonstructorPublicLink** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more KonstructorPublicLinks
+    * const konstructorPublicLinks = await prisma.konstructorPublicLink.findMany()
+    * ```
+    */
+  get konstructorPublicLink(): Prisma.KonstructorPublicLinkDelegate<ExtArgs, ClientOptions>;
+
+  /**
    * `prisma.contractTemplate`: Exposes CRUD operations for the **ContractTemplate** model.
     * Example usage:
     * ```ts
@@ -2412,6 +2428,7 @@ export namespace Prisma {
     portal_invites: 'portal_invites',
     AppCache: 'AppCache',
     ShareLink: 'ShareLink',
+    KonstructorPublicLink: 'KonstructorPublicLink',
     ContractTemplate: 'ContractTemplate',
     SupplyReportTemplate: 'SupplyReportTemplate'
   };
@@ -2432,7 +2449,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalAiSettings" | "portalAppSettings" | "vendorSuperUser" | "vendorSetting" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink" | "contractTemplate" | "supplyReportTemplate"
+      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalAiSettings" | "portalAppSettings" | "vendorSuperUser" | "vendorSetting" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink" | "konstructorPublicLink" | "contractTemplate" | "supplyReportTemplate"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -9036,6 +9053,72 @@ export namespace Prisma {
           }
         }
       }
+      KonstructorPublicLink: {
+        payload: Prisma.$KonstructorPublicLinkPayload<ExtArgs>
+        fields: Prisma.KonstructorPublicLinkFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.KonstructorPublicLinkFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KonstructorPublicLinkPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.KonstructorPublicLinkFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KonstructorPublicLinkPayload>
+          }
+          findFirst: {
+            args: Prisma.KonstructorPublicLinkFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KonstructorPublicLinkPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.KonstructorPublicLinkFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KonstructorPublicLinkPayload>
+          }
+          findMany: {
+            args: Prisma.KonstructorPublicLinkFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KonstructorPublicLinkPayload>[]
+          }
+          create: {
+            args: Prisma.KonstructorPublicLinkCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KonstructorPublicLinkPayload>
+          }
+          createMany: {
+            args: Prisma.KonstructorPublicLinkCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.KonstructorPublicLinkDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KonstructorPublicLinkPayload>
+          }
+          update: {
+            args: Prisma.KonstructorPublicLinkUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KonstructorPublicLinkPayload>
+          }
+          deleteMany: {
+            args: Prisma.KonstructorPublicLinkDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.KonstructorPublicLinkUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.KonstructorPublicLinkUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KonstructorPublicLinkPayload>
+          }
+          aggregate: {
+            args: Prisma.KonstructorPublicLinkAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateKonstructorPublicLink>
+          }
+          groupBy: {
+            args: Prisma.KonstructorPublicLinkGroupByArgs<ExtArgs>
+            result: $Utils.Optional<KonstructorPublicLinkGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.KonstructorPublicLinkCountArgs<ExtArgs>
+            result: $Utils.Optional<KonstructorPublicLinkCountAggregateOutputType> | number
+          }
+        }
+      }
       ContractTemplate: {
         payload: Prisma.$ContractTemplatePayload<ExtArgs>
         fields: Prisma.ContractTemplateFieldRefs
@@ -9364,6 +9447,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesOmit
     appCache?: AppCacheOmit
     shareLink?: ShareLinkOmit
+    konstructorPublicLink?: KonstructorPublicLinkOmit
     contractTemplate?: ContractTemplateOmit
     supplyReportTemplate?: SupplyReportTemplateOmit
   }
@@ -9982,6 +10066,7 @@ export namespace Prisma {
     portal_invites: number
     appCaches: number
     shareLinks: number
+    konstructorPublicLinks: number
     appSettings: number
     skapImportFiles: number
     skapImportItems: number
@@ -10023,6 +10108,7 @@ export namespace Prisma {
     portal_invites?: boolean | PortalCountOutputTypeCountPortal_invitesArgs
     appCaches?: boolean | PortalCountOutputTypeCountAppCachesArgs
     shareLinks?: boolean | PortalCountOutputTypeCountShareLinksArgs
+    konstructorPublicLinks?: boolean | PortalCountOutputTypeCountKonstructorPublicLinksArgs
     appSettings?: boolean | PortalCountOutputTypeCountAppSettingsArgs
     skapImportFiles?: boolean | PortalCountOutputTypeCountSkapImportFilesArgs
     skapImportItems?: boolean | PortalCountOutputTypeCountSkapImportItemsArgs
@@ -10246,6 +10332,13 @@ export namespace Prisma {
    */
   export type PortalCountOutputTypeCountShareLinksArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ShareLinkWhereInput
+  }
+
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountKonstructorPublicLinksArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: KonstructorPublicLinkWhereInput
   }
 
   /**
@@ -45933,6 +46026,7 @@ export namespace Prisma {
     portal_invites?: boolean | Portal$portal_invitesArgs<ExtArgs>
     appCaches?: boolean | Portal$appCachesArgs<ExtArgs>
     shareLinks?: boolean | Portal$shareLinksArgs<ExtArgs>
+    konstructorPublicLinks?: boolean | Portal$konstructorPublicLinksArgs<ExtArgs>
     aiSettings?: boolean | Portal$aiSettingsArgs<ExtArgs>
     appSettings?: boolean | Portal$appSettingsArgs<ExtArgs>
     skapImportFiles?: boolean | Portal$skapImportFilesArgs<ExtArgs>
@@ -46009,6 +46103,7 @@ export namespace Prisma {
     portal_invites?: boolean | Portal$portal_invitesArgs<ExtArgs>
     appCaches?: boolean | Portal$appCachesArgs<ExtArgs>
     shareLinks?: boolean | Portal$shareLinksArgs<ExtArgs>
+    konstructorPublicLinks?: boolean | Portal$konstructorPublicLinksArgs<ExtArgs>
     aiSettings?: boolean | Portal$aiSettingsArgs<ExtArgs>
     appSettings?: boolean | Portal$appSettingsArgs<ExtArgs>
     skapImportFiles?: boolean | Portal$skapImportFilesArgs<ExtArgs>
@@ -46055,6 +46150,7 @@ export namespace Prisma {
       portal_invites: Prisma.$portal_invitesPayload<ExtArgs>[]
       appCaches: Prisma.$AppCachePayload<ExtArgs>[]
       shareLinks: Prisma.$ShareLinkPayload<ExtArgs>[]
+      konstructorPublicLinks: Prisma.$KonstructorPublicLinkPayload<ExtArgs>[]
       aiSettings: Prisma.$PortalAiSettingsPayload<ExtArgs> | null
       appSettings: Prisma.$PortalAppSettingsPayload<ExtArgs>[]
       skapImportFiles: Prisma.$SkapImportFilePayload<ExtArgs>[]
@@ -46463,6 +46559,7 @@ export namespace Prisma {
     portal_invites<T extends Portal$portal_invitesArgs<ExtArgs> = {}>(args?: Subset<T, Portal$portal_invitesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$portal_invitesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     appCaches<T extends Portal$appCachesArgs<ExtArgs> = {}>(args?: Subset<T, Portal$appCachesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AppCachePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     shareLinks<T extends Portal$shareLinksArgs<ExtArgs> = {}>(args?: Subset<T, Portal$shareLinksArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    konstructorPublicLinks<T extends Portal$konstructorPublicLinksArgs<ExtArgs> = {}>(args?: Subset<T, Portal$konstructorPublicLinksArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$KonstructorPublicLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     aiSettings<T extends Portal$aiSettingsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$aiSettingsArgs<ExtArgs>>): Prisma__PortalAiSettingsClient<$Result.GetResult<Prisma.$PortalAiSettingsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     appSettings<T extends Portal$appSettingsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$appSettingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalAppSettingsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     skapImportFiles<T extends Portal$skapImportFilesArgs<ExtArgs> = {}>(args?: Subset<T, Portal$skapImportFilesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkapImportFilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -47583,6 +47680,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: ShareLinkScalarFieldEnum | ShareLinkScalarFieldEnum[]
+  }
+
+  /**
+   * Portal.konstructorPublicLinks
+   */
+  export type Portal$konstructorPublicLinksArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the KonstructorPublicLink
+     */
+    select?: KonstructorPublicLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the KonstructorPublicLink
+     */
+    omit?: KonstructorPublicLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: KonstructorPublicLinkInclude<ExtArgs> | null
+    where?: KonstructorPublicLinkWhereInput
+    orderBy?: KonstructorPublicLinkOrderByWithRelationInput | KonstructorPublicLinkOrderByWithRelationInput[]
+    cursor?: KonstructorPublicLinkWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: KonstructorPublicLinkScalarFieldEnum | KonstructorPublicLinkScalarFieldEnum[]
   }
 
   /**
@@ -119713,6 +119834,1028 @@ export namespace Prisma {
 
 
   /**
+   * Model KonstructorPublicLink
+   */
+
+  export type AggregateKonstructorPublicLink = {
+    _count: KonstructorPublicLinkCountAggregateOutputType | null
+    _avg: KonstructorPublicLinkAvgAggregateOutputType | null
+    _sum: KonstructorPublicLinkSumAggregateOutputType | null
+    _min: KonstructorPublicLinkMinAggregateOutputType | null
+    _max: KonstructorPublicLinkMaxAggregateOutputType | null
+  }
+
+  export type KonstructorPublicLinkAvgAggregateOutputType = {
+    portalId: number | null
+    viewCount: number | null
+  }
+
+  export type KonstructorPublicLinkSumAggregateOutputType = {
+    portalId: bigint | null
+    viewCount: number | null
+  }
+
+  export type KonstructorPublicLinkMinAggregateOutputType = {
+    id: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    token: string | null
+    portalId: bigint | null
+    title: string | null
+    expiresAt: Date | null
+    revokedAt: Date | null
+    viewCount: number | null
+    lastViewedAt: Date | null
+  }
+
+  export type KonstructorPublicLinkMaxAggregateOutputType = {
+    id: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    token: string | null
+    portalId: bigint | null
+    title: string | null
+    expiresAt: Date | null
+    revokedAt: Date | null
+    viewCount: number | null
+    lastViewedAt: Date | null
+  }
+
+  export type KonstructorPublicLinkCountAggregateOutputType = {
+    id: number
+    createdAt: number
+    updatedAt: number
+    token: number
+    portalId: number
+    title: number
+    expiresAt: number
+    revokedAt: number
+    viewCount: number
+    lastViewedAt: number
+    _all: number
+  }
+
+
+  export type KonstructorPublicLinkAvgAggregateInputType = {
+    portalId?: true
+    viewCount?: true
+  }
+
+  export type KonstructorPublicLinkSumAggregateInputType = {
+    portalId?: true
+    viewCount?: true
+  }
+
+  export type KonstructorPublicLinkMinAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    token?: true
+    portalId?: true
+    title?: true
+    expiresAt?: true
+    revokedAt?: true
+    viewCount?: true
+    lastViewedAt?: true
+  }
+
+  export type KonstructorPublicLinkMaxAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    token?: true
+    portalId?: true
+    title?: true
+    expiresAt?: true
+    revokedAt?: true
+    viewCount?: true
+    lastViewedAt?: true
+  }
+
+  export type KonstructorPublicLinkCountAggregateInputType = {
+    id?: true
+    createdAt?: true
+    updatedAt?: true
+    token?: true
+    portalId?: true
+    title?: true
+    expiresAt?: true
+    revokedAt?: true
+    viewCount?: true
+    lastViewedAt?: true
+    _all?: true
+  }
+
+  export type KonstructorPublicLinkAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which KonstructorPublicLink to aggregate.
+     */
+    where?: KonstructorPublicLinkWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of KonstructorPublicLinks to fetch.
+     */
+    orderBy?: KonstructorPublicLinkOrderByWithRelationInput | KonstructorPublicLinkOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: KonstructorPublicLinkWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` KonstructorPublicLinks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` KonstructorPublicLinks.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned KonstructorPublicLinks
+    **/
+    _count?: true | KonstructorPublicLinkCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: KonstructorPublicLinkAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: KonstructorPublicLinkSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: KonstructorPublicLinkMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: KonstructorPublicLinkMaxAggregateInputType
+  }
+
+  export type GetKonstructorPublicLinkAggregateType<T extends KonstructorPublicLinkAggregateArgs> = {
+        [P in keyof T & keyof AggregateKonstructorPublicLink]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateKonstructorPublicLink[P]>
+      : GetScalarType<T[P], AggregateKonstructorPublicLink[P]>
+  }
+
+
+
+
+  export type KonstructorPublicLinkGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: KonstructorPublicLinkWhereInput
+    orderBy?: KonstructorPublicLinkOrderByWithAggregationInput | KonstructorPublicLinkOrderByWithAggregationInput[]
+    by: KonstructorPublicLinkScalarFieldEnum[] | KonstructorPublicLinkScalarFieldEnum
+    having?: KonstructorPublicLinkScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: KonstructorPublicLinkCountAggregateInputType | true
+    _avg?: KonstructorPublicLinkAvgAggregateInputType
+    _sum?: KonstructorPublicLinkSumAggregateInputType
+    _min?: KonstructorPublicLinkMinAggregateInputType
+    _max?: KonstructorPublicLinkMaxAggregateInputType
+  }
+
+  export type KonstructorPublicLinkGroupByOutputType = {
+    id: string
+    createdAt: Date | null
+    updatedAt: Date | null
+    token: string
+    portalId: bigint
+    title: string
+    expiresAt: Date | null
+    revokedAt: Date | null
+    viewCount: number
+    lastViewedAt: Date | null
+    _count: KonstructorPublicLinkCountAggregateOutputType | null
+    _avg: KonstructorPublicLinkAvgAggregateOutputType | null
+    _sum: KonstructorPublicLinkSumAggregateOutputType | null
+    _min: KonstructorPublicLinkMinAggregateOutputType | null
+    _max: KonstructorPublicLinkMaxAggregateOutputType | null
+  }
+
+  type GetKonstructorPublicLinkGroupByPayload<T extends KonstructorPublicLinkGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<KonstructorPublicLinkGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof KonstructorPublicLinkGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], KonstructorPublicLinkGroupByOutputType[P]>
+            : GetScalarType<T[P], KonstructorPublicLinkGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type KonstructorPublicLinkSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    token?: boolean
+    portalId?: boolean
+    title?: boolean
+    expiresAt?: boolean
+    revokedAt?: boolean
+    viewCount?: boolean
+    lastViewedAt?: boolean
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["konstructorPublicLink"]>
+
+
+
+  export type KonstructorPublicLinkSelectScalar = {
+    id?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    token?: boolean
+    portalId?: boolean
+    title?: boolean
+    expiresAt?: boolean
+    revokedAt?: boolean
+    viewCount?: boolean
+    lastViewedAt?: boolean
+  }
+
+  export type KonstructorPublicLinkOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "createdAt" | "updatedAt" | "token" | "portalId" | "title" | "expiresAt" | "revokedAt" | "viewCount" | "lastViewedAt", ExtArgs["result"]["konstructorPublicLink"]>
+  export type KonstructorPublicLinkInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+  }
+
+  export type $KonstructorPublicLinkPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "KonstructorPublicLink"
+    objects: {
+      portal: Prisma.$PortalPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      createdAt: Date | null
+      updatedAt: Date | null
+      token: string
+      portalId: bigint
+      title: string
+      expiresAt: Date | null
+      revokedAt: Date | null
+      viewCount: number
+      lastViewedAt: Date | null
+    }, ExtArgs["result"]["konstructorPublicLink"]>
+    composites: {}
+  }
+
+  type KonstructorPublicLinkGetPayload<S extends boolean | null | undefined | KonstructorPublicLinkDefaultArgs> = $Result.GetResult<Prisma.$KonstructorPublicLinkPayload, S>
+
+  type KonstructorPublicLinkCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<KonstructorPublicLinkFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: KonstructorPublicLinkCountAggregateInputType | true
+    }
+
+  export interface KonstructorPublicLinkDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['KonstructorPublicLink'], meta: { name: 'KonstructorPublicLink' } }
+    /**
+     * Find zero or one KonstructorPublicLink that matches the filter.
+     * @param {KonstructorPublicLinkFindUniqueArgs} args - Arguments to find a KonstructorPublicLink
+     * @example
+     * // Get one KonstructorPublicLink
+     * const konstructorPublicLink = await prisma.konstructorPublicLink.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends KonstructorPublicLinkFindUniqueArgs>(args: SelectSubset<T, KonstructorPublicLinkFindUniqueArgs<ExtArgs>>): Prisma__KonstructorPublicLinkClient<$Result.GetResult<Prisma.$KonstructorPublicLinkPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one KonstructorPublicLink that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {KonstructorPublicLinkFindUniqueOrThrowArgs} args - Arguments to find a KonstructorPublicLink
+     * @example
+     * // Get one KonstructorPublicLink
+     * const konstructorPublicLink = await prisma.konstructorPublicLink.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends KonstructorPublicLinkFindUniqueOrThrowArgs>(args: SelectSubset<T, KonstructorPublicLinkFindUniqueOrThrowArgs<ExtArgs>>): Prisma__KonstructorPublicLinkClient<$Result.GetResult<Prisma.$KonstructorPublicLinkPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first KonstructorPublicLink that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {KonstructorPublicLinkFindFirstArgs} args - Arguments to find a KonstructorPublicLink
+     * @example
+     * // Get one KonstructorPublicLink
+     * const konstructorPublicLink = await prisma.konstructorPublicLink.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends KonstructorPublicLinkFindFirstArgs>(args?: SelectSubset<T, KonstructorPublicLinkFindFirstArgs<ExtArgs>>): Prisma__KonstructorPublicLinkClient<$Result.GetResult<Prisma.$KonstructorPublicLinkPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first KonstructorPublicLink that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {KonstructorPublicLinkFindFirstOrThrowArgs} args - Arguments to find a KonstructorPublicLink
+     * @example
+     * // Get one KonstructorPublicLink
+     * const konstructorPublicLink = await prisma.konstructorPublicLink.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends KonstructorPublicLinkFindFirstOrThrowArgs>(args?: SelectSubset<T, KonstructorPublicLinkFindFirstOrThrowArgs<ExtArgs>>): Prisma__KonstructorPublicLinkClient<$Result.GetResult<Prisma.$KonstructorPublicLinkPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more KonstructorPublicLinks that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {KonstructorPublicLinkFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all KonstructorPublicLinks
+     * const konstructorPublicLinks = await prisma.konstructorPublicLink.findMany()
+     * 
+     * // Get first 10 KonstructorPublicLinks
+     * const konstructorPublicLinks = await prisma.konstructorPublicLink.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const konstructorPublicLinkWithIdOnly = await prisma.konstructorPublicLink.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends KonstructorPublicLinkFindManyArgs>(args?: SelectSubset<T, KonstructorPublicLinkFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$KonstructorPublicLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a KonstructorPublicLink.
+     * @param {KonstructorPublicLinkCreateArgs} args - Arguments to create a KonstructorPublicLink.
+     * @example
+     * // Create one KonstructorPublicLink
+     * const KonstructorPublicLink = await prisma.konstructorPublicLink.create({
+     *   data: {
+     *     // ... data to create a KonstructorPublicLink
+     *   }
+     * })
+     * 
+     */
+    create<T extends KonstructorPublicLinkCreateArgs>(args: SelectSubset<T, KonstructorPublicLinkCreateArgs<ExtArgs>>): Prisma__KonstructorPublicLinkClient<$Result.GetResult<Prisma.$KonstructorPublicLinkPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many KonstructorPublicLinks.
+     * @param {KonstructorPublicLinkCreateManyArgs} args - Arguments to create many KonstructorPublicLinks.
+     * @example
+     * // Create many KonstructorPublicLinks
+     * const konstructorPublicLink = await prisma.konstructorPublicLink.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends KonstructorPublicLinkCreateManyArgs>(args?: SelectSubset<T, KonstructorPublicLinkCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a KonstructorPublicLink.
+     * @param {KonstructorPublicLinkDeleteArgs} args - Arguments to delete one KonstructorPublicLink.
+     * @example
+     * // Delete one KonstructorPublicLink
+     * const KonstructorPublicLink = await prisma.konstructorPublicLink.delete({
+     *   where: {
+     *     // ... filter to delete one KonstructorPublicLink
+     *   }
+     * })
+     * 
+     */
+    delete<T extends KonstructorPublicLinkDeleteArgs>(args: SelectSubset<T, KonstructorPublicLinkDeleteArgs<ExtArgs>>): Prisma__KonstructorPublicLinkClient<$Result.GetResult<Prisma.$KonstructorPublicLinkPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one KonstructorPublicLink.
+     * @param {KonstructorPublicLinkUpdateArgs} args - Arguments to update one KonstructorPublicLink.
+     * @example
+     * // Update one KonstructorPublicLink
+     * const konstructorPublicLink = await prisma.konstructorPublicLink.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends KonstructorPublicLinkUpdateArgs>(args: SelectSubset<T, KonstructorPublicLinkUpdateArgs<ExtArgs>>): Prisma__KonstructorPublicLinkClient<$Result.GetResult<Prisma.$KonstructorPublicLinkPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more KonstructorPublicLinks.
+     * @param {KonstructorPublicLinkDeleteManyArgs} args - Arguments to filter KonstructorPublicLinks to delete.
+     * @example
+     * // Delete a few KonstructorPublicLinks
+     * const { count } = await prisma.konstructorPublicLink.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends KonstructorPublicLinkDeleteManyArgs>(args?: SelectSubset<T, KonstructorPublicLinkDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more KonstructorPublicLinks.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {KonstructorPublicLinkUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many KonstructorPublicLinks
+     * const konstructorPublicLink = await prisma.konstructorPublicLink.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends KonstructorPublicLinkUpdateManyArgs>(args: SelectSubset<T, KonstructorPublicLinkUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one KonstructorPublicLink.
+     * @param {KonstructorPublicLinkUpsertArgs} args - Arguments to update or create a KonstructorPublicLink.
+     * @example
+     * // Update or create a KonstructorPublicLink
+     * const konstructorPublicLink = await prisma.konstructorPublicLink.upsert({
+     *   create: {
+     *     // ... data to create a KonstructorPublicLink
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the KonstructorPublicLink we want to update
+     *   }
+     * })
+     */
+    upsert<T extends KonstructorPublicLinkUpsertArgs>(args: SelectSubset<T, KonstructorPublicLinkUpsertArgs<ExtArgs>>): Prisma__KonstructorPublicLinkClient<$Result.GetResult<Prisma.$KonstructorPublicLinkPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of KonstructorPublicLinks.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {KonstructorPublicLinkCountArgs} args - Arguments to filter KonstructorPublicLinks to count.
+     * @example
+     * // Count the number of KonstructorPublicLinks
+     * const count = await prisma.konstructorPublicLink.count({
+     *   where: {
+     *     // ... the filter for the KonstructorPublicLinks we want to count
+     *   }
+     * })
+    **/
+    count<T extends KonstructorPublicLinkCountArgs>(
+      args?: Subset<T, KonstructorPublicLinkCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], KonstructorPublicLinkCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a KonstructorPublicLink.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {KonstructorPublicLinkAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends KonstructorPublicLinkAggregateArgs>(args: Subset<T, KonstructorPublicLinkAggregateArgs>): Prisma.PrismaPromise<GetKonstructorPublicLinkAggregateType<T>>
+
+    /**
+     * Group by KonstructorPublicLink.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {KonstructorPublicLinkGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends KonstructorPublicLinkGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: KonstructorPublicLinkGroupByArgs['orderBy'] }
+        : { orderBy?: KonstructorPublicLinkGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, KonstructorPublicLinkGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetKonstructorPublicLinkGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the KonstructorPublicLink model
+   */
+  readonly fields: KonstructorPublicLinkFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for KonstructorPublicLink.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__KonstructorPublicLinkClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    portal<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the KonstructorPublicLink model
+   */
+  interface KonstructorPublicLinkFieldRefs {
+    readonly id: FieldRef<"KonstructorPublicLink", 'String'>
+    readonly createdAt: FieldRef<"KonstructorPublicLink", 'DateTime'>
+    readonly updatedAt: FieldRef<"KonstructorPublicLink", 'DateTime'>
+    readonly token: FieldRef<"KonstructorPublicLink", 'String'>
+    readonly portalId: FieldRef<"KonstructorPublicLink", 'BigInt'>
+    readonly title: FieldRef<"KonstructorPublicLink", 'String'>
+    readonly expiresAt: FieldRef<"KonstructorPublicLink", 'DateTime'>
+    readonly revokedAt: FieldRef<"KonstructorPublicLink", 'DateTime'>
+    readonly viewCount: FieldRef<"KonstructorPublicLink", 'Int'>
+    readonly lastViewedAt: FieldRef<"KonstructorPublicLink", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * KonstructorPublicLink findUnique
+   */
+  export type KonstructorPublicLinkFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the KonstructorPublicLink
+     */
+    select?: KonstructorPublicLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the KonstructorPublicLink
+     */
+    omit?: KonstructorPublicLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: KonstructorPublicLinkInclude<ExtArgs> | null
+    /**
+     * Filter, which KonstructorPublicLink to fetch.
+     */
+    where: KonstructorPublicLinkWhereUniqueInput
+  }
+
+  /**
+   * KonstructorPublicLink findUniqueOrThrow
+   */
+  export type KonstructorPublicLinkFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the KonstructorPublicLink
+     */
+    select?: KonstructorPublicLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the KonstructorPublicLink
+     */
+    omit?: KonstructorPublicLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: KonstructorPublicLinkInclude<ExtArgs> | null
+    /**
+     * Filter, which KonstructorPublicLink to fetch.
+     */
+    where: KonstructorPublicLinkWhereUniqueInput
+  }
+
+  /**
+   * KonstructorPublicLink findFirst
+   */
+  export type KonstructorPublicLinkFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the KonstructorPublicLink
+     */
+    select?: KonstructorPublicLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the KonstructorPublicLink
+     */
+    omit?: KonstructorPublicLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: KonstructorPublicLinkInclude<ExtArgs> | null
+    /**
+     * Filter, which KonstructorPublicLink to fetch.
+     */
+    where?: KonstructorPublicLinkWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of KonstructorPublicLinks to fetch.
+     */
+    orderBy?: KonstructorPublicLinkOrderByWithRelationInput | KonstructorPublicLinkOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for KonstructorPublicLinks.
+     */
+    cursor?: KonstructorPublicLinkWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` KonstructorPublicLinks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` KonstructorPublicLinks.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of KonstructorPublicLinks.
+     */
+    distinct?: KonstructorPublicLinkScalarFieldEnum | KonstructorPublicLinkScalarFieldEnum[]
+  }
+
+  /**
+   * KonstructorPublicLink findFirstOrThrow
+   */
+  export type KonstructorPublicLinkFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the KonstructorPublicLink
+     */
+    select?: KonstructorPublicLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the KonstructorPublicLink
+     */
+    omit?: KonstructorPublicLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: KonstructorPublicLinkInclude<ExtArgs> | null
+    /**
+     * Filter, which KonstructorPublicLink to fetch.
+     */
+    where?: KonstructorPublicLinkWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of KonstructorPublicLinks to fetch.
+     */
+    orderBy?: KonstructorPublicLinkOrderByWithRelationInput | KonstructorPublicLinkOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for KonstructorPublicLinks.
+     */
+    cursor?: KonstructorPublicLinkWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` KonstructorPublicLinks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` KonstructorPublicLinks.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of KonstructorPublicLinks.
+     */
+    distinct?: KonstructorPublicLinkScalarFieldEnum | KonstructorPublicLinkScalarFieldEnum[]
+  }
+
+  /**
+   * KonstructorPublicLink findMany
+   */
+  export type KonstructorPublicLinkFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the KonstructorPublicLink
+     */
+    select?: KonstructorPublicLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the KonstructorPublicLink
+     */
+    omit?: KonstructorPublicLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: KonstructorPublicLinkInclude<ExtArgs> | null
+    /**
+     * Filter, which KonstructorPublicLinks to fetch.
+     */
+    where?: KonstructorPublicLinkWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of KonstructorPublicLinks to fetch.
+     */
+    orderBy?: KonstructorPublicLinkOrderByWithRelationInput | KonstructorPublicLinkOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing KonstructorPublicLinks.
+     */
+    cursor?: KonstructorPublicLinkWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` KonstructorPublicLinks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` KonstructorPublicLinks.
+     */
+    skip?: number
+    distinct?: KonstructorPublicLinkScalarFieldEnum | KonstructorPublicLinkScalarFieldEnum[]
+  }
+
+  /**
+   * KonstructorPublicLink create
+   */
+  export type KonstructorPublicLinkCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the KonstructorPublicLink
+     */
+    select?: KonstructorPublicLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the KonstructorPublicLink
+     */
+    omit?: KonstructorPublicLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: KonstructorPublicLinkInclude<ExtArgs> | null
+    /**
+     * The data needed to create a KonstructorPublicLink.
+     */
+    data: XOR<KonstructorPublicLinkCreateInput, KonstructorPublicLinkUncheckedCreateInput>
+  }
+
+  /**
+   * KonstructorPublicLink createMany
+   */
+  export type KonstructorPublicLinkCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many KonstructorPublicLinks.
+     */
+    data: KonstructorPublicLinkCreateManyInput | KonstructorPublicLinkCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * KonstructorPublicLink update
+   */
+  export type KonstructorPublicLinkUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the KonstructorPublicLink
+     */
+    select?: KonstructorPublicLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the KonstructorPublicLink
+     */
+    omit?: KonstructorPublicLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: KonstructorPublicLinkInclude<ExtArgs> | null
+    /**
+     * The data needed to update a KonstructorPublicLink.
+     */
+    data: XOR<KonstructorPublicLinkUpdateInput, KonstructorPublicLinkUncheckedUpdateInput>
+    /**
+     * Choose, which KonstructorPublicLink to update.
+     */
+    where: KonstructorPublicLinkWhereUniqueInput
+  }
+
+  /**
+   * KonstructorPublicLink updateMany
+   */
+  export type KonstructorPublicLinkUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update KonstructorPublicLinks.
+     */
+    data: XOR<KonstructorPublicLinkUpdateManyMutationInput, KonstructorPublicLinkUncheckedUpdateManyInput>
+    /**
+     * Filter which KonstructorPublicLinks to update
+     */
+    where?: KonstructorPublicLinkWhereInput
+    /**
+     * Limit how many KonstructorPublicLinks to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * KonstructorPublicLink upsert
+   */
+  export type KonstructorPublicLinkUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the KonstructorPublicLink
+     */
+    select?: KonstructorPublicLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the KonstructorPublicLink
+     */
+    omit?: KonstructorPublicLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: KonstructorPublicLinkInclude<ExtArgs> | null
+    /**
+     * The filter to search for the KonstructorPublicLink to update in case it exists.
+     */
+    where: KonstructorPublicLinkWhereUniqueInput
+    /**
+     * In case the KonstructorPublicLink found by the `where` argument doesn't exist, create a new KonstructorPublicLink with this data.
+     */
+    create: XOR<KonstructorPublicLinkCreateInput, KonstructorPublicLinkUncheckedCreateInput>
+    /**
+     * In case the KonstructorPublicLink was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<KonstructorPublicLinkUpdateInput, KonstructorPublicLinkUncheckedUpdateInput>
+  }
+
+  /**
+   * KonstructorPublicLink delete
+   */
+  export type KonstructorPublicLinkDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the KonstructorPublicLink
+     */
+    select?: KonstructorPublicLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the KonstructorPublicLink
+     */
+    omit?: KonstructorPublicLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: KonstructorPublicLinkInclude<ExtArgs> | null
+    /**
+     * Filter which KonstructorPublicLink to delete.
+     */
+    where: KonstructorPublicLinkWhereUniqueInput
+  }
+
+  /**
+   * KonstructorPublicLink deleteMany
+   */
+  export type KonstructorPublicLinkDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which KonstructorPublicLinks to delete
+     */
+    where?: KonstructorPublicLinkWhereInput
+    /**
+     * Limit how many KonstructorPublicLinks to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * KonstructorPublicLink without action
+   */
+  export type KonstructorPublicLinkDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the KonstructorPublicLink
+     */
+    select?: KonstructorPublicLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the KonstructorPublicLink
+     */
+    omit?: KonstructorPublicLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: KonstructorPublicLinkInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Model ContractTemplate
    */
 
@@ -123871,6 +125014,22 @@ export namespace Prisma {
   export type ShareLinkScalarFieldEnum = (typeof ShareLinkScalarFieldEnum)[keyof typeof ShareLinkScalarFieldEnum]
 
 
+  export const KonstructorPublicLinkScalarFieldEnum: {
+    id: 'id',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    token: 'token',
+    portalId: 'portalId',
+    title: 'title',
+    expiresAt: 'expiresAt',
+    revokedAt: 'revokedAt',
+    viewCount: 'viewCount',
+    lastViewedAt: 'lastViewedAt'
+  };
+
+  export type KonstructorPublicLinkScalarFieldEnum = (typeof KonstructorPublicLinkScalarFieldEnum)[keyof typeof KonstructorPublicLinkScalarFieldEnum]
+
+
   export const ContractTemplateScalarFieldEnum: {
     id: 'id',
     created_at: 'created_at',
@@ -125240,6 +126399,15 @@ export namespace Prisma {
   };
 
   export type ShareLinkOrderByRelevanceFieldEnum = (typeof ShareLinkOrderByRelevanceFieldEnum)[keyof typeof ShareLinkOrderByRelevanceFieldEnum]
+
+
+  export const KonstructorPublicLinkOrderByRelevanceFieldEnum: {
+    id: 'id',
+    token: 'token',
+    title: 'title'
+  };
+
+  export type KonstructorPublicLinkOrderByRelevanceFieldEnum = (typeof KonstructorPublicLinkOrderByRelevanceFieldEnum)[keyof typeof KonstructorPublicLinkOrderByRelevanceFieldEnum]
 
 
   export const ContractTemplateOrderByRelevanceFieldEnum: {
@@ -128411,6 +129579,7 @@ export namespace Prisma {
     portal_invites?: Portal_invitesListRelationFilter
     appCaches?: AppCacheListRelationFilter
     shareLinks?: ShareLinkListRelationFilter
+    konstructorPublicLinks?: KonstructorPublicLinkListRelationFilter
     aiSettings?: XOR<PortalAiSettingsNullableScalarRelationFilter, PortalAiSettingsWhereInput> | null
     appSettings?: PortalAppSettingsListRelationFilter
     skapImportFiles?: SkapImportFileListRelationFilter
@@ -128480,6 +129649,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesOrderByRelationAggregateInput
     appCaches?: AppCacheOrderByRelationAggregateInput
     shareLinks?: ShareLinkOrderByRelationAggregateInput
+    konstructorPublicLinks?: KonstructorPublicLinkOrderByRelationAggregateInput
     aiSettings?: PortalAiSettingsOrderByWithRelationInput
     appSettings?: PortalAppSettingsOrderByRelationAggregateInput
     skapImportFiles?: SkapImportFileOrderByRelationAggregateInput
@@ -128553,6 +129723,7 @@ export namespace Prisma {
     portal_invites?: Portal_invitesListRelationFilter
     appCaches?: AppCacheListRelationFilter
     shareLinks?: ShareLinkListRelationFilter
+    konstructorPublicLinks?: KonstructorPublicLinkListRelationFilter
     aiSettings?: XOR<PortalAiSettingsNullableScalarRelationFilter, PortalAiSettingsWhereInput> | null
     appSettings?: PortalAppSettingsListRelationFilter
     skapImportFiles?: SkapImportFileListRelationFilter
@@ -135773,6 +136944,89 @@ export namespace Prisma {
     lastViewedAt?: DateTimeNullableWithAggregatesFilter<"ShareLink"> | Date | string | null
   }
 
+  export type KonstructorPublicLinkWhereInput = {
+    AND?: KonstructorPublicLinkWhereInput | KonstructorPublicLinkWhereInput[]
+    OR?: KonstructorPublicLinkWhereInput[]
+    NOT?: KonstructorPublicLinkWhereInput | KonstructorPublicLinkWhereInput[]
+    id?: StringFilter<"KonstructorPublicLink"> | string
+    createdAt?: DateTimeNullableFilter<"KonstructorPublicLink"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"KonstructorPublicLink"> | Date | string | null
+    token?: StringFilter<"KonstructorPublicLink"> | string
+    portalId?: BigIntFilter<"KonstructorPublicLink"> | bigint | number
+    title?: StringFilter<"KonstructorPublicLink"> | string
+    expiresAt?: DateTimeNullableFilter<"KonstructorPublicLink"> | Date | string | null
+    revokedAt?: DateTimeNullableFilter<"KonstructorPublicLink"> | Date | string | null
+    viewCount?: IntFilter<"KonstructorPublicLink"> | number
+    lastViewedAt?: DateTimeNullableFilter<"KonstructorPublicLink"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }
+
+  export type KonstructorPublicLinkOrderByWithRelationInput = {
+    id?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    token?: SortOrder
+    portalId?: SortOrder
+    title?: SortOrder
+    expiresAt?: SortOrderInput | SortOrder
+    revokedAt?: SortOrderInput | SortOrder
+    viewCount?: SortOrder
+    lastViewedAt?: SortOrderInput | SortOrder
+    portal?: PortalOrderByWithRelationInput
+    _relevance?: KonstructorPublicLinkOrderByRelevanceInput
+  }
+
+  export type KonstructorPublicLinkWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    token?: string
+    AND?: KonstructorPublicLinkWhereInput | KonstructorPublicLinkWhereInput[]
+    OR?: KonstructorPublicLinkWhereInput[]
+    NOT?: KonstructorPublicLinkWhereInput | KonstructorPublicLinkWhereInput[]
+    createdAt?: DateTimeNullableFilter<"KonstructorPublicLink"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"KonstructorPublicLink"> | Date | string | null
+    portalId?: BigIntFilter<"KonstructorPublicLink"> | bigint | number
+    title?: StringFilter<"KonstructorPublicLink"> | string
+    expiresAt?: DateTimeNullableFilter<"KonstructorPublicLink"> | Date | string | null
+    revokedAt?: DateTimeNullableFilter<"KonstructorPublicLink"> | Date | string | null
+    viewCount?: IntFilter<"KonstructorPublicLink"> | number
+    lastViewedAt?: DateTimeNullableFilter<"KonstructorPublicLink"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+  }, "id" | "token">
+
+  export type KonstructorPublicLinkOrderByWithAggregationInput = {
+    id?: SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    token?: SortOrder
+    portalId?: SortOrder
+    title?: SortOrder
+    expiresAt?: SortOrderInput | SortOrder
+    revokedAt?: SortOrderInput | SortOrder
+    viewCount?: SortOrder
+    lastViewedAt?: SortOrderInput | SortOrder
+    _count?: KonstructorPublicLinkCountOrderByAggregateInput
+    _avg?: KonstructorPublicLinkAvgOrderByAggregateInput
+    _max?: KonstructorPublicLinkMaxOrderByAggregateInput
+    _min?: KonstructorPublicLinkMinOrderByAggregateInput
+    _sum?: KonstructorPublicLinkSumOrderByAggregateInput
+  }
+
+  export type KonstructorPublicLinkScalarWhereWithAggregatesInput = {
+    AND?: KonstructorPublicLinkScalarWhereWithAggregatesInput | KonstructorPublicLinkScalarWhereWithAggregatesInput[]
+    OR?: KonstructorPublicLinkScalarWhereWithAggregatesInput[]
+    NOT?: KonstructorPublicLinkScalarWhereWithAggregatesInput | KonstructorPublicLinkScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"KonstructorPublicLink"> | string
+    createdAt?: DateTimeNullableWithAggregatesFilter<"KonstructorPublicLink"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"KonstructorPublicLink"> | Date | string | null
+    token?: StringWithAggregatesFilter<"KonstructorPublicLink"> | string
+    portalId?: BigIntWithAggregatesFilter<"KonstructorPublicLink"> | bigint | number
+    title?: StringWithAggregatesFilter<"KonstructorPublicLink"> | string
+    expiresAt?: DateTimeNullableWithAggregatesFilter<"KonstructorPublicLink"> | Date | string | null
+    revokedAt?: DateTimeNullableWithAggregatesFilter<"KonstructorPublicLink"> | Date | string | null
+    viewCount?: IntWithAggregatesFilter<"KonstructorPublicLink"> | number
+    lastViewedAt?: DateTimeNullableWithAggregatesFilter<"KonstructorPublicLink"> | Date | string | null
+  }
+
   export type ContractTemplateWhereInput = {
     AND?: ContractTemplateWhereInput | ContractTemplateWhereInput[]
     OR?: ContractTemplateWhereInput[]
@@ -139405,6 +140659,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -139473,6 +140728,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -139541,6 +140797,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -139609,6 +140866,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -147954,6 +149212,96 @@ export namespace Prisma {
     lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
+  export type KonstructorPublicLinkCreateInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    token: string
+    title: string
+    expiresAt?: Date | string | null
+    revokedAt?: Date | string | null
+    viewCount?: number
+    lastViewedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutKonstructorPublicLinksInput
+  }
+
+  export type KonstructorPublicLinkUncheckedCreateInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    token: string
+    portalId: bigint | number
+    title: string
+    expiresAt?: Date | string | null
+    revokedAt?: Date | string | null
+    viewCount?: number
+    lastViewedAt?: Date | string | null
+  }
+
+  export type KonstructorPublicLinkUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    token?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutKonstructorPublicLinksNestedInput
+  }
+
+  export type KonstructorPublicLinkUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    token?: StringFieldUpdateOperationsInput | string
+    portalId?: BigIntFieldUpdateOperationsInput | bigint | number
+    title?: StringFieldUpdateOperationsInput | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type KonstructorPublicLinkCreateManyInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    token: string
+    portalId: bigint | number
+    title: string
+    expiresAt?: Date | string | null
+    revokedAt?: Date | string | null
+    viewCount?: number
+    lastViewedAt?: Date | string | null
+  }
+
+  export type KonstructorPublicLinkUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    token?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type KonstructorPublicLinkUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    token?: StringFieldUpdateOperationsInput | string
+    portalId?: BigIntFieldUpdateOperationsInput | bigint | number
+    title?: StringFieldUpdateOperationsInput | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
   export type ContractTemplateCreateInput = {
     id?: bigint | number
     created_at?: Date | string | null
@@ -150892,6 +152240,12 @@ export namespace Prisma {
     none?: ShareLinkWhereInput
   }
 
+  export type KonstructorPublicLinkListRelationFilter = {
+    every?: KonstructorPublicLinkWhereInput
+    some?: KonstructorPublicLinkWhereInput
+    none?: KonstructorPublicLinkWhereInput
+  }
+
   export type PortalAiSettingsNullableScalarRelationFilter = {
     is?: PortalAiSettingsWhereInput | null
     isNot?: PortalAiSettingsWhereInput | null
@@ -151048,6 +152402,10 @@ export namespace Prisma {
   }
 
   export type ShareLinkOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type KonstructorPublicLinkOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -156454,6 +157812,61 @@ export namespace Prisma {
     viewCount?: SortOrder
   }
 
+  export type KonstructorPublicLinkOrderByRelevanceInput = {
+    fields: KonstructorPublicLinkOrderByRelevanceFieldEnum | KonstructorPublicLinkOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type KonstructorPublicLinkCountOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    token?: SortOrder
+    portalId?: SortOrder
+    title?: SortOrder
+    expiresAt?: SortOrder
+    revokedAt?: SortOrder
+    viewCount?: SortOrder
+    lastViewedAt?: SortOrder
+  }
+
+  export type KonstructorPublicLinkAvgOrderByAggregateInput = {
+    portalId?: SortOrder
+    viewCount?: SortOrder
+  }
+
+  export type KonstructorPublicLinkMaxOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    token?: SortOrder
+    portalId?: SortOrder
+    title?: SortOrder
+    expiresAt?: SortOrder
+    revokedAt?: SortOrder
+    viewCount?: SortOrder
+    lastViewedAt?: SortOrder
+  }
+
+  export type KonstructorPublicLinkMinOrderByAggregateInput = {
+    id?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    token?: SortOrder
+    portalId?: SortOrder
+    title?: SortOrder
+    expiresAt?: SortOrder
+    revokedAt?: SortOrder
+    viewCount?: SortOrder
+    lastViewedAt?: SortOrder
+  }
+
+  export type KonstructorPublicLinkSumOrderByAggregateInput = {
+    portalId?: SortOrder
+    viewCount?: SortOrder
+  }
+
   export type ContractTemplateOrderByRelevanceInput = {
     fields: ContractTemplateOrderByRelevanceFieldEnum | ContractTemplateOrderByRelevanceFieldEnum[]
     sort: SortOrder
@@ -158342,6 +159755,13 @@ export namespace Prisma {
     connect?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
   }
 
+  export type KonstructorPublicLinkCreateNestedManyWithoutPortalInput = {
+    create?: XOR<KonstructorPublicLinkCreateWithoutPortalInput, KonstructorPublicLinkUncheckedCreateWithoutPortalInput> | KonstructorPublicLinkCreateWithoutPortalInput[] | KonstructorPublicLinkUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: KonstructorPublicLinkCreateOrConnectWithoutPortalInput | KonstructorPublicLinkCreateOrConnectWithoutPortalInput[]
+    createMany?: KonstructorPublicLinkCreateManyPortalInputEnvelope
+    connect?: KonstructorPublicLinkWhereUniqueInput | KonstructorPublicLinkWhereUniqueInput[]
+  }
+
   export type PortalAiSettingsCreateNestedOneWithoutPortalInput = {
     create?: XOR<PortalAiSettingsCreateWithoutPortalInput, PortalAiSettingsUncheckedCreateWithoutPortalInput>
     connectOrCreate?: PortalAiSettingsCreateOrConnectWithoutPortalInput
@@ -158612,6 +160032,13 @@ export namespace Prisma {
     connectOrCreate?: ShareLinkCreateOrConnectWithoutPortalInput | ShareLinkCreateOrConnectWithoutPortalInput[]
     createMany?: ShareLinkCreateManyPortalInputEnvelope
     connect?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+  }
+
+  export type KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput = {
+    create?: XOR<KonstructorPublicLinkCreateWithoutPortalInput, KonstructorPublicLinkUncheckedCreateWithoutPortalInput> | KonstructorPublicLinkCreateWithoutPortalInput[] | KonstructorPublicLinkUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: KonstructorPublicLinkCreateOrConnectWithoutPortalInput | KonstructorPublicLinkCreateOrConnectWithoutPortalInput[]
+    createMany?: KonstructorPublicLinkCreateManyPortalInputEnvelope
+    connect?: KonstructorPublicLinkWhereUniqueInput | KonstructorPublicLinkWhereUniqueInput[]
   }
 
   export type PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput = {
@@ -159097,6 +160524,20 @@ export namespace Prisma {
     update?: ShareLinkUpdateWithWhereUniqueWithoutPortalInput | ShareLinkUpdateWithWhereUniqueWithoutPortalInput[]
     updateMany?: ShareLinkUpdateManyWithWhereWithoutPortalInput | ShareLinkUpdateManyWithWhereWithoutPortalInput[]
     deleteMany?: ShareLinkScalarWhereInput | ShareLinkScalarWhereInput[]
+  }
+
+  export type KonstructorPublicLinkUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<KonstructorPublicLinkCreateWithoutPortalInput, KonstructorPublicLinkUncheckedCreateWithoutPortalInput> | KonstructorPublicLinkCreateWithoutPortalInput[] | KonstructorPublicLinkUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: KonstructorPublicLinkCreateOrConnectWithoutPortalInput | KonstructorPublicLinkCreateOrConnectWithoutPortalInput[]
+    upsert?: KonstructorPublicLinkUpsertWithWhereUniqueWithoutPortalInput | KonstructorPublicLinkUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: KonstructorPublicLinkCreateManyPortalInputEnvelope
+    set?: KonstructorPublicLinkWhereUniqueInput | KonstructorPublicLinkWhereUniqueInput[]
+    disconnect?: KonstructorPublicLinkWhereUniqueInput | KonstructorPublicLinkWhereUniqueInput[]
+    delete?: KonstructorPublicLinkWhereUniqueInput | KonstructorPublicLinkWhereUniqueInput[]
+    connect?: KonstructorPublicLinkWhereUniqueInput | KonstructorPublicLinkWhereUniqueInput[]
+    update?: KonstructorPublicLinkUpdateWithWhereUniqueWithoutPortalInput | KonstructorPublicLinkUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: KonstructorPublicLinkUpdateManyWithWhereWithoutPortalInput | KonstructorPublicLinkUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: KonstructorPublicLinkScalarWhereInput | KonstructorPublicLinkScalarWhereInput[]
   }
 
   export type PortalAiSettingsUpdateOneWithoutPortalNestedInput = {
@@ -159639,6 +161080,20 @@ export namespace Prisma {
     update?: ShareLinkUpdateWithWhereUniqueWithoutPortalInput | ShareLinkUpdateWithWhereUniqueWithoutPortalInput[]
     updateMany?: ShareLinkUpdateManyWithWhereWithoutPortalInput | ShareLinkUpdateManyWithWhereWithoutPortalInput[]
     deleteMany?: ShareLinkScalarWhereInput | ShareLinkScalarWhereInput[]
+  }
+
+  export type KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<KonstructorPublicLinkCreateWithoutPortalInput, KonstructorPublicLinkUncheckedCreateWithoutPortalInput> | KonstructorPublicLinkCreateWithoutPortalInput[] | KonstructorPublicLinkUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: KonstructorPublicLinkCreateOrConnectWithoutPortalInput | KonstructorPublicLinkCreateOrConnectWithoutPortalInput[]
+    upsert?: KonstructorPublicLinkUpsertWithWhereUniqueWithoutPortalInput | KonstructorPublicLinkUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: KonstructorPublicLinkCreateManyPortalInputEnvelope
+    set?: KonstructorPublicLinkWhereUniqueInput | KonstructorPublicLinkWhereUniqueInput[]
+    disconnect?: KonstructorPublicLinkWhereUniqueInput | KonstructorPublicLinkWhereUniqueInput[]
+    delete?: KonstructorPublicLinkWhereUniqueInput | KonstructorPublicLinkWhereUniqueInput[]
+    connect?: KonstructorPublicLinkWhereUniqueInput | KonstructorPublicLinkWhereUniqueInput[]
+    update?: KonstructorPublicLinkUpdateWithWhereUniqueWithoutPortalInput | KonstructorPublicLinkUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: KonstructorPublicLinkUpdateManyWithWhereWithoutPortalInput | KonstructorPublicLinkUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: KonstructorPublicLinkScalarWhereInput | KonstructorPublicLinkScalarWhereInput[]
   }
 
   export type PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput = {
@@ -162013,6 +163468,20 @@ export namespace Prisma {
     update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutShareLinksInput, PortalUpdateWithoutShareLinksInput>, PortalUncheckedUpdateWithoutShareLinksInput>
   }
 
+  export type PortalCreateNestedOneWithoutKonstructorPublicLinksInput = {
+    create?: XOR<PortalCreateWithoutKonstructorPublicLinksInput, PortalUncheckedCreateWithoutKonstructorPublicLinksInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutKonstructorPublicLinksInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type PortalUpdateOneRequiredWithoutKonstructorPublicLinksNestedInput = {
+    create?: XOR<PortalCreateWithoutKonstructorPublicLinksInput, PortalUncheckedCreateWithoutKonstructorPublicLinksInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutKonstructorPublicLinksInput
+    upsert?: PortalUpsertWithoutKonstructorPublicLinksInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutKonstructorPublicLinksInput, PortalUpdateWithoutKonstructorPublicLinksInput>, PortalUncheckedUpdateWithoutKonstructorPublicLinksInput>
+  }
+
   export type NestedBigIntFilter<$PrismaModel = never> = {
     equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
     in?: bigint[] | number[]
@@ -162591,6 +164060,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -162658,6 +164128,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -162890,6 +164361,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -162957,6 +164429,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -163377,6 +164850,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -163444,6 +164918,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -163527,6 +165002,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -163594,6 +165070,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -163727,6 +165204,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -163794,6 +165272,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -163877,6 +165356,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -163944,6 +165424,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -164011,6 +165492,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -164078,6 +165560,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -164161,6 +165644,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -164228,6 +165712,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -164295,6 +165780,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -164362,6 +165848,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -164445,6 +165932,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -164512,6 +166000,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -164579,6 +166068,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -164646,6 +166136,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -164729,6 +166220,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -164796,6 +166288,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -164947,6 +166440,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -165014,6 +166508,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -165097,6 +166592,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -165164,6 +166660,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -165231,6 +166728,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -165298,6 +166796,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -165783,6 +167282,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -165850,6 +167350,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -165933,6 +167434,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -166000,6 +167502,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -168152,6 +169655,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -168219,6 +169723,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -168423,6 +169928,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -168490,6 +169996,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -168657,6 +170164,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -168724,6 +170232,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -168856,6 +170365,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -168923,6 +170433,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -170107,6 +171618,40 @@ export namespace Prisma {
 
   export type ShareLinkCreateManyPortalInputEnvelope = {
     data: ShareLinkCreateManyPortalInput | ShareLinkCreateManyPortalInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type KonstructorPublicLinkCreateWithoutPortalInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    token: string
+    title: string
+    expiresAt?: Date | string | null
+    revokedAt?: Date | string | null
+    viewCount?: number
+    lastViewedAt?: Date | string | null
+  }
+
+  export type KonstructorPublicLinkUncheckedCreateWithoutPortalInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    token: string
+    title: string
+    expiresAt?: Date | string | null
+    revokedAt?: Date | string | null
+    viewCount?: number
+    lastViewedAt?: Date | string | null
+  }
+
+  export type KonstructorPublicLinkCreateOrConnectWithoutPortalInput = {
+    where: KonstructorPublicLinkWhereUniqueInput
+    create: XOR<KonstructorPublicLinkCreateWithoutPortalInput, KonstructorPublicLinkUncheckedCreateWithoutPortalInput>
+  }
+
+  export type KonstructorPublicLinkCreateManyPortalInputEnvelope = {
+    data: KonstructorPublicLinkCreateManyPortalInput | KonstructorPublicLinkCreateManyPortalInput[]
     skipDuplicates?: boolean
   }
 
@@ -171550,6 +173095,38 @@ export namespace Prisma {
     lastViewedAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
   }
 
+  export type KonstructorPublicLinkUpsertWithWhereUniqueWithoutPortalInput = {
+    where: KonstructorPublicLinkWhereUniqueInput
+    update: XOR<KonstructorPublicLinkUpdateWithoutPortalInput, KonstructorPublicLinkUncheckedUpdateWithoutPortalInput>
+    create: XOR<KonstructorPublicLinkCreateWithoutPortalInput, KonstructorPublicLinkUncheckedCreateWithoutPortalInput>
+  }
+
+  export type KonstructorPublicLinkUpdateWithWhereUniqueWithoutPortalInput = {
+    where: KonstructorPublicLinkWhereUniqueInput
+    data: XOR<KonstructorPublicLinkUpdateWithoutPortalInput, KonstructorPublicLinkUncheckedUpdateWithoutPortalInput>
+  }
+
+  export type KonstructorPublicLinkUpdateManyWithWhereWithoutPortalInput = {
+    where: KonstructorPublicLinkScalarWhereInput
+    data: XOR<KonstructorPublicLinkUpdateManyMutationInput, KonstructorPublicLinkUncheckedUpdateManyWithoutPortalInput>
+  }
+
+  export type KonstructorPublicLinkScalarWhereInput = {
+    AND?: KonstructorPublicLinkScalarWhereInput | KonstructorPublicLinkScalarWhereInput[]
+    OR?: KonstructorPublicLinkScalarWhereInput[]
+    NOT?: KonstructorPublicLinkScalarWhereInput | KonstructorPublicLinkScalarWhereInput[]
+    id?: StringFilter<"KonstructorPublicLink"> | string
+    createdAt?: DateTimeNullableFilter<"KonstructorPublicLink"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"KonstructorPublicLink"> | Date | string | null
+    token?: StringFilter<"KonstructorPublicLink"> | string
+    portalId?: BigIntFilter<"KonstructorPublicLink"> | bigint | number
+    title?: StringFilter<"KonstructorPublicLink"> | string
+    expiresAt?: DateTimeNullableFilter<"KonstructorPublicLink"> | Date | string | null
+    revokedAt?: DateTimeNullableFilter<"KonstructorPublicLink"> | Date | string | null
+    viewCount?: IntFilter<"KonstructorPublicLink"> | number
+    lastViewedAt?: DateTimeNullableFilter<"KonstructorPublicLink"> | Date | string | null
+  }
+
   export type PortalAiSettingsUpsertWithoutPortalInput = {
     update: XOR<PortalAiSettingsUpdateWithoutPortalInput, PortalAiSettingsUncheckedUpdateWithoutPortalInput>
     create: XOR<PortalAiSettingsCreateWithoutPortalInput, PortalAiSettingsUncheckedCreateWithoutPortalInput>
@@ -172015,6 +173592,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
     skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
@@ -172082,6 +173660,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
     skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
@@ -172165,6 +173744,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
     skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
@@ -172232,6 +173812,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
     skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
@@ -172299,6 +173880,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
     skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
@@ -172366,6 +173948,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
     skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
@@ -172449,6 +174032,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
     skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
@@ -172516,6 +174100,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
     skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
@@ -172583,6 +174168,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -172650,6 +174236,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -172733,6 +174320,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -172800,6 +174388,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -172867,6 +174456,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -172934,6 +174524,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -173097,6 +174688,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -173164,6 +174756,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -173298,6 +174891,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -173365,6 +174959,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -173541,6 +175136,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -173608,6 +175204,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -173864,6 +175461,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
@@ -173931,6 +175529,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
@@ -174072,6 +175671,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
@@ -174139,6 +175739,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
@@ -174222,6 +175823,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -174289,6 +175891,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -174517,6 +176120,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -174584,6 +176188,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -174730,6 +176335,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -174797,6 +176403,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -174933,6 +176540,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -175000,6 +176608,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -175126,6 +176735,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -175193,6 +176803,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -175329,6 +176940,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -175396,6 +177008,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -175522,6 +177135,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -175589,6 +177203,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -175672,6 +177287,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -175739,6 +177355,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -176157,6 +177774,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -176224,6 +177842,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -176307,6 +177926,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -176374,6 +177994,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -176875,6 +178496,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -176942,6 +178564,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -177057,6 +178680,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -177124,6 +178748,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -177191,6 +178816,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -177258,6 +178884,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -177341,6 +178968,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -177408,6 +179036,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -177643,6 +179272,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -177710,6 +179340,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -177924,6 +179555,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -177991,6 +179623,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -178175,6 +179808,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -178242,6 +179876,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -178325,6 +179960,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -178392,6 +180028,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -178459,6 +180096,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -178526,6 +180164,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -178609,6 +180248,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -178676,6 +180316,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -180488,6 +182129,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -180555,6 +182197,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -180723,6 +182366,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -180790,6 +182434,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -181113,6 +182758,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -181180,6 +182826,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -181263,6 +182910,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -181330,6 +182978,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -181538,6 +183187,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -181605,6 +183255,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -181773,6 +183424,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -181840,6 +183492,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -181907,6 +183560,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -181974,6 +183628,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -182123,6 +183778,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -182190,6 +183846,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -182583,6 +184240,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -182650,6 +184308,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -182821,6 +184480,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -182888,6 +184548,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -183697,6 +185358,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -183764,6 +185426,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -183847,6 +185510,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -183914,6 +185578,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -184012,6 +185677,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -184079,6 +185745,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -184199,6 +185866,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -184266,6 +185934,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -184404,6 +186073,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -184471,6 +186141,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -184607,6 +186278,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -184674,6 +186346,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -184741,6 +186414,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -184808,6 +186482,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -184891,6 +186566,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -184958,6 +186634,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -185082,6 +186759,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -185149,6 +186827,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -185295,6 +186974,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -185362,6 +187042,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -185458,6 +187139,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -185525,6 +187207,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -185643,6 +187326,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -185710,6 +187394,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -185777,6 +187462,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -185844,6 +187530,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -185927,6 +187614,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -185994,6 +187682,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -186061,6 +187750,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
@@ -186128,6 +187818,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
     portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
     appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
     aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
     appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
     skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
@@ -186211,6 +187902,7 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -186278,6 +187970,295 @@ export namespace Prisma {
     marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalCreateWithoutKonstructorPublicLinksInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalUncheckedCreateWithoutKonstructorPublicLinksInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalCreateOrConnectWithoutKonstructorPublicLinksInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutKonstructorPublicLinksInput, PortalUncheckedCreateWithoutKonstructorPublicLinksInput>
+  }
+
+  export type PortalUpsertWithoutKonstructorPublicLinksInput = {
+    update: XOR<PortalUpdateWithoutKonstructorPublicLinksInput, PortalUncheckedUpdateWithoutKonstructorPublicLinksInput>
+    create: XOR<PortalCreateWithoutKonstructorPublicLinksInput, PortalUncheckedCreateWithoutKonstructorPublicLinksInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutKonstructorPublicLinksInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutKonstructorPublicLinksInput, PortalUncheckedUpdateWithoutKonstructorPublicLinksInput>
+  }
+
+  export type PortalUpdateWithoutKonstructorPublicLinksInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutKonstructorPublicLinksInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -186645,6 +188626,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
@@ -186712,6 +188694,7 @@ export namespace Prisma {
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
     appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
     shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
     aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
     appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
     skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
@@ -188736,6 +190719,18 @@ export namespace Prisma {
     lastViewedAt?: Date | string | null
   }
 
+  export type KonstructorPublicLinkCreateManyPortalInput = {
+    id: string
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    token: string
+    title: string
+    expiresAt?: Date | string | null
+    revokedAt?: Date | string | null
+    viewCount?: number
+    lastViewedAt?: Date | string | null
+  }
+
   export type PortalAppSettingsCreateManyPortalInput = {
     id: string
     domain: string
@@ -190174,6 +192169,42 @@ export namespace Prisma {
     nextRefreshAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: StringFieldUpdateOperationsInput | string
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type KonstructorPublicLinkUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    token?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type KonstructorPublicLinkUncheckedUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    token?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type KonstructorPublicLinkUncheckedUpdateManyWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    token?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     viewCount?: IntFieldUpdateOperationsInput | number
     lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }

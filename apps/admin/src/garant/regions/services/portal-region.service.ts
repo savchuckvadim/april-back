@@ -75,9 +75,12 @@ export class PortalRegionService {
         return {
             domain: portal.domain || '',
             regionCode: region.regionCode || '',
-            own_abs: region.own_abs.toString(),
-            own_tax: region.own_tax.toString(),
-            own_tax_abs: region.own_tax_abs.toString(),
+            // Ноль в own-полях значит «не задано»: форма показывает пустое поле
+            own_abs: region.own_abs ? region.own_abs.toString() : null,
+            own_tax: region.own_tax ? region.own_tax.toString() : null,
+            own_tax_abs: region.own_tax_abs
+                ? region.own_tax_abs.toString()
+                : null,
             own_abs_region_id: region.own_abs_region_id,
         };
     }

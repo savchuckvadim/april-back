@@ -61,4 +61,29 @@ export class OfferPdfGenerateResponseDto implements OfferPdfGenerateResult {
         example: 148_233,
     })
     size: number;
+
+    @ApiProperty({
+        description:
+            'Файл загружен на Диск Битрикса и упомянут в таймлайне сделки.',
+        type: Boolean,
+        example: true,
+    })
+    savedToDeal: boolean;
+
+    @ApiProperty({
+        description: 'Ссылка на файл в Битриксе; пусто — загрузка не удалась.',
+        type: String,
+        nullable: true,
+        example: 'https://portal.bitrix24.ru/disk/file/42',
+    })
+    bitrixLink: string | null;
+
+    @ApiProperty({
+        description:
+            'Почему файл не прикреплён к сделке; пусто — прикреплён или не запрашивалось.',
+        type: String,
+        nullable: true,
+        example: 'Не удалось прикрепить файл к сделке: нет доступа к Диску',
+    })
+    dealMessage: string | null;
 }

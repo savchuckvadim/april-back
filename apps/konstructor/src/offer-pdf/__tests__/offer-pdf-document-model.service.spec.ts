@@ -13,28 +13,60 @@ const createService = (
         getOfferRenderData: jest.fn().mockResolvedValue(data),
     };
     const provider = { findById: jest.fn().mockResolvedValue(rq) };
+    // обогащение подписей поставок: помечаем, что прошли через него
+    const enricher = {
+        enrichSupply: jest.fn((supply: unknown) =>
+            Promise.resolve({ ...(supply as object), enriched: true }),
+        ),
+        enrichRows: jest.fn((rows: unknown[]) =>
+            Promise.resolve(
+                rows.map(row => ({ ...(row as object), enriched: true })),
+            ),
+        ),
+        enrichRow: jest.fn((row: unknown) =>
+            Promise.resolve({ ...(row as object), enriched: true }),
+        ),
+    };
     const service = new OfferPdfDocumentModelService(
         renderData as never,
         provider as never,
+        enricher as never,
     );
-    return { service, renderData, provider };
+    return { service, renderData, provider, enricher };
 };
 
 const dto = {
     providerId: 7,
     domain: 'test.bitrix24.ru',
     userId: 1,
-} as OfferPdfGenerateDto;
+    supply: { code: 'internet_3' },
+    rows: [{ id: 1 }, { id: 2 }],
+    total: { id: 0 },
+} as unknown as OfferPdfGenerateDto;
 
 describe('сборка модели PDF-КП', () => {
-    it('данные — от OfferRenderDataService, подписант — из реквизитов поставщика', async () => {
-        const { service, renderData, provider } = createService({
+    it('данные — от OfferRenderDataService по обогащённому запросу, подписант — из реквизитов', async () => {
+        const { service, renderData, provider, enricher } = createService({
             director: ' Кузнецов А. В. ',
             position: 'Директор',
         });
         const model = await service.build(dto);
 
-        expect(renderData.getOfferRenderData).toHaveBeenCalledWith(dto);
+        expect(enricher.enrichSupply).toHaveBeenCalledWith(dto.supply);
+        expect(enricher.enrichRows).toHaveBeenCalledWith(dto.rows);
+        expect(enricher.enrichRow).toHaveBeenCalledWith(dto.total);
+        // jest.fn без дженериков — сигнатура jest.fn<…> различается между версиями типов
+        const calls = renderData.getOfferRenderData.mock
+            .calls as unknown as Array<[OfferPdfGenerateDto]>;
+        const [passed] = calls[0];
+        expect(passed.supply).toEqual({ code: 'internet_3', enriched: true });
+        expect(passed.rows).toEqual([
+            { id: 1, enriched: true },
+            { id: 2, enriched: true },
+        ]);
+        expect(passed.total).toEqual({ id: 0, enriched: true });
+        expect(passed.providerId).toBe(7);
+
         expect(provider.findById).toHaveBeenCalledWith(7);
         expect(model.data).toBe(data);
         expect(model.signer).toEqual({

@@ -21,7 +21,7 @@ import { OfferPdfRenderService } from '../services/offer-pdf-render.service';
 import {
     DocumentFieldDescriptionMode,
     DocumentFieldViewMode,
-} from '../../offer/type/offer-settings.type';
+} from '../model/offer-document-settings.type';
 
 const VARIANTS: Array<{ name: string; settings: OfferPdfSettingsInput }> = [
     { name: 'list-small', settings: {} },

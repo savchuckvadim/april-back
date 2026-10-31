@@ -7,7 +7,7 @@ import {
 import {
     DocumentFieldDescriptionMode,
     DocumentFieldViewMode,
-} from '../../../../offer/type/offer-settings.type';
+} from '../../../model/offer-document-settings.type';
 import { OfferPdfDocumentModel } from '../../../model/offer-pdf-document.model';
 import { sx } from '../../shared/style.util';
 import { classicStyles } from '../classic.styles';

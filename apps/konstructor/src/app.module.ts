@@ -13,6 +13,7 @@ import { OfferPdfModule } from './offer-pdf/offer-pdf.module';
 import { DocumentSupplyReportModule } from './document-supply-report/document-supply-report.module';
 import { ZakupkiSettingsModule } from './modules/zakupki-settings/zakupki-settings.module';
 import { KonstructorAppSettingsModule } from './modules/app-settings/app-settings.module';
+import { PublicLinkModule } from './modules/public-link/public-link.module';
 // Справочник шаблонов отчёта о поставке (CRUD для админки). Подбор шаблона
 // при генерации живёт в общем резолвере document-template, здесь — только
 // ведение справочника; строка шаблона в этом домене опциональна.
@@ -92,6 +93,8 @@ import { DocumentTemplatePublicModule } from '@lib/portal-lib/konstructor/docume
         ZakupkiSettingsModule,
         // портальные настройки приложения для фрейма (флаги вроде zakupki_enabled)
         KonstructorAppSettingsModule,
+        // публичный конструктор по отзываемой ссылке (выдача из админки)
+        PublicLinkModule,
         SupplyReportTemplateModule,
         ProviderPublicModule,
         TemplateBasePublicModule,

@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { ZakupkiOfferModule } from './zakupki-offer/zakupki-offer.module';
 import { ContractGenerateModule } from './contract/generate/contract-generate.module';
 import { ContractSpecificationFormModule } from './contract/specification-form/contract-specification-form.module';
-import { OfferModule } from './offer/offer.module';
 import { GarantModule } from '@lib/garant/garant.module';
 import { KonstructorInitModule } from './init/konstructor-init.module';
 import { PBXModule } from '@lib/pbx';
@@ -19,7 +18,6 @@ import { ComplectDescriptionModule } from './modules/complect-description/comple
         ZakupkiOfferModule,
         ContractGenerateModule,
         ContractSpecificationFormModule,
-        OfferModule,
         GarantModule,
         KonstructorInitModule,
         PBXModule,
@@ -37,7 +35,6 @@ import { ComplectDescriptionModule } from './modules/complect-description/comple
         ZakupkiOfferModule,
         ContractGenerateModule,
         ContractSpecificationFormModule,
-        OfferModule,
         KonstructorInitModule,
         SupplyInitDealModule,
         SupplyInitTaskAccountantModule,

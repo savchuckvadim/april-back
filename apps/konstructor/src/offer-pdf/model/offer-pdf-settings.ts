@@ -1,7 +1,7 @@
 import {
     DocumentFieldDescriptionMode,
     DocumentFieldViewMode,
-} from '../../offer/type/offer-settings.type';
+} from './offer-document-settings.type';
 
 /**
  * Настройки КП — те же, что были в старой PHP-версии: сколько описания

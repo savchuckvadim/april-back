@@ -18,5 +18,6 @@ import { PortalKonstructorModule } from '@lib/portal-lib/konstructor/portal-kons
         InitInfoblockService,
         InitServicesService,
     ],
+    exports: [KonstructorInitUseCase],
 })
 export class KonstructorInitModule {}

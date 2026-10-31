@@ -17,6 +17,18 @@ import {
     type DescriptionSource,
 } from '../lib/complect-description-doc';
 
+/** Что нужно документу: без домена и пользователя, они важны только хранилищу. */
+export type ComplectDescriptionContent = Pick<
+    ComplectDescriptionGenerateDto,
+    'complectName' | 'supply' | 'groups'
+>;
+
+export interface RenderedComplectDescription {
+    buffer: Buffer;
+    documentName: string;
+    infoblocksCount: number;
+}
+
 /**
  * «Описание комплекта» для менеджера: тексты блоков берутся из БД по коду
  * (инфоблоки — `infoblocks.description`, сервисы LT/консалтинг/СТАР —
@@ -40,27 +52,10 @@ export class ComplectDescriptionService {
     async generate(
         dto: ComplectDescriptionGenerateDto,
     ): Promise<ComplectDescriptionResponseDto> {
-        const codes = [
-            ...new Set(
-                dto.groups.flatMap(group =>
-                    group.infoblocks.map(infoblock => infoblock.code),
-                ),
-            ),
-        ];
-        const sources = await this.loadSources(codes);
-        const groups = resolveDescriptionGroups(dto.groups, sources);
-        const doc = buildDescriptionDocument({
-            complectName: dto.complectName,
-            supply: dto.supply,
-            groups,
-        });
-        const buffer = await Packer.toBuffer(doc);
+        const { buffer, documentName, infoblocksCount } =
+            await this.render(dto);
 
         const year = String(new Date().getFullYear());
-        const documentName = descriptionFileName(
-            dto.complectName,
-            dayjs().format('YYYY-MM-DD_HH-mm-ss'),
-        );
         await this.storage.saveFile(
             buffer,
             documentName,
@@ -79,6 +74,35 @@ export class ComplectDescriptionService {
         return {
             link: `${this.baseUrl}${rootLink}`,
             documentName,
+            infoblocksCount,
+        };
+    }
+
+    /** Собирает DOCX в памяти: сохранение решает вызывающий. */
+    async render(
+        dto: ComplectDescriptionContent,
+    ): Promise<RenderedComplectDescription> {
+        const codes = [
+            ...new Set(
+                dto.groups.flatMap(group =>
+                    group.infoblocks.map(infoblock => infoblock.code),
+                ),
+            ),
+        ];
+        const sources = await this.loadSources(codes);
+        const groups = resolveDescriptionGroups(dto.groups, sources);
+        const doc = buildDescriptionDocument({
+            complectName: dto.complectName,
+            supply: dto.supply,
+            groups,
+        });
+
+        return {
+            buffer: await Packer.toBuffer(doc),
+            documentName: descriptionFileName(
+                dto.complectName,
+                dayjs().format('YYYY-MM-DD_HH-mm-ss'),
+            ),
             infoblocksCount: countInfoblocks(groups),
         };
     }

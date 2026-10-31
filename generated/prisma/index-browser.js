@@ -1785,6 +1785,19 @@ exports.Prisma.ShareLinkScalarFieldEnum = {
   lastViewedAt: 'lastViewedAt'
 };
 
+exports.Prisma.KonstructorPublicLinkScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  token: 'token',
+  portalId: 'portalId',
+  title: 'title',
+  expiresAt: 'expiresAt',
+  revokedAt: 'revokedAt',
+  viewCount: 'viewCount',
+  lastViewedAt: 'lastViewedAt'
+};
+
 exports.Prisma.ContractTemplateScalarFieldEnum = {
   id: 'id',
   created_at: 'created_at',
@@ -2856,6 +2869,12 @@ exports.Prisma.ShareLinkOrderByRelevanceFieldEnum = {
   status: 'status'
 };
 
+exports.Prisma.KonstructorPublicLinkOrderByRelevanceFieldEnum = {
+  id: 'id',
+  token: 'token',
+  title: 'title'
+};
+
 exports.Prisma.ContractTemplateOrderByRelevanceFieldEnum = {
   contract_type: 'contract_type',
   client_types: 'client_types',
@@ -3047,6 +3066,7 @@ exports.Prisma.ModelName = {
   portal_invites: 'portal_invites',
   AppCache: 'AppCache',
   ShareLink: 'ShareLink',
+  KonstructorPublicLink: 'KonstructorPublicLink',
   ContractTemplate: 'ContractTemplate',
   SupplyReportTemplate: 'SupplyReportTemplate'
 };
