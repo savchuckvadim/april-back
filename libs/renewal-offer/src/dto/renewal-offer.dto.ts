@@ -23,7 +23,7 @@ import {
 /** Самый долгий срок ссылки с датой окончания. */
 export const RENEWAL_LINK_MAX_DAYS = 3650;
 
-const { price, employees, hours, extras } = RENEWAL_LIMITS;
+const { price, employees, hours, extras, discountPercent } = RENEWAL_LIMITS;
 
 /** Дополнительная услуга вне прайса — строкой в предложении. */
 export class RenewalExtraLineDto {
@@ -245,7 +245,22 @@ export class RenewalOfferInputDto {
 
     @ApiPropertyOptional({
         description:
-            'Скидка или надбавка к месячному платежу, ₽. Отрицательная — скидка',
+            'Скидка в процентах от стоимости услуг. Сумма в рублях считается сама. 0 — без скидки',
+        type: Number,
+        example: 10,
+        default: 0,
+        minimum: discountPercent.min,
+        maximum: discountPercent.max,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(discountPercent.min)
+    @Max(discountPercent.max)
+    discountPercent?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Скидка или надбавка к месячному платежу, ₽. Отрицательная — скидка. При заданном проценте не применяется',
         type: Number,
         example: -2000,
         default: 0,

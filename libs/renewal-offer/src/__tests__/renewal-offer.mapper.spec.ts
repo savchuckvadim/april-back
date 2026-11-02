@@ -27,6 +27,7 @@ const record = (
         devIncluded: true,
         devHours: 30,
         devHourPrice: 2000,
+        discountPercent: 15,
         adjustment: -2000,
         adjustmentLabel: 'Скидка за год вперёд',
         monthlyTotal: 29000,
@@ -48,6 +49,7 @@ describe('offerFromRecord: состав берётся из колонок', () 
         expect(offer.aiEmployees).toBe(7);
         expect(offer.managerIncluded).toBe(true);
         expect(offer.adjustment).toBe(-2000);
+        expect(offer.discountPercent).toBe(15);
     });
 
     it('колонки важнее слепка: расхождение решается в пользу колонок', () => {

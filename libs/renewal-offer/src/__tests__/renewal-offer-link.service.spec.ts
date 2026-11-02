@@ -29,6 +29,7 @@ const record = (
         devIncluded: true,
         devHours: 30,
         devHourPrice: 2000,
+        discountPercent: 0,
         adjustment: 0,
         adjustmentLabel: 'Скидка',
         monthlyTotal: 18000,

@@ -23,6 +23,7 @@ export interface CreateRenewalOfferLinkData {
     devIncluded: boolean;
     devHours: number;
     devHourPrice: number;
+    discountPercent: number;
     adjustment: number;
     adjustmentLabel: string;
     monthlyTotal: number;

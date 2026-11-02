@@ -124182,6 +124182,7 @@ export namespace Prisma {
     managerPrice: number | null
     devHours: number | null
     devHourPrice: number | null
+    discountPercent: number | null
     adjustment: number | null
     monthlyTotal: number | null
     viewCount: number | null
@@ -124197,6 +124198,7 @@ export namespace Prisma {
     managerPrice: number | null
     devHours: number | null
     devHourPrice: number | null
+    discountPercent: number | null
     adjustment: number | null
     monthlyTotal: number | null
     viewCount: number | null
@@ -124220,6 +124222,7 @@ export namespace Prisma {
     devIncluded: boolean | null
     devHours: number | null
     devHourPrice: number | null
+    discountPercent: number | null
     adjustment: number | null
     adjustmentLabel: string | null
     monthlyTotal: number | null
@@ -124250,6 +124253,7 @@ export namespace Prisma {
     devIncluded: boolean | null
     devHours: number | null
     devHourPrice: number | null
+    discountPercent: number | null
     adjustment: number | null
     adjustmentLabel: string | null
     monthlyTotal: number | null
@@ -124280,6 +124284,7 @@ export namespace Prisma {
     devIncluded: number
     devHours: number
     devHourPrice: number
+    discountPercent: number
     adjustment: number
     adjustmentLabel: number
     monthlyTotal: number
@@ -124305,6 +124310,7 @@ export namespace Prisma {
     managerPrice?: true
     devHours?: true
     devHourPrice?: true
+    discountPercent?: true
     adjustment?: true
     monthlyTotal?: true
     viewCount?: true
@@ -124320,6 +124326,7 @@ export namespace Prisma {
     managerPrice?: true
     devHours?: true
     devHourPrice?: true
+    discountPercent?: true
     adjustment?: true
     monthlyTotal?: true
     viewCount?: true
@@ -124343,6 +124350,7 @@ export namespace Prisma {
     devIncluded?: true
     devHours?: true
     devHourPrice?: true
+    discountPercent?: true
     adjustment?: true
     adjustmentLabel?: true
     monthlyTotal?: true
@@ -124373,6 +124381,7 @@ export namespace Prisma {
     devIncluded?: true
     devHours?: true
     devHourPrice?: true
+    discountPercent?: true
     adjustment?: true
     adjustmentLabel?: true
     monthlyTotal?: true
@@ -124403,6 +124412,7 @@ export namespace Prisma {
     devIncluded?: true
     devHours?: true
     devHourPrice?: true
+    discountPercent?: true
     adjustment?: true
     adjustmentLabel?: true
     monthlyTotal?: true
@@ -124521,6 +124531,7 @@ export namespace Prisma {
     devIncluded: boolean
     devHours: number
     devHourPrice: number
+    discountPercent: number
     adjustment: number
     adjustmentLabel: string
     monthlyTotal: number
@@ -124571,6 +124582,7 @@ export namespace Prisma {
     devIncluded?: boolean
     devHours?: boolean
     devHourPrice?: boolean
+    discountPercent?: boolean
     adjustment?: boolean
     adjustmentLabel?: boolean
     monthlyTotal?: boolean
@@ -124604,6 +124616,7 @@ export namespace Prisma {
     devIncluded?: boolean
     devHours?: boolean
     devHourPrice?: boolean
+    discountPercent?: boolean
     adjustment?: boolean
     adjustmentLabel?: boolean
     monthlyTotal?: boolean
@@ -124617,7 +124630,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type RenewalOfferLinkOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "token" | "clientName" | "title" | "salesIncluded" | "salesPrice" | "aiIncluded" | "aiEmployees" | "aiBasePrice" | "aiBaseEmployees" | "aiExtraPrice" | "aiFreeDelta" | "managerIncluded" | "managerPrice" | "devIncluded" | "devHours" | "devHourPrice" | "adjustment" | "adjustmentLabel" | "monthlyTotal" | "offerJson" | "expiresAt" | "revokedAt" | "viewCount" | "lastViewedAt" | "createdBy" | "createdAt" | "updatedAt", ExtArgs["result"]["renewalOfferLink"]>
+  export type RenewalOfferLinkOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "token" | "clientName" | "title" | "salesIncluded" | "salesPrice" | "aiIncluded" | "aiEmployees" | "aiBasePrice" | "aiBaseEmployees" | "aiExtraPrice" | "aiFreeDelta" | "managerIncluded" | "managerPrice" | "devIncluded" | "devHours" | "devHourPrice" | "discountPercent" | "adjustment" | "adjustmentLabel" | "monthlyTotal" | "offerJson" | "expiresAt" | "revokedAt" | "viewCount" | "lastViewedAt" | "createdBy" | "createdAt" | "updatedAt", ExtArgs["result"]["renewalOfferLink"]>
 
   export type $RenewalOfferLinkPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "RenewalOfferLink"
@@ -124644,7 +124657,11 @@ export namespace Prisma {
       devHours: number
       devHourPrice: number
       /**
-       * Со знаком: отрицательная — скидка
+       * Скидка в процентах от стоимости услуг; 0 — без скидки
+       */
+      discountPercent: number
+      /**
+       * В рублях со знаком: отрицательная — скидка. Для ссылок до процентов
        */
       adjustment: number
       adjustmentLabel: string
@@ -125049,6 +125066,7 @@ export namespace Prisma {
     readonly devIncluded: FieldRef<"RenewalOfferLink", 'Boolean'>
     readonly devHours: FieldRef<"RenewalOfferLink", 'Int'>
     readonly devHourPrice: FieldRef<"RenewalOfferLink", 'Int'>
+    readonly discountPercent: FieldRef<"RenewalOfferLink", 'Int'>
     readonly adjustment: FieldRef<"RenewalOfferLink", 'Int'>
     readonly adjustmentLabel: FieldRef<"RenewalOfferLink", 'String'>
     readonly monthlyTotal: FieldRef<"RenewalOfferLink", 'Int'>
@@ -127460,6 +127478,7 @@ export namespace Prisma {
     devIncluded: 'devIncluded',
     devHours: 'devHours',
     devHourPrice: 'devHourPrice',
+    discountPercent: 'discountPercent',
     adjustment: 'adjustment',
     adjustmentLabel: 'adjustmentLabel',
     monthlyTotal: 'monthlyTotal',
@@ -139799,6 +139818,7 @@ export namespace Prisma {
     devIncluded?: BoolFilter<"RenewalOfferLink"> | boolean
     devHours?: IntFilter<"RenewalOfferLink"> | number
     devHourPrice?: IntFilter<"RenewalOfferLink"> | number
+    discountPercent?: IntFilter<"RenewalOfferLink"> | number
     adjustment?: IntFilter<"RenewalOfferLink"> | number
     adjustmentLabel?: StringFilter<"RenewalOfferLink"> | string
     monthlyTotal?: IntFilter<"RenewalOfferLink"> | number
@@ -139830,6 +139850,7 @@ export namespace Prisma {
     devIncluded?: SortOrder
     devHours?: SortOrder
     devHourPrice?: SortOrder
+    discountPercent?: SortOrder
     adjustment?: SortOrder
     adjustmentLabel?: SortOrder
     monthlyTotal?: SortOrder
@@ -139865,6 +139886,7 @@ export namespace Prisma {
     devIncluded?: BoolFilter<"RenewalOfferLink"> | boolean
     devHours?: IntFilter<"RenewalOfferLink"> | number
     devHourPrice?: IntFilter<"RenewalOfferLink"> | number
+    discountPercent?: IntFilter<"RenewalOfferLink"> | number
     adjustment?: IntFilter<"RenewalOfferLink"> | number
     adjustmentLabel?: StringFilter<"RenewalOfferLink"> | string
     monthlyTotal?: IntFilter<"RenewalOfferLink"> | number
@@ -139896,6 +139918,7 @@ export namespace Prisma {
     devIncluded?: SortOrder
     devHours?: SortOrder
     devHourPrice?: SortOrder
+    discountPercent?: SortOrder
     adjustment?: SortOrder
     adjustmentLabel?: SortOrder
     monthlyTotal?: SortOrder
@@ -139935,6 +139958,7 @@ export namespace Prisma {
     devIncluded?: BoolWithAggregatesFilter<"RenewalOfferLink"> | boolean
     devHours?: IntWithAggregatesFilter<"RenewalOfferLink"> | number
     devHourPrice?: IntWithAggregatesFilter<"RenewalOfferLink"> | number
+    discountPercent?: IntWithAggregatesFilter<"RenewalOfferLink"> | number
     adjustment?: IntWithAggregatesFilter<"RenewalOfferLink"> | number
     adjustmentLabel?: StringWithAggregatesFilter<"RenewalOfferLink"> | string
     monthlyTotal?: IntWithAggregatesFilter<"RenewalOfferLink"> | number
@@ -152395,6 +152419,7 @@ export namespace Prisma {
     devIncluded?: boolean
     devHours?: number
     devHourPrice?: number
+    discountPercent?: number
     adjustment?: number
     adjustmentLabel?: string
     monthlyTotal?: number
@@ -152426,6 +152451,7 @@ export namespace Prisma {
     devIncluded?: boolean
     devHours?: number
     devHourPrice?: number
+    discountPercent?: number
     adjustment?: number
     adjustmentLabel?: string
     monthlyTotal?: number
@@ -152457,6 +152483,7 @@ export namespace Prisma {
     devIncluded?: BoolFieldUpdateOperationsInput | boolean
     devHours?: IntFieldUpdateOperationsInput | number
     devHourPrice?: IntFieldUpdateOperationsInput | number
+    discountPercent?: IntFieldUpdateOperationsInput | number
     adjustment?: IntFieldUpdateOperationsInput | number
     adjustmentLabel?: StringFieldUpdateOperationsInput | string
     monthlyTotal?: IntFieldUpdateOperationsInput | number
@@ -152488,6 +152515,7 @@ export namespace Prisma {
     devIncluded?: BoolFieldUpdateOperationsInput | boolean
     devHours?: IntFieldUpdateOperationsInput | number
     devHourPrice?: IntFieldUpdateOperationsInput | number
+    discountPercent?: IntFieldUpdateOperationsInput | number
     adjustment?: IntFieldUpdateOperationsInput | number
     adjustmentLabel?: StringFieldUpdateOperationsInput | string
     monthlyTotal?: IntFieldUpdateOperationsInput | number
@@ -152519,6 +152547,7 @@ export namespace Prisma {
     devIncluded?: boolean
     devHours?: number
     devHourPrice?: number
+    discountPercent?: number
     adjustment?: number
     adjustmentLabel?: string
     monthlyTotal?: number
@@ -152550,6 +152579,7 @@ export namespace Prisma {
     devIncluded?: BoolFieldUpdateOperationsInput | boolean
     devHours?: IntFieldUpdateOperationsInput | number
     devHourPrice?: IntFieldUpdateOperationsInput | number
+    discountPercent?: IntFieldUpdateOperationsInput | number
     adjustment?: IntFieldUpdateOperationsInput | number
     adjustmentLabel?: StringFieldUpdateOperationsInput | string
     monthlyTotal?: IntFieldUpdateOperationsInput | number
@@ -152581,6 +152611,7 @@ export namespace Prisma {
     devIncluded?: BoolFieldUpdateOperationsInput | boolean
     devHours?: IntFieldUpdateOperationsInput | number
     devHourPrice?: IntFieldUpdateOperationsInput | number
+    discountPercent?: IntFieldUpdateOperationsInput | number
     adjustment?: IntFieldUpdateOperationsInput | number
     adjustmentLabel?: StringFieldUpdateOperationsInput | string
     monthlyTotal?: IntFieldUpdateOperationsInput | number
@@ -161103,6 +161134,7 @@ export namespace Prisma {
     devIncluded?: SortOrder
     devHours?: SortOrder
     devHourPrice?: SortOrder
+    discountPercent?: SortOrder
     adjustment?: SortOrder
     adjustmentLabel?: SortOrder
     monthlyTotal?: SortOrder
@@ -161126,6 +161158,7 @@ export namespace Prisma {
     managerPrice?: SortOrder
     devHours?: SortOrder
     devHourPrice?: SortOrder
+    discountPercent?: SortOrder
     adjustment?: SortOrder
     monthlyTotal?: SortOrder
     viewCount?: SortOrder
@@ -161149,6 +161182,7 @@ export namespace Prisma {
     devIncluded?: SortOrder
     devHours?: SortOrder
     devHourPrice?: SortOrder
+    discountPercent?: SortOrder
     adjustment?: SortOrder
     adjustmentLabel?: SortOrder
     monthlyTotal?: SortOrder
@@ -161179,6 +161213,7 @@ export namespace Prisma {
     devIncluded?: SortOrder
     devHours?: SortOrder
     devHourPrice?: SortOrder
+    discountPercent?: SortOrder
     adjustment?: SortOrder
     adjustmentLabel?: SortOrder
     monthlyTotal?: SortOrder
@@ -161201,6 +161236,7 @@ export namespace Prisma {
     managerPrice?: SortOrder
     devHours?: SortOrder
     devHourPrice?: SortOrder
+    discountPercent?: SortOrder
     adjustment?: SortOrder
     monthlyTotal?: SortOrder
     viewCount?: SortOrder

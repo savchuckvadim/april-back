@@ -2,6 +2,7 @@ import type { RenewalOfferInputDto } from '../dto/renewal-offer.dto';
 import {
     RENEWAL_PRICE_DEFAULTS,
     calcMonthlyTotal,
+    calcServicesMonthly,
 } from '../lib/renewal-offer.model';
 import { normalizeRenewalOffer } from '../lib/renewal-offer.normalize';
 
@@ -56,6 +57,29 @@ describe('normalizeRenewalOffer: границы', () => {
     it('скидка может быть отрицательной', () => {
         const offer = normalizeRenewalOffer(input({ adjustment: -2000 }));
         expect(offer.adjustment).toBe(-2000);
+    });
+
+    it('без процента скидки нет', () => {
+        expect(normalizeRenewalOffer(input()).discountPercent).toBe(0);
+    });
+
+    it('процент больше 100 опускается до 100', () => {
+        const offer = normalizeRenewalOffer(input({ discountPercent: 500 }));
+        expect(offer.discountPercent).toBe(100);
+    });
+
+    it('отрицательный процент становится нулём', () => {
+        const offer = normalizeRenewalOffer(input({ discountPercent: -10 }));
+        expect(offer.discountPercent).toBe(0);
+    });
+
+    it('при заданном проценте сумма в рублях обнуляется', () => {
+        // Иначе в отчётах по колонкам у ссылки было бы две скидки сразу.
+        const offer = normalizeRenewalOffer(
+            input({ discountPercent: 10, adjustment: -2000 }),
+        );
+        expect(offer.discountPercent).toBe(10);
+        expect(offer.adjustment).toBe(0);
     });
 
     it('ноль сотрудников поднимается до одного', () => {
@@ -152,6 +176,35 @@ describe('итог после нормализации', () => {
         );
         // 6500 + (7500 + 4 × 1000) + 10000 + 3000 − 2000
         expect(calcMonthlyTotal(offer)).toBe(29_000);
+    });
+
+    it('процент считается от стоимости услуг', () => {
+        const offer = normalizeRenewalOffer(
+            input({
+                salesPrice: 30_000,
+                aiBasePrice: 10_000,
+                discountPercent: 10,
+            }),
+        );
+        expect(calcServicesMonthly(offer)).toBe(40_000);
+        expect(calcMonthlyTotal(offer)).toBe(36_000);
+    });
+
+    it('разовая услуга в процент не входит', () => {
+        const offer = normalizeRenewalOffer(
+            input({
+                salesPrice: 30_000,
+                aiBasePrice: 10_000,
+                discountPercent: 10,
+                extras: [{ title: 'Обучение', price: 50_000, period: 'once' }],
+            }),
+        );
+        expect(calcMonthlyTotal(offer)).toBe(36_000);
+    });
+
+    it('скидка 100 процентов даёт ноль, а не минус', () => {
+        const offer = normalizeRenewalOffer(input({ discountPercent: 100 }));
+        expect(calcMonthlyTotal(offer)).toBe(0);
     });
 
     it('скидка больше суммы не делает платёж отрицательным', () => {

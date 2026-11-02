@@ -1873,6 +1873,7 @@ exports.Prisma.RenewalOfferLinkScalarFieldEnum = {
   devIncluded: 'devIncluded',
   devHours: 'devHours',
   devHourPrice: 'devHourPrice',
+  discountPercent: 'discountPercent',
   adjustment: 'adjustment',
   adjustmentLabel: 'adjustmentLabel',
   monthlyTotal: 'monthlyTotal',

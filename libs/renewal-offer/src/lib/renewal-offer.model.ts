@@ -26,6 +26,7 @@ export const RENEWAL_LIMITS = {
     employees: { min: 1, max: 1000 },
     hours: { min: 0, max: 1000 },
     extras: { max: 10 },
+    discountPercent: { min: 0, max: 100 },
 } as const;
 
 /** Периодичность дополнительной услуги. */
@@ -61,7 +62,13 @@ export interface RenewalOffer {
     readonly devHours: number;
     readonly devHourPrice: number;
 
-    /** Со знаком: отрицательная — скидка. */
+    /** Скидка в процентах от стоимости услуг; 0 — без скидки. */
+    readonly discountPercent: number;
+    /**
+     * Сумма в рублях со знаком: отрицательная — скидка. Осталась для ссылок,
+     * выданных до процентов. При заданном проценте не применяется, иначе
+     * скидка посчиталась бы дважды.
+     */
     readonly adjustment: number;
     readonly adjustmentLabel: string;
 
@@ -91,16 +98,29 @@ export function calcExtrasOnce(offer: RenewalOffer): number {
         .reduce((sum, line) => sum + line.price, 0);
 }
 
-/** Месячный платёж по включённым услугам с учётом скидки. */
-export function calcMonthlyTotal(offer: RenewalOffer): number {
+/** Стоимость услуг в месяц до скидки: от неё считается процент. */
+export function calcServicesMonthly(offer: RenewalOffer): number {
     let total = 0;
     if (offer.salesIncluded) total += offer.salesPrice;
     if (offer.aiIncluded) total += calcAiPrice(offer);
     if (offer.managerIncluded) total += offer.managerPrice;
     total += calcExtrasMonthly(offer);
-    total += offer.adjustment;
+    return total;
+}
+
+/** Месячный платёж по включённым услугам с учётом скидки. */
+export function calcMonthlyTotal(offer: RenewalOffer): number {
+    const services = calcServicesMonthly(offer);
+    if (offer.discountPercent > 0) {
+        const percent = Math.min(
+            RENEWAL_LIMITS.discountPercent.max,
+            offer.discountPercent,
+        );
+        // До целого рубля: так же округляет страница, суммы обязаны сойтись.
+        return Math.max(0, services - Math.round((services * percent) / 100));
+    }
     // Скидка больше суммы не делает платёж отрицательным.
-    return Math.max(0, total);
+    return Math.max(0, services + offer.adjustment);
 }
 
 /** Коридор состава, в котором цена AI-сервиса не меняется. */

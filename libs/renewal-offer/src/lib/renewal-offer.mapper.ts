@@ -58,6 +58,7 @@ export function offerFromRecord(record: RenewalOfferLinkRecord): RenewalOffer {
         devHours: record.devHours,
         devHourPrice: record.devHourPrice,
 
+        discountPercent: record.discountPercent,
         adjustment: record.adjustment,
         adjustmentLabel: record.adjustmentLabel,
 

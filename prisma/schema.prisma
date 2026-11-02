@@ -2602,7 +2602,9 @@ model RenewalOfferLink {
   devHours     Int     @default(30) @map("dev_hours") @db.UnsignedSmallInt
   devHourPrice Int     @default(2000) @map("dev_hour_price") @db.UnsignedInt
 
-  /// Со знаком: отрицательная — скидка
+  /// Скидка в процентах от стоимости услуг; 0 — без скидки
+  discountPercent Int    @default(0) @map("discount_percent") @db.UnsignedTinyInt
+  /// В рублях со знаком: отрицательная — скидка. Для ссылок до процентов
   adjustment      Int    @default(0)
   adjustmentLabel String @default("Скидка") @map("adjustment_label") @db.VarChar(255)
 

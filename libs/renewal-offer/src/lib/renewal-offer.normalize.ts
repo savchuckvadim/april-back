@@ -43,9 +43,14 @@ export function normalizeRenewalOffer(
     input: RenewalOfferInputDto,
 ): RenewalOffer {
     const d = RENEWAL_PRICE_DEFAULTS;
-    const { price, employees, hours } = RENEWAL_LIMITS;
+    const { price, employees, hours, discountPercent } = RENEWAL_LIMITS;
 
     const label = input.adjustmentLabel?.trim();
+    const percent = clamp(
+        pick(input.discountPercent, 0),
+        discountPercent.min,
+        discountPercent.max,
+    );
 
     return {
         clientName: input.clientName.trim().slice(0, 255),
@@ -99,8 +104,13 @@ export function normalizeRenewalOffer(
             price.max,
         ),
 
-        // Скидка со знаком, поэтому границы симметричные.
-        adjustment: clamp(pick(input.adjustment, 0), -price.max, price.max),
+        discountPercent: percent,
+        // Со знаком, поэтому границы симметричные. При заданном проценте
+        // обнуляем: в отчётах по колонкам не должно быть двух скидок сразу.
+        adjustment:
+            percent > 0
+                ? 0
+                : clamp(pick(input.adjustment, 0), -price.max, price.max),
         adjustmentLabel: label ? label.slice(0, 255) : 'Скидка',
 
         extras: normalizeExtras(input.extras),

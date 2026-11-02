@@ -209,7 +209,15 @@ export class PublicRenewalOfferDto {
     devHourPrice: number;
 
     @ApiProperty({
-        description: 'Скидка или надбавка, ₽. Отрицательная — скидка',
+        description: 'Скидка в процентах от стоимости услуг; 0 — без скидки',
+        type: Number,
+        example: 10,
+    })
+    discountPercent: number;
+
+    @ApiProperty({
+        description:
+            'Скидка или надбавка, ₽. Отрицательная — скидка. При заданном проценте не применяется',
         type: Number,
     })
     adjustment: number;

@@ -64,6 +64,7 @@ export class RenewalOfferLinkService {
             devIncluded: offer.devIncluded,
             devHours: offer.devHours,
             devHourPrice: offer.devHourPrice,
+            discountPercent: offer.discountPercent,
             adjustment: offer.adjustment,
             adjustmentLabel: offer.adjustmentLabel,
             monthlyTotal: calcMonthlyTotal(offer),
