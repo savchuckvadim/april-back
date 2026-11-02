@@ -65,6 +65,10 @@ const EXPECTED_FIELDS = [
     'versions',
     'flow',
     'usage',
+    // Методика и продвижение сделки (01.11.2026): перед extra.
+    'dealProgress',
+    'capsTriggered',
+    'methodology',
     'extra',
 ];
 
@@ -76,7 +80,7 @@ const REQUIRED = {
 };
 
 describe('AgentCallAnalysisDto (слои наследования)', () => {
-    it('Swagger видит все 49 полей в порядке объявления', () => {
+    it('Swagger видит все 52 поля в порядке объявления', () => {
         const keys = (
             Reflect.getMetadata(
                 DECORATORS.API_MODEL_PROPERTIES_ARRAY,

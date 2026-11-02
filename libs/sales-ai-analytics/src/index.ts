@@ -27,11 +27,14 @@ export * from './model/buckets';
 export * from './model/matrix.types';
 export * from './model/matrix-cell';
 export * from './model/manager-type-matrix';
+export * from './model/quality-progress';
 export * from './model/objections';
 export * from './model/explanation-template';
 export * from './model/attention.types';
 export * from './model/attention.rules';
 export * from './model/attention.rules.quality';
+export * from './model/attention.methodology.types';
+export * from './model/attention.rules.methodology';
 export * from './model/attention.rules.phase3';
 export * from './model/attention';
 // Фаза 3, П9: детектор Гудхарта — пары «метрика ↔ противовес» на

@@ -4,7 +4,7 @@ import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import {
     SideFlowJobBuildInput,
-    SideFlowJobKind,
+    SideFlowQueuedJobKind,
     sideJobId,
 } from '../../event-report/services/post-flow/side-flow-job.base';
 import { buildZprFlowJobs } from '../../event-report/services/post-flow/zpr-flow-job.builder';
@@ -21,7 +21,9 @@ interface DeferredSideFlowSpec {
     /** Часть детерминированного jobId (`{operationId}:{flow}:{kind}`). */
     flow: DeferredSideFlow;
     label: string;
-    build: (input: SideFlowJobBuildInput) => Array<{ kind: SideFlowJobKind }>;
+    build: (
+        input: SideFlowJobBuildInput,
+    ) => Array<{ kind: SideFlowQueuedJobKind }>;
 }
 
 /**

@@ -188,6 +188,13 @@ export function buildCallReportSmartFields(
     set.set('SCORE', input.score);
     set.set('WEIGHTED_SCORE', input.weightedScore);
     set.set('SCRIPT_COMPLIANCE', input.scriptCompliance);
+    // Методика и ограничители (01.11.2026): сводка в полях, пункты — в таймлайне.
+    set.set('METHODOLOGY', input.methodology);
+    set.set('CHECKPOINTS_DONE', input.checkpointsDone);
+    set.set('CHECKPOINTS_TOTAL', input.checkpointsTotal);
+    set.set('SPIRALS_FULL', input.spiralsFull);
+    set.set('DEAL_PROGRESS', input.dealProgress);
+    set.setShortText('CAPS_APPLIED', input.capsApplied);
     set.setEnum('COACHING_PRIORITY', input.coachingPriority);
     set.set('SCORE_EXPLANATION', input.scoreExplanation);
     set.set('SPEECH_ANALYSIS', input.speechAnalysis);

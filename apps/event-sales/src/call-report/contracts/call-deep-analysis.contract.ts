@@ -74,8 +74,22 @@ export const NEXT_STEP_SCHEMA = {
         set: { type: 'boolean' },
         description: { type: ['string', 'null'] },
         date: { type: ['string', 'null'] },
+        // Расширенный шаг (v3.0, 01.11.2026): время, цель и действия сторон —
+        // ядро для всех порталов; ограничители ядра смотрят на их полноту.
+        time: { type: ['string', 'null'] },
+        goal: { type: ['string', 'null'] },
+        clientAction: { type: ['string', 'null'] },
+        managerAction: { type: ['string', 'null'] },
     },
-    required: ['set', 'description', 'date'],
+    required: [
+        'set',
+        'description',
+        'date',
+        'time',
+        'goal',
+        'clientAction',
+        'managerAction',
+    ],
     additionalProperties: false,
 } as const;
 
@@ -686,7 +700,10 @@ ${HVOST_CHECKLIST_SPEC}
 ${FIVE_K_CHECKLIST_SPEC}
 - nextStep.set — договорились ли о КОНКРЕТНОМ следующем шаге. «Клиент подумает» и
   «перезвоним как-нибудь» — это НЕ следующий шаг. description — что именно
-  и когда, date — YYYY-MM-DD или null.
+  и когда, date — YYYY-MM-DD или null; time — время контакта («11:00»,
+  «после обеда») или null; goal — цель контакта («узнать решение», «показать
+  директору») или null; clientAction — что клиент делает до контакта,
+  managerAction — что делает менеджер; не прозвучало — null.
 - needs — выявленные потребности клиента, по одной на пункт.
 - productsOffered — что именно предлагали, по одному на пункт.
 - objections — каждое возражение: формулировка клиента, как менеджер отработал,

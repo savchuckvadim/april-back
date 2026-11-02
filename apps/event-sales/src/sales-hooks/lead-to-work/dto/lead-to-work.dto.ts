@@ -461,6 +461,12 @@ export interface ILeadToWorkItem {
      */
     transferredBy?: number;
     /**
+     * ПЕРЕДАЧА ПО SLA ПРИНЯТИЯ: прежний ответственный не подтвердил заявку
+     * за `minutes` рабочих минут. Ставит только крон SLA, из запроса не
+     * приходит. Хук пишет об этом комментарий в таймлайн лида и сделки.
+     */
+    sla?: { minutes: number };
+    /**
      * АДРЕСНЫЙ ХО: ответственный назван явно, а не выбран кругом. Ставится
      * use-case'ом после резолва ответственного, из запроса не приходит.
      * Означает «заявка принята»: сделка в «Холодные», лид «Взята в работу»,
@@ -565,6 +571,7 @@ export function buildLeadToWorkItem(input: {
     department?: string;
     excludeResponsible?: number;
     transferredBy?: number;
+    sla?: { minutes: number };
     createCompany?: LeadToWorkFlag;
     needConvertTo?: LeadToWorkConvertTarget;
     stageMode?: LeadToWorkStageMode;
@@ -592,6 +599,7 @@ export function buildLeadToWorkItem(input: {
         department: input.department,
         excludeResponsible: input.excludeResponsible,
         transferredBy: input.transferredBy,
+        sla: input.sla,
         // Дефолты НЕ подставляем: см. комментарий у ILeadToWorkItem —
         // их применяет resolveLeadToWorkIntent() после чтения карточки.
         createCompany: input.createCompany,

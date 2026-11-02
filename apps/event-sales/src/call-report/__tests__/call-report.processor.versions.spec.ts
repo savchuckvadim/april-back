@@ -255,8 +255,11 @@ describe('версии промпта и классификатора 21.10.2026
     const SERIES_BOUNDARY = AI_ANALYSIS_SERIES_START;
 
     it('версия промпта поднята, несёт свою дату и записана в таблицу серий', () => {
-        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v2.6-2026-10-21');
-        expect(versionDate(CALL_REPORT_PROMPT_VERSION)).toBe('2026-10-21');
+        // v3.0 (01.11.2026): расширенный шаг, продвижение сделки,
+        // ограничители и методика — по существу, но в общей серии
+        // (решение владельца 01.11.2026: оценки должны продолжаться).
+        expect(CALL_REPORT_PROMPT_VERSION).toBe('focus-v3.0-2026-11-01');
+        expect(versionDate(CALL_REPORT_PROMPT_VERSION)).toBe('2026-11-01');
         expect(PROMPT_SERIES_START[CALL_REPORT_PROMPT_VERSION]).toBe(
             SERIES_BOUNDARY,
         );

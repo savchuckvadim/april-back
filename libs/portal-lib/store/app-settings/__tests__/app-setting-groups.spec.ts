@@ -50,7 +50,7 @@ describe('внутренняя документация категорий на�
      * отправила бы сотрудника искать несуществующую настройку.
      */
     const SETTING_ONLY_PREFIX =
-        /^(lead_intake_|lead_work_|lead_client_|xo_rescue_|reject_revive_|deal_audit_|duplicate_report_|with_|checklist_|ai_analytics_|bitrix_|visibility_|support_monitor_)[a-z0-9_]*[a-z0-9]$/;
+        /^(lead_intake_|lead_work_|lead_client_|xo_rescue_|tmc_approval_rescue_|reject_revive_|deal_audit_|duplicate_report_|with_|checklist_|ai_analytics_|bitrix_|visibility_|support_monitor_)[a-z0-9_]*[a-z0-9]$/;
 
     it.each(Object.entries(APP_SETTING_GROUP_DOCS))(
         '%s: упомянутые коды настроек существуют, клиентских оборотов нет',
@@ -121,6 +121,10 @@ describe('категории настроек приложений', () => {
             resolveAppSettingGroup(app, 'lead_intake_repeat_join_mode'),
         ).toBe('lead_repeat');
         expect(resolveAppSettingGroup(app, 'with_ai')).toBe('calls_features');
+        // Спутники «Пост-отказной даты» живут рядом с ней.
+        expect(resolveAppSettingGroup(app, 'post_fail_assign_user_id')).toBe(
+            'calls_features',
+        );
         expect(resolveAppSettingGroup(app, 'checklist_pay_enabled')).toBe(
             'calls_checklists',
         );

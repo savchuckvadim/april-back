@@ -12,6 +12,10 @@
  */
 import type { AttentionRule } from './attention.rules';
 import {
+    progressWithoutQualityRule,
+    weakSpiralsOf,
+} from './attention.rules.methodology';
+import {
     ATTENTION_FOLLOWUP_CALL_TYPES,
     ATTENTION_FOLLOWUP_SECTIONS,
     ATTENTION_PRESENTATION_CALL_TYPES,
@@ -37,7 +41,9 @@ const sortedIds = (ids: readonly string[]): string[] => [...ids].sort();
 /**
  * weak_presentation — у звонков-презентаций слабы «Выявление потребностей»
  * или «Презентация под потребности»: средняя не выше порога либо ниже
- * отдела на заданный разрыв (при n раздела не меньше n_min_none).
+ * отдела на заданный разрыв (при n раздела не меньше n_min_none); либо
+ * (методика со спиралями, focus-v3.0) полных спиралей презентации в
+ * среднем меньше нормы методики при том же минимуме n.
  */
 export const weakPresentationRule: AttentionRule = (manager, rules) => {
     const facts = manager.presentation;
@@ -48,22 +54,36 @@ export const weakPresentationRule: AttentionRule = (manager, rules) => {
         ATTENTION_PRESENTATION_SECTIONS,
         rules,
     );
-    if (weak.length === 0) return null;
-    const parts = weak.map(item => weakSectionText(item, rules));
+    const spirals = weakSpiralsOf(facts.spirals, rules);
+    if (weak.length === 0 && spirals === null) return null;
+    const parts = [
+        ...weak.map(item => weakSectionText(item, rules)),
+        ...(spirals ? [spirals.text] : []),
+    ];
+    const callIds = new Set([
+        ...facts.weakCallIds,
+        ...(spirals?.callIds ?? []),
+    ]);
     return {
         managerId: manager.managerId,
         signal: 'weak_presentation',
         availableFrom: 1,
-        severity: weak[0].section.mean,
+        severity: Math.min(
+            weak[0]?.section.mean ?? Infinity,
+            spirals?.severity ?? Infinity,
+        ),
         headline:
             `Слабые презентации: ${parts.join(', ')} — ` +
             `в среднем по ${ruCount(facts.n, RU_FORMS.reviewsDative)} презентаций`,
-        basis: weak.map(item => weakSectionBasis(item, rules)),
+        basis: [
+            ...weak.map(item => weakSectionBasis(item, rules)),
+            ...(spirals ? [spirals.basis] : []),
+        ],
         link: {
             managerId: manager.managerId,
             callType: ATTENTION_PRESENTATION_CALL_TYPES[0],
-            ...(facts.weakCallIds.length
-                ? { transcriptionIds: sortedIds(facts.weakCallIds) }
+            ...(callIds.size
+                ? { transcriptionIds: sortedIds([...callIds]) }
                 : {}),
         },
     };
@@ -206,4 +226,5 @@ export const ATTENTION_QUALITY_RULES: readonly AttentionRule[] = [
     weakPresentationRule,
     weakFollowupRule,
     lowScoreCallsRule,
+    progressWithoutQualityRule,
 ];

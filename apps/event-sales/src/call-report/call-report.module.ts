@@ -32,6 +32,7 @@ import { CallClassifyStepService } from './services/call-classify-step.service';
 import { CallContextBuilderService } from './services/call-context-builder.service';
 import { CallDeepAnalysisService } from './services/call-deep-analysis.service';
 import { CallFocusAnalysisService } from './services/call-focus-analysis.service';
+import { MethodologyModule } from '@lib/call-lib/call-report/methodology';
 import { CallReportSettingsService } from './services/call-report-settings.service';
 import { CallRevisionService } from './services/call-revision.service';
 import { CallComplianceReviewService } from './services/call-compliance-review.service';
@@ -86,6 +87,9 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         // Материалы базы знаний по ролям (скрипт, регламент, факты,
         // плейбуки, эталоны) — Фаза 2 rag-driven-analysis-plan.md
         KnowledgeMaterialsModule,
+        // Методики продаж как конфиг: реестр действующей методики портала
+        // (настройка AI → таблица ai_methodologies → встроенный polyansky)
+        MethodologyModule,
         // Фильтр сканера «только менеджеры отдела продаж»
         BxDepartmentModule,
         // Настройки AI на портал: пороги, модели и расписание берутся из БД,

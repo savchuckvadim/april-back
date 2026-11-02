@@ -135,7 +135,44 @@ export function buildChecklists(
     if (fiveK) {
         checklists.fiveKDonePct = fiveK;
     }
+    // Методика (focus-v3.0): пункты суммарно по звонкам с методикой,
+    // срезы — доля звонков с данными методики, где ограничитель сработал.
+    const withMethodology = rows.filter(
+        row =>
+            row.methodology?.code != null &&
+            (row.methodology.checkpointsTotal ?? 0) > 0,
+    );
+    if (withMethodology.length > 0) {
+        checklists.checkpointsDonePct = ratePctMetric(
+            withMethodology.reduce(
+                (sum, row) => sum + (row.methodology?.checkpointsDone ?? 0),
+                0,
+            ),
+            withMethodology.reduce(
+                (sum, row) => sum + (row.methodology?.checkpointsTotal ?? 0),
+                0,
+            ),
+        );
+    }
+    const withCapsData = rows.filter(row => row.methodology !== undefined);
+    if (withCapsData.length > 0) {
+        checklists.cappedCallsPct = ratePctMetric(
+            withCapsData.filter(row => (row.methodology?.capsApplied ?? 0) > 0)
+                .length,
+            withCapsData.length,
+        );
+    }
     return checklists;
+}
+
+/** Среднее продвижение сделки 1–5 по звонкам, где оно есть; нет ни одного — undefined. */
+export function dealProgressMetric(
+    rows: readonly MatrixCallRow[],
+): MetricValue | undefined {
+    const values = rows
+        .map(row => row.methodology?.dealProgress ?? null)
+        .filter((value): value is number => value !== null);
+    return values.length > 0 ? scoreMetric(values) : undefined;
 }
 
 /** Сигнатура версий разбора строки: канонический JSON по ключам. */
@@ -157,6 +194,7 @@ export function buildCellCore(
 ): MatrixCellCore {
     const scores = rows.filter(hasScore).map(callScore10);
     const score = scoreMetric(scores);
+    const dealProgress = dealProgressMetric(rows);
     return {
         n: rows.length,
         nBeforeComparable,
@@ -166,5 +204,6 @@ export function buildCellCore(
         checklists: buildChecklists(rows),
         evidenceCallIds: pickEvidence(rows),
         versionsMixed: new Set(rows.map(versionsSignature)).size > 1,
+        ...(dealProgress ? { dealProgress } : {}),
     };
 }

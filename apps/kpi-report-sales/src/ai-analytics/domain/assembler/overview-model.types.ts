@@ -6,6 +6,8 @@ import type { OverviewYoySnapshots } from '../loaders/overview-snapshots.loader'
  */
 import type {
     AttentionLowScoreCall,
+    AttentionPresentationSpirals,
+    AttentionProgressFacts,
     AttentionRules,
     AttentionSectionMean,
     MetricValue,
@@ -137,6 +139,9 @@ export type AttentionThresholds = Pick<
     | 'weakSectionGap'
     | 'lowScoreCallMax'
     | 'weakFollowupShareMin'
+    | 'qualityScoreMin'
+    | 'progressMovingMin'
+    | 'progressNoQualityMinCalls'
 >;
 
 /** Презентации менеджера за период: средние разделов и слабые звонки. */
@@ -144,6 +149,8 @@ export interface ManagerPresentationFacts {
     n: number;
     sections: AttentionSectionMean[];
     weakCallIds: string[];
+    /** Спирали презентаций (методика со спиралями); нет разборов со спиралями — поля нет. */
+    spirals?: AttentionPresentationSpirals;
 }
 
 /** Доработка (refine / decision) за период. */
@@ -166,6 +173,8 @@ export interface ManagerQualityFacts {
     presentation: ManagerPresentationFacts;
     followup: ManagerFollowupFacts;
     lowScoreCalls: AttentionLowScoreCall[];
+    /** Звонки с продвижением сделки без качества («купил бы и без менеджера»); у старого кэша нет. */
+    progress?: AttentionProgressFacts;
 }
 
 /** Факты по звонкам менеджера, не входящие в матрицу. */

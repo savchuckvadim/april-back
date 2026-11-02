@@ -153,6 +153,7 @@ export class PortalAiSettingsPrismaRepository
             update.revisorEnabled !== undefined ||
             update.presentationAuditEnabled !== undefined ||
             update.presentationStrictness !== undefined ||
+            update.methodologyCode !== undefined ||
             update.weeklyReportEnabled !== undefined ||
             update.weeklyReportRecipients !== undefined ||
             update.weeklyReportFolderId !== undefined ||
@@ -180,6 +181,10 @@ export class PortalAiSettingsPrismaRepository
             if (update.presentationStrictness !== undefined) {
                 json.presentationStrictness =
                     update.presentationStrictness ?? undefined;
+            }
+            if (update.methodologyCode !== undefined) {
+                json.methodologyCode =
+                    update.methodologyCode?.trim() || undefined;
             }
             if (update.weeklyReportEnabled !== undefined) {
                 json.weeklyReportEnabled =
@@ -273,6 +278,7 @@ export class PortalAiSettingsPrismaRepository
         revisorEnabled?: boolean;
         presentationAuditEnabled?: boolean;
         presentationStrictness?: PresentationStrictnessLevel;
+        methodologyCode?: string;
         weeklyReportEnabled?: boolean;
         weeklyReportRecipients?: number[];
         weeklyReportFolderId?: number;
@@ -330,6 +336,7 @@ export class PortalAiSettingsPrismaRepository
             whisperApiKeyEncrypted: this.nonEmptyString(
                 raw.whisperApiKeyEncrypted,
             ),
+            methodologyCode: this.nonEmptyString(raw.methodologyCode),
             weeklyReportDelivery: (
                 WEEKLY_REPORT_DELIVERY_MODES as readonly string[]
             ).includes(String(raw.weeklyReportDelivery))
@@ -385,6 +392,8 @@ export class PortalAiSettingsPrismaRepository
             presentationStrictness:
                 this.toJsonSettings(row.settings).presentationStrictness ??
                 null,
+            methodologyCode:
+                this.toJsonSettings(row.settings).methodologyCode ?? null,
             weeklyReportEnabled:
                 this.toJsonSettings(row.settings).weeklyReportEnabled ?? null,
             weeklyReportRecipients:

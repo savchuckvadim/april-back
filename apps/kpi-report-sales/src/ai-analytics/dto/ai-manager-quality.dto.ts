@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type {
     AttentionLowScoreCall,
     AttentionSectionMean,
@@ -9,6 +9,10 @@ import type {
     ManagerPresentationFacts,
     ManagerQualityFacts,
 } from '../domain/assembler/overview-model.types';
+import {
+    AiPresentationSpiralsDto,
+    AiProgressFactsDto,
+} from './ai-manager-progress.dto';
 
 /**
  * Факты качества строки менеджера для сигналов «Внимания» этапа 2
@@ -66,6 +70,15 @@ export class AiPresentationFactsDto implements ManagerPresentationFacts {
         example: ['10245', '10301'],
     })
     weakCallIds: string[];
+
+    @ApiPropertyOptional({
+        description:
+            'Спирали презентаций (методика со спиралями): среднее полных ' +
+            'витков, норма методики и презентации ниже нормы; разборов со ' +
+            'спиралями нет — поля нет.',
+        type: AiPresentationSpiralsDto,
+    })
+    spirals?: AiPresentationSpiralsDto;
 }
 
 /** Доработка периода (refine / decision): возражения, шаг без даты, разделы. */
@@ -180,6 +193,33 @@ export class AiAttentionThresholdsDto implements AttentionThresholds {
         example: 0.5,
     })
     weakFollowupShareMin: number;
+
+    @ApiProperty({
+        description:
+            'Оценка звонка 1–10, с которой качество считается достаточным ' +
+            '(quality_progress_score_min).',
+        type: Number,
+        example: 6,
+    })
+    qualityScoreMin: number;
+
+    @ApiProperty({
+        description:
+            'Продвижение сделки 1–5, с которого сделка считается движущейся ' +
+            '(deal_progress_moving_min).',
+        type: Number,
+        example: 4,
+    })
+    progressMovingMin: number;
+
+    @ApiProperty({
+        description:
+            'Сколько звонков «купил бы и без менеджера» нужно для сигнала ' +
+            '(progress_no_quality_min_calls).',
+        type: Number,
+        example: 3,
+    })
+    progressNoQualityMinCalls: number;
 }
 
 /** Факты качества строки для сигналов «Внимания» этапа 2. */
@@ -207,4 +247,13 @@ export class AiManagerQualityFactsDto implements ManagerQualityFacts {
         type: [AiLowScoreCallDto],
     })
     lowScoreCalls: AiLowScoreCallDto[];
+
+    @ApiPropertyOptional({
+        description:
+            'Продвижение сделок: звонки, где сделка продвинулась, и среди них ' +
+            '— без качества («купил бы и без менеджера»). Строки старого ' +
+            'кэша поля не имеют.',
+        type: AiProgressFactsDto,
+    })
+    progress?: AiProgressFactsDto;
 }

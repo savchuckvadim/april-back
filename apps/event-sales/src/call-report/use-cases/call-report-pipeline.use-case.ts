@@ -17,6 +17,7 @@ import {
     AiService,
 } from '@lib/call-lib';
 import { LlmOrchestratorService, LlmModel, LLM_MODELS } from '@lib/ai-rag';
+import { AI_FIRST_PASS_DISABLED } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.types';
 import { renderPresentationStrictnessBlock } from '../contracts/call-deep-analysis.contract';
 import { CallClassifyStepService } from '../services/call-classify-step.service';
 import {
@@ -359,12 +360,29 @@ export class CallReportPipelineUseCase {
             };
         }
 
+        // Контур резюме (GigaChat и др.) по умолчанию выключен — глубокий
+        // разбор заполняет те же поля лучше (решение владельца 01.11.2026);
+        // включается на портале выбором модели.
+        const llmModel = this.resolveLlmModel(settings.llmModel);
+        if (llmModel === null) {
+            this.logger.log(
+                `Контур резюме выключен настройкой портала ${payload.domain} (activity ${payload.activityId}) — резюме и рекомендации не считаются`,
+            );
+            return {
+                transcriptionId: payload.transcriptionId,
+                provider,
+                resumeSaved: false,
+                recomendationSaved: false,
+                callType: classification?.callType ?? null,
+                classifyConfidence: classification?.confidence ?? null,
+            };
+        }
+
         // Тот же CRM-контекст, что у глубокого разбора: без него GigaChat
         // судит «холодный/тёплый» вслепую.
         const passportBlock = passport
             ? this.contextBuilder.renderForPrompt(passport)
             : null;
-        const llmModel = this.resolveLlmModel(settings.llmModel);
         const {
             resume,
             recomendation,
@@ -471,11 +489,20 @@ export class CallReportPipelineUseCase {
         }
     }
 
-    /** Модель первичного анализа: из настроек портала, если поддерживается; иначе gigachat. */
-    private resolveLlmModel(override?: string): LlmModel {
-        return override && LLM_MODELS.includes(override as LlmModel)
-            ? (override as LlmModel)
-            : 'gigachat';
+    /**
+     * Модель контура резюме из настроек портала: известная модель — она;
+     * `none` (дефолт) и незнакомое значение — контур выключен (null).
+     */
+    private resolveLlmModel(override?: string): LlmModel | null {
+        if (override && LLM_MODELS.includes(override as LlmModel)) {
+            return override as LlmModel;
+        }
+        if (override && override !== AI_FIRST_PASS_DISABLED) {
+            this.logger.warn(
+                `Незнакомая модель контура резюме «${override}» — контур выключен`,
+            );
+        }
+        return null;
     }
 
     private async saveAiRecord(

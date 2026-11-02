@@ -17,9 +17,13 @@ const FIELD_BY_CODE: Record<string, string> = {
     op_xo_lead_stage_mode: 'OP_XO_LEAD_STAGE_MODE',
     op_xo_is_xo: 'OP_XO_IS_XO',
     op_xo_is_force: 'OP_XO_IS_FORCE',
+    op_lead_firstprepare_history: 'OP_LEAD_FIRSTPREPARE_HISTORY',
 };
 
-const portal = (installed = Object.keys(FIELD_BY_CODE)) =>
+/** STATUS_ID стадии «Очередь в ХО» — робот ставит её перед хуком. */
+const QUEUE_STATUS = 'PBX_XO_QUEUE';
+
+const portal = (installed = Object.keys(FIELD_BY_CODE), queueMapped = true) =>
     ({
         getEntityFieldByCode: (_e: string, code: string) => {
             if (!installed.includes(code)) return undefined;
@@ -28,18 +32,25 @@ const portal = (installed = Object.keys(FIELD_BY_CODE)) =>
         },
         getFieldBitrixId: (f: { bitrixId: string }) => `UF_CRM_${f.bitrixId}`,
         getTimezone: () => 'Europe/Moscow',
+        getLeadStatusIdByCode: (code: string) =>
+            queueMapped && code === 'lead_xo_queue' ? QUEUE_STATUS : undefined,
     }) as unknown as PortalModel;
 
+/**
+ * По умолчанию лид стоит в «Очереди в ХО»: это штатная картина «робот
+ * заполнил карточку и дёрнул хук», ради которой карточка и читается.
+ */
 const resolve = (
     item: Partial<ILeadToWorkItem>,
     leadRow: Record<string, unknown> = {},
     isSiteRequest = false,
     installed?: string[],
+    queueMapped = true,
 ) =>
     resolveLeadToWorkIntent({
         item: { leadId: 42, ...item } as ILeadToWorkItem,
-        leadRow,
-        portal: portal(installed),
+        leadRow: { STATUS_ID: QUEUE_STATUS, ...leadRow },
+        portal: portal(installed, queueMapped),
         isSiteRequest,
     });
 
@@ -108,6 +119,101 @@ describe('resolveLeadToWorkIntent', () => {
             const { intent } = resolve({}, FILLED_CARD);
             expect(intent.isXo).toBe('Y');
             expect(intent.stageMode).toBe('new');
+        });
+    });
+
+    describe('ЭХО ХУКА: маршрутизация с карточки читается только в «Очереди в ХО»', () => {
+        /*
+         * garant 02.11.2026, сделка 110469. Хук сам пишет xo_responsible /
+         * xo_name / xo_date после назначения, поэтому у лида в работе на
+         * карточке лежит прошлый ответственный. SLA-передача и «Передать
+         * другому» шлют хук без responsible — и тот возвращал заявку тому
+         * же человеку, считая его адресным ХО (заявка «принята», сделка в
+         * «Холодные»). Карточка — команда робота только в очереди.
+         */
+        const ASSIGNED_CARD = { ...FILLED_CARD, STATUS_ID: 'PBX_ASSIGNED' };
+
+        it('лид уже назначен → responsible/name/deadline карточки не читаются, department читается', () => {
+            const { item, signals } = resolve({}, ASSIGNED_CARD);
+
+            expect(item.responsible).toBeUndefined();
+            expect(item.name).toBeUndefined();
+            expect(item.deadline).toBeUndefined();
+            // Отдел хук не пишет — эхом быть не может.
+            expect(item.department).toBe('Отдел продаж №2');
+            expect(signals.join('\n')).toContain(
+                'маршрутизация карточки пропущена',
+            );
+            expect(signals.join('\n')).toContain('эхом прошлого назначения');
+        });
+
+        it('передача по кругу: excludeResponsible остаётся, явного responsible не появляется', () => {
+            const { item } = resolve(
+                { isXo: 'Y', stageMode: 'new', excludeResponsible: 15 },
+                ASSIGNED_CARD,
+            );
+            expect(item.responsible).toBeUndefined();
+            expect(item.excludeResponsible).toBe(15);
+        });
+
+        it('адресный ХО из запроса не зависит от стадии лида', () => {
+            const { item } = resolve({ responsible: 99 }, ASSIGNED_CARD);
+            expect(item.responsible).toBe(99);
+        });
+
+        it('намерение (stageMode/isXo) карточки читается в любой стадии', () => {
+            const { intent } = resolve({}, ASSIGNED_CARD);
+            expect(intent.isXo).toBe('Y');
+            expect(intent.stageMode).toBe('new');
+        });
+
+        it('пустая карточка вне очереди → без лишних signals', () => {
+            const { signals } = resolve({}, { STATUS_ID: 'PBX_ASSIGNED' });
+            expect(signals.join('\n')).not.toContain('пропущена');
+        });
+
+        describe('стадия «Очередь в ХО» не сопоставлена — судим по истории заявки', () => {
+            it('истории нет → первая постановка, карточка читается', () => {
+                const { item } = resolve(
+                    {},
+                    { ...FILLED_CARD, STATUS_ID: 'NEW' },
+                    false,
+                    undefined,
+                    false,
+                );
+                expect(item.responsible).toBe(15);
+            });
+
+            it('в истории есть назначение → карточка эхо', () => {
+                const { item, signals } = resolve(
+                    {},
+                    {
+                        ...FILLED_CARD,
+                        STATUS_ID: 'NEW',
+                        UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY: [
+                            '01.11.2026 10:36 — ХО назначен: Яна Бунеева',
+                        ],
+                    },
+                    false,
+                    undefined,
+                    false,
+                );
+                expect(item.responsible).toBeUndefined();
+                expect(signals.join('\n')).toContain('назначение уже было');
+            });
+
+            it('ни стадии, ни поля истории → прежнее поведение, карточка читается', () => {
+                const { item } = resolve(
+                    {},
+                    { ...FILLED_CARD, STATUS_ID: 'NEW' },
+                    false,
+                    Object.keys(FIELD_BY_CODE).filter(
+                        code => code !== 'op_lead_firstprepare_history',
+                    ),
+                    false,
+                );
+                expect(item.responsible).toBe(15);
+            });
         });
     });
 

@@ -1,4 +1,8 @@
 import { registryDefault } from '../params/registry.access';
+import type {
+    AttentionPresentationSpirals,
+    AttentionProgressFacts,
+} from './attention.methodology.types';
 import { ConfidenceLevel, MetricValue } from './metric';
 import { AI_ANALYTICS_THRESHOLDS } from './thresholds.const';
 import type { TrendDirection, TrendSignalKind } from './trend/trend.types';
@@ -15,6 +19,7 @@ export const ATTENTION_SIGNALS = [
     'weak_presentation',
     'weak_followup',
     'low_score_calls',
+    'progress_without_quality',
     'no_data',
     'discipline',
     'next_step_drop',
@@ -102,6 +107,8 @@ export interface AttentionPresentationFacts {
     sections: AttentionSectionMean[];
     /** Id звонков со слабым разделом (оценка не выше порога). */
     weakCallIds: string[];
+    /** Спирали презентаций (методика со спиралями, focus-v3.0); нет — не считались. */
+    spirals?: AttentionPresentationSpirals;
 }
 
 /**
@@ -176,6 +183,8 @@ export interface AttentionManagerInput {
     followup?: AttentionFollowupFacts;
     /** Звонки с низкой оценкой (этап 2); нет списка — правило молчит. */
     lowScoreCalls?: AttentionLowScoreCall[];
+    /** Звонки с продвижением сделки без качества (ядро focus-v3.0); нет — правило молчит. */
+    progress?: AttentionProgressFacts;
     /**
      * Средние разделов по отделу для сравнения («ниже отдела на …»); нет —
      * buildAttention считает их сам по всем менеджерам входа.
@@ -244,6 +253,12 @@ export interface AttentionRules {
      * срабатывает (weak_followup_share_min).
      */
     weakFollowupShareMin: number;
+    /** Оценка, с которой качество звонка достаточно (quality_progress_score_min). */
+    qualityScoreMin: number;
+    /** Продвижение сделки 1–5, с которого она движется (deal_progress_moving_min). */
+    progressMovingMin: number;
+    /** Звонков «купил бы и без менеджера» для сигнала (progress_no_quality_min_calls). */
+    progressNoQualityMinCalls: number;
 }
 
 export const ATTENTION_DEFAULT_RULES: AttentionRules = {
@@ -259,4 +274,7 @@ export const ATTENTION_DEFAULT_RULES: AttentionRules = {
     weakSectionMinN: AI_ANALYTICS_THRESHOLDS.scoreNone,
     lowScoreCallMax: registryDefault('low_score_call_max'),
     weakFollowupShareMin: registryDefault('weak_followup_share_min'),
+    qualityScoreMin: registryDefault('quality_progress_score_min'),
+    progressMovingMin: registryDefault('deal_progress_moving_min'),
+    progressNoQualityMinCalls: registryDefault('progress_no_quality_min_calls'),
 };

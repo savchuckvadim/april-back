@@ -20,6 +20,8 @@ import { PortalFieldsModule } from '../shared/portal-fields';
 import { BxDepartmentModule } from '@lib/bx-department';
 import { EventReportActingManagerService } from './services/acting-manager/event-report-acting-manager.service';
 import { EventReportImpersonationService } from './services/impersonation/event-report-impersonation.service';
+import { EventReportSettingsResolver } from './services/settings/event-report-settings.resolver';
+import { EventReportTmcModule } from '../event-report-tmc/event-report-tmc.module';
 
 /**
  * Модуль event-report flow. Подключается родительским `EventSalesModule`.
@@ -51,11 +53,16 @@ import { EventReportImpersonationService } from './services/impersonation/event-
         BxDepartmentModule,
         // Короткий кэш чтений предикта стадии (сделки клиента на минуту).
         RedisModule,
+        // Поток ТМЦ (режим «Менеджер ТМЦ»): воркер выбирает его по
+        // подразделению отчёта; свои сервисы и ручка согласования заявки.
+        EventReportTmcModule,
     ],
     controllers: [EventSalesController],
     providers: [
         EventReportInitService,
         EventReportUseCase,
+        // Настройки портала, которые читает отчёт (общий с потоком ТМЦ код).
+        EventReportSettingsResolver,
         // Пост-обработка отчёта (сайд-очереди ЗПР/презентаций):
         // bitrix-состояния не держит, инжектит только stateless-сервисы.
         EventReportPostFlowService,

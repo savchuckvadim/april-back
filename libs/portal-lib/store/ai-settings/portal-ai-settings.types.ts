@@ -9,6 +9,15 @@
  * Имена полей совпадают с полями Prisma-модели `PortalAiSettings`
  * (в БД — snake_case через @map).
  */
+/**
+ * Значение `llmModel`, выключающее первичный анализ контура резюме (резюме и
+ * рекомендации по звонку — поля RESUME_GIGACHAT / RECOMENDATION_GIGACHAT
+ * карточки). Решение владельца 01.11.2026: глубокий разбор заполняет те же
+ * поля лучше, поэтому это дефолт конвейера; модель контура включается на
+ * портале явно.
+ */
+export const AI_FIRST_PASS_DISABLED = 'none';
+
 export interface PortalAiSettingsRecord {
     /** Обрабатывать ли звонки этого портала вообще (главный выключатель). */
     enabled: boolean | null;
@@ -79,6 +88,13 @@ export interface PortalAiSettingsRecord {
      * soft — любое содержательное обсуждение продукта. NULL — strict.
      */
     presentationStrictness: PresentationStrictnessLevel | null;
+    /**
+     * Код МЕТОДИКИ продаж (таблица ai_methodologies или встроенная,
+     * например polyansky): чек-пункты, ограничители и справочники поверх
+     * общего ядра разбора. NULL — методики нет, разбор идёт одним ядром
+     * (решение владельца 01.11.2026: методика по умолчанию не включается).
+     */
+    methodologyCode: string | null;
     /**
      * Недельный EXCEL-отчёт по звонкам (пятница вечером): всё, что не
      * помещается в карточку смарта — полные разборы, транскрипты, сверка
@@ -186,6 +202,9 @@ export const WEEKLY_REPORT_DELIVERY_MODES = ['chat', 'task', 'notify'] as const;
 export type WeeklyReportDeliveryMode =
     (typeof WEEKLY_REPORT_DELIVERY_MODES)[number];
 
+/** Код методики продаж: латиница, цифры, дефис; 2–64 знака (runtime-константа для DTO и валидатора конфига). */
+export const AI_METHODOLOGY_CODE_PATTERN = /^[a-z][a-z0-9-]{1,63}$/;
+
 /** Уровни строгости определения презентации (runtime-константа для DTO). */
 export const PRESENTATION_STRICTNESS_LEVELS = [
     'strict',
@@ -227,6 +246,7 @@ export const EMPTY_PORTAL_AI_SETTINGS: PortalAiSettingsRecord = {
     revisorEnabled: null,
     presentationAuditEnabled: null,
     presentationStrictness: null,
+    methodologyCode: null,
     weeklyReportEnabled: null,
     weeklyReportRecipients: null,
     weeklyReportFolderId: null,

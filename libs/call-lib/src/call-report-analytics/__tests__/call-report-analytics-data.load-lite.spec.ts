@@ -92,6 +92,28 @@ const FULL_ANALYSIS = {
         classifier: '2026-09-05',
         junk: 5,
     },
+    // Методика и продвижение (focus-v3.0): пункты, спирали, срезы.
+    methodology: {
+        code: 'polyansky',
+        version: '1.0.0',
+        checkpointsDone: 7,
+        checkpointsTotal: 11,
+        spiralsFull: 2,
+        spiralsMinFull: 3,
+        checkpoints: [],
+        spirals: [],
+    },
+    dealProgress: {
+        score: 3,
+        before: 'а',
+        after: 'б',
+        why: 'в',
+        whyNotHigher: 'г',
+    },
+    capsTriggered: [
+        { code: 'core.presentation_without_needs', applied: true },
+        { code: 'core.info_promise_without_date', applied: false },
+    ],
 };
 
 const makeService = (options?: {
@@ -210,6 +232,15 @@ describe('CallReportAnalyticsDataService.loadLite', () => {
                     registry: 'abc',
                     attribution: '2026-08-24',
                     classifier: '2026-09-05',
+                },
+                methodology: {
+                    code: 'polyansky',
+                    checkpointsDone: 7,
+                    checkpointsTotal: 11,
+                    spiralsFull: 2,
+                    spiralsMinFull: 3,
+                    dealProgress: 3,
+                    capsApplied: 1,
                 },
                 // Маркеры стиля: в этом разборе их нет — все null, а не 0.
                 style: {

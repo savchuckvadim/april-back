@@ -5,6 +5,7 @@
  *
  * Без DI, Bitrix и `new Date()`.
  */
+import { methodologyTagOf } from '../contracts/call-report-versions.const';
 import {
     AiService,
     pickActiveAnalysis,
@@ -52,7 +53,12 @@ export function buildReanalysisRecord(input: {
     model: string | null;
 }): Parameters<AiService['create']>[0] {
     const { row, old, versions, usage } = input;
-    const dto: AgentCallAnalysisDto = { ...input.dto, versions };
+    // Метка методики — из нового разбора: переразбор мог пойти уже с методикой.
+    const methodology = methodologyTagOf(input.dto);
+    const dto: AgentCallAnalysisDto = {
+        ...input.dto,
+        versions: methodology ? { ...versions, methodology } : versions,
+    };
     const classifierCallType = stringField(
         old.user_result,
         'classifierCallType',

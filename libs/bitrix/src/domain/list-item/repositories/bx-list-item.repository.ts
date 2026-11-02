@@ -25,6 +25,23 @@ export class BxListItemRepository {
         );
     }
 
+    /** lists.element.get в batch — счётчики и выборки списков одной пачкой. */
+    getBtch(
+        cmdCode: string,
+        dto: Omit<BxListItemGetRequestType, 'IBLOCK_TYPE_ID'>,
+    ) {
+        return this.bitrix.addCmdBatchType(
+            cmdCode,
+            EBxNamespace.LISTS,
+            EBXEntity.ELEMENT,
+            EBxMethod.GET,
+            {
+                IBLOCK_TYPE_ID: 'lists',
+                ...dto,
+            },
+        );
+    }
+
     async add(dto: Omit<BxListItemAddRequestType, 'IBLOCK_TYPE_ID'>) {
         return await this.bitrix.callType(
             EBxNamespace.LISTS,

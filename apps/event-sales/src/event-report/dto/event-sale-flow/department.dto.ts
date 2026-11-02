@@ -16,6 +16,9 @@ export const DEPARTAMENT_CODE_VALUES = [
     'tmc',
 ] as const satisfies readonly DepartamentCode[];
 
+/** Режим «Менеджер ТМЦ» — отчёт идёт своим потоком (event-report-tmc). */
+export const TMC_DEPARTMENT_CODE = 'tmc' as const satisfies DepartamentCode;
+
 export class DepartamentModeDto {
     @ApiProperty({
         description: 'Идентификатор подразделения в портале Bitrix.',

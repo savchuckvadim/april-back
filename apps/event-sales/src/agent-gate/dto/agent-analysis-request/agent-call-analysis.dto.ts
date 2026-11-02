@@ -20,6 +20,11 @@ import { AgentAnalysisVersionsDto } from './agent-analysis-versions.dto';
 import { AgentCallAnalysisContentDto } from './agent-call-analysis-content.dto';
 import { AgentFlowDraftDto } from './agent-flow-draft.dto';
 import {
+    AgentCapTriggeredDto,
+    AgentDealProgressDto,
+    AgentMethodologyOutcomeDto,
+} from './agent-methodology.dto';
+import {
     AgentListItemLinkDto,
     AgentRelatedDealsDto,
 } from './agent-related-links.dto';
@@ -205,6 +210,45 @@ export class AgentCallAnalysisDto extends AgentCallAnalysisContentDto {
     @ValidateNested()
     @Type(() => AgentAnalysisUsageDto)
     usage?: AgentAnalysisUsageDto;
+
+    @ApiPropertyOptional({
+        description:
+            'Продвижение сделки по звонку: шкала 1–5 с комментарием «было — ' +
+            'стало — почему — почему не выше» (ядро, все порталы); null — для ' +
+            'типа звонка не применимо (холодный, звонок под показ, заявка с ' +
+            'сайта, приглашение на мероприятие).',
+        type: AgentDealProgressDto,
+        nullable: true,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => AgentDealProgressDto)
+    dealProgress?: AgentDealProgressDto | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Сработавшие ограничители оценки ядра и методики: что ограничено, ' +
+            'потолок, оценка до и после среза.',
+        type: [AgentCapTriggeredDto],
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => AgentCapTriggeredDto)
+    capsTriggered?: AgentCapTriggeredDto[];
+
+    @ApiPropertyOptional({
+        description:
+            'Итог методики портала: пункты со статусами и цитатами, доля ' +
+            'выполнения, спирали презентации. null — на портале методика не ' +
+            'выбрана или тип звонка вне методики.',
+        type: AgentMethodologyOutcomeDto,
+        nullable: true,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => AgentMethodologyOutcomeDto)
+    methodology?: AgentMethodologyOutcomeDto | null;
 
     @ApiPropertyOptional({
         description:

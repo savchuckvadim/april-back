@@ -330,6 +330,7 @@ describe('порядок сигналов этапа 2', () => {
             'weak_presentation',
             'weak_followup',
             'low_score_calls',
+            'progress_without_quality',
             'no_data',
             'discipline',
             'next_step_drop',

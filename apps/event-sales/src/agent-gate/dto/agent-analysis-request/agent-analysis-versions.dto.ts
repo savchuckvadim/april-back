@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
 
 /**
  * Версии разбора — вынесены из общего файла контракта агента (лимит файла);
@@ -54,4 +54,15 @@ export class AgentAnalysisVersionsDto {
     })
     @IsString()
     classifier: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Метка методики портала «код@версия», если разбор шёл с ' +
+            'методикой; нет — разбор одним ядром.',
+        example: 'polyansky@1.0.0',
+        type: String,
+    })
+    @IsOptional()
+    @IsString()
+    methodology?: string;
 }

@@ -130,6 +130,15 @@ export function buildAgentSmartItemInput(
         weightedScore: dto.weightedScore ?? computeWeightedScore(dto),
         scriptCompliance: dto.scriptCompliance,
         coachingPriority: dto.coachingPriority,
+        // Методика и ограничители (01.11.2026): сводные поля карточки.
+        methodology: dto.methodology
+            ? `${dto.methodology.title} ${dto.methodology.version}`
+            : undefined,
+        checkpointsDone: dto.methodology?.checkpointsDone,
+        checkpointsTotal: dto.methodology?.checkpointsTotal,
+        spiralsFull: dto.methodology?.spiralsFull ?? undefined,
+        dealProgress: dto.dealProgress?.score,
+        capsApplied: capsAppliedText(dto),
         transcriptionId: row.id,
         // Размеченный по ролям диалог (если агент прислал) информативнее
         // сырого текста — он же уходит в поля TRANSCRIPT_N.
@@ -197,6 +206,13 @@ export function resolveObjectionCategories(
  * (Σ score×relevance / Σ relevance × 10) — если агент не прислал свою.
  * Неактуальные разделы исключаются, а не тянут оценку вниз.
  */
+/** Сработавшие ограничители одной строкой: только те, что срезали оценку. */
+export function capsAppliedText(dto: AgentCallAnalysisDto): string | undefined {
+    const applied = (dto.capsTriggered ?? []).filter(cap => cap.applied);
+    if (!applied.length) return undefined;
+    return applied.map(cap => `${cap.title} (не выше ${cap.max})`).join('; ');
+}
+
 export function computeWeightedScore(
     dto: AgentCallAnalysisDto,
 ): number | undefined {

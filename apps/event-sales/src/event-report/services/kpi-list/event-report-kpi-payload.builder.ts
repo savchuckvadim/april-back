@@ -339,6 +339,16 @@ export class EventReportKpiPayloadBuilder {
         if (ctx.reportEventType === 'presentation' && !ctx.isNoCall) {
             return null;
         }
+        /*
+         * Режим ТМЦ: отчёт по презентационной задаче ТМЦ-менеджера в KPI не
+         * пишется вовсе — без исключения для недозвона (легаси ТМЦ:
+         * `$reportEventType !== 'presentation'`). Презентацию провёл и
+         * отчитался по ней менеджер ОП; вторая запись удвоила бы
+         * презентации в сводке.
+         */
+        if (ctx.isTmcMode && ctx.reportEventType === 'presentation') {
+            return null;
+        }
 
         const eventType = mapEventType(ctx.reportEventType);
         if (!eventType) return null;
@@ -375,6 +385,9 @@ export class EventReportKpiPayloadBuilder {
     private buildUnplannedPresentationPlan(): KpiEventPayload | null {
         const ctx = this.ctx;
         if (!ctx.isUnplannedPresentation || ctx.isExpired) return null;
+        // ТМЦ презентаций не проводит — записей о проведении у него нет
+        // (легаси: «У ТМС нет отчета по unplanned presentation»).
+        if (ctx.isTmcMode) return null;
         /*
          * Незапланированная презентация даёт ПАРУ записей с читаемой
          * хронологией ПОСЛЕ отчётной: звонок (0) → «запланирована» (+1) →
@@ -396,6 +409,9 @@ export class EventReportKpiPayloadBuilder {
     private buildPresentationDone(): KpiEventPayload | null {
         const ctx = this.ctx;
         if (!ctx.isPresentationDone || ctx.isExpired) return null;
+        // См. buildUnplannedPresentationPlan: в режиме ТМЦ проведённых
+        // презентаций не бывает.
+        if (ctx.isTmcMode) return null;
         const contactId = this.scenarioContactId('presentation_done');
         return this.assemble({
             scenario: 'presentation_done',
@@ -556,6 +572,9 @@ export class EventReportKpiPayloadBuilder {
     }): KpiEventPayload[] {
         const ctx = this.ctx;
         const out: KpiEventPayload[] = [];
+        // Уникальные презентации — метрика отдела продаж; план презентации
+        // в режиме ТМЦ — заявка, а не презентация (легаси ТМЦ uniq не писал).
+        if (ctx.isTmcMode) return out;
 
         // Легаси-предусловие: ключ строится из компании и базовой сделки.
         const companyId =

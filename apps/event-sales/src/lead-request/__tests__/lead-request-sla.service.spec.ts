@@ -103,7 +103,21 @@ const makeDeps = (input: {
         leadIdFromDealRow: (
             _portal: unknown,
             deal?: Record<string, unknown>,
-        ) => (deal?.LEAD_ID ? Number(deal.LEAD_ID) : null),
+        ) => {
+            // Как реальная реализация: лид из pbx-связи первоисточника,
+            // иначе штатный LEAD_ID.
+            const rawFromLead = deal?.UF_CRM_DEAL_FROM_LEAD_ID;
+            const fromLead = (
+                typeof rawFromLead === 'string' ||
+                typeof rawFromLead === 'number'
+                    ? String(rawFromLead)
+                    : ''
+            )
+                .replace(/^L_/, '')
+                .trim();
+            if (fromLead) return Number(fromLead);
+            return deal?.LEAD_ID ? Number(deal.LEAD_ID) : null;
+        },
     };
     const dispatch = {
         accept: jest.fn().mockResolvedValue({ operationId: 'op-1' }),
@@ -172,8 +186,14 @@ const makeDeps = (input: {
      * тестов прежнее. Отдельный тест на исчерпание лимита — ниже.
      */
     const incr = jest.fn().mockResolvedValue(1);
+    // Накопленные счётчики для отсева эскалированных; пусто — никто не исчерпал.
+    const mget = jest.fn().mockResolvedValue([]);
     const redisService = {
-        getClient: () => ({ incr, expire: jest.fn().mockResolvedValue(1) }),
+        getClient: () => ({
+            incr,
+            mget,
+            expire: jest.fn().mockResolvedValue(1),
+        }),
     };
     const userNames = {
         resolve: jest.fn().mockResolvedValue(input.names ?? {}),
@@ -200,6 +220,7 @@ const makeDeps = (input: {
         service,
         userNames,
         incr,
+        mget,
         leadUpdate,
         dealUpdate,
         notify,
@@ -351,6 +372,10 @@ describe('LeadRequestSlaService', () => {
         expect(envelope[0].data.excludeResponsible).toBe(5);
         expect(envelope[0].data.department).toBe('15');
         expect(envelope[0].data.isXo).toBe('Y');
+        // Явного responsible нет: иначе хук счёл бы передачу адресным ХО.
+        expect(envelope[0].data.responsible).toBeUndefined();
+        // Признак SLA — хук напишет о передаче в таймлайн лида и сделки.
+        expect(envelope[0].data.sla).toEqual({ minutes: 60 });
 
         // Руководитель отдела уведомлён со ссылкой на лид.
         const notifyCalls = notify.mock.calls as unknown as [
@@ -457,6 +482,85 @@ describe('LeadRequestSlaService', () => {
         expect(dispatch.accept).not.toHaveBeenCalled();
         expect(notify).toHaveBeenCalled();
         expect(run.warnings.join(' ')).toContain('лимит передач');
+    });
+
+    /*
+     * После лимита таймер остаётся висеть, и без отсева каждый тик снова
+     * упирался бы в лимит: руководитель получал бы одну и ту же эскалацию
+     * раз в десять минут, а работа занимала место в проходе.
+     */
+    describe('уже эскалированное в проход не попадает', () => {
+        it('лид: ни передачи, ни повторной эскалации, счётчик не растёт', async () => {
+            const { service, dispatch, incr, mget, notify } = makeDeps({
+                leads: [OVERDUE_LEAD],
+                dealStage: 'C3:NEW',
+            });
+            mget.mockResolvedValue(['4']);
+
+            const run = await service.runForDomain('d.b24.ru', 60, 30, 3);
+
+            expect(run.candidates).toBe(0);
+            expect(run.transferred).toBe(0);
+            expect(dispatch.accept).not.toHaveBeenCalled();
+            expect(notify).not.toHaveBeenCalled();
+            expect(incr).not.toHaveBeenCalled();
+            expect(mget).toHaveBeenCalledWith(
+                'lead-request:sla-transfers:d.b24.ru:lead:42',
+            );
+        });
+
+        it('сделка: отсев до лимита прохода', async () => {
+            const { service, dispatch, incr, mget, notify } = makeDeps({
+                leads: [],
+                deals: [OVERDUE_DEAL],
+                withAssignedAt: true,
+            });
+            mget.mockResolvedValue(['4']);
+
+            const run = await service.runForDomain('d.b24.ru', 60, 30, 3);
+
+            expect(run.dealCandidates).toBe(0);
+            expect(dispatch.accept).not.toHaveBeenCalled();
+            expect(notify).not.toHaveBeenCalled();
+            expect(incr).not.toHaveBeenCalled();
+        });
+
+        it('счётчик в пределах лимита → работа в проходе', async () => {
+            const { service, dispatch, mget } = makeDeps({
+                leads: [OVERDUE_LEAD],
+                dealStage: 'C3:NEW',
+            });
+            mget.mockResolvedValue(['3']);
+
+            const run = await service.runForDomain('d.b24.ru', 60, 30, 3);
+
+            expect(run.candidates).toBe(1);
+            expect(dispatch.accept).toHaveBeenCalled();
+        });
+
+        it('лимит 0 (отключён) → счётчики не читаются', async () => {
+            const { service, mget } = makeDeps({
+                leads: [OVERDUE_LEAD],
+                dealStage: 'C3:NEW',
+            });
+
+            await service.runForDomain('d.b24.ru', 60, 30, 0);
+
+            expect(mget).not.toHaveBeenCalled();
+        });
+
+        it('Redis недоступен → отсева нет, проход идёт как раньше', async () => {
+            const { service, dispatch, mget } = makeDeps({
+                leads: [OVERDUE_LEAD],
+                dealStage: 'C3:NEW',
+            });
+            mget.mockRejectedValue(new Error('ECONNREFUSED'));
+
+            const run = await service.runForDomain('d.b24.ru', 60, 30, 3);
+
+            expect(run.candidates).toBe(1);
+            expect(dispatch.accept).toHaveBeenCalled();
+        });
     });
 
     /*
@@ -581,6 +685,35 @@ describe('LeadRequestSlaService', () => {
             withAssignedAt: true,
         });
         const run = await service.runForDomain('d.b24.ru', 60, 30);
+        expect(run.dealCandidates).toBe(1);
+        expect(run.dealsTransferred).toBe(0);
+        expect(dispatch.accept).not.toHaveBeenCalled();
+    });
+
+    /*
+     * garant 02.11.2026, сделка 110469: у сделки из заявки штатный LEAD_ID
+     * пуст, лид лежит в pbx-поле первоисточника. Второй проход этого поля
+     * не читал, лида «не видел» и передал сделку, пока лид ещё ждал
+     * подтверждения; через тик лидовый проход передал её обратно.
+     */
+    it('второй проход читает pbx-связи с лидом и пропускает сделку заявки, чей лид ещё ждёт', async () => {
+        const { service, dispatch, dealGetList } = makeDeps({
+            leads: [],
+            deals: [{ ...OVERDUE_DEAL, UF_CRM_DEAL_FROM_LEAD_ID: 'L_42' }],
+            busyLeads: [{ ID: '42' }],
+            withAssignedAt: true,
+        });
+        const run = await service.runForDomain('d.b24.ru', 60, 30);
+
+        const select = (
+            dealGetList.mock.calls as unknown as [unknown, string[]][]
+        )[0][1];
+        expect(select).toEqual(
+            expect.arrayContaining([
+                'UF_CRM_DEAL_FROM_LEAD_ID',
+                'UF_CRM_DEAL_JOINED_LEADS',
+            ]),
+        );
         expect(run.dealCandidates).toBe(1);
         expect(run.dealsTransferred).toBe(0);
         expect(dispatch.accept).not.toHaveBeenCalled();

@@ -3,6 +3,7 @@ import { AiManagerRowDto } from './ai-manager-row.dto';
 import { AiManagerTypeCellDto } from './ai-manager-type-cell.dto';
 import { AiObjectionsDto } from './ai-objections.dto';
 import { AiOverviewMetaDto } from './ai-overview-meta.dto';
+import { AiQualityProgressDto } from './ai-quality-progress.dto';
 import { AiAnalyticsEnvelopeDto } from './ai-response-envelope.dto';
 import { AiYoyDto } from './ai-yoy.dto';
 import { ReadinessDto } from './readiness.dto';
@@ -203,6 +204,17 @@ export class AiOverviewDto {
         nullable: true,
     })
     yoy?: AiYoyDto | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Матрица «качество × продвижение» по звонкам с оценкой и ' +
+            'продвижением сделки (ядро focus-v3.0): клетки по порогам ' +
+            'портала, строки менеджеров периметра и итоги. null — таких ' +
+            'разборов за период нет; у старого кэша поля нет.',
+        type: AiQualityProgressDto,
+        nullable: true,
+    })
+    qualityProgress?: AiQualityProgressDto | null;
 
     @ApiProperty({ description: 'Служебная сводка.', type: AiOverviewMetaDto })
     meta: AiOverviewMetaDto;

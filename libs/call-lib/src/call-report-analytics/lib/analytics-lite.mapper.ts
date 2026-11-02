@@ -9,6 +9,7 @@ import {
 } from './json-value.util';
 import {
     AnalyticsCallLiteRow,
+    AnalyticsLiteMethodology,
     AnalyticsLiteNextStep,
     AnalyticsLiteObjection,
     AnalyticsLiteRiskEvidence,
@@ -27,6 +28,7 @@ export type AnalyticsLiteAnalysisPart = Pick<
     | 'sections'
     | 'objections'
     | 'versions'
+    | 'methodology'
 >;
 
 /** Разбора нет: null и пустые списки (каждой строке — свои экземпляры). */
@@ -41,6 +43,7 @@ function noAnalysis(): AnalyticsLiteAnalysisPart {
         sections: [],
         objections: [],
         versions: null,
+        methodology: undefined,
     };
 }
 
@@ -63,6 +66,31 @@ export function mapLiteAnalysis(
         sections: mapSections(analysis.sections),
         objections: mapObjections(analysis.objections),
         versions: asStringRecord(analysis.versions),
+        methodology: mapMethodology(analysis),
+    };
+}
+
+/**
+ * Методика и продвижение (focus-v3.0): код и счётчики пунктов из
+ * dto.methodology, продвижение из dto.dealProgress.score, срезы — число
+ * ограничителей с applied=true. Старый разбор без этих полей — нули и null.
+ */
+export function mapMethodology(
+    analysis: Record<string, unknown>,
+): AnalyticsLiteMethodology {
+    const outcome = asRecord(analysis.methodology);
+    const progress = asRecord(analysis.dealProgress);
+    const caps = asRecordArray(analysis.capsTriggered).filter(
+        cap => asBoolean(cap.applied) === true,
+    );
+    return {
+        code: outcome ? asString(outcome.code) : null,
+        checkpointsDone: outcome ? asNumber(outcome.checkpointsDone) : null,
+        checkpointsTotal: outcome ? asNumber(outcome.checkpointsTotal) : null,
+        spiralsFull: outcome ? asNumber(outcome.spiralsFull) : null,
+        spiralsMinFull: outcome ? asNumber(outcome.spiralsMinFull) : null,
+        dealProgress: progress ? asNumber(progress.score) : null,
+        capsApplied: caps.length,
     };
 }
 

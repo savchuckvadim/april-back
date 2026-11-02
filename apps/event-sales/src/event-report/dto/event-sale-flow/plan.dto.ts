@@ -74,6 +74,18 @@ export class PlanDto {
     @Type(() => MinimalUserDto)
     createdBy: MinimalUserDto;
 
+    @ApiPropertyOptional({
+        description:
+            'ТМЦ-менеджер, подавший заявку на презентацию (легаси `plan.tmc`). ' +
+            'Приходит только от ручки согласования заявки ' +
+            '(`tmc/presentation-approved`).',
+        type: MinimalUserDto,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => MinimalUserDto)
+    tmc?: MinimalUserDto;
+
     @ApiProperty({
         description: 'Тип планируемого звонка с текущим выбранным этапом.',
         type: PlanTypeDto,

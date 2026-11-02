@@ -75,6 +75,17 @@ export class StructuredLlmGateway {
         );
     }
 
+    /**
+     * Почему провайдер нельзя использовать для домена (нет ключа, нет
+     * endpoint'а); null — настроен. Для ручек админки; сеть не трогает.
+     */
+    configurationIssueOf(
+        code: LlmProviderCode,
+        domain: string,
+    ): Promise<string | null> {
+        return this.byCode[code].configurationIssue(domain);
+    }
+
     /** Strict-JSON вызов: только разобранный результат (как VibeCodeClient.structuredCompletion, 5-й аргумент — домен). */
     async structuredCompletion(
         systemPrompt: string,
@@ -115,13 +126,18 @@ export class StructuredLlmGateway {
         });
     }
 
-    /** Провайдеры по порядку; отказали все — ошибка со всеми причинами. */
+    /**
+     * Провайдеры по порядку (явный `providers` запроса важнее настройки
+     * портала); отказали все — ошибка со всеми причинами.
+     */
     async complete(
         request: StructuredLlmRequest,
     ): Promise<StructuredLlmResponse> {
         const notes: string[] = [];
         const paused: StructuredLlmAdapter[] = [];
-        const order = await this.orderResolver.orderFor(request.domain);
+        const order = request.providers?.length
+            ? [...request.providers]
+            : await this.orderResolver.orderFor(request.domain);
         for (const adapter of order.map(code => this.byCode[code])) {
             const issue = await adapter.configurationIssue(request.domain);
             if (issue !== null) {

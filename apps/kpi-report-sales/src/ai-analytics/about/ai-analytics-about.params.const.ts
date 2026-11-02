@@ -42,6 +42,13 @@ export const AI_ABOUT_ATTENTION_PARAMS = [
     'weak_section_gap',
     'low_score_call_max',
     'weak_followup_share_min',
+    // Матрица «качество × продвижение» (методика, 01.11.2026): порог
+    // достаточного качества, порог «сделка движется» и сколько таких звонков
+    // без качества ставят сигнал «клиент купил бы и без менеджера» — читают
+    // те же обзор, резюме и досье (`attention-thresholds.util`).
+    'quality_progress_score_min',
+    'deal_progress_moving_min',
+    'progress_no_quality_min_calls',
 ] as const satisfies readonly AiAnalyticsParamCode[];
 
 /** Коды норм и советов, общие для обзора и плана дня. */

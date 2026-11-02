@@ -1,5 +1,4 @@
 import {
-    IsArray,
     IsNotEmpty,
     IsNumber,
     IsObject,
@@ -40,19 +39,25 @@ export class UpdateRpaItemDto {
     fields: Partial<IBxRpaItem>;
 }
 
+/**
+ * `rpa.item.list`: фильтр по системным полям — camelCase, по UF — как есть
+ * (UPPER_CASE), операторы префиксом ключа (`>=movedTime`); сортировка —
+ * поле → `ASC`/`DESC`; `start` — сдвиг страницы (`next` из ответа).
+ */
 export class ListRpaItemDto {
-    @IsNumber()
-    @IsNotEmpty()
-    id: number;
-
     @IsString()
     @IsNotEmpty()
     typeId: number;
 
+    @IsOptional()
     @IsObject()
-    filter: Partial<IBxRpaItem>;
+    filter?: Partial<IBxRpaItem> | Record<string, unknown>;
 
     @IsOptional()
-    @IsArray()
-    order: string[];
+    @IsObject()
+    order?: Record<string, 'ASC' | 'DESC' | 'asc' | 'desc'>;
+
+    @IsOptional()
+    @IsNumber()
+    start?: number;
 }

@@ -70,10 +70,21 @@ import { AnalysisVersions } from '@lib/sales-ai-analytics';
  * для специалиста, договорённость с датой, хвост/5К не применимы) и
  * подсказка синтезу про новый код в callTypeRefined. Оценки существующих
  * типов не менялись: блок подключается только к звонкам нового типа.
+ *
+ * v3.0 — 01.11.2026, ПО СУЩЕСТВУ, но В ОБЩЕЙ СЕРИИ (решение владельца
+ * 01.11.2026: оценки должны продолжаться, ряд не рвём): расширенный
+ * следующий шаг (время, цель, действия сторон), продвижение сделки 1–5 с
+ * комментарием, ограничители оценки ядра (срезают оценку раздела или итог
+ * до потолка), отдельный проход «методика» с пунктами и спиралями на
+ * порталах с выбранной методикой. Запись в PROMPT_SERIES_START.
  */
-export const CALL_REPORT_PROMPT_VERSION = 'focus-v2.6-2026-10-21';
-/** Рубрика: 7 разделов × relevance/score, взвешенная оценка 0–100. */
-export const CALL_REPORT_RUBRIC_VERSION = 'sections-7-v1';
+export const CALL_REPORT_PROMPT_VERSION = 'focus-v3.0-2026-11-01';
+/**
+ * Рубрика: 7 разделов × relevance/score, взвешенная оценка 0–100.
+ * v2 (01.11.2026) — ограничители оценки и продвижение сделки; без даты в
+ * строке, серию не трогает (решение владельца 01.11.2026).
+ */
+export const CALL_REPORT_RUBRIC_VERSION = 'sections-7-v2';
 /** Атрибуция менеджера звонка — правило от 24.08.2026. */
 export const CALL_REPORT_ATTRIBUTION_VERSION = '2026-08-24';
 /**
@@ -101,13 +112,28 @@ export function buildRegistryHash(codes: readonly string[]): string {
         .slice(0, REGISTRY_HASH_LENGTH);
 }
 
-/** Пять версий текущего разбора; registryHash — от buildRegistryHash. */
-export function buildAnalysisVersions(registryHash: string): AnalysisVersions {
+/**
+ * Версии текущего разбора; registryHash — от buildRegistryHash, methodology —
+ * метка «код@версия» методики портала (нет — поле отсутствует).
+ */
+export function buildAnalysisVersions(
+    registryHash: string,
+    methodology?: string | null,
+): AnalysisVersions {
     return {
         prompt: CALL_REPORT_PROMPT_VERSION,
         rubric: CALL_REPORT_RUBRIC_VERSION,
         registry: registryHash,
         attribution: CALL_REPORT_ATTRIBUTION_VERSION,
         classifier: CALL_REPORT_CLASSIFIER_VERSION,
+        ...(methodology ? { methodology } : {}),
     };
+}
+
+/** Метка методики разбора для versions: «код@версия»; разбор без методики — null. */
+export function methodologyTagOf(analysis: {
+    methodology?: { code: string; version: string } | null;
+}): string | null {
+    const outcome = analysis.methodology;
+    return outcome ? `${outcome.code}@${outcome.version}` : null;
 }

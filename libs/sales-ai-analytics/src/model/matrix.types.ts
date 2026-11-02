@@ -30,6 +30,16 @@ export interface MatrixChecklists {
     nextStepDateRatePct: MetricValue;
     hvostDonePct?: MetricValue;
     fiveKDonePct?: MetricValue;
+    /**
+     * Доля выполненных обязательных пунктов методики, % (суммарно по
+     * пунктам звонков ячейки с методикой); нет разборов с методикой — поля нет.
+     */
+    checkpointsDonePct?: MetricValue;
+    /**
+     * Доля звонков, где ограничитель срезал оценку, % — среди разборов с
+     * данными методики (focus-v3.0 и новее); старых разборов нет — поля нет.
+     */
+    cappedCallsPct?: MetricValue;
 }
 
 /** Три опорных звонка ячейки по оценке (null — оценок нет). */
@@ -58,6 +68,12 @@ export interface MatrixCellCore {
     evidenceCallIds: EvidenceCallIds;
     /** В сравнимых строках ячейки больше одной сигнатуры versions. */
     versionsMixed: boolean;
+    /**
+     * Среднее продвижение сделки по звонку, шкала 1–5 (разборы focus-v3.0 и
+     * новее; типы без продвижения не считаются); при n < 8 — none. Нет ни
+     * одного звонка с продвижением — поля нет.
+     */
+    dealProgress?: MetricValue;
 }
 
 export interface ManagerTypeCell extends MatrixCellCore {

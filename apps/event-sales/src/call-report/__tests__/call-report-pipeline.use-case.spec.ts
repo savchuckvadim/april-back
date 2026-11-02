@@ -427,14 +427,25 @@ describe('CallReportPipelineUseCase', () => {
         );
     });
 
-    it('мусорная llmModel портала откатывается на глобальную', async () => {
+    it('llmModel none (дефолт с 01.11.2026): контур резюме не вызывается, записей и коммента нет', async () => {
+        const { useCase, llm, aiService, bitrix } = makeDeps({
+            portalLlmModel: 'none',
+        });
+        const result = await useCase.execute(PAYLOAD);
+        expect(llm.analyzeCall).not.toHaveBeenCalled();
+        expect(aiService.create).not.toHaveBeenCalled();
+        expect(bitrix.timeline.addTimelineComment).not.toHaveBeenCalled();
+        expect(result).toMatchObject({
+            resumeSaved: false,
+            recomendationSaved: false,
+            callType: 'cold',
+        });
+    });
+
+    it('мусорная llmModel портала = дефолт: контур резюме выключен', async () => {
         const { useCase, llm } = makeDeps({ portalLlmModel: 'нейросеть' });
         await useCase.execute(PAYLOAD);
-        expect(llm.analyzeCall).toHaveBeenCalledWith(
-            'gigachat',
-            expect.any(String),
-            'test.bitrix24.ru',
-        );
+        expect(llm.analyzeCall).not.toHaveBeenCalled();
     });
 
     it('паспорт звонка префиксуется к тексту первичного LLM-анализа', async () => {

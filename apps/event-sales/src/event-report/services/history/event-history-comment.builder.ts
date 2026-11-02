@@ -13,6 +13,13 @@ import {
 } from '../task/event-task-checklist.catalog';
 
 /**
+ * Пометка подразделения перед первой строкой записи. Легаси писало историю
+ * ТМЦ-отчёта как «ТМЦ Запланирован Звонок на …» — по ней в карточке видно,
+ * кто вёл клиента: отдел продаж или ТМЦ.
+ */
+export const HISTORY_MARKER_TMC = 'ТМЦ';
+
+/**
  * Минимум контекста для строки истории — структурно совместим с
  * {@link EventReportContext}, но не тянет его целиком (юнит-тесты и
  * таймлайн-сервис передают узкие моки).
@@ -34,6 +41,8 @@ export interface IEventHistoryCommentSource {
     actingManagerNote?: string;
     /** «Назначено сотруднику: Имя» — кому руководитель записал шаг. */
     actingManagerEmployeeNote?: string;
+    /** Пометка подразделения перед первой строкой («ТМЦ»); пусто — без неё. */
+    historyMarker?: string | null;
 }
 
 /**
@@ -80,6 +89,11 @@ export const buildEventHistoryParts = (
         const planned = eventPlanPhrase(src.planEventType);
         const when = src.planDeadline?.toRuHumanDateTime();
         parts.push(when ? `${planned} на ${when}` : planned);
+    }
+
+    // Пометка подразделения — в начале первой строки: «ТМЦ Звонок совершён…».
+    if (src.historyMarker && parts.length) {
+        parts[0] = `${src.historyMarker} ${parts[0]}`;
     }
 
     return parts.map(toBatchText);

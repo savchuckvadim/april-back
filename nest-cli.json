@@ -375,6 +375,15 @@
       "compilerOptions": {
         "tsConfigPath": "libs/rq-lib/tsconfig.lib.json"
       }
+    },
+    "renewal-offer": {
+      "type": "library",
+      "root": "libs/renewal-offer",
+      "entryFile": "index",
+      "sourceRoot": "libs/renewal-offer/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/renewal-offer/tsconfig.lib.json"
+      }
     }
   }
 }

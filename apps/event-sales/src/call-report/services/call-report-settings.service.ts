@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
+import { AI_FIRST_PASS_DISABLED } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.types';
 import {
     PortalAiSettingsRecord,
     PresentationStrictnessLevel,
@@ -34,7 +35,12 @@ const DEFAULTS = {
     windowHours: 25,
     maxPerRun: 10,
     staleMinutes: 90,
-    llmModel: 'gigachat',
+    /**
+     * Контур резюме (GigaChat и др.) по умолчанию выключен — глубокий разбор
+     * заполняет те же поля лучше (решение владельца 01.11.2026); модель
+     * выбирается на портале явно.
+     */
+    llmModel: AI_FIRST_PASS_DISABLED,
     /** Порог гейта нерелевантности (см. CallReportPipelineUseCase). */
     irrelevantConfidence: 0.7,
     /** Ночной ревизор удваивает LLM-расход — включается сознательно. */

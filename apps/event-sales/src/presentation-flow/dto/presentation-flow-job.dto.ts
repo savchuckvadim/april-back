@@ -28,7 +28,7 @@ export interface PresentationFlowJobData {
      * «Запланирована»); `report` — отчитался по презентации (закрыть или
      * перенести элемент; не нашли — создать спонтанный сразу с исходом).
      */
-    kind: 'plan' | 'report';
+    kind: PresentationFlowJobKind;
     /** Исход отчёта (kind='report'); для плана не заполняется. */
     outcome: PresentationOutcome | null;
     /** Встреча состоялась — разводит отказ на «отказ» и «не состоялась». */
@@ -123,4 +123,20 @@ export interface PresentationFlowJobData {
      * формы (ровно так же читается `job.survey ?? {}`).
      */
     answers?: QuestionnaireSmartAnswer[];
+    /**
+     * Заявка ТМЦ (`kind: 'request'`): кто подал заявку (ТМЦ-менеджер), кто
+     * её утверждает (руководитель — постановщик плана в режиме ТМЦ) и
+     * комментарий к заявке. У плана и отчёта пусты.
+     */
+    tmcResponsibleId?: number | null;
+    ownerId?: number | null;
+    requestComment?: string | null;
 }
+
+/**
+ * `plan` — менеджер ОП запланировал презентацию; `report` — отчитался по
+ * ней; `request` — ТМЦ-менеджер подал заявку на презентацию: элемент
+ * рождается в «Заявка на презентацию» и ждёт согласования, план после
+ * утверждения продвигает его в «Запланирована».
+ */
+export type PresentationFlowJobKind = 'plan' | 'report' | 'request';

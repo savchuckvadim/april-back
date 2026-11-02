@@ -189,10 +189,14 @@ export class LeadRequestSlaService {
                 select,
                 { [assignedAtName ?? 'DATE_MODIFY']: 'DESC' } as never,
             );
-            const overdue = (leads ?? []).slice(
-                0,
-                maxPerRun,
-            ) as unknown as BxRow[];
+            const overdue = (
+                await this.withoutEscalated(
+                    domain,
+                    (leads ?? []) as unknown as BxRow[],
+                    row => `lead:${String(row.ID)}`,
+                    maxTransfers,
+                )
+            ).slice(0, maxPerRun);
             result.candidates = overdue.length;
 
             /*
@@ -378,6 +382,14 @@ export class LeadRequestSlaService {
                 'LEAD_ID',
                 // Нужна, чтобы не отбирать сделки, по которым идёт работа.
                 'STAGE_ID',
+                /*
+                 * Связи с лидом: у сделки из заявки штатный LEAD_ID пуст, лид
+                 * лежит в pbx-полях. Без них `leadIdFromDealRow` лида не
+                 * видел, защита «лид ещё ждёт подтверждения» молчала, и оба
+                 * прохода передавали одну заявку по кругу (garant 02.11.2026,
+                 * сделка 110469: 10:02 Сова → Бунеева, 10:10 обратно).
+                 */
+                ...this.leadLinkFieldNames(portal),
             ],
             // Сначала свежие (решение владельца 29.10.2026).
             { [assignedAtName]: 'DESC' } as never,
@@ -406,7 +418,14 @@ export class LeadRequestSlaService {
             deal => !this.dealInProgress(portal, deal),
         );
         const working = notHandled.length - abandoned.length;
-        const candidates = abandoned.slice(0, maxPerRun);
+        const candidates = (
+            await this.withoutEscalated(
+                domain,
+                abandoned,
+                row => `deal:${String(row.ID)}`,
+                maxTransfers,
+            )
+        ).slice(0, maxPerRun);
         if (working > 0) {
             this.logger.log(
                 `[sla] пропущено сделок с идущей работой: ${working} ` +
@@ -451,6 +470,17 @@ export class LeadRequestSlaService {
                 );
             }
         }
+    }
+
+    /** UF-имена полей сделки со ссылками на лиды (первоисточник, присоединённые). */
+    private leadLinkFieldNames(portal: PortalModel): string[] {
+        return [
+            PBX_SALES_EVENT_FIELD_CODES.deal_from_lead_id,
+            PBX_SALES_EVENT_FIELD_CODES.deal_joined_leads,
+        ]
+            .map(code => portal.getEntityFieldByCode('deal', code))
+            .filter((field): field is NonNullable<typeof field> => !!field)
+            .map(field => portal.getFieldBitrixId(field));
     }
 
     /** Лиды кандидатов, у которых СВОЙ таймер подтверждения ещё не снят. */
@@ -892,6 +922,8 @@ export class LeadRequestSlaService {
             department: departmentHint?.departmentId
                 ? String(departmentHint.departmentId)
                 : undefined,
+            // Хук напишет о передаче в таймлайн лида и сделки.
+            sla: { minutes },
         });
         const entityKey = `lead:${leadId}`;
         const operation = await this.dispatch.accept(
@@ -1012,7 +1044,7 @@ export class LeadRequestSlaService {
         if (!maxTransfers || maxTransfers <= 0) return false;
         try {
             const redis = this.redisService.getClient();
-            const cacheKey = `lead-request:sla-transfers:${domain}:${key}`;
+            const cacheKey = this.transferCounterKey(domain, key);
             const count = await redis.incr(cacheKey);
             if (count === 1) {
                 await redis.expire(cacheKey, TRANSFER_WINDOW_SECONDS);
@@ -1028,6 +1060,52 @@ export class LeadRequestSlaService {
     }
 
     /** Эскалация руководителям: работа встала, расписание больше не поможет. */
+    /** Ключ суточного счётчика передач одной работы (`lead:42` / `deal:1024`). */
+    private transferCounterKey(domain: string, key: string): string {
+        return `lead-request:sla-transfers:${domain}:${key}`;
+    }
+
+    /**
+     * УЖЕ ЭСКАЛИРОВАННОЕ В ПРОХОД НЕ ПОПАДАЕТ.
+     *
+     * После лимита работа остаётся в выборке с висящим таймером: каждый тик
+     * снова упирался бы в лимит, снова слал руководителю ту же эскалацию
+     * (раз в десять минут) и занимал место в проходе, которого не хватало
+     * свежим заявкам. Смотрим накопленный счётчик БЕЗ инкремента: больше
+     * лимита — эскалация уже была, ждём решения руководителя или нового дня
+     * (счётчик суточный). Redis недоступен — отсева нет, как и раньше.
+     */
+    private async withoutEscalated(
+        domain: string,
+        rows: BxRow[],
+        keyOf: (row: BxRow) => string,
+        maxTransfers: number,
+    ): Promise<BxRow[]> {
+        if (!maxTransfers || maxTransfers <= 0 || !rows.length) return rows;
+        try {
+            const redis = this.redisService.getClient();
+            const counts = await redis.mget(
+                ...rows.map(row => this.transferCounterKey(domain, keyOf(row))),
+            );
+            const kept = rows.filter(
+                (_, index) => Number(counts[index] ?? 0) <= maxTransfers,
+            );
+            if (kept.length < rows.length) {
+                this.logger.log(
+                    `[sla] ${domain}: пропущено после эскалации ${rows.length - kept.length} ` +
+                        '(лимит передач за сутки исчерпан, руководитель уведомлён)',
+                );
+            }
+            return kept;
+        } catch (error) {
+            this.logger.warn(
+                `Счётчики передач не прочитаны (${(error as Error).message}) — ` +
+                    'эскалированные не отсеяны',
+            );
+            return rows;
+        }
+    }
+
     private async escalate(
         bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
         message: string,

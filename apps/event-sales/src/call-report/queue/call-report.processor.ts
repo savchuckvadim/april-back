@@ -33,6 +33,7 @@ import {
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 import {
     buildAnalysisVersions,
+    methodologyTagOf,
     buildRegistryHash,
     CALL_REPORT_REGISTRY_BUILTIN,
 } from '../contracts/call-report-versions.const';
@@ -353,6 +354,7 @@ export class CallReportProcessor {
             // классификатора — без них витрина не построит тренды.
             analysis.versions ??= buildAnalysisVersions(
                 await this.resolveRegistryHash(payload.domain),
+                methodologyTagOf(analysis),
             );
             const finalCallType = this.refineCallType(
                 analysis,

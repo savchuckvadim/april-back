@@ -36,7 +36,10 @@ import { PortalSmartAdminModule } from '@lib/portal-lib/pbx-domain/portal-smart'
 import { PortalStoreAdminModule } from '@lib/portal-lib/store/portal-store.admin.module';
 import { VendorSettingsModule } from '@lib/portal-lib/store/vendor-settings/vendor-settings.module';
 import { VendorSettingsAdminModule } from './vendor-settings/vendor-settings-admin.module';
+import { RenewalOfferLinkAdminModule } from '@lib/renewal-offer';
 import { AiAdminModule, TranscriptionAdminModule } from '@lib/call-lib';
+import { MethodologyAdminModule } from '@lib/call-lib/call-report/methodology';
+import { MethodologyAssistAdminModule } from './methodology-assist/methodology-assist-admin.module';
 import { AiRagAdminModule } from '@lib/ai-rag';
 import { SalesAiAnalyticsAdminModule } from '@lib/sales-ai-analytics';
 import { AdminGarantPackageModule } from '@lib/garant/package';
@@ -47,6 +50,7 @@ import { ProviderAdminModule } from '@lib/portal-lib/konstructor/provider';
 import { PortalKeysAdminModule } from '@lib/portal-lib/store/keys/portal-keys.admin.module';
 import { PortalAiSettingsAdminModule } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.admin.module';
 import { PortalAiProvidersAdminModule } from './portal/ai-providers/ai-providers.module';
+import { LlmPromptAdminModule } from './llm-prompt/llm-prompt-admin.module';
 import { PortalAppSettingsAdminModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.admin.module';
 import { PortalQuestionnairesAdminModule } from '@lib/portal-lib/store/questionnaires/portal-questionnaires.admin.module';
 import { PortalBadgesAdminModule } from '@lib/portal-lib/store/badges/portal-badges.admin.module';
@@ -95,6 +99,12 @@ import { LogsAdminModule } from '@lib/logger/query';
         // транскрибации — только store-сервисы поверх Prisma).
         TranscriptionAdminModule,
         AiAdminModule,
+        // Методики продаж: список доступных порталу для выбора бейджем в
+        // настройках AI (встроенные + таблица ai_methodologies), 01.11.2026.
+        MethodologyAdminModule,
+        // Помощник брифа методики: документ → черновик конфига через шлюз
+        // моделей (нужны llm-gateway и ai-rag, которых у call-lib нет).
+        MethodologyAssistAdminModule,
         // База знаний RAG: документы общие и по порталам (скрипты типов
         // звонков) — управление из админки, чтение агентами через event-sales.
         AiRagAdminModule,
@@ -121,6 +131,9 @@ import { LogsAdminModule } from '@lib/logger/query';
         // Чек-лист готовности провайдеров AI портала (LLM, транскрибаторы,
         // прокси за рубеж) для формы «Поставщики AI» (29.10.2026).
         PortalAiProvidersAdminModule,
+        // Ручка «любой промпт любой моделью»: разовые точечные задачи теми же
+        // ключами и провайдерами, что и разборы (решение владельца 01.11.2026).
+        LlmPromptAdminModule,
         PortalAppSettingsAdminModule,
         // Настройки уровня вендора (прокси за рубеж, ключи AI-сервисов
         // приложения): глобальный читатель для библиотек + админ-роуты
@@ -158,6 +171,8 @@ import { LogsAdminModule } from '@lib/logger/query';
         SupportMonitorAdminModule,
         // Журналы всех приложений из ClickHouse: сводка с выводами и строки
         LogsAdminModule,
+        // Персональные ссылки на КП на следующий год: выдача, список, отзыв
+        RenewalOfferLinkAdminModule,
     ],
 })
 export class AdminAddModule {}

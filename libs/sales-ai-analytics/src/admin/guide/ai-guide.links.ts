@@ -19,6 +19,7 @@ export const AI_GUIDE_HREF = {
     guide: AI_GUIDE_PATH,
     guideSection: (code: string): string => `${AI_GUIDE_PATH}#${code}`,
     model: '/ai-analytics/model',
+    methodologies: '/ai-analytics/methodologies',
     audit: '/ai-analytics/audit',
     statisticsAi: '/statistics/ai',
     portalStatisticsAi: `${PORTAL}/statistics/ai`,
@@ -71,6 +72,11 @@ export const AI_GUIDE_PAGE = {
         title: 'Смарт-процессы портала (установка «AI-анализ звонков»)',
         href: AI_GUIDE_HREF.portalSmarts,
         note: 'Кнопка установки смарта из карточки портала; повторный запуск доливает значения перечислений.',
+    },
+    methodologies: {
+        title: 'AI-аналитика → Методики продаж',
+        href: AI_GUIDE_HREF.methodologies,
+        note: 'Список методик (общие и свои портала), форма-бриф с проверкой конфига, помощник по документу методики.',
     },
     model: {
         title: 'AI-аналитика → Модель и обратная связь',

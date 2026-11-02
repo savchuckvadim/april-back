@@ -61,6 +61,12 @@ export interface IEventReportInitContext {
      * Используется при report=presentation для синхронизации TMC-воронки.
      */
     currentTmcFromPresentation: IBXDeal | null;
+    /**
+     * Открытая сделка «ТМЦ Основная» компании у ответственного плана — база
+     * ТМЦ-отчёта, когда задача на ТМЦ-сделку не ссылается (легаси
+     * `getDealsFromNewTaskInnerTMC`). Sales-поток её не читает.
+     */
+    companyTmcDeal?: IBXDeal | null;
 
     /** Задача, по которой отчитывается менеджер (если есть) */
     currentTask: IBXTask | null;

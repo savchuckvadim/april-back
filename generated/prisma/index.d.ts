@@ -234,6 +234,15 @@ export type VendorSuperUser = $Result.DefaultSelection<Prisma.$VendorSuperUserPa
  */
 export type VendorSetting = $Result.DefaultSelection<Prisma.$VendorSettingPayload>
 /**
+ * Model AiMethodology
+ * МЕТОДИКИ ПРОДАЖ для AI-разбора звонков (ai_methodologies, миграция
+ * 2026_11_01_120000 в online): конфиг чек-пунктов, ограничителей оценки,
+ * якорей и справочников поверх общего ядра разбора. scope common — общий
+ * слой April (polyansky), portal — своя методика портала portalDomain.
+ * Состав и проверка config — libs/call-lib/src/call-report/methodology.
+ */
+export type AiMethodology = $Result.DefaultSelection<Prisma.$AiMethodologyPayload>
+/**
  * Model PortalQuestionnaire
  * Портальный каталог АНКЕТ: сама анкета (чек-лист) placement-приложения —
  * назначение, где и как показываем, условия показа. Состав вопросов живёт
@@ -598,6 +607,16 @@ export type ContractTemplate = $Result.DefaultSelection<Prisma.$ContractTemplate
  * как сегодня.
  */
 export type SupplyReportTemplate = $Result.DefaultSelection<Prisma.$SupplyReportTemplatePayload>
+/**
+ * Model RenewalOfferLink
+ * Персональная ссылка на КП на следующий год действующему клиенту
+ * (миграция 2026_11_02_120000): создаётся и отзывается в админке, цены
+ * лежат в строке, а не в адресе — клиент их подменить не может.
+ * expiresAt = NULL — действует до отзыва. Состояние выводится из дат.
+ * Колонки цен нужны для отчётов SQL-ом, offerJson — слепок предложения
+ * целиком (новые услуги кладутся туда без миграции).
+ */
+export type RenewalOfferLink = $Result.DefaultSelection<Prisma.$RenewalOfferLinkPayload>
 
 /**
  * Enums
@@ -1238,6 +1257,16 @@ export class PrismaClient<
     * ```
     */
   get vendorSetting(): Prisma.VendorSettingDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.aiMethodology`: Exposes CRUD operations for the **AiMethodology** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more AiMethodologies
+    * const aiMethodologies = await prisma.aiMethodology.findMany()
+    * ```
+    */
+  get aiMethodology(): Prisma.AiMethodologyDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.portalQuestionnaire`: Exposes CRUD operations for the **PortalQuestionnaire** model.
@@ -1888,6 +1917,16 @@ export class PrismaClient<
     * ```
     */
   get supplyReportTemplate(): Prisma.SupplyReportTemplateDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.renewalOfferLink`: Exposes CRUD operations for the **RenewalOfferLink** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more RenewalOfferLinks
+    * const renewalOfferLinks = await prisma.renewalOfferLink.findMany()
+    * ```
+    */
+  get renewalOfferLink(): Prisma.RenewalOfferLinkDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -2366,6 +2405,7 @@ export namespace Prisma {
     PortalAppSettings: 'PortalAppSettings',
     VendorSuperUser: 'VendorSuperUser',
     VendorSetting: 'VendorSetting',
+    AiMethodology: 'AiMethodology',
     PortalQuestionnaire: 'PortalQuestionnaire',
     PortalQuestionnaireItem: 'PortalQuestionnaireItem',
     PortalQuestionnaireItemOption: 'PortalQuestionnaireItemOption',
@@ -2430,7 +2470,8 @@ export namespace Prisma {
     ShareLink: 'ShareLink',
     KonstructorPublicLink: 'KonstructorPublicLink',
     ContractTemplate: 'ContractTemplate',
-    SupplyReportTemplate: 'SupplyReportTemplate'
+    SupplyReportTemplate: 'SupplyReportTemplate',
+    RenewalOfferLink: 'RenewalOfferLink'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -2449,7 +2490,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalAiSettings" | "portalAppSettings" | "vendorSuperUser" | "vendorSetting" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink" | "konstructorPublicLink" | "contractTemplate" | "supplyReportTemplate"
+      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalAiSettings" | "portalAppSettings" | "vendorSuperUser" | "vendorSetting" | "aiMethodology" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink" | "konstructorPublicLink" | "contractTemplate" | "supplyReportTemplate" | "renewalOfferLink"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -4958,6 +4999,72 @@ export namespace Prisma {
           count: {
             args: Prisma.VendorSettingCountArgs<ExtArgs>
             result: $Utils.Optional<VendorSettingCountAggregateOutputType> | number
+          }
+        }
+      }
+      AiMethodology: {
+        payload: Prisma.$AiMethodologyPayload<ExtArgs>
+        fields: Prisma.AiMethodologyFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.AiMethodologyFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AiMethodologyPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.AiMethodologyFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AiMethodologyPayload>
+          }
+          findFirst: {
+            args: Prisma.AiMethodologyFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AiMethodologyPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.AiMethodologyFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AiMethodologyPayload>
+          }
+          findMany: {
+            args: Prisma.AiMethodologyFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AiMethodologyPayload>[]
+          }
+          create: {
+            args: Prisma.AiMethodologyCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AiMethodologyPayload>
+          }
+          createMany: {
+            args: Prisma.AiMethodologyCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.AiMethodologyDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AiMethodologyPayload>
+          }
+          update: {
+            args: Prisma.AiMethodologyUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AiMethodologyPayload>
+          }
+          deleteMany: {
+            args: Prisma.AiMethodologyDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.AiMethodologyUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.AiMethodologyUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AiMethodologyPayload>
+          }
+          aggregate: {
+            args: Prisma.AiMethodologyAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateAiMethodology>
+          }
+          groupBy: {
+            args: Prisma.AiMethodologyGroupByArgs<ExtArgs>
+            result: $Utils.Optional<AiMethodologyGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.AiMethodologyCountArgs<ExtArgs>
+            result: $Utils.Optional<AiMethodologyCountAggregateOutputType> | number
           }
         }
       }
@@ -9251,6 +9358,72 @@ export namespace Prisma {
           }
         }
       }
+      RenewalOfferLink: {
+        payload: Prisma.$RenewalOfferLinkPayload<ExtArgs>
+        fields: Prisma.RenewalOfferLinkFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.RenewalOfferLinkFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RenewalOfferLinkPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.RenewalOfferLinkFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RenewalOfferLinkPayload>
+          }
+          findFirst: {
+            args: Prisma.RenewalOfferLinkFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RenewalOfferLinkPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.RenewalOfferLinkFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RenewalOfferLinkPayload>
+          }
+          findMany: {
+            args: Prisma.RenewalOfferLinkFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RenewalOfferLinkPayload>[]
+          }
+          create: {
+            args: Prisma.RenewalOfferLinkCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RenewalOfferLinkPayload>
+          }
+          createMany: {
+            args: Prisma.RenewalOfferLinkCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.RenewalOfferLinkDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RenewalOfferLinkPayload>
+          }
+          update: {
+            args: Prisma.RenewalOfferLinkUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RenewalOfferLinkPayload>
+          }
+          deleteMany: {
+            args: Prisma.RenewalOfferLinkDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.RenewalOfferLinkUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.RenewalOfferLinkUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RenewalOfferLinkPayload>
+          }
+          aggregate: {
+            args: Prisma.RenewalOfferLinkAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateRenewalOfferLink>
+          }
+          groupBy: {
+            args: Prisma.RenewalOfferLinkGroupByArgs<ExtArgs>
+            result: $Utils.Optional<RenewalOfferLinkGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.RenewalOfferLinkCountArgs<ExtArgs>
+            result: $Utils.Optional<RenewalOfferLinkCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -9385,6 +9558,7 @@ export namespace Prisma {
     portalAppSettings?: PortalAppSettingsOmit
     vendorSuperUser?: VendorSuperUserOmit
     vendorSetting?: VendorSettingOmit
+    aiMethodology?: AiMethodologyOmit
     portalQuestionnaire?: PortalQuestionnaireOmit
     portalQuestionnaireItem?: PortalQuestionnaireItemOmit
     portalQuestionnaireItemOption?: PortalQuestionnaireItemOptionOmit
@@ -9450,6 +9624,7 @@ export namespace Prisma {
     konstructorPublicLink?: KonstructorPublicLinkOmit
     contractTemplate?: ContractTemplateOmit
     supplyReportTemplate?: SupplyReportTemplateOmit
+    renewalOfferLink?: RenewalOfferLinkOmit
   }
 
   /* Types for Logging */
@@ -52037,6 +52212,956 @@ export namespace Prisma {
      * Omit specific fields from the VendorSetting
      */
     omit?: VendorSettingOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model AiMethodology
+   */
+
+  export type AggregateAiMethodology = {
+    _count: AiMethodologyCountAggregateOutputType | null
+    _min: AiMethodologyMinAggregateOutputType | null
+    _max: AiMethodologyMaxAggregateOutputType | null
+  }
+
+  export type AiMethodologyMinAggregateOutputType = {
+    id: string | null
+    code: string | null
+    title: string | null
+    version: string | null
+    scope: string | null
+    portalDomain: string | null
+    isActive: boolean | null
+    updatedBy: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type AiMethodologyMaxAggregateOutputType = {
+    id: string | null
+    code: string | null
+    title: string | null
+    version: string | null
+    scope: string | null
+    portalDomain: string | null
+    isActive: boolean | null
+    updatedBy: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type AiMethodologyCountAggregateOutputType = {
+    id: number
+    code: number
+    title: number
+    version: number
+    scope: number
+    portalDomain: number
+    config: number
+    isActive: number
+    updatedBy: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type AiMethodologyMinAggregateInputType = {
+    id?: true
+    code?: true
+    title?: true
+    version?: true
+    scope?: true
+    portalDomain?: true
+    isActive?: true
+    updatedBy?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type AiMethodologyMaxAggregateInputType = {
+    id?: true
+    code?: true
+    title?: true
+    version?: true
+    scope?: true
+    portalDomain?: true
+    isActive?: true
+    updatedBy?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type AiMethodologyCountAggregateInputType = {
+    id?: true
+    code?: true
+    title?: true
+    version?: true
+    scope?: true
+    portalDomain?: true
+    config?: true
+    isActive?: true
+    updatedBy?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type AiMethodologyAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which AiMethodology to aggregate.
+     */
+    where?: AiMethodologyWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AiMethodologies to fetch.
+     */
+    orderBy?: AiMethodologyOrderByWithRelationInput | AiMethodologyOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: AiMethodologyWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AiMethodologies from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AiMethodologies.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned AiMethodologies
+    **/
+    _count?: true | AiMethodologyCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: AiMethodologyMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: AiMethodologyMaxAggregateInputType
+  }
+
+  export type GetAiMethodologyAggregateType<T extends AiMethodologyAggregateArgs> = {
+        [P in keyof T & keyof AggregateAiMethodology]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateAiMethodology[P]>
+      : GetScalarType<T[P], AggregateAiMethodology[P]>
+  }
+
+
+
+
+  export type AiMethodologyGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: AiMethodologyWhereInput
+    orderBy?: AiMethodologyOrderByWithAggregationInput | AiMethodologyOrderByWithAggregationInput[]
+    by: AiMethodologyScalarFieldEnum[] | AiMethodologyScalarFieldEnum
+    having?: AiMethodologyScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: AiMethodologyCountAggregateInputType | true
+    _min?: AiMethodologyMinAggregateInputType
+    _max?: AiMethodologyMaxAggregateInputType
+  }
+
+  export type AiMethodologyGroupByOutputType = {
+    id: string
+    code: string
+    title: string
+    version: string
+    scope: string
+    portalDomain: string | null
+    config: JsonValue
+    isActive: boolean
+    updatedBy: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    _count: AiMethodologyCountAggregateOutputType | null
+    _min: AiMethodologyMinAggregateOutputType | null
+    _max: AiMethodologyMaxAggregateOutputType | null
+  }
+
+  type GetAiMethodologyGroupByPayload<T extends AiMethodologyGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<AiMethodologyGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof AiMethodologyGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], AiMethodologyGroupByOutputType[P]>
+            : GetScalarType<T[P], AiMethodologyGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type AiMethodologySelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    code?: boolean
+    title?: boolean
+    version?: boolean
+    scope?: boolean
+    portalDomain?: boolean
+    config?: boolean
+    isActive?: boolean
+    updatedBy?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["aiMethodology"]>
+
+
+
+  export type AiMethodologySelectScalar = {
+    id?: boolean
+    code?: boolean
+    title?: boolean
+    version?: boolean
+    scope?: boolean
+    portalDomain?: boolean
+    config?: boolean
+    isActive?: boolean
+    updatedBy?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type AiMethodologyOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "code" | "title" | "version" | "scope" | "portalDomain" | "config" | "isActive" | "updatedBy" | "createdAt" | "updatedAt", ExtArgs["result"]["aiMethodology"]>
+
+  export type $AiMethodologyPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "AiMethodology"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      code: string
+      title: string
+      version: string
+      scope: string
+      portalDomain: string | null
+      /**
+       * JSON конфига методики (Methodology из call-lib).
+       */
+      config: Prisma.JsonValue
+      isActive: boolean
+      /**
+       * Кто менял — логин администратора.
+       */
+      updatedBy: string | null
+      createdAt: Date | null
+      updatedAt: Date | null
+    }, ExtArgs["result"]["aiMethodology"]>
+    composites: {}
+  }
+
+  type AiMethodologyGetPayload<S extends boolean | null | undefined | AiMethodologyDefaultArgs> = $Result.GetResult<Prisma.$AiMethodologyPayload, S>
+
+  type AiMethodologyCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<AiMethodologyFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: AiMethodologyCountAggregateInputType | true
+    }
+
+  export interface AiMethodologyDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['AiMethodology'], meta: { name: 'AiMethodology' } }
+    /**
+     * Find zero or one AiMethodology that matches the filter.
+     * @param {AiMethodologyFindUniqueArgs} args - Arguments to find a AiMethodology
+     * @example
+     * // Get one AiMethodology
+     * const aiMethodology = await prisma.aiMethodology.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends AiMethodologyFindUniqueArgs>(args: SelectSubset<T, AiMethodologyFindUniqueArgs<ExtArgs>>): Prisma__AiMethodologyClient<$Result.GetResult<Prisma.$AiMethodologyPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one AiMethodology that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {AiMethodologyFindUniqueOrThrowArgs} args - Arguments to find a AiMethodology
+     * @example
+     * // Get one AiMethodology
+     * const aiMethodology = await prisma.aiMethodology.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends AiMethodologyFindUniqueOrThrowArgs>(args: SelectSubset<T, AiMethodologyFindUniqueOrThrowArgs<ExtArgs>>): Prisma__AiMethodologyClient<$Result.GetResult<Prisma.$AiMethodologyPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first AiMethodology that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AiMethodologyFindFirstArgs} args - Arguments to find a AiMethodology
+     * @example
+     * // Get one AiMethodology
+     * const aiMethodology = await prisma.aiMethodology.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends AiMethodologyFindFirstArgs>(args?: SelectSubset<T, AiMethodologyFindFirstArgs<ExtArgs>>): Prisma__AiMethodologyClient<$Result.GetResult<Prisma.$AiMethodologyPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first AiMethodology that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AiMethodologyFindFirstOrThrowArgs} args - Arguments to find a AiMethodology
+     * @example
+     * // Get one AiMethodology
+     * const aiMethodology = await prisma.aiMethodology.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends AiMethodologyFindFirstOrThrowArgs>(args?: SelectSubset<T, AiMethodologyFindFirstOrThrowArgs<ExtArgs>>): Prisma__AiMethodologyClient<$Result.GetResult<Prisma.$AiMethodologyPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more AiMethodologies that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AiMethodologyFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all AiMethodologies
+     * const aiMethodologies = await prisma.aiMethodology.findMany()
+     * 
+     * // Get first 10 AiMethodologies
+     * const aiMethodologies = await prisma.aiMethodology.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const aiMethodologyWithIdOnly = await prisma.aiMethodology.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends AiMethodologyFindManyArgs>(args?: SelectSubset<T, AiMethodologyFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AiMethodologyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a AiMethodology.
+     * @param {AiMethodologyCreateArgs} args - Arguments to create a AiMethodology.
+     * @example
+     * // Create one AiMethodology
+     * const AiMethodology = await prisma.aiMethodology.create({
+     *   data: {
+     *     // ... data to create a AiMethodology
+     *   }
+     * })
+     * 
+     */
+    create<T extends AiMethodologyCreateArgs>(args: SelectSubset<T, AiMethodologyCreateArgs<ExtArgs>>): Prisma__AiMethodologyClient<$Result.GetResult<Prisma.$AiMethodologyPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many AiMethodologies.
+     * @param {AiMethodologyCreateManyArgs} args - Arguments to create many AiMethodologies.
+     * @example
+     * // Create many AiMethodologies
+     * const aiMethodology = await prisma.aiMethodology.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends AiMethodologyCreateManyArgs>(args?: SelectSubset<T, AiMethodologyCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a AiMethodology.
+     * @param {AiMethodologyDeleteArgs} args - Arguments to delete one AiMethodology.
+     * @example
+     * // Delete one AiMethodology
+     * const AiMethodology = await prisma.aiMethodology.delete({
+     *   where: {
+     *     // ... filter to delete one AiMethodology
+     *   }
+     * })
+     * 
+     */
+    delete<T extends AiMethodologyDeleteArgs>(args: SelectSubset<T, AiMethodologyDeleteArgs<ExtArgs>>): Prisma__AiMethodologyClient<$Result.GetResult<Prisma.$AiMethodologyPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one AiMethodology.
+     * @param {AiMethodologyUpdateArgs} args - Arguments to update one AiMethodology.
+     * @example
+     * // Update one AiMethodology
+     * const aiMethodology = await prisma.aiMethodology.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends AiMethodologyUpdateArgs>(args: SelectSubset<T, AiMethodologyUpdateArgs<ExtArgs>>): Prisma__AiMethodologyClient<$Result.GetResult<Prisma.$AiMethodologyPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more AiMethodologies.
+     * @param {AiMethodologyDeleteManyArgs} args - Arguments to filter AiMethodologies to delete.
+     * @example
+     * // Delete a few AiMethodologies
+     * const { count } = await prisma.aiMethodology.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends AiMethodologyDeleteManyArgs>(args?: SelectSubset<T, AiMethodologyDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more AiMethodologies.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AiMethodologyUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many AiMethodologies
+     * const aiMethodology = await prisma.aiMethodology.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends AiMethodologyUpdateManyArgs>(args: SelectSubset<T, AiMethodologyUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one AiMethodology.
+     * @param {AiMethodologyUpsertArgs} args - Arguments to update or create a AiMethodology.
+     * @example
+     * // Update or create a AiMethodology
+     * const aiMethodology = await prisma.aiMethodology.upsert({
+     *   create: {
+     *     // ... data to create a AiMethodology
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the AiMethodology we want to update
+     *   }
+     * })
+     */
+    upsert<T extends AiMethodologyUpsertArgs>(args: SelectSubset<T, AiMethodologyUpsertArgs<ExtArgs>>): Prisma__AiMethodologyClient<$Result.GetResult<Prisma.$AiMethodologyPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of AiMethodologies.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AiMethodologyCountArgs} args - Arguments to filter AiMethodologies to count.
+     * @example
+     * // Count the number of AiMethodologies
+     * const count = await prisma.aiMethodology.count({
+     *   where: {
+     *     // ... the filter for the AiMethodologies we want to count
+     *   }
+     * })
+    **/
+    count<T extends AiMethodologyCountArgs>(
+      args?: Subset<T, AiMethodologyCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], AiMethodologyCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a AiMethodology.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AiMethodologyAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends AiMethodologyAggregateArgs>(args: Subset<T, AiMethodologyAggregateArgs>): Prisma.PrismaPromise<GetAiMethodologyAggregateType<T>>
+
+    /**
+     * Group by AiMethodology.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AiMethodologyGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends AiMethodologyGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: AiMethodologyGroupByArgs['orderBy'] }
+        : { orderBy?: AiMethodologyGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, AiMethodologyGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetAiMethodologyGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the AiMethodology model
+   */
+  readonly fields: AiMethodologyFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for AiMethodology.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__AiMethodologyClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the AiMethodology model
+   */
+  interface AiMethodologyFieldRefs {
+    readonly id: FieldRef<"AiMethodology", 'String'>
+    readonly code: FieldRef<"AiMethodology", 'String'>
+    readonly title: FieldRef<"AiMethodology", 'String'>
+    readonly version: FieldRef<"AiMethodology", 'String'>
+    readonly scope: FieldRef<"AiMethodology", 'String'>
+    readonly portalDomain: FieldRef<"AiMethodology", 'String'>
+    readonly config: FieldRef<"AiMethodology", 'Json'>
+    readonly isActive: FieldRef<"AiMethodology", 'Boolean'>
+    readonly updatedBy: FieldRef<"AiMethodology", 'String'>
+    readonly createdAt: FieldRef<"AiMethodology", 'DateTime'>
+    readonly updatedAt: FieldRef<"AiMethodology", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * AiMethodology findUnique
+   */
+  export type AiMethodologyFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AiMethodology
+     */
+    select?: AiMethodologySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AiMethodology
+     */
+    omit?: AiMethodologyOmit<ExtArgs> | null
+    /**
+     * Filter, which AiMethodology to fetch.
+     */
+    where: AiMethodologyWhereUniqueInput
+  }
+
+  /**
+   * AiMethodology findUniqueOrThrow
+   */
+  export type AiMethodologyFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AiMethodology
+     */
+    select?: AiMethodologySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AiMethodology
+     */
+    omit?: AiMethodologyOmit<ExtArgs> | null
+    /**
+     * Filter, which AiMethodology to fetch.
+     */
+    where: AiMethodologyWhereUniqueInput
+  }
+
+  /**
+   * AiMethodology findFirst
+   */
+  export type AiMethodologyFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AiMethodology
+     */
+    select?: AiMethodologySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AiMethodology
+     */
+    omit?: AiMethodologyOmit<ExtArgs> | null
+    /**
+     * Filter, which AiMethodology to fetch.
+     */
+    where?: AiMethodologyWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AiMethodologies to fetch.
+     */
+    orderBy?: AiMethodologyOrderByWithRelationInput | AiMethodologyOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for AiMethodologies.
+     */
+    cursor?: AiMethodologyWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AiMethodologies from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AiMethodologies.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of AiMethodologies.
+     */
+    distinct?: AiMethodologyScalarFieldEnum | AiMethodologyScalarFieldEnum[]
+  }
+
+  /**
+   * AiMethodology findFirstOrThrow
+   */
+  export type AiMethodologyFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AiMethodology
+     */
+    select?: AiMethodologySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AiMethodology
+     */
+    omit?: AiMethodologyOmit<ExtArgs> | null
+    /**
+     * Filter, which AiMethodology to fetch.
+     */
+    where?: AiMethodologyWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AiMethodologies to fetch.
+     */
+    orderBy?: AiMethodologyOrderByWithRelationInput | AiMethodologyOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for AiMethodologies.
+     */
+    cursor?: AiMethodologyWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AiMethodologies from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AiMethodologies.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of AiMethodologies.
+     */
+    distinct?: AiMethodologyScalarFieldEnum | AiMethodologyScalarFieldEnum[]
+  }
+
+  /**
+   * AiMethodology findMany
+   */
+  export type AiMethodologyFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AiMethodology
+     */
+    select?: AiMethodologySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AiMethodology
+     */
+    omit?: AiMethodologyOmit<ExtArgs> | null
+    /**
+     * Filter, which AiMethodologies to fetch.
+     */
+    where?: AiMethodologyWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AiMethodologies to fetch.
+     */
+    orderBy?: AiMethodologyOrderByWithRelationInput | AiMethodologyOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing AiMethodologies.
+     */
+    cursor?: AiMethodologyWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AiMethodologies from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AiMethodologies.
+     */
+    skip?: number
+    distinct?: AiMethodologyScalarFieldEnum | AiMethodologyScalarFieldEnum[]
+  }
+
+  /**
+   * AiMethodology create
+   */
+  export type AiMethodologyCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AiMethodology
+     */
+    select?: AiMethodologySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AiMethodology
+     */
+    omit?: AiMethodologyOmit<ExtArgs> | null
+    /**
+     * The data needed to create a AiMethodology.
+     */
+    data: XOR<AiMethodologyCreateInput, AiMethodologyUncheckedCreateInput>
+  }
+
+  /**
+   * AiMethodology createMany
+   */
+  export type AiMethodologyCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many AiMethodologies.
+     */
+    data: AiMethodologyCreateManyInput | AiMethodologyCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * AiMethodology update
+   */
+  export type AiMethodologyUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AiMethodology
+     */
+    select?: AiMethodologySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AiMethodology
+     */
+    omit?: AiMethodologyOmit<ExtArgs> | null
+    /**
+     * The data needed to update a AiMethodology.
+     */
+    data: XOR<AiMethodologyUpdateInput, AiMethodologyUncheckedUpdateInput>
+    /**
+     * Choose, which AiMethodology to update.
+     */
+    where: AiMethodologyWhereUniqueInput
+  }
+
+  /**
+   * AiMethodology updateMany
+   */
+  export type AiMethodologyUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update AiMethodologies.
+     */
+    data: XOR<AiMethodologyUpdateManyMutationInput, AiMethodologyUncheckedUpdateManyInput>
+    /**
+     * Filter which AiMethodologies to update
+     */
+    where?: AiMethodologyWhereInput
+    /**
+     * Limit how many AiMethodologies to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * AiMethodology upsert
+   */
+  export type AiMethodologyUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AiMethodology
+     */
+    select?: AiMethodologySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AiMethodology
+     */
+    omit?: AiMethodologyOmit<ExtArgs> | null
+    /**
+     * The filter to search for the AiMethodology to update in case it exists.
+     */
+    where: AiMethodologyWhereUniqueInput
+    /**
+     * In case the AiMethodology found by the `where` argument doesn't exist, create a new AiMethodology with this data.
+     */
+    create: XOR<AiMethodologyCreateInput, AiMethodologyUncheckedCreateInput>
+    /**
+     * In case the AiMethodology was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<AiMethodologyUpdateInput, AiMethodologyUncheckedUpdateInput>
+  }
+
+  /**
+   * AiMethodology delete
+   */
+  export type AiMethodologyDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AiMethodology
+     */
+    select?: AiMethodologySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AiMethodology
+     */
+    omit?: AiMethodologyOmit<ExtArgs> | null
+    /**
+     * Filter which AiMethodology to delete.
+     */
+    where: AiMethodologyWhereUniqueInput
+  }
+
+  /**
+   * AiMethodology deleteMany
+   */
+  export type AiMethodologyDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which AiMethodologies to delete
+     */
+    where?: AiMethodologyWhereInput
+    /**
+     * Limit how many AiMethodologies to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * AiMethodology without action
+   */
+  export type AiMethodologyDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AiMethodology
+     */
+    select?: AiMethodologySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AiMethodology
+     */
+    omit?: AiMethodologyOmit<ExtArgs> | null
   }
 
 
@@ -123036,6 +124161,1227 @@ export namespace Prisma {
 
 
   /**
+   * Model RenewalOfferLink
+   */
+
+  export type AggregateRenewalOfferLink = {
+    _count: RenewalOfferLinkCountAggregateOutputType | null
+    _avg: RenewalOfferLinkAvgAggregateOutputType | null
+    _sum: RenewalOfferLinkSumAggregateOutputType | null
+    _min: RenewalOfferLinkMinAggregateOutputType | null
+    _max: RenewalOfferLinkMaxAggregateOutputType | null
+  }
+
+  export type RenewalOfferLinkAvgAggregateOutputType = {
+    salesPrice: number | null
+    aiEmployees: number | null
+    aiBasePrice: number | null
+    aiBaseEmployees: number | null
+    aiExtraPrice: number | null
+    aiFreeDelta: number | null
+    managerPrice: number | null
+    devHours: number | null
+    devHourPrice: number | null
+    adjustment: number | null
+    monthlyTotal: number | null
+    viewCount: number | null
+  }
+
+  export type RenewalOfferLinkSumAggregateOutputType = {
+    salesPrice: number | null
+    aiEmployees: number | null
+    aiBasePrice: number | null
+    aiBaseEmployees: number | null
+    aiExtraPrice: number | null
+    aiFreeDelta: number | null
+    managerPrice: number | null
+    devHours: number | null
+    devHourPrice: number | null
+    adjustment: number | null
+    monthlyTotal: number | null
+    viewCount: number | null
+  }
+
+  export type RenewalOfferLinkMinAggregateOutputType = {
+    id: string | null
+    token: string | null
+    clientName: string | null
+    title: string | null
+    salesIncluded: boolean | null
+    salesPrice: number | null
+    aiIncluded: boolean | null
+    aiEmployees: number | null
+    aiBasePrice: number | null
+    aiBaseEmployees: number | null
+    aiExtraPrice: number | null
+    aiFreeDelta: number | null
+    managerIncluded: boolean | null
+    managerPrice: number | null
+    devIncluded: boolean | null
+    devHours: number | null
+    devHourPrice: number | null
+    adjustment: number | null
+    adjustmentLabel: string | null
+    monthlyTotal: number | null
+    expiresAt: Date | null
+    revokedAt: Date | null
+    viewCount: number | null
+    lastViewedAt: Date | null
+    createdBy: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type RenewalOfferLinkMaxAggregateOutputType = {
+    id: string | null
+    token: string | null
+    clientName: string | null
+    title: string | null
+    salesIncluded: boolean | null
+    salesPrice: number | null
+    aiIncluded: boolean | null
+    aiEmployees: number | null
+    aiBasePrice: number | null
+    aiBaseEmployees: number | null
+    aiExtraPrice: number | null
+    aiFreeDelta: number | null
+    managerIncluded: boolean | null
+    managerPrice: number | null
+    devIncluded: boolean | null
+    devHours: number | null
+    devHourPrice: number | null
+    adjustment: number | null
+    adjustmentLabel: string | null
+    monthlyTotal: number | null
+    expiresAt: Date | null
+    revokedAt: Date | null
+    viewCount: number | null
+    lastViewedAt: Date | null
+    createdBy: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type RenewalOfferLinkCountAggregateOutputType = {
+    id: number
+    token: number
+    clientName: number
+    title: number
+    salesIncluded: number
+    salesPrice: number
+    aiIncluded: number
+    aiEmployees: number
+    aiBasePrice: number
+    aiBaseEmployees: number
+    aiExtraPrice: number
+    aiFreeDelta: number
+    managerIncluded: number
+    managerPrice: number
+    devIncluded: number
+    devHours: number
+    devHourPrice: number
+    adjustment: number
+    adjustmentLabel: number
+    monthlyTotal: number
+    offerJson: number
+    expiresAt: number
+    revokedAt: number
+    viewCount: number
+    lastViewedAt: number
+    createdBy: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type RenewalOfferLinkAvgAggregateInputType = {
+    salesPrice?: true
+    aiEmployees?: true
+    aiBasePrice?: true
+    aiBaseEmployees?: true
+    aiExtraPrice?: true
+    aiFreeDelta?: true
+    managerPrice?: true
+    devHours?: true
+    devHourPrice?: true
+    adjustment?: true
+    monthlyTotal?: true
+    viewCount?: true
+  }
+
+  export type RenewalOfferLinkSumAggregateInputType = {
+    salesPrice?: true
+    aiEmployees?: true
+    aiBasePrice?: true
+    aiBaseEmployees?: true
+    aiExtraPrice?: true
+    aiFreeDelta?: true
+    managerPrice?: true
+    devHours?: true
+    devHourPrice?: true
+    adjustment?: true
+    monthlyTotal?: true
+    viewCount?: true
+  }
+
+  export type RenewalOfferLinkMinAggregateInputType = {
+    id?: true
+    token?: true
+    clientName?: true
+    title?: true
+    salesIncluded?: true
+    salesPrice?: true
+    aiIncluded?: true
+    aiEmployees?: true
+    aiBasePrice?: true
+    aiBaseEmployees?: true
+    aiExtraPrice?: true
+    aiFreeDelta?: true
+    managerIncluded?: true
+    managerPrice?: true
+    devIncluded?: true
+    devHours?: true
+    devHourPrice?: true
+    adjustment?: true
+    adjustmentLabel?: true
+    monthlyTotal?: true
+    expiresAt?: true
+    revokedAt?: true
+    viewCount?: true
+    lastViewedAt?: true
+    createdBy?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type RenewalOfferLinkMaxAggregateInputType = {
+    id?: true
+    token?: true
+    clientName?: true
+    title?: true
+    salesIncluded?: true
+    salesPrice?: true
+    aiIncluded?: true
+    aiEmployees?: true
+    aiBasePrice?: true
+    aiBaseEmployees?: true
+    aiExtraPrice?: true
+    aiFreeDelta?: true
+    managerIncluded?: true
+    managerPrice?: true
+    devIncluded?: true
+    devHours?: true
+    devHourPrice?: true
+    adjustment?: true
+    adjustmentLabel?: true
+    monthlyTotal?: true
+    expiresAt?: true
+    revokedAt?: true
+    viewCount?: true
+    lastViewedAt?: true
+    createdBy?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type RenewalOfferLinkCountAggregateInputType = {
+    id?: true
+    token?: true
+    clientName?: true
+    title?: true
+    salesIncluded?: true
+    salesPrice?: true
+    aiIncluded?: true
+    aiEmployees?: true
+    aiBasePrice?: true
+    aiBaseEmployees?: true
+    aiExtraPrice?: true
+    aiFreeDelta?: true
+    managerIncluded?: true
+    managerPrice?: true
+    devIncluded?: true
+    devHours?: true
+    devHourPrice?: true
+    adjustment?: true
+    adjustmentLabel?: true
+    monthlyTotal?: true
+    offerJson?: true
+    expiresAt?: true
+    revokedAt?: true
+    viewCount?: true
+    lastViewedAt?: true
+    createdBy?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type RenewalOfferLinkAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RenewalOfferLink to aggregate.
+     */
+    where?: RenewalOfferLinkWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RenewalOfferLinks to fetch.
+     */
+    orderBy?: RenewalOfferLinkOrderByWithRelationInput | RenewalOfferLinkOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: RenewalOfferLinkWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RenewalOfferLinks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RenewalOfferLinks.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned RenewalOfferLinks
+    **/
+    _count?: true | RenewalOfferLinkCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: RenewalOfferLinkAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: RenewalOfferLinkSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: RenewalOfferLinkMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: RenewalOfferLinkMaxAggregateInputType
+  }
+
+  export type GetRenewalOfferLinkAggregateType<T extends RenewalOfferLinkAggregateArgs> = {
+        [P in keyof T & keyof AggregateRenewalOfferLink]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateRenewalOfferLink[P]>
+      : GetScalarType<T[P], AggregateRenewalOfferLink[P]>
+  }
+
+
+
+
+  export type RenewalOfferLinkGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RenewalOfferLinkWhereInput
+    orderBy?: RenewalOfferLinkOrderByWithAggregationInput | RenewalOfferLinkOrderByWithAggregationInput[]
+    by: RenewalOfferLinkScalarFieldEnum[] | RenewalOfferLinkScalarFieldEnum
+    having?: RenewalOfferLinkScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: RenewalOfferLinkCountAggregateInputType | true
+    _avg?: RenewalOfferLinkAvgAggregateInputType
+    _sum?: RenewalOfferLinkSumAggregateInputType
+    _min?: RenewalOfferLinkMinAggregateInputType
+    _max?: RenewalOfferLinkMaxAggregateInputType
+  }
+
+  export type RenewalOfferLinkGroupByOutputType = {
+    id: string
+    token: string
+    clientName: string
+    title: string | null
+    salesIncluded: boolean
+    salesPrice: number
+    aiIncluded: boolean
+    aiEmployees: number
+    aiBasePrice: number
+    aiBaseEmployees: number
+    aiExtraPrice: number
+    aiFreeDelta: number
+    managerIncluded: boolean
+    managerPrice: number
+    devIncluded: boolean
+    devHours: number
+    devHourPrice: number
+    adjustment: number
+    adjustmentLabel: string
+    monthlyTotal: number
+    offerJson: JsonValue
+    expiresAt: Date | null
+    revokedAt: Date | null
+    viewCount: number
+    lastViewedAt: Date | null
+    createdBy: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    _count: RenewalOfferLinkCountAggregateOutputType | null
+    _avg: RenewalOfferLinkAvgAggregateOutputType | null
+    _sum: RenewalOfferLinkSumAggregateOutputType | null
+    _min: RenewalOfferLinkMinAggregateOutputType | null
+    _max: RenewalOfferLinkMaxAggregateOutputType | null
+  }
+
+  type GetRenewalOfferLinkGroupByPayload<T extends RenewalOfferLinkGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<RenewalOfferLinkGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof RenewalOfferLinkGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], RenewalOfferLinkGroupByOutputType[P]>
+            : GetScalarType<T[P], RenewalOfferLinkGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type RenewalOfferLinkSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    token?: boolean
+    clientName?: boolean
+    title?: boolean
+    salesIncluded?: boolean
+    salesPrice?: boolean
+    aiIncluded?: boolean
+    aiEmployees?: boolean
+    aiBasePrice?: boolean
+    aiBaseEmployees?: boolean
+    aiExtraPrice?: boolean
+    aiFreeDelta?: boolean
+    managerIncluded?: boolean
+    managerPrice?: boolean
+    devIncluded?: boolean
+    devHours?: boolean
+    devHourPrice?: boolean
+    adjustment?: boolean
+    adjustmentLabel?: boolean
+    monthlyTotal?: boolean
+    offerJson?: boolean
+    expiresAt?: boolean
+    revokedAt?: boolean
+    viewCount?: boolean
+    lastViewedAt?: boolean
+    createdBy?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["renewalOfferLink"]>
+
+
+
+  export type RenewalOfferLinkSelectScalar = {
+    id?: boolean
+    token?: boolean
+    clientName?: boolean
+    title?: boolean
+    salesIncluded?: boolean
+    salesPrice?: boolean
+    aiIncluded?: boolean
+    aiEmployees?: boolean
+    aiBasePrice?: boolean
+    aiBaseEmployees?: boolean
+    aiExtraPrice?: boolean
+    aiFreeDelta?: boolean
+    managerIncluded?: boolean
+    managerPrice?: boolean
+    devIncluded?: boolean
+    devHours?: boolean
+    devHourPrice?: boolean
+    adjustment?: boolean
+    adjustmentLabel?: boolean
+    monthlyTotal?: boolean
+    offerJson?: boolean
+    expiresAt?: boolean
+    revokedAt?: boolean
+    viewCount?: boolean
+    lastViewedAt?: boolean
+    createdBy?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type RenewalOfferLinkOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "token" | "clientName" | "title" | "salesIncluded" | "salesPrice" | "aiIncluded" | "aiEmployees" | "aiBasePrice" | "aiBaseEmployees" | "aiExtraPrice" | "aiFreeDelta" | "managerIncluded" | "managerPrice" | "devIncluded" | "devHours" | "devHourPrice" | "adjustment" | "adjustmentLabel" | "monthlyTotal" | "offerJson" | "expiresAt" | "revokedAt" | "viewCount" | "lastViewedAt" | "createdBy" | "createdAt" | "updatedAt", ExtArgs["result"]["renewalOfferLink"]>
+
+  export type $RenewalOfferLinkPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "RenewalOfferLink"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      token: string
+      clientName: string
+      /**
+       * Служебная пометка «кому и зачем выдана»; клиент её не видит
+       */
+      title: string | null
+      salesIncluded: boolean
+      salesPrice: number
+      aiIncluded: boolean
+      aiEmployees: number
+      aiBasePrice: number
+      aiBaseEmployees: number
+      aiExtraPrice: number
+      aiFreeDelta: number
+      managerIncluded: boolean
+      managerPrice: number
+      devIncluded: boolean
+      devHours: number
+      devHourPrice: number
+      /**
+       * Со знаком: отрицательная — скидка
+       */
+      adjustment: number
+      adjustmentLabel: string
+      /**
+       * Месячный итог на момент выдачи — для списка в админке и отчётов
+       */
+      monthlyTotal: number
+      /**
+       * Слепок предложения целиком, включая «другие услуги» строками
+       */
+      offerJson: Prisma.JsonValue
+      expiresAt: Date | null
+      revokedAt: Date | null
+      viewCount: number
+      lastViewedAt: Date | null
+      createdBy: string | null
+      createdAt: Date | null
+      updatedAt: Date | null
+    }, ExtArgs["result"]["renewalOfferLink"]>
+    composites: {}
+  }
+
+  type RenewalOfferLinkGetPayload<S extends boolean | null | undefined | RenewalOfferLinkDefaultArgs> = $Result.GetResult<Prisma.$RenewalOfferLinkPayload, S>
+
+  type RenewalOfferLinkCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<RenewalOfferLinkFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: RenewalOfferLinkCountAggregateInputType | true
+    }
+
+  export interface RenewalOfferLinkDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RenewalOfferLink'], meta: { name: 'RenewalOfferLink' } }
+    /**
+     * Find zero or one RenewalOfferLink that matches the filter.
+     * @param {RenewalOfferLinkFindUniqueArgs} args - Arguments to find a RenewalOfferLink
+     * @example
+     * // Get one RenewalOfferLink
+     * const renewalOfferLink = await prisma.renewalOfferLink.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends RenewalOfferLinkFindUniqueArgs>(args: SelectSubset<T, RenewalOfferLinkFindUniqueArgs<ExtArgs>>): Prisma__RenewalOfferLinkClient<$Result.GetResult<Prisma.$RenewalOfferLinkPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one RenewalOfferLink that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {RenewalOfferLinkFindUniqueOrThrowArgs} args - Arguments to find a RenewalOfferLink
+     * @example
+     * // Get one RenewalOfferLink
+     * const renewalOfferLink = await prisma.renewalOfferLink.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends RenewalOfferLinkFindUniqueOrThrowArgs>(args: SelectSubset<T, RenewalOfferLinkFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RenewalOfferLinkClient<$Result.GetResult<Prisma.$RenewalOfferLinkPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first RenewalOfferLink that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RenewalOfferLinkFindFirstArgs} args - Arguments to find a RenewalOfferLink
+     * @example
+     * // Get one RenewalOfferLink
+     * const renewalOfferLink = await prisma.renewalOfferLink.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends RenewalOfferLinkFindFirstArgs>(args?: SelectSubset<T, RenewalOfferLinkFindFirstArgs<ExtArgs>>): Prisma__RenewalOfferLinkClient<$Result.GetResult<Prisma.$RenewalOfferLinkPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first RenewalOfferLink that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RenewalOfferLinkFindFirstOrThrowArgs} args - Arguments to find a RenewalOfferLink
+     * @example
+     * // Get one RenewalOfferLink
+     * const renewalOfferLink = await prisma.renewalOfferLink.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends RenewalOfferLinkFindFirstOrThrowArgs>(args?: SelectSubset<T, RenewalOfferLinkFindFirstOrThrowArgs<ExtArgs>>): Prisma__RenewalOfferLinkClient<$Result.GetResult<Prisma.$RenewalOfferLinkPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more RenewalOfferLinks that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RenewalOfferLinkFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all RenewalOfferLinks
+     * const renewalOfferLinks = await prisma.renewalOfferLink.findMany()
+     * 
+     * // Get first 10 RenewalOfferLinks
+     * const renewalOfferLinks = await prisma.renewalOfferLink.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const renewalOfferLinkWithIdOnly = await prisma.renewalOfferLink.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends RenewalOfferLinkFindManyArgs>(args?: SelectSubset<T, RenewalOfferLinkFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RenewalOfferLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a RenewalOfferLink.
+     * @param {RenewalOfferLinkCreateArgs} args - Arguments to create a RenewalOfferLink.
+     * @example
+     * // Create one RenewalOfferLink
+     * const RenewalOfferLink = await prisma.renewalOfferLink.create({
+     *   data: {
+     *     // ... data to create a RenewalOfferLink
+     *   }
+     * })
+     * 
+     */
+    create<T extends RenewalOfferLinkCreateArgs>(args: SelectSubset<T, RenewalOfferLinkCreateArgs<ExtArgs>>): Prisma__RenewalOfferLinkClient<$Result.GetResult<Prisma.$RenewalOfferLinkPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many RenewalOfferLinks.
+     * @param {RenewalOfferLinkCreateManyArgs} args - Arguments to create many RenewalOfferLinks.
+     * @example
+     * // Create many RenewalOfferLinks
+     * const renewalOfferLink = await prisma.renewalOfferLink.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends RenewalOfferLinkCreateManyArgs>(args?: SelectSubset<T, RenewalOfferLinkCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a RenewalOfferLink.
+     * @param {RenewalOfferLinkDeleteArgs} args - Arguments to delete one RenewalOfferLink.
+     * @example
+     * // Delete one RenewalOfferLink
+     * const RenewalOfferLink = await prisma.renewalOfferLink.delete({
+     *   where: {
+     *     // ... filter to delete one RenewalOfferLink
+     *   }
+     * })
+     * 
+     */
+    delete<T extends RenewalOfferLinkDeleteArgs>(args: SelectSubset<T, RenewalOfferLinkDeleteArgs<ExtArgs>>): Prisma__RenewalOfferLinkClient<$Result.GetResult<Prisma.$RenewalOfferLinkPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one RenewalOfferLink.
+     * @param {RenewalOfferLinkUpdateArgs} args - Arguments to update one RenewalOfferLink.
+     * @example
+     * // Update one RenewalOfferLink
+     * const renewalOfferLink = await prisma.renewalOfferLink.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends RenewalOfferLinkUpdateArgs>(args: SelectSubset<T, RenewalOfferLinkUpdateArgs<ExtArgs>>): Prisma__RenewalOfferLinkClient<$Result.GetResult<Prisma.$RenewalOfferLinkPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more RenewalOfferLinks.
+     * @param {RenewalOfferLinkDeleteManyArgs} args - Arguments to filter RenewalOfferLinks to delete.
+     * @example
+     * // Delete a few RenewalOfferLinks
+     * const { count } = await prisma.renewalOfferLink.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends RenewalOfferLinkDeleteManyArgs>(args?: SelectSubset<T, RenewalOfferLinkDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RenewalOfferLinks.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RenewalOfferLinkUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many RenewalOfferLinks
+     * const renewalOfferLink = await prisma.renewalOfferLink.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends RenewalOfferLinkUpdateManyArgs>(args: SelectSubset<T, RenewalOfferLinkUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one RenewalOfferLink.
+     * @param {RenewalOfferLinkUpsertArgs} args - Arguments to update or create a RenewalOfferLink.
+     * @example
+     * // Update or create a RenewalOfferLink
+     * const renewalOfferLink = await prisma.renewalOfferLink.upsert({
+     *   create: {
+     *     // ... data to create a RenewalOfferLink
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the RenewalOfferLink we want to update
+     *   }
+     * })
+     */
+    upsert<T extends RenewalOfferLinkUpsertArgs>(args: SelectSubset<T, RenewalOfferLinkUpsertArgs<ExtArgs>>): Prisma__RenewalOfferLinkClient<$Result.GetResult<Prisma.$RenewalOfferLinkPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of RenewalOfferLinks.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RenewalOfferLinkCountArgs} args - Arguments to filter RenewalOfferLinks to count.
+     * @example
+     * // Count the number of RenewalOfferLinks
+     * const count = await prisma.renewalOfferLink.count({
+     *   where: {
+     *     // ... the filter for the RenewalOfferLinks we want to count
+     *   }
+     * })
+    **/
+    count<T extends RenewalOfferLinkCountArgs>(
+      args?: Subset<T, RenewalOfferLinkCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], RenewalOfferLinkCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a RenewalOfferLink.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RenewalOfferLinkAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends RenewalOfferLinkAggregateArgs>(args: Subset<T, RenewalOfferLinkAggregateArgs>): Prisma.PrismaPromise<GetRenewalOfferLinkAggregateType<T>>
+
+    /**
+     * Group by RenewalOfferLink.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RenewalOfferLinkGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends RenewalOfferLinkGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: RenewalOfferLinkGroupByArgs['orderBy'] }
+        : { orderBy?: RenewalOfferLinkGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, RenewalOfferLinkGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRenewalOfferLinkGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the RenewalOfferLink model
+   */
+  readonly fields: RenewalOfferLinkFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for RenewalOfferLink.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__RenewalOfferLinkClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the RenewalOfferLink model
+   */
+  interface RenewalOfferLinkFieldRefs {
+    readonly id: FieldRef<"RenewalOfferLink", 'String'>
+    readonly token: FieldRef<"RenewalOfferLink", 'String'>
+    readonly clientName: FieldRef<"RenewalOfferLink", 'String'>
+    readonly title: FieldRef<"RenewalOfferLink", 'String'>
+    readonly salesIncluded: FieldRef<"RenewalOfferLink", 'Boolean'>
+    readonly salesPrice: FieldRef<"RenewalOfferLink", 'Int'>
+    readonly aiIncluded: FieldRef<"RenewalOfferLink", 'Boolean'>
+    readonly aiEmployees: FieldRef<"RenewalOfferLink", 'Int'>
+    readonly aiBasePrice: FieldRef<"RenewalOfferLink", 'Int'>
+    readonly aiBaseEmployees: FieldRef<"RenewalOfferLink", 'Int'>
+    readonly aiExtraPrice: FieldRef<"RenewalOfferLink", 'Int'>
+    readonly aiFreeDelta: FieldRef<"RenewalOfferLink", 'Int'>
+    readonly managerIncluded: FieldRef<"RenewalOfferLink", 'Boolean'>
+    readonly managerPrice: FieldRef<"RenewalOfferLink", 'Int'>
+    readonly devIncluded: FieldRef<"RenewalOfferLink", 'Boolean'>
+    readonly devHours: FieldRef<"RenewalOfferLink", 'Int'>
+    readonly devHourPrice: FieldRef<"RenewalOfferLink", 'Int'>
+    readonly adjustment: FieldRef<"RenewalOfferLink", 'Int'>
+    readonly adjustmentLabel: FieldRef<"RenewalOfferLink", 'String'>
+    readonly monthlyTotal: FieldRef<"RenewalOfferLink", 'Int'>
+    readonly offerJson: FieldRef<"RenewalOfferLink", 'Json'>
+    readonly expiresAt: FieldRef<"RenewalOfferLink", 'DateTime'>
+    readonly revokedAt: FieldRef<"RenewalOfferLink", 'DateTime'>
+    readonly viewCount: FieldRef<"RenewalOfferLink", 'Int'>
+    readonly lastViewedAt: FieldRef<"RenewalOfferLink", 'DateTime'>
+    readonly createdBy: FieldRef<"RenewalOfferLink", 'String'>
+    readonly createdAt: FieldRef<"RenewalOfferLink", 'DateTime'>
+    readonly updatedAt: FieldRef<"RenewalOfferLink", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * RenewalOfferLink findUnique
+   */
+  export type RenewalOfferLinkFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RenewalOfferLink
+     */
+    select?: RenewalOfferLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RenewalOfferLink
+     */
+    omit?: RenewalOfferLinkOmit<ExtArgs> | null
+    /**
+     * Filter, which RenewalOfferLink to fetch.
+     */
+    where: RenewalOfferLinkWhereUniqueInput
+  }
+
+  /**
+   * RenewalOfferLink findUniqueOrThrow
+   */
+  export type RenewalOfferLinkFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RenewalOfferLink
+     */
+    select?: RenewalOfferLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RenewalOfferLink
+     */
+    omit?: RenewalOfferLinkOmit<ExtArgs> | null
+    /**
+     * Filter, which RenewalOfferLink to fetch.
+     */
+    where: RenewalOfferLinkWhereUniqueInput
+  }
+
+  /**
+   * RenewalOfferLink findFirst
+   */
+  export type RenewalOfferLinkFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RenewalOfferLink
+     */
+    select?: RenewalOfferLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RenewalOfferLink
+     */
+    omit?: RenewalOfferLinkOmit<ExtArgs> | null
+    /**
+     * Filter, which RenewalOfferLink to fetch.
+     */
+    where?: RenewalOfferLinkWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RenewalOfferLinks to fetch.
+     */
+    orderBy?: RenewalOfferLinkOrderByWithRelationInput | RenewalOfferLinkOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RenewalOfferLinks.
+     */
+    cursor?: RenewalOfferLinkWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RenewalOfferLinks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RenewalOfferLinks.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RenewalOfferLinks.
+     */
+    distinct?: RenewalOfferLinkScalarFieldEnum | RenewalOfferLinkScalarFieldEnum[]
+  }
+
+  /**
+   * RenewalOfferLink findFirstOrThrow
+   */
+  export type RenewalOfferLinkFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RenewalOfferLink
+     */
+    select?: RenewalOfferLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RenewalOfferLink
+     */
+    omit?: RenewalOfferLinkOmit<ExtArgs> | null
+    /**
+     * Filter, which RenewalOfferLink to fetch.
+     */
+    where?: RenewalOfferLinkWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RenewalOfferLinks to fetch.
+     */
+    orderBy?: RenewalOfferLinkOrderByWithRelationInput | RenewalOfferLinkOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RenewalOfferLinks.
+     */
+    cursor?: RenewalOfferLinkWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RenewalOfferLinks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RenewalOfferLinks.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RenewalOfferLinks.
+     */
+    distinct?: RenewalOfferLinkScalarFieldEnum | RenewalOfferLinkScalarFieldEnum[]
+  }
+
+  /**
+   * RenewalOfferLink findMany
+   */
+  export type RenewalOfferLinkFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RenewalOfferLink
+     */
+    select?: RenewalOfferLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RenewalOfferLink
+     */
+    omit?: RenewalOfferLinkOmit<ExtArgs> | null
+    /**
+     * Filter, which RenewalOfferLinks to fetch.
+     */
+    where?: RenewalOfferLinkWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RenewalOfferLinks to fetch.
+     */
+    orderBy?: RenewalOfferLinkOrderByWithRelationInput | RenewalOfferLinkOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing RenewalOfferLinks.
+     */
+    cursor?: RenewalOfferLinkWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RenewalOfferLinks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RenewalOfferLinks.
+     */
+    skip?: number
+    distinct?: RenewalOfferLinkScalarFieldEnum | RenewalOfferLinkScalarFieldEnum[]
+  }
+
+  /**
+   * RenewalOfferLink create
+   */
+  export type RenewalOfferLinkCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RenewalOfferLink
+     */
+    select?: RenewalOfferLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RenewalOfferLink
+     */
+    omit?: RenewalOfferLinkOmit<ExtArgs> | null
+    /**
+     * The data needed to create a RenewalOfferLink.
+     */
+    data: XOR<RenewalOfferLinkCreateInput, RenewalOfferLinkUncheckedCreateInput>
+  }
+
+  /**
+   * RenewalOfferLink createMany
+   */
+  export type RenewalOfferLinkCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many RenewalOfferLinks.
+     */
+    data: RenewalOfferLinkCreateManyInput | RenewalOfferLinkCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RenewalOfferLink update
+   */
+  export type RenewalOfferLinkUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RenewalOfferLink
+     */
+    select?: RenewalOfferLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RenewalOfferLink
+     */
+    omit?: RenewalOfferLinkOmit<ExtArgs> | null
+    /**
+     * The data needed to update a RenewalOfferLink.
+     */
+    data: XOR<RenewalOfferLinkUpdateInput, RenewalOfferLinkUncheckedUpdateInput>
+    /**
+     * Choose, which RenewalOfferLink to update.
+     */
+    where: RenewalOfferLinkWhereUniqueInput
+  }
+
+  /**
+   * RenewalOfferLink updateMany
+   */
+  export type RenewalOfferLinkUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update RenewalOfferLinks.
+     */
+    data: XOR<RenewalOfferLinkUpdateManyMutationInput, RenewalOfferLinkUncheckedUpdateManyInput>
+    /**
+     * Filter which RenewalOfferLinks to update
+     */
+    where?: RenewalOfferLinkWhereInput
+    /**
+     * Limit how many RenewalOfferLinks to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * RenewalOfferLink upsert
+   */
+  export type RenewalOfferLinkUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RenewalOfferLink
+     */
+    select?: RenewalOfferLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RenewalOfferLink
+     */
+    omit?: RenewalOfferLinkOmit<ExtArgs> | null
+    /**
+     * The filter to search for the RenewalOfferLink to update in case it exists.
+     */
+    where: RenewalOfferLinkWhereUniqueInput
+    /**
+     * In case the RenewalOfferLink found by the `where` argument doesn't exist, create a new RenewalOfferLink with this data.
+     */
+    create: XOR<RenewalOfferLinkCreateInput, RenewalOfferLinkUncheckedCreateInput>
+    /**
+     * In case the RenewalOfferLink was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<RenewalOfferLinkUpdateInput, RenewalOfferLinkUncheckedUpdateInput>
+  }
+
+  /**
+   * RenewalOfferLink delete
+   */
+  export type RenewalOfferLinkDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RenewalOfferLink
+     */
+    select?: RenewalOfferLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RenewalOfferLink
+     */
+    omit?: RenewalOfferLinkOmit<ExtArgs> | null
+    /**
+     * Filter which RenewalOfferLink to delete.
+     */
+    where: RenewalOfferLinkWhereUniqueInput
+  }
+
+  /**
+   * RenewalOfferLink deleteMany
+   */
+  export type RenewalOfferLinkDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RenewalOfferLinks to delete
+     */
+    where?: RenewalOfferLinkWhereInput
+    /**
+     * Limit how many RenewalOfferLinks to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * RenewalOfferLink without action
+   */
+  export type RenewalOfferLinkDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RenewalOfferLink
+     */
+    select?: RenewalOfferLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RenewalOfferLink
+     */
+    omit?: RenewalOfferLinkOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -123710,6 +126056,23 @@ export namespace Prisma {
   };
 
   export type VendorSettingScalarFieldEnum = (typeof VendorSettingScalarFieldEnum)[keyof typeof VendorSettingScalarFieldEnum]
+
+
+  export const AiMethodologyScalarFieldEnum: {
+    id: 'id',
+    code: 'code',
+    title: 'title',
+    version: 'version',
+    scope: 'scope',
+    portalDomain: 'portalDomain',
+    config: 'config',
+    isActive: 'isActive',
+    updatedBy: 'updatedBy',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type AiMethodologyScalarFieldEnum = (typeof AiMethodologyScalarFieldEnum)[keyof typeof AiMethodologyScalarFieldEnum]
 
 
   export const PortalQuestionnaireScalarFieldEnum: {
@@ -125079,6 +127442,40 @@ export namespace Prisma {
   export type SupplyReportTemplateScalarFieldEnum = (typeof SupplyReportTemplateScalarFieldEnum)[keyof typeof SupplyReportTemplateScalarFieldEnum]
 
 
+  export const RenewalOfferLinkScalarFieldEnum: {
+    id: 'id',
+    token: 'token',
+    clientName: 'clientName',
+    title: 'title',
+    salesIncluded: 'salesIncluded',
+    salesPrice: 'salesPrice',
+    aiIncluded: 'aiIncluded',
+    aiEmployees: 'aiEmployees',
+    aiBasePrice: 'aiBasePrice',
+    aiBaseEmployees: 'aiBaseEmployees',
+    aiExtraPrice: 'aiExtraPrice',
+    aiFreeDelta: 'aiFreeDelta',
+    managerIncluded: 'managerIncluded',
+    managerPrice: 'managerPrice',
+    devIncluded: 'devIncluded',
+    devHours: 'devHours',
+    devHourPrice: 'devHourPrice',
+    adjustment: 'adjustment',
+    adjustmentLabel: 'adjustmentLabel',
+    monthlyTotal: 'monthlyTotal',
+    offerJson: 'offerJson',
+    expiresAt: 'expiresAt',
+    revokedAt: 'revokedAt',
+    viewCount: 'viewCount',
+    lastViewedAt: 'lastViewedAt',
+    createdBy: 'createdBy',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type RenewalOfferLinkScalarFieldEnum = (typeof RenewalOfferLinkScalarFieldEnum)[keyof typeof RenewalOfferLinkScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -125557,6 +127954,19 @@ export namespace Prisma {
   };
 
   export type VendorSettingOrderByRelevanceFieldEnum = (typeof VendorSettingOrderByRelevanceFieldEnum)[keyof typeof VendorSettingOrderByRelevanceFieldEnum]
+
+
+  export const AiMethodologyOrderByRelevanceFieldEnum: {
+    id: 'id',
+    code: 'code',
+    title: 'title',
+    version: 'version',
+    scope: 'scope',
+    portalDomain: 'portalDomain',
+    updatedBy: 'updatedBy'
+  };
+
+  export type AiMethodologyOrderByRelevanceFieldEnum = (typeof AiMethodologyOrderByRelevanceFieldEnum)[keyof typeof AiMethodologyOrderByRelevanceFieldEnum]
 
 
   export const PortalQuestionnaireOrderByRelevanceFieldEnum: {
@@ -126437,6 +128847,18 @@ export namespace Prisma {
   };
 
   export type SupplyReportTemplateOrderByRelevanceFieldEnum = (typeof SupplyReportTemplateOrderByRelevanceFieldEnum)[keyof typeof SupplyReportTemplateOrderByRelevanceFieldEnum]
+
+
+  export const RenewalOfferLinkOrderByRelevanceFieldEnum: {
+    id: 'id',
+    token: 'token',
+    clientName: 'clientName',
+    title: 'title',
+    adjustmentLabel: 'adjustmentLabel',
+    createdBy: 'createdBy'
+  };
+
+  export type RenewalOfferLinkOrderByRelevanceFieldEnum = (typeof RenewalOfferLinkOrderByRelevanceFieldEnum)[keyof typeof RenewalOfferLinkOrderByRelevanceFieldEnum]
 
 
   /**
@@ -130149,6 +132571,90 @@ export namespace Prisma {
     updatedBy?: StringNullableWithAggregatesFilter<"VendorSetting"> | string | null
     createdAt?: DateTimeNullableWithAggregatesFilter<"VendorSetting"> | Date | string | null
     updatedAt?: DateTimeNullableWithAggregatesFilter<"VendorSetting"> | Date | string | null
+  }
+
+  export type AiMethodologyWhereInput = {
+    AND?: AiMethodologyWhereInput | AiMethodologyWhereInput[]
+    OR?: AiMethodologyWhereInput[]
+    NOT?: AiMethodologyWhereInput | AiMethodologyWhereInput[]
+    id?: StringFilter<"AiMethodology"> | string
+    code?: StringFilter<"AiMethodology"> | string
+    title?: StringFilter<"AiMethodology"> | string
+    version?: StringFilter<"AiMethodology"> | string
+    scope?: StringFilter<"AiMethodology"> | string
+    portalDomain?: StringNullableFilter<"AiMethodology"> | string | null
+    config?: JsonFilter<"AiMethodology">
+    isActive?: BoolFilter<"AiMethodology"> | boolean
+    updatedBy?: StringNullableFilter<"AiMethodology"> | string | null
+    createdAt?: DateTimeNullableFilter<"AiMethodology"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"AiMethodology"> | Date | string | null
+  }
+
+  export type AiMethodologyOrderByWithRelationInput = {
+    id?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    version?: SortOrder
+    scope?: SortOrder
+    portalDomain?: SortOrderInput | SortOrder
+    config?: SortOrder
+    isActive?: SortOrder
+    updatedBy?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _relevance?: AiMethodologyOrderByRelevanceInput
+  }
+
+  export type AiMethodologyWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    scope_portalDomain_code?: AiMethodologyScopePortalDomainCodeCompoundUniqueInput
+    AND?: AiMethodologyWhereInput | AiMethodologyWhereInput[]
+    OR?: AiMethodologyWhereInput[]
+    NOT?: AiMethodologyWhereInput | AiMethodologyWhereInput[]
+    code?: StringFilter<"AiMethodology"> | string
+    title?: StringFilter<"AiMethodology"> | string
+    version?: StringFilter<"AiMethodology"> | string
+    scope?: StringFilter<"AiMethodology"> | string
+    portalDomain?: StringNullableFilter<"AiMethodology"> | string | null
+    config?: JsonFilter<"AiMethodology">
+    isActive?: BoolFilter<"AiMethodology"> | boolean
+    updatedBy?: StringNullableFilter<"AiMethodology"> | string | null
+    createdAt?: DateTimeNullableFilter<"AiMethodology"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"AiMethodology"> | Date | string | null
+  }, "id" | "scope_portalDomain_code">
+
+  export type AiMethodologyOrderByWithAggregationInput = {
+    id?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    version?: SortOrder
+    scope?: SortOrder
+    portalDomain?: SortOrderInput | SortOrder
+    config?: SortOrder
+    isActive?: SortOrder
+    updatedBy?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _count?: AiMethodologyCountOrderByAggregateInput
+    _max?: AiMethodologyMaxOrderByAggregateInput
+    _min?: AiMethodologyMinOrderByAggregateInput
+  }
+
+  export type AiMethodologyScalarWhereWithAggregatesInput = {
+    AND?: AiMethodologyScalarWhereWithAggregatesInput | AiMethodologyScalarWhereWithAggregatesInput[]
+    OR?: AiMethodologyScalarWhereWithAggregatesInput[]
+    NOT?: AiMethodologyScalarWhereWithAggregatesInput | AiMethodologyScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"AiMethodology"> | string
+    code?: StringWithAggregatesFilter<"AiMethodology"> | string
+    title?: StringWithAggregatesFilter<"AiMethodology"> | string
+    version?: StringWithAggregatesFilter<"AiMethodology"> | string
+    scope?: StringWithAggregatesFilter<"AiMethodology"> | string
+    portalDomain?: StringNullableWithAggregatesFilter<"AiMethodology"> | string | null
+    config?: JsonWithAggregatesFilter<"AiMethodology">
+    isActive?: BoolWithAggregatesFilter<"AiMethodology"> | boolean
+    updatedBy?: StringNullableWithAggregatesFilter<"AiMethodology"> | string | null
+    createdAt?: DateTimeNullableWithAggregatesFilter<"AiMethodology"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"AiMethodology"> | Date | string | null
   }
 
   export type PortalQuestionnaireWhereInput = {
@@ -137272,6 +139778,176 @@ export namespace Prisma {
     creator_bitrix_user_id?: BigIntNullableWithAggregatesFilter<"SupplyReportTemplate"> | bigint | number | null
   }
 
+  export type RenewalOfferLinkWhereInput = {
+    AND?: RenewalOfferLinkWhereInput | RenewalOfferLinkWhereInput[]
+    OR?: RenewalOfferLinkWhereInput[]
+    NOT?: RenewalOfferLinkWhereInput | RenewalOfferLinkWhereInput[]
+    id?: StringFilter<"RenewalOfferLink"> | string
+    token?: StringFilter<"RenewalOfferLink"> | string
+    clientName?: StringFilter<"RenewalOfferLink"> | string
+    title?: StringNullableFilter<"RenewalOfferLink"> | string | null
+    salesIncluded?: BoolFilter<"RenewalOfferLink"> | boolean
+    salesPrice?: IntFilter<"RenewalOfferLink"> | number
+    aiIncluded?: BoolFilter<"RenewalOfferLink"> | boolean
+    aiEmployees?: IntFilter<"RenewalOfferLink"> | number
+    aiBasePrice?: IntFilter<"RenewalOfferLink"> | number
+    aiBaseEmployees?: IntFilter<"RenewalOfferLink"> | number
+    aiExtraPrice?: IntFilter<"RenewalOfferLink"> | number
+    aiFreeDelta?: IntFilter<"RenewalOfferLink"> | number
+    managerIncluded?: BoolFilter<"RenewalOfferLink"> | boolean
+    managerPrice?: IntFilter<"RenewalOfferLink"> | number
+    devIncluded?: BoolFilter<"RenewalOfferLink"> | boolean
+    devHours?: IntFilter<"RenewalOfferLink"> | number
+    devHourPrice?: IntFilter<"RenewalOfferLink"> | number
+    adjustment?: IntFilter<"RenewalOfferLink"> | number
+    adjustmentLabel?: StringFilter<"RenewalOfferLink"> | string
+    monthlyTotal?: IntFilter<"RenewalOfferLink"> | number
+    offerJson?: JsonFilter<"RenewalOfferLink">
+    expiresAt?: DateTimeNullableFilter<"RenewalOfferLink"> | Date | string | null
+    revokedAt?: DateTimeNullableFilter<"RenewalOfferLink"> | Date | string | null
+    viewCount?: IntFilter<"RenewalOfferLink"> | number
+    lastViewedAt?: DateTimeNullableFilter<"RenewalOfferLink"> | Date | string | null
+    createdBy?: StringNullableFilter<"RenewalOfferLink"> | string | null
+    createdAt?: DateTimeNullableFilter<"RenewalOfferLink"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"RenewalOfferLink"> | Date | string | null
+  }
+
+  export type RenewalOfferLinkOrderByWithRelationInput = {
+    id?: SortOrder
+    token?: SortOrder
+    clientName?: SortOrder
+    title?: SortOrderInput | SortOrder
+    salesIncluded?: SortOrder
+    salesPrice?: SortOrder
+    aiIncluded?: SortOrder
+    aiEmployees?: SortOrder
+    aiBasePrice?: SortOrder
+    aiBaseEmployees?: SortOrder
+    aiExtraPrice?: SortOrder
+    aiFreeDelta?: SortOrder
+    managerIncluded?: SortOrder
+    managerPrice?: SortOrder
+    devIncluded?: SortOrder
+    devHours?: SortOrder
+    devHourPrice?: SortOrder
+    adjustment?: SortOrder
+    adjustmentLabel?: SortOrder
+    monthlyTotal?: SortOrder
+    offerJson?: SortOrder
+    expiresAt?: SortOrderInput | SortOrder
+    revokedAt?: SortOrderInput | SortOrder
+    viewCount?: SortOrder
+    lastViewedAt?: SortOrderInput | SortOrder
+    createdBy?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _relevance?: RenewalOfferLinkOrderByRelevanceInput
+  }
+
+  export type RenewalOfferLinkWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    token?: string
+    AND?: RenewalOfferLinkWhereInput | RenewalOfferLinkWhereInput[]
+    OR?: RenewalOfferLinkWhereInput[]
+    NOT?: RenewalOfferLinkWhereInput | RenewalOfferLinkWhereInput[]
+    clientName?: StringFilter<"RenewalOfferLink"> | string
+    title?: StringNullableFilter<"RenewalOfferLink"> | string | null
+    salesIncluded?: BoolFilter<"RenewalOfferLink"> | boolean
+    salesPrice?: IntFilter<"RenewalOfferLink"> | number
+    aiIncluded?: BoolFilter<"RenewalOfferLink"> | boolean
+    aiEmployees?: IntFilter<"RenewalOfferLink"> | number
+    aiBasePrice?: IntFilter<"RenewalOfferLink"> | number
+    aiBaseEmployees?: IntFilter<"RenewalOfferLink"> | number
+    aiExtraPrice?: IntFilter<"RenewalOfferLink"> | number
+    aiFreeDelta?: IntFilter<"RenewalOfferLink"> | number
+    managerIncluded?: BoolFilter<"RenewalOfferLink"> | boolean
+    managerPrice?: IntFilter<"RenewalOfferLink"> | number
+    devIncluded?: BoolFilter<"RenewalOfferLink"> | boolean
+    devHours?: IntFilter<"RenewalOfferLink"> | number
+    devHourPrice?: IntFilter<"RenewalOfferLink"> | number
+    adjustment?: IntFilter<"RenewalOfferLink"> | number
+    adjustmentLabel?: StringFilter<"RenewalOfferLink"> | string
+    monthlyTotal?: IntFilter<"RenewalOfferLink"> | number
+    offerJson?: JsonFilter<"RenewalOfferLink">
+    expiresAt?: DateTimeNullableFilter<"RenewalOfferLink"> | Date | string | null
+    revokedAt?: DateTimeNullableFilter<"RenewalOfferLink"> | Date | string | null
+    viewCount?: IntFilter<"RenewalOfferLink"> | number
+    lastViewedAt?: DateTimeNullableFilter<"RenewalOfferLink"> | Date | string | null
+    createdBy?: StringNullableFilter<"RenewalOfferLink"> | string | null
+    createdAt?: DateTimeNullableFilter<"RenewalOfferLink"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"RenewalOfferLink"> | Date | string | null
+  }, "id" | "token">
+
+  export type RenewalOfferLinkOrderByWithAggregationInput = {
+    id?: SortOrder
+    token?: SortOrder
+    clientName?: SortOrder
+    title?: SortOrderInput | SortOrder
+    salesIncluded?: SortOrder
+    salesPrice?: SortOrder
+    aiIncluded?: SortOrder
+    aiEmployees?: SortOrder
+    aiBasePrice?: SortOrder
+    aiBaseEmployees?: SortOrder
+    aiExtraPrice?: SortOrder
+    aiFreeDelta?: SortOrder
+    managerIncluded?: SortOrder
+    managerPrice?: SortOrder
+    devIncluded?: SortOrder
+    devHours?: SortOrder
+    devHourPrice?: SortOrder
+    adjustment?: SortOrder
+    adjustmentLabel?: SortOrder
+    monthlyTotal?: SortOrder
+    offerJson?: SortOrder
+    expiresAt?: SortOrderInput | SortOrder
+    revokedAt?: SortOrderInput | SortOrder
+    viewCount?: SortOrder
+    lastViewedAt?: SortOrderInput | SortOrder
+    createdBy?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _count?: RenewalOfferLinkCountOrderByAggregateInput
+    _avg?: RenewalOfferLinkAvgOrderByAggregateInput
+    _max?: RenewalOfferLinkMaxOrderByAggregateInput
+    _min?: RenewalOfferLinkMinOrderByAggregateInput
+    _sum?: RenewalOfferLinkSumOrderByAggregateInput
+  }
+
+  export type RenewalOfferLinkScalarWhereWithAggregatesInput = {
+    AND?: RenewalOfferLinkScalarWhereWithAggregatesInput | RenewalOfferLinkScalarWhereWithAggregatesInput[]
+    OR?: RenewalOfferLinkScalarWhereWithAggregatesInput[]
+    NOT?: RenewalOfferLinkScalarWhereWithAggregatesInput | RenewalOfferLinkScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"RenewalOfferLink"> | string
+    token?: StringWithAggregatesFilter<"RenewalOfferLink"> | string
+    clientName?: StringWithAggregatesFilter<"RenewalOfferLink"> | string
+    title?: StringNullableWithAggregatesFilter<"RenewalOfferLink"> | string | null
+    salesIncluded?: BoolWithAggregatesFilter<"RenewalOfferLink"> | boolean
+    salesPrice?: IntWithAggregatesFilter<"RenewalOfferLink"> | number
+    aiIncluded?: BoolWithAggregatesFilter<"RenewalOfferLink"> | boolean
+    aiEmployees?: IntWithAggregatesFilter<"RenewalOfferLink"> | number
+    aiBasePrice?: IntWithAggregatesFilter<"RenewalOfferLink"> | number
+    aiBaseEmployees?: IntWithAggregatesFilter<"RenewalOfferLink"> | number
+    aiExtraPrice?: IntWithAggregatesFilter<"RenewalOfferLink"> | number
+    aiFreeDelta?: IntWithAggregatesFilter<"RenewalOfferLink"> | number
+    managerIncluded?: BoolWithAggregatesFilter<"RenewalOfferLink"> | boolean
+    managerPrice?: IntWithAggregatesFilter<"RenewalOfferLink"> | number
+    devIncluded?: BoolWithAggregatesFilter<"RenewalOfferLink"> | boolean
+    devHours?: IntWithAggregatesFilter<"RenewalOfferLink"> | number
+    devHourPrice?: IntWithAggregatesFilter<"RenewalOfferLink"> | number
+    adjustment?: IntWithAggregatesFilter<"RenewalOfferLink"> | number
+    adjustmentLabel?: StringWithAggregatesFilter<"RenewalOfferLink"> | string
+    monthlyTotal?: IntWithAggregatesFilter<"RenewalOfferLink"> | number
+    offerJson?: JsonWithAggregatesFilter<"RenewalOfferLink">
+    expiresAt?: DateTimeNullableWithAggregatesFilter<"RenewalOfferLink"> | Date | string | null
+    revokedAt?: DateTimeNullableWithAggregatesFilter<"RenewalOfferLink"> | Date | string | null
+    viewCount?: IntWithAggregatesFilter<"RenewalOfferLink"> | number
+    lastViewedAt?: DateTimeNullableWithAggregatesFilter<"RenewalOfferLink"> | Date | string | null
+    createdBy?: StringNullableWithAggregatesFilter<"RenewalOfferLink"> | string | null
+    createdAt?: DateTimeNullableWithAggregatesFilter<"RenewalOfferLink"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"RenewalOfferLink"> | Date | string | null
+  }
+
   export type agentsCreateInput = {
     id?: bigint | number
     created_at?: Date | string | null
@@ -141349,6 +144025,104 @@ export namespace Prisma {
     key?: StringFieldUpdateOperationsInput | string
     value?: NullableStringFieldUpdateOperationsInput | string | null
     isSecret?: BoolFieldUpdateOperationsInput | boolean
+    updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type AiMethodologyCreateInput = {
+    id: string
+    code: string
+    title: string
+    version?: string
+    scope?: string
+    portalDomain?: string | null
+    config: JsonNullValueInput | InputJsonValue
+    isActive?: boolean
+    updatedBy?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type AiMethodologyUncheckedCreateInput = {
+    id: string
+    code: string
+    title: string
+    version?: string
+    scope?: string
+    portalDomain?: string | null
+    config: JsonNullValueInput | InputJsonValue
+    isActive?: boolean
+    updatedBy?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type AiMethodologyUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    version?: StringFieldUpdateOperationsInput | string
+    scope?: StringFieldUpdateOperationsInput | string
+    portalDomain?: NullableStringFieldUpdateOperationsInput | string | null
+    config?: JsonNullValueInput | InputJsonValue
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type AiMethodologyUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    version?: StringFieldUpdateOperationsInput | string
+    scope?: StringFieldUpdateOperationsInput | string
+    portalDomain?: NullableStringFieldUpdateOperationsInput | string | null
+    config?: JsonNullValueInput | InputJsonValue
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type AiMethodologyCreateManyInput = {
+    id: string
+    code: string
+    title: string
+    version?: string
+    scope?: string
+    portalDomain?: string | null
+    config: JsonNullValueInput | InputJsonValue
+    isActive?: boolean
+    updatedBy?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type AiMethodologyUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    version?: StringFieldUpdateOperationsInput | string
+    scope?: StringFieldUpdateOperationsInput | string
+    portalDomain?: NullableStringFieldUpdateOperationsInput | string | null
+    config?: JsonNullValueInput | InputJsonValue
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type AiMethodologyUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    version?: StringFieldUpdateOperationsInput | string
+    scope?: StringFieldUpdateOperationsInput | string
+    portalDomain?: NullableStringFieldUpdateOperationsInput | string | null
+    config?: JsonNullValueInput | InputJsonValue
+    isActive?: BoolFieldUpdateOperationsInput | boolean
     updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -149603,6 +152377,223 @@ export namespace Prisma {
     creator_bitrix_user_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   }
 
+  export type RenewalOfferLinkCreateInput = {
+    id: string
+    token: string
+    clientName: string
+    title?: string | null
+    salesIncluded?: boolean
+    salesPrice?: number
+    aiIncluded?: boolean
+    aiEmployees?: number
+    aiBasePrice?: number
+    aiBaseEmployees?: number
+    aiExtraPrice?: number
+    aiFreeDelta?: number
+    managerIncluded?: boolean
+    managerPrice?: number
+    devIncluded?: boolean
+    devHours?: number
+    devHourPrice?: number
+    adjustment?: number
+    adjustmentLabel?: string
+    monthlyTotal?: number
+    offerJson: JsonNullValueInput | InputJsonValue
+    expiresAt?: Date | string | null
+    revokedAt?: Date | string | null
+    viewCount?: number
+    lastViewedAt?: Date | string | null
+    createdBy?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type RenewalOfferLinkUncheckedCreateInput = {
+    id: string
+    token: string
+    clientName: string
+    title?: string | null
+    salesIncluded?: boolean
+    salesPrice?: number
+    aiIncluded?: boolean
+    aiEmployees?: number
+    aiBasePrice?: number
+    aiBaseEmployees?: number
+    aiExtraPrice?: number
+    aiFreeDelta?: number
+    managerIncluded?: boolean
+    managerPrice?: number
+    devIncluded?: boolean
+    devHours?: number
+    devHourPrice?: number
+    adjustment?: number
+    adjustmentLabel?: string
+    monthlyTotal?: number
+    offerJson: JsonNullValueInput | InputJsonValue
+    expiresAt?: Date | string | null
+    revokedAt?: Date | string | null
+    viewCount?: number
+    lastViewedAt?: Date | string | null
+    createdBy?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type RenewalOfferLinkUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    clientName?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    salesIncluded?: BoolFieldUpdateOperationsInput | boolean
+    salesPrice?: IntFieldUpdateOperationsInput | number
+    aiIncluded?: BoolFieldUpdateOperationsInput | boolean
+    aiEmployees?: IntFieldUpdateOperationsInput | number
+    aiBasePrice?: IntFieldUpdateOperationsInput | number
+    aiBaseEmployees?: IntFieldUpdateOperationsInput | number
+    aiExtraPrice?: IntFieldUpdateOperationsInput | number
+    aiFreeDelta?: IntFieldUpdateOperationsInput | number
+    managerIncluded?: BoolFieldUpdateOperationsInput | boolean
+    managerPrice?: IntFieldUpdateOperationsInput | number
+    devIncluded?: BoolFieldUpdateOperationsInput | boolean
+    devHours?: IntFieldUpdateOperationsInput | number
+    devHourPrice?: IntFieldUpdateOperationsInput | number
+    adjustment?: IntFieldUpdateOperationsInput | number
+    adjustmentLabel?: StringFieldUpdateOperationsInput | string
+    monthlyTotal?: IntFieldUpdateOperationsInput | number
+    offerJson?: JsonNullValueInput | InputJsonValue
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type RenewalOfferLinkUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    clientName?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    salesIncluded?: BoolFieldUpdateOperationsInput | boolean
+    salesPrice?: IntFieldUpdateOperationsInput | number
+    aiIncluded?: BoolFieldUpdateOperationsInput | boolean
+    aiEmployees?: IntFieldUpdateOperationsInput | number
+    aiBasePrice?: IntFieldUpdateOperationsInput | number
+    aiBaseEmployees?: IntFieldUpdateOperationsInput | number
+    aiExtraPrice?: IntFieldUpdateOperationsInput | number
+    aiFreeDelta?: IntFieldUpdateOperationsInput | number
+    managerIncluded?: BoolFieldUpdateOperationsInput | boolean
+    managerPrice?: IntFieldUpdateOperationsInput | number
+    devIncluded?: BoolFieldUpdateOperationsInput | boolean
+    devHours?: IntFieldUpdateOperationsInput | number
+    devHourPrice?: IntFieldUpdateOperationsInput | number
+    adjustment?: IntFieldUpdateOperationsInput | number
+    adjustmentLabel?: StringFieldUpdateOperationsInput | string
+    monthlyTotal?: IntFieldUpdateOperationsInput | number
+    offerJson?: JsonNullValueInput | InputJsonValue
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type RenewalOfferLinkCreateManyInput = {
+    id: string
+    token: string
+    clientName: string
+    title?: string | null
+    salesIncluded?: boolean
+    salesPrice?: number
+    aiIncluded?: boolean
+    aiEmployees?: number
+    aiBasePrice?: number
+    aiBaseEmployees?: number
+    aiExtraPrice?: number
+    aiFreeDelta?: number
+    managerIncluded?: boolean
+    managerPrice?: number
+    devIncluded?: boolean
+    devHours?: number
+    devHourPrice?: number
+    adjustment?: number
+    adjustmentLabel?: string
+    monthlyTotal?: number
+    offerJson: JsonNullValueInput | InputJsonValue
+    expiresAt?: Date | string | null
+    revokedAt?: Date | string | null
+    viewCount?: number
+    lastViewedAt?: Date | string | null
+    createdBy?: string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type RenewalOfferLinkUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    clientName?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    salesIncluded?: BoolFieldUpdateOperationsInput | boolean
+    salesPrice?: IntFieldUpdateOperationsInput | number
+    aiIncluded?: BoolFieldUpdateOperationsInput | boolean
+    aiEmployees?: IntFieldUpdateOperationsInput | number
+    aiBasePrice?: IntFieldUpdateOperationsInput | number
+    aiBaseEmployees?: IntFieldUpdateOperationsInput | number
+    aiExtraPrice?: IntFieldUpdateOperationsInput | number
+    aiFreeDelta?: IntFieldUpdateOperationsInput | number
+    managerIncluded?: BoolFieldUpdateOperationsInput | boolean
+    managerPrice?: IntFieldUpdateOperationsInput | number
+    devIncluded?: BoolFieldUpdateOperationsInput | boolean
+    devHours?: IntFieldUpdateOperationsInput | number
+    devHourPrice?: IntFieldUpdateOperationsInput | number
+    adjustment?: IntFieldUpdateOperationsInput | number
+    adjustmentLabel?: StringFieldUpdateOperationsInput | string
+    monthlyTotal?: IntFieldUpdateOperationsInput | number
+    offerJson?: JsonNullValueInput | InputJsonValue
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type RenewalOfferLinkUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    clientName?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    salesIncluded?: BoolFieldUpdateOperationsInput | boolean
+    salesPrice?: IntFieldUpdateOperationsInput | number
+    aiIncluded?: BoolFieldUpdateOperationsInput | boolean
+    aiEmployees?: IntFieldUpdateOperationsInput | number
+    aiBasePrice?: IntFieldUpdateOperationsInput | number
+    aiBaseEmployees?: IntFieldUpdateOperationsInput | number
+    aiExtraPrice?: IntFieldUpdateOperationsInput | number
+    aiFreeDelta?: IntFieldUpdateOperationsInput | number
+    managerIncluded?: BoolFieldUpdateOperationsInput | boolean
+    managerPrice?: IntFieldUpdateOperationsInput | number
+    devIncluded?: BoolFieldUpdateOperationsInput | boolean
+    devHours?: IntFieldUpdateOperationsInput | number
+    devHourPrice?: IntFieldUpdateOperationsInput | number
+    adjustment?: IntFieldUpdateOperationsInput | number
+    adjustmentLabel?: StringFieldUpdateOperationsInput | string
+    monthlyTotal?: IntFieldUpdateOperationsInput | number
+    offerJson?: JsonNullValueInput | InputJsonValue
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    viewCount?: IntFieldUpdateOperationsInput | number
+    lastViewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
   export type BigIntFilter<$PrismaModel = never> = {
     equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
     in?: bigint[] | number[]
@@ -152835,6 +155826,107 @@ export namespace Prisma {
     updatedBy?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+  export type JsonFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
+
+  export type AiMethodologyOrderByRelevanceInput = {
+    fields: AiMethodologyOrderByRelevanceFieldEnum | AiMethodologyOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type AiMethodologyScopePortalDomainCodeCompoundUniqueInput = {
+    scope: string
+    portalDomain: string
+    code: string
+  }
+
+  export type AiMethodologyCountOrderByAggregateInput = {
+    id?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    version?: SortOrder
+    scope?: SortOrder
+    portalDomain?: SortOrder
+    config?: SortOrder
+    isActive?: SortOrder
+    updatedBy?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type AiMethodologyMaxOrderByAggregateInput = {
+    id?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    version?: SortOrder
+    scope?: SortOrder
+    portalDomain?: SortOrder
+    isActive?: SortOrder
+    updatedBy?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type AiMethodologyMinOrderByAggregateInput = {
+    id?: SortOrder
+    code?: SortOrder
+    title?: SortOrder
+    version?: SortOrder
+    scope?: SortOrder
+    portalDomain?: SortOrder
+    isActive?: SortOrder
+    updatedBy?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+  export type JsonWithAggregatesFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonWithAggregatesFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonWithAggregatesFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedJsonFilter<$PrismaModel>
+    _max?: NestedJsonFilter<$PrismaModel>
   }
 
   export type PortalQuestionnaireOrderByRelevanceInput = {
@@ -157611,29 +160703,6 @@ export namespace Prisma {
     client_id?: SortOrder
     redeemed_portal_id?: SortOrder
   }
-  export type JsonFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<JsonFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue
-    lte?: InputJsonValue
-    gt?: InputJsonValue
-    gte?: InputJsonValue
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-  }
 
   export type AppCacheOrderByRelevanceInput = {
     fields: AppCacheOrderByRelevanceFieldEnum | AppCacheOrderByRelevanceFieldEnum[]
@@ -157701,32 +160770,6 @@ export namespace Prisma {
   export type AppCacheSumOrderByAggregateInput = {
     portalId?: SortOrder
     bxUserId?: SortOrder
-  }
-  export type JsonWithAggregatesFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonWithAggregatesFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonWithAggregatesFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue
-    lte?: InputJsonValue
-    gt?: InputJsonValue
-    gte?: InputJsonValue
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedJsonFilter<$PrismaModel>
-    _max?: NestedJsonFilter<$PrismaModel>
   }
 
   export type ShareLinkOrderByRelevanceInput = {
@@ -158034,6 +161077,133 @@ export namespace Prisma {
     portal_id?: SortOrder
     agent_id?: SortOrder
     creator_bitrix_user_id?: SortOrder
+  }
+
+  export type RenewalOfferLinkOrderByRelevanceInput = {
+    fields: RenewalOfferLinkOrderByRelevanceFieldEnum | RenewalOfferLinkOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type RenewalOfferLinkCountOrderByAggregateInput = {
+    id?: SortOrder
+    token?: SortOrder
+    clientName?: SortOrder
+    title?: SortOrder
+    salesIncluded?: SortOrder
+    salesPrice?: SortOrder
+    aiIncluded?: SortOrder
+    aiEmployees?: SortOrder
+    aiBasePrice?: SortOrder
+    aiBaseEmployees?: SortOrder
+    aiExtraPrice?: SortOrder
+    aiFreeDelta?: SortOrder
+    managerIncluded?: SortOrder
+    managerPrice?: SortOrder
+    devIncluded?: SortOrder
+    devHours?: SortOrder
+    devHourPrice?: SortOrder
+    adjustment?: SortOrder
+    adjustmentLabel?: SortOrder
+    monthlyTotal?: SortOrder
+    offerJson?: SortOrder
+    expiresAt?: SortOrder
+    revokedAt?: SortOrder
+    viewCount?: SortOrder
+    lastViewedAt?: SortOrder
+    createdBy?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RenewalOfferLinkAvgOrderByAggregateInput = {
+    salesPrice?: SortOrder
+    aiEmployees?: SortOrder
+    aiBasePrice?: SortOrder
+    aiBaseEmployees?: SortOrder
+    aiExtraPrice?: SortOrder
+    aiFreeDelta?: SortOrder
+    managerPrice?: SortOrder
+    devHours?: SortOrder
+    devHourPrice?: SortOrder
+    adjustment?: SortOrder
+    monthlyTotal?: SortOrder
+    viewCount?: SortOrder
+  }
+
+  export type RenewalOfferLinkMaxOrderByAggregateInput = {
+    id?: SortOrder
+    token?: SortOrder
+    clientName?: SortOrder
+    title?: SortOrder
+    salesIncluded?: SortOrder
+    salesPrice?: SortOrder
+    aiIncluded?: SortOrder
+    aiEmployees?: SortOrder
+    aiBasePrice?: SortOrder
+    aiBaseEmployees?: SortOrder
+    aiExtraPrice?: SortOrder
+    aiFreeDelta?: SortOrder
+    managerIncluded?: SortOrder
+    managerPrice?: SortOrder
+    devIncluded?: SortOrder
+    devHours?: SortOrder
+    devHourPrice?: SortOrder
+    adjustment?: SortOrder
+    adjustmentLabel?: SortOrder
+    monthlyTotal?: SortOrder
+    expiresAt?: SortOrder
+    revokedAt?: SortOrder
+    viewCount?: SortOrder
+    lastViewedAt?: SortOrder
+    createdBy?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RenewalOfferLinkMinOrderByAggregateInput = {
+    id?: SortOrder
+    token?: SortOrder
+    clientName?: SortOrder
+    title?: SortOrder
+    salesIncluded?: SortOrder
+    salesPrice?: SortOrder
+    aiIncluded?: SortOrder
+    aiEmployees?: SortOrder
+    aiBasePrice?: SortOrder
+    aiBaseEmployees?: SortOrder
+    aiExtraPrice?: SortOrder
+    aiFreeDelta?: SortOrder
+    managerIncluded?: SortOrder
+    managerPrice?: SortOrder
+    devIncluded?: SortOrder
+    devHours?: SortOrder
+    devHourPrice?: SortOrder
+    adjustment?: SortOrder
+    adjustmentLabel?: SortOrder
+    monthlyTotal?: SortOrder
+    expiresAt?: SortOrder
+    revokedAt?: SortOrder
+    viewCount?: SortOrder
+    lastViewedAt?: SortOrder
+    createdBy?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RenewalOfferLinkSumOrderByAggregateInput = {
+    salesPrice?: SortOrder
+    aiEmployees?: SortOrder
+    aiBasePrice?: SortOrder
+    aiBaseEmployees?: SortOrder
+    aiExtraPrice?: SortOrder
+    aiFreeDelta?: SortOrder
+    managerPrice?: SortOrder
+    devHours?: SortOrder
+    devHourPrice?: SortOrder
+    adjustment?: SortOrder
+    monthlyTotal?: SortOrder
+    viewCount?: SortOrder
   }
 
   export type PortalCreateNestedOneWithoutAgentsInput = {
@@ -163792,6 +166962,29 @@ export namespace Prisma {
     gte?: InputJsonValue
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
+  export type NestedJsonFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<NestedJsonFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>,
+        Required<NestedJsonFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>
+
+  export type NestedJsonFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
 
   export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel> | null
@@ -163980,29 +167173,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnuminvoice_templates_typeFilter<$PrismaModel>
     _max?: NestedEnuminvoice_templates_typeFilter<$PrismaModel>
-  }
-  export type NestedJsonFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<NestedJsonFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>,
-        Required<NestedJsonFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>
-
-  export type NestedJsonFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue
-    lte?: InputJsonValue
-    gt?: InputJsonValue
-    gte?: InputJsonValue
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
   export type PortalCreateWithoutAgentsInput = {

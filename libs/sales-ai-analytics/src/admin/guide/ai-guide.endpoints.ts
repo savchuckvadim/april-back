@@ -10,6 +10,32 @@
 import type { AiGuideEndpoint } from './ai-guide.types';
 
 export const AI_GUIDE_ENDPOINT = {
+    methodologies: {
+        app: 'admin',
+        method: 'GET',
+        path: 'admin/methodologies',
+        query: 'domain={domain}',
+        when: 'Проверить, какие методики доступны порталу для бейджа в настройках AI.',
+        purpose:
+            'Варианты выбора методики: встроенные общего слоя и строки таблицы ai_methodologies (своя методика портала поверх общей) с кодом, версией, типами звонков и числом пунктов.',
+    },
+    methodologyItems: {
+        app: 'admin',
+        method: 'GET',
+        path: 'admin/methodologies/items',
+        query: 'domain={domain}',
+        when: 'Нужен список методик для раздела «Методики продаж» или проверка, что своя методика портала сохранилась.',
+        purpose:
+            'Строки раздела: общий слой и, с доменом, свои методики портала — слой, версия, число пунктов и ограничителей, включена ли, кто и когда менял, проходит ли конфиг проверку.',
+    },
+    methodologyAssist: {
+        app: 'admin',
+        method: 'POST',
+        path: 'admin/methodologies/assist',
+        when: 'Заказчик прислал документ методики (docx, pdf, txt): собрать черновик пунктов, правил и ограничителей.',
+        purpose:
+            'Файл и/или текст уходят модели через шлюз со строгой схемой конфига; ответ проходит валидатор методики. Возвращает черновик для формы либо ошибки, ничего не сохраняет — человек правит и сохраняет в форме.',
+    },
     backfill: {
         app: 'admin',
         method: 'POST',

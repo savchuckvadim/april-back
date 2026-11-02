@@ -169,7 +169,9 @@ jest.mock(
     '../services/return-to-tmc/event-report-return-to-tmc.service',
     () => ({
         EventReportReturnToTmcService: class {
-            queue(): void {}
+            apply(): Promise<void> {
+                return Promise.resolve();
+            }
         },
     }),
 );
@@ -245,8 +247,21 @@ describe('EventReportUseCase — ответ основного батча дое
             {
                 resolve: () => Promise.resolve({}),
             } as unknown as ConstructorParameters<typeof EventReportUseCase>[2],
+            // Настройки портала: дефолты схемы, чек-листы выключены.
             {
-                resolve: () => Promise.resolve({}),
+                fieldPolicy: () =>
+                    Promise.resolve({
+                        calculatedNextEvent: false,
+                        resetOnFinal: false,
+                    }),
+                stageRule: () => Promise.resolve({ refineStageOnPlan: false }),
+                postFail: () =>
+                    Promise.resolve({
+                        enabled: false,
+                        assignUserId: 0,
+                        companyDateTextField: '',
+                    }),
+                taskChecklistEnabled: () => Promise.resolve(false),
             } as unknown as ConstructorParameters<typeof EventReportUseCase>[3],
             { dispatch } as unknown as EventReportPostFlowService,
             // Режим руководителя в этих сценариях выключен: обычный отчёт.

@@ -3,6 +3,7 @@ import { AI_ANALYTICS_DQ_PARAMS } from './registry.dq.const';
 import { AI_ANALYTICS_EDGE_PARAMS } from './registry.edges.const';
 import { AI_ANALYTICS_EXPOSURE_PARAMS } from './registry.exposure.const';
 import { AI_ANALYTICS_FUNNEL_PARAMS } from './registry.funnel.const';
+import { AI_ANALYTICS_METHODOLOGY_PARAMS } from './registry.methodology.const';
 import { AI_ANALYTICS_NORM_PARAMS } from './registry.norms.const';
 import { AI_ANALYTICS_PHASE4_ADVICE_PARAMS } from './registry.phase4-advice.const';
 import { AI_ANALYTICS_PHASE4_PARAMS } from './registry.phase4.const';
@@ -35,6 +36,7 @@ export const AI_ANALYTICS_PARAMS = [
     ...AI_ANALYTICS_FUNNEL_PARAMS,
     ...AI_ANALYTICS_EDGE_PARAMS,
     ...AI_ANALYTICS_THRESHOLD_PARAMS,
+    ...AI_ANALYTICS_METHODOLOGY_PARAMS,
     ...AI_ANALYTICS_DEFINITION_PARAMS,
     ...AI_ANALYTICS_STYLE_PARAMS,
     ...AI_ANALYTICS_EXPOSURE_PARAMS,

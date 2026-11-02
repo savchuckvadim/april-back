@@ -50,6 +50,10 @@ import { LeadToWorkDeadlineService } from '../services/lead-to-work-deadline.ser
 import { ActiveStaffService } from '../../../shared/active-staff';
 import { LeadToWorkTimelineService } from '../services/lead-to-work-timeline.service';
 import {
+    collectSlaTransfers,
+    LeadToWorkSlaTimelineService,
+} from '../services/lead-to-work-sla-timeline.service';
+import {
     EnumPortalAppCode,
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
@@ -804,6 +808,28 @@ export class LeadToWorkUseCase
         );
         if (dupWarnings.length && results.length) {
             results[0].warnings.push(...dupWarnings);
+        }
+
+        /*
+         * Шаг 4.2. Передача по SLA — комментарий в таймлайн лида и сделки.
+         * Люди читают ленту карточки, а не UF-поле истории заявки: 02.11.2026
+         * на garant передачу сделки 110469 сочли ручной, потому что в ленте
+         * не было ни слова, кто передал и почему.
+         */
+        const slaWarnings = await new LeadToWorkSlaTimelineService(
+            ctx.bitrix,
+            ctx.domain,
+            userNames,
+        ).write(
+            collectSlaTransfers(
+                queued.map(entry => ({
+                    ...entry,
+                    dealId: dealIdOf.get(entry.item.leadId) ?? null,
+                })),
+            ),
+        );
+        if (slaWarnings.length && results.length) {
+            results[0].warnings.push(...slaWarnings);
         }
 
         /*

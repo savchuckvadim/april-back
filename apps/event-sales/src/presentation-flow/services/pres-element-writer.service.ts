@@ -91,12 +91,111 @@ export class PresElementWriterService {
         // поток, к этому моменту уже стоят, и их не перезаписать.
         fields_.applyAnswers(fields, ['plan']);
 
+        // Заявка ТМЦ по этой же ТМЦ-сделке уже ждёт согласования — план её
+        // ПРОДВИГАЕТ, а не заводит второй элемент: «Сделка ОП Презентации +
+        // Список Презентации = Смарт Презентации» — все состояния одной
+        // презентации живут в одном элементе (решение владельца 02.11.2026).
+        const request = job.tmcDealId
+            ? await this.lookup.findOpenRequest(info, job.tmcDealId)
+            : null;
+        if (request) return this.promoteRequest(run, request, fields);
+
         const elementId = await this.add(run, fields);
         this.logger.log(
             `[presentation-flow] ${job.domain}: план → элемент ${elementId ?? '?'} ` +
                 `(op=${job.operationId ?? '-'})`,
         );
         return { action: 'created', elementId };
+    }
+
+    /**
+     * Заявка ТМЦ на презентацию → элемент в «Заявка на презентацию».
+     *
+     * Ждёт согласования руководителя; после утверждения план презентации
+     * менеджера ОП продвинет ЭТОТ элемент в «Запланирована»
+     * ({@link createPlanned}). Ответственный элемента — ТМЦ-менеджер,
+     * подавший заявку: до утверждения её ведёт он; менеджер ОП появится
+     * при утверждении. Это тот же контур, что легаси вёл элементом РПА
+     * «Заявка на презентацию» (поток ТМЦ, 02.11.2026).
+     */
+    async createRequested(
+        run: PresentationFlowRun,
+    ): Promise<PresentationFlowResult> {
+        const { info, job, now } = run;
+        const fields_ = new PresElementFieldsBuilder(run);
+        const links = new PresElementLinksBuilder(run);
+        const tmcManagerId = job.tmcResponsibleId || job.responsibleId;
+        const fields: BxRow = {
+            title: `Заявка на презентацию: ${job.planName || job.planDeadline || now}`,
+            stageId: presStageId(info, 'pres_new'),
+            assignedById: tmcManagerId,
+        };
+        fields_.setUf(fields, 'PRES_IS_OUR_REQUEST', 'Y');
+        fields_.setUf(fields, 'PRES_TMC_RESPONSIBLE', tmcManagerId);
+        fields_.setUf(fields, 'PRES_OWNER', job.ownerId);
+        // Дата, на которую ТМЦ просит презентацию: план утверждения её
+        // перепишет на согласованную.
+        fields_.setUf(fields, 'PRES_PLAN_DATE', job.planDeadline);
+        fields_.setUf(fields, 'PRES_NEXT_CALL_DATE', job.planDeadline);
+        const requestEntry = toMultiFieldEntryText(
+            job.requestComment
+                ? `${now} ТМЦ: ${job.requestComment}`
+                : `${now} ТМЦ: заявка на презентацию`,
+        );
+        fields_.setUf(fields, 'PRES_REQUEST_COMMENT', [requestEntry]);
+        fields_.setUf(fields, 'PRES_COMMENTS', [requestEntry]);
+        links.applyLinks(fields);
+        links.applyParents(fields);
+        links.applyClient(fields);
+
+        const elementId = await this.add(run, fields);
+        this.logger.log(
+            `[presentation-flow] ${job.domain}: заявка ТМЦ → элемент ` +
+                `${elementId ?? '?'} (op=${job.operationId ?? '-'})`,
+        );
+        return { action: 'requested', elementId };
+    }
+
+    /**
+     * Ждущая заявка ТМЦ → «Запланирована»: поля плана ложатся поверх заявки,
+     * заголовок заявки остаётся (по нему её искали в списке), в ленту
+     * комментариев встаёт отметка об утверждении, лента заявки сохраняется.
+     */
+    private async promoteRequest(
+        run: PresentationFlowRun,
+        request: BxRow,
+        planFields: BxRow,
+    ): Promise<PresentationFlowResult> {
+        const { info, job, now } = run;
+        const fields_ = new PresElementFieldsBuilder(run);
+        const { title: _title, ...fields } = planFields;
+        void _title;
+        fields_.setUf(fields, 'PRES_APPROVE_DATE', now);
+        const commentsKey = fields_.ufKey('PRES_COMMENTS');
+        if (commentsKey) {
+            const planEntries = Array.isArray(fields[commentsKey])
+                ? (fields[commentsKey] as unknown[]).map(String)
+                : [];
+            fields[commentsKey] = [
+                toMultiFieldEntryText(
+                    `${now} Заявка утверждена: презентация запланирована`,
+                ),
+                ...planEntries,
+                ...this.previousComments(fields_, request),
+            ].slice(0, COMMENTS_LIMIT);
+        }
+
+        await this.bitrix.item.update(
+            Number(request.id),
+            String(info.entityTypeId) as never,
+            fields as never,
+        );
+        this.logger.log(
+            `[presentation-flow] ${job.domain}: план → заявка ТМЦ ` +
+                `${String(request.id)} продвинута в «Запланирована» ` +
+                `(op=${job.operationId ?? '-'})`,
+        );
+        return { action: 'promoted', elementId: Number(request.id) || null };
     }
 
     /**

@@ -39,6 +39,15 @@ import {
     FOCUS_SYNTHESIS_SCHEMA,
     renderFocusDigest,
 } from '../contracts/call-focus-analysis.contract';
+import {
+    MethodologyRegistryService,
+    type ResolvedMethodology,
+} from '@lib/call-lib/call-report/methodology';
+import {
+    applyMethodologyToDto,
+    buildMethodologyPass,
+    type MethodologyPassSpec,
+} from './call-focus-methodology.util';
 
 const FALLBACK_CALL_TYPE = 'other';
 
@@ -63,6 +72,8 @@ interface FocusMaterials {
     movement: string;
     /** Эталонные разборы — синтез (калибровка оценок). */
     synthesis: string;
+    /** Верхняя норма доли речи менеджера для типа; null — не нормируется. */
+    talkRatioMax: number | null;
 }
 
 /** Описание одного фокус-прохода. */
@@ -125,7 +136,22 @@ export class CallFocusAnalysisService {
         private readonly callTypeRegistry: CallTypeRegistryService,
         private readonly appSettings: PortalAppSettingsService,
         private readonly reportSettings: CallReportSettingsService,
+        private readonly methodologyRegistry: MethodologyRegistryService,
     ) {}
+
+    /** Методика портала; реестр недоступен — разбор без методики (fail-open). */
+    private async resolveMethodology(
+        domain: string,
+    ): Promise<ResolvedMethodology | null> {
+        try {
+            return await this.methodologyRegistry.resolve(domain);
+        } catch (error) {
+            this.logger.warn(
+                `Реестр методик недоступен (${domain}): ${(error as Error).message} — разбор без методики`,
+            );
+            return null;
+        }
+    }
 
     /**
      * Блок этапа воронки: доработка и звонок по решению разбираются
@@ -197,6 +223,11 @@ export class CallFocusAnalysisService {
         }
         try {
             const materials = await this.buildMaterials(domain, callType);
+            // Методика портала (конфиг чек-пунктов): четвёртый проход идёт
+            // только на порталах с выбранной методикой и для её типов.
+            const resolved = await this.resolveMethodology(domain);
+            const methodologyPass: MethodologyPassSpec | null =
+                buildMethodologyPass(resolved, callType);
             // Общие поправки разбора (строгость презентации, требование
             // закрытия хвоста/5К) идут в КАЖДЫЙ проход вместе с материалами.
             const commonTail =
@@ -209,17 +240,28 @@ export class CallFocusAnalysisService {
                 passportBlock,
             );
 
-            const responses = await Promise.all(
-                FOCUS_PASSES.map(pass =>
-                    this.runFocus(
-                        pass,
-                        this.contextFor(materials, pass.key) + commonTail,
-                        userContent,
-                        domain,
-                        options?.model,
+            const [responses, methodologyResponse] = await Promise.all([
+                Promise.all(
+                    FOCUS_PASSES.map(pass =>
+                        this.runFocus(
+                            pass,
+                            this.contextFor(materials, pass.key) + commonTail,
+                            userContent,
+                            domain,
+                            options?.model,
+                        ),
                     ),
                 ),
-            );
+                methodologyPass
+                    ? this.runFocus(
+                          methodologyPass,
+                          materials.shared + commonTail,
+                          userContent,
+                          domain,
+                          options?.model,
+                      )
+                    : Promise.resolve(null),
+            ]);
             const byKey = Object.fromEntries(
                 FOCUS_PASSES.map((pass, index) => [
                     pass.key,
@@ -262,7 +304,11 @@ export class CallFocusAnalysisService {
                 callType: callType ?? FALLBACK_CALL_TYPE,
                 // Расход всех удавшихся вызовов (фокусы + синтез).
                 usage: sumCompletionUsage(
-                    [...responses, synthesisResponse].filter(
+                    [
+                        ...responses,
+                        synthesisResponse,
+                        methodologyResponse,
+                    ].filter(
                         (
                             response,
                         ): response is VibecodeStructuredCompletionWithUsage =>
@@ -279,6 +325,22 @@ export class CallFocusAnalysisService {
                 `Фокус-разбор (${domain})`,
                 this.logger,
             );
+            // Ограничители ядра (все порталы) и методика портала: факты из
+            // разбора, пункты модели и правил, срез оценок до потолков.
+            const applied = applyMethodologyToDto(
+                dto,
+                resolved,
+                resultOf(methodologyResponse),
+                materials.talkRatioMax,
+            );
+            if (applied.capsTriggered > 0 || applied.methodology) {
+                this.logger.log(
+                    `Фокус-разбор (${domain}): ограничителей сработало ${applied.capsTriggered} (срезано ${applied.capsApplied})` +
+                        (applied.methodology
+                            ? `, методика ${applied.methodology.code}: пунктов ${applied.methodology.checkpointsDone}/${applied.methodology.checkpointsTotal}`
+                            : ''),
+                );
+            }
             this.logger.log(
                 `Фокус-разбор (${domain}): проходов ${survived}/3, ` +
                     `разделов ${dto.sections?.length ?? 0}, оценка ${dto.score ?? '—'}`,
@@ -314,6 +376,7 @@ export class CallFocusAnalysisService {
         callType: string | null,
     ): Promise<FocusMaterials> {
         let profileBlock = '';
+        let talkRatioMax: number | null = null;
         let typedKind = `call-analysis-${callType ?? FALLBACK_CALL_TYPE}`;
         try {
             const registry = await this.callTypeRegistry.resolve(domain);
@@ -322,6 +385,7 @@ export class CallFocusAnalysisService {
             if (profile) {
                 profileBlock = renderCallTypeProfile(profile);
                 typedKind = profile.knowledgeKind ?? typedKind;
+                talkRatioMax = profile.talkRatioNorm?.max ?? null;
             }
         } catch (error) {
             this.logger.warn(
@@ -398,6 +462,7 @@ export class CallFocusAnalysisService {
                 'ЭТАЛОННЫЕ РАЗБОРЫ (калибровка шкалы оценок):',
                 byKind.get(KNOWLEDGE_KINDS.callEtalon),
             ),
+            talkRatioMax,
         };
     }
 
@@ -443,7 +508,7 @@ export class CallFocusAnalysisService {
 
     /** Один фокус-проход (ответ + usage); ошибка → null (разбор продолжается без него). */
     private async runFocus(
-        pass: FocusPass,
+        pass: Pick<FocusPass, 'label' | 'prompt' | 'schema'> & { key: string },
         sharedContext: string,
         userContent: string,
         domain: string,

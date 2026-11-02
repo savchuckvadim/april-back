@@ -69,7 +69,8 @@ describe('CallReportSettingsService (портал → дефолт кода, env
         expect(settings.windowHours).toBe(25);
         expect(settings.maxPerRun).toBe(10);
         expect(settings.staleMinutes).toBe(90);
-        expect(settings.llmModel).toBe('gigachat');
+        // Контур резюме по умолчанию выключен (решение владельца 01.11.2026).
+        expect(settings.llmModel).toBe('none');
         expect(settings.irrelevantConfidence).toBe(0.7);
         expect(settings.revisorEnabled).toBe(false);
         expect(settings.deepAnalysisEnabled).toBe(true);

@@ -94,16 +94,20 @@ export class PresentationFlowUseCase {
         // постановки джоба числового id не было (в батче она `$result[...]`).
         // Джоб выполняется после батча, сделка уже существует — находим её
         // по компании и работаем как с обычной.
+        // Заявка ТМЦ основной сделки не имеет по определению: её заведёт
+        // менеджер ОП после утверждения — искать нечего.
         const resolved: PresentationFlowJobData = {
             ...job,
             baseDealId:
-                job.baseDealId ??
-                (await this.baseDealResolver.resolve(bitrix, portal, {
-                    flow: PRES_FLOW,
-                    domain: job.domain,
-                    companyId: job.companyId,
-                    responsibleId: job.responsibleId,
-                })),
+                job.kind === 'request'
+                    ? job.baseDealId
+                    : (job.baseDealId ??
+                      (await this.baseDealResolver.resolve(bitrix, portal, {
+                          flow: PRES_FLOW,
+                          domain: job.domain,
+                          companyId: job.companyId,
+                          responsibleId: job.responsibleId,
+                      }))),
         };
 
         const run: PresentationFlowRun = {
@@ -128,7 +132,9 @@ export class PresentationFlowUseCase {
         const result =
             resolved.kind === 'plan'
                 ? await writer.createPlanned(run)
-                : await writer.closeReported(run);
+                : resolved.kind === 'request'
+                  ? await writer.createRequested(run)
+                  : await writer.closeReported(run);
 
         /*
          * Элемент ↔ задача (зеркало zpr-flow): задача получает привязку
@@ -158,8 +164,10 @@ export class PresentationFlowUseCase {
             );
         }
 
+        // Заявка ТМЦ привязывается к задаче ТМЦ-менеджера, созданной тем же
+        // отчётом (`planTaskId`), — ровно как план к своей новой задаче.
         const linkedTaskId =
-            resolved.kind === 'plan' ? resolved.planTaskId : resolved.taskId;
+            resolved.kind === 'report' ? resolved.taskId : resolved.planTaskId;
         if (linkedTaskId && result.elementId) {
             await this.taskBinder.bind(
                 bitrix,

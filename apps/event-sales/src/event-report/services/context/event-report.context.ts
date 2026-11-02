@@ -36,6 +36,12 @@ import {
     EventStageRuleSettings,
     PlannedEventInput,
 } from '../entity/field-policy';
+import {
+    DEFAULT_POST_FAIL_SETTINGS,
+    EventPostFailSettings,
+} from '../post-fail/post-fail.settings';
+import { HISTORY_MARKER_TMC } from '../history/event-history-comment.builder';
+import { TMC_DEPARTMENT_CODE } from '../../dto/event-sale-flow/department.dto';
 
 /**
  * Стратегия flow по типу владельца события:
@@ -157,6 +163,24 @@ export class EventReportContext {
     get currentTmcFromPresentation(): IBXDeal | null {
         return this.init.currentTmcFromPresentation;
     }
+    /** Открытая ТМЦ-сделка компании у ответственного — база ТМЦ-отчёта. */
+    get companyTmcDeal(): IBXDeal | null {
+        return this.init.companyTmcDeal ?? null;
+    }
+
+    // === Режим «Менеджер ТМЦ» ===
+    /** Отчёт из режима ТМЦ — его ведёт свой поток (event-report-tmc). */
+    get isTmcMode(): boolean {
+        return this.dto.departament?.mode?.code === TMC_DEPARTMENT_CODE;
+    }
+    /** Пометка подразделения перед записью истории: «ТМЦ …», как в легаси. */
+    get historyMarker(): string | null {
+        return this.isTmcMode ? HISTORY_MARKER_TMC : null;
+    }
+    /** ТМЦ-менеджер, подавший заявку на презентацию (ручка согласования); 0 — нет. */
+    get planTmcUserId(): number {
+        return Number(this.dto.plan?.tmc?.ID ?? 0);
+    }
     get currentTask(): IBXTask | null {
         return this.init.currentTask;
     }
@@ -221,6 +245,20 @@ export class EventReportContext {
     }
     private stageRuleSettingsVo: EventStageRuleSettings =
         DEFAULT_STAGE_RULE_SETTINGS;
+
+    /**
+     * Пост-отказ (дата следующего звонка после «Отказа») из настроек
+     * портала — читатель — сервис пост-отказа. Без явной установки —
+     * дефолт схемы (выключено).
+     */
+    get postFailSettings(): EventPostFailSettings {
+        return this.postFailSettingsVo;
+    }
+    setPostFailSettings(settings: EventPostFailSettings): void {
+        this.postFailSettingsVo = settings;
+    }
+    private postFailSettingsVo: EventPostFailSettings =
+        DEFAULT_POST_FAIL_SETTINGS;
 
     /**
      * Ось событий клиента ПОСЛЕ этого отчёта: открытые дела без закрываемой

@@ -262,6 +262,9 @@ export const AI_ANALYTICS_PARAM_MAPPING: Readonly<
         'weak_section_gap',
         'low_score_call_max',
         'weak_followup_share_min',
+        'quality_progress_score_min',
+        'deal_progress_moving_min',
+        'progress_no_quality_min_calls',
     ],
     alert_params: [
         'alert_max_per_day',

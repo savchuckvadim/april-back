@@ -65,6 +65,17 @@ export interface CallReportSmartItemInput {
     weightedScore?: number;
     scriptCompliance?: number;
     coachingPriority?: string;
+    /** Методика разбора: «Название версия»; без методики — не пишется. */
+    methodology?: string;
+    /** Обязательных пунктов методики выполнено / применимо. */
+    checkpointsDone?: number;
+    checkpointsTotal?: number;
+    /** Полных спиралей презентации (только при методике со спиралями). */
+    spiralsFull?: number;
+    /** Продвижение сделки по звонку 1–5 (ядро; null у типов без продвижения). */
+    dealProgress?: number;
+    /** Сработавшие ограничители оценки — названия через «; », ужато до <700 байт. */
+    capsApplied?: string;
     transcriptionId?: string;
     /**
      * Диалог уже постится в таймлайн вызывающей стороной (intake с

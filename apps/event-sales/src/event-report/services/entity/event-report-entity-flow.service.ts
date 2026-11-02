@@ -155,6 +155,9 @@ export class EventReportEntityFlowService {
      * и не смешивается с основным update сущности.
      */
     private queueCompanyBackfill(ctx: EventReportContext): void {
+        // Режим ТМЦ: «основная» сделка контекста — ТМЦ-сделка, источником
+        // ручных полей компании она не бывает (в легаси ТМЦ бэкфилла нет).
+        if (ctx.isTmcMode) return;
         const company = ctx.company as Record<string, unknown> | null;
         const deal = ctx.currentBaseDeal as Record<string, unknown> | null;
         if (!company || !deal) return;

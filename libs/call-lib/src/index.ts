@@ -36,6 +36,7 @@ export * from './call-report/services/call-report-smart-writer.service';
 export * from './call-report/services/call-report-link-repair.service';
 export * from './call-report/services/call-report-base-item.service';
 export * from './call-report/use-cases/install-call-report-smart.use-case';
+export * from './call-report/methodology';
 export * from './call-analysis/call-analysis.module';
 export * from './ai/ai.module';
 export * from './ai/ai.admin.module';

@@ -9,7 +9,8 @@ export interface SideFlowRunRef {
     flow: SideFlowName;
     /** operationId основного отчёта; пусто — гейт выключен. */
     operationId?: string;
-    kind: 'plan' | 'report';
+    /** План, отчёт либо заявка ТМЦ на презентацию (`request`). */
+    kind: 'plan' | 'report' | 'request';
 }
 
 /**

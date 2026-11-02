@@ -84,6 +84,12 @@ export interface IEventReportTimelineSource {
     cards: readonly ITimelineCard[];
     /** Режим руководителя; null/undefined — обычный отчёт. */
     actingManager?: ITimelineActingManager | null;
+    /**
+     * Пометка подразделения перед первой строкой события («ТМЦ Звонок
+     * совершён…», «ТМЦ Следующий шаг…») — как писал легаси-хук ТМЦ.
+     * Пусто — отчёт отдела продаж, без пометки.
+     */
+    departmentMarker?: string | null;
 }
 
 const OUTCOME_TITLE: Record<TimelineOutcome, string> = {
@@ -126,9 +132,12 @@ export const buildEventReportTimelineComment = (
     src: IEventReportTimelineSource,
 ): string => {
     const lines: string[] = [timelineBold(src.happenedAt)];
+    // Пометка подразделения — ровно один раз, на первой строке события
+    // (отчёт, а без него — следующий шаг).
+    const marked = markerOnce(src.departmentMarker);
 
     const done = doneLine(src);
-    if (done) lines.push(timelineText(done));
+    if (done) lines.push(timelineText(marked(done)));
 
     if (src.actingManager) {
         lines.push(
@@ -152,7 +161,7 @@ export const buildEventReportTimelineComment = (
     if (reportContact) lines.push(reportContact);
 
     const next = nextStepLine(src);
-    if (next) lines.push(timelineText(next));
+    if (next) lines.push(timelineText(marked(next)));
 
     // Контакт плана — только когда он ДРУГОЙ: тот же человек уже назван выше.
     if (
@@ -185,6 +194,22 @@ export const buildEventReportTimelineComment = (
     }
 
     return lines.join('\n');
+};
+
+/**
+ * Префикс подразделения для ОДНОЙ строки: первая строка события получает
+ * «ТМЦ …», остальные идут как есть. Пустая пометка — строки не меняются.
+ */
+const markerOnce = (
+    marker: string | null | undefined,
+): ((line: string) => string) => {
+    const prefix = marker?.trim() ?? '';
+    let used = false;
+    return (line: string): string => {
+        if (!prefix || used) return line;
+        used = true;
+        return `${prefix} ${line}`;
+    };
 };
 
 /** «Презентация проведена: Разбор договора»; '' — события отчёта не было. */

@@ -987,6 +987,38 @@ export const CALL_REPORT_SMART_FIELDS: CallReportSmartFieldDef[] = [
         name: 'Соответствие скрипту, %',
         type: 'integer',
     },
+    // Методика продаж и ограничители (01.11.2026): в карточке только
+    // сводка — полные пункты с цитатами в таймлайне и в ais.
+    {
+        code: 'METHODOLOGY',
+        name: 'Методика разбора (название и версия)',
+        type: 'string',
+    },
+    {
+        code: 'CHECKPOINTS_DONE',
+        name: 'Пунктов методики выполнено',
+        type: 'integer',
+    },
+    {
+        code: 'CHECKPOINTS_TOTAL',
+        name: 'Пунктов методики применимо',
+        type: 'integer',
+    },
+    {
+        code: 'SPIRALS_FULL',
+        name: 'Полных спиралей презентации',
+        type: 'integer',
+    },
+    {
+        code: 'DEAL_PROGRESS',
+        name: 'Продвижение сделки по звонку (1-5)',
+        type: 'integer',
+    },
+    {
+        code: 'CAPS_APPLIED',
+        name: 'Оценка ограничена (сработавшие ограничители)',
+        type: 'string',
+    },
     {
         code: 'COACHING_PRIORITY',
         name: 'Приоритет разбора (coaching)',
@@ -1112,6 +1144,12 @@ export const CALL_REPORT_CARD_SECTIONS: readonly CallReportCardSection[] = [
             'EMPLOYEE_RECOMMENDATIONS',
             'SPEECH_ANALYSIS',
             'SCRIPT_COMPLIANCE',
+            'METHODOLOGY',
+            'CHECKPOINTS_DONE',
+            'CHECKPOINTS_TOTAL',
+            'SPIRALS_FULL',
+            'DEAL_PROGRESS',
+            'CAPS_APPLIED',
             'COACHING_PRIORITY',
             'RESUME_GIGACHAT',
             'RECOMENDATION_GIGACHAT',

@@ -111,4 +111,38 @@ describe('buildEventHistoryEntry', () => {
             }),
         ).toBe('26.10.2026 11:00:00 — Звонок совершён');
     });
+
+    it('режим ТМЦ: пометка «ТМЦ» перед первой строкой, как в легаси-хуке ТМЦ', () => {
+        expect(
+            buildEventHistoryEntry('02.11.2026 10:00:00', {
+                reportEventType: 'warm',
+                planEventType: 'presentation',
+                reportComment: 'Директор ждёт показ',
+                planDeadline: deadline,
+                historyMarker: 'ТМЦ',
+            }),
+        ).toBe(
+            '02.11.2026 10:00:00 — ТМЦ Звонок совершён: Директор ждёт показ\n' +
+                'Запланирована Презентация на 27 октября 10:00',
+        );
+        // Чистый план без отчёта — пометка на строке плана.
+        expect(
+            buildEventHistoryParts({
+                reportEventType: null,
+                planEventType: 'warm',
+                reportComment: '',
+                planDeadline: null,
+                historyMarker: 'ТМЦ',
+            }),
+        ).toEqual(['ТМЦ Запланирован Звонок']);
+        // Пустая пометка — запись отдела продаж без изменений.
+        expect(
+            buildEventHistoryParts({
+                reportEventType: 'warm',
+                planEventType: null,
+                reportComment: '',
+                historyMarker: null,
+            }),
+        ).toEqual(['Звонок совершён']);
+    });
 });

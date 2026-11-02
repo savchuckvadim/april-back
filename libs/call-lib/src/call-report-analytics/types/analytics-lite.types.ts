@@ -91,6 +91,33 @@ export interface AnalyticsCallLiteRow {
      * читатель обязан быть готов к `undefined`.
      */
     style?: AnalyticsLiteStyle;
+    /**
+     * Методика и продвижение сделки (разбор focus-v3.0, 01.11.2026) — см.
+     * AnalyticsLiteMethodology. Поле необязательное по той же причине, что
+     * и style: старые сериализованные строки его не несут.
+     */
+    methodology?: AnalyticsLiteMethodology;
+}
+
+/**
+ * Факты методики и продвижения из разбора (dto.methodology, dto.dealProgress,
+ * dto.capsTriggered): без методики на портале code и счётчики пунктов —
+ * null, продвижение и ограничители ядра считаются всегда.
+ */
+export interface AnalyticsLiteMethodology {
+    /** Код методики разбора; null — разбор одним ядром. */
+    code: string | null;
+    /** Обязательных пунктов выполнено / применимо; null — без методики. */
+    checkpointsDone: number | null;
+    checkpointsTotal: number | null;
+    /** Полных спиралей презентации; null — не считались. */
+    spiralsFull: number | null;
+    /** Минимум полных витков по методике разбора; null — не считались. */
+    spiralsMinFull: number | null;
+    /** Продвижение сделки по звонку 1–5; null — тип без продвижения. */
+    dealProgress: number | null;
+    /** Сколько ограничителей срезали оценку (ядро + методика). */
+    capsApplied: number;
 }
 
 /**

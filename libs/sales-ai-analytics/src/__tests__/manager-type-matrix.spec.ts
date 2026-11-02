@@ -421,3 +421,90 @@ describe('buildManagerTypeMatrix', () => {
         expect(empty.analyzed).toBe(0);
     });
 });
+
+/**
+ * Методика и продвижение сделки в ячейке (focus-v3.0, 01.11.2026): доля
+ * выполненных пунктов суммарно по звонкам с методикой, доля звонков со
+ * срезанной оценкой среди разборов с данными методики, среднее продвижение
+ * 1–5; старые разборы без этих полей ничего не добавляют.
+ */
+describe('матрица: методика и продвижение сделки', () => {
+    const withMethodology = (
+        prefix: string,
+        count: number,
+        over: {
+            done: number;
+            total: number;
+            capsApplied: number;
+            dealProgress: number | null;
+        },
+    ): MatrixCallRow[] =>
+        liteRows(prefix, count, {
+            methodology: {
+                code: 'polyansky',
+                checkpointsDone: over.done,
+                checkpointsTotal: over.total,
+                spiralsFull: null,
+                spiralsMinFull: null,
+                dealProgress: over.dealProgress,
+                capsApplied: over.capsApplied,
+            },
+        });
+
+    it('пункты — суммарно по звонкам с методикой, срезы — доля звонков, продвижение — среднее', () => {
+        const matrix = buildManagerTypeMatrix([
+            ...withMethodology('a', 5, {
+                done: 7,
+                total: 10,
+                capsApplied: 1,
+                dealProgress: 3,
+            }),
+            ...withMethodology('b', 3, {
+                done: 5,
+                total: 10,
+                capsApplied: 0,
+                dealProgress: 4,
+            }),
+            // Старый разбор без данных методики — ни в один показатель.
+            liteRow({ transcriptionId: 'old' }),
+        ]);
+        const cell = matrix.managers[0].byType[0];
+        expect(cell.n).toBe(9);
+        // (5×7 + 3×5) / (8×10) = 50 из 80 пунктов → 62,5 %.
+        expect(cell.checklists.checkpointsDonePct?.n).toBe(80);
+        expect(cell.checklists.checkpointsDonePct?.value).toBeCloseTo(62.5, 9);
+        // Срез оценки у 5 звонков из 8 с данными методики.
+        expect(cell.checklists.cappedCallsPct?.n).toBe(8);
+        expect(cell.checklists.cappedCallsPct?.value).toBeCloseTo(62.5, 9);
+        // Продвижение: (5×3 + 3×4) / 8 = 3,375 при n = 8 (low).
+        expect(cell.dealProgress?.n).toBe(8);
+        expect(cell.dealProgress?.value).toBeCloseTo(3.375, 9);
+        expect(cell.dealProgress?.confidence.level).toBe('low');
+    });
+
+    it('без методики на портале пунктов нет, но срезы ядра и продвижение считаются; без данных — полей нет', () => {
+        const core = buildManagerTypeMatrix(
+            liteRows('c', 8, {
+                methodology: {
+                    code: null,
+                    checkpointsDone: null,
+                    checkpointsTotal: null,
+                    spiralsFull: null,
+                    spiralsMinFull: null,
+                    dealProgress: null,
+                    capsApplied: 1,
+                },
+            }),
+        );
+        const cell = core.managers[0].byType[0];
+        expect(cell.checklists.checkpointsDonePct).toBeUndefined();
+        expect(cell.checklists.cappedCallsPct?.value).toBeCloseTo(100, 9);
+        expect(cell.dealProgress).toBeUndefined();
+
+        const legacy = buildManagerTypeMatrix(liteRows('l', 8, {}));
+        const legacyCell = legacy.managers[0].byType[0];
+        expect(legacyCell.checklists.checkpointsDonePct).toBeUndefined();
+        expect(legacyCell.checklists.cappedCallsPct).toBeUndefined();
+        expect(legacyCell.dealProgress).toBeUndefined();
+    });
+});

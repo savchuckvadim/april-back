@@ -168,6 +168,7 @@ describe('assembleQualityFacts', () => {
                 weakCallIds: [],
             },
             lowScoreCalls: [],
+            progress: { n: 0, calls: [] },
         });
         expect(sectionMeansOf([], ['NEEDS'])).toEqual([]);
     });
@@ -197,5 +198,118 @@ describe('assembleQualityFacts', () => {
         expect(quality?.presentation.weakCallIds).toEqual(['p1']);
         expect(quality?.lowScoreCalls).toEqual([]);
         expect(quality?.thresholds.lowScoreCallMax).toBe(2);
+    });
+});
+
+describe('факты методики: спирали презентаций и продвижение сделок (02.11.2026)', () => {
+    const methodology = (
+        spiralsFull: number | null,
+        spiralsMinFull: number | null,
+        dealProgress: number | null,
+    ) => ({
+        code: 'polyansky',
+        checkpointsDone: 1,
+        checkpointsTotal: 2,
+        spiralsFull,
+        spiralsMinFull,
+        dealProgress,
+        capsApplied: 0,
+    });
+
+    it('спирали: среднее полных витков, норма из самого свежего разбора, презентации ниже своей нормы', () => {
+        const facts = assembleQualityFacts(
+            [
+                row('p1', 'presentation', {
+                    callStartedAt: new Date('2026-09-01T08:00:00Z'),
+                    methodology: methodology(1, 3, null),
+                }),
+                row('p2', 'presentation', {
+                    callStartedAt: new Date('2026-09-03T08:00:00Z'),
+                    methodology: methodology(2, 2, null),
+                }),
+                row('p3', 'presentation', {
+                    callStartedAt: new Date('2026-09-02T08:00:00Z'),
+                    methodology: methodology(0, 3, null),
+                }),
+                // Спирали не считались — в среднее не идёт.
+                row('p4', 'presentation', {
+                    methodology: methodology(null, null, null),
+                }),
+                // Холодный звонок к презентациям не относится.
+                row('c1', 'cold', { methodology: methodology(0, 3, null) }),
+            ],
+            THRESHOLDS,
+        );
+        expect(facts.presentation.spirals).toEqual({
+            n: 3,
+            meanFull: 1,
+            minFull: 2,
+            belowMinCallIds: ['p1', 'p3'],
+        });
+    });
+
+    it('без разборов со спиралями поля spirals у презентаций нет', () => {
+        const facts = assembleQualityFacts(
+            [
+                row('p1', 'presentation', {
+                    methodology: methodology(null, null, null),
+                }),
+            ],
+            THRESHOLDS,
+        );
+        expect(facts.presentation.spirals).toBeUndefined();
+    });
+
+    it('продвижение: звонки с движением сделки и среди них — с оценкой ниже порога качества, по id', () => {
+        const facts = assembleQualityFacts(
+            [
+                row('a3', 'presentation', {
+                    score: 45,
+                    methodology: methodology(null, null, 4),
+                }),
+                row('a1', 'refine', {
+                    score: 59,
+                    methodology: methodology(null, null, 5),
+                }),
+                row('a2', 'presentation', {
+                    score: 80,
+                    methodology: methodology(null, null, 5),
+                }),
+                // Сделка не двигалась — вне счётчика.
+                row('a4', 'presentation', {
+                    score: 20,
+                    methodology: methodology(null, null, 2),
+                }),
+                // Без оценки — вне счётчика.
+                row('a5', 'presentation', {
+                    score: null,
+                    methodology: methodology(null, null, 5),
+                }),
+            ],
+            THRESHOLDS,
+        );
+        expect(facts.progress).toEqual({
+            n: 3,
+            calls: [
+                {
+                    transcriptionId: 'a1',
+                    callType: 'refine',
+                    score: 5.9,
+                    dealProgress: 5,
+                },
+                {
+                    transcriptionId: 'a3',
+                    callType: 'presentation',
+                    score: 4.5,
+                    dealProgress: 4,
+                },
+            ],
+        });
+        expect(facts.thresholds.qualityScoreMin).toBe(6);
+        expect(facts.thresholds.progressMovingMin).toBe(4);
+        expect(emptyQualityFacts(THRESHOLDS).progress).toEqual({
+            n: 0,
+            calls: [],
+        });
     });
 });

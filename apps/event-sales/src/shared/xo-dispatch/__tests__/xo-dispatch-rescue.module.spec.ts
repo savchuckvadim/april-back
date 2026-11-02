@@ -6,6 +6,7 @@ import { XoDispatchRescueScheduler } from '../xo-dispatch-rescue.scheduler';
 import { XoDispatchRescueService } from '../xo-dispatch-rescue.service';
 import { LeadRequestModule } from '../../../lead-request/lead-request.module';
 import { RejectReviveHookModule } from '../../../sales-hooks/reject-revive/reject-revive.module';
+import { EventReportTmcModule } from '../../../event-report-tmc/event-report-tmc.module';
 
 /**
  * Проводка модуля, а не логика.
@@ -68,6 +69,8 @@ describe('Модули с кронами: обязательные импорт�
         ['XoDispatchRescueModule', XoDispatchRescueModule],
         ['LeadRequestModule', LeadRequestModule],
         ['RejectReviveHookModule', RejectReviveHookModule],
+        // Подстраховка согласования заявок ТМЦ (tmc-approval-rescue).
+        ['EventReportTmcModule', EventReportTmcModule],
     ])('%s импортирует Redis, настройки и PBX', (_name, moduleClass) => {
         const imports = importsOf(moduleClass);
 

@@ -70,10 +70,17 @@ describe('versions.types', () => {
             // v2.6 (21.10.2026): блок приглашения на мероприятие — только
             // для звонков нового типа, оценки остальных не меняются.
             'focus-v2.6-2026-10-21',
+            // v3.0 (01.11.2026): расширенный шаг, продвижение сделки,
+            // ограничители и методика — по решению владельца в общей серии.
+            'focus-v3.0-2026-11-01',
         ]);
         expect(versionDate('focus-v2.6-2026-10-21')).toBe('2026-10-21');
+        // v3.0 (01.11.2026) — по существу, но по решению владельца в общей серии.
+        expect(versionSeriesDate('focus-v3.0-2026-11-01')).toBe(
+            AI_ANALYSIS_SERIES_START,
+        );
         // Версия без записи — прежнее поведение: дата из строки.
-        expect(versionSeriesDate('focus-v3.0-2026-11-01')).toBe('2026-11-01');
+        expect(versionSeriesDate('focus-v9.0-2027-01-15')).toBe('2027-01-15');
         expect(versionSeriesDate('sections-7-v1')).toBeNull();
     });
 
@@ -84,9 +91,12 @@ describe('versions.types', () => {
         expect(comparableFrom(['sections-7-v1', 'focus-v2.4-2026-10-20'])).toBe(
             AI_ANALYSIS_SERIES_START,
         );
-        // Правка по существу (нет записи в таблице) — рвёт ряд как раньше.
-        expect(comparableFrom(['sections-7-v1', 'focus-v3.0-2026-11-01'])).toBe(
-            '2026-11-01',
+        expect(comparableFrom(['sections-7-v2', 'focus-v3.0-2026-11-01'])).toBe(
+            AI_ANALYSIS_SERIES_START,
+        );
+        // Правка по существу без записи в таблице — рвёт ряд как раньше.
+        expect(comparableFrom(['sections-7-v1', 'focus-v9.0-2027-01-15'])).toBe(
+            '2027-01-15',
         );
     });
 

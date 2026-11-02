@@ -13,6 +13,7 @@ import {
     detectEventFromTmcStage,
     getTmcTargetStageCode,
 } from './deal-target-stage.calculator';
+import { TMC_DEAL_LINK_FIELD } from './tmc-deal-link-fields.const';
 
 /**
  * Воронка tmc_base — взаимодействие сделки ТМЦ с pres-сделкой основной воронки.
@@ -63,14 +64,15 @@ export class TmcDealService {
                 STAGE_ID: composeStageId(categoryId, 'PRES_PLAN'),
                 ASSIGNED_BY_ID: String(ctx.planResponsibleId),
             };
-            (fields as Record<string, unknown>).UF_CRM_TO_BASE_SALES =
-                ctx.currentBaseDeal ? String(ctx.currentBaseDeal.ID) : '';
-            (fields as Record<string, unknown>).UF_CRM_TO_PRESENTATION_SALES =
-                newPresDealRef;
-            (
-                fields as Record<string, unknown>
-            ).UF_CRM_LAST_PRES_DONE_RESPONSIBLE = String(ctx.planResponsibleId);
-            (fields as Record<string, unknown>).UF_CRM_MANAGER_OP = String(
+            const links = fields as Record<string, unknown>;
+            links[TMC_DEAL_LINK_FIELD.toBaseSales] = ctx.currentBaseDeal
+                ? String(ctx.currentBaseDeal.ID)
+                : '';
+            links[TMC_DEAL_LINK_FIELD.toPresentationSales] = newPresDealRef;
+            links[TMC_DEAL_LINK_FIELD.lastPresDoneResponsible] = String(
+                ctx.planResponsibleId,
+            );
+            links[TMC_DEAL_LINK_FIELD.managerOp] = String(
                 ctx.planResponsibleId,
             );
 

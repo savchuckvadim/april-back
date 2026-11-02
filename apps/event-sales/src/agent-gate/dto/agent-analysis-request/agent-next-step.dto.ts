@@ -36,4 +36,50 @@ export class AgentNextStepDto {
     @IsOptional()
     @IsString()
     date?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Время следующего контакта, как прозвучало («11:00», «после ' +
+            'обеда»); null — не названо.',
+        example: '11:00',
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    time?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Цель следующего контакта («узнать решение», «показать ' +
+            'директору»); null — не названа.',
+        example: 'узнать решение директора',
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    goal?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Что клиент делает до следующего контакта; null — ничего не обещал.',
+        example: 'Покажет демо-доступ директору',
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    clientAction?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Что менеджер делает до следующего контакта; null — ничего не обещал.',
+        example: 'Пришлёт счёт и КП',
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    managerAction?: string | null;
 }

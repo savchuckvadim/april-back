@@ -39,6 +39,14 @@ export const logger = new Logger('SideFlowJobBuilder');
 export type SideFlowJobKind = 'plan' | 'report';
 
 /**
+ * Что вообще может лежать в сайд-очереди: план, отчёт и ЗАЯВКА ТМЦ на
+ * презентацию (`request`, поток ТМЦ). Заявка — не назначение анкеты
+ * (ответов у неё нет), поэтому отдельный тип: раскладка ответов по
+ * назначениям по-прежнему знает только план и отчёт.
+ */
+export type SideFlowQueuedJobKind = SideFlowJobKind | 'request';
+
+/**
  * Всё, что нужно, чтобы разложить ответы портальных анкет по потокам:
  * состав вопросов, сами ответы и выключатель по типам события.
  * Читается ОДИН раз на отчёт и только когда ответы вообще пришли.
@@ -227,7 +235,7 @@ export const warnOrphanAnswers = (
 export function sideJobId(
     operationId: string | undefined,
     flow: string,
-    kind: SideFlowJobKind,
+    kind: SideFlowQueuedJobKind,
 ): string | undefined {
     return operationId ? `${operationId}:${flow}:${kind}` : undefined;
 }

@@ -281,3 +281,71 @@ describe('StructuredLlmGateway — провайдеры по порядку с �
         });
     });
 });
+
+/**
+ * Явный порядок провайдеров запроса (ручка «любой промпт» и проверки
+ * одного провайдера) важнее настройки портала; готовность провайдера по
+ * коду — для чек-листов админки.
+ */
+describe('StructuredLlmGateway: явный порядок провайдеров запроса', () => {
+    it('providers в запросе важнее настройки портала и общего порядка', async () => {
+        const { gateway, vibecode, openai, orderResolver } = makeGateway(
+            {},
+            { portalOrder: ['vibecode', 'openai-compatible'] },
+        );
+
+        const response = await gateway.complete({
+            ...REQUEST,
+            providers: ['openai-compatible'],
+        });
+
+        expect(response.provider).toBe('openai-compatible');
+        expect(openai.complete).toHaveBeenCalledTimes(1);
+        expect(vibecode.complete).not.toHaveBeenCalled();
+        expect(orderResolver.orderFor).not.toHaveBeenCalled();
+    });
+
+    it('пустой список providers — обычный порядок портала', async () => {
+        const { gateway, vibecode, orderResolver } = makeGateway();
+
+        const response = await gateway.complete({ ...REQUEST, providers: [] });
+
+        expect(response.provider).toBe('vibecode');
+        expect(vibecode.complete).toHaveBeenCalledTimes(1);
+        expect(orderResolver.orderFor).toHaveBeenCalledWith(DOMAIN);
+    });
+
+    it('явный провайдер без настройки — ошибка с его причиной, другие не пробуются', async () => {
+        const { gateway, openai } = makeGateway(
+            {},
+            {
+                vibecode: fakeAdapter('vibecode', {
+                    issue: 'нет ключа VibeCode',
+                }),
+            },
+        );
+
+        await expect(
+            gateway.complete({ ...REQUEST, providers: ['vibecode'] }),
+        ).rejects.toThrow('vibecode — нет ключа VibeCode');
+        expect(openai.complete).not.toHaveBeenCalled();
+    });
+
+    it('configurationIssueOf отдаёт причину провайдера для домена', async () => {
+        const { gateway } = makeGateway(
+            {},
+            {
+                vibecode: fakeAdapter('vibecode', {
+                    issue: 'нет ключа VibeCode',
+                }),
+            },
+        );
+
+        await expect(
+            gateway.configurationIssueOf('vibecode', DOMAIN),
+        ).resolves.toBe('нет ключа VibeCode');
+        await expect(
+            gateway.configurationIssueOf('openai-compatible', DOMAIN),
+        ).resolves.toBeNull();
+    });
+});

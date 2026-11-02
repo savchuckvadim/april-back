@@ -236,6 +236,12 @@ export class EventReportInitService {
         if (dtoLeadId && entityType !== EEventReportEntityType.LEAD) {
             bitrix.batch.lead.get('get_dto_lead', dtoLeadId);
         }
+        // Заявка на презентацию согласована роботом: ТМЦ-сделка приходит в
+        // DTO — задачи со связью у такого отчёта ещё нет.
+        const tmcInitDealId = this.toId(dto.tmcDealId);
+        if (tmcInitDealId) {
+            bitrix.batch.deal.get('get_tmc_init_deal', tmcInitDealId);
+        }
         if (launchDealId && ownerDeal) {
             bitrix.batch.deal.contactItemsGet(
                 'get_owner_deal_contacts',
@@ -367,11 +373,18 @@ export class EventReportInitService {
 
         // === Фаза 3: presDeal/tmcDeal — по dealIds из dto.currentTask.ufCrmTask ===
         const taskCrmLinks = this.extractTaskCrmLinks(dto);
-        const { currentPresDeal, currentTmcDeal } = this.resolveTaskLinkedDeals(
+        const linked = this.resolveTaskLinkedDeals(
             taskCrmLinks,
             activeDeals,
             portal,
         );
+        const currentPresDeal = linked.currentPresDeal;
+        // Связи задачи важнее DTO: робот согласования задачи не присылает.
+        const currentTmcDeal =
+            linked.currentTmcDeal ??
+            (tmcInitDealId
+                ? this.pick<IBXDeal>(flat, 'get_tmc_init_deal')
+                : null);
 
         const currentTmcFromPresentation = this.resolveTmcLinkedToPresentation(
             currentPresDeal,
@@ -395,6 +408,10 @@ export class EventReportInitService {
             currentPresDeal,
             currentTmcDeal,
             currentTmcFromPresentation,
+            // Открытая ТМЦ-сделка компании у ответственного — база ТМЦ-отчёта
+            // без связи через задачу (режим «Менеджер ТМЦ»).
+            companyTmcDeal:
+                dealsByCategory[PbxDealCategoryCodeEnum.tmc_base] ?? null,
             currentTask,
             reportContact,
             planContact,

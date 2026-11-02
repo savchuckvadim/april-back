@@ -25,6 +25,7 @@ import {
     assembleMatrix,
 } from '../assembler/manager-type-matrix.assembler';
 import { withSignals } from './attention.presenter';
+import { defaultAttentionThresholds } from '../loaders/attention-thresholds.util';
 import { buildManagerRow } from './manager-row.presenter';
 import {
     buildOverviewYoy,
@@ -41,6 +42,7 @@ import {
     unionManagerIds,
 } from './overview-parts.presenter';
 import { overviewScopeMeta, scopeLiteRows } from './overview-scope.presenter';
+import { buildQualityProgressDto } from './quality-progress.presenter';
 import { resolveComparableFrom } from './readiness.util';
 
 // Части сборки вынесены в overview-parts.presenter («≤ 300 строк»);
@@ -190,6 +192,11 @@ export function buildOverviewDto(
         objections,
         // Блок «год назад» по отделу (П3): null — месяцев M−12 нет либо период не месяц.
         yoy: buildOverviewYoy(managers, phase2),
+        // Матрица «качество × продвижение» — по тем же порогам, что сигналы.
+        qualityProgress: buildQualityProgressDto(
+            rows,
+            sources.attentionThresholds ?? defaultAttentionThresholds(),
+        ),
         meta: {
             totalCalls: rows.length,
             analyzedCalls: matrix.analyzed,
@@ -227,6 +234,17 @@ export function applyOverviewPerimeter(
             ...dto.objections,
             byManager: filterByPerimeter(dto.objections.byManager, access),
         },
+        ...(dto.qualityProgress
+            ? {
+                  qualityProgress: {
+                      ...dto.qualityProgress,
+                      managers: filterByPerimeter(
+                          dto.qualityProgress.managers,
+                          access,
+                      ),
+                  },
+              }
+            : {}),
         meta: { ...dto.meta, fromCache },
     };
 }

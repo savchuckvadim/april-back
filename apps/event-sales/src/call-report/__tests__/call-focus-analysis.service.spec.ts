@@ -1,5 +1,9 @@
 import { Logger } from '@nestjs/common';
-import { CALL_REPORT_SECTION_CODES } from '@lib/call-lib';
+import {
+    CALL_REPORT_SECTION_CODES,
+    POLYANSKY_METHODOLOGY,
+    type ResolvedMethodology,
+} from '@lib/call-lib';
 import { FOCUS_SECTION_CODES } from '../contracts/call-focus-analysis.contract';
 import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
 
@@ -14,6 +18,8 @@ const USAGE = { promptTokens: 100, completionTokens: 20, totalTokens: 120 };
 const makeDeps = (options?: {
     /** schemaName → ответ (или Error для падения прохода). */
     responses?: Record<string, Record<string, unknown> | Error>;
+    /** Методика портала из реестра; нет — разбор одним ядром. */
+    methodology?: ResolvedMethodology | null;
 }) => {
     const responses = options?.responses ?? {};
     const llm = {
@@ -62,12 +68,17 @@ const makeDeps = (options?: {
             .fn()
             .mockResolvedValue({ presentationStrictness: 'strict' }),
     };
+    // Реестр методик: по умолчанию на портале методика не выбрана.
+    const methodologyRegistry = {
+        resolve: jest.fn().mockResolvedValue(options?.methodology ?? null),
+    };
     const service = new CallFocusAnalysisService(
         llm as never,
         materials as never,
         callTypeRegistry as never,
         appSettings as never,
         reportSettings as never,
+        methodologyRegistry as never,
     );
     return {
         service,
@@ -75,6 +86,7 @@ const makeDeps = (options?: {
         appSettings,
         reportSettings,
         materials,
+        methodologyRegistry,
     };
 };
 
@@ -371,5 +383,167 @@ describe('CallFocusAnalysisService', () => {
             request => request.kind === 'presentation-playbook',
         );
         expect(playbook?.budgetChars).toBe(1500);
+    });
+});
+
+/**
+ * Проход «методика» (этап 1 плана методики Полянского): на портале с
+ * методикой идёт четвёртый вызов по пунктам типа, его ответ раскладывается
+ * в dto.methodology, ограничители ядра и методики срезают оценки; без
+ * методики — три прохода и синтез, но ограничители ядра всё равно считаются.
+ */
+describe('CallFocusAnalysisService: методика и ограничители', () => {
+    const resolved: ResolvedMethodology = {
+        methodology: POLYANSKY_METHODOLOGY,
+        scope: 'common',
+        source: 'builtin',
+        versionTag: 'polyansky@1.0.0',
+    };
+
+    it('с методикой: пять вызовов, пункты и спирали в dto, ограничитель методики срезал презентацию', async () => {
+        const { service, llm } = makeDeps({
+            methodology: resolved,
+            responses: {
+                call_focus_content: focusResult({
+                    sections: [
+                        { section: 'NEEDS', relevance: 70, score: 7 },
+                        { section: 'PRESENTATION', relevance: 100, score: 9 },
+                    ],
+                    needsFound: true,
+                    needs: ['практика'],
+                    presentationDone: true,
+                }),
+                call_focus_movement: focusResult({
+                    sections: [{ section: 'CLOSING', relevance: 90, score: 8 }],
+                    nextStep: {
+                        set: true,
+                        description: 'созвон',
+                        date: '2026-11-05',
+                        time: '11:00',
+                        goal: 'узнать решение',
+                        clientAction: 'показать директору',
+                        managerAction: 'прислать счёт',
+                    },
+                    dealProgress: {
+                        score: 3,
+                        before: 'сомнения',
+                        after: 'барьер назван',
+                        why: 'есть действие клиента',
+                        whyNotHigher: 'решение за директором',
+                    },
+                }),
+                call_focus_synthesis: { summary: 'Итог', score: 8 },
+                call_focus_methodology: {
+                    checkpoints: [
+                        {
+                            code: 'pres.needs_confirmed',
+                            status: 'done',
+                            quote: 'Итак, вам важно…',
+                            startSec: 120,
+                            endSec: 130,
+                        },
+                        {
+                            code: 'pres.summary_by_needs',
+                            status: 'missed',
+                            quote: null,
+                            startSec: null,
+                            endSec: null,
+                        },
+                    ],
+                    spirals: [
+                        {
+                            need: 'практика',
+                            feature: 'поиск',
+                            link: 'по вашим делам',
+                            benefit: 'час вместо дня',
+                            question: null,
+                            clientAnswer: null,
+                        },
+                    ],
+                },
+            },
+        });
+
+        const dto = await service.run(
+            'gsr.bitrix24.ru',
+            'текст разговора',
+            'presentation',
+            'ПАСПОРТ',
+        );
+
+        expect(dto).not.toBeNull();
+        const schemaNames = llm.structuredCompletionWithUsage.mock.calls.map(
+            call => String(call[2]),
+        );
+        expect(schemaNames).toContain('call_focus_methodology');
+        expect(schemaNames).toHaveLength(5);
+        expect(dto?.methodology).toMatchObject({
+            code: 'polyansky',
+            version: '1.0.0',
+            spiralsFull: 0,
+        });
+        const byCode = Object.fromEntries(
+            (dto?.methodology?.checkpoints ?? []).map(c => [c.code, c.status]),
+        );
+        expect(byCode['pres.needs_confirmed']).toBe('done');
+        expect(byCode['pres.summary_by_needs']).toBe('missed');
+        // Один виток без вопроса: обратная связь после блоков пропущена →
+        // потолок презентации 7 (ограничитель методики).
+        expect(byCode['pres.feedback_per_block']).toBe('missed');
+        expect(
+            dto?.sections?.find(s => s.section === 'PRESENTATION')?.score,
+        ).toBe(7);
+        expect(dto?.capsTriggered?.map(c => c.code)).toContain(
+            'pres.no_questions_after_blocks',
+        );
+        expect(dto?.dealProgress).toMatchObject({ score: 3 });
+        expect(dto?.usage?.calls).toBe(5);
+    });
+
+    it('без методики: четыре вызова, methodology null, ограничитель ядра срезал презентацию без потребностей', async () => {
+        const { service, llm } = makeDeps({
+            responses: {
+                call_focus_content: focusResult({
+                    sections: [
+                        { section: 'PRESENTATION', relevance: 100, score: 9 },
+                    ],
+                    needsFound: false,
+                    needs: [],
+                    presentationDone: true,
+                }),
+                call_focus_synthesis: { summary: 'Итог', score: 8 },
+            },
+        });
+
+        const dto = await service.run(
+            'test.bitrix24.ru',
+            'текст разговора',
+            'presentation',
+        );
+
+        expect(llm.structuredCompletionWithUsage).toHaveBeenCalledTimes(4);
+        expect(dto?.methodology).toBeNull();
+        expect(
+            dto?.sections?.find(s => s.section === 'PRESENTATION')?.score,
+        ).toBe(6);
+        expect(dto?.capsTriggered).toEqual([
+            expect.objectContaining({
+                code: 'core.presentation_without_needs',
+                before: 9,
+                after: 6,
+                applied: true,
+            }),
+        ]);
+    });
+
+    it('методика есть, но тип звонка вне неё — проход не идёт, методика null', async () => {
+        const { service, llm } = makeDeps({ methodology: resolved });
+        const dto = await service.run(
+            'gsr.bitrix24.ru',
+            'текст разговора',
+            'event_invite',
+        );
+        expect(llm.structuredCompletionWithUsage).toHaveBeenCalledTimes(4);
+        expect(dto?.methodology).toBeNull();
     });
 });

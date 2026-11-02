@@ -45,6 +45,8 @@ const CHECKLIST_CODES = [
     'nextStepDateRatePct',
     'hvostDonePct',
     'fiveKDonePct',
+    'checkpointsDonePct',
+    'cappedCallsPct',
     'handledRatePct',
 ] as const satisfies readonly (keyof AiCellChecklistsDto)[];
 
@@ -52,8 +54,16 @@ const CHECKLIST_TITLES: Record<(typeof CHECKLIST_CODES)[number], string> = {
     nextStepDateRatePct: 'Шаг с датой',
     hvostDonePct: '«Хвост»',
     fiveKDonePct: '«5К»',
+    checkpointsDonePct: 'Пункты методики выполнены',
+    cappedCallsPct: 'Оценка ограничена',
     handledRatePct: 'Отработано возражений',
 };
+
+/** «3,2 из 5 по 14 разборам» / «мало данных: 5 разборов» — продвижение словами. */
+const progressText = (metric: MetricValue): string =>
+    metric.value === null
+        ? `мало данных: ${ruCount(metric.n, RU_FORMS.reviews)}`
+        : `${ru1(metric.value)} из 5 по ${ruCount(metric.n, RU_FORMS.reviewsDative)}`;
 
 /** Пара «строка менеджера × ячейка типа» — единица обеих раскладок. */
 interface ByTypePair {
@@ -152,6 +162,20 @@ export function toLongRows(
             metric: cell.score,
             explanation: cell.explanation.text,
         },
+        // Продвижение сделки по звонку (ядро с focus-v3.0): отдельная
+        // оценка 1–5 сразу под оценкой типа.
+        ...(cell.dealProgress
+            ? [
+                  {
+                      ...base,
+                      kind: 'score' as const,
+                      indicator: 'dealProgress',
+                      title: 'Продвижение сделки (1–5)',
+                      metric: cell.dealProgress,
+                      explanation: `Продвижение сделки: ${progressText(cell.dealProgress)}.`,
+                  },
+              ]
+            : []),
         ...cell.sections.map(
             (section): AiByTypeLongRowDto => ({
                 ...base,

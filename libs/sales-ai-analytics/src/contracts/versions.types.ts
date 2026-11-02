@@ -14,6 +14,11 @@ export interface AnalysisVersions {
     attribution: string;
     /** Дата смены классификатора типов. */
     classifier: string;
+    /**
+     * Метка методики портала «код@версия» (с 01.11.2026); нет — разбор
+     * одним ядром. Даты не несёт — на границу сравнимости не влияет.
+     */
+    methodology?: string;
 }
 
 const ISO_DATE_RE = /\d{4}-\d{2}-\d{2}/;
@@ -57,6 +62,10 @@ export const PROMPT_SERIES_START = {
     // event_invite) — подключается только к звонкам нового типа; оценки
     // существующих типов не менялись.
     'focus-v2.6-2026-10-21': AI_ANALYSIS_SERIES_START,
+    // v3.0 (01.11.2026): расширенный шаг, продвижение сделки, ограничители
+    // оценки и проход «методика» — правка ПО СУЩЕСТВУ, но по решению
+    // владельца 01.11.2026 (оценки должны продолжаться) — в общей серии.
+    'focus-v3.0-2026-11-01': AI_ANALYSIS_SERIES_START,
 } as const satisfies Readonly<Record<string, string>>;
 
 /**

@@ -669,6 +669,20 @@ exports.Prisma.VendorSettingScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.AiMethodologyScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  title: 'title',
+  version: 'version',
+  scope: 'scope',
+  portalDomain: 'portalDomain',
+  config: 'config',
+  isActive: 'isActive',
+  updatedBy: 'updatedBy',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.PortalQuestionnaireScalarFieldEnum = {
   id: 'id',
   portal_id: 'portal_id',
@@ -1841,6 +1855,37 @@ exports.Prisma.SupplyReportTemplateScalarFieldEnum = {
   creator_bitrix_user_id: 'creator_bitrix_user_id'
 };
 
+exports.Prisma.RenewalOfferLinkScalarFieldEnum = {
+  id: 'id',
+  token: 'token',
+  clientName: 'clientName',
+  title: 'title',
+  salesIncluded: 'salesIncluded',
+  salesPrice: 'salesPrice',
+  aiIncluded: 'aiIncluded',
+  aiEmployees: 'aiEmployees',
+  aiBasePrice: 'aiBasePrice',
+  aiBaseEmployees: 'aiBaseEmployees',
+  aiExtraPrice: 'aiExtraPrice',
+  aiFreeDelta: 'aiFreeDelta',
+  managerIncluded: 'managerIncluded',
+  managerPrice: 'managerPrice',
+  devIncluded: 'devIncluded',
+  devHours: 'devHours',
+  devHourPrice: 'devHourPrice',
+  adjustment: 'adjustment',
+  adjustmentLabel: 'adjustmentLabel',
+  monthlyTotal: 'monthlyTotal',
+  offerJson: 'offerJson',
+  expiresAt: 'expiresAt',
+  revokedAt: 'revokedAt',
+  viewCount: 'viewCount',
+  lastViewedAt: 'lastViewedAt',
+  createdBy: 'createdBy',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -2192,6 +2237,16 @@ exports.Prisma.VendorSuperUserOrderByRelevanceFieldEnum = {
 exports.Prisma.VendorSettingOrderByRelevanceFieldEnum = {
   key: 'key',
   value: 'value',
+  updatedBy: 'updatedBy'
+};
+
+exports.Prisma.AiMethodologyOrderByRelevanceFieldEnum = {
+  id: 'id',
+  code: 'code',
+  title: 'title',
+  version: 'version',
+  scope: 'scope',
+  portalDomain: 'portalDomain',
   updatedBy: 'updatedBy'
 };
 
@@ -2897,6 +2952,15 @@ exports.Prisma.SupplyReportTemplateOrderByRelevanceFieldEnum = {
   required_fields: 'required_fields',
   optional_fields: 'optional_fields'
 };
+
+exports.Prisma.RenewalOfferLinkOrderByRelevanceFieldEnum = {
+  id: 'id',
+  token: 'token',
+  clientName: 'clientName',
+  title: 'title',
+  adjustmentLabel: 'adjustmentLabel',
+  createdBy: 'createdBy'
+};
 exports.offer_templates_visibility = exports.$Enums.offer_templates_visibility = {
   public: 'public',
   private: 'private',
@@ -3004,6 +3068,7 @@ exports.Prisma.ModelName = {
   PortalAppSettings: 'PortalAppSettings',
   VendorSuperUser: 'VendorSuperUser',
   VendorSetting: 'VendorSetting',
+  AiMethodology: 'AiMethodology',
   PortalQuestionnaire: 'PortalQuestionnaire',
   PortalQuestionnaireItem: 'PortalQuestionnaireItem',
   PortalQuestionnaireItemOption: 'PortalQuestionnaireItemOption',
@@ -3068,7 +3133,8 @@ exports.Prisma.ModelName = {
   ShareLink: 'ShareLink',
   KonstructorPublicLink: 'KonstructorPublicLink',
   ContractTemplate: 'ContractTemplate',
-  SupplyReportTemplate: 'SupplyReportTemplate'
+  SupplyReportTemplate: 'SupplyReportTemplate',
+  RenewalOfferLink: 'RenewalOfferLink'
 };
 
 /**

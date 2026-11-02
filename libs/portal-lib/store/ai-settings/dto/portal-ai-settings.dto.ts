@@ -7,11 +7,13 @@ import {
     IsNumber,
     IsOptional,
     IsString,
+    Matches,
     Max,
     Min,
 } from 'class-validator';
 import {
     AI_LLM_PROVIDER_CODES,
+    AI_METHODOLOGY_CODE_PATTERN,
     AI_TRANSCRIPTION_MODES,
     AiLlmProviderCode,
     AiTranscriptionMode,
@@ -53,6 +55,7 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         this.revisorEnabled = source.revisorEnabled ?? null;
         this.presentationAuditEnabled = source.presentationAuditEnabled ?? null;
         this.presentationStrictness = source.presentationStrictness ?? null;
+        this.methodologyCode = source.methodologyCode ?? null;
         this.weeklyReportEnabled = source.weeklyReportEnabled ?? null;
         this.weeklyReportRecipients = source.weeklyReportRecipients ?? null;
         this.weeklyReportFolderId = source.weeklyReportFolderId ?? null;
@@ -159,8 +162,11 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
 
     @ApiProperty({
         description:
-            'Модель первичного анализа (резюме и рекомендации по звонку).',
-        example: 'gigachat',
+            'Модель контура резюме (резюме и рекомендации по звонку — поля ' +
+            'RESUME_GIGACHAT / RECOMENDATION_GIGACHAT карточки): none — ' +
+            'контур выключен (дефолт с 01.11.2026: глубокий разбор заполняет ' +
+            'те же поля лучше), иначе gigachat / cloudru / openai / ollama.',
+        example: 'none',
         type: String,
         nullable: true,
     })
@@ -290,6 +296,19 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         nullable: true,
     })
     presentationStrictness: PresentationStrictnessLevel | null;
+
+    @ApiProperty({
+        description:
+            'Код методики продаж, по которой разбираются звонки портала: ' +
+            'чек-пункты, ограничители оценки и справочники поверх общего ядра ' +
+            '(например, polyansky — встроенная методика Полянского; свои ' +
+            'методики заводятся в разделе «Методики»). Пусто — методики нет, ' +
+            'разбор идёт одним ядром.',
+        example: 'polyansky',
+        type: String,
+        nullable: true,
+    })
+    methodologyCode: string | null;
 
     @ApiProperty({
         description:
@@ -527,8 +546,10 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
     staleMinutes?: number | null;
 
     @ApiPropertyOptional({
-        description: 'Модель первичного анализа (резюме и рекомендации).',
-        example: 'gigachat',
+        description:
+            'Модель контура резюме: none — выключить (дефолт), иначе ' +
+            'gigachat / cloudru / openai / ollama; null — сбросить на дефолт.',
+        example: 'none',
         type: String,
         nullable: true,
     })
@@ -662,6 +683,23 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
     @IsString()
     @IsIn(PRESENTATION_STRICTNESS_LEVELS as unknown as string[])
     presentationStrictness?: PresentationStrictnessLevel | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Код методики продаж (латиница, цифры, дефис), например ' +
+            'polyansky. null — выключить методику, разбор одним ядром.',
+        example: 'polyansky',
+        type: String,
+        nullable: true,
+        pattern: AI_METHODOLOGY_CODE_PATTERN.source,
+    })
+    @IsOptional()
+    @IsString()
+    @Matches(AI_METHODOLOGY_CODE_PATTERN, {
+        message:
+            'methodologyCode: код методики — латиница, цифры и дефис, от 2 до 64 знаков',
+    })
+    methodologyCode?: string | null;
 
     @ApiPropertyOptional({
         description: 'Недельный Excel-отчёт по звонкам (пятница, 19:00 МСК).',

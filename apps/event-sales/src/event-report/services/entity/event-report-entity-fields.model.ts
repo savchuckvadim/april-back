@@ -91,6 +91,8 @@ export type DealRole = (typeof EDealRole)[keyof typeof EDealRole];
  */
 const HISTORY_LIMIT_DEFAULT = 12;
 const HISTORY_LIMIT_GSIRK = 30;
+/** Легаси ТМЦ-поток держал в «ОП Истории» восемь записей. */
+const HISTORY_LIMIT_TMC = 8;
 const PRES_COMMENTS_LIMIT = 15;
 const FAIL_COMMENTS_LIMIT = 18;
 
@@ -302,7 +304,14 @@ export class EventReportEntityFieldsModel {
                 value: this.nowCrmDate(),
             });
             this.applyNextEventAxis(out);
-            this.setScalar(out, 'manager_op', this.ctx.workResponsibleId);
+            // Чей это клиент: отдел продаж пишет «Менеджер ОП», режим ТМЦ —
+            // «Менеджер ТМЦ» (легаси `manager_tmc`) и менеджера ОП не трогает:
+            // компания может одновременно вестись ТМЦ и продажами.
+            this.setScalar(
+                out,
+                this.ctx.isTmcMode ? 'manager_tmc' : 'manager_op',
+                this.ctx.workResponsibleId,
+            );
         }
 
         // ===== isPresentationDone =====
@@ -1411,9 +1420,11 @@ export class EventReportEntityFieldsModel {
     }
 
     private appendHistory(out: EntityFieldsMap): void {
-        const limit = this.ctx.isGsirk
-            ? HISTORY_LIMIT_GSIRK
-            : HISTORY_LIMIT_DEFAULT;
+        const limit = this.ctx.isTmcMode
+            ? HISTORY_LIMIT_TMC
+            : this.ctx.isGsirk
+              ? HISTORY_LIMIT_GSIRK
+              : HISTORY_LIMIT_DEFAULT;
         /*
          * «ОП История» — с переносами (владелец 26.10.2026, проверено на
          * карточках): дата и что сделано, комментарий построчно, план.

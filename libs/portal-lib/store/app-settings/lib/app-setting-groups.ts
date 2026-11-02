@@ -227,6 +227,21 @@ export const PORTAL_APP_SETTING_GROUPS = {
             'метки подстраховке не по чему досылать.',
         links: [LINK.companyFields, LINK.dealFields],
     },
+    // --- konstructor ---
+    konstructor_features: {
+        title: 'Конструктор КП: возможности',
+        description:
+            'Что включено в конструкторе документов портала: блок ' +
+            '«3 КП для торгов».',
+        links: [],
+    },
+    tmc_approval_rescue: {
+        title: 'ТМЦ: подстраховка согласования заявок',
+        description:
+            'Крон, который планирует презентацию по утверждённой заявке РПА, ' +
+            'если робот бизнес-процесса не дозвонился до приложения.',
+        links: [LINK.dealFields],
+    },
     deal_audit: {
         title: 'Аудит сделок',
         description:
@@ -304,6 +319,7 @@ const GROUP_RULES: Record<EnumPortalAppCode, readonly GroupRule[]> = {
             codes: ['reject_revive_resend_after_minutes'],
             prefixes: ['xo_rescue_'],
         },
+        { group: 'tmc_approval_rescue', prefixes: ['tmc_approval_rescue_'] },
         { group: 'lead_sla', prefixes: ['lead_intake_sla_'] },
         { group: 'lead_rescue', prefixes: ['lead_intake_rescue_'] },
         { group: 'lead_repeat', prefixes: ['lead_intake_repeat_'] },
@@ -343,13 +359,16 @@ const GROUP_RULES: Record<EnumPortalAppCode, readonly GroupRule[]> = {
                 'action_prompts_enabled',
                 'relation_strips_enabled',
             ],
-            prefixes: ['with_'],
+            // post_fail_* — спутники «Пост-отказной даты» (with_post_fail).
+            prefixes: ['with_', 'post_fail_'],
         },
         { group: 'reject_revive', prefixes: ['reject_revive_'] },
         { group: 'deal_audit', prefixes: ['deal_audit_'] },
         { group: 'duplicate_report', prefixes: ['duplicate_report_'] },
     ],
-    [EnumPortalAppCode.konstructor]: [],
+    [EnumPortalAppCode.konstructor]: [
+        { group: 'konstructor_features', codes: ['zakupki_enabled'] },
+    ],
     [EnumPortalAppCode.skap]: [{ group: 'skap_import', prefixes: [''] }],
 };
 

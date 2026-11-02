@@ -24,6 +24,10 @@ export const PRESENTATION_FLOW_ACTIONS = [
     'moved',
     'spontaneous',
     'skipped',
+    /** Заявка ТМЦ: элемент создан в «Заявка». */
+    'requested',
+    /** План презентации продвинул ждущую заявку ТМЦ в «Запланирована». */
+    'promoted',
 ] as const;
 
 export type PresentationFlowAction = (typeof PRESENTATION_FLOW_ACTIONS)[number];
@@ -37,5 +41,5 @@ export interface PresentationFlowResult {
 export interface PresentationFlowDonePayload extends PresentationFlowResult {
     domain: string;
     operationId?: string;
-    kind: 'plan' | 'report';
+    kind: 'plan' | 'report' | 'request';
 }

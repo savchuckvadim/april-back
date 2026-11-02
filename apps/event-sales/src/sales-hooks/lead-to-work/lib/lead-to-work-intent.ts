@@ -3,6 +3,7 @@ import { BitrixDateTime } from '@lib/shared/lib/date';
 import { bxFieldFlag } from '@lib/shared/lib/utils';
 import { XoIntentModel } from '../../../lead-request/intake/xo-intent.model';
 import { XoRoutingModel } from '../../../lead-request/intake/xo-routing.model';
+import { resolveCardRoutingSource } from './card-routing-source';
 import {
     ILeadToWorkItem,
     LeadToWorkIntent,
@@ -83,21 +84,45 @@ export function resolveLeadToWorkIntent(params: {
     // ── Маршрутизация: дозаполняем то, чего не было в запросе ────────────
     const merged: ILeadToWorkItem = { ...item };
 
-    if (merged.responsible === undefined && routing.responsible !== null) {
+    /*
+     * «Кому и когда» с карточки — только если карточка команда робота, а не
+     * эхо прошлого прогона хука (см. resolveCardRoutingSource). Иначе
+     * повторный вызов по лиду возвращал бы заявку прежнему ответственному
+     * и считал это адресным ХО (garant 02.11.2026).
+     */
+    const source = resolveCardRoutingSource(leadRow, portal);
+    const cardHasRouting =
+        routing.responsible !== null ||
+        routing.name !== null ||
+        routing.deadline !== null;
+    if (!source.command && cardHasRouting) {
+        signals.push(`маршрутизация карточки пропущена: ${source.reason}`);
+    }
+    const readCard = source.command;
+
+    if (
+        readCard &&
+        merged.responsible === undefined &&
+        routing.responsible !== null
+    ) {
         merged.responsible = routing.responsible;
         signals.push(
-            `responsible=${routing.responsible} из поля xo_responsible`,
+            `responsible=${routing.responsible} из поля xo_responsible (${source.reason})`,
         );
     }
     if (merged.department === undefined && routing.department !== null) {
         merged.department = routing.department;
         signals.push(`department из поля department_string`);
     }
-    if (merged.name === undefined && routing.name !== null) {
+    if (readCard && merged.name === undefined && routing.name !== null) {
         merged.name = routing.name;
         signals.push(`name из поля xo_name`);
     }
-    if (merged.deadline === undefined && routing.deadline !== null) {
+    if (
+        readCard &&
+        merged.deadline === undefined &&
+        routing.deadline !== null
+    ) {
         /*
          * Дату из КАРТОЧКИ нормализуем в формат, который ждут все
          * потребители ниже (CRM datetime в локали портала). Битрикс

@@ -133,6 +133,7 @@ export function toCellDto(
         nBeforeComparable: core.nBeforeComparable,
         versionsMixed: core.versionsMixed,
         score: core.score,
+        ...(core.dealProgress ? { dealProgress: core.dealProgress } : {}),
         sections: core.sections.map(toSectionDto),
         checklists: {
             ...core.checklists,

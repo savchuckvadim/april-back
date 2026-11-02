@@ -1,5 +1,8 @@
 import { Logger } from '@nestjs/common';
-import { PresentationSmartInfo } from '@lib/portal-lib/pbx/pbx-presentation-smart';
+import {
+    PRESENTATION_REQUEST_STAGE_CODES,
+    PresentationSmartInfo,
+} from '@lib/portal-lib/pbx/pbx-presentation-smart';
 import {
     hasCrmLink,
     parseSmartElementIdsFromTaskBindings,
@@ -8,7 +11,7 @@ import { FlowBitrix } from '../../shared/side-flow';
 import { PresentationFlowJobData } from '../dto/presentation-flow-job.dto';
 import { BxRow } from '../types/presentation-flow-run.type';
 import { presUfKey } from './pres-element-fields.builder';
-import { presOpenStageIds } from './pres-stage.resolver';
+import { presOpenStageIds, presStageId } from './pres-stage.resolver';
 
 /**
  * Поиск ОТКРЫТОГО элемента презентации — единственная операция чтения
@@ -70,6 +73,44 @@ export class PresElementLookupService {
         }
 
         return this.findOpenByClient(info, job, openStages);
+    }
+
+    /**
+     * Заявка ТМЦ, ждущая согласования (стадии «Заявка» / «На согласовании»),
+     * по ТМЦ-сделке: план презентации после утверждения ПРОДВИГАЕТ её, а не
+     * заводит второй элемент. Нет стадий или поля на портале — null.
+     *
+     * listAll по тем же причинам, что и у поиска по клиенту: заявок на
+     * портале может быть больше одной страницы. Select — ключи матча и
+     * последующего продвижения (лента комментариев дописывается).
+     */
+    async findOpenRequest(
+        info: PresentationSmartInfo,
+        tmcDealId: number,
+    ): Promise<BxRow | null> {
+        const requestStages = PRESENTATION_REQUEST_STAGE_CODES.map(code =>
+            presStageId(info, code),
+        ).filter((stageId): stageId is string => Boolean(stageId));
+        const tmcKey = presUfKey(info, 'PRES_TMC_DEAL');
+        if (!requestStages.length || !tmcKey) return null;
+        const select = [
+            'id',
+            'stageId',
+            tmcKey,
+            presUfKey(info, 'PRES_COMMENTS'),
+        ].filter((key): key is string => !!key);
+        const rows = (await this.bitrix.item.listAll(
+            String(info.entityTypeId),
+            { stageId: requestStages } as never,
+            select,
+        )) as unknown as BxRow[];
+        const matches = rows.filter(row =>
+            hasCrmLink(row[tmcKey], 'D', tmcDealId),
+        );
+        if (!matches.length) return null;
+        return matches.reduce((latest, row) =>
+            Number(row.id) > Number(latest.id) ? row : latest,
+        );
     }
 
     /**

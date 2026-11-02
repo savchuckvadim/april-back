@@ -6,6 +6,7 @@ import { resolveCallManagerId } from '@lib/call-lib/call-report/services/call-ma
 import { CallReportSmartInfo } from '@lib/call-lib/call-report/services/call-report-smart-resolver.service';
 import { AgentCallAnalysisDto } from '../dto/agent-analysis-request.dto';
 import { SmartItemWriteResult } from './agent-analysis-intake.types';
+import { renderMethodologyCheckpointComments } from './agent-analysis-methodology-render.util';
 import { resolveCallDirection } from './agent-analysis-smart-input.mapper';
 import {
     renderAnalysisDuplicateComment,
@@ -62,6 +63,15 @@ export class AgentAnalysisTimelineWriter {
         // (решение владельца 15.08.2026). Постятся после разделов —
         // в ленте окажутся выше них, под диалогом и аудио.
         for (const comment of renderMethodologyComments(dto).reverse()) {
+            await post(comment);
+        }
+
+        // Методика продаж и ограничители (01.11.2026): пункты со статусами
+        // и цитатами и запись «оценка ограничена» — отдельные записи, в
+        // ленте окажутся над хвостом/5К.
+        for (const comment of renderMethodologyCheckpointComments(
+            dto,
+        ).reverse()) {
             await post(comment);
         }
 

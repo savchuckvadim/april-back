@@ -15,6 +15,9 @@ import {
     ATTENTION_FOLLOWUP_SECTIONS,
     ATTENTION_PRESENTATION_SECTIONS,
     AttentionLowScoreCall,
+    AttentionPresentationSpirals,
+    AttentionProgressCall,
+    AttentionProgressFacts,
     AttentionSectionMean,
     bucketOfCallType,
     isFollowupCallType,
@@ -81,6 +84,7 @@ function presentationFactsOf(
     const presentations = rows.filter(row =>
         isPresentationCallType(row.callType),
     );
+    const spirals = spiralsOf(presentations);
     return {
         n: presentations.length,
         sections: sectionMeansOf(
@@ -96,6 +100,7 @@ function presentationFactsOf(
                 ),
             ),
         ),
+        ...(spirals ? { spirals } : {}),
     };
 }
 
@@ -161,6 +166,76 @@ function lowScoreCallsOf(
         .sort((a, b) => a.transcriptionId.localeCompare(b.transcriptionId));
 }
 
+/** Самый свежий звонок первым: норма спиралей — из последнего разбора. */
+const byDateDesc = (a: DatedLiteRow, b: DatedLiteRow): number =>
+    b.callStartedAt.getTime() - a.callStartedAt.getTime();
+
+/** Полных витков и норма методики у звонка; спирали не считались — null. */
+const spiralsOfRow = (
+    row: DatedLiteRow,
+): { full: number; minFull: number } | null => {
+    const full = row.methodology?.spiralsFull;
+    const minFull = row.methodology?.spiralsMinFull;
+    return typeof full === 'number' && typeof minFull === 'number'
+        ? { full, minFull }
+        : null;
+};
+
+/**
+ * Спирали презентаций (методика со спиралями, focus-v3.0): среднее полных
+ * витков, норма методики из самого свежего разбора и презентации, где
+ * витков меньше своей нормы. Разборов со спиралями нет — undefined.
+ */
+function spiralsOf(
+    presentations: readonly DatedLiteRow[],
+): AttentionPresentationSpirals | undefined {
+    const counted = presentations.flatMap(row => {
+        const spirals = spiralsOfRow(row);
+        return spirals ? [{ row, ...spirals }] : [];
+    });
+    if (counted.length === 0) return undefined;
+    const latest = [...counted].sort((a, b) => byDateDesc(a.row, b.row))[0];
+    const meanFull =
+        counted.reduce((acc, item) => acc + item.full, 0) / counted.length;
+    return {
+        n: counted.length,
+        meanFull: round1(meanFull),
+        minFull: latest.minFull,
+        belowMinCallIds: sortedIds(
+            counted
+                .filter(item => item.full < item.minFull)
+                .map(item => item.row),
+        ),
+    };
+}
+
+/**
+ * Продвижение сделок (ядро focus-v3.0): звонки с продвижением не ниже
+ * порога движения и среди них — с оценкой ниже порога качества («клиент
+ * купил бы и без менеджера»), по id. Звонки без оценки не считаются.
+ */
+function progressFactsOf(
+    rows: readonly DatedLiteRow[],
+    thresholds: AttentionThresholds,
+): AttentionProgressFacts {
+    const moving = rows.flatMap(row => {
+        const dealProgress = row.methodology?.dealProgress;
+        if (row.score === null || typeof dealProgress !== 'number') return [];
+        if (dealProgress < thresholds.progressMovingMin) return [];
+        return [{ row, score: round1(row.score / 10), dealProgress }];
+    });
+    const calls: AttentionProgressCall[] = moving
+        .filter(item => item.score < thresholds.qualityScoreMin)
+        .map(item => ({
+            transcriptionId: item.row.transcriptionId,
+            callType: item.row.callType,
+            score: item.score,
+            dealProgress: item.dealProgress,
+        }))
+        .sort((a, b) => a.transcriptionId.localeCompare(b.transcriptionId));
+    return { n: moving.length, calls };
+}
+
 /** Факты качества менеджера по звонкам слоя качества (разбор есть, не короткий). */
 export function assembleQualityFacts(
     rows: readonly DatedLiteRow[],
@@ -171,6 +246,7 @@ export function assembleQualityFacts(
         presentation: presentationFactsOf(rows, thresholds),
         followup: followupFactsOf(rows, thresholds),
         lowScoreCalls: lowScoreCallsOf(rows, thresholds),
+        progress: progressFactsOf(rows, thresholds),
     };
 }
 

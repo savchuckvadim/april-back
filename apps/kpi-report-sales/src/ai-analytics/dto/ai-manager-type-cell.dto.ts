@@ -117,6 +117,23 @@ export class AiCellChecklistsDto {
 
     @ApiPropertyOptional({
         description:
+            'Доля выполненных обязательных пунктов методики, % — суммарно по ' +
+            'пунктам звонков ячейки с методикой (focus-v3.0). Отдаётся, когда ' +
+            'в ячейке есть разборы с методикой.',
+        type: MetricDto,
+    })
+    checkpointsDonePct?: MetricDto;
+
+    @ApiPropertyOptional({
+        description:
+            'Доля звонков, где ограничитель срезал оценку, % — среди разборов ' +
+            'с данными методики (focus-v3.0 и новее).',
+        type: MetricDto,
+    })
+    cappedCallsPct?: MetricDto;
+
+    @ApiPropertyOptional({
+        description:
             'Доля отработанных возражений менеджера по всем типам, % — ' +
             'отдаётся в ячейке типа refine.',
         type: MetricDto,
@@ -303,6 +320,15 @@ export class AiManagerTypeCellDto {
         type: MetricDto,
     })
     score: MetricDto;
+
+    @ApiPropertyOptional({
+        description:
+            'Среднее продвижение сделки по звонку, шкала 1–5 (разборы ' +
+            'focus-v3.0 и новее; типы без продвижения не считаются); при n < 8 ' +
+            'value null. Нет ни одного звонка с продвижением — поля нет.',
+        type: MetricDto,
+    })
+    dealProgress?: MetricDto;
 
     @ApiProperty({
         description: 'Разделы рубрики с собственным n (только relevance > 0).',

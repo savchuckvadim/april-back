@@ -18,6 +18,7 @@ import { AI_ANALYTICS_DQ_PARAMS } from '../../params/registry.dq.const';
 import { AI_ANALYTICS_EDGE_PARAMS } from '../../params/registry.edges.const';
 import { AI_ANALYTICS_EXPOSURE_PARAMS } from '../../params/registry.exposure.const';
 import { AI_ANALYTICS_FUNNEL_PARAMS } from '../../params/registry.funnel.const';
+import { AI_ANALYTICS_METHODOLOGY_PARAMS } from '../../params/registry.methodology.const';
 import { AI_ANALYTICS_NORM_PARAMS } from '../../params/registry.norms.const';
 import { AI_ANALYTICS_PHASE4_ADVICE_PARAMS } from '../../params/registry.phase4-advice.const';
 import { AI_ANALYTICS_PHASE4_PARAMS } from '../../params/registry.phase4.const';
@@ -69,6 +70,10 @@ export const AI_GUIDE_PARAM_GROUPS = {
     quality: group(
         'Качество разговора и оценивание',
         AI_ANALYTICS_QUALITY_PARAMS,
+    ),
+    methodology: group(
+        'Методика продаж и продвижение сделки',
+        AI_ANALYTICS_METHODOLOGY_PARAMS,
     ),
     style: group('Стиль менеджера', AI_ANALYTICS_STYLE_PARAMS),
     dq: group('Качество данных и калибровка', AI_ANALYTICS_DQ_PARAMS),
@@ -148,6 +153,8 @@ export const AI_GUIDE_PORTAL_AI_SETTING_TITLES: Readonly<
     presentationAuditEnabled: 'Утренняя сверка по презентациям',
     presentationStrictness:
         'Строгость определения презентации (strict / normal / soft)',
+    methodologyCode:
+        'Методика продаж: код встроенной (polyansky) или своей из раздела «Методики»; пусто — без методики',
     weeklyReportEnabled: 'Недельный Excel-отчёт по звонкам',
     weeklyReportRecipients: 'Получатели недельного отчёта (bitrix-id)',
     weeklyReportFolderId: 'Папка Диска для недельного отчёта',

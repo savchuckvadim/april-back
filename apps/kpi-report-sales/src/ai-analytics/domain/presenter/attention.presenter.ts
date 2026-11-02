@@ -39,13 +39,17 @@ import { isActiveAlertKind } from './pulse-alerts.util';
 /** Факты качества строки для правил этапа 2; у старого кэша их нет. */
 function qualityInputOf(
     row: AiManagerRowDto,
-): Pick<AttentionManagerInput, 'presentation' | 'followup' | 'lowScoreCalls'> {
+): Pick<
+    AttentionManagerInput,
+    'presentation' | 'followup' | 'lowScoreCalls' | 'progress'
+> {
     const quality = row.quality;
     if (!quality) return {};
     return {
         presentation: quality.presentation,
         followup: quality.followup,
         lowScoreCalls: quality.lowScoreCalls,
+        ...(quality.progress ? { progress: quality.progress } : {}),
     };
 }
 

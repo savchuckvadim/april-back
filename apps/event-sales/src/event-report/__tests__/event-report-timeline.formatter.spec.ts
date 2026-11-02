@@ -58,6 +58,27 @@ describe('buildEventReportTimelineComment', () => {
         ]);
     });
 
+    it('режим ТМЦ: пометка подразделения один раз — на первой строке события', () => {
+        const marked = lines({ departmentMarker: 'ТМЦ' });
+        expect(marked[1]).toBe('ТМЦ Презентация проведена: Разбор договора');
+        expect(marked[3]).toBe(
+            'Следующий шаг: Запланирован Звонок по решению на 23 сентября 2026, 16:20',
+        );
+
+        // Чистый план без отчёта — пометка уходит на следующий шаг.
+        const planOnly = lines({
+            departmentMarker: 'ТМЦ',
+            reportEventType: null,
+            reportContact: null,
+        });
+        expect(planOnly[1]).toBe(
+            'ТМЦ Следующий шаг: Запланирован Звонок по решению на 23 сентября 2026, 16:20',
+        );
+
+        // Отдел продаж — без пометки, запись прежняя.
+        expect(lines({ departmentMarker: null })).toEqual(lines());
+    });
+
     it('ссылки — HTML: BB-код таймлайн карточки показывает сырым текстом', () => {
         const comment = buildEventReportTimelineComment(source());
         expect(comment).not.toContain('[URL=');

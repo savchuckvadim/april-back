@@ -693,6 +693,7 @@ model Portal {
   portal_invites                 portal_invites[]
   appCaches                      AppCache[]
   shareLinks                     ShareLink[]
+  konstructorPublicLinks         KonstructorPublicLink[]
   aiSettings                     PortalAiSettings?
   appSettings                    PortalAppSettings[]
   skapImportFiles                SkapImportFile[]
@@ -831,6 +832,31 @@ model VendorSetting {
   updatedAt DateTime? @map("updated_at") @db.Timestamp(0)
 
   @@map("vendor_settings")
+}
+
+/// МЕТОДИКИ ПРОДАЖ для AI-разбора звонков (ai_methodologies, миграция
+/// 2026_11_01_120000 в online): конфиг чек-пунктов, ограничителей оценки,
+/// якорей и справочников поверх общего ядра разбора. scope common — общий
+/// слой April (polyansky), portal — своя методика портала portalDomain.
+/// Состав и проверка config — libs/call-lib/src/call-report/methodology.
+model AiMethodology {
+  id           String    @id @db.Char(36)
+  code         String    @db.VarChar(64)
+  title        String    @db.VarChar(255)
+  version      String    @default("1.0.0") @db.VarChar(32)
+  scope        String    @default("portal") @db.VarChar(16)
+  portalDomain String?   @map("portal_domain") @db.VarChar(255)
+  /// JSON конфига методики (Methodology из call-lib).
+  config       Json
+  isActive     Boolean   @default(true) @map("is_active")
+  /// Кто менял — логин администратора.
+  updatedBy    String?   @map("updated_by") @db.VarChar(128)
+  createdAt    DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime? @map("updated_at") @db.Timestamp(0)
+
+  @@unique([scope, portalDomain, code], map: "ai_methodologies_scope_domain_code_unique")
+  @@index([portalDomain], map: "ai_methodologies_portal_domain_index")
+  @@map("ai_methodologies")
 }
 
 /// Портальный каталог АНКЕТ: сама анкета (чек-лист) placement-приложения —
@@ -2001,30 +2027,36 @@ model UserSelectedTemplate {
 }
 
 model portal_region {
-  portal_id   BigInt   @db.UnsignedBigInt
-  region_id   BigInt   @db.UnsignedBigInt
-  own_abs     Decimal? @db.Decimal(8, 2)
-  own_tax     Decimal? @db.Decimal(8, 2)
-  own_tax_abs Decimal? @db.Decimal(8, 2)
-  portal      Portal   @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portal_region_portal_id_foreign")
-  region      regions  @relation(fields: [region_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portal_region_region_id_foreign")
+  portal_id         BigInt   @db.UnsignedBigInt
+  region_id         BigInt   @db.UnsignedBigInt
+  own_abs           Decimal? @db.Decimal(8, 2)
+  own_tax           Decimal? @db.Decimal(8, 2)
+  own_tax_abs       Decimal? @db.Decimal(8, 2)
+  /// Регион-источник своего рабса: действующий рабс портала берётся из его abs/tax/tax_abs
+  own_abs_region_id BigInt?  @db.UnsignedBigInt
+  portal            Portal   @relation(fields: [portal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portal_region_portal_id_foreign")
+  region            regions  @relation("portal_region_region_idToregions", fields: [region_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portal_region_region_id_foreign")
+  own_abs_region    regions? @relation("portal_region_own_abs_region_idToregions", fields: [own_abs_region_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "portal_region_own_abs_region_id_foreign")
 
   @@id([portal_id, region_id])
   @@index([region_id], map: "portal_region_region_id_foreign")
+  @@index([own_abs_region_id], map: "portal_region_own_abs_region_id_foreign")
 }
 
 model regions {
-  id            BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
-  created_at    DateTime?       @db.Timestamp(0)
-  updated_at    DateTime?       @db.Timestamp(0)
-  number        Int
-  title         String          @db.VarChar(255)
-  code          String          @db.VarChar(255)
-  infoblock     String          @db.VarChar(255)
-  abs           Decimal         @db.Decimal(8, 2)
-  tax           Decimal         @db.Decimal(8, 2)
-  tax_abs       Decimal         @db.Decimal(8, 2)
-  portal_region portal_region[]
+  id                    BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  created_at            DateTime?       @db.Timestamp(0)
+  updated_at            DateTime?       @db.Timestamp(0)
+  number                Int
+  title                 String          @db.VarChar(255)
+  code                  String          @db.VarChar(255)
+  infoblock             String          @db.VarChar(255)
+  abs                   Decimal         @db.Decimal(8, 2)
+  tax                   Decimal         @db.Decimal(8, 2)
+  tax_abs               Decimal         @db.Decimal(8, 2)
+  portal_region         portal_region[] @relation("portal_region_region_idToregions")
+  /// Связи портал→регион, для которых этот регион — источник своего рабса
+  portal_region_own_abs portal_region[] @relation("portal_region_own_abs_region_idToregions")
 }
 
 model OfferTemplateFont {
@@ -2450,6 +2482,25 @@ model ShareLink {
   @@map("share_link")
 }
 
+/// Публичная ссылка на конструктор (миграция 2026_10_31_110000): создаётся и
+/// отзывается в админке, портал задаёт каталог. expiresAt = NULL — до отзыва.
+model KonstructorPublicLink {
+  id           String    @id @db.Char(36)
+  createdAt    DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime? @map("updated_at") @db.Timestamp(0)
+  token        String    @unique(map: "konstructor_public_link_token_unique") @db.VarChar(64)
+  portalId     BigInt    @map("portal_id") @db.UnsignedBigInt
+  title        String    @db.VarChar(255)
+  expiresAt    DateTime? @map("expires_at") @db.Timestamp(0)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamp(0)
+  viewCount    Int       @default(0) @map("view_count")
+  lastViewedAt DateTime? @map("last_viewed_at") @db.Timestamp(0)
+  portal       Portal    @relation(fields: [portalId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "konstructor_public_link_portal_id_foreign")
+
+  @@index([portalId], map: "konstructor_public_link_portal_id_foreign")
+  @@map("konstructor_public_link")
+}
+
 /// Шаблон договора (миграция 2026_09_15_100100).
 /// У КП и счёта шаблоны лежат в базе, у договора был один файл из storage на
 /// все порталы. Привязка к типу договора — главное отличие от остальных
@@ -2519,4 +2570,58 @@ model SupplyReportTemplate {
   @@index([portal_id, is_active], map: "supply_report_templates_lookup_index")
   @@index([agent_id], map: "supply_report_templates_agent_id_index")
   @@map("supply_report_templates")
+}
+
+/// Персональная ссылка на КП на следующий год действующему клиенту
+/// (миграция 2026_11_02_120000): создаётся и отзывается в админке, цены
+/// лежат в строке, а не в адресе — клиент их подменить не может.
+/// expiresAt = NULL — действует до отзыва. Состояние выводится из дат.
+/// Колонки цен нужны для отчётов SQL-ом, offerJson — слепок предложения
+/// целиком (новые услуги кладутся туда без миграции).
+model RenewalOfferLink {
+  id         String  @id @db.Char(36)
+  token      String  @unique(map: "renewal_offer_links_token_unique") @db.VarChar(64)
+  clientName String  @map("client_name") @db.VarChar(255)
+  /// Служебная пометка «кому и зачем выдана»; клиент её не видит
+  title      String? @db.VarChar(255)
+
+  salesIncluded Boolean @default(true) @map("sales_included")
+  salesPrice    Int     @default(5000) @map("sales_price") @db.UnsignedInt
+
+  aiIncluded      Boolean @default(true) @map("ai_included")
+  aiEmployees     Int     @default(3) @map("ai_employees") @db.UnsignedSmallInt
+  aiBasePrice     Int     @default(7500) @map("ai_base_price") @db.UnsignedInt
+  aiBaseEmployees Int     @default(3) @map("ai_base_employees") @db.UnsignedSmallInt
+  aiExtraPrice    Int     @default(1000) @map("ai_extra_price") @db.UnsignedInt
+  aiFreeDelta     Int     @default(2) @map("ai_free_delta") @db.UnsignedSmallInt
+
+  managerIncluded Boolean @default(false) @map("manager_included")
+  managerPrice    Int     @default(10000) @map("manager_price") @db.UnsignedInt
+
+  devIncluded  Boolean @default(true) @map("dev_included")
+  devHours     Int     @default(30) @map("dev_hours") @db.UnsignedSmallInt
+  devHourPrice Int     @default(2000) @map("dev_hour_price") @db.UnsignedInt
+
+  /// Со знаком: отрицательная — скидка
+  adjustment      Int    @default(0)
+  adjustmentLabel String @default("Скидка") @map("adjustment_label") @db.VarChar(255)
+
+  /// Месячный итог на момент выдачи — для списка в админке и отчётов
+  monthlyTotal Int @default(0) @map("monthly_total") @db.UnsignedInt
+
+  /// Слепок предложения целиком, включая «другие услуги» строками
+  offerJson Json @map("offer_json")
+
+  expiresAt    DateTime? @map("expires_at") @db.Timestamp(0)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamp(0)
+  viewCount    Int       @default(0) @map("view_count") @db.UnsignedInt
+  lastViewedAt DateTime? @map("last_viewed_at") @db.Timestamp(0)
+  createdBy    String?   @map("created_by") @db.VarChar(128)
+
+  createdAt DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime? @map("updated_at") @db.Timestamp(0)
+
+  @@index([createdAt], map: "renewal_offer_links_created_at_index")
+  @@index([clientName], map: "renewal_offer_links_client_name_index")
+  @@map("renewal_offer_links")
 }

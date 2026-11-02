@@ -157,6 +157,8 @@ export class EventReportTimelineService {
                 ctx.domain,
                 ctx.actingManager,
             ),
+            // Режим ТМЦ: «ТМЦ Звонок совершён…» — как в легаси-хуке ТМЦ.
+            departmentMarker: ctx.historyMarker,
         };
     }
 

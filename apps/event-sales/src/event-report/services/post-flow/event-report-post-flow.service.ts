@@ -12,7 +12,7 @@ import {
 } from '../task/event-report-task-flow.service';
 import {
     SideFlowJobBuildInput,
-    SideFlowJobKind,
+    SideFlowQueuedJobKind,
     sideJobId,
     parseCreatedDealId,
     resolveKpiRowRefs,
@@ -23,7 +23,7 @@ import { buildPresentationFlowJobs } from './presentation-flow-job.builder';
 import { QuestionnaireSmartContextLoader } from './questionnaire-smart-context.loader';
 
 /** Адрес очереди одного потока плюс тексты, которыми он себя называет. */
-interface SideFlowQueueSpec {
+export interface SideFlowQueueSpec {
     queue: QueueNames;
     job: JobNames;
     /** Часть детерминированного jobId (`{operationId}:{flow}:{kind}`). */
@@ -39,7 +39,12 @@ const ZPR_QUEUE: SideFlowQueueSpec = {
     label: 'zpr-flow',
 };
 
-const PRESENTATION_QUEUE: SideFlowQueueSpec = {
+/**
+ * Экспортирован: поток ТМЦ ставит в ту же очередь джоб заявки на
+ * презентацию (`kind: 'request'`) — адрес очереди и имя потока в jobId
+ * обязаны совпадать с теми, что у основного отчёта.
+ */
+export const PRESENTATION_QUEUE: SideFlowQueueSpec = {
     queue: QueueNames.EVENT_SALES_PRESENTATION_FLOW,
     job: JobNames.EVENT_SALES_PRESENTATION_FLOW,
     flow: 'pres',
@@ -257,7 +262,7 @@ export class EventReportPostFlowService {
      */
     private async enqueue(
         spec: SideFlowQueueSpec,
-        jobs: ReadonlyArray<{ kind: SideFlowJobKind }>,
+        jobs: ReadonlyArray<{ kind: SideFlowQueuedJobKind }>,
         ctx: EventReportContext,
     ): Promise<void> {
         const operationId = ctx.dto.operationId;

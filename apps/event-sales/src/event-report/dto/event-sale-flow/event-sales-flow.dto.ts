@@ -353,6 +353,21 @@ export class EventSalesFlowDto {
     returnToTmc?: ReturnToTmcDto;
 
     @ApiPropertyOptional({
+        description:
+            'ТМЦ-сделка (воронка «ТМЦ Основная»), из которой пришла заявка на ' +
+            'презентацию. Присылает ручка согласования заявки ' +
+            '(`tmc/presentation-approved`): у такого отчёта ещё нет задачи ' +
+            'со связью, и ТМЦ-сделка берётся отсюда — она привязывается к ' +
+            'плановой презентации и переводится в «Заявка принята».',
+        type: Number,
+        example: 213065,
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsNumber()
+    tmcDealId?: number;
+
+    @ApiPropertyOptional({
         description: 'Лид, связанный с событием.',
         type: LeadDto,
     })

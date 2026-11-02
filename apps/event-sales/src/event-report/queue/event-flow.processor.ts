@@ -15,6 +15,8 @@ import {
     EventFlowDuplicateGuardService,
 } from '../services/flow-guard/event-flow-duplicate-guard.service';
 import { EventReportUseCase } from '../use-cases/event-report.use-case';
+import { EventReportTmcUseCase } from '../../event-report-tmc/use-cases/event-report-tmc.use-case';
+import { isTmcReport } from '../../event-report-tmc/lib/is-tmc-report';
 
 /**
  * Сколько отчётов выполняется одновременно. Разные клиенты и разные порталы
@@ -60,6 +62,9 @@ export class EventFlowProcessor {
         private readonly ws: WsService,
         private readonly status: EventFlowStatusService,
         private readonly useCase: EventReportUseCase,
+        // Режим «Менеджер ТМЦ»: отчёт ведёт поток ТМЦ (выбор — по
+        // подразделению в DTO, как выбирал сервис легаси-хук).
+        private readonly tmcUseCase: EventReportTmcUseCase,
         private readonly concurrency: QueueConcurrencyService,
         private readonly duplicates: EventFlowDuplicateGuardService,
     ) {
@@ -148,9 +153,10 @@ export class EventFlowProcessor {
             // и ждёт исход. Очередь работает вне HTTP-запроса и по умолчанию
             // считалась бы фоном — тогда отчёты стояли бы в ограничителе
             // Битрикса за кронами (см. @lib/core/call-context).
+            const useCase = isTmcReport(dto) ? this.tmcUseCase : this.useCase;
             const result = await runAsInteractive(
                 `queue:${QueueNames.EVENT_SALES_FLOW}`,
-                () => this.useCase.execute(dto, socketId),
+                () => useCase.execute(dto, socketId),
             );
             const done = await this.status.setDone(
                 domain,

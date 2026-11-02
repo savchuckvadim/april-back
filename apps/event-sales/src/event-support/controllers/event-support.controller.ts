@@ -1,6 +1,6 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { EventSupportStubService } from '../services/event-support-stub.service';
+import { EventSupportService } from '../services/event-support.service';
 import {
     CompanyDealsRequestDto,
     CompanyDealsResponseDto,
@@ -22,7 +22,7 @@ import { CallResultsDto, ResultCountRequestDto } from '../dto/result-count.dto';
 @ApiTags('Event Sales Support')
 @Controller('event-sales')
 export class EventSupportController {
-    constructor(private readonly service: EventSupportStubService) {}
+    constructor(private readonly service: EventSupportService) {}
 
     @ApiOperation({
         summary: 'Сделки компании по текущей задаче',

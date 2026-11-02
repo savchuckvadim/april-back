@@ -9,6 +9,7 @@ import { BxDepartmentModule } from 'libs/bx-department';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { PrismaModule } from '@lib/core/prisma/prisma.module';
 import { PortalBuilderModule } from '@lib/portal-lib/builder';
+import { RenewalOfferPublicModule } from '@lib/renewal-offer';
 
 /**
  * Корневой модуль приложения pbx.
@@ -46,6 +47,7 @@ import { PortalBuilderModule } from '@lib/portal-lib/builder';
         BxDepartmentModule,
         MarketplaceModule,
         PortalBuilderModule,
+        RenewalOfferPublicModule,
     ],
     providers: [GlobalExceptionFilter],
     exports: [BxDepartmentModule],

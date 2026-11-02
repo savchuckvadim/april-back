@@ -4,10 +4,6 @@ import { BitrixService } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import {
-    EnumPortalAppCode,
-    PortalAppSettingsService,
-} from '@lib/portal-lib/store/app-settings';
-import {
     LeadUfDefinitions,
     LeadUfDefinitionsService,
 } from '../../shared/portal-fields';
@@ -18,16 +14,11 @@ import {
     EventReportContext,
 } from '../services/context/event-report.context';
 import { EventReportEntityFlowService } from '../services/entity/event-report-entity-flow.service';
-import {
-    DEFAULT_FIELD_POLICY_SETTINGS,
-    DEFAULT_STAGE_RULE_SETTINGS,
-    EventFieldPolicySettings,
-    EventStageRuleSettings,
-} from '../services/entity/field-policy';
 import { EventReportDealFlowService } from '../services/deal/event-report-deal-flow.service';
 import { EventReportTaskFlowService } from '../services/task/event-report-task-flow.service';
 import { EventReportKpiFlowService } from '../services/kpi-list/event-report-kpi-flow.service';
 import { EventReportPostFailService } from '../services/post-fail/event-report-post-fail.service';
+import { EventReportSettingsResolver } from '../services/settings/event-report-settings.resolver';
 import { EventReportLeadRelationService } from '../services/lead/event-report-lead-relation.service';
 import { EventReportLeadRequestSyncService } from '../services/lead/event-report-lead-request-sync.service';
 import { EventReportReturnToTmcService } from '../services/return-to-tmc/event-report-return-to-tmc.service';
@@ -61,8 +52,9 @@ export class EventReportUseCase {
         private readonly pbx: PBXService,
         private readonly initService: EventReportInitService,
         private readonly ufDefinitions: LeadUfDefinitionsService,
-        // Гейт чек-листов задач: настройка портала (Redis-кэш 300 с).
-        private readonly appSettings: PortalAppSettingsService,
+        // Настройки портала, которые читает отчёт (Redis-кэш 300 с):
+        // политики полей, правила стадий, пост-отказ, чек-листы задач.
+        private readonly settings: EventReportSettingsResolver,
         // Всё, что происходит ПОСЛЕ основного батча: анкеты, id план-задачи
         // из ответа батча и постановка сайд-очередей.
         private readonly postFlow: EventReportPostFlowService,
@@ -91,12 +83,9 @@ export class EventReportUseCase {
         const ctx = new EventReportContext(dto, portal, init);
         // Классы поведения полей карточки — одним чтением настроек на отчёт:
         // модель полей собирается шесть раз (компания, лид, 4 роли сделок).
-        ctx.setFieldPolicySettings(
-            await this.resolveFieldPolicySettings(dto.domain),
-        );
-        ctx.setStageRuleSettings(
-            await this.resolveStageRuleSettings(dto.domain),
-        );
+        ctx.setFieldPolicySettings(await this.settings.fieldPolicy(dto.domain));
+        ctx.setStageRuleSettings(await this.settings.stageRule(dto.domain));
+        ctx.setPostFailSettings(await this.settings.postFail(dto.domain));
         // Режим руководителя: пометка ставится до flow-сервисов — её читают
         // история карточки, таймлайн, описание задачи и KPI.
         ctx.setActingManager(await this.actingManager.resolve(dto));
@@ -106,7 +95,7 @@ export class EventReportUseCase {
         const taskFlow = new EventReportTaskFlowService(
             bitrix,
             portal,
-            await this.isTaskChecklistEnabled(dto.domain),
+            await this.settings.taskChecklistEnabled(dto.domain),
         );
         const kpiFlow = new EventReportKpiFlowService(bitrix, portal);
         const postFail = new EventReportPostFailService(bitrix, portal);
@@ -146,9 +135,6 @@ export class EventReportUseCase {
          */
         postFail.queue(ctx);
         leadRelation.queue(ctx);
-        if (ctx.strategy !== EEventReportFlowStrategy.LEAD_ONLY) {
-            returnToTmc.queue(ctx);
-        }
         /*
          * Запись в таймлайн — строго ПОСЛЕ deal-flow: она уходит и в саму
          * основную сделку, а её id при создании приезжает подстановкой
@@ -198,6 +184,12 @@ export class EventReportUseCase {
             await this.leadLinkDefinitions(ctx.domain, bitrix, portal),
         );
         await leadRequestSync.run(ctx);
+
+        // Возврат презентации в ТМЦ — ПОСЛЕ основного батча, как в легаси:
+        // задача ТМЦ-менеджера ищется прямым запросом, компания отдаётся ему.
+        if (ctx.strategy !== EEventReportFlowStrategy.LEAD_ONLY) {
+            await returnToTmc.apply(ctx);
+        }
 
         // Перенос: сообщение ответственному — ПОСЛЕ основного батча
         // (im.notify не батчится), ошибка отправки гасится внутри и отчёт
@@ -262,85 +254,6 @@ export class EventReportUseCase {
             entityType: ctx.entityType,
             entityId: ctx.entityId,
         };
-    }
-
-    /**
-     * Гейт чек-листов задач (`task_checklist_enabled`, по умолчанию ВЫКЛ).
-     *
-     * Настройки недоступны — считаем выключенным: отчёт важнее чек-листа,
-     * упавший сервис настроек не должен ни ронять отправку, ни включать
-     * чек-листы неожиданно для владельца портала.
-     */
-    private async isTaskChecklistEnabled(domain: string): Promise<boolean> {
-        try {
-            const settings = await this.appSettings.resolve(
-                domain,
-                EnumPortalAppCode.eventSales,
-            );
-            return Boolean(settings.withTaskChecklist);
-        } catch (error) {
-            this.logger.warn(
-                `настройки ${domain} недоступны — чек-листы задач выключены ` +
-                    `(${(error as Error).message})`,
-            );
-            return false;
-        }
-    }
-
-    /**
-     * Настройки классов поведения полей карточки.
-     *
-     * Настройки недоступны — работаем на дефолтах СХЕМЫ, а не выключаем
-     * расчёт: в отличие от чек-листов (там включение меняет вид задач у
-     * всех менеджеров, и «по умолчанию выключено» — осознанная страховка)
-     * здесь дефолт схемы и есть штатное поведение, а упавший Redis не
-     * повод возвращать заведомо врущие даты в карточку.
-     */
-    private async resolveFieldPolicySettings(
-        domain: string,
-    ): Promise<EventFieldPolicySettings> {
-        try {
-            const settings = await this.appSettings.resolve(
-                domain,
-                EnumPortalAppCode.eventSales,
-            );
-            return {
-                calculatedNextEvent: Boolean(settings.withCalculatedNextEvent),
-                resetOnFinal: Boolean(settings.withFinalFieldsReset),
-            };
-        } catch (error) {
-            this.logger.warn(
-                `настройки ${domain} недоступны — политики полей на дефолтах ` +
-                    `схемы (${(error as Error).message})`,
-            );
-            return DEFAULT_FIELD_POLICY_SETTINGS;
-        }
-    }
-
-    /**
-     * Правила стадий основной воронки (`refine_stage_on_plan_enabled`).
-     *
-     * Настройки недоступны — дефолт СХЕМЫ (исключение выключено): лестница
-     * ведёт себя как всегда, а не выбирает стадию по недочитанной настройке.
-     */
-    private async resolveStageRuleSettings(
-        domain: string,
-    ): Promise<EventStageRuleSettings> {
-        try {
-            const settings = await this.appSettings.resolve(
-                domain,
-                EnumPortalAppCode.eventSales,
-            );
-            return {
-                refineStageOnPlan: Boolean(settings.withRefineStageOnPlan),
-            };
-        } catch (error) {
-            this.logger.warn(
-                `настройки ${domain} недоступны — правила стадий на дефолтах ` +
-                    `схемы (${(error as Error).message})`,
-            );
-            return DEFAULT_STAGE_RULE_SETTINGS;
-        }
     }
 
     /**

@@ -20,6 +20,12 @@ const quality = (
         weakSectionGap: 1,
         lowScoreCallMax: 4,
         weakFollowupShareMin: 0.5,
+
+        qualityScoreMin: 6,
+
+        progressMovingMin: 4,
+
+        progressNoQualityMinCalls: 3,
     },
     presentation: { n: 0, sections: [], weakCallIds: [] },
     followup: {
@@ -109,6 +115,12 @@ describe('attention.presenter — факты качества и действу�
                             weakSectionGap: 2,
                             lowScoreCallMax: 5,
                             weakFollowupShareMin: 0.4,
+
+                            qualityScoreMin: 6,
+
+                            progressMovingMin: 4,
+
+                            progressNoQualityMinCalls: 3,
                         },
                     }),
                 }),
@@ -118,6 +130,12 @@ describe('attention.presenter — факты качества и действу�
             weakSectionGap: 2,
             lowScoreCallMax: 5,
             weakFollowupShareMin: 0.4,
+
+            qualityScoreMin: 6,
+
+            progressMovingMin: 4,
+
+            progressNoQualityMinCalls: 3,
         });
     });
 
@@ -138,6 +156,12 @@ describe('attention.presenter — факты качества и действу�
                         weakSectionGap: 1,
                         lowScoreCallMax: 4,
                         weakFollowupShareMin: 0.5,
+
+                        qualityScoreMin: 6,
+
+                        progressMovingMin: 4,
+
+                        progressNoQualityMinCalls: 3,
                     },
                     presentation: {
                         n: 10,

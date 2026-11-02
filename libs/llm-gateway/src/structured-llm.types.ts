@@ -50,6 +50,12 @@ export interface StructuredLlmRequest extends StructuredLlmOptions {
     /** Имя схемы (`call_focus_form`, `call_classification`) — в теле запроса и в логах. */
     schemaName: string;
     schema: Record<string, unknown>;
+    /**
+     * Явный порядок провайдеров для этого вызова вместо настройки портала и
+     * общего порядка: ручка «любой промпт» в админке и проверки одного
+     * провайдера. Пусто или не задано — как обычно.
+     */
+    providers?: readonly LlmProviderCode[];
 }
 
 /** Расход одного вызова; null — провайдер поле не вернул. */
