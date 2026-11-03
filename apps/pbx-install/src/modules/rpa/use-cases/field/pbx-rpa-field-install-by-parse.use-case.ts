@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
+import { typedFieldInstallFailure } from '@app/pbx-install/shared/typed-entity/field/typed-entity-field-failure';
 import {
     BxTypedEntityFieldsInstallService,
     IPbxTypedFieldInstallData,
@@ -62,9 +63,9 @@ export class PbxRpaFieldInstallByParseUseCase {
         );
         const bxResult = await bxFieldService.installFields();
         if (bxResult.countSuccess === 0) {
-            throw new Error(
-                'В битриксе не удалось изменить ни одного поля RPA',
-            );
+            // Причина по каждому полю (03.11.2026: на gsr это был лимит
+            // пользовательских полей ПОРТАЛА, а ручка отвечала голым 500).
+            throw typedFieldInstallFailure(bxResult, fields, 'rpa');
         }
 
         const clearFields = bxResult.results.filter(

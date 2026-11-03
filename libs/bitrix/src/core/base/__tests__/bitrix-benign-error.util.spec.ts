@@ -1,6 +1,9 @@
 import {
     BITRIX_ACCESS_DENIED_MARKER,
     BITRIX_NOT_FOUND_MARKER,
+    BITRIX_OPAQUE_400_MARKER,
+    BITRIX_USER_FIELD_LIMIT_CODE,
+    BITRIX_USER_FIELD_LIMIT_MARKER,
     benignBitrixErrorMarker,
     requestedEntityId,
 } from '../bitrix-benign-error.util';
@@ -83,6 +86,63 @@ describe('benignBitrixErrorMarker', () => {
                 '{"error_description":"Row size too large (> 8126)"}',
             ),
         ).toBe('Row size too large');
+    });
+});
+
+describe('лимит пользовательских полей (02.11.2026, gsr)', () => {
+    const limitBody = JSON.stringify({
+        error: BITRIX_USER_FIELD_LIMIT_CODE,
+        error_description:
+            'Достигнут лимит пользовательских полей, новое поле не создано.',
+    });
+
+    it('userfieldconfig.add с лимитом — ожидаемая ошибка без алерта', () => {
+        expect(benignBitrixErrorMarker('userfieldconfig.add', limitBody)).toBe(
+            BITRIX_USER_FIELD_LIMIT_MARKER,
+        );
+    });
+
+    it('тот же код у другого метода и другая ошибка у add — алерт нужен', () => {
+        expect(
+            benignBitrixErrorMarker('userfieldconfig.update', limitBody),
+        ).toBeNull();
+        expect(
+            benignBitrixErrorMarker(
+                'userfieldconfig.add',
+                JSON.stringify({ error: 'ACCESS_DENIED' }),
+            ),
+        ).toBeNull();
+    });
+});
+
+describe('безликий 400 записи смарта (03.11.2026)', () => {
+    // Форма ответа с прода: строка смарта переполнена, текста MySQL больше нет.
+    const opaque = JSON.stringify({
+        error: '400',
+        error_description: 'Internal server error.',
+    });
+
+    it.each(['crm.item.add', 'crm.item.update'])(
+        '%s с безликим 400 — ожидаемая ошибка без алерта',
+        method => {
+            expect(benignBitrixErrorMarker(method, opaque)).toBe(
+                BITRIX_OPAQUE_400_MARKER,
+            );
+        },
+    );
+
+    it('тот же 400 у чтения или у сделки — настоящая ошибка', () => {
+        expect(benignBitrixErrorMarker('crm.item.get', opaque)).toBeNull();
+        expect(benignBitrixErrorMarker('crm.deal.update', opaque)).toBeNull();
+        expect(
+            benignBitrixErrorMarker(
+                'crm.item.update',
+                JSON.stringify({
+                    error: '400',
+                    error_description: 'Bad value',
+                }),
+            ),
+        ).toBeNull();
     });
 });
 

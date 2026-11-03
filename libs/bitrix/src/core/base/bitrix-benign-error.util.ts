@@ -18,6 +18,16 @@
  *   .preset.list) — у учётки нет прав на реквизиты; читатель ИНН штатно
  *   показывает «реквизиты недоступны» и помнит отказ час. Раньше каждое
  *   открытие сделки на таком портале слало алерт в Telegram.
+ * - MAIN_USER_FIELD_LIMIT_EXCEEDED у userfieldconfig.add — сущность (смарт)
+ *   исчерпала лимит пользовательских полей (лимит на одну сущность, проверено
+ *   пробой 03.11.2026); установщик смарта называет причину в
+ *   админке и после первого отказа остальные поля не пробует (02.11.2026,
+ *   gsr: четыре алерта за минуту на одно нажатие «Обновить смарт»).
+ * - Безликий 400 «Internal server error.» у crm.item.add/update — так с
+ *   13.10.2026 Битрикс сообщает о переполнении строки смарта; писатель
+ *   разбора сам ужимает поля до четырёх вариантов и сам алертит ТОЛЬКО
+ *   итоговый отказ с порталом и элементом (03.11.2026: около ста алертов за
+ *   ночь по одной попытке на каждый вариант).
  */
 
 export const BITRIX_BENIGN_MARKERS = [
@@ -42,6 +52,22 @@ export const BITRIX_ACCESS_DENIED_TEXT =
     /ACCESS_DENIED|access denied|недостаточно прав/i;
 
 export const BITRIX_ACCESS_DENIED_MARKER = 'Access denied';
+
+/** Создание пользовательского поля: лимит полей сущности обрабатывает установщик. */
+const USER_FIELD_ADD_METHOD = /^userfieldconfig\.add$/;
+
+/** Код Битрикса: лимит пользовательских полей сущности (смарта) исчерпан. */
+export const BITRIX_USER_FIELD_LIMIT_CODE = 'MAIN_USER_FIELD_LIMIT_EXCEEDED';
+
+export const BITRIX_USER_FIELD_LIMIT_MARKER = 'User field limit exceeded';
+
+/** Запись элемента смарта: ужатие полей под лимит строки делает писатель. */
+const CRM_ITEM_WRITE_METHOD = /^crm\.item\.(add|update)$/;
+
+/** Безликий ответ Битрикса о переполнении строки смарта (с 13.10.2026). */
+export const BITRIX_OPAQUE_400_TEXT = /internal server error/i;
+
+export const BITRIX_OPAQUE_400_MARKER = 'Opaque 400 (row size)';
 
 /**
  * Маркер ожидаемой ошибки либо null, если ошибка настоящая и заслуживает
@@ -69,6 +95,19 @@ export function benignBitrixErrorMarker(
         BITRIX_ACCESS_DENIED_TEXT.test(responseJson)
     ) {
         return BITRIX_ACCESS_DENIED_MARKER;
+    }
+    if (
+        USER_FIELD_ADD_METHOD.test(method) &&
+        responseJson.includes(BITRIX_USER_FIELD_LIMIT_CODE)
+    ) {
+        return BITRIX_USER_FIELD_LIMIT_MARKER;
+    }
+    if (
+        CRM_ITEM_WRITE_METHOD.test(method) &&
+        responseJson.includes('400') &&
+        BITRIX_OPAQUE_400_TEXT.test(responseJson)
+    ) {
+        return BITRIX_OPAQUE_400_MARKER;
     }
     return null;
 }

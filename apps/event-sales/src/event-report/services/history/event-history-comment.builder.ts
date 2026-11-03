@@ -5,6 +5,7 @@ import {
 import { BitrixDateTime } from '@/shared/lib/date';
 import {
     eventDonePhrase,
+    eventFailPhrase,
     eventPlanPhrase,
 } from '../../types/event-report.event-codes';
 import {
@@ -28,6 +29,13 @@ export interface IEventHistoryCommentSource {
     reportEventType: string | null;
     planEventType: string | null;
     reportComment: string;
+    /**
+     * Разговор состоялся. `false` — несостоявшееся событие (недозвон,
+     * «нерезультативный»): фраза «Звонок не состоялся», как в таймлайне и
+     * в легаси («ОП Не состоялся Звонок»). Не передано — считается
+     * состоявшимся (старые вызывающие).
+     */
+    isResult?: boolean;
     planDeadline?: BitrixDateTime | null;
     /**
      * Итог чек-листа закрываемой задачи; null/undefined — чек-листов нет
@@ -67,7 +75,12 @@ export const buildEventHistoryParts = (
     const parts: string[] = [];
 
     if (src.reportEventType) {
-        const done = eventDonePhrase(src.reportEventType);
+        // Несостоявшийся разговор (недозвон, «нерезультативный») — своя
+        // фраза: иначе история называла недозвон «Звонок совершён».
+        const done =
+            src.isResult === false
+                ? eventFailPhrase(src.reportEventType)
+                : eventDonePhrase(src.reportEventType);
         parts.push(src.reportComment ? `${done}: ${src.reportComment}` : done);
     } else if (src.reportComment) {
         parts.push(src.reportComment);

@@ -1,4 +1,5 @@
 export * from './field/typed-entity-field.types';
+export * from './field/typed-entity-field-failure';
 export * from './field/bx-typed-entity-field-install.service';
 export * from './field/bx-typed-entity-field-manage.service';
 export * from './field/portal-field-typed-entity-install.service';

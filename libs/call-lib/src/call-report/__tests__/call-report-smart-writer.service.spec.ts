@@ -410,7 +410,9 @@ describe('CallReportSmartWriterService', () => {
         ).toHaveLength(0);
     });
 
-    it('длинный транскрипт раскладывается кусками по полям TRANSCRIPT_N', async () => {
+    // С 03.11.2026 частей две (лимит полей Битрикса на сущность): хвост
+    // длиннее 80k символов в поля не идёт, последняя часть помечается.
+    it('длинный транскрипт раскладывается на две части TRANSCRIPT_N, хвост помечен', async () => {
         const bitrix = makeBitrix();
         const writer = new CallReportSmartWriterService(
             bitrix as never,
@@ -424,8 +426,10 @@ describe('CallReportSmartWriterService', () => {
         const addCall = bitrix.item.add.mock.calls[0] as unknown[];
         const fields = addCall[1] as Record<string, unknown>;
         expect((fields.ufCrm128Transcript1 as string).length).toBe(40_000);
-        expect((fields.ufCrm128Transcript2 as string).length).toBe(40_000);
-        expect((fields.ufCrm128Transcript3 as string).length).toBe(10_000);
+        const second = fields.ufCrm128Transcript2 as string;
+        expect(second.startsWith('а'.repeat(40_000))).toBe(true);
+        expect(second).toContain('транскрипт обрезан');
+        expect(fields.ufCrm128Transcript3).toBeUndefined();
         expect(fields.ufCrm128Transcript4).toBeUndefined();
     });
 

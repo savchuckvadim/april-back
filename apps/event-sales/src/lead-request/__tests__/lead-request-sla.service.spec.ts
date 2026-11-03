@@ -392,6 +392,68 @@ describe('LeadRequestSlaService', () => {
     });
 
     /*
+     * garant 02.11.2026, сделка 111547: руководитель сменил ответственного
+     * сделки в карточке (Липунова → Квашнина), лид остался на Липуновой с
+     * таймером. Передача по кругу отменила бы ручной выбор — вместо неё лид
+     * следует за сделкой, окно принятия стартует заново для нового человека,
+     * сам он получает уведомление; руководителю и кругу — ничего.
+     */
+    it('ответственного сделки сменили руками → лид следует за сделкой, передачи нет', async () => {
+        const { service, dispatch, acceptService, leadUpdate, notify } =
+            makeDeps({
+                leads: [OVERDUE_LEAD],
+                dealStage: 'C3:NEW',
+                dealRow: { ASSIGNED_BY_ID: '7' },
+                withAssignedAt: true,
+                names: { 5: 'Арина Липунова', 7: 'Анна Квашнина' },
+            });
+        const run = await service.runForDomain('d.b24.ru', 60, 30);
+
+        expect(run.handedOver).toBe(1);
+        expect(run.transferred).toBe(0);
+        expect(run.healed).toBe(0);
+        expect(dispatch.accept).not.toHaveBeenCalled();
+        expect(acceptService.accept).not.toHaveBeenCalled();
+
+        const leadCalls = leadUpdate.mock.calls as unknown as [
+            number,
+            Record<string, unknown>,
+        ][];
+        expect(leadCalls).toHaveLength(1);
+        expect(leadCalls[0][0]).toBe(42);
+        expect(leadCalls[0][1].ASSIGNED_BY_ID).toBe(7);
+        expect(leadCalls[0][1].UF_CRM_OP_LEAD_ASSIGNED_AT).toEqual(
+            expect.any(String),
+        );
+        const history = leadCalls[0][1]
+            .UF_CRM_OP_LEAD_FIRSTPREPARE_HISTORY as string[];
+        expect(history.join(' ')).toContain(
+            'ХО передан по сделке: Арина Липунова → Анна Квашнина',
+        );
+
+        const notifyCalls = notify.mock.calls as unknown as [
+            { USER_ID: number; MESSAGE: string },
+        ][];
+        expect(notifyCalls.map(call => call[0].USER_ID)).toEqual([7]);
+        expect(notifyCalls[0][0].MESSAGE).toContain('переведена на вас');
+        expect(notifyCalls[0][0].MESSAGE).toContain('(был: Арина Липунова)');
+        expect(notifyCalls[0][0].MESSAGE).toContain('/crm/lead/details/42/');
+    });
+
+    it('ответственный сделки тот же, что у лида → обычная передача по кругу', async () => {
+        const { service, dispatch } = makeDeps({
+            leads: [OVERDUE_LEAD],
+            dealStage: 'C3:NEW',
+            dealRow: { ASSIGNED_BY_ID: '5' },
+        });
+        const run = await service.runForDomain('d.b24.ru', 60, 30);
+
+        expect(run.handedOver).toBe(0);
+        expect(run.transferred).toBe(1);
+        expect(dispatch.accept).toHaveBeenCalledTimes(1);
+    });
+
+    /*
      * Историю и уведомление читают люди: «Не принял за 60 мин: Вадим
      * Савчук», а не «…: 5» — руководителю не нужно сверять id с людьми.
      */

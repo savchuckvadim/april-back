@@ -11,6 +11,8 @@ export interface IDealOwnerAlignInput {
     closed: boolean;
     company: IOwnedEntity | null;
     contacts: readonly IOwnedEntity[];
+    /** Открытые лиды заявки (первоисточник и присоединённые). */
+    leads: readonly IOwnedEntity[];
 }
 
 /**
@@ -27,14 +29,24 @@ export type DealOwnerSkipReason = (typeof DEAL_OWNER_SKIP_REASONS)[number];
 
 export type DealOwnerAlignPlan =
     | { skip: DealOwnerSkipReason }
-    | { responsibleId: number; companyId: number | null; contactIds: number[] };
+    | {
+          responsibleId: number;
+          companyId: number | null;
+          contactIds: number[];
+          leadIds: number[];
+      };
 
 /**
- * Компания и контакты — за ответственным сделки, по которой сейчас работают
- * (владелец 22.10.2026). На garant это делает и бизнес-процесс при
- * изменении сделки, но перенесённые сделки, которых никто не трогал,
- * остались с компанией и контактами прежнего менеджера, и Битрикс отказывал
- * новому в записи.
+ * Компания, контакты и лиды заявки — за ответственным сделки, по которой
+ * сейчас работают (владелец 22.10.2026, лиды — 03.11.2026). На garant
+ * компанию и контакты выравнивает и бизнес-процесс при изменении сделки,
+ * но перенесённые сделки, которых никто не трогал, остались с компанией и
+ * контактами прежнего менеджера, и Битрикс отказывал новому в записи.
+ *
+ * Лиды: ответственного сделки меняют руками в карточке (руководитель
+ * раздаёт заявки), а лид остаётся на прежнем — карточка сделки лида не
+ * показывает. Лид следует за сделкой, иначе SLA передаст заявку по кругу и
+ * отменит ручной выбор.
  *
  * Выравниваем только при открытии СВОЕЙ открытой сделки: чужую сделку
  * сотрудник может смотреть, но не забирает этим её клиента. Переназначаем
@@ -51,13 +63,24 @@ export function planDealOwnerAlign(
         input.company && input.company.responsibleId !== owner
             ? input.company.id
             : null;
-    const contactIds = [
+    const contactIds = foreignIds(input.contacts, owner);
+    const leadIds = foreignIds(input.leads, owner);
+    if (!companyId && !contactIds.length && !leadIds.length) {
+        return { skip: 'aligned' };
+    }
+    return { responsibleId: owner, companyId, contactIds, leadIds };
+}
+
+/** Id сущностей с другим ответственным, без дублей. */
+function foreignIds(
+    entities: readonly IOwnedEntity[],
+    owner: number,
+): number[] {
+    return [
         ...new Set(
-            input.contacts
-                .filter(contact => contact.responsibleId !== owner)
-                .map(contact => contact.id),
+            entities
+                .filter(entity => entity.responsibleId !== owner)
+                .map(entity => entity.id),
         ),
     ];
-    if (!companyId && !contactIds.length) return { skip: 'aligned' };
-    return { responsibleId: owner, companyId, contactIds };
 }

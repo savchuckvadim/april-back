@@ -29,19 +29,17 @@ export const CALL_REPORT_SMART_PRIORITY_TEXT_CODES = [
     'NEXT_STEP',
 ] as const;
 
-/** Слоты полей TRANSCRIPT_N, по которым раскладывается транскрипт. */
-export const CALL_REPORT_SMART_TRANSCRIPT_SLOTS = [1, 2, 3, 4] as const;
+/** Слоты полей TRANSCRIPT_N, по которым раскладывается транскрипт (= CALL_REPORT_TRANSCRIPT_PARTS). */
+export const CALL_REPORT_SMART_TRANSCRIPT_SLOTS = [1, 2] as const;
 
 /** Размер части коммента таймлайна для длинных текстов (лимиты таймлайна). */
 export const CALL_REPORT_SMART_COMMENT_PART_SIZE = 8000;
 
 /**
  * Порядок выброшенных полей в таймлайне (порядок владельца 10.08.2026:
- * резюме GigaChat → рекомендации → остальное).
+ * резюме → рекомендации → остальное; поля GigaChat убраны 03.11.2026).
  */
 export const CALL_REPORT_SMART_OVERFLOW_ORDER_CODES = [
-    'RESUME_GIGACHAT',
-    'RECOMENDATION_GIGACHAT',
     'SUMMARY',
     'SCORE_EXPLANATION',
     'RECOMMENDATIONS',

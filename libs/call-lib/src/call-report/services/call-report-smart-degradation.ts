@@ -68,7 +68,16 @@ export class CallReportSmartDegradation {
                 return { response, dropped: variant.dropped };
             } catch (error) {
                 const hasNext = i + 1 < variants.length;
-                if (!this.isRowSizeError(error) || !hasNext) throw error;
+                if (!this.isRowSizeError(error)) throw error;
+                if (!hasNext) {
+                    // Даже минимальный вариант не влез: наружу уходит та же
+                    // ошибка, а здесь остаётся след, что именно отправляли.
+                    this.logger.warn(
+                        `Строка смарта не влезла даже в минимальном варианте (${variant.label}: ` +
+                            `${Object.keys(variant.fields).length} полей, ${this.payloadBytes(variant.fields)} байт)`,
+                    );
+                    throw error;
+                }
                 this.logger.warn(
                     `Строка смарта не влезла в лимит Bitrix (${variant.label}) — ` +
                         `повторяю: ${variants[i + 1].label}`,
@@ -93,6 +102,10 @@ export class CallReportSmartDegradation {
      * ужимают тексты, а если дело не в них — последний вариант бросит ту же
      * ошибку наружу, как раньше.
      */
+    private payloadBytes(fields: Record<string, unknown>): number {
+        return Buffer.byteLength(JSON.stringify(fields), 'utf8');
+    }
+
     private isRowSizeError(error: unknown): boolean {
         const axiosLike = error as {
             message?: string;

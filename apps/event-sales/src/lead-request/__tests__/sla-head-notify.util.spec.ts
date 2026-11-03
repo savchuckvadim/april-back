@@ -1,4 +1,5 @@
 import {
+    followedDealMessage,
     notAcceptedHeadMessage,
     notifyHeads,
 } from '../sla/sla-head-notify.util';
@@ -68,6 +69,37 @@ describe('sla-head-notify.util', () => {
                 }),
             ).toBe(
                 'Заявка «Лид 42» не принята сотрудником за 60 мин — передана другому. ' +
+                    '[URL=https://garant.bitrix24.ru/crm/lead/details/42/]Открыть лид[/URL]',
+            );
+        });
+    });
+
+    describe('followedDealMessage', () => {
+        const base = {
+            domain: 'garant.bitrix24.ru',
+            leadId: 42,
+            minutes: 60,
+        };
+
+        it('новому ответственному: кто был, сколько минут на принятие, ссылка', () => {
+            expect(
+                followedDealMessage({
+                    ...base,
+                    lead: { TITLE: 'Ромашка' },
+                    from: 'Арина Липунова',
+                }),
+            ).toBe(
+                'Заявка «Ромашка» переведена на вас: в сделке сменили ответственного ' +
+                    '(был: Арина Липунова). Подтвердите принятие в «Звонках» за 60 мин, ' +
+                    'иначе заявка уйдёт другому. ' +
+                    '[URL=https://garant.bitrix24.ru/crm/lead/details/42/]Открыть лид[/URL]',
+            );
+        });
+
+        it('без прежнего ответственного — без скобок', () => {
+            expect(followedDealMessage({ ...base, lead: {}, from: null })).toBe(
+                'Заявка «Лид 42» переведена на вас: в сделке сменили ответственного. ' +
+                    'Подтвердите принятие в «Звонках» за 60 мин, иначе заявка уйдёт другому. ' +
                     '[URL=https://garant.bitrix24.ru/crm/lead/details/42/]Открыть лид[/URL]',
             );
         });

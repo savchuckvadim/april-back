@@ -36,9 +36,21 @@ export interface IBxTypedFieldWithParsedResult
     bxField: IUserFieldConfig | undefined;
 }
 
+/** Отказ одной batch-команды userfieldconfig: код шаблонного поля, операция и ответ Битрикса. */
+export interface IBxTypedFieldInstallError {
+    code: string;
+    op: 'add' | 'update';
+    /** Код ошибки Битрикса, например MAIN_USER_FIELD_LIMIT_EXCEEDED. */
+    error: string;
+    /** Описание Битрикса словами (может быть пустым). */
+    description: string;
+}
+
 /** Итог install-фазы Bitrix: счётчики + per-field результаты + коды с ошибками батча. */
 export interface IBxTypedEntityFieldsInstallResult {
     errorCodes: string[];
+    /** Те же отказы с причиной Битрикса — для текста ответа ручки. */
+    errorDetails: IBxTypedFieldInstallError[];
     results: IBxTypedFieldWithParsedResult[];
     countSuccess: number;
     countFailed: number;

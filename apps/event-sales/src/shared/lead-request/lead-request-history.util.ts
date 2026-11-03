@@ -111,6 +111,15 @@ export const LEAD_REQUEST_HISTORY_TEXT = {
     /** SLA: не принял за порог — заявку передают другому. */
     notAccepted: (minutes: number, actor: LeadRequestHistoryActor): string =>
         `Не принял за ${minutes} мин: ${actorText(actor)}`,
+    /**
+     * Ответственного основной сделки сменили руками в карточке — лид
+     * следует за сделкой (владелец 03.11.2026). Начинается с «ХО передан»,
+     * чтобы считаться точкой отсчёта принятия ({@link isAssignHistoryEntry}).
+     */
+    followedDeal: (
+        from: LeadRequestHistoryActor,
+        to: LeadRequestHistoryActor,
+    ): string => `ХО передан по сделке: ${actorText(from)} → ${actorText(to)}`,
 } as const;
 
 /** Запись — назначение/передача ХО (точка отсчёта firstprepare). */

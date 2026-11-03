@@ -1,5 +1,8 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { InstallCallReportSmartResult } from '@lib/call-lib';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+    InstallCallReportSmartResult,
+    InstallFieldFailureDto,
+} from '@lib/call-lib';
 
 /** Результат установки смарта «AI-анализ звонков» (aicall_sales). */
 export class InstallAicallSmartResponseDto
@@ -50,4 +53,19 @@ export class InstallAicallSmartResponseDto
         type: [String],
     })
     enumItemsAdded: string[];
+
+    @ApiPropertyOptional({
+        description:
+            'true — портал достиг лимита пользовательских полей Битрикс24: ' +
+            'часть полей не создана, остальные после первого отказа не пробовались.',
+        example: false,
+        type: Boolean,
+    })
+    fieldLimitReached?: boolean;
+
+    @ApiPropertyOptional({
+        description: 'Причина по каждому несозданному полю — словами.',
+        type: [InstallFieldFailureDto],
+    })
+    fieldsFailedDetails?: InstallFieldFailureDto[];
 }

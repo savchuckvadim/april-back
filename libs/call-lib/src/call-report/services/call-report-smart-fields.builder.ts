@@ -180,9 +180,8 @@ export function buildCallReportSmartFields(
     set.set('OBJECTIONS', input.objections);
     set.set('OBJECTIONS_HANDLING', input.objectionsHandling);
 
-    // — Первичный RAG —
-    set.set('RESUME_GIGACHAT', input.resumeGigachat);
-    set.set('RECOMENDATION_GIGACHAT', input.recomendationGigachat);
+    // Полей RESUME_GIGACHAT / RECOMENDATION_GIGACHAT в смарте больше нет
+    // (03.11.2026): контур выключен, место отдано полям методики.
 
     // — Итоговая оценка —
     set.set('SCORE', input.score);

@@ -14,6 +14,7 @@ import { delay } from '@/shared';
 import { Field, ListItem } from '../../parse-field-excel';
 import {
     IBxTypedEntityFieldsInstallResult,
+    IBxTypedFieldInstallError,
     IBxTypedFieldInstallResult,
     IBxTypedFieldWithParsedResult,
     TypedEntityFieldCtx,
@@ -39,6 +40,7 @@ const RETRY_DELAY = 1000;
 
 interface IBatchResult {
     errorCodes: string[];
+    errorDetails: IBxTypedFieldInstallError[];
     results: IBxTypedFieldInstallResult[];
 }
 
@@ -48,6 +50,8 @@ export class BxTypedEntityFieldsInstallService {
     private readonly pbxService: PBXService;
     private readonly ctx: TypedEntityFieldCtx;
     private readonly parseFields: Field[];
+    /** Какая команда ушла по коду поля — для текста отказа («не создано» / «не обновлено»). */
+    private readonly ops = new Map<string, 'add' | 'update'>();
 
     constructor(
         domain: string,
@@ -74,6 +78,7 @@ export class BxTypedEntityFieldsInstallService {
         const existingBxFields = await this.listCurrent();
 
         const errorCodes: string[] = [];
+        const errorDetails: IBxTypedFieldInstallError[] = [];
         const results: IBxTypedFieldInstallResult[] = [];
 
         this.enqueueBatch(this.parseFields, existingBxFields);
@@ -81,13 +86,13 @@ export class BxTypedEntityFieldsInstallService {
         console.log(currentcommands);
 
         const batchResponse = await this.bitrix.api.callBatchWithConcurrency(1);
-        const { errorCodes: batchErrorCodes, results: batchResults } =
-            this.prepareBatchResult(batchResponse);
-        errorCodes.push(...batchErrorCodes);
-        results.push(...batchResults);
+        const batch = this.prepareBatchResult(batchResponse);
+        errorCodes.push(...batch.errorCodes);
+        errorDetails.push(...batch.errorDetails);
+        results.push(...batch.results);
 
-        await this.retryBatch(errorCodes, results);
-        return await this.collectFinalResult(errorCodes, results);
+        await this.retryBatch(errorCodes, errorDetails, results);
+        return await this.collectFinalResult(errorCodes, errorDetails, results);
     }
 
     private async listCurrent(): Promise<IUserFieldConfig[]> {
@@ -117,6 +122,10 @@ export class BxTypedEntityFieldsInstallService {
                 existingField,
             );
 
+            this.ops.set(
+                parseField.code,
+                existingField?.id != null ? 'update' : 'add',
+            );
             if (existingField?.id != null) {
                 this.bitrix.batch.userFieldConfig.updateBtch(parseField.code, {
                     moduleId: this.ctx.moduleId,
@@ -226,15 +235,24 @@ export class BxTypedEntityFieldsInstallService {
         batchResponse: IBitrixBatchResponseResult[],
     ): IBatchResult {
         const errorCodes: string[] = [];
+        const errorDetails: IBxTypedFieldInstallError[] = [];
         const results: IBxTypedFieldInstallResult[] = [];
         for (const response of batchResponse) {
             if (
                 response.result_error &&
                 typeof response.result_error === 'object'
             ) {
-                Object.keys(response.result_error).forEach(k =>
-                    errorCodes.push(k),
-                );
+                for (const [code, error] of Object.entries(
+                    response.result_error,
+                )) {
+                    errorCodes.push(code);
+                    errorDetails.push({
+                        code,
+                        op: this.ops.get(code) ?? 'add',
+                        error: String(error?.error ?? ''),
+                        description: String(error?.error_description ?? ''),
+                    });
+                }
             }
             if (response.result && typeof response.result === 'object') {
                 const map = response.result as Record<string, unknown>;
@@ -243,11 +261,12 @@ export class BxTypedEntityFieldsInstallService {
                 }
             }
         }
-        return { errorCodes, results };
+        return { errorCodes, errorDetails, results };
     }
 
     private async retryBatch(
         errorCodes: string[],
+        errorDetails: IBxTypedFieldInstallError[],
         results: IBxTypedFieldInstallResult[],
     ): Promise<void> {
         let retryCount = 0;
@@ -255,16 +274,17 @@ export class BxTypedEntityFieldsInstallService {
             await delay(RETRY_DELAY);
             const batchResponse =
                 await this.bitrix.api.callBatchWithConcurrency(1);
-            const { errorCodes: batchErrorCodes, results: batchResults } =
-                this.prepareBatchResult(batchResponse);
-            errorCodes.splice(0, errorCodes.length, ...batchErrorCodes);
-            results.push(...batchResults);
+            const batch = this.prepareBatchResult(batchResponse);
+            errorCodes.splice(0, errorCodes.length, ...batch.errorCodes);
+            errorDetails.splice(0, errorDetails.length, ...batch.errorDetails);
+            results.push(...batch.results);
             retryCount++;
         }
     }
 
     private async collectFinalResult(
         errorCodes: string[],
+        errorDetails: IBxTypedFieldInstallError[],
         results: IBxTypedFieldInstallResult[],
     ): Promise<IBxTypedEntityFieldsInstallResult> {
         const currentAfter = await this.listCurrent();
@@ -282,6 +302,7 @@ export class BxTypedEntityFieldsInstallService {
         }
         return {
             errorCodes,
+            errorDetails,
             results: out,
             countSuccess: out.filter(r => r.bxField !== undefined).length,
             countFailed:

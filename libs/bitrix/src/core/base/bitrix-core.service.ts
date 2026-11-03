@@ -272,15 +272,21 @@ export class BitrixCore {
             return;
         }
 
+        // Портал и id сущности — в самом тексте (03.11.2026: сотня
+        // «crm.item.update 400» за ночь без намёка, какой портал и элемент;
+        // транспорт в Telegram печатает только текст записи).
+        const entityId = requestedEntityId(data);
+        const where =
+            `на ${this.domain}` + (entityId === '—' ? '' : `, id ${entityId}`);
         this.logger.error(
-            `Error calling Bitrix [${method}]` +
+            `Error calling Bitrix [${method}] ${where}` +
                 (status ? ` (HTTP ${status})` : '') +
                 `: ${message}` +
                 payload,
         );
         void Promise.resolve(
             this.telegramBot.sendMessageAdminError(
-                `Bitrix API error (${method}): ${JSON.stringify(responseText)}`,
+                `Bitrix API error (${method}) ${where}: ${JSON.stringify(responseText)}`,
             ),
         ).catch(() => undefined);
     }

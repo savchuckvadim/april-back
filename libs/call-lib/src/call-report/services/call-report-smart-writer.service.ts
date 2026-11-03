@@ -58,6 +58,12 @@ export class CallReportSmartWriterService {
         );
     }
 
+    /** Домен портала для текстов алертов (в моках тестов api может не быть). */
+    private get portalDomain(): string {
+        const api = (this.bitrix as { api?: { domain?: string } }).api;
+        return api?.domain ?? '?';
+    }
+
     get lastUpdateFailure(): string | null {
         return this.updateFailure;
     }
@@ -105,7 +111,7 @@ export class CallReportSmartWriterService {
         );
         if (!itemId) {
             throw new Error(
-                `crm.item.add не вернул id элемента (activity ${input.activityId})`,
+                `crm.item.add не вернул id элемента (activity ${input.activityId}, ${this.portalDomain})`,
             );
         }
         this.verifyLinks(fields, response, input, itemId);
@@ -164,7 +170,7 @@ export class CallReportSmartWriterService {
             // поля ищут неделями.
             this.updateFailure = (error as Error).message;
             this.logger.error(
-                `Элемент #${existingId} не обновлён (${xmlId}): ${(error as Error).message}`,
+                `Элемент #${existingId} не обновлён (${xmlId}, ${this.portalDomain}): ${(error as Error).message}`,
                 { telegram: true, itemId: existingId },
             );
         }
@@ -231,7 +237,7 @@ export class CallReportSmartWriterService {
         if (!lost.length) return;
 
         this.logger.error(
-            `Элемент #${itemId} (activity ${input.activityId}): Битрикс НЕ СОХРАНИЛ связи ` +
+            `Элемент #${itemId} (activity ${input.activityId}, ${this.portalDomain}): Битрикс НЕ СОХРАНИЛ связи ` +
                 `[${lost.join(', ')}] — отправлено ${lost
                     .map(key => `${key}=${normalize(sent[key])}`)
                     .join(', ')}, в ответе ${lost

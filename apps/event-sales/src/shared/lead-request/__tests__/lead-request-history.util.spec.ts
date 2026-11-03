@@ -3,6 +3,8 @@ import {
     buildLeadRequestHistoryEntry,
     getLeadRequestAcceptState,
     historyActor,
+    isAcceptHistoryEntry,
+    isAssignHistoryEntry,
     LEAD_REQUEST_HISTORY_MAX_ENTRIES,
     LEAD_REQUEST_HISTORY_TEXT,
 } from '../lead-request-history.util';
@@ -124,6 +126,16 @@ describe('lead-request-history.util', () => {
         expect(LEAD_REQUEST_HISTORY_TEXT.notAccepted(60, null)).toBe(
             'Не принял за 60 мин: —',
         );
+        // Лид следует за сделкой — запись считается новым назначением.
+        const followed = LEAD_REQUEST_HISTORY_TEXT.followedDeal(
+            historyActor(names, 447),
+            historyActor(names, 465),
+        );
+        expect(followed).toBe(
+            'ХО передан по сделке: Вадим Савчук → Иван Петров',
+        );
+        expect(isAssignHistoryEntry(followed)).toBe(true);
+        expect(isAcceptHistoryEntry(followed)).toBe(false);
     });
 
     /*

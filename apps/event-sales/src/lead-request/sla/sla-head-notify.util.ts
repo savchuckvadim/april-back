@@ -59,3 +59,25 @@ export function notAcceptedHeadMessage(input: {
         ` — передана другому. [URL=https://${domain}/crm/lead/details/${leadId}/]Открыть лид[/URL]`
     );
 }
+
+/**
+ * Новому ответственному: ответственного сделки сменили в карточке, заявка
+ * переведена на него и ждёт принятия заново. `from` — прежний ответственный
+ * лида (нет имени — id, нет никого — без скобок).
+ */
+export function followedDealMessage(input: {
+    domain: string;
+    lead: Record<string, unknown>;
+    leadId: number;
+    minutes: number;
+    from: LeadRequestHistoryActor;
+}): string {
+    const { domain, lead, leadId, minutes, from } = input;
+    const title = typeof lead.TITLE === 'string' ? lead.TITLE : `Лид ${leadId}`;
+    return (
+        `Заявка «${title}» переведена на вас: в сделке сменили ответственного` +
+        (from ? ` (был: ${from})` : '') +
+        `. Подтвердите принятие в «Звонках» за ${minutes} мин, иначе заявка уйдёт другому. ` +
+        `[URL=https://${domain}/crm/lead/details/${leadId}/]Открыть лид[/URL]`
+    );
+}

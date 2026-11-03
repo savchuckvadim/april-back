@@ -25,6 +25,12 @@ import {
     buildEnumRepairField,
     missingEnumCodes,
 } from './install-smart-enum-repair';
+import {
+    classifyInstallFieldError,
+    fieldLimitSummary,
+    LIMIT_SKIPPED_MESSAGE,
+    type InstallFieldFailure,
+} from './install-field-failure.util';
 
 export interface InstallCallReportSmartResult {
     entityTypeId: number;
@@ -37,6 +43,14 @@ export interface InstallCallReportSmartResult {
      * справочника (например, новый риск-флаг): «UF_…_RISK_FLAGS: door_closed».
      */
     enumItemsAdded: string[];
+    /**
+     * Портал достиг лимита пользовательских полей Битрикс24
+     * (MAIN_USER_FIELD_LIMIT_EXCEEDED): часть полей не создана, остальные
+     * после первого такого отказа не пробовались.
+     */
+    fieldLimitReached?: boolean;
+    /** Причина по каждому несозданному полю — админка объясняет словами. */
+    fieldsFailedDetails?: InstallFieldFailure[];
 }
 
 /**
@@ -162,8 +176,14 @@ export class InstallCallReportSmartUseCase {
 
         // 2. Поля: добавить отсутствующие (идемпотентно); у существующих
         // enum-полей долить недостающие значения справочников.
-        const { fieldsAdded, fieldsExisting, fieldsFailed, enumItemsAdded } =
-            await this.installFields(bitrix, typeId);
+        const {
+            fieldsAdded,
+            fieldsExisting,
+            fieldsFailed,
+            enumItemsAdded,
+            fieldLimitReached,
+            fieldsFailedDetails,
+        } = await this.installFields(bitrix, typeId, domain);
 
         // 3. Канонический шаг pbx-flow — зеркало полей в PortalDB
         // (bitrixfields + bitrixfield_items): PortalModel и fallback-резолв
@@ -203,6 +223,8 @@ export class InstallCallReportSmartUseCase {
             fieldsExisting,
             fieldsFailed,
             enumItemsAdded,
+            fieldLimitReached,
+            fieldsFailedDetails,
         };
     }
 
@@ -248,10 +270,16 @@ export class InstallCallReportSmartUseCase {
     private async installFields(
         bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
         typeId: number,
+        domain: string,
     ): Promise<
         Pick<
             InstallCallReportSmartResult,
-            'fieldsAdded' | 'fieldsExisting' | 'fieldsFailed' | 'enumItemsAdded'
+            | 'fieldsAdded'
+            | 'fieldsExisting'
+            | 'fieldsFailed'
+            | 'enumItemsAdded'
+            | 'fieldLimitReached'
+            | 'fieldsFailedDetails'
         >
     > {
         let existing: IUserFieldConfig[];
@@ -294,6 +322,8 @@ export class InstallCallReportSmartUseCase {
         const fieldsExisting: string[] = [];
         const fieldsFailed: string[] = [];
         const enumItemsAdded: string[] = [];
+        const fieldsFailedDetails: InstallFieldFailure[] = [];
+        let fieldLimitReached = false;
 
         for (const def of CALL_REPORT_SMART_FIELDS) {
             const fieldName = buildCallReportUfName(typeId, def.code);
@@ -316,6 +346,18 @@ export class InstallCallReportSmartUseCase {
                 }
                 continue;
             }
+            if (fieldLimitReached) {
+                // Лимит портала — состояние, а не ошибка кода: остальные
+                // поля не пробуем, каждая попытка — вызов и тот же отказ.
+                fieldsFailed.push(fieldName);
+                fieldsFailedDetails.push({
+                    fieldName,
+                    title: def.name,
+                    reason: 'field_limit',
+                    message: LIMIT_SKIPPED_MESSAGE,
+                });
+                continue;
+            }
             try {
                 await bitrix.userFieldConfig.add({
                     moduleId: 'crm',
@@ -323,14 +365,34 @@ export class InstallCallReportSmartUseCase {
                 });
                 fieldsAdded.push(fieldName);
             } catch (error) {
-                this.logger.error(
-                    `Поле ${fieldName} не установлено: ${(error as Error).message}`,
-                );
+                const failure = classifyInstallFieldError(error);
                 fieldsFailed.push(fieldName);
+                fieldsFailedDetails.push({
+                    fieldName,
+                    title: def.name,
+                    ...failure,
+                });
+                if (failure.reason === 'field_limit') {
+                    fieldLimitReached = true;
+                    continue;
+                }
+                this.logger.error(
+                    `Поле ${fieldName} не установлено: ${failure.message}`,
+                );
             }
         }
+        if (fieldLimitReached) {
+            this.logger.warn(fieldLimitSummary(domain, fieldsFailedDetails));
+        }
 
-        return { fieldsAdded, fieldsExisting, fieldsFailed, enumItemsAdded };
+        return {
+            fieldsAdded,
+            fieldsExisting,
+            fieldsFailed,
+            enumItemsAdded,
+            fieldLimitReached,
+            fieldsFailedDetails,
+        };
     }
 
     /**

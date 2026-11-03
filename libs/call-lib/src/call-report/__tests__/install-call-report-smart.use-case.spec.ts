@@ -322,5 +322,79 @@ describe('InstallCallReportSmartUseCase', () => {
         expect(result.fieldsAdded).toHaveLength(
             CALL_REPORT_SMART_FIELDS.length - 1,
         );
+        expect(result.fieldLimitReached).toBe(false);
+        expect(result.fieldsFailedDetails).toEqual([
+            expect.objectContaining({
+                fieldName: `UF_CRM_128_${CALL_REPORT_SMART_FIELDS[0].code}`,
+                title: CALL_REPORT_SMART_FIELDS[0].name,
+                reason: 'other',
+                message: 'bitrix error',
+            }),
+        ]);
+    });
+
+    // Прод 02.11.2026, gsr: лимит пользовательских полей портала.
+    it('лимит полей портала: остальные поля не пробуются, у каждого причина, флаг лимита', async () => {
+        const { useCase, bitrix } = makeDeps({ existingType: true });
+        const limitError = Object.assign(
+            new Error('Request failed with status code 400'),
+            {
+                response: {
+                    data: {
+                        error: 'MAIN_USER_FIELD_LIMIT_EXCEEDED',
+                        error_description:
+                            'Достигнут лимит пользовательских полей, новое поле не создано.',
+                    },
+                },
+            },
+        );
+        bitrix.userFieldConfig.add
+            .mockResolvedValueOnce({ result: {} })
+            .mockResolvedValueOnce({ result: {} })
+            .mockRejectedValueOnce(limitError);
+        const result = await useCase.execute(DOMAIN);
+
+        // Два созданы, третий упёрся в лимит — дальше Битрикс не дёргаем.
+        expect(bitrix.userFieldConfig.add).toHaveBeenCalledTimes(3);
+        expect(result.fieldsAdded).toHaveLength(2);
+        expect(result.fieldLimitReached).toBe(true);
+        const failedCount = CALL_REPORT_SMART_FIELDS.length - 2;
+        expect(result.fieldsFailed).toHaveLength(failedCount);
+        expect(result.fieldsFailedDetails).toHaveLength(failedCount);
+        expect(result.fieldsFailedDetails?.[0]).toEqual({
+            fieldName: `UF_CRM_128_${CALL_REPORT_SMART_FIELDS[2].code}`,
+            title: CALL_REPORT_SMART_FIELDS[2].name,
+            reason: 'field_limit',
+            message:
+                'Достигнут лимит пользовательских полей, новое поле не создано.',
+        });
+        expect(
+            result.fieldsFailedDetails?.every(
+                failure => failure.reason === 'field_limit',
+            ),
+        ).toBe(true);
+        // Пропущенные без вызова — своя формулировка, не текст Битрикса.
+        expect(result.fieldsFailedDetails?.[1].message).toContain(
+            'не создавалось',
+        );
+    });
+
+    it('обрыв сети на одном поле — причина network, остальные ставятся', async () => {
+        const { useCase, bitrix } = makeDeps({ existingType: true });
+        bitrix.userFieldConfig.add
+            .mockRejectedValueOnce(new Error('socket hang up'))
+            .mockResolvedValue({ result: {} });
+        const result = await useCase.execute(DOMAIN);
+
+        expect(result.fieldLimitReached).toBe(false);
+        expect(result.fieldsFailedDetails).toEqual([
+            expect.objectContaining({
+                reason: 'network',
+                message: 'socket hang up',
+            }),
+        ]);
+        expect(result.fieldsAdded).toHaveLength(
+            CALL_REPORT_SMART_FIELDS.length - 1,
+        );
     });
 });

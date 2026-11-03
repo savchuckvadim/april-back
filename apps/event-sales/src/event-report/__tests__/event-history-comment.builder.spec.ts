@@ -146,3 +146,42 @@ describe('buildEventHistoryEntry', () => {
         ).toEqual(['Звонок совершён']);
     });
 });
+
+describe('buildEventHistoryParts — несостоявшийся разговор', () => {
+    it('isResult=false — фраза «не состоялся», как в таймлайне и в легаси («ОП Не состоялся Звонок»)', () => {
+        expect(
+            buildEventHistoryParts({
+                reportEventType: 'warm',
+                planEventType: null,
+                reportComment: 'Недозвон - трубку не берут\nИванов Иван',
+                isResult: false,
+            }),
+        ).toEqual([
+            'Звонок не состоялся: Недозвон - трубку не берут%0AИванов Иван',
+        ]);
+        expect(
+            buildEventHistoryParts({
+                reportEventType: 'presentation',
+                planEventType: 'warm',
+                reportComment: '',
+                isResult: false,
+                planDeadline: {
+                    toRuHumanDateTime: () => '5 ноября 11:00',
+                } as never,
+            }),
+        ).toEqual([
+            'Презентация не состоялась',
+            'Запланирован Звонок на 5 ноября 11:00',
+        ]);
+    });
+
+    it('isResult не передан — прежнее поведение, разговор считается состоявшимся', () => {
+        expect(
+            buildEventHistoryParts({
+                reportEventType: 'warm',
+                planEventType: null,
+                reportComment: 'Говорили',
+            }),
+        ).toEqual(['Звонок совершён: Говорили']);
+    });
+});

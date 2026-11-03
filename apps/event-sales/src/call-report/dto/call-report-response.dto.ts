@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { InstallCallReportSmartResult } from '@lib/call-lib';
+import {
+    InstallCallReportSmartResult,
+    InstallFieldFailureDto,
+} from '@lib/call-lib';
 import { CallReportScanResult } from '../use-cases/call-report-scan.use-case';
 import { CallReportPipelineResult } from '../use-cases/call-report-pipeline.use-case';
 import { CallRevisionDomainResult } from '../services/call-revision.service';
@@ -58,6 +61,21 @@ export class InstallCallReportSmartResponseDto
         type: [String],
     })
     enumItemsAdded: string[];
+
+    @ApiPropertyOptional({
+        description:
+            'true — портал достиг лимита пользовательских полей Битрикс24: ' +
+            'часть полей не создана, остальные после первого отказа не пробовались.',
+        example: false,
+        type: Boolean,
+    })
+    fieldLimitReached?: boolean;
+
+    @ApiPropertyOptional({
+        description: 'Причина по каждому несозданному полю — словами.',
+        type: [InstallFieldFailureDto],
+    })
+    fieldsFailedDetails?: InstallFieldFailureDto[];
 }
 
 /** Результат скана звонков домена. */

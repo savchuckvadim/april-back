@@ -390,8 +390,14 @@ function buildSectionFields(): CallReportSmartFieldDef[] {
 
 /** Максимум символов в одном UF-поле транскрипта (запас к лимитам Bitrix). */
 export const CALL_REPORT_TRANSCRIPT_CHUNK_SIZE = 40_000;
-/** Число полей под транскрипт: 4 × 40k ≈ 3 часа разговора. */
-export const CALL_REPORT_TRANSCRIPT_PARTS = 4;
+/**
+ * Число полей под транскрипт: 2 × 40k ≈ 1,5 часа разговора. Было 4; части
+ * 3–4 убраны 03.11.2026 — лимит пользовательских полей Битрикса считается
+ * на одну сущность, и на gsr смарт перестал принимать поля методики.
+ * На порталах, где TRANSCRIPT_3/4 остались, они просто не заполняются
+ * (сироты, можно удалить, когда понадобится место).
+ */
+export const CALL_REPORT_TRANSCRIPT_PARTS = 2;
 
 function buildTranscriptFields(): CallReportSmartFieldDef[] {
     return Array.from({ length: CALL_REPORT_TRANSCRIPT_PARTS }, (_, index) => ({
@@ -967,13 +973,9 @@ export const CALL_REPORT_SMART_FIELDS: CallReportSmartFieldDef[] = [
         type: 'string',
     },
 
-    // — Первичный RAG-анализ (контур 1) —
-    { code: 'RESUME_GIGACHAT', name: 'Резюме GigaChat (RAG)', type: 'string' },
-    {
-        code: 'RECOMENDATION_GIGACHAT',
-        name: 'Рекомендации GigaChat (RAG)',
-        type: 'string',
-    },
+    // Поля RESUME_GIGACHAT / RECOMENDATION_GIGACHAT убраны 03.11.2026:
+    // контур резюме GigaChat выключен по умолчанию (решение владельца
+    // 27.10 и 01.11), а каждое поле смарта — дефицит из-за лимита на сущность.
 
     // — Итоговая оценка агента —
     { code: 'SCORE', name: 'Оценка звонка (1-10)', type: 'integer' },
@@ -1151,8 +1153,6 @@ export const CALL_REPORT_CARD_SECTIONS: readonly CallReportCardSection[] = [
             'DEAL_PROGRESS',
             'CAPS_APPLIED',
             'COACHING_PRIORITY',
-            'RESUME_GIGACHAT',
-            'RECOMENDATION_GIGACHAT',
         ],
     },
     {
@@ -1254,8 +1254,6 @@ export const CALL_REPORT_CARD_SECTIONS: readonly CallReportCardSection[] = [
         codes: [
             'TRANSCRIPT_1',
             'TRANSCRIPT_2',
-            'TRANSCRIPT_3',
-            'TRANSCRIPT_4',
             'TRANSCRIPTION_ID',
             'AGENT_NAME',
             'AGENT_VERSION',

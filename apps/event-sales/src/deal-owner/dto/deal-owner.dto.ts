@@ -32,8 +32,8 @@ export class AlignDealOwnerRequestDto {
 export class DealOwnerAlignResultDto implements IDealOwnerAlignResult {
     @ApiPropertyOptional({
         description:
-            'На кого переназначены компания и контакты; null — ничего не ' +
-            'менялось.',
+            'На кого переназначены компания, контакты и лиды заявки; null — ' +
+            'ничего не менялось.',
         type: Number,
         nullable: true,
         example: 447,
@@ -43,9 +43,9 @@ export class DealOwnerAlignResultDto implements IDealOwnerAlignResult {
     @ApiPropertyOptional({
         description:
             'Почему ничего не менялось: `not_own` — сделка не этого ' +
-            'сотрудника, `closed` — сделка закрыта, `aligned` — компания и ' +
-            'контакты уже на нём, `recent` — сервер недавно уже выравнивал ' +
-            '(в течение 15 минут).',
+            'сотрудника, `closed` — сделка закрыта, `aligned` — компания, ' +
+            'контакты и лиды уже на нём, `recent` — сервер недавно уже ' +
+            'выравнивал (в течение 15 минут).',
         enum: DEAL_OWNER_SKIP_REASONS,
         nullable: true,
         example: null,
@@ -65,6 +65,16 @@ export class DealOwnerAlignResultDto implements IDealOwnerAlignResult {
         example: 2,
     })
     contactsMoved: number;
+
+    @ApiProperty({
+        description:
+            'Сколько открытых лидов заявки (первоисточник и присоединённые) ' +
+            'переведено на ответственного сделки; у ждущих принятия окно ' +
+            'принятия начинается заново.',
+        type: Number,
+        example: 1,
+    })
+    leadsMoved: number;
 
     @ApiProperty({
         description: 'Что переназначить не удалось.',

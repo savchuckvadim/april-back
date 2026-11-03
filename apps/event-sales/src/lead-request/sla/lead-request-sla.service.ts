@@ -32,10 +32,12 @@ import {
     historyActor,
     LEAD_REQUEST_HISTORY_TEXT,
 } from '../../shared/lead-request/lead-request-history.util';
+import { setManagerOp } from '../../shared/lead-request/manager-op.util';
 import { UserNameResolver } from '../../shared/lead-request/user-name.resolver';
 import { PortalWorkingHoursService } from '../../shared/working-hours/portal-working-hours.service';
 import { workingMinutesBefore } from '../../shared/working-hours/working-minutes.util';
 import {
+    followedDealMessage,
     notAcceptedHeadMessage,
     notifyHeads,
     SlaNotifyClient,
@@ -78,6 +80,8 @@ export interface LeadRequestSlaRunResult {
     healed: number;
     /** Передано другому сотруднику. */
     transferred: number;
+    /** Лидов переведено за сделкой (ответственного сделки сменили руками). */
+    handedOver: number;
     /** Сделок с просроченным подтверждением (второй проход, по сделкам). */
     dealCandidates: number;
     /** Сделок передано другому сотруднику. */
@@ -138,6 +142,7 @@ export class LeadRequestSlaService {
             candidates: 0,
             healed: 0,
             transferred: 0,
+            handedOver: 0,
             dealCandidates: 0,
             dealsTransferred: 0,
             warnings: [],
@@ -229,6 +234,9 @@ export class LeadRequestSlaService {
             const toBaseName = toBaseField
                 ? portal.getFieldBitrixId(toBaseField)
                 : null;
+            const historyBitrixId = historyField
+                ? portal.getFieldBitrixId(historyField)
+                : null;
 
             for (const lead of overdue) {
                 const leadId = Number(lead.ID);
@@ -287,6 +295,25 @@ export class LeadRequestSlaService {
                         result.healed += 1;
                         continue;
                     }
+                    const leadResponsible = Number(lead.ASSIGNED_BY_ID) || null;
+                    if (
+                        base.responsibleId &&
+                        leadResponsible !== base.responsibleId
+                    ) {
+                        await this.followDealOwner(
+                            bitrix,
+                            portal,
+                            domain,
+                            lead,
+                            leadId,
+                            leadResponsible,
+                            base.responsibleId,
+                            minutes,
+                            historyBitrixId,
+                            result,
+                        );
+                        continue;
+                    }
                     await this.transfer(
                         bitrix,
                         portal,
@@ -294,9 +321,7 @@ export class LeadRequestSlaService {
                         lead,
                         leadId,
                         minutes,
-                        historyField
-                            ? portal.getFieldBitrixId(historyField)
-                            : null,
+                        historyBitrixId,
                         result,
                         maxTransfers,
                     );
@@ -324,7 +349,8 @@ export class LeadRequestSlaService {
 
         this.logger.log(
             `[sla] ${domain}: лиды — просрочено ${result.candidates}, ` +
-                `доведено принятий ${result.healed}, передано ${result.transferred}; ` +
+                `доведено принятий ${result.healed}, передано ${result.transferred}, ` +
+                `переведено за сделкой ${result.handedOver}; ` +
                 `сделки — просрочено ${result.dealCandidates}, ` +
                 `передано ${result.dealsTransferred}`,
         );
@@ -813,6 +839,72 @@ export class LeadRequestSlaService {
         const at = Date.parse(raw);
         if (!Number.isFinite(at)) return true;
         return at <= before.getTime();
+    }
+
+    /**
+     * ЛИД СЛЕДУЕТ ЗА СДЕЛКОЙ (владелец 03.11.2026).
+     *
+     * Ответственного основной сделки сменили руками в карточке (garant,
+     * сделка 111547: руководитель раздаёт заявки Питера по сотрудникам), а
+     * лид остался на прежнем с висящим таймером — карточка сделки лида не
+     * показывает, и его никто не трогает. Передача по кругу здесь отменила
+     * бы ручной выбор: хук переписал бы ответственного сделки. Поэтому лид
+     * переводится на ответственного сделки вместе с «Менеджером по
+     * продажам», а окно принятия стартует для него заново: не подтвердит за
+     * порог — обычная передача. Лимит передач не трогаем: это выравнивание,
+     * а не круг.
+     */
+    private async followDealOwner(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        portal: PortalModel,
+        domain: string,
+        lead: BxRow,
+        leadId: number,
+        from: number | null,
+        to: number,
+        minutes: number,
+        historyBitrixId: string | null,
+        result: LeadRequestSlaRunResult,
+    ): Promise<void> {
+        const names = await this.userNames.resolve(domain, bitrix, [
+            from ?? 0,
+            to,
+        ]);
+        const patch: BxRow = { ASSIGNED_BY_ID: to };
+        setManagerOp(portal, 'lead', patch, to);
+        if (historyBitrixId) {
+            patch[historyBitrixId] = appendLeadRequestHistory(
+                lead[historyBitrixId],
+                buildLeadRequestHistoryEntry(
+                    LEAD_REQUEST_HISTORY_TEXT.followedDeal(
+                        historyActor(names, from),
+                        historyActor(names, to),
+                    ),
+                    portal.getTimezone(),
+                ),
+            );
+        }
+        const assignedAt = this.leadAssignedAtName(portal);
+        if (assignedAt) patch[assignedAt] = this.nowCrm(portal);
+        await bitrix.lead.update(leadId, patch as never);
+        result.handedOver += 1;
+        this.logger.log(
+            `[sla] лид ${leadId}: ответственный сделки сменён (${from ?? '—'} → ${to}) — ` +
+                `лид переведён за сделкой, окно принятия ${minutes} мин заново`,
+        );
+
+        const message = followedDealMessage({
+            domain,
+            lead,
+            leadId,
+            minutes,
+            from: historyActor(names, from),
+        });
+        for (const failure of await notifyHeads(bitrix, [to], message)) {
+            result.warnings.push(
+                `Лид ${leadId}: уведомление сотруднику ${failure.headUserId} не отправлено — ${failure.error}`,
+            );
+        }
     }
 
     /** Передача: история → повторный ХО (round-robin) → алерт руководителю. */
