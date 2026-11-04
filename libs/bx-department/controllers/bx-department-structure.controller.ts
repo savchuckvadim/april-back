@@ -21,7 +21,7 @@ export class BxDepartmentStructureController {
         summary:
             'Структура отделов продаж (старый API) с мультирежимом, ролью пользователя и коллегами',
         description:
-            'Мультирежим включается флагом is_multiple отдела в нашей БД (не приходит извне). Когда он включён — ищет по всей структуре портала все отделы группы (названия «ОП …» или «Отдел продаж»), возвращает их в прежнем формате (смерджены в одну структуру) и рядом — разбивку по каждому ОП с группами. Также определяет, руководитель ли текущий пользователь (cup/op/group) и возвращает его коллег по группе и по отделу. Суперпользователь вендора (сотрудник April, заведён в админке в карточке портала) получает currentUser.isSuperUser = true, visibility = all, headOf = cup, headOfDepartmentIds — все ОП и headOfSource = superuser; у остальных isSuperUser = false.',
+            'Мультирежим включается флагом is_multiple отдела в нашей БД (не приходит извне). Когда он включён — ищет по всей структуре портала все отделы группы (названия «ОП …» или «Отдел продаж»), возвращает их в прежнем формате (смерджены в одну структуру) и рядом — разбивку по каждому ОП с группами. Также определяет, руководитель ли текущий пользователь (cup/op/group) и возвращает его коллег по группе и по отделу. Суперпользователь вендора (сотрудник April, заведён в админке в карточке портала) получает currentUser.isSuperUser = true, visibility = all, headOf = cup, headOfDepartmentIds — все ОП и headOfSource = superuser; у остальных isSuperUser = false. Флаг applyEmployeeDefault (шлёт только KPI-отчёт) расширяет периметр рядового сотрудника отдела продаж до портальной настройки kpi-sales visibility_employee_default: visibility/subordinateIds по настройке, headOf остаётся null, headOfSource = portal_default. Без флага настройка не читается.',
     })
     @ApiBody({
         type: BxDepartmentStructureRequestDto,
@@ -46,6 +46,7 @@ export class BxDepartmentStructureController {
             dto.department,
             dto.userId,
             dto.resetCache,
+            { applyEmployeeDefault: dto.applyEmployeeDefault === true },
         );
     }
 }

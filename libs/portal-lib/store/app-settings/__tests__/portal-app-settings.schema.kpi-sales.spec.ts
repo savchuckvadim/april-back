@@ -26,6 +26,12 @@ const CONTRACT: Record<
     string,
     { code: string; type: PortalAppSettingType; default: boolean | string }
 > = {
+    // Видимость рядовых в KPI-отчёте (04.11.2026): дефолт own = как раньше.
+    visibilityEmployeeDefault: {
+        code: 'visibility_employee_default',
+        type: 'string',
+        default: 'own',
+    },
     aiAnalyticsEnabled: {
         code: 'ai_analytics_enabled',
         type: 'boolean',

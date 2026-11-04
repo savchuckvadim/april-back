@@ -534,6 +534,105 @@ describe('BxDepartmentStructureService', () => {
         });
     });
 
+    describe('портальный уровень для рядовых (kpi-sales visibility_employee_default)', () => {
+        const KPI = 'kpi-sales';
+        const withFlag = (userId: number, group = EDepartamentGroup.sales) =>
+            service.getStructure(DOMAIN, group, userId, false, {
+                applyEmployeeDefault: true,
+            });
+        /** Настройки по приложению: «Отдел продаж» пустой, kpi-sales — заданный. */
+        const kpiSettings = (visibilityEmployeeDefault: string) =>
+            settingsResolve.mockImplementation((_domain: string, app: string) =>
+                Promise.resolve(app === KPI ? { visibilityEmployeeDefault } : {}),
+            );
+
+        it('с флагом: рядовой видит свою группу, headOf null, source=portal_default', async () => {
+            kpiSettings('group');
+
+            const { currentUser } = await withFlag(204);
+
+            expect(settingsResolve).toHaveBeenCalledWith(DOMAIN, KPI);
+            expect(currentUser.isHead).toBe(false);
+            expect(currentUser.headOf).toBeNull();
+            expect(currentUser.headOfDepartmentIds).toEqual([45]);
+            expect(currentUser.visibility).toBe(EBxVisibilityLevel.group);
+            expect(currentUser.headOfSource).toBe(
+                EBxHeadOfSource.portalDefault,
+            );
+            expect(currentUser.subordinateIds).toEqual([203]);
+        });
+
+        it('без флага настройка kpi-sales не читается, рядовой — own (все прочие потребители)', async () => {
+            kpiSettings('all');
+
+            const { currentUser } = await service.getStructure(
+                DOMAIN,
+                EDepartamentGroup.sales,
+                204,
+            );
+
+            expect(settingsResolve).not.toHaveBeenCalledWith(DOMAIN, KPI);
+            expect(currentUser.visibility).toBe(EBxVisibilityLevel.own);
+            expect(currentUser.headOfSource).toBe(EBxHeadOfSource.structure);
+            expect(currentUser.subordinateIds).toEqual([]);
+        });
+
+        it('группа service: флаг игнорируется, настройки не читаются', async () => {
+            kpiSettings('all');
+
+            await withFlag(204, EDepartamentGroup.service);
+
+            expect(settingsResolve).not.toHaveBeenCalled();
+        });
+
+        it('значение не из словаря или недоступные настройки → own', async () => {
+            kpiSettings('everyone');
+            expect((await withFlag(204)).currentUser.visibility).toBe(
+                EBxVisibilityLevel.own,
+            );
+
+            settingsResolve.mockImplementation((_domain: string, app: string) =>
+                app === KPI
+                    ? Promise.reject(new Error('db down'))
+                    : Promise.resolve({}),
+            );
+            expect((await withFlag(204)).currentUser.visibility).toBe(
+                EBxVisibilityLevel.own,
+            );
+        });
+
+        it('список «Отдел продаж» и дефолт: берётся высший, роль списка сохраняется', async () => {
+            settingsResolve.mockImplementation((_domain: string, app: string) =>
+                Promise.resolve(
+                    app === KPI
+                        ? { visibilityEmployeeDefault: 'department' }
+                        : { visibilityGroupUserIds: '204' },
+                ),
+            );
+
+            const { currentUser } = await withFlag(204);
+
+            // список дал group (headOf=group), дефолт department расширил периметр
+            expect(currentUser.headOf).toBe(EBxDepartmentHeadType.group);
+            expect(currentUser.isHead).toBe(true);
+            expect(currentUser.visibility).toBe(EBxVisibilityLevel.department);
+            expect(currentUser.headOfDepartmentIds).toEqual([41]);
+            expect(currentUser.headOfSource).toBe(
+                EBxHeadOfSource.portalDefault,
+            );
+        });
+
+        it('руководитель ОП при дефолте group — без изменений', async () => {
+            kpiSettings('group');
+
+            const { currentUser } = await withFlag(202);
+
+            expect(currentUser.headOf).toBe(EBxDepartmentHeadType.op);
+            expect(currentUser.visibility).toBe(EBxVisibilityLevel.department);
+            expect(currentUser.headOfSource).toBe(EBxHeadOfSource.structure);
+        });
+    });
+
     describe('одиночный режим (как раньше)', () => {
         it('делегирует BxDepartmentService и строит разбивку из ответа', async () => {
             // is_multiple=false в БД → прежний одиночный режим.

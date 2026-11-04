@@ -21,8 +21,13 @@ export const CLASSIC_THEME = {
         h1: 15,
     },
     page: {
-        paddingTop: 92,
-        paddingBottom: 86,
+        /**
+         * Поля под измеренные шапку и подвал (lib/pdf-layout, fitPageFrame): с
+         * ними обычный документ рисуется за один проход, длинные реквизиты
+         * или контакты менеджера раздвигают их на втором.
+         */
+        paddingTop: 96,
+        paddingBottom: 95,
         paddingHorizontal: 44,
         /** Отступ шапки/подвала от края листа */
         edge: 26,

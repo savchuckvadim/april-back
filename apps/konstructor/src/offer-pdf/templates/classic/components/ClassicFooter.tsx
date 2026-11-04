@@ -24,7 +24,10 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: colors.text,
     },
-    pageNumber: { fontSize: sizes.xs, color: colors.muted },
+    // У текста с render-пропом Yoga не знает содержимого и даёт ему
+    // высоту в тысячи пунктов: блок подвала уезжает за верх листа, а его
+    // верхняя линия не печатается. Высота строки задана явно.
+    pageNumber: { fontSize: sizes.xs, color: colors.muted, height: sizes.xs * 1.35 },
 });
 
 /** Подвал на каждой странице: контакты менеджера (по настройке) и номер страницы. */

@@ -63,7 +63,8 @@
     "hooks:install": "git config core.hooksPath .githooks",
     "typecheck:build": "tsc --noEmit -p tsconfig.build.json",
     "audit:ai-analytics": "ts-node -T -r tsconfig-paths/register apps/kpi-report-sales/src/ai-analytics/audit/run-ai-analytics-audit.ts",
-    "offer-pdf:snapshot": "ts-node -T -r tsconfig-paths/register apps/konstructor/src/offer-pdf/dev/offer-pdf-snapshot.ts"
+    "offer-pdf:snapshot": "ts-node -T -r tsconfig-paths/register apps/konstructor/src/offer-pdf/dev/offer-pdf-snapshot.ts",
+    "offer-pdf:audit": "ts-node -T -r tsconfig-paths/register apps/konstructor/src/offer-pdf/dev/offer-pdf-layout-audit.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.810.0",

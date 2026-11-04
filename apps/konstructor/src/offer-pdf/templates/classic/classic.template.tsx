@@ -1,5 +1,6 @@
 import type { FC } from 'react';
 import { Document, Page } from '@react-pdf/renderer';
+import type { OfferPdfPageFrame } from '../../lib/pdf-layout';
 import { OfferPdfDocumentModel } from '../../model/offer-pdf-document.model';
 import { OfferPdfTemplateCode } from '../../model/offer-pdf-template-code';
 import { OfferPdfTemplate } from '../offer-pdf-template.interface';
@@ -11,12 +12,18 @@ import { ClassicLetter } from './components/ClassicLetter';
 import { ClassicPrice } from './components/ClassicPrice';
 import { ClassicStamps } from './components/ClassicStamps';
 
+interface ClassicDocumentProps {
+    model: OfferPdfDocumentModel;
+    /** Поля под измеренные шапку и подвал; без них — поля темы */
+    frame?: OfferPdfPageFrame;
+}
+
 /**
  * Классический КП — перенос старого Blade-шаблона: письмо, цена,
  * наполнение, подпись/печать, менеджер в подвале. Порядок «цена ↔
  * наполнение» и наличие блоков — из настроек модели.
  */
-const ClassicDocument: FC<{ model: OfferPdfDocumentModel }> = ({ model }) => {
+const ClassicDocument: FC<ClassicDocumentProps> = ({ model, frame }) => {
     const { settings, data } = model;
     const price = <ClassicPrice key="price" model={model} />;
     const infoblocks = <ClassicInfoblocks key="infoblocks" model={model} />;
@@ -41,7 +48,20 @@ const ClassicDocument: FC<{ model: OfferPdfDocumentModel }> = ({ model }) => {
             producer="April Konstructor"
             language="ru"
         >
-            <Page size="A4" style={classicStyles.page}>
+            <Page
+                size="A4"
+                style={
+                    frame
+                        ? [
+                              classicStyles.page,
+                              {
+                                  paddingTop: frame.paddingTop,
+                                  paddingBottom: frame.paddingBottom,
+                              },
+                          ]
+                        : classicStyles.page
+                }
+            >
                 <ClassicHeader model={model} />
                 <ClassicLetter model={model} />
                 {sections}
@@ -56,5 +76,5 @@ export const classicTemplate: OfferPdfTemplate = {
     name: 'Классический',
     description:
         'Как в прежней версии: письмо, таблица цен, наполнение списком или таблицей, подпись и печать, контакты менеджера.',
-    render: model => <ClassicDocument model={model} />,
+    render: (model, frame) => <ClassicDocument model={model} frame={frame} />,
 };

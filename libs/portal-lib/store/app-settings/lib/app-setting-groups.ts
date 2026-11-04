@@ -113,6 +113,13 @@ export const PORTAL_APP_SETTING_GROUPS = {
         links: [LINK.departments, LINK.superUsers],
     },
     // --- kpi-sales ---
+    kpi_sales_visibility: {
+        title: 'KPI-отчёт: видимость для сотрудников',
+        description:
+            'Что видят в KPI-отчёте рядовые сотрудники отделов продаж этого ' +
+            'портала: только себя, свою группу, свой отдел или всю структуру.',
+        links: [LINK.departments],
+    },
     ai_analytics_main: {
         title: 'AI-аналитика: включение и рассылки',
         description:
@@ -308,6 +315,7 @@ const GROUP_RULES: Record<EnumPortalAppCode, readonly GroupRule[]> = {
         { group: 'sales_visibility', prefixes: ['visibility_'] },
     ],
     [EnumPortalAppCode.kpiSales]: [
+        { group: 'kpi_sales_visibility', prefixes: ['visibility_'] },
         { group: 'ai_analytics_people', codes: AI_PEOPLE_CODES },
         { group: 'ai_analytics_model', codes: AI_MODEL_CODES },
         { group: 'ai_analytics_main', prefixes: ['ai_analytics_'] },

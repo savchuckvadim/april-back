@@ -10,10 +10,25 @@ import { BxSuperUserService } from './bx-super-user.service';
 import {
     EMPTY_FORCED_VISIBILITY,
     ForcedVisibilityLists,
+    parseVisibilityLevel,
 } from '../lib/forced-visibility.util';
 import { buildCurrentUser } from '../lib/current-user.util';
 import { toStructureData } from '../lib/structure-projection.util';
-import { BxDepartmentStructureResponseDto } from '../dto/bx-department-structure.dto';
+import {
+    BxDepartmentStructureResponseDto,
+    EBxVisibilityLevel,
+} from '../dto/bx-department-structure.dto';
+
+/** Что ещё учесть в роли текущего пользователя — решает вызывающий. */
+export interface BxDepartmentStructureOptions {
+    /**
+     * Применить портальный уровень для рядовых сотрудников (kpi-sales
+     * `visibility_employee_default`). Передаёт только KPI-отчёт через
+     * флаг запроса; бэк-потребители (права на дубли, режим руководителя,
+     * AI-аналитика, конструктор) зовут без опции и дефолт не видят.
+     */
+    applyEmployeeDefault?: boolean;
+}
 
 /**
  * Структура отделов продаж на старом API (department.get) — проекция
@@ -38,6 +53,7 @@ export class BxDepartmentStructureService {
         group: EDepartamentGroup = EDepartamentGroup.sales,
         userId: number,
         resetCache = false,
+        options: BxDepartmentStructureOptions = {},
     ): Promise<BxDepartmentStructureResponseDto> {
         const { department: snapshot } =
             await this.departments.getFullDepartment(domain, group, resetCache);
@@ -49,8 +65,14 @@ export class BxDepartmentStructureService {
 
         const structure = toStructureData(snapshot);
         const forced = await this.resolveForcedVisibility(domain, group);
+        const employeeDefault = await this.resolveEmployeeDefault(
+            domain,
+            group,
+            options,
+        );
         const currentUser = buildCurrentUser(structure, userId, {
             forced,
+            employeeDefault,
             isSuperUser: await this.superUsers.isSuperUser(
                 domain,
                 Number(userId),
@@ -92,6 +114,42 @@ export class BxDepartmentStructureService {
                 }`,
             );
             return EMPTY_FORCED_VISIBILITY;
+        }
+    }
+
+    /**
+     * Портальный уровень для рядовых из настроек kpi-sales
+     * (visibility_employee_default) — только по опции вызывающего и только
+     * для группы sales. Неизвестное значение или недоступные настройки →
+     * warn и null (как раньше: рядовой видит себя).
+     */
+    private async resolveEmployeeDefault(
+        domain: string,
+        group: EDepartamentGroup,
+        options: BxDepartmentStructureOptions,
+    ): Promise<EBxVisibilityLevel | null> {
+        if (!options.applyEmployeeDefault) return null;
+        if (group !== EDepartamentGroup.sales) return null;
+        try {
+            const settings = await this.appSettings.resolve(
+                domain,
+                EnumPortalAppCode.kpiSales,
+            );
+            const raw = settings.visibilityEmployeeDefault;
+            const level = parseVisibilityLevel(raw);
+            if (level === null && raw !== '') {
+                this.logger.warn(
+                    `[${domain}] visibility_employee_default = «${String(raw)}» не из словаря own|group|department|all — дефолт не применён`,
+                );
+            }
+            return level;
+        } catch (error) {
+            this.logger.warn(
+                `[${domain}] настройка видимости рядовых (kpi-sales) недоступна, дефолт не применён: ${
+                    error instanceof Error ? error.message : String(error)
+                }`,
+            );
+            return null;
         }
     }
 }

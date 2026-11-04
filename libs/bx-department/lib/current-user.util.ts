@@ -11,6 +11,7 @@ import {
 import { BXUserDto } from '../dto/bx-user.dto';
 import { legacyHeadsOf, toPositiveInt } from './department-heads.util';
 import {
+    applyEmployeeDefault,
     applyForcedVisibility,
     forcedLevelFor,
     ForcedVisibilityLists,
@@ -22,13 +23,20 @@ import { subordinateIdsOf } from './subordinates.util';
 /**
  * Роль текущего пользователя поверх структуры отделов (чистые функции
  * BxDepartmentStructureService): структура HEADS → принудительная
- * видимость настроек «Отдел продаж» → суперпользователь вендора.
+ * видимость настроек «Отдел продаж» → портальный уровень для рядовых
+ * (только по флагу запроса KPI-отчёта) → суперпользователь вендора.
  */
 
 /** Что, кроме структуры, влияет на роль текущего пользователя. */
 export interface CurrentUserContext {
     /** Списки принудительной видимости настроек «Отдел продаж». */
     forced: ForcedVisibilityLists;
+    /**
+     * Уровень для рядовых сотрудников из настройки kpi-sales
+     * `visibility_employee_default`. Не передан или null — дефолт не
+     * применяется (так зовут все потребители, кроме KPI-отчёта).
+     */
+    employeeDefault?: EBxVisibilityLevel | null;
     /** Суперпользователь вендора (таблица vendor_super_users, BxSuperUserService). */
     isSuperUser: boolean;
 }
@@ -164,14 +172,19 @@ export const buildCurrentUser = (
     const { myGroup, myOp } = membershipOf(structure, uid, headed);
     const allOpIds = allOpIdsOf(structure);
 
-    const role = applyForcedVisibility(
-        structuralRoleOf(headed),
-        forcedLevelFor(uid, context.forced),
-        {
-            myGroupId: toPositiveInt(myGroup?.ID),
-            myOpId: toPositiveInt(myOp?.department.ID),
-            allOpIds,
-        },
+    const membership = {
+        myGroupId: toPositiveInt(myGroup?.ID),
+        myOpId: toPositiveInt(myOp?.department.ID),
+        allOpIds,
+    };
+    const role = applyEmployeeDefault(
+        applyForcedVisibility(
+            structuralRoleOf(headed),
+            forcedLevelFor(uid, context.forced),
+            membership,
+        ),
+        context.employeeDefault ?? null,
+        membership,
     );
     const withoutUser = (users: IBXUser[]) =>
         toUserDtos(users.filter(u => Number(u?.ID) !== uid));

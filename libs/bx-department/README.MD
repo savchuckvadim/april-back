@@ -35,6 +35,19 @@ PBX
 `UF_HEAD` в ответе = `HEADS[0] ?? null`. Без скоупа `humanresources` на вебхуке
 остаётся только `UF_HEAD` (warn в лог, ответ не падает).
 
+Портальный уровень для рядовых сотрудников (04.11.2026) — настройка kpi-sales
+`visibility_employee_default` (own | group | department | all). Применяется ТОЛЬКО по
+опции `getStructure(…, { applyEmployeeDefault: true })`, которую контроллер
+`bx/department/structure` берёт из флага запроса `applyEmployeeDefault`; его шлёт один
+фронт kpi-sales. Рядовой сотрудник отдела продаж получает `visibility`,
+`headOfDepartmentIds` и `subordinateIds` по уровню настройки, `headOf` остаётся `null`,
+`isHead = false`, `headOfSource = portal_default` (`applyEmployeeDefault` в
+`lib/forced-visibility.util.ts`). Дефолт не понижает структурную роль и уровень списков
+«Отдел продаж», «группа» без своей группы = свой ОП, вне структуры продаж не действует.
+Бэк-потребители (`head-access` и acting-manager в event-sales, `requester-access`
+AI-аналитики, библиотека конструктора) и HeadMode фронта event-sales зовут без опции и
+дефолт не видят.
+
 Суперпользователь вендора (сотрудник April) — `BxSuperUserService`, список в БД
 (`vendor_super_users`, заводится в админке «Суперпользователи April»; env
 `BX_SUPER_USER_IDS` больше не читается). В `bx/department/structure` он получает

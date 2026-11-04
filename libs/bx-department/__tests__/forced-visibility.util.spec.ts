@@ -4,9 +4,15 @@ import {
     EBxVisibilityLevel,
 } from '../dto/bx-department-structure.dto';
 import {
+    EnumPortalAppCode,
+    PORTAL_APP_SETTINGS_SCHEMA,
+} from '@lib/portal-lib/store/app-settings';
+import {
+    applyEmployeeDefault,
     applyForcedVisibility,
     EMPTY_FORCED_VISIBILITY,
     forcedLevelFor,
+    parseVisibilityLevel,
     visibilityOf,
 } from '../lib/forced-visibility.util';
 
@@ -171,6 +177,179 @@ describe('forced-visibility.util', () => {
             expect(result.headOf).toBe(EBxDepartmentHeadType.cup);
             expect(result.headOfDepartmentIds).toEqual([37, 41, 49]);
             expect(result.visibility).toBe(EBxVisibilityLevel.all);
+        });
+    });
+
+    describe('parseVisibilityLevel', () => {
+        it.each([
+            ['own', EBxVisibilityLevel.own],
+            ['group', EBxVisibilityLevel.group],
+            ['department', EBxVisibilityLevel.department],
+            ['all', EBxVisibilityLevel.all],
+        ])('%p → %p', (raw, expected) => {
+            expect(parseVisibilityLevel(raw)).toBe(expected);
+        });
+
+        it.each(['', 'GROUP', 'everyone', 42, null, undefined, {}])(
+            'мусор %p → null',
+            raw => {
+                expect(parseVisibilityLevel(raw)).toBeNull();
+            },
+        );
+
+        it('коды options настройки kpi-sales совпадают со словарём уровней', () => {
+            const codes = (
+                PORTAL_APP_SETTINGS_SCHEMA[EnumPortalAppCode.kpiSales]
+                    .visibilityEmployeeDefault.options ?? []
+            ).map(option => option.code);
+            expect(codes).toEqual(Object.values(EBxVisibilityLevel));
+        });
+    });
+
+    describe('applyEmployeeDefault (портальный уровень для рядовых, 04.11.2026)', () => {
+        const employee = {
+            headOf: null,
+            headOfDepartmentIds: [],
+            visibility: EBxVisibilityLevel.own,
+            headOfSource: EBxHeadOfSource.structure,
+        };
+
+        it('нет дефолта или own — роль без изменений', () => {
+            expect(applyEmployeeDefault(employee, null, membership)).toBe(
+                employee,
+            );
+            expect(
+                applyEmployeeDefault(
+                    employee,
+                    EBxVisibilityLevel.own,
+                    membership,
+                ),
+            ).toBe(employee);
+        });
+
+        it('рядовой + group: периметр своей группы, headOf остаётся null, source=portal_default', () => {
+            const result = applyEmployeeDefault(
+                employee,
+                EBxVisibilityLevel.group,
+                membership,
+            );
+
+            expect(result).toEqual({
+                headOf: null,
+                headOfDepartmentIds: [45],
+                visibility: EBxVisibilityLevel.group,
+                headOfSource: EBxHeadOfSource.portalDefault,
+            });
+        });
+
+        it('рядовой + department: свой ОП; all — все ОП', () => {
+            expect(
+                applyEmployeeDefault(
+                    employee,
+                    EBxVisibilityLevel.department,
+                    membership,
+                ),
+            ).toMatchObject({
+                headOf: null,
+                headOfDepartmentIds: [41],
+                visibility: EBxVisibilityLevel.department,
+            });
+            expect(
+                applyEmployeeDefault(
+                    employee,
+                    EBxVisibilityLevel.all,
+                    membership,
+                ),
+            ).toMatchObject({
+                headOf: null,
+                headOfDepartmentIds: [37, 41, 49],
+                visibility: EBxVisibilityLevel.all,
+            });
+        });
+
+        it('group без своей группы → department по своему ОП', () => {
+            const result = applyEmployeeDefault(
+                employee,
+                EBxVisibilityLevel.group,
+                { ...membership, myGroupId: null },
+            );
+
+            expect(result.visibility).toBe(EBxVisibilityLevel.department);
+            expect(result.headOfDepartmentIds).toEqual([41]);
+            expect(result.headOf).toBeNull();
+        });
+
+        it('вне структуры продаж дефолт не действует (в отличие от списков)', () => {
+            const outside = { myGroupId: null, myOpId: null, allOpIds: [41] };
+
+            expect(
+                applyEmployeeDefault(employee, EBxVisibilityLevel.all, outside),
+            ).toBe(employee);
+        });
+
+        it('не понижает: руководитель ОП при дефолте group остаётся op/department/structure', () => {
+            const opHead = {
+                headOf: EBxDepartmentHeadType.op,
+                headOfDepartmentIds: [41],
+                visibility: EBxVisibilityLevel.department,
+                headOfSource: EBxHeadOfSource.structure,
+            };
+
+            expect(
+                applyEmployeeDefault(opHead, EBxVisibilityLevel.group, membership),
+            ).toBe(opHead);
+            expect(
+                applyEmployeeDefault(
+                    opHead,
+                    EBxVisibilityLevel.department,
+                    membership,
+                ),
+            ).toBe(opHead);
+        });
+
+        it('руководитель группы + дефолт department: headOf group сохраняется, периметр — свой ОП', () => {
+            const result = applyEmployeeDefault(
+                {
+                    headOf: EBxDepartmentHeadType.group,
+                    headOfDepartmentIds: [45],
+                    visibility: EBxVisibilityLevel.group,
+                    headOfSource: EBxHeadOfSource.structure,
+                },
+                EBxVisibilityLevel.department,
+                membership,
+            );
+
+            expect(result).toEqual({
+                headOf: EBxDepartmentHeadType.group,
+                headOfDepartmentIds: [41],
+                visibility: EBxVisibilityLevel.department,
+                headOfSource: EBxHeadOfSource.portalDefault,
+            });
+        });
+
+        it('список «Отдел продаж» выше дефолта — остаётся список; дефолт выше списка — дефолт', () => {
+            const fromList = applyForcedVisibility(
+                { headOf: null, headOfDepartmentIds: [] },
+                EBxVisibilityLevel.department,
+                membership,
+            );
+
+            expect(
+                applyEmployeeDefault(fromList, EBxVisibilityLevel.group, membership),
+            ).toBe(fromList);
+
+            const lifted = applyEmployeeDefault(
+                applyForcedVisibility(
+                    { headOf: null, headOfDepartmentIds: [] },
+                    EBxVisibilityLevel.group,
+                    membership,
+                ),
+                EBxVisibilityLevel.all,
+                membership,
+            );
+            expect(lifted.headOf).toBe(EBxDepartmentHeadType.group);
+            expect(lifted.visibility).toBe(EBxVisibilityLevel.all);
+            expect(lifted.headOfSource).toBe(EBxHeadOfSource.portalDefault);
         });
     });
 });

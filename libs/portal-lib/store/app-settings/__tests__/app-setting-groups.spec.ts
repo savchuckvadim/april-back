@@ -149,6 +149,12 @@ describe('категории настроек приложений', () => {
                 'ai_analytics_enabled',
             ),
         ).toBe('ai_analytics_main');
+        expect(
+            resolveAppSettingGroup(
+                EnumPortalAppCode.kpiSales,
+                'visibility_employee_default',
+            ),
+        ).toBe('kpi_sales_visibility');
     });
 
     it('группы отдаются в порядке справочника и только использованные', () => {

@@ -167,6 +167,85 @@ describe('current-user.util', () => {
         expect(user.headOfSource).toBe(EBxHeadOfSource.structure);
     });
 
+    describe('портальный уровень для рядовых (employeeDefault)', () => {
+        it('рядовой + group: менеджер с периметром группы, подчинённые — коллеги группы', () => {
+            const user = buildCurrentUser(
+                STRUCTURE,
+                204,
+                context({ employeeDefault: EBxVisibilityLevel.group }),
+            );
+
+            expect(user).toMatchObject({
+                isHead: false,
+                headOf: null,
+                headOfDepartmentIds: [45],
+                visibility: EBxVisibilityLevel.group,
+                headOfSource: EBxHeadOfSource.portalDefault,
+                isSuperUser: false,
+                subordinateIds: [203],
+            });
+            // коллеги — по месту в структуре, как и раньше
+            expect(ids(user.colleagues.group)).toEqual([203]);
+        });
+
+        it('рядовой в ОП без групп + group → свой ОП (department)', () => {
+            const user = buildCurrentUser(
+                STRUCTURE,
+                210,
+                context({ employeeDefault: EBxVisibilityLevel.group }),
+            );
+
+            expect(user.headOf).toBeNull();
+            expect(user.visibility).toBe(EBxVisibilityLevel.department);
+            expect(user.headOfDepartmentIds).toEqual([37]);
+            expect(user.subordinateIds).toEqual([201]);
+        });
+
+        it('вне структуры продаж дефолт не действует', () => {
+            const user = buildCurrentUser(
+                STRUCTURE,
+                999,
+                context({ employeeDefault: EBxVisibilityLevel.all }),
+            );
+
+            expect(user.visibility).toBe(EBxVisibilityLevel.own);
+            expect(user.headOfSource).toBe(EBxHeadOfSource.structure);
+            expect(user.subordinateIds).toEqual([]);
+        });
+
+        it('руководителя не понижает, список выше дефолта — список, суперпользователь — поверх всего', () => {
+            const opHead = buildCurrentUser(
+                STRUCTURE,
+                202,
+                context({ employeeDefault: EBxVisibilityLevel.group }),
+            );
+            expect(opHead.headOf).toBe(EBxDepartmentHeadType.op);
+            expect(opHead.headOfSource).toBe(EBxHeadOfSource.structure);
+
+            const fromList = buildCurrentUser(
+                STRUCTURE,
+                204,
+                context({
+                    forced: { group: [], department: [204], all: [] },
+                    employeeDefault: EBxVisibilityLevel.group,
+                }),
+            );
+            expect(fromList.headOf).toBe(EBxDepartmentHeadType.op);
+            expect(fromList.headOfSource).toBe(EBxHeadOfSource.settings);
+
+            const vendor = buildCurrentUser(
+                STRUCTURE,
+                204,
+                context({
+                    employeeDefault: EBxVisibilityLevel.group,
+                    isSuperUser: true,
+                }),
+            );
+            expect(vendor.visibility).toBe(EBxVisibilityLevel.all);
+            expect(vendor.headOfSource).toBe(EBxHeadOfSource.superuser);
+        });
+    });
+
     it('applySuperUser не мутирует исходного пользователя и список ОП', () => {
         const plain = buildCurrentUser(STRUCTURE, 204, context());
         const allOpIds = [41, 37];

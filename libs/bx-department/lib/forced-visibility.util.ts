@@ -39,6 +39,17 @@ const RANK: Record<EBxVisibilityLevel, number> = {
     [EBxVisibilityLevel.all]: 3,
 };
 
+const VISIBILITY_LEVELS = new Set<string>(Object.values(EBxVisibilityLevel));
+
+/**
+ * Уровень видимости из сырого значения настройки портала
+ * (`visibility_employee_default`): неизвестное или пустое → null.
+ */
+export const parseVisibilityLevel = (raw: unknown): EBxVisibilityLevel | null =>
+    typeof raw === 'string' && VISIBILITY_LEVELS.has(raw)
+        ? (raw as EBxVisibilityLevel)
+        : null;
+
 /**
  * Списки принудительной видимости из настроек портала, блок «Отдел продаж»
  * (`visibility_group_user_ids`, `visibility_department_user_ids`,
@@ -90,6 +101,23 @@ export interface ResolvedRole extends StructuralRole {
     headOfSource: EBxHeadOfSource;
 }
 
+/** Уровень, у которого есть периметр шире себя. */
+type PerimeterLevel = Exclude<EBxVisibilityLevel, EBxVisibilityLevel.own>;
+
+const hasPerimeter = (level: EBxVisibilityLevel): level is PerimeterLevel =>
+    level !== EBxVisibilityLevel.own;
+
+/** Периметр уровня: своя группа, свой ОП либо все ОП структуры. */
+const perimeterIdsOf = (
+    level: PerimeterLevel,
+    membership: VisibilityMembership,
+): number[] =>
+    level === EBxVisibilityLevel.group
+        ? [membership.myGroupId as number]
+        : level === EBxVisibilityLevel.department
+          ? [membership.myOpId as number]
+          : [...membership.allOpIds];
+
 /**
  * Принудительный уровень поверх структурного (решения владельца 05.09.2026):
  *  - итог = максимум из двух; настройка никогда не понижает;
@@ -103,7 +131,11 @@ export const applyForcedVisibility = (
     membership: VisibilityMembership,
 ): ResolvedRole => {
     const structuralLevel = visibilityOf(structural.headOf);
-    if (forcedLevel === null || RANK[forcedLevel] <= RANK[structuralLevel]) {
+    if (
+        forcedLevel === null ||
+        !hasPerimeter(forcedLevel) ||
+        RANK[forcedLevel] <= RANK[structuralLevel]
+    ) {
         return {
             ...structural,
             visibility: structuralLevel,
@@ -111,7 +143,7 @@ export const applyForcedVisibility = (
         };
     }
 
-    let level = forcedLevel;
+    let level: PerimeterLevel = forcedLevel;
     if (level === EBxVisibilityLevel.group && membership.myGroupId === null) {
         level = EBxVisibilityLevel.department;
     }
@@ -119,17 +151,43 @@ export const applyForcedVisibility = (
         level = EBxVisibilityLevel.all;
     }
 
-    const headOfDepartmentIds =
-        level === EBxVisibilityLevel.group
-            ? [membership.myGroupId as number]
-            : level === EBxVisibilityLevel.department
-              ? [membership.myOpId as number]
-              : [...membership.allOpIds];
-
     return {
         headOf: HEAD_OF_BY_LEVEL[level],
-        headOfDepartmentIds,
+        headOfDepartmentIds: perimeterIdsOf(level, membership),
         visibility: level,
         headOfSource: EBxHeadOfSource.settings,
+    };
+};
+
+/**
+ * Портальный уровень для рядовых сотрудников (`visibility_employee_default`
+ * блока kpi-sales, решения пользователя 04.11.2026) поверх уже посчитанной
+ * роли (структура + списки «Отдел продаж»):
+ *  - только расширяет периметр: `headOf` и `isHead` не меняются, рядовой
+ *    остаётся менеджером — фичи руководителя на фронте закрыты;
+ *  - не понижает: уровень структуры или списка выше дефолта остаётся;
+ *  - group без своей группы → department по своему ОП;
+ *  - вне структуры продаж (нет своего ОП) дефолт не действует;
+ *  - сработал дефолт → headOfSource = portal_default.
+ */
+export const applyEmployeeDefault = (
+    role: ResolvedRole,
+    defaultLevel: EBxVisibilityLevel | null,
+    membership: VisibilityMembership,
+): ResolvedRole => {
+    if (defaultLevel === null || !hasPerimeter(defaultLevel)) return role;
+    if (membership.myOpId === null) return role;
+
+    const level: PerimeterLevel =
+        defaultLevel === EBxVisibilityLevel.group && membership.myGroupId === null
+            ? EBxVisibilityLevel.department
+            : defaultLevel;
+    if (RANK[level] <= RANK[role.visibility]) return role;
+
+    return {
+        headOf: role.headOf,
+        headOfDepartmentIds: perimeterIdsOf(level, membership),
+        visibility: level,
+        headOfSource: EBxHeadOfSource.portalDefault,
     };
 };

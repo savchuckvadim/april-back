@@ -19,6 +19,9 @@ export const createReactPdfMock = () => ({
     },
     renderToBuffer: (): Promise<Buffer> =>
         Promise.resolve(Buffer.from('%PDF-1.7 mock')),
+    pdf: (): never => {
+        throw new Error('pdf() под jest не рендерит: замокайте в спеке');
+    },
 });
 
 type RenderProps = {

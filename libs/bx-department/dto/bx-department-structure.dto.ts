@@ -32,7 +32,8 @@ export enum EBxDepartmentHeadType {
 /**
  * Уровень видимости текущего пользователя в отчётах продаж — единый
  * словарь для фронтов. Соответствие headOf: null → own, group → group,
- * op → department, cup → all.
+ * op → department, cup → all. Исключение — headOfSource = portal_default:
+ * уровень шире headOf (рядовой остаётся менеджером, видит коллег).
  */
 export enum EBxVisibilityLevel {
     /** Только себя. */
@@ -51,6 +52,13 @@ export enum EBxHeadOfSource {
     structure = 'structure',
     /** Уровень поднят настройкой портала «Отдел продаж» (visibility_*_user_ids). */
     settings = 'settings',
+    /**
+     * Периметр расширен портальной настройкой для рядовых сотрудников
+     * (kpi-sales `visibility_employee_default`, только по флагу запроса
+     * applyEmployeeDefault): headOf остаётся структурным, visibility и
+     * headOfDepartmentIds — по уровню настройки.
+     */
+    portalDefault = 'portal_default',
     /**
      * Суперпользователь вендора (сотрудник April, заведён в админке):
      * видимость all поверх структуры и настроек.
@@ -101,6 +109,24 @@ export class BxDepartmentStructureRequestDto {
     @IsOptional()
     @IsBoolean()
     resetCache?: boolean;
+
+    @ApiProperty({
+        description:
+            'Применить портальный уровень видимости для рядовых сотрудников ' +
+            '(настройка kpi-sales visibility_employee_default): рядовой ' +
+            'сотрудник отдела продаж получает visibility и subordinateIds по ' +
+            'настройке, headOf остаётся null, headOfSource = portal_default. ' +
+            'Шлёт только KPI-отчёт. Без флага (режим руководителя и права ' +
+            'на дубли в «Звонках», AI-аналитика, конструктор) настройка не ' +
+            'читается и роль считается как раньше. Только для группы sales.',
+        type: Boolean,
+        example: false,
+        required: false,
+        default: false,
+    })
+    @IsOptional()
+    @IsBoolean()
+    applyEmployeeDefault?: boolean;
 }
 
 export class BxSalesDepartmentDto {
@@ -165,7 +191,10 @@ export class BxCurrentUserDto {
     userId: number;
 
     @ApiProperty({
-        description: 'Является ли пользователь руководителем в структуре.',
+        description:
+            'Руководитель: по структуре Битрикса (HEADS отдела) или по ' +
+            'спискам настроек «Отдел продаж» (headOf != null). Портальный ' +
+            'уровень для рядовых (portal_default) руководителем не делает.',
         type: Boolean,
         example: true,
     })
@@ -185,7 +214,10 @@ export class BxCurrentUserDto {
 
     @ApiProperty({
         description:
-            'Идентификаторы отделов, которыми руководит пользователь (на уровне headOf).',
+            'Периметр видимости на уровне visibility: отделы (group — ' +
+            'группы, department — ОП, all — все ОП), чьи сотрудники видны. ' +
+            'Для руководителя — отделы, которыми он руководит; при ' +
+            'portal_default — отделы по уровню настройки.',
         type: [Number],
         example: [37],
     })
@@ -198,7 +230,8 @@ export class BxCurrentUserDto {
         description:
             'Уровень видимости: own — только себя; group — своя группа; ' +
             'department — свой ОП со всеми группами; all — вся структура. ' +
-            'Соответствует headOf: null / group / op / cup.',
+            'Соответствует headOf: null / group / op / cup; при ' +
+            'headOfSource = portal_default уровень шире headOf.',
         example: EBxVisibilityLevel.department,
     })
     @IsEnum(EBxVisibilityLevel)
@@ -209,7 +242,10 @@ export class BxCurrentUserDto {
         description:
             'Источник роли: structure — руководитель по структуре Битрикса ' +
             '(HEADS отдела); settings — уровень поднят настройкой портала ' +
-            '«Отдел продаж» (visibility_*_user_ids); superuser — ' +
+            '«Отдел продаж» (visibility_*_user_ids); portal_default — ' +
+            'периметр рядового расширен настройкой kpi-sales ' +
+            'visibility_employee_default (только по флагу запроса ' +
+            'applyEmployeeDefault; headOf не меняется); superuser — ' +
             'суперпользователь вендора, заведённый в админке: видимость ' +
             'all, headOf = cup, headOfDepartmentIds — все ОП, независимо от ' +
             'структуры и настроек.',
@@ -240,7 +276,8 @@ export class BxCurrentUserDto {
             'продаж со всеми группами, all — вся структура. Пустой массив — ' +
             'пользователь не руководитель. Единый источник для режима ' +
             'руководителя в «Звонках»: по нему фронт показывает дела ' +
-            'сотрудников, по нему же бэк проверяет отчёт за сотрудника.',
+            'сотрудников, по нему же бэк проверяет отчёт за сотрудника ' +
+            '(без флага applyEmployeeDefault — у рядового всегда пусто).',
         type: [Number],
         example: [231, 465],
     })

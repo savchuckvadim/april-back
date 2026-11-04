@@ -1,5 +1,6 @@
 import type { FC, ReactNode } from 'react';
 import { StyleSheet, Text, View } from '@react-pdf/renderer';
+import { IProductRenderItemData } from '@app/konstructor/offer-word/services/render-data-services/offer-render-price.service';
 import { OfferPdfDocumentModel } from '../../../model/offer-pdf-document.model';
 import { sx } from '../../shared/style.util';
 import { classicStyles } from '../classic.styles';
@@ -8,20 +9,34 @@ import { parseAmount } from '../classic.util';
 
 const { colors, sizes } = CLASSIC_THEME;
 
+const FRAME = 0.75;
+const GRID = 0.5;
+
+/**
+ * Рамка таблицы нарисована на строках, а не на обёртке: так итог живёт в
+ * одном потоке со строками, и при разрыве страницы последняя строка
+ * уходит вместе с ним (minPresenceAhead), а не «Итого» одно на новом листе.
+ */
 const styles = StyleSheet.create({
-    table: {
-        marginTop: 6,
-        borderWidth: 0.75,
+    table: { marginTop: 6 },
+    row: {
+        flexDirection: 'row',
+        borderLeftWidth: FRAME,
+        borderRightWidth: FRAME,
         borderColor: colors.tableBorder,
     },
-    row: { flexDirection: 'row' },
-    rowHead: { flexDirection: 'row', backgroundColor: colors.shade },
+    rowHead: {
+        backgroundColor: colors.shade,
+        borderTopWidth: FRAME,
+        borderTopColor: colors.tableBorder,
+    },
+    rowLast: { borderBottomWidth: FRAME - GRID, borderBottomColor: colors.tableBorder },
     cell: {
         paddingVertical: 4,
         paddingHorizontal: 4,
-        borderRightWidth: 0.5,
+        borderRightWidth: GRID,
         borderRightColor: colors.tableBorder,
-        borderBottomWidth: 0.5,
+        borderBottomWidth: GRID,
         borderBottomColor: colors.tableBorder,
         justifyContent: 'center',
     },
@@ -40,6 +55,11 @@ const styles = StyleSheet.create({
         color: colors.accent,
     },
 });
+
+/** Сколько места держать под итог после последней строки таблицы */
+const TOTALS_PRESENCE = 90;
+/** Таблицу до стольких строк не делим между страницами */
+const SMALL_TABLE_ROWS = 3;
 
 interface Column {
     title: string;
@@ -66,6 +86,78 @@ const Cell: FC<{ width: string; last?: boolean; children: ReactNode }> = ({
     </View>
 );
 
+const HeadRow: FC<{ columns: Column[] }> = ({ columns }) => (
+    <View style={[styles.row, styles.rowHead]}>
+        {columns.map((column, index) => (
+            <Cell
+                key={column.title}
+                width={column.width}
+                last={index === columns.length - 1}
+            >
+                <Text style={styles.cellHead}>{column.title}</Text>
+            </Cell>
+        ))}
+    </View>
+);
+
+const rowValues = (
+    row: IProductRenderItemData,
+    index: number,
+    withDiscount: boolean,
+): Array<string | null> => [
+    row.ProductNumber || String(index + 1),
+    null,
+    row.ProductQuantity,
+    row.ProductMeasure,
+    withDiscount ? row.ProductPriceDefault || row.ProductPrice : row.ProductPrice,
+    ...(withDiscount
+        ? [
+              parseAmount(row.ProductDiscountPercent) > 0
+                  ? `${row.ProductDiscountPercent} %`
+                  : '—',
+          ]
+        : []),
+    row.ProductSum,
+];
+
+interface ProductRowProps {
+    row: IProductRenderItemData;
+    index: number;
+    columns: Column[];
+    withDiscount: boolean;
+    last: boolean;
+}
+
+const ProductRow: FC<ProductRowProps> = ({ row, index, columns, withDiscount, last }) => {
+    const values = rowValues(row, index, withDiscount);
+    return (
+        <View
+            style={sx(styles.row, last && styles.rowLast)}
+            wrap={false}
+            minPresenceAhead={last ? TOTALS_PRESENCE : undefined}
+        >
+            {columns.map((column, columnIndex) => (
+                <Cell
+                    key={column.title}
+                    width={column.width}
+                    last={columnIndex === columns.length - 1}
+                >
+                    {columnIndex === 1 ? (
+                        <>
+                            <Text style={styles.cellTextLeft}>{row.ProductName}</Text>
+                            {row.SupplyNameMarketing ? (
+                                <Text style={styles.sub}>{row.SupplyNameMarketing}</Text>
+                            ) : null}
+                        </>
+                    ) : (
+                        <Text style={styles.cellText}>{values[columnIndex] ?? ''}</Text>
+                    )}
+                </Cell>
+            ))}
+        </View>
+    );
+};
+
 /** Таблица цен по строкам КП, итог и фраза об акции. */
 export const ClassicPrice: FC<{ model: OfferPdfDocumentModel }> = ({
     model,
@@ -79,6 +171,8 @@ export const ClassicPrice: FC<{ model: OfferPdfDocumentModel }> = ({
     const total = data.TotalRow?.[0];
     const caption =
         data.GeneralProductByContractName || data.GeneralProductName;
+    const [first, ...rest] = rows;
+    const isLast = (index: number): boolean => index === rows.length - 1;
 
     return (
         <View style={classicStyles.section}>
@@ -89,94 +183,60 @@ export const ClassicPrice: FC<{ model: OfferPdfDocumentModel }> = ({
                 <Text style={classicStyles.caption}>{caption}</Text>
             ) : null}
 
-            <View style={styles.table}>
-                <View style={styles.rowHead} wrap={false}>
-                    {columns.map((column, index) => (
-                        <Cell
-                            key={column.title}
-                            width={column.width}
-                            last={index === columns.length - 1}
-                        >
-                            <Text style={styles.cellHead}>{column.title}</Text>
-                        </Cell>
-                    ))}
+            {/* Короткая таблица не рвётся между страницами: уходит на новую вместе с итогом */}
+            <View style={styles.table} wrap={rows.length > SMALL_TABLE_ROWS}>
+                {/* Шапка таблицы — вместе с первой строкой: одна внизу страницы она не остаётся */}
+                <View wrap={false} minPresenceAhead={isLast(0) ? TOTALS_PRESENCE : undefined}>
+                    <HeadRow columns={columns} />
+                    {first ? (
+                        <ProductRow
+                            row={first}
+                            index={0}
+                            columns={columns}
+                            withDiscount={withDiscount}
+                            last={isLast(0)}
+                        />
+                    ) : null}
                 </View>
-                {rows.map((row, index) => {
-                    const values = [
-                        row.ProductNumber || String(index + 1),
-                        null,
-                        row.ProductQuantity,
-                        row.ProductMeasure,
-                        withDiscount
-                            ? row.ProductPriceDefault || row.ProductPrice
-                            : row.ProductPrice,
-                        ...(withDiscount
-                            ? [
-                                  parseAmount(row.ProductDiscountPercent) > 0
-                                      ? `${row.ProductDiscountPercent} %`
-                                      : '—',
-                              ]
-                            : []),
-                        row.ProductSum,
-                    ];
-                    return (
-                        <View key={index} style={styles.row} wrap={false}>
-                            {columns.map((column, columnIndex) => (
-                                <Cell
-                                    key={column.title}
-                                    width={column.width}
-                                    last={columnIndex === columns.length - 1}
-                                >
-                                    {columnIndex === 1 ? (
-                                        <>
-                                            <Text style={styles.cellTextLeft}>
-                                                {row.ProductName}
-                                            </Text>
-                                            {row.SupplyNameMarketing ? (
-                                                <Text style={styles.sub}>
-                                                    {row.SupplyNameMarketing}
-                                                </Text>
-                                            ) : null}
-                                        </>
-                                    ) : (
-                                        <Text style={styles.cellText}>
-                                            {values[columnIndex] ?? ''}
-                                        </Text>
-                                    )}
-                                </Cell>
-                            ))}
-                        </View>
-                    );
-                })}
+                {rest.map((row, offset) => (
+                    <ProductRow
+                        key={offset + 1}
+                        row={row}
+                        index={offset + 1}
+                        columns={columns}
+                        withDiscount={withDiscount}
+                        last={isLast(offset + 1)}
+                    />
+                ))}
+
+                {total ? (
+                    <View style={styles.totals} wrap={false}>
+                        <Text style={styles.totalLine}>
+                            <Text style={classicStyles.bold}>Итого: </Text>
+                            {total.TotalSum}
+                        </Text>
+                        {total.TotalMonthSum ? (
+                            <Text style={styles.totalSub}>
+                                В месяц: {total.TotalMonthSum}
+                            </Text>
+                        ) : null}
+                        {total.TotalTaxInvoiceInfo ? (
+                            <Text style={styles.totalSub}>
+                                {total.TotalTaxInvoiceInfo}
+                            </Text>
+                        ) : null}
+                        {total.TotalSumString ? (
+                            <Text style={styles.totalSub}>
+                                Сумма прописью: {total.TotalSumString}
+                            </Text>
+                        ) : null}
+                    </View>
+                ) : null}
+
+                {settings.salePhrase ? (
+                    <Text style={styles.salePhrase}>{settings.salePhrase}</Text>
+                ) : null}
             </View>
-
-            {total ? (
-                <View style={styles.totals} wrap={false}>
-                    <Text style={styles.totalLine}>
-                        <Text style={classicStyles.bold}>Итого: </Text>
-                        {total.TotalSum}
-                    </Text>
-                    {total.TotalMonthSum ? (
-                        <Text style={styles.totalSub}>
-                            В месяц: {total.TotalMonthSum}
-                        </Text>
-                    ) : null}
-                    {total.TotalTaxInvoiceInfo ? (
-                        <Text style={styles.totalSub}>
-                            {total.TotalTaxInvoiceInfo}
-                        </Text>
-                    ) : null}
-                    {total.TotalSumString ? (
-                        <Text style={styles.totalSub}>
-                            Сумма прописью: {total.TotalSumString}
-                        </Text>
-                    ) : null}
-                </View>
-            ) : null}
-
-            {settings.salePhrase ? (
-                <Text style={styles.salePhrase}>{settings.salePhrase}</Text>
-            ) : null}
         </View>
     );
 };
