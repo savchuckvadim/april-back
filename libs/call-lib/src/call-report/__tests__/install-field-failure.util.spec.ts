@@ -1,6 +1,7 @@
 import {
     classifyInstallFieldError,
     fieldLimitSummary,
+    reconcileFailedFields,
     type InstallFieldFailure,
 } from '../use-cases/install-field-failure.util';
 
@@ -90,5 +91,73 @@ describe('fieldLimitSummary', () => {
         expect(text).not.toContain('спиралей');
         // Без английских кодов (домен портала — единственная латиница).
         expect(text.replace('gsr.bitrix24.ru', '')).not.toMatch(/[a-z_]{6,}/);
+    });
+});
+
+/**
+ * Сверка отказов с порталом (05.11.2026, gsirk): поле, которое после цикла
+ * есть на портале, — не отказ.
+ */
+describe('reconcileFailedFields', () => {
+    const failure = (
+        fieldName: string,
+        reason: InstallFieldFailure['reason'],
+    ): InstallFieldFailure => ({
+        fieldName,
+        title: fieldName,
+        reason,
+        message: 'причина',
+    });
+
+    it('поля, которые есть на портале, уходят в «уже существовали», причины снимаются', () => {
+        const result = reconcileFailedFields(
+            {
+                fieldsExisting: ['UF_A'],
+                fieldsFailed: ['UF_B', 'UF_C'],
+                fieldsFailedDetails: [
+                    failure('UF_B', 'other'),
+                    failure('UF_C', 'network'),
+                ],
+            },
+            new Set(['UF_A', 'UF_B']),
+        );
+        expect(result.recovered).toEqual(['UF_B']);
+        expect(result.fieldsExisting).toEqual(['UF_A', 'UF_B']);
+        expect(result.fieldsFailed).toEqual(['UF_C']);
+        expect(result.fieldsFailedDetails).toEqual([
+            failure('UF_C', 'network'),
+        ]);
+        expect(result.fieldLimitReached).toBe(false);
+    });
+
+    it('флаг лимита остаётся, пока среди настоящих отказов есть лимит', () => {
+        const outcome = {
+            fieldsExisting: [],
+            fieldsFailed: ['UF_B', 'UF_C'],
+            fieldsFailedDetails: [
+                failure('UF_B', 'field_limit'),
+                failure('UF_C', 'field_limit'),
+            ],
+        };
+        expect(
+            reconcileFailedFields(outcome, new Set(['UF_B'])).fieldLimitReached,
+        ).toBe(true);
+        expect(
+            reconcileFailedFields(outcome, new Set(['UF_B', 'UF_C']))
+                .fieldLimitReached,
+        ).toBe(false);
+    });
+
+    it('без полей на портале — итог прежний', () => {
+        const result = reconcileFailedFields(
+            {
+                fieldsExisting: [],
+                fieldsFailed: ['UF_B'],
+                fieldsFailedDetails: [failure('UF_B', 'other')],
+            },
+            new Set(),
+        );
+        expect(result.recovered).toEqual([]);
+        expect(result.fieldsFailed).toEqual(['UF_B']);
     });
 });

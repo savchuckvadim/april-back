@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { DocumentClientBxRqService } from '@app/konstructor/document-generate/bx-client-rq/bx-client-rq.service';
+import {
+    blank,
+    DocumentClientBxRqService,
+} from '@app/konstructor/document-generate/bx-client-rq/bx-client-rq.service';
 import { BxRqDto } from '@app/konstructor/document-generate/dto/bx-rq/bx-rq.dto';
 import { ClientTypeEnum } from '@app/konstructor/document-generate/type/client.type';
 import { CONTRACT_LTYPE } from '@app/konstructor/document-generate/type/contract.type';
@@ -10,7 +13,7 @@ export class ContractRqService {
 
     public getRqs(
         provider: RqEntity,
-        clientRq: BxRqDto,
+        clientRq: BxRqDto | undefined,
         clientType: ClientTypeEnum,
         contractType: CONTRACT_LTYPE,
     ): {
@@ -55,12 +58,13 @@ export class ContractRqService {
             client_role: roles.client,
 
             client_role_case: roles.clientCase,
-            client_direct_position:
-                (clientRq.fields.find(field => field.code === 'position')
-                    ?.value as string) || '',
-            client_direct_fio:
-                (clientRq.fields.find(field => field.code === 'director')
-                    ?.value as string) || '',
+            // «рыба»: подпись клиента с прочерками, если реквизит не заполнен
+            client_direct_position: blank(
+                clientRq?.fields.find(field => field.code === 'position')?.value,
+            ),
+            client_direct_fio: blank(
+                clientRq?.fields.find(field => field.code === 'director')?.value,
+            ),
         };
     }
 

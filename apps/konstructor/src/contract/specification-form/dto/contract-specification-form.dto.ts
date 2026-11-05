@@ -3,6 +3,7 @@ import {
     IsArray,
     IsEnum,
     IsObject,
+    IsOptional,
     IsString,
     ValidateNested,
 } from 'class-validator';
@@ -16,7 +17,19 @@ import { CONTRACT_LTYPE } from '@app/konstructor/document-generate/type/contract
 import { ContractDto } from '@app/konstructor/dto/contract.dto';
 import { SupplyDto } from '@app/konstructor/dto/supply.dto';
 
-/** Legal Tech договора: бесплатная часть комплекта и платный пакет — названиями. */
+/** Платный пакет Legal Tech: название товара и его сервисы. */
+export class ContractSpecificationLtPacketDto {
+    @ApiProperty({ description: 'Название пакета (товар)', type: String })
+    @IsString()
+    name: string;
+
+    @ApiProperty({ description: 'Сервисы пакета', type: [String] })
+    @IsArray()
+    @IsString({ each: true })
+    services: string[];
+}
+
+/** Legal Tech договора: бесплатная часть комплекта и платные пакеты — названиями. */
 export class ContractSpecificationLtDto {
     @ApiProperty({
         description: 'Бесплатный пакет LT в комплекте (название)',
@@ -38,6 +51,18 @@ export class ContractSpecificationLtDto {
     @IsArray()
     @IsString({ each: true })
     paidServices: string[];
+
+    @ApiProperty({
+        description:
+            'Платные пакеты LT по отдельности: у каждого своя пара строк спецификации. Без поля — один пакет из paidPacket/paidServices (легаси)',
+        type: [ContractSpecificationLtPacketDto],
+        required: false,
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ContractSpecificationLtPacketDto)
+    paidPackets?: ContractSpecificationLtPacketDto[];
 }
 
 /**

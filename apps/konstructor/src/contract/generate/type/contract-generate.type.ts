@@ -59,16 +59,25 @@ export type ContractGenerateTemplateProps = {
     supply_comment_1: string;
     logins_quantity: string;
     contract_pay_date: string;
+    /** Ответственный за получение справочника (поле сделки) */
+    client_assigned_fio: string;
+    /** Email для интернет-версии (поле сделки) */
+    garant_client_email: string;
 
-    // productNumber: string;
-    // productName: string;
-    // productQuantity: string;
-    // productMeasure: string;
-    // productPrice: string;
-    // productSum: string;
+    /** Строка товара главной строки: шаблон печатает её вне цикла products */
+    productNumber: string;
+    productName: string;
+    productQuantity: string;
+    productMeasure: string;
+    productPrice: string;
+    productSum: string;
     products: Product[];
     total_month_sum: string;
+    total_month_sum_string: string;
+    /** Всего месяцев действия договора */
     total_quantity: string;
     total_measure: string;
     total_prepayment_sum: string;
+    total_prepayment_sum_string: string;
+    total_prepayment_quantity_string: string;
 };

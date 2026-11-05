@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ContractSpecificationDto } from '@app/konstructor/document-generate/dto/specification/specification.dto';
+import { isLtSpecificationCode } from '@app/konstructor/document-generate/lib/specification-lt.util';
 
 @Injectable()
 export class ContractSpecificationService {
@@ -64,15 +65,11 @@ export class ContractSpecificationService {
                 specification_services += value.value + '\n';
             }
 
-            if (
-                [
-                    'specification_lt_free',
-                    'specification_lt_free_services',
-                    'specification_lt_packet',
-                    'specification_lt_services',
-                ].includes(value.code)
-            ) {
-                lt += `\n${value.value}\n`;
+            // бесплатный пакет, его состав, затем каждый платный пакет со своим составом
+            if (isLtSpecificationCode(value.code)) {
+                const text =
+                    typeof value.value === 'string' ? value.value.trim() : '';
+                if (text) lt += `\n${text}\n`;
             }
 
             if (value.code === 'specification_supply') {

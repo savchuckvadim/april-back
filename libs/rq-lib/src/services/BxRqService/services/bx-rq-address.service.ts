@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix/bitrix.service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
+import { BitrixOwnerTypeId } from '@/modules/bitrix/domain/enums/bitrix-constants.enum';
 import { Address } from '../../../types/bx-address.type';
 import {
     filterAddressesByType,
@@ -34,9 +35,17 @@ export class BxRqAddressService {
     /**
      * Добавляет batch команду для получения адресов реквизита
      */
+    /**
+     * Адреса реквизита. Фильтр только по ENTITY_ID отдавал адреса любой
+     * сущности с таким же id (контакта, компании): они отсеивались по якорю,
+     * а заготовки юр/факт адреса к реквизиту уже не добавлялись.
+     */
     addAddressBatchCommand(bitrix: BitrixService, requisiteId: number): void {
         bitrix.api.addCmdBatch(`address_${requisiteId}`, 'crm.address.list', {
-            filter: { ENTITY_ID: requisiteId },
+            filter: {
+                ENTITY_ID: requisiteId,
+                ENTITY_TYPE_ID: BitrixOwnerTypeId.REQUISITE,
+            },
         });
     }
 
@@ -95,7 +104,10 @@ export class BxRqAddressService {
 
         // Получаем список адресов
         const listAddress = (await bitrix.api.call('crm.address.list', {
-            filter: { ENTITY_ID: address.ENTITY_ID },
+            filter: {
+                ENTITY_ID: address.ENTITY_ID,
+                ENTITY_TYPE_ID: BitrixOwnerTypeId.REQUISITE,
+            },
         })) as BxAddressListResponse;
 
         const addressCompany: Address[] = [];

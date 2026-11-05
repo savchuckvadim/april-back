@@ -1,28 +1,55 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { RequisiteService } from './requisite.service';
+import { PBXService } from '@/modules/pbx';
+import { BitrixOwnerTypeId } from '@/modules/bitrix/domain/enums/bitrix-constants.enum';
 import { ERQItem } from '../dto/erq-item.dto';
+import { ERQField } from '../dto/erq-field.dto';
 import { ERQAddressItem } from '../dto/erq-address.dto';
 import { ERQBankItem } from '../dto/erq-bank.dto';
 import { BXRequisiteDTO } from '../types/bx-requisite-dto.type';
 import { Address } from '../types/bx-address.type';
 import { Bank } from '../types/bx-bank.type';
 import { CodesField, Names } from '../dto/codes-field';
-
-import { PresetName } from '../enums/preset-name.enum';
 import { AddressFieldCode } from '../enums/address-field-code.enum';
 import { BankFieldCode } from '../enums/bank-field-code.enum';
 import { TypeIdAddress } from '../types/type-id-address.enum';
 import { ErrorMessage } from '../enums/error-message.enum';
-import { PresetId } from '../enums/preset-id.enum';
-import { BitrixOwnerTypeId } from '@/modules/bitrix/domain/enums/bitrix-constants.enum';
-import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
-import { getPresetConfig, PresetConfig } from './BxRqService';
+import { RQ_TYPE } from '../enums/rq-type.enum';
+import { BxRqService, BxRqCustomFieldService } from './BxRqService';
+import {
+    createTemplateRequisite,
+    TEMPLATE_RQ_ID,
+} from './BxRqService/utils/requisite.utils';
 import { mutateCustomFieldXmlIdByName } from '../shared/';
+import {
+    presetKindOf,
+    RqPresetKind,
+    RqPresetService,
+} from './rq-preset.service';
+
+const RQ_TYPE_BY_KIND: Record<RqPresetKind, RQ_TYPE> = {
+    org: RQ_TYPE.ORGANIZATION,
+    ip: RQ_TYPE.IP,
+    fiz: RQ_TYPE.FIZ,
+};
+
+/** Запрос на создание: bx_id не передан или -1. */
+export const isNewRequisite = (rqId: number | null | undefined): boolean =>
+    rqId == null || Number(rqId) === TEMPLATE_RQ_ID;
 
 @Injectable()
 export class RequisiteUpdateService {
-    constructor(private readonly requisiteService: RequisiteService) {}
+    constructor(
+        private readonly pbxService: PBXService,
+        private readonly bxRqService: BxRqService,
+        private readonly presetService: RqPresetService,
+        private readonly customFieldService: BxRqCustomFieldService,
+    ) {}
 
+    /**
+     * Создать (bx_id -1) или обновить реквизит. Новый собирается из заготовки
+     * пресета, который задан в запросе: заготовка первого типа в списке
+     * раньше делала из любого нового реквизита организацию.
+     */
     async updateRequisite(
         erqItem: ERQItem,
         rqId: number | undefined,
@@ -30,89 +57,71 @@ export class RequisiteUpdateService {
         companyId: number,
         domain: string,
         presetId: number | undefined,
-        PortalModel: PortalModel,
     ): Promise<ERQItem> {
         if (!erqItem) {
             throw new BadRequestException(ErrorMessage.NOT_FULL_DATA);
         }
-        const preset: PresetConfig = getPresetConfig(PortalModel);
-        erqItem.bx_id = rqId || null;
-        erqItem.preset_id = presetId || null;
+        const { bitrix, PortalModel } = await this.pbxService.init(domain);
+        const presets = await this.presetService.resolve(bitrix, PortalModel);
+        const codeToAttribute = this.getCodeToAttributeMap();
 
-        // Создаем словарь для сопоставления кодов с именами атрибутов
-        const codeToAttributeMap = this.getCodeToAttributeMap();
+        if (isNewRequisite(rqId)) {
+            const kind = presetKindOf(presets, presetId ?? erqItem.preset_id);
+            if (!kind) {
+                throw new BadRequestException(ErrorMessage.PRESET_REQUIRED);
+            }
+            const template = createTemplateRequisite(companyId, presets[kind]);
+            // у заготовки нет UF_-ключей: должность, основание и падежи
+            // пишутся через каталог пользовательских полей портала
+            template.customFields = await this.customFieldService.loadCatalog(bitrix);
+            this.applyFields(template, erqItem.fields, codeToAttribute);
 
-        // Обновляем поля в BX реквизите
-        const updateRq = bxRqs.find(rq => Number(rq.ID) === Number(rqId));
-
-        if (!updateRq) {
-            throw new BadRequestException(ErrorMessage.NOT_FULL_DATA);
+            const bxId = await this.bxRqService.createRq(template, domain);
+            return new ERQItem({
+                bx_id: bxId,
+                fields: erqItem.fields,
+                address: erqItem.address,
+                bank: erqItem.bank,
+                preset_id: presets[kind].id,
+                type: RQ_TYPE_BY_KIND[kind],
+            });
         }
 
-        for (const eventRequisite of erqItem.fields) {
-            // Получаем имя атрибута из словаря
-            const attributeName = codeToAttributeMap[eventRequisite.code];
-            if (attributeName) {
-                // Обновляем атрибут объекта bxRq
-                (updateRq as unknown as Record<string, unknown>)[
-                    attributeName
-                ] = eventRequisite.value;
-            }
+        const target = bxRqs.find(rq => Number(rq.ID) === Number(rqId));
+        if (!target) {
+            throw new BadRequestException(ErrorMessage.REQUISITE_NOT_FOUND);
+        }
+        this.applyFields(target, erqItem.fields, codeToAttribute);
+        await this.bxRqService.updateRq(target, Number(rqId), domain);
 
-            // Обновляем customFields
-            if (updateRq.customFields) {
-                for (const customField of updateRq.customFields) {
-                    // if(customField.FIELD_NAME?.includes('1773131028')) {
-                    //     customField.XML_ID = "base_other";
-                    // }
-                    mutateCustomFieldXmlIdByName(customField);
-                    const customXmlId = customField.XML_ID?.trim() || '';
-                    if (customXmlId === eventRequisite.code) {
-                        customField.value = eventRequisite.value as
-                            | string
-                            | null;
-                    }
+        const kind = presetKindOf(presets, target.PRESET_ID);
+        return new ERQItem({
+            ...erqItem,
+            bx_id: Number(rqId),
+            preset_id: target.PRESET_ID,
+            type: kind ? RQ_TYPE_BY_KIND[kind] : erqItem.type,
+        });
+    }
+
+    /** Значения полей формы → атрибуты реквизита и пользовательские поля по XML_ID. */
+    private applyFields(
+        target: BXRequisiteDTO,
+        fields: ERQField[],
+        codeToAttribute: Record<string, string>,
+    ): void {
+        const record = target as unknown as Record<string, unknown>;
+        for (const field of fields) {
+            const attribute = codeToAttribute[field.code];
+            if (attribute) {
+                record[attribute] = field.value;
+            }
+            for (const customField of target.customFields ?? []) {
+                mutateCustomFieldXmlIdByName(customField);
+                if ((customField.XML_ID?.trim() || '') === field.code) {
+                    customField.value = field.value as string | null;
                 }
             }
         }
-
-        if (rqId === -1) {
-            // Создание нового реквизита
-            updateRq.ENTITY_TYPE_ID = 4;
-            updateRq.ENTITY_ID = companyId;
-            updateRq.PRESET_ID = erqItem.preset_id || PresetId.ORG;
-
-            // Устанавливаем название в зависимости от preset_id
-            if (Number(erqItem.preset_id) === Number(preset.org)) {
-                updateRq.NAME = PresetName.ORGANIZATION;
-            } else if (Number(erqItem.preset_id) === Number(preset.ip)) {
-                updateRq.NAME = PresetName.IP;
-            } else if (Number(erqItem.preset_id) === Number(preset.fiz)) {
-                updateRq.NAME = PresetName.PHYSICAL_PERSON;
-            }
-            if (!updateRq.NAME) {
-                updateRq.NAME = `Название: ${PresetName.ORGANIZATION}`;
-            }
-            try {
-                const bx_id = (await this.requisiteService.createRq(
-                    updateRq,
-                    domain,
-                )) as number;
-                return new ERQItem({ bx_id: bx_id });
-            } catch (error) {
-                console.log('error', error);
-                throw new BadRequestException(ErrorMessage.NOT_FULL_DATA);
-            }
-
-            // if (typeof task === 'string') {
-            //     throw new BadRequestException(ErrorMessage.NOT_FULL_DATA);
-            // }
-        } else {
-            // Обновление существующего реквизита
-            await this.requisiteService.updateRq(updateRq, rqId!, domain);
-        }
-
-        return erqItem;
     }
 
     async updateAddress(
@@ -156,7 +165,7 @@ export class RequisiteUpdateService {
             }
         }
 
-        return await this.requisiteService.updateAddress(domain, bxAddress);
+        return await this.bxRqService.updateAddress(domain, bxAddress);
     }
 
     async updateBank(
@@ -186,7 +195,7 @@ export class RequisiteUpdateService {
             }
         }
 
-        return await this.requisiteService.updateBank(domain, bxBank);
+        return await this.bxRqService.updateBank(domain, bxBank);
     }
 
     private getCodeToAttributeMap(): Record<string, string> {

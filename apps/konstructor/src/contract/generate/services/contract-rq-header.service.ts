@@ -5,6 +5,8 @@ import { ClientTypeEnum } from '@app/konstructor/document-generate/type/client.t
 import { Injectable } from '@nestjs/common';
 import { ContractRqService } from './contract-rq.service';
 import { RqEntity } from '@lib/portal-lib/konstructor/provider';
+import { BxRqDto } from '@app/konstructor/document-generate/dto/bx-rq/bx-rq.dto';
+import { fieldText } from '@app/konstructor/document-generate/bx-client-rq/bx-client-rq.service';
 
 @Injectable()
 export class ContractRqHeaderService {
@@ -20,7 +22,7 @@ export class ContractRqHeaderService {
     public getContractHeaderText(
         contractType: string,
         clientType: ClientTypeEnum,
-        clientRq: any,
+        clientRq: BxRqDto | undefined,
         providerRq: RqEntity,
     ): string {
         const roles = this.rqService.getRoles(contractType);
@@ -49,25 +51,26 @@ export class ContractRqHeaderService {
 
         if (clientRq?.fields) {
             for (const rqItem of clientRq.fields) {
-                if (rqItem.value) {
+                const value = fieldText(rqItem.value);
+                if (value) {
                     if (
                         rqItem.code === 'fullname' &&
                         (clientType === 'ip' ||
                             clientType === 'org' ||
                             clientType === 'org_state')
                     ) {
-                        clientCompanyFullName = rqItem.value;
+                        clientCompanyFullName = value;
                     } else if (
                         rqItem.code === 'personName' &&
                         clientType === 'fiz'
                     ) {
-                        clientCompanyFullName = rqItem.value;
+                        clientCompanyFullName = value;
                     } else if (rqItem.code === 'position_case') {
-                        clientCompanyDirectorPositionCase = rqItem.value;
+                        clientCompanyDirectorPositionCase = value;
                     } else if (rqItem.code === 'director_case') {
-                        clientCompanyDirectorNameCase = rqItem.value;
+                        clientCompanyDirectorNameCase = value;
                     } else if (rqItem.code === 'based') {
-                        clientCompanyBased = rqItem.value;
+                        clientCompanyBased = value;
                     }
                 }
             }

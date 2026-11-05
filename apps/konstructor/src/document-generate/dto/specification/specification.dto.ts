@@ -1,4 +1,4 @@
-import { IsArray, IsEnum } from 'class-validator';
+import { IsArray, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { RqItem } from '../../type/bx-rq.type';
 import { FormFieldDto } from '../form-field/form-field.dto';
@@ -38,17 +38,32 @@ export enum ContractSpecificationCodeEnum {
     /** «Вид поставки» — подпись quantityForKp (легаси contract_spec_products_names_comment) */
     PRODUCTS_NAMES_COMMENT = 'contract_spec_products_names_comment',
 }
+
+/**
+ * Коды строк спецификации: значения ContractSpecificationCodeEnum и строки
+ * второго и следующих платных пакетов Legal Tech — specification_lt_packet_N /
+ * specification_lt_services_N (первый пакет — легаси-коды без номера).
+ */
+export const SPECIFICATION_CODE_PATTERN = new RegExp(
+    '^(?:' +
+        Object.values(ContractSpecificationCodeEnum).join('|') +
+        '|specification_lt_(?:packet|services)_[0-9]+)$',
+);
+
 export class ContractSpecificationItemDto
     extends FormFieldDto
-    implements RqItem<ContractSpecificationCodeEnum>
+    implements RqItem<string>
 {
     @ApiProperty({
-        description: 'Код строки спецификации',
-        enum: ContractSpecificationCodeEnum,
-        enumName: 'ContractSpecificationCode',
+        description:
+            'Код строки спецификации (ContractSpecificationCodeEnum); второй и следующие платные пакеты Legal Tech — specification_lt_packet_N и specification_lt_services_N',
+        type: String,
+        example: ContractSpecificationCodeEnum.LT_PACKET,
     })
-    @IsEnum(ContractSpecificationCodeEnum)
-    code: ContractSpecificationCodeEnum;
+    @Matches(SPECIFICATION_CODE_PATTERN, {
+        message: 'ContractSpecificationItemDto code must be a specification code',
+    })
+    code: string;
 }
 
 export class ContractSpecificationDto {

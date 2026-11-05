@@ -1,52 +1,47 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { StoreRqRequestDto } from '../dto/request.dto';
 import { ERQItem } from '../dto/erq-item.dto';
-import { RequisiteService } from '../services/requisite.service';
-import { RequisiteUpdateService } from '../services/requisite-update.service';
+import {
+    isNewRequisite,
+    RequisiteUpdateService,
+} from '../services/requisite-update.service';
 import { ErrorMessage } from '../enums/error-message.enum';
-import { PBXService } from '@/modules/pbx';
+import { BxRqService } from '../services/BxRqService';
 
 @Injectable()
 export class StoreRqUseCase {
     constructor(
-        private readonly requisiteService: RequisiteService,
+        private readonly bxRqService: BxRqService,
         private readonly requisiteUpdateService: RequisiteUpdateService,
-        private readonly pbxService: PBXService,
     ) {}
 
+    /** Ровно одно из rq / address / bank; iswait всегда true, очередей нет. */
     async execute(dto: StoreRqRequestDto): Promise<ERQItem | boolean | number> {
-        const { company_id, domain, rq, bx_id, preset_id } = dto;
-        // iswait всегда true - убрали логику очередей
-        const bxRqs = await this.requisiteService.getRq(company_id, domain);
-        const { address, bank } = dto;
-        const { PortalModel } = await this.pbxService.init(domain);
+        const { company_id, domain, rq, bx_id, preset_id, address, bank } = dto;
         if (rq) {
-            // Обновление реквизита
-            const result = await this.requisiteUpdateService.updateRequisite(
+            // для нового реквизита список компании не нужен: заготовка строится по пресету
+            const bxRqs = isNewRequisite(bx_id)
+                ? []
+                : await this.bxRqService.getRq(company_id, domain);
+            return this.requisiteUpdateService.updateRequisite(
                 rq,
                 bx_id,
                 bxRqs,
                 company_id,
                 domain,
                 preset_id,
-                PortalModel,
             );
-            return result;
-        } else if (address) {
-            // Обновление адреса
-            return await this.requisiteUpdateService.updateAddress(
+        }
+        if (address) {
+            return this.requisiteUpdateService.updateAddress(
                 address,
                 bx_id!,
                 company_id,
                 domain,
             );
-        } else if (bank) {
-            // Обновление банка
-            return await this.requisiteUpdateService.updateBank(
-                bank,
-                bx_id!,
-                domain,
-            );
+        }
+        if (bank) {
+            return this.requisiteUpdateService.updateBank(bank, bx_id!, domain);
         }
 
         throw new BadRequestException(ErrorMessage.NOT_FULL_DATA);

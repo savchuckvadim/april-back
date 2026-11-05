@@ -7,112 +7,128 @@ import { ERQBank, ERQBankItem } from '../dto/erq-bank.dto';
 import { CodesField, Names } from '../dto/codes-field';
 import { Address } from '../types/bx-address.type';
 import { Bank } from '../types/bx-bank.type';
-import { PresetCode } from '../enums/preset-code.enum';
 import { AddressFieldName } from '../enums/address-field-name.enum';
 import { AddressFieldCode } from '../enums/address-field-code.enum';
 import { BankFieldName } from '../enums/bank-field-name.enum';
 import { BankFieldCode } from '../enums/bank-field-code.enum';
-import { TypeIdAddress } from '../types/type-id-address.enum';
 import { RQ_TYPE } from '../enums/rq-type.enum';
 import { normalizeAddressTypeId } from './BxRqService/utils/address.utils';
+import { addMissingAddresses } from './BxRqService/utils/address.utils';
+import { addMissingBank } from './BxRqService/utils/bank.utils';
+import {
+    createTemplateRequisite,
+    TEMPLATE_RQ_ID,
+} from './BxRqService/utils/requisite.utils';
 import { PBXService } from '@lib/pbx';
+import {
+    presetKindOf,
+    RqPresetKind,
+    RqPresetService,
+    RqPresetSet,
+} from './rq-preset.service';
 
+const RQ_TYPE_BY_KIND: Record<RqPresetKind, RQ_TYPE> = {
+    org: RQ_TYPE.ORGANIZATION,
+    ip: RQ_TYPE.IP,
+    fiz: RQ_TYPE.FIZ,
+};
+
+interface KindGroup {
+    items: ERQItem[];
+    template: ERQItem | null;
+}
+
+/**
+ * Реквизиты Bitrix → ответ `get_rq`: по типам клиента, в каждой группе
+ * реальные реквизиты и заготовка `default` (bx_id -1) для нового.
+ */
 @Injectable()
 export class RequisiteMapperService {
-    constructor(private readonly pbxService: PBXService) {}
+    constructor(
+        private readonly pbxService: PBXService,
+        private readonly presetService: RqPresetService,
+    ) {}
 
     async mapBxRequisitesToErqDto(
         bxRqs: BXRequisiteDTO[],
         companyId: number,
         domain: string,
     ): Promise<ERQDTO> {
-        const { PortalModel } = await this.pbxService.init(domain);
-
+        const { bitrix, PortalModel } = await this.pbxService.init(domain);
+        const presets = await this.presetService.resolve(bitrix, PortalModel);
         const codes = this.getCodesFieldMap();
-        const eventRqOrg: ERQItem[] = [];
-        const eventRqIp: ERQItem[] = [];
-        const eventRqFiz: ERQItem[] = [];
+
+        const groups: Record<RqPresetKind, KindGroup> = {
+            org: { items: [], template: null },
+            ip: { items: [], template: null },
+            fiz: { items: [], template: null },
+        };
 
         for (const bxRq of bxRqs) {
-            const eventRequisiteDto = this.mapBxRequisiteToErqFields(
-                bxRq,
-                codes,
-            );
-            const address = this.mapBxAddressToErqAddress(
-                bxRq.address,
-                companyId,
-            );
-            const bank = this.mapBxBankToErqBank(bxRq.bank);
-
-            const presetOrg = PortalModel.getPresetForName(PresetCode.ORG);
-            const presetIp = PortalModel.getPresetForName(PresetCode.IP);
-            const presetFiz = PortalModel.getPresetForName(PresetCode.FIZ);
-            const type = this.getRqType(
-                Number(bxRq.PRESET_ID),
-                presetOrg?.bitrix_id || 0,
-                presetIp?.bitrix_id || 0,
-                presetFiz?.bitrix_id || 0,
-            );
-
-            const erqItem = new ERQItem({
-                bx_id: bxRq.ID,
-                fields: eventRequisiteDto,
-                address: address,
-                bank: bank,
-                preset_id: Number(bxRq.PRESET_ID),
-                type,
-            });
-
-            if (presetOrg && bxRq.PRESET_ID === presetOrg.bitrix_id) {
-                eventRqOrg.push(erqItem);
-            } else if (presetIp && bxRq.PRESET_ID === presetIp.bitrix_id) {
-                eventRqIp.push(erqItem);
-            } else if (presetFiz && bxRq.PRESET_ID === presetFiz.bitrix_id) {
-                eventRqFiz.push(erqItem);
+            // реквизит с чужим пресетом конструктору не нужен
+            const kind = presetKindOf(presets, bxRq.PRESET_ID);
+            if (!kind) continue;
+            const item = this.toItem(bxRq, kind, companyId, codes);
+            if (Number(bxRq.ID) === TEMPLATE_RQ_ID) {
+                groups[kind].template = item;
+            } else {
+                groups[kind].items.push(item);
             }
         }
 
-        const current = this.getCurrentRequisite(
-            eventRqOrg,
-            eventRqFiz,
-            eventRqIp,
-        );
-        // const defaultItem = this.createDefaultItem(current);
+        const toObject = (kind: RqPresetKind): ERQObject => {
+            const group = groups[kind];
+            const template =
+                group.template ??
+                this.toItem(
+                    this.emptyTemplate(companyId, presets, kind),
+                    kind,
+                    companyId,
+                    codes,
+                );
+            // Альфацентр и легаси-хуки узнают «пусто» по items[0].bx_id === -1
+            return new ERQObject({
+                items: group.items.length > 0 ? group.items : [template],
+                default: template,
+            });
+        };
 
-        const result = new ERQDTO({
-            org: new ERQObject({
-                items: eventRqOrg,
-                default: eventRqOrg.find(item => item.bx_id === -1) || null,
-            }),
-            fiz: new ERQObject({
-                items: eventRqFiz,
-                default: eventRqFiz.find(item => item.bx_id === -1) || null,
-            }),
-            ip: new ERQObject({
-                items: eventRqIp,
-                default: eventRqIp.find(item => item.bx_id === -1) || null,
-            }),
-            current: current,
+        return new ERQDTO({
+            org: toObject('org'),
+            fiz: toObject('fiz'),
+            ip: toObject('ip'),
+            current: groups.org.items[0] ?? groups.fiz.items[0] ?? groups.ip.items[0] ?? null,
         });
-
-        return result;
     }
 
-    private getRqType(
-        presetId: number,
-        presetOrgBitrixId: number,
-        presetIpBitrixId: number,
-        presetFizBitrixId: number,
-    ): RQ_TYPE {
-        if (Number(presetId) === Number(presetOrgBitrixId)) {
-            return RQ_TYPE.ORGANIZATION;
-        } else if (Number(presetId) === Number(presetIpBitrixId)) {
-            return RQ_TYPE.IP;
-        } else if (Number(presetId) === Number(presetFizBitrixId)) {
-            return RQ_TYPE.FIZ;
-        }
-        return RQ_TYPE.ORGANIZATION;
+    private toItem(
+        bxRq: BXRequisiteDTO,
+        kind: RqPresetKind,
+        companyId: number,
+        codes: Record<string, Names>,
+    ): ERQItem {
+        return new ERQItem({
+            bx_id: bxRq.ID,
+            fields: this.mapBxRequisiteToErqFields(bxRq, codes),
+            address: this.mapBxAddressToErqAddress(bxRq.address, companyId),
+            bank: this.mapBxBankToErqBank(bxRq.bank),
+            preset_id: Number(bxRq.PRESET_ID),
+            type: RQ_TYPE_BY_KIND[kind],
+        });
     }
+
+    /** Заготовка, если список пришёл без неё: пустые поля, адреса и банк. */
+    private emptyTemplate(
+        companyId: number,
+        presets: RqPresetSet,
+        kind: RqPresetKind,
+    ): BXRequisiteDTO {
+        const template = createTemplateRequisite(companyId, presets[kind]);
+        addMissingAddresses(template, companyId, TEMPLATE_RQ_ID);
+        addMissingBank(template);
+        return template;
+    }
+
     private getCodesFieldMap(): Record<string, Names> {
         const codes: Record<string, Names> = {};
         const codesFieldKeys = Object.keys(CodesField);
@@ -320,7 +336,8 @@ export class RequisiteMapperService {
 
                 bankItems.push(
                     new ERQBankItem({
-                        id: bankValue.ID || -1,
+                        // REST отдаёт id строкой; фронт сравнивает числа
+                        id: Number(bankValue.ID) || -1,
                         fields: [...bankFields],
                     }),
                 );
@@ -333,100 +350,5 @@ export class RequisiteMapperService {
             current:
                 bankItems.length > 0 ? bankItems[bankItems.length - 1] : null,
         });
-    }
-
-    private getCurrentRequisite(
-        eventRqOrg: ERQItem[],
-        eventRqFiz: ERQItem[],
-        eventRqIp: ERQItem[],
-    ): ERQItem | null {
-        if (eventRqOrg.length > 0 && eventRqOrg[0]?.bx_id !== -1) {
-            return eventRqOrg[0];
-        } else if (eventRqFiz.length > 0 && eventRqFiz[0]?.bx_id !== -1) {
-            return eventRqFiz[0];
-        } else if (eventRqIp.length > 0 && eventRqIp[0]?.bx_id !== -1) {
-            return eventRqIp[0];
-        }
-        return null;
-    }
-
-    private createDefaultItem(current: ERQItem | null): ERQItem | null {
-        if (!current) {
-            return null;
-        }
-
-        const defaultItem = this.deepCopy(current);
-        for (const defaultField of defaultItem.fields) {
-            defaultField.value = '';
-        }
-
-        if (defaultItem.address) {
-            if (defaultItem.address.current) {
-                for (const defaultField of defaultItem.address.current.fields) {
-                    defaultField.value = '';
-                }
-            }
-        }
-
-        if (defaultItem.bank?.current) {
-            for (const defaultField of defaultItem.bank.current.fields) {
-                defaultField.value = '';
-            }
-        }
-
-        if (defaultItem.address) {
-            defaultItem.address.items = defaultItem.address.items.filter(
-                addr =>
-                    (addr.type_id as TypeIdAddress) === TypeIdAddress.LEGAL ||
-                    (addr.type_id as TypeIdAddress) === TypeIdAddress.FACTUAL,
-            );
-            for (const aItem of defaultItem.address.items) {
-                aItem.anchor_id = -1;
-                for (const fItem of aItem.fields) {
-                    fItem.value = '';
-                }
-            }
-        }
-
-        if (defaultItem.address?.current) {
-            defaultItem.address.current.anchor_id = -1;
-        }
-
-        if (defaultItem.bank) {
-            defaultItem.bank.items = [];
-            if (defaultItem.bank.current) {
-                defaultItem.bank.current.id = -1;
-            }
-        }
-
-        defaultItem.bx_id = -1;
-
-        return defaultItem;
-    }
-
-    private deepCopy<T>(obj: T): T {
-        if (obj === null || typeof obj !== 'object') {
-            return obj;
-        }
-
-        if (obj instanceof Date) {
-            return new Date(obj.getTime()) as unknown as T;
-        }
-
-        if (Array.isArray(obj)) {
-            return obj.map((item: unknown) =>
-                this.deepCopy(item),
-            ) as unknown as T;
-        }
-
-        const copy: Record<string, unknown> = {};
-        for (const key in obj) {
-            if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                copy[key] = this.deepCopy(
-                    (obj as Record<string, unknown>)[key],
-                );
-            }
-        }
-        return copy as T;
     }
 }

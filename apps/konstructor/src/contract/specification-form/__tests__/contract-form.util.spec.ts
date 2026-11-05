@@ -204,6 +204,49 @@ describe('buildSpecificationItems + filter', () => {
         );
     });
 
+    it('несколько платных пакетов LT: у каждого своя пара строк, первый — с легаси-кодами', () => {
+        const items = buildSpecificationItems({
+            ...input,
+            lt: {
+                ...input.lt,
+                paidPacket: 'LT Малый, LT Средний',
+                paidServices: ['LT Малый: Искра', 'LT Средний: ЧекДок, Тендер'],
+                paidPackets: [
+                    { name: 'LT Малый', services: ['Искра'] },
+                    { name: 'LT Средний', services: ['ЧекДок', 'Тендер'] },
+                ],
+            },
+        });
+        expect(items).toHaveLength(31);
+        const lt = items.filter(item => item.code.startsWith('specification_lt_'));
+        expect(lt.map(item => [item.code, item.name, item.value])).toEqual([
+            ['specification_lt_free', 'Legal Tech в комплекте (бесплатно)', 'LT Малый'],
+            ['specification_lt_free_services', 'Состав Бесплатных Legal Tech', ' Сутяжник\n'],
+            ['specification_lt_packet', 'Платный Пакет Legal Tech 1', 'LT Малый'],
+            ['specification_lt_services', 'Состав Платного Legal Tech 1', 'Искра\n'],
+            ['specification_lt_packet_2', 'Платный Пакет Legal Tech 2', 'LT Средний'],
+            ['specification_lt_services_2', 'Состав Платного Legal Tech 2', 'ЧекДок\nТендер\n'],
+        ]);
+        // порядок: после бесплатного LT и до «Других сервисов»
+        const orders = lt.slice(2).map(item => item.order ?? 0);
+        expect([...orders].sort((a, b) => a - b)).toEqual(orders);
+        expect(Math.min(...orders)).toBeGreaterThanOrEqual(9);
+        expect(Math.max(...orders)).toBeLessThan(11);
+        expect(lt.every(item => item.isActive && item.isDisable && item.isHidden)).toBe(true);
+    });
+
+    it('легаси-клиент без paidPackets: одна пара строк из paidPacket/paidServices', () => {
+        const items = buildSpecificationItems({
+            ...input,
+            lt: { ...input.lt, paidPacket: 'Legal Tech', paidServices: ['Пакет 1: Искра; Пакет 2: ЧекДок'] },
+        });
+        expect(items).toHaveLength(29);
+        const byCode = Object.fromEntries(items.map(item => [item.code, item]));
+        expect(byCode['specification_lt_packet'].name).toBe('Платный Пакет Legal Tech');
+        expect(byCode['specification_lt_packet'].value).toBe('Legal Tech');
+        expect(byCode['specification_lt_services'].value).toBe('Пакет 1: Искра; Пакет 2: ЧекДок\n');
+    });
+
     it('фильтр по поставке/договору/клиенту: интернет-услуги без носителей и без лицензионных сроков', () => {
         const items = filterSpecificationItems(buildSpecificationItems(input), {
             supplyType: SupplyTypeEnum.INTERNET,

@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { RqController } from './rq.controller';
-import { RequisiteService } from './services/requisite.service';
 import { RequisiteMapperService } from './services/requisite-mapper.service';
 import { RequisiteUpdateService } from './services/requisite-update.service';
+import { RqPresetService } from './services/rq-preset.service';
 import { GetRqUseCase } from './use-cases/get-rq.use-case';
 import { StoreRqUseCase } from './use-cases/store-rq.use-case';
 import { UpdateAddressUseCase } from './use-cases/update-address.use-case';
@@ -19,7 +19,7 @@ import {
     imports: [PBXModule],
     controllers: [RqController],
     providers: [
-        RequisiteService,
+        RqPresetService,
         RequisiteMapperService,
         RequisiteUpdateService,
         GetRqUseCase,
@@ -32,6 +32,11 @@ import {
         BxRqBankService,
         BxRqCustomFieldService,
     ],
-    exports: [RequisiteService, RequisiteMapperService, RequisiteUpdateService],
+    exports: [
+        BxRqService,
+        RqPresetService,
+        RequisiteMapperService,
+        RequisiteUpdateService,
+    ],
 })
 export class RqModule {}

@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix/bitrix.service';
-import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
+import {
+    IBitrixBatchResponseResult,
+    IBitrixResponse,
+} from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { CustomField } from '../../../types/bx-custom-field.type';
 import { BXRequisiteDTO } from '../../../types/bx-requisite-dto.type';
 import {
@@ -85,5 +88,18 @@ export class BxRqCustomFieldService {
         }
 
         return customFields;
+    }
+
+    /**
+     * Все пользовательские поля реквизитов портала без значений. Нужны новому
+     * реквизиту: у заготовки нет UF_-ключей, а должность, основание и
+     * падежи живут именно в них.
+     */
+    async loadCatalog(bitrix: BitrixService): Promise<CustomField[]> {
+        const response = (await bitrix.api.call('crm.requisite.userfield.list', {
+            order: { ID: 'ASC' },
+        })) as IBitrixResponse<RawCustomFieldResult[]>;
+        const rows = Array.isArray(response?.result) ? response.result : [];
+        return rows.map(row => processCustomFieldResult(row, null));
     }
 }

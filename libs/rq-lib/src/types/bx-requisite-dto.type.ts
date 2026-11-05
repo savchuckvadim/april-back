@@ -89,10 +89,13 @@ export class BXRequisiteDTO {
     bank?: Bank[] | null;
 
     constructor(data: Partial<BXRequisiteDTO>) {
-        this.ID = data.ID || 0;
-        this.ENTITY_TYPE_ID = data.ENTITY_TYPE_ID ?? null;
-        this.ENTITY_ID = data.ENTITY_ID || 0;
-        this.PRESET_ID = data.PRESET_ID ?? null;
+        // REST отдаёт id строками, пресеты портала в БД тоже строки —
+        // сравниваем всегда числа
+        this.ID = Number(data.ID) || 0;
+        this.ENTITY_TYPE_ID =
+            data.ENTITY_TYPE_ID != null ? Number(data.ENTITY_TYPE_ID) : null;
+        this.ENTITY_ID = Number(data.ENTITY_ID) || 0;
+        this.PRESET_ID = data.PRESET_ID != null ? Number(data.PRESET_ID) : null;
         this.DATE_CREATE = data.DATE_CREATE ?? null;
         this.DATE_MODIFY = data.DATE_MODIFY ?? null;
         this.CREATED_BY_ID = data.CREATED_BY_ID ?? null;

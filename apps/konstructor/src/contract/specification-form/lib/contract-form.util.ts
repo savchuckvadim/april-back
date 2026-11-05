@@ -14,6 +14,10 @@ import {
 import { CONTRACT_LTYPE } from '@app/konstructor/document-generate/type/contract.type';
 import type { SupplyTexts } from '@lib/garant';
 import { ContractIBlocks } from './contract-iblocks.util';
+import {
+    ltPaidPacketCode,
+    ltPaidServicesCode,
+} from '@app/konstructor/document-generate/lib/specification-lt.util';
 
 /**
  * Общая форма договора и спецификация — порт Laravel
@@ -48,12 +52,34 @@ export interface SupplyContractTexts {
     quantityForKp: string;
 }
 
+export interface SpecificationLtPacket {
+    name: string;
+    services: string[];
+}
+
 export interface SpecificationLt {
     freePacket: string;
     freeServices: string[];
     paidPacket: string;
     paidServices: string[];
+    /** Платные пакеты по отдельности; без них — одна пара paidPacket/paidServices */
+    paidPackets?: SpecificationLtPacket[];
 }
+
+/**
+ * Платные пакеты LT: новый фронт шлёт списком, легаси-клиенты (init-form,
+ * старый фронт) — одной парой полей, где все пакеты склеены в одну строку.
+ */
+export const paidLtPacketsOf = (lt: SpecificationLt): SpecificationLtPacket[] => {
+    if (lt.paidPackets?.length) {
+        return lt.paidPackets.filter(
+            packet => packet.name || packet.services.length,
+        );
+    }
+    return lt.paidPacket || lt.paidServices.length
+        ? [{ name: lt.paidPacket, services: lt.paidServices }]
+        : [];
+};
 
 export interface SpecificationConsalting {
     /** Название ПК/ГЛ: «Горячая Линия», «Советы экспертов…» */
@@ -315,8 +341,13 @@ export const buildSpecificationItems = (
     const money = sumContractMoney(input.rows);
     const { supply, lt, consalting, iblocks } = input;
     const quantityMonths = money.generalQuantity * input.contractCoefficient;
+    // нет платных — пара пустых неактивных строк, как в легаси (их ждут потребители)
+    const paidPackets = paidLtPacketsOf(lt);
+    const ltPaidRows = paidPackets.length
+        ? paidPackets
+        : [{ name: '', services: [] }];
     const spec = (
-        code: ContractSpecificationCodeEnum,
+        code: string,
         seed: Omit<FieldSeed, 'code'> &
             Partial<Pick<FieldSeed, 'supplies' | 'contractType'>>,
     ): ContractSpecificationItemDto => ({
@@ -476,25 +507,33 @@ export const buildSpecificationItems = (
             order: 8,
             isHidden: true,
         }),
-        spec(ContractSpecificationCodeEnum.LT_PACKET, {
-            type: T.STRING,
-            name: 'Платный Пакет Legal Tech',
-            value: lt.paidPacket,
-            isRequired: false,
-            isActive: Boolean(lt.paidPacket),
-            isDisable: true,
-            order: 9,
-            isHidden: true,
-        }),
-        spec(ContractSpecificationCodeEnum.LT_SERVICES, {
-            type: T.TEXT,
-            name: 'Состав Платного Legal Tech',
-            value: lt.paidServices.map(name => `${name}\n`).join(''),
-            isRequired: false,
-            isActive: lt.paidServices.length > 0,
-            isDisable: true,
-            order: 10,
-            isHidden: true,
+        // по паре строк на каждый платный пакет: легаси клал все в одну
+        ...ltPaidRows.flatMap((packet, index) => {
+            const suffix = ltPaidRows.length > 1 ? ` ${index + 1}` : '';
+            // строки пакетов — между бесплатным LT (8) и «Другими сервисами» (11)
+            const step = 2 / (ltPaidRows.length * 2 + 1);
+            return [
+                spec(ltPaidPacketCode(index), {
+                    type: T.STRING,
+                    name: `Платный Пакет Legal Tech${suffix}`,
+                    value: packet.name,
+                    isRequired: false,
+                    isActive: Boolean(packet.name),
+                    isDisable: true,
+                    order: 9 + step * index * 2,
+                    isHidden: true,
+                }),
+                spec(ltPaidServicesCode(index), {
+                    type: T.TEXT,
+                    name: `Состав Платного Legal Tech${suffix}`,
+                    value: packet.services.map(name => `${name}\n`).join(''),
+                    isRequired: false,
+                    isActive: packet.services.length > 0,
+                    isDisable: true,
+                    order: 9 + step * (index * 2 + 1),
+                    isHidden: true,
+                }),
+            ];
         }),
         spec(ContractSpecificationCodeEnum.SERVICES, {
             type: T.TEXT,

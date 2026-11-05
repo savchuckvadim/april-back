@@ -38,6 +38,7 @@ import {
     ContractSpecificationItemDto,
 } from '../../../document-generate/dto/specification/specification.dto';
 import { getErrorString } from '@lib/shared';
+import { readLtPaidPackets } from '../../../document-generate/lib/specification-lt.util';
 
 /** Куда в блоке реквизитов кладётся банковское поле. */
 type BankRqSlot = 'bank' | 'rs' | 'ks' | 'bik' | 'other';
@@ -458,20 +459,19 @@ export class SupplyReportDataService {
                         lt_free += `: \n${services}`;
                     }
                 }
-            } else if (item.code === ContractSpecificationCodeEnum.LT_PACKET) {
-                if (value) {
-                    lt_packet = `${item.name} ${value}`;
-                    const services = findValue(
-                        ContractSpecificationCodeEnum.LT_SERVICES,
-                    );
-                    if (services) {
-                        lt_packet += `: \n${services}`;
-                    }
-                }
             } else if (item.code === ContractSpecificationCodeEnum.PK) {
                 pk = value;
             }
         }
+
+        // каждый платный пакет своей строкой (легаси склеивал все в одну)
+        lt_packet = readLtPaidPackets(filteredSpecification)
+            .map(packet =>
+                packet.services.length
+                    ? `Платный Пакет Legal Tech ${packet.name}: \n${packet.services.map(service => `${service}\n`).join('')}`
+                    : `Платный Пакет Legal Tech ${packet.name}`,
+            )
+            .join('\n');
 
         return { iblocks, ifree, lt_free, lt_packet, pk };
     }

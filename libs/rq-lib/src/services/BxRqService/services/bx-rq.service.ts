@@ -1,31 +1,35 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
 import { BitrixService } from '@/modules/bitrix/bitrix.service';
 import { BXRequisiteDTO } from '@lib/rq-lib/types/bx-requisite-dto.type';
 import { Address } from '@lib/rq-lib/types/bx-address.type';
 import { Bank } from '@lib/rq-lib/types/bx-bank.type';
 import { IBitrixResponse } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
-import { PresetCode } from '@lib/rq-lib/enums/preset-code.enum';
+import { ErrorMessage } from '@lib/rq-lib/enums/error-message.enum';
 import { BxRqAddressService } from './bx-rq-address.service';
 import { BxRqBankService } from './bx-rq-bank.service';
 import { BxRqCustomFieldService } from './bx-rq-custom-field.service';
-import { getPresetConfig } from '../utils/preset.utils';
 import {
     applyCustomFieldsToRequisite,
     setRequisiteNameIfEmpty,
     processOrganizationRequisite,
     processPhysicalPersonRequisite,
-    processRequisiteWithoutPreset,
-    addMissingPresets,
-    updatePresetIds,
+    addTemplates,
     filterRequisiteFields,
     mergeCustomFields,
 } from '../utils/requisite.utils';
 import { PresetConfig } from '../consts/preset.consts';
-import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
+import { presetConfigOf, RqPresetService } from '../../rq-preset.service';
+
+interface BxRequisiteMutationResponse {
+    result?: unknown;
+    error?: string;
+    error_description?: string;
+}
 
 /**
- * Основной сервис для работы с реквизитами Bitrix24
+ * Реквизиты компании в Bitrix24: чтение с адресами, банками и
+ * пользовательскими полями, создание и обновление.
  */
 @Injectable()
 export class BxRqService {
@@ -34,65 +38,36 @@ export class BxRqService {
         private readonly addressService: BxRqAddressService,
         private readonly bankService: BxRqBankService,
         private readonly customFieldService: BxRqCustomFieldService,
+        private readonly presetService: RqPresetService,
     ) {}
 
     /**
-     * Получает все реквизиты компании
+     * Реквизиты компании плюс заготовка (-1) на каждый тип клиента. Чтение
+     * ничего не пишет в Bitrix: раньше ради шаблона создавался и удалялся
+     * реквизит с пресетом 1, которого на портале может не быть.
      */
     async getRq(companyId: number, domain: string): Promise<BXRequisiteDTO[]> {
         const { bitrix, PortalModel } = await this.pbxService.init(domain);
-
-        const preset = getPresetConfig(PortalModel);
+        const presets = await this.presetService.resolve(bitrix, PortalModel);
+        const config = presetConfigOf(presets);
 
         const result = (await bitrix.api.call('crm.requisite.list', {
             filter: { ENTITY_ID: companyId },
             start: -1,
         })) as IBitrixResponse<BXRequisiteDTO[]>;
+        const rows = Array.isArray(result?.result) ? result.result : [];
 
-        const resultRqs = result?.result;
-
-        if (resultRqs?.length > 0) {
-            return this.processRequisites(resultRqs, companyId, bitrix, preset);
-        }
-
-        // Если реквизитов нет, создаем простой реквизит и удаляем его
-        return this.handleEmptyRequisites(companyId, domain, preset);
-    }
-
-    /**
-     * Обрабатывает список реквизитов
-     */
-    private async processRequisites(
-        resultRqs: BXRequisiteDTO[],
-        companyId: number,
-        bitrix: BitrixService,
-        preset: PresetConfig,
-    ): Promise<BXRequisiteDTO[]> {
         const rq: BXRequisiteDTO[] = [];
-
-        for (const requisite of resultRqs) {
-            const processedRequisite = await this.processSingleRequisite(
-                requisite,
-                bitrix,
-                preset,
-            );
-            rq.push(processedRequisite);
+        for (const requisite of rows) {
+            rq.push(await this.processSingleRequisite(requisite, bitrix, config));
         }
+        addTemplates(rq, companyId, presets);
 
-        addMissingPresets(rq, companyId, preset);
-
-        // Добавляем недостающие адреса и банки
         for (const requisite of rq) {
-            const anchorId = Number(companyId) || -1;
-
-            const entityId = Number(requisite?.ID) || -1;
-
             this.addressService.ensureRequiredAddresses(
                 requisite,
-
-                anchorId,
-
-                entityId,
+                Number(companyId) || -1,
+                Number(requisite.ID) || -1,
             );
             this.bankService.ensureRequiredBank(requisite);
         }
@@ -101,14 +76,13 @@ export class BxRqService {
     }
 
     /**
-     * Обрабатывает один реквизит
+     * Один реквизит: адреса, банки и пользовательские поля одним batch.
      */
     private async processSingleRequisite(
         requisite: BXRequisiteDTO,
         bitrix: BitrixService,
         preset: PresetConfig,
     ): Promise<BXRequisiteDTO> {
-        // Добавляем batch команды для получения адресов, банков и custom fields
         this.addressService.addAddressBatchCommand(bitrix, requisite.ID);
         this.bankService.addBankBatchCommand(bitrix, requisite.ID);
         const rqCommands = this.customFieldService.addCustomFieldsBatchCommands(
@@ -116,225 +90,88 @@ export class BxRqService {
             requisite,
         );
 
-        // Выполняем batch запросы
         const batches = await bitrix.api.callBatchWithConcurrency(5);
 
-        // Обрабатываем результаты
-        const addresses =
-            this.addressService.processAddressesFromBatch(batches);
-        const banks = this.bankService.processBanksFromBatch(batches);
-        const customFields =
-            this.customFieldService.processCustomFieldsFromBatch(
-                batches,
-                rqCommands,
-            );
-
-        // Применяем результаты к реквизиту
-        requisite.address = addresses;
-        requisite.bank = banks;
-        requisite.customFields = customFields;
+        requisite.address = this.addressService.processAddressesFromBatch(batches);
+        requisite.bank = this.bankService.processBanksFromBatch(batches);
+        requisite.customFields = this.customFieldService.processCustomFieldsFromBatch(
+            batches,
+            rqCommands,
+        );
 
         const bxRq = new BXRequisiteDTO(requisite);
-
-        // Обрабатываем customFields
         applyCustomFieldsToRequisite(bxRq);
-
-        // Устанавливаем имя, если отсутствует
         setRequisiteNameIfEmpty(bxRq);
-
-        // Обрабатываем в зависимости от типа пресета
-        if (preset) {
-            processOrganizationRequisite(bxRq, preset);
-            processPhysicalPersonRequisite(bxRq, preset);
-        } else {
-            processRequisiteWithoutPreset(bxRq);
-        }
+        processOrganizationRequisite(bxRq, preset);
+        processPhysicalPersonRequisite(bxRq, preset);
 
         return bxRq;
     }
 
     /**
-     * Обрабатывает случай, когда реквизитов нет
+     * Создать реквизит; вернёт его id в Bitrix. Пресет и имя уже в заготовке.
      */
-    private async handleEmptyRequisites(
-        companyId: number,
-        domain: string,
-        preset: PresetConfig,
-    ): Promise<BXRequisiteDTO[]> {
-        try {
-            if (!(await this.hasRequisites(companyId, domain))) {
-                await this.createSimpleRq(companyId, domain);
-                const rqs = await this.getRq(companyId, domain);
-                if (rqs.length > 0) {
-                    await this.deleteRq(rqs[0].ID, domain);
-                    rqs[0].ID = -1;
-                    rqs[0].ENTITY_TYPE_ID = 4;
-                    rqs[0].ENTITY_ID = companyId;
-                    updatePresetIds(rqs, preset);
-                }
-                return rqs;
-            }
-        } catch {
-            // Ignore
-        }
-
-        return [];
-    }
-
-    /**
-     * Проверяет наличие реквизитов
-     */
-    private async hasRequisites(
-        companyId: number,
-        domain: string,
-    ): Promise<boolean> {
+    async createRq(bxRqs: BXRequisiteDTO, domain: string): Promise<number> {
         const { bitrix } = await this.pbxService.init(domain);
-        const result = (await bitrix.api.call('crm.requisite.list', {
-            filter: { ENTITY_ID: companyId },
-            start: -1,
-        })) as IBitrixResponse<BXRequisiteDTO[]>;
-        return !!result?.result?.[0];
-    }
-
-    /**
-     * Создает реквизит
-     */
-    async createRq(bxRqs: BXRequisiteDTO, domain: string): Promise<unknown> {
-        const { bitrix, PortalModel } = await this.pbxService.init(domain);
-
-        this.applyPresetToRequisite(bxRqs, PortalModel);
 
         const fields = this.prepareRequisiteFields(bxRqs);
-
-        return await bitrix.api.call('crm.requisite.add', {
-            fields: fields,
-        });
+        const result = (await bitrix.api.call('crm.requisite.add', {
+            fields,
+        })) as BxRequisiteMutationResponse;
+        if (result?.error) {
+            throw new BadRequestException(
+                result.error_description || result.error,
+            );
+        }
+        const bxId = Number(result?.result);
+        if (!bxId) {
+            throw new BadRequestException(ErrorMessage.REQUISITE_NOT_CREATED);
+        }
+        return bxId;
     }
 
     /**
-     * Обновляет реквизит
+     * Обновить реквизит.
      */
     async updateRq(
         bxRqs: BXRequisiteDTO,
         rqId: number,
         domain: string,
-    ): Promise<any> {
+    ): Promise<void> {
         const { bitrix } = await this.pbxService.init(domain);
 
         const fields = this.prepareRequisiteFields(bxRqs);
-
-        const result = await bitrix.api.call('crm.requisite.update', {
+        const result = (await bitrix.api.call('crm.requisite.update', {
             id: rqId,
-            fields: fields,
-        });
-
-        return result;
+            fields,
+        })) as BxRequisiteMutationResponse;
+        if (result?.error) {
+            throw new BadRequestException(
+                result.error_description || result.error,
+            );
+        }
     }
 
-    /**
-     * Устанавливает выбранный реквизит для компании
-     */
-    async setSelectedRq(
-        entityId: number,
-        requisiteId: number,
-        bankDetailId: number,
-        domain: string,
-    ): Promise<any> {
-        const { bitrix } = await this.pbxService.init(domain);
-
-        return await bitrix.api.call(
-            'crm.requisite.settings.setSelectedEntityRequisite',
-            {
-                entityTypeId: 4,
-                entityId: entityId,
-                requisiteId: requisiteId,
-                bankDetailId: bankDetailId,
-            },
-        );
-    }
-
-    /**
-     * Обновляет адрес
-     */
     async updateAddress(domain: string, address: Address): Promise<boolean> {
         const { bitrix } = await this.pbxService.init(domain);
         return this.addressService.updateAddress(bitrix, address);
     }
 
-    /**
-     * Обновляет банк
-     */
-    async updateBank(
-        domain: string,
-        bank: Bank,
-    ): Promise<boolean | { bx_id: unknown }> {
+    /** Создать или обновить банк; вернёт id банка. */
+    async updateBank(domain: string, bank: Bank): Promise<number> {
         const { bitrix } = await this.pbxService.init(domain);
         return this.bankService.updateBank(bitrix, bank);
     }
 
     /**
-     * Применяет пресет к реквизиту
+     * Поля записи: служебные ключи заготовки (ID -1, адреса, банки, список
+     * пользовательских полей) в Bitrix не уходят.
      */
-    private applyPresetToRequisite(
-        bxRqs: BXRequisiteDTO,
-        PortalModel: PortalModel,
-    ): void {
-        const presetOrg = PortalModel.getPresetForName(PresetCode.ORG);
-        const presetIp = PortalModel.getPresetForName(PresetCode.IP);
-        const presetFiz = PortalModel.getPresetForName(PresetCode.FIZ);
-
-        if (bxRqs.NAME === 'Организация' && presetOrg) {
-            bxRqs.NAME = presetOrg.name;
-            bxRqs.PRESET_ID = presetOrg.bitrix_id;
-        } else if (bxRqs.NAME === 'ИП' && presetIp) {
-            bxRqs.NAME = presetIp.name;
-            bxRqs.PRESET_ID = presetIp.bitrix_id;
-        } else if (bxRqs.NAME === 'Физ. лицо' && presetFiz) {
-            bxRqs.NAME = presetFiz.name;
-            bxRqs.PRESET_ID = presetFiz.bitrix_id;
-        }
-    }
-
-    /**
-     * Подготавливает поля реквизита для отправки в Bitrix24
-     */
-    private prepareRequisiteFields(bxRqs: BXRequisiteDTO): Record<string, any> {
+    private prepareRequisiteFields(bxRqs: BXRequisiteDTO): Record<string, unknown> {
         const fields = filterRequisiteFields(bxRqs);
+        for (const key of ['ID', 'address', 'bank', 'customFields']) {
+            delete fields[key];
+        }
         return mergeCustomFields(fields, bxRqs.customFields ?? undefined);
-    }
-
-    /**
-     * Создает простой реквизит
-     */
-    private async createSimpleRq(
-        companyId: number,
-        domain: string,
-    ): Promise<any> {
-        const { bitrix } = await this.pbxService.init(domain);
-
-        const rq = new BXRequisiteDTO({
-            ID: -1,
-            ENTITY_ID: companyId,
-            ENTITY_TYPE_ID: 4,
-            PRESET_ID: 1,
-            NAME: 'Организация',
-        });
-
-        const fields = filterRequisiteFields(rq);
-
-        return await bitrix.api.call('crm.requisite.add', {
-            fields: fields,
-        });
-    }
-
-    /**
-     * Удаляет реквизит
-     */
-    private async deleteRq(rqId: number, domain: string): Promise<any> {
-        const { bitrix } = await this.pbxService.init(domain);
-
-        return await bitrix.api.call('crm.requisite.delete', {
-            id: rqId,
-        });
     }
 }

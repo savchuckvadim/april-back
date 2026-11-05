@@ -36,6 +36,12 @@ const makeDeps = (options: {
                     fieldName: `UF_CRM_128_${code}`,
                 })),
             ),
+            // Сверка отказов после цикла (по умолчанию — те же поля, что до).
+            getAll: jest.fn().mockResolvedValue(
+                (options.existingFieldCodes ?? []).map(code => ({
+                    fieldName: `UF_CRM_128_${code}`,
+                })),
+            ),
             add: jest.fn().mockResolvedValue({ result: {} }),
             update: jest.fn().mockResolvedValue({ result: {} }),
         },
@@ -377,6 +383,24 @@ describe('InstallCallReportSmartUseCase', () => {
         expect(result.fieldsFailedDetails?.[1].message).toContain(
             'не создавалось',
         );
+    });
+
+    // Прод gsirk 05.11.2026: «не удалось создать», а поле на портале есть.
+    it('отказ, а поле на портале есть — считается существующим, без причины', async () => {
+        const { useCase, bitrix } = makeDeps({ existingType: true });
+        const first = `UF_CRM_128_${CALL_REPORT_SMART_FIELDS[0].code}`;
+        bitrix.userFieldConfig.add
+            .mockRejectedValueOnce(
+                new Error('Поле с таким кодом уже существует'),
+            )
+            .mockResolvedValue({ result: {} });
+        bitrix.userFieldConfig.getAll.mockResolvedValue([{ fieldName: first }]);
+        const result = await useCase.execute(DOMAIN);
+
+        expect(result.fieldsFailed).toEqual([]);
+        expect(result.fieldsFailedDetails).toEqual([]);
+        expect(result.fieldsExisting).toContain(first);
+        expect(result.fieldLimitReached).toBe(false);
     });
 
     it('обрыв сети на одном поле — причина network, остальные ставятся', async () => {

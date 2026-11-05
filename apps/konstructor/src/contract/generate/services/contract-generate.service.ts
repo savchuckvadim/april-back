@@ -13,7 +13,9 @@ import {
     ProviderService,
     RqEntity,
 } from '@lib/portal-lib/konstructor/provider';
-// import { DocumentTotalRowService } from '../../../document-generate/product-rows/total-row.service';
+import { DocumentTotalRowService } from '../../../document-generate/product-rows/total-row.service';
+import { getWithTax } from '../../../document-generate/lib/get-with-tax.util';
+import { blank, BLANK } from '../../../document-generate/bx-client-rq/bx-client-rq.service';
 
 import { ContractGenerateTemplateProps } from '../type/contract-generate.type';
 import { DocumentInfoblockService } from '../../../document-generate/infoblocks/infoblock.service';
@@ -28,6 +30,13 @@ import { SupplyDto } from '@app/konstructor/dto';
 import { ContractTemplateSourceService } from './contract-template-source.service';
 import { ContractGenerateResult } from '../type/contract-generate.type';
 
+/**
+ * Тег шаблона без значения: простой плейсхолдер — прочерк под ручку («рыба»),
+ * цикл или raw-xml — пусто. Без этого docxtemplater печатает «undefined».
+ */
+const nullAsBlank = (part: { module?: string | null; type?: string }): string =>
+    part.type === 'placeholder' && !part.module ? BLANK : '';
+
 @Injectable()
 export class ContractGenerateService {
     private readonly baseUrl: string;
@@ -39,7 +48,6 @@ export class ContractGenerateService {
         private readonly configService: ConfigService,
         private readonly providerService: ProviderService,
 
-        // private readonly totalRowService: DocumentTotalRowService,
         private readonly documentInfoblockService: DocumentInfoblockService,
 
         private readonly documentProductRowService: DocumentProductRowService,
@@ -48,6 +56,7 @@ export class ContractGenerateService {
         private readonly rqService: ContractRqService,
         private readonly specificationService: ContractSpecificationService,
         private readonly templateSource: ContractTemplateSourceService,
+        private readonly totalRowService: DocumentTotalRowService,
     ) {
         dayjs.extend(localizedFormat);
         this.currentYear = dayjs().format('YYYY');
@@ -120,6 +129,7 @@ export class ContractGenerateService {
         return new Docxtemplater(zip, {
             paragraphLoop: true,
             linebreaks: true,
+            nullGetter: nullAsBlank,
         });
     }
     private async saveDoc(
@@ -188,10 +198,20 @@ export class ContractGenerateService {
         dto: ContractGenerateDto,
         provider: RqEntity,
     ): ContractGenerateTemplateProps {
-        // const recipientData = this.getRecipientData(dto.recipient);
         const contractData = this.getContractData(dto.contract);
-        // const supplyData = this.getSupplyData(dto.supply);
-        // const totalData = this.totalRowService.getContractData(dto.total, this.clientType);
+        // итоги и строка товара — по главной строке (total), как в легаси PHP
+        const totals = this.totalRowService.getContractData(
+            dto.total,
+            dto.clientType,
+            getWithTax(provider, dto.contractType),
+        );
+        const [mainProduct] = this.documentProductRowService.getProducts(
+            [dto.total],
+            contractData.contractName,
+            dto.contractType !== CONTRACT_LTYPE.SERVICE,
+            dto.contract.prepayment,
+            dto.clientType,
+        );
 
         const contractStart =
             (dto.contractStart && this.formatDocumentDate(dto.contractStart)) ||
@@ -272,14 +292,27 @@ export class ContractGenerateService {
             supply_comment_1: specificationData.supply_comment_1,
             logins_quantity: specificationData.logins_quantity,
             contract_pay_date:
-                dto.firstPayDate || '________________________________',
-            // productNumber: totalData.productNumber,
-            // productName: totalData.productName,
-            // productQuantity: totalData.productQuantity,
-            // productMeasure: totalData.productMeasure,
-            // productPrice: totalData.productPrice,
-            // productSum: totalData.productSum,
+                (dto.firstPayDate && this.formatDocumentDate(dto.firstPayDate)) ||
+                '________________________________',
+            // ответственный за справочник и email интернет-версии — поля сделки
+            client_assigned_fio: blank(dto.garantClientAssignedName, BLANK),
+            garant_client_email: blank(dto.garantClientEmail, BLANK),
+            // строка товара главной строки — шаблон печатает её вне цикла
+            productNumber: mainProduct ? String(mainProduct.productNumber) : '1',
+            productName: mainProduct?.productName ?? contractData.contractName,
+            productQuantity: mainProduct ? String(mainProduct.productQuantity) : BLANK,
+            productMeasure: mainProduct?.productMeasure ?? BLANK,
+            productPrice: mainProduct?.productPrice ?? BLANK,
+            productSum: mainProduct?.productSum ?? BLANK,
             products: products,
+            total_month_sum: totals.total_month_sum,
+            total_month_sum_string: totals.total_month_sum_string,
+            // всего месяцев действия договора (количество × длительность)
+            total_quantity: String(totals.total_month_quantity),
+            total_measure: totals.total_measure,
+            total_prepayment_sum: totals.total_prepayment_sum,
+            total_prepayment_sum_string: totals.total_prepayment_sum_string,
+            total_prepayment_quantity_string: totals.total_prepayment_quantity_string,
             // ...providerData,
             // // ...recipientData,
             // ...contractData,

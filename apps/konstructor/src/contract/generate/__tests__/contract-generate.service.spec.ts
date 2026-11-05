@@ -27,6 +27,16 @@ const TEMPLATE_PATH =
 const APP_URL = 'https://api.konstructor.april-app.ru';
 const ROOT_LINK = '/api/files/abc123';
 
+const totals = {
+    total_month_sum: '8 187,00',
+    total_month_sum_string: '(восемь тысяч сто восемьдесят семь рублей)',
+    total_month_quantity: 12,
+    total_measure: 'мес.',
+    total_prepayment_sum: '8 187,00',
+    total_prepayment_sum_string: '(восемь тысяч сто восемьдесят семь рублей)',
+    total_prepayment_quantity_string: '12 месяцев',
+};
+
 const dto = (): ContractGenerateDto =>
     ({
         domain: 'gsr.bitrix24.ru',
@@ -35,6 +45,7 @@ const dto = (): ContractGenerateDto =>
         contractType: CONTRACT_LTYPE.ABON,
         clientType: ClientTypeEnum.ORG,
         contractNumber: '77',
+        garantClientAssignedName: '',
         contract: { contract: { name: 'Абонентский' }, prepayment: 1 },
         total: { shortName: 'abonYear', name: 'Комплект' },
         rows: [],
@@ -83,6 +94,7 @@ describe('ContractGenerateService', () => {
             { getRqs: jest.fn().mockReturnValue({}) } as never,
             { getSpecification: jest.fn().mockReturnValue({}) } as never,
             { resolve: resolveTemplate } as never,
+            { getContractData: jest.fn().mockReturnValue(totals) } as never,
         );
     });
 
@@ -109,6 +121,26 @@ describe('ContractGenerateService', () => {
         expect(result.data).toBeDefined();
         expect(result.provider).toEqual({ id: 12, name: 'ООО Гарант' });
         expect(result.documentName).toContain('Договор');
+    });
+
+    it('«рыба»: итоги и товар из главной строки, пустые поля сделки — прочерками, теги без значения — прочерк', async () => {
+        const DocxtemplaterMock = (await import('docxtemplater')).default as unknown as jest.Mock;
+        const result = await service.generateContract(dto());
+
+        expect(result.data.total_quantity).toBe('12');
+        expect(result.data.total_prepayment_quantity_string).toBe('12 месяцев');
+        expect(result.data.client_assigned_fio).toMatch(/^_+$/);
+        expect(result.data.garant_client_email).toMatch(/^_+$/);
+        expect(result.data.contract_start).toMatch(/^_+$/);
+        // шаблон печатает товар вне цикла: без строк — прочерки, а не undefined
+        expect(result.data.productQuantity).toMatch(/^_+$/);
+        expect(JSON.stringify(result.data)).not.toContain('undefined');
+
+        const options = DocxtemplaterMock.mock.calls[0][1] as {
+            nullGetter: (part: { type?: string; module?: string | null }) => string;
+        };
+        expect(options.nullGetter({ type: 'placeholder', module: null })).toMatch(/^_+$/);
+        expect(options.nullGetter({ type: 'placeholder', module: 'loop' })).toBe('');
     });
 
     it('без поставщика документ не собирается', async () => {

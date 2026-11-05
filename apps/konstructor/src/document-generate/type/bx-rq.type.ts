@@ -87,6 +87,8 @@ export enum RQ_ITEM_CODE {
     DOCUMENT_NUMBER = 'docNum',
     ISSUED_BY = 'issued_by',
     DEPARTMENT_CODE = 'dep_code',
+    /** «Дополнительные реквизиты» — пользовательское поле rq-lib (base_other); без него DTO не проходил валидацию */
+    BASE_OTHER = 'base_other',
 }
 export enum ADDRESS_RQ_ITEM_CODE {
     ADDRESS_COUNTRY = 'address_country',

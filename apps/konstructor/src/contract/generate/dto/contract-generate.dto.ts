@@ -214,11 +214,17 @@ export class ContractGenerateDto {
     @IsEnum(ClientTypeEnum)
     clientType: ClientTypeEnum;
 
-    @ApiProperty({ description: 'BxRQ of the contract', type: BxRqDto })
+    @ApiProperty({
+        description:
+            'Реквизит клиента; без него договор печатается «рыбой» с прочерками',
+        type: BxRqDto,
+        required: false,
+    })
+    @IsOptional()
     @IsObject()
     @ValidateNested()
     @Type(() => BxRqDto)
-    bxrq: BxRqDto;
+    bxrq?: BxRqDto;
 
     @ApiProperty({
         description: 'Contract specification state of the contract',

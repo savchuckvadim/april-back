@@ -78,7 +78,7 @@ export class ERQItem {
         this.fields = data?.fields || [];
         this.address = data?.address ?? null;
         this.bank = data?.bank ?? null;
-        this.preset_id = data?.preset_id ?? 1;
+        this.preset_id = data?.preset_id ?? null;
         this.type = data?.type ?? RQ_TYPE.ORGANIZATION;
     }
 }

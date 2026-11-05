@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { BitrixService } from '@/modules/bitrix/bitrix.service';
 import { IBitrixBatchResponseResult } from '@/modules/bitrix/core/interface/bitrix-api-http.intterface';
 import { Bank } from '../../../types/bx-bank.type';
+import { ErrorMessage } from '../../../enums/error-message.enum';
 
 import {
     filterBankFields,
@@ -17,6 +18,7 @@ import {
 interface BxBankMutationResponse {
     result?: unknown;
     error?: string;
+    error_description?: string;
 }
 
 /**
@@ -66,12 +68,9 @@ export class BxRqBankService {
     }
 
     /**
-     * Обновляет или создает банк в Bitrix24
+     * Создаёт или обновляет банк; возвращает id банка в Bitrix.
      */
-    async updateBank(
-        bitrix: BitrixService,
-        bank: Bank,
-    ): Promise<boolean | { bx_id: unknown }> {
+    async updateBank(bitrix: BitrixService, bank: Bank): Promise<number> {
         const preparedBank = prepareBankForSave(bank);
         const updateBank = filterBankFields(preparedBank);
 
@@ -83,20 +82,29 @@ export class BxRqBankService {
                 },
             )) as BxBankMutationResponse;
             if (result?.error) {
-                return false;
+                throw new BadRequestException(
+                    result.error_description || result.error,
+                );
             }
-            return {
-                bx_id: (result?.result as unknown[] | undefined)?.[0],
-            };
-        } else {
-            const result = (await bitrix.api.call(
-                'crm.requisite.bankdetail.update',
-                {
-                    id: preparedBank.ID,
-                    fields: updateBank,
-                },
-            )) as BxBankMutationResponse;
-            return !result?.error;
+            const bankId = Number(result?.result);
+            if (!bankId) {
+                throw new BadRequestException(ErrorMessage.BANK_NOT_CREATED);
+            }
+            return bankId;
         }
+
+        const result = (await bitrix.api.call(
+            'crm.requisite.bankdetail.update',
+            {
+                id: preparedBank.ID,
+                fields: updateBank,
+            },
+        )) as BxBankMutationResponse;
+        if (result?.error) {
+            throw new BadRequestException(
+                result.error_description || result.error,
+            );
+        }
+        return Number(preparedBank.ID);
     }
 }

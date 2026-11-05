@@ -29,6 +29,7 @@ import {
     classifyInstallFieldError,
     fieldLimitSummary,
     LIMIT_SKIPPED_MESSAGE,
+    reconcileFailedFields,
     type InstallFieldFailure,
 } from './install-field-failure.util';
 
@@ -374,25 +375,68 @@ export class InstallCallReportSmartUseCase {
                 });
                 if (failure.reason === 'field_limit') {
                     fieldLimitReached = true;
-                    continue;
                 }
-                this.logger.error(
-                    `Поле ${fieldName} не установлено: ${failure.message}`,
-                );
             }
         }
-        if (fieldLimitReached) {
-            this.logger.warn(fieldLimitSummary(domain, fieldsFailedDetails));
+
+        // Отказ сверяется с порталом: поле могла создать параллельная
+        // установка, или Битрикс создал его, а ответ потерялся (gsirk 05.11).
+        const outcome = fieldsFailed.length
+            ? reconcileFailedFields(
+                  { fieldsExisting, fieldsFailed, fieldsFailedDetails },
+                  await this.presentFieldNames(bitrix, typeId),
+              )
+            : {
+                  fieldsExisting,
+                  fieldsFailed,
+                  fieldsFailedDetails,
+                  fieldLimitReached,
+                  recovered: [],
+              };
+        if (outcome.recovered.length) {
+            this.logger.warn(
+                `Поля ${outcome.recovered.join(', ')} на ${domain} есть, хотя создание вернуло ошибку: ` +
+                    'параллельная установка или потерянный ответ Битрикса',
+            );
+        }
+        for (const failure of outcome.fieldsFailedDetails) {
+            if (failure.reason === 'field_limit') continue;
+            this.logger.error(
+                `Поле ${failure.fieldName} не установлено: ${failure.message}`,
+            );
+        }
+        if (outcome.fieldLimitReached) {
+            this.logger.warn(
+                fieldLimitSummary(domain, outcome.fieldsFailedDetails),
+            );
         }
 
         return {
             fieldsAdded,
-            fieldsExisting,
-            fieldsFailed,
+            fieldsExisting: outcome.fieldsExisting,
+            fieldsFailed: outcome.fieldsFailed,
             enumItemsAdded,
-            fieldLimitReached,
-            fieldsFailedDetails,
+            fieldLimitReached: outcome.fieldLimitReached,
+            fieldsFailedDetails: outcome.fieldsFailedDetails,
         };
+    }
+
+    /** Имена полей смарта на портале сейчас; сбой чтения — пустой набор (сверка пропускается). */
+    private async presentFieldNames(
+        bitrix: Awaited<ReturnType<PBXService['init']>>['bitrix'],
+        typeId: number,
+    ): Promise<Set<string>> {
+        try {
+            const fields = await bitrix.userFieldConfig.getAll('crm', {
+                entityId: `CRM_${typeId}`,
+            });
+            return new Set(fields.map(field => field.fieldName));
+        } catch (error) {
+            this.logger.warn(
+                `Сверка полей после установки пропущена: ${(error as Error).message}`,
+            );
+            return new Set();
+        }
     }
 
     /**

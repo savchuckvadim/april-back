@@ -1,16 +1,16 @@
-import { PresetId } from '@lib/rq-lib/enums/preset-id.enum';
-
+import { BitrixOwnerTypeId } from '@/modules/bitrix/domain/enums/bitrix-constants.enum';
 import { PresetConfig } from '../consts/preset.consts';
 import { BXRequisiteDTO } from '@lib/rq-lib/types/bx-requisite-dto.type';
 import { CustomField } from '@lib/rq-lib/types/bx-custom-field.type';
 import { NameUtil, WordUtil } from '@lib/shared';
+import type { RqPreset, RqPresetSet } from '../../rq-preset.service';
+import { isPreset } from './preset.utils';
+
+/** Id заготовки реквизита: ещё не создан в Bitrix. */
+export const TEMPLATE_RQ_ID = -1;
 
 /**
- * Утилиты для работы с реквизитами
- */
-
-/**
- * Фильтрует поля реквизита, убирая пустые значения
+ * Поля реквизита для записи в Bitrix: без пустых значений.
  */
 export const filterRequisiteFields = (
     requisite: BXRequisiteDTO,
@@ -25,7 +25,7 @@ export const filterRequisiteFields = (
 };
 
 /**
- * Добавляет поля из customFields в объект полей
+ * Значения пользовательских полей (UF_CRM_*) к полям записи.
  */
 export const mergeCustomFields = (
     fields: Record<string, unknown>,
@@ -42,7 +42,7 @@ export const mergeCustomFields = (
 };
 
 /**
- * Применяет значения customFields к реквизиту
+ * Пользовательские поля по XML_ID → именованные атрибуты реквизита.
  */
 export const applyCustomFieldsToRequisite = (
     requisite: BXRequisiteDTO,
@@ -79,7 +79,7 @@ export const applyCustomFieldsToRequisite = (
 };
 
 /**
- * Устанавливает имя реквизита, если оно отсутствует
+ * Имя реквизита по ФИО, если Bitrix его не хранит.
  */
 export const setRequisiteNameIfEmpty = (requisite: BXRequisiteDTO): void => {
     if (!requisite.NAME) {
@@ -95,13 +95,13 @@ export const setRequisiteNameIfEmpty = (requisite: BXRequisiteDTO): void => {
 };
 
 /**
- * Обрабатывает реквизит организации
+ * Организация: падежи директора и должности, краткое имя из полного.
  */
 export const processOrganizationRequisite = (
     requisite: BXRequisiteDTO,
     preset: PresetConfig,
 ): void => {
-    if (requisite.PRESET_ID !== preset.org) return;
+    if (!isPreset(requisite.PRESET_ID, preset.org)) return;
 
     if (requisite.RQ_DIRECTOR && !requisite.RQ_DIRECTOR_CASE?.trim()) {
         requisite.RQ_DIRECTOR_CASE = NameUtil.declineWord(
@@ -121,100 +121,54 @@ export const processOrganizationRequisite = (
 };
 
 /**
- * Обрабатывает реквизит физического лица
+ * Физлицо: ФИО одной строкой.
  */
 export const processPhysicalPersonRequisite = (
     requisite: BXRequisiteDTO,
     preset: PresetConfig,
 ): void => {
-    if (requisite.PRESET_ID !== preset.fiz) return;
+    if (!isPreset(requisite.PRESET_ID, preset.fiz)) return;
 
     if (!requisite.RQ_NAME) {
-        try {
-            requisite.RQ_NAME =
-                (requisite.RQ_LAST_NAME + ' ' || '') +
-                (requisite.RQ_FIRST_NAME + ' ' || '') +
-                (requisite.RQ_SECOND_NAME + ' ' || '');
-        } catch {
-            // Ignore
-        }
+        requisite.RQ_NAME = [
+            requisite.RQ_LAST_NAME,
+            requisite.RQ_FIRST_NAME,
+            requisite.RQ_SECOND_NAME,
+        ]
+            .filter(Boolean)
+            .join(' ')
+            .trim();
     }
 };
 
 /**
- * Обрабатывает реквизит без пресета
+ * Заготовка реквизита типа: id -1, пресет и имя пресета портала, владелец —
+ * компания. В Bitrix не пишется, пока менеджер не сохранит поля.
  */
-export const processRequisiteWithoutPreset = (
-    requisite: BXRequisiteDTO,
-): void => {
-    if (!requisite.RQ_DIRECTOR_CASE) {
-        // TODO: Implement decline_word function
-        // requisite.RQ_DIRECTOR_CASE = `${declineWord(requisite.RQ_LAST_NAME)} ${declineWord(requisite.RQ_FIRST_NAME)} ${declineWord(requisite.RQ_SECOND_NAME)}`;
-    }
-};
-
-/**
- * Проверяет наличие реквизита с указанным PRESET_ID
- */
-export const hasRequisiteWithPresetId = (
-    requisites: BXRequisiteDTO[],
-    presetId: number,
-): boolean => {
-    return requisites.some(item => item.PRESET_ID === presetId);
-};
-
-/**
- * Создает пустой реквизит с указанным PRESET_ID
- */
-export const createEmptyRequisite = (
+export const createTemplateRequisite = (
     companyId: number,
-    presetId: number,
-): BXRequisiteDTO => {
-    return new BXRequisiteDTO({
-        ID: -1,
+    preset: RqPreset,
+): BXRequisiteDTO =>
+    new BXRequisiteDTO({
+        ID: TEMPLATE_RQ_ID,
         ENTITY_ID: companyId,
-        ENTITY_TYPE_ID: 4,
-        PRESET_ID: presetId,
+        ENTITY_TYPE_ID: BitrixOwnerTypeId.COMPANY,
+        PRESET_ID: preset.id,
+        NAME: preset.name,
     });
-};
 
 /**
- * Добавляет недостающие пресеты реквизитов
+ * По заготовке на каждый тип клиента, независимо от того, есть ли у компании
+ * реквизиты этого типа: из неё создаётся новый реквизит.
  */
-export const addMissingPresets = (
+export const addTemplates = (
     requisites: BXRequisiteDTO[],
     companyId: number,
-    preset: PresetConfig,
+    presets: RqPresetSet,
 ): void => {
-    try {
-        if (!hasRequisiteWithPresetId(requisites, preset.org)) {
-            requisites.push(createEmptyRequisite(companyId, preset.org));
-        }
-        if (!hasRequisiteWithPresetId(requisites, preset.ip)) {
-            requisites.push(createEmptyRequisite(companyId, preset.ip));
-        }
-        if (!hasRequisiteWithPresetId(requisites, preset.fiz)) {
-            requisites.push(createEmptyRequisite(companyId, preset.fiz));
-        }
-    } catch {
-        // Ignore
-    }
-};
-
-/**
- * Обновляет PRESET_ID реквизитов на основе пресетов
- */
-export const updatePresetIds = (
-    requisites: BXRequisiteDTO[],
-    preset: PresetConfig,
-): void => {
-    for (const rq of requisites) {
-        if (rq.PRESET_ID === PresetId.ORG) {
-            rq.PRESET_ID = preset.org;
-        } else if (rq.PRESET_ID === PresetId.IP) {
-            rq.PRESET_ID = preset.ip;
-        } else if (rq.PRESET_ID === PresetId.FIZ) {
-            rq.PRESET_ID = preset.fiz;
-        }
-    }
+    requisites.push(
+        createTemplateRequisite(companyId, presets.org),
+        createTemplateRequisite(companyId, presets.ip),
+        createTemplateRequisite(companyId, presets.fiz),
+    );
 };

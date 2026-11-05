@@ -1,65 +1,64 @@
 import { Injectable } from '@nestjs/common';
 import { InitSupplyDto } from '../../../dto/init-supply.dto';
 import { ContractSpecificationCodeEnum } from '@app/konstructor/document-generate/dto/specification/specification.dto';
+import { readLtPaidPackets } from '@app/konstructor/document-generate/lib/specification-lt.util';
 import {
     RpaCommentHelper,
     RpaIconEnum,
 } from '../lib/rpa-comment-helper.service';
 
+const servicesOf = (value: unknown): string[] =>
+    (typeof value === 'string' ? value : '')
+        .split('\n')
+        .map(item => item.trim())
+        .filter(Boolean);
+
+/**
+ * Legal Tech в комментарии заявки: бесплатная часть комплекта и каждый
+ * платный пакет отдельной строкой со своим составом.
+ */
 @Injectable()
 export class InfoblockLtService {
     getLtComment(dto: InitSupplyDto): string {
-        const freeLtComment = this.getLt(dto, 'free');
-        const paidLtComment = this.getLt(dto, 'paid');
-        let result = '';
-        if (freeLtComment) {
-            result += freeLtComment;
-        }
-        if (paidLtComment) {
-            result += paidLtComment;
-        }
-        return result;
+        return this.getFreeLt(dto) + this.getPaidLt(dto);
     }
 
-    getLt(dto: InitSupplyDto, type: 'free' | 'paid'): string {
-        const isFree = type === 'free';
-        const packetLt = dto.contractSpecificationState.items.find(item =>
-            isFree
-                ? item.code === ContractSpecificationCodeEnum.LT_FREE
-                : item.code === ContractSpecificationCodeEnum.LT_PACKET,
+    private getFreeLt(dto: InitSupplyDto): string {
+        const items = dto.contractSpecificationState.items;
+        const packet = items.find(
+            item => item.code === ContractSpecificationCodeEnum.LT_FREE,
         );
-        const packetLtValue = packetLt?.value as string;
-        if (packetLtValue) {
-            // const packetLtList = packetLtValue.split('\n').map(item => item.trim()).filter(item => item !== '')
-            // const packetLtString = RpaCommentHelper.getList(packetLtList)
-            const packetLtComment = RpaCommentHelper.getHeaderWithIcon(
-                RpaIconEnum.INFOBLOCK,
-                isFree ? 'Бесплатный LegalTech: ' : 'Платный LegalTech: ',
-            );
-
-            const servicesData = dto.contractSpecificationState.items.find(
+        const name = typeof packet?.value === 'string' ? packet.value.trim() : '';
+        if (!name) return '';
+        const services = servicesOf(
+            items.find(
                 item =>
-                    isFree
-                        ? item.code ===
-                          ContractSpecificationCodeEnum.LT_FREE_SERVICES
-                        : item.code ===
-                          ContractSpecificationCodeEnum.LT_SERVICES,
-            );
-            const servicesDataValue = servicesData?.value as string;
-            const servicesList = servicesDataValue
-                .split('\n')
-                .map(item => item.trim())
-                .filter(item => item !== '');
+                    item.code === ContractSpecificationCodeEnum.LT_FREE_SERVICES,
+            )?.value,
+        );
+        const header = RpaCommentHelper.getHeaderWithIcon(
+            RpaIconEnum.INFOBLOCK,
+            'Бесплатный LegalTech: ',
+        );
+        const list = RpaCommentHelper.getListWithBold([
+            { head: name, value: RpaCommentHelper.getList(services) },
+        ]);
+        return `${header} ${list}`;
+    }
 
-            const ltComment = RpaCommentHelper.getListWithBold([
-                {
-                    head: packetLtValue,
-                    value: RpaCommentHelper.getList(servicesList),
-                },
-            ]);
-
-            return `${packetLtComment} ${ltComment}`;
-        }
-        return '';
+    private getPaidLt(dto: InitSupplyDto): string {
+        const packets = readLtPaidPackets(dto.contractSpecificationState.items);
+        if (!packets.length) return '';
+        const header = RpaCommentHelper.getHeaderWithIcon(
+            RpaIconEnum.INFOBLOCK,
+            'Платный LegalTech: ',
+        );
+        const list = RpaCommentHelper.getListWithBold(
+            packets.map(packet => ({
+                head: packet.name,
+                value: RpaCommentHelper.getList(packet.services),
+            })),
+        );
+        return `${header} ${list}`;
     }
 }

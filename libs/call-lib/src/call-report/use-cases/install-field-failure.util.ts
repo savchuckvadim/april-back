@@ -118,3 +118,53 @@ export function fieldLimitSummary(
         'удалите неиспользуемые поля в самом смарте и повторите установку.'
     );
 }
+
+/** Часть итога установки полей, которую сверяет {@link reconcileFailedFields}. */
+export interface InstallFieldsFailures {
+    fieldsExisting: readonly string[];
+    fieldsFailed: readonly string[];
+    fieldsFailedDetails: readonly InstallFieldFailure[];
+}
+
+/** Итог сверки: отказы без полей, которые на деле есть на портале. */
+export interface ReconciledInstallFields {
+    fieldsExisting: string[];
+    fieldsFailed: string[];
+    fieldsFailedDetails: InstallFieldFailure[];
+    fieldLimitReached: boolean;
+    /** Поля из отказов, которые на деле есть на портале. */
+    recovered: string[];
+}
+
+/**
+ * Сверка отказов с тем, что реально есть на портале после цикла установки.
+ *
+ * Прод gsirk 05.11.2026: окно установки показало шесть полей «не удалось
+ * создать», а через несколько минут все 112 полей были на портале. Так
+ * бывает, когда вторая установка идёт параллельно первой (повторное
+ * нажатие, пока первая ещё доливает поля) или когда Битрикс создал поле,
+ * а ответ потерялся. Поле, которое есть на портале, — не отказ: оно уходит
+ * в «уже существовали», а его причина снимается.
+ */
+export function reconcileFailedFields(
+    outcome: InstallFieldsFailures,
+    presentNames: ReadonlySet<string>,
+): ReconciledInstallFields {
+    const recovered = outcome.fieldsFailed.filter(name =>
+        presentNames.has(name),
+    );
+    const fieldsFailedDetails = outcome.fieldsFailedDetails.filter(
+        failure => !presentNames.has(failure.fieldName),
+    );
+    return {
+        fieldsExisting: [...outcome.fieldsExisting, ...recovered],
+        fieldsFailed: outcome.fieldsFailed.filter(
+            name => !presentNames.has(name),
+        ),
+        fieldsFailedDetails,
+        fieldLimitReached: fieldsFailedDetails.some(
+            failure => failure.reason === 'field_limit',
+        ),
+        recovered,
+    };
+}

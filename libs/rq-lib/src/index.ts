@@ -1,7 +1,8 @@
 export * from './rq.module';
 export * from './rq.controller';
 // export * from './services/event-task.service';
-export * from './services/requisite.service';
+export * from './services/rq-preset.service';
+export * from './services/BxRqService';
 
 export * from './dto/type-task.enum';
 export * from './dto/includes.enum';
