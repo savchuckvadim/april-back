@@ -13,7 +13,6 @@ import { AppCacheService } from '@lib/app-cache';
 import {
     AI_ANALYTICS_SNAPSHOT_TYPE,
     previousPeriod,
-    previousWorkday,
     toPortalDate,
     type BriefPeriod,
 } from '@lib/sales-ai-analytics';
@@ -86,7 +85,7 @@ export class EvidencePackSourceReader {
             months,
             forecasts,
         ] = await Promise.all([
-            this.readPulse(domain, previousWorkday(today, calendar)),
+            this.readPulse(domain, today),
             this.overviews.read(domain, { from, to }, managerIds),
             this.overviews.read(domain, prev, managerIds),
             this.readAgenda(domain, today),
@@ -119,12 +118,12 @@ export class EvidencePackSourceReader {
         };
     }
 
-    /** Кэш пульса за последний рабочий день портала (ключ ручки pulse). */
+    /** Кэш пульса, посчитанного сегодня (ключ ручки pulse — день запроса). */
     private readPulse(
         domain: string,
-        endDate: string,
+        today: string,
     ): Promise<AiPulseDto | null> {
-        return this.cache.getJson<AiPulseDto>(buildPulseKey(domain, endDate));
+        return this.cache.getJson<AiPulseDto>(buildPulseKey(domain, today));
     }
 
     /**

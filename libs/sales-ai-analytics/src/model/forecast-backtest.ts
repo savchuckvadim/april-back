@@ -37,6 +37,7 @@ import type {
     ForecastPitBin,
 } from './forecast-backtest.types';
 import { AI_FORECAST_PIT_BINS } from './forecast-backtest.types';
+import { rollingCalibration } from './forecast-calibration';
 import { mulberry32 } from './prng';
 import { AI_ANALYTICS_THRESHOLDS } from './thresholds.const';
 import { wilsonInterval } from './wilson';
@@ -55,6 +56,13 @@ export const FORECAST_BACKTEST_DEFAULTS = {
     bootstrapDraws: 500,
     /** Длина блока месяцев — константа процедуры (квартал). */
     blockMonths: 3,
+    /**
+     * С этой длины истории выигрыш у «среднего за 3 месяца» нужен с
+     * уверенностью (верх CI90 бутстрапа ниже порога); раньше хватает
+     * точечной оценки: по году бутстрап по месяцам слишком широк (решение
+     * владельца 05.11.2026). У «по темпу» уверенность нужна всегда.
+     */
+    strictMean3Months: 24,
 } as const;
 
 const finite = (value: number): number => (Number.isFinite(value) ? value : 0);
@@ -167,16 +175,21 @@ export function backtestForecast(
     const months = orderedMonths(input.months);
     const days = months.flatMap(originDaysOf);
     const sums = errorSums(days);
-    const covered = days.filter(
+    // Покрытие — по вилке, которую увидел бы руководитель: с калибровкой
+    // по прошлым месяцам; месяцев для неё мало — по вилке модели.
+    const rolling = rollingCalibration(months, level);
+    const calibrated = input.calibrate === true && rolling.days.length > 0;
+    const bandDays = calibrated ? rolling.days : days;
+    const covered = bandDays.filter(
         day => day.low <= day.actual && day.actual <= day.high,
     ).length;
-    const ci90 = wilsonInterval(covered, days.length, z);
+    const ci90 = wilsonInterval(covered, bandDays.length, z);
     const tail = (1 - level) / 2;
     const pinballLow = mean(
-        days.map(day => pinballLoss(day.actual, day.low, tail)),
+        bandDays.map(day => pinballLoss(day.actual, day.low, tail)),
     );
     const pinballHigh = mean(
-        days.map(day => pinballLoss(day.actual, day.high, 1 - tail)),
+        bandDays.map(day => pinballLoss(day.actual, day.high, 1 - tail)),
     );
     const enough = months.length >= minMonths && days.length > 0;
     const boot =
@@ -201,8 +214,13 @@ export function backtestForecast(
     else if (days.length === 0) reasons.push('no-days');
     if (enough) {
         if (ci90[1] < target) reasons.push('coverage-below');
+        const strictMean3 =
+            months.length >= FORECAST_BACKTEST_DEFAULTS.strictMean3Months;
         for (const reference of ['naive', 'mean3'] as const) {
-            const upper = upperBoundOf(mase[reference]);
+            const upper =
+                reference === 'mean3' && !strictMean3
+                    ? mase[reference].value
+                    : upperBoundOf(mase[reference]);
             if (upper === null) {
                 reasons.push('mase-undefined');
             } else if (upper >= maseMax) {
@@ -218,6 +236,7 @@ export function backtestForecast(
           ? 'pass'
           : 'fail';
     const total = Math.max(1, days.length);
+    const bandTotal = Math.max(1, bandDays.length);
 
     return {
         status,
@@ -226,9 +245,9 @@ export function backtestForecast(
         days: days.length,
         level,
         coverage: {
-            share: days.length === 0 ? 0 : covered / total,
+            share: bandDays.length === 0 ? 0 : covered / bandTotal,
             covered,
-            days: days.length,
+            days: bandDays.length,
             ci90,
             target,
         },
@@ -243,6 +262,8 @@ export function backtestForecast(
             high: pinballHigh,
             mean: (pinballLow + pinballHigh) / 2,
         },
-        pit: pitOf(days, level),
+        pit: pitOf(bandDays, level),
+        calibration: rolling.latest,
+        calibratedMonths: calibrated ? rolling.months : 0,
     };
 }

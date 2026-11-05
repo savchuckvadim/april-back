@@ -170,6 +170,8 @@ export function forecastBacktest(
         },
         pinball: { low: 0.4, high: 0.5, mean: 0.45 },
         pit: { belowP50Share: 0.5, bins: [] },
+        calibration: null,
+        calibratedMonths: 0,
         ...over,
     };
 }

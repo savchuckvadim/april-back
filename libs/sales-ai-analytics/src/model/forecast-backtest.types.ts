@@ -3,6 +3,8 @@
  * «калибровочный контур»; Фаза 4, поток `p4-forecast-model`).
  */
 
+import type { ForecastCalibration } from './forecast-calibration';
+
 /** Статус гейта L4. */
 export const AI_FORECAST_BACKTEST_STATUSES = [
     'pass',
@@ -88,6 +90,11 @@ export interface ForecastBacktestInput {
     readonly blockMonths?: number;
     /** Квантиль интервалов (Уилсон, бутстрап); по умолчанию `z_compare`. */
     readonly z?: number;
+    /**
+     * Покрытие, pinball и PIT считать по вилке, откалиброванной по истории
+     * (rollingCalibration, без подглядывания). Нет — по вилке модели.
+     */
+    readonly calibrate?: boolean;
 }
 
 /** Покрытие вилки по дням. */
@@ -160,4 +167,11 @@ export interface ForecastBacktest {
     };
     readonly pinball: ForecastPinball;
     readonly pit: ForecastPit;
+    /**
+     * Калибровка вилки по всем месяцам — витрина расширяет ею живую вилку;
+     * null — месяцев меньше минимума калибровки.
+     */
+    readonly calibration: ForecastCalibration | null;
+    /** Месяцев, по дням которых считалось покрытие откалиброванной вилки; 0 — не калибровали. */
+    readonly calibratedMonths: number;
 }

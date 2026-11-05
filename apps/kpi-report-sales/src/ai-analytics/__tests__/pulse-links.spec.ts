@@ -3,6 +3,10 @@ import { withPulseAlertLinks } from '../domain/presenter/pulse.presenter';
 import { PulseUseCase } from '../domain/use-cases/pulse.use-case';
 import type { AiAnalyticsFeedbackStore } from '../store/ai-analytics-feedback.store';
 import {
+    calendarLoaderWith,
+    telephonyWith,
+} from './fixtures/pulse-deps.fixture';
+import {
     callsLoaderWith,
     liteRow,
     provenRisk,
@@ -60,6 +64,8 @@ describe('PulseUseCase: ссылки сигналов на карточки ра
             settingsLoaderWith(),
             emptyFeedback(),
             links.loader,
+            calendarLoaderWith().loader,
+            telephonyWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -80,6 +86,8 @@ describe('PulseUseCase: ссылки сигналов на карточки ра
             settingsLoaderWith(),
             emptyFeedback(),
             links.loader,
+            calendarLoaderWith().loader,
+            telephonyWith().loader,
         );
 
         await useCase.execute('d', { now: NOW });
@@ -99,6 +107,8 @@ describe('PulseUseCase: ссылки сигналов на карточки ра
             settingsLoaderWith(),
             emptyFeedback(),
             links.loader,
+            calendarLoaderWith().loader,
+            telephonyWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -116,6 +126,8 @@ describe('PulseUseCase: ссылки сигналов на карточки ра
             settingsLoaderWith(),
             emptyFeedback(),
             smartLinksFailing('ais недоступен').loader,
+            calendarLoaderWith().loader,
+            telephonyWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });

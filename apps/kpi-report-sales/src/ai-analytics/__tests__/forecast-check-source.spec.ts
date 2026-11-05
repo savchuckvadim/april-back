@@ -33,6 +33,7 @@ const sources = (over: Partial<ForecastSources> = {}): ForecastSources => ({
         shadowMonths: 10,
         shadowMinMonths: 9,
         numbers: null,
+        calibration: null,
     },
     stageEnabled: true,
     shadowMinMonths: 9,

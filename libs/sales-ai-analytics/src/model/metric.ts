@@ -47,10 +47,17 @@ export interface MetricValue {
 /**
  * Доверие по объёму: n < scoreNone → none; до порога ok → low; иначе ok.
  * Порог ok: для оценок scoreLow (20), для долей rateOk (30).
+ * noneBelow — свой порог «мало данных» вызывающего (строка менеджера в
+ * пульсе со своим порогом портала); не задан — общий scoreNone.
  */
-export function confidenceFor(n: number, kind: MetricKind): MetricConfidence {
+export function confidenceFor(
+    n: number,
+    kind: MetricKind,
+    noneBelow?: number,
+): MetricConfidence {
     const { scoreNone, scoreLow, rateOk } = AI_ANALYTICS_THRESHOLDS;
-    if (!Number.isFinite(n) || n < scoreNone) {
+    const minN = noneBelow ?? scoreNone;
+    if (!Number.isFinite(n) || n < minN) {
         return {
             level: 'none',
             reason: METRIC_CONFIDENCE_REASONS.notEnoughData,
@@ -65,10 +72,15 @@ export function confidenceFor(n: number, kind: MetricKind): MetricConfidence {
 
 /**
  * Доля successes/n (0..1) с интервалом Уилсона z = 1,645.
- * При confidence none value = null и интервал не отдаётся.
+ * При confidence none value = null и интервал не отдаётся; noneBelow — см.
+ * confidenceFor.
  */
-export function rateMetric(successes: number, n: number): MetricValue {
-    const confidence = confidenceFor(n, 'rate');
+export function rateMetric(
+    successes: number,
+    n: number,
+    noneBelow?: number,
+): MetricValue {
+    const confidence = confidenceFor(n, 'rate', noneBelow);
     if (confidence.level === 'none' || n <= 0) {
         return { value: null, n, confidence };
     }

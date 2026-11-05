@@ -10,6 +10,7 @@ import {
 import { ruCount, ruPluralForm, RU_FORMS } from '../../model/ru-text.util';
 import type { ReanalysisRunStatus } from '../../contracts/reanalysis.types';
 import type { Phase4BacktestView } from '../services/ai-analytics-phase4.types';
+import { backtestNumbersText, failAdvice } from './launch-status.forecast-text';
 import { unreadText } from './launch-status.blocks';
 import { parseModelParamsJson, stageFlagOf } from './launch-model-params';
 import {
@@ -40,7 +41,7 @@ export function backtestReasonTexts(reasons: readonly string[]): string[] {
 
 /**
  * Вердикт проверки точности словами: пройдено / не пройдено и почему /
- * мало данных / проверки не было.
+ * мало данных / проверки не было; с цифрами проверки.
  */
 export function forecastVerdictText(view: Phase4BacktestView | null): string {
     if (view === null) {
@@ -48,13 +49,15 @@ export function forecastVerdictText(view: Phase4BacktestView | null): string {
     }
     const why = backtestReasonTexts(view.reasons).join('; ');
     const shadow = `теневых месяцев ${view.shadowMonths} из ${view.shadowMinMonths} нужных, из них по истории восстановлено ${view.replayedMonths}`;
+    const numbers = backtestNumbersText(view);
+    const numbersTail = numbers ? `: ${numbers}` : '';
     if (view.status === 'pass') {
-        return `Проверка пройдена (месяц ${view.monthKey}, ${shadow}): прогноз можно показывать руководителям.`;
+        return `Проверка пройдена (месяц ${view.monthKey}, ${shadow})${numbersTail}. Прогноз можно показывать руководителям.`;
     }
     if (view.status === 'insufficient') {
         return `Мало данных для проверки (месяц ${view.monthKey}): ${shadow}${why ? `; ${why}` : ''}. Догоните историю и восстановите прогноз, потом проверьте ещё раз.`;
     }
-    return `Проверка не пройдена (месяц ${view.monthKey}): ${why || 'причина не записана'}. Показывать прогноз пока рано — точность хуже простых способов.`;
+    return `Проверка не пройдена (месяц ${view.monthKey}): ${why || 'причина не записана'}${numbers ? ` — ${numbers}` : ''}. ${failAdvice(view)}`;
 }
 
 export function forecastBlock(input: LaunchStatusInput): LaunchForecastBlock {

@@ -29,6 +29,7 @@ import { ClosedSalesDaysLoader } from '../domain/loaders/closed-sales-days.loade
 import { FinanceLoader } from '../domain/loaders/finance.loader';
 import { KpiLoader } from '../domain/loaders/kpi.loader';
 import { PlansLoader } from '../domain/loaders/plans.loader';
+import { PulseTelephonyLoader } from '../domain/loaders/pulse-telephony.loader';
 import { SmartLinkLoader } from '../domain/loaders/smart-link.loader';
 import { SalesFinanceUseCaseFactory } from '../domain/loaders/sales-finance-use-case.factory';
 import { StyleCrmLoader } from '../domain/loaders/style-crm.loader';
@@ -49,6 +50,10 @@ export const AI_ANALYTICS_CORE_PBX_PROVIDERS: Type<unknown>[] = [
     // Ссылки на карточки разборов (entityTypeId смарта портала +
     // report_item_id из ais): повестка, «Внимание», слепая оценка.
     SmartLinkLoader,
+    // Доля коротких разговоров пульса из телефонии. Производственный
+    // календарь пульса — AiAnalyticsCalendarLoader среза конвейера (он его
+    // экспортирует): провайдер объявлен один раз.
+    PulseTelephonyLoader,
 ];
 
 @Module({

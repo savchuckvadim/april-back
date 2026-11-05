@@ -1,143 +1,22 @@
 import { registryDefault } from '../params/registry.access';
-import { AI_ANALYTICS_THRESHOLDS } from './thresholds.const';
 import { MetricValue, rateMetric } from './metric';
-import { XmrPoint, XmrResult, xmrLimits } from './xmr';
-import { WorkCalendar, lastWorkdays, toPortalDate } from './workdays.util';
+import { minDurationSecOf, type MinDurationSecByType } from './pulse-duration';
+import type {
+    PulseCallRow,
+    PulseManagerRow,
+    PulseOptions,
+    PulsePreviousWindow,
+    PulseResult,
+} from './pulse.types';
+import { pulseWindowDays } from './pulse-window';
+import { XmrPoint, xmrLimits } from './xmr';
+import { lastWorkdays, previousWorkday, toPortalDate } from './workdays.util';
 
-/** Следующий шаг из разбора: назначен ли и есть ли дата. */
-export interface PulseNextStep {
-    set: boolean;
-    date: string | null;
-}
-
-/** Строка звонка для пульса (lite-выборка без текста транскрипта). */
-export interface PulseCallRow {
-    transcriptionId: string;
-    managerId: string | null;
-    callStartedAt: Date;
-    durationSec: number | null;
-    /**
-     * Тип звонка классификатора: нужен только для порога длительности по
-     * типу. Поля нет или null — порог берётся из ключа «все прочие типы».
-     */
-    callType?: string | null;
-    analysisPresent: boolean;
-    nextStep: PulseNextStep | null;
-    riskFlags: string[];
-    coachingPriority: string | null;
-}
-
-export interface PulseWindow {
-    from: string;
-    to: string;
-    workdays: string[];
-}
-
-export interface PulseManagerRow {
-    managerId: string;
-    analyzed: number;
-    nextStepDateRate: MetricValue;
-}
-
-export interface PulseResult {
-    window: PulseWindow;
-    /** Доля разобранных звонков окна с назначенным шагом и датой. */
-    nextStepDateRate: MetricValue;
-    /** XmR по дневным долям истории (null при < 3 дней с разборами). */
-    xmr: XmrResult | null;
-    /** Дневные доли по рабочим дням истории (только дни с разборами). */
-    daily: XmrPoint[];
-    analyzedCalls: number;
-    /** Доля коротких звонков (короче порога своего типа) среди звонков окна, %. */
-    shortCallsSharePct: number;
-    /** Порог «короткого» звонка, с: типы вне карты и звонки без типа. */
-    minDurationSec: number;
-    /** Применённый минимум разборов менеджера для строки byManager. */
-    managerMinN: number;
-    /** Менеджеры с analyzed ≥ managerMinN, по managerId. */
-    byManager: PulseManagerRow[];
-}
-
-export interface PulseOptions {
-    /** Последний день окна (YYYY-MM-DD в TZ портала). */
-    endDate: string;
-    calendar: WorkCalendar;
-    /** Рабочих дней в окне доли (по умолчанию 5). */
-    windowWorkdays?: number;
-    /** Рабочих дней истории для дневного ряда XmR (по умолчанию 25). */
-    historyWorkdays?: number;
-    /**
-     * Минимум разобранных звонков менеджера для строки byManager (код
-     * реестра `pulse_manager_min_n`, портал может переопределить); нет —
-     * дефолт реестра.
-     */
-    managerMinN?: number;
-    /**
-     * Пороги «разбираемого» звонка по типу (реестр
-     * `min_duration_sec_by_type`, решение владельца А.1). Опции нет —
-     * поведение Фазы 1a: единый порог `AI_ANALYTICS_THRESHOLDS.shortCallSec`.
-     */
-    minDurationSecByType?: MinDurationSecByType;
-}
-
-/** Порог «разбираемого» звонка по типу звонка, секунды. */
-export type MinDurationSecByType = Readonly<Record<string, number>>;
-
-/**
- * Ключ «все прочие типы» карты порогов: звонок без типа и типы, которых в
- * карте нет. Под него сценарий кладёт значение реестра
- * `min_duration_sec_by_type`, разрешённое с контекстом портала.
- */
-export const MIN_DURATION_DEFAULT_TYPE = 'default' as const;
-
-const secondsOf = (value: unknown): number | undefined =>
-    typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-
-/**
- * Порог для типа звонка: значение типа → ключ «все прочие типы» →
- * константа Фазы 1a. Карты нет — прежние `shortCallSec` секунд.
- */
-export function minDurationSecOf(
-    callType: string | null | undefined,
-    byType?: MinDurationSecByType,
-): number {
-    const configured = callType ? secondsOf(byType?.[callType]) : undefined;
-
-    return (
-        configured ??
-        secondsOf(byType?.[MIN_DURATION_DEFAULT_TYPE]) ??
-        AI_ANALYTICS_THRESHOLDS.shortCallSec
-    );
-}
-
-/**
- * Эффективные пороги «разбираемого» звонка: карта определений портала и
- * значение реестра для типов вне карты (в том числе для звонка без типа).
- * Одинаковый порог у всех типов — это одно решение, и его владелец —
- * реестр (портал мог переопределить код в `ai_analytics_model_params`);
- * разные пороги по типам — это карта, и тогда тип решает сам за себя.
- *
- * Пульс и ночной конвейер обязаны строить пороги этой функцией: иначе
- * знаменатель пульса и набор разбираемых звонков конвейера разойдутся.
- */
-export function minDurationByType(
-    configured: MinDurationSecByType | undefined,
-    registrySec?: number,
-): MinDurationSecByType {
-    const fallback =
-        secondsOf(registrySec) ?? AI_ANALYTICS_THRESHOLDS.shortCallSec;
-    const entries = Object.entries(configured ?? {}).flatMap(([type, sec]) => {
-        const seconds = secondsOf(sec);
-
-        return seconds === undefined ? [] : [[type, seconds] as const];
-    });
-    const uniform = new Set(entries.map(([, sec]) => sec)).size <= 1;
-
-    return {
-        ...(uniform ? {} : Object.fromEntries(entries)),
-        [MIN_DURATION_DEFAULT_TYPE]: fallback,
-    };
-}
+// Типы, пороги длительности и окно — отдельными файлами (лимит 300 строк);
+// публичный путь `model/pulse` остаётся прежним.
+export * from './pulse.types';
+export * from './pulse-duration';
+export * from './pulse-window';
 
 export const PULSE_DEFAULTS = {
     /** Окно доли — рабочих дней (план 6.3); не параметр реестра. */
@@ -146,6 +25,18 @@ export const PULSE_DEFAULTS = {
     historyWorkdays: 25,
     /** Строка менеджера — с этого числа разборов (реестр, дефолт 8). */
     managerMinN: registryDefault('pulse_manager_min_n'),
+    /**
+     * Точка дневного ряда XmR — с этого числа разборов за день: доля дня по
+     * одному-двум звонкам — это 0 или 100 %, и «выше/ниже коридора» по ней
+     * был бы шумом (05.11.2026, april-garant: один звонок дня дал «выше
+     * коридора»). Не параметр реестра.
+     */
+    xmrDayMinN: 5,
+    /**
+     * Сколько звонков без даты показать у менеджера «С кем поработать»:
+     * два — чтобы разобрать на планёрке, а не читать архив.
+     */
+    examplesPerManager: 2,
 } as const;
 
 interface DatedRow {
@@ -193,13 +84,27 @@ function groupBy<T>(
     return groups;
 }
 
-function nextStepRate(rows: readonly DatedRow[]): MetricValue {
+function nextStepRate(
+    rows: readonly DatedRow[],
+    noneBelow?: number,
+): MetricValue {
     return rateMetric(
         rows.filter(item => hasNextStepDate(item.row)).length,
         rows.length,
+        noneBelow,
     );
 }
 
+/** Свежие первыми; при равном времени — по id (детерминированно). */
+const newestFirst = (a: DatedRow, b: DatedRow): number =>
+    b.row.callStartedAt.getTime() - a.row.callStartedAt.getTime() ||
+    a.row.transcriptionId.localeCompare(b.row.transcriptionId);
+
+/**
+ * Строки менеджеров: порог портала решает и появление строки, и показ доли
+ * числом — иначе строка с 5 разборами при пороге 5 пришла бы «мало данных».
+ * У строки — звонки-примеры: без даты (разобрать) и с датой (образец).
+ */
 function buildByManager(
     analyzed: readonly DatedRow[],
     managerMinN: number,
@@ -207,11 +112,21 @@ function buildByManager(
     return [...groupBy(analyzed, item => item.row.managerId).entries()]
         .filter(([, rows]) => rows.length >= managerMinN)
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([managerId, rows]) => ({
-            managerId,
-            analyzed: rows.length,
-            nextStepDateRate: nextStepRate(rows),
-        }));
+        .map(([managerId, rows]) => {
+            const sorted = [...rows].sort(newestFirst);
+            return {
+                managerId,
+                analyzed: rows.length,
+                nextStepDateRate: nextStepRate(rows, managerMinN),
+                noDateCallIds: sorted
+                    .filter(item => !hasNextStepDate(item.row))
+                    .slice(0, PULSE_DEFAULTS.examplesPerManager)
+                    .map(item => item.row.transcriptionId),
+                dateCallId:
+                    sorted.find(item => hasNextStepDate(item.row))?.row
+                        .transcriptionId ?? null,
+            };
+        });
 }
 
 function buildDaily(
@@ -230,14 +145,48 @@ function buildDaily(
 }
 
 /**
+ * Такое же окно перед текущим («неделей раньше»): те же правила дней;
+ * разборов в нём нет — null.
+ */
+function buildPrevious(
+    analyzed: readonly DatedRow[],
+    from: string,
+    options: PulseOptions,
+    windowWorkdays: number,
+    activeDays: ReadonlySet<string> | undefined,
+): PulsePreviousWindow | null {
+    const days = pulseWindowDays(
+        previousWorkday(from, options.calendar),
+        windowWorkdays,
+        options.calendar,
+        activeDays,
+    );
+    const prevFrom = days[0];
+    const prevTo = days[days.length - 1];
+    if (prevFrom === undefined || prevTo === undefined) return null;
+    const rows = analyzed.filter(
+        item => item.day >= prevFrom && item.day <= prevTo,
+    );
+    if (rows.length === 0) return null;
+    return {
+        from: prevFrom,
+        to: prevTo,
+        analyzedCalls: rows.length,
+        nextStepDateRate: nextStepRate(rows),
+    };
+}
+
+/**
  * Пульс дисциплины «следующий шаг с датой»: окно из windowWorkdays рабочих
- * дней (диапазон дат от первого рабочего дня до последнего включительно),
- * доля считается только по разобранным звонкам окна (isAnalyzedCall),
- * короткие звонки — в shortCallsSharePct, но не в знаменателе. Порог
- * «короткого» — options.minDurationSecByType (реестр
- * `min_duration_sec_by_type`, тот же, что у ночного конвейера); опции нет —
- * прежний единый AI_ANALYTICS_THRESHOLDS.shortCallSec.
- * Дневной ряд и XmR — по рабочим дням истории historyWorkdays.
+ * дней (диапазон дат от первого рабочего дня до последнего включительно;
+ * со skipDaysWithoutCalls дни без звонков пропускаются), доля считается
+ * только по разобранным звонкам окна (isAnalyzedCall), короткие звонки —
+ * в shortCallsSharePct, но не в знаменателе. Порог «короткого» —
+ * options.minDurationSecByType (реестр `min_duration_sec_by_type`, тот же,
+ * что у ночного конвейера); опции нет — прежний единый
+ * AI_ANALYTICS_THRESHOLDS.shortCallSec. Рядом — такое же окно перед
+ * текущим для сравнения. Дневной ряд — по рабочим дням истории
+ * historyWorkdays, XmR — по его дням с разборами не меньше xmrDayMinN.
  * Чистая детерминированная функция.
  */
 export function computePulse(
@@ -252,17 +201,27 @@ export function computePulse(
         windowWorkdays,
     );
     const managerMinN = options.managerMinN ?? PULSE_DEFAULTS.managerMinN;
-
-    const workdays = lastWorkdays(endDate, windowWorkdays, calendar);
-    const historyDays = lastWorkdays(endDate, historyWorkdays, calendar);
-    const from = workdays[0] ?? endDate;
-    const to = workdays[workdays.length - 1] ?? endDate;
+    const xmrDayMinN = options.xmrDayMinN ?? PULSE_DEFAULTS.xmrDayMinN;
 
     const dated: DatedRow[] = rows.map(row => ({
         row,
         day: toPortalDate(row.callStartedAt, calendar.timeZone),
     }));
+    const activeDays = options.skipDaysWithoutCalls
+        ? new Set(dated.map(item => item.day))
+        : undefined;
+    const workdays = pulseWindowDays(
+        endDate,
+        windowWorkdays,
+        calendar,
+        activeDays,
+    );
+    const historyDays = lastWorkdays(endDate, historyWorkdays, calendar);
+    const from = workdays[0] ?? endDate;
+    const to = workdays[workdays.length - 1] ?? endDate;
+
     const byType = options.minDurationSecByType;
+    const analyzedAll = dated.filter(item => isAnalyzedCall(item.row, byType));
     const inWindow = dated.filter(item => item.day >= from && item.day <= to);
     const analyzedInWindow = inWindow.filter(item =>
         isAnalyzedCall(item.row, byType),
@@ -270,16 +229,19 @@ export function computePulse(
     const shortCalls = inWindow.filter(item =>
         isShortCall(item.row, byType),
     ).length;
-
-    const daily = buildDaily(
-        dated.filter(item => isAnalyzedCall(item.row, byType)),
-        historyDays,
-    );
+    const daily = buildDaily(analyzedAll, historyDays);
 
     return {
         window: { from, to, workdays },
         nextStepDateRate: nextStepRate(analyzedInWindow),
-        xmr: xmrLimits(daily),
+        previous: buildPrevious(
+            analyzedAll,
+            from,
+            options,
+            windowWorkdays,
+            activeDays,
+        ),
+        xmr: xmrLimits(daily.filter(point => point.n >= xmrDayMinN)),
         daily,
         analyzedCalls: analyzedInWindow.length,
         shortCallsSharePct:

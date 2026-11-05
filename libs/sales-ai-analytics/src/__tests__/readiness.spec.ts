@@ -149,6 +149,21 @@ describe('buildReadiness: подъём до norms', () => {
         ).toBe(true);
     });
 
+    it('без требования даты подтверждение РОПом засчитывается и без уровней', () => {
+        expect(
+            isRosterConfirmed({
+                rosterLevels: 0,
+                rosterConfirmedAt: '2026-11-05',
+            }),
+        ).toBe(true);
+        expect(
+            isRosterConfirmed(
+                { rosterLevels: 4, rosterConfirmedAt: '' },
+                gates({ rosterConfirmRequired: true }),
+            ),
+        ).toBe(false);
+    });
+
     it('менее 100 презентаций — descriptive по гейту L2', () => {
         const result = buildReadiness(input({ presentations: 80 }));
 

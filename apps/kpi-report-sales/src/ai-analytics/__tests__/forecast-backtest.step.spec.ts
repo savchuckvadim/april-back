@@ -202,6 +202,8 @@ describe('ForecastBacktestStep — точность прогноза отдел�
             coverageTarget: params.coverageTarget,
             maseMax: params.maseMax,
             level: params.level,
+            // Как в buildBacktestSnapshot: покрытие по откалиброванной вилке.
+            calibrate: true,
         });
         expect(payload.backtest).toEqual(expected);
     });

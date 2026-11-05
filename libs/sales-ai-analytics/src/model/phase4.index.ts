@@ -12,6 +12,7 @@ export * from './lag-cdf-shrink';
 export * from './season-index';
 export * from './forecast-backtest.types';
 export * from './forecast-backtest';
+export * from './forecast-calibration';
 
 // Фаза 4, поток П17 «пул порталов»: β пула (Q Кокрана, I², τ²), нормы μ₀/κ̄,
 // общая таблица лага, чек и сезон — только по датированному согласию.

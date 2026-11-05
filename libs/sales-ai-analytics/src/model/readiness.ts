@@ -169,17 +169,18 @@ export const AI_READINESS_MIN_HYPOTHESIS_PAIRS = 2;
 
 /**
  * Гейт «состав подтверждён»: при `roster_confirm_required = false` хватает
- * непустых уровней, при `true` нужна дата подтверждения РОПом.
+ * непустых уровней ИЛИ даты подтверждения РОПом, при `true` нужна дата.
+ * Дата засчитывается и без уровней (решение владельца 05.11.2026): кнопка
+ * «Подтвердить состав» на витрине пункт не закрывала — гейт ждал уровней.
  */
 export function isRosterConfirmed(
     input: Pick<ReadinessInput, 'rosterLevels' | 'rosterConfirmedAt'>,
     gates: ReadinessGates = AI_READINESS_GATE_DEFAULTS,
 ): boolean {
-    if (gates.rosterConfirmRequired) {
-        return input.rosterConfirmedAt.trim().length > 0;
-    }
+    const confirmedByRop = input.rosterConfirmedAt.trim().length > 0;
+    if (gates.rosterConfirmRequired) return confirmedByRop;
 
-    return input.rosterLevels > 0;
+    return confirmedByRop || input.rosterLevels > 0;
 }
 
 /** Причины, по которым портал не дотягивает до калибровочного гейта. */

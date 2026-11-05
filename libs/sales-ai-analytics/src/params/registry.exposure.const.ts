@@ -178,7 +178,7 @@ export const AI_ANALYTICS_EXPOSURE_PARAMS = [
         phase: 2,
         breaksSeries: false,
         description:
-            'Гейт готовности «состав подтверждён»: при false хватает непустых уровней в ai_analytics_levels, при true нужна дата ai_analytics_roster_confirmed_at, иначе витрина остаётся в режиме descriptive с причиной roster-not-confirmed.',
+            'Гейт готовности «состав подтверждён»: при false хватает непустых уровней в ai_analytics_levels или даты ai_analytics_roster_confirmed_at, при true нужна дата, иначе витрина остаётся в режиме descriptive с причиной roster-not-confirmed.',
         userTitle: 'Нужно ли подтверждать состав отдела',
         userDescription:
             'Если включено, витрина ждёт даты подтверждения состава отдела руководителем, а до этого показывает только описательные цифры.',

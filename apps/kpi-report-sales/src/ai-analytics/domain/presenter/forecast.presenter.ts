@@ -14,6 +14,7 @@
  *
  * Чистые функции: без DI, Bitrix и Prisma, без `new Date()`.
  */
+import { calibratedBand, calibratedMoneyBand } from '@lib/sales-ai-analytics';
 import type { AiAnalyticsReadinessMode } from '../../constants/ai-analytics.const';
 import {
     AI_FORECAST_BACKTEST_REASON_MAP,
@@ -123,6 +124,27 @@ function backtestSummary(
     };
 }
 
+/**
+ * Вилка дня для показа: расширена калибровкой по истории (её покрытие и
+ * проверяли), деньги — вслед за штуками. Калибровки нет — вилка модели.
+ */
+function shownBands(
+    day: ForecastLogDayView,
+    backtest: ForecastBacktestView | null,
+): Pick<AiForecastDto, 'band' | 'money'> {
+    const band = calibratedBand(
+        day.band,
+        day.done,
+        backtest?.calibration ?? null,
+    );
+    return {
+        band: { ...band },
+        money: day.money
+            ? calibratedMoneyBand(day.money, day.band, band)
+            : null,
+    };
+}
+
 /** Прогноз отдела в DTO: вилка — только в режиме published и при журнале дня. */
 export function presentForecast(sources: ForecastSources): AiForecastDto {
     const minMonths = sources.shadowMinMonths;
@@ -130,14 +152,17 @@ export function presentForecast(sources: ForecastSources): AiForecastDto {
     const mode: AiForecastMode = reasons.length === 0 ? 'published' : 'shadow';
     const day = sources.day;
     const published = mode === 'published' && day !== null;
+    const bands = published
+        ? shownBands(day, sources.backtest)
+        : { band: null, money: null };
 
     return {
         mode,
         monthKey: sources.monthKey,
         asOf: day?.day ?? null,
         level: day?.level ?? null,
-        band: published ? { ...day.band } : null,
-        money: published && day.money ? { ...day.money } : null,
+        band: bands.band,
+        money: bands.money,
         checkSource: day?.checkSource ?? null,
         done: day?.done ?? null,
         naive: day?.naive ?? null,

@@ -23,7 +23,7 @@ describe('cache-key.util (ai-analytics)', () => {
             'sales-ai-analytics:v1:april.bitrix24.ru:settings',
         );
         expect(buildPulseKey(DOMAIN, '2026-09-04')).toBe(
-            'sales-ai-analytics:v1:april.bitrix24.ru:pulse:v2:2026-09-04',
+            'sales-ai-analytics:v1:april.bitrix24.ru:pulse:v3:2026-09-04',
         );
         expect(buildAgendaKey(DOMAIN, '2026-W36')).toBe(
             'sales-ai-analytics:v1:april.bitrix24.ru:agenda:2026-W36',

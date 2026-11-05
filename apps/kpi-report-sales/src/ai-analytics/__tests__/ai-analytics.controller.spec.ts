@@ -102,7 +102,7 @@ function makeController(
     };
     const settingsUseCase = { execute: compute };
     const pulseUseCase = {
-        resolveEndDate: jest.fn().mockResolvedValue('2026-09-04'),
+        resolveCacheDay: jest.fn().mockResolvedValue('2026-09-05'),
         execute: jest.fn().mockResolvedValue(pulse),
     };
     const agendaUseCase = {
@@ -161,12 +161,12 @@ describe('AiAnalyticsController', () => {
         );
     });
 
-    it('pulse: промах → use-case, кэш 1 ч, ключ по endDate; руководитель видит всех', async () => {
+    it('pulse: промах → use-case, кэш 1 ч, ключ по дню запроса; руководитель видит всех', async () => {
         const { controller, cache, pulseUseCase } = makeController(leader);
         const response = await controller.getPulse(base);
         expect(response.status).toBe('ready');
         expect(response.requestKey).toBe(
-            'sales-ai-analytics:v1:april.bitrix24.ru:pulse:v2:2026-09-04',
+            'sales-ai-analytics:v1:april.bitrix24.ru:pulse:v3:2026-09-05',
         );
         expect(response.data?.byManager).toHaveLength(2);
         expect(response.data?.alerts).toHaveLength(2);

@@ -104,6 +104,32 @@ describe('BxVoximplantStatisticService', () => {
         expect(result.rows).toHaveLength(2);
         expect(result.truncated).toBe(true);
     });
+
+    it('countCalls: один запрос, число из total; нет total — null, а не ноль', async () => {
+        const { bitrix, calls } = bitrixOf([
+            { result: [row({ CALL_ID: 'a' })], next: 50, total: 586 },
+            { result: [] },
+        ]);
+        const service = new BxVoximplantStatisticService(bitrix);
+        const params = {
+            fromIso: '2026-10-29T00:00:00+03:00',
+            toIso: '2026-11-03T23:59:59+03:00',
+            minDurationSec: 1,
+            maxDurationSecExclusive: 220,
+            userIds: [174],
+        };
+
+        expect(await service.countCalls(params)).toBe(586);
+        expect(calls).toHaveLength(1);
+        expect(calls[0].FILTER).toEqual({
+            '>=CALL_START_DATE': '2026-10-29T00:00:00+03:00',
+            '<=CALL_START_DATE': '2026-11-03T23:59:59+03:00',
+            '>=CALL_DURATION': 1,
+            '<CALL_DURATION': 220,
+            PORTAL_USER_ID: ['174'],
+        });
+        expect(await service.countCalls(params)).toBeNull();
+    });
 });
 
 describe('buildStatisticFilter', () => {

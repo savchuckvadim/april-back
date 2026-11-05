@@ -18,8 +18,8 @@ export const BRIEF_DOMAIN = 'april.bitrix24.ru';
 export const BRIEF_FROM = '2026-09-01';
 export const BRIEF_TO = '2026-09-07';
 export const BRIEF_NOW = new Date('2026-09-08T06:00:00Z');
-/** Предыдущий рабочий день портала для BRIEF_NOW — ключ кэша пульса. */
-export const BRIEF_PULSE_DAY = '2026-09-07';
+/** День портала для BRIEF_NOW — ключ кэша пульса (день запроса). */
+export const BRIEF_PULSE_DAY = '2026-09-08';
 /** Прошлый период той же длины: неделя до BRIEF_FROM. */
 export const BRIEF_PREV_FROM = '2026-08-25';
 export const BRIEF_PREV_TO = '2026-08-31';

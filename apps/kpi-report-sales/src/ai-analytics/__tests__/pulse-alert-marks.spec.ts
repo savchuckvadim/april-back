@@ -1,6 +1,10 @@
 import { PulseUseCase } from '../domain/use-cases/pulse.use-case';
 import type { AiAnalyticsFeedbackRecord } from '../store/ai-analytics-feedback.store';
 import {
+    calendarLoaderWith,
+    telephonyWith,
+} from './fixtures/pulse-deps.fixture';
+import {
     callsLoaderWith,
     liteRow,
     provenRisk,
@@ -65,6 +69,8 @@ describe('PulseUseCase: отметки алертов до момента зап
             settingsLoaderWith(),
             feedback.store,
             smartLinksWith().loader,
+            calendarLoaderWith().loader,
+            telephonyWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -84,6 +90,8 @@ describe('PulseUseCase: отметки алертов до момента зап
             settingsLoaderWith(),
             feedbackByPeriod([]).store,
             smartLinksWith().loader,
+            calendarLoaderWith().loader,
+            telephonyWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -91,7 +99,9 @@ describe('PulseUseCase: отметки алертов до момента зап
         expect(loadLite).toHaveBeenCalledWith(
             expect.objectContaining({ to: WINDOW_END.toISOString() }),
         );
-        expect(dto.window.to).toBe('2026-09-02');
+        expect(dto.periodDate).toBe('2026-09-02');
+        // Окно — по дням со звонками: единственный звонок — 01.09.
+        expect(dto.window.to).toBe('2026-09-01');
         expect(dto.alerts[0].handled).toBe(false);
     });
 
@@ -104,6 +114,8 @@ describe('PulseUseCase: отметки алертов до момента зап
             settingsLoaderWith(),
             feedback.store,
             smartLinksWith().loader,
+            calendarLoaderWith().loader,
+            telephonyWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });

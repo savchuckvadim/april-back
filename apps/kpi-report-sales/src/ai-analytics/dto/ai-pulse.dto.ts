@@ -4,6 +4,10 @@ import {
     AI_ANALYTICS_ALERT_KINDS,
     AiAnalyticsAlertKind,
 } from '../constants/ai-analytics.const';
+import {
+    AiPulseManagerExamplesDto,
+    AiPulsePreviousDto,
+} from './ai-pulse-coach.dto';
 import { AiRequestBaseDto } from './ai-request-base.dto';
 import { AiAnalyticsEnvelopeDto } from './ai-response-envelope.dto';
 import { MetricDto } from './metric.dto';
@@ -91,6 +95,14 @@ export class AiPulseManagerDto {
         type: MetricDto,
     })
     nextStepDateRate: MetricDto;
+
+    @ApiPropertyOptional({
+        description:
+            'Звонки-примеры для «С кем поработать»: без даты — разобрать, с ' +
+            'датой — образец. Поля нет — ответ из кэша до обновления.',
+        type: AiPulseManagerExamplesDto,
+    })
+    examples?: AiPulseManagerExamplesDto;
 }
 
 /** Звонок окна с сигналом руководителю (риск-флаг или срочный коучинг). */
@@ -183,6 +195,15 @@ export class AiPulseDto {
     })
     nextStepDateRate: MetricDto;
 
+    @ApiPropertyOptional({
+        description:
+            'Такое же окно перед текущим — для «неделей раньше»; null — разборов ' +
+            'в нём нет; поля нет — ответ из кэша до обновления.',
+        type: AiPulsePreviousDto,
+        nullable: true,
+    })
+    previous?: AiPulsePreviousDto | null;
+
     @ApiProperty({
         description:
             'XmR-границы по дневным долям; null — меньше 3 дней с разборами.',
@@ -200,13 +221,27 @@ export class AiPulseDto {
 
     @ApiProperty({
         description:
-            'Доля коротких звонков среди всех звонков окна, %: звонок короче ' +
-            'порога длительности своего типа (порог портала, см. ' +
-            'minDurationSec) AI не разбирает, в долю шага он не входит.',
+            'Доля коротких разговоров окна по телефонии Битрикса, %: разговор ' +
+            'короче порога (minDurationSec) AI не разбирает, в долю шага он ' +
+            'не входит. Считаются сотрудники разбора (пилот и отдел продаж, ' +
+            'как у конвейера), недозвоны (длительность 0) не считаются. ' +
+            'null — телефония не ответила.',
         type: Number,
+        nullable: true,
         example: 37.5,
     })
-    shortCallsSharePct: number;
+    shortCallsSharePct: number | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Состоявшихся разговоров окна по телефонии у сотрудников разбора — ' +
+            'знаменатель shortCallsSharePct. null — телефония не ответила; ' +
+            'поля нет — ответ из кэша до обновления.',
+        type: Number,
+        nullable: true,
+        example: 412,
+    })
+    connectedCalls?: number | null;
 
     @ApiPropertyOptional({
         description:

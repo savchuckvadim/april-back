@@ -38,11 +38,13 @@ export function buildSettingsKey(domain: string): string {
 
 /**
  * Версия формы пульса в кэше: v2 — у сигналов (`alerts[]`) появилась
- * ссылка `link` на карточку разбора. Меняется вместе с формой, чтобы после
+ * ссылка `link` на карточку разбора; v3 — доля коротких из телефонии
+ * (nullable, `connectedCalls`), ключ по дню запроса, окно по календарю с
+ * праздниками (05.11.2026). Меняется вместе с формой, чтобы после
  * деплоя не отдавать записи старой формы без поля до истечения TTL; версия
  * стоит после секции — сброс по `pulse:*`/домену её захватывает.
  */
-const PULSE_KEY_VERSION = 'v2';
+const PULSE_KEY_VERSION = 'v3';
 
 export function buildPulseKey(domain: string, endDate: string): string {
     return `${AI_ANALYTICS_CACHE_PREFIX}:${domain}:${PULSE}:${PULSE_KEY_VERSION}:${endDate}`;

@@ -67,9 +67,17 @@ export interface BxVoximplantStatisticParams {
     userIds?: readonly (string | number)[];
     /** Минимальная длительность в секундах, ВКЛЮЧИТЕЛЬНО; 0 — все наборы. */
     minDurationSec?: number;
+    /** Длительность СТРОГО меньше этого числа секунд; не задано — без потолка. */
+    maxDurationSecExclusive?: number;
     /** Потолок собираемых строк (защита от разноса пагинации). */
     maxRows?: number;
 }
+
+/** Фильтр подсчёта звонков: те же поля, что у выборки, без пагинации. */
+export type BxVoximplantCountParams = Omit<
+    BxVoximplantStatisticParams,
+    'maxRows'
+>;
 
 /** Итог выборки: строки и честный признак неполноты. */
 export interface BxVoximplantStatisticResult {

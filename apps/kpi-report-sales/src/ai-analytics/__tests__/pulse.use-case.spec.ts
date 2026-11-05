@@ -31,6 +31,10 @@ import {
     portalSettings,
     settingsLoaderWith,
 } from './fixtures/lite-row.fixture';
+import {
+    calendarLoaderWith,
+    telephonyWith,
+} from './fixtures/pulse-deps.fixture';
 import { smartLinksWith } from './fixtures/smart-links.fixture';
 
 /** Суббота 05.09.2026 12:00 MSK → окно пн 31.08 — пт 04.09. */
@@ -82,21 +86,19 @@ describe('PulseUseCase', () => {
             settingsLoaderWith(),
             feedbackStoreWith([]),
             smartLinksWith().loader,
+            calendarLoaderWith().loader,
+            telephonyWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
 
         expect(dto.periodDate).toBe('2026-09-04');
+        // Звонки окна — только 01–04.09: пн 31.08 без единого звонка
+        // считается выходным, а раньше звонков нет — в окне 4 дня.
         expect(dto.window).toEqual({
-            from: '2026-08-31',
+            from: '2026-09-01',
             to: '2026-09-04',
-            workdays: [
-                '2026-08-31',
-                '2026-09-01',
-                '2026-09-02',
-                '2026-09-03',
-                '2026-09-04',
-            ],
+            workdays: ['2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04'],
         });
         // 25 рабочих дней назад от пт 04.09 — пн 03.08; начало дня MSK = 02.08 21:00Z
         expect(loadLite).toHaveBeenCalledWith(
@@ -106,7 +108,8 @@ describe('PulseUseCase', () => {
                 to: '2026-09-04T20:59:59.999Z',
             }),
         );
-        expect(await useCase.resolveEndDate('d', NOW)).toBe('2026-09-04');
+        // Ключ кэша — день запроса в TZ портала (суббота), не конец окна.
+        expect(await useCase.resolveCacheDay('d', NOW)).toBe('2026-09-05');
     });
 
     it('доля шага с датой = 30/40, менеджер с n не меньше порога портала попадает в byManager', async () => {
@@ -124,6 +127,8 @@ describe('PulseUseCase', () => {
             settingsLoaderWith(),
             feedbackStoreWith([]),
             smartLinksWith().loader,
+            calendarLoaderWith().loader,
+            telephonyWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -134,7 +139,9 @@ describe('PulseUseCase', () => {
         expect(dto.nextStepDateRate.confidence.level).toBe('ok');
         expect(dto.byManager.map(row => row.managerId)).toEqual(['10']);
         expect(dto.byManager[0].analyzed).toBe(40);
-        expect(dto.shortCallsSharePct).toBeCloseTo((1 / 46) * 100, 1);
+        // Телефония не ответила — доли нет (выборка разборов её не заменяет).
+        expect(dto.shortCallsSharePct).toBeNull();
+        expect(dto.connectedCalls).toBeNull();
         // Пороги, по которым посчитан ответ, уходят витрине.
         expect(dto.managerMinN).toBe(8);
         expect(dto.minDurationSec).toBe(300);
@@ -196,6 +203,8 @@ describe('PulseUseCase', () => {
                 { kind: 'alert_handled', transcriptionId: 'risk' },
             ]),
             smartLinksWith().loader,
+            calendarLoaderWith().loader,
+            telephonyWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -230,6 +239,8 @@ describe('PulseUseCase', () => {
             settingsLoaderWith(),
             feedbackStoreWith([]),
             smartLinksWith().loader,
+            calendarLoaderWith().loader,
+            telephonyWith().loader,
         );
         const dto = await useCase.execute('d', { now: NOW });
 
@@ -400,6 +411,8 @@ describe('PulseUseCase: порог длительности из реестра'
             settingsLoaderWith(),
             feedbackStoreWith([]),
             smartLinksWith().loader,
+            calendarLoaderWith().loader,
+            telephonyWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -419,6 +432,8 @@ describe('PulseUseCase: порог длительности из реестра'
             settingsLoader,
             feedbackStoreWith([]),
             smartLinksWith().loader,
+            calendarLoaderWith().loader,
+            telephonyWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -446,7 +461,7 @@ describe('PulseUseCase: порог длительности из реестра'
             'p3',
             'p4',
         ]);
-        expect(dto.shortCallsSharePct).toBe(0);
+        expect(dto.shortCallsSharePct).toBeNull();
     });
 
     it('неравномерная карта (cold 60, остальные 300): пульс и конвейер режут одни звонки', async () => {
@@ -463,6 +478,8 @@ describe('PulseUseCase: порог длительности из реестра'
             settingsLoaderWith({ definitions }),
             feedbackStoreWith([]),
             smartLinksWith().loader,
+            calendarLoaderWith().loader,
+            telephonyWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -525,6 +542,8 @@ describe('PulseUseCase: порог длительности из реестра'
             settingsLoaderWith({ definitions }),
             feedbackStoreWith([]),
             smartLinksWith().loader,
+            calendarLoaderWith().loader,
+            telephonyWith().loader,
         );
 
         const dto = await useCase.execute('d', { now: NOW });
@@ -555,6 +574,8 @@ describe('PulseUseCase: порог строки сотрудника из рее
             settingsLoaderWith({ modelParams }),
             feedbackStoreWith([]),
             smartLinksWith().loader,
+            calendarLoaderWith().loader,
+            telephonyWith().loader,
         ).execute('d', { now: NOW });
 
     it('по умолчанию строка с 8 разборов: 8 — есть, 7 — нет', async () => {

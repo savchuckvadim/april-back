@@ -13,6 +13,7 @@ import {
     AI_FORECAST_BACKTEST_STATUSES,
     type ForecastBacktestReason,
     type ForecastBacktestStatus,
+    type ForecastCalibration,
     type LognormalCheckSource,
 } from '@lib/sales-ai-analytics';
 import { AI_FORECAST_CHECK_SOURCES } from '../../constants/ai-forecast.const';
@@ -68,6 +69,11 @@ export interface ForecastBacktestView {
     readonly replayedMonths?: number;
     /** null — журналов с фактом нет, чисел нет. */
     readonly numbers: ForecastBacktestNumbers | null;
+    /**
+     * Калибровка вилки по истории — ею витрина расширяет живую вилку;
+     * null — нет в записи (старая проверка или мало месяцев).
+     */
+    readonly calibration: ForecastCalibration | null;
 }
 
 type Json = Record<string, unknown>;
@@ -181,6 +187,23 @@ function numbersOf(value: unknown): ForecastBacktestNumbers | null {
     };
 }
 
+/** Калибровка вилки из нагрузки проверки; чужая форма — null. */
+function calibrationOf(value: unknown): ForecastCalibration | null {
+    if (!isRecord(value) || !isRecord(value.calibration)) return null;
+    const raw = value.calibration;
+    const qLow = num(raw.qLow);
+    const qHigh = num(raw.qHigh);
+    const level = num(raw.level);
+    if (qLow === null || qHigh === null || level === null) return null;
+    return {
+        qLow: Math.min(0, qLow),
+        qHigh: Math.max(0, qHigh),
+        level,
+        days: count(raw.days),
+        months: count(raw.months),
+    };
+}
+
 /** Снапшот проверки точности; чужая форма (нет статуса) — null. */
 export function readForecastBacktest(
     periodKey: string,
@@ -201,5 +224,6 @@ export function readForecastBacktest(
         shadowMinMonths: minMonths !== null && minMonths > 0 ? minMonths : null,
         ...(replayed === null ? {} : { replayedMonths: count(replayed) }),
         numbers: numbersOf(payload.backtest),
+        calibration: calibrationOf(payload.backtest),
     };
 }

@@ -3,6 +3,7 @@ import type { BitrixService } from '../../../bitrix.service';
 import {
     BX_VOX_INCOMING_CALL_TYPES,
     BX_VOX_SUCCESS_FAILED_CODE,
+    BxVoximplantCountParams,
     BxVoximplantStatisticParams,
     BxVoximplantStatisticResult,
     BxVoximplantStatisticRow,
@@ -76,6 +77,22 @@ export class BxVoximplantStatisticService {
         if (rows.length >= maxRows) truncated = true;
         return { rows: rows.slice(0, maxRows), truncated, total };
     }
+
+    /**
+     * Сколько звонков под фильтром — одним запросом, по полю `total`
+     * конверта пагинации (строки первой страницы не нужны). null — портал
+     * не отдал total (дроп страницы под нагрузкой): «ноль» тут был бы враньём.
+     */
+    async countCalls(params: BxVoximplantCountParams): Promise<number | null> {
+        const response = (await this.bitrix.api.call(
+            'voximplant.statistic.get',
+            { FILTER: buildStatisticFilter(params) },
+        )) as BxVoximplantStatisticResponse | null;
+        const total = response?.total;
+        return typeof total === 'number' && Number.isFinite(total)
+            ? total
+            : null;
+    }
 }
 
 /**
@@ -84,7 +101,7 @@ export class BxVoximplantStatisticService {
  * массив как IN).
  */
 export function buildStatisticFilter(
-    params: BxVoximplantStatisticParams,
+    params: BxVoximplantCountParams,
 ): Record<string, unknown> {
     const filter: Record<string, unknown> = {
         '>=CALL_START_DATE': params.fromIso,
@@ -92,6 +109,12 @@ export function buildStatisticFilter(
     };
     if (params.minDurationSec !== undefined && params.minDurationSec > 0) {
         filter['>=CALL_DURATION'] = params.minDurationSec;
+    }
+    if (
+        params.maxDurationSecExclusive !== undefined &&
+        params.maxDurationSecExclusive > 0
+    ) {
+        filter['<CALL_DURATION'] = params.maxDurationSecExclusive;
     }
     if (params.userIds?.length) {
         filter.PORTAL_USER_ID = params.userIds.map(String);

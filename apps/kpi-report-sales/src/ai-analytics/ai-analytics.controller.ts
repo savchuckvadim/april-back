@@ -123,8 +123,8 @@ export class AiAnalyticsController {
             dto.domain,
             dto.requesterUserId,
         );
-        const endDate = await this.pulseUseCase.resolveEndDate(dto.domain);
-        const requestKey = buildPulseKey(dto.domain, endDate);
+        const cacheDay = await this.pulseUseCase.resolveCacheDay(dto.domain);
+        const requestKey = buildPulseKey(dto.domain, cacheDay);
         const { value } = await this.cache.remember<AiPulseDto>(
             requestKey,
             AI_ANALYTICS_PULSE_TTL_SECONDS,

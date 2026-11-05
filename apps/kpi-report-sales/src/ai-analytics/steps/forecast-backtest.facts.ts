@@ -168,6 +168,9 @@ export function buildBacktestSnapshot(
         coverageTarget: input.params.coverageTarget,
         maseMax: input.params.maseMax,
         level: input.params.level,
+        // Покрытие — по вилке, откалиброванной по прошлым месяцам: её же
+        // видит руководитель (05.11.2026, вилка модели была узкой).
+        calibrate: true,
     });
 
     return {

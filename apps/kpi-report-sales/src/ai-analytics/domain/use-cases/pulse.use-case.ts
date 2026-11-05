@@ -10,20 +10,18 @@ import {
 import { AI_ANALYTICS_WINDOWS } from '../../constants/ai-analytics.const';
 import { AiPulseDto } from '../../dto/ai-pulse.dto';
 import { AiAnalyticsFeedbackStore } from '../../store/ai-analytics-feedback.store';
+import { AiAnalyticsCalendarLoader } from '../loaders/calendar.loader';
 import { CallsLoader } from '../loaders/calls.loader';
 import { toPulseRow } from '../loaders/lite-row.mapper';
 import { portalMinDurationByType } from '../loaders/min-duration.util';
 import { portalRangeUtc } from '../loaders/period.util';
+import { PulseTelephonyLoader } from '../loaders/pulse-telephony.loader';
 import {
     AiAnalyticsPortalSettings,
     SettingsLoader,
 } from '../loaders/settings.loader';
 import { SmartLinkLoader } from '../loaders/smart-link.loader';
-import {
-    AlertMarks,
-    collectPulseAlerts,
-    PulseAlertDraft,
-} from '../presenter/pulse-alerts.util';
+import { AlertMarks, collectPulseAlerts } from '../presenter/pulse-alerts.util';
 import { toPulseDto, withPulseAlertLinks } from '../presenter/pulse.presenter';
 import { portalRegistryOf } from '../presenter/readiness-stages.util';
 
@@ -70,6 +68,13 @@ export interface PulseUseCaseOptions {
  * применённый порог и порог «короткого» звонка уходят в ответ, чтобы
  * витрина не писала числа наугад.
  *
+ * Рабочие дни — по производственному календарю портала, тому же, что у
+ * ночного конвейера (AiAnalyticsCalendarLoader: календарь Битрикса → РФ),
+ * а не по JSON настроек без праздников (05.11.2026: 04.11 считался
+ * рабочим). День без единого звонка в выборке — выходной, которого не
+ * знает и календарь: окно берёт день раньше (skipDaysWithoutCalls).
+ * Доля коротких разговоров — из телефонии (PulseTelephonyLoader).
+ *
  * Отметки алертов (alert_sent / alert_handled) читаются до момента запроса,
  * а не до конца окна: «Отработано», поставленное сегодня по звонку окна,
  * видно сразу. Запись alert_handled сбрасывает кэш пульса домена
@@ -92,12 +97,18 @@ export class PulseUseCase {
         private readonly settings: SettingsLoader,
         private readonly feedback: AiAnalyticsFeedbackStore,
         private readonly smartLinks: SmartLinkLoader,
+        private readonly calendars: AiAnalyticsCalendarLoader,
+        private readonly telephony: PulseTelephonyLoader,
     ) {}
 
-    /** Последний день окна: вчерашний рабочий день в TZ портала. */
-    async resolveEndDate(domain: string, now = new Date()): Promise<string> {
+    /**
+     * День ключа кэша: «сегодня» в TZ портала. Не последний день окна:
+     * его считает календарь с Битрикса, а резюме (без PBX) должно найти
+     * пульс тем же ключом — «сегодня» оба знают одинаково.
+     */
+    async resolveCacheDay(domain: string, now = new Date()): Promise<string> {
         const { calendar } = await this.settings.load(domain);
-        return previousWorkday(toPortalDate(now, calendar.timeZone), calendar);
+        return toPortalDate(now, calendar.timeZone);
     }
 
     async execute(
@@ -106,7 +117,7 @@ export class PulseUseCase {
     ): Promise<AiPulseDto> {
         const now = options.now ?? new Date();
         const settings = await this.settings.load(domain);
-        const { calendar } = settings;
+        const { calendar } = await this.calendars.load(domain, { now });
         const endDate = previousWorkday(
             toPortalDate(now, calendar.timeZone),
             calendar,
@@ -134,6 +145,7 @@ export class PulseUseCase {
             historyWorkdays: AI_ANALYTICS_WINDOWS.pulseHistoryWorkdays,
             minDurationSecByType: portalMinDurationByType(settings),
             managerMinN: pulseManagerMinN(settings),
+            skipDaysWithoutCalls: true,
         });
         const alerts = collectPulseAlerts(
             rows,
@@ -141,8 +153,39 @@ export class PulseUseCase {
             calendar.timeZone,
             marks,
         );
-        const links = await this.resolveAlertLinks(domain, alerts);
-        return toPulseDto(endDate, result, withPulseAlertLinks(alerts, links));
+        // Ссылки одним вызовом: сигналы и звонки-примеры «С кем поработать».
+        const exampleIds = result.byManager.flatMap(row => [
+            ...row.noDateCallIds,
+            ...(row.dateCallId ? [row.dateCallId] : []),
+        ]);
+        const [links, shortShare] = await Promise.all([
+            this.resolveLinks(domain, [
+                ...alerts.map(alert => alert.transcriptionId),
+                ...exampleIds,
+            ]),
+            this.telephony.shortShare(domain, {
+                from: result.window.from,
+                to: result.window.to,
+                timeZone: calendar.timeZone,
+                minDurationSec: result.minDurationSec,
+                callReport: settings.callReport,
+            }),
+        ]);
+        const startedAt = new Map(
+            rows.map(row => [row.transcriptionId, row.callStartedAt]),
+        );
+        return toPulseDto(
+            endDate,
+            result,
+            withPulseAlertLinks(alerts, links),
+            shortShare,
+            (transcriptionId: string) => ({
+                transcriptionId,
+                callStartedAt:
+                    startedAt.get(transcriptionId)?.toISOString() ?? null,
+                link: links.get(transcriptionId) ?? null,
+            }),
+        );
     }
 
     /** Отправленные/отработанные алерты по звонкам (ais feedback). */
@@ -165,15 +208,15 @@ export class PulseUseCase {
     }
 
     /**
-     * Ссылки на карточки разборов всех сигналов одним вызовом загрузчика
-     * (он сам ходит в смарт и ais пачкой по всем id). Fail-open: ошибка
-     * загрузчика → пустая карта, у всех сигналов link = null.
+     * Ссылки на карточки разборов (сигналы и звонки-примеры) одним вызовом
+     * загрузчика (он сам ходит в смарт и ais пачкой по всем id). Fail-open:
+     * ошибка загрузчика → пустая карта, у всех link = null.
      */
-    private async resolveAlertLinks(
+    private async resolveLinks(
         domain: string,
-        alerts: readonly PulseAlertDraft[],
+        transcriptionIds: readonly string[],
     ): Promise<ReadonlyMap<string, string | null>> {
-        const ids = [...new Set(alerts.map(alert => alert.transcriptionId))];
+        const ids = [...new Set(transcriptionIds)];
         if (!ids.length) return new Map();
         try {
             return await this.smartLinks.resolveLinks(domain, ids);

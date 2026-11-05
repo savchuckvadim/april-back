@@ -120,4 +120,37 @@ describe('forecastVerdictText', () => {
         ).toContain('Мало данных');
         expect(forecastVerdictText(backtest())).toContain('Проверка пройдена');
     });
+
+    it('провал по узкой вилке — цифры словами, без «точность хуже простых способов»', () => {
+        const text = forecastVerdictText(
+            backtest({
+                monthKey: '2026-10',
+                status: 'fail',
+                reasons: ['coverage-below', 'mase-mean3'],
+                coverageShare: 0.52,
+                coverageTarget: 0.8,
+                maseNaive: 0.63,
+                maseMean3: 0.76,
+            }),
+        );
+
+        expect(text).toContain('факт попал в вилку в 52 % дней (нужно 80 %)');
+        expect(text).toContain(
+            'на 37 % меньше, чем у «по темпу с начала месяца»',
+        );
+        expect(text).toContain(
+            'на 24 % меньше, чем у «среднего за три месяца»',
+        );
+        expect(text).toContain('мешает узкая вилка');
+        expect(text).not.toContain('точность хуже простых способов');
+        expect(
+            forecastVerdictText(
+                backtest({
+                    status: 'fail',
+                    reasons: ['mase-naive'],
+                    maseNaive: 1.2,
+                }),
+            ),
+        ).toContain('середина не точнее простых способов');
+    });
 });

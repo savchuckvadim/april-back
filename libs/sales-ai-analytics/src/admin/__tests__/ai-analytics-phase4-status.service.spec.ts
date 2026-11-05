@@ -76,6 +76,8 @@ const backtest = (status: string, shadowMonths: number) => ({
         },
         pinball: { low: 1, high: 2, mean: 1.5 },
         pit: { belowP50Share: 0.5, bins: [] },
+        calibration: null,
+        calibratedMonths: 0,
     },
     meta: META,
 });

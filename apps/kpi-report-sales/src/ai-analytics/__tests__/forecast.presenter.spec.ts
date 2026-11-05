@@ -125,6 +125,7 @@ describe('forecast-snapshots.reader — структурное чтение жу
                 months: 6,
                 days: 132,
             },
+            calibration: null,
         });
         expect(readForecastBacktest('2026-09', { status: 'магия' })).toBeNull();
         expect(

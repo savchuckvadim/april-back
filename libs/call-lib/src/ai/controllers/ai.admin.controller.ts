@@ -1,5 +1,12 @@
-import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Param, Put, Query } from '@nestjs/common';
+import {
+    ApiOkResponse,
+    ApiOperation,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
+import { AiAdminPageDto, AiAdminPageQueryDto } from '../dto/ai-admin-page.dto';
+import { AiAdminPageService } from '../services/ai-admin-page.service';
 import { AiService } from '../services/ai.service';
 import { AiCreateDto } from '../dto/ai-create.dto';
 import { AiEntityDto } from '../dto/ai-entity.dto';
@@ -8,7 +15,10 @@ import { AiUpdateDto } from '../dto/ai-update.dto';
 @ApiTags('Admin AI')
 @Controller('admin/ai')
 export class AdminAiController {
-    constructor(private readonly aiService: AiService) {}
+    constructor(
+        private readonly aiService: AiService,
+        private readonly pageService: AiAdminPageService,
+    ) {}
 
     @Post()
     @ApiOperation({ summary: 'Создать новую запись AI' })
@@ -30,6 +40,21 @@ export class AdminAiController {
     })
     async findAll(): Promise<AiEntityDto[]> {
         return this.aiService.findAll();
+    }
+
+    // Объявлен до ':id', иначе 'page' уйдёт в поиск записи по id.
+    @Get('page')
+    @ApiOperation({
+        summary: 'Страница AI-записей',
+        description:
+            'Свежие первыми, общее число под фильтром; фильтры — домен портала ' +
+            'и тип записи. Для списка админки вместо выгрузки всех записей.',
+    })
+    @ApiOkResponse({ type: AiAdminPageDto })
+    async findPage(
+        @Query() query: AiAdminPageQueryDto,
+    ): Promise<AiAdminPageDto> {
+        return this.pageService.findPage(query);
     }
 
     @Get('domain/:domain/user/:userId')

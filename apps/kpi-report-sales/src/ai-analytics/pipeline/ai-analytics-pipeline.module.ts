@@ -181,6 +181,9 @@ export const AI_ANALYTICS_PIPELINE_STEP_MODULES: Type<unknown>[] = [
         },
     ],
     exports: [
+        // Тот же производственный календарь читает пульс корня фичи
+        // (05.11.2026: окно пульса по праздникам портала, как у конвейера).
+        AiAnalyticsCalendarLoader,
         SnapshotPipelineService,
         AiAnalyticsBackfillService,
         SanityStep,

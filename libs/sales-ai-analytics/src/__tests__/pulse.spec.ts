@@ -163,7 +163,8 @@ describe('computePulse', () => {
             withDate(tooOld),
         ];
 
-        const result = computePulse(rows, options);
+        // Порог точки XmR снят: здесь проверяется арифметика ряда.
+        const result = computePulse(rows, { ...options, xmrDayMinN: 1 });
         const keys = result.daily.map(point => point.key);
         expect(keys).toEqual([history[0], '2026-09-04', END]);
         expect(keys.every(key => history.includes(key))).toBe(true);
