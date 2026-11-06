@@ -235,6 +235,29 @@ describe('AI_GUIDE_SECTIONS: целостность путеводителя', (
         expect(section?.theory).toContain('кнопками на карточке портала');
     });
 
+    it('раздел «отчёт собственнику» ведёт на ручки отчёта и ключи выпуска', () => {
+        const section = findAiGuideSection('owner-report');
+        const paths = (section?.endpoints ?? []).map(endpoint => endpoint.path);
+        expect(paths).toEqual(
+            expect.arrayContaining([
+                AI_GUIDE_ENDPOINT.ownerReport.path,
+                AI_GUIDE_ENDPOINT.ownerReportPdf.path,
+                AI_GUIDE_ENDPOINT.ownerReportSend.path,
+            ]),
+        );
+        const keys = (section?.settings ?? []).map(ref => ref.key);
+        expect(keys).toEqual(
+            expect.arrayContaining([
+                'aiAnalyticsOwnerReportEnabled',
+                'aiAnalyticsOwnerReportKinds',
+                'aiAnalyticsOwnerReportUserIds',
+                'aiAnalyticsOwnerReportDiskFolderId',
+                'aiAnalyticsOwnerReportDryRun',
+            ]),
+        );
+        expect(section?.theory).toContain('второй рабочий день');
+    });
+
     it('раздел «модель и данные» показывает все тематические группы реестра', () => {
         const section = findAiGuideSection('model-and-data');
         expect([...(section?.paramGroups ?? [])].sort()).toEqual(

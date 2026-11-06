@@ -3,6 +3,7 @@ import { ENABLE_AND_PUSH_SECTION } from './sections/enable-and-push.section';
 import { PEOPLE_AND_TARGETS_SECTION } from './sections/people-and-targets.section';
 import { CALL_ANALYSIS_SECTION } from './sections/call-analysis.section';
 import { METHODOLOGY_SECTION } from './sections/methodology.section';
+import { OWNER_REPORT_SECTION } from './sections/owner-report.section';
 import { MODEL_AND_DATA_SECTION } from './sections/model-and-data.section';
 import { FORECAST_SECTION } from './sections/forecast.section';
 import { FEEDBACK_RELIABILITY_SECTION } from './sections/feedback-reliability.section';
@@ -17,6 +18,7 @@ export const AI_GUIDE_SECTIONS: readonly AiGuideSection[] = [
     PEOPLE_AND_TARGETS_SECTION,
     CALL_ANALYSIS_SECTION,
     METHODOLOGY_SECTION,
+    OWNER_REPORT_SECTION,
     MODEL_AND_DATA_SECTION,
     FORECAST_SECTION,
     FEEDBACK_RELIABILITY_SECTION,
