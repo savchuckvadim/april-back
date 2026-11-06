@@ -1,7 +1,7 @@
-import { Type } from 'class-transformer';
-import { IsOptional, IsString, ValidateNested } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsInt, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumeric } from '@/core/decorators/dto/string-to-number-transform-validate.decorator';
+import { parseCrmEntityId } from '../lib/crm-entity-id.util';
 
 /** Блок `auth`, который исходящий вебхук Битрикса добавляет к запросу. */
 export class TmcPresentationApprovedAuthDto {
@@ -45,21 +45,29 @@ export class TmcPresentationApprovedDto {
 
     @ApiPropertyOptional({
         description:
-            'ТМЦ-сделка, из которой подана заявка (поле РПА «ТМЦ Сделка»).',
+            'ТМЦ-сделка, из которой подана заявка (поле РПА «ТМЦ Сделка»): ' +
+            'голый id либо привязка вида D_216773.',
         type: Number,
         example: 213065,
     })
     @IsOptional()
-    @IsNumeric()
+    @Transform(({ obj }) =>
+        parseCrmEntityId((obj as Record<string, unknown>).tmcDealId),
+    )
+    @IsInt()
     tmcDealId?: number;
 
     @ApiPropertyOptional({
-        description: 'Компания клиента (поле РПА «Компания»).',
+        description:
+            'Компания клиента (поле РПА «Компания»): голый id либо CO_95857.',
         type: Number,
         example: 48210,
     })
     @IsOptional()
-    @IsNumeric()
+    @Transform(({ obj }) =>
+        parseCrmEntityId((obj as Record<string, unknown>).companyId),
+    )
+    @IsInt()
     companyId?: number;
 
     @ApiPropertyOptional({
@@ -69,7 +77,10 @@ export class TmcPresentationApprovedDto {
         example: 91022,
     })
     @IsOptional()
-    @IsNumeric()
+    @Transform(({ obj }) =>
+        parseCrmEntityId((obj as Record<string, unknown>).contactId),
+    )
+    @IsInt()
     contactId?: number;
 
     @ApiPropertyOptional({

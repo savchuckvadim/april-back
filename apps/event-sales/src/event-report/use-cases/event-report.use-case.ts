@@ -117,6 +117,9 @@ export class EventReportUseCase {
         // его итог уезжает в историю карточки, а её собирает entity-flow —
         // первый в цепочке. Один прямой вызов, batch не трогается.
         await taskFlow.readClosingChecklist(ctx);
+        // Удалённые лиды не должны попасть в привязки новой задачи: с ними
+        // Битрикс не показывает её в карточке сделки. Тоже прямой вызов.
+        await taskFlow.readMissingLeads(ctx);
 
         // dealFlow сам выключается для leadOnly (ctx.isDealFlow), возврат в
         // ТМЦ — тоже про движение сделок, поэтому гейтится стратегией явно.

@@ -32,12 +32,16 @@ export interface AnalyticsLiteObjection {
     at?: number | null;
     /** Первая реакция менеджера: answer / clarify / other (П8); null — нет. */
     reaction?: string | null;
+    /** Тема возражения для отчётов (focus-v3.1); null — старый разбор. */
+    topic?: string | null;
 }
 
 /** Следующий шаг: назначен ли и на какую дату (YYYY-MM-DD). */
 export interface AnalyticsLiteNextStep {
     set: boolean;
     date: string | null;
+    /** Вид шага: presentation / demo_access / offer / invoice / callback / other; null — нет. */
+    kind?: string | null;
 }
 
 /**
@@ -97,6 +101,51 @@ export interface AnalyticsCallLiteRow {
      * и style: старые сериализованные строки его не несут.
      */
     methodology?: AnalyticsLiteMethodology;
+    /**
+     * Факты для отчётов руководителю (focus-v3.1, 06.11.2026) — см.
+     * AnalyticsLiteReportFacts. Необязательное по той же причине: старые
+     * сериализованные строки его не несут.
+     */
+    report?: AnalyticsLiteReportFacts;
+}
+
+/** Сбой не по вине разговора: код справочника и цитата. */
+export interface AnalyticsLiteIssue {
+    code: string;
+    quote: string | null;
+}
+
+/** Цена, прозвучавшая в разговоре. */
+export interface AnalyticsLitePrice {
+    amount: number;
+    /** За сколько месяцев названа; null — срок не прозвучал. */
+    periodMonths: number | null;
+    product: string | null;
+    /** list / promo (строкой — справочник отчёта); null — нет. */
+    kind: string | null;
+}
+
+/** Самопредставление менеджера. */
+export interface AnalyticsLiteSelfIntro {
+    introduced: boolean | null;
+    companyNamed: boolean | null;
+    /** none / honest / evasive; null — нет. */
+    offerQuestion: string | null;
+}
+
+/**
+ * Факты для отчётов руководителю и собственнику (постановка
+ * ai/tasks/2026-11-06-owner-period-report.md, §3). Старый разбор без этих
+ * полей — null и пустые списки; отчёт показывает «признак считается с даты X».
+ */
+export interface AnalyticsLiteReportFacts {
+    /** advanced / callback_dated / postponed / refused / no_contact; null — нет. */
+    outcome: string | null;
+    issues: AnalyticsLiteIssue[];
+    prices: AnalyticsLitePrice[];
+    upsellAttempted: boolean | null;
+    upsellKind: string | null;
+    selfIntro: AnalyticsLiteSelfIntro | null;
 }
 
 /**

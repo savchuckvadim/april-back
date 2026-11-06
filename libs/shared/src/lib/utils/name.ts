@@ -1,13 +1,17 @@
 import { incline } from 'lvovich';
 import type { FioT } from 'lvovich/lib/gender';
 
+/** Падежи, в которые склоняем ФИО: родительный — договоры, дательный — адресат КП. */
+export type NameCase = 'genitive' | 'dative';
+
 export class NameUtil {
     /**
-     * Склоняет слово в родительный падеж (genitive)
+     * Склоняет ФИО (или его часть) в падеж; по умолчанию родительный (genitive)
      * @param word - слово для склонения
+     * @param grammaticalCase - падеж lvovich: genitive («Иванова») или dative («Иванову»)
      * @returns склоненное слово
      */
-    static declineWord(word: string): string {
+    static declineWord(word: string, grammaticalCase: NameCase = 'genitive'): string {
         if (!word || word.trim() === '') {
             return '';
         }
@@ -21,7 +25,7 @@ export class NameUtil {
 
             // Если это похоже на ФИО (3 части), склоняем как ФИО
             if (fioParts.last && fioParts.first && fioParts.middle) {
-                const inflected = incline(fioParts, 'genitive');
+                const inflected = incline(fioParts, grammaticalCase);
                 const result = `${inflected.last} ${inflected.first} ${inflected.middle}`;
                 return isCapitalized
                     ? this.capitalizeWords(result)
@@ -30,7 +34,7 @@ export class NameUtil {
 
             // Если это два слова, пытаемся склонить как ФИО (фамилия + имя)
             if (fioParts.last && fioParts.first) {
-                const inflected = incline(fioParts, 'genitive');
+                const inflected = incline(fioParts, grammaticalCase);
                 const result = `${inflected.last} ${inflected.first}`;
                 return isCapitalized
                     ? this.capitalizeWords(result)
@@ -45,7 +49,7 @@ export class NameUtil {
                         first: null,
                         middle: null,
                     };
-                    const inflected = incline(singleFio, 'genitive');
+                    const inflected = incline(singleFio, grammaticalCase);
                     const result = inflected.last || originalWord;
                     return isCapitalized
                         ? this.capitalize(result)

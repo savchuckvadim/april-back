@@ -101,6 +101,9 @@ export class EventReportTmcUseCase {
         // Чек-лист закрываемой задачи — до flow-сервисов: его итог уходит
         // в историю карточки, которую собирает entity-flow.
         await taskFlow.readClosingChecklist(ctx);
+        // Удалённые лиды не должны попасть в привязки новой задачи: с ними
+        // Битрикс не показывает её в карточке сделки. Тоже прямой вызов.
+        await taskFlow.readMissingLeads(ctx);
         // Легаси: до батча — лишние открытые сделки менеджера по компании.
         const closed = await closeOthers.apply(ctx);
 

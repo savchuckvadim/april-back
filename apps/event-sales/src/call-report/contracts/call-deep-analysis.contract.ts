@@ -1,3 +1,13 @@
+import {
+    FORM_FACTS_PROPERTIES,
+    FORM_FACTS_REQUIRED,
+    FORM_FACTS_SPEC,
+    MOVEMENT_FACTS_PROPERTIES,
+    MOVEMENT_FACTS_REQUIRED,
+    MOVEMENT_FACTS_SPEC,
+    NEXT_STEP_KIND_SCHEMA,
+    OBJECTION_TOPIC_SCHEMA,
+} from './call-report-facts.contract';
 import { CALL_REPORT_OBJECTION_REACTIONS } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import {
     FIVE_K_TEMPLATES,
@@ -80,6 +90,8 @@ export const NEXT_STEP_SCHEMA = {
         goal: { type: ['string', 'null'] },
         clientAction: { type: ['string', 'null'] },
         managerAction: { type: ['string', 'null'] },
+        // Вид шага (focus-v3.1, 06.11.2026) — конверсии отчёта собственнику.
+        kind: NEXT_STEP_KIND_SCHEMA,
     },
     required: [
         'set',
@@ -89,6 +101,7 @@ export const NEXT_STEP_SCHEMA = {
         'goal',
         'clientAction',
         'managerAction',
+        'kind',
     ],
     additionalProperties: false,
 } as const;
@@ -155,6 +168,8 @@ export const OBJECTION_SCHEMA = {
             type: ['string', 'null'],
             enum: [...CALL_REPORT_OBJECTION_REACTIONS, null],
         },
+        // Тема возражения для отчёта (focus-v3.1) — подробнее категории.
+        topic: OBJECTION_TOPIC_SCHEMA,
     },
     required: [
         'objection',
@@ -165,6 +180,7 @@ export const OBJECTION_SCHEMA = {
         'startSec',
         'endSec',
         'reaction',
+        'topic',
     ],
     additionalProperties: false,
 } as const;
@@ -341,6 +357,9 @@ export const CALL_DEEP_ANALYSIS_SCHEMA: Record<string, unknown> = {
         fiveKAnalysis: { type: ['string', 'null'] },
         fiveKItems: FIVE_K_ITEMS_SCHEMA,
         flow: FLOW_SCHEMA,
+        // Факты для отчётов руководителю (focus-v3.1, 06.11.2026).
+        ...MOVEMENT_FACTS_PROPERTIES,
+        ...FORM_FACTS_PROPERTIES,
     },
     required: [
         'summary',
@@ -377,6 +396,8 @@ export const CALL_DEEP_ANALYSIS_SCHEMA: Record<string, unknown> = {
         'fiveKAnalysis',
         'fiveKItems',
         'flow',
+        ...MOVEMENT_FACTS_REQUIRED,
+        ...FORM_FACTS_REQUIRED,
     ],
     additionalProperties: false,
 };
@@ -711,6 +732,8 @@ ${FIVE_K_CHECKLIST_SPEC}
   СКРЫТОЕ сопротивление: «у нас уже есть Консультант», «пришлите на почту»,
   «надо посоветоваться» — это возражения, а не информация.
   ${OBJECTION_TIMECODE_SPEC}
+${MOVEMENT_FACTS_SPEC}
+${FORM_FACTS_SPEC}
 - competitors — какие конкурирующие системы упомянул клиент (только коды из
   справочника, пустой массив если не упоминал).
 - refusalCategory — если звонок закончился отказом, отдели РЫНОЧНУЮ причину

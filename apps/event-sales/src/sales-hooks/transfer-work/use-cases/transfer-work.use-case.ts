@@ -24,6 +24,7 @@ import {
 import { setManagerOp } from '../../../shared/lead-request/manager-op.util';
 import { dealLeadIds } from '../../../cold-hook-v2/lib/deal-link-fields';
 import { dealFailStageId } from '../../../shared/deal-stage';
+import { closedSatelliteLabel } from '../lib/closed-satellite-label';
 
 type BxRow = Record<string, unknown>;
 
@@ -240,7 +241,11 @@ export class TransferWorkUseCase
                     } as never),
                 );
                 closedSatellites.push(
-                    `${scoped.categoryCode} #${dealId} «${this.textOf((scoped.deal as unknown as BxRow).TITLE)}»`,
+                    closedSatelliteLabel(
+                        ctx.portal.getDealCategoryByCode(scoped.categoryCode),
+                        dealId,
+                        this.textOf((scoped.deal as unknown as BxRow).TITLE),
+                    ),
                 );
                 continue;
             }

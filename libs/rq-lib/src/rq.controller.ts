@@ -101,10 +101,17 @@ export class RqController {
     @Post('case')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({
-        summary: 'Родительный падеж (ФИО директора, должность, основание)',
+        summary:
+            'Падеж для ФИО, должности, основания: родительный (по умолчанию) или дательный',
     })
     @ApiOkResponse({ type: RqCaseResponseDto })
     declineCase(@Body() body: RqCaseRequestDto): RqCaseResponseDto {
-        return { case: this.rqCaseService.decline(body.value, body.kind) };
+        return {
+            case: this.rqCaseService.decline(
+                body.value,
+                body.kind,
+                body.grammaticalCase,
+            ),
+        };
     }
 }

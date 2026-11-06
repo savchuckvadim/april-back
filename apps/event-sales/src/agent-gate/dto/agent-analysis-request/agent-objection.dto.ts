@@ -14,7 +14,9 @@ import {
 } from '@lib/call-lib';
 import {
     CALL_REPORT_OBJECTION_REACTIONS,
+    CALL_REPORT_OBJECTION_TOPICS,
     type CallReportObjectionReaction,
+    type CallReportObjectionTopic,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 
 /**
@@ -122,4 +124,19 @@ export class AgentObjectionDto {
     @IsString()
     @IsIn(CALL_REPORT_OBJECTION_REACTIONS as unknown as string[])
     reaction?: CallReportObjectionReaction | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Тема возражения для отчётов руководителю (focus-v3.1): нет ' +
+            'времени, не ЛПР, бюджет и закупки, уже есть система, «пришлите ' +
+            'на почту», подумать, не интересно, технические проблемы, ' +
+            'раздражение звонками, цена, другое. Подробнее категории.',
+        enum: CALL_REPORT_OBJECTION_TOPICS,
+        nullable: true,
+        example: 'send_to_email',
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(CALL_REPORT_OBJECTION_TOPICS as unknown as string[])
+    topic?: CallReportObjectionTopic | null;
 }

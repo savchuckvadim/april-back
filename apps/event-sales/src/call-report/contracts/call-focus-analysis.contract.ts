@@ -22,6 +22,14 @@ import {
     SECTION_ITEM_SCHEMA,
 } from './call-deep-analysis.contract';
 import {
+    FORM_FACTS_PROPERTIES,
+    FORM_FACTS_REQUIRED,
+    FORM_FACTS_SPEC,
+    MOVEMENT_FACTS_PROPERTIES,
+    MOVEMENT_FACTS_REQUIRED,
+    MOVEMENT_FACTS_SPEC,
+} from './call-report-facts.contract';
+import {
     RISK_EVIDENCE_LIST_SCHEMA,
     RISK_FLAGS_SCHEMA,
     RISK_FLAGS_SPEC,
@@ -102,6 +110,8 @@ export const FOCUS_FORM_SCHEMA: Record<string, unknown> = {
             type: ['string', 'null'],
             enum: [...CALL_REPORT_SPECIALIST_CODES, null],
         },
+        // Самопредставление (focus-v3.1, 06.11.2026) — для отчётов руководителю.
+        ...FORM_FACTS_PROPERTIES,
     },
     required: [
         'sections',
@@ -111,6 +121,7 @@ export const FOCUS_FORM_SCHEMA: Record<string, unknown> = {
         'sentiment',
         'interlocutorRole',
         'specialist',
+        ...FORM_FACTS_REQUIRED,
     ],
     additionalProperties: false,
 };
@@ -140,7 +151,8 @@ ${SECTION_FIELDS_SPEC}
   юрист; кадры, приказы, отпуска, трудовые споры — кадровик; управление
   компанией и решения — руководитель. Явных признаков нет — null, не гадай.
   Если в контексте CRM указана должность собеседника — используй её как
-  подсказку, но верь лексике разговора больше.`;
+  подсказку, но верь лексике разговора больше.
+${FORM_FACTS_SPEC}`;
 
 // ---------------------------------------------------------------------------
 // ФОКУС «СОДЕРЖАНИЕ»: потребности и презентация. Главный вопрос — уместность.
@@ -237,6 +249,9 @@ export const FOCUS_MOVEMENT_SCHEMA: Record<string, unknown> = {
         fiveKAnalysis: { type: ['string', 'null'] },
         fiveKItems: FIVE_K_ITEMS_SCHEMA,
         flow: FLOW_SCHEMA,
+        // Факты для отчётов руководителю (focus-v3.1, 06.11.2026): исход,
+        // сбои, цены, допродажа.
+        ...MOVEMENT_FACTS_PROPERTIES,
     },
     required: [
         'sections',
@@ -257,6 +272,7 @@ export const FOCUS_MOVEMENT_SCHEMA: Record<string, unknown> = {
         'fiveKAnalysis',
         'fiveKItems',
         'flow',
+        ...MOVEMENT_FACTS_REQUIRED,
     ],
     additionalProperties: false,
 };
@@ -277,7 +293,8 @@ ${SECTION_FIELDS_SPEC}
 
 ДОПОЛНИТЕЛЬНЫЕ ПОЛЯ ТВОЕГО ФОКУСА
 - objections — каждое возражение: формулировка, отработка, удалось ли, дословная
-  цитата, категория. Считай возражением и СКРЫТОЕ сопротивление: «у нас уже есть
+  цитата, категория и тема (topic — см. факты ниже). Считай возражением и
+  СКРЫТОЕ сопротивление: «у нас уже есть
   Консультант», «пришлите на почту», «надо посоветоваться».
   ${OBJECTION_TIMECODE_SPEC}
 - priceDiscussed — обсуждалась ли цена фактически.
@@ -347,6 +364,8 @@ ${FIVE_K_CHECKLIST_SPEC}
   будет ли следующий контакт; plan.typeCode при isPlanned (cold/warm/
   presentation/hot/moneyAwait/supply), иначе null; plan.name — короткое название;
   plan.deadlineDate — YYYY-MM-DD или null.
+
+${MOVEMENT_FACTS_SPEC}
 
 ${RISK_FLAGS_SPEC}`;
 

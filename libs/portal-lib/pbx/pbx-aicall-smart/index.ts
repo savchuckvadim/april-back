@@ -1,4 +1,5 @@
 export * from './type/pbx-aicall-smart.type';
+export * from './type/pbx-aicall-report-facts.type';
 export * from './type/pbx-aicall-smart-field.type';
 export * from './type/pbx-aicall-smart.descriptor';
 export * from './type/ai-analytics-event-map.const';

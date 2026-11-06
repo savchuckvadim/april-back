@@ -4,7 +4,6 @@ import { ETaskPriority } from '@/modules/bitrix/domain/tasks/task/interface/task
 import { IBXChecklistItem } from '@/modules/bitrix/domain/tasks/checklist-item';
 import { mergeTaskCrmBindings } from '@/modules/bitrix/domain/tasks/task/lib/task-crm-binding.util';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
-import { PBX_SALES_EVENT_FIELD_CODES } from '@lib/portal-lib/pbx';
 import { toBatchSafeText } from '@lib/bitrix/consts/batch.consts';
 import { EventReportContext } from '../context/event-report.context';
 import { isClosedLaunchDealEntity } from '../init/closed-launch-base-deal';
@@ -42,6 +41,8 @@ import {
 import { EEventReportEntityType } from '../init/event-report-init.types';
 import { DealFlowResult } from '../deal/event-report-deal-flow.service';
 import { isTaskClosed, reportClosesTask } from './report-closes-task';
+import { collectTaskLeadIds } from './task-lead-links';
+import { LiveLeadsReader } from './live-leads.reader';
 
 /**
  * Эмодзи-маркеры «важных» планов (legacy `isPlannedImportant`).
@@ -173,6 +174,32 @@ export class EventReportTaskFlowService {
          */
         private readonly checklistEnabled: boolean = false,
     ) {}
+
+    /** Удалённые лиды из окружения отчёта — см. {@link readMissingLeads}. */
+    private missingLeadIds: ReadonlySet<number> = new Set();
+
+    /**
+     * Проверяет, живы ли лиды, которые новая задача унаследует в
+     * `UF_CRM_TASK`. Удалённый лид в привязках ломает задачу тихо: она
+     * создаётся, но Битрикс не заводит для неё дело — в карточке сделки
+     * задачи нет (garant 06.11.2026, сделка 33467).
+     *
+     * Как и чек-лист — один прямой вызов ДО общего batch.
+     */
+    async readMissingLeads(ctx: EventReportContext): Promise<void> {
+        if (!ctx.isPlanned) return;
+        const candidates = collectTaskLeadIds(ctx, this.portal);
+        if (!candidates.length) return;
+        this.missingLeadIds = await new LiveLeadsReader(
+            this.bitrix,
+        ).findMissing(candidates);
+        if (this.missingLeadIds.size) {
+            this.logger.log(
+                `task-flow ${ctx.domain}: удалённые лиды ${[...this.missingLeadIds].join(', ')} ` +
+                    'не попадут в привязки новой задачи',
+            );
+        }
+    }
 
     /**
      * Читает чек-лист ЗАКРЫВАЕМОЙ задачи и кладёт итог в контекст.
@@ -629,32 +656,11 @@ export class EventReportTaskFlowService {
     ): string[] {
         const links: string[] = [];
 
-        if (ctx.entityType === EEventReportEntityType.LEAD && ctx.entityId) {
-            links.push(`L_${ctx.entityId}`);
-        }
-
-        // Лид не должен теряться при работе из сделки/компании: следующая
-        // задача наследует L_* текущей задачи и лиды-первоисточники сделки
-        // (deal_from_lead_id / deal_joined_leads / LEAD_ID) — из лида видно,
-        // что происходит с работой.
-        links.push(...this.collectInheritedLeadLinks(ctx));
-
-        // Заявка, с которой менеджер связал презентацию (модалка перед
-        // отправкой) — следующая задача обязана нести её L_-привязку.
-        const linkedLead = ctx.dto.leadSync?.presentationLink
-            ? Number(ctx.dto.leadSync.leadId)
-            : NaN;
-        if (Number.isFinite(linkedLead) && linkedLead > 0) {
-            links.push(`L_${linkedLead}`);
-        }
-
-        // Лиды, отмеченные менеджером при создании задачи из сделки/компании
-        // без текущей задачи (чекбоксы «связано с этими заявками?»).
-        for (const rawId of ctx.dto.plan?.relatedLeadIds ?? []) {
-            const id = Number(rawId);
-            if (Number.isFinite(id) && id > 0) {
-                links.push(`L_${id}`);
-            }
+        // Лид не должен теряться при работе из сделки/компании (см.
+        // collectTaskLeadIds); удалённые лиды отброшены — с ними Битрикс
+        // не показывает задачу в карточке сделки.
+        for (const leadId of collectTaskLeadIds(ctx, this.portal)) {
+            if (!this.missingLeadIds.has(leadId)) links.push(`L_${leadId}`);
         }
 
         const planContactId = ctx.dto.plan?.contact?.ID;
@@ -690,53 +696,5 @@ export class EventReportTaskFlowService {
 
         // Дедуп с сохранением порядка первого вхождения (legacy-порядок цел).
         return mergeTaskCrmBindings(links, []);
-    }
-
-    /**
-     * `L_*`-привязки, которые новая задача обязана унаследовать:
-     *  1) из текущей задачи (UF_CRM_TASK) — лид уже был в цепочке;
-     *  2) из сделки-владельца: deal_from_lead_id, deal_joined_leads (наши
-     *     поля графа) и штатный LEAD_ID — работа началась ХО-хуком из лида.
-     */
-    private collectInheritedLeadLinks(ctx: EventReportContext): string[] {
-        const leads: string[] = [];
-        const push = (raw: unknown): void => {
-            const values = Array.isArray(raw) ? raw : [raw];
-            for (const value of values) {
-                if (value == null) continue;
-                const match = /^(?:L_)?(\d+)$/.exec(String(value).trim());
-                if (match && Number(match[1]) > 0) {
-                    leads.push(`L_${match[1]}`);
-                }
-            }
-        };
-
-        const task = ctx.currentTask as unknown as Record<
-            string,
-            unknown
-        > | null;
-        const taskBindings = task?.ufCrmTask ?? task?.UF_CRM_TASK;
-        if (Array.isArray(taskBindings)) {
-            for (const binding of taskBindings) {
-                if (typeof binding === 'string' && binding.startsWith('L_')) {
-                    push(binding);
-                }
-            }
-        }
-
-        const deal = ctx.ownerDeal as unknown as Record<string, unknown> | null;
-        if (deal) {
-            push(deal.LEAD_ID);
-            for (const code of [
-                PBX_SALES_EVENT_FIELD_CODES.deal_from_lead_id,
-                PBX_SALES_EVENT_FIELD_CODES.deal_joined_leads,
-            ]) {
-                const field = this.portal.getEntityFieldByCode('deal', code);
-                if (!field) continue;
-                push(deal[this.portal.getFieldBitrixId(field)]);
-            }
-        }
-
-        return leads;
     }
 }

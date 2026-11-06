@@ -7,6 +7,7 @@ import {
     asStringArray,
     asStringRecord,
 } from './json-value.util';
+import { mapLiteReport } from './analytics-lite-report.mapper';
 import {
     AnalyticsCallLiteRow,
     AnalyticsLiteMethodology,
@@ -29,6 +30,7 @@ export type AnalyticsLiteAnalysisPart = Pick<
     | 'objections'
     | 'versions'
     | 'methodology'
+    | 'report'
 >;
 
 /** Разбора нет: null и пустые списки (каждой строке — свои экземпляры). */
@@ -44,6 +46,7 @@ function noAnalysis(): AnalyticsLiteAnalysisPart {
         objections: [],
         versions: null,
         methodology: undefined,
+        report: undefined,
     };
 }
 
@@ -67,6 +70,7 @@ export function mapLiteAnalysis(
         objections: mapObjections(analysis.objections),
         versions: asStringRecord(analysis.versions),
         methodology: mapMethodology(analysis),
+        report: mapLiteReport(analysis),
     };
 }
 
@@ -108,7 +112,11 @@ function mapScore(analysis: Record<string, unknown>): number | null {
 function mapNextStep(value: unknown): AnalyticsLiteNextStep | null {
     const record = asRecord(value);
     if (!record) return null;
-    return { set: asBoolean(record.set) ?? false, date: asString(record.date) };
+    return {
+        set: asBoolean(record.set) ?? false,
+        date: asString(record.date),
+        kind: asString(record.kind),
+    };
 }
 
 /** Разделы без кода пропускаются; relevance не число → 0 (не применим). */
@@ -153,5 +161,6 @@ function mapObjections(value: unknown): AnalyticsLiteObjection[] {
         outcome: asString(item.outcome),
         at: asNumber(item.startSec),
         reaction: asString(item.reaction),
+        topic: asString(item.topic),
     }));
 }

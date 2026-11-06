@@ -46,9 +46,12 @@ Bitrix и LLM модулю НЕ нужны — отчёты строятся и�
 текста** (Prisma `select` только нужных колонок —
 `TranscriptionStoreService.findDoneInPeriodLite`) + ais-записи
 `agent-analysis` / `call-classify` с проекцией разбора: `score`
-(weightedScore 0–100; у старых разборов score 1–10 × 10), `nextStep {set, date}`,
+(weightedScore 0–100; у старых разборов score 1–10 × 10), `nextStep {set, date, kind}`,
 `riskFlags`, `coachingPriority`, `sections[] {section, relevance, score,
-asWas, alternatives}`, `objections[] {category, quote, handled, outcome}`,
+asWas, alternatives}`, `objections[] {category, topic, quote, handled, outcome}`,
+`report {outcome, issues[], prices[], upsellAttempted, upsellKind, selfIntro}`
+(факты для отчётов руководителю, focus-v3.1 06.11.2026 — старый разбор даёт
+null и пустые списки, см. `analytics-lite-report.mapper.ts`),
 `versions`. Отсутствующее в разборе → `null` / `[]`. Фильтры запроса — те же,
 что у `load` (менеджеры, длительность, тип звонка).
 

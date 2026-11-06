@@ -9,6 +9,7 @@ export * from './agent-analysis-request/agent-related-links.dto';
 export * from './agent-analysis-request/agent-checklists.dto';
 export * from './agent-analysis-request/agent-flow-draft.dto';
 export * from './agent-analysis-request/agent-objection.dto';
+export * from './agent-analysis-request/agent-report-facts.dto';
 export * from './agent-analysis-request/agent-risk-evidence.dto';
 export * from './agent-analysis-request/agent-methodology.dto';
 export * from './agent-analysis-request/agent-analysis-usage.dto';

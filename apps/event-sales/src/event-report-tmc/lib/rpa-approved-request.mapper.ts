@@ -5,6 +5,7 @@ import {
     RPA_PRESENTATION_FIELD,
     RpaPresentationFieldCode,
 } from './rpa-presentation-fields.const';
+import { parseCrmEntityId } from './crm-entity-id.util';
 
 /** Элемент РПА, как его отдаёт `rpa.item.list`: системные поля camelCase, UF — как есть. */
 export type RpaItemRow = Record<string, unknown>;
@@ -37,15 +38,8 @@ export type ApprovedRpaMapping =
  * Bitrix в crm-привязках умеет и `D_213065` / `CO_95857`; множественное
  * поле — первый элемент.
  */
-export const parseRpaCrmBinding = (raw: unknown): number => {
-    const value: unknown = Array.isArray(raw) ? raw[0] : raw;
-    if (typeof value !== 'string' && typeof value !== 'number') return 0;
-    const digits = String(value)
-        .trim()
-        .replace(/^[A-Za-z]+_/, '');
-    const id = Number(digits);
-    return Number.isInteger(id) && id > 0 ? id : 0;
-};
+export const parseRpaCrmBinding = (raw: unknown): number =>
+    parseCrmEntityId(raw) ?? 0;
 
 /** Множественное текстовое поле РПА → строки через перевод строки. */
 export const joinRpaMultiText = (raw: unknown): string => {

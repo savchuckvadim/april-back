@@ -182,3 +182,113 @@ describe('EventReportTaskFlowService — наследование L_* в нов�
         expect(links).not.toContain('D_28477');
     });
 });
+
+/*
+ * garant 06.11.2026, сделка 33467: лид 215557 удалили 08.10, сделка
+ * продолжала на него ссылаться. Задача с удалённым лидом в UF_CRM_TASK
+ * создаётся, но Битрикс не заводит для неё дело — в карточке сделки задачи
+ * нет, а приложение при открытии падало на загрузке лида.
+ */
+describe('EventReportTaskFlowService — удалённые лиды в привязках', () => {
+    const makeBitrixWithLeads = (
+        alive: number[],
+        options: { fail?: boolean } = {},
+    ) => {
+        const base = makeBitrix();
+        const listCalls: unknown[] = [];
+        const bitrix = {
+            ...base.bitrix,
+            lead: {
+                getList: (filter: unknown) => {
+                    listCalls.push(filter);
+                    if (options.fail) {
+                        return Promise.reject(new Error('socket hang up'));
+                    }
+                    const asked = (filter as { ID: number[] }).ID;
+                    return Promise.resolve({
+                        result: asked
+                            .filter(id => alive.includes(id))
+                            .map(id => ({ ID: String(id) })),
+                    });
+                },
+            },
+        };
+        return { bitrix, calls: base.calls, listCalls };
+    };
+
+    const linksOf = (calls: { method: string; args: unknown[] }[]) =>
+        (
+            calls.find(c => c.method === 'task.add')?.args[0] as Record<
+                string,
+                unknown
+            >
+        ).UF_CRM_TASK as string[];
+
+    const ownerWithLeads = () =>
+        baseCtx({
+            ownerDeal: {
+                ID: '33467',
+                LEAD_ID: '215557',
+                UF_CRM_DEAL_JOINED_LEADS: ['L_11'],
+            },
+            entityId: 33467,
+        });
+
+    it('удалённый лид не попадает в новую задачу, живой остаётся', async () => {
+        const { bitrix, calls, listCalls } = makeBitrixWithLeads([11]);
+        const service = new EventReportTaskFlowService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        const ctx = ownerWithLeads();
+
+        await service.readMissingLeads(ctx);
+        service.queue(ctx, deals);
+
+        expect(listCalls).toHaveLength(1);
+        expect(linksOf(calls)).toEqual(['L_11', 'D_33467']);
+    });
+
+    it('чтение лидов упало — привязки прежние, отчёт не падает', async () => {
+        const { bitrix, calls } = makeBitrixWithLeads([], { fail: true });
+        const service = new EventReportTaskFlowService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        const ctx = ownerWithLeads();
+
+        await expect(service.readMissingLeads(ctx)).resolves.toBeUndefined();
+        service.queue(ctx, deals);
+
+        expect(linksOf(calls)).toEqual(['L_215557', 'L_11', 'D_33467']);
+    });
+
+    it('без плана лиды не читаются — новой задачи не будет', async () => {
+        const { bitrix, listCalls } = makeBitrixWithLeads([]);
+        const service = new EventReportTaskFlowService(
+            bitrix as never,
+            makePortal() as never,
+        );
+
+        await service.readMissingLeads(
+            baseCtx({
+                isPlanned: false,
+                ownerDeal: { ID: '1', LEAD_ID: '215557' },
+            }),
+        );
+
+        expect(listCalls).toHaveLength(0);
+    });
+
+    it('лидов в окружении нет — портал не спрашиваем', async () => {
+        const { bitrix, listCalls } = makeBitrixWithLeads([]);
+        const service = new EventReportTaskFlowService(
+            bitrix as never,
+            makePortal() as never,
+        );
+
+        await service.readMissingLeads(baseCtx());
+
+        expect(listCalls).toHaveLength(0);
+    });
+});

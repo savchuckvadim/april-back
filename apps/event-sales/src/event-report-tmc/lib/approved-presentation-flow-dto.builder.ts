@@ -8,6 +8,7 @@ import {
     EnumWorkStatusName,
 } from '../../event-report/types/report-types';
 import { TmcPresentationApprovedDto } from '../dto/tmc-presentation-approved.dto';
+import { parseCrmEntityId } from './crm-entity-id.util';
 
 /** Нормализованные параметры согласованной заявки. */
 export interface ApprovedPresentationInput {
@@ -46,10 +47,9 @@ export const parseBpUserId = (
     return Number.isInteger(id) && id > 0 ? id : 0;
 };
 
-const toId = (raw: string | number | undefined | null): number => {
-    const id = Number(raw);
-    return Number.isInteger(id) && id > 0 ? id : 0;
-};
+/** Id сущности CRM из параметра робота: голый id либо `D_123`/`CO_123`; мусор — 0. */
+const toId = (raw: string | number | undefined | null): number =>
+    parseCrmEntityId(raw) ?? 0;
 
 const text = (raw: string | undefined | null): string =>
     typeof raw === 'string' ? raw.trim() : '';

@@ -1,5 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString } from 'class-validator';
+import {
+    CALL_REPORT_NEXT_STEP_KINDS,
+    type CallReportNextStepKind,
+} from '@lib/call-lib';
 
 /**
  * Следующий шаг по итогам звонка — вынесен из общего файла контракта агента
@@ -82,4 +86,17 @@ export class AgentNextStepDto {
     @IsOptional()
     @IsString()
     managerAction?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Вид следующего шага (focus-v3.1): показ системы, тестовый ' +
+            'доступ, КП, счёт, созвон, другое; null — шаг не назначен.',
+        enum: CALL_REPORT_NEXT_STEP_KINDS,
+        nullable: true,
+        example: 'presentation',
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(CALL_REPORT_NEXT_STEP_KINDS as unknown as string[])
+    kind?: CallReportNextStepKind | null;
 }

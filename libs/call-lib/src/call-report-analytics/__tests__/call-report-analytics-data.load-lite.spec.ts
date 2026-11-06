@@ -178,7 +178,7 @@ describe('CallReportAnalyticsDataService.loadLite', () => {
                 callType: 'presentation',
                 analysisPresent: true,
                 score: 62,
-                nextStep: { set: true, date: '2026-08-12' },
+                nextStep: { set: true, date: '2026-08-12', kind: null },
                 riskFlags: ['promise', 'conflict'],
                 riskEvidence: [
                     {
@@ -216,6 +216,7 @@ describe('CallReportAnalyticsDataService.loadLite', () => {
                         outcome: 'disengaged',
                         at: null,
                         reaction: null,
+                        topic: null,
                     },
                     {
                         category: null,
@@ -224,6 +225,7 @@ describe('CallReportAnalyticsDataService.loadLite', () => {
                         outcome: null,
                         at: null,
                         reaction: null,
+                        topic: null,
                     },
                 ],
                 versions: {
@@ -241,6 +243,15 @@ describe('CallReportAnalyticsDataService.loadLite', () => {
                     spiralsMinFull: 3,
                     dealProgress: 3,
                     capsApplied: 1,
+                },
+                // Факты отчёта: в этом разборе их нет — null и пустые списки.
+                report: {
+                    outcome: null,
+                    issues: [],
+                    prices: [],
+                    upsellAttempted: null,
+                    upsellKind: null,
+                    selfIntro: null,
                 },
                 // Маркеры стиля: в этом разборе их нет — все null, а не 0.
                 style: {
@@ -353,7 +364,7 @@ describe('CallReportAnalyticsDataService.loadLite', () => {
             expect.objectContaining({
                 analysisPresent: true,
                 score: 80,
-                nextStep: { set: false, date: null },
+                nextStep: { set: false, date: null, kind: null },
                 sections: [],
                 objections: [],
                 // Старый разбор без доказательств — пустой список, не null.

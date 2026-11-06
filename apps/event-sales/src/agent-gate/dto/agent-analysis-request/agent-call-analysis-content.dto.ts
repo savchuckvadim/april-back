@@ -3,14 +3,25 @@ import { Type } from 'class-transformer';
 import {
     IsArray,
     IsBoolean,
+    IsIn,
     IsNotEmpty,
     IsOptional,
     IsString,
     ValidateNested,
 } from 'class-validator';
+import {
+    CALL_REPORT_OUTCOME_CODES,
+    type CallReportOutcomeCode,
+} from '@lib/call-lib';
 import { AgentCallAnalysisClassificationDto } from './agent-call-analysis-classification.dto';
 import { AgentFiveKItemsDto, AgentHvostStepsDto } from './agent-checklists.dto';
 import { AgentObjectionDto } from './agent-objection.dto';
+import {
+    AgentIssueDto,
+    AgentPriceDto,
+    AgentSelfIntroDto,
+    AgentUpsellDto,
+} from './agent-report-facts.dto';
 import { AgentSectionAnalysisDto } from './agent-section-analysis.dto';
 
 /**
@@ -205,4 +216,59 @@ export class AgentCallAnalysisContentDto extends AgentCallAnalysisClassification
     @IsArray()
     @IsString({ each: true })
     recommendations?: string[];
+
+    @ApiPropertyOptional({
+        description:
+            'Исход разговора (focus-v3.1): продвинут (показ, доступ, КП, ' +
+            'счёт), перезвон с датой, отложено без даты, отказ, без ' +
+            'содержательного контакта; null — нерелевантный звонок.',
+        enum: CALL_REPORT_OUTCOME_CODES,
+        nullable: true,
+        example: 'postponed',
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(CALL_REPORT_OUTCOME_CODES as unknown as string[])
+    outcome?: CallReportOutcomeCode | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Сбои не по вине разговора: дубли CRM, неверный контакт, связь, ' +
+            'демо-доступ, невыполненные обещания, другой дистрибьютор.',
+        type: [AgentIssueDto],
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => AgentIssueDto)
+    issues?: AgentIssueDto[];
+
+    @ApiPropertyOptional({
+        description: 'Цены, прозвучавшие в разговоре, с их сроком и продуктом.',
+        type: [AgentPriceDto],
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => AgentPriceDto)
+    prices?: AgentPriceDto[];
+
+    @ApiPropertyOptional({
+        description:
+            'Допродажа: предлагал ли менеджер больше, чем просил клиент.',
+        type: AgentUpsellDto,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => AgentUpsellDto)
+    upsell?: AgentUpsellDto;
+
+    @ApiPropertyOptional({
+        description: 'Самопредставление менеджера в начале разговора.',
+        type: AgentSelfIntroDto,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => AgentSelfIntroDto)
+    selfIntro?: AgentSelfIntroDto;
 }

@@ -190,3 +190,21 @@ describe('deadlineOperationKey', () => {
         expect(deadlineOperationKey('через неделю 2')).toBe('2');
     });
 });
+
+describe('normalizeApprovedPresentation — привязки CRM с префиксом', () => {
+    it('робот печатает crm-поле привязкой (D_, CO_, C_) — id разбираются как голые', () => {
+        const input = normalizeApprovedPresentation(
+            raw({
+                tmcDealId: 'D_213065' as never,
+                companyId: 'CO_48210' as never,
+                contactId: 'C_91022' as never,
+            }),
+        );
+
+        expect(input).toMatchObject({
+            tmcDealId: 213065,
+            companyId: 48210,
+            contactId: 91022,
+        });
+    });
+});

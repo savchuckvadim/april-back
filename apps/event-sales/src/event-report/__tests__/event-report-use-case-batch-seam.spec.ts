@@ -127,6 +127,9 @@ jest.mock('../services/task/event-report-task-flow.service', () => ({
         readClosingChecklist(): Promise<void> {
             return Promise.resolve();
         }
+        readMissingLeads(): Promise<void> {
+            return Promise.resolve();
+        }
         queue(): void {}
         notifyTransfer(): Promise<void> {
             return Promise.resolve();
