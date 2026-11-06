@@ -13,3 +13,4 @@ export * from './owner-report.leaks';
 export * from './owner-report.management';
 export * from './owner-report.managers';
 export * from './owner-report';
+export * from './text';
