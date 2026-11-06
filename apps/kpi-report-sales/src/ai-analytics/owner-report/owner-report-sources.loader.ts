@@ -4,6 +4,7 @@ import {
     AI_ANALYTICS_THRESHOLDS,
     MIN_DURATION_DEFAULT_TYPE,
     type MinDurationSecByType,
+    type OwnerReportCrmFacts,
     type OwnerReportPeriod,
     type OwnerReportPeriodBounds,
     type OwnerReportTelephonyFacts,
@@ -16,6 +17,7 @@ import { portalRangeUtc } from '../domain/loaders/period.util';
 import { PulseTelephonyLoader } from '../domain/loaders/pulse-telephony.loader';
 import { SettingsLoader } from '../domain/loaders/settings.loader';
 import { UserNamesReader } from '../domain/loaders/user-names.reader';
+import { OwnerReportCrmLoader } from './owner-report-crm.loader';
 
 /** Всё, что нужно модели отчёта за период и за прошлый период. */
 export interface OwnerReportSources {
@@ -27,14 +29,17 @@ export interface OwnerReportSources {
     previousRows: DatedLiteRow[];
     minDurationByType: MinDurationSecByType;
     telephony: OwnerReportTelephonyFacts | null;
+    /** CRM-факты периода (продажи, счета, показы, план); null — источники не ответили. */
+    crm: OwnerReportCrmFacts | null;
     names: Record<string, string>;
 }
 
 /**
  * Источники отчёта собственнику: настройки портала (TZ, календарь, порог
  * длительности), периметр отдела, lite-строки звонков за период и за
- * прошлый период, итоги телефонии, имена сотрудников. Телефония и имена —
- * fail-open: без них отчёт выходит, только без этих строк.
+ * прошлый период, итоги телефонии, CRM-факты, имена сотрудников.
+ * Телефония, CRM и имена — fail-open: без них отчёт выходит, только без
+ * этих строк.
  *
  * `@Injectable` без bitrix-состояния: инстанс Битрикса берётся внутри
  * метода через `PBXService.init(domain)` и дальше не хранится.
@@ -48,6 +53,7 @@ export class OwnerReportSourcesLoader {
         private readonly scopes: AiManagerScopeResolver,
         private readonly calls: CallsLoader,
         private readonly telephony: PulseTelephonyLoader,
+        private readonly crm: OwnerReportCrmLoader,
         private readonly pbx: PBXService,
     ) {}
 
@@ -55,6 +61,7 @@ export class OwnerReportSourcesLoader {
         domain: string,
         bounds: OwnerReportPeriodBounds,
         previous: OwnerReportPeriodBounds,
+        now: Date = new Date(),
     ): Promise<OwnerReportSources> {
         const settings = await this.settings.load(domain);
         const { calendar } = settings;
@@ -74,7 +81,7 @@ export class OwnerReportSourcesLoader {
         );
         const managerIds = scope.managerIds.map(String);
         const minDurationByType = portalMinDurationByType(settings);
-        const [rows, previousRows, telephony, names] = await Promise.all([
+        const [rows, previousRows, telephony, crm, names] = await Promise.all([
             this.loadRows(domain, bounds, calendar.timeZone),
             this.loadRows(domain, previous, calendar.timeZone),
             this.loadTelephony(
@@ -84,6 +91,7 @@ export class OwnerReportSourcesLoader {
                 minDurationByType,
                 settings.callReport,
             ),
+            this.crm.load(domain, bounds, managerIds, now),
             this.loadNames(domain, managerIds),
         ]);
         return {
@@ -94,6 +102,7 @@ export class OwnerReportSourcesLoader {
             previousRows,
             minDurationByType,
             telephony,
+            crm,
             names,
         };
     }

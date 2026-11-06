@@ -15,6 +15,7 @@ import { OwnerReportPdfService } from './owner-report-pdf.service';
 import { LlmGatewayNarrativeAdapter } from './llm-gateway-narrative.adapter';
 import { AI_OWNER_REPORT_NARRATIVE_PORT } from './owner-report-narrative.port';
 import { OwnerReportSnapshotReader } from './owner-report-snapshot.reader';
+import { OwnerReportCrmLoader } from './owner-report-crm.loader';
 import { OwnerReportSourcesLoader } from './owner-report-sources.loader';
 
 /**
@@ -35,6 +36,7 @@ import { OwnerReportSourcesLoader } from './owner-report-sources.loader';
     ],
     controllers: [AiAnalyticsOwnerReportController],
     providers: [
+        OwnerReportCrmLoader,
         OwnerReportSourcesLoader,
         OwnerReportSnapshotReader,
         OwnerReportPdfService,

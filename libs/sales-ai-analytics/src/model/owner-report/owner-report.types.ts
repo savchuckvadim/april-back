@@ -69,15 +69,18 @@ export interface OwnerReportCrmManagerFacts {
     deals: number;
     invoices: number;
     presentations: number;
-    /** План продаж на период; null — плана нет. */
+    /**
+     * План «Месячная сумма продаж» блока «Планы», пересчитанный на даты
+     * периода; null — план не задан или показатель выключен на портале.
+     */
     plan: number | null;
-    /** Сумма продаж за период; null — финансов нет. */
+    /** Месячная сумма продаж по закрытым сделкам периода; null — финансов нет. */
     salesAmount: number | null;
 }
 
 export interface OwnerReportCrmFacts {
     byManager: Readonly<Record<string, OwnerReportCrmManagerFacts>>;
-    /** Средний чек по закрытым сделкам периода; null — нет. */
+    /** Средняя сумма договора по закрытым сделкам периода; null — сделок нет. */
     avgCheck: number | null;
 }
 

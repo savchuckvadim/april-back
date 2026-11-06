@@ -56,6 +56,7 @@ const sources = (): OwnerReportSources => ({
     previousRows: [dated(call({ day: '2026-09-07' }))],
     minDurationByType: { default: 60 },
     telephony: { outbound: null, connected: 10, short: 3 },
+    crm: null,
     names: { '7': 'Надежда', '8': 'Виолетта' },
 });
 
@@ -146,6 +147,7 @@ describe('OwnerReportJobUseCase', () => {
                 periodKey: '2026-09',
                 from: '2026-09-01',
             }),
+            NOW,
         );
         expect(dto).toMatchObject({
             kind: 'month',

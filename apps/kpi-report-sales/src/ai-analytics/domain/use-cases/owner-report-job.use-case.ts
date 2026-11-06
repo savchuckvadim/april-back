@@ -111,6 +111,7 @@ export class OwnerReportJobUseCase {
                 to: data.to,
             },
             previousBoundsOf(data),
+            now,
         );
         const facts = factsOf(sources, 'current');
         const previousFacts = factsOf(sources, 'previous');
@@ -288,6 +289,7 @@ function factsOf(
         managerIds: sources.managerIds,
         minDurationByType: sources.minDurationByType,
         telephony: which === 'current' ? sources.telephony : null,
+        crm: which === 'current' ? sources.crm : null,
     });
 }
 
