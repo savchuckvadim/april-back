@@ -76,6 +76,13 @@ export function portalSettings(
         poolOptIn: false,
         poolConsentAt: null,
         experimentsEnabled: false,
+        ownerReport: {
+            enabled: false,
+            kinds: [],
+            userIds: [],
+            diskFolderId: null,
+            dryRun: true,
+        },
         // Блоки Фазы 2: дефолты кода (портал ничего не решал).
         levels: [],
         targets: defaultTargets(),

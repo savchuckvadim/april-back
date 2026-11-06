@@ -15,3 +15,4 @@ export * from './owner-report.managers';
 export * from './owner-report';
 export * from './text';
 export * from './owner-report.period';
+export * from './owner-report.schedule';

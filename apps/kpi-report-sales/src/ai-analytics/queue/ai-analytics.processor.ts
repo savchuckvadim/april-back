@@ -1,3 +1,8 @@
+import { OwnerReportDeliveryUseCase } from '../domain/use-cases/owner-report-delivery.use-case';
+import type {
+    AiOwnerReportDeliveryJobData,
+    OwnerReportDeliveryResult,
+} from '../owner-report/owner-report-delivery.types';
 import { OwnerReportJobUseCase } from '../domain/use-cases/owner-report-job.use-case';
 import type { AiOwnerReportDto } from '../dto/ai-owner-report.dto';
 import { AI_OWNER_REPORT_ERRORS } from '../owner-report/owner-report.const';
@@ -77,6 +82,8 @@ export class AiAnalyticsQueueProcessor {
         private readonly pipeline?: AiSnapshotRunner,
         @Optional()
         private readonly ownerReportJob?: OwnerReportJobUseCase,
+        @Optional()
+        private readonly ownerReportDelivery?: OwnerReportDeliveryUseCase,
     ) {}
 
     /**
@@ -154,6 +161,21 @@ export class AiAnalyticsQueueProcessor {
             );
             throw error;
         }
+    }
+
+    /** Выпуск отчёта собственнику: снапшот → PDF на Диск → личные сообщения. */
+    @Process(JobNames.SALES_AI_ANALYTICS_OWNER_REPORT_DELIVERY)
+    async handleOwnerReportDelivery(
+        job: Job<AiOwnerReportDeliveryJobData>,
+    ): Promise<OwnerReportDeliveryResult> {
+        const { domain, kind, periodKey } = job.data;
+        this.logger.log(
+            `SALES_AI_ANALYTICS_OWNER_REPORT_DELIVERY: ${domain} ${kind} ${periodKey}`,
+        );
+        if (!this.ownerReportDelivery) {
+            throw new Error(AI_OWNER_REPORT_ERRORS.jobMissing);
+        }
+        return this.ownerReportDelivery.execute(job.data);
     }
 
     @Process(JobNames.SALES_AI_ANALYTICS_DOSSIER)

@@ -1,3 +1,7 @@
+import {
+    parseOwnerReportKinds,
+    type OwnerReportPeriodKind,
+} from '@lib/sales-ai-analytics';
 import { Injectable, Optional } from '@nestjs/common';
 import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
 import type { PortalAiSettingsRecord } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.types';
@@ -74,6 +78,22 @@ export function toCallReportStatus(
 }
 
 /** Настройки AI-аналитики портала (kpiSales, контракт 1) в разобранном виде. */
+/** Настройки выпуска отчёта собственнику (ключи ai_analytics_owner_report_*). */
+export interface AiOwnerReportDeliverySettings {
+    enabled: boolean;
+    kinds: OwnerReportPeriodKind[];
+    userIds: number[];
+    /** Папка Диска для PDF; null — хранилище приложения. */
+    diskFolderId: number | null;
+    dryRun: boolean;
+}
+
+/** Id папки Диска из строки настройки; пусто или не число — null. */
+function parseFolderId(value: string): number | null {
+    const id = Number(value.trim());
+    return Number.isInteger(id) && id > 0 ? id : null;
+}
+
 export interface AiAnalyticsPortalSettings {
     enabled: boolean;
     /** Аудит и калибровка данных по порталу разрешены (ai_analytics_audit_enabled). */
@@ -97,6 +117,8 @@ export interface AiAnalyticsPortalSettings {
     poolConsentAt: string | null;
     /** Эксперименты на портале (ai_analytics_experiments_enabled). */
     experimentsEnabled: boolean;
+    /** Выпуск отчёта собственнику: расписание, виды периодов, получатели, Диск, «только считать». */
+    ownerReport: AiOwnerReportDeliverySettings;
     // --- Фаза 2, §3.3: решения людей JSON-строками. Битый JSON любого
     // ключа даёт дефолт кода, а не исключение, — витрина не гаснет.
     /** Уровни менеджеров (ai_analytics_levels); пусто — читается снапшот. */
@@ -202,6 +224,17 @@ export class SettingsLoader {
             poolOptIn: settings.aiAnalyticsPoolOptIn,
             poolConsentAt: poolConsentAt || null,
             experimentsEnabled: settings.aiAnalyticsExperimentsEnabled,
+            ownerReport: {
+                enabled: settings.aiAnalyticsOwnerReportEnabled,
+                kinds: parseOwnerReportKinds(
+                    settings.aiAnalyticsOwnerReportKinds,
+                ),
+                userIds: parseUserIds(settings.aiAnalyticsOwnerReportUserIds),
+                diskFolderId: parseFolderId(
+                    settings.aiAnalyticsOwnerReportDiskFolderId,
+                ),
+                dryRun: settings.aiAnalyticsOwnerReportDryRun,
+            },
             levels: parseAiLevels(settings.aiAnalyticsLevels),
             targets: parseAiTargets(settings.aiAnalyticsTargets),
             absences: parseAiAbsences(settings.aiAnalyticsAbsences),

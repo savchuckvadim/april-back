@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { AppCacheService } from '@lib/app-cache';
 import { WsService } from '@/core/ws';
+import { OwnerReportDeliveryUseCase } from '../../domain/use-cases/owner-report-delivery.use-case';
 import { OwnerReportJobUseCase } from '../../domain/use-cases/owner-report-job.use-case';
 import { OwnerReportUseCase } from '../../domain/use-cases/owner-report.use-case';
 import {
@@ -17,7 +18,8 @@ import { AI_OWNER_REPORT_NARRATIVE_PORT } from '../owner-report-narrative.port';
 /**
  * Срез отчёта собственнику подключается в сборку отдельным модулем: его
  * DI-граф обязан закрываться сам (ядро, PBX-половина ядра, шлюз моделей,
- * очередь, WS), а наружу уходит ровно одна ручка и два use-case'а.
+ * очередь, WS), а наружу уходит ровно одна ручка и три use-case'а
+ * (сборка, джоба, выпуск).
  */
 describe('DI-граф AiAnalyticsOwnerReportModule', () => {
     it('все зависимости провайдеров и контроллера доступны в модуле', () => {
@@ -44,13 +46,14 @@ describe('DI-граф AiAnalyticsOwnerReportModule', () => {
         expect(port?.useExisting).toBe(LlmGatewayNarrativeAdapter);
     });
 
-    it('модуль публикует только свою ручку и экспортирует оба use-case’а', () => {
+    it('модуль публикует только свою ручку и экспортирует три use-case’а', () => {
         expect(
             metadataList(AiAnalyticsOwnerReportModule, 'controllers'),
         ).toEqual([AiAnalyticsOwnerReportController]);
         expect([...exportsOf(AiAnalyticsOwnerReportModule)]).toEqual([
             OwnerReportUseCase,
             OwnerReportJobUseCase,
+            OwnerReportDeliveryUseCase,
         ]);
     });
 });

@@ -116,3 +116,14 @@ export function isOwnerReportPeriodKind(
         (OWNER_REPORT_PERIOD_KINDS as readonly string[]).includes(value)
     );
 }
+
+/** Виды периодов из строки настройки «month, quarter»; чужие коды отбрасываются, порядок — справочника. */
+export function parseOwnerReportKinds(value: string): OwnerReportPeriodKind[] {
+    const wanted = new Set(
+        value
+            .split(',')
+            .map(item => item.trim().toLowerCase())
+            .filter(isOwnerReportPeriodKind),
+    );
+    return OWNER_REPORT_PERIOD_KINDS.filter(kind => wanted.has(kind));
+}

@@ -6,6 +6,8 @@ import { PortalSessionModule } from '@lib/auth';
 import { LlmGatewayModule } from '@lib/llm-gateway';
 import { AiAnalyticsCorePbxModule } from '../core/ai-analytics-core-pbx.module';
 import { AiAnalyticsCoreModule } from '../core/ai-analytics-core.module';
+import { OwnerReportScheduler } from '../cron/owner-report.scheduler';
+import { OwnerReportDeliveryUseCase } from '../domain/use-cases/owner-report-delivery.use-case';
 import { OwnerReportJobUseCase } from '../domain/use-cases/owner-report-job.use-case';
 import { OwnerReportUseCase } from '../domain/use-cases/owner-report.use-case';
 import { AiAnalyticsOwnerReportController } from './ai-analytics-owner-report.controller';
@@ -43,9 +45,15 @@ import { OwnerReportSourcesLoader } from './owner-report-sources.loader';
         },
         OwnerReportUseCase,
         OwnerReportJobUseCase,
+        OwnerReportDeliveryUseCase,
+        OwnerReportScheduler,
     ],
-    // Джоба нужна процессору очереди (поток сборки), конверт ручки —
-    // соседним срезам (PDF, доставка).
-    exports: [OwnerReportUseCase, OwnerReportJobUseCase],
+    // Джобы нужны процессору очереди (поток сборки), конверт ручки —
+    // соседним срезам.
+    exports: [
+        OwnerReportUseCase,
+        OwnerReportJobUseCase,
+        OwnerReportDeliveryUseCase,
+    ],
 })
 export class AiAnalyticsOwnerReportModule {}

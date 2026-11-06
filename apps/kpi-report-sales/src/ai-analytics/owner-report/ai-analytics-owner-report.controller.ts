@@ -1,3 +1,4 @@
+import { toPortalDate } from '@lib/sales-ai-analytics';
 import {
     Body,
     Controller,
@@ -22,7 +23,12 @@ import {
     AI_ANALYTICS_SWAGGER_TAG,
 } from '../constants/ai-analytics.const';
 import { RequesterAccessService } from '../domain/access/requester-access.service';
+import { OwnerReportDeliveryUseCase } from '../domain/use-cases/owner-report-delivery.use-case';
 import { OwnerReportUseCase } from '../domain/use-cases/owner-report.use-case';
+import {
+    AiOwnerReportSendRequestDto,
+    AiOwnerReportSendResponseDto,
+} from '../dto/ai-owner-report-send.dto';
 import { SettingsLoader } from '../domain/loaders/settings.loader';
 import { OwnerReportPdfService } from './owner-report-pdf.service';
 import { OwnerReportSnapshotReader } from './owner-report-snapshot.reader';
@@ -41,6 +47,7 @@ export class AiAnalyticsOwnerReportController {
         private readonly reader: OwnerReportSnapshotReader,
         private readonly pdfService: OwnerReportPdfService,
         private readonly settings: SettingsLoader,
+        private readonly delivery: OwnerReportDeliveryUseCase,
     ) {}
 
     @PortalSessionProtected()
@@ -147,5 +154,59 @@ export class AiAnalyticsOwnerReportController {
         );
         res.setHeader('Content-Length', rendered.buffer.length.toString());
         res.end(rendered.buffer);
+    }
+
+    @PortalSessionProtected()
+    @Post('owner-report/send')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Выпустить отчёт собственнику сейчас',
+        description:
+            'Тот же код, что у крона 2-го рабочего дня: снапшот периода (или ' +
+            'сборка на месте — до пары минут), PDF на Диск портала, личные ' +
+            'сообщения получателям. recipients — тест «отправить себе» вместо ' +
+            'настроек портала (режим «только считать» на них не действует). ' +
+            'Только cup|op.',
+    })
+    @ApiBody({
+        type: AiOwnerReportSendRequestDto,
+        description:
+            'Вид и ключ периода (как у owner-report) плюс необязательный ' +
+            'список получателей для теста.',
+    })
+    @ApiOkResponse({
+        type: AiOwnerReportSendResponseDto,
+        description:
+            'Конверт со status = ready и итогом выпуска в data: статус ' +
+            'доставки, причина пропуска, кому доставлено, ссылка на PDF.',
+    })
+    async send(
+        @Body() dto: AiOwnerReportSendRequestDto,
+    ): Promise<AiOwnerReportSendResponseDto> {
+        const access = await this.access.resolve(
+            dto.domain,
+            dto.requesterUserId,
+        );
+        this.access.assertLeader(access, AI_ANALYTICS_ADMIN_ROLES);
+        const now = new Date();
+        const bounds = await this.ownerReport.resolveBounds(dto, now);
+        const { calendar } = await this.settings.load(dto.domain);
+        const data = await this.delivery.execute(
+            {
+                domain: dto.domain,
+                kind: dto.kind,
+                periodKey: bounds.periodKey,
+                date: toPortalDate(now, calendar.timeZone),
+                ...(dto.recipients?.length
+                    ? { recipients: dto.recipients }
+                    : {}),
+            },
+            now,
+        );
+        return {
+            status: 'ready',
+            requestKey: `${dto.domain}:owner-report-send:${dto.kind}:${bounds.periodKey}`,
+            data,
+        };
     }
 }
