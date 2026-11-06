@@ -1,5 +1,20 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+    Body,
+    Controller,
+    HttpCode,
+    NotFoundException,
+    Post,
+    Res,
+} from '@nestjs/common';
+import {
+    ApiBody,
+    ApiOkResponse,
+    ApiOperation,
+    ApiProduces,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
+import type { Response } from 'express';
 import { PortalSessionProtected } from '@lib/auth';
 import {
     AI_ANALYTICS_ADMIN_ROLES,
@@ -8,6 +23,10 @@ import {
 } from '../constants/ai-analytics.const';
 import { RequesterAccessService } from '../domain/access/requester-access.service';
 import { OwnerReportUseCase } from '../domain/use-cases/owner-report.use-case';
+import { SettingsLoader } from '../domain/loaders/settings.loader';
+import { OwnerReportPdfService } from './owner-report-pdf.service';
+import { OwnerReportSnapshotReader } from './owner-report-snapshot.reader';
+import { AI_OWNER_REPORT_ERRORS } from './owner-report.const';
 import {
     AiOwnerReportRequestDto,
     AiOwnerReportResponseDto,
@@ -19,6 +38,9 @@ export class AiAnalyticsOwnerReportController {
     constructor(
         private readonly access: RequesterAccessService,
         private readonly ownerReport: OwnerReportUseCase,
+        private readonly reader: OwnerReportSnapshotReader,
+        private readonly pdfService: OwnerReportPdfService,
+        private readonly settings: SettingsLoader,
     ) {}
 
     @PortalSessionProtected()
@@ -77,5 +99,53 @@ export class AiAnalyticsOwnerReportController {
                     jobId: lookup.jobId,
                 };
         }
+    }
+
+    @PortalSessionProtected()
+    @Post('owner-report/pdf')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'PDF отчёта собственнику за период',
+        description:
+            'Готовый отчёт периода (снапшот) в PDF: те же разделы, что на ' +
+            'витрине, шрифты встроены, нумерация страниц. Отчёт должен быть ' +
+            'уже собран ручкой owner-report — иначе 404. Только cup|op.',
+    })
+    @ApiBody({ type: AiOwnerReportRequestDto })
+    @ApiProduces('application/pdf')
+    @ApiResponse({
+        status: 200,
+        description: 'PDF-файл отчёта',
+        schema: { type: 'string', format: 'binary' },
+    })
+    async pdf(
+        @Body() dto: AiOwnerReportRequestDto,
+        @Res() res: Response,
+    ): Promise<void> {
+        const access = await this.access.resolve(
+            dto.domain,
+            dto.requesterUserId,
+        );
+        this.access.assertLeader(access, AI_ANALYTICS_ADMIN_ROLES);
+        const bounds = await this.ownerReport.resolveBounds(dto, new Date());
+        const report = await this.reader.read(
+            dto.domain,
+            dto.kind,
+            bounds.periodKey,
+        );
+        if (!report)
+            throw new NotFoundException(AI_OWNER_REPORT_ERRORS.notBuilt);
+        const { calendar } = await this.settings.load(dto.domain);
+        const rendered = await this.pdfService.render(
+            report,
+            calendar.timeZone,
+        );
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="${rendered.filename}"`,
+        );
+        res.setHeader('Content-Length', rendered.buffer.length.toString());
+        res.end(rendered.buffer);
     }
 }

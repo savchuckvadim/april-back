@@ -9,6 +9,7 @@ import { AiAnalyticsCoreModule } from '../core/ai-analytics-core.module';
 import { OwnerReportJobUseCase } from '../domain/use-cases/owner-report-job.use-case';
 import { OwnerReportUseCase } from '../domain/use-cases/owner-report.use-case';
 import { AiAnalyticsOwnerReportController } from './ai-analytics-owner-report.controller';
+import { OwnerReportPdfService } from './owner-report-pdf.service';
 import { LlmGatewayNarrativeAdapter } from './llm-gateway-narrative.adapter';
 import { AI_OWNER_REPORT_NARRATIVE_PORT } from './owner-report-narrative.port';
 import { OwnerReportSnapshotReader } from './owner-report-snapshot.reader';
@@ -34,6 +35,7 @@ import { OwnerReportSourcesLoader } from './owner-report-sources.loader';
     providers: [
         OwnerReportSourcesLoader,
         OwnerReportSnapshotReader,
+        OwnerReportPdfService,
         LlmGatewayNarrativeAdapter,
         {
             provide: AI_OWNER_REPORT_NARRATIVE_PORT,

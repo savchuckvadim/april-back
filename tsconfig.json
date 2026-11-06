@@ -70,6 +70,8 @@
       "@lib/vibecode/*": ["libs/vibecode/src/*"],
       "@lib/llm-gateway": ["libs/llm-gateway/src"],
       "@lib/llm-gateway/*": ["libs/llm-gateway/src/*"],
+      "@lib/pdf-render": ["libs/pdf-render/src"],
+      "@lib/pdf-render/*": ["libs/pdf-render/src/*"],
       "@lib/egress-proxy": ["libs/egress-proxy/src"],
       "@lib/egress-proxy/*": ["libs/egress-proxy/src/*"],
       "@lib/ai-presets": ["libs/ai-presets/src"],
