@@ -39,6 +39,7 @@ import { AiAnalyticsPortalModelModule } from '../portal-model/ai-analytics-porta
 import { AiAnalyticsDossierModule } from '../dossier/ai-analytics-dossier.module';
 import { AiAnalyticsPlanFactModule } from '../plan-fact/ai-analytics-plan-fact.module';
 import { AiAnalyticsReviewModule } from '../review/ai-analytics-review.module';
+import { AiAnalyticsOwnerReportModule } from '../owner-report/ai-analytics-owner-report.module';
 import { AiAnalyticsRopMarkModule } from '../rop-mark/ai-analytics-rop-mark.module';
 import { AiAnalyticsSnapshotsModule } from '../snapshots/ai-analytics-snapshots.module';
 import { AiAnalyticsStageHistoryModule } from '../stage-history/ai-analytics-stage-history.module';
@@ -107,6 +108,7 @@ const EXPECTED_CONTROLLERS = [
     'AiAnalyticsDossierController',
     'AiAnalyticsForecastController',
     'AiAnalyticsOverviewController',
+    'AiAnalyticsOwnerReportController',
     'AiAnalyticsPlanController',
     'AiAnalyticsPlanFactController',
     'AiAnalyticsReviewController',
@@ -132,6 +134,7 @@ const FEATURE_MODULES: Ctor[] = [
     AiAnalyticsStyleModule,
     AiAnalyticsAboutModule,
     AiAnalyticsReviewModule,
+    AiAnalyticsOwnerReportModule,
 ];
 
 type StepCtor = new (...args: never[]) => AiAnalyticsPipelineStep;
@@ -254,7 +257,7 @@ describe('DI-граф AiAnalyticsModule (kpi-report-sales)', () => {
         },
     );
 
-    it('поверхность API — ровно семь контроллеров фичи, чужих через транзитивные импорты нет', () => {
+    it('поверхность API — ровно восемь контроллеров фичи, чужих через транзитивные импорты нет', () => {
         const graph = [AiAnalyticsModule, ...importsDeep(AiAnalyticsModule)];
         const controllers = graph
             .flatMap(module => metadataList(module, 'controllers'))

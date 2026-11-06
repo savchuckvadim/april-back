@@ -1,3 +1,7 @@
+import { OwnerReportJobUseCase } from '../domain/use-cases/owner-report-job.use-case';
+import type { AiOwnerReportDto } from '../dto/ai-owner-report.dto';
+import { AI_OWNER_REPORT_ERRORS } from '../owner-report/owner-report.const';
+import type { AiOwnerReportJobData } from '../owner-report/owner-report.types';
 import { Process, Processor } from '@nestjs/bull';
 import { Inject, Logger, Optional } from '@nestjs/common';
 import { Job } from 'bull';
@@ -71,6 +75,8 @@ export class AiAnalyticsQueueProcessor {
         @Optional()
         @Inject(AI_ANALYTICS_SNAPSHOT_RUNNER)
         private readonly pipeline?: AiSnapshotRunner,
+        @Optional()
+        private readonly ownerReportJob?: OwnerReportJobUseCase,
     ) {}
 
     /**
@@ -124,6 +130,32 @@ export class AiAnalyticsQueueProcessor {
      * ais → сборка → кэш → WS done. Пустой раздел — штатная деградация
      * внутри сценария; сюда доходит только провал всей джобы.
      */
+    /**
+     * Отчёт собственнику за период: источники → факты → текст → модель →
+     * снапшот → кэш → WS done. Модель недоступна — шаблон внутри сценария;
+     * сюда доходит только провал всей джобы.
+     */
+    @Process(JobNames.SALES_AI_ANALYTICS_OWNER_REPORT)
+    async handleOwnerReport(
+        job: Job<AiOwnerReportJobData>,
+    ): Promise<AiOwnerReportDto> {
+        const { domain, kind, periodKey, requestKey } = job.data;
+        this.logger.log(
+            `SALES_AI_ANALYTICS_OWNER_REPORT: ${domain} ${kind} ${periodKey}`,
+        );
+        try {
+            if (!this.ownerReportJob) {
+                throw new Error(AI_OWNER_REPORT_ERRORS.jobMissing);
+            }
+            return await this.ownerReportJob.execute(job.data);
+        } catch (error) {
+            this.logger.warn(
+                `Отчёт собственнику ${requestKey} упал: ${(error as Error).message}`,
+            );
+            throw error;
+        }
+    }
+
     @Process(JobNames.SALES_AI_ANALYTICS_DOSSIER)
     async handleDossier(job: Job<AiDossierJobData>): Promise<AiDossierDto> {
         const { domain, managerId, requestKey } = job.data;

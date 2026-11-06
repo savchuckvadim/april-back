@@ -1,3 +1,4 @@
+import { AiAnalyticsOwnerReportModule } from './owner-report/ai-analytics-owner-report.module';
 import { Module } from '@nestjs/common';
 import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { QueueModule } from 'src/modules/queue/queue.module';
@@ -124,6 +125,7 @@ import { AiAnalyticsStyleModule } from './style/ai-analytics-style.module';
         AiAnalyticsRopMarkModule,
         AiAnalyticsAboutModule,
         AiAnalyticsReviewModule,
+        AiAnalyticsOwnerReportModule,
     ],
     controllers: [
         AiAnalyticsController,

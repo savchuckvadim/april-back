@@ -67,6 +67,8 @@ export enum JobNames {
     SALES_AI_ANALYTICS_SNAPSHOT = 'sales-ai-analytics-snapshot',
     SALES_AI_ANALYTICS_DOSSIER = 'sales-ai-analytics-dossier',
     SALES_AI_ANALYTICS_PUSH = 'sales-ai-analytics-push',
+    //отчёт собственнику за период: факты + текст + модель → снапшот + кэш
+    SALES_AI_ANALYTICS_OWNER_REPORT = 'sales-ai-analytics-owner-report',
 
     //публичные ссылки на KPI-отчёт: фоновая регенерация снимка
     SHARE_LINK_REFRESH = 'share-link-refresh',

@@ -62,6 +62,8 @@ export const AI_ANALYTICS_CACHE_SECTIONS = {
     BRIEF: 'brief',
     /** Счётчик вызовов LLM на портал в день (квота brief, ключ по домену и дате). */
     BRIEF_QUOTA: 'brief-quota',
+    /** Отчёт собственнику за период: ключ по виду и ключу периода. */
+    OWNER_REPORT: 'owner-report',
     /** История стадий сделок (crm.stagehistory) — эпизоды воронки. */
     STAGE_HISTORY: 'stage-history',
     /** Производственный календарь портала (calendar.settings.get). */
@@ -75,6 +77,8 @@ export const AI_ANALYTICS_WS_EVENTS = {
     BRIEF_ERROR: 'ai-analytics:brief:error',
     DOSSIER_DONE: 'ai-analytics:dossier:done',
     DOSSIER_ERROR: 'ai-analytics:dossier:error',
+    OWNER_REPORT_DONE: 'ai-analytics:owner-report:done',
+    OWNER_REPORT_ERROR: 'ai-analytics:owner-report:error',
 } as const;
 
 /** Статусы конверта ответа (план, 6.2). */
