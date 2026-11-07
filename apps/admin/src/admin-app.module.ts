@@ -55,6 +55,7 @@ import { PortalAppSettingsAdminModule } from '@lib/portal-lib/store/app-settings
 import { PortalQuestionnairesAdminModule } from '@lib/portal-lib/store/questionnaires/portal-questionnaires.admin.module';
 import { PortalBadgesAdminModule } from '@lib/portal-lib/store/badges/portal-badges.admin.module';
 import { VendorSuperUserAdminModule } from '@lib/bx-department/vendor-super-user.admin.module';
+import { PortalEmployeesAdminModule } from '@lib/bx-department/portal-employees.admin.module';
 import { AdminQuestionnairesModule } from './portal/questionnaires/questionnaires.module';
 import { MarketplaceModerationModule } from './marketplace-moderation/marketplace-moderation.module';
 import { BitrixAppSecretsModule } from './bitrix-app-secrets/bitrix-app-secrets.module';
@@ -144,6 +145,9 @@ import { LogsAdminModule } from '@lib/logger/query';
         // «Смотреть как…», служебные ссылки. Раньше задавались env
         // BX_SUPER_USER_IDS без возможности править из интерфейса.
         VendorSuperUserAdminModule,
+        // Сотрудники портала для выбора в настройках (07.11.2026): вместо
+        // ввода Bitrix-id цифрами — список с должностью и отделами.
+        PortalEmployeesAdminModule,
         // Портальный каталог анкет: состав вопросов плана и отчёта
         // задаётся из полей, которые владелец завёл в Битриксе руками.
         // CRUD и реестр — в сторе портала, источник полей и сверка

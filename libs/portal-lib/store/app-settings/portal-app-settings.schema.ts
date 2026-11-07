@@ -33,6 +33,17 @@ export const PORTAL_APP_CODES = Object.values(EnumPortalAppCode);
 /** Тип значения настройки. */
 export type PortalAppSettingType = 'boolean' | 'number' | 'string';
 
+/**
+ * Чем заполняется значение в админке вместо свободного ввода:
+ * `bitrix-users` — Bitrix-id сотрудников портала через запятую (тип string),
+ * `bitrix-user` — один Bitrix-id (тип number, 0 — никто).
+ */
+export const PORTAL_APP_SETTING_PICKS = [
+    'bitrix-users',
+    'bitrix-user',
+] as const;
+export type PortalAppSettingPick = (typeof PORTAL_APP_SETTING_PICKS)[number];
+
 /** Вариант значения-списка: код уезжает в CSV, название — подпись. */
 export interface PortalAppSettingOption {
     code: string;
@@ -66,6 +77,11 @@ export interface PortalAppSettingDescriptor<
      * `getStoredAppSettingKeys` продолжает работать как работал.
      */
     isList?: boolean;
+    /**
+     * Значение — сотрудники портала: админка рисует выбор из списка
+     * сотрудников (имя, должность, отдел), а не ввод цифр.
+     */
+    pick?: PortalAppSettingPick;
 }
 
 const setting = <TType extends PortalAppSettingType, TDefault>(
@@ -201,6 +217,7 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'Пусто — колокольчик не отправляется, остаётся Telegram.',
             type: 'string',
             default: '',
+            pick: 'bitrix-users',
         }),
         supportMonitorOperatorMap: setting({
             code: 'support_monitor_operator_map',
@@ -270,6 +287,7 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'Пусто — только по структуре.',
             type: 'string',
             default: '',
+            pick: 'bitrix-users',
         }),
         visibilityDepartmentUserIds: setting({
             code: 'visibility_department_user_ids',
@@ -282,6 +300,7 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'структуре.',
             type: 'string',
             default: '',
+            pick: 'bitrix-users',
         }),
         visibilityAllUserIds: setting({
             code: 'visibility_all_user_ids',
@@ -293,6 +312,7 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'только по структуре.',
             type: 'string',
             default: '',
+            pick: 'bitrix-users',
         }),
     },
     [EnumPortalAppCode.kpiSales]: {
@@ -383,6 +403,7 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'Разбор строки — parseUserIds.',
             type: 'string',
             default: '',
+            pick: 'bitrix-users',
         }),
         aiAnalyticsCalendar: setting({
             code: 'ai_analytics_calendar',
@@ -436,6 +457,7 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'parseUserIds.',
             type: 'string',
             default: '',
+            pick: 'bitrix-users',
         }),
         aiAnalyticsStyleOptOut: setting({
             code: 'ai_analytics_style_opt_out',
@@ -517,6 +539,7 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'Разбор строки — parseUserIds.',
             type: 'string',
             default: '',
+            pick: 'bitrix-users',
         }),
         aiAnalyticsOwnerReportDiskFolderId: setting({
             code: 'ai_analytics_owner_report_disk_folder_id',
@@ -794,6 +817,7 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'уходит по кругу среди них, с предупреждением в истории.',
             type: 'string',
             default: '',
+            pick: 'bitrix-users',
         }),
         leadIntakeRepeatJoinMode: setting({
             code: 'lead_intake_repeat_join_mode',
@@ -1020,6 +1044,7 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'только при включённой «Пост-отказной дате».',
             type: 'number',
             default: 0,
+            pick: 'bitrix-user',
         }),
         postFailCompanyDateTextField: setting({
             code: 'post_fail_company_date_text_field',
@@ -1669,6 +1694,7 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'отправляется.',
             type: 'string',
             default: '',
+            pick: 'bitrix-users',
         }),
         dealAuditDigestDepartmentUserIds: setting({
             code: 'deal_audit_digest_department_user_ids',
@@ -1682,6 +1708,7 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'руководителем, — тогда «Сводку РОПу» он не получает.',
             type: 'string',
             default: '',
+            pick: 'bitrix-users',
         }),
         dealAuditDigestExcludeUserIds: setting({
             code: 'deal_audit_digest_exclude_user_ids',
@@ -1693,6 +1720,7 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'остаётся как есть.',
             type: 'string',
             default: '',
+            pick: 'bitrix-users',
         }),
         dealAuditDigestLimit: setting({
             code: 'deal_audit_digest_limit',
@@ -1777,6 +1805,7 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'отдел, но в структуре Битрикса не отмечен руководителем.',
             type: 'string',
             default: '',
+            pick: 'bitrix-users',
         }),
         duplicateReportUserIds: setting({
             code: 'duplicate_report_user_ids',
@@ -1787,6 +1816,7 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'отчёт не отправляется.',
             type: 'string',
             default: '',
+            pick: 'bitrix-users',
         }),
         duplicateReportExcludeUserIds: setting({
             code: 'duplicate_report_exclude_user_ids',
@@ -1798,6 +1828,7 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'выпадает.',
             type: 'string',
             default: '',
+            pick: 'bitrix-users',
         }),
         duplicateReportDeadlineDays: setting({
             code: 'duplicate_report_deadline_days',
@@ -1921,6 +1952,7 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'бэка (логгер-транспорт).',
             type: 'string',
             default: '',
+            pick: 'bitrix-users',
         }),
         digestLevel: setting({
             code: 'digest_level',

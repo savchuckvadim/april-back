@@ -149,3 +149,41 @@ describe('PORTAL_APP_SETTINGS_SCHEMA: контракт с фреймом event-s
         }
     });
 });
+
+describe('PORTAL_APP_SETTINGS_SCHEMA: сотрудники выбираются, а не вводятся', () => {
+    const all = PORTAL_APP_CODES.flatMap(app =>
+        Object.values(
+            PORTAL_APP_SETTINGS_SCHEMA[app] as Record<
+                string,
+                PortalAppSettingDescriptor
+            >,
+        ),
+    );
+
+    it('каждый ключ *_user_ids — выбор сотрудников списком (строка CSV)', () => {
+        const lists = all.filter(item => /_user_ids$/.test(item.code));
+        expect(lists.length).toBeGreaterThan(10);
+        for (const item of lists) {
+            expect({
+                code: item.code,
+                pick: item.pick,
+                type: item.type,
+            }).toEqual({
+                code: item.code,
+                pick: 'bitrix-users',
+                type: 'string',
+            });
+        }
+    });
+
+    it('одиночный выбор сотрудника — у числового ключа, 0 = никто', () => {
+        const singles = all.filter(item => item.pick === 'bitrix-user');
+        expect(singles.map(item => item.code)).toEqual([
+            'post_fail_assign_user_id',
+        ]);
+        for (const item of singles) {
+            expect(item.type).toBe('number');
+            expect(item.default).toBe(0);
+        }
+    });
+});
