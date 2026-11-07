@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { OwnerReportDeliveryUseCase } from '../../domain/use-cases/owner-report-delivery.use-case';
+import { OwnerReportSourceService } from '../owner-report-source.service';
 import type { AiOwnerReportDto } from '../../dto/ai-owner-report.dto';
 import { buildOwnerReportMessage } from '../owner-report-message.util';
 
@@ -89,8 +90,7 @@ const makeUseCase = (
     };
     const useCase = new OwnerReportDeliveryUseCase(
         settings as never,
-        reader as never,
-        job as never,
+        new OwnerReportSourceService(reader as never, job as never),
         pdf as never,
         pbx as never,
         { resolve: jest.fn().mockResolvedValue(null) } as never,

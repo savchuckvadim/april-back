@@ -4,10 +4,12 @@ import { QueueModule } from 'src/modules/queue/queue.module';
 import { WsModule } from '@/core/ws/ws.module';
 import { PortalSessionModule } from '@lib/auth';
 import { LlmGatewayModule } from '@lib/llm-gateway';
+import { OwnerReportExportStoreModule } from '@lib/sales-ai-analytics/owner-report-export';
 import { AiAnalyticsCorePbxModule } from '../core/ai-analytics-core-pbx.module';
 import { AiAnalyticsCoreModule } from '../core/ai-analytics-core.module';
 import { OwnerReportScheduler } from '../cron/owner-report.scheduler';
 import { OwnerReportDeliveryUseCase } from '../domain/use-cases/owner-report-delivery.use-case';
+import { OwnerReportExportUseCase } from '../domain/use-cases/owner-report-export.use-case';
 import { OwnerReportJobUseCase } from '../domain/use-cases/owner-report-job.use-case';
 import { OwnerReportUseCase } from '../domain/use-cases/owner-report.use-case';
 import { AiAnalyticsOwnerReportController } from './ai-analytics-owner-report.controller';
@@ -18,6 +20,8 @@ import { OwnerReportSnapshotReader } from './owner-report-snapshot.reader';
 import { OwnerReportCrmLoader } from './owner-report-crm.loader';
 import { OwnerReportDiskFolderResolver } from './owner-report-disk-folder.resolver';
 import { OwnerReportSourcesLoader } from './owner-report-sources.loader';
+import { OwnerReportExportProcessor } from './owner-report-export.processor';
+import { OwnerReportSourceService } from './owner-report-source.service';
 
 /**
  * Срез «Отчёт собственнику за период» (постановка
@@ -34,6 +38,7 @@ import { OwnerReportSourcesLoader } from './owner-report-sources.loader';
         AiAnalyticsCoreModule,
         AiAnalyticsCorePbxModule,
         PortalSessionModule,
+        OwnerReportExportStoreModule,
     ],
     controllers: [AiAnalyticsOwnerReportController],
     providers: [
@@ -49,8 +54,12 @@ import { OwnerReportSourcesLoader } from './owner-report-sources.loader';
         },
         OwnerReportUseCase,
         OwnerReportJobUseCase,
+        OwnerReportSourceService,
         OwnerReportDeliveryUseCase,
         OwnerReportScheduler,
+        // Выгрузка PDF для админки: джоба SALES_AI_ANALYTICS_OWNER_REPORT_EXPORT
+        OwnerReportExportUseCase,
+        OwnerReportExportProcessor,
     ],
     // Джобы нужны процессору очереди (поток сборки), конверт ручки —
     // соседним срезам.

@@ -1,8 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
 import { CallReportWeeklyDeliveryService } from '@lib/call-lib/call-report/weekly-report/call-report-weekly-delivery.service';
-import { ownerReportPeriodBounds } from '@lib/sales-ai-analytics';
-import type { AiOwnerReportDto } from '../../dto/ai-owner-report.dto';
 import {
     OWNER_REPORT_DELIVERY_REASONS,
     type AiOwnerReportDeliveryJobData,
@@ -10,15 +8,12 @@ import {
 } from '../../owner-report/owner-report-delivery.types';
 import { buildOwnerReportMessage } from '../../owner-report/owner-report-message.util';
 import { OwnerReportPdfService } from '../../owner-report/owner-report-pdf.service';
-import { OwnerReportSnapshotReader } from '../../owner-report/owner-report-snapshot.reader';
+import { OwnerReportSourceService } from '../../owner-report/owner-report-source.service';
 import { OwnerReportDiskFolderResolver } from '../../owner-report/owner-report-disk-folder.resolver';
-import { buildOwnerReportKey } from '../../owner-report/owner-report.cache-key.util';
-import { AI_OWNER_REPORT_ERRORS } from '../../owner-report/owner-report.const';
 import {
     SettingsLoader,
     type AiAnalyticsPortalSettings,
 } from '../loaders/settings.loader';
-import { OwnerReportJobUseCase } from './owner-report-job.use-case';
 
 /**
  * Выпуск отчёта собственнику: готовый снапшот (или сборка на месте) →
@@ -35,8 +30,7 @@ export class OwnerReportDeliveryUseCase {
 
     constructor(
         private readonly settings: SettingsLoader,
-        private readonly reader: OwnerReportSnapshotReader,
-        private readonly job: OwnerReportJobUseCase,
+        private readonly source: OwnerReportSourceService,
         private readonly pdf: OwnerReportPdfService,
         private readonly pbx: PBXService,
         private readonly folders: OwnerReportDiskFolderResolver,
@@ -62,7 +56,7 @@ export class OwnerReportDeliveryUseCase {
             );
         }
 
-        const report = await this.readOrBuild(data, now);
+        const report = await this.source.get(data, false, now);
         const rendered = await this.pdf.render(
             report,
             settings.calendar.timeZone,
@@ -121,36 +115,6 @@ export class OwnerReportDeliveryUseCase {
             return OWNER_REPORT_DELIVERY_REASONS.disabled;
         }
         return null;
-    }
-
-    /** Снапшот периода; нет — собрать сейчас (джоба пишет снапшот и кэш сама). */
-    private async readOrBuild(
-        data: AiOwnerReportDeliveryJobData,
-        now: Date,
-    ): Promise<AiOwnerReportDto> {
-        const stored = await this.reader.read(
-            data.domain,
-            data.kind,
-            data.periodKey,
-        );
-        if (stored) return stored;
-        const bounds = ownerReportPeriodBounds(data.kind, data.periodKey);
-        if (!bounds) throw new Error(AI_OWNER_REPORT_ERRORS.periodKey);
-        return this.job.execute(
-            {
-                domain: data.domain,
-                kind: data.kind,
-                periodKey: data.periodKey,
-                from: bounds.from,
-                to: bounds.to,
-                requestKey: buildOwnerReportKey(
-                    data.domain,
-                    data.kind,
-                    data.periodKey,
-                ),
-            },
-            now,
-        );
     }
 
     private finish(

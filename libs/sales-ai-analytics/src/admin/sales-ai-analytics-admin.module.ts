@@ -5,6 +5,7 @@ import { AiAnalyticsGoldenSetAdminController } from './controllers/golden-set.ad
 import { AiAnalyticsPhase4AdminController } from './controllers/phase4.admin.controller';
 import { AiAnalyticsPipelineAdminController } from './controllers/pipeline.admin.controller';
 import { AiAnalyticsReanalyzeAdminController } from './controllers/reanalyze.admin.controller';
+import { AiAnalyticsOwnerReportExportAdminController } from './controllers/owner-report-export.admin.controller';
 import { AiAnalyticsRetentionAdminController } from './controllers/retention.admin.controller';
 import { AiAnalyticsSmartBackfillAdminController } from './controllers/smart-backfill.admin.controller';
 import { AiAnalyticsGuideAdminController } from './guide/ai-guide.admin.controller';
@@ -61,6 +62,8 @@ import { SalesAiAnalyticsProbeModule } from './sales-ai-analytics-probe.module';
         AiAnalyticsGuideAdminController,
         // Панель запуска: кэш витрины, флаги ступеней, сводка состояния
         AiAnalyticsLaunchAdminController,
+        // Отчёт собственнику: сформировать PDF за период и скачать
+        AiAnalyticsOwnerReportExportAdminController,
     ],
 })
 export class SalesAiAnalyticsAdminModule {}

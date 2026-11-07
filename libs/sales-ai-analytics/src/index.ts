@@ -119,6 +119,7 @@ export * from './model/quality.index';
 // воронки с перестановочной проверкой, отбор рычагов и уровни доказательности.
 // К ручкам не подключено: чистая математика, потребители — Фазы 2–4.
 export * from './contracts/quality-link.types';
+export * from './contracts/owner-report-export.types';
 export * from './model/prng';
 export * from './model/quality-curve';
 export * from './model/qav';
