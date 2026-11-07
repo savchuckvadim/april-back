@@ -4,6 +4,7 @@ import type { AiOwnerReportDto } from '../../dto/ai-owner-report.dto';
 import { OWNER_PDF_TEXT } from './owner-report-pdf.texts';
 import { ownerPdfStyles as s } from './owner-report-pdf.styles';
 import { PdfManagers } from './OwnerReportPdfManagers';
+import { PdfAttention, PdfGlossary, PdfTiles } from './OwnerReportPdfReading';
 import {
     PdfLeaks,
     PdfManagement,
@@ -19,19 +20,25 @@ interface OwnerReportPdfDocumentProps {
     generatedAtText: string;
 }
 
-const Footer: FC = () => (
-    <View style={s.footer} fixed>
-        <Text style={s.footerText}>{OWNER_PDF_TEXT.footer.brand}</Text>
-        <Text
-            style={s.footerText}
-            render={({ pageNumber, totalPages }) =>
-                OWNER_PDF_TEXT.footer.page(pageNumber, totalPages)
-            }
-        />
+/**
+ * Колонтитул сверху на каждом листе: бренд, период и полоса. Номера
+ * страницы нет: текст с render-пропом react-pdf 4.9 рисует нестабильно
+ * (в подвале — никогда, в колонтитуле — через раз; проверено 07.11.2026).
+ */
+const Header: FC<{ periodLabel: string }> = ({ periodLabel }) => (
+    <View style={s.header} fixed>
+        <View style={s.headerRow}>
+            <Text style={s.headerText}>{OWNER_PDF_TEXT.footer.brand}</Text>
+            <Text style={s.headerText}>{periodLabel}</Text>
+        </View>
+        <View style={s.topBar} />
     </View>
 );
 
-/** PDF отчёта собственнику: шапка с плитками, затем разделы в порядке подачи. */
+/**
+ * PDF отчёта собственнику: шапка с цветными плитками, «на что обратить
+ * внимание», резюме, словарь терминов, затем разделы в порядке подачи.
+ */
 export const OwnerReportPdfDocument: FC<OwnerReportPdfDocumentProps> = ({
     report,
     generatedAtText,
@@ -44,25 +51,15 @@ export const OwnerReportPdfDocument: FC<OwnerReportPdfDocumentProps> = ({
             language="ru"
         >
             <Page size="A4" style={s.page}>
+                <Header periodLabel={text.periodLabel} />
                 <Text style={s.h1}>{text.title}</Text>
                 <Text style={s.subtitle}>
                     {text.periodLabel} ·{' '}
                     {OWNER_PDF_TEXT.generatedAt(generatedAtText)} ·{' '}
                     {OWNER_PDF_TEXT.writtenBy[report.source]}
                 </Text>
-                <View style={s.tiles}>
-                    {text.tiles.map(tile => (
-                        <View key={tile.code} style={s.tile}>
-                            <Text style={s.tileValue}>{tile.value}</Text>
-                            <Text style={s.tileLabel}>{tile.label}</Text>
-                            {tile.compare && (
-                                <Text style={s.tileCompare}>
-                                    {tile.compare}
-                                </Text>
-                            )}
-                        </View>
-                    ))}
-                </View>
+                <PdfTiles tiles={text.tiles} />
+                <PdfAttention items={text.attention} />
                 <PdfSection title={OWNER_PDF_TEXT.sections.summary}>
                     {text.summary.map((paragraph, index) => (
                         <Text
@@ -73,12 +70,17 @@ export const OwnerReportPdfDocument: FC<OwnerReportPdfDocumentProps> = ({
                         </Text>
                     ))}
                 </PdfSection>
+                <PdfSection title={OWNER_PDF_TEXT.sections.glossary}>
+                    <PdfGlossary items={text.glossary} />
+                </PdfSection>
                 <PdfSection title={OWNER_PDF_TEXT.sections.overview}>
                     <PdfOverview overview={text.overview} />
                 </PdfSection>
-                <PdfSection title={OWNER_PDF_TEXT.sections.leaks}>
-                    <PdfLeaks leaks={text.leaks} />
-                </PdfSection>
+                {text.leaks.length > 0 && (
+                    <PdfSection title={OWNER_PDF_TEXT.sections.leaks}>
+                        <PdfLeaks leaks={text.leaks} />
+                    </PdfSection>
+                )}
                 <PdfSection title={OWNER_PDF_TEXT.sections.management}>
                     <PdfManagement management={text.management} />
                 </PdfSection>
@@ -96,15 +98,11 @@ export const OwnerReportPdfDocument: FC<OwnerReportPdfDocumentProps> = ({
                 </PdfSection>
                 <PdfSection title={OWNER_PDF_TEXT.sections.methodology}>
                     {text.methodology.map(line => (
-                        <Text
-                            key={line}
-                            style={[s.small, s.muted, { marginBottom: 3 }]}
-                        >
+                        <Text key={line} style={[s.note, { marginBottom: 3 }]}>
                             {line}
                         </Text>
                     ))}
                 </PdfSection>
-                <Footer />
             </Page>
         </Document>
     );

@@ -30,6 +30,7 @@ export function toOwnerReportDto(
             title: text.title,
             periodLabel: text.periodLabel,
             tiles: text.tiles,
+            attention: text.attention,
             summary: text.summary,
             summarySource: text.summarySource,
             overview: text.overview,
@@ -66,6 +67,7 @@ export function toOwnerReportDto(
                 source: manager.source,
             })),
             methodology: text.methodology,
+            glossary: text.glossary,
         },
         availablePeriods: [...availablePeriods],
     };

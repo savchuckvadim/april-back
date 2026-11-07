@@ -6,16 +6,18 @@ import type {
     OwnerReportCall,
     OwnerReportCallInput,
     OwnerReportOutcome,
-    OwnerReportOutcomeSource,
     OwnerReportPrice,
     OwnerReportTypeGroup,
 } from './owner-report.types';
 
 /**
  * Нормализация lite-строк звонков в единицу счётчиков отчёта собственнику.
- * Старый разбор без фактов focus-v3.1 не выбрасывается: исход выводится по
- * прежним полям (`outcomeSource = 'derived'`), и отчёт честно показывает
- * долю выведенных исходов, а не «мало данных».
+ * Старый разбор без фактов focus-v3.1 не выбрасывается: всё, что он знает
+ * (задачи клиента, шаг с датой, возражения, закрытие), идёт в доли как
+ * есть; исход, сбои, допродажа и темы возражений у него null — «не
+ * размечено», а не «нет». Угадывать исход по косвенным полям нельзя:
+ * 07.11.2026 такой вывод записал 54 из 70 октябрьских разговоров в
+ * «отложено без даты» и родил ложную главную утечку.
  */
 
 /** Группа типа: дожим = доработка, решение, оплата. */
@@ -30,19 +32,10 @@ const TYPE_GROUP_BY_CALL_TYPE: Readonly<Record<string, OwnerReportTypeGroup>> =
         event_invite: 'event_invite',
     };
 
-/** Исход, который двигает сделку, если вид шага известен. */
-const ADVANCING_STEP_KINDS: ReadonlySet<string> = new Set([
-    'presentation',
-    'demo_access',
-    'offer',
-    'invoice',
-]);
-
-/** Роль собеседника, при которой контакт с решающим не состоялся. */
-const NO_CONTACT_ROLES: ReadonlySet<string> = new Set(['secretary', 'other']);
-
-/** Продвижение сделки по звонку (1–5), с которого разговор считаем продвинутым. */
-const DERIVED_ADVANCED_PROGRESS = 3;
+/** Собеседник старого разбора, с которым разговор шёл с решающим. */
+const CONTACT_ROLES: ReadonlySet<string> = new Set(['lpr', 'user']);
+/** Собеседник, при котором до решающего не дошли. */
+const NO_CONTACT_ROLES: ReadonlySet<string> = new Set(['secretary']);
 
 /** Оценка раздела «Закрытие» (1–10), с которой попытка закрытия засчитана. */
 const CLOSING_ATTEMPT_MIN_SCORE = 5;
@@ -119,7 +112,8 @@ function toOwnerReportCall(
     managerId: string,
     date: string,
 ): OwnerReportCall {
-    const { outcome, source } = outcomeOf(row);
+    const outcome = outcomeOf(row);
+    const marked = outcome !== null;
     const nextStepSet = row.nextStep?.set === true;
     const nextStepKind = row.nextStep?.kind ?? null;
     const style = row.style;
@@ -133,21 +127,23 @@ function toOwnerReportCall(
         weekKey: mondayOf(date),
         callType: row.callType,
         typeGroup: typeGroupOf(row),
+        marked,
         outcome,
-        outcomeSource: source,
-        contactReached: outcome !== 'no_contact',
-        advanced: outcome === 'advanced',
+        contactReached: contactOf(row, outcome),
+        advanced: outcome === null ? null : outcome === 'advanced',
         nextStepSet,
         nextStepDated: nextStepSet && typeof row.nextStep?.date === 'string',
         nextStepKind,
         objections: row.objections.map(objection => ({
-            topic: objection.topic ?? 'other',
+            topic: objection.topic ?? (marked ? 'other' : null),
             handled: objection.handled,
             outcome: objection.outcome,
         })),
-        issues: (row.report?.issues ?? []).map(issue => issue.code),
+        issues: marked
+            ? (row.report?.issues ?? []).map(issue => issue.code)
+            : null,
         prices: (row.report?.prices ?? []).map(priceOf),
-        upsellAttempted: row.report?.upsellAttempted ?? null,
+        upsellAttempted: marked ? (row.report?.upsellAttempted ?? null) : null,
         needsFound: style?.needsFound ?? null,
         presentationByNeeds: presentationByNeedsOf(row),
         closingAttempted:
@@ -155,7 +151,9 @@ function toOwnerReportCall(
                 ? closing.score >= CLOSING_ATTEMPT_MIN_SCORE
                 : null,
         conflict: row.riskFlags.includes('conflict'),
-        evasive: row.report?.selfIntro?.offerQuestion === 'evasive',
+        evasive: row.report?.selfIntro
+            ? row.report.selfIntro.offerQuestion === 'evasive'
+            : null,
         score: row.score,
     };
 }
@@ -168,46 +166,29 @@ export function typeGroupOf(
     return TYPE_GROUP_BY_CALL_TYPE[row.callType] ?? 'other';
 }
 
-/**
- * Исход разговора: из разбора focus-v3.1, иначе по старым полям —
- * отказ → refused; шаг с датой и видом, двигающим сделку, или продвижение
- * ≥ 3 → advanced; шаг с датой → callback_dated; шаг без даты → postponed;
- * собеседник не ЛПР и не пользователь → no_contact; иначе postponed.
- */
-export function outcomeOf(row: OwnerReportCallInput): {
-    outcome: OwnerReportOutcome;
-    source: OwnerReportOutcomeSource;
-} {
+/** Исход разговора из разбора focus-v3.1; нет или код чужой — null. */
+export function outcomeOf(
+    row: OwnerReportCallInput,
+): OwnerReportOutcome | null {
     const fromAnalysis = row.report?.outcome ?? null;
-    if (fromAnalysis !== null && OUTCOME_CODES.has(fromAnalysis)) {
-        return {
-            outcome: fromAnalysis as OwnerReportOutcome,
-            source: 'analysis',
-        };
-    }
-    return { outcome: deriveOutcome(row), source: 'derived' };
+    return fromAnalysis !== null && OUTCOME_CODES.has(fromAnalysis)
+        ? (fromAnalysis as OwnerReportOutcome)
+        : null;
 }
 
-function deriveOutcome(row: OwnerReportCallInput): OwnerReportOutcome {
-    if (row.style?.refusalCategory) return 'refused';
-    const step = row.nextStep;
-    const dated = step?.set === true && typeof step.date === 'string';
-    const progress = row.methodology?.dealProgress ?? null;
-    const advancingKind =
-        step?.kind !== null &&
-        step?.kind !== undefined &&
-        ADVANCING_STEP_KINDS.has(step.kind);
-    if (
-        (dated && advancingKind) ||
-        (progress !== null && progress >= DERIVED_ADVANCED_PROGRESS)
-    ) {
-        return 'advanced';
-    }
-    if (dated) return 'callback_dated';
-    if (step?.set === true) return 'postponed';
+/**
+ * Состоялся ли разговор с решающим: по исходу; без исхода — по собеседнику
+ * старого разбора (ЛПР или пользователь — да, секретарь — нет); иначе null.
+ */
+function contactOf(
+    row: OwnerReportCallInput,
+    outcome: OwnerReportOutcome | null,
+): boolean | null {
+    if (outcome !== null) return outcome !== 'no_contact';
     const role = row.style?.interlocutorRole ?? null;
-    if (role !== null && NO_CONTACT_ROLES.has(role)) return 'no_contact';
-    return 'postponed';
+    if (role !== null && CONTACT_ROLES.has(role)) return true;
+    if (role !== null && NO_CONTACT_ROLES.has(role)) return false;
+    return null;
 }
 
 /**

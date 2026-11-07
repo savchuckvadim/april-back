@@ -9,12 +9,25 @@
 
 export type OwnerReportTextSource = 'template' | 'model';
 
+/** Оценка значения для цвета: хорошо, внимание, плохо, без оценки. */
+export const OWNER_REPORT_TONES = ['good', 'warn', 'bad', 'neutral'] as const;
+export type OwnerReportTone = (typeof OWNER_REPORT_TONES)[number];
+
 /** Плитка шапки: число крупно, подпись под ним, сравнение с прошлым периодом. */
 export interface OwnerReportTile {
     code: string;
     value: string;
     label: string;
     compare: string | null;
+    /** Цвет плитки по порогам доли; нет значения — neutral. */
+    tone: OwnerReportTone;
+}
+
+/** Пункт «На что обратить внимание»: что не так и одно действие. */
+export interface OwnerReportAttentionItem {
+    tone: OwnerReportTone;
+    title: string;
+    action: string;
 }
 
 export interface OwnerReportOutcomeText {
@@ -31,6 +44,14 @@ export interface OwnerReportTypeGroupText {
     postponed: number;
     refused: number;
     noContact: number;
+    /** Разговоров без размеченного исхода (старый разбор). */
+    unmarked: number;
+}
+
+/** Пояснение термина отчёта для читателя, который видит его впервые. */
+export interface OwnerReportGlossaryItem {
+    term: string;
+    meaning: string;
 }
 
 export interface OwnerReportWeekText {
@@ -132,11 +153,12 @@ export const MANAGER_COLUMNS = [
 ] as const;
 export type ManagerColumn = (typeof MANAGER_COLUMNS)[number];
 
+/** Подписи колонок; без стрелок — в шрифте PDF их нет (рисовался апостроф). */
 export const MANAGER_COLUMN_LABELS: Readonly<Record<ManagerColumn, string>> = {
     calls: 'Разговоров (доля)',
-    coldAdvanced: 'Холодные → показ',
-    contactedAdvanced: 'С решающим → шаг вперёд',
-    reactivationAdvanced: 'Возврат → шаг вперёд',
+    coldAdvanced: 'Холодные: шаг вперёд',
+    contactedAdvanced: 'С решающим: шаг вперёд',
+    reactivationAdvanced: 'Возврат: шаг вперёд',
     needsFound: 'Выяснил задачи',
     presentationByNeeds: 'Показ под задачи',
     closingAttempted: 'Попытка закрытия',
@@ -165,6 +187,8 @@ export interface OwnerReportText {
     title: string;
     periodLabel: string;
     tiles: OwnerReportTile[];
+    /** До четырёх пунктов: главные утечки и провалы управления с действием. */
+    attention: OwnerReportAttentionItem[];
     summary: string[];
     summarySource: OwnerReportTextSource;
     overview: OwnerReportOverviewText;
@@ -175,4 +199,6 @@ export interface OwnerReportText {
     controlMetrics: OwnerReportMetricText[];
     managers: OwnerReportManagerText[];
     methodology: string[];
+    /** Словарь: что значат исходы, виды разговоров и прочерк. */
+    glossary: OwnerReportGlossaryItem[];
 }

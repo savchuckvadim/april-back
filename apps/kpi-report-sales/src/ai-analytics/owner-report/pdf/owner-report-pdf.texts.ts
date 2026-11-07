@@ -1,10 +1,15 @@
+import type { OwnerReportTone } from '@lib/sales-ai-analytics';
+
 /**
  * Подписи PDF отчёта собственнику: разделы, колонки, подвал. Сам текст
- * отчёта приходит из снапшота готовыми фразами.
+ * отчёта приходит из снапшота готовыми фразами. Без стрелок: в шрифте PDF
+ * их нет (рисовался апостроф — PDF 07.11.2026).
  */
 export const OWNER_PDF_TEXT = {
     sections: {
+        attention: 'На что обратить внимание',
         summary: 'Коротко для собственника',
+        glossary: 'Как читать отчёт',
         overview: 'Общая картина',
         outcomes: 'Чем заканчиваются разговоры',
         typeGroups: 'По видам разговоров',
@@ -15,8 +20,18 @@ export const OWNER_PDF_TEXT = {
         issues: 'Сбои не по вине разговора',
         metrics: 'Что держать под контролем',
         managers: 'Сотрудники',
+        managersResult: 'Результат',
+        managersTalk: 'Как ведут разговор',
+        managerCards: 'Выводы по сотрудникам',
         methodology: 'Как считали и что не учтено',
     },
+    attentionKind: {
+        bad: 'Утечка',
+        warn: 'Управление',
+        good: 'Хорошо',
+        neutral: 'Данные',
+    } satisfies Record<OwnerReportTone, string>,
+    attentionAction: 'Что сделать: ',
     columns: {
         outcome: 'Исход',
         calls: 'Разговоров',
@@ -27,18 +42,19 @@ export const OWNER_PDF_TEXT = {
         postponed: 'Отложено',
         refused: 'Отказ',
         noContact: 'Без контакта',
+        unmarked: 'Не размечено',
         week: 'Неделя',
         cold: 'Холодных',
-        coldAdvanced: 'Холодные → шаг вперёд',
+        coldAdvanced: 'Холодные: шаг вперёд',
         contacted: 'С решающим',
-        contactedAdvanced: 'С решающим → шаг вперёд',
+        contactedAdvanced: 'С решающим: шаг вперёд',
         note: 'Пометка',
         sign: 'Признак',
         verdict: 'Вердикт',
         detail: 'Что видно в разговорах',
         topic: 'Возражение',
         handled: 'Отработано',
-        advancedAfter: 'Продвинуты после',
+        advancedAfter: 'Шаг вперёд после',
         issue: 'Сбой',
         metric: 'Показатель',
         value: 'За период',
@@ -59,28 +75,36 @@ export const OWNER_PDF_TEXT = {
         risks: 'Риски',
         conclusion: 'Вывод для собственника',
     },
-    /** Колонки таблицы сотрудников в PDF: коды ячеек сервера и подписи (укорочены под лист). */
-    managerColumns: [
-        ['calls', 'Разговоров'],
-        ['coldAdvanced', 'Холодные → шаг'],
-        ['contactedAdvanced', 'С решающим → шаг'],
+    /**
+     * Таблицы сотрудников в PDF — две, чтобы ячейки «12 из 13 (92 %)»
+     * помещались в строку: результат и то, как ведут разговор.
+     */
+    managerResultColumns: [
+        ['calls', 'Разговоров (доля)'],
+        ['coldAdvanced', 'Холодные: шаг вперёд'],
+        ['contactedAdvanced', 'С решающим: шаг вперёд'],
+        ['advancedShareOfTeam', 'Доля в шагах вперёд отдела'],
+        ['upsellShareOfTeam', 'Доля в допродажах'],
+        ['crm', 'CRM: сделки / счета / показы'],
+    ],
+    managerTalkColumns: [
         ['needsFound', 'Выяснил задачи'],
         ['presentationByNeeds', 'Показ под задачи'],
-        ['closingAttempted', 'Закрытие'],
+        ['closingAttempted', 'Попытка закрытия'],
         ['nextStepDated', 'Шаг с датой'],
-        ['objectionsHandled', 'Возражения'],
+        ['objectionsHandled', 'Отработал возражения'],
         ['postponedWithDate', 'Отложено с датой'],
-        ['conflict', 'Конфликт'],
+        ['conflict', 'Конфликтный тон'],
         ['evasive', 'Ушёл от ответа'],
-        ['advancedShareOfTeam', 'Доля в продвижениях'],
     ],
     footer: {
         brand: 'April · AI-аналитика отдела продаж',
-        page: (page: number, total: number) => `страница ${page} из ${total}`,
     },
     writtenBy: {
-        model: 'написано моделью по фактам',
-        template: 'текст собран шаблоном',
+        model: 'выводы написаны моделью по посчитанным фактам',
+        template: 'текст собран по посчитанным фактам',
     },
-    generatedAt: (date: string) => `Собран ${date}`,
+    generatedAt: (date: string) => `собран ${date}`,
+    glossaryHint:
+        'Термины объяснены в разделе «Как читать отчёт» после краткого резюме.',
 } as const;

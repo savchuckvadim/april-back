@@ -12,57 +12,68 @@ import {
 describe('отчёт собственнику: нормализация звонков', () => {
     beforeEach(resetCounter);
 
-    it('исход из разбора focus-v3.1 — как есть; старый разбор — выводится по полям', () => {
-        expect(outcomeOf(call({ outcome: 'postponed' }))).toEqual({
-            outcome: 'postponed',
-            source: 'analysis',
-        });
-        // Отказ сильнее шага.
+    it('исход только из разбора focus-v3.1; у старого разбора — null, без угадывания', () => {
+        expect(outcomeOf(call({ outcome: 'postponed' }))).toBe('postponed');
+        // Ни шаг без даты, ни отказ в стиле не превращаются в исход.
+        expect(
+            outcomeOf(legacyCall({ nextStep: { set: true, date: null } })),
+        ).toBeNull();
         expect(
             outcomeOf(
                 legacyCall({
                     style: { ...DEFAULT_STYLE, refusalCategory: 'price' },
                 }),
-            ).outcome,
-        ).toBe('refused');
-        // Шаг с датой и видом, двигающим сделку, — продвинут.
-        expect(outcomeOf(legacyCall()).outcome).toBe('advanced');
-        // Шаг с датой без вида — перезвон с датой; без даты — отложено.
-        expect(
-            outcomeOf(
-                legacyCall({ nextStep: { set: true, date: '2026-10-20' } }),
-            ).outcome,
-        ).toBe('callback_dated');
-        expect(
-            outcomeOf(legacyCall({ nextStep: { set: true, date: null } }))
-                .outcome,
-        ).toBe('postponed');
-        // Нет шага, говорили с секретарём — без контакта.
-        expect(
-            outcomeOf(
+            ),
+        ).toBeNull();
+        // Чужой код исхода — тоже не размечен.
+        expect(outcomeOf(call({ outcome: 'maybe' }))).toBeNull();
+    });
+
+    it('старый разбор: новые признаки null, старые — как есть, контакт по собеседнику', () => {
+        const facts = buildOwnerReportFacts(
+            [
+                // Старый разбор темы возражений не знал.
                 legacyCall({
-                    nextStep: { set: false, date: null },
+                    objections: [
+                        {
+                            category: null,
+                            quote: null,
+                            handled: true,
+                            outcome: 'continued',
+                            topic: null,
+                        },
+                    ],
+                }),
+                legacyCall({
                     style: { ...DEFAULT_STYLE, interlocutorRole: 'secretary' },
                 }),
-            ),
-        ).toEqual({ outcome: 'no_contact', source: 'derived' });
-        // Продвижение сделки ≥ 3 — продвинут даже без даты.
-        expect(
-            outcomeOf(
-                legacyCall({
-                    nextStep: { set: false, date: null },
-                    methodology: {
-                        code: null,
-                        checkpointsDone: null,
-                        checkpointsTotal: null,
-                        spiralsFull: null,
-                        spiralsMinFull: null,
-                        dealProgress: 4,
-                        capsApplied: 0,
-                    },
-                }),
-            ).outcome,
-        ).toBe('advanced');
+            ],
+            OCTOBER,
+        );
+        // Исходов нет — ни одного «отложено» и «без контакта».
+        expect(facts.outcomes.byOutcome).toEqual({
+            advanced: 0,
+            callback_dated: 0,
+            postponed: 0,
+            refused: 0,
+            no_contact: 0,
+        });
+        expect(facts.outcomes.unmarked).toBe(2);
+        expect(facts.outcomes.advancedOfContacted.n).toBe(0);
+        // Сбои и допродажа не «0 из 2», а не размечены.
+        expect(facts.issues.callsWithIssues.n).toBe(0);
+        expect(facts.leaks.map(leak => leak.code)).not.toContain(
+            'postponed_no_date',
+        );
+        // Шаг с датой и задачи клиента — из старых полей, по ЛПР.
+        const manager = facts.managers[0];
+        expect(manager.nextStepDated).toMatchObject({ successes: 1, n: 1 });
+        expect(manager.needsFound).toMatchObject({ successes: 1, n: 1 });
+        expect(manager.contactedAdvanced.n).toBe(0);
+        expect(manager.evasive.n).toBe(0);
+        // Тема возражения не размечена — в таблицу тем не попадает.
+        expect(facts.objections.byTopic).toEqual([]);
+        expect(facts.objections.topicUnmarked).toBe(1);
     });
 
     it('покрытие: короткие, без разбора, чужие и вне периода не считаются единицей', () => {
@@ -86,7 +97,7 @@ describe('отчёт собственнику: нормализация звон
             noManager: 1,
             noAnalysis: 1,
             outcomeFromAnalysis: 1,
-            outcomeDerived: 1,
+            outcomeUnmarked: 1,
             factsSince: '2026-10-05',
         });
         expect(facts.unattributedCalls).toBe(1);

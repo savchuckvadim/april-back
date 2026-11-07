@@ -36,22 +36,32 @@ const LEAK_RULES: readonly LeakRule[] = [
     {
         code: 'followup_no_decision',
         nature: 'both',
-        base: calls => calls.filter(call => call.typeGroup === 'followup'),
-        affected: base => base.filter(call => !call.advanced),
+        base: calls =>
+            calls.filter(
+                call => call.typeGroup === 'followup' && call.advanced !== null,
+            ),
+        affected: base => base.filter(call => call.advanced === false),
         money: true,
     },
     {
         code: 'postponed_no_date',
         nature: 'process',
-        base: calls => calls.filter(call => call.contactReached),
+        base: calls =>
+            calls.filter(
+                call => call.outcome !== null && call.contactReached === true,
+            ),
         affected: base => base.filter(call => call.outcome === 'postponed'),
         money: true,
     },
     {
         code: 'cold_no_contact',
         nature: 'process',
-        base: calls => calls.filter(call => call.typeGroup === 'cold'),
-        affected: base => base.filter(call => !call.contactReached),
+        base: calls =>
+            calls.filter(
+                call =>
+                    call.typeGroup === 'cold' && call.contactReached !== null,
+            ),
+        affected: base => base.filter(call => call.contactReached === false),
         money: false,
     },
     {
@@ -59,7 +69,8 @@ const LEAK_RULES: readonly LeakRule[] = [
         nature: 'skill',
         base: calls =>
             calls.filter(
-                call => call.contactReached && call.objections.length > 0,
+                call =>
+                    call.contactReached !== false && call.objections.length > 0,
             ),
         affected: base =>
             base.filter(call =>

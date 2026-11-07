@@ -68,6 +68,14 @@ const report = (): AiOwnerReportDto => ({
                 value: '312',
                 label: 'разговоров разобрано',
                 compare: null,
+                tone: 'neutral',
+            },
+        ],
+        attention: [
+            {
+                tone: 'bad',
+                title: 'Отложено без даты возврата: 54 из 70 (77 %)',
+                action: 'Требовать дату следующего контакта в CRM.',
             },
         ],
         summary: ['Деньги застревают на дожиме.', 'Второй абзац.'],
@@ -112,6 +120,9 @@ const report = (): AiOwnerReportDto => ({
             },
         ],
         methodology: ['Период 1–31 октября 2026.'],
+        glossary: [
+            { term: 'Шаг вперёд', meaning: 'Назначен показ или выдан доступ.' },
+        ],
     },
 });
 
@@ -144,7 +155,11 @@ describe('OwnerReportPdfService', () => {
         expect(texts).toContain('Деньги застревают на дожиме.');
         expect(texts).toContain('Отложено без даты возврата');
         expect(texts).toContain('Надежда');
-        expect(texts).toContain('Собран 2 ноября 2026');
-        expect(texts).toContain('написано моделью по фактам');
+        expect(texts).toContain('собран 2 ноября 2026');
+        expect(texts).toContain(
+            'выводы написаны моделью по посчитанным фактам',
+        );
+        expect(texts).toContain('На что обратить внимание');
+        expect(texts).toContain('Как читать отчёт');
     });
 });

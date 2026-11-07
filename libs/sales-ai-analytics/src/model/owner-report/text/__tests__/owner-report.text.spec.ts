@@ -3,8 +3,37 @@ import {
     OCTOBER,
     call,
     defaultReport,
+    legacyCall,
     resetCounter,
 } from '../../__tests__/owner-report.fixture';
+import { OWNER_REPORT_GLOSSARY } from '../owner-report.glossary';
+
+describe('текст отчёта собственнику: период без новой разметки (октябрь 2026)', () => {
+    beforeEach(resetCounter);
+
+    it('прочерки и пояснение вместо «0 %», «нет данных» и ложной утечки', () => {
+        const facts = buildOwnerReportFacts(
+            [legacyCall(), legacyCall({ day: '2026-10-06' })],
+            OCTOBER,
+        );
+        const text = buildOwnerReportText(facts);
+        const tile = (code: string) =>
+            text.tiles.find(item => item.code === code);
+        expect(tile('cold_advanced')).toMatchObject({
+            value: '—',
+            compare: 'исход в разборах периода не размечен',
+        });
+        expect(tile('postponed_with_date')?.value).toBe('—');
+        expect(text.leaks.map(leak => leak.code)).not.toContain(
+            'postponed_no_date',
+        );
+        expect(text.overview.notes.join(' ')).toContain('переразбирают');
+        expect(text.summary[0]).toContain('не размечены');
+        expect(text.summary.join(' ')).toContain('задачи клиента выясняют');
+        expect(JSON.stringify(text)).not.toContain('нет данных');
+        expect(text.glossary).toHaveLength(OWNER_REPORT_GLOSSARY.length);
+    });
+});
 import {
     allowedNumberKeys,
     applyNarrative,
@@ -97,7 +126,7 @@ describe('текст отчёта собственнику: шаблон', () =>
             text.management.rows.find(row => row.code === 'plan_fact'),
         ).toMatchObject({
             verdict: 'Не проверялось',
-            detail: 'данных за период нет',
+            detail: 'план продаж в CRM не задан',
         });
         expect(text.objections.intro).toBe(
             'Возражения прозвучали в 1 из 7 разговоров с решающим (14 %); отработано 100 % возражений.',
@@ -123,11 +152,12 @@ describe('текст отчёта собственнику: шаблон', () =>
         expect(first.risks[0]).toContain(
             'разговор с решающим реже других заканчивается шагом вперёд',
         );
-        // Трёх разговоров мало — выводы предварительные.
-        expect(second.headline).toBe(
-            'Разговоров мало — выводы предварительные',
-        );
-        expect(second.conclusion).toContain('слишком мало');
+        // Риск подтверждён долей сотрудника и средним по отделу, а не «(0%)».
+        expect(first.risks[0]).toContain('в среднем по отделу');
+        // Три разговора — выводы есть, с пометкой, без стены «мало данных».
+        expect(second.headline).toContain('предварительно, 3 разг.');
+        expect(second.conclusion).toContain('выводы предварительные');
+        expect(second.conclusion).not.toContain('слишком мало');
     });
 
     it('сравнение с прошлым периодом — в пунктах', () => {

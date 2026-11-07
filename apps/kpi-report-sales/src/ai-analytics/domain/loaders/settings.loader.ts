@@ -89,8 +89,8 @@ export interface AiOwnerReportDeliverySettings {
 }
 
 /** Id папки Диска из строки настройки; пусто или не число — null. */
-function parseFolderId(value: string): number | null {
-    const id = Number(value.trim());
+function parseFolderId(value: string | null | undefined): number | null {
+    const id = Number((value ?? '').trim());
     return Number.isInteger(id) && id > 0 ? id : null;
 }
 
@@ -225,7 +225,7 @@ export class SettingsLoader {
             poolConsentAt: poolConsentAt || null,
             experimentsEnabled: settings.aiAnalyticsExperimentsEnabled,
             ownerReport: {
-                enabled: settings.aiAnalyticsOwnerReportEnabled,
+                enabled: settings.aiAnalyticsOwnerReportEnabled === true,
                 kinds: parseOwnerReportKinds(
                     settings.aiAnalyticsOwnerReportKinds,
                 ),
@@ -233,7 +233,8 @@ export class SettingsLoader {
                 diskFolderId: parseFolderId(
                     settings.aiAnalyticsOwnerReportDiskFolderId,
                 ),
-                dryRun: settings.aiAnalyticsOwnerReportDryRun,
+                // Ключа нет — «только считать»: безопасный дефолт схемы.
+                dryRun: settings.aiAnalyticsOwnerReportDryRun !== false,
             },
             levels: parseAiLevels(settings.aiAnalyticsLevels),
             targets: parseAiTargets(settings.aiAnalyticsTargets),

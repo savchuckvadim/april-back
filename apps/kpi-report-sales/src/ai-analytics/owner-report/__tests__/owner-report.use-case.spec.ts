@@ -4,7 +4,7 @@ import type { AiOwnerReportDto } from '../../dto/ai-owner-report.dto';
 
 const NOW = new Date('2026-11-06T09:00:00Z');
 const KEY =
-    'sales-ai-analytics:v1:test.bitrix24.ru:owner-report:v1:month:2026-10';
+    'sales-ai-analytics:v1:test.bitrix24.ru:owner-report:v2:month:2026-10';
 
 const dto = (): AiOwnerReportDto =>
     ({ kind: 'month', periodKey: '2026-10' }) as AiOwnerReportDto;

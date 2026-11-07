@@ -1,7 +1,7 @@
 import { CALL_REPORT_OUTCOME_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-report-facts.type';
 import { isWorkday, shiftDate } from '../workdays.util';
 import { mondayOf, type NormalizeResult } from './owner-report.calls';
-import { countBy, shareOf } from './owner-report.share';
+import { advancedShare, countBy, shareOf } from './owner-report.share';
 import {
     OWNER_REPORT_TYPE_GROUPS,
     type OwnerReportCall,
@@ -27,13 +27,20 @@ export function countOutcomes(
     return countBy(calls, CALL_REPORT_OUTCOME_CODES, call => call.outcome);
 }
 
+/** Разговоры с размеченным исходом — единственная база долей исходов. */
+export function markedOf(calls: readonly OwnerReportCall[]): OwnerReportCall[] {
+    return calls.filter(call => call.outcome !== null);
+}
+
 export function buildOutcomes(
     calls: readonly OwnerReportCall[],
 ): OwnerReportOutcomes {
     const byOutcome = countOutcomes(calls);
-    const contacted = calls.filter(call => call.contactReached).length;
+    const marked = markedOf(calls);
+    const contacted = marked.filter(call => call.contactReached).length;
     return {
         byOutcome,
+        unmarked: calls.length - marked.length,
         contacted,
         advancedOfContacted: shareOf(byOutcome.advanced, contacted),
         postponedWithDate: postponedWithDate(calls),
@@ -57,13 +64,15 @@ export function buildTypeGroups(
         const rows = calls.filter(call => call.typeGroup === group);
         if (rows.length === 0) return [];
         const byOutcome = countOutcomes(rows);
-        const contacted = rows.filter(call => call.contactReached).length;
+        const marked = markedOf(rows);
+        const contacted = marked.filter(call => call.contactReached).length;
         return [
             {
                 group,
                 calls: rows.length,
                 byOutcome,
-                advancedOfAll: shareOf(byOutcome.advanced, rows.length),
+                unmarked: rows.length - marked.length,
+                advancedOfAll: shareOf(byOutcome.advanced, marked.length),
                 advancedOfContacted: shareOf(byOutcome.advanced, contacted),
             },
         ];
@@ -103,7 +112,7 @@ export function buildWeeks(
         const to = sunday > period.to ? period.to : sunday;
         const rows = calls.filter(call => call.weekKey === monday);
         const cold = rows.filter(call => call.typeGroup === 'cold');
-        const contacted = rows.filter(call => call.contactReached);
+        const contacted = rows.filter(call => call.contactReached === true);
         weeks.push({
             weekKey: monday,
             from,
@@ -111,15 +120,9 @@ export function buildWeeks(
             partial: monday < period.from || sunday > period.to,
             calls: rows.length,
             cold: cold.length,
-            coldAdvanced: shareOf(
-                cold.filter(call => call.advanced).length,
-                cold.length,
-            ),
+            coldAdvanced: advancedShare(cold),
             contacted: contacted.length,
-            contactedAdvanced: shareOf(
-                contacted.filter(call => call.advanced).length,
-                contacted.length,
-            ),
+            contactedAdvanced: advancedShare(contacted),
             silentWorkdays: silentWorkdays(from, to, period, activeDates),
         });
     }
@@ -132,9 +135,7 @@ export function buildCoverage(
     telephony: OwnerReportTelephonyFacts | null,
 ): OwnerReportCoverage {
     const calls = normalized.calls;
-    const fromAnalysis = calls.filter(
-        call => call.outcomeSource === 'analysis',
-    );
+    const fromAnalysis = markedOf(calls);
     const factsSince = fromAnalysis.reduce<string | null>(
         (earliest, call) =>
             earliest === null || call.date < earliest ? call.date : earliest,
@@ -151,7 +152,7 @@ export function buildCoverage(
         noManager: normalized.noManager,
         noAnalysis: normalized.noAnalysis,
         outcomeFromAnalysis: fromAnalysis.length,
-        outcomeDerived: calls.length - fromAnalysis.length,
+        outcomeUnmarked: calls.length - fromAnalysis.length,
         factsSince,
         silentWorkdays: silentWorkdays(
             period.from,
