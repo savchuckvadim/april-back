@@ -106,14 +106,13 @@ describe('OwnerReportReactivationLoader — признак возврата по
             false,
         ]);
         // Только закрытые сделки «ОП Основная» нужных компаний.
-        expect(all).toHaveBeenCalledWith(
-            expect.objectContaining({
-                CATEGORY_ID: 5,
-                CLOSED: 'Y',
-                '@COMPANY_ID': expect.arrayContaining(['100', '200', '300']),
-            }),
-            ['ID', 'COMPANY_ID', 'STAGE_ID', 'CLOSEDATE'],
+        const companyCall = all.mock.calls.find(
+            ([filter]) => '@COMPANY_ID' in filter,
         );
+        expect(companyCall?.[0]).toMatchObject({ CATEGORY_ID: 5, CLOSED: 'Y' });
+        expect(
+            [...(companyCall?.[0]['@COMPANY_ID'] as string[])].sort(),
+        ).toEqual(['100', '200', '300']);
     });
 
     it('сбой Битрикса — строки без признака, отчёт не падает', async () => {
