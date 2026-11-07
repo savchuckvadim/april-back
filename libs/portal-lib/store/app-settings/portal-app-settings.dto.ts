@@ -3,6 +3,8 @@ import { IsIn, IsObject } from 'class-validator';
 import {
     EnumPortalAppCode,
     PORTAL_APP_CODES,
+    PORTAL_APP_SETTING_PICKS,
+    type PortalAppSettingPick,
 } from './portal-app-settings.schema';
 
 /** Вариант значения-списка: код уезжает в CSV, название — подпись. */
@@ -296,6 +298,16 @@ export class PortalAppSettingDescriptorDto {
         type: Boolean,
     })
     isList?: boolean;
+
+    @ApiPropertyOptional({
+        description:
+            'Значение — сотрудники портала: bitrix-users — Bitrix-id через ' +
+            'запятую, bitrix-user — один Bitrix-id (0 — никто). Админка ' +
+            'рисует выбор сотрудников по ручке admin/portal/:id/employees.',
+        enum: PORTAL_APP_SETTING_PICKS,
+        example: 'bitrix-users',
+    })
+    pick?: PortalAppSettingPick;
 
     @ApiProperty({
         description:

@@ -67,6 +67,28 @@ export class DepartmentBitrixService {
         return { result };
     }
 
+    /**
+     * Все активные пользователи портала — все страницы user.get, узкий
+     * select (имя, должность, отделы, тип). Для выбора сотрудников в
+     * админке; тип пользователя (сотрудник, экстранет, почтовый) фильтрует
+     * вызывающий.
+     */
+    async getActiveUsersAll(): Promise<IBXUser[]> {
+        return await this.callAllPages<IBXUser>('user.get', {
+            FILTER: { ACTIVE: true },
+            SELECT: [
+                'ID',
+                'NAME',
+                'LAST_NAME',
+                'WORK_POSITION',
+                'UF_DEPARTMENT',
+                'USER_TYPE',
+            ],
+            SORT: 'ID',
+            ORDER: 'ASC',
+        });
+    }
+
     async enrichWithUsers(
         departments: IBXDepartment[],
     ): Promise<IBXDepartment[]> {

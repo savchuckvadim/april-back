@@ -135,6 +135,7 @@ export class PortalAppSettingsController {
                             ? { options: [...descriptor.options] }
                             : {}),
                         ...(descriptor.isList ? { isList: true } : {}),
+                        ...(descriptor.pick ? { pick: descriptor.pick } : {}),
                         group,
                         // Связи отдаём только когда они есть: у настроек
                         // без хуков ответ не меняется.

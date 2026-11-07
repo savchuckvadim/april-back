@@ -88,6 +88,17 @@ describe('PortalAppSettingsController: признак stored', () => {
 
         expect(setting?.options).toBeUndefined();
         expect(setting?.isList).toBeUndefined();
+        expect(setting?.pick).toBeUndefined();
+    });
+
+    it('ключ получателей едет с признаком выбора сотрудников', async () => {
+        const setting = await findSetting(
+            { lead_intake_round_robin_excluded_user_ids: '447, 12' },
+            'lead_intake_round_robin_excluded_user_ids',
+        );
+
+        expect(setting?.pick).toBe('bitrix-users');
+        expect(setting?.value).toBe('447, 12');
     });
 
     it('строки настроек у портала нет — заданных ключей нет вообще', async () => {
