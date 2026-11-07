@@ -11,6 +11,7 @@ import {
 import { buildOwnerReportMessage } from '../../owner-report/owner-report-message.util';
 import { OwnerReportPdfService } from '../../owner-report/owner-report-pdf.service';
 import { OwnerReportSnapshotReader } from '../../owner-report/owner-report-snapshot.reader';
+import { OwnerReportDiskFolderResolver } from '../../owner-report/owner-report-disk-folder.resolver';
 import { buildOwnerReportKey } from '../../owner-report/owner-report.cache-key.util';
 import { AI_OWNER_REPORT_ERRORS } from '../../owner-report/owner-report.const';
 import {
@@ -38,6 +39,7 @@ export class OwnerReportDeliveryUseCase {
         private readonly job: OwnerReportJobUseCase,
         private readonly pdf: OwnerReportPdfService,
         private readonly pbx: PBXService,
+        private readonly folders: OwnerReportDiskFolderResolver,
     ) {}
 
     async execute(
@@ -65,12 +67,17 @@ export class OwnerReportDeliveryUseCase {
             report,
             settings.calendar.timeZone,
         );
-        const { bitrix } = await this.pbx.init(data.domain);
+        const { bitrix, PortalModel } = await this.pbx.init(data.domain);
+        // Папка из настройки; пусто — «AI-аналитика / Отчёт собственнику»
+        // в группе задач ОП; не нашлась — хранилище приложения.
+        const folderId =
+            settings.ownerReport.diskFolderId ??
+            (await this.folders.resolve(data.domain, bitrix, PortalModel));
         const upload = await new CallReportWeeklyDeliveryService().upload(
             bitrix,
             rendered.filename,
             rendered.buffer,
-            settings.ownerReport.diskFolderId,
+            folderId,
         );
         const dryRun = settings.ownerReport.dryRun && explicit.length === 0;
         if (dryRun)
