@@ -1,6 +1,10 @@
 import 'reflect-metadata';
 import { Logger } from '@nestjs/common';
-import { DEFAULT_WORK_CALENDAR, WorkCalendar } from '@lib/sales-ai-analytics';
+import {
+    DEFAULT_WORK_CALENDAR,
+    isWorkday,
+    WorkCalendar,
+} from '@lib/sales-ai-analytics';
 import type { BxCalendarSettingsResult } from '@lib/bitrix/domain/calendar/interface/bx-calendar.interface';
 import {
     AI_CALENDAR_ERROR_TTL_SECONDS,
@@ -8,6 +12,10 @@ import {
     AiAnalyticsCalendarLoader,
     buildCalendarKey,
 } from '../domain/loaders/calendar.loader';
+import {
+    fallbackRuCalendar,
+    type RuWorkCalendarYear,
+} from '@lib/ru-work-calendar';
 import {
     AI_CALENDAR_FALLBACK_DAY_HOURS,
     calendarWarnings,
@@ -48,6 +56,8 @@ function makeLoader(
     response: BxCalendarSettingsResult | Error = okResponse(),
     portalCalendar: WorkCalendar = DEFAULT_WORK_CALENDAR,
     cached: unknown = null,
+
+    ruYear?: (year: number) => RuWorkCalendarYear,
 ) {
     const settingsGetSafe = jest.fn(() =>
         response instanceof Error
@@ -69,12 +79,25 @@ function makeLoader(
         getJson: jest.fn().mockResolvedValue(cached),
         setJson: jest.fn().mockResolvedValue(undefined),
     };
+    // Календарь РФ: по умолчанию «живой» с теми же праздниками ТК РФ.
+    const ruCalendar = {
+        years: jest.fn((years: readonly number[]) =>
+            Promise.resolve(
+                years.map(year =>
+                    ruYear
+                        ? ruYear(year)
+                        : { ...fallbackRuCalendar(year), source: 'live' },
+                ),
+            ),
+        ),
+    };
     const loader = new AiAnalyticsCalendarLoader(
         { init } as never,
         settings as never,
         cache as never,
+        ruCalendar as never,
     );
-    return { loader, init, settingsGetSafe, cache };
+    return { loader, init, settingsGetSafe, cache, ruCalendar };
 }
 
 describe('calendar.util — чистые разборы производственного календаря', () => {
@@ -181,6 +204,32 @@ describe('AiAnalyticsCalendarLoader — импорт календаря порт
 
         expect(result.source).toBe('fallback');
         expect(result.warnings[0]).toContain('таймаут');
+    });
+
+    it('запасной календарь берёт переносы РФ: нерабочая пятница и рабочая суббота', async () => {
+        const { loader } = makeLoader(
+            new Error('таймаут'),
+            undefined,
+            undefined,
+            year =>
+                year === 2026
+                    ? {
+                          year,
+                          holidays: ['2026-01-09'],
+                          workingWeekends: ['2026-11-07'],
+                          shortDays: [],
+                          source: 'live',
+                      }
+                    : fallbackRuCalendar(year),
+        );
+
+        const result = await loader.load(DOMAIN, { now: NOW });
+
+        expect(result.calendar.holidays).toContain('2026-01-09');
+        expect(result.calendar.extraWorkdays).toEqual(['2026-11-07']);
+        expect(isWorkday('2026-11-07', result.calendar)).toBe(true);
+        expect(isWorkday('2026-01-09', result.calendar)).toBe(false);
+        expect(result.warnings[0]).toContain('с переносами');
     });
 
     it('заданные поля ключа настроек важнее импорта', async () => {

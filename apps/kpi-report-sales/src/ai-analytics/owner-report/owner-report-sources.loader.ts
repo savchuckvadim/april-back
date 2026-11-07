@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
 import {
     AI_ANALYTICS_THRESHOLDS,
@@ -10,6 +10,7 @@ import {
     type OwnerReportTelephonyFacts,
 } from '@lib/sales-ai-analytics';
 import { AiManagerScopeResolver } from '../domain/access/ai-manager-scope.resolver';
+import { AiAnalyticsCalendarLoader } from '../domain/loaders/calendar.loader';
 import { CallsLoader } from '../domain/loaders/calls.loader';
 import type { DatedLiteRow } from '../domain/loaders/lite-row.mapper';
 import { portalMinDurationByType } from '../domain/loaders/min-duration.util';
@@ -61,6 +62,8 @@ export class OwnerReportSourcesLoader {
         private readonly crm: OwnerReportCrmLoader,
         private readonly pbx: PBXService,
         private readonly reactivation: OwnerReportReactivationLoader,
+        /** Календарь портала с переносами РФ; нет (спеки) — из настроек. */
+        @Optional() private readonly calendars?: AiAnalyticsCalendarLoader,
     ) {}
 
     async load(
@@ -70,7 +73,9 @@ export class OwnerReportSourcesLoader {
         now: Date = new Date(),
     ): Promise<OwnerReportSources> {
         const settings = await this.settings.load(domain);
-        const { calendar } = settings;
+        const calendar = this.calendars
+            ? (await this.calendars.load(domain, { now })).calendar
+            : settings.calendar;
         const toPeriod = (
             range: OwnerReportPeriodBounds,
         ): OwnerReportPeriod => ({

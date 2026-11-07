@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { QueueDispatcherService } from '@/modules/queue';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
@@ -13,6 +13,7 @@ import {
 } from '@lib/sales-ai-analytics';
 import { AiAnalyticsPortalsLoader } from '../domain/loaders/portals.loader';
 import { SettingsLoader } from '../domain/loaders/settings.loader';
+import { AiAnalyticsCalendarLoader } from '../domain/loaders/calendar.loader';
 import {
     buildOwnerReportDeliveryJobId,
     OWNER_REPORT_DELIVERY_JOB_OPTIONS,
@@ -39,6 +40,8 @@ export class OwnerReportScheduler {
         private readonly portals: AiAnalyticsPortalsLoader,
         private readonly settings: SettingsLoader,
         private readonly dispatcher: QueueDispatcherService,
+        /** Календарь портала с переносами РФ; нет (спеки) — из настроек. */
+        @Optional() private readonly calendars?: AiAnalyticsCalendarLoader,
     ) {}
 
     @Cron(hourlyTickCron(OWNER_REPORT_RELEASE_SLOT))
@@ -64,13 +67,16 @@ export class OwnerReportScheduler {
         try {
             const settings = await this.settings.load(domain);
             if (!settings.enabled || !settings.ownerReport.enabled) return [];
-            const { calendar } = settings;
             const clock = dueLocalClock(
                 now,
-                calendar.timeZone,
+                settings.calendar.timeZone,
                 OWNER_REPORT_RELEASE_SLOT,
             );
             if (!clock) return [];
+            // «Второй рабочий день» — по календарю портала с переносами.
+            const calendar = this.calendars
+                ? (await this.calendars.load(domain, { now })).calendar
+                : settings.calendar;
             if (
                 workdayOrdinalInMonth(clock.date, calendar) !==
                 OWNER_REPORT_RELEASE_WORKDAY

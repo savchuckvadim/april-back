@@ -21,6 +21,8 @@
  * вызывается внутри метода (CLAUDE.md про race condition).
  */
 import { Module, Type } from '@nestjs/common';
+import { RuWorkCalendarModule } from '@lib/ru-work-calendar';
+import { AiAnalyticsCalendarLoader } from '../domain/loaders/calendar.loader';
 import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { AiModule } from '@lib/call-lib';
 import { PbxAicallSmartModule } from '@lib/portal-lib/pbx/pbx-aicall-smart';
@@ -50,10 +52,12 @@ export const AI_ANALYTICS_CORE_PBX_PROVIDERS: Type<unknown>[] = [
     // Ссылки на карточки разборов (entityTypeId смарта портала +
     // report_item_id из ais): повестка, «Внимание», слепая оценка.
     SmartLinkLoader,
-    // Доля коротких разговоров пульса из телефонии. Производственный
-    // календарь пульса — AiAnalyticsCalendarLoader среза конвейера (он его
-    // экспортирует): провайдер объявлен один раз.
+    // Доля коротких разговоров пульса из телефонии.
     PulseTelephonyLoader,
+    // Производственный календарь портала (импорт → настройки → РФ с
+    // переносами): общий для конвейера, пульса и отчёта собственнику
+    // (07.11.2026 перенесён сюда из среза конвейера — объявлен один раз).
+    AiAnalyticsCalendarLoader,
 ];
 
 @Module({
@@ -63,6 +67,7 @@ export const AI_ANALYTICS_CORE_PBX_PROVIDERS: Type<unknown>[] = [
         PortalAppSettingsModule,
         PbxAicallSmartModule,
         AiAnalyticsCoreModule,
+        RuWorkCalendarModule,
     ],
     providers: AI_ANALYTICS_CORE_PBX_PROVIDERS,
     exports: AI_ANALYTICS_CORE_PBX_PROVIDERS,

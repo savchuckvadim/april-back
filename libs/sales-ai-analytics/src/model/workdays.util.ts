@@ -8,6 +8,11 @@ export interface WorkCalendar {
     timeZone: string;
     holidays: string[];
     workweek: number[];
+    /**
+     * Рабочие дни вне workweek — перенесённые рабочие субботы
+     * производственного календаря РФ (07.11.2026). Нет — переносов нет.
+     */
+    extraWorkdays?: string[];
 }
 
 export const DEFAULT_WORK_CALENDAR: WorkCalendar = {
@@ -130,18 +135,21 @@ export function parseWorkCalendar(
         typeof raw.timeZone === 'string' && isValidTimeZone(raw.timeZone)
             ? raw.timeZone
             : DEFAULT_WORK_CALENDAR.timeZone;
+    const extraWorkdays = normalizeHolidays(raw.extraWorkdays);
     return {
         timeZone,
         holidays: normalizeHolidays(raw.holidays),
         workweek: normalizeWorkweek(raw.workweek),
+        ...(extraWorkdays.length > 0 ? { extraWorkdays } : {}),
     };
 }
 
-/** Рабочий ли день: день недели входит в workweek и дата не праздник. */
+/** Рабочий ли день: не праздник и день недели в workweek либо перенесённый рабочий. */
 export function isWorkday(date: string, calendar: WorkCalendar): boolean {
+    if (calendar.holidays.includes(date)) return false;
     return (
-        calendar.workweek.includes(isoWeekday(date)) &&
-        !calendar.holidays.includes(date)
+        calendar.workweek.includes(isoWeekday(date)) ||
+        (calendar.extraWorkdays?.includes(date) ?? false)
     );
 }
 

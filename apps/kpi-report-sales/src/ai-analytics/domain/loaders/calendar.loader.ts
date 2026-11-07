@@ -17,7 +17,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PBXService } from '@/modules/pbx';
 import { isBxCalendarUnavailable } from '@lib/bitrix/domain/calendar/consts/bx-calendar.const';
 import type { BxCalendarSettingsResult } from '@lib/bitrix/domain/calendar/interface/bx-calendar.interface';
-import { toPortalDate, WorkCalendar } from '@lib/sales-ai-analytics';
+import {
+    DEFAULT_WORK_CALENDAR,
+    toPortalDate,
+    WorkCalendar,
+} from '@lib/sales-ai-analytics';
+import { RuWorkCalendarService } from '@lib/ru-work-calendar';
 import { AiAnalyticsCacheService } from '../../cache/ai-analytics-cache.service';
 import { AI_ANALYTICS_CACHE_PREFIX } from '../../constants/ai-analytics.const';
 import {
@@ -28,7 +33,6 @@ import {
     parseBxDayHours,
     parseBxHolidays,
     parseBxWorkweek,
-    ruWorkCalendar,
     yearsAround,
 } from './calendar.util';
 import { SettingsLoader } from './settings.loader';
@@ -59,6 +63,7 @@ export class AiAnalyticsCalendarLoader {
         private readonly pbx: PBXService,
         private readonly settings: SettingsLoader,
         private readonly cache: AiAnalyticsCacheService,
+        private readonly ruCalendar: RuWorkCalendarService,
     ) {}
 
     /** Календарь портала: импорт → переопределение настройками → РФ. */
@@ -96,13 +101,17 @@ export class AiAnalyticsCalendarLoader {
             const { bitrix } = await this.pbx.init(domain);
             response = await bitrix.calendar.settingsGetSafe();
         } catch (error) {
-            return fallbackCalendar(timeZone, year, (error as Error).message);
+            return this.fallbackCalendar(
+                timeZone,
+                year,
+                (error as Error).message,
+            );
         }
         if (!response.ok) {
             const suffix = isBxCalendarUnavailable(response.reason)
                 ? 'метод недоступен порталу'
                 : 'сбой вызова';
-            return fallbackCalendar(
+            return this.fallbackCalendar(
                 timeZone,
                 year,
                 `${response.reason}: ${suffix}`,
@@ -133,6 +142,37 @@ export class AiAnalyticsCalendarLoader {
         };
     }
 
+    /**
+     * Запасной календарь: производственный календарь РФ с переносами из
+     * живого источника (@lib/ru-work-calendar) на год и соседей; источник
+     * молчит — праздники ТК РФ без переносов, как раньше.
+     */
+    private async fallbackCalendar(
+        timeZone: string,
+        year: number,
+        reason: string,
+    ): Promise<AiCalendarResult> {
+        const years = await this.ruCalendar.years(yearsAround(year));
+        const live = years.some(item => item.source === 'live');
+        const extraWorkdays = years.flatMap(item => item.workingWeekends);
+        return {
+            calendar: {
+                timeZone,
+                holidays: years.flatMap(item => item.holidays),
+                workweek: [...DEFAULT_WORK_CALENDAR.workweek],
+                ...(extraWorkdays.length > 0 ? { extraWorkdays } : {}),
+            },
+            dayHours: AI_CALENDAR_FALLBACK_DAY_HOURS,
+            source: 'fallback',
+            warnings: [
+                `Производственный календарь портала не прочитан (${reason}) — ` +
+                    (live
+                        ? 'считаем по производственному календарю РФ с переносами'
+                        : 'считаем по праздникам ТК РФ без переносов: календарь РФ тоже не ответил'),
+            ],
+        };
+    }
+
     /** Оговорки календаря видит руководитель — значит, и телеграм. */
     private report(domain: string, result: AiCalendarResult): void {
         for (const warning of result.warnings) {
@@ -155,23 +195,6 @@ export class AiAnalyticsCalendarLoader {
     }
 }
 
-/** Запасной календарь РФ с объяснением, почему импорт не сработал. */
-function fallbackCalendar(
-    timeZone: string,
-    year: number,
-    reason: string,
-): AiCalendarResult {
-    return {
-        calendar: ruWorkCalendar(year, timeZone),
-        dayHours: AI_CALENDAR_FALLBACK_DAY_HOURS,
-        source: 'fallback',
-        warnings: [
-            `Производственный календарь портала не прочитан (${reason}) — ` +
-                'считаем по производственному календарю РФ',
-        ],
-    };
-}
-
 /** Заданные поля ключа `ai_analytics_calendar` важнее импорта. */
 function applyOverride(
     base: AiCalendarResult,
@@ -190,6 +213,9 @@ function applyOverride(
                     ? [...override.holidays]
                     : [...base.calendar.holidays],
             workweek: [...override.workweek],
+            ...(base.calendar.extraWorkdays
+                ? { extraWorkdays: [...base.calendar.extraWorkdays] }
+                : {}),
         },
     };
 }

@@ -232,7 +232,12 @@ const LOCAL_FIELDS: Readonly<Record<string, readonly string[]>> = {
         'bootMonths',
         'levelUnderstatedRatio',
     ],
-    PULSE_DEFAULTS: ['windowWorkdays', 'historyWorkdays'],
+    PULSE_DEFAULTS: [
+        'windowWorkdays',
+        'historyWorkdays',
+        'xmrDayMinN',
+        'examplesPerManager',
+    ],
 };
 
 /** Пометка локальной константы в исходнике модели. */

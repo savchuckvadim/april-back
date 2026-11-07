@@ -19,6 +19,7 @@ import {
     shiftDate,
     WorkCalendar,
 } from '@lib/sales-ai-analytics';
+import { RU_PRODUCTION_HOLIDAYS } from '@lib/ru-work-calendar';
 
 /** Откуда взят календарь: портал, настройки портала, запасной РФ. */
 export const AI_CALENDAR_SOURCES = ['import', 'override', 'fallback'] as const;
@@ -34,27 +35,8 @@ export interface AiCalendarResult {
     warnings: string[];
 }
 
-/**
- * Нерабочие праздничные дни РФ (ТК РФ, ст. 112) в формате «день.месяц».
- * Переносы выходных сюда не входят: они меняются постановлением каждый
- * год, поэтому портал задаёт их сам (импорт либо ключ настроек).
- */
-export const RU_PRODUCTION_HOLIDAYS = [
-    '1.1',
-    '2.1',
-    '3.1',
-    '4.1',
-    '5.1',
-    '6.1',
-    '7.1',
-    '8.1',
-    '23.2',
-    '8.3',
-    '1.5',
-    '9.5',
-    '12.6',
-    '4.11',
-] as const;
+/** Праздники ТК РФ — единый список в @lib/ru-work-calendar (реэкспорт для прежних импортов). */
+export { RU_PRODUCTION_HOLIDAYS } from '@lib/ru-work-calendar';
 
 /** Длина рабочего дня запасного календаря: 40 часов / 5 дней (ТК РФ). */
 export const AI_CALENDAR_FALLBACK_DAY_HOURS = 8;

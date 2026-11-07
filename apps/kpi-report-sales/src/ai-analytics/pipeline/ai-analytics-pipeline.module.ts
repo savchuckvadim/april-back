@@ -2,8 +2,8 @@ import { DynamicModule, Module, ModuleMetadata, Type } from '@nestjs/common';
 import { PBXModule } from 'src/modules/pbx/pbx.module';
 import { QueueModule } from 'src/modules/queue/queue.module';
 import { AiAnalyticsCoreModule } from '../core/ai-analytics-core.module';
+import { AiAnalyticsCorePbxModule } from '../core/ai-analytics-core-pbx.module';
 import { AiAnalyticsSnapshotScheduler } from '../cron/ai-analytics-snapshot.scheduler';
-import { AiAnalyticsCalendarLoader } from '../domain/loaders/calendar.loader';
 import { AiAnalyticsPassportModule } from '../passport/ai-analytics-passport.module';
 import { AiAnalyticsPortalModelModule } from '../portal-model/ai-analytics-portal-model.module';
 import { AiAnalyticsRopMarkModule } from '../rop-mark/ai-analytics-rop-mark.module';
@@ -158,9 +158,14 @@ export const AI_ANALYTICS_PIPELINE_STEP_MODULES: Type<unknown>[] = [
  * нулём шагов, а не падает.
  */
 @Module({
-    imports: [PBXModule, QueueModule, AiAnalyticsCoreModule],
+    imports: [
+        PBXModule,
+        QueueModule,
+        AiAnalyticsCoreModule,
+        // Производственный календарь портала — из PBX-половины ядра.
+        AiAnalyticsCorePbxModule,
+    ],
     providers: [
-        AiAnalyticsCalendarLoader,
         ...AI_ANALYTICS_PIPELINE_METRIC_PROVIDERS,
         AiAnalyticsPipelineMetrics,
         EtlRunWriter,
@@ -181,9 +186,6 @@ export const AI_ANALYTICS_PIPELINE_STEP_MODULES: Type<unknown>[] = [
         },
     ],
     exports: [
-        // Тот же производственный календарь читает пульс корня фичи
-        // (05.11.2026: окно пульса по праздникам портала, как у конвейера).
-        AiAnalyticsCalendarLoader,
         SnapshotPipelineService,
         AiAnalyticsBackfillService,
         SanityStep,
