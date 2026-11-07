@@ -93,6 +93,7 @@ const makeUseCase = (
         job as never,
         pdf as never,
         pbx as never,
+        { resolve: jest.fn().mockResolvedValue(null) } as never,
     );
     return { useCase, reader, job, pdf, messageAdd };
 };
