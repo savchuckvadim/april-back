@@ -11,7 +11,9 @@ const toBuffer = jest.fn().mockReturnValue(Buffer.from('docx'));
 
 jest.mock('pizzip', () => ({
     __esModule: true,
-    default: jest.fn().mockImplementation(() => ({})),
+    default: jest
+        .fn()
+        .mockImplementation(() => ({ file: jest.fn().mockReturnValue([]) })),
 }));
 
 jest.mock('docxtemplater', () => ({
@@ -63,6 +65,7 @@ describe('ContractGenerateService', () => {
     let createPublicLink: jest.Mock;
     let findById: jest.Mock;
     let resolveTemplate: jest.Mock;
+    let getProducts: jest.Mock;
     let service: ContractGenerateService;
 
     beforeEach(() => {
@@ -72,6 +75,7 @@ describe('ContractGenerateService', () => {
         countFilesInDirectory = jest.fn().mockResolvedValue(0);
         createPublicLink = jest.fn().mockResolvedValue(ROOT_LINK);
         findById = jest.fn().mockResolvedValue({ id: 12, name: 'ООО Гарант' });
+        getProducts = jest.fn().mockReturnValue([]);
         resolveTemplate = jest.fn().mockResolvedValue({
             path: TEMPLATE_PATH,
             origin: ContractTemplateOrigin.LEGACY,
@@ -84,7 +88,7 @@ describe('ContractGenerateService', () => {
             { get: jest.fn().mockReturnValue(APP_URL) } as never,
             { findById } as never,
             { getInfoblocks: jest.fn().mockReturnValue({}) } as never,
-            { getProducts: jest.fn().mockReturnValue([]) } as never,
+            { getProducts } as never,
             // тексты поставок: payload проходит как есть
             {
                 enrichRows: jest.fn(async (rows: unknown[]) => rows),
@@ -124,10 +128,12 @@ describe('ContractGenerateService', () => {
     });
 
     it('«рыба»: итоги и товар из главной строки, пустые поля сделки — прочерками, теги без значения — прочерк', async () => {
-        const DocxtemplaterMock = (await import('docxtemplater')).default as unknown as jest.Mock;
+        const DocxtemplaterMock = (await import('docxtemplater'))
+            .default as unknown as jest.Mock;
         const result = await service.generateContract(dto());
 
-        expect(result.data.total_quantity).toBe('12');
+        // без строк товара количество — прочерк, а не месяцы договора
+        expect(result.data.total_quantity).toMatch(/^_+$/);
         expect(result.data.total_prepayment_quantity_string).toBe('12 месяцев');
         expect(result.data.client_assigned_fio).toMatch(/^_+$/);
         expect(result.data.garant_client_email).toMatch(/^_+$/);
@@ -137,10 +143,35 @@ describe('ContractGenerateService', () => {
         expect(JSON.stringify(result.data)).not.toContain('undefined');
 
         const options = DocxtemplaterMock.mock.calls[0][1] as {
-            nullGetter: (part: { type?: string; module?: string | null }) => string;
+            nullGetter: (part: {
+                type?: string;
+                module?: string | null;
+            }) => string;
         };
-        expect(options.nullGetter({ type: 'placeholder', module: null })).toMatch(/^_+$/);
-        expect(options.nullGetter({ type: 'placeholder', module: 'loop' })).toBe('');
+        expect(
+            options.nullGetter({ type: 'placeholder', module: null }),
+        ).toMatch(/^_+$/);
+        expect(
+            options.nullGetter({ type: 'placeholder', module: 'loop' }),
+        ).toBe('');
+    });
+
+    it('итоговое количество — как у товара: месяцы договора не подставляются', async () => {
+        getProducts.mockReturnValue([
+            {
+                productNumber: 1,
+                productName: 'Гарант-Юрист',
+                productQuantity: 1,
+                productMeasure: 'Лицензия 6 месяцев',
+                productPrice: '67078.80',
+                productSum: '67078.80',
+            },
+        ]);
+        const result = await service.generateContract(dto());
+
+        expect(result.data.productQuantity).toBe('1');
+        // totals.total_month_quantity = 12, но в «Итого» — количество товара
+        expect(result.data.total_quantity).toBe('1');
     });
 
     it('без поставщика документ не собирается', async () => {

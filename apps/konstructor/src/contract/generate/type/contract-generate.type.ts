@@ -26,6 +26,9 @@ export type ContractGenerateResult = {
     documentName: string;
     data: ContractGenerateTemplateProps;
     provider: RqEntity;
+    /** Файл на Диске Битрикса (папка сделки / «Договоры»); null — не загрузился */
+    bitrixLink: string | null;
+    savedToDisk: boolean;
 };
 
 export type ContractGenerateTemplateProps = {

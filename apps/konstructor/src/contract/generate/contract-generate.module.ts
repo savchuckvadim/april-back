@@ -15,6 +15,7 @@ import { ContractGenerateUseCase } from './use-case/contract-generate.use-case';
 import { ContractBitrixPushService } from './services/contract-bitrix-push.service';
 import { DocumentTemplateModule } from '@lib/portal-lib/konstructor/document-template';
 import { ContractTemplateSourceService } from './services/contract-template-source.service';
+import { BitrixDocumentSaveFlowService } from '../../offer-word/services/bitrix/bitrix-document-save-flow.service';
 
 /**
  * `DocumentTemplateModule` добавлен ради подбора шаблона договора из БД
@@ -44,6 +45,7 @@ import { ContractTemplateSourceService } from './services/contract-template-sour
         ContractRqService,
         ContractRqHeaderService,
         ContractSpecificationService,
+        BitrixDocumentSaveFlowService,
     ],
     exports: [ContractGenerateService],
 })

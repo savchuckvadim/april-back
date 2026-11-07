@@ -14,13 +14,27 @@ import type {
  * заказчиком, см. комментарий к типу).
  */
 export class ContractGenerateResponseDto implements ContractGenerateResult {
-    @ApiProperty({ description: 'Публичная ссылка на DOCX договора' })
+    @ApiProperty({
+        description:
+            'Ссылка на договор: файл на Диске Битрикса (папка сделки / «Договоры»), при сбое Диска — файл на сервере',
+    })
     link: string;
 
-    @ApiProperty({ description: 'Та же ссылка; её читает init-supply' })
+    @ApiProperty({
+        description:
+            'Файл на Диске Битрикса; null — Диск недоступен, в link серверная ссылка',
+        type: String,
+        nullable: true,
+    })
+    bitrixLink: string | null;
+
+    @ApiProperty({ description: 'Договор сохранён на Диск Битрикса' })
+    savedToDisk: boolean;
+
+    @ApiProperty({ description: 'Файл на сервере; его читает init-supply' })
     file: string;
 
-    @ApiProperty({ description: 'Та же ссылка; под этим именем её ждёт фронт' })
+    @ApiProperty({ description: 'Файл на сервере (легаси-имя поля)' })
     document: string;
 
     @ApiProperty({ description: 'Имя файла документа' })

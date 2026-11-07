@@ -6,6 +6,14 @@ import {
 } from '@lib/bitrix/domain/disk';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 
+/** Куда и как класть файлы внутри папки сделки. */
+export interface BxDiskUploadOptions {
+    /** Подпапка в папке сделки (например, «Договоры»); нет — прямо в папку сделки, как КП. */
+    subfolder?: string;
+    /** Файл с тем же именем не перезаписывается и не ломает загрузку: Битрикс добавит номер. */
+    uniqueNames?: boolean;
+}
+
 export class BxDiskUploadFlowService {
     private rootStorageId: number | undefined;
     constructor(
@@ -13,6 +21,7 @@ export class BxDiskUploadFlowService {
         private readonly portalModel: PortalModel,
         private readonly companyId: number | string,
         private readonly dealId?: number | string,
+        private readonly options: BxDiskUploadOptions = {},
     ) {}
 
     public async upload(files: [string, string][]): Promise<{
@@ -32,10 +41,40 @@ export class BxDiskUploadFlowService {
         if (!currentFolder || !currentFolder.ID) {
             throw new Error('New storage folder ID is not set');
         }
-        const currentFolderId = Number(currentFolder.ID);
+        const target = this.options.subfolder
+            ? await this.ensureSubfolder(
+                  Number(currentFolder.ID),
+                  this.options.subfolder,
+              )
+            : { id: Number(currentFolder.ID), url: currentFolder.DETAIL_URL };
 
-        const uploadedFiles = await this.uploadFiles(currentFolderId, files);
-        return { uploadedFiles, folderUrl: currentFolder.DETAIL_URL };
+        const uploadedFiles = await this.uploadFiles(target.id, files);
+        return { uploadedFiles, folderUrl: target.url };
+    }
+
+    /** Подпапка в папке сделки: найти по имени или создать. */
+    private async ensureSubfolder(
+        parentId: number,
+        name: string,
+    ): Promise<{ id: number; url: string | undefined }> {
+        const existing = await this.bitrix.disk.folder.getchildren({
+            id: parentId,
+            filter: { TYPE: 'folder', NAME: name },
+        });
+        const found = existing.result?.[0];
+        if (found?.ID) return { id: Number(found.ID), url: found.DETAIL_URL };
+
+        const created = await this.bitrix.disk.folder.addsubfolder({
+            id: parentId,
+            data: { NAME: name },
+        });
+        if (!created.result?.ID) {
+            throw new Error(`Disk subfolder «${name}» is not created`);
+        }
+        return {
+            id: Number(created.result.ID),
+            url: created.result.DETAIL_URL,
+        };
     }
 
     private async getExistingFolder(): Promise<IBXDiskStorageChildItem | null> {
@@ -97,6 +136,9 @@ export class BxDiskUploadFlowService {
                     NAME: file[0],
                 },
                 fileContent: file,
+                ...(this.options.uniqueNames
+                    ? { generateUniqueName: true }
+                    : {}),
             });
             results.push(response.result);
             await delay(1000);

@@ -15,7 +15,10 @@ import {
 } from '@lib/portal-lib/konstructor/provider';
 import { DocumentTotalRowService } from '../../../document-generate/product-rows/total-row.service';
 import { getWithTax } from '../../../document-generate/lib/get-with-tax.util';
-import { blank, BLANK } from '../../../document-generate/bx-client-rq/bx-client-rq.service';
+import {
+    blank,
+    BLANK,
+} from '../../../document-generate/bx-client-rq/bx-client-rq.service';
 
 import { ContractGenerateTemplateProps } from '../type/contract-generate.type';
 import { DocumentInfoblockService } from '../../../document-generate/infoblocks/infoblock.service';
@@ -29,13 +32,19 @@ import { ContractDto } from '@app/konstructor/dto/contract.dto';
 import { SupplyDto } from '@app/konstructor/dto';
 import { ContractTemplateSourceService } from './contract-template-source.service';
 import { ContractGenerateResult } from '../type/contract-generate.type';
+import {
+    stripPhpTagDollars,
+    TEMPLATE_TEXT_PARTS,
+} from '../lib/template-dollar.util';
 
 /**
  * Тег шаблона без значения: простой плейсхолдер — прочерк под ручку («рыба»),
  * цикл или raw-xml — пусто. Без этого docxtemplater печатает «undefined».
  */
-const nullAsBlank = (part: { module?: string | null; type?: string }): string =>
-    part.type === 'placeholder' && !part.module ? BLANK : '';
+const nullAsBlank = (part: {
+    module?: string | null;
+    type?: string;
+}): string => (part.type === 'placeholder' && !part.module ? BLANK : '');
 
 @Injectable()
 export class ContractGenerateService {
@@ -67,6 +76,13 @@ export class ContractGenerateService {
     async generateContract(
         input: ContractGenerateDto,
     ): Promise<ContractGenerateResult> {
+        return (await this.generateContractFile(input)).result;
+    }
+
+    /** Договор и путь к DOCX на сервере: файл дальше уходит на Диск Битрикса. */
+    async generateContractFile(
+        input: ContractGenerateDto,
+    ): Promise<{ result: ContractGenerateResult; absolutePath: string }> {
         // Тексты поставки (договор услуг/лицензионный/абонентский) — с бэка по
         // code; готовые тексты легаси-payload остаются как есть.
         const dto: ContractGenerateDto = {
@@ -90,7 +106,7 @@ export class ContractGenerateService {
 
         const data = this.prepareDocumentData(dto, provider);
 
-        const { rootLink } = await this.saveDoc(
+        const { rootLink, absolutePath } = await this.saveDoc(
             doc,
             dto,
             documentName,
@@ -101,16 +117,21 @@ export class ContractGenerateService {
         const link = `${this.baseUrl}${rootLink}`;
 
         return {
-            link,
-            // `file` и `document` — та же ссылка под именами, которые ждёт
-            // фронт (он типизирует ответ как {link, file, document}) и под
-            // которыми её читает init-supply. Отдельного base64-роута, как в
-            // Laravel, на несте нет — ровно как в отчёте о поставке.
-            file: link,
-            document: link,
-            data,
-            documentName,
-            provider,
+            absolutePath,
+            result: {
+                link,
+                // `file` и `document` — та же ссылка под именами, которые ждёт
+                // фронт (он типизирует ответ как {link, file, document}) и под
+                // которыми её читает init-supply. Отдельного base64-роута, как в
+                // Laravel, на несте нет — ровно как в отчёте о поставке.
+                file: link,
+                document: link,
+                data,
+                documentName,
+                provider,
+                bitrixLink: null,
+                savedToDisk: false,
+            },
         };
     }
 
@@ -126,6 +147,10 @@ export class ContractGenerateService {
         const template = await this.templateSource.resolve(dto);
         const content = await this.storage.readFile(template.path);
         const zip = new PizZip(content);
+        // поля ${name} из Laravel-шаблонов: без этого $ остаётся в договоре
+        for (const part of zip.file(TEMPLATE_TEXT_PARTS)) {
+            zip.file(part.name, stripPhpTagDollars(part.asText()));
+        }
         return new Docxtemplater(zip, {
             paragraphLoop: true,
             linebreaks: true,
@@ -146,7 +171,7 @@ export class ContractGenerateService {
         }
 
         const buf = doc.toBuffer();
-        await this.storage.saveFile(
+        const absolutePath = await this.storage.saveFile(
             buf,
             documentName,
             StorageType.PUBLIC,
@@ -160,7 +185,7 @@ export class ContractGenerateService {
             this.currentYear,
             `${documentName}`,
         );
-        return { rootLink };
+        return { rootLink, absolutePath };
     }
     private getDocumentPath(domain: string, userId: string | number) {
         return `konstructor/contract/${this.currentYear}/${domain}/${userId}`;
@@ -292,27 +317,35 @@ export class ContractGenerateService {
             supply_comment_1: specificationData.supply_comment_1,
             logins_quantity: specificationData.logins_quantity,
             contract_pay_date:
-                (dto.firstPayDate && this.formatDocumentDate(dto.firstPayDate)) ||
+                (dto.firstPayDate &&
+                    this.formatDocumentDate(dto.firstPayDate)) ||
                 '________________________________',
             // ответственный за справочник и email интернет-версии — поля сделки
             client_assigned_fio: blank(dto.garantClientAssignedName, BLANK),
             garant_client_email: blank(dto.garantClientEmail, BLANK),
             // строка товара главной строки — шаблон печатает её вне цикла
-            productNumber: mainProduct ? String(mainProduct.productNumber) : '1',
+            productNumber: mainProduct
+                ? String(mainProduct.productNumber)
+                : '1',
             productName: mainProduct?.productName ?? contractData.contractName,
-            productQuantity: mainProduct ? String(mainProduct.productQuantity) : BLANK,
+            productQuantity: mainProduct
+                ? String(mainProduct.productQuantity)
+                : BLANK,
             productMeasure: mainProduct?.productMeasure ?? BLANK,
             productPrice: mainProduct?.productPrice ?? BLANK,
             productSum: mainProduct?.productSum ?? BLANK,
             products: products,
             total_month_sum: totals.total_month_sum,
             total_month_sum_string: totals.total_month_sum_string,
-            // всего месяцев действия договора (количество × длительность)
-            total_quantity: String(totals.total_month_quantity),
+            // количество товара, как в строке: речь о месяцах — строки не складываются
+            total_quantity: mainProduct
+                ? String(mainProduct.productQuantity)
+                : BLANK,
             total_measure: totals.total_measure,
             total_prepayment_sum: totals.total_prepayment_sum,
             total_prepayment_sum_string: totals.total_prepayment_sum_string,
-            total_prepayment_quantity_string: totals.total_prepayment_quantity_string,
+            total_prepayment_quantity_string:
+                totals.total_prepayment_quantity_string,
             // ...providerData,
             // // ...recipientData,
             // ...contractData,

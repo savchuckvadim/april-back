@@ -2,26 +2,36 @@ import { BitrixService } from '@lib/bitrix';
 import { PBXService } from '@lib/pbx';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { Injectable, Logger } from '@nestjs/common';
-import { BxDiskUploadFlowService } from './bx-disk-upload-flow.service';
+import {
+    BxDiskUploadFlowService,
+    type BxDiskUploadOptions,
+} from './bx-disk-upload-flow.service';
 import { readFile } from 'fs/promises';
 import { basename } from 'path';
 import {
+    DocumentLinkType,
     IPreparedDocument,
     IResultDocumentLink,
 } from '../../interface/document.interface';
 
-export interface IDocumentSaveFlowData {
+export interface IDocumentSaveFlowData<
+    T extends DocumentLinkType = 'offer' | 'invoice',
+> {
     domain: string;
     companyId: string;
     userId: number;
     dealId?: string;
-    documents: IPreparedDocument[];
+    documents: IPreparedDocument<T>[];
     onlyBitrixSave?: boolean;
+    /** Подпапка в папке сделки и имена без перезаписи (договоры) */
+    disk?: BxDiskUploadOptions;
 }
 
-export interface IDocumentSaveFlowResult {
+export interface IDocumentSaveFlowResult<
+    T extends DocumentLinkType = 'offer' | 'invoice',
+> {
     portalFolderId: number | null;
-    documents: IResultDocumentLink[];
+    documents: IResultDocumentLink<T>[];
     files: [string, string][];
 }
 
@@ -31,9 +41,9 @@ export class BitrixDocumentSaveFlowService {
 
     constructor(private readonly pbx: PBXService) {}
 
-    async saveDocuments(
-        data: IDocumentSaveFlowData,
-    ): Promise<IDocumentSaveFlowResult> {
+    async saveDocuments<T extends DocumentLinkType = 'offer' | 'invoice'>(
+        data: IDocumentSaveFlowData<T>,
+    ): Promise<IDocumentSaveFlowResult<T>> {
         const { bitrix, PortalModel } = await this.pbx.init(data.domain);
         const rootFolderId = await this.getRootFolderId(bitrix, PortalModel);
 
@@ -46,6 +56,7 @@ export class BitrixDocumentSaveFlowService {
             PortalModel,
             data.companyId,
             data.dealId,
+            data.disk,
         );
 
         const filesForUpload = await this.prepareFilesForUpload(data.documents);
@@ -53,7 +64,7 @@ export class BitrixDocumentSaveFlowService {
         try {
             const { uploadedFiles } = await diskFlow.upload(filesForUpload);
 
-            const documents: IResultDocumentLink[] = data.documents.map(
+            const documents: IResultDocumentLink<T>[] = data.documents.map(
                 (doc, index) => ({
                     link: uploadedFiles[index]?.DETAIL_URL || doc.link,
                     name: doc.name,
@@ -71,10 +82,10 @@ export class BitrixDocumentSaveFlowService {
         }
     }
 
-    private handleFallback(
-        data: IDocumentSaveFlowData,
+    private handleFallback<T extends DocumentLinkType>(
+        data: IDocumentSaveFlowData<T>,
         error: unknown,
-    ): IDocumentSaveFlowResult {
+    ): IDocumentSaveFlowResult<T> {
         if (data.onlyBitrixSave) {
             throw error;
         }
@@ -96,7 +107,7 @@ export class BitrixDocumentSaveFlowService {
     }
 
     private async prepareFilesForUpload(
-        documents: IPreparedDocument[],
+        documents: IPreparedDocument<DocumentLinkType>[],
     ): Promise<[string, string][]> {
         const files: [string, string][] = [];
         for (const doc of documents) {
