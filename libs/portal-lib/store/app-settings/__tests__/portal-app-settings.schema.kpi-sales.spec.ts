@@ -98,6 +98,33 @@ const CONTRACT: Record<
         type: 'boolean',
         default: false,
     },
+    // Отчёт собственнику (ai/tasks/2026-11-06-owner-period-report.md, §6):
+    // выпуск выключен, только месяц, «только считать» включено.
+    aiAnalyticsOwnerReportEnabled: {
+        code: 'ai_analytics_owner_report_enabled',
+        type: 'boolean',
+        default: false,
+    },
+    aiAnalyticsOwnerReportKinds: {
+        code: 'ai_analytics_owner_report_kinds',
+        type: 'string',
+        default: 'month',
+    },
+    aiAnalyticsOwnerReportUserIds: {
+        code: 'ai_analytics_owner_report_user_ids',
+        type: 'string',
+        default: '',
+    },
+    aiAnalyticsOwnerReportDiskFolderId: {
+        code: 'ai_analytics_owner_report_disk_folder_id',
+        type: 'string',
+        default: '',
+    },
+    aiAnalyticsOwnerReportDryRun: {
+        code: 'ai_analytics_owner_report_dry_run',
+        type: 'boolean',
+        default: true,
+    },
     // Фаза 2 (план §3.3): решения людей JSON-строкой, дефолт — пусто.
     aiAnalyticsLevels: {
         code: 'ai_analytics_levels',
@@ -261,6 +288,9 @@ describe('PORTAL_APP_SETTINGS_SCHEMA[kpiSales]: ключи AI-аналитики
         expect(values.aiAnalyticsPoolOptIn).toBe(false);
         expect(values.aiAnalyticsPoolConsentAt).toBe('');
         expect(values.aiAnalyticsExperimentsEnabled).toBe(false);
+        expect(values.aiAnalyticsOwnerReportEnabled).toBe(false);
+        expect(values.aiAnalyticsOwnerReportKinds).toBe('month');
+        expect(values.aiAnalyticsOwnerReportDryRun).toBe(true);
     });
 
     it('resolve перекрывает дефолт сохранённым и держит остальные ключи дефолтными', async () => {

@@ -187,6 +187,15 @@
         "tsConfigPath": "libs/vibecode/tsconfig.lib.json"
       }
     },
+    "pdf-render": {
+      "type": "library",
+      "root": "libs/pdf-render",
+      "entryFile": "index",
+      "sourceRoot": "libs/pdf-render/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/pdf-render/tsconfig.lib.json"
+      }
+    },
     "llm-gateway": {
       "type": "library",
       "root": "libs/llm-gateway",

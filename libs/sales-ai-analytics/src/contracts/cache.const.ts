@@ -31,6 +31,8 @@ export const AI_ANALYTICS_CACHE_SCOPES = [
     'brief-quota',
     'stage-history',
     'calendar',
+    // Отчёт собственнику за период (06.11.2026).
+    'owner-report',
 ] as const;
 export type AiAnalyticsCacheScope = (typeof AI_ANALYTICS_CACHE_SCOPES)[number];
 

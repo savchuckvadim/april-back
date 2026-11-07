@@ -217,6 +217,17 @@ export const AI_ANALYTICS_SNAPSHOT_DESCRIPTORS = {
             'интервалом, доли КП и счетов до и после совета, несогласия, ' +
             'статус гейта; читает готовность витрины и досье.',
     },
+    [AI_ANALYTICS_SNAPSHOT_TYPE.ownerReport]: {
+        type: AI_ANALYTICS_SNAPSHOT_TYPE.ownerReport,
+        grain: 'portal-hash',
+        keyFormat:
+            'ключ периода: YYYY-MM, YYYY-Q1…Q4, YYYY-H1/H2 или YYYY (вид в нагрузке)',
+        retention: { unit: 'records', value: 60 },
+        description:
+            'Отчёт собственнику за закрытый период (06.11.2026): факты по ' +
+            'звонкам, телефонии и CRM, шаблонный текст и что принято от ' +
+            'модели, ссылки на разборы-примеры; пересборка — forceRefresh.',
+    },
 } as const satisfies Record<
     AiAnalyticsSnapshotType,
     AiAnalyticsSnapshotDescriptor

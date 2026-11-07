@@ -88,6 +88,8 @@ export const AI_ANALYTICS_SNAPSHOT_TYPE = {
     forecastBacktest: 'ai-analytics-forecast-backtest',
     /** Фаза 4, П23: эффект советов — доля выполненных и до/после (portal-month). */
     recommendationEffect: 'ai-analytics-recommendation-effect',
+    /** Отчёт собственнику за период (portal; periodKey — месяц, квартал, полугодие, год). */
+    ownerReport: 'ai-analytics-owner-report',
 } as const;
 
 /** Порядок — порядок таблицы §3.1 плана (снапшоты Фазы 2, затем 1a/0). */
@@ -112,6 +114,7 @@ export const AI_ANALYTICS_SNAPSHOT_TYPES = [
     AI_ANALYTICS_SNAPSHOT_TYPE.forecastLog,
     AI_ANALYTICS_SNAPSHOT_TYPE.forecastBacktest,
     AI_ANALYTICS_SNAPSHOT_TYPE.recommendationEffect,
+    AI_ANALYTICS_SNAPSHOT_TYPE.ownerReport,
 ] as const;
 
 export type AiAnalyticsSnapshotType =

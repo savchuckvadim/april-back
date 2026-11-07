@@ -485,6 +485,59 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             type: 'boolean',
             default: false,
         }),
+        // --- Отчёт собственнику за период (ai/tasks/2026-11-06-owner-period-report.md, §6):
+        // выпуск во второй рабочий день месяца, PDF на Диск, личные сообщения.
+        aiAnalyticsOwnerReportEnabled: setting({
+            code: 'ai_analytics_owner_report_enabled',
+            name: 'Отчёт собственнику: автоматический выпуск',
+            description:
+                'Во второй рабочий день месяца (09:05 по TZ портала) собирается ' +
+                'отчёт за закрытый период, PDF кладётся на Диск, получателям ' +
+                'уходят личные сообщения. Требует ai_analytics_enabled. ' +
+                'Выключено — отчёт доступен только по запросу с витрины.',
+            type: 'boolean',
+            default: false,
+        }),
+        aiAnalyticsOwnerReportKinds: setting({
+            code: 'ai_analytics_owner_report_kinds',
+            name: 'Отчёт собственнику: виды периодов через запятую',
+            description:
+                'month — месяц, quarter — квартал, half_year — полугодие, year — ' +
+                'год: «month, quarter». Квартал выпускается в январе, апреле, ' +
+                'июле, октябре; полугодие — в январе и июле; год — в январе.',
+            type: 'string',
+            default: 'month',
+        }),
+        aiAnalyticsOwnerReportUserIds: setting({
+            code: 'ai_analytics_owner_report_user_ids',
+            name: 'Отчёт собственнику: Bitrix-id получателей через запятую',
+            description:
+                'Кому уходит личное сообщение с цифрами и ссылкой на PDF: ' +
+                '«1, 42». Пусто — выпуск пропускается с причиной no-recipients. ' +
+                'Разбор строки — parseUserIds.',
+            type: 'string',
+            default: '',
+        }),
+        aiAnalyticsOwnerReportDiskFolderId: setting({
+            code: 'ai_analytics_owner_report_disk_folder_id',
+            name: 'Отчёт собственнику: id папки на Диске',
+            description:
+                'Папка Диска портала для PDF выпусков. Пусто — хранилище ' +
+                'приложения (как у недельного отчёта по звонкам).',
+            type: 'string',
+            default: '',
+        }),
+        aiAnalyticsOwnerReportDryRun: setting({
+            code: 'ai_analytics_owner_report_dry_run',
+            name: 'Отчёт собственнику: только считать',
+            description:
+                'Включено — отчёт собирается и PDF кладётся на Диск, но ' +
+                'сообщения получателям не уходят; итог — в лог и Telegram ' +
+                'вендора. Выключите после обкатки. На ручной «отправить себе» ' +
+                'не действует.',
+            type: 'boolean',
+            default: true,
+        }),
         // --- Фаза 2 (план ai/tasks/ai-sales-analytics-phase2-plan.md, §3.3):
         // решения ЛЮДЕЙ, которых нет ни в Bitrix, ни в разборах — уровни,
         // цели, отсутствия, определения событий, гиперпараметры модели,

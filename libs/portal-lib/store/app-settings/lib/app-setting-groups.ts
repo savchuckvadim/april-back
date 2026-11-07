@@ -81,6 +81,10 @@ const LINK = {
         'Путеводитель: запуск после выкладки',
         'launch-after-release',
     ),
+    aiGuideOwnerReport: guideLink(
+        'Путеводитель: отчёт собственнику за период',
+        'owner-report',
+    ),
 } as const;
 
 /** Справочник групп. Порядок ключей = порядок секций в админке. */
@@ -128,6 +132,7 @@ export const PORTAL_APP_SETTING_GROUPS = {
         links: [
             LINK.aiGuideEnable,
             LINK.aiGuideLaunch,
+            LINK.aiGuideOwnerReport,
             LINK.aiSettings,
             LINK.aiModel,
             LINK.aiAudit,

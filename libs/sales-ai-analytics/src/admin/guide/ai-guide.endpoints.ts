@@ -276,6 +276,33 @@ export const AI_GUIDE_ENDPOINT = {
         purpose:
             'Синхронно выполняет тот же код, что крон: kind = agenda | digest | digest_all, date — день в TZ портала (по умолчанию сегодня), recipients — кому отправить вместо адресатов настроек (отметки доставки при этом не пишутся). Только руководители.',
     },
+    ownerReport: {
+        app: 'kpi-report-sales',
+        method: 'POST',
+        path: 'ai-analytics/owner-report',
+        body: '{"domain":"{domain}","requesterUserId":"<ваш bitrix-id>","kind":"month","periodKey":"2026-10"}',
+        when: 'Собрать отчёт собственнику за закрытый период с витрины или проверить сборку руками.',
+        purpose:
+            'Ставит джобу сборки: факты по разборам, CRM и телефонии, шаблонный текст, резюме модели; результат — снапшот периода и кэш на 30 дней, клиенту WS ai-analytics:owner-report:done. periodKey пусто — последний закрытый период вида (month | quarter | half_year | year); forceRefresh — пересобрать. Только руководители cup | op.',
+    },
+    ownerReportPdf: {
+        app: 'kpi-report-sales',
+        method: 'POST',
+        path: 'ai-analytics/owner-report/pdf',
+        body: '{"domain":"{domain}","requesterUserId":"<ваш bitrix-id>","kind":"month","periodKey":"2026-10"}',
+        when: 'Скачать PDF готового отчёта (кнопка «Скачать PDF» на витрине).',
+        purpose:
+            'Рендерит PDF из снапшота периода: шапка с пятью цифрами, разделы, таблицы, карточки сотрудников, нумерация страниц. Снапшота нет — ошибка с подсказкой сначала собрать отчёт.',
+    },
+    ownerReportSend: {
+        app: 'kpi-report-sales',
+        method: 'POST',
+        path: 'ai-analytics/owner-report/send',
+        body: '{"domain":"{domain}","requesterUserId":"<ваш bitrix-id>","kind":"month","periodKey":"2026-10","recipients":[<ваш bitrix-id>]}',
+        when: 'Проверить выпуск руками, не дожидаясь второго рабочего дня («отправить себе»).',
+        purpose:
+            'Тот же код, что у крона выпуска: снапшот или сборка на месте, PDF на Диск портала, личные сообщения. recipients — вместо получателей настроек, режим «только считать» на явный список не действует. Ответ — статус выпуска (sent | dry_run | skipped | failed), причина, кому доставлено, ссылка на файл.',
+    },
 } as const satisfies Record<string, AiGuideEndpoint>;
 
 export type AiGuideEndpointKey = keyof typeof AI_GUIDE_ENDPOINT;

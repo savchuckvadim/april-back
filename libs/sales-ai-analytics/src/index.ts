@@ -396,3 +396,6 @@ export type {
 
 // Фаза 4: прогноз, пул, эффект советов, связь качества — см. model/phase4.index.ts.
 export * from './model/phase4.index';
+
+// Отчёт собственнику за период (06.11.2026): факты по звонкам, CRM и телефонии — см. model/owner-report.
+export * from './model/owner-report';
