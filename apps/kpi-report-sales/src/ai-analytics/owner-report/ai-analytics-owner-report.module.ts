@@ -22,6 +22,7 @@ import { OwnerReportDiskFolderResolver } from './owner-report-disk-folder.resolv
 import { OwnerReportSourcesLoader } from './owner-report-sources.loader';
 import { OwnerReportExportProcessor } from './owner-report-export.processor';
 import { OwnerReportSourceService } from './owner-report-source.service';
+import { OwnerReportReactivationLoader } from './owner-report-reactivation.loader';
 
 /**
  * Срез «Отчёт собственнику за период» (постановка
@@ -45,6 +46,7 @@ import { OwnerReportSourceService } from './owner-report-source.service';
         OwnerReportCrmLoader,
         OwnerReportDiskFolderResolver,
         OwnerReportSourcesLoader,
+        OwnerReportReactivationLoader,
         OwnerReportSnapshotReader,
         OwnerReportPdfService,
         LlmGatewayNarrativeAdapter,

@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { AppCacheService } from '@lib/app-cache';
+import { PrismaService } from '@/core/prisma/prisma.service';
 import { WsService } from '@/core/ws';
 import { OwnerReportDeliveryUseCase } from '../../domain/use-cases/owner-report-delivery.use-case';
 import { OwnerReportJobUseCase } from '../../domain/use-cases/owner-report-job.use-case';
@@ -24,9 +25,11 @@ import { AI_OWNER_REPORT_NARRATIVE_PORT } from '../owner-report-narrative.port';
 describe('DI-граф AiAnalyticsOwnerReportModule', () => {
     it('все зависимости провайдеров и контроллера доступны в модуле', () => {
         expect(
+            // PrismaModule — @Global ядра: импортируется в корне приложения.
             missingDependencies(AiAnalyticsOwnerReportModule, [
                 AppCacheService,
                 WsService,
+                PrismaService,
             ]),
         ).toEqual([]);
     });
