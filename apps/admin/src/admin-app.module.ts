@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AdminClientModule } from './client/client.module';
 import { AdminAppModule } from './app/app.module';
 import { AdminPortalModule } from './portal/portal.module';
+import { PortalBitrixLoadModule } from './portal/bitrix-load/portal-bitrix-load.module';
 import { BtxDealModule } from './portal/btx-deals/btx-deal.module';
 import { BtxLeadModule } from './portal/btx-leads/btx-lead.module';
 import { BtxCompanyModule } from './portal/btx-companies/btx-company.module';
@@ -70,6 +71,7 @@ import { CabinetAdminModule } from '@lib/cabinet';
         AdminClientModule,
         AdminAppModule,
         AdminPortalModule,
+        PortalBitrixLoadModule,
         BtxDealModule,
         BtxLeadModule,
         BtxCompanyModule,

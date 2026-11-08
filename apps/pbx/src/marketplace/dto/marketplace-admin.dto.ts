@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PickType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
     IsArray,
@@ -277,4 +277,74 @@ export class PlacementSyncResultDto {
     })
     @IsInt()
     total: number;
+}
+
+/** Портал, чьи привязки виджетов показать (member_id приоритетнее домена). */
+export class LivePlacementsDto extends PickType(RefreshPlacementsDto, [
+    'memberId',
+    'domain',
+] as const) {}
+
+export class LivePlacementBindingDto {
+    @ApiProperty({
+        description: 'Место встройки в Битриксе.',
+        example: 'CRM_DEAL_DETAIL_TAB',
+        type: String,
+    })
+    placement!: string;
+
+    @ApiProperty({
+        description: 'Адрес обработчика, на который Битрикс открывает виджет.',
+        example:
+            'https://api.pbx.april-app.ru/api/bitrix-marketplace/placement/event-sales',
+        type: String,
+    })
+    handler!: string;
+
+    @ApiProperty({
+        description: 'Название вкладки/пункта в Битриксе.',
+        example: 'Звонки',
+        type: String,
+        nullable: true,
+    })
+    title!: string | null;
+
+    @ApiProperty({
+        description:
+            'Привязка нашего приложения (обработчик — роутер api.pbx).',
+        example: true,
+        type: Boolean,
+    })
+    ours!: boolean;
+
+    @ApiProperty({
+        description: 'Код виджета April; null — чужая привязка.',
+        example: 'event-sales',
+        type: String,
+        nullable: true,
+    })
+    widget!: string | null;
+}
+
+export class LivePlacementsResultDto {
+    @ApiProperty({
+        description: 'Битрикс отдал список привязок.',
+        example: true,
+        type: Boolean,
+    })
+    ok!: boolean;
+
+    @ApiProperty({
+        description: 'Ответ Битрикса при ошибке.',
+        example: null,
+        type: String,
+        nullable: true,
+    })
+    error!: string | null;
+
+    @ApiProperty({
+        description: 'Привязки виджетов на портале сейчас.',
+        type: [LivePlacementBindingDto],
+    })
+    bindings!: LivePlacementBindingDto[];
 }

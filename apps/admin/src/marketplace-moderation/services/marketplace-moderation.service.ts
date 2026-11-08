@@ -24,6 +24,7 @@ import {
     AppEventsPageDto,
     EventsQueryDto,
     InstallsQueryDto,
+    LivePlacementsDto,
     PbxActionResultDto,
     PortalProductDto,
 } from '../dto/marketplace-admin-views.dto';
@@ -383,6 +384,26 @@ export class MarketplaceModerationService {
                 : 'MODERATION_PLACEMENTS_REFRESH',
         );
         return { ok: true, details: JSON.stringify(body) };
+    }
+
+    /**
+     * Привязки виджетов на портале прямо сейчас — прокси в pbx (placement.get
+     * свежим токеном приложения). Только чтение.
+     */
+    async livePlacements(portalId: number): Promise<LivePlacementsDto> {
+        const portal = await this.repository.findPortalById(BigInt(portalId));
+        if (!portal) {
+            throw new NotFoundException(`Портал #${portalId} не найден`);
+        }
+        return (await this.callPbx(
+            '/api/bitrix-marketplace/admin/placements/live',
+            {
+                memberId: portal.member_id ?? undefined,
+                domain: portal.domain ?? undefined,
+            },
+            portal,
+            'MODERATION_PLACEMENTS_LIVE',
+        )) as LivePlacementsDto;
     }
 
     private async requireMarketplacePortal(

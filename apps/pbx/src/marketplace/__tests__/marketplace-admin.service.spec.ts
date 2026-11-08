@@ -11,6 +11,7 @@ import {
     MarketplaceInstallRepository,
 } from '../persistence/marketplace-install.repository';
 import { MarketplacePlacementSyncService } from '../services/marketplace-placement-sync.service';
+import { MarketplacePlacementReader } from '../services/marketplace-placement.reader';
 
 type RepoMock = jest.Mocked<
     Pick<MarketplaceInstallRepository, 'findInstallsWithComponents'>
@@ -80,6 +81,7 @@ describe('MarketplaceAdminService.getInstalls (диагностика устан
             {} as MarketplacePlacementSyncService,
             {} as MarketplaceTokenService,
             {} as PortalAppSettingsService,
+            {} as MarketplacePlacementReader,
         );
     });
 
@@ -144,6 +146,7 @@ describe('MarketplaceAdminService.refreshPlacements (виджеты по нас�
         Pick<MarketplaceTokenService, 'getFreshAccessToken'>
     >;
     let settings: jest.Mocked<Pick<PortalAppSettingsService, 'resolve'>>;
+    let reader: jest.Mocked<Pick<MarketplacePlacementReader, 'fetch'>>;
     let service: MarketplaceAdminService;
 
     beforeEach(() => {
@@ -170,12 +173,26 @@ describe('MarketplaceAdminService.refreshPlacements (виджеты по нас�
                 appWidgets: 'event-sales, report-sales, bogus',
             }),
         };
+        reader = { fetch: jest.fn() };
         service = new MarketplaceAdminService(
             repo as unknown as MarketplaceInstallRepository,
             sync as unknown as MarketplacePlacementSyncService,
             token as unknown as MarketplaceTokenService,
             settings as unknown as PortalAppSettingsService,
+            reader as unknown as MarketplacePlacementReader,
         );
+    });
+
+    it('живой список привязок: свежий токен портала → placement.get', async () => {
+        reader.fetch.mockResolvedValue({ ok: true, error: null, bindings: [] });
+        await expect(
+            service.livePlacements({ memberId: 'member-1' }),
+        ).resolves.toEqual({ ok: true, error: null, bindings: [] });
+        expect(reader.fetch).toHaveBeenCalledWith(
+            'portal.bitrix24.ru',
+            'fresh-at',
+        );
+        expect(sync.syncPlacements).not.toHaveBeenCalled();
     });
 
     it('список виджетов берётся из настройки портала, чужие коды отбрасываются', async () => {

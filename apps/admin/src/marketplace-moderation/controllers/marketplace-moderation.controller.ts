@@ -25,6 +25,7 @@ import {
     AppEventsPageDto,
     EventsQueryDto,
     InstallsQueryDto,
+    LivePlacementsDto,
     PbxActionResultDto,
     PlacementsRefreshDto,
     PortalProductDto,
@@ -221,6 +222,22 @@ export class MarketplaceModerationController {
         @Body() dto: PlacementsRefreshDto = {},
     ): Promise<PbxActionResultDto> {
         return this.moderationService.placementsRefresh(id, dto.force === true);
+    }
+
+    @ApiOperation({
+        summary: 'Привязки виджетов на портале сейчас',
+        description:
+            'Прокси в pbx: живой список из Битрикса (placement.get) — наши и чужие привязки. Только чтение. Нужна установленная на портале April (токен приложения).',
+    })
+    @ApiOkResponse({
+        description: 'Привязки виджетов портала.',
+        type: LivePlacementsDto,
+    })
+    @Get('portals/:id/placements/live')
+    async livePlacements(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<LivePlacementsDto> {
+        return this.moderationService.livePlacements(id);
     }
 
     // ─── Коды подключения портала (invite) ───

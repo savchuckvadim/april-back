@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { MarketplacePlacementSyncService } from '../services/marketplace-placement-sync.service';
+import { MarketplacePlacementReader } from '../services/marketplace-placement.reader';
 import { MarketplaceBxClient } from '../clients/marketplace-bx.client';
 import { MarketplaceInstallRepository } from '../persistence/marketplace-install.repository';
 import { getDesiredBindingsForWidgets } from '../config/marketplace-manifest';
@@ -42,7 +43,10 @@ describe('MarketplacePlacementSyncService (diff эталон ↔ портал)',
         service = new MarketplacePlacementSyncService(
             bx as unknown as MarketplaceBxClient,
             repo as unknown as MarketplaceInstallRepository,
-            configService,
+            new MarketplacePlacementReader(
+                bx as unknown as MarketplaceBxClient,
+                configService,
+            ),
         );
     });
 
@@ -190,7 +194,7 @@ describe('MarketplacePlacementSyncService (diff эталон ↔ портал)',
         );
     });
 
-    it('placement.list недоступен → считаем портал пустым и биндим всё', async () => {
+    it('placement.get недоступен → считаем портал пустым и биндим всё', async () => {
         bx.listPlacements.mockResolvedValue({
             ok: false,
             error: 'expired_token',
@@ -210,7 +214,7 @@ describe('MarketplacePlacementSyncService (diff эталон ↔ портал)',
     /*
      * Список виджетов портала пуст (действующие порталы: виджеты стоят
      * старыми привязками) — синхронизация не делает НИЧЕГО: ни bind, ни
-     * unbind, ни даже placement.list.
+     * unbind, ни даже placement.get.
      */
     it('пустой список виджетов → полный no-op', async () => {
         bx.listPlacements.mockResolvedValue({
