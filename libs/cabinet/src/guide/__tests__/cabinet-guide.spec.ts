@@ -5,7 +5,8 @@ import { CabinetConfig } from '../../config/cabinet.config';
 import { ClientTelegramBotClient } from '../../telegram/client-telegram-bot.client';
 import { buildCabinetChecklist } from '../cabinet-guide.checklist';
 import { CABINET_GUIDE_SECTIONS } from '../cabinet-guide.content';
-import { CabinetGuideService, corsAllows } from '../cabinet-guide.service';
+import { CabinetCorsProbe } from '../cabinet-cors.probe';
+import { CabinetGuideService } from '../cabinet-guide.service';
 import type { CabinetGuideFacts } from '../cabinet-guide.types';
 
 const READY: CabinetGuideFacts = {
@@ -13,7 +14,7 @@ const READY: CabinetGuideFacts = {
     authJwtSecretSet: true,
     authEnabled: true,
     cookieDomain: '.april-app.ru',
-    corsAllowsSite: true,
+    cors: 'ok',
     siteUrl: 'https://bitrix.april-app.ru',
     botTokenSet: true,
     botUsername: 'AprilReportBot',
@@ -48,7 +49,7 @@ describe('чек-лист кабинета', () => {
             authJwtSecretSet: false,
             authEnabled: false,
             cookieDomain: null,
-            corsAllowsSite: false,
+            cors: 'blocked',
             siteUrl: 'https://bitrix.april-app.ru',
             botTokenSet: false,
             botUsername: null,
@@ -87,16 +88,21 @@ describe('чек-лист кабинета', () => {
     });
 });
 
-describe('corsAllows', () => {
-    it('ищет адрес сайта в списке через запятую, без хвостового слэша', () => {
-        expect(
-            corsAllows(
-                'https://admin.april-app.ru, https://bitrix.april-app.ru/',
-                'https://bitrix.april-app.ru',
-            ),
-        ).toBe(true);
-        expect(corsAllows('*', 'https://bitrix.april-app.ru')).toBe(false);
-        expect(corsAllows('', 'https://bitrix.april-app.ru')).toBe(false);
+describe('проверка CORS в чек-листе', () => {
+    it('api.pbx не ответил — проверить вручную, а не «не сделано»', () => {
+        const cors = buildCabinetChecklist({
+            ...READY,
+            cors: 'unreachable',
+        }).find(item => item.key === 'cors');
+        expect(cors?.status).toBe('manual');
+    });
+
+    it('не пускает — подсказка про CORS_ORIGIN окружения pbx и apps/pbx/.env', () => {
+        const cors = buildCabinetChecklist({ ...READY, cors: 'blocked' }).find(
+            item => item.key === 'cors',
+        );
+        expect(cors?.status).toBe('todo');
+        expect(cors?.hint).toContain('apps/pbx/.env');
     });
 });
 
@@ -105,7 +111,6 @@ describe('CabinetGuideService', () => {
         const env: Record<string, string> = {
             AUTH_JWT_SECRET: 'x',
             AUTH_ENABLED: 'true',
-            CORS_ORIGIN: 'https://bitrix.april-app.ru',
             MAIL_HOST: '',
         };
         return new CabinetGuideService(
@@ -120,6 +125,9 @@ describe('CabinetGuideService', () => {
                 isConfigured: () => Promise.resolve(true),
                 botUsername: () => Promise.resolve('AprilReportBot'),
             } as unknown as ClientTelegramBotClient,
+            {
+                check: () => Promise.resolve('ok'),
+            } as unknown as CabinetCorsProbe,
         );
     }
 

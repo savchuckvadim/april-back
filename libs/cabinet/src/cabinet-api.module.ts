@@ -1,3 +1,4 @@
+import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { MarketplaceCoreModule } from '@lib/marketplace-core';
 import { CabinetModule } from './cabinet.module';
@@ -9,8 +10,10 @@ import { CabinetTelegramController } from './controllers/cabinet-telegram.contro
 import { CabinetBitrixAppController } from './controllers/cabinet-bitrix-app.controller';
 import { CabinetAdminController } from './admin/cabinet-admin.controller';
 import { CabinetBitrixAppAdminController } from './admin/cabinet-bitrix-app.admin.controller';
+import { CabinetChecksAdminController } from './admin/cabinet-checks.admin.controller';
 import { CabinetGuideAdminController } from './admin/cabinet-guide.admin.controller';
 import { CabinetGuideService } from './guide/cabinet-guide.service';
+import { CabinetCorsProbe } from './guide/cabinet-cors.probe';
 import { ClientTelegramWebhookController } from './telegram/webhook/client-telegram-webhook.controller';
 import { ClientTelegramWebhookGuard } from './telegram/webhook/client-telegram-webhook.guard';
 import { ClientTelegramWebhookRegistrar } from './telegram/webhook/client-telegram-webhook.registrar';
@@ -39,13 +42,14 @@ export class CabinetApiModule {}
  * ТОЛЬКО в apps/admin.
  */
 @Module({
-    imports: [CabinetModule, MarketplaceCoreModule],
+    imports: [CabinetModule, MarketplaceCoreModule, HttpModule],
     controllers: [
         CabinetAdminController,
         CabinetBitrixAppAdminController,
+        CabinetChecksAdminController,
         CabinetGuideAdminController,
     ],
-    providers: [CabinetGuideService],
+    providers: [CabinetGuideService, CabinetCorsProbe],
 })
 export class CabinetAdminModule {}
 

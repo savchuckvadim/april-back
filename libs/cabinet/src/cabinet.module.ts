@@ -31,6 +31,7 @@ import { CabinetTelegramLinkService } from './telegram/cabinet-telegram-link.ser
 import { ClientTelegramUpdateHandler } from './telegram/client-telegram-update.handler';
 import { CabinetTelegramDeliveryService } from './telegram/cabinet-telegram-delivery.service';
 import { CabinetAdminService } from './admin/cabinet-admin.service';
+import { CabinetChannelCheckService } from './admin/cabinet-channel-check.service';
 import { CabinetAppStatusService } from './admin/cabinet-app-status.service';
 
 /**
@@ -82,6 +83,7 @@ import { CabinetAppStatusService } from './admin/cabinet-app-status.service';
         CabinetTelegramDeliveryService,
         CabinetAppStatusService,
         CabinetAdminService,
+        CabinetChannelCheckService,
     ],
     exports: [
         CabinetConfig,
@@ -98,6 +100,7 @@ import { CabinetAppStatusService } from './admin/cabinet-app-status.service';
         ClientTelegramBotClient,
         CabinetTelegramDeliveryService,
         CabinetAdminService,
+        CabinetChannelCheckService,
     ],
 })
 export class CabinetModule {}
