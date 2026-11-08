@@ -60,7 +60,10 @@ describe('CabinetPasswordService (ссылки и пароль)', () => {
                 .mockResolvedValue([{}] as MembershipWithPortal[]),
         };
         sendPasswordLink = jest.fn().mockResolvedValue(false);
-        mailer = { sendPasswordLink };
+        mailer = {
+            sendPasswordLink,
+            sendTest: jest.fn().mockResolvedValue({ ok: true, error: null }),
+        };
         const config = {
             siteUrl: () => 'https://bitrix.april-app.ru',
         } as unknown as CabinetConfig;
