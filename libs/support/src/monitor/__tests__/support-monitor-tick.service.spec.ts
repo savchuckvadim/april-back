@@ -1,3 +1,4 @@
+import { SupportDialogHistoryService } from '../application/support-dialog-history.service';
 import { SupportMonitorTickService } from '../application/support-monitor-tick.service';
 import { SupportMonitorOptions } from '../application/support-monitor-options';
 import { SupportSignalDispatcher } from '../application/support-signal.dispatcher';
@@ -64,12 +65,14 @@ function setup(memories: Map<number, SupportDialogMemory> = new Map()) {
         openChannels: jest.fn().mockResolvedValue(channels),
         dispatch: delivered(),
     };
+    const history = { record: jest.fn().mockResolvedValue(undefined) };
     const service = new SupportMonitorTickService(
         pbx as never,
         store as unknown as SupportMonitorStore,
         dispatcher as unknown as SupportSignalDispatcher,
+        history as unknown as SupportDialogHistoryService,
     );
-    return { service, pbx, store, dispatcher, delivered };
+    return { service, pbx, store, dispatcher, delivered, history };
 }
 
 describe('SupportMonitorTickService.run', () => {
@@ -147,6 +150,13 @@ describe('SupportMonitorTickService.run', () => {
         });
     });
 
+    it('такт отмечается в истории обращений — и в режиме «только считать»', async () => {
+        const { service, history } = setup();
+        const now = minutesAfter(1);
+        const report = await service.run(LINE, options({ dryRun: true }), now);
+        expect(history.record).toHaveBeenCalledWith(report, now);
+    });
+
     it('клиент ждёт 10 минут — напоминание', async () => {
         const memories = new Map<number, SupportDialogMemory>([
             [71, { announced: true, waitingFor: 10, levels: [] }],
@@ -163,8 +173,9 @@ describe('SupportMonitorTickService.run', () => {
 
 describe('SupportMonitorTickService.preview', () => {
     it('показывает, что ушло бы, ничего не шлёт и не запоминает', async () => {
-        const { service, store, dispatcher } = setup();
+        const { service, store, dispatcher, history } = setup();
         const report = await service.preview(LINE, options(), minutesAfter(1));
+        expect(history.record).not.toHaveBeenCalled();
         expect(report.signals).toHaveLength(2);
         expect(
             report.signals.every(s => !s.remembered && !s.bellDelivered),

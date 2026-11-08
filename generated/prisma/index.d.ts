@@ -204,6 +204,16 @@ export type PortalUser = $Result.DefaultSelection<Prisma.$PortalUserPayload>
  */
 export type TelegramBinding = $Result.DefaultSelection<Prisma.$TelegramBindingPayload>
 /**
+ * Model SupportDialog
+ * История обращений в линию поддержки April (libs/support): строка на
+ * сессию открытой линии; монитор поддержки отмечает открытые на каждом
+ * проходе, пропавшие из открытых — closed_at. client_portal — портал
+ * клиента по сайту пользователя Битрикс24-сети (может быть пусто).
+ * Таблица добавлена ручной правкой (db pull запрещён) — миграция
+ * online/database/migrations/2026_11_08_120000_create_support_dialogs_table.php
+ */
+export type SupportDialog = $Result.DefaultSelection<Prisma.$SupportDialogPayload>
+/**
  * Model PortalAiSettings
  * Настройки AI-отчётности по звонкам на конкретный портал.
  * NULL в любом поле = «на портале не задано», значение берётся из
@@ -1257,6 +1267,16 @@ export class PrismaClient<
     * ```
     */
   get telegramBinding(): Prisma.TelegramBindingDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.supportDialog`: Exposes CRUD operations for the **SupportDialog** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SupportDialogs
+    * const supportDialogs = await prisma.supportDialog.findMany()
+    * ```
+    */
+  get supportDialog(): Prisma.SupportDialogDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.portalAiSettings`: Exposes CRUD operations for the **PortalAiSettings** model.
@@ -2443,6 +2463,7 @@ export namespace Prisma {
     Portal: 'Portal',
     PortalUser: 'PortalUser',
     TelegramBinding: 'TelegramBinding',
+    SupportDialog: 'SupportDialog',
     PortalAiSettings: 'PortalAiSettings',
     PortalAppSettings: 'PortalAppSettings',
     VendorSuperUser: 'VendorSuperUser',
@@ -2532,7 +2553,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalUser" | "telegramBinding" | "portalAiSettings" | "portalAppSettings" | "vendorSuperUser" | "vendorSetting" | "aiMethodology" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink" | "konstructorPublicLink" | "contractTemplate" | "supplyReportTemplate" | "renewalOfferLink"
+      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalUser" | "telegramBinding" | "supportDialog" | "portalAiSettings" | "portalAppSettings" | "vendorSuperUser" | "vendorSetting" | "aiMethodology" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink" | "konstructorPublicLink" | "contractTemplate" | "supplyReportTemplate" | "renewalOfferLink"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -4909,6 +4930,72 @@ export namespace Prisma {
           count: {
             args: Prisma.TelegramBindingCountArgs<ExtArgs>
             result: $Utils.Optional<TelegramBindingCountAggregateOutputType> | number
+          }
+        }
+      }
+      SupportDialog: {
+        payload: Prisma.$SupportDialogPayload<ExtArgs>
+        fields: Prisma.SupportDialogFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SupportDialogFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupportDialogPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SupportDialogFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupportDialogPayload>
+          }
+          findFirst: {
+            args: Prisma.SupportDialogFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupportDialogPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SupportDialogFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupportDialogPayload>
+          }
+          findMany: {
+            args: Prisma.SupportDialogFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupportDialogPayload>[]
+          }
+          create: {
+            args: Prisma.SupportDialogCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupportDialogPayload>
+          }
+          createMany: {
+            args: Prisma.SupportDialogCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SupportDialogDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupportDialogPayload>
+          }
+          update: {
+            args: Prisma.SupportDialogUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupportDialogPayload>
+          }
+          deleteMany: {
+            args: Prisma.SupportDialogDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SupportDialogUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SupportDialogUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SupportDialogPayload>
+          }
+          aggregate: {
+            args: Prisma.SupportDialogAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSupportDialog>
+          }
+          groupBy: {
+            args: Prisma.SupportDialogGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SupportDialogGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SupportDialogCountArgs<ExtArgs>
+            result: $Utils.Optional<SupportDialogCountAggregateOutputType> | number
           }
         }
       }
@@ -9730,6 +9817,7 @@ export namespace Prisma {
     portal?: PortalOmit
     portalUser?: PortalUserOmit
     telegramBinding?: TelegramBindingOmit
+    supportDialog?: SupportDialogOmit
     portalAiSettings?: PortalAiSettingsOmit
     portalAppSettings?: PortalAppSettingsOmit
     vendorSuperUser?: VendorSuperUserOmit
@@ -50497,6 +50585,1044 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: TelegramBindingInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SupportDialog
+   */
+
+  export type AggregateSupportDialog = {
+    _count: SupportDialogCountAggregateOutputType | null
+    _avg: SupportDialogAvgAggregateOutputType | null
+    _sum: SupportDialogSumAggregateOutputType | null
+    _min: SupportDialogMinAggregateOutputType | null
+    _max: SupportDialogMaxAggregateOutputType | null
+  }
+
+  export type SupportDialogAvgAggregateOutputType = {
+    sessionId: number | null
+    chatId: number | null
+    lineId: number | null
+    maxWaitedMinutes: number | null
+  }
+
+  export type SupportDialogSumAggregateOutputType = {
+    sessionId: bigint | null
+    chatId: bigint | null
+    lineId: number | null
+    maxWaitedMinutes: number | null
+  }
+
+  export type SupportDialogMinAggregateOutputType = {
+    id: string | null
+    lineDomain: string | null
+    sessionId: bigint | null
+    chatId: bigint | null
+    lineId: number | null
+    clientPortal: string | null
+    clientName: string | null
+    operatorName: string | null
+    maxWaitedMinutes: number | null
+    firstSeenAt: Date | null
+    lastSeenAt: Date | null
+    answeredAt: Date | null
+    closedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type SupportDialogMaxAggregateOutputType = {
+    id: string | null
+    lineDomain: string | null
+    sessionId: bigint | null
+    chatId: bigint | null
+    lineId: number | null
+    clientPortal: string | null
+    clientName: string | null
+    operatorName: string | null
+    maxWaitedMinutes: number | null
+    firstSeenAt: Date | null
+    lastSeenAt: Date | null
+    answeredAt: Date | null
+    closedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type SupportDialogCountAggregateOutputType = {
+    id: number
+    lineDomain: number
+    sessionId: number
+    chatId: number
+    lineId: number
+    clientPortal: number
+    clientName: number
+    operatorName: number
+    maxWaitedMinutes: number
+    firstSeenAt: number
+    lastSeenAt: number
+    answeredAt: number
+    closedAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type SupportDialogAvgAggregateInputType = {
+    sessionId?: true
+    chatId?: true
+    lineId?: true
+    maxWaitedMinutes?: true
+  }
+
+  export type SupportDialogSumAggregateInputType = {
+    sessionId?: true
+    chatId?: true
+    lineId?: true
+    maxWaitedMinutes?: true
+  }
+
+  export type SupportDialogMinAggregateInputType = {
+    id?: true
+    lineDomain?: true
+    sessionId?: true
+    chatId?: true
+    lineId?: true
+    clientPortal?: true
+    clientName?: true
+    operatorName?: true
+    maxWaitedMinutes?: true
+    firstSeenAt?: true
+    lastSeenAt?: true
+    answeredAt?: true
+    closedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type SupportDialogMaxAggregateInputType = {
+    id?: true
+    lineDomain?: true
+    sessionId?: true
+    chatId?: true
+    lineId?: true
+    clientPortal?: true
+    clientName?: true
+    operatorName?: true
+    maxWaitedMinutes?: true
+    firstSeenAt?: true
+    lastSeenAt?: true
+    answeredAt?: true
+    closedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type SupportDialogCountAggregateInputType = {
+    id?: true
+    lineDomain?: true
+    sessionId?: true
+    chatId?: true
+    lineId?: true
+    clientPortal?: true
+    clientName?: true
+    operatorName?: true
+    maxWaitedMinutes?: true
+    firstSeenAt?: true
+    lastSeenAt?: true
+    answeredAt?: true
+    closedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type SupportDialogAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SupportDialog to aggregate.
+     */
+    where?: SupportDialogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SupportDialogs to fetch.
+     */
+    orderBy?: SupportDialogOrderByWithRelationInput | SupportDialogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SupportDialogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SupportDialogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SupportDialogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SupportDialogs
+    **/
+    _count?: true | SupportDialogCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SupportDialogAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SupportDialogSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SupportDialogMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SupportDialogMaxAggregateInputType
+  }
+
+  export type GetSupportDialogAggregateType<T extends SupportDialogAggregateArgs> = {
+        [P in keyof T & keyof AggregateSupportDialog]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSupportDialog[P]>
+      : GetScalarType<T[P], AggregateSupportDialog[P]>
+  }
+
+
+
+
+  export type SupportDialogGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SupportDialogWhereInput
+    orderBy?: SupportDialogOrderByWithAggregationInput | SupportDialogOrderByWithAggregationInput[]
+    by: SupportDialogScalarFieldEnum[] | SupportDialogScalarFieldEnum
+    having?: SupportDialogScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SupportDialogCountAggregateInputType | true
+    _avg?: SupportDialogAvgAggregateInputType
+    _sum?: SupportDialogSumAggregateInputType
+    _min?: SupportDialogMinAggregateInputType
+    _max?: SupportDialogMaxAggregateInputType
+  }
+
+  export type SupportDialogGroupByOutputType = {
+    id: string
+    lineDomain: string
+    sessionId: bigint
+    chatId: bigint
+    lineId: number
+    clientPortal: string | null
+    clientName: string | null
+    operatorName: string | null
+    maxWaitedMinutes: number
+    firstSeenAt: Date | null
+    lastSeenAt: Date | null
+    answeredAt: Date | null
+    closedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    _count: SupportDialogCountAggregateOutputType | null
+    _avg: SupportDialogAvgAggregateOutputType | null
+    _sum: SupportDialogSumAggregateOutputType | null
+    _min: SupportDialogMinAggregateOutputType | null
+    _max: SupportDialogMaxAggregateOutputType | null
+  }
+
+  type GetSupportDialogGroupByPayload<T extends SupportDialogGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SupportDialogGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SupportDialogGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SupportDialogGroupByOutputType[P]>
+            : GetScalarType<T[P], SupportDialogGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SupportDialogSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    lineDomain?: boolean
+    sessionId?: boolean
+    chatId?: boolean
+    lineId?: boolean
+    clientPortal?: boolean
+    clientName?: boolean
+    operatorName?: boolean
+    maxWaitedMinutes?: boolean
+    firstSeenAt?: boolean
+    lastSeenAt?: boolean
+    answeredAt?: boolean
+    closedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["supportDialog"]>
+
+
+
+  export type SupportDialogSelectScalar = {
+    id?: boolean
+    lineDomain?: boolean
+    sessionId?: boolean
+    chatId?: boolean
+    lineId?: boolean
+    clientPortal?: boolean
+    clientName?: boolean
+    operatorName?: boolean
+    maxWaitedMinutes?: boolean
+    firstSeenAt?: boolean
+    lastSeenAt?: boolean
+    answeredAt?: boolean
+    closedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type SupportDialogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "lineDomain" | "sessionId" | "chatId" | "lineId" | "clientPortal" | "clientName" | "operatorName" | "maxWaitedMinutes" | "firstSeenAt" | "lastSeenAt" | "answeredAt" | "closedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["supportDialog"]>
+
+  export type $SupportDialogPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SupportDialog"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      lineDomain: string
+      sessionId: bigint
+      chatId: bigint
+      lineId: number
+      clientPortal: string | null
+      clientName: string | null
+      operatorName: string | null
+      maxWaitedMinutes: number
+      firstSeenAt: Date | null
+      lastSeenAt: Date | null
+      answeredAt: Date | null
+      closedAt: Date | null
+      createdAt: Date | null
+      updatedAt: Date | null
+    }, ExtArgs["result"]["supportDialog"]>
+    composites: {}
+  }
+
+  type SupportDialogGetPayload<S extends boolean | null | undefined | SupportDialogDefaultArgs> = $Result.GetResult<Prisma.$SupportDialogPayload, S>
+
+  type SupportDialogCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SupportDialogFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SupportDialogCountAggregateInputType | true
+    }
+
+  export interface SupportDialogDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SupportDialog'], meta: { name: 'SupportDialog' } }
+    /**
+     * Find zero or one SupportDialog that matches the filter.
+     * @param {SupportDialogFindUniqueArgs} args - Arguments to find a SupportDialog
+     * @example
+     * // Get one SupportDialog
+     * const supportDialog = await prisma.supportDialog.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SupportDialogFindUniqueArgs>(args: SelectSubset<T, SupportDialogFindUniqueArgs<ExtArgs>>): Prisma__SupportDialogClient<$Result.GetResult<Prisma.$SupportDialogPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SupportDialog that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SupportDialogFindUniqueOrThrowArgs} args - Arguments to find a SupportDialog
+     * @example
+     * // Get one SupportDialog
+     * const supportDialog = await prisma.supportDialog.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SupportDialogFindUniqueOrThrowArgs>(args: SelectSubset<T, SupportDialogFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SupportDialogClient<$Result.GetResult<Prisma.$SupportDialogPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SupportDialog that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SupportDialogFindFirstArgs} args - Arguments to find a SupportDialog
+     * @example
+     * // Get one SupportDialog
+     * const supportDialog = await prisma.supportDialog.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SupportDialogFindFirstArgs>(args?: SelectSubset<T, SupportDialogFindFirstArgs<ExtArgs>>): Prisma__SupportDialogClient<$Result.GetResult<Prisma.$SupportDialogPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SupportDialog that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SupportDialogFindFirstOrThrowArgs} args - Arguments to find a SupportDialog
+     * @example
+     * // Get one SupportDialog
+     * const supportDialog = await prisma.supportDialog.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SupportDialogFindFirstOrThrowArgs>(args?: SelectSubset<T, SupportDialogFindFirstOrThrowArgs<ExtArgs>>): Prisma__SupportDialogClient<$Result.GetResult<Prisma.$SupportDialogPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SupportDialogs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SupportDialogFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SupportDialogs
+     * const supportDialogs = await prisma.supportDialog.findMany()
+     * 
+     * // Get first 10 SupportDialogs
+     * const supportDialogs = await prisma.supportDialog.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const supportDialogWithIdOnly = await prisma.supportDialog.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SupportDialogFindManyArgs>(args?: SelectSubset<T, SupportDialogFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SupportDialogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SupportDialog.
+     * @param {SupportDialogCreateArgs} args - Arguments to create a SupportDialog.
+     * @example
+     * // Create one SupportDialog
+     * const SupportDialog = await prisma.supportDialog.create({
+     *   data: {
+     *     // ... data to create a SupportDialog
+     *   }
+     * })
+     * 
+     */
+    create<T extends SupportDialogCreateArgs>(args: SelectSubset<T, SupportDialogCreateArgs<ExtArgs>>): Prisma__SupportDialogClient<$Result.GetResult<Prisma.$SupportDialogPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SupportDialogs.
+     * @param {SupportDialogCreateManyArgs} args - Arguments to create many SupportDialogs.
+     * @example
+     * // Create many SupportDialogs
+     * const supportDialog = await prisma.supportDialog.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SupportDialogCreateManyArgs>(args?: SelectSubset<T, SupportDialogCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a SupportDialog.
+     * @param {SupportDialogDeleteArgs} args - Arguments to delete one SupportDialog.
+     * @example
+     * // Delete one SupportDialog
+     * const SupportDialog = await prisma.supportDialog.delete({
+     *   where: {
+     *     // ... filter to delete one SupportDialog
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SupportDialogDeleteArgs>(args: SelectSubset<T, SupportDialogDeleteArgs<ExtArgs>>): Prisma__SupportDialogClient<$Result.GetResult<Prisma.$SupportDialogPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SupportDialog.
+     * @param {SupportDialogUpdateArgs} args - Arguments to update one SupportDialog.
+     * @example
+     * // Update one SupportDialog
+     * const supportDialog = await prisma.supportDialog.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SupportDialogUpdateArgs>(args: SelectSubset<T, SupportDialogUpdateArgs<ExtArgs>>): Prisma__SupportDialogClient<$Result.GetResult<Prisma.$SupportDialogPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SupportDialogs.
+     * @param {SupportDialogDeleteManyArgs} args - Arguments to filter SupportDialogs to delete.
+     * @example
+     * // Delete a few SupportDialogs
+     * const { count } = await prisma.supportDialog.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SupportDialogDeleteManyArgs>(args?: SelectSubset<T, SupportDialogDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SupportDialogs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SupportDialogUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SupportDialogs
+     * const supportDialog = await prisma.supportDialog.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SupportDialogUpdateManyArgs>(args: SelectSubset<T, SupportDialogUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SupportDialog.
+     * @param {SupportDialogUpsertArgs} args - Arguments to update or create a SupportDialog.
+     * @example
+     * // Update or create a SupportDialog
+     * const supportDialog = await prisma.supportDialog.upsert({
+     *   create: {
+     *     // ... data to create a SupportDialog
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SupportDialog we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SupportDialogUpsertArgs>(args: SelectSubset<T, SupportDialogUpsertArgs<ExtArgs>>): Prisma__SupportDialogClient<$Result.GetResult<Prisma.$SupportDialogPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SupportDialogs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SupportDialogCountArgs} args - Arguments to filter SupportDialogs to count.
+     * @example
+     * // Count the number of SupportDialogs
+     * const count = await prisma.supportDialog.count({
+     *   where: {
+     *     // ... the filter for the SupportDialogs we want to count
+     *   }
+     * })
+    **/
+    count<T extends SupportDialogCountArgs>(
+      args?: Subset<T, SupportDialogCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SupportDialogCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SupportDialog.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SupportDialogAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SupportDialogAggregateArgs>(args: Subset<T, SupportDialogAggregateArgs>): Prisma.PrismaPromise<GetSupportDialogAggregateType<T>>
+
+    /**
+     * Group by SupportDialog.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SupportDialogGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SupportDialogGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SupportDialogGroupByArgs['orderBy'] }
+        : { orderBy?: SupportDialogGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SupportDialogGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSupportDialogGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SupportDialog model
+   */
+  readonly fields: SupportDialogFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SupportDialog.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SupportDialogClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SupportDialog model
+   */
+  interface SupportDialogFieldRefs {
+    readonly id: FieldRef<"SupportDialog", 'String'>
+    readonly lineDomain: FieldRef<"SupportDialog", 'String'>
+    readonly sessionId: FieldRef<"SupportDialog", 'BigInt'>
+    readonly chatId: FieldRef<"SupportDialog", 'BigInt'>
+    readonly lineId: FieldRef<"SupportDialog", 'Int'>
+    readonly clientPortal: FieldRef<"SupportDialog", 'String'>
+    readonly clientName: FieldRef<"SupportDialog", 'String'>
+    readonly operatorName: FieldRef<"SupportDialog", 'String'>
+    readonly maxWaitedMinutes: FieldRef<"SupportDialog", 'Int'>
+    readonly firstSeenAt: FieldRef<"SupportDialog", 'DateTime'>
+    readonly lastSeenAt: FieldRef<"SupportDialog", 'DateTime'>
+    readonly answeredAt: FieldRef<"SupportDialog", 'DateTime'>
+    readonly closedAt: FieldRef<"SupportDialog", 'DateTime'>
+    readonly createdAt: FieldRef<"SupportDialog", 'DateTime'>
+    readonly updatedAt: FieldRef<"SupportDialog", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SupportDialog findUnique
+   */
+  export type SupportDialogFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupportDialog
+     */
+    select?: SupportDialogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupportDialog
+     */
+    omit?: SupportDialogOmit<ExtArgs> | null
+    /**
+     * Filter, which SupportDialog to fetch.
+     */
+    where: SupportDialogWhereUniqueInput
+  }
+
+  /**
+   * SupportDialog findUniqueOrThrow
+   */
+  export type SupportDialogFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupportDialog
+     */
+    select?: SupportDialogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupportDialog
+     */
+    omit?: SupportDialogOmit<ExtArgs> | null
+    /**
+     * Filter, which SupportDialog to fetch.
+     */
+    where: SupportDialogWhereUniqueInput
+  }
+
+  /**
+   * SupportDialog findFirst
+   */
+  export type SupportDialogFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupportDialog
+     */
+    select?: SupportDialogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupportDialog
+     */
+    omit?: SupportDialogOmit<ExtArgs> | null
+    /**
+     * Filter, which SupportDialog to fetch.
+     */
+    where?: SupportDialogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SupportDialogs to fetch.
+     */
+    orderBy?: SupportDialogOrderByWithRelationInput | SupportDialogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SupportDialogs.
+     */
+    cursor?: SupportDialogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SupportDialogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SupportDialogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SupportDialogs.
+     */
+    distinct?: SupportDialogScalarFieldEnum | SupportDialogScalarFieldEnum[]
+  }
+
+  /**
+   * SupportDialog findFirstOrThrow
+   */
+  export type SupportDialogFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupportDialog
+     */
+    select?: SupportDialogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupportDialog
+     */
+    omit?: SupportDialogOmit<ExtArgs> | null
+    /**
+     * Filter, which SupportDialog to fetch.
+     */
+    where?: SupportDialogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SupportDialogs to fetch.
+     */
+    orderBy?: SupportDialogOrderByWithRelationInput | SupportDialogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SupportDialogs.
+     */
+    cursor?: SupportDialogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SupportDialogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SupportDialogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SupportDialogs.
+     */
+    distinct?: SupportDialogScalarFieldEnum | SupportDialogScalarFieldEnum[]
+  }
+
+  /**
+   * SupportDialog findMany
+   */
+  export type SupportDialogFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupportDialog
+     */
+    select?: SupportDialogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupportDialog
+     */
+    omit?: SupportDialogOmit<ExtArgs> | null
+    /**
+     * Filter, which SupportDialogs to fetch.
+     */
+    where?: SupportDialogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SupportDialogs to fetch.
+     */
+    orderBy?: SupportDialogOrderByWithRelationInput | SupportDialogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SupportDialogs.
+     */
+    cursor?: SupportDialogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SupportDialogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SupportDialogs.
+     */
+    skip?: number
+    distinct?: SupportDialogScalarFieldEnum | SupportDialogScalarFieldEnum[]
+  }
+
+  /**
+   * SupportDialog create
+   */
+  export type SupportDialogCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupportDialog
+     */
+    select?: SupportDialogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupportDialog
+     */
+    omit?: SupportDialogOmit<ExtArgs> | null
+    /**
+     * The data needed to create a SupportDialog.
+     */
+    data: XOR<SupportDialogCreateInput, SupportDialogUncheckedCreateInput>
+  }
+
+  /**
+   * SupportDialog createMany
+   */
+  export type SupportDialogCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SupportDialogs.
+     */
+    data: SupportDialogCreateManyInput | SupportDialogCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SupportDialog update
+   */
+  export type SupportDialogUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupportDialog
+     */
+    select?: SupportDialogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupportDialog
+     */
+    omit?: SupportDialogOmit<ExtArgs> | null
+    /**
+     * The data needed to update a SupportDialog.
+     */
+    data: XOR<SupportDialogUpdateInput, SupportDialogUncheckedUpdateInput>
+    /**
+     * Choose, which SupportDialog to update.
+     */
+    where: SupportDialogWhereUniqueInput
+  }
+
+  /**
+   * SupportDialog updateMany
+   */
+  export type SupportDialogUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SupportDialogs.
+     */
+    data: XOR<SupportDialogUpdateManyMutationInput, SupportDialogUncheckedUpdateManyInput>
+    /**
+     * Filter which SupportDialogs to update
+     */
+    where?: SupportDialogWhereInput
+    /**
+     * Limit how many SupportDialogs to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SupportDialog upsert
+   */
+  export type SupportDialogUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupportDialog
+     */
+    select?: SupportDialogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupportDialog
+     */
+    omit?: SupportDialogOmit<ExtArgs> | null
+    /**
+     * The filter to search for the SupportDialog to update in case it exists.
+     */
+    where: SupportDialogWhereUniqueInput
+    /**
+     * In case the SupportDialog found by the `where` argument doesn't exist, create a new SupportDialog with this data.
+     */
+    create: XOR<SupportDialogCreateInput, SupportDialogUncheckedCreateInput>
+    /**
+     * In case the SupportDialog was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SupportDialogUpdateInput, SupportDialogUncheckedUpdateInput>
+  }
+
+  /**
+   * SupportDialog delete
+   */
+  export type SupportDialogDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupportDialog
+     */
+    select?: SupportDialogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupportDialog
+     */
+    omit?: SupportDialogOmit<ExtArgs> | null
+    /**
+     * Filter which SupportDialog to delete.
+     */
+    where: SupportDialogWhereUniqueInput
+  }
+
+  /**
+   * SupportDialog deleteMany
+   */
+  export type SupportDialogDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SupportDialogs to delete
+     */
+    where?: SupportDialogWhereInput
+    /**
+     * Limit how many SupportDialogs to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SupportDialog without action
+   */
+  export type SupportDialogDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SupportDialog
+     */
+    select?: SupportDialogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SupportDialog
+     */
+    omit?: SupportDialogOmit<ExtArgs> | null
   }
 
 
@@ -128463,6 +129589,27 @@ export namespace Prisma {
   export type TelegramBindingScalarFieldEnum = (typeof TelegramBindingScalarFieldEnum)[keyof typeof TelegramBindingScalarFieldEnum]
 
 
+  export const SupportDialogScalarFieldEnum: {
+    id: 'id',
+    lineDomain: 'lineDomain',
+    sessionId: 'sessionId',
+    chatId: 'chatId',
+    lineId: 'lineId',
+    clientPortal: 'clientPortal',
+    clientName: 'clientName',
+    operatorName: 'operatorName',
+    maxWaitedMinutes: 'maxWaitedMinutes',
+    firstSeenAt: 'firstSeenAt',
+    lastSeenAt: 'lastSeenAt',
+    answeredAt: 'answeredAt',
+    closedAt: 'closedAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type SupportDialogScalarFieldEnum = (typeof SupportDialogScalarFieldEnum)[keyof typeof SupportDialogScalarFieldEnum]
+
+
   export const PortalAiSettingsScalarFieldEnum: {
     id: 'id',
     portal_id: 'portal_id',
@@ -130395,6 +131542,17 @@ export namespace Prisma {
   };
 
   export type TelegramBindingOrderByRelevanceFieldEnum = (typeof TelegramBindingOrderByRelevanceFieldEnum)[keyof typeof TelegramBindingOrderByRelevanceFieldEnum]
+
+
+  export const SupportDialogOrderByRelevanceFieldEnum: {
+    id: 'id',
+    lineDomain: 'lineDomain',
+    clientPortal: 'clientPortal',
+    clientName: 'clientName',
+    operatorName: 'operatorName'
+  };
+
+  export type SupportDialogOrderByRelevanceFieldEnum = (typeof SupportDialogOrderByRelevanceFieldEnum)[keyof typeof SupportDialogOrderByRelevanceFieldEnum]
 
 
   export const JsonNullValueFilter: {
@@ -134897,6 +136055,112 @@ export namespace Prisma {
     revokedAt?: DateTimeNullableWithAggregatesFilter<"TelegramBinding"> | Date | string | null
     createdAt?: DateTimeNullableWithAggregatesFilter<"TelegramBinding"> | Date | string | null
     updatedAt?: DateTimeNullableWithAggregatesFilter<"TelegramBinding"> | Date | string | null
+  }
+
+  export type SupportDialogWhereInput = {
+    AND?: SupportDialogWhereInput | SupportDialogWhereInput[]
+    OR?: SupportDialogWhereInput[]
+    NOT?: SupportDialogWhereInput | SupportDialogWhereInput[]
+    id?: StringFilter<"SupportDialog"> | string
+    lineDomain?: StringFilter<"SupportDialog"> | string
+    sessionId?: BigIntFilter<"SupportDialog"> | bigint | number
+    chatId?: BigIntFilter<"SupportDialog"> | bigint | number
+    lineId?: IntFilter<"SupportDialog"> | number
+    clientPortal?: StringNullableFilter<"SupportDialog"> | string | null
+    clientName?: StringNullableFilter<"SupportDialog"> | string | null
+    operatorName?: StringNullableFilter<"SupportDialog"> | string | null
+    maxWaitedMinutes?: IntFilter<"SupportDialog"> | number
+    firstSeenAt?: DateTimeNullableFilter<"SupportDialog"> | Date | string | null
+    lastSeenAt?: DateTimeNullableFilter<"SupportDialog"> | Date | string | null
+    answeredAt?: DateTimeNullableFilter<"SupportDialog"> | Date | string | null
+    closedAt?: DateTimeNullableFilter<"SupportDialog"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"SupportDialog"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SupportDialog"> | Date | string | null
+  }
+
+  export type SupportDialogOrderByWithRelationInput = {
+    id?: SortOrder
+    lineDomain?: SortOrder
+    sessionId?: SortOrder
+    chatId?: SortOrder
+    lineId?: SortOrder
+    clientPortal?: SortOrderInput | SortOrder
+    clientName?: SortOrderInput | SortOrder
+    operatorName?: SortOrderInput | SortOrder
+    maxWaitedMinutes?: SortOrder
+    firstSeenAt?: SortOrderInput | SortOrder
+    lastSeenAt?: SortOrderInput | SortOrder
+    answeredAt?: SortOrderInput | SortOrder
+    closedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _relevance?: SupportDialogOrderByRelevanceInput
+  }
+
+  export type SupportDialogWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    lineDomain_sessionId?: SupportDialogLineDomainSessionIdCompoundUniqueInput
+    AND?: SupportDialogWhereInput | SupportDialogWhereInput[]
+    OR?: SupportDialogWhereInput[]
+    NOT?: SupportDialogWhereInput | SupportDialogWhereInput[]
+    lineDomain?: StringFilter<"SupportDialog"> | string
+    sessionId?: BigIntFilter<"SupportDialog"> | bigint | number
+    chatId?: BigIntFilter<"SupportDialog"> | bigint | number
+    lineId?: IntFilter<"SupportDialog"> | number
+    clientPortal?: StringNullableFilter<"SupportDialog"> | string | null
+    clientName?: StringNullableFilter<"SupportDialog"> | string | null
+    operatorName?: StringNullableFilter<"SupportDialog"> | string | null
+    maxWaitedMinutes?: IntFilter<"SupportDialog"> | number
+    firstSeenAt?: DateTimeNullableFilter<"SupportDialog"> | Date | string | null
+    lastSeenAt?: DateTimeNullableFilter<"SupportDialog"> | Date | string | null
+    answeredAt?: DateTimeNullableFilter<"SupportDialog"> | Date | string | null
+    closedAt?: DateTimeNullableFilter<"SupportDialog"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"SupportDialog"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"SupportDialog"> | Date | string | null
+  }, "id" | "lineDomain_sessionId">
+
+  export type SupportDialogOrderByWithAggregationInput = {
+    id?: SortOrder
+    lineDomain?: SortOrder
+    sessionId?: SortOrder
+    chatId?: SortOrder
+    lineId?: SortOrder
+    clientPortal?: SortOrderInput | SortOrder
+    clientName?: SortOrderInput | SortOrder
+    operatorName?: SortOrderInput | SortOrder
+    maxWaitedMinutes?: SortOrder
+    firstSeenAt?: SortOrderInput | SortOrder
+    lastSeenAt?: SortOrderInput | SortOrder
+    answeredAt?: SortOrderInput | SortOrder
+    closedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _count?: SupportDialogCountOrderByAggregateInput
+    _avg?: SupportDialogAvgOrderByAggregateInput
+    _max?: SupportDialogMaxOrderByAggregateInput
+    _min?: SupportDialogMinOrderByAggregateInput
+    _sum?: SupportDialogSumOrderByAggregateInput
+  }
+
+  export type SupportDialogScalarWhereWithAggregatesInput = {
+    AND?: SupportDialogScalarWhereWithAggregatesInput | SupportDialogScalarWhereWithAggregatesInput[]
+    OR?: SupportDialogScalarWhereWithAggregatesInput[]
+    NOT?: SupportDialogScalarWhereWithAggregatesInput | SupportDialogScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SupportDialog"> | string
+    lineDomain?: StringWithAggregatesFilter<"SupportDialog"> | string
+    sessionId?: BigIntWithAggregatesFilter<"SupportDialog"> | bigint | number
+    chatId?: BigIntWithAggregatesFilter<"SupportDialog"> | bigint | number
+    lineId?: IntWithAggregatesFilter<"SupportDialog"> | number
+    clientPortal?: StringNullableWithAggregatesFilter<"SupportDialog"> | string | null
+    clientName?: StringNullableWithAggregatesFilter<"SupportDialog"> | string | null
+    operatorName?: StringNullableWithAggregatesFilter<"SupportDialog"> | string | null
+    maxWaitedMinutes?: IntWithAggregatesFilter<"SupportDialog"> | number
+    firstSeenAt?: DateTimeNullableWithAggregatesFilter<"SupportDialog"> | Date | string | null
+    lastSeenAt?: DateTimeNullableWithAggregatesFilter<"SupportDialog"> | Date | string | null
+    answeredAt?: DateTimeNullableWithAggregatesFilter<"SupportDialog"> | Date | string | null
+    closedAt?: DateTimeNullableWithAggregatesFilter<"SupportDialog"> | Date | string | null
+    createdAt?: DateTimeNullableWithAggregatesFilter<"SupportDialog"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"SupportDialog"> | Date | string | null
   }
 
   export type PortalAiSettingsWhereInput = {
@@ -146509,6 +147773,132 @@ export namespace Prisma {
     displayName?: NullableStringFieldUpdateOperationsInput | string | null
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SupportDialogCreateInput = {
+    id: string
+    lineDomain: string
+    sessionId: bigint | number
+    chatId: bigint | number
+    lineId: number
+    clientPortal?: string | null
+    clientName?: string | null
+    operatorName?: string | null
+    maxWaitedMinutes?: number
+    firstSeenAt?: Date | string | null
+    lastSeenAt?: Date | string | null
+    answeredAt?: Date | string | null
+    closedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SupportDialogUncheckedCreateInput = {
+    id: string
+    lineDomain: string
+    sessionId: bigint | number
+    chatId: bigint | number
+    lineId: number
+    clientPortal?: string | null
+    clientName?: string | null
+    operatorName?: string | null
+    maxWaitedMinutes?: number
+    firstSeenAt?: Date | string | null
+    lastSeenAt?: Date | string | null
+    answeredAt?: Date | string | null
+    closedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SupportDialogUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    lineDomain?: StringFieldUpdateOperationsInput | string
+    sessionId?: BigIntFieldUpdateOperationsInput | bigint | number
+    chatId?: BigIntFieldUpdateOperationsInput | bigint | number
+    lineId?: IntFieldUpdateOperationsInput | number
+    clientPortal?: NullableStringFieldUpdateOperationsInput | string | null
+    clientName?: NullableStringFieldUpdateOperationsInput | string | null
+    operatorName?: NullableStringFieldUpdateOperationsInput | string | null
+    maxWaitedMinutes?: IntFieldUpdateOperationsInput | number
+    firstSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    answeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SupportDialogUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    lineDomain?: StringFieldUpdateOperationsInput | string
+    sessionId?: BigIntFieldUpdateOperationsInput | bigint | number
+    chatId?: BigIntFieldUpdateOperationsInput | bigint | number
+    lineId?: IntFieldUpdateOperationsInput | number
+    clientPortal?: NullableStringFieldUpdateOperationsInput | string | null
+    clientName?: NullableStringFieldUpdateOperationsInput | string | null
+    operatorName?: NullableStringFieldUpdateOperationsInput | string | null
+    maxWaitedMinutes?: IntFieldUpdateOperationsInput | number
+    firstSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    answeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SupportDialogCreateManyInput = {
+    id: string
+    lineDomain: string
+    sessionId: bigint | number
+    chatId: bigint | number
+    lineId: number
+    clientPortal?: string | null
+    clientName?: string | null
+    operatorName?: string | null
+    maxWaitedMinutes?: number
+    firstSeenAt?: Date | string | null
+    lastSeenAt?: Date | string | null
+    answeredAt?: Date | string | null
+    closedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type SupportDialogUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    lineDomain?: StringFieldUpdateOperationsInput | string
+    sessionId?: BigIntFieldUpdateOperationsInput | bigint | number
+    chatId?: BigIntFieldUpdateOperationsInput | bigint | number
+    lineId?: IntFieldUpdateOperationsInput | number
+    clientPortal?: NullableStringFieldUpdateOperationsInput | string | null
+    clientName?: NullableStringFieldUpdateOperationsInput | string | null
+    operatorName?: NullableStringFieldUpdateOperationsInput | string | null
+    maxWaitedMinutes?: IntFieldUpdateOperationsInput | number
+    firstSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    answeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type SupportDialogUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    lineDomain?: StringFieldUpdateOperationsInput | string
+    sessionId?: BigIntFieldUpdateOperationsInput | bigint | number
+    chatId?: BigIntFieldUpdateOperationsInput | bigint | number
+    lineId?: IntFieldUpdateOperationsInput | number
+    clientPortal?: NullableStringFieldUpdateOperationsInput | string | null
+    clientName?: NullableStringFieldUpdateOperationsInput | string | null
+    operatorName?: NullableStringFieldUpdateOperationsInput | string | null
+    maxWaitedMinutes?: IntFieldUpdateOperationsInput | number
+    firstSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    answeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
@@ -158578,6 +159968,85 @@ export namespace Prisma {
     portalId?: SortOrder
     userId?: SortOrder
     chatId?: SortOrder
+  }
+
+  export type SupportDialogOrderByRelevanceInput = {
+    fields: SupportDialogOrderByRelevanceFieldEnum | SupportDialogOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type SupportDialogLineDomainSessionIdCompoundUniqueInput = {
+    lineDomain: string
+    sessionId: bigint | number
+  }
+
+  export type SupportDialogCountOrderByAggregateInput = {
+    id?: SortOrder
+    lineDomain?: SortOrder
+    sessionId?: SortOrder
+    chatId?: SortOrder
+    lineId?: SortOrder
+    clientPortal?: SortOrder
+    clientName?: SortOrder
+    operatorName?: SortOrder
+    maxWaitedMinutes?: SortOrder
+    firstSeenAt?: SortOrder
+    lastSeenAt?: SortOrder
+    answeredAt?: SortOrder
+    closedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SupportDialogAvgOrderByAggregateInput = {
+    sessionId?: SortOrder
+    chatId?: SortOrder
+    lineId?: SortOrder
+    maxWaitedMinutes?: SortOrder
+  }
+
+  export type SupportDialogMaxOrderByAggregateInput = {
+    id?: SortOrder
+    lineDomain?: SortOrder
+    sessionId?: SortOrder
+    chatId?: SortOrder
+    lineId?: SortOrder
+    clientPortal?: SortOrder
+    clientName?: SortOrder
+    operatorName?: SortOrder
+    maxWaitedMinutes?: SortOrder
+    firstSeenAt?: SortOrder
+    lastSeenAt?: SortOrder
+    answeredAt?: SortOrder
+    closedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SupportDialogMinOrderByAggregateInput = {
+    id?: SortOrder
+    lineDomain?: SortOrder
+    sessionId?: SortOrder
+    chatId?: SortOrder
+    lineId?: SortOrder
+    clientPortal?: SortOrder
+    clientName?: SortOrder
+    operatorName?: SortOrder
+    maxWaitedMinutes?: SortOrder
+    firstSeenAt?: SortOrder
+    lastSeenAt?: SortOrder
+    answeredAt?: SortOrder
+    closedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SupportDialogSumOrderByAggregateInput = {
+    sessionId?: SortOrder
+    chatId?: SortOrder
+    lineId?: SortOrder
+    maxWaitedMinutes?: SortOrder
   }
   export type JsonNullableFilter<$PrismaModel = never> =
     | PatchUndefined<

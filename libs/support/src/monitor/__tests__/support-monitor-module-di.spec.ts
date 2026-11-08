@@ -2,6 +2,7 @@ import { findMissingModuleDependencies } from '@lib/core/testing/module-di';
 import { SupportMonitorModule } from '../support-monitor.module';
 import { SupportMonitorAdminModule } from '../support-monitor.admin.module';
 import { SupportMonitorAdminController } from '../admin/support-monitor-admin.controller';
+import { SupportHistoryAdminController } from '../admin/support-history-admin.controller';
 import { SupportGuideAdminController } from '../../guide/admin/support-guide-admin.controller';
 
 describe('DI-граф модулей монитора поддержки', () => {
@@ -21,6 +22,10 @@ describe('DI-граф модулей монитора поддержки', () =>
         ).toEqual([]);
         expect(
             Reflect.getMetadata('controllers', SupportMonitorAdminModule),
-        ).toEqual([SupportMonitorAdminController, SupportGuideAdminController]);
+        ).toEqual([
+            SupportMonitorAdminController,
+            SupportHistoryAdminController,
+            SupportGuideAdminController,
+        ]);
     });
 });

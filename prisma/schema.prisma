@@ -765,6 +765,35 @@ model TelegramBinding {
   @@map("telegram_bindings")
 }
 
+/// История обращений в линию поддержки April (libs/support): строка на
+/// сессию открытой линии; монитор поддержки отмечает открытые на каждом
+/// проходе, пропавшие из открытых — closed_at. client_portal — портал
+/// клиента по сайту пользователя Битрикс24-сети (может быть пусто).
+/// Таблица добавлена ручной правкой (db pull запрещён) — миграция
+/// online/database/migrations/2026_11_08_120000_create_support_dialogs_table.php
+model SupportDialog {
+  id               String    @id @db.Char(36)
+  lineDomain       String    @map("line_domain") @db.VarChar(255)
+  sessionId        BigInt    @map("session_id") @db.UnsignedBigInt
+  chatId           BigInt    @map("chat_id") @db.UnsignedBigInt
+  lineId           Int       @map("line_id") @db.UnsignedInt
+  clientPortal     String?   @map("client_portal") @db.VarChar(255)
+  clientName       String?   @map("client_name") @db.VarChar(255)
+  operatorName     String?   @map("operator_name") @db.VarChar(255)
+  maxWaitedMinutes Int       @default(0) @map("max_waited_minutes") @db.UnsignedInt
+  firstSeenAt      DateTime? @map("first_seen_at") @db.Timestamp(0)
+  lastSeenAt       DateTime? @map("last_seen_at") @db.Timestamp(0)
+  answeredAt       DateTime? @map("answered_at") @db.Timestamp(0)
+  closedAt         DateTime? @map("closed_at") @db.Timestamp(0)
+  createdAt        DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt        DateTime? @map("updated_at") @db.Timestamp(0)
+
+  @@unique([lineDomain, sessionId], map: "support_dialogs_line_session_unique")
+  @@index([lineDomain, closedAt], map: "support_dialogs_line_closed_index")
+  @@index([clientPortal, firstSeenAt], map: "support_dialogs_portal_seen_index")
+  @@map("support_dialogs")
+}
+
 /// Настройки AI-отчётности по звонкам на конкретный портал.
 /// NULL в любом поле = «на портале не задано», значение берётся из
 /// глобальных env приложения (CALL_REPORT_*). Поэтому здесь нет default —
