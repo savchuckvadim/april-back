@@ -18,7 +18,8 @@ export enum MarketplaceBxMethod {
     EVENT_GET = 'event.get',
     PLACEMENT_BIND = 'placement.bind',
     PLACEMENT_UNBIND = 'placement.unbind',
-    PLACEMENT_LIST = 'placement.list',
+    /** Обработчики, зарегистрированные приложением (placement.bind). */
+    PLACEMENT_GET = 'placement.get',
     APP_INFO = 'app.info',
     PROFILE = 'profile',
     USER_CURRENT = 'user.current',
@@ -176,8 +177,9 @@ export class MarketplaceBxClient {
     }
 
     /**
-     * placement.list — текущие привязки НАШЕГО приложения на портале
-     * (Битрикс возвращает только встройки, сделанные этим приложением).
+     * placement.get — текущие привязки НАШЕГО приложения на портале
+     * (обработчики, зарегистрированные placement.bind). Не placement.list:
+     * тот возвращает только коды мест, доступных для встройки.
      */
     async listPlacements(
         domain: string,
@@ -186,7 +188,7 @@ export class MarketplaceBxClient {
         return this.call(
             domain,
             accessToken,
-            MarketplaceBxMethod.PLACEMENT_LIST,
+            MarketplaceBxMethod.PLACEMENT_GET,
             {},
         );
     }

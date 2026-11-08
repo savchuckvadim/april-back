@@ -23,10 +23,20 @@ import {
     PlacementSyncResult,
 } from './marketplace-placement-sync.service';
 import {
+    LivePlacements,
+    MarketplacePlacementReader,
+} from './marketplace-placement.reader';
+import {
     AdminInstallDto,
     AdminInstallsQueryDto,
+    LivePlacementsDto,
     RefreshPlacementsDto,
 } from '../dto/marketplace-admin.dto';
+
+/** Установка портала вместе с порталом (как её отдаёт репозиторий). */
+type InstallWithPortal = NonNullable<
+    Awaited<ReturnType<MarketplaceInstallRepository['findInstallByMemberId']>>
+>;
 
 /**
  * Admin-операции вендора над установками (под AdminKeyGuard).
@@ -49,6 +59,7 @@ export class MarketplaceAdminService {
         private readonly placementSync: MarketplacePlacementSyncService,
         private readonly tokenService: MarketplaceTokenService,
         private readonly settings: PortalAppSettingsService,
+        private readonly placementReader: MarketplacePlacementReader,
     ) {}
 
     /**
@@ -103,46 +114,7 @@ export class MarketplaceAdminService {
     async refreshPlacements(
         dto: RefreshPlacementsDto,
     ): Promise<PlacementSyncResult> {
-        const install = dto.memberId
-            ? await this.repository.findInstallByMemberId(
-                  dto.memberId,
-                  this.appCode,
-              )
-            : dto.domain
-              ? await this.repository.findInstallByDomain(
-                    dto.domain,
-                    this.appCode,
-                )
-              : null;
-
-        if (!install) {
-            throw new NotFoundException(
-                'Установка не найдена (укажите memberId или domain портала)',
-            );
-        }
-        if (install.uninstalled_at) {
-            throw new BadRequestException(
-                'Приложение удалено с портала — синхронизация невозможна',
-            );
-        }
-
-        const domain = install.portals.domain ?? dto.domain;
-        if (!domain) {
-            throw new BadRequestException('У портала не указан домен');
-        }
-        let accessToken: string;
-        try {
-            accessToken = await this.tokenService.getFreshAccessToken({
-                memberId: install.portals.member_id ?? undefined,
-                domain,
-            });
-        } catch (error) {
-            if (error instanceof MarketplaceTokenError) {
-                throw new BadRequestException(error.message);
-            }
-            throw error;
-        }
-
+        const { install, domain, accessToken } = await this.access(dto);
         const widgetCodes = parseAppWidgetCodes(
             (await this.settings.resolve(domain, EnumPortalAppCode.portal))
                 .appWidgets,
@@ -163,6 +135,61 @@ export class MarketplaceAdminService {
             throw new BadRequestException(
                 error instanceof Error ? error.message : String(error),
             );
+        }
+    }
+
+    /**
+     * Привязки виджетов на портале прямо сейчас (placement.get) — наши и
+     * чужие. Только чтение: ничего не ставит и не снимает.
+     */
+    async livePlacements(dto: LivePlacementsDto): Promise<LivePlacements> {
+        const { domain, accessToken } = await this.access(dto);
+        return this.placementReader.fetch(domain, accessToken);
+    }
+
+    /** Установка портала и свежий токен приложения — для работы с привязками. */
+    private async access(dto: LivePlacementsDto): Promise<{
+        install: InstallWithPortal;
+        domain: string;
+        accessToken: string;
+    }> {
+        const install = dto.memberId
+            ? await this.repository.findInstallByMemberId(
+                  dto.memberId,
+                  this.appCode,
+              )
+            : dto.domain
+              ? await this.repository.findInstallByDomain(
+                    dto.domain,
+                    this.appCode,
+                )
+              : null;
+
+        if (!install) {
+            throw new NotFoundException(
+                'Установка не найдена (укажите memberId или domain портала)',
+            );
+        }
+        if (install.uninstalled_at) {
+            throw new BadRequestException(
+                'Приложение удалено с портала — работа с виджетами невозможна',
+            );
+        }
+        const domain = install.portals.domain ?? dto.domain;
+        if (!domain) {
+            throw new BadRequestException('У портала не указан домен');
+        }
+        try {
+            const accessToken = await this.tokenService.getFreshAccessToken({
+                memberId: install.portals.member_id ?? undefined,
+                domain,
+            });
+            return { install, domain, accessToken };
+        } catch (error) {
+            if (error instanceof MarketplaceTokenError) {
+                throw new BadRequestException(error.message);
+            }
+            throw error;
         }
     }
 }

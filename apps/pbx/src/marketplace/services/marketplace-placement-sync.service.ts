@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { MarketplaceBxClient } from '../clients/marketplace-bx.client';
 import { MarketplaceInstallRepository } from '../persistence/marketplace-install.repository';
+import { MarketplacePlacementReader } from './marketplace-placement.reader';
 import {
     DesiredBinding,
     getDesiredBindingsForWidgets,
@@ -14,7 +14,7 @@ import {
  *
  * Желаемое — getDesiredBindingsForWidgets(кодов из настройки портала
  * `app_widgets`): пары «виджет × место встройки» из манифеста. Факт —
- * placement.list на портале (Битрикс возвращает привязки нашего
+ * placement.get на портале (MarketplacePlacementReader — привязки нашего
  * приложения). Синхронизация: bind недостающих пар, unbind лишних НАШИХ
  * (виджет убрали из списка / из манифеста). Идемпотентна — повторный
  * запуск ничего не меняет. Пустой список — полный no-op: ничего не
@@ -50,21 +50,14 @@ interface ActualBinding {
 export class MarketplacePlacementSyncService {
     private readonly logger = new Logger(MarketplacePlacementSyncService.name);
 
-    /** Публичный URL этого API — база HANDLER-URL виджетов */
-    readonly apiPublicUrl: string;
-
     constructor(
         private readonly bxClient: MarketplaceBxClient,
         private readonly repository: MarketplaceInstallRepository,
-        private readonly configService: ConfigService,
-    ) {
-        this.apiPublicUrl =
-            this.configService.get<string>('MARKETPLACE_API_PUBLIC_URL') ??
-            'https://api.pbx.april-app.ru';
-    }
+        private readonly reader: MarketplacePlacementReader,
+    ) {}
 
     handlerFor(code: string): string {
-        return `${this.apiPublicUrl}/api/bitrix-marketplace/placement/${code}`;
+        return `${this.reader.apiPublicUrl}/api/bitrix-marketplace/placement/${code}`;
     }
 
     /**
@@ -236,33 +229,14 @@ export class MarketplacePlacementSyncService {
         domain: string,
         accessToken: string,
     ): Promise<ActualBinding[]> {
-        const response = await this.bxClient.listPlacements(
-            domain,
-            accessToken,
-        );
-        if (!response.ok || !Array.isArray(response.result)) {
-            // list не удался — считаем, что привязок нет (bind идемпотентен)
-            if (!response.ok) {
-                this.logger.warn(
-                    `placement.list failed: domain=${domain} ${response.error ?? ''}`,
-                );
-            }
-            return [];
+        const live = await this.reader.fetch(domain, accessToken);
+        if (!live.ok) {
+            // список не получен — считаем, что привязок нет (bind идемпотентен)
+            this.logger.warn(
+                `placement.get failed: domain=${domain} ${live.error ?? ''}`,
+            );
         }
-        return (response.result as unknown[])
-            .map(item => {
-                const record = item as Record<string, unknown>;
-                const placement =
-                    typeof record.placement === 'string'
-                        ? record.placement
-                        : undefined;
-                const handler =
-                    typeof record.handler === 'string'
-                        ? record.handler
-                        : undefined;
-                return placement && handler ? { placement, handler } : null;
-            })
-            .filter((item): item is ActualBinding => item !== null);
+        return live.bindings;
     }
 
     private bindingKey(placement: string, handler: string): string {
@@ -274,13 +248,11 @@ export class MarketplacePlacementSyncService {
     }
 
     private isOurHandler(handler: string): boolean {
-        return handler.startsWith(
-            `${this.apiPublicUrl}/api/bitrix-marketplace/placement/`,
-        );
+        return this.reader.isOurHandler(handler);
     }
 
     private codeFromHandler(handler: string): string {
-        return handler.split('/').pop() ?? handler;
+        return this.reader.widgetOf(handler);
     }
 
     private productFromHandler(handler: string): string {

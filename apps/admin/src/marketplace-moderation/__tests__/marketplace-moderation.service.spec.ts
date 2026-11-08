@@ -387,6 +387,18 @@ describe('MarketplaceModerationService (approve/block заявок)', () => {
         );
     });
 
+    it('livePlacements: прокси в pbx placements/live, ответ pbx отдаётся как есть', async () => {
+        const live = { ok: true, error: null, bindings: [] };
+        httpPost.mockReturnValue(of({ data: { data: live } }));
+
+        await expect(service.livePlacements(7)).resolves.toEqual(live);
+        expect(httpPost).toHaveBeenCalledWith(
+            'https://pbx.test/api/bitrix-marketplace/admin/placements/live',
+            expect.objectContaining({ memberId: 'member-1' }),
+            expect.anything(),
+        );
+    });
+
     it('placementsRefresh несуществующего портала → NotFoundException', async () => {
         repo.findPortalById.mockResolvedValue(null);
         await expect(service.placementsRefresh(99)).rejects.toBeInstanceOf(

@@ -367,3 +367,68 @@ export class PbxActionResultDto {
     })
     details?: string;
 }
+
+/** Привязка виджета на портале — как её видит Битрикс сейчас. */
+export class LivePlacementBindingDto {
+    @ApiProperty({
+        description: 'Место встройки в Битриксе.',
+        example: 'CRM_DEAL_DETAIL_TAB',
+        type: String,
+    })
+    placement!: string;
+
+    @ApiProperty({
+        description: 'Адрес обработчика виджета.',
+        example:
+            'https://api.pbx.april-app.ru/api/bitrix-marketplace/placement/event-sales',
+        type: String,
+    })
+    handler!: string;
+
+    @ApiProperty({
+        description: 'Название вкладки/пункта в Битриксе.',
+        example: 'Звонки',
+        type: String,
+        nullable: true,
+    })
+    title!: string | null;
+
+    @ApiProperty({
+        description: 'Привязка приложения April.',
+        example: true,
+        type: Boolean,
+    })
+    ours!: boolean;
+
+    @ApiProperty({
+        description: 'Код виджета April; null — чужая привязка.',
+        example: 'event-sales',
+        type: String,
+        nullable: true,
+    })
+    widget!: string | null;
+}
+
+/** Живой список привязок виджетов портала (pbx → placement.get). */
+export class LivePlacementsDto {
+    @ApiProperty({
+        description: 'Битрикс отдал список привязок.',
+        example: true,
+        type: Boolean,
+    })
+    ok!: boolean;
+
+    @ApiProperty({
+        description: 'Ответ Битрикса при ошибке.',
+        example: null,
+        type: String,
+        nullable: true,
+    })
+    error!: string | null;
+
+    @ApiProperty({
+        description: 'Привязки виджетов на портале сейчас.',
+        type: [LivePlacementBindingDto],
+    })
+    bindings!: LivePlacementBindingDto[];
+}

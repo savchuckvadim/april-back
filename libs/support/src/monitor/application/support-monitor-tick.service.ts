@@ -15,6 +15,7 @@ import {
     SupportMemoryMode,
     SupportMonitorStore,
 } from '../infrastructure/support-monitor.store';
+import { SupportDialogHistoryService } from './support-dialog-history.service';
 import { SupportMonitorOptions } from './support-monitor-options';
 import {
     formatRunSummary,
@@ -40,7 +41,8 @@ const memoryModeOf = (options: SupportMonitorOptions): SupportMemoryMode =>
     options.dryRun ? 'dry' : 'live';
 
 /**
- * Один такт мониторинга линии: прочитать → решить → разослать → запомнить.
+ * Один такт мониторинга линии: прочитать → решить → разослать → запомнить
+ * → отметить в истории обращений.
  *
  * Инстанс Битрикса портала линии берётся per-call через PBXService и в
  * `this` не хранится: race condition между порталами исключён (CLAUDE.md).
@@ -53,6 +55,7 @@ export class SupportMonitorTickService {
         private readonly pbx: PBXService,
         private readonly store: SupportMonitorStore,
         private readonly dispatcher: SupportSignalDispatcher,
+        private readonly history: SupportDialogHistoryService,
     ) {}
 
     /** Боевой такт крона. «Только считать» — разбор и журнал без отправки. */
@@ -115,6 +118,8 @@ export class SupportMonitorTickService {
         }
 
         const result = this.reportOf(domain, options, evaluation, signals, now);
+        // История обращений для статистики порталов; ошибки БД не мешают такту.
+        await this.history.record(result, now);
         this.log(result);
         return result;
     }

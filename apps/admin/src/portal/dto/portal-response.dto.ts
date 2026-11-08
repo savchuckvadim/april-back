@@ -19,6 +19,8 @@ export class AdminPortalResponseDto {
         this.number = portal.number;
         this.created_at = portal.created_at;
         this.updated_at = portal.updated_at;
+        this.member_id = portal.member_id;
+        this.approval_status = portal.approval_status;
     }
     @ApiProperty({
         description: 'Portal ID',
@@ -89,6 +91,24 @@ export class AdminPortalResponseDto {
         type: String,
     })
     updated_at?: Date | null;
+
+    @ApiPropertyOptional({
+        description:
+            'member_id портала Битрикс24 — постоянный идентификатор (не меняется при смене домена); появляется после установки приложения.',
+        example: 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6',
+        type: String,
+        nullable: true,
+    })
+    member_id?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Допуск портала: pending — ждёт одобрения, approved — допущен, blocked — отключён; пусто — действующий клиент (легаси).',
+        example: 'approved',
+        type: String,
+        nullable: true,
+    })
+    approval_status?: string | null;
 }
 
 export class AdminPortalWithRelationsResponseDto extends AdminPortalResponseDto {

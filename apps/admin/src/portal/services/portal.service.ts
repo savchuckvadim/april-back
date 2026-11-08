@@ -137,6 +137,8 @@ export class AdminPortalService {
             number: portal.number,
             created_at: portal.created_at,
             updated_at: portal.updated_at,
+            member_id: portal.member_id,
+            approval_status: portal.approval_status,
         };
     }
     private mapToWithRelationsResponseDto(

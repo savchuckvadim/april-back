@@ -704,9 +704,94 @@ model Portal {
   questionnaires                 PortalQuestionnaire[]
   questionnaireItems             PortalQuestionnaireItem[]
   vendorSuperUsers               VendorSuperUser[]
+  portalUsers                    PortalUser[]
+  telegramBindings               TelegramBinding[]
 
   @@index([client_id], map: "portals_client_id_foreign")
   @@map("portals")
+}
+
+/// Членство учётной записи кабинета клиента (`users`) в портале (libs/cabinet):
+/// `role` owner — корневой пользователь организации (доступы, передача прав),
+/// member — сотрудник с доступом; `bitrix_user_id` связывает учётку с
+/// сотрудником портала из сессии фрейма; `revoked_at` — доступ снят.
+/// Таблица добавлена ручной правкой (db pull запрещён) — миграция
+/// online/database/migrations/2026_11_08_100000_create_portal_users_table.php
+model PortalUser {
+  id           String    @id @db.Char(36)
+  portalId     BigInt    @map("portal_id") @db.UnsignedBigInt
+  userId       BigInt    @map("user_id") @db.UnsignedBigInt
+  bitrixUserId String?   @map("bitrix_user_id") @db.VarChar(32)
+  role         String    @default("member") @db.VarChar(16)
+  invitedBy    String?   @map("invited_by") @db.VarChar(255)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamp(0)
+  createdAt    DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime? @map("updated_at") @db.Timestamp(0)
+
+  portal Portal @relation(fields: [portalId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portal_users_portal_id_foreign")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portal_users_user_id_foreign")
+
+  @@unique([portalId, userId], map: "portal_users_portal_user_unique")
+  @@index([portalId, bitrixUserId], map: "portal_users_portal_bitrix_index")
+  @@index([userId], map: "portal_users_user_id_foreign")
+  @@map("portal_users")
+}
+
+/// Привязка Telegram-чата к человеку на портале (клиентский бот April,
+/// libs/cabinet): кого привязали — сотрудник портала `bitrix_user_id`
+/// и/или учётка кабинета `user_id`; один чат может быть привязан к
+/// нескольким порталам; `revoked_at` — отвязка без удаления.
+/// Таблица добавлена ручной правкой (db pull запрещён) — миграция
+/// online/database/migrations/2026_11_08_110000_create_telegram_bindings_table.php
+model TelegramBinding {
+  id               String    @id @db.Char(36)
+  portalId         BigInt    @map("portal_id") @db.UnsignedBigInt
+  userId           BigInt?   @map("user_id") @db.UnsignedBigInt
+  bitrixUserId     String?   @map("bitrix_user_id") @db.VarChar(32)
+  chatId           BigInt    @map("chat_id")
+  telegramUsername String?   @map("telegram_username") @db.VarChar(255)
+  displayName      String?   @map("display_name") @db.VarChar(255)
+  createdBy        String?   @map("created_by") @db.VarChar(255)
+  revokedAt        DateTime? @map("revoked_at") @db.Timestamp(0)
+  createdAt        DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt        DateTime? @map("updated_at") @db.Timestamp(0)
+
+  portal Portal @relation(fields: [portalId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "telegram_bindings_portal_id_foreign")
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "telegram_bindings_user_id_foreign")
+
+  @@unique([portalId, chatId], map: "telegram_bindings_portal_chat_unique")
+  @@index([portalId, bitrixUserId], map: "telegram_bindings_portal_bitrix_index")
+  @@index([userId], map: "telegram_bindings_user_id_foreign")
+  @@map("telegram_bindings")
+}
+
+/// История обращений в линию поддержки April (libs/support): строка на
+/// сессию открытой линии; монитор поддержки отмечает открытые на каждом
+/// проходе, пропавшие из открытых — closed_at. client_portal — портал
+/// клиента по сайту пользователя Битрикс24-сети (может быть пусто).
+/// Таблица добавлена ручной правкой (db pull запрещён) — миграция
+/// online/database/migrations/2026_11_08_120000_create_support_dialogs_table.php
+model SupportDialog {
+  id               String    @id @db.Char(36)
+  lineDomain       String    @map("line_domain") @db.VarChar(255)
+  sessionId        BigInt    @map("session_id") @db.UnsignedBigInt
+  chatId           BigInt    @map("chat_id") @db.UnsignedBigInt
+  lineId           Int       @map("line_id") @db.UnsignedInt
+  clientPortal     String?   @map("client_portal") @db.VarChar(255)
+  clientName       String?   @map("client_name") @db.VarChar(255)
+  operatorName     String?   @map("operator_name") @db.VarChar(255)
+  maxWaitedMinutes Int       @default(0) @map("max_waited_minutes") @db.UnsignedInt
+  firstSeenAt      DateTime? @map("first_seen_at") @db.Timestamp(0)
+  lastSeenAt       DateTime? @map("last_seen_at") @db.Timestamp(0)
+  answeredAt       DateTime? @map("answered_at") @db.Timestamp(0)
+  closedAt         DateTime? @map("closed_at") @db.Timestamp(0)
+  createdAt        DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt        DateTime? @map("updated_at") @db.Timestamp(0)
+
+  @@unique([lineDomain, sessionId], map: "support_dialogs_line_session_unique")
+  @@index([lineDomain, closedAt], map: "support_dialogs_line_closed_index")
+  @@index([clientPortal, firstSeenAt], map: "support_dialogs_portal_seen_index")
+  @@map("support_dialogs")
 }
 
 /// Настройки AI-отчётности по звонкам на конкретный портал.
@@ -1408,22 +1493,24 @@ model timezones {
 }
 
 model User {
-  id                        BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
-  name                      String    @db.VarChar(255)
-  surname                   String    @db.VarChar(255)
-  email                     String?   @unique(map: "users_email_unique") @db.VarChar(255)
-  photo                     String?   @db.VarChar(255)
-  role_id                   BigInt    @db.UnsignedBigInt
-  email_verified_at         DateTime? @db.Timestamp(0)
-  password                  String    @db.VarChar(255)
-  two_factor_secret         String?   @db.Text
-  two_factor_recovery_codes String?   @db.Text
-  remember_token            String?   @db.VarChar(100)
-  created_at                DateTime? @db.Timestamp(0)
-  updated_at                DateTime? @db.Timestamp(0)
-  client_id                 BigInt?   @db.UnsignedBigInt
-  bitrix_id                 String?   @db.VarChar(255)
-  clients                   Client?   @relation("ClientUsers", fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "users_client_id_foreign")
+  id                        BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  name                      String            @db.VarChar(255)
+  surname                   String            @db.VarChar(255)
+  email                     String?           @unique(map: "users_email_unique") @db.VarChar(255)
+  photo                     String?           @db.VarChar(255)
+  role_id                   BigInt            @db.UnsignedBigInt
+  email_verified_at         DateTime?         @db.Timestamp(0)
+  password                  String            @db.VarChar(255)
+  two_factor_secret         String?           @db.Text
+  two_factor_recovery_codes String?           @db.Text
+  remember_token            String?           @db.VarChar(100)
+  created_at                DateTime?         @db.Timestamp(0)
+  updated_at                DateTime?         @db.Timestamp(0)
+  client_id                 BigInt?           @db.UnsignedBigInt
+  bitrix_id                 String?           @db.VarChar(255)
+  clients                   Client?           @relation("ClientUsers", fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "users_client_id_foreign")
+  portalUsers               PortalUser[]
+  telegramBindings          TelegramBinding[]
 
   @@index([client_id], map: "users_client_id_foreign")
   @@map("users")

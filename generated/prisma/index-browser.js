@@ -639,6 +639,24 @@ exports.Prisma.TelegramBindingScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.SupportDialogScalarFieldEnum = {
+  id: 'id',
+  lineDomain: 'lineDomain',
+  sessionId: 'sessionId',
+  chatId: 'chatId',
+  lineId: 'lineId',
+  clientPortal: 'clientPortal',
+  clientName: 'clientName',
+  operatorName: 'operatorName',
+  maxWaitedMinutes: 'maxWaitedMinutes',
+  firstSeenAt: 'firstSeenAt',
+  lastSeenAt: 'lastSeenAt',
+  answeredAt: 'answeredAt',
+  closedAt: 'closedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.PortalAiSettingsScalarFieldEnum = {
   id: 'id',
   portal_id: 'portal_id',
@@ -2246,6 +2264,14 @@ exports.Prisma.TelegramBindingOrderByRelevanceFieldEnum = {
   createdBy: 'createdBy'
 };
 
+exports.Prisma.SupportDialogOrderByRelevanceFieldEnum = {
+  id: 'id',
+  lineDomain: 'lineDomain',
+  clientPortal: 'clientPortal',
+  clientName: 'clientName',
+  operatorName: 'operatorName'
+};
+
 exports.Prisma.JsonNullValueFilter = {
   DbNull: Prisma.DbNull,
   JsonNull: Prisma.JsonNull,
@@ -3108,6 +3134,7 @@ exports.Prisma.ModelName = {
   Portal: 'Portal',
   PortalUser: 'PortalUser',
   TelegramBinding: 'TelegramBinding',
+  SupportDialog: 'SupportDialog',
   PortalAiSettings: 'PortalAiSettings',
   PortalAppSettings: 'PortalAppSettings',
   VendorSuperUser: 'VendorSuperUser',

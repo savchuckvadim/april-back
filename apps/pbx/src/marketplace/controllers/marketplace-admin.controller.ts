@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Get,
+    HttpCode,
+    Post,
+    Query,
+    UseGuards,
+} from '@nestjs/common';
 import {
     ApiBody,
     ApiHeader,
@@ -12,6 +20,8 @@ import { MarketplaceProductService } from '../services/marketplace-product.servi
 import {
     AdminInstallDto,
     AdminInstallsQueryDto,
+    LivePlacementsDto,
+    LivePlacementsResultDto,
     PlacementSyncResultDto,
     RefreshPlacementsDto,
 } from '../dto/marketplace-admin.dto';
@@ -78,6 +88,32 @@ export class MarketplaceAdminController {
         @Body() dto: RefreshPlacementsDto,
     ): Promise<PlacementSyncResultDto> {
         return this.adminService.refreshPlacements(dto);
+    }
+
+    @ApiOperation({
+        summary: 'Привязки виджетов на портале сейчас',
+        description:
+            'Живой список из Битрикса (placement.get): наши и чужие привязки. Только чтение — ничего не ставит и не снимает.',
+    })
+    @ApiHeader({
+        name: 'X-Admin-Key',
+        description: 'Ключ администратора (env MARKETPLACE_ADMIN_KEY)',
+        required: true,
+    })
+    @ApiBody({
+        type: LivePlacementsDto,
+        description: 'Портал: memberId или domain.',
+    })
+    @ApiOkResponse({
+        description: 'Привязки виджетов портала.',
+        type: LivePlacementsResultDto,
+    })
+    @Post('placements/live')
+    @HttpCode(200)
+    async livePlacements(
+        @Body() dto: LivePlacementsDto,
+    ): Promise<LivePlacementsResultDto> {
+        return this.adminService.livePlacements(dto);
     }
 
     @ApiOperation({

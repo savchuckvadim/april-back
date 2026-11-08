@@ -3,12 +3,14 @@ import { LlmGatewayModule } from '@lib/llm-gateway';
 import { PortalRepository } from '@lib/portal-lib/store/portal.repository';
 import { PortalPrismaRepository } from '@lib/portal-lib/store/portal.prisma.repository';
 import { SupportMonitorAdminController } from './admin/support-monitor-admin.controller';
+import { SupportHistoryAdminController } from './admin/support-history-admin.controller';
 import { SupportGuideAdminController } from '../guide/admin/support-guide-admin.controller';
 import { SupportGuideService } from '../guide/support-guide.service';
 import { SupportMonitorModule } from './support-monitor.module';
 
 /**
- * Админ-слой поддержки клиентов: предпросмотр монитора и путеводитель
+ * Админ-слой поддержки клиентов: предпросмотр монитора, статистика
+ * обращений порталов и путеводитель
  * раздела «Поддержка». Импортируется ТОЛЬКО в apps/admin
  * (ai/rules/app-api-surface.md), чтобы ручки не попали в Swagger apps/bot.
  *
@@ -18,7 +20,11 @@ import { SupportMonitorModule } from './support-monitor.module';
  */
 @Module({
     imports: [SupportMonitorModule, LlmGatewayModule],
-    controllers: [SupportMonitorAdminController, SupportGuideAdminController],
+    controllers: [
+        SupportMonitorAdminController,
+        SupportHistoryAdminController,
+        SupportGuideAdminController,
+    ],
     providers: [
         { provide: PortalRepository, useClass: PortalPrismaRepository },
         SupportGuideService,
