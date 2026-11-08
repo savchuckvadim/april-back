@@ -2,8 +2,10 @@ import {
     Body,
     Controller,
     Get,
+    HttpCode,
     NotFoundException,
     Param,
+    Post,
     Put,
 } from '@nestjs/common';
 import {
@@ -23,8 +25,17 @@ import {
     VendorSettingDto,
     VendorSettingsResponseDto,
 } from './dto/vendor-settings.dto';
-import { VendorTelegramBotsResponseDto } from './dto/vendor-telegram-bots.dto';
+import {
+    VendorTelegramBotsResponseDto,
+    VendorTelegramBotTestDto,
+    VendorTelegramBotTestResultDto,
+} from './dto/vendor-telegram-bots.dto';
 import { VendorTelegramBotsService } from './services/vendor-telegram-bots.service';
+import { VendorTelegramBotTestService } from './services/vendor-telegram-bot-test.service';
+import {
+    isTelegramBotKey,
+    TELEGRAM_BOT_KEYS,
+} from './services/telegram-bots.catalog';
 
 /**
  * Настройки приложения уровня вендора (April): исходящий прокси за рубеж и
@@ -38,6 +49,7 @@ export class VendorSettingsController {
     constructor(
         private readonly service: VendorSettingsService,
         private readonly telegramBotsCheck: VendorTelegramBotsService,
+        private readonly telegramBotTest: VendorTelegramBotTestService,
     ) {}
 
     @Get()
@@ -68,6 +80,38 @@ export class VendorSettingsController {
         return new VendorTelegramBotsResponseDto(
             await this.telegramBotsCheck.check(),
         );
+    }
+
+    @Post('telegram-bots/:key/test')
+    @HttpCode(200)
+    @ApiOperation({
+        summary: 'Тестовое сообщение через бота',
+        description:
+            'Поддержка — в чат поддержки, тревоги — в TELEGRAM_ADMIN_CHAT_ID, либо в указанный chat id. Клиентского бота проверяют у привязанного чата в карточке портала. Не доставлено — причина по-русски.',
+    })
+    @ApiParam({
+        name: 'key',
+        description: 'Бот — имя настройки или переменной с его токеном.',
+        enum: TELEGRAM_BOT_KEYS,
+        example: 'SUPPORT_TELEGRAM_BOT_TOKEN',
+    })
+    @ApiBody({
+        type: VendorTelegramBotTestDto,
+        description: 'Куда отправить (необязательно).',
+    })
+    @ApiOkResponse({
+        type: VendorTelegramBotTestResultDto,
+        description: 'Итог отправки.',
+    })
+    @ApiNotFoundResponse({ description: 'Такого бота нет.' })
+    async testTelegramBot(
+        @Param('key') key: string,
+        @Body() dto: VendorTelegramBotTestDto,
+    ): Promise<VendorTelegramBotTestResultDto> {
+        if (!isTelegramBotKey(key)) {
+            throw new NotFoundException(`Бота «${key}» нет`);
+        }
+        return this.telegramBotTest.send(key, dto.chatId);
     }
 
     @Put(':key')

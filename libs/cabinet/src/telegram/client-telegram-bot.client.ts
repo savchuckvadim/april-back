@@ -101,6 +101,20 @@ export class ClientTelegramBotClient {
 
     /** @returns true — Telegram принял сообщение */
     async sendMessage(chatId: bigint | number, html: string): Promise<boolean> {
+        const error = await this.trySendMessage(chatId, html);
+        if (error) {
+            this.logger.warn(
+                `Клиентский бот: сообщение в чат ${chatId.toString()} не отправлено: ${error}`,
+            );
+        }
+        return error === null;
+    }
+
+    /** Отправка с причиной отказа (проверка канала из админки). @returns null — доставлено */
+    async trySendMessage(
+        chatId: bigint | number,
+        html: string,
+    ): Promise<string | null> {
         try {
             await this.call('sendMessage', {
                 chat_id: chatId.toString(),
@@ -108,12 +122,9 @@ export class ClientTelegramBotClient {
                 parse_mode: 'HTML',
                 disable_web_page_preview: true,
             });
-            return true;
+            return null;
         } catch (error) {
-            this.logger.warn(
-                `Клиентский бот: сообщение в чат ${chatId.toString()} не отправлено: ${errorText(error)}`,
-            );
-            return false;
+            return errorText(error);
         }
     }
 

@@ -3,7 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
 import { render } from '@react-email/components';
 import { CabinetPasswordLinkTemplate } from '@lib/mail/templates/cabinet-password-link.template';
-import { CabinetMailer, PasswordLinkMail } from './cabinet-mailer.port';
+import {
+    CabinetMailer,
+    MailTestResult,
+    PasswordLinkMail,
+} from './cabinet-mailer.port';
 
 /** Отправитель писем по умолчанию — если в env нет SMTP_FROM. */
 const DEFAULT_FROM = 'manager@april-app.ru';
@@ -46,7 +50,7 @@ export class CabinetMailerService extends CabinetMailer {
             );
             await this.mailer.sendMail({
                 to: mail.to,
-                from: `"April" <${this.config.get<string>('SMTP_FROM') || DEFAULT_FROM}>`,
+                from: this.from(),
                 subject:
                     mail.purpose === 'setup'
                         ? 'Доступ в кабинет April'
@@ -62,6 +66,33 @@ export class CabinetMailerService extends CabinetMailer {
             );
             return false;
         }
+    }
+
+    async sendTest(to: string): Promise<MailTestResult> {
+        if (!this.mailer || !this.isConfigured()) {
+            return {
+                ok: false,
+                error: 'Почта не настроена: в окружении нет MAIL_HOST (или у приложения нет почтового транспорта)',
+            };
+        }
+        try {
+            await this.mailer.sendMail({
+                to,
+                from: this.from(),
+                subject: 'Проверка почты April',
+                html: '<p>Это тестовое письмо из админки April: почта для ссылок на пароль и кодов подключения работает.</p>',
+            });
+            return { ok: true, error: null };
+        } catch (error) {
+            return {
+                ok: false,
+                error: error instanceof Error ? error.message : String(error),
+            };
+        }
+    }
+
+    private from(): string {
+        return `"April" <${this.config.get<string>('SMTP_FROM') || DEFAULT_FROM}>`;
     }
 
     private isConfigured(): boolean {

@@ -15,6 +15,8 @@ import {
  * «упала база» должна уйти, когда настройки из админки (в базе) недоступны.
  */
 export const TELEGRAM_ALERTS_BOT_TOKEN_ENV = 'TELEGRAM_BOT_TOKEN';
+/** Чат, куда бот тревог шлёт сообщения (тоже только env). */
+export const TELEGRAM_ALERTS_CHAT_ID_ENV = 'TELEGRAM_ADMIN_CHAT_ID';
 
 /**
  * Единственный отправитель тревог в Telegram: логгер-транспорт, фильтр
@@ -52,7 +54,7 @@ export class TelegramService {
             (configService.get<string>(key) ?? '').trim();
         this.appName = read('APP_NAME') || 'Monorepo';
         const token = read(TELEGRAM_ALERTS_BOT_TOKEN_ENV);
-        const chatId = read('TELEGRAM_ADMIN_CHAT_ID');
+        const chatId = read(TELEGRAM_ALERTS_CHAT_ID_ENV);
         this.disabledReason =
             read('WITH_TELEGRAM') !== 'true'
                 ? 'WITH_TELEGRAM не равен true'
