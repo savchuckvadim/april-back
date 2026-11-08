@@ -5,6 +5,10 @@ import { AxiosError, AxiosHeaders, AxiosResponse } from 'axios';
 import { RedisService } from '@/core/redis/redis.service';
 import { MarketplaceTokenService } from '../refresh/marketplace-token.service';
 import {
+    MARKETPLACE_SHARED_APP_ENV,
+    MarketplaceAppSecretsResolver,
+} from '../refresh/marketplace-app-secrets.resolver';
+import {
     ActiveInstall,
     MarketplaceAuthRepository,
 } from '../persistence/marketplace-auth.repository';
@@ -79,25 +83,30 @@ describe('MarketplaceTokenService (refresh токенов маркетплейс
         };
         httpGet = jest.fn();
 
-        const redisService = {
-            getClient: () => redisClient,
-        } as unknown as RedisService;
-        const http = { get: httpGet } as unknown as HttpService;
+        // Сценарии ниже написаны для режима Маркета (общая пара + env);
+        // режим «только свои ключи» — отдельный describe в конце.
         const configService = {
             get: jest.fn((key: string) => {
                 if (key === 'MARKETPLACE_CLIENT_ID') return 'app.client.id';
                 if (key === 'MARKETPLACE_CLIENT_SECRET') return 'secret';
+                if (key === MARKETPLACE_SHARED_APP_ENV) return 'true';
                 return undefined;
             }),
         } as unknown as ConfigService;
 
-        service = new MarketplaceTokenService(
-            repo as unknown as MarketplaceAuthRepository,
-            redisService,
-            http,
-            configService,
-        );
+        service = makeService(configService);
     });
+
+    function makeService(config: ConfigService): MarketplaceTokenService {
+        const repository = repo as unknown as MarketplaceAuthRepository;
+        return new MarketplaceTokenService(
+            repository,
+            { getClient: () => redisClient } as unknown as RedisService,
+            { get: httpGet } as unknown as HttpService,
+            config,
+            new MarketplaceAppSecretsResolver(repository, config),
+        );
+    }
 
     it('свежий токен (>5 мин до истечения) — отдаётся без refresh', async () => {
         repo.findActiveInstall.mockResolvedValue(makeInstall(60 * 60 * 1000));
@@ -382,24 +391,90 @@ describe('MarketplaceTokenService (refresh токенов маркетплейс
         });
     });
 
-    it('нет ни строки в БД, ни env-кред → OAUTH_UNAVAILABLE с понятным текстом', async () => {
+    it('режим Маркета: нет ни строки в БД, ни env-кред → OAUTH_UNAVAILABLE с понятным текстом', async () => {
         repo.findActiveInstall.mockResolvedValue(makeInstall(0));
-        const emptyConfig = {
-            get: jest.fn().mockReturnValue(undefined),
+        const sharedOnly = {
+            get: jest.fn((key: string) =>
+                key === MARKETPLACE_SHARED_APP_ENV ? 'true' : undefined,
+            ),
         } as unknown as ConfigService;
-        const bare = new MarketplaceTokenService(
-            repo as unknown as MarketplaceAuthRepository,
-            { getClient: () => redisClient } as unknown as RedisService,
-            { get: httpGet } as unknown as HttpService,
-            emptyConfig,
-        );
 
         await expect(
-            bare.getFreshAccessToken({ memberId: 'member-1' }),
+            makeService(sharedOnly).getFreshAccessToken({
+                memberId: 'member-1',
+            }),
         ).rejects.toMatchObject({
             code: MarketplaceTokenErrorCode.OAUTH_UNAVAILABLE,
         });
         expect(httpGet).not.toHaveBeenCalled();
+    });
+
+    describe('только свои ключи портала (по умолчанию — Маркета в April нет)', () => {
+        const localOnly = {
+            get: jest.fn((key: string) =>
+                key === 'MARKETPLACE_CLIENT_ID'
+                    ? 'app.client.id'
+                    : key === 'MARKETPLACE_CLIENT_SECRET'
+                      ? 'secret'
+                      : undefined,
+            ),
+        } as unknown as ConfigService;
+
+        it('ключей нет → APP_KEYS_MISSING, общая пара и env не используются', async () => {
+            repo.findActiveInstall.mockResolvedValue(makeInstall(0));
+            repo.findAppSecrets.mockResolvedValue(null);
+
+            await expect(
+                makeService(localOnly).getFreshAccessToken({
+                    memberId: 'member-1',
+                }),
+            ).rejects.toMatchObject({
+                code: MarketplaceTokenErrorCode.APP_KEYS_MISSING,
+            });
+            expect(repo.findAppSecrets.mock.calls.map(c => c[0])).toEqual([
+                'garant_local:mid:member-1',
+                'garant_local:april-dev.bitrix24.ru',
+            ]);
+            expect(httpGet).not.toHaveBeenCalled();
+        });
+
+        it('wrong_client → APP_KEYS_INVALID (чужие ключи, а не «портал спал»)', async () => {
+            repo.findActiveInstall.mockResolvedValue(makeInstall(0));
+            repo.findAppSecrets.mockResolvedValue({
+                clientId: 'local.x.1',
+                clientSecret: 'wrong-secret',
+            });
+            httpGet.mockReturnValue(
+                of(axiosResponse({ error: 'wrong_client' })),
+            );
+
+            await expect(
+                makeService(localOnly).getFreshAccessToken({
+                    memberId: 'member-1',
+                }),
+            ).rejects.toMatchObject({
+                code: MarketplaceTokenErrorCode.APP_KEYS_INVALID,
+            });
+            expect(repo.logTokenEvent).toHaveBeenCalledWith(
+                expect.objectContaining({ status: 'error' }),
+            );
+        });
+
+        it('forceRefresh обновляет даже свежий токен (проверка ключей)', async () => {
+            repo.findActiveInstall.mockResolvedValue(
+                makeInstall(60 * 60 * 1000),
+            );
+            repo.findAppSecrets.mockResolvedValue({
+                clientId: 'local.x.1',
+                clientSecret: 'ok-secret',
+            });
+            okRefresh();
+
+            await makeService(localOnly).forceRefresh({ memberId: 'member-1' });
+
+            expect(httpGet).toHaveBeenCalledTimes(1);
+            expect(repo.saveRefreshedTokens).toHaveBeenCalled();
+        });
     });
 
     it('MarketplaceTokenError несёт код и русское сообщение', () => {

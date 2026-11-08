@@ -5,4 +5,8 @@ export * from './domain/marketplace-provision-job.interface';
 export * from './persistence/marketplace-auth.repository';
 export * from './persistence/marketplace-component-state.repository';
 export * from './refresh/marketplace-token.service';
+export * from './refresh/marketplace-app-secrets.resolver';
+export * from './local-app/local-app.constants';
+export * from './local-app/local-app-connection.service';
+export * from './persistence/local-app-keys.repository';
 export * from './invite/invite-code.util';

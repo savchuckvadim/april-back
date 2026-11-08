@@ -16,6 +16,13 @@ export enum MarketplaceTokenErrorCode {
     REFRESH_INVALID = 'refresh_invalid',
     /** OAuth-сервер Битрикса недоступен или ответил неожиданно */
     OAUTH_UNAVAILABLE = 'oauth_unavailable',
+    /** Ключи локального приложения портала не внесены (garant_local:…) */
+    APP_KEYS_MISSING = 'app_keys_missing',
+    /**
+     * Битрикс отверг ключи (wrong_client): внесённые client_id/secret не от
+     * приложения, которое установлено на портале.
+     */
+    APP_KEYS_INVALID = 'app_keys_invalid',
 }
 
 export class MarketplaceTokenError extends Error {
