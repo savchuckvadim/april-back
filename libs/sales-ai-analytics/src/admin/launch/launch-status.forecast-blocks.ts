@@ -10,7 +10,12 @@ import {
 import { ruCount, ruPluralForm, RU_FORMS } from '../../model/ru-text.util';
 import type { ReanalysisRunStatus } from '../../contracts/reanalysis.types';
 import type { Phase4BacktestView } from '../services/ai-analytics-phase4.types';
-import { backtestNumbersText, failAdvice } from './launch-status.forecast-text';
+import {
+    backtestNumbersText,
+    computedPhrase,
+    failAdvice,
+    monthPhrase,
+} from './launch-status.forecast-text';
 import { unreadText } from './launch-status.blocks';
 import { parseModelParamsJson, stageFlagOf } from './launch-model-params';
 import {
@@ -48,16 +53,17 @@ export function forecastVerdictText(view: Phase4BacktestView | null): string {
         return 'Проверки точности прогноза ещё не было: сначала «Догнать историю» и «Восстановить прогноз по истории», затем «Проверить точность прогноза».';
     }
     const why = backtestReasonTexts(view.reasons).join('; ');
-    const shadow = `теневых месяцев ${view.shadowMonths} из ${view.shadowMinMonths} нужных, из них по истории восстановлено ${view.replayedMonths}`;
+    const when = `${monthPhrase(view.monthKey)}${computedPhrase(view.generatedAt)}`;
     const numbers = backtestNumbersText(view);
-    const numbersTail = numbers ? `: ${numbers}` : '';
+    const numbersTail = numbers ? ` ${numbers}` : '';
     if (view.status === 'pass') {
-        return `Проверка пройдена (месяц ${view.monthKey}, ${shadow})${numbersTail}. Прогноз можно показывать руководителям.`;
+        return `Проверка пройдена (${when}).${numbersTail} Прогноз можно показывать руководителям.`;
     }
     if (view.status === 'insufficient') {
-        return `Мало данных для проверки (месяц ${view.monthKey}): ${shadow}${why ? `; ${why}` : ''}. Догоните историю и восстановите прогноз, потом проверьте ещё раз.`;
+        const shadow = `месяцев с прогнозом ${view.shadowMonths} из ${view.shadowMinMonths} нужных, из них восстановлено по истории ${view.replayedMonths}`;
+        return `Мало данных для проверки (${when}): ${shadow}${why ? `; ${why}` : ''}. Догоните историю и восстановите прогноз, потом проверьте ещё раз.`;
     }
-    return `Проверка не пройдена (месяц ${view.monthKey}): ${why || 'причина не записана'}${numbers ? ` — ${numbers}` : ''}. ${failAdvice(view)}`;
+    return `Прогноз пока не показываем: проверка не пройдена (${when}).${numbersTail} ${failAdvice(view)}`;
 }
 
 export function forecastBlock(input: LaunchStatusInput): LaunchForecastBlock {

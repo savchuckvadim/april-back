@@ -73,6 +73,8 @@ export enum JobNames {
     SALES_AI_ANALYTICS_OWNER_REPORT_DELIVERY = 'sales-ai-analytics-owner-report-delivery',
     //выгрузка PDF отчёта собственнику из админки: PDF в Redis на сутки
     SALES_AI_ANALYTICS_OWNER_REPORT_EXPORT = 'sales-ai-analytics-owner-report-export',
+    //«обновить всё по порядку» из админки: тик сценария портала (очередь AI_ANALYTICS_ADMIN)
+    SALES_AI_ANALYTICS_REFRESH_TICK = 'sales-ai-analytics-refresh-tick',
 
     //публичные ссылки на KPI-отчёт: фоновая регенерация снимка
     SHARE_LINK_REFRESH = 'share-link-refresh',

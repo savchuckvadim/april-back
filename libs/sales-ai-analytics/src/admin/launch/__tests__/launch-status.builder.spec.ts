@@ -211,10 +211,10 @@ describe('buildLaunchStatus', () => {
             }),
         );
         expect(fail.forecast.reasonTexts).toEqual([
-            'факт попадает в вилку прогноза реже цели',
+            'итог месяца слишком редко попадает в диапазон прогноза «от–до»',
             'новый-код',
         ]);
-        expect(fail.forecast.text).toContain('Проверка не пройдена');
+        expect(fail.forecast.text).toContain('проверка не пройдена');
     });
 
     it('прогноз: битый JSON настроек модели — флаг null и пояснение', () => {

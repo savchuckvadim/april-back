@@ -7,6 +7,8 @@ import { AiAnalyticsPhase4AdminController } from '../controllers/phase4.admin.co
 import { AiAnalyticsPhase4StatusService } from '../services/ai-analytics-phase4-status.service';
 import { AiAnalyticsLaunchAdminController } from '../launch/ai-analytics-launch.admin.controller';
 import { SalesAiAnalyticsLaunchModule } from '../launch/sales-ai-analytics-launch.module';
+import { AiAnalyticsRefreshAdminController } from '../controllers/refresh.admin.controller';
+import { SalesAiAnalyticsRefreshModule } from '../refresh/sales-ai-analytics-refresh.module';
 
 /**
  * Статическая проверка DI-графа админ-слоя AI-аналитики: каждая
@@ -140,5 +142,15 @@ describe('DI-граф админ-слоя AI-аналитики', () => {
 
     it('сервисный модуль аудита остаётся самодостаточным', () => {
         expect(missingIn(SalesAiAnalyticsAuditModule)).toEqual([]);
+    });
+
+    it('«обновить всё»: шаги, тик и воркер получают зависимости; модуль без контроллеров, контроллер — в админ-модуле', () => {
+        expect(missingIn(SalesAiAnalyticsRefreshModule)).toEqual([]);
+        expect(
+            metadataOf(SalesAiAnalyticsRefreshModule, 'controllers'),
+        ).toEqual([]);
+        expect(
+            metadataOf(SalesAiAnalyticsAdminModule, 'controllers'),
+        ).toContain(AiAnalyticsRefreshAdminController);
     });
 });
