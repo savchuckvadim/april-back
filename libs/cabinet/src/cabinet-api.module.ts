@@ -6,6 +6,8 @@ import { CabinetMembersController } from './controllers/cabinet-members.controll
 import { CabinetFrameController } from './controllers/cabinet-frame.controller';
 import { CabinetTelegramController } from './controllers/cabinet-telegram.controller';
 import { CabinetAdminController } from './admin/cabinet-admin.controller';
+import { CabinetGuideAdminController } from './admin/cabinet-guide.admin.controller';
+import { CabinetGuideService } from './guide/cabinet-guide.service';
 import { ClientTelegramWebhookController } from './telegram/webhook/client-telegram-webhook.controller';
 import { ClientTelegramWebhookGuard } from './telegram/webhook/client-telegram-webhook.guard';
 import { ClientTelegramWebhookRegistrar } from './telegram/webhook/client-telegram-webhook.registrar';
@@ -25,11 +27,12 @@ export class CabinetApiModule {}
 
 /**
  * Ручки кабинета для администратора April (`admin/cabinet/*`,
- * @Roles(SUPER_USER)) — подключается ТОЛЬКО в apps/admin.
+ * @Roles(SUPER_USER)) и путеводитель — подключается ТОЛЬКО в apps/admin.
  */
 @Module({
     imports: [CabinetModule],
-    controllers: [CabinetAdminController],
+    controllers: [CabinetAdminController, CabinetGuideAdminController],
+    providers: [CabinetGuideService],
 })
 export class CabinetAdminModule {}
 
