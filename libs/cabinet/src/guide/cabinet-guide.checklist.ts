@@ -81,13 +81,19 @@ export function buildCabinetChecklist(
             `Домен cookie: \`${facts.cookieDomain ?? ''}\`.`,
             '`CABINET_COOKIE_DOMAIN=.april-app.ru` в корневом .env прода (локально пусто — это норма).',
         ),
-        check(
-            'cors',
-            'Сайт кабинета пускают с cookie',
-            facts.corsAllowsSite,
-            `\`CORS_ORIGIN\` содержит ${facts.siteUrl}.`,
-            `Дописать \`${facts.siteUrl}\` в \`CORS_ORIGIN\` корневого .env: вход с сайта ходит в api.pbx с cookie, а с «*» это не работает.`,
-        ),
+        facts.cors === 'unreachable'
+            ? manual(
+                  'cors',
+                  'Сайт кабинета пускают с cookie',
+                  'api.pbx не ответил на проверку — повторите позже (во время выкладки это нормально).',
+              )
+            : check(
+                  'cors',
+                  'Сайт кабинета пускают с cookie',
+                  facts.cors === 'ok',
+                  `api.pbx пускает ${facts.siteUrl} с cookie (проверено запросом, как браузер).`,
+                  `api.pbx не пускает ${facts.siteUrl} с cookie: дописать его в \`CORS_ORIGIN\` окружения pbx — корневой .env, а если в apps/pbx/.env есть свой \`CORS_ORIGIN\`, то туда (он перекрывает корневой). С «*» cookie не работают.`,
+              ),
         check(
             'bot-token',
             'Клиентский Telegram-бот',

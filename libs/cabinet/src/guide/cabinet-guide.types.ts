@@ -46,6 +46,13 @@ export interface CabinetGuideCounters {
     telegramBindings: number;
 }
 
+/**
+ * Пускает ли api.pbx сайт кабинета с cookie (живой preflight): ok — да,
+ * blocked — нет (CORS_ORIGIN pbx без сайта), unreachable — api.pbx не ответил.
+ */
+export const CABINET_CORS_CHECKS = ['ok', 'blocked', 'unreachable'] as const;
+export type CabinetCorsCheck = (typeof CABINET_CORS_CHECKS)[number];
+
 /** Факты, из которых собирается чек-лист (собирает сервис, проверяет чистая функция). */
 export interface CabinetGuideFacts {
     /** Таблицы portal_users и telegram_bindings есть (миграции применены). */
@@ -53,7 +60,7 @@ export interface CabinetGuideFacts {
     authJwtSecretSet: boolean;
     authEnabled: boolean;
     cookieDomain: string | null;
-    corsAllowsSite: boolean;
+    cors: CabinetCorsCheck;
     siteUrl: string;
     botTokenSet: boolean;
     /** Имя бота по ответу Telegram; null — токена нет или Telegram не узнал его. */

@@ -5,6 +5,7 @@ import { PrismaService } from '@lib/core/prisma/prisma.service';
 import { CabinetConfig } from '../config/cabinet.config';
 import type { CabinetRole } from '../domain/cabinet.constants';
 import { ClientTelegramBotClient } from '../telegram/client-telegram-bot.client';
+import { CabinetCorsProbe } from './cabinet-cors.probe';
 import {
     buildCabinetChecklist,
     CABINET_GUIDE_PAGES,
@@ -26,19 +27,11 @@ const PENDING: CabinetRole = 'pending';
 /** Таблицы нет — миграция не применена (Prisma P2021). */
 const TABLE_MISSING = 'P2021';
 
-/** `CORS_ORIGIN` — список через запятую; сравниваем без хвостового «/». */
-export function corsAllows(corsOrigin: string, siteUrl: string): boolean {
-    const site = siteUrl.replace(/\/+$/, '');
-    return corsOrigin
-        .split(',')
-        .map(origin => origin.trim().replace(/\/+$/, ''))
-        .includes(site);
-}
-
 /**
  * Путеводитель «Кабинет клиента» для админки: тексты + живой чек-лист.
- * Окружение — admin (корневой .env общий для pbx, bot и admin), бот —
- * настройка «Telegram-боты» с проверкой у Telegram, счётчики — из БД.
+ * Окружение — admin (корневой .env общий для pbx, bot и admin), CORS —
+ * живым запросом к api.pbx, бот — настройка «Telegram-боты» с проверкой у
+ * Telegram, счётчики — из БД.
  */
 @Injectable()
 export class CabinetGuideService {
@@ -47,24 +40,24 @@ export class CabinetGuideService {
         private readonly cabinetConfig: CabinetConfig,
         private readonly config: ConfigService,
         private readonly bot: ClientTelegramBotClient,
+        private readonly corsProbe: CabinetCorsProbe,
     ) {}
 
     async build(): Promise<CabinetGuide> {
-        const [counters, botTokenSet, botUsername] = await Promise.all([
+        const siteUrl = this.cabinetConfig.siteUrl();
+        const [counters, botTokenSet, botUsername, cors] = await Promise.all([
             this.counters(),
             this.bot.isConfigured(),
             this.bot.botUsername(),
+            this.corsProbe.check(siteUrl),
         ]);
         const facts: CabinetGuideFacts = {
             tablesReady: counters !== null,
             authJwtSecretSet: Boolean(this.env('AUTH_JWT_SECRET')),
             authEnabled: this.env('AUTH_ENABLED') === 'true',
             cookieDomain: this.cabinetConfig.cookieDomain(),
-            corsAllowsSite: corsAllows(
-                this.env('CORS_ORIGIN'),
-                this.cabinetConfig.siteUrl(),
-            ),
-            siteUrl: this.cabinetConfig.siteUrl(),
+            cors,
+            siteUrl,
             botTokenSet,
             botUsername,
             webhookUrl: this.cabinetConfig.telegramWebhookUrl(),
