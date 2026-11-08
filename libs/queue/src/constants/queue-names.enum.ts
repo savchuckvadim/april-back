@@ -74,4 +74,11 @@ export enum QueueNames {
 
     /** Импорт статистики СКАП с Диска в смарт (воркер в event-service) */
     SKAP_IMPORT = 'skap-import',
+
+    /**
+     * Сценарии админки AI-аналитики: «обновить всё по порядку» — тик раз в
+     * минуту двигает шаги (воркер ТОЛЬКО в apps/admin: общий
+     * SALES_KPI_REPORT админке слушать нельзя — Bull уронит чужие джобы).
+     */
+    AI_ANALYTICS_ADMIN = 'ai-analytics-admin',
 }

@@ -31,6 +31,8 @@ import {
 } from '../guide/ai-guide.admin.controller';
 import { AiAnalyticsLaunchAdminController } from '../launch/ai-analytics-launch.admin.controller';
 import { AiAnalyticsOwnerReportExportAdminController } from '../controllers/owner-report-export.admin.controller';
+import { AiAnalyticsRefreshAdminController } from '../controllers/refresh.admin.controller';
+import { SalesAiAnalyticsRefreshModule } from '../refresh/sales-ai-analytics-refresh.module';
 import { SalesAiAnalyticsLaunchModule } from '../launch/sales-ai-analytics-launch.module';
 import { SalesAiAnalyticsAdminModule } from '../sales-ai-analytics-admin.module';
 import { SalesAiAnalyticsAuditModule } from '../sales-ai-analytics-audit.module';
@@ -54,6 +56,7 @@ const ADMIN_CONTROLLERS = [
     AiAnalyticsGuideAdminController,
     AiAnalyticsLaunchAdminController,
     AiAnalyticsOwnerReportExportAdminController,
+    AiAnalyticsRefreshAdminController,
 ];
 
 const metadataOf = (key: string, target: unknown): unknown[] =>
@@ -258,12 +261,13 @@ describe('раскол модулей (ai/rules/app-api-surface.md)', () => {
         );
     });
 
-    it('admin-модуль импортирует ровно четыре сервисных модуля', () => {
+    it('admin-модуль импортирует ровно пять сервисных модулей', () => {
         expect(metadataOf('imports', SalesAiAnalyticsAdminModule)).toEqual([
             SalesAiAnalyticsAuditModule,
             SalesAiAnalyticsProbeModule,
             SalesAiAnalyticsOpsModule,
             SalesAiAnalyticsLaunchModule,
+            SalesAiAnalyticsRefreshModule,
         ]);
     });
 

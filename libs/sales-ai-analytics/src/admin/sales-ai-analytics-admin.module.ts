@@ -6,6 +6,8 @@ import { AiAnalyticsPhase4AdminController } from './controllers/phase4.admin.con
 import { AiAnalyticsPipelineAdminController } from './controllers/pipeline.admin.controller';
 import { AiAnalyticsReanalyzeAdminController } from './controllers/reanalyze.admin.controller';
 import { AiAnalyticsOwnerReportExportAdminController } from './controllers/owner-report-export.admin.controller';
+import { AiAnalyticsRefreshAdminController } from './controllers/refresh.admin.controller';
+import { SalesAiAnalyticsRefreshModule } from './refresh/sales-ai-analytics-refresh.module';
 import { AiAnalyticsRetentionAdminController } from './controllers/retention.admin.controller';
 import { AiAnalyticsSmartBackfillAdminController } from './controllers/smart-backfill.admin.controller';
 import { AiAnalyticsGuideAdminController } from './guide/ai-guide.admin.controller';
@@ -45,6 +47,8 @@ import { SalesAiAnalyticsProbeModule } from './sales-ai-analytics-probe.module';
         SalesAiAnalyticsProbeModule,
         SalesAiAnalyticsOpsModule,
         SalesAiAnalyticsLaunchModule,
+        // «Обновить всё по порядку»: сервисы и воркер тиков (только apps/admin)
+        SalesAiAnalyticsRefreshModule,
     ],
     controllers: [
         AiAnalyticsAuditAdminController,
@@ -64,6 +68,8 @@ import { SalesAiAnalyticsProbeModule } from './sales-ai-analytics-probe.module';
         AiAnalyticsLaunchAdminController,
         // Отчёт собственнику: сформировать PDF за период и скачать
         AiAnalyticsOwnerReportExportAdminController,
+        // Обновить всё по порядку: портал, все порталы, сводка
+        AiAnalyticsRefreshAdminController,
     ],
 })
 export class SalesAiAnalyticsAdminModule {}

@@ -156,7 +156,7 @@ describe('AiAnalyticsLaunchStageFlagsService', () => {
         const { service } = stageFlagsSetup({ status: 'fail' });
         await expect(
             service.apply({ domain: DOMAIN, forecast: true }),
-        ).rejects.toThrow('реже цели');
+        ).rejects.toThrow('Прогноз пока не показываем');
     });
 
     it('force — включение без проверки, гейт не читается', async () => {

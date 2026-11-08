@@ -121,28 +121,41 @@ describe('forecastVerdictText', () => {
         expect(forecastVerdictText(backtest())).toContain('Проверка пройдена');
     });
 
-    it('провал по узкой вилке — цифры словами, без «точность хуже простых способов»', () => {
+    it('провал — простыми словами: без «вилки», «факта» и «середины», с месяцем и датой расчёта', () => {
         const text = forecastVerdictText(
             backtest({
                 monthKey: '2026-10',
+                generatedAt: '2026-11-02T01:00:00.000Z',
                 status: 'fail',
                 reasons: ['coverage-below', 'mase-mean3'],
                 coverageShare: 0.52,
                 coverageTarget: 0.8,
                 maseNaive: 0.63,
                 maseMean3: 0.76,
+                maseMean3Ci90: [0.6, 1.08],
             }),
         );
 
-        expect(text).toContain('факт попал в вилку в 52 % дней (нужно 80 %)');
         expect(text).toContain(
-            'на 37 % меньше, чем у «по темпу с начала месяца»',
+            'Прогноз пока не показываем: проверка не пройдена (по итогам октября 2026, посчитана 2 ноября 2026)',
         );
         expect(text).toContain(
-            'на 24 % меньше, чем у «среднего за три месяца»',
+            'итог месяца попадал в диапазон «от–до» в 52 % дней (нужно не меньше 80 %)',
         );
-        expect(text).toContain('мешает узкая вилка');
-        expect(text).not.toContain('точность хуже простых способов');
+        expect(text).toContain(
+            'ошибается на 37 % меньше, чем расчёт «по темпу»',
+        );
+        expect(text).toContain(
+            'на 24 % меньше, чем расчёт «как в среднем за три прошлых месяца», но не стабильно: в неудачные кварталы истории — до 8 % хуже',
+        );
+        expect(text).toContain('Диапазон «от–до» узковат');
+        expect(text).toContain('кнопками это не исправить');
+        for (const jargon of ['вилк', 'факт ', 'середин']) {
+            expect(text).not.toContain(jargon);
+        }
+    });
+
+    it('прогноз хуже простого расчёта — показывать незачем; выигрыш неустойчив — ждать следующего месяца', () => {
         expect(
             forecastVerdictText(
                 backtest({
@@ -151,6 +164,29 @@ describe('forecastVerdictText', () => {
                     maseNaive: 1.2,
                 }),
             ),
-        ).toContain('середина не точнее простых способов');
+        ).toContain('ошибается на 20 % больше');
+        expect(
+            forecastVerdictText(
+                backtest({
+                    status: 'fail',
+                    reasons: ['mase-naive'],
+                    maseNaive: 1.2,
+                }),
+            ),
+        ).toContain('показывать незачем');
+
+        const unstable = forecastVerdictText(
+            backtest({
+                status: 'fail',
+                reasons: ['mase-naive'],
+                coverageShare: 0.83,
+                maseNaive: 0.85,
+                maseNaiveCi90: [0.7, 1.04],
+            }),
+        );
+        expect(unstable).toContain('ошибается на 15 % меньше');
+        expect(unstable).toContain('до 4 % хуже');
+        expect(unstable).toContain('после закрытия следующего месяца');
+        expect(unstable).not.toContain('узковат');
     });
 });

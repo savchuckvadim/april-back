@@ -73,6 +73,9 @@ export class QueueDispatcherService {
 
         @InjectQueue(QueueNames.EVENT_SALES_PRESENTATION_FLOW)
         private readonly eventSalesPresentationFlowQueue: Queue,
+
+        @InjectQueue(QueueNames.AI_ANALYTICS_ADMIN)
+        private readonly aiAnalyticsAdminQueue: Queue,
     ) {
         this.logger.log('QueueDispatcherService initialized');
     }
@@ -164,6 +167,9 @@ export class QueueDispatcherService {
 
             case QueueNames.EVENT_SALES_PRESENTATION_FLOW:
                 return this.eventSalesPresentationFlowQueue;
+
+            case QueueNames.AI_ANALYTICS_ADMIN:
+                return this.aiAnalyticsAdminQueue;
 
             default: {
                 const error = `Unknown queue name: ${name}`;
