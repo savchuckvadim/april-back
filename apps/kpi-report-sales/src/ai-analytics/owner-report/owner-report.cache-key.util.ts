@@ -7,7 +7,7 @@ import { AI_OWNER_REPORT_KEY_VERSION } from './owner-report.const';
 
 /**
  * Ключ кэша и jobId отчёта собственнику:
- * `sales-ai-analytics:v1:{domain}:owner-report:v1:{kind}:{periodKey}`.
+ * `sales-ai-analytics:v1:{domain}:owner-report:v2:{kind}:{periodKey}`.
  * Один период — один ключ: повторный запрос подписывается на идущий расчёт.
  */
 export function buildOwnerReportKey(

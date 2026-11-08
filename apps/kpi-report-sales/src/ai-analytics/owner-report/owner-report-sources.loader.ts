@@ -18,6 +18,10 @@ import { PulseTelephonyLoader } from '../domain/loaders/pulse-telephony.loader';
 import { SettingsLoader } from '../domain/loaders/settings.loader';
 import { UserNamesReader } from '../domain/loaders/user-names.reader';
 import { OwnerReportCrmLoader } from './owner-report-crm.loader';
+import {
+    OwnerReportReactivationLoader,
+    type OwnerReportDatedRow,
+} from './owner-report-reactivation.loader';
 
 /** Всё, что нужно модели отчёта за период и за прошлый период. */
 export interface OwnerReportSources {
@@ -25,8 +29,9 @@ export interface OwnerReportSources {
     previousPeriod: OwnerReportPeriod;
     /** Периметр отдела: ростер ОП ∩ список разбора (Bitrix ID строками). */
     managerIds: string[];
-    rows: DatedLiteRow[];
-    previousRows: DatedLiteRow[];
+    /** Строки звонков с признаком «реактивация» (fail-open — без него). */
+    rows: OwnerReportDatedRow[];
+    previousRows: OwnerReportDatedRow[];
     minDurationByType: MinDurationSecByType;
     telephony: OwnerReportTelephonyFacts | null;
     /** CRM-факты периода (продажи, счета, показы, план); null — источники не ответили. */
@@ -55,6 +60,7 @@ export class OwnerReportSourcesLoader {
         private readonly telephony: PulseTelephonyLoader,
         private readonly crm: OwnerReportCrmLoader,
         private readonly pbx: PBXService,
+        private readonly reactivation: OwnerReportReactivationLoader,
     ) {}
 
     async load(
@@ -94,12 +100,18 @@ export class OwnerReportSourcesLoader {
             this.crm.load(domain, bounds, managerIds, now),
             this.loadNames(domain, managerIds),
         ]);
+        // Реактивация — по сделкам компании; оба периода, чтобы группы
+        // «холодные / возврат» сравнивались одинаково.
+        const [markedRows, markedPrevious] = await Promise.all([
+            this.reactivation.mark(domain, rows, calendar.timeZone),
+            this.reactivation.mark(domain, previousRows, calendar.timeZone),
+        ]);
         return {
             period: toPeriod(bounds),
             previousPeriod: toPeriod(previous),
             managerIds,
-            rows,
-            previousRows,
+            rows: markedRows,
+            previousRows: markedPrevious,
             minDurationByType,
             telephony,
             crm,

@@ -1,4 +1,10 @@
-import { firstIds, shareOf, shareWhere } from './owner-report.share';
+import {
+    advancedShare,
+    firstIds,
+    shareOf,
+    shareWhere,
+    talkedOf,
+} from './owner-report.share';
 import type {
     OwnerReportCall,
     OwnerReportCrmFacts,
@@ -28,10 +34,16 @@ export const CRM_ISSUE_CODES: ReadonlySet<string> = new Set([
 export function buildObjections(
     calls: readonly OwnerReportCall[],
 ): OwnerReportObjections {
-    const contacted = calls.filter(call => call.contactReached);
+    const contacted = talkedOf(calls);
     const withObjections = contacted.filter(call => call.objections.length > 0);
     const all = contacted.flatMap(call => call.objections);
-    const topics = [...new Set(all.map(objection => objection.topic))];
+    const topics = [
+        ...new Set(
+            all.flatMap(objection =>
+                objection.topic === null ? [] : [objection.topic],
+            ),
+        ),
+    ];
     const byTopic = topics
         .map(topic => topicRow(topic, contacted))
         .sort((a, b) => b.calls - a.calls || a.topic.localeCompare(b.topic));
@@ -39,6 +51,7 @@ export function buildObjections(
         callsWithObjections: shareOf(withObjections.length, contacted.length),
         handled: shareWhere(all, objection => objection.handled),
         byTopic,
+        topicUnmarked: all.filter(objection => objection.topic === null).length,
         coldNotAdvancedTop: coldNotAdvancedTop(calls),
     };
 }
@@ -58,10 +71,7 @@ function topicRow(
         n: objections.length,
         calls: withTopic.length,
         handled: shareWhere(objections, objection => objection.handled),
-        advancedAfter: shareOf(
-            withTopic.filter(call => call.advanced).length,
-            withTopic.length,
-        ),
+        advancedAfter: advancedShare(withTopic),
     };
 }
 
@@ -71,9 +81,9 @@ function coldNotAdvancedTop(
 ): { topic: string; calls: number }[] {
     const counts = new Map<string, number>();
     for (const call of calls) {
-        if (call.typeGroup !== 'cold' || call.advanced) continue;
+        if (call.typeGroup !== 'cold' || call.advanced !== false) continue;
         for (const topic of new Set(call.objections.map(o => o.topic))) {
-            counts.set(topic, (counts.get(topic) ?? 0) + 1);
+            if (topic !== null) counts.set(topic, (counts.get(topic) ?? 0) + 1);
         }
     }
     return [...counts.entries()]
@@ -85,11 +95,16 @@ function coldNotAdvancedTop(
 export function buildIssues(
     calls: readonly OwnerReportCall[],
 ): OwnerReportIssues {
-    const withIssues = calls.filter(call => call.issues.length > 0);
-    const codes = [...new Set(calls.flatMap(call => call.issues))];
+    const marked = calls.flatMap(call =>
+        call.issues === null ? [] : [{ call, issues: call.issues }],
+    );
+    const withIssues = marked.filter(item => item.issues.length > 0);
+    const codes = [...new Set(marked.flatMap(item => item.issues))];
     const byCode = codes
         .map(code => {
-            const affected = calls.filter(call => call.issues.includes(code));
+            const affected = marked
+                .filter(item => item.issues.includes(code))
+                .map(item => item.call);
             return {
                 code,
                 calls: affected.length,
@@ -101,7 +116,7 @@ export function buildIssues(
         })
         .sort((a, b) => b.calls - a.calls || a.code.localeCompare(b.code));
     return {
-        callsWithIssues: shareOf(withIssues.length, calls.length),
+        callsWithIssues: shareOf(withIssues.length, marked.length),
         byCode,
     };
 }

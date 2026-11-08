@@ -1,4 +1,4 @@
-import type { OwnerShare } from './owner-report.types';
+import type { OwnerReportCall, OwnerShare } from './owner-report.types';
 
 /**
  * Доля отчёта собственнику: числитель, знаменатель и процент. Правило
@@ -30,18 +30,34 @@ export function shareWhere<T>(
     return shareOf(successes, n);
 }
 
-/** Сумма значений по ключам; отсутствующие ключи — 0. */
+/** Сумма значений по ключам; отсутствующие ключи — 0, ключ null не считается. */
 export function countBy<T, K extends string>(
     items: readonly T[],
     keys: readonly K[],
-    keyOf: (item: T) => K,
+    keyOf: (item: T) => K | null,
 ): Record<K, number> {
     const counts = Object.fromEntries(keys.map(key => [key, 0])) as Record<
         K,
         number
     >;
-    for (const item of items) counts[keyOf(item)] += 1;
+    for (const item of items) {
+        const key = keyOf(item);
+        if (key !== null) counts[key] += 1;
+    }
     return counts;
+}
+
+/**
+ * Шаг вперёд среди разговоров с размеченным исходом: знаменатель — только
+ * они, неразмеченные не превращаются в «не продвинут».
+ */
+export function advancedShare(calls: readonly OwnerReportCall[]): OwnerShare {
+    return shareWhere(calls, call => call.advanced);
+}
+
+/** Разговоры, где решающий точно или возможно был на линии (не секретарь). */
+export function talkedOf(calls: readonly OwnerReportCall[]): OwnerReportCall[] {
+    return calls.filter(call => call.contactReached !== false);
 }
 
 /** Первые `limit` id в порядке появления, без повторов. */

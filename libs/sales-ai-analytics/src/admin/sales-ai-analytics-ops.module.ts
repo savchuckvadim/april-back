@@ -23,6 +23,7 @@ import { Module } from '@nestjs/common';
 import { AiModule } from '@lib/call-lib';
 import { PrismaModule } from '@lib/core/prisma/prisma.module';
 import { QueueModule } from '@lib/queue';
+import { OwnerReportExportStoreModule } from '../owner-report-export/owner-report-export-store.module';
 import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
 import { AiAnalyticsAdminSnapshotStore } from './ai-analytics-admin-snapshot.store';
 import { AiAnalyticsCostService } from './services/ai-analytics-cost.service';
@@ -34,9 +35,16 @@ import { AiAnalyticsPipelineAdminService } from './services/ai-analytics-pipelin
 import { AiAnalyticsReanalyzeService } from './services/ai-analytics-reanalyze.service';
 import { AiAnalyticsRetentionService } from './services/ai-analytics-retention.service';
 import { AiAnalyticsSmartBackfillService } from './services/ai-analytics-smart-backfill.service';
+import { AiOwnerReportExportService } from './services/ai-owner-report-export.service';
 
 @Module({
-    imports: [PrismaModule, AiModule, QueueModule, PortalAppSettingsModule],
+    imports: [
+        PrismaModule,
+        AiModule,
+        QueueModule,
+        PortalAppSettingsModule,
+        OwnerReportExportStoreModule,
+    ],
     providers: [
         AiAnalyticsAdminSnapshotStore,
         AiAnalyticsPipelineAdminService,
@@ -51,8 +59,11 @@ import { AiAnalyticsSmartBackfillService } from './services/ai-analytics-smart-b
         // Дописывание полей карточек из ais без модели: джоба
         // CALL_REPORT_SMART_BACKFILL + статус и число ожидающих
         AiAnalyticsSmartBackfillService,
+        // Выгрузка PDF отчёта собственнику: джоба в SALES_KPI_REPORT + Redis
+        AiOwnerReportExportService,
     ],
     exports: [
+        AiOwnerReportExportService,
         AiAnalyticsAdminSnapshotStore,
         AiAnalyticsPipelineAdminService,
         AiAnalyticsEtlStatusService,

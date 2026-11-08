@@ -10,8 +10,11 @@ import {
  * снапшот, тексты ошибок.
  */
 
-/** Версия формы кэша: меняется вместе с DTO отчёта. */
-export const AI_OWNER_REPORT_KEY_VERSION = 'v1' as const;
+/**
+ * Версия формы кэша: меняется вместе с DTO отчёта. v2 (07.11.2026) —
+ * неразмеченный исход больше не «отложено», плитки с цветом, словарь.
+ */
+export const AI_OWNER_REPORT_KEY_VERSION = 'v2' as const;
 
 /**
  * TTL кэша: отчёт закрытого периода не меняется, пока его не пересобрали
@@ -42,7 +45,7 @@ export const AI_OWNER_REPORT_SNAPSHOT_RECORD = {
 export const AI_OWNER_REPORT_PERIODS_LIMIT = 48;
 
 /** Версия нагрузки снапшота: меняется вместе с формой фактов и текста. */
-export const AI_OWNER_REPORT_PAYLOAD_VERSION = 'owner-report-1' as const;
+export const AI_OWNER_REPORT_PAYLOAD_VERSION = 'owner-report-2' as const;
 
 export const AI_OWNER_REPORT_ERRORS = {
     periodKey:

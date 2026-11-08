@@ -30,6 +30,7 @@ import {
     AiAnalyticsGuideAdminController,
 } from '../guide/ai-guide.admin.controller';
 import { AiAnalyticsLaunchAdminController } from '../launch/ai-analytics-launch.admin.controller';
+import { AiAnalyticsOwnerReportExportAdminController } from '../controllers/owner-report-export.admin.controller';
 import { SalesAiAnalyticsLaunchModule } from '../launch/sales-ai-analytics-launch.module';
 import { SalesAiAnalyticsAdminModule } from '../sales-ai-analytics-admin.module';
 import { SalesAiAnalyticsAuditModule } from '../sales-ai-analytics-audit.module';
@@ -52,6 +53,7 @@ const ADMIN_CONTROLLERS = [
     AiAnalyticsSmartBackfillAdminController,
     AiAnalyticsGuideAdminController,
     AiAnalyticsLaunchAdminController,
+    AiAnalyticsOwnerReportExportAdminController,
 ];
 
 const metadataOf = (key: string, target: unknown): unknown[] =>

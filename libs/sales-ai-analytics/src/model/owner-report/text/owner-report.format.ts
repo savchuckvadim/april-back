@@ -27,6 +27,12 @@ export const REPORT_FORMS = {
     days: ['рабочий день', 'рабочих дня', 'рабочих дней'] as RuPluralForms,
     weeks: ['неделя', 'недели', 'недель'] as RuPluralForms,
     objections: ['возражение', 'возражения', 'возражений'] as RuPluralForms,
+    /** «у 5 возражений» — родительный падеж. */
+    objectionsGenitive: [
+        'возражения',
+        'возражений',
+        'возражений',
+    ] as RuPluralForms,
     points: ['пункт', 'пункта', 'пунктов'] as RuPluralForms,
 } as const;
 
@@ -40,15 +46,21 @@ export function pctText(pct: number | null): string {
     return pct === null ? '—' : `${ruInt(pct)}${NBSP}%`;
 }
 
-/** «19 из 91 (21 %)»; при пустом знаменателе — «нет данных». */
+/**
+ * Пустая ячейка: признак в разговорах периода не встретился или не размечен.
+ * Пояснение прочерка — в словаре отчёта, а не «нет данных» в каждой клетке.
+ */
+export const EMPTY_CELL = '—';
+
+/** «19 из 91 (21 %)»; при пустом знаменателе — прочерк. */
 export function shareText(share: OwnerShare): string {
-    if (share.n === 0) return 'нет данных';
+    if (share.n === 0) return EMPTY_CELL;
     return `${share.successes} из ${share.n} (${pctText(share.pct)})`;
 }
 
 /** «19 из 91 разговоров» — с формой слова знаменателя. */
 export function shareOfText(share: OwnerShare, forms: RuPluralForms): string {
-    if (share.n === 0) return 'нет данных';
+    if (share.n === 0) return EMPTY_CELL;
     return `${share.successes} из ${ruCount(share.n, forms)}`;
 }
 

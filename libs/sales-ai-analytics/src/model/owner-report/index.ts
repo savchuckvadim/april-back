@@ -16,3 +16,4 @@ export * from './owner-report';
 export * from './text';
 export * from './owner-report.period';
 export * from './owner-report.schedule';
+export * from './owner-report.reactivation';

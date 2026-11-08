@@ -1,5 +1,10 @@
 import { postponedWithDate } from './owner-report.overview';
-import { shareOf, shareWhere } from './owner-report.share';
+import {
+    advancedShare,
+    shareOf,
+    shareWhere,
+    talkedOf,
+} from './owner-report.share';
 import type {
     OwnerReportCall,
     OwnerReportCrmFacts,
@@ -17,7 +22,7 @@ export function buildManagerRows(
     calls: readonly OwnerReportCall[],
     crm: OwnerReportCrmFacts | null,
 ): OwnerReportManagerRow[] {
-    const teamAdvanced = calls.filter(call => call.advanced).length;
+    const teamAdvanced = calls.filter(call => call.advanced === true).length;
     const teamUpsell = calls.filter(
         call => call.upsellAttempted === true,
     ).length;
@@ -47,14 +52,9 @@ function managerRow(
     team: { calls: number; advanced: number; upsell: number },
     crm: OwnerReportManagerRow['crm'],
 ): OwnerReportManagerRow {
-    const contacted = rows.filter(call => call.contactReached);
-    const advancedIn = (group: OwnerReportCall['typeGroup']) => {
-        const inGroup = rows.filter(call => call.typeGroup === group);
-        return shareOf(
-            inGroup.filter(call => call.advanced).length,
-            inGroup.length,
-        );
-    };
+    const contacted = talkedOf(rows);
+    const advancedIn = (group: OwnerReportCall['typeGroup']) =>
+        advancedShare(rows.filter(call => call.typeGroup === group));
     const scores = rows.flatMap(call =>
         call.score === null ? [] : [call.score],
     );
@@ -63,9 +63,8 @@ function managerRow(
         calls: rows.length,
         shareOfTeam: shareOf(rows.length, team.calls),
         coldAdvanced: advancedIn('cold'),
-        contactedAdvanced: shareOf(
-            contacted.filter(call => call.advanced).length,
-            contacted.length,
+        contactedAdvanced: advancedShare(
+            rows.filter(call => call.contactReached === true),
         ),
         reactivationAdvanced: advancedIn('reactivation'),
         needsFound: shareWhere(contacted, call => call.needsFound),
@@ -80,7 +79,7 @@ function managerRow(
         conflict: shareWhere(rows, call => call.conflict),
         evasive: shareWhere(rows, call => call.evasive),
         advancedShareOfTeam: shareOf(
-            rows.filter(call => call.advanced).length,
+            rows.filter(call => call.advanced === true).length,
             team.advanced,
         ),
         upsellShareOfTeam: shareOf(
@@ -91,7 +90,7 @@ function managerRow(
             scores.length > 0
                 ? scores.reduce((sum, score) => sum + score, 0) / scores.length
                 : null,
-        issues: rows.filter(call => call.issues.length > 0).length,
+        issues: rows.filter(call => (call.issues?.length ?? 0) > 0).length,
         crm,
     };
 }

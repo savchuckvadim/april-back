@@ -1,6 +1,8 @@
 import type { FC } from 'react';
 import { StyleSheet, Text, View } from '@react-pdf/renderer';
+import type { OwnerReportTone } from '@lib/sales-ai-analytics';
 import { OWNER_PDF_THEME } from './owner-report-pdf.styles';
+import { PdfBadge } from './OwnerReportPdfBadge';
 
 const { colors, sizes } = OWNER_PDF_THEME;
 
@@ -19,11 +21,20 @@ const styles = StyleSheet.create({
         borderBottomColor: colors.line,
         paddingVertical: 2.5,
     },
-    headCell: { fontSize: sizes.xs, color: colors.muted, paddingRight: 4 },
-    cell: { fontSize: sizes.sm, paddingRight: 4 },
+    zebra: { backgroundColor: '#fafbfc' },
+    // Поля с обеих сторон: число справа и доля слева больше не слипаются.
+    headCell: {
+        fontSize: sizes.xs,
+        lineHeight: 1.3,
+        color: colors.muted,
+        paddingHorizontal: 3,
+    },
+    cell: { fontSize: sizes.sm, lineHeight: 1.35, paddingHorizontal: 3 },
+    compact: { fontSize: sizes.xs },
     right: { textAlign: 'right' },
     bold: { fontWeight: 'bold' },
     mutedCell: { color: colors.muted },
+    badgeCell: { paddingHorizontal: 3 },
 });
 
 /** Колонка таблицы: подпись, ширина (доля) и выравнивание. */
@@ -34,17 +45,22 @@ export interface PdfColumn {
     align?: 'left' | 'right';
     muted?: boolean;
     bold?: boolean;
+    /** Ячейка бейджем: тон по значению (вердикт и т.п.). */
+    badge?: (value: string) => OwnerReportTone;
 }
 
 interface OwnerReportPdfTableProps {
     columns: readonly PdfColumn[];
     rows: readonly (readonly (string | number)[])[];
+    /** Мелкий кегль ячеек — для широких таблиц (сотрудники). */
+    compact?: boolean;
 }
 
-/** Простая таблица: строки — массивы ячеек по колонкам; длинные строки переносятся. */
+/** Таблица: строки — массивы ячеек по колонкам; длинные строки переносятся. */
 export const OwnerReportPdfTable: FC<OwnerReportPdfTableProps> = ({
     columns,
     rows,
+    compact,
 }) => {
     const total = columns.reduce((sum, column) => sum + column.width, 0);
     const widthOf = (column: PdfColumn): string =>
@@ -66,21 +82,47 @@ export const OwnerReportPdfTable: FC<OwnerReportPdfTableProps> = ({
                 ))}
             </View>
             {rows.map((row, index) => (
-                <View key={index} style={styles.row} wrap={false}>
-                    {columns.map((column, cellIndex) => (
-                        <Text
-                            key={column.label}
-                            style={[
-                                styles.cell,
-                                { width: widthOf(column) },
-                                column.align === 'right' ? styles.right : {},
-                                column.bold ? styles.bold : {},
-                                column.muted ? styles.mutedCell : {},
-                            ]}
-                        >
-                            {String(row[cellIndex] ?? '')}
-                        </Text>
-                    ))}
+                <View
+                    key={index}
+                    style={[styles.row, index % 2 === 1 ? styles.zebra : {}]}
+                    wrap={false}
+                >
+                    {columns.map((column, cellIndex) => {
+                        const value = String(row[cellIndex] ?? '');
+                        if (column.badge && value) {
+                            return (
+                                <View
+                                    key={column.label}
+                                    style={[
+                                        styles.badgeCell,
+                                        { width: widthOf(column) },
+                                    ]}
+                                >
+                                    <PdfBadge
+                                        tone={column.badge(value)}
+                                        label={value}
+                                    />
+                                </View>
+                            );
+                        }
+                        return (
+                            <Text
+                                key={column.label}
+                                style={[
+                                    styles.cell,
+                                    compact ? styles.compact : {},
+                                    { width: widthOf(column) },
+                                    column.align === 'right'
+                                        ? styles.right
+                                        : {},
+                                    column.bold ? styles.bold : {},
+                                    column.muted ? styles.mutedCell : {},
+                                ]}
+                            >
+                                {value}
+                            </Text>
+                        );
+                    })}
                 </View>
             ))}
         </View>

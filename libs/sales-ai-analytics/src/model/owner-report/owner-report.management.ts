@@ -1,6 +1,11 @@
 import { CRM_ISSUE_CODES } from './owner-report.objections';
 import { buildTypeGroups, postponedWithDate } from './owner-report.overview';
-import { shareOf, shareWhere } from './owner-report.share';
+import {
+    advancedShare,
+    shareOf,
+    shareWhere,
+    talkedOf,
+} from './owner-report.share';
 import type {
     OwnerReportCall,
     OwnerReportControlMetric,
@@ -43,8 +48,6 @@ export interface ManagementInput {
     calls: readonly OwnerReportCall[];
     prices: OwnerReportPrices;
     crm: OwnerReportCrmFacts | null;
-    /** Есть ли разборы с фактами focus-v3.1 (иначе сбои и допродажа — unknown). */
-    factsAvailable: boolean;
 }
 
 const higherIsBetter = (
@@ -81,7 +84,7 @@ const signOf = (
 export function topManagerAdvancedShare(
     calls: readonly OwnerReportCall[],
 ): OwnerShare {
-    const advanced = calls.filter(call => call.advanced);
+    const advanced = calls.filter(call => call.advanced === true);
     const counts = new Map<string, number>();
     for (const call of advanced) {
         counts.set(call.managerId, (counts.get(call.managerId) ?? 0) + 1);
@@ -89,33 +92,31 @@ export function topManagerAdvancedShare(
     return shareOf(Math.max(0, ...counts.values()), advanced.length);
 }
 
+/** Доля разговоров со сбоями базы среди разговоров с размеченными сбоями. */
 export function crmIssuesShare(calls: readonly OwnerReportCall[]): OwnerShare {
-    return shareOf(
-        calls.filter(call =>
-            call.issues.some(code => CRM_ISSUE_CODES.has(code)),
-        ).length,
-        calls.length,
+    return shareWhere(calls, call =>
+        call.issues === null
+            ? null
+            : call.issues.some(code => CRM_ISSUE_CODES.has(code)),
     );
 }
 
 export function buildManagement(input: ManagementInput): OwnerReportManagement {
-    const { calls, prices, crm, factsAvailable } = input;
-    const contacted = calls.filter(call => call.contactReached);
+    const { calls, prices, crm } = input;
+    const contacted = talkedOf(calls);
     const presentation = buildTypeGroups(calls).find(
         row => row.group === 'presentation',
     );
     const repeat = presentation?.advancedOfContacted ?? shareOf(0, 0);
     const stage = shareWhere(contacted, call => call.nextStepDated);
     const needs = shareWhere(contacted, call => call.needsFound);
-    const upsell = factsAvailable
-        ? shareWhere(contacted, call => call.upsellAttempted)
-        : shareOf(0, 0);
+    const upsell = shareWhere(contacted, call => call.upsellAttempted);
     const objections = shareWhere(
         contacted.flatMap(call => call.objections),
         objection => objection.handled,
     );
     const top = topManagerAdvancedShare(calls);
-    const base = factsAvailable ? crmIssuesShare(calls) : shareOf(0, 0);
+    const base = crmIssuesShare(calls);
     const spread = prices.listPerMonth
         ? prices.listPerMonth.max / prices.listPerMonth.min
         : null;
@@ -211,8 +212,8 @@ function verdictOf(
 export function buildControlMetrics(
     calls: readonly OwnerReportCall[],
     weeks: readonly OwnerReportWeek[],
-    factsAvailable: boolean,
 ): OwnerReportControlMetric[] {
+    const issuesMarked = calls.some(call => call.issues !== null);
     const lastWeek = [...weeks].reverse().find(week => !week.partial) ?? null;
     const lastWeekCalls = lastWeek
         ? calls.filter(call => call.weekKey === lastWeek.weekKey)
@@ -229,13 +230,8 @@ export function buildControlMetrics(
     });
     const groupAdvanced =
         (group: OwnerReportCall['typeGroup']) =>
-        (rows: readonly OwnerReportCall[]): OwnerShare => {
-            const inGroup = rows.filter(call => call.typeGroup === group);
-            return shareOf(
-                inGroup.filter(call => call.advanced).length,
-                inGroup.length,
-            );
-        };
+        (rows: readonly OwnerReportCall[]): OwnerShare =>
+            advancedShare(rows.filter(call => call.typeGroup === group));
     return [
         metric('postponed_with_date', 'higher_better', postponedWithDate),
         metric(
@@ -244,7 +240,7 @@ export function buildControlMetrics(
             groupAdvanced('followup'),
         ),
         metric('cold_to_advanced', 'higher_better', groupAdvanced('cold')),
-        ...(factsAvailable
+        ...(issuesMarked
             ? [metric('crm_issues', 'lower_better', crmIssuesShare)]
             : []),
         metric('top_manager_share', 'lower_better', topManagerAdvancedShare),

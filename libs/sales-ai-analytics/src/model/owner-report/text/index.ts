@@ -1,4 +1,6 @@
 export * from './owner-report.labels';
+export * from './owner-report.glossary';
+export * from './owner-report.attention';
 export * from './owner-report.format';
 export * from './owner-report.text.types';
 export * from './owner-report.text';

@@ -29,6 +29,8 @@ type ShareColumn = Exclude<ManagerColumn, 'calls' | 'crm'>;
 
 interface Trait {
     column: ShareColumn;
+    /** Что измеряет доля — для строки-подтверждения. */
+    measure: string;
     /** Чем выше, тем лучше (для конфликта и ухода от ответа — наоборот). */
     higherBetter: boolean;
     good: string;
@@ -38,60 +40,70 @@ interface Trait {
 const TRAITS: readonly Trait[] = [
     {
         column: 'contactedAdvanced',
+        measure: 'шаг вперёд в разговорах с решающим',
         higherBetter: true,
         good: 'разговор с решающим чаще других заканчивается шагом вперёд',
         bad: 'разговор с решающим реже других заканчивается шагом вперёд',
     },
     {
         column: 'coldAdvanced',
+        measure: 'холодные с шагом вперёд',
         higherBetter: true,
         good: 'холодный вход работает лучше, чем у команды',
         bad: 'холодный вход почти не работает',
     },
     {
         column: 'needsFound',
+        measure: 'выяснил задачи',
         higherBetter: true,
         good: 'выясняет задачи клиента чаще других',
         bad: 'задачи клиента выясняет реже других — продаёт скриптом',
     },
     {
         column: 'presentationByNeeds',
+        measure: 'показ под задачи',
         higherBetter: true,
         good: 'показывает систему под задачи клиента',
         bad: 'показывает систему по шаблону, не под задачи клиента',
     },
     {
         column: 'closingAttempted',
+        measure: 'попытка закрытия',
         higherBetter: true,
         good: 'пробует закрыть разговор на шаг',
         bad: 'редко пробует закрыть разговор на шаг',
     },
     {
         column: 'nextStepDated',
+        measure: 'шаг с датой',
         higherBetter: true,
         good: 'фиксирует шаг с датой',
         bad: 'оставляет разговор без шага с датой',
     },
     {
         column: 'objectionsHandled',
+        measure: 'отработано возражений',
         higherBetter: true,
         good: 'отрабатывает возражения',
         bad: 'оставляет возражения без ответа',
     },
     {
         column: 'postponedWithDate',
+        measure: 'отложенные с датой возврата',
         higherBetter: true,
         good: 'у отложенных разговоров есть дата возврата',
         bad: 'отложенные разговоры остаются без даты возврата',
     },
     {
         column: 'conflict',
+        measure: 'разговоры с конфликтным тоном',
         higherBetter: false,
         good: 'чистая коммуникация без конфликтного тона',
         bad: 'конфликтный тон или давление в разговорах',
     },
     {
         column: 'evasive',
+        measure: 'ушёл от ответа',
         higherBetter: false,
         good: 'прямо отвечает, зачем звонит',
         bad: 'уходит от ответа «вы что-то предлагаете?» — риск для репутации',
@@ -135,29 +147,32 @@ function managerText(
     names: Readonly<Record<string, string>>,
 ): OwnerReportManagerText {
     const name = names[row.managerId] ?? `Сотрудник ${row.managerId}`;
+    // Без стены «мало данных» (правило владельца 06.11): выводы считаются
+    // всегда, у малого числа разговоров — пометка «предварительно».
     const enough = row.calls >= MANAGER_MIN_CALLS;
     const strengths: string[] = [];
     const risks: string[] = [];
-    if (enough) {
-        if ((row.advancedShareOfTeam.pct ?? 0) >= CORE_SHARE_PCT) {
-            strengths.push(
-                `даёт ${shareText(row.advancedShareOfTeam)} продвижений команды`,
-            );
+    if ((row.advancedShareOfTeam.pct ?? 0) >= CORE_SHARE_PCT) {
+        strengths.push(
+            `даёт ${shareText(row.advancedShareOfTeam)} продвижений команды`,
+        );
+    }
+    for (const trait of TRAITS) {
+        const verdict = traitVerdict(
+            row[trait.column],
+            team[trait.column],
+            trait,
+        );
+        const evidence = evidenceOf(
+            trait,
+            row[trait.column],
+            team[trait.column],
+        );
+        if (verdict === 'good' && strengths.length < TRAITS_LIMIT) {
+            strengths.push(`${trait.good}: ${evidence}`);
         }
-        for (const trait of TRAITS) {
-            const verdict = traitVerdict(
-                row[trait.column],
-                team[trait.column],
-                trait,
-            );
-            if (verdict === 'good' && strengths.length < TRAITS_LIMIT) {
-                strengths.push(
-                    `${trait.good} (${pctText(row[trait.column].pct)})`,
-                );
-            }
-            if (verdict === 'bad' && risks.length < TRAITS_LIMIT) {
-                risks.push(`${trait.bad} (${pctText(row[trait.column].pct)})`);
-            }
+        if (verdict === 'bad' && risks.length < TRAITS_LIMIT) {
+            risks.push(`${trait.bad}: ${evidence}`);
         }
     }
     return {
@@ -170,6 +185,21 @@ function managerText(
         conclusion: conclusionOf(row, strengths, risks, enough),
         source: 'template',
     };
+}
+
+/**
+ * Чем подтверждён признак: «шаг с датой — в 0 из 10 разговоров, в среднем
+ * по отделу 24 %». Раньше было «(0%)» рядом с риском — читалось как «риска
+ * нет» (замечание владельца 07.11.2026).
+ */
+function evidenceOf(
+    trait: Trait,
+    share: OwnerShare,
+    teamPct: number | null,
+): string {
+    const team =
+        teamPct === null ? '' : `, в среднем по отделу ${pctText(teamPct)}`;
+    return `${trait.measure} — ${share.successes} из ${share.n} (${pctText(share.pct)})${team}`;
 }
 
 function traitVerdict(
@@ -193,7 +223,15 @@ function headlineOf(
     risks: readonly string[],
     enough: boolean,
 ): string {
-    if (!enough) return 'Разговоров мало — выводы предварительные';
+    const base = baseHeadline(row, strengths, risks);
+    return enough ? base : `${base} · предварительно, ${row.calls} разг.`;
+}
+
+function baseHeadline(
+    row: OwnerReportManagerRow,
+    strengths: readonly string[],
+    risks: readonly string[],
+): string {
     if ((row.advancedShareOfTeam.pct ?? 0) >= CORE_SHARE_PCT) {
         return risks.length > 0 ? 'Ядро продаж — с рисками' : 'Ядро продаж';
     }
@@ -210,12 +248,14 @@ function conclusionOf(
     risks: readonly string[],
     enough: boolean,
 ): string {
-    if (!enough) {
-        return `${row.calls} разговоров за период — слишком мало, чтобы делать выводы о сотруднике.`;
-    }
+    const advanced =
+        row.contactedAdvanced.n > 0
+            ? `, шаг вперёд в ${pctText(row.contactedAdvanced.pct)} разговоров с решающим`
+            : '';
     const parts: string[] = [
-        `${shareText(row.shareOfTeam)} разговоров команды, шаг вперёд в ${pctText(row.contactedAdvanced.pct)} разговоров с решающим.`,
+        `${shareText(row.shareOfTeam)} разговоров команды${advanced}.`,
     ];
+    if (!enough) parts.push('Разговоров немного — выводы предварительные.');
     if (strengths.length > 0) parts.push(`Сильная сторона: ${strengths[0]}.`);
     if (risks.length > 0) parts.push(`Риск: ${risks[0]}.`);
     return parts.join(' ');

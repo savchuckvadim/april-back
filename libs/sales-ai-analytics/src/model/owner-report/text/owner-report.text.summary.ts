@@ -34,6 +34,9 @@ export function buildSummaryParagraphs(facts: OwnerReportFacts): string[] {
         pricesParagraph(facts),
         issuesParagraph(facts),
         workingLinkParagraph(facts),
+        // Последним: при размеченных исходах вытесняется лимитом, без них —
+        // главный абзац о том, что видно в разговорах.
+        qualityParagraph(facts),
     ].filter((text): text is string => text !== null);
     return paragraphs.slice(0, SUMMARY_PARAGRAPHS_LIMIT);
 }
@@ -41,19 +44,27 @@ export function buildSummaryParagraphs(facts: OwnerReportFacts): string[] {
 function volumeParagraph(facts: OwnerReportFacts): string {
     const { coverage, outcomes } = facts;
     const noContact = outcomes.byOutcome.no_contact;
-    return (
+    const head =
         `Разобрано ${countText(coverage.analyzed, REPORT_FORMS.calls)}` +
-        (coverage.short > 0 ? `, ещё ${coverage.short} короче порога` : '') +
-        `. С решающим состоялось ${countText(outcomes.contacted, REPORT_FORMS.calls)}, до него не дошли ${noContact}.`
-    );
+        (coverage.short > 0 ? `, ещё ${coverage.short} короче порога` : '');
+    if (coverage.outcomeFromAnalysis === 0) {
+        return `${head}. Исходы разговоров в разборах этого периода не размечены — выводы ниже по тому, что видно в самих разговорах.`;
+    }
+    const scope =
+        outcomes.unmarked > 0
+            ? `Из ${countText(coverage.outcomeFromAnalysis, REPORT_FORMS.callsGenitive)} с размеченным исходом с решающим`
+            : 'С решающим';
+    return `${head}. ${scope} состоялось ${countText(outcomes.contacted, REPORT_FORMS.calls)}, до него не дошли ${noContact}.`;
 }
 
 function followupParagraph(facts: OwnerReportFacts): string | null {
     const followup = facts.byTypeGroup.find(row => row.group === 'followup');
     if (!followup) return null;
-    const noDecision = followup.calls - followup.byOutcome.advanced;
-    return `Дожим: из ${countText(followup.calls, REPORT_FORMS.callsGenitive)} после показа и предложения без решения остались ${noDecision} (${pctText(
-        followup.calls > 0 ? (noDecision / followup.calls) * 100 : null,
+    const marked = followup.calls - followup.unmarked;
+    if (marked === 0) return null;
+    const noDecision = marked - followup.byOutcome.advanced;
+    return `Дожим: из ${countText(marked, REPORT_FORMS.callsGenitive)} после показа и предложения без решения остались ${noDecision} (${pctText(
+        (noDecision / marked) * 100,
     )}); шаг вперёд — в ${followup.byOutcome.advanced}.`;
 }
 
@@ -69,8 +80,27 @@ function postponedParagraph(facts: OwnerReportFacts): string | null {
 function coldParagraph(facts: OwnerReportFacts): string | null {
     const cold = facts.byTypeGroup.find(row => row.group === 'cold');
     if (!cold) return null;
-    const contacted = cold.calls - cold.byOutcome.no_contact;
-    return `Холодный вход: из ${countText(cold.calls, REPORT_FORMS.callsGenitive)} до решающего дошли ${contacted}, до показа, доступа или предложения — ${cold.byOutcome.advanced} (${pctText(cold.advancedOfAll.pct)}).`;
+    const marked = cold.calls - cold.unmarked;
+    if (marked === 0) return null;
+    const contacted = marked - cold.byOutcome.no_contact;
+    return `Холодный вход: из ${countText(marked, REPORT_FORMS.callsGenitive)} до решающего дошли ${contacted}, до показа, доступа или предложения — ${cold.byOutcome.advanced} (${pctText(cold.advancedOfAll.pct)}).`;
+}
+
+/** Что в разговорах видно и без новой разметки: задачи, шаг с датой, возражения. */
+const QUALITY_SIGNS: readonly { code: string; phrase: string }[] = [
+    { code: 'needs_discovery', phrase: 'задачи клиента выясняют' },
+    { code: 'stage_control', phrase: 'шаг с датой фиксируют' },
+    { code: 'objections_handling', phrase: 'возражения отрабатывают' },
+];
+
+function qualityParagraph(facts: OwnerReportFacts): string | null {
+    const parts = QUALITY_SIGNS.flatMap(({ code, phrase }) => {
+        const sign = facts.management.signs.find(item => item.code === code);
+        if (!sign || sign.value === null || sign.n === 0) return [];
+        return [`${phrase} в ${pctText(sign.value)} случаев (из ${sign.n})`];
+    });
+    if (parts.length === 0) return null;
+    return `В разговорах: ${parts.join(', ')}.`;
 }
 
 function trendParagraph(facts: OwnerReportFacts): string | null {

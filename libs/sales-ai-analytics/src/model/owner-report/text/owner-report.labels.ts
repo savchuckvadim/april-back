@@ -26,6 +26,9 @@ const itemLabels = (
 export const OUTCOME_LABELS: Readonly<Record<OwnerReportOutcome, string>> =
     itemLabels(CALL_REPORT_OUTCOME_ITEMS) as Record<OwnerReportOutcome, string>;
 
+/** Строка таблицы исходов для разговоров старого разбора. */
+export const UNMARKED_OUTCOME_LABEL = 'Исход не размечен (старый разбор)';
+
 export const TOPIC_LABELS = itemLabels(CALL_REPORT_OBJECTION_TOPIC_ITEMS);
 export const ISSUE_LABELS = itemLabels(CALL_REPORT_ISSUE_ITEMS);
 
@@ -189,7 +192,7 @@ export const METRIC_LABELS: Readonly<Record<string, MetricLabel>> = {
         ifIgnored: 'Затраты на холодный вход и показы не окупаются',
     },
     cold_to_advanced: {
-        title: 'Холодный звонок → показ, доступ или предложение',
+        title: 'Холодный звонок: дошли до показа, доступа или предложения',
         why: 'Определяет, сколько нового спроса заходит в воронку',
         ifIgnored: 'Через несколько месяцев дожимать будет некого',
     },

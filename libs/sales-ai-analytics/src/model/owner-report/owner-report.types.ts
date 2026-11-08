@@ -26,9 +26,6 @@ export type OwnerReportTypeGroup = (typeof OWNER_REPORT_TYPE_GROUPS)[number];
 
 export type OwnerReportOutcome = CallReportOutcomeCode;
 
-/** Откуда взят исход: из разбора (focus-v3.1+) или выведен по старым полям. */
-export type OwnerReportOutcomeSource = 'analysis' | 'derived';
-
 /** Доля с числителем и знаменателем; pct = null только при n = 0. */
 export interface OwnerShare {
     successes: number;
@@ -103,16 +100,27 @@ export interface OwnerReportCall {
     weekKey: string;
     callType: string | null;
     typeGroup: OwnerReportTypeGroup;
-    outcome: OwnerReportOutcome;
-    outcomeSource: OwnerReportOutcomeSource;
-    /** Разговор состоялся с тем, кто решает (исход ≠ no_contact). */
-    contactReached: boolean;
-    advanced: boolean;
+    /**
+     * В разборе есть факты focus-v3.1: исход, сбои, цены, допродажа, темы
+     * возражений. Старый разбор их не знает — такие признаки у него null,
+     * а не «нет»: в доли они не входят (иначе ноль вместо «не размечено»).
+     */
+    marked: boolean;
+    /** Исход разговора из разбора; null — не размечен (старый разбор). */
+    outcome: OwnerReportOutcome | null;
+    /**
+     * Разговор с тем, кто решает: по исходу, а у старого разбора — по
+     * собеседнику (ЛПР или пользователь — да, секретарь — нет); null — неизвестно.
+     */
+    contactReached: boolean | null;
+    /** Шаг вперёд (исход advanced); null — исход не размечен. */
+    advanced: boolean | null;
     nextStepSet: boolean;
     nextStepDated: boolean;
     nextStepKind: string | null;
     objections: OwnerReportObjection[];
-    issues: string[];
+    /** Сбои не по вине разговора; null — не размечены. */
+    issues: string[] | null;
     prices: OwnerReportPrice[];
     upsellAttempted: boolean | null;
     needsFound: boolean | null;
@@ -121,13 +129,14 @@ export interface OwnerReportCall {
     /** Попытка закрытия: раздел CLOSING применим и оценён не ниже 5. */
     closingAttempted: boolean | null;
     conflict: boolean;
-    /** Ушёл от ответа на «вы что-то предлагаете?». */
-    evasive: boolean;
+    /** Ушёл от ответа на «вы что-то предлагаете?»; null — не размечено. */
+    evasive: boolean | null;
     score: number | null;
 }
 
 export interface OwnerReportObjection {
-    topic: string;
+    /** Тема возражения; null — старый разбор темы не размечал. */
+    topic: string | null;
     handled: boolean | null;
     /** continued / converted / disengaged / null. */
     outcome: string | null;
@@ -150,9 +159,9 @@ export interface OwnerReportCoverage {
     short: number;
     noManager: number;
     noAnalysis: number;
-    /** Исход из разбора / выведен по старым полям. */
+    /** С размеченным исходом / без него (старый разбор до focus-v3.1). */
     outcomeFromAnalysis: number;
-    outcomeDerived: number;
+    outcomeUnmarked: number;
     /** Первый день периода с фактами focus-v3.1 (null — таких разборов нет). */
     factsSince: string | null;
     /** Рабочие дни периода без единого звонка. */
@@ -162,6 +171,8 @@ export interface OwnerReportCoverage {
 
 export interface OwnerReportOutcomes {
     byOutcome: Record<OwnerReportOutcome, number>;
+    /** Разговоров без размеченного исхода — в доли исходов не входят. */
+    unmarked: number;
     /** Разговоров с тем, кто решает. */
     contacted: number;
     advancedOfContacted: OwnerShare;
@@ -173,7 +184,9 @@ export interface OwnerReportTypeGroupRow {
     group: OwnerReportTypeGroup;
     calls: number;
     byOutcome: Record<OwnerReportOutcome, number>;
-    /** Продвинутых от всех звонков группы. */
+    /** Звонков группы без размеченного исхода. */
+    unmarked: number;
+    /** Продвинутых от звонков группы с размеченным исходом. */
     advancedOfAll: OwnerShare;
     /** Продвинутых от разговоров с ЛПР. */
     advancedOfContacted: OwnerShare;

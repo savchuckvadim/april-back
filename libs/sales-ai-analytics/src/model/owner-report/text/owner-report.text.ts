@@ -1,4 +1,3 @@
-import { formatRuDayMonth } from '../../iso-week.util';
 import type {
     OwnerReportFacts,
     OwnerReportLeak,
@@ -9,7 +8,6 @@ import {
     moneyText,
     pctText,
     periodText,
-    pointsDeltaText,
     REPORT_FORMS,
     shareOfText,
     shareText,
@@ -20,21 +18,24 @@ import {
     MANAGEMENT_VERDICT_LABELS,
     METRIC_LABELS,
     NATURE_LABELS,
-    OUTCOME_LABELS,
     PERIOD_KIND_LABELS,
     SIGN_LABELS,
     SIGN_VERDICT_LABELS,
     TOPIC_LABELS,
-    TYPE_GROUP_LABELS,
 } from './owner-report.labels';
+import { OWNER_REPORT_GLOSSARY } from './owner-report.glossary';
+import { buildOwnerReportAttention } from './owner-report.attention';
+import {
+    buildOverview,
+    buildTiles,
+    unmarkedNoteOf,
+} from './owner-report.text.overview';
 import { buildManagerTexts } from './owner-report.text.managers';
 import { buildSummaryParagraphs } from './owner-report.text.summary';
 import type {
     OwnerReportLeakText,
     OwnerReportManagementText,
-    OwnerReportOverviewText,
     OwnerReportText,
-    OwnerReportTile,
 } from './owner-report.text.types';
 
 /**
@@ -59,6 +60,7 @@ export function buildOwnerReportText(
         title: `Управленческий отчёт по отделу продаж за ${PERIOD_KIND_LABELS[facts.period.kind]}`,
         periodLabel: periodText(facts.period.from, facts.period.to),
         tiles: buildTiles(facts, previous),
+        attention: buildOwnerReportAttention(facts),
         summary: buildSummaryParagraphs(facts),
         summarySource: 'template',
         overview: buildOverview(facts),
@@ -76,143 +78,8 @@ export function buildOwnerReportText(
         })),
         managers: buildManagerTexts(facts, options.names ?? {}),
         methodology: buildMethodology(facts),
+        glossary: OWNER_REPORT_GLOSSARY.map(item => ({ ...item })),
     };
-}
-
-/** Пять плиток шапки; сравнение — разница долей в пунктах к прошлому периоду. */
-function buildTiles(
-    facts: OwnerReportFacts,
-    previous: OwnerReportFacts | null,
-): OwnerReportTile[] {
-    const group = (code: string, source: OwnerReportFacts) =>
-        source.byTypeGroup.find(row => row.group === code);
-    const noContact = (source: OwnerReportFacts) => {
-        const n = source.coverage.analyzed + source.coverage.short;
-        const successes =
-            source.outcomes.byOutcome.no_contact + source.coverage.short;
-        return { successes, n, pct: n > 0 ? (successes / n) * 100 : null };
-    };
-    const followupNoDecision = (source: OwnerReportFacts) => {
-        const followup = group('followup', source);
-        if (!followup) return null;
-        const successes = followup.calls - followup.byOutcome.advanced;
-        return {
-            successes,
-            n: followup.calls,
-            pct: followup.calls > 0 ? (successes / followup.calls) * 100 : null,
-        };
-    };
-    const compare = (
-        current: number | null,
-        prev: number | null | undefined,
-    ) => (previous ? pointsDeltaText(current, prev ?? null) : null);
-
-    const contact = noContact(facts);
-    const cold = group('cold', facts);
-    const followup = followupNoDecision(facts);
-    return [
-        {
-            code: 'analyzed',
-            value: String(facts.coverage.analyzed),
-            label: 'разговоров разобрано',
-            compare:
-                previous === null
-                    ? null
-                    : `в прошлом периоде ${previous.coverage.analyzed}`,
-        },
-        {
-            code: 'no_contact',
-            value: pctText(contact.pct),
-            label: 'разговоров без содержательного контакта',
-            compare: compare(contact.pct, previous && noContact(previous).pct),
-        },
-        {
-            code: 'cold_advanced',
-            value: pctText(cold?.advancedOfAll.pct ?? null),
-            label: 'холодных звонков дошли до показа, доступа или предложения',
-            compare: compare(
-                cold?.advancedOfAll.pct ?? null,
-                previous && group('cold', previous)?.advancedOfAll.pct,
-            ),
-        },
-        {
-            code: 'followup_no_decision',
-            value: pctText(followup?.pct ?? null),
-            label: 'разговоров дожима закончились без решения',
-            compare: compare(
-                followup?.pct ?? null,
-                previous && followupNoDecision(previous)?.pct,
-            ),
-        },
-        {
-            code: 'postponed_with_date',
-            value: pctText(facts.outcomes.postponedWithDate.pct),
-            label: 'отложенных разговоров имеют дату возврата',
-            compare: compare(
-                facts.outcomes.postponedWithDate.pct,
-                previous?.outcomes.postponedWithDate.pct,
-            ),
-        },
-    ];
-}
-
-function buildOverview(facts: OwnerReportFacts): OwnerReportOverviewText {
-    const analyzed = facts.coverage.analyzed;
-    const notes: string[] = [];
-    if (facts.coverage.silentWorkdays.length > 0) {
-        notes.push(
-            `Рабочие дни без звонков: ${facts.coverage.silentWorkdays.map(formatRuDayMonth).join(', ')}.`,
-        );
-    }
-    if (facts.coverage.outcomeDerived > 0) {
-        notes.push(
-            `У ${countText(facts.coverage.outcomeDerived, REPORT_FORMS.callsGenitive)} исход выведен по прежним полям разбора` +
-                (facts.coverage.factsSince
-                    ? `; полные факты считаются с ${formatRuDayMonth(facts.coverage.factsSince)}.`
-                    : '.'),
-        );
-    }
-    return {
-        outcomes: (
-            Object.keys(OUTCOME_LABELS) as (keyof typeof OUTCOME_LABELS)[]
-        ).map(code => ({
-            label: OUTCOME_LABELS[code],
-            calls: facts.outcomes.byOutcome[code],
-            pct: pctText(
-                analyzed > 0
-                    ? (facts.outcomes.byOutcome[code] / analyzed) * 100
-                    : null,
-            ),
-        })),
-        typeGroups: facts.byTypeGroup.map(row => ({
-            label: TYPE_GROUP_LABELS[row.group],
-            calls: row.calls,
-            advanced: shareText(row.advancedOfAll),
-            callbackDated: row.byOutcome.callback_dated,
-            postponed: row.byOutcome.postponed,
-            refused: row.byOutcome.refused,
-            noContact: row.byOutcome.no_contact,
-        })),
-        weeks: facts.weeks.map(week => ({
-            label: periodText(week.from, week.to),
-            calls: week.calls,
-            cold: week.cold,
-            coldAdvanced: shareText(week.coldAdvanced),
-            contacted: week.contacted,
-            contactedAdvanced: shareText(week.contactedAdvanced),
-            note: weekNote(week.partial, week.silentWorkdays),
-        })),
-        notes,
-    };
-}
-
-function weekNote(partial: boolean, silent: readonly string[]): string | null {
-    const parts: string[] = [];
-    if (partial) parts.push('неполная неделя');
-    if (silent.length > 0) {
-        parts.push(`нет звонков: ${silent.map(formatRuDayMonth).join(', ')}`);
-    }
-    return parts.length > 0 ? parts.join('; ') : null;
 }
 
 function leakText(leak: OwnerReportLeak): OwnerReportLeakText {
@@ -240,7 +107,11 @@ function leakText(leak: OwnerReportLeak): OwnerReportLeakText {
 function signDetail(sign: OwnerReportSign): string {
     const label = SIGN_LABELS[sign.code];
     if (!label) return '';
-    if (sign.verdict === 'unknown') return 'данных за период нет';
+    if (sign.verdict === 'unknown') {
+        return sign.code === 'plan_fact'
+            ? 'план продаж в CRM не задан'
+            : 'в разборах периода не встречалось или не размечено';
+    }
     const words = label[sign.verdict];
     if (sign.value === null) return words;
     if (sign.code === 'unified_pricing') {
@@ -281,8 +152,15 @@ function buildObjectionsText(facts: OwnerReportFacts) {
                   )
                   .join(', ')}.`
             : null;
+    const intro =
+        objections.callsWithObjections.n === 0
+            ? 'Разговоров с решающим, где звучали возражения, в периоде нет.'
+            : `Возражения прозвучали в ${shareOfText(objections.callsWithObjections, REPORT_FORMS.callsGenitive)} с решающим (${pctText(objections.callsWithObjections.pct)}); отработано ${pctText(objections.handled.pct)} возражений.` +
+              (objections.topicUnmarked > 0
+                  ? ` Тема не размечена у ${countText(objections.topicUnmarked, REPORT_FORMS.objectionsGenitive)} — это старые разборы, в таблицу тем они не входят.`
+                  : '');
     return {
-        intro: `Возражения прозвучали в ${shareOfText(objections.callsWithObjections, REPORT_FORMS.callsGenitive)} с решающим (${pctText(objections.callsWithObjections.pct)}); отработано ${pctText(objections.handled.pct)} возражений.`,
+        intro,
         rows: objections.byTopic.map(row => ({
             label: TOPIC_LABELS[row.topic] ?? row.topic,
             calls: row.calls,
@@ -298,8 +176,10 @@ function buildIssuesText(facts: OwnerReportFacts) {
     return {
         intro:
             issues.callsWithIssues.n === 0
-                ? 'Сбои не по вине разговора в этом периоде не отмечались.'
-                : `Сбои не по вине разговора видны в ${shareOfText(issues.callsWithIssues, REPORT_FORMS.callsGenitive)} (${pctText(issues.callsWithIssues.pct)}).`,
+                ? 'Сбои не по вине разговора размечаются в новой версии разбора; в разборах этого периода разметки нет.'
+                : issues.callsWithIssues.successes === 0
+                  ? `Сбои не по вине разговора не отмечались: проверено ${countText(issues.callsWithIssues.n, REPORT_FORMS.calls)}.`
+                  : `Сбои не по вине разговора видны в ${shareOfText(issues.callsWithIssues, REPORT_FORMS.callsGenitive)} (${pctText(issues.callsWithIssues.pct)}).`,
         rows: issues.byCode.map(row => ({
             label: ISSUE_LABELS[row.code] ?? row.code,
             calls: row.calls,
@@ -314,12 +194,10 @@ function buildMethodology(facts: OwnerReportFacts): string[] {
         `Период ${periodText(facts.period.from, facts.period.to)}. Звонков за период — ${coverage.calls}, из них с разбором — ${coverage.analyzed}; короче порога — ${coverage.short}, без разбора — ${coverage.noAnalysis}, без сотрудника — ${coverage.noManager}.`,
         'Каждый разговор размечен разбором по единой схеме: тип, исход, возражения, сбои, цены, признаки качества. Все доли посчитаны по разметке, без поиска по словам; конверсия входа считается только по холодным первым контактам.',
     ];
-    if (coverage.outcomeDerived > 0) {
+    const unmarkedLine = unmarkedNoteOf(facts);
+    if (unmarkedLine) {
         lines.push(
-            `У ${coverage.outcomeDerived} из ${coverage.analyzed} разговоров исход выведен по прежним полям разбора (следующий шаг, отказ, собеседник)` +
-                (coverage.factsSince
-                    ? `; новые факты считаются с ${formatRuDayMonth(coverage.factsSince)}.`
-                    : '.'),
+            `${unmarkedLine} Неразмеченное не считается ни «да», ни «нет»: в таблицах это прочерк.`,
         );
     }
     lines.push(

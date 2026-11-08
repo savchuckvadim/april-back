@@ -117,10 +117,16 @@ export function isOwnerReportPeriodKind(
     );
 }
 
-/** Виды периодов из строки настройки «month, quarter»; чужие коды отбрасываются, порядок — справочника. */
-export function parseOwnerReportKinds(value: string): OwnerReportPeriodKind[] {
+/**
+ * Виды периодов из строки настройки «month, quarter»; чужие коды
+ * отбрасываются, порядок — справочника. Пусто или ключа нет (старый
+ * портал, мок) — ни одного вида.
+ */
+export function parseOwnerReportKinds(
+    value: string | null | undefined,
+): OwnerReportPeriodKind[] {
     const wanted = new Set(
-        value
+        (value ?? '')
             .split(',')
             .map(item => item.trim().toLowerCase())
             .filter(isOwnerReportPeriodKind),

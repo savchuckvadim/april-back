@@ -61,7 +61,7 @@ export class AiAnalyticsOwnerReportController {
             'где теряем продажи, как управляется отдел, возражения, сбои, ' +
             'метрики контроля, сотрудники, методология. Только руководители ' +
             'cup|op. Ключ результата — ' +
-            'sales-ai-analytics:v1:{domain}:owner-report:v1:{kind}:{periodKey}: ' +
+            'sales-ai-analytics:v1:{domain}:owner-report:v2:{kind}:{periodKey}: ' +
             'попадание в кэш или готовый снапшот → ready; расчёт идёт → ' +
             'processing; промах → джоба SALES_AI_ANALYTICS_OWNER_REPORT ' +
             '(jobId = requestKey) → queued, по завершении WS ' +

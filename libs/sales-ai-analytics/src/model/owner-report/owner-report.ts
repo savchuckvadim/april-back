@@ -47,7 +47,6 @@ export function buildOwnerReportFacts(
         period,
         options.telephony ?? null,
     );
-    const factsAvailable = coverage.factsSince !== null;
     const prices = buildPrices(calls, crm);
     const weeks = buildWeeks(calls, period);
     return {
@@ -60,8 +59,8 @@ export function buildOwnerReportFacts(
         issues: buildIssues(calls),
         prices,
         leaks: buildLeaks(calls, prices),
-        management: buildManagement({ calls, prices, crm, factsAvailable }),
-        controlMetrics: buildControlMetrics(calls, weeks, factsAvailable),
+        management: buildManagement({ calls, prices, crm }),
+        controlMetrics: buildControlMetrics(calls, weeks),
         managers: buildManagerRows(calls, crm),
         unattributedCalls: normalized.noManager,
     };

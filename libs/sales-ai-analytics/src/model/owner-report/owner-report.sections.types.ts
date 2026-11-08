@@ -29,6 +29,8 @@ export interface OwnerReportObjections {
     callsWithObjections: OwnerShare;
     handled: OwnerShare;
     byTopic: OwnerReportObjectionTopicRow[];
+    /** Возражений без темы (старый разбор) — в таблицу тем не входят. */
+    topicUnmarked: number;
     /** Темы среди холодных без продвижения: что чаще всего останавливает вход. */
     coldNotAdvancedTop: { topic: string; calls: number }[];
 }
@@ -41,6 +43,7 @@ export interface OwnerReportIssueRow {
 }
 
 export interface OwnerReportIssues {
+    /** Знаменатель — разговоры с размеченными сбоями (focus-v3.1). */
     callsWithIssues: OwnerShare;
     byCode: OwnerReportIssueRow[];
 }
