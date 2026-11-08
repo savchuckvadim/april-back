@@ -385,6 +385,15 @@
         "tsConfigPath": "libs/rq-lib/tsconfig.lib.json"
       }
     },
+    "ru-work-calendar": {
+      "type": "library",
+      "root": "libs/ru-work-calendar",
+      "entryFile": "index",
+      "sourceRoot": "libs/ru-work-calendar/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/ru-work-calendar/tsconfig.lib.json"
+      }
+    },
     "renewal-offer": {
       "type": "library",
       "root": "libs/renewal-offer",

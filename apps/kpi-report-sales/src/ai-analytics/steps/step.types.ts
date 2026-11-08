@@ -96,7 +96,11 @@ export function buildInputsHash(
         `${ctx.domain}|${ctx.rhythm}|${ctx.day}|${ctx.weekKey}|${ctx.monthKey}`,
         `${ctx.calcVersion}|${ctx.paramsVersion}|${ctx.comparableFrom}`,
         ctx.managerIds.join(','),
-        `${cal.timeZone}|${cal.holidays.join(',')}|${cal.workweek.join('')}`,
+        `${cal.timeZone}|${cal.holidays.join(',')}|${cal.workweek.join('')}` +
+            // Переносы — только если есть: прежние хэши не меняются.
+            (cal.extraWorkdays?.length
+                ? `|${cal.extraWorkdays.join(',')}`
+                : ''),
     ]);
 }
 

@@ -82,6 +82,8 @@
       "@lib/renewal-offer/*": ["libs/renewal-offer/src/*"],
       "@lib/cabinet": ["libs/cabinet/src"],
       "@lib/cabinet/*": ["libs/cabinet/src/*"],
+      "@lib/ru-work-calendar": ["libs/ru-work-calendar/src"],
+      "@lib/ru-work-calendar/*": ["libs/ru-work-calendar/src/*"],
       "@lib/pbx-user-fields": ["libs/pbx-user-fields/src"],
       "@lib/pbx-user-fields/*": ["libs/pbx-user-fields/src/*"],
       "@lib/sales-ai-analytics": ["libs/sales-ai-analytics/src"],
