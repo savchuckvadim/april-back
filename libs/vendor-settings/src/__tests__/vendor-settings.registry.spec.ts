@@ -1,4 +1,5 @@
 import { envOnlyReader } from '../vendor-settings.contract';
+import { TELEGRAM_BOT_TOKEN_SETTING_KEYS } from '../vendor-settings.telegram';
 import {
     VENDOR_SECRET_KEYS,
     VENDOR_SETTINGS,
@@ -28,10 +29,25 @@ describe('реестр настроек вендора', () => {
     it('ключи и токен — секреты, адрес и хосты прокси — нет', () => {
         expect([...VENDOR_SECRET_KEYS].sort()).toEqual([
             'ANTHROPIC_API_KEY',
+            'CABINET_TELEGRAM_BOT_TOKEN',
             'CLOUDRU_API_KEY',
             'EGRESS_PROXY_TOKEN',
             'GROQ_API_KEY',
+            'SUPPORT_TELEGRAM_BOT_TOKEN',
         ]);
+    });
+
+    it('Telegram-боты: все токены — секреты одной группы, чат поддержки — число', () => {
+        for (const key of TELEGRAM_BOT_TOKEN_SETTING_KEYS) {
+            const item = vendorSettingOf(key);
+            expect(item.secret).toBe(true);
+            expect(item.group).toBe('telegram-bots');
+            expect(item.howTo).toContain('Если токен утёк');
+        }
+        const chat = vendorSettingOf('SUPPORT_TELEGRAM_CHAT_ID').validate!;
+        expect(chat('-1001234567890')).toBeNull();
+        expect(chat('123456789')).toBeNull();
+        expect(chat('@support_chat')).toContain('число');
     });
 
     it('проверки: адрес прокси — полный https, хосты — имена через запятую', () => {

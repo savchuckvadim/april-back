@@ -196,7 +196,11 @@ export class KonstructorInitUseCase {
             aprilName: contract.contracts?.name || '',
             bitrixName: contract.contracts?.name || '',
             discount: contract.contracts?.discount || 0,
-            itemId: Number(contract.bitrixfield_item_id) || 0,
+            // ID пункта «Тип договора» в Битриксе портала, как отдавал Laravel
+            // (PortalContractResource: $fieldItem->bitrixId). Раньше здесь был
+            // bitrixfield_item_id — ID строки нашей БД, и deal-send писал в
+            // поле сделки несуществующий пункт («не выбрано»).
+            itemId: Number(contract.bitrixfield_items?.bitrixId) || 0,
             prepayment: contract.contracts?.prepayment || 0,
             order: contract.order || 0,
             portalMeasure: {

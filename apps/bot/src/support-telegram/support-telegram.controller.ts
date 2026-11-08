@@ -15,14 +15,12 @@ import {
 } from '@nestjs/swagger';
 import { BackgroundCalls } from '@lib/core/call-context';
 import { SupportTelegramBotService } from '@lib/support';
+import { TELEGRAM_SECRET_HEADER } from '@lib/telegram';
 import {
     SupportTelegramAckDto,
     SupportTelegramUpdateDto,
 } from './dto/support-telegram-update.dto';
-import {
-    SupportTelegramWebhookGuard,
-    TELEGRAM_SECRET_HEADER,
-} from './guards/support-telegram-webhook.guard';
+import { SupportTelegramWebhookGuard } from './guards/support-telegram-webhook.guard';
 
 /**
  * Вебхук Telegram-бота поддержки: команды ИИ-помощнику («что в поддержке»,
@@ -31,7 +29,8 @@ import {
 @ApiTags('Support Telegram')
 @ApiHeader({
     name: TELEGRAM_SECRET_HEADER,
-    description: 'Секрет вебхука (env SUPPORT_TELEGRAM_WEBHOOK_SECRET).',
+    description:
+        'Секрет вебхука: bot вычисляет его из токена бота поддержки и передаёт Telegram при регистрации.',
     required: true,
 })
 @BackgroundCalls()

@@ -83,9 +83,9 @@ controllers/  install | router | session | onboarding | cabinet | event | admin
 
 | Endpoint | Назначение |
 |---|---|
-| `POST/GET /install` | Установка (ONAPPINSTALL callback + iframe мастера). Пайплайн: [1] портал (member_id-first, fallback domain, дозаполнение legacy) + `marketplace_installs` (токены шифруются crypt.util/APP_KEY) → [2] event.bind-синхронизация → [3] placement.bind-синхронизация → [4] умные сценарии (ставит сам Битрикс из архива карточки; компоненты skipped/bitrix_archive) → [5] агрегат pbx-сущностей pending/awaiting_approval (при переустановке на портале с активным sales — НЕ сбрасывается) → `installed`. Iframe получает **HTML-финал с этого же origin** (redirect на чужой origin ломает installFinish — родитель Битрикса отвечает только зарегистрированному origin; доказано живым тестом 2026-07-14). Пустой GET/HEAD → 200 (валидатор кабинета) |
+| `POST/GET /install` | Установка (ONAPPINSTALL callback + iframe мастера). Пайплайн: [1] портал (member_id-first, fallback domain, дозаполнение legacy) + `marketplace_installs` (токены шифруются crypt.util/APP_KEY) + правила локального приложения (закрепить `bitrix_auth_mode`: новому порталу `app`, действующему `webhook`, если админ не выбирал; секрет `garant_local:<домен>` → `garant_local:mid:<member_id>`) → [2] event.bind-синхронизация → **виджеты НЕ ставятся** (с 07.11.2026: только кнопкой «Обновить виджеты» по списку `app_widgets` портала) → [3] умные сценарии (ставит сам Битрикс из архива карточки; компоненты skipped/bitrix_archive) → [4] агрегат pbx-сущностей pending/awaiting_approval (при переустановке на портале с активным sales — НЕ сбрасывается) → `installed`. Iframe получает **HTML-финал с этого же origin** (redirect на чужой origin ломает installFinish — родитель Битрикса отвечает только зарегистрированному origin; доказано живым тестом 2026-07-14). Пустой GET/HEAD → 200 (валидатор кабинета) |
 | `POST/GET /app` | Основное приложение: свежие токены сохраняются (бесплатный refresh) → верификация (member_id + application_token + REST `profile`) → 302 на кабинет `?domain&lang&status&state&code` (state: onboarding/pending/active/blocked/unauthorized; сырой member_id НЕ передаётся). На state=onboarding в сессию кладётся email из `user.current` (префилл формы) |
-| `POST/GET /placement/:code` | Виджеты (коды — закрытый enum из эталона): токены → **readiness-гейт** (агрегат pbx_entities продукта installed? легаси-порталы пропускаются) → 302 на `frontUrl` виджета (подмена env `MARKETPLACE_WIDGET_URL_<КОД>` без деплоя) + `placement_options`; не готов/blocked/удалён → same-origin HTML-заглушка (200) |
+| `POST/GET /placement/:code` | Виджеты (коды — закрытый enum из эталона): токены → **readiness-гейт** (агрегат pbx_entities продукта installed? легаси-порталы пропускаются) → 302 на `frontUrl` виджета (адрес — админка → «Настройки приложения» → «Виджеты», ключ `MARKETPLACE_WIDGET_URL_<КОД>`; запасной путь — env с тем же именем; без деплоя и перепривязки) + `placement_options`; не готов/blocked/удалён → same-origin HTML-заглушка (200) |
 | `POST /session/exchange` | Обмен одноразового кода (Redis, TTL 60с, сжигается) на `{token, state, domain, memberId, user}`; token = portal-context JWT |
 | `GET /onboarding/state`, `POST /onboarding` | Состояние допуска / подача заявки (организация+email). ТОЛЬКО под PortalSessionGuard (Bearer). Заявка идемпотентна, уведомляет вендора (Telegram + журнал) |
 | `GET /cabinet/summary` | Сводка кабинета: продукты portal_products + статусы компонентов (PortalSessionGuard) |
@@ -129,6 +129,10 @@ Cookies не используются вовсе → нет проблем SameS
 - ✅ (2026-07-18) Admin-обзор в apps/admin: `GET admin/marketplace/installs[/:id]`, `GET admin/marketplace/events` (журнал, пагинация), `GET admin/marketplace/portals/:id/products`, прокси-действия `POST portals/:id/provision-refresh|placements-refresh` (X-Admin-Key живёт server-side)
 - ✅ (2026-07-18) Админ-фронт (front/apps/admin): раздел «Marketplace» — Заявки (approve/block/re-provision/refresh-виджетов, продукты, компоненты), Установки, Клиенты, Секреты приложений (CRUD, секрет маскирован), Журнал событий; легаси «app на клиента» (entities/bitrix-app, entities/bitrix, get-app.helper, @workspace/nest-api) удалено
 
+- ✅ (2026-11-07) **Локальное приложение «April»** вместо тиражного (отказ модерации 23.07): тот же конвейер, свои client_id/secret у каждого портала (`bitrix_app_secrets`: `garant_local:<домен>` / `garant_local:mid:<member_id>`, форма «Секреты приложений» в админке). Инструкция клиенту — [local-app-install-guide-ru](../../../../ai/marketplace/local-app-install-guide-ru.md).
+- ✅ (2026-11-07) Настройки портала «Приложение April на портале»: `bitrix_auth_mode` (webhook/app/auto — читает `PBXService.init`), `enabled_parts` (sales/service), `app_widgets` (какие виджеты ставит «Обновить виджеты»). Реестр частей и виджетов — `libs/portal-lib/store/app-settings/lib/app-widgets.registry.ts`.
+- ✅ (2026-11-07) Кабинет клиента (вход с сайта, участники, Telegram) — отдельная библиотека `@lib/cabinet`, см. docs/AUTH.md §2.3.
+
 ## 7. Осталось (следующие этапы)
 
 - Живые тесты нового флоу на april-dev: онбординг-форма (сбросить портал в pending) → approve через админку → provisioning → готовые виджеты; повторный прогон (идемпотентность field/category-цепочек)
@@ -148,7 +152,7 @@ Cookies не используются вовсе → нет проблем SameS
 ## 8. Env (все — `.env.example`)
 
 `MARKETPLACE_API_PUBLIC_URL` (HANDLER'ы bind), `MARKETPLACE_APP_REDIRECT_URL`
-(кабинет), `MARKETPLACE_INSTALL_REDIRECT_URL` (запасной), `MARKETPLACE_WIDGET_URL_<КОД>`
+(кабинет), `MARKETPLACE_INSTALL_REDIRECT_URL` (запасной), `MARKETPLACE_WIDGET_URL_<КОД>` (теперь прежде всего настройка вендора в админке, env — запасной путь)
 (подмена фронта виджета), `MARKETPLACE_ADMIN_KEY` (admin-ручки),
 OAuth-креды приложения — в БД `bitrix_app_secrets` (code=garant_manager;
 CRUD в админке `PUT /api/admin/bitrix-app-secrets/garant_manager`, секрет в

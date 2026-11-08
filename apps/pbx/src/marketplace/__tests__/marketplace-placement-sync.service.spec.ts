@@ -2,10 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { MarketplacePlacementSyncService } from '../services/marketplace-placement-sync.service';
 import { MarketplaceBxClient } from '../clients/marketplace-bx.client';
 import { MarketplaceInstallRepository } from '../persistence/marketplace-install.repository';
-import {
-    getDesiredBindings,
-    MarketplaceProduct,
-} from '../config/marketplace-manifest';
+import { getDesiredBindingsForWidgets } from '../config/marketplace-manifest';
 
 type BxMock = jest.Mocked<
     Pick<
@@ -18,7 +15,9 @@ type RepoMock = jest.Mocked<
 >;
 
 const API = 'https://api.pbx.april-app.ru';
-const DESIRED = getDesiredBindings([MarketplaceProduct.SALES]);
+/** Виджеты отдела продаж — список из настройки портала app_widgets */
+const SALES_WIDGETS = ['event-sales', 'konstructor', 'report-sales'];
+const DESIRED = getDesiredBindingsForWidgets(SALES_WIDGETS);
 
 describe('MarketplacePlacementSyncService (diff эталон ↔ портал)', () => {
     let service: MarketplacePlacementSyncService;
@@ -53,6 +52,7 @@ describe('MarketplacePlacementSyncService (diff эталон ↔ портал)',
             'at',
             'install-uuid',
             BigInt(1),
+            SALES_WIDGETS,
         );
 
         expect(result.bound).toBe(DESIRED.length);
@@ -92,6 +92,7 @@ describe('MarketplacePlacementSyncService (diff эталон ↔ портал)',
             'at',
             'install-uuid',
             BigInt(1),
+            SALES_WIDGETS,
         );
 
         expect(result.bound).toBe(0);
@@ -116,6 +117,7 @@ describe('MarketplacePlacementSyncService (diff эталон ↔ портал)',
             'at',
             'install-uuid',
             BigInt(1),
+            SALES_WIDGETS,
         );
 
         expect(result.unbound).toBe(1);
@@ -153,6 +155,7 @@ describe('MarketplacePlacementSyncService (diff эталон ↔ портал)',
             'at',
             'install-uuid',
             BigInt(1),
+            SALES_WIDGETS,
         );
 
         expect(bx.unbindPlacement).not.toHaveBeenCalled();
@@ -171,6 +174,7 @@ describe('MarketplacePlacementSyncService (diff эталон ↔ портал)',
                 'at',
                 'install-uuid',
                 BigInt(1),
+                SALES_WIDGETS,
             ),
         ).rejects.toThrow('placement.bind failed');
 
@@ -197,8 +201,136 @@ describe('MarketplacePlacementSyncService (diff эталон ↔ портал)',
             'at',
             'install-uuid',
             BigInt(1),
+            SALES_WIDGETS,
         );
 
         expect(result.bound).toBe(DESIRED.length);
+    });
+
+    /*
+     * Список виджетов портала пуст (действующие порталы: виджеты стоят
+     * старыми привязками) — синхронизация не делает НИЧЕГО: ни bind, ни
+     * unbind, ни даже placement.list.
+     */
+    it('пустой список виджетов → полный no-op', async () => {
+        bx.listPlacements.mockResolvedValue({
+            ok: true,
+            result: [
+                {
+                    placement: 'CRM_DEAL_DETAIL_TAB',
+                    handler: `${API}/api/bitrix-marketplace/placement/konstructor`,
+                },
+            ],
+        });
+
+        const result = await service.syncPlacements(
+            'portal.bitrix24.ru',
+            'at',
+            'install-uuid',
+            BigInt(1),
+            [],
+        );
+
+        expect(result).toEqual({ bound: 0, unbound: 0, errors: 0, total: 0 });
+        expect(bx.listPlacements).not.toHaveBeenCalled();
+        expect(bx.bindPlacement).not.toHaveBeenCalled();
+        expect(bx.unbindPlacement).not.toHaveBeenCalled();
+    });
+
+    it('часть виджетов: ставятся только выбранные, наши лишние снимаются', async () => {
+        bx.listPlacements.mockResolvedValue({
+            ok: true,
+            result: [
+                {
+                    placement: 'CRM_DEAL_DETAIL_TAB',
+                    handler: `${API}/api/bitrix-marketplace/placement/konstructor`,
+                },
+            ],
+        });
+
+        const result = await service.syncPlacements(
+            'portal.bitrix24.ru',
+            'at',
+            'install-uuid',
+            BigInt(1),
+            ['event-sales'],
+        );
+
+        // event-sales: два места → два bind
+        expect(result.bound).toBe(2);
+        expect(bx.bindPlacement).toHaveBeenCalledTimes(2);
+        // konstructor не в списке → наша привязка снимается
+        expect(result.unbound).toBe(1);
+        expect(bx.unbindPlacement).toHaveBeenCalledWith(
+            'portal.bitrix24.ru',
+            'at',
+            'CRM_DEAL_DETAIL_TAB',
+            `${API}/api/bitrix-marketplace/placement/konstructor`,
+        );
+    });
+
+    it('переустановка: все наши привязки снимаются и ставятся заново, чужие не трогаются', async () => {
+        bx.listPlacements.mockResolvedValue({
+            ok: true,
+            result: [
+                {
+                    placement: 'CRM_DEAL_DETAIL_TAB',
+                    handler: `${API}/api/bitrix-marketplace/placement/event-sales`,
+                },
+                {
+                    placement: 'CRM_DEAL_DETAIL_TAB',
+                    handler: 'https://other-app.example.com/handler',
+                },
+            ],
+        });
+
+        const result = await service.syncPlacements(
+            'portal.bitrix24.ru',
+            'at',
+            'install-uuid',
+            BigInt(1),
+            ['event-sales'],
+            { force: true },
+        );
+
+        // наша привязка снята, чужая — нет
+        expect(bx.unbindPlacement).toHaveBeenCalledTimes(1);
+        expect(bx.unbindPlacement).toHaveBeenCalledWith(
+            'portal.bitrix24.ru',
+            'at',
+            'CRM_DEAL_DETAIL_TAB',
+            `${API}/api/bitrix-marketplace/placement/event-sales`,
+        );
+        // обе пары event-sales поставлены заново, включая ту, что была
+        expect(result.unbound).toBe(1);
+        expect(result.bound).toBe(2);
+        expect(bx.bindPlacement).toHaveBeenCalledTimes(2);
+    });
+
+    it('переустановка с пустым списком — тоже no-op (действующие порталы)', async () => {
+        const result = await service.syncPlacements(
+            'portal.bitrix24.ru',
+            'at',
+            'install-uuid',
+            BigInt(1),
+            [],
+            { force: true },
+        );
+
+        expect(result.total).toBe(0);
+        expect(bx.unbindPlacement).not.toHaveBeenCalled();
+    });
+
+    it('неизвестный код в списке игнорируется', async () => {
+        const result = await service.syncPlacements(
+            'portal.bitrix24.ru',
+            'at',
+            'install-uuid',
+            BigInt(1),
+            ['no-such-widget', 'report-sales'],
+        );
+
+        expect(result.total).toBe(1);
+        expect(bx.bindPlacement).toHaveBeenCalledTimes(1);
     });
 });

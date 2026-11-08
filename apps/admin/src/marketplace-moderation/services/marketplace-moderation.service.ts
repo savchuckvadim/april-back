@@ -355,17 +355,32 @@ export class MarketplaceModerationService {
         return { ok: true, details: JSON.stringify(body) };
     }
 
-    /** Синхронизация привязок виджетов портала с эталоном-манифестом */
-    async placementsRefresh(portalId: number): Promise<PbxActionResultDto> {
-        const portal = await this.requireMarketplacePortal(portalId);
+    /**
+     * Виджеты портала под его список `app_widgets` (force — переустановить).
+     * В отличие от provisioning, доступно и действующим (легаси) порталам:
+     * локальное приложение April ставится и на них, а пустой список виджетов
+     * на pbx — no-op, так что их старые привязки не тронутся. Установки
+     * приложения на портале нет — pbx ответит понятной ошибкой.
+     */
+    async placementsRefresh(
+        portalId: number,
+        force = false,
+    ): Promise<PbxActionResultDto> {
+        const portal = await this.repository.findPortalById(BigInt(portalId));
+        if (!portal) {
+            throw new NotFoundException(`Портал #${portalId} не найден`);
+        }
         const body = await this.callPbx(
             '/api/bitrix-marketplace/admin/placements/refresh',
             {
                 memberId: portal.member_id ?? undefined,
                 domain: portal.domain ?? undefined,
+                force,
             },
             portal,
-            'MODERATION_PLACEMENTS_REFRESH',
+            force
+                ? 'MODERATION_PLACEMENTS_REINSTALL'
+                : 'MODERATION_PLACEMENTS_REFRESH',
         );
         return { ok: true, details: JSON.stringify(body) };
     }

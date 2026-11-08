@@ -613,6 +613,32 @@ exports.Prisma.PortalScalarFieldEnum = {
   approved_by: 'approved_by'
 };
 
+exports.Prisma.PortalUserScalarFieldEnum = {
+  id: 'id',
+  portalId: 'portalId',
+  userId: 'userId',
+  bitrixUserId: 'bitrixUserId',
+  role: 'role',
+  invitedBy: 'invitedBy',
+  revokedAt: 'revokedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.TelegramBindingScalarFieldEnum = {
+  id: 'id',
+  portalId: 'portalId',
+  userId: 'userId',
+  bitrixUserId: 'bitrixUserId',
+  chatId: 'chatId',
+  telegramUsername: 'telegramUsername',
+  displayName: 'displayName',
+  createdBy: 'createdBy',
+  revokedAt: 'revokedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.PortalAiSettingsScalarFieldEnum = {
   id: 'id',
   portal_id: 'portal_id',
@@ -2205,6 +2231,21 @@ exports.Prisma.PortalOrderByRelevanceFieldEnum = {
   approved_by: 'approved_by'
 };
 
+exports.Prisma.PortalUserOrderByRelevanceFieldEnum = {
+  id: 'id',
+  bitrixUserId: 'bitrixUserId',
+  role: 'role',
+  invitedBy: 'invitedBy'
+};
+
+exports.Prisma.TelegramBindingOrderByRelevanceFieldEnum = {
+  id: 'id',
+  bitrixUserId: 'bitrixUserId',
+  telegramUsername: 'telegramUsername',
+  displayName: 'displayName',
+  createdBy: 'createdBy'
+};
+
 exports.Prisma.JsonNullValueFilter = {
   DbNull: Prisma.DbNull,
   JsonNull: Prisma.JsonNull,
@@ -3065,6 +3106,8 @@ exports.Prisma.ModelName = {
   portal_contracts: 'portal_contracts',
   portal_measure: 'portal_measure',
   Portal: 'Portal',
+  PortalUser: 'PortalUser',
+  TelegramBinding: 'TelegramBinding',
   PortalAiSettings: 'PortalAiSettings',
   PortalAppSettings: 'PortalAppSettings',
   VendorSuperUser: 'VendorSuperUser',

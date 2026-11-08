@@ -393,6 +393,15 @@
       "compilerOptions": {
         "tsConfigPath": "libs/renewal-offer/tsconfig.lib.json"
       }
+    },
+    "cabinet": {
+      "type": "library",
+      "root": "libs/cabinet",
+      "entryFile": "index",
+      "sourceRoot": "libs/cabinet/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/cabinet/tsconfig.lib.json"
+      }
     }
   }
 }

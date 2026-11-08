@@ -18,7 +18,23 @@ export class DealSendProcessor {
         this.logger.log(
             `${JobNames.KONSTRUCTOR_DEAL_SEND}: ${job.data.domain} сделка ${job.data.dealId}`,
         );
-        const { bitrix } = await this.pbx.init(job.data.domain);
-        await new DealSendWriterService(bitrix).write(job.data);
+        try {
+            const { bitrix } = await this.pbx.init(job.data.domain);
+            await new DealSendWriterService(bitrix).write(job.data);
+        } catch (error) {
+            // Bull помечает задание failed молча: без этой строки упавшая
+            // запись в Bitrix не видна нигде, а фронт уже показал «сохранено»
+            this.logger.error(
+                `${JobNames.KONSTRUCTOR_DEAL_SEND}: ${job.data.domain} сделка ${job.data.dealId} не записана — ${describeError(error)}`,
+            );
+            throw error;
+        }
     }
 }
+
+/** Текст ошибки Bitrix (axios: response.data) или обычной ошибки. */
+const describeError = (error: unknown): string => {
+    const data = (error as { response?: { data?: unknown } })?.response?.data;
+    if (data) return JSON.stringify(data);
+    return error instanceof Error ? error.message : String(error);
+};

@@ -10,6 +10,8 @@ import { MarketplaceModule } from './marketplace/marketplace.module';
 import { PrismaModule } from '@lib/core/prisma/prisma.module';
 import { PortalBuilderModule } from '@lib/portal-lib/builder';
 import { RenewalOfferPublicModule } from '@lib/renewal-offer';
+import { VendorSettingsModule } from '@lib/portal-lib/store/vendor-settings/vendor-settings.module';
+import { CabinetApiModule, CabinetMailTransportModule } from '@lib/cabinet';
 
 /**
  * Корневой модуль приложения pbx.
@@ -48,6 +50,14 @@ import { RenewalOfferPublicModule } from '@lib/renewal-offer';
         MarketplaceModule,
         PortalBuilderModule,
         RenewalOfferPublicModule,
+        // Настройки вендора из админки (клиентский Telegram-бот, прокси за
+        // рубеж) — глобальный читатель для библиотек приложения.
+        VendorSettingsModule,
+        // Кабинет клиента-портала (07.11.2026): вход с сайта, участники,
+        // доступ из фрейма, привязка Telegram. SMTP — свой транспорт без
+        // публичного MailController (без MAIL_HOST письма не уходят).
+        CabinetMailTransportModule.forApp(),
+        CabinetApiModule,
     ],
     providers: [GlobalExceptionFilter],
     exports: [BxDepartmentModule],

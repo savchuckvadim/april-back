@@ -4,6 +4,16 @@ import { AUTH_OPTIONS } from '../config/auth.constants';
 import { AuthModuleOptions } from '../config/auth.config';
 import { AuthJwtPayload, AuthUser } from '../types/auth-user.interface';
 
+/** Параметры выпуска токена, отличные от конфигурации библиотеки. */
+export interface AuthSignOptions {
+    /**
+     * Срок жизни токена (формат jsonwebtoken: `'1h'`, `'15m'`, секунды).
+     * Не задан — `AUTH_JWT_EXPIRES_IN` приложения. Короткий access с
+     * refresh-токеном — у кабинета клиента (libs/cabinet).
+     */
+    expiresIn?: string | number;
+}
+
 /**
  * Выпуск и проверка access-JWT. Секрет берётся из {@link AuthModuleOptions}
  * (общий для всех приложений → токен, выданный одним, валиден в другом).
@@ -18,7 +28,7 @@ export class AuthTokenService {
     ) {}
 
     /** Подписывает access-токен для субъекта. */
-    sign(user: AuthUser): string {
+    sign(user: AuthUser, signOptions: AuthSignOptions = {}): string {
         const payload: AuthUser = {
             sub: user.sub,
             login: user.login,
@@ -30,11 +40,13 @@ export class AuthTokenService {
                 bitrixUserId: user.bitrixUserId,
             }),
             ...(user.domain !== undefined && { domain: user.domain }),
+            ...(user.memberId !== undefined && { memberId: user.memberId }),
+            ...(user.userId !== undefined && { userId: user.userId }),
         };
         return this.jwtService.sign(payload, {
             secret: this.options.jwt.secret,
-            expiresIn: this.options.jwt
-                .expiresIn as JwtSignOptions['expiresIn'],
+            expiresIn: (signOptions.expiresIn ??
+                this.options.jwt.expiresIn) as JwtSignOptions['expiresIn'],
         });
     }
 

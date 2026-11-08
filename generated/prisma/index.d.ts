@@ -184,6 +184,26 @@ export type portal_measure = $Result.DefaultSelection<Prisma.$portal_measurePayl
  */
 export type Portal = $Result.DefaultSelection<Prisma.$PortalPayload>
 /**
+ * Model PortalUser
+ * Членство учётной записи кабинета клиента (`users`) в портале (libs/cabinet):
+ * `role` owner — корневой пользователь организации (доступы, передача прав),
+ * member — сотрудник с доступом; `bitrix_user_id` связывает учётку с
+ * сотрудником портала из сессии фрейма; `revoked_at` — доступ снят.
+ * Таблица добавлена ручной правкой (db pull запрещён) — миграция
+ * online/database/migrations/2026_11_08_100000_create_portal_users_table.php
+ */
+export type PortalUser = $Result.DefaultSelection<Prisma.$PortalUserPayload>
+/**
+ * Model TelegramBinding
+ * Привязка Telegram-чата к человеку на портале (клиентский бот April,
+ * libs/cabinet): кого привязали — сотрудник портала `bitrix_user_id`
+ * и/или учётка кабинета `user_id`; один чат может быть привязан к
+ * нескольким порталам; `revoked_at` — отвязка без удаления.
+ * Таблица добавлена ручной правкой (db pull запрещён) — миграция
+ * online/database/migrations/2026_11_08_110000_create_telegram_bindings_table.php
+ */
+export type TelegramBinding = $Result.DefaultSelection<Prisma.$TelegramBindingPayload>
+/**
  * Model PortalAiSettings
  * Настройки AI-отчётности по звонкам на конкретный портал.
  * NULL в любом поле = «на портале не задано», значение берётся из
@@ -1217,6 +1237,26 @@ export class PrismaClient<
     * ```
     */
   get portal(): Prisma.PortalDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.portalUser`: Exposes CRUD operations for the **PortalUser** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PortalUsers
+    * const portalUsers = await prisma.portalUser.findMany()
+    * ```
+    */
+  get portalUser(): Prisma.PortalUserDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.telegramBinding`: Exposes CRUD operations for the **TelegramBinding** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more TelegramBindings
+    * const telegramBindings = await prisma.telegramBinding.findMany()
+    * ```
+    */
+  get telegramBinding(): Prisma.TelegramBindingDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.portalAiSettings`: Exposes CRUD operations for the **PortalAiSettings** model.
@@ -2401,6 +2441,8 @@ export namespace Prisma {
     portal_contracts: 'portal_contracts',
     portal_measure: 'portal_measure',
     Portal: 'Portal',
+    PortalUser: 'PortalUser',
+    TelegramBinding: 'TelegramBinding',
     PortalAiSettings: 'PortalAiSettings',
     PortalAppSettings: 'PortalAppSettings',
     VendorSuperUser: 'VendorSuperUser',
@@ -2490,7 +2532,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalAiSettings" | "portalAppSettings" | "vendorSuperUser" | "vendorSetting" | "aiMethodology" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink" | "konstructorPublicLink" | "contractTemplate" | "supplyReportTemplate" | "renewalOfferLink"
+      modelProps: "agents" | "bitrixfield_items" | "bitrixfields" | "bitrixlists" | "btx_categories" | "btx_companies" | "btx_deals" | "btx_leads" | "btx_rpas" | "btx_stages" | "callings" | "client" | "contracts" | "counters" | "deal_document_favorites" | "deal_document_options" | "deals" | "departaments" | "documents" | "f_items" | "failed_jobs" | "field" | "files" | "infoblock" | "info_groups" | "jobs" | "links" | "measures" | "migrations" | "offers" | "personal_access_tokens" | "portal_contracts" | "portal_measure" | "portal" | "portalUser" | "telegramBinding" | "portalAiSettings" | "portalAppSettings" | "vendorSuperUser" | "vendorSetting" | "aiMethodology" | "portalQuestionnaire" | "portalQuestionnaireItem" | "portalQuestionnaireItemOption" | "skapImportFile" | "skapImportItem" | "skapSession" | "skapSubscription" | "skapImportRun" | "price_row_cells" | "rq_counter" | "rqs" | "smarts" | "t_fields" | "telescope_entries" | "telescope_entries_tags" | "telescope_monitoring" | "template_counter" | "templateField" | "template" | "timezones" | "user" | "ai" | "bitrix_app_placements" | "bitrix_app_secrets" | "bitrix_apps" | "bitrix_settings" | "bitrix_tokens" | "btx_contacts" | "bxDocumentDeal" | "bx_rqs" | "complect_infoblock" | "complects" | "garant_packages" | "garant_prof_prices" | "google_tokens" | "infoblock_info_group" | "infoblock_package" | "offerTemplatePortal" | "offerTemplate" | "offer_zakupki_settings" | "provider_currents" | "report_settings" | "supplies" | "transcription" | "userSelectedTemplate" | "portal_region" | "regions" | "offerTemplateFont" | "offerTemplateImage" | "offerTemplatePageBlock" | "offerTemplatePageSticker" | "offerTemplatePage" | "roles" | "btxUser" | "invoiceTemplate" | "marketplace_installs" | "portal_products" | "marketplace_install_components" | "bitrix_app_events" | "portal_invites" | "appCache" | "shareLink" | "konstructorPublicLink" | "contractTemplate" | "supplyReportTemplate" | "renewalOfferLink"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -4735,6 +4777,138 @@ export namespace Prisma {
           count: {
             args: Prisma.PortalCountArgs<ExtArgs>
             result: $Utils.Optional<PortalCountAggregateOutputType> | number
+          }
+        }
+      }
+      PortalUser: {
+        payload: Prisma.$PortalUserPayload<ExtArgs>
+        fields: Prisma.PortalUserFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PortalUserFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalUserPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PortalUserFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalUserPayload>
+          }
+          findFirst: {
+            args: Prisma.PortalUserFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalUserPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PortalUserFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalUserPayload>
+          }
+          findMany: {
+            args: Prisma.PortalUserFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalUserPayload>[]
+          }
+          create: {
+            args: Prisma.PortalUserCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalUserPayload>
+          }
+          createMany: {
+            args: Prisma.PortalUserCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.PortalUserDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalUserPayload>
+          }
+          update: {
+            args: Prisma.PortalUserUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalUserPayload>
+          }
+          deleteMany: {
+            args: Prisma.PortalUserDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PortalUserUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.PortalUserUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PortalUserPayload>
+          }
+          aggregate: {
+            args: Prisma.PortalUserAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePortalUser>
+          }
+          groupBy: {
+            args: Prisma.PortalUserGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PortalUserGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PortalUserCountArgs<ExtArgs>
+            result: $Utils.Optional<PortalUserCountAggregateOutputType> | number
+          }
+        }
+      }
+      TelegramBinding: {
+        payload: Prisma.$TelegramBindingPayload<ExtArgs>
+        fields: Prisma.TelegramBindingFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.TelegramBindingFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TelegramBindingPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.TelegramBindingFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TelegramBindingPayload>
+          }
+          findFirst: {
+            args: Prisma.TelegramBindingFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TelegramBindingPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.TelegramBindingFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TelegramBindingPayload>
+          }
+          findMany: {
+            args: Prisma.TelegramBindingFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TelegramBindingPayload>[]
+          }
+          create: {
+            args: Prisma.TelegramBindingCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TelegramBindingPayload>
+          }
+          createMany: {
+            args: Prisma.TelegramBindingCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.TelegramBindingDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TelegramBindingPayload>
+          }
+          update: {
+            args: Prisma.TelegramBindingUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TelegramBindingPayload>
+          }
+          deleteMany: {
+            args: Prisma.TelegramBindingDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.TelegramBindingUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.TelegramBindingUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TelegramBindingPayload>
+          }
+          aggregate: {
+            args: Prisma.TelegramBindingAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateTelegramBinding>
+          }
+          groupBy: {
+            args: Prisma.TelegramBindingGroupByArgs<ExtArgs>
+            result: $Utils.Optional<TelegramBindingGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.TelegramBindingCountArgs<ExtArgs>
+            result: $Utils.Optional<TelegramBindingCountAggregateOutputType> | number
           }
         }
       }
@@ -9554,6 +9728,8 @@ export namespace Prisma {
     portal_contracts?: portal_contractsOmit
     portal_measure?: portal_measureOmit
     portal?: PortalOmit
+    portalUser?: PortalUserOmit
+    telegramBinding?: TelegramBindingOmit
     portalAiSettings?: PortalAiSettingsOmit
     portalAppSettings?: PortalAppSettingsOmit
     vendorSuperUser?: VendorSuperUserOmit
@@ -10251,6 +10427,8 @@ export namespace Prisma {
     questionnaires: number
     questionnaireItems: number
     vendorSuperUsers: number
+    portalUsers: number
+    telegramBindings: number
   }
 
   export type PortalCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -10293,6 +10471,8 @@ export namespace Prisma {
     questionnaires?: boolean | PortalCountOutputTypeCountQuestionnairesArgs
     questionnaireItems?: boolean | PortalCountOutputTypeCountQuestionnaireItemsArgs
     vendorSuperUsers?: boolean | PortalCountOutputTypeCountVendorSuperUsersArgs
+    portalUsers?: boolean | PortalCountOutputTypeCountPortalUsersArgs
+    telegramBindings?: boolean | PortalCountOutputTypeCountTelegramBindingsArgs
   }
 
   // Custom InputTypes
@@ -10579,6 +10759,20 @@ export namespace Prisma {
     where?: VendorSuperUserWhereInput
   }
 
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountPortalUsersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PortalUserWhereInput
+  }
+
+  /**
+   * PortalCountOutputType without action
+   */
+  export type PortalCountOutputTypeCountTelegramBindingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: TelegramBindingWhereInput
+  }
+
 
   /**
    * Count Type PortalQuestionnaireCountOutputType
@@ -10821,6 +11015,46 @@ export namespace Prisma {
    */
   export type TemplateCountOutputTypeCountTemplate_fieldArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: TemplateFieldWhereInput
+  }
+
+
+  /**
+   * Count Type UserCountOutputType
+   */
+
+  export type UserCountOutputType = {
+    portalUsers: number
+    telegramBindings: number
+  }
+
+  export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    portalUsers?: boolean | UserCountOutputTypeCountPortalUsersArgs
+    telegramBindings?: boolean | UserCountOutputTypeCountTelegramBindingsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserCountOutputType
+     */
+    select?: UserCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountPortalUsersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PortalUserWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountTelegramBindingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: TelegramBindingWhereInput
   }
 
 
@@ -46212,6 +46446,8 @@ export namespace Prisma {
     questionnaires?: boolean | Portal$questionnairesArgs<ExtArgs>
     questionnaireItems?: boolean | Portal$questionnaireItemsArgs<ExtArgs>
     vendorSuperUsers?: boolean | Portal$vendorSuperUsersArgs<ExtArgs>
+    portalUsers?: boolean | Portal$portalUsersArgs<ExtArgs>
+    telegramBindings?: boolean | Portal$telegramBindingsArgs<ExtArgs>
     _count?: boolean | PortalCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["portal"]>
 
@@ -46289,6 +46525,8 @@ export namespace Prisma {
     questionnaires?: boolean | Portal$questionnairesArgs<ExtArgs>
     questionnaireItems?: boolean | Portal$questionnaireItemsArgs<ExtArgs>
     vendorSuperUsers?: boolean | Portal$vendorSuperUsersArgs<ExtArgs>
+    portalUsers?: boolean | Portal$portalUsersArgs<ExtArgs>
+    telegramBindings?: boolean | Portal$telegramBindingsArgs<ExtArgs>
     _count?: boolean | PortalCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -46336,6 +46574,8 @@ export namespace Prisma {
       questionnaires: Prisma.$PortalQuestionnairePayload<ExtArgs>[]
       questionnaireItems: Prisma.$PortalQuestionnaireItemPayload<ExtArgs>[]
       vendorSuperUsers: Prisma.$VendorSuperUserPayload<ExtArgs>[]
+      portalUsers: Prisma.$PortalUserPayload<ExtArgs>[]
+      telegramBindings: Prisma.$TelegramBindingPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
@@ -46745,6 +46985,8 @@ export namespace Prisma {
     questionnaires<T extends Portal$questionnairesArgs<ExtArgs> = {}>(args?: Subset<T, Portal$questionnairesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalQuestionnairePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     questionnaireItems<T extends Portal$questionnaireItemsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$questionnaireItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalQuestionnaireItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     vendorSuperUsers<T extends Portal$vendorSuperUsersArgs<ExtArgs> = {}>(args?: Subset<T, Portal$vendorSuperUsersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VendorSuperUserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    portalUsers<T extends Portal$portalUsersArgs<ExtArgs> = {}>(args?: Subset<T, Portal$portalUsersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalUserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    telegramBindings<T extends Portal$telegramBindingsArgs<ExtArgs> = {}>(args?: Subset<T, Portal$telegramBindingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TelegramBindingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -48117,6 +48359,54 @@ export namespace Prisma {
   }
 
   /**
+   * Portal.portalUsers
+   */
+  export type Portal$portalUsersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalUser
+     */
+    select?: PortalUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalUser
+     */
+    omit?: PortalUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalUserInclude<ExtArgs> | null
+    where?: PortalUserWhereInput
+    orderBy?: PortalUserOrderByWithRelationInput | PortalUserOrderByWithRelationInput[]
+    cursor?: PortalUserWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PortalUserScalarFieldEnum | PortalUserScalarFieldEnum[]
+  }
+
+  /**
+   * Portal.telegramBindings
+   */
+  export type Portal$telegramBindingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TelegramBinding
+     */
+    select?: TelegramBindingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TelegramBinding
+     */
+    omit?: TelegramBindingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TelegramBindingInclude<ExtArgs> | null
+    where?: TelegramBindingWhereInput
+    orderBy?: TelegramBindingOrderByWithRelationInput | TelegramBindingOrderByWithRelationInput[]
+    cursor?: TelegramBindingWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: TelegramBindingScalarFieldEnum | TelegramBindingScalarFieldEnum[]
+  }
+
+  /**
    * Portal without action
    */
   export type PortalDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -48132,6 +48422,2081 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: PortalInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model PortalUser
+   */
+
+  export type AggregatePortalUser = {
+    _count: PortalUserCountAggregateOutputType | null
+    _avg: PortalUserAvgAggregateOutputType | null
+    _sum: PortalUserSumAggregateOutputType | null
+    _min: PortalUserMinAggregateOutputType | null
+    _max: PortalUserMaxAggregateOutputType | null
+  }
+
+  export type PortalUserAvgAggregateOutputType = {
+    portalId: number | null
+    userId: number | null
+  }
+
+  export type PortalUserSumAggregateOutputType = {
+    portalId: bigint | null
+    userId: bigint | null
+  }
+
+  export type PortalUserMinAggregateOutputType = {
+    id: string | null
+    portalId: bigint | null
+    userId: bigint | null
+    bitrixUserId: string | null
+    role: string | null
+    invitedBy: string | null
+    revokedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PortalUserMaxAggregateOutputType = {
+    id: string | null
+    portalId: bigint | null
+    userId: bigint | null
+    bitrixUserId: string | null
+    role: string | null
+    invitedBy: string | null
+    revokedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PortalUserCountAggregateOutputType = {
+    id: number
+    portalId: number
+    userId: number
+    bitrixUserId: number
+    role: number
+    invitedBy: number
+    revokedAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type PortalUserAvgAggregateInputType = {
+    portalId?: true
+    userId?: true
+  }
+
+  export type PortalUserSumAggregateInputType = {
+    portalId?: true
+    userId?: true
+  }
+
+  export type PortalUserMinAggregateInputType = {
+    id?: true
+    portalId?: true
+    userId?: true
+    bitrixUserId?: true
+    role?: true
+    invitedBy?: true
+    revokedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PortalUserMaxAggregateInputType = {
+    id?: true
+    portalId?: true
+    userId?: true
+    bitrixUserId?: true
+    role?: true
+    invitedBy?: true
+    revokedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PortalUserCountAggregateInputType = {
+    id?: true
+    portalId?: true
+    userId?: true
+    bitrixUserId?: true
+    role?: true
+    invitedBy?: true
+    revokedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type PortalUserAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PortalUser to aggregate.
+     */
+    where?: PortalUserWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalUsers to fetch.
+     */
+    orderBy?: PortalUserOrderByWithRelationInput | PortalUserOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PortalUserWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalUsers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalUsers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PortalUsers
+    **/
+    _count?: true | PortalUserCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PortalUserAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PortalUserSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PortalUserMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PortalUserMaxAggregateInputType
+  }
+
+  export type GetPortalUserAggregateType<T extends PortalUserAggregateArgs> = {
+        [P in keyof T & keyof AggregatePortalUser]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePortalUser[P]>
+      : GetScalarType<T[P], AggregatePortalUser[P]>
+  }
+
+
+
+
+  export type PortalUserGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PortalUserWhereInput
+    orderBy?: PortalUserOrderByWithAggregationInput | PortalUserOrderByWithAggregationInput[]
+    by: PortalUserScalarFieldEnum[] | PortalUserScalarFieldEnum
+    having?: PortalUserScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PortalUserCountAggregateInputType | true
+    _avg?: PortalUserAvgAggregateInputType
+    _sum?: PortalUserSumAggregateInputType
+    _min?: PortalUserMinAggregateInputType
+    _max?: PortalUserMaxAggregateInputType
+  }
+
+  export type PortalUserGroupByOutputType = {
+    id: string
+    portalId: bigint
+    userId: bigint
+    bitrixUserId: string | null
+    role: string
+    invitedBy: string | null
+    revokedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    _count: PortalUserCountAggregateOutputType | null
+    _avg: PortalUserAvgAggregateOutputType | null
+    _sum: PortalUserSumAggregateOutputType | null
+    _min: PortalUserMinAggregateOutputType | null
+    _max: PortalUserMaxAggregateOutputType | null
+  }
+
+  type GetPortalUserGroupByPayload<T extends PortalUserGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PortalUserGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PortalUserGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PortalUserGroupByOutputType[P]>
+            : GetScalarType<T[P], PortalUserGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PortalUserSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    portalId?: boolean
+    userId?: boolean
+    bitrixUserId?: boolean
+    role?: boolean
+    invitedBy?: boolean
+    revokedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["portalUser"]>
+
+
+
+  export type PortalUserSelectScalar = {
+    id?: boolean
+    portalId?: boolean
+    userId?: boolean
+    bitrixUserId?: boolean
+    role?: boolean
+    invitedBy?: boolean
+    revokedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type PortalUserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "portalId" | "userId" | "bitrixUserId" | "role" | "invitedBy" | "revokedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["portalUser"]>
+  export type PortalUserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $PortalUserPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PortalUser"
+    objects: {
+      portal: Prisma.$PortalPayload<ExtArgs>
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      portalId: bigint
+      userId: bigint
+      bitrixUserId: string | null
+      role: string
+      invitedBy: string | null
+      revokedAt: Date | null
+      createdAt: Date | null
+      updatedAt: Date | null
+    }, ExtArgs["result"]["portalUser"]>
+    composites: {}
+  }
+
+  type PortalUserGetPayload<S extends boolean | null | undefined | PortalUserDefaultArgs> = $Result.GetResult<Prisma.$PortalUserPayload, S>
+
+  type PortalUserCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<PortalUserFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: PortalUserCountAggregateInputType | true
+    }
+
+  export interface PortalUserDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PortalUser'], meta: { name: 'PortalUser' } }
+    /**
+     * Find zero or one PortalUser that matches the filter.
+     * @param {PortalUserFindUniqueArgs} args - Arguments to find a PortalUser
+     * @example
+     * // Get one PortalUser
+     * const portalUser = await prisma.portalUser.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PortalUserFindUniqueArgs>(args: SelectSubset<T, PortalUserFindUniqueArgs<ExtArgs>>): Prisma__PortalUserClient<$Result.GetResult<Prisma.$PortalUserPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one PortalUser that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {PortalUserFindUniqueOrThrowArgs} args - Arguments to find a PortalUser
+     * @example
+     * // Get one PortalUser
+     * const portalUser = await prisma.portalUser.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PortalUserFindUniqueOrThrowArgs>(args: SelectSubset<T, PortalUserFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PortalUserClient<$Result.GetResult<Prisma.$PortalUserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PortalUser that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalUserFindFirstArgs} args - Arguments to find a PortalUser
+     * @example
+     * // Get one PortalUser
+     * const portalUser = await prisma.portalUser.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PortalUserFindFirstArgs>(args?: SelectSubset<T, PortalUserFindFirstArgs<ExtArgs>>): Prisma__PortalUserClient<$Result.GetResult<Prisma.$PortalUserPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PortalUser that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalUserFindFirstOrThrowArgs} args - Arguments to find a PortalUser
+     * @example
+     * // Get one PortalUser
+     * const portalUser = await prisma.portalUser.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PortalUserFindFirstOrThrowArgs>(args?: SelectSubset<T, PortalUserFindFirstOrThrowArgs<ExtArgs>>): Prisma__PortalUserClient<$Result.GetResult<Prisma.$PortalUserPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more PortalUsers that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalUserFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PortalUsers
+     * const portalUsers = await prisma.portalUser.findMany()
+     * 
+     * // Get first 10 PortalUsers
+     * const portalUsers = await prisma.portalUser.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const portalUserWithIdOnly = await prisma.portalUser.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PortalUserFindManyArgs>(args?: SelectSubset<T, PortalUserFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalUserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a PortalUser.
+     * @param {PortalUserCreateArgs} args - Arguments to create a PortalUser.
+     * @example
+     * // Create one PortalUser
+     * const PortalUser = await prisma.portalUser.create({
+     *   data: {
+     *     // ... data to create a PortalUser
+     *   }
+     * })
+     * 
+     */
+    create<T extends PortalUserCreateArgs>(args: SelectSubset<T, PortalUserCreateArgs<ExtArgs>>): Prisma__PortalUserClient<$Result.GetResult<Prisma.$PortalUserPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many PortalUsers.
+     * @param {PortalUserCreateManyArgs} args - Arguments to create many PortalUsers.
+     * @example
+     * // Create many PortalUsers
+     * const portalUser = await prisma.portalUser.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PortalUserCreateManyArgs>(args?: SelectSubset<T, PortalUserCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a PortalUser.
+     * @param {PortalUserDeleteArgs} args - Arguments to delete one PortalUser.
+     * @example
+     * // Delete one PortalUser
+     * const PortalUser = await prisma.portalUser.delete({
+     *   where: {
+     *     // ... filter to delete one PortalUser
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PortalUserDeleteArgs>(args: SelectSubset<T, PortalUserDeleteArgs<ExtArgs>>): Prisma__PortalUserClient<$Result.GetResult<Prisma.$PortalUserPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one PortalUser.
+     * @param {PortalUserUpdateArgs} args - Arguments to update one PortalUser.
+     * @example
+     * // Update one PortalUser
+     * const portalUser = await prisma.portalUser.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PortalUserUpdateArgs>(args: SelectSubset<T, PortalUserUpdateArgs<ExtArgs>>): Prisma__PortalUserClient<$Result.GetResult<Prisma.$PortalUserPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more PortalUsers.
+     * @param {PortalUserDeleteManyArgs} args - Arguments to filter PortalUsers to delete.
+     * @example
+     * // Delete a few PortalUsers
+     * const { count } = await prisma.portalUser.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PortalUserDeleteManyArgs>(args?: SelectSubset<T, PortalUserDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PortalUsers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalUserUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PortalUsers
+     * const portalUser = await prisma.portalUser.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PortalUserUpdateManyArgs>(args: SelectSubset<T, PortalUserUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one PortalUser.
+     * @param {PortalUserUpsertArgs} args - Arguments to update or create a PortalUser.
+     * @example
+     * // Update or create a PortalUser
+     * const portalUser = await prisma.portalUser.upsert({
+     *   create: {
+     *     // ... data to create a PortalUser
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PortalUser we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PortalUserUpsertArgs>(args: SelectSubset<T, PortalUserUpsertArgs<ExtArgs>>): Prisma__PortalUserClient<$Result.GetResult<Prisma.$PortalUserPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of PortalUsers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalUserCountArgs} args - Arguments to filter PortalUsers to count.
+     * @example
+     * // Count the number of PortalUsers
+     * const count = await prisma.portalUser.count({
+     *   where: {
+     *     // ... the filter for the PortalUsers we want to count
+     *   }
+     * })
+    **/
+    count<T extends PortalUserCountArgs>(
+      args?: Subset<T, PortalUserCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PortalUserCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PortalUser.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalUserAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PortalUserAggregateArgs>(args: Subset<T, PortalUserAggregateArgs>): Prisma.PrismaPromise<GetPortalUserAggregateType<T>>
+
+    /**
+     * Group by PortalUser.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PortalUserGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PortalUserGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PortalUserGroupByArgs['orderBy'] }
+        : { orderBy?: PortalUserGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PortalUserGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPortalUserGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PortalUser model
+   */
+  readonly fields: PortalUserFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PortalUser.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PortalUserClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    portal<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PortalUser model
+   */
+  interface PortalUserFieldRefs {
+    readonly id: FieldRef<"PortalUser", 'String'>
+    readonly portalId: FieldRef<"PortalUser", 'BigInt'>
+    readonly userId: FieldRef<"PortalUser", 'BigInt'>
+    readonly bitrixUserId: FieldRef<"PortalUser", 'String'>
+    readonly role: FieldRef<"PortalUser", 'String'>
+    readonly invitedBy: FieldRef<"PortalUser", 'String'>
+    readonly revokedAt: FieldRef<"PortalUser", 'DateTime'>
+    readonly createdAt: FieldRef<"PortalUser", 'DateTime'>
+    readonly updatedAt: FieldRef<"PortalUser", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PortalUser findUnique
+   */
+  export type PortalUserFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalUser
+     */
+    select?: PortalUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalUser
+     */
+    omit?: PortalUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalUserInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalUser to fetch.
+     */
+    where: PortalUserWhereUniqueInput
+  }
+
+  /**
+   * PortalUser findUniqueOrThrow
+   */
+  export type PortalUserFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalUser
+     */
+    select?: PortalUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalUser
+     */
+    omit?: PortalUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalUserInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalUser to fetch.
+     */
+    where: PortalUserWhereUniqueInput
+  }
+
+  /**
+   * PortalUser findFirst
+   */
+  export type PortalUserFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalUser
+     */
+    select?: PortalUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalUser
+     */
+    omit?: PortalUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalUserInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalUser to fetch.
+     */
+    where?: PortalUserWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalUsers to fetch.
+     */
+    orderBy?: PortalUserOrderByWithRelationInput | PortalUserOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PortalUsers.
+     */
+    cursor?: PortalUserWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalUsers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalUsers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PortalUsers.
+     */
+    distinct?: PortalUserScalarFieldEnum | PortalUserScalarFieldEnum[]
+  }
+
+  /**
+   * PortalUser findFirstOrThrow
+   */
+  export type PortalUserFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalUser
+     */
+    select?: PortalUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalUser
+     */
+    omit?: PortalUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalUserInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalUser to fetch.
+     */
+    where?: PortalUserWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalUsers to fetch.
+     */
+    orderBy?: PortalUserOrderByWithRelationInput | PortalUserOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PortalUsers.
+     */
+    cursor?: PortalUserWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalUsers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalUsers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PortalUsers.
+     */
+    distinct?: PortalUserScalarFieldEnum | PortalUserScalarFieldEnum[]
+  }
+
+  /**
+   * PortalUser findMany
+   */
+  export type PortalUserFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalUser
+     */
+    select?: PortalUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalUser
+     */
+    omit?: PortalUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalUserInclude<ExtArgs> | null
+    /**
+     * Filter, which PortalUsers to fetch.
+     */
+    where?: PortalUserWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PortalUsers to fetch.
+     */
+    orderBy?: PortalUserOrderByWithRelationInput | PortalUserOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PortalUsers.
+     */
+    cursor?: PortalUserWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PortalUsers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PortalUsers.
+     */
+    skip?: number
+    distinct?: PortalUserScalarFieldEnum | PortalUserScalarFieldEnum[]
+  }
+
+  /**
+   * PortalUser create
+   */
+  export type PortalUserCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalUser
+     */
+    select?: PortalUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalUser
+     */
+    omit?: PortalUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalUserInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PortalUser.
+     */
+    data: XOR<PortalUserCreateInput, PortalUserUncheckedCreateInput>
+  }
+
+  /**
+   * PortalUser createMany
+   */
+  export type PortalUserCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PortalUsers.
+     */
+    data: PortalUserCreateManyInput | PortalUserCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PortalUser update
+   */
+  export type PortalUserUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalUser
+     */
+    select?: PortalUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalUser
+     */
+    omit?: PortalUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalUserInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PortalUser.
+     */
+    data: XOR<PortalUserUpdateInput, PortalUserUncheckedUpdateInput>
+    /**
+     * Choose, which PortalUser to update.
+     */
+    where: PortalUserWhereUniqueInput
+  }
+
+  /**
+   * PortalUser updateMany
+   */
+  export type PortalUserUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PortalUsers.
+     */
+    data: XOR<PortalUserUpdateManyMutationInput, PortalUserUncheckedUpdateManyInput>
+    /**
+     * Filter which PortalUsers to update
+     */
+    where?: PortalUserWhereInput
+    /**
+     * Limit how many PortalUsers to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PortalUser upsert
+   */
+  export type PortalUserUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalUser
+     */
+    select?: PortalUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalUser
+     */
+    omit?: PortalUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalUserInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PortalUser to update in case it exists.
+     */
+    where: PortalUserWhereUniqueInput
+    /**
+     * In case the PortalUser found by the `where` argument doesn't exist, create a new PortalUser with this data.
+     */
+    create: XOR<PortalUserCreateInput, PortalUserUncheckedCreateInput>
+    /**
+     * In case the PortalUser was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PortalUserUpdateInput, PortalUserUncheckedUpdateInput>
+  }
+
+  /**
+   * PortalUser delete
+   */
+  export type PortalUserDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalUser
+     */
+    select?: PortalUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalUser
+     */
+    omit?: PortalUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalUserInclude<ExtArgs> | null
+    /**
+     * Filter which PortalUser to delete.
+     */
+    where: PortalUserWhereUniqueInput
+  }
+
+  /**
+   * PortalUser deleteMany
+   */
+  export type PortalUserDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PortalUsers to delete
+     */
+    where?: PortalUserWhereInput
+    /**
+     * Limit how many PortalUsers to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * PortalUser without action
+   */
+  export type PortalUserDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalUser
+     */
+    select?: PortalUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalUser
+     */
+    omit?: PortalUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalUserInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model TelegramBinding
+   */
+
+  export type AggregateTelegramBinding = {
+    _count: TelegramBindingCountAggregateOutputType | null
+    _avg: TelegramBindingAvgAggregateOutputType | null
+    _sum: TelegramBindingSumAggregateOutputType | null
+    _min: TelegramBindingMinAggregateOutputType | null
+    _max: TelegramBindingMaxAggregateOutputType | null
+  }
+
+  export type TelegramBindingAvgAggregateOutputType = {
+    portalId: number | null
+    userId: number | null
+    chatId: number | null
+  }
+
+  export type TelegramBindingSumAggregateOutputType = {
+    portalId: bigint | null
+    userId: bigint | null
+    chatId: bigint | null
+  }
+
+  export type TelegramBindingMinAggregateOutputType = {
+    id: string | null
+    portalId: bigint | null
+    userId: bigint | null
+    bitrixUserId: string | null
+    chatId: bigint | null
+    telegramUsername: string | null
+    displayName: string | null
+    createdBy: string | null
+    revokedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type TelegramBindingMaxAggregateOutputType = {
+    id: string | null
+    portalId: bigint | null
+    userId: bigint | null
+    bitrixUserId: string | null
+    chatId: bigint | null
+    telegramUsername: string | null
+    displayName: string | null
+    createdBy: string | null
+    revokedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type TelegramBindingCountAggregateOutputType = {
+    id: number
+    portalId: number
+    userId: number
+    bitrixUserId: number
+    chatId: number
+    telegramUsername: number
+    displayName: number
+    createdBy: number
+    revokedAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type TelegramBindingAvgAggregateInputType = {
+    portalId?: true
+    userId?: true
+    chatId?: true
+  }
+
+  export type TelegramBindingSumAggregateInputType = {
+    portalId?: true
+    userId?: true
+    chatId?: true
+  }
+
+  export type TelegramBindingMinAggregateInputType = {
+    id?: true
+    portalId?: true
+    userId?: true
+    bitrixUserId?: true
+    chatId?: true
+    telegramUsername?: true
+    displayName?: true
+    createdBy?: true
+    revokedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type TelegramBindingMaxAggregateInputType = {
+    id?: true
+    portalId?: true
+    userId?: true
+    bitrixUserId?: true
+    chatId?: true
+    telegramUsername?: true
+    displayName?: true
+    createdBy?: true
+    revokedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type TelegramBindingCountAggregateInputType = {
+    id?: true
+    portalId?: true
+    userId?: true
+    bitrixUserId?: true
+    chatId?: true
+    telegramUsername?: true
+    displayName?: true
+    createdBy?: true
+    revokedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type TelegramBindingAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which TelegramBinding to aggregate.
+     */
+    where?: TelegramBindingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TelegramBindings to fetch.
+     */
+    orderBy?: TelegramBindingOrderByWithRelationInput | TelegramBindingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: TelegramBindingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TelegramBindings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TelegramBindings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned TelegramBindings
+    **/
+    _count?: true | TelegramBindingCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: TelegramBindingAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: TelegramBindingSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: TelegramBindingMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: TelegramBindingMaxAggregateInputType
+  }
+
+  export type GetTelegramBindingAggregateType<T extends TelegramBindingAggregateArgs> = {
+        [P in keyof T & keyof AggregateTelegramBinding]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateTelegramBinding[P]>
+      : GetScalarType<T[P], AggregateTelegramBinding[P]>
+  }
+
+
+
+
+  export type TelegramBindingGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: TelegramBindingWhereInput
+    orderBy?: TelegramBindingOrderByWithAggregationInput | TelegramBindingOrderByWithAggregationInput[]
+    by: TelegramBindingScalarFieldEnum[] | TelegramBindingScalarFieldEnum
+    having?: TelegramBindingScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: TelegramBindingCountAggregateInputType | true
+    _avg?: TelegramBindingAvgAggregateInputType
+    _sum?: TelegramBindingSumAggregateInputType
+    _min?: TelegramBindingMinAggregateInputType
+    _max?: TelegramBindingMaxAggregateInputType
+  }
+
+  export type TelegramBindingGroupByOutputType = {
+    id: string
+    portalId: bigint
+    userId: bigint | null
+    bitrixUserId: string | null
+    chatId: bigint
+    telegramUsername: string | null
+    displayName: string | null
+    createdBy: string | null
+    revokedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    _count: TelegramBindingCountAggregateOutputType | null
+    _avg: TelegramBindingAvgAggregateOutputType | null
+    _sum: TelegramBindingSumAggregateOutputType | null
+    _min: TelegramBindingMinAggregateOutputType | null
+    _max: TelegramBindingMaxAggregateOutputType | null
+  }
+
+  type GetTelegramBindingGroupByPayload<T extends TelegramBindingGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<TelegramBindingGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof TelegramBindingGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], TelegramBindingGroupByOutputType[P]>
+            : GetScalarType<T[P], TelegramBindingGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type TelegramBindingSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    portalId?: boolean
+    userId?: boolean
+    bitrixUserId?: boolean
+    chatId?: boolean
+    telegramUsername?: boolean
+    displayName?: boolean
+    createdBy?: boolean
+    revokedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+    user?: boolean | TelegramBinding$userArgs<ExtArgs>
+  }, ExtArgs["result"]["telegramBinding"]>
+
+
+
+  export type TelegramBindingSelectScalar = {
+    id?: boolean
+    portalId?: boolean
+    userId?: boolean
+    bitrixUserId?: boolean
+    chatId?: boolean
+    telegramUsername?: boolean
+    displayName?: boolean
+    createdBy?: boolean
+    revokedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type TelegramBindingOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "portalId" | "userId" | "bitrixUserId" | "chatId" | "telegramUsername" | "displayName" | "createdBy" | "revokedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["telegramBinding"]>
+  export type TelegramBindingInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    portal?: boolean | PortalDefaultArgs<ExtArgs>
+    user?: boolean | TelegramBinding$userArgs<ExtArgs>
+  }
+
+  export type $TelegramBindingPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "TelegramBinding"
+    objects: {
+      portal: Prisma.$PortalPayload<ExtArgs>
+      user: Prisma.$UserPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      portalId: bigint
+      userId: bigint | null
+      bitrixUserId: string | null
+      chatId: bigint
+      telegramUsername: string | null
+      displayName: string | null
+      createdBy: string | null
+      revokedAt: Date | null
+      createdAt: Date | null
+      updatedAt: Date | null
+    }, ExtArgs["result"]["telegramBinding"]>
+    composites: {}
+  }
+
+  type TelegramBindingGetPayload<S extends boolean | null | undefined | TelegramBindingDefaultArgs> = $Result.GetResult<Prisma.$TelegramBindingPayload, S>
+
+  type TelegramBindingCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<TelegramBindingFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: TelegramBindingCountAggregateInputType | true
+    }
+
+  export interface TelegramBindingDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['TelegramBinding'], meta: { name: 'TelegramBinding' } }
+    /**
+     * Find zero or one TelegramBinding that matches the filter.
+     * @param {TelegramBindingFindUniqueArgs} args - Arguments to find a TelegramBinding
+     * @example
+     * // Get one TelegramBinding
+     * const telegramBinding = await prisma.telegramBinding.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends TelegramBindingFindUniqueArgs>(args: SelectSubset<T, TelegramBindingFindUniqueArgs<ExtArgs>>): Prisma__TelegramBindingClient<$Result.GetResult<Prisma.$TelegramBindingPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one TelegramBinding that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {TelegramBindingFindUniqueOrThrowArgs} args - Arguments to find a TelegramBinding
+     * @example
+     * // Get one TelegramBinding
+     * const telegramBinding = await prisma.telegramBinding.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends TelegramBindingFindUniqueOrThrowArgs>(args: SelectSubset<T, TelegramBindingFindUniqueOrThrowArgs<ExtArgs>>): Prisma__TelegramBindingClient<$Result.GetResult<Prisma.$TelegramBindingPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first TelegramBinding that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TelegramBindingFindFirstArgs} args - Arguments to find a TelegramBinding
+     * @example
+     * // Get one TelegramBinding
+     * const telegramBinding = await prisma.telegramBinding.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends TelegramBindingFindFirstArgs>(args?: SelectSubset<T, TelegramBindingFindFirstArgs<ExtArgs>>): Prisma__TelegramBindingClient<$Result.GetResult<Prisma.$TelegramBindingPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first TelegramBinding that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TelegramBindingFindFirstOrThrowArgs} args - Arguments to find a TelegramBinding
+     * @example
+     * // Get one TelegramBinding
+     * const telegramBinding = await prisma.telegramBinding.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends TelegramBindingFindFirstOrThrowArgs>(args?: SelectSubset<T, TelegramBindingFindFirstOrThrowArgs<ExtArgs>>): Prisma__TelegramBindingClient<$Result.GetResult<Prisma.$TelegramBindingPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more TelegramBindings that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TelegramBindingFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all TelegramBindings
+     * const telegramBindings = await prisma.telegramBinding.findMany()
+     * 
+     * // Get first 10 TelegramBindings
+     * const telegramBindings = await prisma.telegramBinding.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const telegramBindingWithIdOnly = await prisma.telegramBinding.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends TelegramBindingFindManyArgs>(args?: SelectSubset<T, TelegramBindingFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TelegramBindingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a TelegramBinding.
+     * @param {TelegramBindingCreateArgs} args - Arguments to create a TelegramBinding.
+     * @example
+     * // Create one TelegramBinding
+     * const TelegramBinding = await prisma.telegramBinding.create({
+     *   data: {
+     *     // ... data to create a TelegramBinding
+     *   }
+     * })
+     * 
+     */
+    create<T extends TelegramBindingCreateArgs>(args: SelectSubset<T, TelegramBindingCreateArgs<ExtArgs>>): Prisma__TelegramBindingClient<$Result.GetResult<Prisma.$TelegramBindingPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many TelegramBindings.
+     * @param {TelegramBindingCreateManyArgs} args - Arguments to create many TelegramBindings.
+     * @example
+     * // Create many TelegramBindings
+     * const telegramBinding = await prisma.telegramBinding.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends TelegramBindingCreateManyArgs>(args?: SelectSubset<T, TelegramBindingCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a TelegramBinding.
+     * @param {TelegramBindingDeleteArgs} args - Arguments to delete one TelegramBinding.
+     * @example
+     * // Delete one TelegramBinding
+     * const TelegramBinding = await prisma.telegramBinding.delete({
+     *   where: {
+     *     // ... filter to delete one TelegramBinding
+     *   }
+     * })
+     * 
+     */
+    delete<T extends TelegramBindingDeleteArgs>(args: SelectSubset<T, TelegramBindingDeleteArgs<ExtArgs>>): Prisma__TelegramBindingClient<$Result.GetResult<Prisma.$TelegramBindingPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one TelegramBinding.
+     * @param {TelegramBindingUpdateArgs} args - Arguments to update one TelegramBinding.
+     * @example
+     * // Update one TelegramBinding
+     * const telegramBinding = await prisma.telegramBinding.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends TelegramBindingUpdateArgs>(args: SelectSubset<T, TelegramBindingUpdateArgs<ExtArgs>>): Prisma__TelegramBindingClient<$Result.GetResult<Prisma.$TelegramBindingPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more TelegramBindings.
+     * @param {TelegramBindingDeleteManyArgs} args - Arguments to filter TelegramBindings to delete.
+     * @example
+     * // Delete a few TelegramBindings
+     * const { count } = await prisma.telegramBinding.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends TelegramBindingDeleteManyArgs>(args?: SelectSubset<T, TelegramBindingDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more TelegramBindings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TelegramBindingUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many TelegramBindings
+     * const telegramBinding = await prisma.telegramBinding.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends TelegramBindingUpdateManyArgs>(args: SelectSubset<T, TelegramBindingUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one TelegramBinding.
+     * @param {TelegramBindingUpsertArgs} args - Arguments to update or create a TelegramBinding.
+     * @example
+     * // Update or create a TelegramBinding
+     * const telegramBinding = await prisma.telegramBinding.upsert({
+     *   create: {
+     *     // ... data to create a TelegramBinding
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the TelegramBinding we want to update
+     *   }
+     * })
+     */
+    upsert<T extends TelegramBindingUpsertArgs>(args: SelectSubset<T, TelegramBindingUpsertArgs<ExtArgs>>): Prisma__TelegramBindingClient<$Result.GetResult<Prisma.$TelegramBindingPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of TelegramBindings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TelegramBindingCountArgs} args - Arguments to filter TelegramBindings to count.
+     * @example
+     * // Count the number of TelegramBindings
+     * const count = await prisma.telegramBinding.count({
+     *   where: {
+     *     // ... the filter for the TelegramBindings we want to count
+     *   }
+     * })
+    **/
+    count<T extends TelegramBindingCountArgs>(
+      args?: Subset<T, TelegramBindingCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], TelegramBindingCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a TelegramBinding.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TelegramBindingAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends TelegramBindingAggregateArgs>(args: Subset<T, TelegramBindingAggregateArgs>): Prisma.PrismaPromise<GetTelegramBindingAggregateType<T>>
+
+    /**
+     * Group by TelegramBinding.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TelegramBindingGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends TelegramBindingGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: TelegramBindingGroupByArgs['orderBy'] }
+        : { orderBy?: TelegramBindingGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, TelegramBindingGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetTelegramBindingGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the TelegramBinding model
+   */
+  readonly fields: TelegramBindingFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for TelegramBinding.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__TelegramBindingClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    portal<T extends PortalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PortalDefaultArgs<ExtArgs>>): Prisma__PortalClient<$Result.GetResult<Prisma.$PortalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    user<T extends TelegramBinding$userArgs<ExtArgs> = {}>(args?: Subset<T, TelegramBinding$userArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the TelegramBinding model
+   */
+  interface TelegramBindingFieldRefs {
+    readonly id: FieldRef<"TelegramBinding", 'String'>
+    readonly portalId: FieldRef<"TelegramBinding", 'BigInt'>
+    readonly userId: FieldRef<"TelegramBinding", 'BigInt'>
+    readonly bitrixUserId: FieldRef<"TelegramBinding", 'String'>
+    readonly chatId: FieldRef<"TelegramBinding", 'BigInt'>
+    readonly telegramUsername: FieldRef<"TelegramBinding", 'String'>
+    readonly displayName: FieldRef<"TelegramBinding", 'String'>
+    readonly createdBy: FieldRef<"TelegramBinding", 'String'>
+    readonly revokedAt: FieldRef<"TelegramBinding", 'DateTime'>
+    readonly createdAt: FieldRef<"TelegramBinding", 'DateTime'>
+    readonly updatedAt: FieldRef<"TelegramBinding", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * TelegramBinding findUnique
+   */
+  export type TelegramBindingFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TelegramBinding
+     */
+    select?: TelegramBindingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TelegramBinding
+     */
+    omit?: TelegramBindingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TelegramBindingInclude<ExtArgs> | null
+    /**
+     * Filter, which TelegramBinding to fetch.
+     */
+    where: TelegramBindingWhereUniqueInput
+  }
+
+  /**
+   * TelegramBinding findUniqueOrThrow
+   */
+  export type TelegramBindingFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TelegramBinding
+     */
+    select?: TelegramBindingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TelegramBinding
+     */
+    omit?: TelegramBindingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TelegramBindingInclude<ExtArgs> | null
+    /**
+     * Filter, which TelegramBinding to fetch.
+     */
+    where: TelegramBindingWhereUniqueInput
+  }
+
+  /**
+   * TelegramBinding findFirst
+   */
+  export type TelegramBindingFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TelegramBinding
+     */
+    select?: TelegramBindingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TelegramBinding
+     */
+    omit?: TelegramBindingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TelegramBindingInclude<ExtArgs> | null
+    /**
+     * Filter, which TelegramBinding to fetch.
+     */
+    where?: TelegramBindingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TelegramBindings to fetch.
+     */
+    orderBy?: TelegramBindingOrderByWithRelationInput | TelegramBindingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for TelegramBindings.
+     */
+    cursor?: TelegramBindingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TelegramBindings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TelegramBindings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of TelegramBindings.
+     */
+    distinct?: TelegramBindingScalarFieldEnum | TelegramBindingScalarFieldEnum[]
+  }
+
+  /**
+   * TelegramBinding findFirstOrThrow
+   */
+  export type TelegramBindingFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TelegramBinding
+     */
+    select?: TelegramBindingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TelegramBinding
+     */
+    omit?: TelegramBindingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TelegramBindingInclude<ExtArgs> | null
+    /**
+     * Filter, which TelegramBinding to fetch.
+     */
+    where?: TelegramBindingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TelegramBindings to fetch.
+     */
+    orderBy?: TelegramBindingOrderByWithRelationInput | TelegramBindingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for TelegramBindings.
+     */
+    cursor?: TelegramBindingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TelegramBindings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TelegramBindings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of TelegramBindings.
+     */
+    distinct?: TelegramBindingScalarFieldEnum | TelegramBindingScalarFieldEnum[]
+  }
+
+  /**
+   * TelegramBinding findMany
+   */
+  export type TelegramBindingFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TelegramBinding
+     */
+    select?: TelegramBindingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TelegramBinding
+     */
+    omit?: TelegramBindingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TelegramBindingInclude<ExtArgs> | null
+    /**
+     * Filter, which TelegramBindings to fetch.
+     */
+    where?: TelegramBindingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TelegramBindings to fetch.
+     */
+    orderBy?: TelegramBindingOrderByWithRelationInput | TelegramBindingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing TelegramBindings.
+     */
+    cursor?: TelegramBindingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TelegramBindings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TelegramBindings.
+     */
+    skip?: number
+    distinct?: TelegramBindingScalarFieldEnum | TelegramBindingScalarFieldEnum[]
+  }
+
+  /**
+   * TelegramBinding create
+   */
+  export type TelegramBindingCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TelegramBinding
+     */
+    select?: TelegramBindingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TelegramBinding
+     */
+    omit?: TelegramBindingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TelegramBindingInclude<ExtArgs> | null
+    /**
+     * The data needed to create a TelegramBinding.
+     */
+    data: XOR<TelegramBindingCreateInput, TelegramBindingUncheckedCreateInput>
+  }
+
+  /**
+   * TelegramBinding createMany
+   */
+  export type TelegramBindingCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many TelegramBindings.
+     */
+    data: TelegramBindingCreateManyInput | TelegramBindingCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * TelegramBinding update
+   */
+  export type TelegramBindingUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TelegramBinding
+     */
+    select?: TelegramBindingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TelegramBinding
+     */
+    omit?: TelegramBindingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TelegramBindingInclude<ExtArgs> | null
+    /**
+     * The data needed to update a TelegramBinding.
+     */
+    data: XOR<TelegramBindingUpdateInput, TelegramBindingUncheckedUpdateInput>
+    /**
+     * Choose, which TelegramBinding to update.
+     */
+    where: TelegramBindingWhereUniqueInput
+  }
+
+  /**
+   * TelegramBinding updateMany
+   */
+  export type TelegramBindingUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update TelegramBindings.
+     */
+    data: XOR<TelegramBindingUpdateManyMutationInput, TelegramBindingUncheckedUpdateManyInput>
+    /**
+     * Filter which TelegramBindings to update
+     */
+    where?: TelegramBindingWhereInput
+    /**
+     * Limit how many TelegramBindings to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * TelegramBinding upsert
+   */
+  export type TelegramBindingUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TelegramBinding
+     */
+    select?: TelegramBindingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TelegramBinding
+     */
+    omit?: TelegramBindingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TelegramBindingInclude<ExtArgs> | null
+    /**
+     * The filter to search for the TelegramBinding to update in case it exists.
+     */
+    where: TelegramBindingWhereUniqueInput
+    /**
+     * In case the TelegramBinding found by the `where` argument doesn't exist, create a new TelegramBinding with this data.
+     */
+    create: XOR<TelegramBindingCreateInput, TelegramBindingUncheckedCreateInput>
+    /**
+     * In case the TelegramBinding was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<TelegramBindingUpdateInput, TelegramBindingUncheckedUpdateInput>
+  }
+
+  /**
+   * TelegramBinding delete
+   */
+  export type TelegramBindingDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TelegramBinding
+     */
+    select?: TelegramBindingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TelegramBinding
+     */
+    omit?: TelegramBindingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TelegramBindingInclude<ExtArgs> | null
+    /**
+     * Filter which TelegramBinding to delete.
+     */
+    where: TelegramBindingWhereUniqueInput
+  }
+
+  /**
+   * TelegramBinding deleteMany
+   */
+  export type TelegramBindingDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which TelegramBindings to delete
+     */
+    where?: TelegramBindingWhereInput
+    /**
+     * Limit how many TelegramBindings to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * TelegramBinding.user
+   */
+  export type TelegramBinding$userArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the User
+     */
+    omit?: UserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
+  }
+
+  /**
+   * TelegramBinding without action
+   */
+  export type TelegramBindingDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TelegramBinding
+     */
+    select?: TelegramBindingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TelegramBinding
+     */
+    omit?: TelegramBindingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TelegramBindingInclude<ExtArgs> | null
   }
 
 
@@ -75085,6 +77450,9 @@ export namespace Prisma {
     client_id?: boolean
     bitrix_id?: boolean
     clients?: boolean | User$clientsArgs<ExtArgs>
+    portalUsers?: boolean | User$portalUsersArgs<ExtArgs>
+    telegramBindings?: boolean | User$telegramBindingsArgs<ExtArgs>
+    _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
 
@@ -75110,12 +77478,17 @@ export namespace Prisma {
   export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "surname" | "email" | "photo" | "role_id" | "email_verified_at" | "password" | "two_factor_secret" | "two_factor_recovery_codes" | "remember_token" | "created_at" | "updated_at" | "client_id" | "bitrix_id", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     clients?: boolean | User$clientsArgs<ExtArgs>
+    portalUsers?: boolean | User$portalUsersArgs<ExtArgs>
+    telegramBindings?: boolean | User$telegramBindingsArgs<ExtArgs>
+    _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
 
   export type $UserPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "User"
     objects: {
       clients: Prisma.$ClientPayload<ExtArgs> | null
+      portalUsers: Prisma.$PortalUserPayload<ExtArgs>[]
+      telegramBindings: Prisma.$TelegramBindingPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
@@ -75474,6 +77847,8 @@ export namespace Prisma {
   export interface Prisma__UserClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     clients<T extends User$clientsArgs<ExtArgs> = {}>(args?: Subset<T, User$clientsArgs<ExtArgs>>): Prisma__ClientClient<$Result.GetResult<Prisma.$ClientPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    portalUsers<T extends User$portalUsersArgs<ExtArgs> = {}>(args?: Subset<T, User$portalUsersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PortalUserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    telegramBindings<T extends User$telegramBindingsArgs<ExtArgs> = {}>(args?: Subset<T, User$telegramBindingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TelegramBindingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -75877,6 +78252,54 @@ export namespace Prisma {
      */
     include?: ClientInclude<ExtArgs> | null
     where?: ClientWhereInput
+  }
+
+  /**
+   * User.portalUsers
+   */
+  export type User$portalUsersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PortalUser
+     */
+    select?: PortalUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PortalUser
+     */
+    omit?: PortalUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PortalUserInclude<ExtArgs> | null
+    where?: PortalUserWhereInput
+    orderBy?: PortalUserOrderByWithRelationInput | PortalUserOrderByWithRelationInput[]
+    cursor?: PortalUserWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PortalUserScalarFieldEnum | PortalUserScalarFieldEnum[]
+  }
+
+  /**
+   * User.telegramBindings
+   */
+  export type User$telegramBindingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TelegramBinding
+     */
+    select?: TelegramBindingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TelegramBinding
+     */
+    omit?: TelegramBindingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TelegramBindingInclude<ExtArgs> | null
+    where?: TelegramBindingWhereInput
+    orderBy?: TelegramBindingOrderByWithRelationInput | TelegramBindingOrderByWithRelationInput[]
+    cursor?: TelegramBindingWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: TelegramBindingScalarFieldEnum | TelegramBindingScalarFieldEnum[]
   }
 
   /**
@@ -126008,6 +128431,38 @@ export namespace Prisma {
   export type PortalScalarFieldEnum = (typeof PortalScalarFieldEnum)[keyof typeof PortalScalarFieldEnum]
 
 
+  export const PortalUserScalarFieldEnum: {
+    id: 'id',
+    portalId: 'portalId',
+    userId: 'userId',
+    bitrixUserId: 'bitrixUserId',
+    role: 'role',
+    invitedBy: 'invitedBy',
+    revokedAt: 'revokedAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type PortalUserScalarFieldEnum = (typeof PortalUserScalarFieldEnum)[keyof typeof PortalUserScalarFieldEnum]
+
+
+  export const TelegramBindingScalarFieldEnum: {
+    id: 'id',
+    portalId: 'portalId',
+    userId: 'userId',
+    bitrixUserId: 'bitrixUserId',
+    chatId: 'chatId',
+    telegramUsername: 'telegramUsername',
+    displayName: 'displayName',
+    createdBy: 'createdBy',
+    revokedAt: 'revokedAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type TelegramBindingScalarFieldEnum = (typeof TelegramBindingScalarFieldEnum)[keyof typeof TelegramBindingScalarFieldEnum]
+
+
   export const PortalAiSettingsScalarFieldEnum: {
     id: 'id',
     portal_id: 'portal_id',
@@ -127919,6 +130374,27 @@ export namespace Prisma {
   };
 
   export type PortalOrderByRelevanceFieldEnum = (typeof PortalOrderByRelevanceFieldEnum)[keyof typeof PortalOrderByRelevanceFieldEnum]
+
+
+  export const PortalUserOrderByRelevanceFieldEnum: {
+    id: 'id',
+    bitrixUserId: 'bitrixUserId',
+    role: 'role',
+    invitedBy: 'invitedBy'
+  };
+
+  export type PortalUserOrderByRelevanceFieldEnum = (typeof PortalUserOrderByRelevanceFieldEnum)[keyof typeof PortalUserOrderByRelevanceFieldEnum]
+
+
+  export const TelegramBindingOrderByRelevanceFieldEnum: {
+    id: 'id',
+    bitrixUserId: 'bitrixUserId',
+    telegramUsername: 'telegramUsername',
+    displayName: 'displayName',
+    createdBy: 'createdBy'
+  };
+
+  export type TelegramBindingOrderByRelevanceFieldEnum = (typeof TelegramBindingOrderByRelevanceFieldEnum)[keyof typeof TelegramBindingOrderByRelevanceFieldEnum]
 
 
   export const JsonNullValueFilter: {
@@ -132031,6 +134507,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireListRelationFilter
     questionnaireItems?: PortalQuestionnaireItemListRelationFilter
     vendorSuperUsers?: VendorSuperUserListRelationFilter
+    portalUsers?: PortalUserListRelationFilter
+    telegramBindings?: TelegramBindingListRelationFilter
   }
 
   export type PortalOrderByWithRelationInput = {
@@ -132101,6 +134579,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireOrderByRelationAggregateInput
     questionnaireItems?: PortalQuestionnaireItemOrderByRelationAggregateInput
     vendorSuperUsers?: VendorSuperUserOrderByRelationAggregateInput
+    portalUsers?: PortalUserOrderByRelationAggregateInput
+    telegramBindings?: TelegramBindingOrderByRelationAggregateInput
     _relevance?: PortalOrderByRelevanceInput
   }
 
@@ -132175,6 +134655,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireListRelationFilter
     questionnaireItems?: PortalQuestionnaireItemListRelationFilter
     vendorSuperUsers?: VendorSuperUserListRelationFilter
+    portalUsers?: PortalUserListRelationFilter
+    telegramBindings?: TelegramBindingListRelationFilter
   }, "id" | "member_id">
 
   export type PortalOrderByWithAggregationInput = {
@@ -132241,6 +134723,180 @@ export namespace Prisma {
     approval_status?: StringNullableWithAggregatesFilter<"Portal"> | string | null
     approved_at?: DateTimeNullableWithAggregatesFilter<"Portal"> | Date | string | null
     approved_by?: StringNullableWithAggregatesFilter<"Portal"> | string | null
+  }
+
+  export type PortalUserWhereInput = {
+    AND?: PortalUserWhereInput | PortalUserWhereInput[]
+    OR?: PortalUserWhereInput[]
+    NOT?: PortalUserWhereInput | PortalUserWhereInput[]
+    id?: StringFilter<"PortalUser"> | string
+    portalId?: BigIntFilter<"PortalUser"> | bigint | number
+    userId?: BigIntFilter<"PortalUser"> | bigint | number
+    bitrixUserId?: StringNullableFilter<"PortalUser"> | string | null
+    role?: StringFilter<"PortalUser"> | string
+    invitedBy?: StringNullableFilter<"PortalUser"> | string | null
+    revokedAt?: DateTimeNullableFilter<"PortalUser"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"PortalUser"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"PortalUser"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }
+
+  export type PortalUserOrderByWithRelationInput = {
+    id?: SortOrder
+    portalId?: SortOrder
+    userId?: SortOrder
+    bitrixUserId?: SortOrderInput | SortOrder
+    role?: SortOrder
+    invitedBy?: SortOrderInput | SortOrder
+    revokedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    portal?: PortalOrderByWithRelationInput
+    user?: UserOrderByWithRelationInput
+    _relevance?: PortalUserOrderByRelevanceInput
+  }
+
+  export type PortalUserWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    portalId_userId?: PortalUserPortalIdUserIdCompoundUniqueInput
+    AND?: PortalUserWhereInput | PortalUserWhereInput[]
+    OR?: PortalUserWhereInput[]
+    NOT?: PortalUserWhereInput | PortalUserWhereInput[]
+    portalId?: BigIntFilter<"PortalUser"> | bigint | number
+    userId?: BigIntFilter<"PortalUser"> | bigint | number
+    bitrixUserId?: StringNullableFilter<"PortalUser"> | string | null
+    role?: StringFilter<"PortalUser"> | string
+    invitedBy?: StringNullableFilter<"PortalUser"> | string | null
+    revokedAt?: DateTimeNullableFilter<"PortalUser"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"PortalUser"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"PortalUser"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }, "id" | "portalId_userId">
+
+  export type PortalUserOrderByWithAggregationInput = {
+    id?: SortOrder
+    portalId?: SortOrder
+    userId?: SortOrder
+    bitrixUserId?: SortOrderInput | SortOrder
+    role?: SortOrder
+    invitedBy?: SortOrderInput | SortOrder
+    revokedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _count?: PortalUserCountOrderByAggregateInput
+    _avg?: PortalUserAvgOrderByAggregateInput
+    _max?: PortalUserMaxOrderByAggregateInput
+    _min?: PortalUserMinOrderByAggregateInput
+    _sum?: PortalUserSumOrderByAggregateInput
+  }
+
+  export type PortalUserScalarWhereWithAggregatesInput = {
+    AND?: PortalUserScalarWhereWithAggregatesInput | PortalUserScalarWhereWithAggregatesInput[]
+    OR?: PortalUserScalarWhereWithAggregatesInput[]
+    NOT?: PortalUserScalarWhereWithAggregatesInput | PortalUserScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"PortalUser"> | string
+    portalId?: BigIntWithAggregatesFilter<"PortalUser"> | bigint | number
+    userId?: BigIntWithAggregatesFilter<"PortalUser"> | bigint | number
+    bitrixUserId?: StringNullableWithAggregatesFilter<"PortalUser"> | string | null
+    role?: StringWithAggregatesFilter<"PortalUser"> | string
+    invitedBy?: StringNullableWithAggregatesFilter<"PortalUser"> | string | null
+    revokedAt?: DateTimeNullableWithAggregatesFilter<"PortalUser"> | Date | string | null
+    createdAt?: DateTimeNullableWithAggregatesFilter<"PortalUser"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"PortalUser"> | Date | string | null
+  }
+
+  export type TelegramBindingWhereInput = {
+    AND?: TelegramBindingWhereInput | TelegramBindingWhereInput[]
+    OR?: TelegramBindingWhereInput[]
+    NOT?: TelegramBindingWhereInput | TelegramBindingWhereInput[]
+    id?: StringFilter<"TelegramBinding"> | string
+    portalId?: BigIntFilter<"TelegramBinding"> | bigint | number
+    userId?: BigIntNullableFilter<"TelegramBinding"> | bigint | number | null
+    bitrixUserId?: StringNullableFilter<"TelegramBinding"> | string | null
+    chatId?: BigIntFilter<"TelegramBinding"> | bigint | number
+    telegramUsername?: StringNullableFilter<"TelegramBinding"> | string | null
+    displayName?: StringNullableFilter<"TelegramBinding"> | string | null
+    createdBy?: StringNullableFilter<"TelegramBinding"> | string | null
+    revokedAt?: DateTimeNullableFilter<"TelegramBinding"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"TelegramBinding"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"TelegramBinding"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+    user?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
+  }
+
+  export type TelegramBindingOrderByWithRelationInput = {
+    id?: SortOrder
+    portalId?: SortOrder
+    userId?: SortOrderInput | SortOrder
+    bitrixUserId?: SortOrderInput | SortOrder
+    chatId?: SortOrder
+    telegramUsername?: SortOrderInput | SortOrder
+    displayName?: SortOrderInput | SortOrder
+    createdBy?: SortOrderInput | SortOrder
+    revokedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    portal?: PortalOrderByWithRelationInput
+    user?: UserOrderByWithRelationInput
+    _relevance?: TelegramBindingOrderByRelevanceInput
+  }
+
+  export type TelegramBindingWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    portalId_chatId?: TelegramBindingPortalIdChatIdCompoundUniqueInput
+    AND?: TelegramBindingWhereInput | TelegramBindingWhereInput[]
+    OR?: TelegramBindingWhereInput[]
+    NOT?: TelegramBindingWhereInput | TelegramBindingWhereInput[]
+    portalId?: BigIntFilter<"TelegramBinding"> | bigint | number
+    userId?: BigIntNullableFilter<"TelegramBinding"> | bigint | number | null
+    bitrixUserId?: StringNullableFilter<"TelegramBinding"> | string | null
+    chatId?: BigIntFilter<"TelegramBinding"> | bigint | number
+    telegramUsername?: StringNullableFilter<"TelegramBinding"> | string | null
+    displayName?: StringNullableFilter<"TelegramBinding"> | string | null
+    createdBy?: StringNullableFilter<"TelegramBinding"> | string | null
+    revokedAt?: DateTimeNullableFilter<"TelegramBinding"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"TelegramBinding"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"TelegramBinding"> | Date | string | null
+    portal?: XOR<PortalScalarRelationFilter, PortalWhereInput>
+    user?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
+  }, "id" | "portalId_chatId">
+
+  export type TelegramBindingOrderByWithAggregationInput = {
+    id?: SortOrder
+    portalId?: SortOrder
+    userId?: SortOrderInput | SortOrder
+    bitrixUserId?: SortOrderInput | SortOrder
+    chatId?: SortOrder
+    telegramUsername?: SortOrderInput | SortOrder
+    displayName?: SortOrderInput | SortOrder
+    createdBy?: SortOrderInput | SortOrder
+    revokedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    _count?: TelegramBindingCountOrderByAggregateInput
+    _avg?: TelegramBindingAvgOrderByAggregateInput
+    _max?: TelegramBindingMaxOrderByAggregateInput
+    _min?: TelegramBindingMinOrderByAggregateInput
+    _sum?: TelegramBindingSumOrderByAggregateInput
+  }
+
+  export type TelegramBindingScalarWhereWithAggregatesInput = {
+    AND?: TelegramBindingScalarWhereWithAggregatesInput | TelegramBindingScalarWhereWithAggregatesInput[]
+    OR?: TelegramBindingScalarWhereWithAggregatesInput[]
+    NOT?: TelegramBindingScalarWhereWithAggregatesInput | TelegramBindingScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"TelegramBinding"> | string
+    portalId?: BigIntWithAggregatesFilter<"TelegramBinding"> | bigint | number
+    userId?: BigIntNullableWithAggregatesFilter<"TelegramBinding"> | bigint | number | null
+    bitrixUserId?: StringNullableWithAggregatesFilter<"TelegramBinding"> | string | null
+    chatId?: BigIntWithAggregatesFilter<"TelegramBinding"> | bigint | number
+    telegramUsername?: StringNullableWithAggregatesFilter<"TelegramBinding"> | string | null
+    displayName?: StringNullableWithAggregatesFilter<"TelegramBinding"> | string | null
+    createdBy?: StringNullableWithAggregatesFilter<"TelegramBinding"> | string | null
+    revokedAt?: DateTimeNullableWithAggregatesFilter<"TelegramBinding"> | Date | string | null
+    createdAt?: DateTimeNullableWithAggregatesFilter<"TelegramBinding"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"TelegramBinding"> | Date | string | null
   }
 
   export type PortalAiSettingsWhereInput = {
@@ -134754,6 +137410,8 @@ export namespace Prisma {
     client_id?: BigIntNullableFilter<"User"> | bigint | number | null
     bitrix_id?: StringNullableFilter<"User"> | string | null
     clients?: XOR<ClientNullableScalarRelationFilter, ClientWhereInput> | null
+    portalUsers?: PortalUserListRelationFilter
+    telegramBindings?: TelegramBindingListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -134773,6 +137431,8 @@ export namespace Prisma {
     client_id?: SortOrderInput | SortOrder
     bitrix_id?: SortOrderInput | SortOrder
     clients?: ClientOrderByWithRelationInput
+    portalUsers?: PortalUserOrderByRelationAggregateInput
+    telegramBindings?: TelegramBindingOrderByRelationAggregateInput
     _relevance?: UserOrderByRelevanceInput
   }
 
@@ -134796,6 +137456,8 @@ export namespace Prisma {
     client_id?: BigIntNullableFilter<"User"> | bigint | number | null
     bitrix_id?: StringNullableFilter<"User"> | string | null
     clients?: XOR<ClientNullableScalarRelationFilter, ClientWhereInput> | null
+    portalUsers?: PortalUserListRelationFilter
+    telegramBindings?: TelegramBindingListRelationFilter
   }, "id" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -143370,6 +146032,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateInput = {
@@ -143439,6 +146103,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUpdateInput = {
@@ -143508,6 +146174,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateInput = {
@@ -143577,6 +146245,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateManyInput = {
@@ -143663,6 +146333,184 @@ export namespace Prisma {
     approval_status?: NullableStringFieldUpdateOperationsInput | string | null
     approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type PortalUserCreateInput = {
+    id: string
+    bitrixUserId?: string | null
+    role?: string
+    invitedBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutPortalUsersInput
+    user: UserCreateNestedOneWithoutPortalUsersInput
+  }
+
+  export type PortalUserUncheckedCreateInput = {
+    id: string
+    portalId: bigint | number
+    userId: bigint | number
+    bitrixUserId?: string | null
+    role?: string
+    invitedBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalUserUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    invitedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutPortalUsersNestedInput
+    user?: UserUpdateOneRequiredWithoutPortalUsersNestedInput
+  }
+
+  export type PortalUserUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portalId?: BigIntFieldUpdateOperationsInput | bigint | number
+    userId?: BigIntFieldUpdateOperationsInput | bigint | number
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    invitedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalUserCreateManyInput = {
+    id: string
+    portalId: bigint | number
+    userId: bigint | number
+    bitrixUserId?: string | null
+    role?: string
+    invitedBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalUserUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    invitedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalUserUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portalId?: BigIntFieldUpdateOperationsInput | bigint | number
+    userId?: BigIntFieldUpdateOperationsInput | bigint | number
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    invitedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type TelegramBindingCreateInput = {
+    id: string
+    bitrixUserId?: string | null
+    chatId: bigint | number
+    telegramUsername?: string | null
+    displayName?: string | null
+    createdBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutTelegramBindingsInput
+    user?: UserCreateNestedOneWithoutTelegramBindingsInput
+  }
+
+  export type TelegramBindingUncheckedCreateInput = {
+    id: string
+    portalId: bigint | number
+    userId?: bigint | number | null
+    bitrixUserId?: string | null
+    chatId: bigint | number
+    telegramUsername?: string | null
+    displayName?: string | null
+    createdBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type TelegramBindingUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    chatId?: BigIntFieldUpdateOperationsInput | bigint | number
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutTelegramBindingsNestedInput
+    user?: UserUpdateOneWithoutTelegramBindingsNestedInput
+  }
+
+  export type TelegramBindingUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portalId?: BigIntFieldUpdateOperationsInput | bigint | number
+    userId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    chatId?: BigIntFieldUpdateOperationsInput | bigint | number
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type TelegramBindingCreateManyInput = {
+    id: string
+    portalId: bigint | number
+    userId?: bigint | number | null
+    bitrixUserId?: string | null
+    chatId: bigint | number
+    telegramUsername?: string | null
+    displayName?: string | null
+    createdBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type TelegramBindingUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    chatId?: BigIntFieldUpdateOperationsInput | bigint | number
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type TelegramBindingUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portalId?: BigIntFieldUpdateOperationsInput | bigint | number
+    userId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    chatId?: BigIntFieldUpdateOperationsInput | bigint | number
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type PortalAiSettingsCreateInput = {
@@ -146510,6 +149358,8 @@ export namespace Prisma {
     updated_at?: Date | string | null
     bitrix_id?: string | null
     clients?: ClientCreateNestedOneWithoutUsersInput
+    portalUsers?: PortalUserCreateNestedManyWithoutUserInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -146528,6 +149378,8 @@ export namespace Prisma {
     updated_at?: Date | string | null
     client_id?: bigint | number | null
     bitrix_id?: string | null
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutUserInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserUpdateInput = {
@@ -146546,6 +149398,8 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     bitrix_id?: NullableStringFieldUpdateOperationsInput | string | null
     clients?: ClientUpdateOneWithoutUsersNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutUserNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -146564,6 +149418,8 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     bitrix_id?: NullableStringFieldUpdateOperationsInput | string | null
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutUserNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -155327,6 +158183,18 @@ export namespace Prisma {
     none?: VendorSuperUserWhereInput
   }
 
+  export type PortalUserListRelationFilter = {
+    every?: PortalUserWhereInput
+    some?: PortalUserWhereInput
+    none?: PortalUserWhereInput
+  }
+
+  export type TelegramBindingListRelationFilter = {
+    every?: TelegramBindingWhereInput
+    some?: TelegramBindingWhereInput
+    none?: TelegramBindingWhereInput
+  }
+
   export type bitrix_appsOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -155467,6 +158335,14 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
+  export type PortalUserOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type TelegramBindingOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type PortalOrderByRelevanceInput = {
     fields: PortalOrderByRelevanceFieldEnum | PortalOrderByRelevanceFieldEnum[]
     sort: SortOrder
@@ -155570,6 +158446,138 @@ export namespace Prisma {
     id?: SortOrder
     number?: SortOrder
     client_id?: SortOrder
+  }
+
+  export type UserScalarRelationFilter = {
+    is?: UserWhereInput
+    isNot?: UserWhereInput
+  }
+
+  export type PortalUserOrderByRelevanceInput = {
+    fields: PortalUserOrderByRelevanceFieldEnum | PortalUserOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type PortalUserPortalIdUserIdCompoundUniqueInput = {
+    portalId: bigint | number
+    userId: bigint | number
+  }
+
+  export type PortalUserCountOrderByAggregateInput = {
+    id?: SortOrder
+    portalId?: SortOrder
+    userId?: SortOrder
+    bitrixUserId?: SortOrder
+    role?: SortOrder
+    invitedBy?: SortOrder
+    revokedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PortalUserAvgOrderByAggregateInput = {
+    portalId?: SortOrder
+    userId?: SortOrder
+  }
+
+  export type PortalUserMaxOrderByAggregateInput = {
+    id?: SortOrder
+    portalId?: SortOrder
+    userId?: SortOrder
+    bitrixUserId?: SortOrder
+    role?: SortOrder
+    invitedBy?: SortOrder
+    revokedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PortalUserMinOrderByAggregateInput = {
+    id?: SortOrder
+    portalId?: SortOrder
+    userId?: SortOrder
+    bitrixUserId?: SortOrder
+    role?: SortOrder
+    invitedBy?: SortOrder
+    revokedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PortalUserSumOrderByAggregateInput = {
+    portalId?: SortOrder
+    userId?: SortOrder
+  }
+
+  export type UserNullableScalarRelationFilter = {
+    is?: UserWhereInput | null
+    isNot?: UserWhereInput | null
+  }
+
+  export type TelegramBindingOrderByRelevanceInput = {
+    fields: TelegramBindingOrderByRelevanceFieldEnum | TelegramBindingOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type TelegramBindingPortalIdChatIdCompoundUniqueInput = {
+    portalId: bigint | number
+    chatId: bigint | number
+  }
+
+  export type TelegramBindingCountOrderByAggregateInput = {
+    id?: SortOrder
+    portalId?: SortOrder
+    userId?: SortOrder
+    bitrixUserId?: SortOrder
+    chatId?: SortOrder
+    telegramUsername?: SortOrder
+    displayName?: SortOrder
+    createdBy?: SortOrder
+    revokedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TelegramBindingAvgOrderByAggregateInput = {
+    portalId?: SortOrder
+    userId?: SortOrder
+    chatId?: SortOrder
+  }
+
+  export type TelegramBindingMaxOrderByAggregateInput = {
+    id?: SortOrder
+    portalId?: SortOrder
+    userId?: SortOrder
+    bitrixUserId?: SortOrder
+    chatId?: SortOrder
+    telegramUsername?: SortOrder
+    displayName?: SortOrder
+    createdBy?: SortOrder
+    revokedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TelegramBindingMinOrderByAggregateInput = {
+    id?: SortOrder
+    portalId?: SortOrder
+    userId?: SortOrder
+    bitrixUserId?: SortOrder
+    chatId?: SortOrder
+    telegramUsername?: SortOrder
+    displayName?: SortOrder
+    createdBy?: SortOrder
+    revokedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TelegramBindingSumOrderByAggregateInput = {
+    portalId?: SortOrder
+    userId?: SortOrder
+    chatId?: SortOrder
   }
   export type JsonNullableFilter<$PrismaModel = never> =
     | PatchUndefined<
@@ -163037,6 +166045,20 @@ export namespace Prisma {
     connect?: VendorSuperUserWhereUniqueInput | VendorSuperUserWhereUniqueInput[]
   }
 
+  export type PortalUserCreateNestedManyWithoutPortalInput = {
+    create?: XOR<PortalUserCreateWithoutPortalInput, PortalUserUncheckedCreateWithoutPortalInput> | PortalUserCreateWithoutPortalInput[] | PortalUserUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: PortalUserCreateOrConnectWithoutPortalInput | PortalUserCreateOrConnectWithoutPortalInput[]
+    createMany?: PortalUserCreateManyPortalInputEnvelope
+    connect?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+  }
+
+  export type TelegramBindingCreateNestedManyWithoutPortalInput = {
+    create?: XOR<TelegramBindingCreateWithoutPortalInput, TelegramBindingUncheckedCreateWithoutPortalInput> | TelegramBindingCreateWithoutPortalInput[] | TelegramBindingUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: TelegramBindingCreateOrConnectWithoutPortalInput | TelegramBindingCreateOrConnectWithoutPortalInput[]
+    createMany?: TelegramBindingCreateManyPortalInputEnvelope
+    connect?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+  }
+
   export type bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput = {
     create?: XOR<bitrix_appsCreateWithoutPortalsInput, bitrix_appsUncheckedCreateWithoutPortalsInput> | bitrix_appsCreateWithoutPortalsInput[] | bitrix_appsUncheckedCreateWithoutPortalsInput[]
     connectOrCreate?: bitrix_appsCreateOrConnectWithoutPortalsInput | bitrix_appsCreateOrConnectWithoutPortalsInput[]
@@ -163314,6 +166336,20 @@ export namespace Prisma {
     connectOrCreate?: VendorSuperUserCreateOrConnectWithoutPortalInput | VendorSuperUserCreateOrConnectWithoutPortalInput[]
     createMany?: VendorSuperUserCreateManyPortalInputEnvelope
     connect?: VendorSuperUserWhereUniqueInput | VendorSuperUserWhereUniqueInput[]
+  }
+
+  export type PortalUserUncheckedCreateNestedManyWithoutPortalInput = {
+    create?: XOR<PortalUserCreateWithoutPortalInput, PortalUserUncheckedCreateWithoutPortalInput> | PortalUserCreateWithoutPortalInput[] | PortalUserUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: PortalUserCreateOrConnectWithoutPortalInput | PortalUserCreateOrConnectWithoutPortalInput[]
+    createMany?: PortalUserCreateManyPortalInputEnvelope
+    connect?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+  }
+
+  export type TelegramBindingUncheckedCreateNestedManyWithoutPortalInput = {
+    create?: XOR<TelegramBindingCreateWithoutPortalInput, TelegramBindingUncheckedCreateWithoutPortalInput> | TelegramBindingCreateWithoutPortalInput[] | TelegramBindingUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: TelegramBindingCreateOrConnectWithoutPortalInput | TelegramBindingCreateOrConnectWithoutPortalInput[]
+    createMany?: TelegramBindingCreateManyPortalInputEnvelope
+    connect?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
   }
 
   export type bitrix_appsUpdateManyWithoutPortalsNestedInput = {
@@ -163882,6 +166918,34 @@ export namespace Prisma {
     deleteMany?: VendorSuperUserScalarWhereInput | VendorSuperUserScalarWhereInput[]
   }
 
+  export type PortalUserUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<PortalUserCreateWithoutPortalInput, PortalUserUncheckedCreateWithoutPortalInput> | PortalUserCreateWithoutPortalInput[] | PortalUserUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: PortalUserCreateOrConnectWithoutPortalInput | PortalUserCreateOrConnectWithoutPortalInput[]
+    upsert?: PortalUserUpsertWithWhereUniqueWithoutPortalInput | PortalUserUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: PortalUserCreateManyPortalInputEnvelope
+    set?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+    disconnect?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+    delete?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+    connect?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+    update?: PortalUserUpdateWithWhereUniqueWithoutPortalInput | PortalUserUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: PortalUserUpdateManyWithWhereWithoutPortalInput | PortalUserUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: PortalUserScalarWhereInput | PortalUserScalarWhereInput[]
+  }
+
+  export type TelegramBindingUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<TelegramBindingCreateWithoutPortalInput, TelegramBindingUncheckedCreateWithoutPortalInput> | TelegramBindingCreateWithoutPortalInput[] | TelegramBindingUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: TelegramBindingCreateOrConnectWithoutPortalInput | TelegramBindingCreateOrConnectWithoutPortalInput[]
+    upsert?: TelegramBindingUpsertWithWhereUniqueWithoutPortalInput | TelegramBindingUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: TelegramBindingCreateManyPortalInputEnvelope
+    set?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+    disconnect?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+    delete?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+    connect?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+    update?: TelegramBindingUpdateWithWhereUniqueWithoutPortalInput | TelegramBindingUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: TelegramBindingUpdateManyWithWhereWithoutPortalInput | TelegramBindingUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: TelegramBindingScalarWhereInput | TelegramBindingScalarWhereInput[]
+  }
+
   export type bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput = {
     create?: XOR<bitrix_appsCreateWithoutPortalsInput, bitrix_appsUncheckedCreateWithoutPortalsInput> | bitrix_appsCreateWithoutPortalsInput[] | bitrix_appsUncheckedCreateWithoutPortalsInput[]
     connectOrCreate?: bitrix_appsCreateOrConnectWithoutPortalsInput | bitrix_appsCreateOrConnectWithoutPortalsInput[]
@@ -164436,6 +167500,92 @@ export namespace Prisma {
     update?: VendorSuperUserUpdateWithWhereUniqueWithoutPortalInput | VendorSuperUserUpdateWithWhereUniqueWithoutPortalInput[]
     updateMany?: VendorSuperUserUpdateManyWithWhereWithoutPortalInput | VendorSuperUserUpdateManyWithWhereWithoutPortalInput[]
     deleteMany?: VendorSuperUserScalarWhereInput | VendorSuperUserScalarWhereInput[]
+  }
+
+  export type PortalUserUncheckedUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<PortalUserCreateWithoutPortalInput, PortalUserUncheckedCreateWithoutPortalInput> | PortalUserCreateWithoutPortalInput[] | PortalUserUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: PortalUserCreateOrConnectWithoutPortalInput | PortalUserCreateOrConnectWithoutPortalInput[]
+    upsert?: PortalUserUpsertWithWhereUniqueWithoutPortalInput | PortalUserUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: PortalUserCreateManyPortalInputEnvelope
+    set?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+    disconnect?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+    delete?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+    connect?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+    update?: PortalUserUpdateWithWhereUniqueWithoutPortalInput | PortalUserUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: PortalUserUpdateManyWithWhereWithoutPortalInput | PortalUserUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: PortalUserScalarWhereInput | PortalUserScalarWhereInput[]
+  }
+
+  export type TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput = {
+    create?: XOR<TelegramBindingCreateWithoutPortalInput, TelegramBindingUncheckedCreateWithoutPortalInput> | TelegramBindingCreateWithoutPortalInput[] | TelegramBindingUncheckedCreateWithoutPortalInput[]
+    connectOrCreate?: TelegramBindingCreateOrConnectWithoutPortalInput | TelegramBindingCreateOrConnectWithoutPortalInput[]
+    upsert?: TelegramBindingUpsertWithWhereUniqueWithoutPortalInput | TelegramBindingUpsertWithWhereUniqueWithoutPortalInput[]
+    createMany?: TelegramBindingCreateManyPortalInputEnvelope
+    set?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+    disconnect?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+    delete?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+    connect?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+    update?: TelegramBindingUpdateWithWhereUniqueWithoutPortalInput | TelegramBindingUpdateWithWhereUniqueWithoutPortalInput[]
+    updateMany?: TelegramBindingUpdateManyWithWhereWithoutPortalInput | TelegramBindingUpdateManyWithWhereWithoutPortalInput[]
+    deleteMany?: TelegramBindingScalarWhereInput | TelegramBindingScalarWhereInput[]
+  }
+
+  export type PortalCreateNestedOneWithoutPortalUsersInput = {
+    create?: XOR<PortalCreateWithoutPortalUsersInput, PortalUncheckedCreateWithoutPortalUsersInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutPortalUsersInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutPortalUsersInput = {
+    create?: XOR<UserCreateWithoutPortalUsersInput, UserUncheckedCreateWithoutPortalUsersInput>
+    connectOrCreate?: UserCreateOrConnectWithoutPortalUsersInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type PortalUpdateOneRequiredWithoutPortalUsersNestedInput = {
+    create?: XOR<PortalCreateWithoutPortalUsersInput, PortalUncheckedCreateWithoutPortalUsersInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutPortalUsersInput
+    upsert?: PortalUpsertWithoutPortalUsersInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutPortalUsersInput, PortalUpdateWithoutPortalUsersInput>, PortalUncheckedUpdateWithoutPortalUsersInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutPortalUsersNestedInput = {
+    create?: XOR<UserCreateWithoutPortalUsersInput, UserUncheckedCreateWithoutPortalUsersInput>
+    connectOrCreate?: UserCreateOrConnectWithoutPortalUsersInput
+    upsert?: UserUpsertWithoutPortalUsersInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutPortalUsersInput, UserUpdateWithoutPortalUsersInput>, UserUncheckedUpdateWithoutPortalUsersInput>
+  }
+
+  export type PortalCreateNestedOneWithoutTelegramBindingsInput = {
+    create?: XOR<PortalCreateWithoutTelegramBindingsInput, PortalUncheckedCreateWithoutTelegramBindingsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutTelegramBindingsInput
+    connect?: PortalWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutTelegramBindingsInput = {
+    create?: XOR<UserCreateWithoutTelegramBindingsInput, UserUncheckedCreateWithoutTelegramBindingsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutTelegramBindingsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type PortalUpdateOneRequiredWithoutTelegramBindingsNestedInput = {
+    create?: XOR<PortalCreateWithoutTelegramBindingsInput, PortalUncheckedCreateWithoutTelegramBindingsInput>
+    connectOrCreate?: PortalCreateOrConnectWithoutTelegramBindingsInput
+    upsert?: PortalUpsertWithoutTelegramBindingsInput
+    connect?: PortalWhereUniqueInput
+    update?: XOR<XOR<PortalUpdateToOneWithWhereWithoutTelegramBindingsInput, PortalUpdateWithoutTelegramBindingsInput>, PortalUncheckedUpdateWithoutTelegramBindingsInput>
+  }
+
+  export type UserUpdateOneWithoutTelegramBindingsNestedInput = {
+    create?: XOR<UserCreateWithoutTelegramBindingsInput, UserUncheckedCreateWithoutTelegramBindingsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutTelegramBindingsInput
+    upsert?: UserUpsertWithoutTelegramBindingsInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutTelegramBindingsInput, UserUpdateWithoutTelegramBindingsInput>, UserUncheckedUpdateWithoutTelegramBindingsInput>
   }
 
   export type PortalCreateNestedOneWithoutAiSettingsInput = {
@@ -165224,6 +168374,34 @@ export namespace Prisma {
     connect?: ClientWhereUniqueInput
   }
 
+  export type PortalUserCreateNestedManyWithoutUserInput = {
+    create?: XOR<PortalUserCreateWithoutUserInput, PortalUserUncheckedCreateWithoutUserInput> | PortalUserCreateWithoutUserInput[] | PortalUserUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: PortalUserCreateOrConnectWithoutUserInput | PortalUserCreateOrConnectWithoutUserInput[]
+    createMany?: PortalUserCreateManyUserInputEnvelope
+    connect?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+  }
+
+  export type TelegramBindingCreateNestedManyWithoutUserInput = {
+    create?: XOR<TelegramBindingCreateWithoutUserInput, TelegramBindingUncheckedCreateWithoutUserInput> | TelegramBindingCreateWithoutUserInput[] | TelegramBindingUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: TelegramBindingCreateOrConnectWithoutUserInput | TelegramBindingCreateOrConnectWithoutUserInput[]
+    createMany?: TelegramBindingCreateManyUserInputEnvelope
+    connect?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+  }
+
+  export type PortalUserUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<PortalUserCreateWithoutUserInput, PortalUserUncheckedCreateWithoutUserInput> | PortalUserCreateWithoutUserInput[] | PortalUserUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: PortalUserCreateOrConnectWithoutUserInput | PortalUserCreateOrConnectWithoutUserInput[]
+    createMany?: PortalUserCreateManyUserInputEnvelope
+    connect?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+  }
+
+  export type TelegramBindingUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<TelegramBindingCreateWithoutUserInput, TelegramBindingUncheckedCreateWithoutUserInput> | TelegramBindingCreateWithoutUserInput[] | TelegramBindingUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: TelegramBindingCreateOrConnectWithoutUserInput | TelegramBindingCreateOrConnectWithoutUserInput[]
+    createMany?: TelegramBindingCreateManyUserInputEnvelope
+    connect?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+  }
+
   export type ClientUpdateOneWithoutUsersNestedInput = {
     create?: XOR<ClientCreateWithoutUsersInput, ClientUncheckedCreateWithoutUsersInput>
     connectOrCreate?: ClientCreateOrConnectWithoutUsersInput
@@ -165232,6 +168410,62 @@ export namespace Prisma {
     delete?: ClientWhereInput | boolean
     connect?: ClientWhereUniqueInput
     update?: XOR<XOR<ClientUpdateToOneWithWhereWithoutUsersInput, ClientUpdateWithoutUsersInput>, ClientUncheckedUpdateWithoutUsersInput>
+  }
+
+  export type PortalUserUpdateManyWithoutUserNestedInput = {
+    create?: XOR<PortalUserCreateWithoutUserInput, PortalUserUncheckedCreateWithoutUserInput> | PortalUserCreateWithoutUserInput[] | PortalUserUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: PortalUserCreateOrConnectWithoutUserInput | PortalUserCreateOrConnectWithoutUserInput[]
+    upsert?: PortalUserUpsertWithWhereUniqueWithoutUserInput | PortalUserUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: PortalUserCreateManyUserInputEnvelope
+    set?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+    disconnect?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+    delete?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+    connect?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+    update?: PortalUserUpdateWithWhereUniqueWithoutUserInput | PortalUserUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: PortalUserUpdateManyWithWhereWithoutUserInput | PortalUserUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: PortalUserScalarWhereInput | PortalUserScalarWhereInput[]
+  }
+
+  export type TelegramBindingUpdateManyWithoutUserNestedInput = {
+    create?: XOR<TelegramBindingCreateWithoutUserInput, TelegramBindingUncheckedCreateWithoutUserInput> | TelegramBindingCreateWithoutUserInput[] | TelegramBindingUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: TelegramBindingCreateOrConnectWithoutUserInput | TelegramBindingCreateOrConnectWithoutUserInput[]
+    upsert?: TelegramBindingUpsertWithWhereUniqueWithoutUserInput | TelegramBindingUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: TelegramBindingCreateManyUserInputEnvelope
+    set?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+    disconnect?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+    delete?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+    connect?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+    update?: TelegramBindingUpdateWithWhereUniqueWithoutUserInput | TelegramBindingUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: TelegramBindingUpdateManyWithWhereWithoutUserInput | TelegramBindingUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: TelegramBindingScalarWhereInput | TelegramBindingScalarWhereInput[]
+  }
+
+  export type PortalUserUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<PortalUserCreateWithoutUserInput, PortalUserUncheckedCreateWithoutUserInput> | PortalUserCreateWithoutUserInput[] | PortalUserUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: PortalUserCreateOrConnectWithoutUserInput | PortalUserCreateOrConnectWithoutUserInput[]
+    upsert?: PortalUserUpsertWithWhereUniqueWithoutUserInput | PortalUserUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: PortalUserCreateManyUserInputEnvelope
+    set?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+    disconnect?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+    delete?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+    connect?: PortalUserWhereUniqueInput | PortalUserWhereUniqueInput[]
+    update?: PortalUserUpdateWithWhereUniqueWithoutUserInput | PortalUserUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: PortalUserUpdateManyWithWhereWithoutUserInput | PortalUserUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: PortalUserScalarWhereInput | PortalUserScalarWhereInput[]
+  }
+
+  export type TelegramBindingUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<TelegramBindingCreateWithoutUserInput, TelegramBindingUncheckedCreateWithoutUserInput> | TelegramBindingCreateWithoutUserInput[] | TelegramBindingUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: TelegramBindingCreateOrConnectWithoutUserInput | TelegramBindingCreateOrConnectWithoutUserInput[]
+    upsert?: TelegramBindingUpsertWithWhereUniqueWithoutUserInput | TelegramBindingUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: TelegramBindingCreateManyUserInputEnvelope
+    set?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+    disconnect?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+    delete?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+    connect?: TelegramBindingWhereUniqueInput | TelegramBindingWhereUniqueInput[]
+    update?: TelegramBindingUpdateWithWhereUniqueWithoutUserInput | TelegramBindingUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: TelegramBindingUpdateManyWithWhereWithoutUserInput | TelegramBindingUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: TelegramBindingScalarWhereInput | TelegramBindingScalarWhereInput[]
   }
 
   export type NullableFloatFieldUpdateOperationsInput = {
@@ -167277,6 +170511,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAgentsInput = {
@@ -167345,6 +170581,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAgentsInput = {
@@ -167578,6 +170816,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAgentsInput = {
@@ -167646,6 +170886,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type rqsUpsertWithoutAgentsInput = {
@@ -168067,6 +171309,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBitrixlistsInput = {
@@ -168135,6 +171379,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBitrixlistsInput = {
@@ -168219,6 +171465,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBitrixlistsInput = {
@@ -168287,6 +171535,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type btx_stagesCreateWithoutBtx_categoriesInput = {
@@ -168421,6 +171671,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_companiesInput = {
@@ -168489,6 +171741,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_companiesInput = {
@@ -168573,6 +171827,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_companiesInput = {
@@ -168641,6 +171897,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_dealsInput = {
@@ -168709,6 +171967,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_dealsInput = {
@@ -168777,6 +172037,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_dealsInput = {
@@ -168861,6 +172123,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_dealsInput = {
@@ -168929,6 +172193,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_leadsInput = {
@@ -168997,6 +172263,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_leadsInput = {
@@ -169065,6 +172333,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_leadsInput = {
@@ -169149,6 +172419,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_leadsInput = {
@@ -169217,6 +172489,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBtx_rpasInput = {
@@ -169285,6 +172559,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_rpasInput = {
@@ -169353,6 +172629,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_rpasInput = {
@@ -169437,6 +172715,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_rpasInput = {
@@ -169505,6 +172785,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type btx_categoriesCreateWithoutBtx_stagesInput = {
@@ -169657,6 +172939,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutCallingsInput = {
@@ -169725,6 +173009,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutCallingsInput = {
@@ -169809,6 +173095,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutCallingsInput = {
@@ -169877,6 +173165,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutClientsInput = {
@@ -169945,6 +173235,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutClientsInput = {
@@ -170013,6 +173305,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutClientsInput = {
@@ -170040,6 +173334,8 @@ export namespace Prisma {
     created_at?: Date | string | null
     updated_at?: Date | string | null
     bitrix_id?: string | null
+    portalUsers?: PortalUserCreateNestedManyWithoutUserInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutClientsInput = {
@@ -170057,6 +173353,8 @@ export namespace Prisma {
     created_at?: Date | string | null
     updated_at?: Date | string | null
     bitrix_id?: string | null
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutUserInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutClientsInput = {
@@ -170499,6 +173797,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutDepartamentsInput = {
@@ -170567,6 +173867,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutDepartamentsInput = {
@@ -170651,6 +173953,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutDepartamentsInput = {
@@ -170719,6 +174023,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type TemplateFieldCreateWithoutFieldsInput = {
@@ -172872,6 +176178,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_contractsInput = {
@@ -172940,6 +176248,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_contractsInput = {
@@ -173145,6 +176455,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_contractsInput = {
@@ -173213,6 +176525,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type portal_measureUpsertWithoutPortal_contractsInput = {
@@ -173381,6 +176695,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_measureInput = {
@@ -173449,6 +176765,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_measureInput = {
@@ -173582,6 +176900,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_measureInput = {
@@ -173650,6 +176970,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type bitrix_appsCreateWithoutPortalsInput = {
@@ -175352,6 +178674,74 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type PortalUserCreateWithoutPortalInput = {
+    id: string
+    bitrixUserId?: string | null
+    role?: string
+    invitedBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    user: UserCreateNestedOneWithoutPortalUsersInput
+  }
+
+  export type PortalUserUncheckedCreateWithoutPortalInput = {
+    id: string
+    userId: bigint | number
+    bitrixUserId?: string | null
+    role?: string
+    invitedBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalUserCreateOrConnectWithoutPortalInput = {
+    where: PortalUserWhereUniqueInput
+    create: XOR<PortalUserCreateWithoutPortalInput, PortalUserUncheckedCreateWithoutPortalInput>
+  }
+
+  export type PortalUserCreateManyPortalInputEnvelope = {
+    data: PortalUserCreateManyPortalInput | PortalUserCreateManyPortalInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type TelegramBindingCreateWithoutPortalInput = {
+    id: string
+    bitrixUserId?: string | null
+    chatId: bigint | number
+    telegramUsername?: string | null
+    displayName?: string | null
+    createdBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    user?: UserCreateNestedOneWithoutTelegramBindingsInput
+  }
+
+  export type TelegramBindingUncheckedCreateWithoutPortalInput = {
+    id: string
+    userId?: bigint | number | null
+    bitrixUserId?: string | null
+    chatId: bigint | number
+    telegramUsername?: string | null
+    displayName?: string | null
+    createdBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type TelegramBindingCreateOrConnectWithoutPortalInput = {
+    where: TelegramBindingWhereUniqueInput
+    create: XOR<TelegramBindingCreateWithoutPortalInput, TelegramBindingUncheckedCreateWithoutPortalInput>
+  }
+
+  export type TelegramBindingCreateManyPortalInputEnvelope = {
+    data: TelegramBindingCreateManyPortalInput | TelegramBindingCreateManyPortalInput[]
+    skipDuplicates?: boolean
+  }
+
   export type bitrix_appsUpsertWithWhereUniqueWithoutPortalsInput = {
     where: bitrix_appsWhereUniqueInput
     update: XOR<bitrix_appsUpdateWithoutPortalsInput, bitrix_appsUncheckedUpdateWithoutPortalsInput>
@@ -176742,6 +180132,846 @@ export namespace Prisma {
     updatedAt?: DateTimeNullableFilter<"VendorSuperUser"> | Date | string | null
   }
 
+  export type PortalUserUpsertWithWhereUniqueWithoutPortalInput = {
+    where: PortalUserWhereUniqueInput
+    update: XOR<PortalUserUpdateWithoutPortalInput, PortalUserUncheckedUpdateWithoutPortalInput>
+    create: XOR<PortalUserCreateWithoutPortalInput, PortalUserUncheckedCreateWithoutPortalInput>
+  }
+
+  export type PortalUserUpdateWithWhereUniqueWithoutPortalInput = {
+    where: PortalUserWhereUniqueInput
+    data: XOR<PortalUserUpdateWithoutPortalInput, PortalUserUncheckedUpdateWithoutPortalInput>
+  }
+
+  export type PortalUserUpdateManyWithWhereWithoutPortalInput = {
+    where: PortalUserScalarWhereInput
+    data: XOR<PortalUserUpdateManyMutationInput, PortalUserUncheckedUpdateManyWithoutPortalInput>
+  }
+
+  export type PortalUserScalarWhereInput = {
+    AND?: PortalUserScalarWhereInput | PortalUserScalarWhereInput[]
+    OR?: PortalUserScalarWhereInput[]
+    NOT?: PortalUserScalarWhereInput | PortalUserScalarWhereInput[]
+    id?: StringFilter<"PortalUser"> | string
+    portalId?: BigIntFilter<"PortalUser"> | bigint | number
+    userId?: BigIntFilter<"PortalUser"> | bigint | number
+    bitrixUserId?: StringNullableFilter<"PortalUser"> | string | null
+    role?: StringFilter<"PortalUser"> | string
+    invitedBy?: StringNullableFilter<"PortalUser"> | string | null
+    revokedAt?: DateTimeNullableFilter<"PortalUser"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"PortalUser"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"PortalUser"> | Date | string | null
+  }
+
+  export type TelegramBindingUpsertWithWhereUniqueWithoutPortalInput = {
+    where: TelegramBindingWhereUniqueInput
+    update: XOR<TelegramBindingUpdateWithoutPortalInput, TelegramBindingUncheckedUpdateWithoutPortalInput>
+    create: XOR<TelegramBindingCreateWithoutPortalInput, TelegramBindingUncheckedCreateWithoutPortalInput>
+  }
+
+  export type TelegramBindingUpdateWithWhereUniqueWithoutPortalInput = {
+    where: TelegramBindingWhereUniqueInput
+    data: XOR<TelegramBindingUpdateWithoutPortalInput, TelegramBindingUncheckedUpdateWithoutPortalInput>
+  }
+
+  export type TelegramBindingUpdateManyWithWhereWithoutPortalInput = {
+    where: TelegramBindingScalarWhereInput
+    data: XOR<TelegramBindingUpdateManyMutationInput, TelegramBindingUncheckedUpdateManyWithoutPortalInput>
+  }
+
+  export type TelegramBindingScalarWhereInput = {
+    AND?: TelegramBindingScalarWhereInput | TelegramBindingScalarWhereInput[]
+    OR?: TelegramBindingScalarWhereInput[]
+    NOT?: TelegramBindingScalarWhereInput | TelegramBindingScalarWhereInput[]
+    id?: StringFilter<"TelegramBinding"> | string
+    portalId?: BigIntFilter<"TelegramBinding"> | bigint | number
+    userId?: BigIntNullableFilter<"TelegramBinding"> | bigint | number | null
+    bitrixUserId?: StringNullableFilter<"TelegramBinding"> | string | null
+    chatId?: BigIntFilter<"TelegramBinding"> | bigint | number
+    telegramUsername?: StringNullableFilter<"TelegramBinding"> | string | null
+    displayName?: StringNullableFilter<"TelegramBinding"> | string | null
+    createdBy?: StringNullableFilter<"TelegramBinding"> | string | null
+    revokedAt?: DateTimeNullableFilter<"TelegramBinding"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"TelegramBinding"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"TelegramBinding"> | Date | string | null
+  }
+
+  export type PortalCreateWithoutPortalUsersInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalUncheckedCreateWithoutPortalUsersInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalCreateOrConnectWithoutPortalUsersInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutPortalUsersInput, PortalUncheckedCreateWithoutPortalUsersInput>
+  }
+
+  export type UserCreateWithoutPortalUsersInput = {
+    id?: bigint | number
+    name: string
+    surname: string
+    email?: string | null
+    photo?: string | null
+    role_id: bigint | number
+    email_verified_at?: Date | string | null
+    password: string
+    two_factor_secret?: string | null
+    two_factor_recovery_codes?: string | null
+    remember_token?: string | null
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    bitrix_id?: string | null
+    clients?: ClientCreateNestedOneWithoutUsersInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutPortalUsersInput = {
+    id?: bigint | number
+    name: string
+    surname: string
+    email?: string | null
+    photo?: string | null
+    role_id: bigint | number
+    email_verified_at?: Date | string | null
+    password: string
+    two_factor_secret?: string | null
+    two_factor_recovery_codes?: string | null
+    remember_token?: string | null
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    client_id?: bigint | number | null
+    bitrix_id?: string | null
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutPortalUsersInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutPortalUsersInput, UserUncheckedCreateWithoutPortalUsersInput>
+  }
+
+  export type PortalUpsertWithoutPortalUsersInput = {
+    update: XOR<PortalUpdateWithoutPortalUsersInput, PortalUncheckedUpdateWithoutPortalUsersInput>
+    create: XOR<PortalCreateWithoutPortalUsersInput, PortalUncheckedCreateWithoutPortalUsersInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutPortalUsersInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutPortalUsersInput, PortalUncheckedUpdateWithoutPortalUsersInput>
+  }
+
+  export type PortalUpdateWithoutPortalUsersInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutPortalUsersInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
+  }
+
+  export type UserUpsertWithoutPortalUsersInput = {
+    update: XOR<UserUpdateWithoutPortalUsersInput, UserUncheckedUpdateWithoutPortalUsersInput>
+    create: XOR<UserCreateWithoutPortalUsersInput, UserUncheckedCreateWithoutPortalUsersInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutPortalUsersInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutPortalUsersInput, UserUncheckedUpdateWithoutPortalUsersInput>
+  }
+
+  export type UserUpdateWithoutPortalUsersInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    name?: StringFieldUpdateOperationsInput | string
+    surname?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    photo?: NullableStringFieldUpdateOperationsInput | string | null
+    role_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    email_verified_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    password?: StringFieldUpdateOperationsInput | string
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    two_factor_recovery_codes?: NullableStringFieldUpdateOperationsInput | string | null
+    remember_token?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bitrix_id?: NullableStringFieldUpdateOperationsInput | string | null
+    clients?: ClientUpdateOneWithoutUsersNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutPortalUsersInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    name?: StringFieldUpdateOperationsInput | string
+    surname?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    photo?: NullableStringFieldUpdateOperationsInput | string | null
+    role_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    email_verified_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    password?: StringFieldUpdateOperationsInput | string
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    two_factor_recovery_codes?: NullableStringFieldUpdateOperationsInput | string | null
+    remember_token?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    bitrix_id?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type PortalCreateWithoutTelegramBindingsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserCreateNestedManyWithoutPortalsInput
+    callings?: callingsCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionCreateNestedManyWithoutPortalInput
+    clients?: ClientCreateNestedOneWithoutPortalsInput
+    smarts?: smartsCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateCreateNestedManyWithoutPortalsInput
+    agents?: agentsCreateNestedManyWithoutPortalInput
+    templates?: TemplateCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalUncheckedCreateWithoutTelegramBindingsInput = {
+    id?: bigint | number
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    domain?: string | null
+    key?: string | null
+    C_REST_CLIENT_ID?: string | null
+    C_REST_CLIENT_SECRET?: string | null
+    C_REST_WEB_HOOK_URL?: string | null
+    number: number
+    client_id?: bigint | number | null
+    nestKey?: string | null
+    nestKonstructorKey?: string | null
+    nestReportKey?: string | null
+    nestEventsKey?: string | null
+    nestServiceKey?: string | null
+    nestWebhooksKey?: string | null
+    nestScheduleKey?: string | null
+    vibeKey?: string | null
+    llmKey?: string | null
+    llmBaseUrl?: string | null
+    llmModelName?: string | null
+    member_id?: string | null
+    source?: string
+    approval_status?: string | null
+    approved_at?: Date | string | null
+    approved_by?: string | null
+    bitrix_apps?: bitrix_appsUncheckedCreateNestedManyWithoutPortalsInput
+    bitrixlists?: bitrixlistsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_companies?: btx_companiesUncheckedCreateNestedManyWithoutPortalsInput
+    btx_contacts?: btx_contactsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_deals?: btx_dealsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_leads?: btx_leadsUncheckedCreateNestedManyWithoutPortalsInput
+    btx_rpas?: btx_rpasUncheckedCreateNestedManyWithoutPortalsInput
+    btx_users?: BtxUserUncheckedCreateNestedManyWithoutPortalsInput
+    callings?: callingsUncheckedCreateNestedManyWithoutPortalsInput
+    departaments?: departamentsUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplateImages?: OfferTemplateImageUncheckedCreateNestedManyWithoutPortalsInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedCreateNestedManyWithoutPortalsInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_contracts?: portal_contractsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_measure?: portal_measureUncheckedCreateNestedManyWithoutPortalsInput
+    portal_region?: portal_regionUncheckedCreateNestedManyWithoutPortalInput
+    smarts?: smartsUncheckedCreateNestedManyWithoutPortalsInput
+    timezones?: timezonesUncheckedCreateNestedManyWithoutPortalsInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedCreateNestedManyWithoutPortalsInput
+    agents?: agentsUncheckedCreateNestedManyWithoutPortalInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutPortalInput
+    invoiceTemplates?: InvoiceTemplateUncheckedCreateNestedManyWithoutPortalInput
+    bxRqs?: bx_rqsUncheckedCreateNestedManyWithoutPortalInput
+    marketplace_installs?: marketplace_installsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_products?: portal_productsUncheckedCreateNestedManyWithoutPortalsInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedCreateNestedManyWithoutPortalsInput
+    portal_invites?: portal_invitesUncheckedCreateNestedManyWithoutPortalsInput
+    appCaches?: AppCacheUncheckedCreateNestedManyWithoutPortalInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutPortalInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedCreateNestedManyWithoutPortalInput
+    aiSettings?: PortalAiSettingsUncheckedCreateNestedOneWithoutPortalInput
+    appSettings?: PortalAppSettingsUncheckedCreateNestedManyWithoutPortalInput
+    skapImportFiles?: SkapImportFileUncheckedCreateNestedManyWithoutPortalInput
+    skapImportItems?: SkapImportItemUncheckedCreateNestedManyWithoutPortalInput
+    skapSessions?: SkapSessionUncheckedCreateNestedManyWithoutPortalInput
+    skapSubscriptions?: SkapSubscriptionUncheckedCreateNestedManyWithoutPortalInput
+    skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
+    questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+  }
+
+  export type PortalCreateOrConnectWithoutTelegramBindingsInput = {
+    where: PortalWhereUniqueInput
+    create: XOR<PortalCreateWithoutTelegramBindingsInput, PortalUncheckedCreateWithoutTelegramBindingsInput>
+  }
+
+  export type UserCreateWithoutTelegramBindingsInput = {
+    id?: bigint | number
+    name: string
+    surname: string
+    email?: string | null
+    photo?: string | null
+    role_id: bigint | number
+    email_verified_at?: Date | string | null
+    password: string
+    two_factor_secret?: string | null
+    two_factor_recovery_codes?: string | null
+    remember_token?: string | null
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    bitrix_id?: string | null
+    clients?: ClientCreateNestedOneWithoutUsersInput
+    portalUsers?: PortalUserCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutTelegramBindingsInput = {
+    id?: bigint | number
+    name: string
+    surname: string
+    email?: string | null
+    photo?: string | null
+    role_id: bigint | number
+    email_verified_at?: Date | string | null
+    password: string
+    two_factor_secret?: string | null
+    two_factor_recovery_codes?: string | null
+    remember_token?: string | null
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+    client_id?: bigint | number | null
+    bitrix_id?: string | null
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutTelegramBindingsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutTelegramBindingsInput, UserUncheckedCreateWithoutTelegramBindingsInput>
+  }
+
+  export type PortalUpsertWithoutTelegramBindingsInput = {
+    update: XOR<PortalUpdateWithoutTelegramBindingsInput, PortalUncheckedUpdateWithoutTelegramBindingsInput>
+    create: XOR<PortalCreateWithoutTelegramBindingsInput, PortalUncheckedCreateWithoutTelegramBindingsInput>
+    where?: PortalWhereInput
+  }
+
+  export type PortalUpdateToOneWithWhereWithoutTelegramBindingsInput = {
+    where?: PortalWhereInput
+    data: XOR<PortalUpdateWithoutTelegramBindingsInput, PortalUncheckedUpdateWithoutTelegramBindingsInput>
+  }
+
+  export type PortalUpdateWithoutTelegramBindingsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUpdateManyWithoutPortalNestedInput
+    clients?: ClientUpdateOneWithoutPortalsNestedInput
+    smarts?: smartsUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+  }
+
+  export type PortalUncheckedUpdateWithoutTelegramBindingsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domain?: NullableStringFieldUpdateOperationsInput | string | null
+    key?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_ID?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_CLIENT_SECRET?: NullableStringFieldUpdateOperationsInput | string | null
+    C_REST_WEB_HOOK_URL?: NullableStringFieldUpdateOperationsInput | string | null
+    number?: IntFieldUpdateOperationsInput | number
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    nestKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestKonstructorKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestReportKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestEventsKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestServiceKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestWebhooksKey?: NullableStringFieldUpdateOperationsInput | string | null
+    nestScheduleKey?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmKey?: NullableStringFieldUpdateOperationsInput | string | null
+    llmBaseUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    llmModelName?: NullableStringFieldUpdateOperationsInput | string | null
+    member_id?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: StringFieldUpdateOperationsInput | string
+    approval_status?: NullableStringFieldUpdateOperationsInput | string | null
+    approved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    approved_by?: NullableStringFieldUpdateOperationsInput | string | null
+    bitrix_apps?: bitrix_appsUncheckedUpdateManyWithoutPortalsNestedInput
+    bitrixlists?: bitrixlistsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_companies?: btx_companiesUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_contacts?: btx_contactsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_deals?: btx_dealsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_leads?: btx_leadsUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_rpas?: btx_rpasUncheckedUpdateManyWithoutPortalsNestedInput
+    btx_users?: BtxUserUncheckedUpdateManyWithoutPortalsNestedInput
+    callings?: callingsUncheckedUpdateManyWithoutPortalsNestedInput
+    departaments?: departamentsUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplateImages?: OfferTemplateImageUncheckedUpdateManyWithoutPortalsNestedInput
+    offerTemplatePortal?: OfferTemplatePortalUncheckedUpdateManyWithoutPortalsNestedInput
+    offer_zakupki_settings?: offer_zakupki_settingsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_contracts?: portal_contractsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_measure?: portal_measureUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_region?: portal_regionUncheckedUpdateManyWithoutPortalNestedInput
+    smarts?: smartsUncheckedUpdateManyWithoutPortalsNestedInput
+    timezones?: timezonesUncheckedUpdateManyWithoutPortalsNestedInput
+    userSelectedTemplates?: UserSelectedTemplateUncheckedUpdateManyWithoutPortalsNestedInput
+    agents?: agentsUncheckedUpdateManyWithoutPortalNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutPortalNestedInput
+    invoiceTemplates?: InvoiceTemplateUncheckedUpdateManyWithoutPortalNestedInput
+    bxRqs?: bx_rqsUncheckedUpdateManyWithoutPortalNestedInput
+    marketplace_installs?: marketplace_installsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_products?: portal_productsUncheckedUpdateManyWithoutPortalsNestedInput
+    marketplace_install_components?: marketplace_install_componentsUncheckedUpdateManyWithoutPortalsNestedInput
+    portal_invites?: portal_invitesUncheckedUpdateManyWithoutPortalsNestedInput
+    appCaches?: AppCacheUncheckedUpdateManyWithoutPortalNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutPortalNestedInput
+    konstructorPublicLinks?: KonstructorPublicLinkUncheckedUpdateManyWithoutPortalNestedInput
+    aiSettings?: PortalAiSettingsUncheckedUpdateOneWithoutPortalNestedInput
+    appSettings?: PortalAppSettingsUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportFiles?: SkapImportFileUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportItems?: SkapImportItemUncheckedUpdateManyWithoutPortalNestedInput
+    skapSessions?: SkapSessionUncheckedUpdateManyWithoutPortalNestedInput
+    skapSubscriptions?: SkapSubscriptionUncheckedUpdateManyWithoutPortalNestedInput
+    skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
+    questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+  }
+
+  export type UserUpsertWithoutTelegramBindingsInput = {
+    update: XOR<UserUpdateWithoutTelegramBindingsInput, UserUncheckedUpdateWithoutTelegramBindingsInput>
+    create: XOR<UserCreateWithoutTelegramBindingsInput, UserUncheckedCreateWithoutTelegramBindingsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutTelegramBindingsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutTelegramBindingsInput, UserUncheckedUpdateWithoutTelegramBindingsInput>
+  }
+
+  export type UserUpdateWithoutTelegramBindingsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    name?: StringFieldUpdateOperationsInput | string
+    surname?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    photo?: NullableStringFieldUpdateOperationsInput | string | null
+    role_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    email_verified_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    password?: StringFieldUpdateOperationsInput | string
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    two_factor_recovery_codes?: NullableStringFieldUpdateOperationsInput | string | null
+    remember_token?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bitrix_id?: NullableStringFieldUpdateOperationsInput | string | null
+    clients?: ClientUpdateOneWithoutUsersNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutTelegramBindingsInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    name?: StringFieldUpdateOperationsInput | string
+    surname?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    photo?: NullableStringFieldUpdateOperationsInput | string | null
+    role_id?: BigIntFieldUpdateOperationsInput | bigint | number
+    email_verified_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    password?: StringFieldUpdateOperationsInput | string
+    two_factor_secret?: NullableStringFieldUpdateOperationsInput | string | null
+    two_factor_recovery_codes?: NullableStringFieldUpdateOperationsInput | string | null
+    remember_token?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    client_id?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    bitrix_id?: NullableStringFieldUpdateOperationsInput | string | null
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutUserNestedInput
+  }
+
   export type PortalCreateWithoutAiSettingsInput = {
     id?: bigint | number
     created_at?: Date | string | null
@@ -176808,6 +181038,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAiSettingsInput = {
@@ -176876,6 +181108,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAiSettingsInput = {
@@ -176960,6 +181194,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAiSettingsInput = {
@@ -177028,6 +181264,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutAppSettingsInput = {
@@ -177096,6 +181334,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAppSettingsInput = {
@@ -177164,6 +181404,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAppSettingsInput = {
@@ -177248,6 +181490,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAppSettingsInput = {
@@ -177316,6 +181560,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutVendorSuperUsersInput = {
@@ -177384,6 +181630,8 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutVendorSuperUsersInput = {
@@ -177452,6 +181700,8 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutVendorSuperUsersInput = {
@@ -177536,6 +181786,8 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutVendorSuperUsersInput = {
@@ -177604,6 +181856,8 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutQuestionnairesInput = {
@@ -177672,6 +181926,8 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutQuestionnairesInput = {
@@ -177740,6 +181996,8 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutQuestionnairesInput = {
@@ -177904,6 +182162,8 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutQuestionnairesInput = {
@@ -177972,6 +182232,8 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalQuestionnaireItemUpsertWithWhereUniqueWithoutQuestionnaireInput = {
@@ -178107,6 +182369,8 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutQuestionnaireItemsInput = {
@@ -178175,6 +182439,8 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedCreateNestedManyWithoutPortalInput
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutQuestionnaireItemsInput = {
@@ -178352,6 +182618,8 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutQuestionnaireItemsInput = {
@@ -178420,6 +182688,8 @@ export namespace Prisma {
     skapImportRuns?: SkapImportRunUncheckedUpdateManyWithoutPortalNestedInput
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalQuestionnaireItemOptionUpsertWithWhereUniqueWithoutItemInput = {
@@ -178677,6 +182947,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSkapImportFilesInput = {
@@ -178745,6 +183017,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSkapImportFilesInput = {
@@ -178887,6 +183161,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSkapImportFilesInput = {
@@ -178955,6 +183231,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type SkapImportItemUpsertWithWhereUniqueWithoutFileInput = {
@@ -179039,6 +183317,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSkapImportItemsInput = {
@@ -179107,6 +183387,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSkapImportItemsInput = {
@@ -179336,6 +183618,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSkapImportItemsInput = {
@@ -179404,6 +183688,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type SkapImportFileUpsertWithoutItemsInput = {
@@ -179551,6 +183837,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSkapSessionsInput = {
@@ -179619,6 +183907,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSkapSessionsInput = {
@@ -179756,6 +184046,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSkapSessionsInput = {
@@ -179824,6 +184116,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type SkapImportItemUpsertWithoutSessionsInput = {
@@ -179951,6 +184245,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSkapSubscriptionsInput = {
@@ -180019,6 +184315,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSkapSubscriptionsInput = {
@@ -180156,6 +184454,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSkapSubscriptionsInput = {
@@ -180224,6 +184524,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type SkapImportItemUpsertWithoutSubscriptionsInput = {
@@ -180351,6 +184653,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSkapImportRunsInput = {
@@ -180419,6 +184723,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSkapImportRunsInput = {
@@ -180503,6 +184809,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSkapImportRunsInput = {
@@ -180571,6 +184879,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type countersCreateWithoutRq_counterInput = {
@@ -180991,6 +185301,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutSmartsInput = {
@@ -181059,6 +185371,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutSmartsInput = {
@@ -181143,6 +185457,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutSmartsInput = {
@@ -181211,6 +185527,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type telescope_entries_tagsCreateWithoutTelescope_entriesInput = {
@@ -181713,6 +186031,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutTemplatesInput = {
@@ -181781,6 +186101,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutTemplatesInput = {
@@ -181897,6 +186219,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutTemplatesInput = {
@@ -181965,6 +186289,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutTimezonesInput = {
@@ -182033,6 +186359,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutTimezonesInput = {
@@ -182101,6 +186429,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutTimezonesInput = {
@@ -182185,6 +186515,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutTimezonesInput = {
@@ -182253,6 +186585,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type ClientCreateWithoutUsersInput = {
@@ -182282,6 +186616,74 @@ export namespace Prisma {
   export type ClientCreateOrConnectWithoutUsersInput = {
     where: ClientWhereUniqueInput
     create: XOR<ClientCreateWithoutUsersInput, ClientUncheckedCreateWithoutUsersInput>
+  }
+
+  export type PortalUserCreateWithoutUserInput = {
+    id: string
+    bitrixUserId?: string | null
+    role?: string
+    invitedBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutPortalUsersInput
+  }
+
+  export type PortalUserUncheckedCreateWithoutUserInput = {
+    id: string
+    portalId: bigint | number
+    bitrixUserId?: string | null
+    role?: string
+    invitedBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalUserCreateOrConnectWithoutUserInput = {
+    where: PortalUserWhereUniqueInput
+    create: XOR<PortalUserCreateWithoutUserInput, PortalUserUncheckedCreateWithoutUserInput>
+  }
+
+  export type PortalUserCreateManyUserInputEnvelope = {
+    data: PortalUserCreateManyUserInput | PortalUserCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type TelegramBindingCreateWithoutUserInput = {
+    id: string
+    bitrixUserId?: string | null
+    chatId: bigint | number
+    telegramUsername?: string | null
+    displayName?: string | null
+    createdBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    portal: PortalCreateNestedOneWithoutTelegramBindingsInput
+  }
+
+  export type TelegramBindingUncheckedCreateWithoutUserInput = {
+    id: string
+    portalId: bigint | number
+    bitrixUserId?: string | null
+    chatId: bigint | number
+    telegramUsername?: string | null
+    displayName?: string | null
+    createdBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type TelegramBindingCreateOrConnectWithoutUserInput = {
+    where: TelegramBindingWhereUniqueInput
+    create: XOR<TelegramBindingCreateWithoutUserInput, TelegramBindingUncheckedCreateWithoutUserInput>
+  }
+
+  export type TelegramBindingCreateManyUserInputEnvelope = {
+    data: TelegramBindingCreateManyUserInput | TelegramBindingCreateManyUserInput[]
+    skipDuplicates?: boolean
   }
 
   export type ClientUpsertWithoutUsersInput = {
@@ -182317,6 +186719,38 @@ export namespace Prisma {
     is_active?: NullableBoolFieldUpdateOperationsInput | boolean | null
     portals?: PortalUncheckedUpdateManyWithoutClientsNestedInput
     portal_invites?: portal_invitesUncheckedUpdateManyWithoutClientsNestedInput
+  }
+
+  export type PortalUserUpsertWithWhereUniqueWithoutUserInput = {
+    where: PortalUserWhereUniqueInput
+    update: XOR<PortalUserUpdateWithoutUserInput, PortalUserUncheckedUpdateWithoutUserInput>
+    create: XOR<PortalUserCreateWithoutUserInput, PortalUserUncheckedCreateWithoutUserInput>
+  }
+
+  export type PortalUserUpdateWithWhereUniqueWithoutUserInput = {
+    where: PortalUserWhereUniqueInput
+    data: XOR<PortalUserUpdateWithoutUserInput, PortalUserUncheckedUpdateWithoutUserInput>
+  }
+
+  export type PortalUserUpdateManyWithWhereWithoutUserInput = {
+    where: PortalUserScalarWhereInput
+    data: XOR<PortalUserUpdateManyMutationInput, PortalUserUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type TelegramBindingUpsertWithWhereUniqueWithoutUserInput = {
+    where: TelegramBindingWhereUniqueInput
+    update: XOR<TelegramBindingUpdateWithoutUserInput, TelegramBindingUncheckedUpdateWithoutUserInput>
+    create: XOR<TelegramBindingCreateWithoutUserInput, TelegramBindingUncheckedCreateWithoutUserInput>
+  }
+
+  export type TelegramBindingUpdateWithWhereUniqueWithoutUserInput = {
+    where: TelegramBindingWhereUniqueInput
+    data: XOR<TelegramBindingUpdateWithoutUserInput, TelegramBindingUncheckedUpdateWithoutUserInput>
+  }
+
+  export type TelegramBindingUpdateManyWithWhereWithoutUserInput = {
+    where: TelegramBindingScalarWhereInput
+    data: XOR<TelegramBindingUpdateManyMutationInput, TelegramBindingUncheckedUpdateManyWithoutUserInput>
   }
 
   export type bitrix_appsCreateWithoutBitrix_app_placementsInput = {
@@ -182489,6 +186923,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBitrix_appsInput = {
@@ -182557,6 +186993,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBitrix_appsInput = {
@@ -182772,6 +187210,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBitrix_appsInput = {
@@ -182840,6 +187280,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type bitrix_tokensUpsertWithWhereUniqueWithoutBitrix_appsInput = {
@@ -183025,6 +187467,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_contactsInput = {
@@ -183093,6 +187537,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_contactsInput = {
@@ -183177,6 +187623,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_contactsInput = {
@@ -183245,6 +187693,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutBxRqsInput = {
@@ -183313,6 +187763,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBxRqsInput = {
@@ -183381,6 +187833,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBxRqsInput = {
@@ -183465,6 +187919,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBxRqsInput = {
@@ -183533,6 +187989,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type complectsCreateWithoutComplect_infoblockInput = {
@@ -185346,6 +189804,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOfferTemplatePortalInput = {
@@ -185414,6 +189874,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOfferTemplatePortalInput = {
@@ -185583,6 +190045,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOfferTemplatePortalInput = {
@@ -185651,6 +190115,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type OfferTemplateFontCreateWithoutOffer_templatesInput = {
@@ -185975,6 +190441,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOffer_zakupki_settingsInput = {
@@ -186043,6 +190511,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOffer_zakupki_settingsInput = {
@@ -186127,6 +190597,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOffer_zakupki_settingsInput = {
@@ -186195,6 +190667,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type garant_prof_pricesCreateWithoutSuppliesInput = {
@@ -186404,6 +190878,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutUserSelectedTemplatesInput = {
@@ -186472,6 +190948,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutUserSelectedTemplatesInput = {
@@ -186641,6 +191119,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutUserSelectedTemplatesInput = {
@@ -186709,6 +191189,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutPortal_regionInput = {
@@ -186777,6 +191259,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_regionInput = {
@@ -186845,6 +191329,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_regionInput = {
@@ -186995,6 +191481,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_regionInput = {
@@ -187063,6 +191551,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type regionsUpsertWithoutPortal_regionInput = {
@@ -187457,6 +191947,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutOfferTemplateImagesInput = {
@@ -187525,6 +192017,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutOfferTemplateImagesInput = {
@@ -187697,6 +192191,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutOfferTemplateImagesInput = {
@@ -187765,6 +192261,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type OfferTemplatePageBlockUpsertWithWhereUniqueWithoutOfferTemplateImageInput = {
@@ -188575,6 +193073,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutBtx_usersInput = {
@@ -188643,6 +193143,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutBtx_usersInput = {
@@ -188727,6 +193229,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutBtx_usersInput = {
@@ -188795,6 +193299,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type agentsCreateWithoutInvoiceTemplatesInput = {
@@ -188894,6 +193400,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutInvoiceTemplatesInput = {
@@ -188962,6 +193470,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutInvoiceTemplatesInput = {
@@ -189083,6 +193593,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutInvoiceTemplatesInput = {
@@ -189151,6 +193663,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type marketplace_install_componentsCreateWithoutMarketplace_installsInput = {
@@ -189290,6 +193804,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutMarketplace_installsInput = {
@@ -189358,6 +193874,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutMarketplace_installsInput = {
@@ -189495,6 +194013,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutMarketplace_installsInput = {
@@ -189563,6 +194083,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutPortal_productsInput = {
@@ -189631,6 +194153,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_productsInput = {
@@ -189699,6 +194223,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_productsInput = {
@@ -189783,6 +194309,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_productsInput = {
@@ -189851,6 +194379,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type marketplace_installsCreateWithoutMarketplace_install_componentsInput = {
@@ -189976,6 +194506,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutMarketplace_install_componentsInput = {
@@ -190044,6 +194576,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutMarketplace_install_componentsInput = {
@@ -190191,6 +194725,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutMarketplace_install_componentsInput = {
@@ -190259,6 +194795,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type ClientCreateWithoutPortal_invitesInput = {
@@ -190356,6 +194894,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutPortal_invitesInput = {
@@ -190424,6 +194964,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutPortal_invitesInput = {
@@ -190543,6 +195085,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutPortal_invitesInput = {
@@ -190611,6 +195155,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutAppCachesInput = {
@@ -190679,6 +195225,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutAppCachesInput = {
@@ -190747,6 +195295,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutAppCachesInput = {
@@ -190831,6 +195381,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutAppCachesInput = {
@@ -190899,6 +195451,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutShareLinksInput = {
@@ -190967,6 +195521,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutShareLinksInput = {
@@ -191035,6 +195591,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutShareLinksInput = {
@@ -191119,6 +195677,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutShareLinksInput = {
@@ -191187,6 +195747,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalCreateWithoutKonstructorPublicLinksInput = {
@@ -191255,6 +195817,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingCreateNestedManyWithoutPortalInput
   }
 
   export type PortalUncheckedCreateWithoutKonstructorPublicLinksInput = {
@@ -191323,6 +195887,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedCreateNestedManyWithoutPortalInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedCreateNestedManyWithoutPortalInput
     vendorSuperUsers?: VendorSuperUserUncheckedCreateNestedManyWithoutPortalInput
+    portalUsers?: PortalUserUncheckedCreateNestedManyWithoutPortalInput
+    telegramBindings?: TelegramBindingUncheckedCreateNestedManyWithoutPortalInput
   }
 
   export type PortalCreateOrConnectWithoutKonstructorPublicLinksInput = {
@@ -191407,6 +195973,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutKonstructorPublicLinksInput = {
@@ -191475,6 +196043,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type InvoiceTemplateCreateManyAgentInput = {
@@ -191843,6 +196413,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateWithoutClientsInput = {
@@ -191911,6 +196483,8 @@ export namespace Prisma {
     questionnaires?: PortalQuestionnaireUncheckedUpdateManyWithoutPortalNestedInput
     questionnaireItems?: PortalQuestionnaireItemUncheckedUpdateManyWithoutPortalNestedInput
     vendorSuperUsers?: VendorSuperUserUncheckedUpdateManyWithoutPortalNestedInput
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutPortalNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutPortalNestedInput
   }
 
   export type PortalUncheckedUpdateManyWithoutClientsInput = {
@@ -191956,6 +196530,8 @@ export namespace Prisma {
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     bitrix_id?: NullableStringFieldUpdateOperationsInput | string | null
+    portalUsers?: PortalUserUpdateManyWithoutUserNestedInput
+    telegramBindings?: TelegramBindingUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutClientsInput = {
@@ -191973,6 +196549,8 @@ export namespace Prisma {
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     bitrix_id?: NullableStringFieldUpdateOperationsInput | string | null
+    portalUsers?: PortalUserUncheckedUpdateManyWithoutUserNestedInput
+    telegramBindings?: TelegramBindingUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateManyWithoutClientsInput = {
@@ -194105,6 +198683,30 @@ export namespace Prisma {
     updatedAt?: Date | string | null
   }
 
+  export type PortalUserCreateManyPortalInput = {
+    id: string
+    userId: bigint | number
+    bitrixUserId?: string | null
+    role?: string
+    invitedBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type TelegramBindingCreateManyPortalInput = {
+    id: string
+    userId?: bigint | number | null
+    bitrixUserId?: string | null
+    chatId: bigint | number
+    telegramUsername?: string | null
+    displayName?: string | null
+    createdBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
   export type bitrix_appsUpdateWithoutPortalsInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -195929,6 +200531,78 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
+  export type PortalUserUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    invitedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    user?: UserUpdateOneRequiredWithoutPortalUsersNestedInput
+  }
+
+  export type PortalUserUncheckedUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: BigIntFieldUpdateOperationsInput | bigint | number
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    invitedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalUserUncheckedUpdateManyWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: BigIntFieldUpdateOperationsInput | bigint | number
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    invitedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type TelegramBindingUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    chatId?: BigIntFieldUpdateOperationsInput | bigint | number
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    user?: UserUpdateOneWithoutTelegramBindingsNestedInput
+  }
+
+  export type TelegramBindingUncheckedUpdateWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    chatId?: BigIntFieldUpdateOperationsInput | bigint | number
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type TelegramBindingUncheckedUpdateManyWithoutPortalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    chatId?: BigIntFieldUpdateOperationsInput | bigint | number
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
   export type PortalQuestionnaireItemCreateManyQuestionnaireInput = {
     id: string
     portal_id: bigint | number
@@ -196567,6 +201241,102 @@ export namespace Prisma {
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     field_id?: BigIntFieldUpdateOperationsInput | bigint | number
+  }
+
+  export type PortalUserCreateManyUserInput = {
+    id: string
+    portalId: bigint | number
+    bitrixUserId?: string | null
+    role?: string
+    invitedBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type TelegramBindingCreateManyUserInput = {
+    id: string
+    portalId: bigint | number
+    bitrixUserId?: string | null
+    chatId: bigint | number
+    telegramUsername?: string | null
+    displayName?: string | null
+    createdBy?: string | null
+    revokedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+  }
+
+  export type PortalUserUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    invitedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutPortalUsersNestedInput
+  }
+
+  export type PortalUserUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portalId?: BigIntFieldUpdateOperationsInput | bigint | number
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    invitedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type PortalUserUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portalId?: BigIntFieldUpdateOperationsInput | bigint | number
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    invitedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type TelegramBindingUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    chatId?: BigIntFieldUpdateOperationsInput | bigint | number
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    portal?: PortalUpdateOneRequiredWithoutTelegramBindingsNestedInput
+  }
+
+  export type TelegramBindingUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portalId?: BigIntFieldUpdateOperationsInput | bigint | number
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    chatId?: BigIntFieldUpdateOperationsInput | bigint | number
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type TelegramBindingUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    portalId?: BigIntFieldUpdateOperationsInput | bigint | number
+    bitrixUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    chatId?: BigIntFieldUpdateOperationsInput | bigint | number
+    telegramUsername?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type bitrix_app_placementsCreateManyBitrix_appsInput = {

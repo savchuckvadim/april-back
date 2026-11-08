@@ -63,6 +63,7 @@ import { MaintenanceModule } from './maintenance';
 import { HooksAdminModule } from '@lib/portal-lib/hooks';
 import { SupportMonitorAdminModule } from '@lib/support';
 import { LogsAdminModule } from '@lib/logger/query';
+import { CabinetAdminModule } from '@lib/cabinet';
 
 @Module({
     imports: [
@@ -177,6 +178,10 @@ import { LogsAdminModule } from '@lib/logger/query';
         LogsAdminModule,
         // Персональные ссылки на КП на следующий год: выдача, список, отзыв
         RenewalOfferLinkAdminModule,
+        // Кабинет клиента-портала (07.11.2026): связь портала с организацией,
+        // участники и владелец, ссылки на пароль, Telegram. Почтовый
+        // транспорт даёт MarketplaceModerationModule (MailerModule глобальный).
+        CabinetAdminModule,
     ],
 })
 export class AdminAddModule {}

@@ -1,17 +1,25 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom } from 'rxjs';
 import { EgressProxyService } from '@lib/egress-proxy';
+import {
+    callTelegramBotApi,
+    TELEGRAM_MAX_TEXT,
+    TelegramBotApiTransport,
+    telegramWebhookSecret,
+} from '@lib/telegram';
+import {
+    envOnlyReader,
+    VENDOR_SETTINGS_READER,
+    VendorSettingsReader,
+} from '@lib/vendor-settings';
 
 /** Токен отдельного бота поддержки (BotFather), не общий бот тревог. */
 export const SUPPORT_TELEGRAM_BOT_TOKEN_ENV = 'SUPPORT_TELEGRAM_BOT_TOKEN';
 /** Чат поддержки: все его участники получают клиентские сигналы. */
 export const SUPPORT_TELEGRAM_CHAT_ID_ENV = 'SUPPORT_TELEGRAM_CHAT_ID';
-
-/** Лимит Telegram на длину сообщения. */
-const TELEGRAM_MAX_TEXT = 4096;
-const TELEGRAM_TIMEOUT_MS = 15_000;
+/** Соль секрета вебхука бота поддержки (у клиентского бота — своя). */
+export const SUPPORT_TELEGRAM_WEBHOOK_PURPOSE = 'support';
 
 /** Статусы getChatMember, при которых человек состоит в чате. */
 const MEMBER_STATUSES = new Set([
@@ -33,46 +41,58 @@ export interface TelegramSendOptions {
     replyToMessageId?: number;
 }
 
-/** Ответ Bot API: `ok` + `result`; при ошибке HTTP 4xx — исключение axios. */
-interface TelegramApiResponse<T> {
-    ok: boolean;
-    result?: T;
-    description?: string;
-}
-
 /**
  * Бот поддержки в Telegram (решение владельца 26.10.2026: отдельный бот и
  * чат, а не личный чат и не бот тревог разработчика): оповещения в чат
  * поддержки и ответы ИИ-помощника с кнопками.
  *
- * Бот и чат задаются в env приложения; не заданы — канал выключен и
- * оповещения уходят только в колокольчик. Ошибка Telegram не роняет такт:
- * `send` возвращает false, решение «запомнить или повторить» — у вызывающего.
+ * Токен и чат — админка «Настройки приложения» → «Telegram-боты»
+ * (SUPPORT_TELEGRAM_BOT_TOKEN, SUPPORT_TELEGRAM_CHAT_ID); не заданы там —
+ * env с теми же именами; нигде — канал выключен, оповещения уходят только
+ * в колокольчик. Смена токена в админке подхватывается без перезапуска.
+ * Ошибка Telegram не роняет такт: `send` возвращает false, решение
+ * «запомнить или повторить» — у вызывающего.
  */
 @Injectable()
 export class SupportTelegramNotifier {
     private readonly logger = new Logger(SupportTelegramNotifier.name);
+    private readonly reader: VendorSettingsReader;
+    private readonly transport: TelegramBotApiTransport;
 
     constructor(
-        private readonly http: HttpService,
-        private readonly config: ConfigService,
-        /** api.telegram.org через исходящий прокси, если он настроен в env. */
-        private readonly egress: EgressProxyService,
-    ) {}
-
-    isConfigured(): boolean {
-        return Boolean(this.token() && this.chatId());
+        http: HttpService,
+        config: ConfigService,
+        /** api.telegram.org через исходящий прокси, если он настроен. */
+        egress: EgressProxyService,
+        @Optional()
+        @Inject(VENDOR_SETTINGS_READER)
+        reader?: VendorSettingsReader,
+    ) {
+        this.transport = { http, egress };
+        this.reader = reader ?? envOnlyReader(key => config.get<string>(key));
     }
 
-    /** Чат поддержки из env; '' — не задан. */
-    supportChatId(): string {
+    async isConfigured(): Promise<boolean> {
+        return Boolean((await this.token()) && (await this.chatId()));
+    }
+
+    /** Чат поддержки; '' — не задан. */
+    supportChatId(): Promise<string> {
         return this.chatId();
+    }
+
+    /** Секрет вебхука для текущего токена; null — токена нет. */
+    async webhookSecret(): Promise<string | null> {
+        const token = await this.token();
+        return token
+            ? telegramWebhookSecret(token, SUPPORT_TELEGRAM_WEBHOOK_PURPOSE)
+            : null;
     }
 
     /** Оповещение в чат поддержки. @returns true — сообщение принято Telegram. */
     async send(html: string): Promise<boolean> {
-        const chatId = this.chatId();
-        if (!this.token() || !chatId) return false;
+        const chatId = await this.chatId();
+        if (!chatId || !(await this.token())) return false;
         return (await this.post(chatId, html)) !== null;
     }
 
@@ -160,7 +180,7 @@ export class SupportTelegramNotifier {
 
     /** Состоит ли человек в чате поддержки — пропуск в личный чат с ботом. */
     async isChatMember(userId: number): Promise<boolean> {
-        const chatId = this.chatId();
+        const chatId = await this.chatId();
         if (!chatId) return false;
         try {
             const member = await this.call<{ status?: string }>(
@@ -190,31 +210,18 @@ export class SupportTelegramNotifier {
         method: string,
         payload: Record<string, unknown>,
     ): Promise<T | undefined> {
-        const token = this.token();
+        const token = await this.token();
         if (!token) {
             throw new Error(`не задан ${SUPPORT_TELEGRAM_BOT_TOKEN_ENV}`);
         }
-        const route = this.egress.route(
-            `https://api.telegram.org/bot${token}/${method}`,
-        );
-        const response = await firstValueFrom(
-            this.http.post<TelegramApiResponse<T>>(route.url, payload, {
-                timeout: TELEGRAM_TIMEOUT_MS,
-                ...(route.viaProxy ? { headers: { ...route.headers } } : {}),
-            }),
-        );
-        return response.data?.result;
+        return callTelegramBotApi<T>(this.transport, token, method, payload);
     }
 
-    private token(): string {
-        return (
-            this.config.get<string>(SUPPORT_TELEGRAM_BOT_TOKEN_ENV) ?? ''
-        ).trim();
+    private async token(): Promise<string> {
+        return (await this.reader.get(SUPPORT_TELEGRAM_BOT_TOKEN_ENV)) ?? '';
     }
 
-    private chatId(): string {
-        return (
-            this.config.get<string>(SUPPORT_TELEGRAM_CHAT_ID_ENV) ?? ''
-        ).trim();
+    private async chatId(): Promise<string> {
+        return (await this.reader.get(SUPPORT_TELEGRAM_CHAT_ID_ENV)) ?? '';
     }
 }

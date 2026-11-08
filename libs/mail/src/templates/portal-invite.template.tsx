@@ -23,7 +23,15 @@ interface PortalInviteTemplateProps {
     organization?: string;
 }
 
-const baseUrl = `https://${process.env.AUTH_COOKIE_SPA_DOMAIN}`;
+/**
+ * Сайт April, с которого письмо берёт логотип. Раньше адрес собирался из
+ * AUTH_COOKIE_SPA_DOMAIN (домен куки легаси-кабинета на Vercel) — логотип
+ * отдавал 404. Теперь — сайт кабинета (CABINET_SITE_URL, на зеркале — его
+ * адрес), логотип тот же, что в превью сайта.
+ */
+const siteUrl = (
+    process.env.CABINET_SITE_URL || 'https://bitrix.april-app.ru'
+).replace(/\/+$/, '');
 const supportEmail = 'april-app@mail.ru';
 
 /**
@@ -39,7 +47,7 @@ export function PortalInviteTemplate({
     expiresAtLabel,
     organization,
 }: PortalInviteTemplateProps) {
-    const logo = `${baseUrl}/touch-icons/512x512.png`;
+    const logo = `${siteUrl}/logo/logo.png`;
 
     return (
         <Tailwind>

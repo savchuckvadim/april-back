@@ -41,7 +41,7 @@ export class SupportSignalDispatcher {
         warnings: string[],
     ): Promise<SupportChannels> {
         const telegram =
-            options.telegramEnabled && this.telegram.isConfigured();
+            options.telegramEnabled && (await this.telegram.isConfigured());
         let bell: SupportBellNotifier | null = null;
         if (options.notifyUserIds.length) {
             try {

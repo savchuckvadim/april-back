@@ -1,5 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
 import { MarketplaceTokenService } from '@lib/marketplace-core';
+import {
+    EnumPortalAppCode,
+    getPortalAppDefaults,
+    PortalAppSettingsService,
+} from '@lib/portal-lib/store/app-settings';
 import { MarketplaceAdminService } from '../services/marketplace-admin.service';
 import {
     InstallWithDetails,
@@ -74,6 +79,7 @@ describe('MarketplaceAdminService.getInstalls (диагностика устан
             repo as unknown as MarketplaceInstallRepository,
             {} as MarketplacePlacementSyncService,
             {} as MarketplaceTokenService,
+            {} as PortalAppSettingsService,
         );
     });
 
@@ -119,5 +125,113 @@ describe('MarketplaceAdminService.getInstalls (диагностика устан
         await expect(
             service.getInstalls({ memberId: 'unknown' }),
         ).resolves.toEqual([]);
+    });
+});
+
+/**
+ * Виджеты ставятся ТОЛЬКО отсюда и только по списку `app_widgets` из
+ * «Общих настроек портала» (при установке приложения — никогда).
+ */
+describe('MarketplaceAdminService.refreshPlacements (виджеты по настройке портала)', () => {
+    const portalDefaults = getPortalAppDefaults(EnumPortalAppCode.portal);
+    let repo: jest.Mocked<
+        Pick<MarketplaceInstallRepository, 'findInstallByMemberId'>
+    >;
+    let sync: jest.Mocked<
+        Pick<MarketplacePlacementSyncService, 'syncPlacements'>
+    >;
+    let token: jest.Mocked<
+        Pick<MarketplaceTokenService, 'getFreshAccessToken'>
+    >;
+    let settings: jest.Mocked<Pick<PortalAppSettingsService, 'resolve'>>;
+    let service: MarketplaceAdminService;
+
+    beforeEach(() => {
+        repo = {
+            findInstallByMemberId: jest.fn().mockResolvedValue({
+                ...installFixture(),
+                portal_id: BigInt(1),
+            }),
+        };
+        sync = {
+            syncPlacements: jest.fn().mockResolvedValue({
+                bound: 2,
+                unbound: 0,
+                errors: 0,
+                total: 2,
+            }),
+        };
+        token = {
+            getFreshAccessToken: jest.fn().mockResolvedValue('fresh-at'),
+        };
+        settings = {
+            resolve: jest.fn().mockResolvedValue({
+                ...portalDefaults,
+                appWidgets: 'event-sales, report-sales, bogus',
+            }),
+        };
+        service = new MarketplaceAdminService(
+            repo as unknown as MarketplaceInstallRepository,
+            sync as unknown as MarketplacePlacementSyncService,
+            token as unknown as MarketplaceTokenService,
+            settings as unknown as PortalAppSettingsService,
+        );
+    });
+
+    it('список виджетов берётся из настройки портала, чужие коды отбрасываются', async () => {
+        await service.refreshPlacements({ memberId: 'member-1' });
+
+        expect(settings.resolve).toHaveBeenCalledWith(
+            'portal.bitrix24.ru',
+            EnumPortalAppCode.portal,
+        );
+        expect(sync.syncPlacements).toHaveBeenCalledWith(
+            'portal.bitrix24.ru',
+            'fresh-at',
+            'install-uuid',
+            BigInt(1),
+            ['event-sales', 'report-sales'],
+            { force: false },
+        );
+    });
+
+    it('переустановка: флаг force уходит в синхронизацию', async () => {
+        await service.refreshPlacements({ memberId: 'member-1', force: true });
+
+        expect(sync.syncPlacements).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.any(String),
+            expect.any(String),
+            expect.anything(),
+            expect.any(Array),
+            { force: true },
+        );
+    });
+
+    it('настройка пуста (действующий портал) → синхронизация получает пустой список', async () => {
+        settings.resolve.mockResolvedValue(portalDefaults);
+
+        await service.refreshPlacements({ memberId: 'member-1' });
+
+        expect(sync.syncPlacements).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.any(String),
+            expect.any(String),
+            expect.anything(),
+            [],
+            { force: false },
+        );
+    });
+
+    it('приложение удалено с портала → BadRequestException без синхронизации', async () => {
+        repo.findInstallByMemberId.mockResolvedValue({
+            ...installFixture(),
+            uninstalled_at: new Date(),
+        });
+
+        await expect(
+            service.refreshPlacements({ memberId: 'member-1' }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(sync.syncPlacements).not.toHaveBeenCalled();
     });
 });

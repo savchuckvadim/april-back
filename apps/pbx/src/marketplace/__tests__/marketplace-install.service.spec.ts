@@ -1,12 +1,13 @@
 import { ConfigService } from '@nestjs/config';
+import { Portal } from 'generated/prisma';
 import { MarketplaceInstallService } from '../services/marketplace-install.service';
 import { InstallChannel } from '../lib/parse-install-params.util';
 import {
     InstallStatus,
     MarketplaceInstallRepository,
 } from '../persistence/marketplace-install.repository';
-import { MarketplacePlacementSyncService } from '../services/marketplace-placement-sync.service';
 import { MarketplaceEventSyncService } from '../services/marketplace-event-sync.service';
+import { MarketplaceLocalAppService } from '../services/marketplace-local-app.service';
 
 type RepoMock = jest.Mocked<
     Pick<
@@ -22,15 +23,17 @@ type RepoMock = jest.Mocked<
 type EventSyncMock = jest.Mocked<
     Pick<MarketplaceEventSyncService, 'syncEvents'>
 >;
-type SyncMock = jest.Mocked<
-    Pick<MarketplacePlacementSyncService, 'syncPlacements'>
+type LocalAppMock = jest.Mocked<
+    Pick<MarketplaceLocalAppService, 'onPortalInstalled'>
 >;
+
+const PORTAL = { id: BigInt(1), member_id: 'member-1' } as Portal;
 
 describe('MarketplaceInstallService (пайплайн установки)', () => {
     let service: MarketplaceInstallService;
     let repo: RepoMock;
     let eventSync: EventSyncMock;
-    let sync: SyncMock;
+    let localApp: LocalAppMock;
 
     const onAppInstallBody = {
         event: 'ONAPPINSTALL',
@@ -48,7 +51,7 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
         repo = {
             upsertPortal: jest
                 .fn()
-                .mockResolvedValue({ id: BigInt(1), member_id: 'member-1' }),
+                .mockResolvedValue({ portal: PORTAL, created: false }),
             upsertInstall: jest.fn().mockResolvedValue({ id: 'install-uuid' }),
             updateInstallStatus: jest.fn().mockResolvedValue(undefined),
             upsertComponents: jest.fn().mockResolvedValue(undefined),
@@ -63,13 +66,8 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
                 total: 3,
             }),
         };
-        sync = {
-            syncPlacements: jest.fn().mockResolvedValue({
-                bound: 4,
-                unbound: 0,
-                errors: 0,
-                total: 4,
-            }),
+        localApp = {
+            onPortalInstalled: jest.fn().mockResolvedValue(undefined),
         };
         const configService = {
             get: jest.fn().mockReturnValue(undefined),
@@ -78,12 +76,12 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
         service = new MarketplaceInstallService(
             repo as unknown as MarketplaceInstallRepository,
             eventSync as unknown as MarketplaceEventSyncService,
-            sync as unknown as MarketplacePlacementSyncService,
+            localApp as unknown as MarketplaceLocalAppService,
             configService,
         );
     });
 
-    it('успешная установка: токены → sync событий → sync привязок → installed', async () => {
+    it('успешная установка: токены → правила локального приложения → sync событий → installed', async () => {
         const result = await service.installFromBitrixRequest(
             onAppInstallBody,
             undefined,
@@ -98,25 +96,49 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
             memberId: 'member-1',
             domain: 'portal.bitrix24.ru',
         });
-        // события синхронизированы ДО привязок виджетов
+        // правила локального приложения знают, создан ли портал установкой
+        expect(localApp.onPortalInstalled).toHaveBeenCalledWith({
+            portal: PORTAL,
+            created: false,
+            domain: 'portal.bitrix24.ru',
+            memberId: 'member-1',
+        });
         expect(eventSync.syncEvents).toHaveBeenCalledWith(
             'portal.bitrix24.ru',
             'at',
-        );
-        const eventsOrder = eventSync.syncEvents.mock.invocationCallOrder[0];
-        const placementsOrder = sync.syncPlacements.mock.invocationCallOrder[0];
-        expect(eventsOrder).toBeLessThan(placementsOrder);
-        // привязки виджетов синхронизированы с эталоном
-        expect(sync.syncPlacements).toHaveBeenCalledWith(
-            'portal.bitrix24.ru',
-            'at',
-            'install-uuid',
-            BigInt(1),
         );
         // финальный статус — installed
         expect(repo.updateInstallStatus).toHaveBeenLastCalledWith(
             'install-uuid',
             InstallStatus.INSTALLED,
+        );
+    });
+
+    /*
+     * На действующих порталах виджеты уже стоят старыми привязками —
+     * автоматическая установка дала бы дубли (решение владельца 07.11.2026).
+     * Виджеты ставит только админ по списку app_widgets.
+     */
+    it('виджеты при установке не ставятся: статус placements_bound не выставляется, компонентов placement нет', async () => {
+        await service.installFromBitrixRequest(onAppInstallBody, undefined);
+
+        const statuses = repo.updateInstallStatus.mock.calls.map(
+            call => call[1],
+        );
+        expect(statuses).not.toContain(InstallStatus.PLACEMENTS_BOUND);
+        const componentTypes = repo.upsertComponents.mock.calls.flatMap(call =>
+            call[2].map(component => component.componentType),
+        );
+        expect(componentTypes).not.toContain('placement');
+    });
+
+    it('новый портал (создан установкой) → правила локального приложения получают created=true', async () => {
+        repo.upsertPortal.mockResolvedValue({ portal: PORTAL, created: true });
+
+        await service.installFromBitrixRequest(onAppInstallBody, undefined);
+
+        expect(localApp.onPortalInstalled).toHaveBeenCalledWith(
+            expect.objectContaining({ created: true }),
         );
     });
 
@@ -146,26 +168,8 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
 
         expect(result.status).toBe('fail');
         expect(repo.upsertPortal).not.toHaveBeenCalled();
+        expect(localApp.onPortalInstalled).not.toHaveBeenCalled();
         expect(eventSync.syncEvents).not.toHaveBeenCalled();
-    });
-
-    it('ошибка синхронизации привязок → status=error с шагом placements', async () => {
-        sync.syncPlacements.mockRejectedValue(
-            new Error('placement.bind failed: CRM_DEAL_DETAIL_TAB/event-sales'),
-        );
-
-        const result = await service.installFromBitrixRequest(
-            onAppInstallBody,
-            undefined,
-        );
-
-        expect(result.status).toBe('fail');
-        expect(repo.updateInstallStatus).toHaveBeenCalledWith(
-            'install-uuid',
-            InstallStatus.ERROR,
-            'placements',
-            expect.stringContaining('placement.bind'),
-        );
     });
 
     it('ошибка синхронизации событий → status=error с шагом events', async () => {
@@ -187,7 +191,7 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
         );
     });
 
-    it('storeFromPayload (открытие): обновляет токены, статус не трогает', async () => {
+    it('storeFromPayload (открытие): обновляет токены, статус и правила не трогает', async () => {
         const result = await service.storeFromPayload({
             channel: InstallChannel.OPEN,
             access_token: 'at2',
@@ -201,6 +205,6 @@ describe('MarketplaceInstallService (пайплайн установки)', () =
         expect(repo.upsertInstall).toHaveBeenCalled();
         expect(repo.updateInstallStatus).not.toHaveBeenCalled();
         expect(eventSync.syncEvents).not.toHaveBeenCalled();
-        expect(sync.syncPlacements).not.toHaveBeenCalled();
+        expect(localApp.onPortalInstalled).not.toHaveBeenCalled();
     });
 });

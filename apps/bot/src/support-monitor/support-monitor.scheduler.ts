@@ -99,7 +99,10 @@ export class SupportMonitorScheduler implements OnApplicationBootstrap {
                 })),
             );
             this.logger.log(
-                formatSupportRoster(entries, this.telegram.isConfigured()),
+                formatSupportRoster(
+                    entries,
+                    await this.telegram.isConfigured(),
+                ),
                 { telegram: true },
             );
         } catch (error) {

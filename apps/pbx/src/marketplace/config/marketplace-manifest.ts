@@ -12,7 +12,9 @@
  * (/api/bitrix-marketplace/placement/<code>) — он принимает POST/GET
  * и редиректит на frontUrl. Куда редиректить — подменяемо БЕЗ
  * перерегистрации привязок: правкой frontUrl здесь (деплой) или
- * env-переменной MARKETPLACE_WIDGET_URL_<КОД> (без деплоя, см. роутер).
+ * настройкой вендора MARKETPLACE_WIDGET_URL_<КОД> — админка → «Настройки
+ * приложения» → «Виджеты» (запасной путь — env с тем же именем; без
+ * деплоя, см. роутер).
  *
  * Эталон живёт в коде (одинаков для всех порталов, версионируется с
  * приложением). Факт на конкретном портале — в самом Битриксе
@@ -25,7 +27,7 @@
  * 1. Новый виджет — элемент в MARKETPLACE_WIDGETS (code уникальный,
  *    kebab-case; frontUrl — полный URL страницы виджета).
  *    Смена мест — правка places[]; смена фронта — правка frontUrl
- *    (или env MARKETPLACE_WIDGET_URL_<КОД> без деплоя).
+ *    (или адрес в админке «Настройки приложения» → «Виджеты» без деплоя).
  *    Тип MarketplaceWidgetCode, Swagger-enum роутера, guard и тесты
  *    подхватят изменения АВТОМАТИЧЕСКИ (всё выводится из массива).
  * 2. Страница по frontUrl должна работать в iframe (открывается GET-ом
@@ -43,10 +45,25 @@
  * ════════════════════════════════════════════════════════
  */
 
+import type {
+    AppPartCode,
+    AppWidgetCode,
+} from '@lib/portal-lib/store/app-settings';
+
+/**
+ * Продукты приложения = ЧАСТИ из реестра portal-lib (`APP_PARTS`):
+ * значения enum обязаны совпадать с кодами частей — это проверяет тип
+ * `satisfies` ниже.
+ */
 export enum MarketplaceProduct {
     SALES = 'sales',
     SERVICE = 'service',
 }
+
+const MARKETPLACE_PRODUCT_CODES = Object.values(
+    MarketplaceProduct,
+) satisfies AppPartCode[];
+void MARKETPLACE_PRODUCT_CODES;
 
 /**
  * Компоненты установки (component_type в marketplace_install_components).
@@ -84,9 +101,11 @@ export interface WidgetManifestItem {
     product: MarketplaceProduct;
     /**
      * Код виджета — стабильный HANDLER-URL
-     * `/api/bitrix-marketplace/placement/<code>` для ВСЕХ мест встройки
+     * `/api/bitrix-marketplace/placement/<code>` для ВСЕХ мест встройки.
+     * Только коды реестра `APP_WIDGETS` (portal-lib): их же хранит
+     * настройка портала `app_widgets`.
      */
-    code: string;
+    code: AppWidgetCode;
     /** Название вкладки/виджета в интерфейсе Битрикс24 */
     title: string;
     description?: string;
@@ -94,7 +113,7 @@ export interface WidgetManifestItem {
     places: readonly BxPlace[];
     /**
      * Полный URL фронта виджета (домены у виджетов РАЗНЫЕ; URL может
-     * меняться — правка здесь или env MARKETPLACE_WIDGET_URL_<КОД>).
+     * меняться — правка здесь или адрес в админке, ключ MARKETPLACE_WIDGET_URL_<КОД>).
      * Открывается GET-ом после redirect роутера.
      */
     frontUrl: string;
@@ -110,7 +129,7 @@ export interface WidgetManifestItem {
  * frontUrl — отдельные Next-приложения на своих поддоменах
  * (актуализировано 2026-07-20, владелец): konstructor / event-sales /
  * event-service / kpi-sales / kpi-service .april-app.ru. Подмена без
- * деплоя — env MARKETPLACE_WIDGET_URL_<КОД>.
+ * деплоя — админка «Настройки приложения» → «Виджеты» (env — запасной путь).
  */
 export const MARKETPLACE_WIDGETS = [
     {
@@ -203,6 +222,22 @@ export function getDesiredBindings(
 ): DesiredBinding[] {
     return MARKETPLACE_WIDGETS.filter(widget =>
         products.includes(widget.product),
+    ).flatMap((widget: WidgetManifestItem) =>
+        widget.places.map((place: BxPlace) => ({ widget, place })),
+    );
+}
+
+/**
+ * Целевые привязки для ВЫБРАННЫХ виджетов портала (настройка
+ * `app_widgets`): только они должны стоять; остальные НАШИ привязки
+ * синхронизация снимет. Неизвестные коды игнорируются.
+ */
+export function getDesiredBindingsForWidgets(
+    widgetCodes: readonly string[],
+): DesiredBinding[] {
+    const wanted = new Set(widgetCodes);
+    return MARKETPLACE_WIDGETS.filter(widget =>
+        wanted.has(widget.code),
     ).flatMap((widget: WidgetManifestItem) =>
         widget.places.map((place: BxPlace) => ({ widget, place })),
     );

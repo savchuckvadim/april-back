@@ -10,6 +10,7 @@ import { BitrixBotModule } from './bitrix/bitrix-bot.module';
 import { SupportMonitorBotModule } from './support-monitor/support-monitor-bot.module';
 import { SupportApiModule } from './support-api/support-api.module';
 import { SupportTelegramAppModule } from './support-telegram/support-telegram-app.module';
+import { CabinetTelegramWebhookModule } from '@lib/cabinet';
 
 /**
  * Корневой модуль приложения bot.
@@ -47,6 +48,9 @@ import { SupportTelegramAppModule } from './support-telegram/support-telegram-ap
         SupportApiModule,
         // Telegram-бот поддержки: команды ИИ-помощнику и кнопки (28.10.2026)
         SupportTelegramAppModule,
+        // Клиентский Telegram-бот April: привязка чатов сотрудников порталов
+        // одноразовым кодом из кабинета (07.11.2026)
+        CabinetTelegramWebhookModule,
     ],
     providers: [GlobalExceptionFilter],
 })

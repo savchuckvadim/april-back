@@ -369,6 +369,32 @@ describe('MarketplaceModerationService (approve/block заявок)', () => {
         );
     });
 
+    /*
+     * Локальное приложение April ставится и на действующие (легаси) порталы:
+     * виджеты им обновлять можно — пустой список на pbx ничего не трогает.
+     */
+    it('placementsRefresh на действующем (легаси) портале идёт в pbx, force прокидывается', async () => {
+        repo.findPortalById.mockResolvedValue(
+            portalFixture({ source: 'legacy' } as never),
+        );
+
+        await service.placementsRefresh(7, true);
+
+        expect(httpPost).toHaveBeenCalledWith(
+            'https://pbx.test/api/bitrix-marketplace/admin/placements/refresh',
+            expect.objectContaining({ memberId: 'member-1', force: true }),
+            expect.anything(),
+        );
+    });
+
+    it('placementsRefresh несуществующего портала → NotFoundException', async () => {
+        repo.findPortalById.mockResolvedValue(null);
+        await expect(service.placementsRefresh(99)).rejects.toBeInstanceOf(
+            NotFoundException,
+        );
+        expect(httpPost).not.toHaveBeenCalled();
+    });
+
     it('provisionRefresh на не-marketplace портале → BadRequestException', async () => {
         repo.findPortalById.mockResolvedValue(
             portalFixture({ source: 'legacy' } as never),

@@ -13,25 +13,30 @@ import {
     InstallStatus,
     MarketplaceInstallRepository,
 } from '../persistence/marketplace-install.repository';
-import { MarketplacePlacementSyncService } from './marketplace-placement-sync.service';
 import { MarketplaceEventSyncService } from './marketplace-event-sync.service';
+import { MarketplaceLocalAppService } from './marketplace-local-app.service';
 import {
     MarketplaceComponentType,
     SALES_SMART_SCENARIOS,
 } from '../config/marketplace-manifest';
 
 /**
- * Установка маркетплейс-приложения «Менеджер Гарант» — полный пайплайн:
+ * Установка приложения «April» (локальное приложение Битрикс24; тот же
+ * конвейер обслуживает и тиражную установку) — пайплайн:
  *
- *  [1] tokens_stored     — портал (member_id-first) + установка + токены
+ *  [1] tokens_stored     — портал (member_id-first) + установка + токены;
+ *                          правила локального приложения (режим авторизации
+ *                          нового портала, перепривязка секрета к member_id)
  *  [2] events_bound      — event.bind: ONAPPUNINSTALL/ONAPPUPDATE/ONAPPPAYMENT
- *  [3] placements_bound  — diff-синхронизация привязок виджетов
- *                          (эталон-манифест ↔ placement.list Битрикса)
- *  [4] умные сценарии    — ставит сам Битрикс из архива карточки решения;
+ *  [3] умные сценарии    — ставит сам Битрикс из архива карточки решения;
  *                          здесь только фиксация состава (skipped/bitrix_archive)
- *  [5] installed         — provisioning pbx-сущностей: ЗАГЛУШКА (компонент
- *                          pbx_entities помечается pending; фактическая
- *                          установка и смена статусов — следующий этап)
+ *  [4] installed         — provisioning pbx-сущностей запускается при
+ *                          активации продукта, здесь — компонент «ожидает»
+ *
+ * ВИДЖЕТЫ (placement.bind) ПРИ УСТАНОВКЕ НЕ СТАВЯТСЯ (решение владельца
+ * 07.11.2026): на действующих порталах виджеты уже стоят старыми
+ * привязками, и автоматическая установка дала бы дубли. Виджеты ставит
+ * админ по списку `app_widgets` портала — MarketplaceAdminService.
  *
  * Хранение — ТОЛЬКО маркетплейс-таблицы (marketplace_installs и др.);
  * легаси bitrix_apps/bitrix_tokens не используются.
@@ -52,7 +57,7 @@ export class MarketplaceInstallService {
     constructor(
         private readonly repository: MarketplaceInstallRepository,
         private readonly eventSync: MarketplaceEventSyncService,
-        private readonly placementSync: MarketplacePlacementSyncService,
+        private readonly localApp: MarketplaceLocalAppService,
         private readonly configService: ConfigService,
     ) {
         this.installRedirectUrl =
@@ -99,7 +104,7 @@ export class MarketplaceInstallService {
             };
         }
         try {
-            const portal = await this.repository.upsertPortal({
+            const { portal } = await this.repository.upsertPortal({
                 memberId: payload.member_id,
                 domain: payload.domain,
             });
@@ -141,8 +146,8 @@ export class MarketplaceInstallService {
         let installId: string | undefined;
 
         try {
-            // [1] Портал + установка + токены
-            const portal = await this.repository.upsertPortal({
+            // [1] Портал + установка + токены + правила локального приложения
+            const { portal, created } = await this.repository.upsertPortal({
                 memberId: payload.member_id,
                 domain,
             });
@@ -150,6 +155,12 @@ export class MarketplaceInstallService {
                 this.buildUpsertInput(portal.id, payload),
             );
             installId = install.id;
+            await this.localApp.onPortalInstalled({
+                portal,
+                created,
+                domain,
+                memberId: payload.member_id,
+            });
 
             // [2] События жизненного цикла — diff-синхронизация с эталоном
             step = 'events';
@@ -159,24 +170,13 @@ export class MarketplaceInstallService {
                 InstallStatus.EVENTS_BOUND,
             );
 
-            // [3] Привязки виджетов: diff-синхронизация эталона с порталом
-            step = 'placements';
-            await this.placementSync.syncPlacements(
-                domain,
-                accessToken,
-                install.id,
-                portal.id,
-            );
-            await this.repository.updateInstallStatus(
-                install.id,
-                InstallStatus.PLACEMENTS_BOUND,
-            );
+            // Виджеты здесь НЕ ставятся — см. док-комментарий класса.
 
-            // [4] Умные сценарии — ЗАГЛУШКА (фиксируем состав, не устанавливаем)
+            // [3] Умные сценарии — ЗАГЛУШКА (фиксируем состав, не устанавливаем)
             step = 'smart_scenarios';
             await this.registerSmartScenarioStubs(install.id, portal.id);
 
-            // [5] Provisioning pbx-сущностей запускается НЕ здесь, а при
+            // [4] Provisioning pbx-сущностей запускается НЕ здесь, а при
             // активации продукта (approve заявки → MarketplaceProductService).
             // Здесь — агрегатный компонент «ожидает одобрения»; при
             // ПЕРЕустановке на портале с активным sales статус сущностей

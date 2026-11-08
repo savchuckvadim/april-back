@@ -60,7 +60,7 @@ monitor/
 
 Админка → портал линии → «Портал (общие)» → «Поддержка: оповещения о диалогах линии». Описание ключей — там же, внутренняя документация категории.
 
-Env приложения bot: `SUPPORT_TELEGRAM_BOT_TOKEN`, `SUPPORT_TELEGRAM_CHAT_ID` (см. `apps/bot/.env.example`).
+Токен и чат — админка «Настройки приложения» → «Telegram-боты» (`SUPPORT_TELEGRAM_BOT_TOKEN`, `SUPPORT_TELEGRAM_CHAT_ID`; пусто там — env с теми же именами). Смена токена подхватывается без перезапуска.
 
 ## Стойка поддержки (`src/desk`) — Support API
 
@@ -123,7 +123,7 @@ telegram-bot/
 - Модель не знает текстов базы знаний — только названия карточек частых проблем (`SUPPORT_FREQUENT_PROBLEMS`); тексты статей — следующий шаг.
 - Telegram ждёт быстрый ответ: вебхук отвечает сразу, обработка в фоне; ошибка — «Не получилось: …» в тот же чат.
 
-Вебхук (apps/bot): `POST /api/support/telegram/webhook`, секрет в заголовке `X-Telegram-Bot-Api-Secret-Token` (env `SUPPORT_TELEGRAM_WEBHOOK_SECRET`); `SupportTelegramWebhookRegistrar` при старте регистрирует `SUPPORT_TELEGRAM_WEBHOOK_URL` в Telegram (не на `APP_ROLE=standby`). В группе без выключенного режима приватности (BotFather `/setprivacy`) бот видит только команды вида `/analyze 769`.
+Вебхук (apps/bot): `POST /api/support/telegram/webhook`, секрет в заголовке `X-Telegram-Bot-Api-Secret-Token` вычисляется из токена (`telegramWebhookSecret`, @lib/telegram); `SupportTelegramWebhookRegistrar` регистрирует `SUPPORT_TELEGRAM_WEBHOOK_URL` при старте и перерегистрирует при смене токена (сверка раз в минуту; не на `APP_ROLE=standby`). В группе без выключенного режима приватности (BotFather `/setprivacy`) бот видит только команды вида `/analyze 769`.
 
 Support API: `POST /api/support/dialogs/:chatId/analyze` — тот же разбор для Claude Code; MCP-инструмент `support_dialog_analyze`.
 

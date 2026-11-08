@@ -10,6 +10,11 @@ import {
     MarketplaceTokenService,
 } from '@lib/marketplace-core';
 import {
+    EnumPortalAppCode,
+    parseAppWidgetCodes,
+    PortalAppSettingsService,
+} from '@lib/portal-lib/store/app-settings';
+import {
     InstallWithDetails,
     MarketplaceInstallRepository,
 } from '../persistence/marketplace-install.repository';
@@ -26,12 +31,13 @@ import {
 /**
  * Admin-операции вендора над установками (под AdminKeyGuard).
  *
- * refreshPlacements — раскатка изменений эталона-манифеста (новые виджеты,
- * смена мест встройки) на уже установленный портал БЕЗ переустановки:
- * diff-синхронизация. access_token берётся через MarketplaceTokenService —
- * протухший обновляется автоматически (oauth.bitrix24.tech); ошибка
- * возможна только если портал не открывал приложение >28 дней
- * (refresh_token истёк) — тогда просим клиента открыть приложение.
+ * refreshPlacements — ЕДИНСТВЕННЫЙ способ поставить/переставить виджеты
+ * на портале: diff-синхронизация под список `app_widgets` из «Общих
+ * настроек портала» (при установке виджеты не ставятся). access_token
+ * берётся через MarketplaceTokenService — протухший обновляется
+ * автоматически (oauth.bitrix24.tech); ошибка возможна только если портал
+ * не открывал приложение >28 дней (refresh_token истёк) — тогда просим
+ * клиента открыть приложение.
  */
 @Injectable()
 export class MarketplaceAdminService {
@@ -42,6 +48,7 @@ export class MarketplaceAdminService {
         private readonly repository: MarketplaceInstallRepository,
         private readonly placementSync: MarketplacePlacementSyncService,
         private readonly tokenService: MarketplaceTokenService,
+        private readonly settings: PortalAppSettingsService,
     ) {}
 
     /**
@@ -136,8 +143,12 @@ export class MarketplaceAdminService {
             throw error;
         }
 
+        const widgetCodes = parseAppWidgetCodes(
+            (await this.settings.resolve(domain, EnumPortalAppCode.portal))
+                .appWidgets,
+        );
         this.logger.log(
-            `Admin refresh placements: domain=${domain} install=${install.id}`,
+            `Admin ${dto.force ? 'reinstall' : 'refresh'} placements: domain=${domain} install=${install.id} widgets=[${widgetCodes.join(', ')}]`,
         );
         try {
             return await this.placementSync.syncPlacements(
@@ -145,6 +156,8 @@ export class MarketplaceAdminService {
                 accessToken,
                 install.id,
                 install.portal_id,
+                widgetCodes,
+                { force: dto.force === true },
             );
         } catch (error) {
             throw new BadRequestException(

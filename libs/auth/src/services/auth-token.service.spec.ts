@@ -41,6 +41,38 @@ describe('AuthTokenService', () => {
         expect(payload.portalId).toBe(42);
     });
 
+    it('сохраняет memberId/userId/domain кабинета, если заданы', () => {
+        const payload = service.verify(
+            service.sign({
+                sub: 'user:17',
+                login: 'a@b.ru',
+                role: Role.CLIENT,
+                userId: 17,
+                memberId: 'member-1',
+                domain: 'a.bitrix24.ru',
+            }),
+        );
+
+        expect(payload.userId).toBe(17);
+        expect(payload.memberId).toBe('member-1');
+        expect(payload.domain).toBe('a.bitrix24.ru');
+    });
+
+    it('срок токена задаётся на вызов, иначе — из конфигурации', () => {
+        const short = service.verify(
+            service.sign(
+                { sub: 'user:1', login: 'x', role: Role.CLIENT },
+                { expiresIn: '15m' },
+            ),
+        );
+        expect((short.exp ?? 0) - (short.iat ?? 0)).toBe(15 * 60);
+
+        const normal = service.verify(
+            service.sign({ sub: 'su', login: 'su', role: Role.SUPER_USER }),
+        );
+        expect((normal.exp ?? 0) - (normal.iat ?? 0)).toBe(60 * 60);
+    });
+
     it('отвергает токен, подписанный другим секретом', () => {
         const other = new AuthTokenService(new JwtService({}), {
             ...options,

@@ -5,12 +5,40 @@
  * логика чтения работает и для env, и для админки.
  */
 
+import {
+    TELEGRAM_BOT_SETTING_KEYS,
+    TELEGRAM_BOT_SETTINGS,
+} from './vendor-settings.telegram';
+
 export const VENDOR_SETTING_GROUPS = [
     'egress-proxy',
     'ai-keys',
     'support',
+    'telegram-bots',
+    'widgets',
 ] as const;
 export type VendorSettingGroup = (typeof VENDOR_SETTING_GROUPS)[number];
+
+/**
+ * Адреса фронтов виджетов приложения «April» — `MARKETPLACE_WIDGET_URL_<КОД>`
+ * (код виджета в верхнем регистре, дефисы → «_»). Те же имена, что у прежней
+ * env-подмены роутера apps/pbx, — env продолжает работать как запасной путь.
+ * Каждый код из реестра виджетов (portal-lib `APP_WIDGETS`) обязан иметь
+ * ключ — это проверяет тест роутера.
+ */
+export const WIDGET_URL_SETTING_KEYS = [
+    'MARKETPLACE_WIDGET_URL_EVENT_SALES',
+    'MARKETPLACE_WIDGET_URL_KONSTRUCTOR',
+    'MARKETPLACE_WIDGET_URL_REPORT_SALES',
+    'MARKETPLACE_WIDGET_URL_EVENT_SERVICE',
+    'MARKETPLACE_WIDGET_URL_KONSTRUCTOR_SERVICE',
+    'MARKETPLACE_WIDGET_URL_REPORT_SERVICE',
+] as const;
+
+/** Ключ настройки адреса фронта виджета по его коду (`event-sales` → …_EVENT_SALES). */
+export function widgetUrlSettingKey(widgetCode: string): string {
+    return `MARKETPLACE_WIDGET_URL_${widgetCode.toUpperCase().replace(/-/g, '_')}`;
+}
 
 export const VENDOR_SETTING_KEYS = [
     'EGRESS_PROXY_URL',
@@ -19,6 +47,8 @@ export const VENDOR_SETTING_KEYS = [
     'GROQ_API_KEY',
     'CLOUDRU_API_KEY',
     'ANTHROPIC_API_KEY',
+    ...TELEGRAM_BOT_SETTING_KEYS,
+    ...WIDGET_URL_SETTING_KEYS,
 ] as const;
 export type VendorSettingKey = (typeof VENDOR_SETTING_KEYS)[number];
 
@@ -61,6 +91,16 @@ export const VENDOR_SETTING_GROUP_INFO: Readonly<
         title: 'Модуль технической поддержки',
         description:
             'Ключи сервисов, которыми пользуется бот поддержки и монитор обращений.',
+    },
+    'telegram-bots': {
+        title: 'Telegram-боты',
+        description:
+            'У April три бота, у каждого своя задача — не путайте токены. Поддержка — для сотрудников April (сигналы линии, ИИ-помощник). Клиентский — для клиентов (отчёты и уведомления; чат привязывается кодом из кабинета). Бот тревог разработчика задаётся только в окружении сервера (TELEGRAM_BOT_TOKEN): он должен работать, даже когда недоступна база с этими настройками. Сверху показано, какой бот сейчас стоит в каждом поле.',
+    },
+    widgets: {
+        title: 'Виджеты приложения April: адреса фронтов',
+        description:
+            'Куда открывается каждый виджет (вкладка в карточке, пункт меню). В Битриксе привязан постоянный адрес нашего сервера, а он уже перенаправляет на фронт отсюда — смена адреса действует на всех порталах в течение минуты, переустанавливать виджеты не нужно. Пусто — адрес по умолчанию.',
     },
 };
 
@@ -157,7 +197,59 @@ export const VENDOR_SETTINGS: readonly VendorSettingDefinition[] = [
         secret: true,
         example: 'sk-ant-…',
     },
+    ...TELEGRAM_BOT_SETTINGS,
+    widgetUrl(
+        'MARKETPLACE_WIDGET_URL_EVENT_SALES',
+        'Звонки (отдел продаж)',
+        'https://event-sales.april-app.ru/',
+    ),
+    widgetUrl(
+        'MARKETPLACE_WIDGET_URL_KONSTRUCTOR',
+        'Конструктор КП',
+        'https://konstructor.april-app.ru/',
+    ),
+    widgetUrl(
+        'MARKETPLACE_WIDGET_URL_REPORT_SALES',
+        'Отчёт ОП KPI',
+        'https://kpi-sales.april-app.ru/',
+    ),
+    widgetUrl(
+        'MARKETPLACE_WIDGET_URL_EVENT_SERVICE',
+        'Звонки (сервис)',
+        'https://event-service.april-app.ru/',
+    ),
+    widgetUrl(
+        'MARKETPLACE_WIDGET_URL_KONSTRUCTOR_SERVICE',
+        'Конструктор КП (сервис)',
+        'https://konstructor.april-app.ru/',
+    ),
+    widgetUrl(
+        'MARKETPLACE_WIDGET_URL_REPORT_SERVICE',
+        'Отчёт КЦ KPI',
+        'https://kpi-service.april-app.ru/',
+    ),
 ];
+
+/**
+ * Описание адреса фронта виджета. Значение по умолчанию живёт в манифесте
+ * роутера apps/pbx (`MARKETPLACE_WIDGETS[].frontUrl`) — здесь только пример.
+ */
+function widgetUrl(
+    key: (typeof WIDGET_URL_SETTING_KEYS)[number],
+    title: string,
+    defaultUrl: string,
+): VendorSettingDefinition {
+    return {
+        key,
+        group: 'widgets',
+        label: `Виджет «${title}»: адрес фронта`,
+        description: `Куда роутер April перенаправляет открытие виджета «${title}» на всех порталах. Пусто — адрес по умолчанию ${defaultUrl}. Действует в течение минуты, переустанавливать виджеты не нужно.`,
+        howTo: 'Полный адрес страницы виджета, которая работает внутри Битрикс24 (в iframe). Перед заменой проверьте новый фронт на тестовом портале.',
+        secret: false,
+        example: defaultUrl,
+        validate: validateUrl,
+    };
+}
 
 export const isVendorSettingKey = (value: string): value is VendorSettingKey =>
     (VENDOR_SETTING_KEYS as readonly string[]).includes(value);

@@ -23,6 +23,8 @@ import {
     VendorSettingDto,
     VendorSettingsResponseDto,
 } from './dto/vendor-settings.dto';
+import { VendorTelegramBotsResponseDto } from './dto/vendor-telegram-bots.dto';
+import { VendorTelegramBotsService } from './services/vendor-telegram-bots.service';
 
 /**
  * Настройки приложения уровня вендора (April): исходящий прокси за рубеж и
@@ -33,7 +35,10 @@ import {
 @ApiTags('Admin Vendor Settings')
 @Controller('admin/vendor-settings')
 export class VendorSettingsController {
-    constructor(private readonly service: VendorSettingsService) {}
+    constructor(
+        private readonly service: VendorSettingsService,
+        private readonly telegramBotsCheck: VendorTelegramBotsService,
+    ) {}
 
     @Get()
     @ApiOperation({
@@ -47,6 +52,22 @@ export class VendorSettingsController {
     })
     async list(): Promise<VendorSettingsResponseDto> {
         return new VendorSettingsResponseDto(await this.service.list());
+    }
+
+    @Get('telegram-bots')
+    @ApiOperation({
+        summary: 'Какие Telegram-боты подключены',
+        description:
+            'Для каждого бота April (клиентский, поддержка, тревоги разработчика) — какой бот на самом деле стоит в токене (имя по ответу Telegram), почему проверка не прошла и не вставлен ли один токен в два места. Токены наружу не отдаются.',
+    })
+    @ApiOkResponse({
+        type: VendorTelegramBotsResponseDto,
+        description: 'Проверка всех Telegram-ботов.',
+    })
+    async telegramBots(): Promise<VendorTelegramBotsResponseDto> {
+        return new VendorTelegramBotsResponseDto(
+            await this.telegramBotsCheck.check(),
+        );
     }
 
     @Put(':key')

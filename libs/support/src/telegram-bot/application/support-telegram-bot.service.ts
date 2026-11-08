@@ -199,7 +199,9 @@ export class SupportTelegramBotService {
         chatId: number,
         from: SupportTelegramUser | undefined,
     ): Promise<boolean> {
-        if (String(chatId) === this.telegram.supportChatId()) return true;
+        if (String(chatId) === (await this.telegram.supportChatId())) {
+            return true;
+        }
         if (chatId <= 0 || !from || from.is_bot) return false;
         const until = this.members.get(from.id);
         if (until && until > Date.now()) return true;

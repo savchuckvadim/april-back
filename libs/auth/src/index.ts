@@ -18,7 +18,10 @@ export { RolesGuard } from './guards/roles.guard';
 
 // Сервисы (для приложений, которым нужно выпускать токены, напр. будущая клиентская auth)
 export { AuthService } from './services/auth.service';
-export { AuthTokenService } from './services/auth-token.service';
+export {
+    AuthTokenService,
+    type AuthSignOptions,
+} from './services/auth-token.service';
 
 // Типы и конфигурация
 export { Role, ROLE_VALUES } from './types/role.enum';

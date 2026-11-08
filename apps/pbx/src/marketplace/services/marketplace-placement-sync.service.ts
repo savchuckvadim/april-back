@@ -4,23 +4,25 @@ import { MarketplaceBxClient } from '../clients/marketplace-bx.client';
 import { MarketplaceInstallRepository } from '../persistence/marketplace-install.repository';
 import {
     DesiredBinding,
-    getDesiredBindings,
+    getDesiredBindingsForWidgets,
     MarketplaceComponentType,
     MarketplaceProduct,
 } from '../config/marketplace-manifest';
 
 /**
- * Diff-синхронизация привязок виджетов: эталон (манифест) ↔ факт (Битрикс).
+ * Diff-синхронизация привязок виджетов: желаемое ↔ факт (Битрикс).
  *
- * Эталон — getDesiredBindings(products): пары «виджет × место встройки».
- * Факт — placement.list на портале (Битрикс возвращает привязки нашего
- * приложения). Синхронизация: bind недостающих пар, unbind лишних
- * (виджет убрали из места / удалили из манифеста). Идемпотентна —
- * повторный запуск ничего не меняет.
+ * Желаемое — getDesiredBindingsForWidgets(кодов из настройки портала
+ * `app_widgets`): пары «виджет × место встройки» из манифеста. Факт —
+ * placement.list на портале (Битрикс возвращает привязки нашего
+ * приложения). Синхронизация: bind недостающих пар, unbind лишних НАШИХ
+ * (виджет убрали из списка / из манифеста). Идемпотентна — повторный
+ * запуск ничего не меняет. Пустой список — полный no-op: ничего не
+ * ставим и не снимаем (действующие порталы живут старыми привязками).
  *
- * Вызывается: (1) при установке приложения; (2) по admin-запросу
- * POST /bitrix-marketplace/admin/placements/refresh — раскатка изменений
- * манифеста на уже установленные порталы без переустановки.
+ * Вызывается ТОЛЬКО по admin-запросу POST /bitrix-marketplace/admin/
+ * placements/refresh (при установке виджеты не ставятся — решение
+ * владельца 07.11.2026).
  */
 
 export interface PlacementSyncResult {
@@ -28,6 +30,15 @@ export interface PlacementSyncResult {
     unbound: number;
     errors: number;
     total: number;
+}
+
+export interface PlacementSyncOptions {
+    /**
+     * Переустановить: сначала снять ВСЕ наши привязки портала, потом
+     * поставить выбранные заново. Нужно, когда привязка «есть», но
+     * сломана (сменили название вкладки, Битрикс потерял обработчик).
+     */
+    force?: boolean;
 }
 
 interface ActualBinding {
@@ -57,7 +68,9 @@ export class MarketplacePlacementSyncService {
     }
 
     /**
-     * Выравнивает привязки портала под эталон манифеста.
+     * Выравнивает привязки портала под выбранные виджеты.
+     * @param widgetCodes коды виджетов, которые должны стоять (настройка
+     *   портала `app_widgets`); пусто — ничего не делаем
      * @throws Error если хотя бы один bind не удался (unbind-ошибки — warn)
      */
     async syncPlacements(
@@ -65,18 +78,22 @@ export class MarketplacePlacementSyncService {
         accessToken: string,
         installId: string,
         portalId: bigint,
-        products: readonly MarketplaceProduct[] = [MarketplaceProduct.SALES],
+        widgetCodes: readonly string[],
+        options: PlacementSyncOptions = {},
     ): Promise<PlacementSyncResult> {
-        const desired = getDesiredBindings(products);
-        const actual = await this.fetchActualBindings(domain, accessToken);
+        if (widgetCodes.length === 0) {
+            this.logger.log(
+                `Placements sync: domain=${domain} — список виджетов пуст, привязки не трогаем`,
+            );
+            return { bound: 0, unbound: 0, errors: 0, total: 0 };
+        }
+        const desired = getDesiredBindingsForWidgets(widgetCodes);
+        const fetched = await this.fetchActualBindings(domain, accessToken);
 
         const desiredKeys = new Set(
             desired.map(item =>
                 this.bindingKey(item.place, this.handlerFor(item.widget.code)),
             ),
-        );
-        const actualKeys = new Set(
-            actual.map(item => this.bindingKey(item.placement, item.handler)),
         );
 
         const result: PlacementSyncResult = {
@@ -85,6 +102,14 @@ export class MarketplacePlacementSyncService {
             errors: 0,
             total: desired.length,
         };
+
+        // Переустановка: снимаем все свои привязки — дальше ставим с нуля.
+        const actual = options.force
+            ? await this.unbindAllOurs(domain, accessToken, fetched, result)
+            : fetched;
+        const actualKeys = new Set(
+            actual.map(item => this.bindingKey(item.placement, item.handler)),
+        );
 
         // 1) bind недостающих пар (идемпотентно: «уже привязано» = успех)
         const bindErrors: string[] = [];
@@ -163,13 +188,48 @@ export class MarketplacePlacementSyncService {
         }
 
         this.logger.log(
-            `Placements sync: domain=${domain} bound=${result.bound} unbound=${result.unbound} errors=${result.errors} total=${result.total}`,
+            `Placements sync${options.force ? ' (переустановка)' : ''}: domain=${domain} bound=${result.bound} unbound=${result.unbound} errors=${result.errors} total=${result.total}`,
         );
 
         if (bindErrors.length > 0) {
             throw new Error(`placement.bind failed: ${bindErrors.join('; ')}`);
         }
         return result;
+    }
+
+    /**
+     * Снять все НАШИ привязки (чужие обработчики не трогаем). Возвращает
+     * то, что осталось на портале (чужое и то, что снять не удалось).
+     */
+    private async unbindAllOurs(
+        domain: string,
+        accessToken: string,
+        actual: ActualBinding[],
+        result: PlacementSyncResult,
+    ): Promise<ActualBinding[]> {
+        const left: ActualBinding[] = [];
+        for (const item of actual) {
+            if (!this.isOurHandler(item.handler)) {
+                left.push(item);
+                continue;
+            }
+            const unbound = await this.bxClient.unbindPlacement(
+                domain,
+                accessToken,
+                item.placement,
+                item.handler,
+            );
+            if (unbound.ok) {
+                result.unbound += 1;
+            } else {
+                result.errors += 1;
+                left.push(item);
+                this.logger.warn(
+                    `unbind (переустановка) failed: ${item.placement} ${item.handler} — ${unbound.error ?? ''}`,
+                );
+            }
+        }
+        return left;
     }
 
     private async fetchActualBindings(

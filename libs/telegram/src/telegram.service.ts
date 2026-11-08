@@ -3,14 +3,18 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { EgressProxyService } from '@lib/egress-proxy';
+import { TELEGRAM_API_HOST } from './bot-api/telegram-bot-api';
 import { TelegramSendMessageDto } from './telegram.dto';
 import {
     TelegramSendWindow,
     toTelegramMarkdownText,
 } from './telegram-message.util';
 
-/** Хост Bot API — он должен быть в списке хостов исходящего прокси. */
-export const TELEGRAM_API_HOST = 'api.telegram.org';
+/**
+ * Токен бота тревог разработчика — только env (корневой .env): тревога
+ * «упала база» должна уйти, когда настройки из админки (в базе) недоступны.
+ */
+export const TELEGRAM_ALERTS_BOT_TOKEN_ENV = 'TELEGRAM_BOT_TOKEN';
 
 /**
  * Единственный отправитель тревог в Telegram: логгер-транспорт, фильтр
@@ -47,7 +51,7 @@ export class TelegramService {
         const read = (key: string): string =>
             (configService.get<string>(key) ?? '').trim();
         this.appName = read('APP_NAME') || 'Monorepo';
-        const token = read('TELEGRAM_BOT_TOKEN');
+        const token = read(TELEGRAM_ALERTS_BOT_TOKEN_ENV);
         const chatId = read('TELEGRAM_ADMIN_CHAT_ID');
         this.disabledReason =
             read('WITH_TELEGRAM') !== 'true'

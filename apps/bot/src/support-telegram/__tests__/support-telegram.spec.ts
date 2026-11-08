@@ -5,10 +5,7 @@ import {
     SupportTelegramBotService,
     SupportTelegramNotifier,
 } from '@lib/support';
-import {
-    secretsEqual,
-    SupportTelegramWebhookGuard,
-} from '../guards/support-telegram-webhook.guard';
+import { SupportTelegramWebhookGuard } from '../guards/support-telegram-webhook.guard';
 import { SupportTelegramAppModule } from '../support-telegram-app.module';
 import { SupportTelegramController } from '../support-telegram.controller';
 import { SupportTelegramWebhookRegistrar } from '../support-telegram-webhook.registrar';
@@ -21,45 +18,44 @@ const contextWith = (headers: Record<string, string | string[]>) =>
 const configOf = (env: Record<string, string | undefined>) =>
     ({ get: (key: string) => env[key] }) as unknown as ConfigService;
 
-describe('SupportTelegramWebhookGuard', () => {
-    const guard = new SupportTelegramWebhookGuard(
-        configOf({ SUPPORT_TELEGRAM_WEBHOOK_SECRET: 's3cret' }),
-    );
+const notifierWithSecret = (secret: string | null) =>
+    ({
+        webhookSecret: () => Promise.resolve(secret),
+    }) as unknown as SupportTelegramNotifier;
 
-    it('секрет не задан — вебхук закрыт', () => {
-        const closed = new SupportTelegramWebhookGuard(configOf({}));
-        expect(() =>
+describe('SupportTelegramWebhookGuard', () => {
+    const guard = new SupportTelegramWebhookGuard(notifierWithSecret('s3cret'));
+
+    it('токена нет — вебхук закрыт', async () => {
+        const closed = new SupportTelegramWebhookGuard(
+            notifierWithSecret(null),
+        );
+        await expect(
             closed.canActivate(
                 contextWith({ 'x-telegram-bot-api-secret-token': 's3cret' }),
             ),
-        ).toThrow(UnauthorizedException);
+        ).rejects.toThrow('Вебхук Telegram-бота поддержки не настроен');
     });
 
-    it('без заголовка или с чужим секретом — 401; верный — пропуск', () => {
-        expect(() => guard.canActivate(contextWith({}))).toThrow(
+    it('без заголовка или с чужим секретом — 401; верный — пропуск', async () => {
+        await expect(guard.canActivate(contextWith({}))).rejects.toThrow(
             UnauthorizedException,
         );
-        expect(() =>
+        await expect(
             guard.canActivate(
                 contextWith({ 'x-telegram-bot-api-secret-token': 'nope' }),
             ),
-        ).toThrow(UnauthorizedException);
-        expect(
+        ).rejects.toThrow(UnauthorizedException);
+        await expect(
             guard.canActivate(
                 contextWith({ 'x-telegram-bot-api-secret-token': 's3cret' }),
             ),
-        ).toBe(true);
-        expect(
+        ).resolves.toBe(true);
+        await expect(
             guard.canActivate(
                 contextWith({ 'x-telegram-bot-api-secret-token': ['s3cret'] }),
             ),
-        ).toBe(true);
-    });
-
-    it('сравнение секретов не зависит от длины', () => {
-        expect(secretsEqual('abc', 'abc')).toBe(true);
-        expect(secretsEqual('abc', 'abcd')).toBe(false);
-        expect(secretsEqual('', 'a')).toBe(false);
+        ).resolves.toBe(true);
     });
 });
 
@@ -79,61 +75,46 @@ describe('SupportTelegramController', () => {
 });
 
 describe('SupportTelegramWebhookRegistrar', () => {
-    const originalRole = process.env.APP_ROLE;
-    afterEach(() => {
-        if (originalRole === undefined) delete process.env.APP_ROLE;
-        else process.env.APP_ROLE = originalRole;
-    });
+    const URL = 'https://api.bot.april-app.ru/api/support/telegram/webhook';
 
-    function setup(env: Record<string, string | undefined>, configured = true) {
+    function setup(url: string | undefined, secret: string | null = 'sec-1') {
         const telegram = {
-            isConfigured: jest.fn().mockReturnValue(configured),
+            webhookSecret: jest.fn().mockResolvedValue(secret),
             setWebhook: jest.fn().mockResolvedValue(undefined),
         };
         const registrar = new SupportTelegramWebhookRegistrar(
-            configOf(env),
+            configOf({ SUPPORT_TELEGRAM_WEBHOOK_URL: url }),
             telegram as unknown as SupportTelegramNotifier,
         );
         return { registrar, telegram };
     }
 
-    const ENV = {
-        SUPPORT_TELEGRAM_WEBHOOK_URL:
-            'https://api.bot.april-app.ru/api/support/telegram/webhook',
-        SUPPORT_TELEGRAM_WEBHOOK_SECRET: 's3cret',
-    };
+    it('адрес и токен есть — вебхук с секретом токена; токен сменился — заново', async () => {
+        const { registrar, telegram } = setup(URL);
+        await registrar.sync();
+        await registrar.sync();
+        expect(telegram.setWebhook).toHaveBeenCalledTimes(1);
+        expect(telegram.setWebhook).toHaveBeenCalledWith(URL, 'sec-1');
 
-    it('адрес и секрет заданы — вебхук регистрируется', async () => {
-        delete process.env.APP_ROLE;
-        const { registrar, telegram } = setup(ENV);
-        await registrar.register();
-        expect(telegram.setWebhook).toHaveBeenCalledWith(
-            ENV.SUPPORT_TELEGRAM_WEBHOOK_URL,
-            's3cret',
-        );
+        telegram.webhookSecret.mockResolvedValue('sec-2');
+        await registrar.sync();
+        expect(telegram.setWebhook).toHaveBeenLastCalledWith(URL, 'sec-2');
     });
 
-    it('зеркало, бот не настроен или нет адреса — не регистрируем', async () => {
-        process.env.APP_ROLE = 'standby';
-        const standby = setup(ENV);
-        await standby.registrar.register();
-        expect(standby.telegram.setWebhook).not.toHaveBeenCalled();
-
-        delete process.env.APP_ROLE;
-        const unconfigured = setup(ENV, false);
-        await unconfigured.registrar.register();
+    it('бот не настроен или нет адреса — не регистрируем', async () => {
+        const unconfigured = setup(URL, null);
+        await unconfigured.registrar.sync();
         expect(unconfigured.telegram.setWebhook).not.toHaveBeenCalled();
 
-        const noUrl = setup({ SUPPORT_TELEGRAM_WEBHOOK_SECRET: 's' });
-        await noUrl.registrar.register();
+        const noUrl = setup(undefined);
+        await noUrl.registrar.sync();
         expect(noUrl.telegram.setWebhook).not.toHaveBeenCalled();
     });
 
     it('ошибка Telegram не роняет старт', async () => {
-        delete process.env.APP_ROLE;
-        const { registrar, telegram } = setup(ENV);
+        const { registrar, telegram } = setup(URL);
         telegram.setWebhook.mockRejectedValueOnce(new Error('401'));
-        await expect(registrar.register()).resolves.toBeUndefined();
+        await expect(registrar.sync()).resolves.toBeUndefined();
     });
 });
 

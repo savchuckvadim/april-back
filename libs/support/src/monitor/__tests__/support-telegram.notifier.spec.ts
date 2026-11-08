@@ -1,7 +1,11 @@
 import { of, throwError } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { SupportTelegramNotifier } from '../infrastructure/support-telegram.notifier';
+import { telegramWebhookSecret } from '@lib/telegram';
+import {
+    SUPPORT_TELEGRAM_WEBHOOK_PURPOSE,
+    SupportTelegramNotifier,
+} from '../infrastructure/support-telegram.notifier';
 
 function setup(
     env: Record<string, string | undefined>,
@@ -32,14 +36,14 @@ const CONFIGURED = {
 describe('SupportTelegramNotifier', () => {
     it('не настроен — молчит и не ходит в сеть', async () => {
         const { notifier, http } = setup({ SUPPORT_TELEGRAM_BOT_TOKEN: 'x' });
-        expect(notifier.isConfigured()).toBe(false);
+        expect(await notifier.isConfigured()).toBe(false);
         expect(await notifier.send('<b>hi</b>')).toBe(false);
         expect(http.post).not.toHaveBeenCalled();
     });
 
     it('шлёт HTML в чат поддержки отдельного бота', async () => {
         const { notifier, http } = setup(CONFIGURED);
-        expect(notifier.isConfigured()).toBe(true);
+        expect(await notifier.isConfigured()).toBe(true);
         expect(await notifier.send('<b>hi</b>')).toBe(true);
         expect(http.post).toHaveBeenCalledWith(
             'https://api.telegram.org/bot123:abc/sendMessage',
@@ -165,5 +169,35 @@ describe('SupportTelegramNotifier — бот поддержки', () => {
         await expect(notifier.setWebhook('https://x', 's')).rejects.toThrow(
             '401',
         );
+    });
+
+    it('токен и чат из админки важнее env; секрет вебхука — из токена', async () => {
+        const http = {
+            post: jest.fn().mockReturnValue(of({ data: { ok: true } })),
+        };
+        const admin: Record<string, string> = {
+            SUPPORT_TELEGRAM_BOT_TOKEN: '777:new',
+            SUPPORT_TELEGRAM_CHAT_ID: '-200',
+        };
+        const notifier = new SupportTelegramNotifier(
+            http as unknown as HttpService,
+            { get: () => undefined } as unknown as ConfigService,
+            directEgress as never,
+            {
+                get: (key: string) => Promise.resolve(admin[key] ?? null),
+                getMany: () => Promise.resolve({}),
+            },
+        );
+        await notifier.send('hi');
+        expect(http.post.mock.calls[0]).toEqual([
+            'https://api.telegram.org/bot777:new/sendMessage',
+            expect.objectContaining({ chat_id: '-200' }),
+            { timeout: 15_000 },
+        ]);
+        expect(await notifier.webhookSecret()).toBe(
+            telegramWebhookSecret('777:new', SUPPORT_TELEGRAM_WEBHOOK_PURPOSE),
+        );
+        delete admin.SUPPORT_TELEGRAM_BOT_TOKEN;
+        expect(await notifier.webhookSecret()).toBeNull();
     });
 });

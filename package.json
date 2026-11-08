@@ -116,7 +116,6 @@
     "langchain-gigachat": "^0.0.14",
     "lvovich": "^2.0.2",
     "mammoth": "^1.12.0",
-    "nestjs-telegraf": "^2.9.1",
     "nodemailer": "^7.0.9",
     "number-to-words-ru": "^2.4.1",
     "officegen": "^0.6.5",
@@ -130,7 +129,6 @@
     "russian-nouns-js": "^2.2.0",
     "rxjs": "^7.8.1",
     "sharp": "^0.35.3",
-    "telegraf": "^4.16.3",
     "winston": "^3.17.0"
   },
   "devDependencies": {
@@ -214,6 +212,7 @@
       "^@lib/ai-presets(|/.*)$": "<rootDir>/libs/ai-presets/src/$1",
       "^@lib/vendor-settings(|/.*)$": "<rootDir>/libs/vendor-settings/src/$1",
       "^@lib/renewal-offer(|/.*)$": "<rootDir>/libs/renewal-offer/src/$1",
+      "^@lib/cabinet(|/.*)$": "<rootDir>/libs/cabinet/src/$1",
       "^@lib/pbx-user-fields(|/.*)$": "<rootDir>/libs/pbx-user-fields/src/$1",
       "^@lib/sales-ai-analytics(|/.*)$": "<rootDir>/libs/sales-ai-analytics/src/$1",
       "^@lib/pbx(|/.*)$": "<rootDir>/libs/pbx/src/$1",

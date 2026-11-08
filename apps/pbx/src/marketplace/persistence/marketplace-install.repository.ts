@@ -33,6 +33,12 @@ export interface UpsertPortalInput {
     domain?: string;
 }
 
+/** Портал после upsert + признак «создан этой установкой» (не легаси). */
+export interface UpsertPortalResult {
+    portal: Portal;
+    created: boolean;
+}
+
 export interface UpsertInstallTokens {
     accessToken: string;
     refreshToken: string;
@@ -89,9 +95,10 @@ export class MarketplaceInstallRepository {
      * Портал: member_id-first, fallback по domain; создание при первой
      * установке (source=marketplace, approval_status=pending).
      * Дозаполняет member_id у найденных по домену и обновляет domain
-     * при его смене (домен изменяем, member_id — нет).
+     * при его смене (домен изменяем, member_id — нет). У существующего
+     * (легаси) портала source/approval_status/вебхук НЕ трогаются.
      */
-    async upsertPortal(input: UpsertPortalInput): Promise<Portal> {
+    async upsertPortal(input: UpsertPortalInput): Promise<UpsertPortalResult> {
         const { memberId, domain } = input;
 
         let portal: Portal | null = null;
@@ -119,7 +126,7 @@ export class MarketplaceInstallRepository {
             this.logger.log(
                 `Portal created: id=${portal.id} domain=${domain ?? '-'} member_id=${memberId ?? '-'}`,
             );
-            return portal;
+            return { portal, created: true };
         }
 
         const patch: { member_id?: string; domain?: string } = {};
@@ -139,7 +146,7 @@ export class MarketplaceInstallRepository {
                 data: patch,
             });
         }
-        return portal;
+        return { portal, created: false };
     }
 
     /** Идемпотентный upsert установки по (portal_id, app_code); токены шифруются */

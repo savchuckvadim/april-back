@@ -4,6 +4,10 @@ import { PrismaService } from '@/core';
 import { decrypt, encrypt } from '@/shared/lib/utils/crypt.util';
 import { marketplace_installs, Portal } from 'generated/prisma';
 import { BITRIX_APP_CODES } from '@lib/bitrix-setup/app/enums/bitrix-app.enum';
+import {
+    localAppSecretCodeByDomain,
+    localAppSecretCodeByMemberId,
+} from '../domain/app-secret-code.util';
 
 /**
  * Доступ к учёткам маркетплейс-установок (marketplace_installs) для
@@ -129,6 +133,50 @@ export class MarketplaceAuthRepository {
             clientSecret = row.client_secret; // legacy-строка открытым текстом
         }
         return { clientId: row.client_id, clientSecret };
+    }
+
+    /**
+     * Креды ЛОКАЛЬНОГО приложения, заведённые по домену (клиент знает
+     * домен до установки), перепривязываются к member_id — постоянному
+     * ключу портала: после переименования домена строка по домену
+     * перестала бы находиться, и рефреш молча ушёл бы на тиражные креды.
+     *
+     * Значения копируются как лежат (шифртекст — тот же APP_KEY).
+     * @returns true, если строка по member_id создана этим вызовом
+     */
+    async copyLocalSecretToMemberId(
+        domain: string,
+        memberId: string,
+    ): Promise<boolean> {
+        const memberCode = localAppSecretCodeByMemberId(memberId);
+        const existing = await this.prisma.bitrix_app_secrets.findFirst({
+            where: { code: memberCode },
+            select: { id: true },
+        });
+        if (existing) {
+            return false;
+        }
+        const byDomain = await this.prisma.bitrix_app_secrets.findFirst({
+            where: { code: localAppSecretCodeByDomain(domain) },
+        });
+        if (!byDomain) {
+            return false;
+        }
+        await this.prisma.bitrix_app_secrets.create({
+            data: {
+                code: memberCode,
+                client_id: byDomain.client_id,
+                client_secret: byDomain.client_secret,
+                group: byDomain.group,
+                type: byDomain.type,
+                created_at: new Date(),
+                updated_at: new Date(),
+            },
+        });
+        this.logger.log(
+            `Local app secrets rebound: ${domain} → member_id (${memberCode})`,
+        );
+        return true;
     }
 
     /** Журнал bitrix_app_events (best-effort, не роняет основной флоу) */

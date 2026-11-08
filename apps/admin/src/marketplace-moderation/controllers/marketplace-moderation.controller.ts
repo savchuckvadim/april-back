@@ -26,6 +26,7 @@ import {
     EventsQueryDto,
     InstallsQueryDto,
     PbxActionResultDto,
+    PlacementsRefreshDto,
     PortalProductDto,
 } from '../dto/marketplace-admin-views.dto';
 import {
@@ -201,9 +202,14 @@ export class MarketplaceModerationController {
     }
 
     @ApiOperation({
-        summary: 'Синхронизировать привязки виджетов портала',
+        summary: 'Обновить или переустановить виджеты портала',
         description:
-            'Прокси в pbx: diff-синхронизация placement.bind портала с эталоном-манифестом (после изменения состава виджетов/мест).',
+            'Прокси в pbx: привязки placement.bind портала выравниваются под список виджетов портала (настройка app_widgets): недостающие ставятся, лишние наши снимаются. force=true — снять все наши привязки и поставить заново. Пустой список — ничего не делает. Работает на любом портале с установленным приложением April (и действующем, и новом).',
+    })
+    @ApiBody({
+        type: PlacementsRefreshDto,
+        required: false,
+        description: 'force — переустановить.',
     })
     @ApiOkResponse({
         description: 'Синхронизация выполнена',
@@ -212,8 +218,9 @@ export class MarketplaceModerationController {
     @Post('portals/:id/placements-refresh')
     async placementsRefresh(
         @Param('id', ParseIntPipe) id: number,
+        @Body() dto: PlacementsRefreshDto = {},
     ): Promise<PbxActionResultDto> {
-        return this.moderationService.placementsRefresh(id);
+        return this.moderationService.placementsRefresh(id, dto.force === true);
     }
 
     // ─── Коды подключения портала (invite) ───

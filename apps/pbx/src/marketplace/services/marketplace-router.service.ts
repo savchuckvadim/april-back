@@ -1,5 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import {
+    envOnlyReader,
+    VENDOR_SETTINGS_READER,
+    VendorSettingsReader,
+    widgetUrlSettingKey,
+} from '@lib/vendor-settings';
 import { BITRIX_APP_CODES } from '@lib/bitrix-setup/app/enums/bitrix-app.enum';
 import {
     MarketplaceComponentStateRepository,
@@ -28,11 +34,11 @@ import {
  * (в теле — AUTH_ID/REFRESH_ID/member_id/DOMAIN/PLACEMENT). Сервис:
  *  1) сохраняет/обновляет токены из каждого открытия (бесплатный refresh);
  *  2) строит redirect на фронт. Фронты виджетов живут на РАЗНЫХ доменах:
- *     цель берётся из эталона-манифеста (frontUrl виджета) и подменяется
- *     env-переменной MARKETPLACE_WIDGET_URL_<КОД> (дефисы → подчёркивания,
- *     напр. MARKETPLACE_WIDGET_URL_EVENT_SALES) БЕЗ деплоя. В Битриксе
- *     зарегистрированы только стабильные URL бэка — перерегистрация
- *     привязок при смене фронтов не нужна.
+ *     цель — настройка вендора MARKETPLACE_WIDGET_URL_<КОД> (админка →
+ *     «Настройки приложения» → «Виджеты»; запасной путь — env с тем же
+ *     именем), иначе frontUrl из эталона-манифеста. В Битриксе
+ *     зарегистрированы только стабильные URL бэка — смена фронта не требует
+ *     перерегистрации привязок и действует в течение минуты (кэш настроек).
  */
 @Injectable()
 export class MarketplaceRouterService {
@@ -41,27 +47,49 @@ export class MarketplaceRouterService {
     /** Фронт основного приложения (кабинет в левом меню Битрикса) */
     readonly appRedirectUrl: string;
 
+    /** Настройки вендора: значение из админки, иначе env; null — не задано. */
+    private readonly settings: VendorSettingsReader;
+
     constructor(
         private readonly installService: MarketplaceInstallService,
         private readonly sessionService: MarketplaceSessionService,
         private readonly configService: ConfigService,
         private readonly repository: MarketplaceInstallRepository,
         private readonly componentState: MarketplaceComponentStateRepository,
+        @Optional()
+        @Inject(VENDOR_SETTINGS_READER)
+        settings?: VendorSettingsReader,
     ) {
         this.appRedirectUrl =
             this.configService.get<string>('MARKETPLACE_APP_REDIRECT_URL') ??
             'https://bitrix.april-app.ru/cabinet';
+        this.settings =
+            settings ??
+            envOnlyReader(key => this.configService.get<string>(key));
     }
 
-    /** Целевой URL фронта виджета: env-подмена приоритетнее манифеста */
-    resolveWidgetFrontUrl(code: string, manifestUrl: string): string {
-        const envKey = `MARKETPLACE_WIDGET_URL_${code.toUpperCase().replace(/-/g, '_')}`;
-        const override = this.configService.get<string>(envKey);
-        if (override) {
-            this.logger.log(
-                `Widget "${code}": frontUrl подменён через ${envKey}`,
+    /**
+     * Целевой URL фронта виджета: настройка вендора (админка → env)
+     * приоритетнее манифеста. Сбой чтения настроек — адрес из манифеста:
+     * открытие виджета не должно падать из-за настроек.
+     */
+    async resolveWidgetFrontUrl(
+        code: string,
+        manifestUrl: string,
+    ): Promise<string> {
+        const key = widgetUrlSettingKey(code);
+        try {
+            const override = await this.settings.get(key);
+            if (override) {
+                this.logger.log(`Widget "${code}": frontUrl из ${key}`);
+                return override;
+            }
+        } catch (error) {
+            this.logger.warn(
+                `Widget "${code}": настройка ${key} не прочитана — адрес из манифеста: ${
+                    error instanceof Error ? error.message : String(error)
+                }`,
             );
-            return override;
         }
         return manifestUrl;
     }
@@ -156,7 +184,7 @@ export class MarketplaceRouterService {
             };
         }
 
-        const target = this.resolveWidgetFrontUrl(
+        const target = await this.resolveWidgetFrontUrl(
             code,
             widget?.frontUrl ?? this.appRedirectUrl,
         );

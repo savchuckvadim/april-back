@@ -1,5 +1,11 @@
 import { ConfigService } from '@nestjs/config';
 import { MarketplaceComponentStateRepository } from '@lib/marketplace-core';
+import {
+    isVendorSettingKey,
+    VendorSettingsReader,
+    widgetUrlSettingKey,
+} from '@lib/vendor-settings';
+import { MARKETPLACE_WIDGET_CODES } from '../config/marketplace-manifest';
 import { MarketplaceRouterService } from '../services/marketplace-router.service';
 import { MarketplaceInstallService } from '../services/marketplace-install.service';
 import {
@@ -170,6 +176,84 @@ describe('MarketplaceRouterService', () => {
         expect(url.origin + url.pathname).toBe(
             'https://new-front.example.com/events',
         );
+    });
+
+    /*
+     * Адреса фронтов — настройки вендора из админки (vendor_settings):
+     * сменили адрес — все порталы открывают новый фронт без перепривязки.
+     */
+    it('адрес из админки (настройки вендора) приоритетнее манифеста', async () => {
+        const settings: VendorSettingsReader = {
+            get: jest.fn((key: string) =>
+                Promise.resolve(
+                    key === 'MARKETPLACE_WIDGET_URL_KONSTRUCTOR'
+                        ? 'https://konstructor-v2.april-app.ru/'
+                        : null,
+                ),
+            ),
+            getMany: jest.fn(),
+        };
+        const fromAdmin = new MarketplaceRouterService(
+            installService as unknown as MarketplaceInstallService,
+            sessionService as unknown as MarketplaceSessionService,
+            { get: jest.fn() } as unknown as ConfigService,
+            repo as unknown as MarketplaceInstallRepository,
+            componentState as unknown as MarketplaceComponentStateRepository,
+            settings,
+        );
+
+        const konstructor = new URL(
+            (
+                await fromAdmin.handlePlacementOpen(
+                    'konstructor',
+                    openBody,
+                    openQuery,
+                )
+            ).redirectUrl,
+        );
+        const events = new URL(
+            (
+                await fromAdmin.handlePlacementOpen(
+                    'event-sales',
+                    openBody,
+                    openQuery,
+                )
+            ).redirectUrl,
+        );
+
+        expect(konstructor.origin).toBe('https://konstructor-v2.april-app.ru');
+        expect(events.origin).toBe('https://event-sales.april-app.ru');
+    });
+
+    it('настройки не прочитались — адрес из манифеста, виджет открывается', async () => {
+        const broken = new MarketplaceRouterService(
+            installService as unknown as MarketplaceInstallService,
+            sessionService as unknown as MarketplaceSessionService,
+            { get: jest.fn() } as unknown as ConfigService,
+            repo as unknown as MarketplaceInstallRepository,
+            componentState as unknown as MarketplaceComponentStateRepository,
+            {
+                get: jest.fn().mockRejectedValue(new Error('db down')),
+                getMany: jest.fn(),
+            },
+        );
+
+        const result = await broken.handlePlacementOpen(
+            'report-sales',
+            openBody,
+            openQuery,
+        );
+
+        expect(new URL(result.redirectUrl).origin).toBe(
+            'https://kpi-sales.april-app.ru',
+        );
+    });
+
+    it('у каждого виджета манифеста есть ключ адреса в настройках вендора', () => {
+        const missing = MARKETPLACE_WIDGET_CODES.map(
+            widgetUrlSettingKey,
+        ).filter(key => !isVendorSettingKey(key));
+        expect(missing).toEqual([]);
     });
 
     it('report-sales редиректит на свой домен (kpi-sales.april-app.ru)', async () => {

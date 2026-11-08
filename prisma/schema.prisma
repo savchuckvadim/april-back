@@ -704,9 +704,65 @@ model Portal {
   questionnaires                 PortalQuestionnaire[]
   questionnaireItems             PortalQuestionnaireItem[]
   vendorSuperUsers               VendorSuperUser[]
+  portalUsers                    PortalUser[]
+  telegramBindings               TelegramBinding[]
 
   @@index([client_id], map: "portals_client_id_foreign")
   @@map("portals")
+}
+
+/// Членство учётной записи кабинета клиента (`users`) в портале (libs/cabinet):
+/// `role` owner — корневой пользователь организации (доступы, передача прав),
+/// member — сотрудник с доступом; `bitrix_user_id` связывает учётку с
+/// сотрудником портала из сессии фрейма; `revoked_at` — доступ снят.
+/// Таблица добавлена ручной правкой (db pull запрещён) — миграция
+/// online/database/migrations/2026_11_08_100000_create_portal_users_table.php
+model PortalUser {
+  id           String    @id @db.Char(36)
+  portalId     BigInt    @map("portal_id") @db.UnsignedBigInt
+  userId       BigInt    @map("user_id") @db.UnsignedBigInt
+  bitrixUserId String?   @map("bitrix_user_id") @db.VarChar(32)
+  role         String    @default("member") @db.VarChar(16)
+  invitedBy    String?   @map("invited_by") @db.VarChar(255)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamp(0)
+  createdAt    DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime? @map("updated_at") @db.Timestamp(0)
+
+  portal Portal @relation(fields: [portalId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portal_users_portal_id_foreign")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "portal_users_user_id_foreign")
+
+  @@unique([portalId, userId], map: "portal_users_portal_user_unique")
+  @@index([portalId, bitrixUserId], map: "portal_users_portal_bitrix_index")
+  @@index([userId], map: "portal_users_user_id_foreign")
+  @@map("portal_users")
+}
+
+/// Привязка Telegram-чата к человеку на портале (клиентский бот April,
+/// libs/cabinet): кого привязали — сотрудник портала `bitrix_user_id`
+/// и/или учётка кабинета `user_id`; один чат может быть привязан к
+/// нескольким порталам; `revoked_at` — отвязка без удаления.
+/// Таблица добавлена ручной правкой (db pull запрещён) — миграция
+/// online/database/migrations/2026_11_08_110000_create_telegram_bindings_table.php
+model TelegramBinding {
+  id               String    @id @db.Char(36)
+  portalId         BigInt    @map("portal_id") @db.UnsignedBigInt
+  userId           BigInt?   @map("user_id") @db.UnsignedBigInt
+  bitrixUserId     String?   @map("bitrix_user_id") @db.VarChar(32)
+  chatId           BigInt    @map("chat_id")
+  telegramUsername String?   @map("telegram_username") @db.VarChar(255)
+  displayName      String?   @map("display_name") @db.VarChar(255)
+  createdBy        String?   @map("created_by") @db.VarChar(255)
+  revokedAt        DateTime? @map("revoked_at") @db.Timestamp(0)
+  createdAt        DateTime? @map("created_at") @db.Timestamp(0)
+  updatedAt        DateTime? @map("updated_at") @db.Timestamp(0)
+
+  portal Portal @relation(fields: [portalId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "telegram_bindings_portal_id_foreign")
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "telegram_bindings_user_id_foreign")
+
+  @@unique([portalId, chatId], map: "telegram_bindings_portal_chat_unique")
+  @@index([portalId, bitrixUserId], map: "telegram_bindings_portal_bitrix_index")
+  @@index([userId], map: "telegram_bindings_user_id_foreign")
+  @@map("telegram_bindings")
 }
 
 /// Настройки AI-отчётности по звонкам на конкретный портал.
@@ -1424,6 +1480,8 @@ model User {
   client_id                 BigInt?   @db.UnsignedBigInt
   bitrix_id                 String?   @db.VarChar(255)
   clients                   Client?   @relation("ClientUsers", fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "users_client_id_foreign")
+  portalUsers               PortalUser[]
+  telegramBindings          TelegramBinding[]
 
   @@index([client_id], map: "users_client_id_foreign")
   @@map("users")

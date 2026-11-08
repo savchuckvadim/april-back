@@ -11,8 +11,16 @@ import {
     BitrixServiceFactory,
     BxAuthType,
 } from '@/modules/bitrix/bitrix-service.factory';
+import {
+    EnumPortalAppCode,
+    getPortalAppDefaults,
+    PortalAppSettingsService,
+} from '@lib/portal-lib/store/app-settings';
 
 type FactoryMock = jest.Mocked<Pick<BitrixServiceFactory, 'create'>>;
+type SettingsMock = jest.Mocked<
+    Pick<PortalAppSettingsService, 'resolve' | 'resolveWithStored'>
+>;
 type PortalServiceMock = jest.Mocked<
     Pick<PortalService, 'getPortalByDomain' | 'getModelByDomain'>
 >;
@@ -46,9 +54,18 @@ describe('PBXService.init (marketplace-ветка vs legacy)', () => {
     let token: TokenMock;
     let authRepo: AuthRepoMock;
     let builder: BuilderMock;
+    let settings: SettingsMock;
 
     const bitrixInstance = { id: 'bitrix' };
     const portalModelInstance = { id: 'model' };
+    const portalDefaults = getPortalAppDefaults(EnumPortalAppCode.portal);
+
+    /** Режим авторизации бэкенда портала — настройка `bitrix_auth_mode`. */
+    const setAuthMode = (mode: 'webhook' | 'app' | 'auto') =>
+        settings.resolve.mockResolvedValue({
+            ...portalDefaults,
+            bitrixAuthMode: mode,
+        });
 
     const build = (withMarketplace = true, withBuilder = true) =>
         new PBXService(
@@ -64,9 +81,16 @@ describe('PBXService.init (marketplace-ветка vs legacy)', () => {
             withBuilder
                 ? (builder as unknown as BackendPortalBuilderService)
                 : undefined,
+            settings as unknown as PortalAppSettingsService,
         );
 
     beforeEach(() => {
+        settings = {
+            resolve: jest.fn().mockResolvedValue(portalDefaults),
+            resolveWithStored: jest
+                .fn()
+                .mockResolvedValue({ values: portalDefaults, storedKeys: [] }),
+        };
         factory = {
             create: jest.fn().mockResolvedValue(bitrixInstance),
         };
@@ -93,7 +117,8 @@ describe('PBXService.init (marketplace-ветка vs legacy)', () => {
         delete process.env.PBX_MARKETPLACE_AUTH_FIRST;
     });
 
-    it('marketplace-домен: TOKEN-авторизация со свежим access, online-API не вызывается', async () => {
+    it('режим app + активная установка: TOKEN-авторизация со свежим access, online-API не вызывается', async () => {
+        setAuthMode('app');
         token.hasActiveInstall.mockResolvedValue(true);
         const service = build();
 
@@ -103,7 +128,10 @@ describe('PBXService.init (marketplace-ветка vs legacy)', () => {
             domain: 'mp.bitrix24.ru',
         });
         expect(factory.create).toHaveBeenCalledWith(
-            { domain: 'mp.bitrix24.ru', accessToken: 'fresh-access' },
+            expect.objectContaining({
+                domain: 'mp.bitrix24.ru',
+                accessToken: 'fresh-access',
+            }),
             BxAuthType.TOKEN,
         );
         expect(portalService.getPortalByDomain).not.toHaveBeenCalled();
@@ -120,7 +148,10 @@ describe('PBXService.init (marketplace-ветка vs legacy)', () => {
         const result = await service.init('legacy.bitrix24.ru');
 
         expect(factory.create).toHaveBeenCalledWith(
-            { domain: 'legacy.bitrix24.ru', key: 'webhook-key' },
+            expect.objectContaining({
+                domain: 'legacy.bitrix24.ru',
+                key: 'webhook-key',
+            }),
             BxAuthType.HOOK,
         );
         expect(token.getFreshAccessToken).not.toHaveBeenCalled();
@@ -128,19 +159,93 @@ describe('PBXService.init (marketplace-ветка vs legacy)', () => {
         expect(result.PortalModel).toBe(portalModelInstance);
     });
 
+    /*
+     * Установка локального приложения на живой портал не должна уводить его
+     * кроны и хуки с вебхука: установка закрепляет `bitrix_auth_mode=webhook`,
+     * и OAuth-путь не включается даже при активной установке (решение
+     * владельца 07.11.2026).
+     */
+    it('режим webhook при активной установке → HOOK-путь, установка даже не проверяется', async () => {
+        setAuthMode('webhook');
+        token.hasActiveInstall.mockResolvedValue(true);
+        const service = build();
+
+        await service.init('legacy.bitrix24.ru');
+
+        expect(token.hasActiveInstall).not.toHaveBeenCalled();
+        expect(token.getFreshAccessToken).not.toHaveBeenCalled();
+        expect(factory.create).toHaveBeenCalledWith(
+            expect.objectContaining({ key: 'webhook-key' }),
+            BxAuthType.HOOK,
+        );
+    });
+
+    /*
+     * Порталы, созданные установкой до 07.11.2026 (april-dev), настройки не
+     * имеют и вебхука тоже — умолчание `auto` сохраняет им прежний OAuth-путь.
+     */
+    it('режим не задан (auto) + активная установка → TOKEN, как было', async () => {
+        token.hasActiveInstall.mockResolvedValue(true);
+        const service = build();
+
+        await service.init('mp.bitrix24.ru');
+
+        expect(factory.create).toHaveBeenCalledWith(
+            expect.objectContaining({ accessToken: 'fresh-access' }),
+            BxAuthType.TOKEN,
+        );
+    });
+
+    it('режим app без активной установки → HOOK-путь', async () => {
+        setAuthMode('app');
+        token.hasActiveInstall.mockResolvedValue(false);
+        const service = build();
+
+        await service.init('legacy.bitrix24.ru');
+
+        expect(token.hasActiveInstall).toHaveBeenCalledWith(
+            'legacy.bitrix24.ru',
+        );
+        expect(factory.create).toHaveBeenCalledWith(
+            expect.objectContaining({ key: 'webhook-key' }),
+            BxAuthType.HOOK,
+        );
+    });
+
+    it('настройки портала не прочитались → как раньше (auto): без установки — HOOK', async () => {
+        settings.resolve.mockRejectedValue(new Error('db down'));
+        token.hasActiveInstall.mockResolvedValue(false);
+        const service = build();
+
+        await service.init('legacy.bitrix24.ru');
+
+        expect(token.hasActiveInstall).toHaveBeenCalledWith(
+            'legacy.bitrix24.ru',
+        );
+        expect(factory.create).toHaveBeenCalledWith(
+            expect.objectContaining({ key: 'webhook-key' }),
+            BxAuthType.HOOK,
+        );
+    });
+
     it('без MarketplaceCoreModule (Optional) — legacy-путь работает', async () => {
+        setAuthMode('app');
         const service = build(false);
 
         await service.init('legacy.bitrix24.ru');
 
         expect(factory.create).toHaveBeenCalledWith(
-            { domain: 'legacy.bitrix24.ru', key: 'webhook-key' },
+            expect.objectContaining({
+                domain: 'legacy.bitrix24.ru',
+                key: 'webhook-key',
+            }),
             BxAuthType.HOOK,
         );
     });
 
-    it('предохранитель PBX_MARKETPLACE_AUTH_FIRST=false → legacy даже при активной установке', async () => {
+    it('предохранитель PBX_MARKETPLACE_AUTH_FIRST=false → legacy даже при режиме app и активной установке', async () => {
         process.env.PBX_MARKETPLACE_AUTH_FIRST = 'false';
+        setAuthMode('app');
         token.hasActiveInstall.mockResolvedValue(true);
         const service = build();
 
@@ -153,7 +258,8 @@ describe('PBXService.init (marketplace-ветка vs legacy)', () => {
         );
     });
 
-    it('initWebhook: вебхук из online-API даже при активной маркетплейс-установке', async () => {
+    it('initWebhook: вебхук из online-API даже при режиме app и активной установке', async () => {
+        setAuthMode('app');
         token.hasActiveInstall.mockResolvedValue(true);
         const service = build();
 
@@ -168,6 +274,7 @@ describe('PBXService.init (marketplace-ветка vs legacy)', () => {
     });
 
     it('сбой детекта (Redis/БД) → безопасный fallback на legacy', async () => {
+        setAuthMode('app');
         token.hasActiveInstall.mockRejectedValue(new Error('redis down'));
         const service = build();
 

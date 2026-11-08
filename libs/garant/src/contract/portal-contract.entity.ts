@@ -26,4 +26,6 @@ export class PortalContractEntity {
      */
     contracts?: ContractEntity;
     portal_measure?: PortalMeasureEntity;
+    /** Пункт списка «Тип договора» сделки; bitrixId — его ID в Битриксе портала. */
+    bitrixfield_items?: { bitrixId: number };
 }

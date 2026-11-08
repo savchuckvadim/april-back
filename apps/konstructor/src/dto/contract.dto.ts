@@ -122,7 +122,10 @@ export class ContractDto {
     @IsNumber()
     discount: number;
 
-    @ApiProperty({ description: 'Item ID of the contract' })
+    @ApiProperty({
+        description:
+            'ID пункта списка «Тип договора» сделки в Битриксе портала (bitrixfield_items.bitrixId)',
+    })
     @IsNumber()
     itemId: number;
 

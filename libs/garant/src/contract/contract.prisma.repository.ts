@@ -68,6 +68,7 @@ export class ContractPrismaRepository implements ContractRepository {
                         measures: true,
                     },
                 },
+                bitrixfield_items: { select: { bitrixId: true } },
             },
         });
     }

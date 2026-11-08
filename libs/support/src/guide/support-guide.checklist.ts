@@ -69,10 +69,10 @@ export function buildSupportChecklist(
         },
         {
             key: 'telegram_chat',
-            title: 'Telegram-бот и чат поддержки заданы в env bot',
+            title: 'Telegram-бот и чат поддержки заданы',
             status: 'manual',
             hint:
-                '`SUPPORT_TELEGRAM_BOT_TOKEN` и `SUPPORT_TELEGRAM_CHAT_ID` в env приложения bot. ' +
+                'Админка → «Настройки приложения» → «Telegram-боты»: токен и чат поддержки (там же видно, какой бот стоит в токене). ' +
                 'Проверка: сообщение bot при старте — «Telegram-чат поддержки» или «Telegram не настроен на сервере».',
             link: null,
         },
@@ -129,8 +129,8 @@ export function buildSupportChecklist(
             title: 'Telegram-бот принимает команды (вебхук)',
             status: 'manual',
             hint:
-                '`SUPPORT_TELEGRAM_WEBHOOK_URL` и `SUPPORT_TELEGRAM_WEBHOOK_SECRET` в env bot; при старте bot пишет ' +
-                '«вебхук установлен». Проверка: написать боту «помощь». В группе бот видит только команды вида ' +
+                '`SUPPORT_TELEGRAM_WEBHOOK_URL` в env bot (секрет вычисляется из токена); при старте bot пишет ' +
+                '«вебхук …». Проверка: написать боту «помощь». В группе бот видит только команды вида ' +
                 '`/analyze 769`, пока в BotFather не выключен режим приватности (`/setprivacy` → Disable).',
             link: null,
         },

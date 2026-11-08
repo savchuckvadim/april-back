@@ -28,6 +28,17 @@ export class RefreshPlacementsDto {
     @IsOptional()
     @IsString()
     domain?: string;
+
+    @ApiPropertyOptional({
+        description:
+            'Переустановить: снять все наши привязки виджетов портала и поставить выбранные (app_widgets) заново. Без флага — только недостающие и лишние.',
+        example: false,
+        type: Boolean,
+        default: false,
+    })
+    @IsOptional()
+    @IsBoolean()
+    force?: boolean;
 }
 
 export class AdminInstallsQueryDto {

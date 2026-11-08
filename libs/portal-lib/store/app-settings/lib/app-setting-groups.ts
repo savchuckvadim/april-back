@@ -95,6 +95,14 @@ export const PORTAL_APP_SETTING_GROUPS = {
         description: 'Версия продукта на портале.',
         links: [],
     },
+    portal_app: {
+        title: 'Приложение April на портале',
+        description:
+            'Локальное приложение Битрикс24: как бэкенд ходит в портал ' +
+            '(вебхук или токен приложения), какие части включены и какие ' +
+            'виджеты должны стоять.',
+        links: [],
+    },
     portal_bitrix_limits: {
         title: 'Лимиты запросов к Битрикс24',
         description:
@@ -313,6 +321,12 @@ const AI_MODEL_CODES = [
 const GROUP_RULES: Record<EnumPortalAppCode, readonly GroupRule[]> = {
     [EnumPortalAppCode.portal]: [
         { group: 'portal_product', codes: ['product_version'] },
+        // Раньше правила по префиксу bitrix_: режим авторизации — про
+        // приложение, а не про лимиты.
+        {
+            group: 'portal_app',
+            codes: ['bitrix_auth_mode', 'enabled_parts', 'app_widgets'],
+        },
         { group: 'portal_bitrix_limits', prefixes: ['bitrix_'] },
         { group: 'support_monitor', prefixes: ['support_monitor_'] },
     ],

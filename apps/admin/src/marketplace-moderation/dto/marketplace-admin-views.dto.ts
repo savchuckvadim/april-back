@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+    IsBoolean,
     IsInt,
     IsOptional,
     IsString,
@@ -334,6 +335,19 @@ export class PortalProductDto {
         example: '2027-07-18T00:00:00.000Z',
     })
     paidUntil?: string;
+}
+
+export class PlacementsRefreshDto {
+    @ApiPropertyOptional({
+        description:
+            'Переустановить: снять все наши привязки виджетов портала и поставить выбранные (настройка портала app_widgets) заново. Без флага — только недостающие и лишние.',
+        type: Boolean,
+        example: false,
+        default: false,
+    })
+    @IsOptional()
+    @IsBoolean()
+    force?: boolean;
 }
 
 export class PbxActionResultDto {

@@ -14,6 +14,7 @@ import {
 import { TimedCache } from '@lib/shared';
 import { PortalAppSettingsService } from '@lib/portal-lib/store/app-settings';
 import { PortalRateLimitResolver } from './lib/portal-rate-limit.resolver';
+import { PortalBitrixAuthModeResolver } from './lib/portal-bitrix-auth-mode.resolver';
 import { fillPortalGapsFromInternal } from './lib/portal-gap-fill';
 import { PBX_INIT_STEP, countInit, timeInitStep } from './lib/pbx-init-metrics';
 
@@ -69,10 +70,24 @@ export class PBXService {
         appSettings?: PortalAppSettingsService,
     ) {
         this.rateLimits = new PortalRateLimitResolver(appSettings, this.logger);
+        this.authModes = new PortalBitrixAuthModeResolver(
+            appSettings,
+            this.logger,
+        );
     }
 
     /** Лимит запросов портала к Битриксу — из его настроек. */
     private readonly rateLimits: PortalRateLimitResolver;
+
+    /**
+     * Чем бэкенд ходит в портал — из его настроек (`bitrix_auth_mode`).
+     * `webhook` выключает OAuth-путь даже при активной установке: установка
+     * локального приложения на живой портал не должна переводить его кроны и
+     * хуки с вебхука на OAuth (решение владельца 07.11.2026; установка сама
+     * пишет `webhook` действующему порталу). `app`/`auto` — OAuth, если
+     * установка активна.
+     */
+    private readonly authModes: PortalBitrixAuthModeResolver;
 
     /**
      * Локальная сборка портала из БД — около 19 SQL-запросов. Раньше она
@@ -236,12 +251,18 @@ export class PBXService {
         }
     }
 
-    /** Есть ли у домена активная маркетплейс-установка (кэш Redis в сервисе) */
+    /**
+     * Идти ли OAuth-путём приложения: портал не закреплён за вебхуком
+     * настройкой И у него есть активная установка (кэш Redis в сервисе).
+     */
     private async isMarketplacePortal(domain: string): Promise<boolean> {
         if (
             !this.marketplaceToken ||
             process.env.PBX_MARKETPLACE_AUTH_FIRST === 'false'
         ) {
+            return false;
+        }
+        if ((await this.authModes.resolve(domain)) === 'webhook') {
             return false;
         }
         try {

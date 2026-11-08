@@ -4,6 +4,7 @@ import { AuthModule } from '@lib/auth';
 import { TelegramService } from '@lib/telegram';
 import { EgressProxyModule } from '@lib/egress-proxy';
 import { MarketplaceCoreModule } from '@lib/marketplace-core';
+import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings/portal-app-settings.module';
 import { QueueModule } from '@lib/queue';
 import { RedisModule } from '@/core/redis/redis.module';
 import { MarketplaceInstallController } from './controllers/marketplace-install.controller';
@@ -24,6 +25,7 @@ import { MarketplaceSessionService } from './services/marketplace-session.servic
 import { MarketplaceOnboardingService } from './services/marketplace-onboarding.service';
 import { MarketplaceCabinetService } from './services/marketplace-cabinet.service';
 import { MarketplaceInviteService } from './services/marketplace-invite.service';
+import { MarketplaceLocalAppService } from './services/marketplace-local-app.service';
 import { MarketplaceInstallRepository } from './persistence/marketplace-install.repository';
 import { MarketplaceClientRepository } from './persistence/marketplace-client.repository';
 import { PortalSessionGuard } from './lib/portal-session.guard';
@@ -57,6 +59,9 @@ import { AdminKeyGuard } from './lib/admin-key.guard';
         MarketplaceCoreModule,
         // Очередь provisioning pbx-сущностей (продюсер; воркер — pbx-install)
         QueueModule,
+        // «Общие настройки портала»: режим авторизации нового портала
+        // (установка) и список виджетов (admin refresh привязок)
+        PortalAppSettingsModule,
         // HttpModule и EgressProxyModule — для TelegramService (см. providers):
         // api.telegram.org с российских серверов доступен только через
         // исходящий прокси, без него сервис не соберётся — и это правильно.
@@ -84,6 +89,7 @@ import { AdminKeyGuard } from './lib/admin-key.guard';
         MarketplaceOnboardingService,
         MarketplaceCabinetService,
         MarketplaceInviteService,
+        MarketplaceLocalAppService,
         MarketplaceInstallRepository,
         MarketplaceClientRepository,
         MarketplaceBxClient,

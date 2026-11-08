@@ -19,6 +19,7 @@ import {
 } from '@lib/portal-lib/pbx-domain/field/type/sales/konstructor/pbx-sales-konstructor-field.type';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
 import { PMeasureCode } from '@lib/portal-lib/portal/interfaces/portal.interface';
+import { IsDealFieldValue } from './is-deal-field-value.validator';
 
 /**
  * Коды ИНН, которые ручка НЕ ПРИНИМАЕТ.
@@ -93,6 +94,7 @@ export class DealSendFieldDto {
             { type: 'array', items: { type: 'string' } },
         ],
     })
+    @IsDealFieldValue()
     value: string | number | boolean | string[];
 }
 

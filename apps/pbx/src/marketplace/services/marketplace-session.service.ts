@@ -155,6 +155,10 @@ export class MarketplaceSessionService {
                 : payload.member_id,
             role: Role.CLIENT,
             portalId: Number(portal.id),
+            // Домен и member_id — для кабинета клиента (@lib/cabinet) и
+            // гарда мутирующих ручек фреймов (сверка domain тела).
+            memberId: payload.member_id,
+            domain: payload.domain,
             ...(portal.client_id !== null
                 ? { clientId: Number(portal.client_id) }
                 : {}),
