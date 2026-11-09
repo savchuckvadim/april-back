@@ -112,6 +112,7 @@ export const OWNER_PDF_TEXT = {
     },
     presentations: {
         comparisonTitle: 'Что работает',
+        qualityLinkTitle: 'Качество показа и продажи',
     },
     footer: {
         brand: 'April · AI-аналитика отдела продаж',

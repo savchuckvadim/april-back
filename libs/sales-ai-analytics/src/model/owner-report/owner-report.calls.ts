@@ -127,6 +127,10 @@ function toOwnerReportCall(
         weekKey: mondayOf(date),
         callType: row.callType,
         typeGroup: typeGroupOf(row),
+        reactivationSource:
+            row.reactivation === true
+                ? (row.reactivationSource ?? 'stage')
+                : null,
         marked,
         outcome,
         contactReached: contactOf(row, outcome),

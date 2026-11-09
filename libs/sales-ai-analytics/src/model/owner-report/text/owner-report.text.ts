@@ -36,6 +36,10 @@ import {
     buildPresentationsText,
 } from './owner-report.text.funnel';
 import { buildManagerTexts } from './owner-report.text.managers';
+import {
+    buildQualityLinkText,
+    reactivationSourcesNote,
+} from './owner-report.text.signals';
 import { buildSummaryParagraphs } from './owner-report.text.summary';
 import type {
     OwnerReportLeakText,
@@ -72,6 +76,7 @@ export function buildOwnerReportText(
         funnel: buildFunnelText(facts),
         crmFunnel: buildCrmFunnelText(facts, previous),
         presentations: buildPresentationsText(facts, options.names ?? {}),
+        qualityLink: buildQualityLinkText(facts.qualityLink),
         leaks: facts.leaks.map(leakText),
         management: buildManagementText(facts),
         objections: buildObjectionsText(facts),
@@ -208,6 +213,8 @@ function buildMethodology(facts: OwnerReportFacts): string[] {
     lines.push(
         'Сотрудник определён по телефонии, а не по самопредставлению. Исход зафиксирован по договорённости в разговоре; сверка со сделками и оплатами в CRM — отдельный раздел.',
     );
+    const reactivationLine = reactivationSourcesNote(facts.reactivation);
+    if (reactivationLine) lines.push(reactivationLine);
     if (coverage.telephony?.outbound) {
         lines.push(
             `По телефонии: исходящих вызовов — ${coverage.telephony.outbound}, состоявшихся разговоров — ${coverage.telephony.connected ?? '—'}.`,

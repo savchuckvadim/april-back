@@ -37,6 +37,7 @@ export function toOwnerReportDto(
             funnel: text.funnel,
             crmFunnel: text.crmFunnel,
             presentations: text.presentations,
+            qualityLink: text.qualityLink,
             leaks: text.leaks.map(leak => ({
                 code: leak.code,
                 title: leak.title,

@@ -5,6 +5,7 @@ import type {
     AiOwnerReportFunnelDto,
     AiOwnerReportKeyValueDto,
     AiOwnerReportPresentationsDto,
+    AiOwnerReportQualityLinkDto,
 } from '../../dto/ai-owner-report-text.dto';
 import { OWNER_PDF_TEXT } from './owner-report-pdf.texts';
 import {
@@ -95,10 +96,22 @@ export const PdfFunnel: FC<{
     </>
 );
 
-/** «Презентации»: сводка показов, пара «под задачи против шаблонного», оценки разделов. */
+/** Кромка карточки связи: подтверждена — зелёная, предварительная — янтарная, нет — серая. */
+const QUALITY_LINK_EDGE: Record<AiOwnerReportQualityLinkDto['status'], string> =
+    {
+        confirmed: OWNER_PDF_TONES.good.edge,
+        preliminary: OWNER_PDF_TONES.warn.edge,
+        none: OWNER_PDF_TONES.neutral.edge,
+    };
+
+/**
+ * «Презентации»: сводка показов, пара «под задачи против шаблонного»,
+ * оценки разделов и карточка связи качества показа с продажами.
+ */
 export const PdfPresentations: FC<{
     presentations: AiOwnerReportPresentationsDto;
-}> = ({ presentations }) => (
+    qualityLink: AiOwnerReportQualityLinkDto;
+}> = ({ presentations, qualityLink }) => (
     <>
         <Text style={s.paragraph}>{presentations.intro}</Text>
         {presentations.comparison && (
@@ -129,5 +142,10 @@ export const PdfPresentations: FC<{
         {presentations.people && (
             <Text style={s.note}>{presentations.people}</Text>
         )}
+        <PdfCallout
+            title={OWNER_PDF_TEXT.presentations.qualityLinkTitle}
+            text={qualityLink.lines.join(' ')}
+            edge={QUALITY_LINK_EDGE[qualityLink.status]}
+        />
     </>
 );

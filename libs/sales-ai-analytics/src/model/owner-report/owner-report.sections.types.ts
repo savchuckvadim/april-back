@@ -1,8 +1,10 @@
+import type { OwnerReportQualityLink } from './owner-report.quality-link';
 import type {
     OwnerReportCoverage,
     OwnerReportCrmManagerFacts,
     OwnerReportOutcomes,
     OwnerReportPeriod,
+    OwnerReportReactivationFacts,
     OwnerReportTypeGroupRow,
     OwnerReportWeek,
     OwnerShare,
@@ -201,6 +203,10 @@ export interface OwnerReportFacts {
     weeks: OwnerReportWeek[];
     funnel: OwnerReportFunnel;
     presentations: OwnerReportPresentations;
+    /** Связь качества показа и продаж по снапшоту связи; null — снапшота нет. */
+    qualityLink: OwnerReportQualityLink | null;
+    /** Возвраты периода по источникам отказа. */
+    reactivation: OwnerReportReactivationFacts;
     objections: OwnerReportObjections;
     issues: OwnerReportIssues;
     prices: OwnerReportPrices;

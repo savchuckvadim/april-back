@@ -290,6 +290,7 @@ function factsOf(
         minDurationByType: sources.minDurationByType,
         telephony: which === 'current' ? sources.telephony : null,
         crm: which === 'current' ? sources.crm : null,
+        qualityLink: which === 'current' ? sources.qualityLink : null,
     });
 }
 

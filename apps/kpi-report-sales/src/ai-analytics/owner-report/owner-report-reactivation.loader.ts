@@ -2,36 +2,44 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/core/prisma/prisma.service';
 import { PBXService } from '@/modules/pbx';
 import type { IBXDeal } from '@/modules/bitrix';
-import { PBX_DEAL_SALES_BASE_STAGE_CODE } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
+import type { BitrixService } from '@lib/bitrix';
 import type { IPCategory } from '@lib/portal-lib/portal/interfaces/portal.interface';
+import type { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PbxDealCategoryCodeEnum } from '@lib/portal-lib/portal/services/types/deals/portal.deal.type';
+import { EnumSalesKpiEventType } from '@lib/portal-lib/pbx/pbx-sales-kpi-list/type/pbx-sales-kpi-list.enum';
 import {
-    isReactivationCall,
+    SALES_LIST_CODES,
+    SalesListReaderService,
+} from '@lib/portal-lib/pbx/pbx-sales-list-reader';
+import {
+    reactivationOf,
     toPortalDate,
     type OwnerReportClosedDeal,
+    type OwnerReportRefusalSource,
 } from '@lib/sales-ai-analytics';
 import type { DatedLiteRow } from '../domain/loaders/lite-row.mapper';
+import {
+    dealSignalsOf,
+    refusalFieldsOf,
+    type DealRow,
+} from './owner-report-refusal-signals.util';
 
 /** Строка звонка отчёта с признаком «возврат ушедшего или отказавшего». */
-export type OwnerReportDatedRow = DatedLiteRow & { reactivation?: boolean };
+export type OwnerReportDatedRow = DatedLiteRow & {
+    reactivation?: boolean;
+    /** Откуда известен отказ: финал сделки, запись «ОП История», поля сделки. */
+    reactivationSource?: OwnerReportRefusalSource;
+};
 
 /** Сущность, к которой привязан звонок (transcriptions.entity_type). */
 const CALL_ENTITY = { deal: 'deal', company: 'company' } as const;
 
-/**
- * Отказные стадии «ОП Основная» — те же, из которых ХО возвращает клиента
- * в работу (решение владельца 14.10.2026): «Отказ», «Не состоялась»,
- * «Не ЦА». «Не беспокоить» — не отказ по сделке.
- */
-const REFUSAL_STAGE_CODES: ReadonlySet<string> = new Set([
-    PBX_DEAL_SALES_BASE_STAGE_CODE.fail,
-    PBX_DEAL_SALES_BASE_STAGE_CODE.apology,
-    PBX_DEAL_SALES_BASE_STAGE_CODE.notCa,
-]);
-const WON_STAGE_CODE = PBX_DEAL_SALES_BASE_STAGE_CODE.success;
-
 const ID_CHUNK = 50;
 const DB_CHUNK = 500;
+/** Записей «ОП История» типа «Отказ» на порцию компаний — с запасом. */
+const HISTORY_LIMIT = 500;
+/** Префикс ссылки на компанию в crm-поле списка. */
+const COMPANY_REF = 'CO_';
 
 const chunks = <T>(items: readonly T[], size: number): T[][] =>
     Array.from({ length: Math.ceil(items.length / size) }, (_, index) =>
@@ -44,11 +52,22 @@ const stageIdOf = (category: IPCategory, stageBitrixId: string): string =>
         ? stageBitrixId
         : `C${category.bitrixId}:${stageBitrixId}`;
 
+const push = (
+    map: Map<string, OwnerReportClosedDeal[]>,
+    company: string,
+    signal: OwnerReportClosedDeal,
+): void => {
+    const list = map.get(company) ?? [];
+    list.push(signal);
+    map.set(company, list);
+};
+
 /**
  * Признак «реактивация» у звонков периода: компания звонка (прямо или
- * через сделку) → закрытые сделки «ОП Основная» компании → правило
- * `isReactivationCall`. Только чтение Битрикса. Fail-open: сбой — строки
- * без признака, отчёт выходит.
+ * через сделку) → отказы и успехи компании по сделкам «ОП Основная»
+ * (финалы, поля сделки) и записям «ОП История» типа «Отказ» → правило
+ * `reactivationOf`. Только чтение Битрикса. Fail-open: сбой — строки без
+ * признака, отчёт выходит.
  *
  * `@Injectable` без bitrix-состояния: инстанс — внутри метода.
  */
@@ -68,17 +87,30 @@ export class OwnerReportReactivationLoader {
     ): Promise<OwnerReportDatedRow[]> {
         if (rows.length === 0) return [];
         try {
-            const companyByCall = await this.companiesOfCalls(domain, rows);
+            const { bitrix, PortalModel: portal } = await this.pbx.init(domain);
+            const companyByCall = await this.companiesOfCalls(
+                bitrix,
+                domain,
+                rows,
+            );
             const companies = [...new Set(companyByCall.values())];
             if (companies.length === 0) return [...rows];
-            const history = await this.closedDeals(domain, companies, timeZone);
+            const history = await this.refusalHistory(
+                bitrix,
+                portal,
+                companies,
+                timeZone,
+            );
             return rows.map(row => {
                 const company = companyByCall.get(row.transcriptionId);
                 const deals = company ? history.get(company) : undefined;
                 if (!deals) return row;
-                const callDate = toPortalDate(row.callStartedAt, timeZone);
-                return isReactivationCall(callDate, deals)
-                    ? { ...row, reactivation: true }
+                const source = reactivationOf(
+                    toPortalDate(row.callStartedAt, timeZone),
+                    deals,
+                );
+                return source
+                    ? { ...row, reactivation: true, reactivationSource: source }
                     : row;
             });
         } catch (error) {
@@ -91,6 +123,7 @@ export class OwnerReportReactivationLoader {
 
     /** Компания каждого звонка: из привязки транскрипции или её сделки. */
     private async companiesOfCalls(
+        bitrix: BitrixService,
         domain: string,
         rows: readonly DatedLiteRow[],
     ): Promise<Map<string, string>> {
@@ -124,7 +157,6 @@ export class OwnerReportReactivationLoader {
             if (link.type === CALL_ENTITY.deal) dealIds.add(link.entity);
         }
         if (dealIds.size === 0) return result;
-        const { bitrix } = await this.pbx.init(domain);
         const companyOfDeal = new Map<string, string>();
         for (const part of chunks([...dealIds], ID_CHUNK)) {
             const deals = await bitrix.deal.all(
@@ -146,17 +178,21 @@ export class OwnerReportReactivationLoader {
         return result;
     }
 
-    /** Закрытые сделки «ОП Основная» по компаниям: отказы и успехи с датой. */
-    private async closedDeals(
-        domain: string,
+    /**
+     * Отказы и успехи по компаниям: сделки «ОП Основная» (финал — основной
+     * источник, поля сделки — вторичный) плюс записи «ОП История» типа
+     * «Отказ» по ссылке на компанию.
+     */
+    private async refusalHistory(
+        bitrix: BitrixService,
+        portal: PortalModel,
         companies: readonly string[],
         timeZone: string,
     ): Promise<Map<string, OwnerReportClosedDeal[]>> {
-        const { bitrix, PortalModel } = await this.pbx.init(domain);
-        const category = PortalModel.getDealCategoryByCode(
+        const result = new Map<string, OwnerReportClosedDeal[]>();
+        const category = portal.getDealCategoryByCode(
             PbxDealCategoryCodeEnum.sales_base,
         );
-        const result = new Map<string, OwnerReportClosedDeal[]>();
         if (!category) return result;
         const codeOfStage = new Map(
             category.stages.map(stage => [
@@ -164,30 +200,77 @@ export class OwnerReportReactivationLoader {
                 stage.code,
             ]),
         );
+        const fields = refusalFieldsOf(portal);
         for (const part of chunks(companies, ID_CHUNK)) {
             const deals = await bitrix.deal.all(
                 {
                     CATEGORY_ID: category.bitrixId,
-                    CLOSED: 'Y',
                     '@COMPANY_ID': part,
                 } as unknown as Partial<IBXDeal>,
-                ['ID', 'COMPANY_ID', 'STAGE_ID', 'CLOSEDATE'],
+                [
+                    'ID',
+                    'COMPANY_ID',
+                    'STAGE_ID',
+                    'CLOSEDATE',
+                    'DATE_MODIFY',
+                    ...(fields?.select ?? []),
+                ],
             );
             for (const deal of deals) {
-                const code = codeOfStage.get(String(deal.STAGE_ID));
-                const kind = code
-                    ? REFUSAL_STAGE_CODES.has(code)
-                        ? 'refusal'
-                        : code === WON_STAGE_CODE
-                          ? 'won'
-                          : null
-                    : null;
-                const closed = new Date(String(deal.CLOSEDATE ?? ''));
-                if (!kind || Number.isNaN(closed.getTime())) continue;
                 const company = String(deal.COMPANY_ID);
-                const list = result.get(company) ?? [];
-                list.push({ kind, date: toPortalDate(closed, timeZone) });
-                result.set(company, list);
+                const signals = dealSignalsOf(
+                    deal as unknown as DealRow,
+                    codeOfStage,
+                    fields,
+                    timeZone,
+                );
+                for (const signal of signals) push(result, company, signal);
+            }
+        }
+        const history = await this.historyRefusals(
+            bitrix,
+            portal,
+            companies,
+            timeZone,
+        );
+        for (const [company, signals] of history) {
+            for (const signal of signals) push(result, company, signal);
+        }
+        return result;
+    }
+
+    /**
+     * Записи «ОП История» типа «Отказ» по ссылке на компанию (crm-поле
+     * списка, `CO_<id>`): дата события, без неё — дата записи. Читатель
+     * списков fail-open: списка нет или сбой — записей нет.
+     */
+    private async historyRefusals(
+        bitrix: BitrixService,
+        portal: PortalModel,
+        companies: readonly string[],
+        timeZone: string,
+    ): Promise<Map<string, OwnerReportClosedDeal[]>> {
+        const result = new Map<string, OwnerReportClosedDeal[]>();
+        const reader = new SalesListReaderService(bitrix, portal);
+        for (const part of chunks(companies, ID_CHUNK)) {
+            const records = await reader.read(SALES_LIST_CODES.history, {
+                crmRefs: part.map(id => `${COMPANY_REF}${id}`),
+                eventTypeCodes: [EnumSalesKpiEventType.ev_fail],
+                limit: HISTORY_LIMIT,
+            });
+            for (const record of records) {
+                const company = record.crmRefs
+                    .find(ref => ref.startsWith(COMPANY_REF))
+                    ?.slice(COMPANY_REF.length);
+                const raw = record.eventDate ?? record.createdAt;
+                if (!company || !raw) continue;
+                const date = new Date(raw);
+                if (Number.isNaN(date.getTime())) continue;
+                push(result, company, {
+                    kind: 'refusal',
+                    date: toPortalDate(date, timeZone),
+                    source: 'history',
+                });
             }
         }
         return result;

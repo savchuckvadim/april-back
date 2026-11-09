@@ -1,3 +1,5 @@
+import type { OwnerReportQualityLinkStatus } from '../owner-report.quality-link';
+
 /**
  * Текст отчёта собственнику: разделы в порядке подачи, каждая строка —
  * готовая фраза по-русски. Собирается шаблоном из фактов
@@ -212,6 +214,12 @@ export interface OwnerReportKeyValueText {
     value: string;
 }
 
+/** Связь качества показа и продаж словами (статус — как у фактов). */
+export interface OwnerReportQualityLinkText {
+    status: OwnerReportQualityLinkStatus;
+    lines: string[];
+}
+
 /** Раздел «Презентации» словами. */
 export interface OwnerReportPresentationsText {
     intro: string;
@@ -247,6 +255,8 @@ export interface OwnerReportText {
     /** Воронка по CRM; null — данных CRM за период нет. */
     crmFunnel: OwnerReportCrmFunnelText | null;
     presentations: OwnerReportPresentationsText;
+    /** Связь качества показа и продаж: предварительная оценка или сколько осталось до неё. */
+    qualityLink: OwnerReportQualityLinkText;
     leaks: OwnerReportLeakText[];
     management: OwnerReportManagementText;
     objections: OwnerReportObjectionsText;

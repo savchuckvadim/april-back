@@ -16,7 +16,7 @@ import {
  * v3 (09.11.2026) — ЛПР вместо «решающего», разброс цен больше не
  * признак управления, нулевые цены не считаются.
  */
-export const AI_OWNER_REPORT_KEY_VERSION = 'v3' as const;
+export const AI_OWNER_REPORT_KEY_VERSION = 'v4' as const;
 
 /**
  * TTL кэша: отчёт закрытого периода не меняется, пока его не пересобрали
@@ -47,7 +47,7 @@ export const AI_OWNER_REPORT_SNAPSHOT_RECORD = {
 export const AI_OWNER_REPORT_PERIODS_LIMIT = 48;
 
 /** Версия нагрузки снапшота: меняется вместе с формой фактов и текста. */
-export const AI_OWNER_REPORT_PAYLOAD_VERSION = 'owner-report-3' as const;
+export const AI_OWNER_REPORT_PAYLOAD_VERSION = 'owner-report-4' as const;
 
 export const AI_OWNER_REPORT_ERRORS = {
     periodKey:

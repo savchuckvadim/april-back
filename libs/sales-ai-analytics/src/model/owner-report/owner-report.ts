@@ -18,6 +18,8 @@ import {
     buildWeeks,
 } from './owner-report.overview';
 import { buildPresentations } from './owner-report.presentations';
+import { buildOwnerReportQualityLink } from './owner-report.quality-link';
+import { buildReactivationFacts } from './owner-report.reactivation';
 import type {
     OwnerReportCallInput,
     OwnerReportFacts,
@@ -59,6 +61,8 @@ export function buildOwnerReportFacts(
         weeks,
         funnel: buildFunnel(calls),
         presentations: buildPresentations(calls),
+        qualityLink: buildOwnerReportQualityLink(options.qualityLink),
+        reactivation: buildReactivationFacts(calls),
         objections: buildObjections(calls),
         issues: buildIssues(calls),
         prices,

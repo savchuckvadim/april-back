@@ -1,4 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+    OWNER_REPORT_QUALITY_LINK_STATUSES,
+    type OwnerReportQualityLinkStatus,
+} from '@lib/sales-ai-analytics';
 
 /**
  * «Воронка и конверсии» и «Презентации» отчёта собственнику (замечания
@@ -180,4 +184,29 @@ export class AiOwnerReportPresentationsDto {
         nullable: true,
     })
     people: string | null;
+}
+
+/** Статус оценки связи «качество показа → счёт/КП». */
+export const AI_OWNER_REPORT_QUALITY_LINK_STATUSES =
+    OWNER_REPORT_QUALITY_LINK_STATUSES;
+
+/** Связь качества показа и продаж словами. */
+export class AiOwnerReportQualityLinkDto {
+    @ApiProperty({
+        description:
+            'none — оценки ещё нет (мало показов с исходом); preliminary — предварительная, уточняется ежемесячно; confirmed — подтверждена по данным портала.',
+        enum: AI_OWNER_REPORT_QUALITY_LINK_STATUSES,
+        example: 'preliminary',
+    })
+    status: OwnerReportQualityLinkStatus;
+
+    @ApiProperty({
+        type: [String],
+        description:
+            'Фразы: по скольким показам оценка, вероятность счёта/КП при опорном качестве и на 2 балла выше, диапазон, сколько показов осталось до устойчивой оценки.',
+        example: [
+            'Предварительная оценка по 48 показам, 6 менеджеров (уточняется ежемесячно): при качестве показа 6,5 из 10 счёт или КП следуют в 40 % случаев, при качестве на 2 балла выше — около 57 %.',
+        ],
+    })
+    lines: string[];
 }

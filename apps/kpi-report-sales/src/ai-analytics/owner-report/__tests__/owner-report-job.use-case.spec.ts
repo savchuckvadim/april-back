@@ -57,6 +57,7 @@ const sources = (): OwnerReportSources => ({
     minDurationByType: { default: 60 },
     telephony: { outbound: null, connected: 10, short: 3 },
     crm: null,
+    qualityLink: null,
     names: { '7': 'Надежда', '8': 'Виолетта' },
 });
 

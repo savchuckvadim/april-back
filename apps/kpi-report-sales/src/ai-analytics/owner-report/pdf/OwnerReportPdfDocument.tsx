@@ -86,7 +86,10 @@ export const OwnerReportPdfDocument: FC<OwnerReportPdfDocumentProps> = ({
                     </PdfSection>
                 )}
                 <PdfSection title={OWNER_PDF_TEXT.sections.presentations}>
-                    <PdfPresentations presentations={text.presentations} />
+                    <PdfPresentations
+                        presentations={text.presentations}
+                        qualityLink={text.qualityLink}
+                    />
                 </PdfSection>
                 <PdfSection title={OWNER_PDF_TEXT.sections.management}>
                     <PdfManagement management={text.management} />

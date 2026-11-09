@@ -10,6 +10,7 @@ export type { NormalizeOptions, NormalizeResult } from './owner-report.calls';
 export * from './owner-report.overview';
 export * from './owner-report.funnel';
 export * from './owner-report.presentations';
+export * from './owner-report.quality-link';
 export * from './owner-report.objections';
 export * from './owner-report.leaks';
 export * from './owner-report.management';

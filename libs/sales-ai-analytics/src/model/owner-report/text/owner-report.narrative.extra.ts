@@ -42,7 +42,15 @@ export function narrativeExtraBlocks(text: OwnerReportText): string[] {
             ? `\n${keyValueLines(presentations.sections)}`
             : '') +
         (presentations.people ? `\n- ${presentations.people}` : '');
-    return [funnelBlock, ...(crmBlock ? [crmBlock] : []), presentationsBlock];
+    const qualityBlock =
+        'СВЯЗЬ КАЧЕСТВА ПОКАЗА И ПРОДАЖ:\n' +
+        text.qualityLink.lines.map(line => `- ${line}`).join('\n');
+    return [
+        funnelBlock,
+        ...(crmBlock ? [crmBlock] : []),
+        presentationsBlock,
+        qualityBlock,
+    ];
 }
 
 /** Числа этих блоков — в разрешённые для модели. */
@@ -52,6 +60,7 @@ export function addNarrativeExtraNumbers(
     addCount: (value: number) => void,
 ): void {
     const { funnel, crmFunnel, presentations } = text;
+    text.qualityLink.lines.forEach(addText);
     for (const row of funnel.rows) {
         addCount(row.calls);
         [

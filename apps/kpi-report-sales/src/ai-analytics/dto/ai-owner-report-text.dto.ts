@@ -11,6 +11,7 @@ import {
     AiOwnerReportCrmFunnelDto,
     AiOwnerReportFunnelDto,
     AiOwnerReportPresentationsDto,
+    AiOwnerReportQualityLinkDto,
 } from './ai-owner-report-funnel.dto';
 import { AiOwnerReportOverviewDto } from './ai-owner-report-overview.dto';
 import {
@@ -177,6 +178,13 @@ export class AiOwnerReportTextDto {
         description: 'Презентации: качество показов и что из него выходит.',
     })
     presentations: AiOwnerReportPresentationsDto;
+
+    @ApiProperty({
+        type: AiOwnerReportQualityLinkDto,
+        description:
+            'Связь качества показа и продаж: предварительная оценка с диапазоном или сколько показов осталось до первой оценки.',
+    })
+    qualityLink: AiOwnerReportQualityLinkDto;
 
     @ApiProperty({
         type: [AiOwnerReportLeakDto],
