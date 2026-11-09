@@ -8,9 +8,15 @@ import {
     MailTestResult,
     PasswordLinkMail,
 } from './cabinet-mailer.port';
+import { smtpErrorInfo } from './smtp-error.explain';
 
 /** Отправитель писем по умолчанию — если в env нет SMTP_FROM. */
 const DEFAULT_FROM = 'manager@april-app.ru';
+
+/** Адрес отправителя писем кабинета: SMTP_FROM или адрес по умолчанию. */
+export function cabinetMailFrom(config: ConfigService): string {
+    return (config.get<string>('SMTP_FROM') ?? '').trim() || DEFAULT_FROM;
+}
 
 /**
  * Письма кабинета через SMTP приложения (`MailerService` из
@@ -84,15 +90,13 @@ export class CabinetMailerService extends CabinetMailer {
             });
             return { ok: true, error: null };
         } catch (error) {
-            return {
-                ok: false,
-                error: error instanceof Error ? error.message : String(error),
-            };
+            const smtp = smtpErrorInfo(error);
+            return { ok: false, error: smtp.message, smtp };
         }
     }
 
     private from(): string {
-        return `"April" <${this.config.get<string>('SMTP_FROM') || DEFAULT_FROM}>`;
+        return `"April" <${cabinetMailFrom(this.config)}>`;
     }
 
     private isConfigured(): boolean {

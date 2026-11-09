@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    Get,
     HttpCode,
     Param,
     ParseIntPipe,
@@ -19,9 +20,12 @@ import { AuthUser, CurrentUser, Role, Roles } from '@lib/auth';
 import { CabinetAccessService } from '../access/cabinet-access.service';
 import {
     CabinetCheckResultDto,
+    CabinetMailCheckResultDto,
+    CabinetMailStatusDto,
     CabinetMailTestDto,
 } from '../dto/cabinet-checks.dto';
 import { CabinetChannelCheckService } from './cabinet-channel-check.service';
+import { CabinetMailCheckService } from './cabinet-mail-check.service';
 
 /**
  * Проверка каналов кабинета из админки April: тестовое письмо и тестовое
@@ -36,22 +40,37 @@ export class CabinetChecksAdminController {
     constructor(
         private readonly access: CabinetAccessService,
         private readonly checks: CabinetChannelCheckService,
+        private readonly mailCheck: CabinetMailCheckService,
     ) {}
+
+    @Get('checks/mail')
+    @ApiOperation({
+        summary: 'Настройка почты',
+        description:
+            'Что задано в окружении сервера для исходящей почты (MAIL_HOST, MAIL_PORT, MAIL_LOGIN, SMTP_FROM; пароль — только «задан/нет») и что в этом не так.',
+    })
+    @ApiOkResponse({
+        type: CabinetMailStatusDto,
+        description: 'Настройка почты без пароля.',
+    })
+    mailStatus(): CabinetMailStatusDto {
+        return this.mailCheck.status();
+    }
 
     @Post('checks/mail')
     @HttpCode(200)
     @ApiOperation({
         summary: 'Проверить почту',
         description:
-            'Отправить тестовое письмо через SMTP (MAIL_*), которым уходят ссылки на пароль и коды подключения. Ошибка SMTP — в ответе.',
+            'Отправить тестовое письмо через SMTP (MAIL_*), которым уходят ссылки на пароль и коды подключения. Отказ — с причиной по-русски и в журнал приложения admin; если соединиться не удалось — с пробой DNS и портов 465/587 с сервера.',
     })
     @ApiBody({ type: CabinetMailTestDto, description: 'Куда отправить.' })
     @ApiOkResponse({
-        type: CabinetCheckResultDto,
-        description: 'Итог проверки.',
+        type: CabinetMailCheckResultDto,
+        description: 'Итог проверки и сетевая диагностика.',
     })
-    mail(@Body() dto: CabinetMailTestDto): Promise<CabinetCheckResultDto> {
-        return this.checks.testMail(dto.email);
+    mail(@Body() dto: CabinetMailTestDto): Promise<CabinetMailCheckResultDto> {
+        return this.mailCheck.test(dto.email);
     }
 
     @Post('portals/:portalId/telegram/:bindingId/test')

@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CabinetContext } from '../domain/cabinet-context';
-import { CabinetMailer } from '../infrastructure/cabinet-mailer.port';
 import { requirePortal } from '../members/cabinet-membership.service';
 import { CabinetTelegramBindingRepository } from '../persistence/cabinet-telegram-binding.repository';
 import { ClientTelegramBotClient } from '../telegram/client-telegram-bot.client';
@@ -28,31 +27,16 @@ const TELEGRAM_REASONS: ReadonlyArray<readonly [RegExp, string]> = [
 ];
 
 /**
- * Проверка каналов кабинета из админки: тестовое письмо (почта для ссылок
- * на пароль) и тестовое сообщение в привязанный чат клиентского бота —
- * с причиной отказа, а не только «не ушло».
+ * Проверка Telegram-канала кабинета из админки: тестовое сообщение в
+ * привязанный чат клиентского бота — с причиной отказа, а не только «не
+ * ушло». Почта — {@link CabinetMailCheckService}.
  */
 @Injectable()
 export class CabinetChannelCheckService {
     constructor(
         private readonly bindings: CabinetTelegramBindingRepository,
         private readonly bot: ClientTelegramBotClient,
-        private readonly mailer: CabinetMailer,
     ) {}
-
-    async testMail(email: string): Promise<ChannelCheckResult> {
-        const to = email.trim();
-        const result = await this.mailer.sendTest(to);
-        return result.ok
-            ? {
-                  ok: true,
-                  message: `Письмо отправлено на ${to} — проверьте ящик (и папку «Спам»).`,
-              }
-            : {
-                  ok: false,
-                  message: `Письмо не ушло: ${result.error ?? 'неизвестная ошибка'}`,
-              };
-    }
 
     async testTelegramBinding(
         ctx: CabinetContext,

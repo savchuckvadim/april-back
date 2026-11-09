@@ -101,6 +101,9 @@ import { CabinetAppStatusService } from './admin/cabinet-app-status.service';
         CabinetTelegramDeliveryService,
         CabinetAdminService,
         CabinetChannelCheckService,
+        // Проверка почты из админки (CabinetMailCheckService) шлёт тестовое
+        // письмо тем же транспортом.
+        CabinetMailer,
     ],
 })
 export class CabinetModule {}
