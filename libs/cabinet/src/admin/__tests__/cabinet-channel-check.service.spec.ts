@@ -1,7 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { TelegramBinding } from 'generated/prisma';
 import { CabinetContext } from '../../domain/cabinet-context';
-import { CabinetMailer } from '../../infrastructure/cabinet-mailer.port';
 import { CabinetTelegramBindingRepository } from '../../persistence/cabinet-telegram-binding.repository';
 import { ClientTelegramBotClient } from '../../telegram/client-telegram-bot.client';
 import { CabinetChannelCheckService } from '../cabinet-channel-check.service';
@@ -31,38 +30,14 @@ function setup() {
         isConfigured: jest.fn().mockResolvedValue(true),
         trySendMessage: jest.fn().mockResolvedValue(null),
     };
-    const mailer = {
-        sendTest: jest.fn().mockResolvedValue({ ok: true, error: null }),
-    };
     const service = new CabinetChannelCheckService(
         bindings as unknown as CabinetTelegramBindingRepository,
         bot as unknown as ClientTelegramBotClient,
-        mailer as unknown as CabinetMailer,
     );
-    return { service, bindings, bot, mailer };
+    return { service, bindings, bot };
 }
 
 describe('CabinetChannelCheckService', () => {
-    it('почта: письмо ушло / причина отказа SMTP', async () => {
-        const { service, mailer } = setup();
-        await expect(
-            service.testMail(' me@example.ru '),
-        ).resolves.toMatchObject({
-            ok: true,
-            message: expect.stringContaining('me@example.ru') as unknown,
-        });
-        expect(mailer.sendTest).toHaveBeenCalledWith('me@example.ru');
-
-        mailer.sendTest.mockResolvedValue({
-            ok: false,
-            error: 'Invalid login: 535 Authentication failed',
-        });
-        await expect(service.testMail('me@example.ru')).resolves.toEqual({
-            ok: false,
-            message: 'Письмо не ушло: Invalid login: 535 Authentication failed',
-        });
-    });
-
     it('Telegram: доставлено в чат привязки', async () => {
         const { service, bot } = setup();
         await expect(service.testTelegramBinding(CTX, 'b-1')).resolves.toEqual({

@@ -11,6 +11,8 @@ import { CabinetBitrixAppController } from './controllers/cabinet-bitrix-app.con
 import { CabinetAdminController } from './admin/cabinet-admin.controller';
 import { CabinetBitrixAppAdminController } from './admin/cabinet-bitrix-app.admin.controller';
 import { CabinetChecksAdminController } from './admin/cabinet-checks.admin.controller';
+import { CabinetMailCheckService } from './admin/cabinet-mail-check.service';
+import { SmtpNetworkProbe } from './infrastructure/smtp-network.probe';
 import { CabinetGuideAdminController } from './admin/cabinet-guide.admin.controller';
 import { CabinetGuideService } from './guide/cabinet-guide.service';
 import { CabinetCorsProbe } from './guide/cabinet-cors.probe';
@@ -49,7 +51,12 @@ export class CabinetApiModule {}
         CabinetChecksAdminController,
         CabinetGuideAdminController,
     ],
-    providers: [CabinetGuideService, CabinetCorsProbe],
+    providers: [
+        CabinetGuideService,
+        CabinetCorsProbe,
+        CabinetMailCheckService,
+        SmtpNetworkProbe,
+    ],
 })
 export class CabinetAdminModule {}
 

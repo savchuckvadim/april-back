@@ -1,4 +1,5 @@
 import { CabinetPasswordLinkPurpose } from '../domain/cabinet.constants';
+import type { SmtpErrorInfo } from './smtp-error.explain';
 
 export interface PasswordLinkMail {
     to: string;
@@ -17,6 +18,8 @@ export interface PasswordLinkMail {
 export interface MailTestResult {
     ok: boolean;
     error: string | null;
+    /** Поля ошибки SMTP (код, шаг, ответ сервера) — для разбора причины. */
+    smtp?: SmtpErrorInfo;
 }
 
 export abstract class CabinetMailer {

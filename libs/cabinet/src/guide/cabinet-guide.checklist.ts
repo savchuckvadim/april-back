@@ -13,6 +13,10 @@ export const CABINET_GUIDE_PAGES = {
         title: 'Настройки приложения → «Telegram-боты»',
         href: '/settings',
     },
+    mailSettings: {
+        title: 'Настройки приложения → «Почта»',
+        href: '/settings',
+    },
     secrets: { title: 'Секреты приложений', href: '/marketplace/secrets' },
 } as const satisfies Record<string, CabinetGuideLink>;
 
@@ -121,8 +125,9 @@ export function buildCabinetChecklist(
             'mail',
             'Почта для ссылок на пароль',
             Boolean(facts.mailHost),
-            `SMTP: \`${facts.mailHost}\`. Отправку проверить письмом: «Ссылка на пароль» у участника.`,
+            `SMTP: \`${facts.mailHost}\`. Отправку проверить тестовым письмом: «Настройки приложения» → «Почта» (при отказе там же — причина, порты 465/587 с сервера и что поменять).`,
             'Без `MAIL_HOST` письма не уходят — ссылку на пароль копируют из карточки портала и передают лично. Для почты: `MAIL_HOST`, `MAIL_PORT`, `MAIL_LOGIN`, `MAIL_PASSWORD`, `SMTP_FROM` (= ящик) — все пять, иначе pbx и admin не стартуют.',
+            CABINET_GUIDE_PAGES.mailSettings,
         ),
         manual(
             'e2e',
