@@ -1125,3 +1125,43 @@ describe('ColdHooksHandlerV2Service — сбой одной сделки не р
         );
     });
 });
+
+describe('ColdHooksHandlerV2Service — смарты читаются один раз на окно', () => {
+    it('два хука: открытые элементы «Презентаций» и «ЗПР» прочитаны по разу, а не на каждую сделку', async () => {
+        const world: World = {
+            companies: [
+                { ID: '7', TITLE: 'ООО Ромашка' },
+                { ID: '8', TITLE: 'ООО Лютик' },
+            ],
+            deals: [
+                {
+                    ID: '500',
+                    CATEGORY_ID: '17',
+                    STAGE_ID: 'C17:WARM',
+                    COMPANY_ID: '7',
+                    ASSIGNED_BY_ID: '447',
+                },
+                {
+                    ID: '800',
+                    CATEGORY_ID: '17',
+                    STAGE_ID: 'C17:WARM',
+                    COMPANY_ID: '8',
+                    ASSIGNED_BY_ID: '447',
+                },
+            ],
+            tasks: [],
+            items: {},
+        };
+        const { handler, journal, bitrix } = makeHandler(world);
+
+        await handler.handleHooks('d.b24.ru', {
+            h1: hook(EnumColdCallEntityType.COMPANY, '7', EnumColdCallForce.N),
+            h2: hook(EnumColdCallEntityType.COMPANY, '8', EnumColdCallForce.N),
+        });
+
+        // Раньше — 4 чтения (2 смарта × 2 сделки); 85 сделок утром 09.11
+        // давали 170 полных перечитываний открытых элементов.
+        expect(bitrix.item.listAll).toHaveBeenCalledTimes(2);
+        expect(of(journal, 'deal.set')).toHaveLength(2);
+    });
+});

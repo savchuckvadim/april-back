@@ -54,6 +54,15 @@ export class ColdRelationsCollectorV2Service {
     private readonly logger = new Logger(ColdRelationsCollectorV2Service.name);
     private readonly categories: PortalDealColdCategoryService;
     private readonly dealFields: EventColdCallEntityTargetFieldsModel;
+    /**
+     * Открытые элементы смартов — одно чтение на окно. Коллектор живёт одно
+     * окно тишины, а список открытых «Презентаций»/«ЗПР» общий для всех его
+     * сделок: до 09.11.2026 он перечитывался на каждую (85 сделок × два
+     * смарта × страницы по 50 — ~10 с на сделку и лишние шансы поймать 500
+     * портала). Неудачное чтение не кэшируется — следующая сделка прочитает
+     * заново.
+     */
+    private readonly openElementsCache = new Map<string, Promise<SmartRow[]>>();
 
     constructor(
         private readonly portal: PortalModel,
@@ -364,11 +373,21 @@ export class ColdRelationsCollectorV2Service {
             'assignedById',
             ...linkKeys.filter((key): key is string => Boolean(key)),
         ];
-        return (await this.bitrix.item.listAll(
-            String(entityTypeId),
-            { stageId: openStages } as never,
-            select,
-        )) as unknown as SmartRow[];
+        const key = `${entityTypeId}|${openStages.join(',')}|${select.join(',')}`;
+        const cached = this.openElementsCache.get(key);
+        if (cached) return cached;
+        const pending = (
+            this.bitrix.item.listAll(
+                String(entityTypeId),
+                { stageId: openStages } as never,
+                select,
+            ) as unknown as Promise<SmartRow[]>
+        ).catch((error: unknown) => {
+            this.openElementsCache.delete(key);
+            throw error;
+        });
+        this.openElementsCache.set(key, pending);
+        return pending;
     }
 
     /** Элемент привязан к клиенту: любой из ключей совпал с компанией/сделкой/лидом. */
