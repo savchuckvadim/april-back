@@ -172,6 +172,57 @@ export const MANAGER_COLUMN_LABELS: Readonly<Record<ManagerColumn, string>> = {
     crm: 'Сделки / счета / показы в CRM',
 };
 
+/** Строка воронки по разговорам: ступень и исходы словами. */
+export interface OwnerReportFunnelRowText {
+    code: string;
+    label: string;
+    calls: number;
+    advanced: string;
+    undecided: string;
+    refused: string;
+    noContact: string;
+    invoiceAgreed: string;
+}
+
+export interface OwnerReportFunnelText {
+    rows: OwnerReportFunnelRowText[];
+    /** «Цепочка: из N холодных до показа дошли …; из M показов двигают …». */
+    chain: string | null;
+    /** После показа и КП: сколько ушло в «подумаем», сколько согласий на счёт. */
+    afterOffer: string | null;
+    /** Согласие на счёт по всем разговорам периода. */
+    invoice: string;
+}
+
+export interface OwnerReportCrmFunnelRowText {
+    label: string;
+    value: number;
+    previous: number | null;
+}
+
+/** Воронка по CRM: показы → счета → договоры за период. */
+export interface OwnerReportCrmFunnelText {
+    rows: OwnerReportCrmFunnelRowText[];
+    conversions: string;
+    note: string;
+}
+
+export interface OwnerReportKeyValueText {
+    label: string;
+    value: string;
+}
+
+/** Раздел «Презентации» словами. */
+export interface OwnerReportPresentationsText {
+    intro: string;
+    rows: OwnerReportKeyValueText[];
+    /** «Показ под задачи … против … при шаблонной подаче»; null — сравнить не с чем. */
+    comparison: string | null;
+    sections: OwnerReportKeyValueText[];
+    /** У кого показ двигает клиента чаще и реже всего. */
+    people: string | null;
+}
+
 export interface OwnerReportManagerText {
     managerId: string;
     name: string;
@@ -192,6 +243,10 @@ export interface OwnerReportText {
     summary: string[];
     summarySource: OwnerReportTextSource;
     overview: OwnerReportOverviewText;
+    funnel: OwnerReportFunnelText;
+    /** Воронка по CRM; null — данных CRM за период нет. */
+    crmFunnel: OwnerReportCrmFunnelText | null;
+    presentations: OwnerReportPresentationsText;
     leaks: OwnerReportLeakText[];
     management: OwnerReportManagementText;
     objections: OwnerReportObjectionsText;

@@ -3,7 +3,9 @@ import {
     CALL_REPORT_OBJECTION_TOPIC_ITEMS,
     CALL_REPORT_OUTCOME_ITEMS,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-report-facts.type';
+import { CALL_REPORT_SECTIONS } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-smart.type';
 import type {
+    OwnerReportFunnelStageCode,
     OwnerReportLeakCode,
     OwnerReportLeakNature,
     OwnerReportOutcome,
@@ -201,3 +203,18 @@ export const METRIC_LABELS: Readonly<Record<string, MetricLabel>> = {
         ifIgnored: 'Уход или выгорание одного менеджера обрушит результат',
     },
 };
+
+/** Ступени воронки по разговорам. */
+export const FUNNEL_STAGE_LABELS: Readonly<
+    Record<OwnerReportFunnelStageCode, string>
+> = {
+    cold: 'Холодный первый контакт',
+    presentation: 'Показ системы',
+    followup: 'После показа и КП: доработка, решение, оплата',
+};
+
+/** Разделы разбора разговора — названия из справочника смарта. */
+export const SECTION_LABELS: Readonly<Record<string, string>> =
+    Object.fromEntries(
+        CALL_REPORT_SECTIONS.map(section => [section.code, section.title]),
+    );

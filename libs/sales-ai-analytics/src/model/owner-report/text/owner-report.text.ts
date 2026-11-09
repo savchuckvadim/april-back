@@ -30,6 +30,11 @@ import {
     buildTiles,
     unmarkedNoteOf,
 } from './owner-report.text.overview';
+import {
+    buildCrmFunnelText,
+    buildFunnelText,
+    buildPresentationsText,
+} from './owner-report.text.funnel';
 import { buildManagerTexts } from './owner-report.text.managers';
 import { buildSummaryParagraphs } from './owner-report.text.summary';
 import type {
@@ -64,6 +69,9 @@ export function buildOwnerReportText(
         summary: buildSummaryParagraphs(facts),
         summarySource: 'template',
         overview: buildOverview(facts),
+        funnel: buildFunnelText(facts),
+        crmFunnel: buildCrmFunnelText(facts, previous),
+        presentations: buildPresentationsText(facts, options.names ?? {}),
         leaks: facts.leaks.map(leakText),
         management: buildManagementText(facts),
         objections: buildObjectionsText(facts),

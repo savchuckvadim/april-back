@@ -5,6 +5,10 @@ import {
     wordCount,
 } from '../../brief-factcheck';
 import { extractNumbers, numberKeys } from '../../brief-numbers';
+import {
+    addNarrativeExtraNumbers,
+    narrativeExtraBlocks,
+} from './owner-report.narrative.extra';
 import type {
     OwnerReportLeakText,
     OwnerReportManagerText,
@@ -70,7 +74,7 @@ export const OWNER_REPORT_NARRATIVE_SCHEMA: Record<string, unknown> = {
 };
 
 export const OWNER_REPORT_NARRATIVE_SYSTEM_PROMPT = `Ты пишешь управленческий отчёт собственнику компании по работе отдела продаж за период. Ниже — факты периода, посчитанные кодом, и черновик текста по шаблону. Твоя задача — переписать три части живым языком собственника, не меняя смысла фактов:
-1) summary — от 3 до 7 абзацев, каждый до 70 слов: где застревают деньги, самая дорогая утечка, вход в воронку, динамика внутри периода, зависимость от людей, качество базы, что работает. Первым — главное для денег.
+1) summary — от 3 до 7 абзацев, каждый до 70 слов: где застревают деньги (что происходит после показа и КП, сколько согласий на счёт), самая дорогая утечка, вход в воронку, динамика внутри периода, зависимость от людей, качество базы, что работает (показ под задачи клиента против шаблонного). Первым — главное для денег.
 2) leaks — абзац на каждую утечку из списка (код как в списке): масштаб, цена вопроса, что это — процесс или навык, и что сделать.
 3) managers — по каждому сотруднику из списка (managerId как в списке): до трёх сильных сторон, до трёх рисков по одной фразе, вывод для собственника до 60 слов.
 
@@ -115,6 +119,7 @@ export function buildNarrativeUserContent(text: OwnerReportText): string {
                         `- ${row.label}: ${row.calls}; холодные → продвижение ${row.coldAdvanced}; с ЛПР → продвижение ${row.contactedAdvanced}${row.note ? `; ${row.note}` : ''}`,
                 )
                 .join('\n'),
+        ...narrativeExtraBlocks(text),
         'УТЕЧКИ (код — черновик):\n' +
             text.leaks
                 .map(
@@ -202,6 +207,7 @@ export function allowedNumberKeys(text: OwnerReportText): Set<string> {
         addText(row.contactedAdvanced);
     }
     text.overview.notes.forEach(addText);
+    addNarrativeExtraNumbers(text, addText, addCount);
     for (const leak of text.leaks) {
         [
             leak.title,

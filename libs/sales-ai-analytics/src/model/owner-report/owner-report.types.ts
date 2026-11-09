@@ -132,6 +132,8 @@ export interface OwnerReportCall {
     /** Ушёл от ответа на «вы что-то предлагаете?»; null — не размечено. */
     evasive: boolean | null;
     score: number | null;
+    /** Оценки разделов разбора 1–10 по коду раздела; только применимые разделы. */
+    sectionScores: Readonly<Record<string, number>>;
 }
 
 export interface OwnerReportObjection {

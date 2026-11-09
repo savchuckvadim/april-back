@@ -155,7 +155,21 @@ function toOwnerReportCall(
             ? row.report.selfIntro.offerQuestion === 'evasive'
             : null,
         score: row.score,
+        sectionScores: sectionScoresOf(row),
     };
+}
+
+/** Оценки применимых разделов (актуальность > 0, оценка есть) по коду раздела. */
+function sectionScoresOf(
+    row: OwnerReportCallInput,
+): Readonly<Record<string, number>> {
+    const scores: Record<string, number> = {};
+    for (const section of row.sections) {
+        if (section.relevance > 0 && section.score !== null) {
+            scores[section.section] = section.score;
+        }
+    }
+    return scores;
 }
 
 export function typeGroupOf(

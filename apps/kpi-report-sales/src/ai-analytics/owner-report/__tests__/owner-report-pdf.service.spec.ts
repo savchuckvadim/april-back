@@ -86,6 +86,44 @@ const report = (): AiOwnerReportDto => ({
             weeks: [],
             notes: ['Рабочие дни без звонков: 12 октября.'],
         },
+        funnel: {
+            rows: [
+                {
+                    code: 'followup',
+                    label: 'После показа и КП: доработка, решение, оплата',
+                    calls: 46,
+                    advanced: '5 из 46 (11 %)',
+                    undecided: '41 из 46 (89 %)',
+                    refused: '0 из 46 (0 %)',
+                    noContact: '0 из 46 (0 %)',
+                    invoiceAgreed: '1 из 46 (2 %)',
+                },
+            ],
+            chain: null,
+            afterOffer:
+                'Из 46 разговоров после показа и КП 41 (89 %) закончились переносом или «подумаем»; согласие на счёт — 1.',
+            invoice: 'Согласие на счёт прозвучало в 1 разговоре периода.',
+        },
+        crmFunnel: {
+            rows: [{ label: 'Показы по CRM', value: 50, previous: 41 }],
+            conversions: 'Счета к показам — 30 %.',
+            note: 'Отношения событий за период.',
+        },
+        presentations: {
+            intro: 'Показов за период — 50; шаг вперёд после показа — 28 из 50 (56 %).',
+            rows: [
+                { label: 'Показ под задачи клиента', value: '20 из 50 (40 %)' },
+            ],
+            comparison:
+                'Показ под задачи клиента двигает разговор дальше в 59 % случаев против 26 % при шаблонной подаче (20 показов и 30 показов).',
+            sections: [
+                {
+                    label: 'Выявление потребностей',
+                    value: '6,4 из 10 (по 50 показам)',
+                },
+            ],
+            people: null,
+        },
         leaks: [
             {
                 code: 'postponed_no_date',
@@ -161,5 +199,11 @@ describe('OwnerReportPdfService', () => {
         );
         expect(texts).toContain('На что обратить внимание');
         expect(texts).toContain('Как читать отчёт');
+        // Воронка и презентации — новые разделы 09.11.2026.
+        expect(texts).toContain('Воронка и конверсии');
+        expect(texts).toContain('41 из 46 (89 %)');
+        expect(texts).toContain('Воронка по CRM');
+        expect(texts).toContain('Презентации');
+        expect(texts).toContain('против 26 % при шаблонной подаче');
     });
 });

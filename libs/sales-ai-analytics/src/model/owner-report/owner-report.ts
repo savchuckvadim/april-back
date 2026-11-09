@@ -1,4 +1,5 @@
 import { normalizeOwnerReportCalls } from './owner-report.calls';
+import { buildFunnel } from './owner-report.funnel';
 import { buildLeaks } from './owner-report.leaks';
 import {
     buildControlMetrics,
@@ -16,6 +17,7 @@ import {
     buildTypeGroups,
     buildWeeks,
 } from './owner-report.overview';
+import { buildPresentations } from './owner-report.presentations';
 import type {
     OwnerReportCallInput,
     OwnerReportFacts,
@@ -55,6 +57,8 @@ export function buildOwnerReportFacts(
         outcomes: buildOutcomes(calls),
         byTypeGroup: buildTypeGroups(calls),
         weeks,
+        funnel: buildFunnel(calls),
+        presentations: buildPresentations(calls),
         objections: buildObjections(calls),
         issues: buildIssues(calls),
         prices,
