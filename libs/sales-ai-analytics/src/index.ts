@@ -16,6 +16,7 @@ export * from './model/sections.util';
 export * from './model/risk-flags.util';
 export * from './model/pulse';
 export * from './model/agenda';
+export * from './model/score-scale';
 export * from './model/morning-digest';
 
 // Фаза 1b «модель и матрица»: усадка, корзины, матрица менеджер × тип,

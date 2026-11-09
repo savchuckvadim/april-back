@@ -25,6 +25,8 @@ export function toPulseRow(row: DatedLiteRow): PulseCallRow {
         nextStep: row.nextStep,
         riskFlags: row.riskFlags,
         coachingPriority: row.coachingPriority,
+        // Для звонка-образца «С кем поработать»: лучшая оценка, не свежесть.
+        score: row.score,
     };
 }
 

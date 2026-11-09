@@ -38,13 +38,14 @@ export function shortSharePct(share: PulseShortShare | null): number | null {
         : 0;
 }
 
-/** Звонок-пример по id: время и ссылка на разбор. */
+/** Звонок-пример по id: время, ссылка на разбор и оценка. */
 export type PulseCallRefOf = (transcriptionId: string) => AiPulseCallRefDto;
 
 const refWithoutLink: PulseCallRefOf = transcriptionId => ({
     transcriptionId,
     callStartedAt: null,
     link: null,
+    score: null,
 });
 
 export function toPulseDto(

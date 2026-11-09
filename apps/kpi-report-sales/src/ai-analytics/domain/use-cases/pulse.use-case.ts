@@ -6,6 +6,7 @@ import {
     PULSE_DEFAULTS,
     resolveNumberParam,
     toPortalDate,
+    toScore10,
 } from '@lib/sales-ai-analytics';
 import { AI_ANALYTICS_WINDOWS } from '../../constants/ai-analytics.const';
 import { AiPulseDto } from '../../dto/ai-pulse.dto';
@@ -171,20 +172,23 @@ export class PulseUseCase {
                 callReport: settings.callReport,
             }),
         ]);
-        const startedAt = new Map(
-            rows.map(row => [row.transcriptionId, row.callStartedAt]),
-        );
+        const byId = new Map(rows.map(row => [row.transcriptionId, row]));
         return toPulseDto(
             endDate,
             result,
             withPulseAlertLinks(alerts, links),
             shortShare,
-            (transcriptionId: string) => ({
-                transcriptionId,
-                callStartedAt:
-                    startedAt.get(transcriptionId)?.toISOString() ?? null,
-                link: links.get(transcriptionId) ?? null,
-            }),
+            (transcriptionId: string) => {
+                const row = byId.get(transcriptionId);
+                return {
+                    transcriptionId,
+                    callStartedAt: row?.callStartedAt.toISOString() ?? null,
+                    link: links.get(transcriptionId) ?? null,
+                    // Оценка образца уходит витрине: «образец» должен быть
+                    // объясним («8,4 из 10»), а не просто ссылкой.
+                    score: toScore10(row?.score),
+                };
+            },
         );
     }
 

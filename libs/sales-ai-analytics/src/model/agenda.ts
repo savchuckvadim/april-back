@@ -10,6 +10,7 @@ import type {
     AgendaOptions,
     AgendaReasonKind,
 } from './agenda.types';
+import { toScore10 } from './score-scale';
 
 export * from './agenda.types';
 export { AGENDA_DISPUTED_OUTCOME } from './agenda.candidates';
@@ -67,10 +68,6 @@ function selectDiverse(
     }
     return selected.sort(compareCandidates);
 }
-
-/** Общая оценка строки 0–100 → шкала витрины 1–10 с одной цифрой после запятой. */
-const toScore10 = (score: number | null): number | null =>
-    score === null ? null : Math.round(score) / 10;
 
 function toItem(candidate: AgendaCandidate): AgendaItem {
     const { row, quote } = candidate;

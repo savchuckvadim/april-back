@@ -24,6 +24,12 @@ export interface PulseCallRow {
     nextStep: PulseNextStep | null;
     riskFlags: string[];
     coachingPriority: string | null;
+    /**
+     * Общая оценка разбора по шкале lite-строки 0–100 — для выбора
+     * звонка-образца. Поля нет или null — оценка не известна, образцом
+     * такой звонок не станет.
+     */
+    score?: number | null;
 }
 
 export interface PulseWindow {
@@ -42,7 +48,12 @@ export interface PulseManagerRow {
      * менеджером.
      */
     noDateCallIds: string[];
-    /** Свежий звонок окна с договорённостью и датой — образец; нет — null. */
+    /**
+     * Звонок-образец: разобранный звонок окна с договорённостью и датой и
+     * лучшей общей оценкой разбора — не ниже PULSE_DEFAULTS.exemplarMinScore
+     * или выше средней по разобранным звонкам окна (см. pulse-exemplar);
+     * такого нет — null.
+     */
     dateCallId: string | null;
 }
 

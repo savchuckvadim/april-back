@@ -319,3 +319,83 @@ describe('порог длительности разбора (min_duration_sec_b
         expect(result.minDurationSec).toBe(300);
     });
 });
+
+describe('звонок-образец (dateCallId)', () => {
+    const DAY = '2026-09-09';
+    const opts = { ...options, managerMinN: 3 };
+    const exemplarOf = (rows: PulseCallRow[]): string | null =>
+        computePulse(rows, opts).byManager[0]?.dateCallId ?? null;
+
+    it('планка 7 из 10; образец — лучшая оценка среди звонков с датой, а не самый свежий', () => {
+        expect(PULSE_DEFAULTS.exemplarMinScore).toBe(70);
+        const older = withDate('2026-09-08', { score: 72 });
+        const rows = [
+            older,
+            withDate(DAY, { score: 55 }),
+            // без даты — не кандидат, даже с лучшей оценкой
+            noDate(DAY, { score: 95 }),
+        ];
+        expect(exemplarOf(rows)).toBe(older.transcriptionId);
+    });
+
+    it('ниже планки, но выше средней по окну — образец; ниже средней — нет', () => {
+        const strong = withDate(DAY, { score: 50 });
+        // средняя (50 + 40 + 30) / 3 = 40 < 50
+        expect(
+            exemplarOf([
+                strong,
+                noDate(DAY, { score: 40 }),
+                noDate(DAY, { score: 30 }),
+            ]),
+        ).toBe(strong.transcriptionId);
+        const weak = withDate(DAY, { score: 50 });
+        // средняя (50 + 60 + 70) / 3 = 60 > 50
+        expect(
+            exemplarOf([
+                weak,
+                noDate(DAY, { score: 60 }),
+                noDate(DAY, { score: 70 }),
+            ]),
+        ).toBeNull();
+    });
+
+    it('средняя — по разобранным звонкам окна всего отдела, не по строке менеджера', () => {
+        const rows = [
+            withDate(DAY, { score: 50 }),
+            noDate(DAY, { score: 20 }),
+            noDate(DAY, { score: 20 }),
+            // сильный сосед поднимает среднюю окна: (50 + 20 + 20 + 90 × 3) / 6 = 60
+            ...Array.from({ length: 3 }, () =>
+                withDate(DAY, { managerId: 'm2', score: 90 }),
+            ),
+        ];
+        const result = computePulse(rows, opts);
+        expect(
+            result.byManager.map(row => [
+                row.managerId,
+                row.dateCallId !== null,
+            ]),
+        ).toEqual([
+            ['m1', false],
+            ['m2', true],
+        ]);
+    });
+
+    it('при равной оценке — более свежий; без оценок образца нет (свежий с датой не подставляется)', () => {
+        const fresh = withDate('2026-09-10', { score: 80 });
+        expect(
+            exemplarOf([
+                withDate('2026-09-08', { score: 80 }),
+                fresh,
+                noDate(DAY, { score: 80 }),
+            ]),
+        ).toBe(fresh.transcriptionId);
+        expect(
+            exemplarOf([
+                withDate(DAY, { score: null }),
+                withDate(DAY),
+                noDate(DAY),
+            ]),
+        ).toBeNull();
+    });
+});

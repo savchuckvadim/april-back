@@ -1,6 +1,11 @@
 import { registryDefault } from '../params/registry.access';
 import { MetricValue, rateMetric } from './metric';
 import { minDurationSecOf, type MinDurationSecByType } from './pulse-duration';
+import {
+    PULSE_EXEMPLAR_MIN_SCORE,
+    exemplarCallId,
+    meanScoreOf,
+} from './pulse-exemplar';
 import type {
     PulseCallRow,
     PulseManagerRow,
@@ -16,6 +21,7 @@ import { lastWorkdays, previousWorkday, toPortalDate } from './workdays.util';
 // публичный путь `model/pulse` остаётся прежним.
 export * from './pulse.types';
 export * from './pulse-duration';
+export * from './pulse-exemplar';
 export * from './pulse-window';
 
 export const PULSE_DEFAULTS = {
@@ -37,6 +43,12 @@ export const PULSE_DEFAULTS = {
      * два — чтобы разобрать на планёрке, а не читать архив. Не параметр реестра.
      */
     examplesPerManager: 2,
+    /**
+     * Звонок-образец «С кем поработать»: общая оценка разбора не ниже этой
+     * (шкала lite-строки 0–100, то есть 7 из 10) или выше средней по
+     * разобранным звонкам окна — см. pulse-exemplar. Не параметр реестра.
+     */
+    exemplarMinScore: PULSE_EXEMPLAR_MIN_SCORE,
 } as const;
 
 interface DatedRow {
@@ -103,11 +115,15 @@ const newestFirst = (a: DatedRow, b: DatedRow): number =>
 /**
  * Строки менеджеров: порог портала решает и появление строки, и показ доли
  * числом — иначе строка с 5 разборами при пороге 5 пришла бы «мало данных».
- * У строки — звонки-примеры: без даты (разобрать) и с датой (образец).
+ * У строки — звонки-примеры: без даты (разобрать) и образец — звонок с
+ * датой и лучшей оценкой разбора, если она тянет на образец
+ * (exemplarCallId; meanScore — средняя по разобранным звонкам окна всего
+ * отдела).
  */
 function buildByManager(
     analyzed: readonly DatedRow[],
     managerMinN: number,
+    meanScore: number | null,
 ): PulseManagerRow[] {
     return [...groupBy(analyzed, item => item.row.managerId).entries()]
         .filter(([, rows]) => rows.length >= managerMinN)
@@ -122,9 +138,12 @@ function buildByManager(
                     .filter(item => !hasNextStepDate(item.row))
                     .slice(0, PULSE_DEFAULTS.examplesPerManager)
                     .map(item => item.row.transcriptionId),
-                dateCallId:
-                    sorted.find(item => hasNextStepDate(item.row))?.row
-                        .transcriptionId ?? null,
+                dateCallId: exemplarCallId(
+                    sorted
+                        .filter(item => hasNextStepDate(item.row))
+                        .map(item => item.row),
+                    meanScore,
+                ),
             };
         });
 }
@@ -250,6 +269,10 @@ export function computePulse(
                 : 0,
         minDurationSec: minDurationSecOf(null, byType),
         managerMinN,
-        byManager: buildByManager(analyzedInWindow, managerMinN),
+        byManager: buildByManager(
+            analyzedInWindow,
+            managerMinN,
+            meanScoreOf(analyzedInWindow.map(item => item.row)),
+        ),
     };
 }
