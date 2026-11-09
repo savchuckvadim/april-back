@@ -49,8 +49,22 @@ describe('BitrixCore — повтор запроса', () => {
         expect(pause(http(500), 0)).toBeNull();
     });
 
-    it('ошибка без HTTP-ответа (сеть) — не повторяем здесь', () => {
-        expect(pause(new Error('socket hang up'))).toBeNull();
+    // gsr 02.11.2026: сброшенный keep-alive сокет ронял пачку целиком.
+    it('обрыв соединения («socket hang up», ECONNRESET) — короткая пауза и повтор', () => {
+        expect(pause(new Error('socket hang up'))).toBe(
+            profile.connectionResetPauseMs,
+        );
+        expect(
+            pause(
+                Object.assign(new Error('read ECONNRESET'), {
+                    code: 'ECONNRESET',
+                }),
+            ),
+        ).toBe(profile.connectionResetPauseMs);
+    });
+
+    it('прочая сетевая ошибка без HTTP-ответа — не повторяем', () => {
+        expect(pause(new Error('getaddrinfo ENOTFOUND'))).toBeNull();
     });
 
     it('набор временных статусов — ровно серверные 5xx облака', () => {

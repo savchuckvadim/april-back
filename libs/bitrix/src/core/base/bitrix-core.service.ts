@@ -29,6 +29,7 @@ import {
     backgroundCooldownMs,
 } from './bitrix-request-profile';
 import {
+    isBitrixConnectionReset,
     isBitrixQueryLimitExceeded,
     isBitrixTimeout,
     readBitrixTime,
@@ -209,9 +210,9 @@ export class BitrixCore {
     /**
      * Пауза перед повтором или null, если повторять нельзя.
      *
-     * Повторяем три случая: таймаут, превышение лимита запросов и «сервис
-     * недоступен» (503) — пока остались попытки. Остальные ошибки отдаём
-     * вызывающему сразу.
+     * Повторяем: таймаут, обрыв соединения из пула (socket hang up),
+     * превышение лимита запросов и серверные 5xx облака — пока остались
+     * попытки. Остальные ошибки отдаём вызывающему сразу.
      */
     protected resolveRetryPause(
         error: unknown,
@@ -227,6 +228,14 @@ export class BitrixCore {
                     `${profile.timeoutPauseMs / 1000}s...`,
             );
             return profile.timeoutPauseMs;
+        }
+
+        if (isBitrixConnectionReset(error)) {
+            this.logger.warn(
+                `Connection reset on ${method} (socket hang up), retrying in ` +
+                    `${profile.connectionResetPauseMs / 1000}s...`,
+            );
+            return profile.connectionResetPauseMs;
         }
 
         if (isBitrixQueryLimitExceeded(error)) {

@@ -260,6 +260,25 @@ describe('BitrixCore.request', () => {
         expect(calls).toHaveLength(2);
     });
 
+    // gsr 02.11.2026: сервер закрыл простаивавший сокет пула — «socket hang up».
+    it('обрыв соединения у менеджера — один быстрый повтор, вторая попытка проходит', async () => {
+        const reset = Object.assign(new Error('socket hang up'), {
+            code: 'ECONNRESET',
+        });
+        const { core, calls } = makeCore([reset, { result: 1 }]);
+
+        const pending = runAsInteractive('route', () =>
+            core.request<{ result: number }>('crm.deal.get', {}),
+        );
+        await jest.advanceTimersByTimeAsync(
+            BITRIX_REQUEST_PROFILES.interactive.connectionResetPauseMs,
+        );
+        const response = await pending;
+
+        expect(response.data).toEqual({ result: 1 });
+        expect(calls).toHaveLength(2);
+    });
+
     it('500 дважды у менеджера — ошибка наверх после одного повтора', async () => {
         const { core, calls } = makeCore([httpError(500), httpError(500)]);
 

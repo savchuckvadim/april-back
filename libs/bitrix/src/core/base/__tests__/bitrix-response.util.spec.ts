@@ -1,4 +1,5 @@
 import {
+    isBitrixConnectionReset,
     isBitrixAccessDenied,
     isBitrixNotFound,
     isBitrixQueryLimitExceeded,
@@ -102,6 +103,39 @@ describe('разбор ответов Битрикса', () => {
             expect(isBitrixTimeout({ code: 'ECONNRESET' })).toBe(false);
             expect(isBitrixTimeout(null)).toBe(false);
             expect(isBitrixTimeout(undefined)).toBe(false);
+        });
+    });
+
+    describe('isBitrixConnectionReset', () => {
+        it('ECONNRESET и «socket hang up» — обрыв соединения', () => {
+            expect(
+                isBitrixConnectionReset(
+                    Object.assign(new Error('read ECONNRESET'), {
+                        code: 'ECONNRESET',
+                    }),
+                ),
+            ).toBe(true);
+            expect(isBitrixConnectionReset(new Error('socket hang up'))).toBe(
+                true,
+            );
+        });
+
+        it('ответ Битрикса (есть response), таймаут и пустые значения — не обрыв', () => {
+            expect(
+                isBitrixConnectionReset({
+                    message: 'Request failed with status code 500',
+                    response: { status: 500 },
+                }),
+            ).toBe(false);
+            expect(
+                isBitrixConnectionReset(
+                    Object.assign(new Error('timeout of 30000ms exceeded'), {
+                        code: 'ECONNABORTED',
+                    }),
+                ),
+            ).toBe(false);
+            expect(isBitrixConnectionReset(null)).toBe(false);
+            expect(isBitrixConnectionReset(undefined)).toBe(false);
         });
     });
 

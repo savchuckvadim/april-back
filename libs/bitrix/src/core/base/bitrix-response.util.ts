@@ -26,6 +26,30 @@ export const isBitrixTimeout = (error: unknown): boolean => {
     );
 };
 
+/** Коды сети: соединение из пула оборвано до ответа. */
+const CONNECTION_RESET_CODES: ReadonlySet<string> = new Set([
+    'ECONNRESET',
+    'EPIPE',
+]);
+
+/**
+ * Соединение сброшено («socket hang up», ECONNRESET): сервер закрыл
+ * простаивавший keep-alive сокет, а мы взяли его из пула. Это не ответ
+ * Битрикса и не его лимит — запрос, как правило, до портала не дошёл,
+ * поэтому повтор безопасен в той же мере, что и повтор по таймауту
+ * (gsr 02.11.2026, разбор в памяти проекта).
+ */
+export const isBitrixConnectionReset = (error: unknown): boolean => {
+    const e = error as { message?: string; code?: string; response?: unknown };
+    if (e?.response) return false;
+    return (
+        (typeof e?.code === 'string' && CONNECTION_RESET_CODES.has(e.code)) ||
+        (typeof e?.message === 'string' &&
+            (e.message.includes('socket hang up') ||
+                e.message.includes('ECONNRESET')))
+    );
+};
+
 /** Битрикс ответил «превышен лимит запросов» — строкой или JSON-ом. */
 export const isBitrixQueryLimitExceeded = (error: unknown): boolean => {
     const body = (error as AxiosError).response?.data;

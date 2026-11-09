@@ -30,6 +30,8 @@ export interface BitrixRequestProfile {
     busyPauseMs: number;
     /** Пауза перед повтором при превышении лимита запросов, мс. */
     queryLimitPauseMs: number;
+    /** Пауза перед повтором после обрыва соединения (socket hang up), мс. */
+    connectionResetPauseMs: number;
 }
 
 export const BITRIX_REQUEST_PROFILES: Record<
@@ -42,6 +44,7 @@ export const BITRIX_REQUEST_PROFILES: Record<
         timeoutPauseMs: 1_000,
         busyPauseMs: 2_000,
         queryLimitPauseMs: 3_000,
+        connectionResetPauseMs: 500,
     },
     [BITRIX_CALL_CLASS.background]: {
         timeoutMs: 300_000,
@@ -49,6 +52,7 @@ export const BITRIX_REQUEST_PROFILES: Record<
         timeoutPauseMs: 30_000,
         busyPauseMs: 10_000,
         queryLimitPauseMs: 35_000,
+        connectionResetPauseMs: 2_000,
     },
 };
 
@@ -88,11 +92,21 @@ export const backgroundCooldownMs = (processingSec: number | null): number =>
  * maxSockets ограничивает число одновременных соединений с одним порталом:
  * больше лимит Битрикса всё равно не пропустит, а без предела всплеск
  * открыл бы сотни сокетов.
+ *
+ * timeout — простой сокета в пуле: Node закрывает свободное соединение сам,
+ * раньше, чем это сделает сервер Битрикса. Без него простаивавший сокет
+ * закрывал сервер, следующий запрос брал его из пула и падал с
+ * «socket hang up» (gsr 02.11.2026). На активный запрос этот срок не
+ * влияет: его таймаут задаёт профиль вызова (axios переустанавливает его
+ * на время запроса).
  */
+export const BITRIX_AGENT_IDLE_TIMEOUT_MS = 20_000;
+
 const AGENT_OPTIONS = {
     keepAlive: true,
     maxSockets: 32,
     maxFreeSockets: 8,
+    timeout: BITRIX_AGENT_IDLE_TIMEOUT_MS,
 } as const;
 
 export const BITRIX_HTTP_AGENT = new http.Agent(AGENT_OPTIONS);
