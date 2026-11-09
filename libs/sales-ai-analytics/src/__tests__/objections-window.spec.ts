@@ -44,27 +44,30 @@ describe('buildObjectionsSlice: те же звонки, что у матрицы
         ]);
     });
 
-    it('разрыв ряда настройками: звонки раньше дня и без даты отсекаются, как в матрице', () => {
+    it('разрыв ряда настройками: звонки раньше дня и без даты входят в срез и в матрицу с пометкой (09.11.2026)', () => {
         const options = { seriesBreakFrom: '2026-09-05', timeZone: TZ };
         const slice = buildObjectionsSlice(rows, options);
         const matrix = buildManagerTypeMatrix(rows, options);
 
-        expect(slice.n).toBe(2);
-        expect(slice.totals[0].calls).toBe(2);
+        expect(slice.n).toBe(4);
+        expect(slice.totals[0].calls).toBe(4);
         // Ровно те звонки, что вошли в n матрицы.
         expect(matrix.analyzed).toBe(slice.totals[0].calls);
         expect(matrix.excluded.beforeComparable).toBe(2);
+        expect(matrix.managers[0].nBeforeComparable).toBe(2);
         expect(matrix.excluded.noType).toBe(1);
     });
 
-    it('граница по версии разбора: срез режет строки той же функцией, что матрица', () => {
+    it('граница по версии разбора: разборы прежней версии входят и в срез, и в матрицу — с пометкой (09.11.2026)', () => {
         // У строк фикстуры набор versions датирован 2026-09-05.
         const options = { comparableVersionFrom: '2026-09-06', timeZone: TZ };
         const slice = buildObjectionsSlice(rows, options);
         const matrix = buildManagerTypeMatrix(rows, options);
 
-        expect(slice.n).toBe(0);
-        expect(matrix.analyzed).toBe(0);
+        expect(slice.n).toBe(4);
+        expect(matrix.analyzed).toBe(4);
+        expect(matrix.excluded.beforeComparable).toBe(4);
+        expect(matrix.managers[0].nBeforeComparable).toBe(4);
     });
 
     it('границ нет — дата звонка не участвует (прежнее поведение)', () => {

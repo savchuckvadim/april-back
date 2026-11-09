@@ -99,16 +99,18 @@ describe('Ряды досье на настоящих нагрузках нед�
     it('ряд «Месяцы»: разборы месяца не 0 — объём и оценка из снапшота месяца', () => {
         const [month] = series?.months ?? [];
 
+        // Два разбора до границы входят в n с пометкой (09.11.2026).
         expect(month).toMatchObject({
             periodKey: MONTH,
-            n: 20,
+            n: 22,
             nBeforeComparable: 2,
         });
-        // 18 презентаций с баллом с 3 сентября: «прочее» и без балла — вне оценки.
+        // 18 презентаций с баллом с 3 сентября + 2 до границы (09.11.2026 —
+        // входят в оценку с пометкой); «прочее» и без балла — вне оценки.
         expect(month.score).toMatchObject({
             value: 7,
-            n: 18,
-            confidence: { level: 'low' },
+            n: 20,
+            confidence: { level: 'ok' },
         });
         // У месяца признака смешанных версий нет — поле не отдаётся.
         expect(month).not.toHaveProperty('versionsMixed');
@@ -123,7 +125,8 @@ describe('Ряды досье на настоящих нагрузках нед�
             '2026-W37',
             '2026-W38',
         ]);
-        expect(weeks.map(week => week.n)).toEqual([4, 7, 9]);
+        // Первая неделя несёт и два разбора до границы — они в n с пометкой.
+        expect(weeks.map(week => week.n)).toEqual([6, 7, 9]);
         expect(weeks.reduce((sum, week) => sum + week.n, 0)).toBe(month?.n);
         expect(
             weeks.reduce((sum, week) => sum + week.nBeforeComparable, 0),
@@ -147,7 +150,7 @@ describe('Ряды досье на настоящих нагрузках нед�
     it('объём окна для трендов — тот же, что в ряду «Месяцы»', () => {
         const month = monthView(rows);
 
-        expect(windowAnalyzed([month])).toBe(20);
+        expect(windowAnalyzed([month])).toBe(22);
         expect(windowAnalyzed([month])).toBe(analyzedOf(month.payload));
     });
 });
@@ -166,11 +169,11 @@ describe('Месяц старого расчёта (до 30.09.2026, без n и
 
         expect(point).toEqual({
             periodKey: MONTH,
-            n: 20,
+            n: 22,
             nBeforeComparable: 0,
             score: legacyMetric(),
         });
-        expect(windowAnalyzed([view(MONTH, legacy)])).toBe(20);
+        expect(windowAnalyzed([view(MONTH, legacy)])).toBe(22);
     });
 
     it('чужая форма нагрузки: 0 разборов и пустая оценка без выдуманных чисел', () => {

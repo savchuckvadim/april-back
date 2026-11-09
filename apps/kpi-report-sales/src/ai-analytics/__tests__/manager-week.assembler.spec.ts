@@ -116,7 +116,7 @@ describe('buildManagerWeekPayload — неделя менеджера', () => {
 });
 
 describe('Граница сравнимой истории', () => {
-    it('звонки до comparableFrom считаются отдельно и в оценку не идут', () => {
+    it('звонки до comparableFrom входят в n с пометкой nBeforeComparable (09.11.2026)', () => {
         const assembly = input(
             [
                 callRow('old', {
@@ -128,7 +128,7 @@ describe('Граница сравнимой истории', () => {
         );
 
         const payload = assembly.rows[0].payload;
-        expect(payload.n).toBe(1);
+        expect(payload.n).toBe(2);
         expect(payload.nBeforeComparable).toBe(1);
         expect(payload.comparableFrom).toBe('2026-08-31');
     });
@@ -247,7 +247,7 @@ describe('Возражения недели — по тем же звонкам,
             ...overrides,
         });
 
-    it('звонок до границы сравнимости и звонок без типа в срез не попадают', () => {
+    it('звонок до границы сравнимости входит в срез, как и в n; звонок без типа — нет', () => {
         const assembly = input(
             [
                 priced('new'),
@@ -260,15 +260,15 @@ describe('Возражения недели — по тем же звонкам,
         );
 
         const payload = assembly.rows[0].payload;
-        expect(payload.n).toBe(1);
+        expect(payload.n).toBe(2);
         expect(payload.nBeforeComparable).toBe(1);
         expect(payload.objections).toEqual([
             expect.objectContaining({
                 category: 'price',
-                n: 1,
-                calls: 1,
-                handled: 1,
-                handledKnown: 1,
+                n: 2,
+                calls: 2,
+                handled: 2,
+                handledKnown: 2,
             }),
         ]);
     });

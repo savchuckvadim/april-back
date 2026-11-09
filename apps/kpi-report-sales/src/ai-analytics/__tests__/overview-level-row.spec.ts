@@ -120,7 +120,7 @@ describe('Строка обзора: уровень и стаж из паспо�
 });
 
 describe('meta.excludedBeforeComparable', () => {
-    it('разборы раньше comparableFrom считаются отдельно, а не пропадают', () => {
+    it('разборы раньше comparableFrom входят в числа и считаются пометкой (09.11.2026)', () => {
         // callsOf: 11.08…20.08; версия промпта от 15.08 рвёт ряд.
         const rows = [
             ...callsOf('10', 10),
@@ -136,9 +136,9 @@ describe('meta.excludedBeforeComparable', () => {
         );
 
         expect(dto.comparableFrom).toBe('2026-08-15');
-        // 11.08–14.08 — четыре разбора до границы.
+        // 11.08–14.08 — четыре разбора до границы: помечены, но в числах.
         expect(dto.meta.excludedBeforeComparable).toBe(4);
-        expect(dto.meta.analyzedCalls).toBe(7);
+        expect(dto.meta.analyzedCalls).toBe(11);
     });
 
     it('версий нет — граница пуста, исключённых ноль', () => {

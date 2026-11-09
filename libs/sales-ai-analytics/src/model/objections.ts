@@ -1,8 +1,7 @@
 import type { AnalyticsCallLiteRow } from '@lib/call-lib/call-report-analytics/types/analytics-lite.types';
 import { CALL_REPORT_OBJECTION_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-smart.type';
-import { isBeforeComparable, matrixComparability } from './comparable-row';
 import { isBelowMinDuration, minDurationMapOf } from './manager-type-matrix';
-import type { MatrixComparability, MatrixOptions } from './matrix.types';
+import type { MatrixOptions } from './matrix.types';
 import { MetricValue } from './metric';
 import { ratePctMetric } from './metric-pct.util';
 import type { MinDurationSecByType } from './pulse';
@@ -60,11 +59,11 @@ export interface ObjectionsSlice {
 }
 
 /**
- * Опции среза. Границы сравнимости — те же, что у матрицы менеджер × тип
- * (`comparableFrom` / `comparableVersionFrom` / `seriesBreakFrom` +
- * `timeZone`, правило — `comparable-row.ts`): срез, собранный с опциями
- * матрицы периода, считает возражения по тем же звонкам, что и её `n`.
- * Границы не заданы — звонки по дате не отсекаются.
+ * Опции среза. Границы сравнимости (`comparableFrom` /
+ * `comparableVersionFrom` / `seriesBreakFrom` + `timeZone`) принимаются
+ * ради одного набора опций с матрицей менеджер × тип, но с 09.11.2026 на
+ * отбор не влияют: матрица больше не исключает строки до границы (они
+ * входят в n с пометкой), и срез считает возражения по тем же звонкам.
  */
 export interface ObjectionsOptions
     extends Pick<
@@ -113,14 +112,14 @@ type QualityRow = AnalyticsCallLiteRow & { managerId: string };
 
 /**
  * Те же фильтры, что у матрицы менеджер × тип: разбор есть, менеджер и
- * тип звонка известны, звонок не короче порога своего типа и не раньше
- * границы сравнимости. Иначе «N возражений в M звонках» считалось бы по
- * другому набору звонков, чем объём и оценки периода.
+ * тип звонка известны, звонок не короче порога своего типа. Строки до
+ * границы сравнимости входят, как и в матрице (09.11.2026). Иначе
+ * «N возражений в M звонках» считалось бы по другому набору звонков, чем
+ * объём и оценки периода.
  */
 function inQualityLayer(
     row: AnalyticsCallLiteRow,
     byType: MinDurationSecByType,
-    comparability: MatrixComparability,
 ): row is QualityRow {
     return (
         row.analysisPresent &&
@@ -128,19 +127,17 @@ function inQualityLayer(
         row.managerId !== '' &&
         row.callType !== null &&
         row.callType !== '' &&
-        !isBelowMinDuration(row, byType) &&
-        !isBeforeComparable(row, comparability)
+        !isBelowMinDuration(row, byType)
     );
 }
 
 function collect(
     rows: readonly AnalyticsCallLiteRow[],
     byType: MinDurationSecByType,
-    comparability: MatrixComparability,
 ): ObjectionRecord[] {
     const records: ObjectionRecord[] = [];
     for (const row of rows) {
-        if (!inQualityLayer(row, byType, comparability)) continue;
+        if (!inQualityLayer(row, byType)) continue;
         for (const objection of row.objections) {
             records.push({
                 managerId: row.managerId,
@@ -211,8 +208,8 @@ function byCategory(
  * всё прочее и null → other. Возражение без категории →
  * OBJECTION_CATEGORY_UNKNOWN. Звонки — те же, что у матрицы менеджер ×
  * тип: без разбора, без менеджера, без типа, короче порога своего типа
- * (карта `minDurationSecByType`, иначе shortCallSec) и до границы
- * сравнимости (если задана) не участвуют.
+ * (карта `minDurationSecByType`, иначе shortCallSec) не участвуют; строки
+ * до границы сравнимости входят, как и в матрицу (09.11.2026).
  * Чистая детерминированная функция.
  */
 export function buildObjectionsSlice(
@@ -222,7 +219,6 @@ export function buildObjectionsSlice(
     const records = collect(
         rows,
         minDurationMapOf(options.shortCallSec, options.minDurationSecByType),
-        matrixComparability(options),
     );
     const managers = new Map<string, ObjectionRecord[]>();
     for (const record of records) {

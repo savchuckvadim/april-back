@@ -200,7 +200,7 @@ describe('OverviewUseCase: исключения матрицы и порог д�
     });
 
     // Версии по существу (без записи в таблице серий): граница — дата в строке.
-    it('возражения считаются по тем же разборам, что n матрицы: разбор старой версии по существу не идёт', async () => {
+    it('возражения считаются по тем же разборам, что n матрицы: разбор старой версии по существу входит с пометкой (09.11.2026)', async () => {
         const objection: AnalyticsCallLiteRow['objections'][number] = {
             category: 'price',
             quote: 'Дорого',
@@ -227,11 +227,11 @@ describe('OverviewUseCase: исключения матрицы и порог д�
         const dto = await useCase.execute(input, now);
 
         expect(dto.meta).toMatchObject({
-            analyzedCalls: 10,
+            analyzedCalls: 13,
             excludedBeforeComparable: 3,
         });
         const [manager] = dto.objections.byManager;
-        expect(manager?.byCategory.map(item => item.n)).toEqual([10]);
+        expect(manager?.byCategory.map(item => item.n)).toEqual([13]);
     });
 
     it('порог портала 60 с (как у пульса) — те же звонки в оценке', async () => {

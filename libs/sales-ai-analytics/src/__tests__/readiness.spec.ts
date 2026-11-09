@@ -5,9 +5,7 @@ import {
     ReadinessGates,
     ReadinessInput,
     buildReadiness,
-    confidenceForPeriod,
     isRosterConfirmed,
-    metricForPeriod,
     readinessReason,
 } from '../model/readiness';
 import { registryDefault } from '../params/registry.access';
@@ -314,56 +312,5 @@ describe('buildReadiness: счётчик до гейта β (решение А.3
 
         expect(result.betaSource).toBe('data');
         expect(result.betaCountdown).toBeNull();
-    });
-});
-
-describe('confidenceForPeriod и metricForPeriod', () => {
-    it('период до comparableFrom — доверие none с version-changed', () => {
-        const confidence = confidenceForPeriod(
-            120,
-            'rate',
-            '2026-07-01',
-            '2026-08-24',
-        );
-
-        expect(confidence).toEqual({
-            level: 'none',
-            reason: 'version-changed',
-        });
-    });
-
-    it('период после comparableFrom считается по объёму', () => {
-        expect(
-            confidenceForPeriod(120, 'rate', '2026-09-01', '2026-08-24').level,
-        ).toBe('ok');
-    });
-
-    it('без comparableFrom ряд не рвётся', () => {
-        expect(confidenceForPeriod(50, 'score', '2020-01-01', '').level).toBe(
-            'ok',
-        );
-    });
-
-    it('n < 8 — значение наружу не уходит', () => {
-        const metric = metricForPeriod(4.2, 7, 'score', '2026-09-01', '');
-
-        expect(metric.value).toBeNull();
-        expect(metric.confidence).toEqual({
-            level: 'none',
-            reason: 'not-enough-data',
-        });
-    });
-
-    it('разорванный ряд тоже прячет значение', () => {
-        const metric = metricForPeriod(
-            0.42,
-            300,
-            'rate',
-            '2026-07-01',
-            '2026-08-24',
-        );
-
-        expect(metric.value).toBeNull();
-        expect(metric.n).toBe(300);
     });
 });

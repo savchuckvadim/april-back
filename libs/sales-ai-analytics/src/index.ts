@@ -136,7 +136,6 @@ export * from './model/evidence';
 // общая нормализация чисел, факт-чек и шаблонный откат без LLM.
 // Ручка brief появится в следующих волнах — здесь только модель.
 export * from './model/readiness';
-export * from './model/readiness-confidence';
 export * from './model/readiness-window';
 // Фаза 4: ступени «прогноз» (L4) и «рекомендации» (L5) поверх лестницы.
 export * from './model/readiness-phase4';

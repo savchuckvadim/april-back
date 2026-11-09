@@ -30,7 +30,7 @@ import {
 } from './pulse';
 import { AI_ANALYTICS_THRESHOLDS } from './thresholds.const';
 
-/** Правило сравнимости — общий предикат (срез возражений и др.). */
+/** Правило сравнимости — общий предикат (ряды трендов и др.). */
 export {
     effectiveComparableFrom,
     isBeforeComparable,
@@ -87,6 +87,7 @@ type QualityRow = MatrixCallRow & { managerId: string; callType: string };
 
 type Verdict =
     | { kind: 'ok'; row: QualityRow }
+    /** Строка до границы сравнимости: входит в числа с пометкой (09.11.2026). */
     | { kind: 'before'; row: QualityRow }
     | { kind: keyof Omit<MatrixExcluded, 'beforeComparable'> };
 
@@ -105,8 +106,11 @@ const emptyExcluded = (): MatrixExcluded => ({
 });
 
 /**
- * Вердикт строки: сначала фильтры слоя качества, затем сравнимость —
- * по версии разбора и по разрыву ряда настройками (`comparable-row.ts`).
+ * Вердикт строки: сначала фильтры слоя качества, затем сравнимость
+ * (`comparable-row.ts`) — по версии разбора и по разрыву ряда настройками.
+ * С 09.11.2026 строка до границы не исключается, а помечается: такие
+ * разборы входят в числа и оценки (решение владельца: всегда число с
+ * пометкой «часть разборов — по прежним правилам», а не «скрыто»).
  */
 function judge(
     row: MatrixCallRow,
@@ -154,6 +158,8 @@ function classify(
         if (verdict.kind === 'ok') {
             result.ok.push(verdict.row);
         } else if (verdict.kind === 'before') {
+            // Счётчик остался под прежним именем ради витрины: строки входят
+            // в ячейки, а число помеченных показывается рядом с n.
             result.before.push(verdict.row);
             result.excluded.beforeComparable += 1;
         } else {
@@ -200,15 +206,22 @@ const bucketedScore = (rows: readonly QualityRow[]): MetricValue =>
             .map(callScore10),
     );
 
+/**
+ * Строка менеджера: разборы по текущим и по прежним правилам вместе —
+ * числа и оценки по всем, `nBeforeComparable` помечает, сколько из них до
+ * границы сравнимости (09.11.2026; раньше они считались отдельно и в
+ * оценки не шли).
+ */
 function buildManagerRow(
     managerId: string,
     ok: readonly QualityRow[],
     before: readonly QualityRow[],
 ): ManagerMatrixRow {
-    const okByType = groupBy(ok, row => row.callType);
+    const all = [...ok, ...before];
+    const allByType = groupBy(all, row => row.callType);
     const beforeByType = groupBy(before, row => row.callType);
     const byType: ManagerTypeCell[] = unionKeys(
-        okByType,
+        allByType,
         beforeByType,
         compareCallTypes,
     ).map(callType => ({
@@ -216,16 +229,16 @@ function buildManagerRow(
         callType,
         bucket: bucketOfCallType(callType),
         ...buildCellCore(
-            okByType.get(callType) ?? [],
+            allByType.get(callType) ?? [],
             beforeByType.get(callType)?.length ?? 0,
         ),
     }));
     return {
         managerId,
-        n: ok.length,
+        n: all.length,
         nBeforeComparable: before.length,
-        score: bucketedScore(ok),
-        buckets: aggregateBucketScores(toBucketInputs(ok)),
+        score: bucketedScore(all),
+        buckets: aggregateBucketScores(toBucketInputs(all)),
         byType,
     };
 }
@@ -234,28 +247,33 @@ function buildTotals(
     ok: readonly QualityRow[],
     before: readonly QualityRow[],
 ): TypeTotalsCell[] {
-    const okByType = groupBy(ok, row => row.callType);
+    const allByType = groupBy([...ok, ...before], row => row.callType);
     const beforeByType = groupBy(before, row => row.callType);
-    return unionKeys(okByType, beforeByType, compareCallTypes).map(callType => {
-        const rows = okByType.get(callType) ?? [];
-        return {
-            callType,
-            bucket: bucketOfCallType(callType),
-            managers: new Set(rows.map(row => row.managerId)).size,
-            ...buildCellCore(rows, beforeByType.get(callType)?.length ?? 0),
-        };
-    });
+    return unionKeys(allByType, beforeByType, compareCallTypes).map(
+        callType => {
+            const rows = allByType.get(callType) ?? [];
+            return {
+                callType,
+                bucket: bucketOfCallType(callType),
+                managers: new Set(rows.map(row => row.managerId)).size,
+                ...buildCellCore(rows, beforeByType.get(callType)?.length ?? 0),
+            };
+        },
+    );
 }
 
 /**
  * Матрица менеджер × тип звонка за период (план §4.3, §6.3, ТЗ FR-22).
  * В слой качества попадают строки с разбором, менеджером и типом,
  * не короче порога своего типа (карта `minDurationSecByType`, иначе
- * скаляр shortCallSec, иначе 300 с). Строки до границы сравнимости
- * считаются отдельно (nBeforeComparable) и в оценки не смешиваются (§5.4):
+ * скаляр shortCallSec, иначе 300 с). Строки до границы сравнимости —
  * разбор старой версии (дата набора versions раньше `comparableVersionFrom`
  * / прежнего `comparableFrom`; без версий — по дню звонка) либо звонок
- * раньше разрыва ряда настройками (`seriesBreakFrom`, день в TZ портала).
+ * раньше разрыва ряда настройками (`seriesBreakFrom`, день в TZ портала) —
+ * с 09.11.2026 ВХОДЯТ в числа и оценки, а `nBeforeComparable` (и прежний
+ * счётчик `excluded.beforeComparable`) помечает, сколько таких: решение
+ * владельца — всегда число с пометкой «часть разборов — по прежним
+ * правилам», а не «значение скрыто: версия изменилась».
  * Ячейка: n, score (среднее S/10 при n ≥ 8), разделы с relevance > 0,
  * чек-листы, три опорных звонка, versionsMixed. Итоги по типам, корзины
  * менеджера и отдела — той же функцией ядра. Чистая детерминированная
@@ -278,14 +296,15 @@ export function buildManagerTypeMatrix(
             beforeByManager.get(managerId) ?? [],
         ),
     );
+    const all = [...ok, ...before];
     return {
         managers,
         totals: buildTotals(ok, before),
-        buckets: aggregateBucketScores(toBucketInputs(ok)),
-        analyzed: ok.length,
-        noBucket: ok.filter(row => bucketOfCallType(row.callType) === null)
+        buckets: aggregateBucketScores(toBucketInputs(all)),
+        analyzed: all.length,
+        noBucket: all.filter(row => bucketOfCallType(row.callType) === null)
             .length,
-        noColumn: ok.filter(row => !hasTypeColumn(row.callType)).length,
+        noColumn: all.filter(row => !hasTypeColumn(row.callType)).length,
         comparableFrom: effectiveComparableFrom(comparability),
         comparableVersionFrom: comparability.versionFrom,
         seriesBreakFrom: comparability.seriesBreakFrom,

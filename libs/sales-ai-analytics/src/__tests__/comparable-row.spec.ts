@@ -156,16 +156,28 @@ describe('Сравнимость по версии разбора', () => {
         ).toBe(false);
     });
 
-    it('звонок после даты, но разобранный старой версией, — не сравним', () => {
+    it('звонок после даты, но разобранный старой версией, входит в числа с пометкой прежней версии (09.11.2026)', () => {
         const matrix = buildManagerTypeMatrix(
             [reviewed('stale', '2026-09-26', V_OLD)],
             { comparableFrom: NEW_FROM },
         );
 
-        expect(matrix.analyzed).toBe(0);
+        expect(matrix.analyzed).toBe(1);
+        // Счётчик помеченных под прежним именем — для витрины.
+        expect(matrix.excluded.beforeComparable).toBe(1);
         expect(matrix.managers[0]).toEqual(
-            expect.objectContaining({ n: 0, nBeforeComparable: 1 }),
+            expect.objectContaining({ n: 1, nBeforeComparable: 1 }),
         );
+        expect(matrix.managers[0].byType[0]).toEqual(
+            expect.objectContaining({ n: 1, nBeforeComparable: 1 }),
+        );
+        // Сам предикат прежней версии остаётся — им и ставится пометка.
+        expect(
+            isBeforeComparable(
+                reviewed('stale', '2026-09-26', V_OLD),
+                matrixComparability({ comparableFrom: NEW_FROM }),
+            ),
+        ).toBe(true);
     });
 
     it('период из одних старых разборов даёт свою дату сравнимости — в оценке все разборы', () => {
@@ -179,14 +191,15 @@ describe('Сравнимость по версии разбора', () => {
         expect(matrix.analyzed).toBe(9);
         expect(matrix.excluded.beforeComparable).toBe(0);
         expect(matrix.managers[0].byType[0].score.value).not.toBeNull();
-        // прежнее правило (день звонка против границы) опустошало период
-        expect(
-            buildManagerTypeMatrix(august, { seriesBreakFrom: boundary })
-                .analyzed,
-        ).toBe(0);
+        // Разрыв настройками тоже не опустошает период: строки помечены.
+        const broken = buildManagerTypeMatrix(august, {
+            seriesBreakFrom: boundary,
+        });
+        expect(broken.analyzed).toBe(9);
+        expect(broken.managers[0].nBeforeComparable).toBe(9);
     });
 
-    it('один переразобранный новой версией звонок не опустошает период', () => {
+    it('один переразобранный новой версией звонок двигает границу, но старые разборы остаются в числах с пометкой', () => {
         const period = [...augustOld(8), reviewed('re', '2026-08-15', V_NEW)];
         const boundary = periodBoundary(period);
         const matrix = buildManagerTypeMatrix(period, {
@@ -194,15 +207,16 @@ describe('Сравнимость по версии разбора', () => {
         });
 
         expect(boundary).toBe(NEW_FROM);
-        expect(matrix.analyzed).toBe(1);
+        expect(matrix.analyzed).toBe(9);
         expect(matrix.managers[0].byType[0]).toEqual(
-            expect.objectContaining({ n: 1, nBeforeComparable: 8 }),
+            expect.objectContaining({ n: 9, nBeforeComparable: 8 }),
         );
-        // прежнее правило: все звонки периода раньше 25.09 → «разборов нет»
+        expect(matrix.managers[0].byType[0].score.value).not.toBeNull();
+        // Разрыв настройками: все звонки раньше 25.09 — в числах, все помечены.
         expect(
             buildManagerTypeMatrix(period, { seriesBreakFrom: boundary })
-                .analyzed,
-        ).toBe(0);
+                .managers[0],
+        ).toEqual(expect.objectContaining({ n: 9, nBeforeComparable: 9 }));
     });
 
     /**
@@ -260,9 +274,12 @@ describe('Строки без версий — прежнее поведение
             { comparableFrom: NEW_FROM },
         );
 
-        expect(matrix.analyzed).toBe(1);
+        // Три строки до границы — по прежним правилам: входят в числа с пометкой.
+        expect(matrix.analyzed).toBe(4);
         expect(matrix.excluded.beforeComparable).toBe(3);
-        expect(matrix.managers[0].byType[0].evidenceCallIds.best).toBe('new');
+        expect(matrix.managers[0]).toEqual(
+            expect.objectContaining({ n: 4, nBeforeComparable: 3 }),
+        );
     });
 
     it('день звонка строки без версий берётся в TZ портала', () => {
@@ -275,19 +292,20 @@ describe('Строки без версий — прежнее поведение
         ];
 
         expect(
-            buildManagerTypeMatrix(edge, { comparableFrom: NEW_FROM }).analyzed,
-        ).toBe(1);
+            buildManagerTypeMatrix(edge, { comparableFrom: NEW_FROM })
+                .managers[0].nBeforeComparable,
+        ).toBe(0);
         expect(
             buildManagerTypeMatrix(edge, {
                 comparableFrom: NEW_FROM,
                 timeZone: 'UTC',
-            }).analyzed,
-        ).toBe(0);
+            }).managers[0].nBeforeComparable,
+        ).toBe(1);
     });
 });
 
 describe('Разрыв ряда настройками — по дню звонка', () => {
-    it('новая версия не спасает звонок до разрыва, старая — не топит звонок после', () => {
+    it('новая версия не спасает звонок до разрыва от пометки, старая — не метит звонок после; оба в числах', () => {
         const matrix = buildManagerTypeMatrix(
             [
                 reviewed('before-break', '2026-09-18', V_NEW),
@@ -296,14 +314,26 @@ describe('Разрыв ряда настройками — по дню звон�
             { seriesBreakFrom: SETTINGS_BREAK },
         );
 
-        expect(matrix.analyzed).toBe(1);
+        expect(matrix.analyzed).toBe(2);
         expect(matrix.excluded.beforeComparable).toBe(1);
-        expect(matrix.managers[0].byType[0].evidenceCallIds.best).toBe(
-            'after-break',
+        expect(matrix.managers[0]).toEqual(
+            expect.objectContaining({ n: 2, nBeforeComparable: 1 }),
         );
+        expect(
+            isBeforeComparable(
+                reviewed('before-break', '2026-09-18', V_NEW),
+                matrixComparability({ seriesBreakFrom: SETTINGS_BREAK }),
+            ),
+        ).toBe(true);
+        expect(
+            isBeforeComparable(
+                reviewed('after-break', '2026-09-22', V_OLD),
+                matrixComparability({ seriesBreakFrom: SETTINGS_BREAK }),
+            ),
+        ).toBe(false);
     });
 
-    it('оба основания вместе: строка до любой из границ — вне оценки', () => {
+    it('оба основания вместе: строка до любой из границ помечена, все строки в числах', () => {
         const matrix = buildManagerTypeMatrix(
             [
                 reviewed('fresh', '2026-09-22', V_NEW),
@@ -316,8 +346,9 @@ describe('Разрыв ряда настройками — по дню звон�
             },
         );
 
-        expect(matrix.analyzed).toBe(1);
+        expect(matrix.analyzed).toBe(3);
         expect(matrix.excluded.beforeComparable).toBe(2);
+        expect(matrix.managers[0].nBeforeComparable).toBe(2);
         expect(matrix).toEqual(
             expect.objectContaining({
                 comparableFrom: NEW_FROM,

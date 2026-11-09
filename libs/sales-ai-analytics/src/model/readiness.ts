@@ -330,8 +330,8 @@ export function buildReadiness(
 }
 
 /**
- * Доверие к значению за период и метрика с ним — в соседнем файле
- * `model/readiness-confidence.ts` (правила показа одного числа отделены
- * от правил режимов витрины).
+ * Доверие к значению одного числа — по объёму (`confidenceFor` в
+ * `model/metric.ts`). Скрытие значения «версия изменилась» убрано
+ * 09.11.2026 (решение владельца: всегда число, разборы прежней версии
+ * входят в числа с пометкой — `nBeforeComparable` матрицы).
  */
-export { confidenceForPeriod, metricForPeriod } from './readiness-confidence';
