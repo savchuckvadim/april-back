@@ -178,6 +178,9 @@ export class EventReportTaskFlowService {
     /** Удалённые лиды из окружения отчёта — см. {@link readMissingLeads}. */
     private missingLeadIds: ReadonlySet<number> = new Set();
 
+    /** Закрытие текущей задачи уже в пачке — {@link queueClose} идемпотентен. */
+    private closeQueued = false;
+
     /**
      * Проверяет, живы ли лиды, которые новая задача унаследует в
      * `UF_CRM_TASK`. Удалённый лид в привязках ломает задачу тихо: она
@@ -239,6 +242,33 @@ export class EventReportTaskFlowService {
         }
     }
 
+    /**
+     * Закрытие текущей задачи — ПЕРВЫМ в пачке, до команд сделок.
+     *
+     * Если сделка в том же отчёте уходит в финальную стадию (отказ,
+     * извинения, продажа), Битрикс сам завершает её открытые дела вместе с
+     * задачей. Пока закрытие стояло после сделок, наша команда приходила
+     * второй и получала «Действие над задачей не разрешено» — задача
+     * закрыта, но в Telegram летела тревога (garant 06.11 и 09.11.2026,
+     * совпадение до секунды на каждой проверенной задаче).
+     *
+     * Повторный вызов ничего не добавляет: {@link queue} зовёт этот метод
+     * сам, на случай если сценарий не вызвал его раньше.
+     */
+    queueClose(ctx: EventReportContext): void {
+        if (this.closeQueued) return;
+        this.closeQueued = true;
+        const closingTaskId = this.closingTaskId(ctx);
+        if (!closingTaskId) return;
+        // Итог чек-листа — комментарием в самой задаче ДО закрытия:
+        // в закрытой задаче менеджер видит, что именно он подтвердил.
+        this.queueChecklistSummaryComment(ctx, closingTaskId);
+        this.bitrix.batch.task.complete(
+            `complete_task_${closingTaskId}`,
+            closingTaskId,
+        );
+    }
+
     queue(ctx: EventReportContext, deals: DealFlowResult): void {
         const currentTaskId = ctx.currentTask?.id
             ? Number(ctx.currentTask.id)
@@ -265,16 +295,8 @@ export class EventReportTaskFlowService {
             return;
         }
 
-        const closingTaskId = this.closingTaskId(ctx);
-        if (closingTaskId) {
-            // Итог чек-листа — комментарием в самой задаче ДО закрытия:
-            // в закрытой задаче менеджер видит, что именно он подтвердил.
-            this.queueChecklistSummaryComment(ctx, closingTaskId);
-            this.bitrix.batch.task.complete(
-                `complete_task_${closingTaskId}`,
-                closingTaskId,
-            );
-        }
+        // Обычно уже в пачке: сценарий зовёт queueClose до сделок.
+        this.queueClose(ctx);
 
         if (ctx.isPlanned) {
             const description = buildEventTaskDescription({

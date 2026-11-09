@@ -106,14 +106,20 @@ const flushChunk = (): IBitrixBatchResponseResult =>
  */
 const mockKpiQueuesIntoBuffer = { value: true };
 
+/** Порядок вызовов flow-сервисов: закрытие задачи обязано идти до сделок. */
+const mockFlowOrder: string[] = [];
+
 jest.mock('../services/entity/event-report-entity-flow.service', () => ({
     EventReportEntityFlowService: class {
-        queue(): void {}
+        queue(): void {
+            mockFlowOrder.push('entity');
+        }
     },
 }));
 jest.mock('../services/deal/event-report-deal-flow.service', () => ({
     EventReportDealFlowService: class {
         queue(): { baseDealId: null } {
+            mockFlowOrder.push('deal');
             return { baseDealId: null };
         }
     },
@@ -130,7 +136,12 @@ jest.mock('../services/task/event-report-task-flow.service', () => ({
         readMissingLeads(): Promise<void> {
             return Promise.resolve();
         }
-        queue(): void {}
+        queueClose(): void {
+            mockFlowOrder.push('task-close');
+        }
+        queue(): void {
+            mockFlowOrder.push('task');
+        }
         notifyTransfer(): Promise<void> {
             return Promise.resolve();
         }
@@ -189,6 +200,7 @@ describe('EventReportUseCase — ответ основного батча дое
     // Кейс с пустым буфером снимает флаг у себя внутри.
     beforeEach(() => {
         mockKpiQueuesIntoBuffer.value = true;
+        mockFlowOrder.length = 0;
     });
 
     // Снимаем шпиона за настоящим буфером (ставит только кейс с пустым
@@ -285,6 +297,24 @@ describe('EventReportUseCase — ответ основного батча дое
         domain: 'portal.bitrix24.ru',
         operationId: 'op-1',
     } as unknown as Parameters<EventReportUseCase['execute']>[0];
+
+    /*
+     * garant 06.11 и 09.11.2026: сделка, ушедшая в финал, закрывала задачу
+     * раньше нашей команды — «Действие над задачей не разрешено».
+     */
+    it('закрытие текущей задачи встаёт в пачку раньше команд сделок', async () => {
+        const { useCase } = makeUseCase();
+
+        await useCase.execute(dto);
+
+        expect(mockFlowOrder.indexOf('task-close')).toBeGreaterThanOrEqual(0);
+        expect(mockFlowOrder.indexOf('task-close')).toBeLessThan(
+            mockFlowOrder.indexOf('entity'),
+        );
+        expect(mockFlowOrder.indexOf('task-close')).toBeLessThan(
+            mockFlowOrder.indexOf('deal'),
+        );
+    });
 
     it("в координатор уезжает ответ flush'а буфера, а не пустой хвостовой вызов", async () => {
         const { useCase, dispatch, batchCalls } = makeUseCase();

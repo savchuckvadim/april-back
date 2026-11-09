@@ -123,6 +123,9 @@ export class EventReportUseCase {
 
         // dealFlow сам выключается для leadOnly (ctx.isDealFlow), возврат в
         // ТМЦ — тоже про движение сделок, поэтому гейтится стратегией явно.
+        // Закрытие текущей задачи — до команд сделок: сделка, ушедшая в
+        // финал, иначе закрывала задачу раньше нас (см. queueClose).
+        taskFlow.queueClose(ctx);
         entityFlow.queue(ctx);
         const deals = dealFlow.queue(ctx);
         taskFlow.queue(ctx, deals);

@@ -339,3 +339,56 @@ describe('EventReportTaskFlowService — DESCRIPTION новой задачи', (
         expect(fields.DESCRIPTION_IN_BBCODE).toBeUndefined();
     });
 });
+
+/*
+ * garant 06.11 и 09.11.2026: закрытие задачи стояло в пачке после команд
+ * сделок; сделка, ушедшая в финал, закрывала задачу раньше нас — и наш
+ * complete получал «Действие над задачей не разрешено».
+ */
+describe('EventReportTaskFlowService — закрытие отдельным шагом', () => {
+    const closingCtx = () =>
+        makeCtx({ currentTask: { id: 900 }, isFail: true, isPlanned: false });
+
+    it('queueClose ставит закрытие сразу, queue второй раз его не добавляет', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new EventReportTaskFlowService(
+            bitrix as never,
+            makePortal() as never,
+        );
+        const ctx = closingCtx();
+
+        service.queueClose(ctx);
+        expect(calls.map(c => c.method)).toEqual(['task.complete']);
+
+        service.queue(ctx, deals);
+        expect(
+            calls.filter(c => c.method === 'task.complete').map(c => c.cmd),
+        ).toEqual(['complete_task_900']);
+    });
+
+    it('без отдельного вызова queue закрывает сам — старые сценарии не ломаются', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new EventReportTaskFlowService(
+            bitrix as never,
+            makePortal() as never,
+        );
+
+        service.queue(closingCtx(), deals);
+
+        expect(calls.filter(c => c.method === 'task.complete')).toHaveLength(1);
+    });
+
+    it('перенос задачи не закрывает — queueClose ничего не ставит', () => {
+        const { bitrix, calls } = makeBitrix();
+        const service = new EventReportTaskFlowService(
+            bitrix as never,
+            makePortal() as never,
+        );
+
+        service.queueClose(
+            makeCtx({ currentTask: { id: 900 }, isExpired: true }),
+        );
+
+        expect(calls).toEqual([]);
+    });
+});

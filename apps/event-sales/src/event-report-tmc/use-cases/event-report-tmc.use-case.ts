@@ -107,6 +107,9 @@ export class EventReportTmcUseCase {
         // Легаси: до батча — лишние открытые сделки менеджера по компании.
         const closed = await closeOthers.apply(ctx);
 
+        // Закрытие текущей задачи — до команд сделок: сделка, ушедшая в
+        // финал, иначе закрывала задачу раньше нас (см. queueClose).
+        taskFlow.queueClose(ctx);
         entityFlow.queue(ctx);
         const deals = tmcDealFlow.queue(ctx);
         taskFlow.queue(ctx, deals);
