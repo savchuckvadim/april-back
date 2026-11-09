@@ -71,7 +71,7 @@ export interface ReanalysisCostEstimate {
     message: string;
 }
 
-/** Нагрузка записи-статуса прогона (обновляется каждые N звонков). */
+/** Нагрузка записи-статуса прогона (обновляется после каждого звонка). */
 export interface ReanalysisRunStatus {
     domain: string;
     from: string;
@@ -97,6 +97,23 @@ export interface ReanalysisRunStatus {
     /** jobId поставленного продолжения; null — продолжение не нужно. */
     continuedWith: string | null;
     estimate: ReanalysisCostEstimate | null;
+    /**
+     * Всего звонков прогона: сделано с начала плюс осталось на старте
+     * последней части — знаменатель «переразобрано N из M». Нет у записей
+     * до 09.11.2026.
+     */
+    total?: number;
+    /** Чистое время обработки звонков с начала прогона, мс — для «осталось». */
+    processingMs?: number;
+    /** Оценка оставшегося времени, минут; null — ещё нечем оценить. */
+    etaMinutes?: number | null;
+    /** Сколько звонков разбирается одновременно (после серии сбоев — один). */
+    concurrency?: number;
+    /**
+     * Последняя часть остановлена серией сбоев подряд: прогон НЕ закончен,
+     * продолжение не ставилось — нужен повторный запуск (повтор безопасен).
+     */
+    stopped?: boolean;
 }
 
 export const REANALYSIS_DEFAULTS = {
@@ -104,8 +121,14 @@ export const REANALYSIS_DEFAULTS = {
     quota: 300,
     /** Бюджет времени части — 45 минут (как у test-retest). */
     timeBudgetMs: 45 * 60 * 1000,
-    /** Статус обновляется каждые N обработанных звонков. */
-    statusEvery: 10,
+    /**
+     * Звонков на портал одновременно (решение владельца 09.11.2026); после
+     * `serialAfterFailures` сбоев подряд — по одному до конца части.
+     */
+    concurrency: 3,
+    serialAfterFailures: 3,
+    /** Столько сбоев подряд — модель или Битрикс лежат: часть останавливается. */
+    stopAfterFailures: 8,
     /** Окно записей для средних токенов оценки dryRun, дней. */
     estimateLookbackDays: 30,
     /** Пояс дат портала по умолчанию. */

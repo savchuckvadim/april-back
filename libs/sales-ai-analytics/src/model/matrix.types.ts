@@ -54,9 +54,11 @@ export interface MatrixCellCore {
     /** Разобранных сравнимых звонков (после всех фильтров). */
     n: number;
     /**
-     * Строк до границы сравнимости: разбор старой версии (дата набора
+     * Из n — строк до границы сравнимости: разбор старой версии (дата набора
      * versions раньше границы версий) или звонок раньше разрыва ряда
-     * настройками; строка без версий — по дню звонка, без даты — сюда же.
+     * настройками; без версий — по дню звонка, без даты — сюда же. С
+     * 09.11.2026 они входят в n и в оценки: это только пометка «часть
+     * разборов — по прежним правилам».
      */
     nBeforeComparable: number;
     /** Среднее weightedScore/10 (шкала 1–10) при n ≥ 8, иначе none. */
@@ -92,6 +94,7 @@ export interface TypeTotalsCell extends MatrixCellCore {
 export interface ManagerMatrixRow {
     managerId: string;
     n: number;
+    /** Из n — строк до границы сравнимости (входят в числа, пометка). */
     nBeforeComparable: number;
     /** Среднее по звонкам с корзиной (other / irrelevant не участвуют). */
     score: MetricValue;
@@ -105,6 +108,12 @@ export interface MatrixExcluded {
     noManager: number;
     noType: number;
     short: number;
+    /**
+     * Строк до границы сравнимости (версия разбора или разрыв настройками).
+     * С 09.11.2026 они НЕ исключаются — входят в ячейки с пометкой
+     * `nBeforeComparable`; счётчик остался под прежним именем ради витрины
+     * (`meta.excludedBeforeComparable` показывает число помеченных).
+     */
     beforeComparable: number;
 }
 

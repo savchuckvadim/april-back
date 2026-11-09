@@ -249,7 +249,7 @@ describe('buildManagerTypeMatrix', () => {
         expect(partial.managers[0].byType[0].versionsMixed).toBe(true);
     });
 
-    it('разрыв ряда настройками отсекает звонки до даты: считаются отдельно, в оценки не входят', () => {
+    it('разрыв ряда настройками помечает звонки до даты: входят в числа и оценки с пометкой (09.11.2026)', () => {
         const cut = buildManagerTypeMatrix(
             [...rows, liteRow({ transcriptionId: 'nd', callStartedAt: null })],
             { seriesBreakFrom: '2026-09-05' },
@@ -260,30 +260,31 @@ describe('buildManagerTypeMatrix', () => {
         expect(cut.excluded.beforeComparable).toBe(4);
         const cutM1 = cut.managers[0];
         // 3 холодных 1 сентября + строка nd без даты (менеджер m1 по умолчанию)
-        expect(cutM1.n).toBe(10);
+        // — помечены, но в числах: n = 10 сравнимых + 4 помеченных.
+        expect(cutM1.n).toBe(14);
         expect(cutM1.nBeforeComparable).toBe(4);
         expect(cutM1.byType[0]).toEqual(
             expect.objectContaining({
                 callType: 'cold',
-                n: 0,
+                n: 3,
                 nBeforeComparable: 3,
             }),
         );
         expect(cutM1.byType[1]).toEqual(
             expect.objectContaining({
                 callType: 'presentation',
-                n: 10,
+                n: 11,
                 nBeforeComparable: 1,
             }),
         );
-        expect(cutM1.byType[1].score.value).toBeCloseTo(7.25, 9);
-        expect(cutM1.buckets[0].n).toBe(0);
+        expect(cutM1.byType[1].score.n).toBe(11);
+        expect(cutM1.buckets[0].n).toBe(3);
         expect(cut.totals[0]).toEqual(
             expect.objectContaining({
                 callType: 'cold',
-                n: 0,
+                n: 3,
                 nBeforeComparable: 3,
-                managers: 0,
+                managers: 1,
             }),
         );
         // без границ строка без даты — обычная сравнимая строка

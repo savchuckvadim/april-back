@@ -142,7 +142,7 @@ export class AiOverviewDto {
     @ApiProperty({
         description: 'Версия кода расчёта (semver).',
         type: String,
-        example: 'sam-1.0.0',
+        example: 'sam-1.1.0',
     })
     calcVersion: string;
 

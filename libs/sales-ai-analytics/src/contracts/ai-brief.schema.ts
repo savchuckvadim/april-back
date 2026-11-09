@@ -4,8 +4,9 @@
  * 300 строк; потребитель — `VibeCodeClient.structuredCompletionWithUsage`
  * (`Record<string, unknown>`).
  *
- * Модель пишет заголовок и буллеты двух групп — изменения и фокус.
- * Действия в схему не входят: их выводят правила из пакета фактов.
+ * Модель пишет заголовок и буллеты одной группы — изменения. Фокус «на
+ * кого смотреть» и действия в схему не входят: их выводят правила из
+ * пакета фактов (фокус — заголовок карточки «Внимания» как есть).
  * Дополнительные поля запрещены — всё, что не описано, отбрасывается
  * `validateBriefPayload`. Только константы — без DI.
  */
@@ -15,9 +16,11 @@ import {
     AI_BRIEF_TONES,
 } from './ai-brief.contract';
 
-/** Буллетов в ответе модели: сумма лимитов её групп. */
-export const AI_BRIEF_MODEL_BULLETS =
-    AI_BRIEF_LIMITS.groups.change + AI_BRIEF_LIMITS.groups.focus;
+/** Буллетов в ответе модели: сумма лимитов её групп (сейчас — изменения). */
+export const AI_BRIEF_MODEL_BULLETS = AI_BRIEF_MODEL_GROUPS.reduce(
+    (sum, group) => sum + AI_BRIEF_LIMITS.groups[group],
+    0,
+);
 
 export const AI_BRIEF_JSON_SCHEMA: Record<string, unknown> = {
     type: 'object',
@@ -50,14 +53,16 @@ export const AI_BRIEF_JSON_SCHEMA: Record<string, unknown> = {
                         description:
                             'Буллет до 30 слов; каждое число — из пакета ' +
                             'фактов (значение, прошлый период, изменение, ' +
-                            'норма или план).',
+                            'норма или план) и пишется цифрами, как в ' +
+                            'пакете; числа словами не допускаются.',
                     },
                     group: {
                         type: 'string',
                         enum: [...AI_BRIEF_MODEL_GROUPS],
                         description:
-                            'Группа: change — что изменилось, focus — на ' +
-                            'кого смотреть.',
+                            'Группа: change — что изменилось. «На кого ' +
+                            'смотреть» и действия добавляются отдельно по ' +
+                            'фактам пакета — их не писать.',
                     },
                     managerId: {
                         type: 'string',

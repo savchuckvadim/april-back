@@ -85,7 +85,8 @@ export interface FixtureOptions {
     records?: Record<string, unknown>[];
     allowedUserIds?: number[] | null;
     recent?: { tokens_count: number; price: number }[];
-    rerun?: 'ok' | 'null' | 'throw';
+    /** deferred — ответ модели держится до `release()` (проверка одновременности). */
+    rerun?: 'ok' | 'null' | 'throw' | 'deferred';
 }
 
 interface KeyFilter {
@@ -138,6 +139,13 @@ export function makeUseCase(options: FixtureOptions = {}) {
     const transcriptionStore = {
         findDoneInPeriodLite: jest.fn().mockResolvedValue(options.rows ?? []),
     };
+    const okOutcome = (transcriptionId: string) => ({
+        row: pipelineRow(transcriptionId),
+        dto: { ...analysis(60, null), usage: USAGE },
+        usage: { tokens_count: 1200, price: 1.8 },
+    });
+    /** Отложенные ответы модели (rerun: 'deferred'). */
+    const pending: Array<() => void> = [];
     const rerunService = {
         rerun: jest
             .fn()
@@ -146,13 +154,22 @@ export function makeUseCase(options: FixtureOptions = {}) {
                     if (options.rerun === 'throw')
                         return Promise.reject(new Error('модель упала'));
                     if (options.rerun === 'null') return Promise.resolve(null);
-                    return Promise.resolve({
-                        row: pipelineRow(transcriptionId),
-                        dto: { ...analysis(60, null), usage: USAGE },
-                        usage: { tokens_count: 1200, price: 1.8 },
-                    });
+                    if (options.rerun === 'deferred') {
+                        return new Promise(resolve => {
+                            pending.push(() =>
+                                resolve(okOutcome(transcriptionId)),
+                            );
+                        });
+                    }
+                    return Promise.resolve(okOutcome(transcriptionId));
                 },
             ),
+    };
+    /** Отдать модели все отложенные ответы; возвращает их число. */
+    const release = (): number => {
+        const batch = pending.splice(0);
+        batch.forEach(resolve => resolve());
+        return batch.length;
     };
     const settingsService = {
         resolve: jest.fn().mockResolvedValue({
@@ -196,5 +213,13 @@ export function makeUseCase(options: FixtureOptions = {}) {
         rerunService,
         rerunCall,
         queueDispatcher,
+        release,
     };
 }
+
+/** Дать отработать очереди микрозадач и таймерам ввода-вывода. */
+export const flush = async (): Promise<void> => {
+    for (let i = 0; i < 3; i += 1) {
+        await new Promise<void>(resolve => setImmediate(resolve));
+    }
+};

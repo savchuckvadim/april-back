@@ -202,7 +202,7 @@ describe('SnapshotPipelineService — раннер ночного конвейе
             calendar: DEFAULT_WORK_CALENDAR,
             registry: { portal: { kappa_star: 30 } },
             paramsVersion: 'pv-1',
-            calcVersion: 'sam-1.0.0',
+            calcVersion: 'sam-1.1.0',
             comparableFrom: '2026-06-01',
             managerIds: [10, 20],
             now: NOW,

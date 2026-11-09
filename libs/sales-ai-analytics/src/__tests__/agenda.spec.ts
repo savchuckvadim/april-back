@@ -216,7 +216,8 @@ describe('buildAgenda', () => {
             'Низкая оценка звонка: 3,5 из 10, слабее всего — «Работа по цене»: 2 из 10',
         );
         expect(item.quote).toBe('Ну дорого так дорого');
-        expect(item.score).toBe(35);
+        // Наружу — шкала витрины 1–10, внутри строки — 0–100.
+        expect(item.score).toBe(3.5);
         expect(buildAgenda([call('L2', 'm1', { score: 41 })])[0].kind).toBe(
             'section',
         );
@@ -237,7 +238,7 @@ describe('buildAgenda', () => {
         expect(item.charOffset).toBe(
             RISK_TEXT.indexOf('Ладно, тогда до свидания'),
         );
-        expect(item.score).toBe(60);
+        expect(item.score).toBe(6);
     });
 
     it('отменённые флаги и флаги без цитаты — не риск (звонок уходит в запасные причины)', () => {

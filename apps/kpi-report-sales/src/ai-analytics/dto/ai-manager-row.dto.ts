@@ -226,7 +226,9 @@ export class AiManagerRowDto extends AiManagerRowTenureDto {
     callsTotal: number;
 
     @ApiProperty({
-        description: 'Разобранных сравнимых звонков менеджера за период.',
+        description:
+            'Разобранных звонков менеджера за период в слое качества (с ' +
+            '09.11.2026 включая разборы по прежним правилам — с пометкой).',
         type: Number,
         example: 62,
     })

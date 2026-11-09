@@ -135,13 +135,16 @@ export const AI_BRIEF_BULLET_GROUPS = ['change', 'focus', 'action'] as const;
 export type AiBriefBulletGroup = (typeof AI_BRIEF_BULLET_GROUPS)[number];
 
 /**
- * Группы, которые пишет нейросеть. Действия в её ответ не входят: они
- * всегда выводятся правилами из пакета фактов (`actionBullets`), чтобы
- * ни одно действие не появилось без факта за ним.
+ * Группы, которые пишет нейросеть, — только «что изменилось». Действия в
+ * её ответ не входят: они всегда выводятся правилами из пакета фактов
+ * (`actionBullets`), чтобы ни одно действие не появилось без факта за
+ * ним. Фокус «на кого смотреть» с 09.11.2026 тоже не пишется моделью, а
+ * берётся из фактов фокуса как есть (`focusBullets`): заголовок карточки
+ * «Внимания» уже написан словами, а пересказ моделью искажал смысл
+ * («Менеджер разобрал два звонка из двух» — звонки разбирает AI).
  */
 export const AI_BRIEF_MODEL_GROUPS = [
     'change',
-    'focus',
 ] as const satisfies readonly AiBriefBulletGroup[];
 export type AiBriefModelGroup = (typeof AI_BRIEF_MODEL_GROUPS)[number];
 
@@ -213,9 +216,10 @@ export type AiBriefLimits = typeof AI_BRIEF_LIMITS;
 
 /**
  * Версия промпта резюме; входит в ключ кэша, смена рвёт сравнимость
- * резюме между периодами. 2.0.0 — группы буллетов и прошлый период.
+ * резюме между периодами. 2.0.0 — группы буллетов и прошлый период;
+ * 2.1.0 — модель пишет только изменения и числа цифрами (09.11.2026).
  */
-export const AI_BRIEF_PROMPT_VERSION = 'brief-2.0.0';
+export const AI_BRIEF_PROMPT_VERSION = 'brief-2.1.0';
 
 /**
  * Стоп-слова резюме: сравниваются по корню в нижнем регистре.
@@ -264,6 +268,16 @@ export const AI_BRIEF_DROP_REASONS = {
     unknownFactRef: 'unknown-fact-ref',
     /** Число в тексте отсутствует в пакете фактов. */
     numberNotInPack: 'number-not-in-pack',
+    /**
+     * Число написано словами («четыре целых две десятых процента»): такое
+     * число факт-чек сверить не может, а модель так обходила проверку.
+     */
+    numbersInWords: 'numbers-in-words',
+    /**
+     * Буллет изменений целиком о факте фокуса: карточку «Внимания» резюме
+     * и так несёт в группе focus — от модели пересказ не нужен (09.11.2026).
+     */
+    focusFactAsChange: 'focus-fact-as-change',
     /** Стоп-слово. */
     forbiddenWord: 'forbidden-word',
     /** Каузальная формулировка. */

@@ -94,9 +94,10 @@ describe('buildManagerMonthPayload — объём и оценка разборо
             meta: META,
         }).rows[0].payload;
 
-        expect(month.n).toBe(28);
+        // С 09.11.2026 два разбора до границы входят в n и в оценку — с пометкой.
+        expect(month.n).toBe(30);
         expect(month.nBeforeComparable).toBe(2);
-        expect(month.score).toMatchObject({ value: 7, n: 28 });
+        expect(month.score).toMatchObject({ value: 7, n: 30 });
         expect({
             n: month.n,
             nBeforeComparable: month.nBeforeComparable,

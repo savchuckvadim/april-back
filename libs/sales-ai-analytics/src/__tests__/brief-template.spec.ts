@@ -19,6 +19,7 @@ import { factCheckBullets } from '../model/brief-factcheck';
 import { trimEvidencePack } from '../model/brief-pack';
 import {
     AI_BRIEF_HEADLINE_NUMBER_ERROR,
+    AI_BRIEF_HEADLINE_NUMBER_WORDS_ERROR,
     buildBriefFromLlm,
     buildTemplateBrief,
     toneForPack,
@@ -385,7 +386,7 @@ describe('buildTemplateBrief: три группы и лимиты', () => {
                 AI_BRIEF_LIMITS.bullets,
             );
             expect(brief.source).toBe('template');
-            expect(brief.promptVersion).toBe('brief-2.0.0');
+            expect(brief.promptVersion).toBe('brief-2.1.0');
         }
     });
 
@@ -418,7 +419,7 @@ describe('buildTemplateBrief: три группы и лимиты', () => {
     });
 });
 
-describe('buildBriefFromLlm: изменения и фокус — от модели, действия — от правил', () => {
+describe('buildBriefFromLlm: изменения — от модели, фокус и действия — от правил', () => {
     const answer = (headline: string, extra: unknown[] = []) => ({
         headline,
         tone: 'alarm',
@@ -435,14 +436,22 @@ describe('buildBriefFromLlm: изменения и фокус — от моде�
                 group: 'change',
                 factRefs: ['alerts'],
             },
+            // Модель пишет только изменения: для резюме нужно не меньше двух
+            // прошедших факт-чек буллетов (minBullets), фокус в счёт не идёт.
+            {
+                text: 'Продаж за период 3, за прошлый период 5',
+                group: 'change',
+                factRefs: ['plan_vs_fact_sales'],
+            },
             ...extra,
         ],
     });
 
-    it('change-буллет несёт delta факта, группы идут в порядке витрины', () => {
+    it('change-буллет несёт delta факта, группы идут в порядке витрины; фокус — заголовки карточек «Внимания», а не пересказ модели', () => {
+        const pack = fullPack();
         const outcome = buildBriefFromLlm(
             answer('Сигналов риска вдвое больше'),
-            fullPack(),
+            pack,
             CTX,
         );
 
@@ -450,14 +459,32 @@ describe('buildBriefFromLlm: изменения и фокус — от моде�
         expect(outcome.brief.headline).toBe('Сигналов риска вдвое больше');
         expect(outcome.brief.bullets.map(bullet => bullet.group)).toEqual([
             'change',
+            'change',
+            'focus',
             'focus',
             'action',
             'action',
             'action',
         ]);
         expect(outcome.brief.bullets[0].delta).toBe(37);
-        expect(outcome.brief.bullets[1].delta).toBeUndefined();
-        expect(outcome.brief.bullets[1].link).toBe(LINK);
+        expect(outcome.brief.bullets[1].delta).toBe(-2);
+        // Фокус — из фактов пакета как есть (09.11.2026): текст карточки,
+        // менеджер и ссылка факта; буллет фокуса модели отброшен.
+        expect(outcome.brief.bullets[2]).toMatchObject({
+            text: 'Сигналы риска: 3 — Иванов',
+            managerId: '12',
+            link: LINK,
+            factRefs: ['focus_1'],
+        });
+        expect(outcome.brief.bullets[2].delta).toBeUndefined();
+        expect(outcome.brief.bullets.slice(2, 4)).toEqual(focusBullets(pack));
+        expect(outcome.dropped).toEqual([
+            {
+                text: 'Иванов: три сигнала риска за неделю',
+                reason: 'group-unknown',
+                detail: 'focus',
+            },
+        ]);
     });
 
     it('действия модели не принимаются: в резюме идут действия правил пакета', () => {
@@ -479,6 +506,11 @@ describe('buildBriefFromLlm: изменения и фокус — от моде�
 
         expect(actions).toEqual(actionBullets(pack));
         expect(outcome.dropped).toEqual([
+            {
+                text: 'Иванов: три сигнала риска за неделю',
+                reason: 'group-unknown',
+                detail: 'focus',
+            },
             {
                 text: 'Провести тренинг по работе с возражениями',
                 reason: 'group-unknown',
@@ -513,6 +545,26 @@ describe('buildBriefFromLlm: изменения и фокус — от моде�
             'За 1–7 сентября 2026 сигналов риска 68 против 31',
         );
         expect(dated.errors).not.toContain(AI_BRIEF_HEADLINE_NUMBER_ERROR);
+    });
+
+    it('заголовок модели с числом словами заменяется шаблонным: число словами не сверить', () => {
+        const pack = fullPack();
+        const words = buildBriefFromLlm(
+            answer('Восемь неотработанных сигналов риска и три менеджера'),
+            pack,
+            CTX,
+        );
+
+        expect(words.brief.source).toBe('llm');
+        expect(words.brief.headline).toBe(
+            templateHeadline(pack, CTX.from, CTX.to),
+        );
+        expect(words.errors).toContain(AI_BRIEF_HEADLINE_NUMBER_WORDS_ERROR);
+        // Слово кратности числом не считается — заголовок остаётся.
+        expect(
+            buildBriefFromLlm(answer('Сигналов риска вдвое больше'), pack, CTX)
+                .errors,
+        ).not.toContain(AI_BRIEF_HEADLINE_NUMBER_WORDS_ERROR);
     });
 
     it('у пакета без сравнения буллет модели дельту не получает', () => {

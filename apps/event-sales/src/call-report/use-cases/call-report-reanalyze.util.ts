@@ -9,6 +9,7 @@
 import { AGENT_ANALYSIS_TYPE, pickActiveAnalysis } from '@lib/call-lib';
 import {
     dateKeyOf,
+    REANALYSIS_DEFAULTS,
     REANALYSIS_SKIP_REASONS,
     versionSeriesDate,
     type AnalysisVersions,
@@ -16,9 +17,14 @@ import {
     type ReanalysisRunStatus,
     type ReanalysisSkipReason,
 } from '@lib/sales-ai-analytics';
+import type {
+    ReanalysisOneOutcome,
+    ReanalysisPoolState,
+} from './call-report-reanalyze.pool';
 import { promptVersionOf } from './call-report-retest.util';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const MINUTE_MS = 60 * 1000;
 
 /** Запись ais в объёме, нужном переразбору (старая запись — источник ссылок). */
 export interface ReanalysisRecordView {
@@ -193,8 +199,12 @@ export function selectReanalysisCandidates(input: {
 }
 
 /**
- * Статус части: продолжение незаконченного прогона той же версии несёт
- * счётчики дальше (done/failed/tokens/price/startedAt), иначе — новый.
+ * Статус части: незаконченный прогон той же версии продолжается — счётчики
+ * (done/failed/tokens/price/processingMs/startedAt) идут дальше, номер
+ * части растёт от прошлой записи. Так ни запуск после перезапуска воркера,
+ * ни повторное нажатие кнопки не выглядят как «часть 1 с нуля»
+ * (09.11.2026). Законченный или dryRun-прогон не продолжается, и dryRun сам
+ * ничего не продолжает — у подсчёта без модели счётчики всегда с нуля.
  */
 export function initialRunStatus(input: {
     data: ReanalysisJobData;
@@ -205,13 +215,14 @@ export function initialRunStatus(input: {
     now: Date;
 }): ReanalysisRunStatus {
     const { data, versions, selection, previous, now } = input;
-    const part = data.part ?? 1;
     const carry =
-        part > 1 &&
+        data.dryRun !== true &&
         previous !== null &&
         !previous.finished &&
         !previous.dryRun &&
         previous.promptVersion === versions.prompt;
+    const part = carry ? previous.part + 1 : (data.part ?? 1);
+    const done = carry ? previous.done : 0;
     return {
         domain: data.domain,
         from: data.from,
@@ -222,7 +233,7 @@ export function initialRunStatus(input: {
         series: versionSeriesDate(versions.prompt),
         part,
         candidates: selection.candidates.length,
-        done: carry ? previous.done : 0,
+        done,
         failed: carry ? previous.failed : 0,
         skipped: Object.values(selection.skippedBy).reduce(
             (sum, value) => sum + value,
@@ -238,7 +249,58 @@ export function initialRunStatus(input: {
         timeBudgetHit: false,
         continuedWith: null,
         estimate: null,
+        total: done + selection.candidates.length,
+        processingMs: carry ? (previous.processingMs ?? 0) : 0,
+        etaMinutes: null,
+        concurrency: REANALYSIS_DEFAULTS.concurrency,
+        stopped: false,
     };
+}
+
+/**
+ * Оценка оставшегося времени, минут: среднее чистое время звонка с начала
+ * прогона × остаток ÷ одновременность; null — ни одного обработанного.
+ */
+export function etaMinutesOf(
+    status: Pick<
+        ReanalysisRunStatus,
+        'total' | 'done' | 'failed' | 'processingMs' | 'concurrency'
+    >,
+): number | null {
+    const processed = status.done + status.failed;
+    const processingMs = status.processingMs ?? 0;
+    if (processed === 0 || processingMs <= 0) return null;
+    const remaining = Math.max((status.total ?? 0) - status.done, 0);
+    const perCallMs = processingMs / processed;
+    const concurrency = Math.max(status.concurrency ?? 1, 1);
+
+    return Math.ceil((remaining * perCallMs) / concurrency / MINUTE_MS);
+}
+
+/**
+ * Учёт итога одного звонка в статусе прогона: счётчики, расход, чистое
+ * время, одновременность пула и оценка «осталось». Остановка части после
+ * серии сбоев попадает в lastError — её видно в панели запуска.
+ */
+export function accountOutcome(
+    status: ReanalysisRunStatus,
+    outcome: ReanalysisOneOutcome,
+    elapsedMs: number,
+    pool: ReanalysisPoolState,
+): void {
+    status.processingMs = (status.processingMs ?? 0) + Math.max(elapsedMs, 0);
+    if (outcome.ok) {
+        status.done += 1;
+        status.tokens += outcome.usage.tokens_count ?? 0;
+        status.price += outcome.usage.price ?? 0;
+    } else {
+        status.failed += 1;
+        status.lastError = pool.stopped
+            ? `${outcome.error} — остановлено после ${pool.failStreak} сбоев подряд`
+            : outcome.error;
+    }
+    status.concurrency = pool.concurrency;
+    status.etaMinutes = etaMinutesOf(status);
 }
 
 /** Итог части из статуса. */

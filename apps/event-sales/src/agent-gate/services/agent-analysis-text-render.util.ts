@@ -76,6 +76,14 @@ export function renderDialogComments(
 }
 
 /** Русское название раздела рубрики по коду; код — если его нет в справочнике. */
+/**
+ * Оценка — число; null/undefined/NaN от агента — оценки нет. Раньше
+ * `Number(null) === 0` считалось числом, и в таймлайне появлялось
+ * «Поведение при отказах — null/10» (замечание владельца 09.11.2026).
+ */
+const isScore = (value: unknown): value is number =>
+    typeof value === 'number' && Number.isFinite(value);
+
 function sectionTitle(code: string): string {
     return CALL_REPORT_SECTIONS.find(item => item.code === code)?.title ?? code;
 }
@@ -98,9 +106,9 @@ export function renderSectionComment(
         return null;
     }
 
-    const score = Number.isFinite(Number(section.score))
-        ? ` — ${section.score}/10`
-        : '';
+    // Раздел без оценки (этап не прозвучал, агент прислал null) — заголовок
+    // без «null/10» (замечание владельца 09.11.2026).
+    const score = isScore(section.score) ? ` — ${section.score}/10` : '';
     let text = `[b]${sectionTitle(section.section)}[/b]${score}\n`;
 
     if (asWas) {
@@ -175,8 +183,7 @@ export function renderAnalysisDuplicateComment(
     const sectionLines = (dto.sections ?? [])
         .filter(section => section.relevance > 0)
         .map(section => {
-            const score =
-                section.score !== undefined ? `${section.score}/10` : '—';
+            const score = isScore(section.score) ? `${section.score}/10` : '—';
             return `• ${sectionTitle(section.section)}: ${score} (актуальность ${section.relevance}%)`;
         })
         .join('\n');
@@ -187,7 +194,7 @@ export function renderAnalysisDuplicateComment(
     return (
         `🤖 [b]Глубокий AI-анализ звонка[/b] (активность #${activityId ?? '?'})\n\n` +
         `[b]Тип:[/b] ${callTypeLabel}\n` +
-        (dto.score !== undefined
+        (isScore(dto.score)
             ? `[b]Оценка:[/b] ${dto.score}/10${dto.scoreExplanation ? ` — ${dto.scoreExplanation.slice(0, 500)}` : ''}\n`
             : '') +
         `\n[b]Резюме:[/b]\n${dto.summary.slice(0, 1500)}\n` +

@@ -1,10 +1,13 @@
 import { CALL_REPORT_PROMPT_VERSION } from '../contracts/call-report-versions.const';
 import {
+    accountOutcome,
     dayKeyInWindow,
+    etaMinutesOf,
     initialRunStatus,
     isInRoster,
     selectReanalysisCandidates,
     windowBounds,
+    type ReanalysisCandidate,
     type ReanalysisSelection,
 } from '../use-cases/call-report-reanalyze.util';
 import { versionSeriesDate } from '@lib/sales-ai-analytics';
@@ -210,5 +213,164 @@ describe('initialRunStatus', () => {
             now,
         });
         expect(fresh.done).toBe(0);
+        expect(fresh.part).toBe(2);
+    });
+
+    it('перезапуск «части 1» поверх незаконченного прогона продолжает его: счётчики и время идут дальше, номер части растёт, total = сделано + остаток', () => {
+        const candidate = (id: string): ReanalysisCandidate => ({
+            transcriptionId: id,
+            userId: '317',
+            old: record(`r-${id}`, id, OLD_VERSION),
+            oldPromptVersion: OLD_VERSION,
+            oldSeries: '2026-09-08',
+        });
+        const previous = initialRunStatus({
+            data,
+            versions,
+            roster: null,
+            selection,
+            previous: null,
+            now: new Date('2026-10-20T00:00:00Z'),
+        });
+        previous.part = 3;
+        previous.done = 5;
+        previous.failed = 1;
+        previous.processingMs = 60_000;
+        const status = initialRunStatus({
+            data: { ...data, part: 1 },
+            versions,
+            roster: null,
+            selection: {
+                candidates: ['a', 'b', 'c'].map(candidate),
+                skippedBy: selection.skippedBy,
+            },
+            previous,
+            now,
+        });
+        expect(status).toMatchObject({
+            part: 4,
+            done: 5,
+            failed: 1,
+            processingMs: 60_000,
+            total: 8,
+            concurrency: 3,
+            etaMinutes: null,
+            startedAt: '2026-10-20T00:00:00.000Z',
+        });
+    });
+
+    it('dryRun ничего не продолжает: поверх незаконченного боевого прогона счётчики с нуля', () => {
+        const previous = initialRunStatus({
+            data,
+            versions,
+            roster: null,
+            selection,
+            previous: null,
+            now: new Date('2026-10-20T00:00:00Z'),
+        });
+        previous.done = 5;
+        previous.price = 7.5;
+        previous.part = 2;
+        const dry = initialRunStatus({
+            data: { ...data, dryRun: true },
+            versions,
+            roster: null,
+            selection,
+            previous,
+            now,
+        });
+        expect(dry).toMatchObject({
+            part: 1,
+            dryRun: true,
+            done: 0,
+            price: 0,
+            processingMs: 0,
+            stopped: false,
+            startedAt: now.toISOString(),
+        });
+    });
+
+    it('etaMinutesOf: остаток × среднее время звонка ÷ одновременность; без обработанных — null', () => {
+        expect(
+            etaMinutesOf({
+                total: 100,
+                done: 10,
+                failed: 0,
+                processingMs: 10 * 30_000,
+                concurrency: 3,
+            }),
+        ).toBe(15);
+        expect(
+            etaMinutesOf({
+                total: 100,
+                done: 10,
+                failed: 0,
+                processingMs: 10 * 30_000,
+                concurrency: 1,
+            }),
+        ).toBe(45);
+        expect(
+            etaMinutesOf({
+                total: 100,
+                done: 0,
+                failed: 0,
+                processingMs: 0,
+                concurrency: 3,
+            }),
+        ).toBeNull();
+    });
+
+    it('accountOutcome: успех — счётчики и расход; сбой — lastError, при остановке — с причиной', () => {
+        const status = initialRunStatus({
+            data,
+            versions,
+            roster: null,
+            selection,
+            previous: null,
+            now,
+        });
+        status.total = 10;
+        const pool = {
+            processed: 1,
+            doneInPart: 1,
+            failStreak: 0,
+            concurrency: 3,
+            stopped: false,
+            aborted: false,
+            timeBudgetHit: false,
+        };
+        accountOutcome(
+            status,
+            { ok: true, usage: { tokens_count: 1200, price: 1.8 } },
+            30_000,
+            pool,
+        );
+        expect(status).toMatchObject({
+            done: 1,
+            tokens: 1200,
+            price: 1.8,
+            processingMs: 30_000,
+            concurrency: 3,
+            etaMinutes: 2,
+        });
+
+        accountOutcome(status, { ok: false, error: 'модель упала' }, 5_000, {
+            ...pool,
+            processed: 2,
+            failStreak: 1,
+        });
+        expect(status).toMatchObject({ failed: 1, lastError: 'модель упала' });
+
+        accountOutcome(status, { ok: false, error: 'модель упала' }, 5_000, {
+            ...pool,
+            processed: 3,
+            failStreak: 8,
+            concurrency: 1,
+            stopped: true,
+        });
+        expect(status.lastError).toBe(
+            'модель упала — остановлено после 8 сбоев подряд',
+        );
+        expect(status.concurrency).toBe(1);
     });
 });
