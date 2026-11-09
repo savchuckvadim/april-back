@@ -82,6 +82,71 @@ describe('BatchApiService.dictToQueryString', () => {
     });
 });
 
+/*
+ * gsr 09.11.2026 и garant 02.11.2026: «#» в названии плана («заявка
+ * #41468209», компания «# 1481423 …», да и сам Битрикс зовёт сделки
+ * «Сделка #N») обрезал команду пачки — Битрикс читает её как url и
+ * отбрасывает всё от «#»: задача не создавалась, сделка презентации
+ * появлялась пустой в общей воронке.
+ */
+describe('BatchApiService.dictToQueryString — «#» в значениях', () => {
+    const service = new TestableBatchApiService(
+        {} as unknown as BitrixCore,
+        {} as unknown as AxiosInstance,
+    );
+    /** Что достанет из команды Битрикс: фрагмент после «#» отбрасывается. */
+    const parse = (cmd: string): URL =>
+        new URL(`https://portal.invalid/rest/${cmd}`);
+
+    it('«#» уезжает как %23: поля после него не теряются', () => {
+        const cmd = service.buildQueryString('tasks.task.add', {
+            fields: {
+                TITLE: '⚡ Презентация  Федин (заявка #41468209:8770702733)',
+                RESPONSIBLE_ID: 33,
+                DEADLINE: '2026-11-19T11:00:00+03:00',
+            },
+        });
+        const url = parse(cmd);
+
+        expect(url.hash).toBe('');
+        expect(url.searchParams.get('fields[TITLE]')).toBe(
+            '⚡ Презентация  Федин (заявка #41468209:8770702733)',
+        );
+        expect(url.searchParams.get('fields[RESPONSIBLE_ID]')).toBe('33');
+    });
+
+    it('«#» в элементах массива тоже экранируется', () => {
+        const cmd = service.buildQueryString('lists.element.add', {
+            FIELDS: { PROPERTY_1: ['Сделка #215385', 'D_215385'] },
+        });
+
+        expect(cmd).toBe(
+            'lists.element.add?FIELDS[PROPERTY_1][]=Сделка %23215385&FIELDS[PROPERTY_1][]=D_215385',
+        );
+    });
+
+    it('уже экранированный текст (toBatchSafeText) не экранируется повторно', () => {
+        const cmd = service.buildQueryString('crm.timeline.comment.add', {
+            fields: { COMMENT: 'строка%0Aзаявка %2341468209 %26 50%25' },
+        });
+
+        expect(cmd).toBe(
+            'crm.timeline.comment.add?fields[COMMENT]=строка%0Aзаявка %2341468209 %26 50%25',
+        );
+    });
+
+    it('подстановки $result[...] и даты с часовым поясом не меняются', () => {
+        const cmd = service.buildQueryString('crm.deal.update', {
+            id: '$result[set_base_deal]',
+            fields: { UF_CRM_DATE: '2026-11-19T11:00:00+03:00' },
+        });
+
+        expect(cmd).toBe(
+            'crm.deal.update?id=$result[set_base_deal]&fields[UF_CRM_DATE]=2026-11-19T11:00:00+03:00',
+        );
+    });
+});
+
 describe('BatchApiService.callBatchWithConcurrency', () => {
     /** Наполняет очередь N командами (первый чанк = 50 команд). */
     const fill = (service: BatchApiService, count: number) => {

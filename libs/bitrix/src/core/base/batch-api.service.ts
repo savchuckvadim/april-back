@@ -71,18 +71,32 @@ export class BatchApiService {
                             );
                         }
                     } else {
-                        queryParts.push(`${encodeKey(key)}[]=${item}`);
+                        queryParts.push(
+                            `${encodeKey(key)}[]=${encodeValue(item)}`,
+                        );
                     }
                 });
             } else {
-                queryParts.push(`${encodeKey(key)}=${value}`);
+                queryParts.push(`${encodeKey(key)}=${encodeValue(value)}`);
             }
         };
 
         // '=' внутри ключа фильтра (например filter[=ownerId]) ломает
         // разбор cmd-строки на стороне Битрикс: строка режется по первому
-        // '='. Экранируем '=' только в ключе — значения не трогаем.
+        // '='. Экранируем '=' только в ключе.
         const encodeKey = (key: string): string => key.replace(/=/g, '%3D');
+
+        // '#' в значении — начало фрагмента url: Битрикс разбирает команду
+        // как url и отбрасывает ВСЁ от '#' до конца команды вместе со
+        // следующими полями. gsr 09.11.2026: «заявка #41468209» в названии
+        // плана — задача ушла без ответственного и не создалась, сделка
+        // презентации стала пустой «Сделка #N» в общей воронке (garant
+        // 02.11 — то же). Битрикс декодирует '%23' обратно в '#', текст цел.
+        // Остальные символы значения не трогаем: '%' уже экранирован
+        // toBatchSafeText (повторное экранирование испортило бы '%0A'), а
+        // смена разбора '+' задела бы даты вида «…+03:00».
+        const encodeValue = (value: unknown): string =>
+            String(value).replace(/#/g, '%23');
 
         for (const [key, value] of Object.entries(data)) {
             processItem(key, value);
