@@ -150,18 +150,38 @@ export class StructuredLlmGateway {
                 continue;
             }
             const response = await this.attempt(adapter, request, notes);
-            if (response) return response;
+            if (response) return this.answered(response, request, notes);
         }
         // Живых и настроенных не осталось — пробуем отключённых (полуоткрытое
         // состояние): попытка лучше гарантированного отказа, а удача снова
         // включит провайдера.
         for (const adapter of paused) {
             const response = await this.attempt(adapter, request, notes);
-            if (response) return response;
+            if (response) return this.answered(response, request, notes);
         }
         throw new Error(
             `LLM недоступна для ${request.schemaName} (${request.domain}): ${notes.join('; ')}`,
         );
+    }
+
+    /**
+     * Ответ получен не от первого провайдера порядка — в лог уходит, кто
+     * ответил и почему пропущены предыдущие (нет ключа, пауза предохранителя,
+     * ошибка). Раньше пропуск по паузе или настройке был молчаливым, и
+     * разборы уходили запасному провайдеру без следа в логах (B3, 09.11.2026).
+     */
+    private answered(
+        response: StructuredLlmResponse,
+        request: StructuredLlmRequest,
+        notes: readonly string[],
+    ): StructuredLlmResponse {
+        if (notes.length > 0) {
+            this.logger.warn(
+                `LLM ${request.schemaName} (${request.domain}): ответил ${response.provider}, ` +
+                    `пропущены: ${notes.join('; ')}`,
+            );
+        }
+        return response;
     }
 
     private async attempt(
