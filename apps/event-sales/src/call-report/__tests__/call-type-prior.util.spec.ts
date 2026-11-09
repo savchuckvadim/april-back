@@ -159,6 +159,21 @@ describe('resolveCallTypePrior — ожидаемый тип звонка по C
         expect(prior?.reason).toContain('sales_pres');
         expect(prior?.reason).toContain('sales_base');
     });
+
+    it('с названиями из слепка портала причина — словами, без pbx-кодов', () => {
+        const prior = resolveCallTypePrior({
+            entityType: 'deal',
+            dealCategoryCode: 'sales_base',
+            dealStageCode: 'sales_pres',
+            stageTitle: 'Презентация',
+            categoryTitle: 'ОП Основная',
+            leadWorkKind: null,
+        });
+        expect(prior?.reason).toBe(
+            'сделка на стадии «Презентация» воронки «ОП Основная»',
+        );
+        expect(prior?.reason).not.toContain('sales_');
+    });
 });
 
 describe('renderCallTypePrior — подсказка классификатору', () => {

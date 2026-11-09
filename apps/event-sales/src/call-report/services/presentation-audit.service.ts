@@ -14,6 +14,7 @@ import {
     AiService,
     pickActiveAnalysis,
     TranscriptionStoreService,
+    callReportCallTypeTitle,
 } from '@lib/call-lib';
 import { CallReportSmartResolverService } from '@lib/call-lib/call-report/services/call-report-smart-resolver.service';
 import { CallReportSmartWriterService } from '@lib/call-lib/call-report/services/call-report-smart-writer.service';
@@ -394,7 +395,7 @@ export class PresentationAuditService {
     /** Выжимка разбора для сверки. */
     private renderAnalysisDigest(dto: AgentCallAnalysisDto): string {
         const lines = [
-            `Тип звонка: ${dto.callType}`,
+            `Тип звонка: ${callReportCallTypeTitle(dto.callType) ?? '—'}`,
             `Резюме: ${dto.summary}`,
             `Хвост пройден: ${this.boolLabel(dto.hvostDone)}`,
             dto.hvostSteps

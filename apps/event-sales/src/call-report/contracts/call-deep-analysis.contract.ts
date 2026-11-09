@@ -23,6 +23,7 @@ import {
     CALL_REPORT_REFUSAL_CODES,
     CALL_REPORT_SENTIMENT_CODES,
     CALL_REPORT_SPECIALIST_CODES,
+    callReportCallTypeTitle,
 } from '@lib/call-lib';
 import {
     AGENT_FLOW_NORESULT_REASONS,
@@ -865,8 +866,11 @@ export function buildDeepAnalysisUserContent(
     callType: string | null,
     passportBlock?: string,
 ): string {
+    // Тип — русским названием: код модель переносила в текст разбора как
+    // есть; сам код остаётся рядом только как значение поля callType схемы.
     const typeLine = callType
-        ? `Тип звонка по классификатору: ${callType}.\n`
+        ? `Тип звонка по классификатору: ${callReportCallTypeTitle(callType)} ` +
+          `(код для поля callType: ${callType}).\n`
         : '';
     const passport = passportBlock ? `${passportBlock}\n\n` : '\n';
     return `${typeLine}${passport}Разбери звонок по расшифровке:\n\n${transcript}`;

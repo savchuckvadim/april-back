@@ -8,6 +8,7 @@ import {
     KnowledgeMaterialsService,
     renderMaterialBlock,
     TranscriptionPipelineView,
+    callReportCallTypeTitle,
 } from '@lib/call-lib';
 import { KNOWLEDGE_KINDS } from '@lib/ai-rag';
 import { CallReportSmartResolverService } from '@lib/call-lib/call-report/services/call-report-smart-resolver.service';
@@ -409,7 +410,7 @@ export class CallComplianceReviewService {
     /** Выжимка разбора для контекста проверки (не пересматривается). */
     private renderAnalysisDigest(dto: AgentCallAnalysisDto): string {
         return [
-            `Тип звонка: ${dto.callType ?? '—'}`,
+            `Тип звонка: ${callReportCallTypeTitle(dto.callType) ?? '—'}`,
             `Резюме: ${dto.summary ?? '—'}`,
             dto.productsOffered?.length
                 ? `Предложенные продукты: ${dto.productsOffered.join('; ')}`

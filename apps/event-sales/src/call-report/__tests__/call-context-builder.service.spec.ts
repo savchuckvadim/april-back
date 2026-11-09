@@ -134,22 +134,39 @@ const makeDeps = (options?: {
             {
                 bitrixId: '0',
                 code: 'sales_base',
+                name: 'ОП Основная',
                 stages: [
-                    { code: 'sales_pres', bitrixId: 'PREPARATION' },
-                    { code: 'sales_double', bitrixId: 'APOLOGY' },
+                    {
+                        code: 'sales_pres',
+                        bitrixId: 'PREPARATION',
+                        name: 'Презентация',
+                    },
+                    {
+                        code: 'sales_double',
+                        bitrixId: 'APOLOGY',
+                        name: 'Не состоялась',
+                    },
                 ],
             },
             {
                 bitrixId: '5',
                 code: 'sales_presentation',
+                name: 'ОП Презентации',
                 stages: [
                     {
                         code: 'sales_presentation_presentation',
                         bitrixId: 'C5:EXECUTING',
+                        name: 'Презентация',
                     },
                 ],
             },
         ]),
+        // Статусы лида — название статуса в промпте вместо кода.
+        getLeadCategories: jest
+            .fn()
+            .mockReturnValue([
+                { stages: [{ bitrixId: 'IN_PROCESS', name: 'В работе' }] },
+            ]),
     };
     const pbxService = {
         init: jest.fn().mockResolvedValue({ bitrix, PortalModel: portalModel }),
@@ -256,6 +273,18 @@ describe('CallContextBuilderService', () => {
         expect(service.renderClassifyHint(passport)).toContain(
             "'presentation'",
         );
+        // В промпте разбора — названия из слепка портала, не коды CRM
+        // (коды модель переносила в текст полей смарта, 09.11.2026).
+        expect(passport.stageTitle).toBe('Презентация');
+        expect(passport.categoryTitle).toBe('ОП Презентации');
+        const prompt = service.renderForPrompt(passport);
+        expect(prompt).toContain(
+            'стадия «Презентация» воронки «ОП Презентации»',
+        );
+        expect(prompt).not.toContain('C5:EXECUTING');
+        expect(passport.callTypePrior?.reason).toBe(
+            'сделка на стадии «Презентация» воронки «ОП Презентации»',
+        );
     });
 
     /**
@@ -286,6 +315,9 @@ describe('CallContextBuilderService', () => {
         expect(passport.categoryId).toBe('28');
         expect(passport.dealCategoryCode).toBe('sales_base');
         expect(passport.dealStageCode).toBe('sales_double');
+        // Названия — у той же основной сделки, что и коды.
+        expect(passport.stageTitle).toBe('Не состоялась');
+        expect(passport.categoryTitle).toBe('ОП Основная');
         expect(passport.callTypePrior).toEqual(
             expect.objectContaining({ callType: 'call', strength: 'weak' }),
         );
@@ -309,6 +341,10 @@ describe('CallContextBuilderService', () => {
         const passport = await service.build(row() as never);
         expect(passport.dealCategoryCode).toBeNull();
         expect(passport.callTypePrior).toBeNull();
+        // Названия стадии нет — промпт без кода CRM, этап по содержанию.
+        const prompt = service.renderForPrompt(passport);
+        expect(prompt).toContain('стадия сделки системе неизвестна');
+        expect(prompt).not.toContain('C9:NEW');
         expect(service.renderClassifyHint(passport)).toContain(
             'привязан к сделке',
         );
@@ -324,6 +360,11 @@ describe('CallContextBuilderService', () => {
         );
         expect(passport.certainty).toBe('lead');
         expect(passport.leadStatusId).toBe('IN_PROCESS');
+        expect(passport.leadStatusTitle).toBe('В работе');
+        expect(service.renderForPrompt(passport)).toContain(
+            'статус «В работе»',
+        );
+        expect(service.renderForPrompt(passport)).not.toContain('IN_PROCESS');
         expect(api.call).not.toHaveBeenCalledWith(
             'crm.duplicate.findbycomm',
             expect.anything(),

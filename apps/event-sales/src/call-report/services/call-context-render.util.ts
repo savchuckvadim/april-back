@@ -15,20 +15,42 @@ import { renderCallTypePrior } from './call-type-prior.util';
 const trim = (value: string, max: number): string =>
     value.length > max ? `${value.slice(0, max)}…` : value;
 
+/**
+ * Строка о сделке: стадия и воронка — русскими названиями из слепка
+ * портала. Коды CRM (C5:EXECUTING, sales_pres) в промпт не попадают: модель
+ * переносила их в текст разбора как есть. Названий нет (воронка или стадия
+ * вне настроек отдела продаж и основной сделки ОП не нашлось) — этап по
+ * содержанию разговора.
+ */
+function renderDealLine(passport: CallPassport): string {
+    const head = `- Звонок по СДЕЛКЕ #${passport.entityId}`;
+    if (!passport.stageTitle) {
+        return (
+            `${head}: стадия сделки системе неизвестна (воронка или стадия вне ` +
+            'настроек отдела продаж) — этап определяй по содержанию разговора, ' +
+            'уместность разделов оценивай мягко.'
+        );
+    }
+    const funnel = passport.categoryTitle
+        ? ` воронки «${passport.categoryTitle}»`
+        : '';
+    return (
+        `${head}, стадия «${passport.stageTitle}»${funnel}. ` +
+        'Этап переговоров известен ДОСТОВЕРНО — оценивай уместность разделов относительно него.'
+    );
+}
+
 /** Текстовый блок паспорта для user-части промпта разбора. */
 export function renderPassportForPrompt(passport: CallPassport): string {
     const lines: string[] = ['', 'КОНТЕКСТ ИЗ CRM (паспорт звонка):'];
     if (passport.certainty === 'rich') {
-        lines.push(
-            `- Звонок по СДЕЛКЕ #${passport.entityId}, стадия ${passport.stageId ?? '—'}` +
-                (passport.categoryId
-                    ? `, воронка ${passport.categoryId}`
-                    : '') +
-                '. Этап переговоров известен ДОСТОВЕРНО — оценивай уместность разделов относительно него.',
-        );
+        lines.push(renderDealLine(passport));
     } else if (passport.certainty === 'lead') {
+        const status = passport.leadStatusTitle
+            ? `, статус «${passport.leadStatusTitle}»`
+            : '';
         lines.push(
-            `- Звонок по ЛИДУ #${passport.entityId}, статус ${passport.leadStatusId ?? '—'}. ` +
+            `- Звонок по ЛИДУ #${passport.entityId}${status}. ` +
                 'Стадии переговоров нет — этап определяй по содержанию разговора, уместность оценивай мягко.',
         );
         if (passport.leadWorkKind === 'request') {

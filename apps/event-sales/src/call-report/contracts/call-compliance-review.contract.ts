@@ -1,3 +1,4 @@
+import { callReportCallTypeTitle } from '@lib/call-lib';
 import { DEEP_ANALYSIS_CORE_RULES } from './call-deep-analysis.contract';
 
 /**
@@ -209,7 +210,10 @@ export function buildComplianceUserContent(input: {
     analysisDigest: string;
     materials: string;
 }): string {
-    const typeLine = input.callType ? `Тип звонка: ${input.callType}.\n` : '';
+    // Тип словами: код (presentation) модель переносила в текст проверки.
+    const typeLine = input.callType
+        ? `Тип звонка: ${callReportCallTypeTitle(input.callType)}.\n`
+        : '';
     return (
         `${typeLine}\n` +
         `ЧТО УЖЕ УСТАНОВЛЕНО РАЗБОРОМ (не пересматривай, используй как ` +
