@@ -130,11 +130,29 @@ export class AiAnalyticsLaunchReanalysisRunDto implements LaunchReanalysisRun {
 
     @ApiProperty({
         description:
-            'Доля сделанного 0..1 (после первой части — оценка снизу).',
+            'Доля сделанного 0..1 (у записей без total после первой части — оценка снизу).',
         type: Number,
         example: 0.29,
     })
     progressShare: number;
+
+    @ApiProperty({
+        description:
+            'Всего звонков прогона — знаменатель «переразобрано N из M»; null у прогонов до 09.11.2026.',
+        type: Number,
+        nullable: true,
+        example: 412,
+    })
+    total: number | null;
+
+    @ApiProperty({
+        description:
+            'Оценка оставшегося времени, минут (по среднему времени звонка и одновременности); null — ещё нечем оценить.',
+        type: Number,
+        nullable: true,
+        example: 37,
+    })
+    etaMinutes: number | null;
 }
 
 export class AiAnalyticsLaunchReanalysisDto

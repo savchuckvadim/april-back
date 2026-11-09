@@ -194,6 +194,42 @@ export class AiAnalyticsReanalysisRunStatusDto implements ReanalysisRunStatus {
         nullable: true,
     })
     estimate: AiAnalyticsReanalysisEstimateDto | null;
+
+    @ApiProperty({
+        description:
+            'Всего звонков прогона: сделано с начала плюс остаток на старте последней части; нет у записей до 09.11.2026.',
+        type: Number,
+        required: false,
+        example: 420,
+    })
+    total?: number;
+
+    @ApiProperty({
+        description: 'Чистое время обработки звонков с начала прогона, мс.',
+        type: Number,
+        required: false,
+        example: 5400000,
+    })
+    processingMs?: number;
+
+    @ApiProperty({
+        description:
+            'Оценка оставшегося времени, минут; null — ещё нечем оценить.',
+        type: Number,
+        required: false,
+        nullable: true,
+        example: 37,
+    })
+    etaMinutes?: number | null;
+
+    @ApiProperty({
+        description:
+            'Сколько звонков разбирается одновременно: 3, после серии сбоев — 1.',
+        type: Number,
+        required: false,
+        example: 3,
+    })
+    concurrency?: number;
 }
 
 /** Ответ ручки статуса переразбора. */

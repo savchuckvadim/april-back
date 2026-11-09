@@ -13,8 +13,13 @@
  * - квота на часть и бюджет времени 45 минут; остались кандидаты — джоба
  *   сама ставит продолжение (та же нагрузка, part + 1); повтор запуска
  *   безопасен — уже пересчитанные пропускаются по серии версии;
+ * - три звонка одновременно (решение владельца 09.11.2026), после трёх
+ *   сбоев подряд — по одному, после восьми — остановка части
+ *   (call-report-reanalyze.pool.ts);
  * - статус прогона — запись `call-report-reanalysis-run`, обновляется
- *   каждые N звонков; dryRun — кандидаты и оценка стоимости без модели;
+ *   после каждого звонка («переразобрано N из M, осталось ≈ X минут»);
+ *   незаконченный прогон продолжается с теми же счётчиками и после
+ *   перезапуска воркера; dryRun — кандидаты и оценка стоимости без модели;
  * - по окончании части — отчёт согласия старой и новой версии по парам
  *   окна (`ai-analytics-version-agreement`), по ключу на старую серию.
  *
@@ -41,7 +46,6 @@ import {
     durationSecOf,
     prepareAgentAnalysis,
 } from '../../agent-gate/services/agent-analysis-prepare.util';
-import type { AnalysisUsageColumns } from '../../agent-gate/services/agent-analysis-usage.util';
 import {
     buildAnalysisVersions,
     buildRegistryHash,
@@ -51,10 +55,15 @@ import { CallAnalysisRerunService } from '../services/call-analysis-rerun.servic
 import { CallReportReanalysisReportService } from '../services/call-report-reanalysis-report.service';
 import { CallReportSettingsService } from '../services/call-report-settings.service';
 import {
+    runReanalysisPool,
+    type ReanalysisOneOutcome,
+} from './call-report-reanalyze.pool';
+import {
     buildReanalysisRecord,
     estimateReanalysisCost,
 } from './call-report-reanalyze.record';
 import {
+    accountOutcome,
     dayKeyInWindow,
     initialRunStatus,
     selectReanalysisCandidates,
@@ -66,10 +75,6 @@ import {
 } from './call-report-reanalyze.util';
 
 export type { CallReportReanalyzeResult } from './call-report-reanalyze.util';
-
-type OneOutcome =
-    | { ok: true; usage: AnalysisUsageColumns }
-    | { ok: false; error: string };
 
 @Injectable()
 export class CallReportReanalyzeUseCase {
@@ -90,7 +95,6 @@ export class CallReportReanalyzeUseCase {
         now: Date = new Date(),
     ): Promise<CallReportReanalyzeResult> {
         const startedAt = Date.now();
-        const part = data.part ?? 1;
         const versions = buildAnalysisVersions(
             await this.registryHash(data.domain),
         );
@@ -133,40 +137,40 @@ export class CallReportReanalyzeUseCase {
         statusId = await this.reports.saveStatus(status, statusId);
 
         const quota = data.quota ?? REANALYSIS_DEFAULTS.quota;
-        let processed = 0;
-        let doneInPart = 0;
-        for (const candidate of selection.candidates.slice(0, quota)) {
-            if (Date.now() - startedAt > REANALYSIS_DEFAULTS.timeBudgetMs) {
-                status.timeBudgetHit = true;
-                break;
-            }
-            const outcome = await this.reanalyzeOne(
-                candidate,
-                versions,
-                settings.deepAnalysisModel,
-            );
-            processed += 1;
-            if (outcome.ok) {
-                doneInPart += 1;
-                status.done += 1;
-                status.tokens += outcome.usage.tokens_count ?? 0;
-                status.price += outcome.usage.price ?? 0;
-            } else {
-                status.failed += 1;
-                status.lastError = outcome.error;
-            }
-            if (processed % REANALYSIS_DEFAULTS.statusEvery === 0) {
+        const recordId = statusId;
+        const pool = await runReanalysisPool(
+            selection.candidates.slice(0, quota),
+            candidate =>
+                this.reanalyzeOne(
+                    candidate,
+                    versions,
+                    settings.deepAnalysisModel,
+                ),
+            async (outcome, elapsedMs, state) => {
+                // Статус — после каждого звонка: панель показывает «N из M,
+                // осталось ≈ X минут», а перезапуск воркера ничего не теряет.
+                accountOutcome(status, outcome, elapsedMs, state);
                 status.updatedAt = new Date().toISOString();
-                await this.reports.saveStatus(status, statusId);
-            }
-        }
+                await this.reports.saveStatus(status, recordId);
+            },
+            {
+                concurrency: REANALYSIS_DEFAULTS.concurrency,
+                serialAfterFailures: REANALYSIS_DEFAULTS.serialAfterFailures,
+                stopAfterFailures: REANALYSIS_DEFAULTS.stopAfterFailures,
+                timeBudgetMs: REANALYSIS_DEFAULTS.timeBudgetMs,
+                startedAt,
+                now: () => Date.now(),
+            },
+        );
+        status.timeBudgetHit = pool.timeBudgetHit;
+        const { processed, doneInPart } = pool;
 
         // Продолжение — только если часть что-то смогла: иначе упорный сбой
         // крутил бы цепочку бесконечно.
         const remaining = selection.candidates.length - processed;
         status.continuedWith =
             remaining > 0 && doneInPart > 0
-                ? await this.dispatchContinuation(data, part + 1)
+                ? await this.dispatchContinuation(data, status.part + 1)
                 : null;
         const reportIds = await this.reports.writeAgreementReports(
             data.domain,
@@ -185,9 +189,10 @@ export class CallReportReanalyzeUseCase {
             startedAt,
         );
         this.logger.log(
-            `Переразбор ${data.domain} ${data.from}..${data.to} часть ${part}: ` +
+            `Переразбор ${data.domain} ${data.from}..${data.to} часть ${status.part}: ` +
                 `кандидатов ${result.candidates}, сделано ${doneInPart}, ` +
-                `сбоев ${status.failed}, продолжение ${result.continuedWith ?? '—'}`,
+                `сбоев ${status.failed}, одновременно ${pool.concurrency}, ` +
+                `продолжение ${result.continuedWith ?? '—'}`,
         );
 
         return result;
@@ -221,7 +226,7 @@ export class CallReportReanalyzeUseCase {
         candidate: ReanalysisCandidate,
         versions: AnalysisVersions,
         model: string | null,
-    ): Promise<OneOutcome> {
+    ): Promise<ReanalysisOneOutcome> {
         try {
             const outcome = await this.rerunService.rerun({
                 transcriptionId: candidate.transcriptionId,

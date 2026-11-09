@@ -137,8 +137,12 @@ export interface LaunchReanalysisRun {
     estimatedTokens: number | null;
     estimatedPrice: number | null;
     estimateMessage: string | null;
-    /** Доля сделанного 0..1 (в частях после первой — оценка снизу). */
+    /** Доля сделанного 0..1 (у записей без total после первой части — оценка снизу). */
     progressShare: number;
+    /** Всего звонков прогона — знаменатель «N из M»; null у записей до 09.11.2026. */
+    total: number | null;
+    /** Оценка оставшегося времени, минут; null — ещё нечем оценить. */
+    etaMinutes: number | null;
 }
 
 export interface LaunchReanalysisBlock extends LaunchBlock {

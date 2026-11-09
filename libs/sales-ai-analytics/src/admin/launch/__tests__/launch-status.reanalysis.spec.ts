@@ -91,6 +91,43 @@ describe('buildLaunchStatus: переразбор и расход', () => {
     });
 });
 
+describe('buildLaunchStatus: переразбор с total (09.11.2026)', () => {
+    it('знаменатель — total статуса; в тексте «переразобрано N из M, осталось ≈ X мин»', () => {
+        const running = buildLaunchStatus(
+            launchInput({
+                reanalysis: {
+                    ok: true,
+                    value: reanalysisRun({
+                        part: 3,
+                        done: 300,
+                        candidates: 50,
+                        total: 400,
+                        etaMinutes: 7,
+                    }),
+                },
+            }),
+        );
+        expect(running.reanalysis.run).toMatchObject({
+            progressShare: 0.75,
+            total: 400,
+            etaMinutes: 7,
+        });
+        expect(running.reanalysis.text).toContain(
+            'переразобрано 300 из 400, осталось ≈ 7 мин',
+        );
+
+        // Старая запись без total: знаменатель — оценка, полей нет (null).
+        const legacy = buildLaunchStatus(
+            launchInput({ reanalysis: { ok: true, value: reanalysisRun() } }),
+        );
+        expect(legacy.reanalysis.run).toMatchObject({
+            total: null,
+            etaMinutes: null,
+        });
+        expect(legacy.reanalysis.text).toContain('переразобрано 100, сбоев 2');
+    });
+});
+
 describe('reanalysisProgress', () => {
     it('первая часть — done / candidates; следующие — оценка снизу; конец — 1', () => {
         expect(reanalysisProgress(reanalysisRun())).toBe(0.25);
@@ -103,6 +140,17 @@ describe('reanalysisProgress', () => {
             reanalysisProgress(reanalysisRun({ candidates: 0, done: 0 })),
         ).toBe(0);
         expect(reanalysisProgress(reanalysisRun({ finished: true }))).toBe(1);
+        // total статуса важнее оценки по кандидатам.
+        expect(
+            reanalysisProgress(
+                reanalysisRun({
+                    part: 3,
+                    done: 300,
+                    candidates: 50,
+                    total: 400,
+                }),
+            ),
+        ).toBe(0.75);
     });
 });
 

@@ -126,13 +126,20 @@ export function forecastBlock(input: LaunchStatusInput): LaunchForecastBlock {
 // --- Переразбор --------------------------------------------------------------
 
 /**
- * Доля сделанного: в первой части кандидаты — весь объём; в следующих
- * candidates — остаток на старте части, а done копится с первой, поэтому
- * done / (done + candidates) — оценка снизу.
+ * Знаменатель прогресса: `total` статуса (с 09.11.2026 — сделано плюс
+ * остаток на старте части). У старых записей без total: в первой части
+ * кандидаты — весь объём; в следующих candidates — остаток на старте
+ * части, а done копится с первой, поэтому done + candidates — оценка снизу.
  */
+export function reanalysisTotal(run: ReanalysisRunStatus): number {
+    if (typeof run.total === 'number') return Math.max(run.total, run.done);
+    return run.part > 1 ? run.done + run.candidates : run.candidates;
+}
+
+/** Доля сделанного 0..1; конец прогона — 1. */
 export function reanalysisProgress(run: ReanalysisRunStatus): number {
     if (run.finished) return 1;
-    const total = run.part > 1 ? run.done + run.candidates : run.candidates;
+    const total = reanalysisTotal(run);
     if (total <= 0) return 0;
     return Math.min(1, run.done / total);
 }
@@ -166,6 +173,8 @@ export function toLaunchRun(
         estimatedPrice: run.estimate?.estimatedPrice ?? null,
         estimateMessage: run.estimate?.message ?? null,
         progressShare: reanalysisProgress(run),
+        total: typeof run.total === 'number' ? run.total : null,
+        etaMinutes: typeof run.etaMinutes === 'number' ? run.etaMinutes : null,
     };
 }
 
@@ -203,7 +212,10 @@ function reanalysisText(run: LaunchReanalysisRun): string {
     if (run.stale) {
         return `Переразбор остановился (${period}): сделано ${run.done}, статус давно не обновлялся${run.lastError ? `, последняя ошибка: ${run.lastError}` : ''}. Запустите ещё раз — повтор безопасен, сделанное пропускается.`;
     }
-    return `Переразбор идёт (${period}): часть ${run.part}, сделано ${run.done}, сбоев ${run.failed}, потрачено ${rub(run.price)}.`;
+    const ofTotal = run.total === null ? '' : ` из ${run.total}`;
+    const eta =
+        run.etaMinutes === null ? '' : `, осталось ≈ ${run.etaMinutes} мин`;
+    return `Переразбор идёт (${period}): часть ${run.part}, переразобрано ${run.done}${ofTotal}${eta}, сбоев ${run.failed}, потрачено ${rub(run.price)}.`;
 }
 
 export function reanalysisBlock(

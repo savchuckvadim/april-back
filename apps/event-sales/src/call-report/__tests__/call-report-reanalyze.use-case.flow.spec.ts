@@ -3,6 +3,7 @@ import { CALL_REPORT_PROMPT_VERSION } from '../contracts/call-report-versions.co
 import {
     containing,
     DOMAIN,
+    flush,
     liteRow,
     makeUseCase,
     NOW,
@@ -15,7 +16,8 @@ import {
  * Переразбор истории, ход прогона: квота и бюджет времени ставят
  * продолжение той же нагрузкой (part + 1); сбой модели не роняет часть и
  * не крутит цепочку без успехов; часть 2 несёт счётчики незаконченного
- * прогона и обновляет ту же запись статуса.
+ * прогона и обновляет ту же запись статуса; три звонка идут одновременно,
+ * статус пишется после каждого, серия сбоев — по одному и остановка.
  */
 const twoCandidates = () => ({
     rows: [liteRow('t-1', '317'), liteRow('t-5', '317')],
@@ -146,5 +148,69 @@ describe('CallReportReanalyzeUseCase: продолжения и сбои', () =>
                 }),
             }),
         );
+    });
+
+    it('три звонка идут одновременно; статус с «N из M» пишется после каждого звонка', async () => {
+        const ids = ['t-1', 't-2', 't-3', 't-4'];
+        const { useCase, rerunService, ofType, release } = makeUseCase({
+            rows: ids.map(id => liteRow(id, '317')),
+            records: ids.map((id, index) =>
+                oldRecord(String(index + 1), id, OLD_VERSION),
+            ),
+            rerun: 'deferred',
+        });
+        const run = useCase.execute(PERIOD, NOW);
+        await flush();
+        // Три запроса к модели ушли до первого ответа, четвёртый ждёт.
+        expect(rerunService.rerun).toHaveBeenCalledTimes(3);
+        const statusOf = () =>
+            ofType('call-report-reanalysis-run')[0].user_result as {
+                done: number;
+                total: number;
+                concurrency: number;
+                etaMinutes: number | null;
+                finished: boolean;
+            };
+        expect(statusOf()).toMatchObject({ done: 0, total: 4, concurrency: 3 });
+
+        expect(release()).toBe(3);
+        await flush();
+        expect(rerunService.rerun).toHaveBeenCalledTimes(4);
+        // Статус обновлён по каждому из трёх звонков, не дожидаясь конца части.
+        expect(statusOf()).toMatchObject({
+            done: 3,
+            total: 4,
+            finished: false,
+        });
+        expect(typeof statusOf().etaMinutes).toBe('number');
+
+        expect(release()).toBe(1);
+        const result = await run;
+        expect(result).toMatchObject({ done: 4, failed: 0, processed: 4 });
+        expect(statusOf()).toMatchObject({ done: 4, finished: true });
+    });
+
+    it('три сбоя подряд — дальше по одному звонку; восемь подряд — часть останавливается, продолжение не ставится', async () => {
+        const ids = Array.from({ length: 12 }, (_, index) => `t-${index + 1}`);
+        const { useCase, rerunService, queueDispatcher, ofType } = makeUseCase({
+            rows: ids.map(id => liteRow(id, '317')),
+            records: ids.map((id, index) =>
+                oldRecord(String(index + 1), id, OLD_VERSION),
+            ),
+            rerun: 'throw',
+        });
+        const result = await useCase.execute(PERIOD, NOW);
+
+        // 3 одновременно упали → по одному; ещё 5 сбоев → стоп на восьмом.
+        expect(rerunService.rerun).toHaveBeenCalledTimes(8);
+        expect(result).toMatchObject({ processed: 8, done: 0, failed: 8 });
+        expect(queueDispatcher.dispatch).not.toHaveBeenCalled();
+        expect(
+            ofType('call-report-reanalysis-run')[0].user_result,
+        ).toMatchObject({
+            concurrency: 1,
+            finished: true,
+            lastError: 'модель упала — остановлено после 8 сбоев подряд',
+        });
     });
 });
