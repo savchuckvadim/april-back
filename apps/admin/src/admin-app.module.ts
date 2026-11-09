@@ -65,6 +65,7 @@ import { HooksAdminModule } from '@lib/portal-lib/hooks';
 import { SupportMonitorAdminModule } from '@lib/support';
 import { LogsAdminModule } from '@lib/logger/query';
 import { CabinetAdminModule } from '@lib/cabinet';
+import { SiteMediaAdminModule } from '@lib/site-content';
 
 @Module({
     imports: [
@@ -184,6 +185,9 @@ import { CabinetAdminModule } from '@lib/cabinet';
         // участники и владелец, ссылки на пароль, Telegram. Почтовый
         // транспорт даёт MarketplaceModerationModule (MailerModule глобальный).
         CabinetAdminModule,
+        // Картинки и видео сайта по местам кадров (09.11.2026): файлы в
+        // storage/public/site-media, сайт читает их через apps/bot.
+        SiteMediaAdminModule,
     ],
 })
 export class AdminAddModule {}

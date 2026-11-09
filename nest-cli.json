@@ -411,6 +411,15 @@
       "compilerOptions": {
         "tsConfigPath": "libs/cabinet/tsconfig.lib.json"
       }
+    },
+    "site-content": {
+      "type": "library",
+      "root": "libs/site-content",
+      "entryFile": "index",
+      "sourceRoot": "libs/site-content/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/site-content/tsconfig.lib.json"
+      }
     }
   }
 }
