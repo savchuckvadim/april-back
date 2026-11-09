@@ -11,6 +11,7 @@ import {
     compareFreshness,
     DealFreshness,
 } from '../../../shared/lead-request/deal-freshness.util';
+import { DomainGuardSkip, guardEmailDomain } from './repeat-domain-guard';
 
 type BxRow = Record<string, unknown>;
 
@@ -42,6 +43,8 @@ export interface IRepeatDealInfo {
     title: string;
     /** DATE_MODIFY сделки (ISO): по нему выбирается самая свежая; нет — null. */
     modifiedAt: string | null;
+    /** ИНН сделки из ИНН-полей портала; нет — пусто (см. repeat-domain-guard). */
+    inns?: readonly string[];
     row: BxRow;
 }
 
@@ -72,6 +75,11 @@ export interface IRepeatResolution {
     companyId?: number;
     /** Закрытые сделки клиента — в комментарий «уже обращался». */
     closedDealIds?: number[];
+    /**
+     * kind='none' по домену почты: почему домен не годится — заявка с
+     * другим ИНН или домен общий у разных клиентов (repeat-domain-guard).
+     */
+    skipped?: DomainGuardSkip;
 }
 
 /** Человекочитаемое описание решения — для таймлайна и истории. */
@@ -128,9 +136,14 @@ export function repeatJoinHistoryText(
  *  - открытых нет, ровно одна компания → reuse-client (компания);
  *  - открытых нет, компаний нет, ровно один контакт → reuse-client;
  *  - иначе → none (обычный путь).
+ *
+ * Домен почты дополнительно проходит {@link guardEmailDomain}: общий у
+ * разных клиентов домен или другой ИНН заявки — не повод присоединять
+ * (решение владельца 09.11.2026, govvrn.ru на garant).
  */
 export function resolveRepeatWork(
     buckets: readonly IRepeatSignalCandidates[],
+    leadInns: readonly string[] = [],
 ): IRepeatResolution {
     const bySignal = new Map<RepeatSignalKind, IRepeatSignalCandidates[]>();
     for (const bucket of buckets) {
@@ -152,12 +165,31 @@ export function resolveRepeatWork(
 
         // Разные значения одного сигнала (два телефона лида) — объединяем:
         // клиент один, значения его же.
-        const deals = uniqueDeals(hits.flatMap(bucket => bucket.deals));
+        const found = uniqueDeals(hits.flatMap(bucket => bucket.deals));
         const value = hits.map(bucket => bucket.value).join(', ');
-        const open = deals.filter(deal => !deal.closed);
-        const closedDealIds = deals
+        const closedDealIds = found
             .filter(deal => deal.closed)
             .map(deal => deal.dealId);
+
+        let deals = found;
+        if (signal === 'email_domain') {
+            const guard = guardEmailDomain(
+                found,
+                unique(hits.flatMap(bucket => bucket.companyIds)),
+                leadInns,
+            );
+            if (guard.skipped) {
+                return {
+                    kind: 'none',
+                    signal,
+                    value,
+                    closedDealIds,
+                    skipped: guard.skipped,
+                };
+            }
+            deals = guard.deals;
+        }
+        const open = deals.filter(deal => !deal.closed);
 
         if (open.length === 1) {
             return {

@@ -86,7 +86,51 @@ export const FREE_EMAIL_DOMAINS: ReadonlySet<string> = new Set([
     'proton.me',
     'tut.by',
     'ukr.net',
+    // Дополнено 09.11.2026: vk.com склеил трёх разных людей из Воронежа,
+    // Белгорода и Питера (garant, сделка 102167), xmail.ru — ещё одну пару.
+    'vk.com',
+    'xmail.ru',
+    'mail.ua',
+    'narod.ru',
+    'myrambler.ru',
+    'ro.ru',
+    'rambler.ua',
+    'pochta.ru',
+    'qip.ru',
+    'nm.ru',
+    'e1.ru',
+    'ngs.ru',
+    'yandex.by',
+    'yandex.kz',
+    'yandex.ua',
+    'live.ru',
+    'msn.com',
+    'mail.com',
+    'gmx.com',
+    'gmx.de',
+    'zoho.com',
+    'tutanota.com',
+    'i.ua',
+    'meta.ua',
+    'bigmir.net',
 ]);
+
+/**
+ * Домены госсектора и образования: один домен на десятки учреждений.
+ * `govvrn.ru` — администрация Воронежской области, `volgadmin.ru` —
+ * Волгограда: под ними школы, детсады, ДЮСШ и департаменты, каждое —
+ * отдельный клиент (garant, 08.10–09.11.2026). Признак — часть имени, а не
+ * список: таких доменов в каждом регионе свои. Перестраховка дешёвая —
+ * без доменного сигнала заявка просто не присоединится и попадёт в отчёт
+ * по дублям, а ложная склейка уводит клиента чужому менеджеру.
+ */
+const PUBLIC_SECTOR_LABEL = /(^|[.-])(gov|edu)|gov|admin/;
+
+export function isPublicSectorDomain(domain: string): boolean {
+    const labels = domain.toLowerCase().split('.');
+    // Последняя метка — зона (ru, com): по ней не судим.
+    return labels.slice(0, -1).some(label => PUBLIC_SECTOR_LABEL.test(label));
+}
 
 /**
  * Служебные домены: адрес на них клиенту не принадлежит. `garant.ru` —
@@ -160,6 +204,7 @@ export function corporateEmailDomain(
     if (isPlaceholderEmail(raw)) return null;
     const domain = emailDomain(raw);
     if (!domain || FREE_EMAIL_DOMAINS.has(domain)) return null;
+    if (isPublicSectorDomain(domain)) return null;
     if (isListedDomain(domain, SERVICE_EMAIL_DOMAINS)) return null;
     if (isListedDomain(domain, excluded)) return null;
     return domain;

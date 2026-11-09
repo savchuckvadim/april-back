@@ -174,7 +174,19 @@ export class RepeatWorkFinderService {
                 needs.get(lead.leadId)!,
                 dealRowById,
             );
-            const resolution = resolveRepeatWork(buckets);
+            const resolution = resolveRepeatWork(
+                buckets,
+                signalsByLead.get(lead.leadId)?.inns ?? [],
+            );
+            if (resolution.skipped) {
+                this.logger.log(
+                    `[repeat] lead=${lead.leadId}: домен почты ${resolution.value ?? ''} — ` +
+                        (resolution.skipped === 'shared-domain'
+                            ? 'общий у разных клиентов'
+                            : 'у сделки другой ИНН') +
+                        ', не присоединяем',
+                );
+            }
             out.set(lead.leadId, {
                 resolution,
                 openMainTasks: [],
@@ -688,6 +700,13 @@ export class RepeatWorkFinderService {
             companyId: this.toId(row.COMPANY_ID),
             title: this.text(row.TITLE) || `#${String(row.ID)}`,
             modifiedAt: this.text(row.DATE_MODIFY) || null,
+            inns: uniq(
+                this.innFields.deal.flatMap(field =>
+                    this.multifield(row[field.fieldName]).flatMap(
+                        normalizeInnList,
+                    ),
+                ),
+            ),
             row,
         };
     }

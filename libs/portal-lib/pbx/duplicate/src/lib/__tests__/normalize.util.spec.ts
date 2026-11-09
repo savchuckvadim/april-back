@@ -1,4 +1,5 @@
 import {
+    isPublicSectorDomain,
     corporateEmailDomain,
     isPlaceholderEmail,
     parseEmailDomainList,
@@ -283,5 +284,43 @@ describe('uniqueContacts — множественные поля сделки б
             '101',
             '102',
         ]);
+    });
+});
+
+/*
+ * garant 09.11.2026: vk.com (бесплатная почта) и govvrn.ru / volgadmin.ru
+ * (общие домены администраций) склеивали разных клиентов в одну сделку.
+ */
+describe('домен почты как признак организации — бесплатные и госсектор', () => {
+    it.each([
+        'user@vk.com',
+        'user@xmail.ru',
+        'user@narod.ru',
+        'user@yandex.by',
+    ])('%s — бесплатная почта, не признак', email => {
+        expect(corporateEmailDomain(email)).toBeNull();
+    });
+
+    it.each([
+        'idanilova@govvrn.ru',
+        'dou117@volgadmin.ru',
+        'school@edu.vrn.ru',
+        'info@edu-region.ru',
+        'x@minfin.gov.ru',
+    ])('%s — госсектор или образование, не признак', email => {
+        expect(corporateEmailDomain(email)).toBeNull();
+    });
+
+    it.each([
+        ['volodina_vv2@cscentr.com', 'cscentr.com'],
+        ['gusev_sa@transmost.ru', 'transmost.ru'],
+    ])('%s — домен организации остаётся признаком', (email, domain) => {
+        expect(corporateEmailDomain(email)).toBe(domain);
+    });
+
+    it('по зоне домена не судим: .gov в зоне не бывает, метки проверяются до неё', () => {
+        expect(isPublicSectorDomain('govvrn.ru')).toBe(true);
+        expect(isPublicSectorDomain('volgadmin.ru')).toBe(true);
+        expect(isPublicSectorDomain('transmost.ru')).toBe(false);
     });
 });

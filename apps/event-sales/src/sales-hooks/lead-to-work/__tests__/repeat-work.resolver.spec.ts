@@ -21,6 +21,7 @@ const deal = (
     companyId: null,
     title: `Сделка ${dealId}`,
     modifiedAt: null,
+    inns: [],
     row: { ID: String(dealId) },
     ...over,
 });
@@ -200,6 +201,125 @@ describe('resolveRepeatWork', () => {
  * Запись истории уходит значением batch-команды: Битрикс разбирает команду
  * как url и режет всё от первого `#` — запись сохранялась как «лид ».
  */
+/*
+ * garant 08–28.10.2026: общий домен Воронежской области govvrn.ru склеил
+ * четыре заявки разных учреждений со сделками 92231 и 95597. Решение
+ * владельца 09.11.2026: общий домен и чужой ИНН — не повод присоединять.
+ */
+describe('resolveRepeatWork — домен почты', () => {
+    it('домен у двух разных компаний — общий: не присоединяем (govvrn.ru)', () => {
+        const res = resolveRepeatWork([
+            bucket({
+                signal: 'email_domain',
+                value: 'govvrn.ru',
+                deals: [
+                    deal(92231, { companyId: 83337, inns: ['3666096861'] }),
+                    deal(95597, { companyId: 77589, inns: ['3617006223'] }),
+                ],
+            }),
+        ]);
+        expect(res).toMatchObject({
+            kind: 'none',
+            signal: 'email_domain',
+            skipped: 'shared-domain',
+        });
+        expect(res.mainDeal).toBeUndefined();
+    });
+
+    it('вторая организация найдена компанией без работы — домен тоже общий', () => {
+        const res = resolveRepeatWork([
+            bucket({
+                signal: 'email_domain',
+                deals: [deal(92231, { companyId: 83337 })],
+                companyIds: [77589],
+            }),
+        ]);
+        expect(res.skipped).toBe('shared-domain');
+    });
+
+    it('заявка с ИНН не присоединяется по домену к сделке с другим ИНН', () => {
+        const res = resolveRepeatWork(
+            [
+                bucket({
+                    signal: 'email_domain',
+                    deals: [
+                        deal(92231, { companyId: 83337, inns: ['3666096861'] }),
+                    ],
+                }),
+            ],
+            ['3604001234'],
+        );
+        expect(res).toMatchObject({ kind: 'none', skipped: 'inn-conflict' });
+    });
+
+    it('один клиент на домене — присоединяем, как раньше', () => {
+        const res = resolveRepeatWork([
+            bucket({
+                signal: 'email_domain',
+                deals: [deal(11, { companyId: 100 })],
+            }),
+        ]);
+        expect(res).toMatchObject({ kind: 'join', signal: 'email_domain' });
+        expect(res.mainDeal?.dealId).toBe(11);
+    });
+
+    it('две сделки одной фирмы (одна компания или общий ИНН) — не общий домен', () => {
+        const sameCompany = resolveRepeatWork([
+            bucket({
+                signal: 'email_domain',
+                deals: [
+                    deal(11, { companyId: 100 }),
+                    deal(12, { companyId: 100 }),
+                ],
+            }),
+        ]);
+        expect(sameCompany.kind).toBe('ambiguous');
+
+        const sameInn = resolveRepeatWork([
+            bucket({
+                signal: 'email_domain',
+                deals: [
+                    deal(11, { companyId: 100, inns: ['3666096861'] }),
+                    deal(12, { companyId: 200, inns: ['3666096861'] }),
+                ],
+            }),
+        ]);
+        expect(sameInn.kind).toBe('ambiguous');
+    });
+
+    // Ради этого сигнал и просили (garant 21.09.2026): фирма пишет с одного
+    // домена, а карточки ещё без компании и ИНН.
+    it('сделки без компании и ИНН не делают домен общим — самая свежая', () => {
+        const res = resolveRepeatWork([
+            bucket({
+                signal: 'email_domain',
+                deals: [
+                    deal(84393, { modifiedAt: '2026-09-20T09:00:00+03:00' }),
+                    deal(84415, { modifiedAt: '2026-09-21T09:00:00+03:00' }),
+                ],
+            }),
+        ]);
+        expect(res.kind).toBe('ambiguous');
+        expect(res.mainDeal?.dealId).toBe(84415);
+    });
+
+    it('почта целиком и телефон проверку домена не проходят — решение 01.10 в силе', () => {
+        const res = resolveRepeatWork(
+            [
+                bucket({
+                    signal: 'email',
+                    deals: [
+                        deal(11, { companyId: 100, inns: ['1'] }),
+                        deal(12, { companyId: 200, inns: ['2'] }),
+                    ],
+                }),
+            ],
+            ['3'],
+        );
+        expect(res.kind).toBe('ambiguous');
+    });
+});
+
 describe('repeatJoinHistoryText', () => {
     const ambiguous = resolveRepeatWork([
         bucket({
