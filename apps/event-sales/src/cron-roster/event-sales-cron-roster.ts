@@ -14,7 +14,11 @@ import { PortalAiSettingsWithDomain } from '@lib/portal-lib/store/ai-settings/po
  * Таблицы повторяют критерии самих планировщиков — каждый читает свой
  * флаг из тех же настроек портала. Расхождение с реестром Nest видно в
  * отчёте: крон без строки здесь печатается как «привязка к порталам не
- * описана», строка без крона — предупреждением внизу.
+ * описана», строка без крона — предупреждением под заголовком.
+ *
+ * Аудит сделок при старте дополнительно шлёт своё сообщение с частотой и
+ * получателями по порталам (DealAuditScheduler.reportRoster) — здесь
+ * только «где включён».
  */
 
 const SETTINGS = PORTAL_APP_SETTINGS_SCHEMA[EnumPortalAppCode.eventSales];
@@ -60,7 +64,7 @@ const xoOrphanNote: PortalNote<PortalAppSettingsRecord> = row => {
 const APP_SETTINGS_CRONS: readonly AppSettingsCron[] = [
     {
         name: 'xo-dispatch-rescue',
-        purpose: 'подстраховка ХО: досылка упавших хуков',
+        purpose: 'подстраховка ХО: дожим компаний и сделок, где хук упал',
         enabled: SETTINGS.xoRescueEnabled,
         note: xoOrphanNote,
     },
@@ -144,6 +148,21 @@ const AI_SETTINGS_CRONS: readonly AiSettingsCron[] = [
         purpose: 'утренняя сверка презентаций и причин отказа',
         note: presentationAuditNote,
     },
+    // Крон библиотеки @lib/call-lib (CallReportAnalyticsModule), в реестре
+    // event-sales — те же порталы AI-конвейера.
+    {
+        name: 'call-report-analytics-snapshot',
+        purpose: 'недельные снимки отчётов по звонкам для трендов',
+    },
+];
+
+/** Кроны без привязки к порталам — приезжают из библиотек вместе с модулями. */
+const UNBOUND_CRONS: readonly { name: string; purpose: string }[] = [
+    // @lib/app-cache (AppCacheServiceModule)
+    {
+        name: 'app-cache-purge',
+        purpose: 'чистка протухшего кэша приложения, раз в час',
+    },
 ];
 
 const toPortal = <T extends { domain: string }>(
@@ -187,6 +206,9 @@ export const buildEventSalesCronRoster = (
                 .sort(byDomain),
         });
     }
+    for (const cron of UNBOUND_CRONS) {
+        roster.set(cron.name, { purpose: cron.purpose, portals: null });
+    }
     return roster;
 };
 
@@ -194,4 +216,5 @@ export const buildEventSalesCronRoster = (
 export const EVENT_SALES_DESCRIBED_CRONS: readonly string[] = [
     ...APP_SETTINGS_CRONS,
     ...AI_SETTINGS_CRONS,
+    ...UNBOUND_CRONS,
 ].map(cron => cron.name);

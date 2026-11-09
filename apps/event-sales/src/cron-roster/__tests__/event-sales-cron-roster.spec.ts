@@ -46,6 +46,25 @@ const aiPortal = (domain: string, flags: AiFlags): PortalAiSettingsWithDomain =>
 const GARANT = 'garant.bitrix24.ru';
 const GSR = 'gsr.bitrix24.ru';
 
+/** Все кроны, которые Nest регистрирует в event-sales, включая библиотечные. */
+const EVENT_SALES_CRONS = [
+    'app-cache-purge',
+    'call-report-analytics-snapshot',
+    'call-report-catch-up',
+    'call-report-scan',
+    'call-report-smart-backfill',
+    'call-report-weekly',
+    'call-revision',
+    'event-sales-deal-audit',
+    'event-sales-duplicate-report',
+    'lead-intake-rescue',
+    'lead-request-sla',
+    'presentation-audit',
+    'reject-revive',
+    'tmc-approval-rescue',
+    'xo-dispatch-rescue',
+];
+
 describe('buildEventSalesCronRoster', () => {
     const rows = [
         row(GSR, {
@@ -75,7 +94,7 @@ describe('buildEventSalesCronRoster', () => {
 
     it('подстраховка ХО: порталы по флагу, пометка про поиск по дате звонка и его холостой ход', () => {
         expect(roster.get('xo-dispatch-rescue')).toEqual({
-            purpose: 'подстраховка ХО: досылка упавших хуков',
+            purpose: 'подстраховка ХО: дожим компаний и сделок, где хук упал',
             portals: [
                 { domain: GARANT, note: 'по дате звонка — только в лог' },
                 { domain: GSR, note: 'и по дате звонка' },
@@ -111,6 +130,9 @@ describe('buildEventSalesCronRoster', () => {
         expect(roster.get('call-report-smart-backfill')?.portals).toHaveLength(
             2,
         );
+        expect(
+            roster.get('call-report-analytics-snapshot')?.portals,
+        ).toHaveLength(2);
         expect(roster.get('call-report-weekly')?.portals).toEqual([
             { domain: GARANT },
         ]);
@@ -124,6 +146,13 @@ describe('buildEventSalesCronRoster', () => {
         ]);
     });
 
+    it('чистка кэша — крон библиотеки без привязки к порталам', () => {
+        expect(roster.get('app-cache-purge')).toEqual({
+            purpose: 'чистка протухшего кэша приложения, раз в час',
+            portals: null,
+        });
+    });
+
     it('портал AI-конвейера с enabled=false в список не попадает', () => {
         const result = buildEventSalesCronRoster(
             [],
@@ -133,11 +162,11 @@ describe('buildEventSalesCronRoster', () => {
         expect(result.get('call-report-scan')?.portals).toEqual([]);
     });
 
-    it('описаны все 13 кронов event-sales, имена без повторов', () => {
-        expect(new Set(EVENT_SALES_DESCRIBED_CRONS).size).toBe(13);
-        expect([...roster.keys()].sort()).toEqual(
-            [...EVENT_SALES_DESCRIBED_CRONS].sort(),
+    it('описаны ровно те кроны, что зарегистрированы в event-sales', () => {
+        expect([...EVENT_SALES_DESCRIBED_CRONS].sort()).toEqual(
+            EVENT_SALES_CRONS,
         );
+        expect([...roster.keys()].sort()).toEqual(EVENT_SALES_CRONS);
     });
 });
 

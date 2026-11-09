@@ -17,6 +17,9 @@ import {
     CronJobsRosterSource,
 } from './cron-jobs-roster';
 
+const errorMessage = (error: unknown): string =>
+    error instanceof Error ? error.message : String(error);
+
 /**
  * При старте приложения пишет в лог и в Telegram список зарегистрированных
  * кронов с ближайшими запусками, а если приложение отдало сведения
@@ -31,7 +34,9 @@ import {
  * Кроны монтирует глобальный ScheduleModule в своём onApplicationBootstrap,
  * а хуки глобальных модулей Nest вызывает первыми — к нашему хуку реестр
  * уже полон. Сведения читаются из БД без ожидания: старт приложения они
- * не задерживают, сбой чтения — строка в том же сообщении.
+ * не задерживают, сбой чтения — строка в том же сообщении. Отчёт — только
+ * диагностика, поэтому любая его ошибка остаётся в логе и приложение не
+ * роняет.
  */
 @Injectable()
 export class CronJobsReporter implements OnApplicationBootstrap {
@@ -45,7 +50,11 @@ export class CronJobsReporter implements OnApplicationBootstrap {
     ) {}
 
     onApplicationBootstrap(): void {
-        void this.report();
+        void this.report().catch((error: unknown) =>
+            this.logger.error(
+                `Отчёт о кронах не отправлен: ${errorMessage(error)}`,
+            ),
+        );
     }
 
     /** Собрать и отправить отчёт; вынесен из хука ради тестов и повторного вызова. */
@@ -56,11 +65,11 @@ export class CronJobsReporter implements OnApplicationBootstrap {
             return;
         }
         const roster = await this.loadRoster();
-        const { lines, footer } = mergeCronJobsRoster(jobs, roster.value);
+        const { lines, warnings } = mergeCronJobsRoster(jobs, roster.value);
         if (roster.error) {
-            footer.push(`⚠️ Сведения о порталах не собраны: ${roster.error}`);
+            warnings.push(`⚠️ Сведения о порталах не собраны: ${roster.error}`);
         }
-        this.logger.log(formatCronJobsReport(lines, footer), {
+        this.logger.log(formatCronJobsReport(lines, warnings), {
             telegram: true,
         });
     }
@@ -73,8 +82,7 @@ export class CronJobsReporter implements OnApplicationBootstrap {
         try {
             return { value: await this.rosterSource.resolve(), error: null };
         } catch (error) {
-            const message =
-                error instanceof Error ? error.message : String(error);
+            const message = errorMessage(error);
             this.logger.error(
                 `Сведения о порталах для отчёта о кронах не собраны: ${message}`,
             );

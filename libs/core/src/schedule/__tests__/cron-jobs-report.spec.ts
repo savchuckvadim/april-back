@@ -26,6 +26,8 @@ const job = (runs: string[], zones: string[] = []): CronJobSchedule => ({
 const roster = (entries: [string, CronJobInfo][]) =>
     new Map<string, CronJobInfo>(entries);
 
+const HEADER = '🕒 Кроны запущены: 1 (ближайшие запуски, МСК)\n';
+
 describe('summarizeCronJobs', () => {
     it('сортирует задачи по имени и берёт два ближайших запуска в МСК', () => {
         const zones: string[] = [];
@@ -61,7 +63,7 @@ describe('mergeCronJobsRoster', () => {
     it('без источника сведений строки остаются голым реестром', () => {
         expect(mergeCronJobsRoster(jobs, null)).toEqual({
             lines: jobs,
-            footer: [],
+            warnings: [],
         });
     });
 
@@ -80,12 +82,12 @@ describe('mergeCronJobsRoster', () => {
     });
 
     it('кроны, описанные без регистрации в Nest, попадают в предупреждение', () => {
-        const { footer } = mergeCronJobsRoster(
+        const { warnings } = mergeCronJobsRoster(
             jobs,
             roster([['lead-sla', { purpose: 'SLA', portals: [] }]]),
         );
 
-        expect(footer).toEqual([
+        expect(warnings).toEqual([
             '⚠️ Описаны, но не зарегистрированы: lead-sla',
         ]);
     });
@@ -97,10 +99,7 @@ describe('formatCronJobsReport', () => {
             { name: 'deal-audit', nextRuns: ['01.10 12:30', '01.10 13:00'] },
         ]);
 
-        expect(text).toBe(
-            '🕒 Кроны запущены: 1 (ближайшие запуски, МСК)\n' +
-                '• deal-audit — 01.10 12:30, 01.10 13:00',
-        );
+        expect(text).toBe(HEADER + '• deal-audit — 01.10 12:30, 01.10 13:00');
     });
 
     it('со сведениями — вторая строка: назначение и порталы с пометками', () => {
@@ -142,17 +141,17 @@ describe('formatCronJobsReport', () => {
         expect(text).toContain('• moveDeals — 01.10 15:00\n  перенос сделок');
     });
 
-    it('крон без сведений при наличии источника помечается, подвал дописывается', () => {
+    it('крон без сведений при наличии источника помечается, предупреждения — сразу под заголовком', () => {
         const text = formatCronJobsReport(
             [{ name: 'new-cron', nextRuns: ['01.10 12:00'], info: null }],
             ['⚠️ Описаны, но не зарегистрированы: old-cron'],
         );
 
         expect(text).toBe(
-            '🕒 Кроны запущены: 1 (ближайшие запуски, МСК)\n' +
+            HEADER +
+                '⚠️ Описаны, но не зарегистрированы: old-cron\n' +
                 '• new-cron — 01.10 12:00\n' +
-                '  привязка к порталам не описана\n' +
-                '⚠️ Описаны, но не зарегистрированы: old-cron',
+                '  привязка к порталам не описана',
         );
     });
 
@@ -165,6 +164,7 @@ describe('CronJobsReporter', () => {
     const registry = (jobs: Map<string, CronJobSchedule>) =>
         ({ getCronJobs: () => jobs }) as never;
     const jobs = new Map([['deal-audit', job(['01.10 12:30'])]]);
+    const flush = () => new Promise(resolve => setImmediate(resolve));
 
     afterEach(() => jest.restoreAllMocks());
 
@@ -192,6 +192,23 @@ describe('CronJobsReporter', () => {
         expect(report).toHaveBeenCalledTimes(1);
     });
 
+    it('упавший отчёт остаётся в логе ошибкой, а не необработанным отказом', async () => {
+        const error = jest
+            .spyOn(Logger.prototype, 'error')
+            .mockImplementation(() => undefined);
+        const reporter = new CronJobsReporter(registry(jobs));
+        jest.spyOn(reporter, 'report').mockRejectedValue(
+            new Error('сломалось'),
+        );
+
+        reporter.onApplicationBootstrap();
+        await flush();
+
+        expect(error).toHaveBeenCalledWith(
+            'Отчёт о кронах не отправлен: сломалось',
+        );
+    });
+
     it('сведения источника попадают в сообщение', async () => {
         const log = jest
             .spyOn(Logger.prototype, 'log')
@@ -216,7 +233,7 @@ describe('CronJobsReporter', () => {
         );
     });
 
-    it('сбой источника — список кронов всё равно уходит, причина в подвале', async () => {
+    it('сбой источника — список кронов всё равно уходит, причина под заголовком', async () => {
         const log = jest
             .spyOn(Logger.prototype, 'log')
             .mockImplementation(() => undefined);
@@ -230,10 +247,9 @@ describe('CronJobsReporter', () => {
         await new CronJobsReporter(registry(jobs), source).report();
 
         expect(log).toHaveBeenCalledWith(
-            expect.stringContaining(
-                '• deal-audit — 01.10 12:30\n' +
-                    '⚠️ Сведения о порталах не собраны: БД недоступна',
-            ),
+            HEADER +
+                '⚠️ Сведения о порталах не собраны: БД недоступна\n' +
+                '• deal-audit — 01.10 12:30',
             { telegram: true },
         );
         expect(error).toHaveBeenCalledWith(

@@ -58,13 +58,13 @@ export const summarizeCronJobs = (
 /**
  * Склейка реестра со сведениями приложения. Кроны, описанные в сведениях,
  * но не зарегистрированные в Nest (опечатка в имени, модуль не подключён),
- * попадают в предупреждение внизу отчёта.
+ * попадают в предупреждения отчёта.
  */
 export const mergeCronJobsRoster = (
     jobs: readonly CronJobSummary[],
     roster: CronJobsRoster | null,
-): { lines: CronJobReportLine[]; footer: string[] } => {
-    if (!roster) return { lines: [...jobs], footer: [] };
+): { lines: CronJobReportLine[]; warnings: string[] } => {
+    if (!roster) return { lines: [...jobs], warnings: [] };
     const registered = new Set(jobs.map(job => job.name));
     const unknown = [...roster.keys()].filter(name => !registered.has(name));
     return {
@@ -72,7 +72,7 @@ export const mergeCronJobsRoster = (
             ...job,
             info: roster.get(job.name) ?? null,
         })),
-        footer: unknown.length
+        warnings: unknown.length
             ? [`⚠️ Описаны, но не зарегистрированы: ${unknown.join(', ')}`]
             : [],
     };
@@ -97,10 +97,14 @@ const describeInfo = (info: CronJobInfo | null | undefined): string | null => {
         : `${info.purpose}: ${describePortals(info.portals)}`;
 };
 
-/** Текст отчёта о кронах приложения для лога и Telegram. */
+/**
+ * Текст отчёта о кронах приложения для лога и Telegram. Предупреждения идут
+ * сразу после заголовка: если Telegram обрежет длинное сообщение, пропадут
+ * последние строки списка, а не они.
+ */
 export const formatCronJobsReport = (
     jobs: readonly CronJobReportLine[],
-    footer: readonly string[] = [],
+    warnings: readonly string[] = [],
 ): string => {
     if (!jobs.length) {
         return (
@@ -115,7 +119,7 @@ export const formatCronJobsReport = (
     });
     return [
         `🕒 Кроны запущены: ${jobs.length} (ближайшие запуски, МСК)`,
+        ...warnings,
         ...lines,
-        ...footer,
     ].join('\n');
 };
