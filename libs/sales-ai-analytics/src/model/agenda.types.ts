@@ -72,6 +72,7 @@ export interface AgendaItem {
     reason: string;
     quote: string;
     charOffset: number | null;
+    /** Общая оценка звонка по шкале витрины 1–10 (weightedScore/10); null — нет. */
     score: number | null;
 }
 

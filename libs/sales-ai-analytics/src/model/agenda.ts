@@ -68,6 +68,10 @@ function selectDiverse(
     return selected.sort(compareCandidates);
 }
 
+/** Общая оценка строки 0–100 → шкала витрины 1–10 с одной цифрой после запятой. */
+const toScore10 = (score: number | null): number | null =>
+    score === null ? null : Math.round(score) / 10;
+
 function toItem(candidate: AgendaCandidate): AgendaItem {
     const { row, quote } = candidate;
     const offset =
@@ -80,7 +84,9 @@ function toItem(candidate: AgendaCandidate): AgendaItem {
         reason: candidate.reason,
         quote,
         charOffset: offset >= 0 ? offset : null,
-        score: row.score,
+        // Витрина и подсказки везде говорят о шкале 1–10 (09.11.2026: в
+        // повестке показывалось «оценка 30» при «4 из 10» в причине).
+        score: toScore10(row.score),
     };
 }
 

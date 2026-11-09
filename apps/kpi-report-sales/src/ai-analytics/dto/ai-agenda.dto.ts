@@ -80,10 +80,11 @@ export class AiAgendaItemDto {
     link: string | null;
 
     @ApiProperty({
-        description: 'Оценка звонка 0–100; null — нет.',
+        description:
+            'Общая оценка звонка по шкале 1–10 (как во всей витрине); null — нет.',
         type: Number,
         nullable: true,
-        example: 72,
+        example: 7.2,
     })
     score: number | null;
 }
