@@ -212,6 +212,7 @@
       "^@lib/ai-presets(|/.*)$": "<rootDir>/libs/ai-presets/src/$1",
       "^@lib/vendor-settings(|/.*)$": "<rootDir>/libs/vendor-settings/src/$1",
       "^@lib/renewal-offer(|/.*)$": "<rootDir>/libs/renewal-offer/src/$1",
+      "^@lib/site-content(|/.*)$": "<rootDir>/libs/site-content/src/$1",
       "^@lib/cabinet(|/.*)$": "<rootDir>/libs/cabinet/src/$1",
       "^@lib/ru-work-calendar(|/.*)$": "<rootDir>/libs/ru-work-calendar/src/$1",
       "^@lib/pbx-user-fields(|/.*)$": "<rootDir>/libs/pbx-user-fields/src/$1",

@@ -80,6 +80,8 @@
       "@lib/vendor-settings/*": ["libs/vendor-settings/src/*"],
       "@lib/renewal-offer": ["libs/renewal-offer/src"],
       "@lib/renewal-offer/*": ["libs/renewal-offer/src/*"],
+      "@lib/site-content": ["libs/site-content/src"],
+      "@lib/site-content/*": ["libs/site-content/src/*"],
       "@lib/cabinet": ["libs/cabinet/src"],
       "@lib/cabinet/*": ["libs/cabinet/src/*"],
       "@lib/ru-work-calendar": ["libs/ru-work-calendar/src"],

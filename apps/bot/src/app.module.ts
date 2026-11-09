@@ -12,6 +12,7 @@ import { SupportApiModule } from './support-api/support-api.module';
 import { SupportTelegramAppModule } from './support-telegram/support-telegram-app.module';
 import { CabinetTelegramWebhookModule } from '@lib/cabinet';
 import { SiteLeadModule } from './site-lead/site-lead.module';
+import { SiteMediaPublicModule } from '@lib/site-content';
 
 /**
  * Корневой модуль приложения bot.
@@ -54,6 +55,8 @@ import { SiteLeadModule } from './site-lead/site-lead.module';
         CabinetTelegramWebhookModule,
         // Заявки с сайта April → Telegram-чат «April Client» ботом поддержки (09.11.2026)
         SiteLeadModule,
+        // Картинки и видео сайта: список для ISR и файлы под /media сайта (09.11.2026)
+        SiteMediaPublicModule,
     ],
     providers: [GlobalExceptionFilter],
 })
