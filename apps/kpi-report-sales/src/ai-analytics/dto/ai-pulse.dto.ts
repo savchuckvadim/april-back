@@ -99,7 +99,8 @@ export class AiPulseManagerDto {
     @ApiPropertyOptional({
         description:
             'Звонки-примеры для «С кем поработать»: без даты — разобрать, с ' +
-            'датой — образец. Поля нет — ответ из кэша до обновления.',
+            'датой и лучшей оценкой разбора — образец. Поля нет — ответ из ' +
+            'кэша до обновления.',
         type: AiPulseManagerExamplesDto,
     })
     examples?: AiPulseManagerExamplesDto;

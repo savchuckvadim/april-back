@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MetricDto } from './metric.dto';
 
 /**
@@ -33,6 +33,16 @@ export class AiPulseCallRefDto {
         example: 'https://april.bitrix24.ru/crm/type/1036/details/128/',
     })
     link: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Общая оценка разбора по шкале 1–10 (одна цифра после запятой); ' +
+            'null — оценки нет. Поля нет — ответ из кэша до обновления.',
+        type: Number,
+        nullable: true,
+        example: 8.4,
+    })
+    score?: number | null;
 }
 
 /** Звонки-примеры менеджера: что разобрать и что показать как образец. */
@@ -47,8 +57,9 @@ export class AiPulseManagerExamplesDto {
 
     @ApiProperty({
         description:
-            'Свежий звонок окна с договорённостью и датой — образец; null — ' +
-            'таких в окне нет.',
+            'Звонок-образец: звонок окна с договорённостью и датой и лучшей ' +
+            'общей оценкой разбора — не ниже 7 из 10 или выше средней по ' +
+            'разобранным звонкам окна; null — такого звонка нет.',
         type: AiPulseCallRefDto,
         nullable: true,
     })

@@ -197,7 +197,7 @@ describe('computePulse: неделей раньше и звонки-пример
         expect(strict.previous?.nextStepDateRate.value).toBeCloseTo(0.5, 10);
     });
 
-    it('у менеджера — два свежих звонка без даты и свежий с датой', () => {
+    it('у менеджера — два свежих звонка без даты и образец: звонок с датой и оценкой не ниже планки', () => {
         const rows = [
             call('2026-11-02', { transcriptionId: 'old-no', nextStep: null }),
             call('2026-11-03', {
@@ -209,7 +209,7 @@ describe('computePulse: неделей раньше и звонки-пример
                 callStartedAt: new Date('2026-11-03T09:00:00+03:00'),
                 nextStep: { set: false, date: null },
             }),
-            call('2026-11-02', { transcriptionId: 'with-date' }),
+            call('2026-11-02', { transcriptionId: 'with-date', score: 80 }),
             ...calls('2026-10-30', 4),
         ];
         const result = computePulse(rows, {

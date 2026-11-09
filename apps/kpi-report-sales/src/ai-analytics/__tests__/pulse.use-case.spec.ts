@@ -147,6 +147,37 @@ describe('PulseUseCase', () => {
         expect(dto.minDurationSec).toBe(300);
     });
 
+    it('звонок-образец — с лучшей оценкой среди звонков с датой, оценка 1–10 уходит в ответ', async () => {
+        const rows = [
+            ...windowRows(),
+            // Старее всех звонков окна, зато оценка выше остальных (у них 70).
+            liteRow({
+                transcriptionId: 'best',
+                managerId: '10',
+                callStartedAt: new Date('2026-09-01T07:00:00Z'),
+                score: 92,
+            }),
+        ];
+        const useCase = new PulseUseCase(
+            callsLoaderWith(rows).loader,
+            settingsLoaderWith(),
+            feedbackStoreWith([]),
+            smartLinksWith().loader,
+            calendarLoaderWith().loader,
+            telephonyWith().loader,
+        );
+
+        const dto = await useCase.execute('d', { now: NOW });
+
+        const examples = dto.byManager[0].examples;
+        expect(examples?.withDate).toMatchObject({
+            transcriptionId: 'best',
+            score: 9.2,
+        });
+        expect(examples?.noDate).toHaveLength(2);
+        expect(examples?.noDate[0].score).toBe(7);
+    });
+
     it('alerts: риск-флаг, urgent и alert_sent из ais; handled — по alert_handled', async () => {
         const rows = [
             liteRow({
