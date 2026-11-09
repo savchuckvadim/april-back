@@ -40,10 +40,10 @@ interface Trait {
 const TRAITS: readonly Trait[] = [
     {
         column: 'contactedAdvanced',
-        measure: 'шаг вперёд в разговорах с решающим',
+        measure: 'шаг вперёд в разговорах с ЛПР',
         higherBetter: true,
-        good: 'разговор с решающим чаще других заканчивается шагом вперёд',
-        bad: 'разговор с решающим реже других заканчивается шагом вперёд',
+        good: 'разговор с ЛПР чаще других заканчивается шагом вперёд',
+        bad: 'разговор с ЛПР реже других заканчивается шагом вперёд',
     },
     {
         column: 'coldAdvanced',
@@ -250,7 +250,7 @@ function conclusionOf(
 ): string {
     const advanced =
         row.contactedAdvanced.n > 0
-            ? `, шаг вперёд в ${pctText(row.contactedAdvanced.pct)} разговоров с решающим`
+            ? `, шаг вперёд в ${pctText(row.contactedAdvanced.pct)} разговоров с ЛПР`
             : '';
     const parts: string[] = [
         `${shareText(row.shareOfTeam)} разговоров команды${advanced}.`,

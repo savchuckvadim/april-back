@@ -11,7 +11,6 @@ import type {
     OwnerReportControlMetric,
     OwnerReportCrmFacts,
     OwnerReportManagement,
-    OwnerReportPrices,
     OwnerReportSign,
     OwnerReportSignVerdict,
     OwnerReportWeek,
@@ -20,8 +19,9 @@ import type {
 
 /**
  * «Как управляется отдел»: признаки с порогами и общий вердикт; «Пять
- * метрик для контроля». Пороги — в процентах доли, кроме разброса цен
- * (отношение max/min). Признак без данных — unknown, он не входит в вердикт.
+ * метрик для контроля». Пороги — в процентах доли. Признак без данных —
+ * unknown, он не входит в вердикт. Разброс цен признаком не считается
+ * (решение владельца 09.11.2026: разным клиентам допустимы разные условия).
  */
 
 /** Пороги «да / частично» по доле, %. */
@@ -37,8 +37,6 @@ const SIGN_THRESHOLDS = {
 const PEOPLE_DEPENDENCY = { yes: 35, partial: 50 } as const;
 /** Качество базы: доля звонков со сбоями CRM, выше — хуже. */
 const BASE_QUALITY = { yes: 3, partial: 8 } as const;
-/** Единые цены: max/min обычной цены в месяц, выше — хуже. */
-const PRICE_SPREAD = { yes: 1.2, partial: 1.6 } as const;
 /** План-факт: факт/план. */
 const PLAN_FACT = { yes: 1, partial: 0.8 } as const;
 
@@ -46,7 +44,6 @@ const NOT_MANAGED_NO_SIGNS = 3;
 
 export interface ManagementInput {
     calls: readonly OwnerReportCall[];
-    prices: OwnerReportPrices;
     crm: OwnerReportCrmFacts | null;
 }
 
@@ -102,7 +99,7 @@ export function crmIssuesShare(calls: readonly OwnerReportCall[]): OwnerShare {
 }
 
 export function buildManagement(input: ManagementInput): OwnerReportManagement {
-    const { calls, prices, crm } = input;
+    const { calls, crm } = input;
     const contacted = talkedOf(calls);
     const presentation = buildTypeGroups(calls).find(
         row => row.group === 'presentation',
@@ -117,9 +114,6 @@ export function buildManagement(input: ManagementInput): OwnerReportManagement {
     );
     const top = topManagerAdvancedShare(calls);
     const base = crmIssuesShare(calls);
-    const spread = prices.listPerMonth
-        ? prices.listPerMonth.max / prices.listPerMonth.min
-        : null;
     const planFact = planFactOf(crm);
 
     const signs: OwnerReportSign[] = [
@@ -128,12 +122,6 @@ export function buildManagement(input: ManagementInput): OwnerReportManagement {
             repeat,
             higherIsBetter(repeat.pct, SIGN_THRESHOLDS.repeatability),
         ),
-        {
-            code: 'unified_pricing',
-            verdict: lowerIsBetter(spread, PRICE_SPREAD),
-            value: spread,
-            n: prices.listPerMonth?.n ?? 0,
-        },
         signOf(
             'people_dependency',
             top,

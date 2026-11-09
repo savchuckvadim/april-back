@@ -108,14 +108,14 @@ export class AiOwnerReportWeekRowDto {
     coldAdvanced: string;
 
     @ApiProperty({
-        description: 'Разговоров с решающим.',
+        description: 'Разговоров с ЛПР (лицом, принимающим решение).',
         type: Number,
         example: 31,
     })
     contacted: number;
 
     @ApiProperty({
-        description: 'С решающим → продвижение.',
+        description: 'С ЛПР → продвижение.',
         type: String,
         example: '15 из 31 (48 %)',
     })

@@ -143,7 +143,15 @@ export function buildPrices(
     calls: readonly OwnerReportCall[],
     crm: OwnerReportCrmFacts | null,
 ): OwnerReportPrices {
-    const prices = calls.flatMap(call => call.prices);
+    // Нулевая сумма — не цена («бесплатно», пробный доступ, сбой разметки):
+    // иначе разброс цен превращается в деление на ноль.
+    const prices = calls
+        .flatMap(call => call.prices)
+        .filter(
+            price =>
+                price.amount > 0 &&
+                (price.perMonth === null || price.perMonth > 0),
+        );
     const list = prices.filter(price => price.kind !== 'promo');
     const promo = prices.filter(price => price.kind === 'promo');
     const perMonth = (items: typeof prices): number[] =>

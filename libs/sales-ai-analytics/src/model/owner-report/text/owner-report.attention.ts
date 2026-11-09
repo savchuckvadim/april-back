@@ -20,8 +20,6 @@ const LEAKS_IN_ATTENTION = 2;
 const SIGN_ACTIONS: Readonly<Record<string, string>> = {
     repeatability:
         'Разобрать с отделом три лучших показа месяца и сделать из них общий порядок показа.',
-    unified_pricing:
-        'Утвердить прайс и условия акций одним документом и проверить, что менеджеры называют одни цены.',
     people_dependency:
         'Передать приёмы лучшего сотрудника команде: совместные звонки и разбор его записей.',
     stage_control:

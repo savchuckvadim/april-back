@@ -52,9 +52,9 @@ function volumeParagraph(facts: OwnerReportFacts): string {
     }
     const scope =
         outcomes.unmarked > 0
-            ? `Из ${countText(coverage.outcomeFromAnalysis, REPORT_FORMS.callsGenitive)} с размеченным исходом с решающим`
-            : 'С решающим';
-    return `${head}. ${scope} состоялось ${countText(outcomes.contacted, REPORT_FORMS.calls)}, до него не дошли ${noContact}.`;
+            ? `Из ${countText(coverage.outcomeFromAnalysis, REPORT_FORMS.callsGenitive)} с размеченным исходом с ЛПР`
+            : 'С ЛПР';
+    return `${head}. ${scope} состоялось ${countText(outcomes.contacted, REPORT_FORMS.calls)}, до ЛПР не дошли ${noContact}.`;
 }
 
 function followupParagraph(facts: OwnerReportFacts): string | null {
@@ -74,7 +74,7 @@ function postponedParagraph(facts: OwnerReportFacts): string | null {
     if (postponed === 0) return null;
     return `Отложено без даты возврата — ${countText(postponed, REPORT_FORMS.calls)} (${pctText(
         outcomes.contacted > 0 ? (postponed / outcomes.contacted) * 100 : null,
-    )} разговоров с решающим); дата возврата есть у ${outcomes.postponedWithDate.successes} из ${outcomes.postponedWithDate.n} отложенных и перезвонов.`;
+    )} разговоров с ЛПР); дата возврата есть у ${outcomes.postponedWithDate.successes} из ${outcomes.postponedWithDate.n} отложенных и перезвонов.`;
 }
 
 function coldParagraph(facts: OwnerReportFacts): string | null {
@@ -83,7 +83,7 @@ function coldParagraph(facts: OwnerReportFacts): string | null {
     const marked = cold.calls - cold.unmarked;
     if (marked === 0) return null;
     const contacted = marked - cold.byOutcome.no_contact;
-    return `Холодный вход: из ${countText(marked, REPORT_FORMS.callsGenitive)} до решающего дошли ${contacted}, до показа, доступа или предложения — ${cold.byOutcome.advanced} (${pctText(cold.advancedOfAll.pct)}).`;
+    return `Холодный вход: из ${countText(marked, REPORT_FORMS.callsGenitive)} до ЛПР дошли ${contacted}, до показа, доступа или предложения — ${cold.byOutcome.advanced} (${pctText(cold.advancedOfAll.pct)}).`;
 }
 
 /** Что в разговорах видно и без новой разметки: задачи, шаг с датой, возражения. */
@@ -138,10 +138,12 @@ function pricesParagraph(facts: OwnerReportFacts): string | null {
     const spread = prices.byPeriod.find(
         item => item.range.min !== item.range.max,
     );
+    // Разные условия разным клиентам — не проблема и не вывод (решение
+    // владельца 09.11.2026): цены в резюме только справочно.
     if (spread) {
-        return `Единых цен нет: за ${countText(spread.periodMonths, ['месяц', 'месяца', 'месяцев'])} в разных разговорах звучало от ${moneyText(spread.range.min)} до ${moneyText(spread.range.max)}.`;
+        return `Цены в разговорах: за ${countText(spread.periodMonths, ['месяц', 'месяца', 'месяцев'])} звучало от ${moneyText(spread.range.min)} до ${moneyText(spread.range.max)} — условия разным клиентам могут отличаться, это не оценивается.`;
     }
-    return `Цены в разговорах совпадают: ${countText(prices.n, ['цена', 'цены', 'цен'])} без расхождений.`;
+    return `Цены в разговорах: ${countText(prices.n, ['цена', 'цены', 'цен'])}, суммы совпадают.`;
 }
 
 function issuesParagraph(facts: OwnerReportFacts): string | null {
@@ -165,5 +167,5 @@ function workingLinkParagraph(facts: OwnerReportFacts): string | null {
                 (a.advancedOfContacted.pct ?? 0),
         )[0];
     if (!best) return null;
-    return `Работающее звено — ${TYPE_GROUP_LABELS[best.group].toLowerCase()}: ${pctText(best.advancedOfContacted.pct)} таких разговоров с решающим двигают клиента дальше.`;
+    return `Работающее звено — ${TYPE_GROUP_LABELS[best.group].toLowerCase()}: ${pctText(best.advancedOfContacted.pct)} таких разговоров с ЛПР двигают клиента дальше.`;
 }

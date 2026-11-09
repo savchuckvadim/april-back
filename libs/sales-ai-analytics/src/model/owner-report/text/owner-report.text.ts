@@ -114,9 +114,6 @@ function signDetail(sign: OwnerReportSign): string {
     }
     const words = label[sign.verdict];
     if (sign.value === null) return words;
-    if (sign.code === 'unified_pricing') {
-        return `${words}: разброс в ${sign.value.toFixed(1).replace('.', ',')} раза`;
-    }
     if (sign.code === 'plan_fact') {
         return `${words}: ${pctText(sign.value * 100)} плана`;
     }
@@ -154,8 +151,8 @@ function buildObjectionsText(facts: OwnerReportFacts) {
             : null;
     const intro =
         objections.callsWithObjections.n === 0
-            ? 'Разговоров с решающим, где звучали возражения, в периоде нет.'
-            : `Возражения прозвучали в ${shareOfText(objections.callsWithObjections, REPORT_FORMS.callsGenitive)} с решающим (${pctText(objections.callsWithObjections.pct)}); отработано ${pctText(objections.handled.pct)} возражений.` +
+            ? 'Разговоров с ЛПР, где звучали возражения, в периоде нет.'
+            : `Возражения прозвучали в ${shareOfText(objections.callsWithObjections, REPORT_FORMS.callsGenitive)} с ЛПР (${pctText(objections.callsWithObjections.pct)}); отработано ${pctText(objections.handled.pct)} возражений.` +
               (objections.topicUnmarked > 0
                   ? ` Тема не размечена у ${countText(objections.topicUnmarked, REPORT_FORMS.objectionsGenitive)} — это старые разборы, в таблицу тем они не входят.`
                   : '');

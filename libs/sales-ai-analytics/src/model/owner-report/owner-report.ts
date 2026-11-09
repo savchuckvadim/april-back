@@ -59,7 +59,7 @@ export function buildOwnerReportFacts(
         issues: buildIssues(calls),
         prices,
         leaks: buildLeaks(calls, prices),
-        management: buildManagement({ calls, prices, crm }),
+        management: buildManagement({ calls, crm }),
         controlMetrics: buildControlMetrics(calls, weeks),
         managers: buildManagerRows(calls, crm),
         unattributedCalls: normalized.noManager,

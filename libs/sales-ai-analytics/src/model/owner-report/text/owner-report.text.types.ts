@@ -157,7 +157,7 @@ export type ManagerColumn = (typeof MANAGER_COLUMNS)[number];
 export const MANAGER_COLUMN_LABELS: Readonly<Record<ManagerColumn, string>> = {
     calls: 'Разговоров (доля)',
     coldAdvanced: 'Холодные: шаг вперёд',
-    contactedAdvanced: 'С решающим: шаг вперёд',
+    contactedAdvanced: 'С ЛПР: шаг вперёд',
     reactivationAdvanced: 'Возврат: шаг вперёд',
     needsFound: 'Выяснил задачи',
     presentationByNeeds: 'Показ под задачи',
