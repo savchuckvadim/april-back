@@ -6,4 +6,5 @@ export * from './owner-report.text.types';
 export * from './owner-report.text';
 export * from './owner-report.text.summary';
 export * from './owner-report.text.managers';
+export * from './owner-report.text.signals';
 export * from './owner-report.narrative';

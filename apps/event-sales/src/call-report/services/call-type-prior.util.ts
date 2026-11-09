@@ -36,6 +36,12 @@ export interface CallTypePriorInput {
     dealCategoryCode: string | null;
     /** pbx-код стадии сделки (sales_pres, sales_refine, …). */
     dealStageCode: string | null;
+    /**
+     * Русские названия стадии и воронки из слепка портала — причина приора
+     * словами («Презентация»), а не кодом; без них в причине остаются коды.
+     */
+    stageTitle?: string | null;
+    categoryTitle?: string | null;
     /** Вид работы лида: request — заявка с сайта, lead — обращение, cold. */
     leadWorkKind: 'request' | 'lead' | 'cold' | null;
 }
@@ -181,14 +187,20 @@ export function resolveCallTypePrior(
               : null;
     const prior = table?.[input.dealStageCode];
     if (!prior) return null;
-    return {
-        ...prior,
-        reason:
-            `сделка на стадии ${input.dealStageCode}` +
-            (input.dealCategoryCode
-                ? ` воронки ${input.dealCategoryCode}`
-                : ''),
-    };
+    return { ...prior, reason: priorReason(input) };
+}
+
+/** Причина приора словами: названия из слепка портала, без них — pbx-коды. */
+function priorReason(input: CallTypePriorInput): string {
+    const stage = input.stageTitle
+        ? `«${input.stageTitle}»`
+        : (input.dealStageCode ?? '—');
+    const category = input.categoryTitle
+        ? `«${input.categoryTitle}»`
+        : input.dealCategoryCode;
+    return (
+        `сделка на стадии ${stage}` + (category ? ` воронки ${category}` : '')
+    );
 }
 
 /** Строка для промпта классификатора — подсказка, не приговор. */

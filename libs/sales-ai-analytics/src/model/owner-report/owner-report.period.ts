@@ -133,3 +133,24 @@ export function parseOwnerReportKinds(
     );
     return OWNER_REPORT_PERIOD_KINDS.filter(kind => wanted.has(kind));
 }
+
+/** Ключи месяцев (YYYY-MM) внутри границ периода, по порядку. */
+export function ownerReportMonthKeys(
+    bounds: Pick<OwnerReportPeriodBounds, 'from' | 'to'>,
+): string[] {
+    const keys: string[] = [];
+    let year = Number(bounds.from.slice(0, 4));
+    let month = Number(bounds.from.slice(5, 7));
+    const last = bounds.to.slice(0, 7);
+    for (;;) {
+        const key = `${year}-${pad(month)}`;
+        if (key > last) break;
+        keys.push(key);
+        month += 1;
+        if (month > 12) {
+            month = 1;
+            year += 1;
+        }
+    }
+    return keys;
+}

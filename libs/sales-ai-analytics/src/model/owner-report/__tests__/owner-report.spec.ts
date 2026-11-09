@@ -297,10 +297,8 @@ describe('отчёт собственнику: разделы', () => {
         });
         const sign = (code: string) =>
             facts.management.signs.find(item => item.code === code);
-        expect(sign('unified_pricing')).toMatchObject({
-            verdict: 'yes',
-            value: 1,
-        });
+        // Разброс цен — не признак управления (решение владельца 09.11.2026).
+        expect(sign('unified_pricing')).toBeUndefined();
         expect(sign('people_dependency')?.verdict).toBe('no');
         expect(sign('people_dependency')?.value).toBeCloseTo(66.67, 1);
         expect(sign('upsell')).toMatchObject({ verdict: 'no', n: 7 });

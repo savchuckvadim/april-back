@@ -1,4 +1,5 @@
 import { normalizeOwnerReportCalls } from './owner-report.calls';
+import { buildFunnel } from './owner-report.funnel';
 import { buildLeaks } from './owner-report.leaks';
 import {
     buildControlMetrics,
@@ -16,6 +17,9 @@ import {
     buildTypeGroups,
     buildWeeks,
 } from './owner-report.overview';
+import { buildPresentations } from './owner-report.presentations';
+import { buildOwnerReportQualityLink } from './owner-report.quality-link';
+import { buildReactivationFacts } from './owner-report.reactivation';
 import type {
     OwnerReportCallInput,
     OwnerReportFacts,
@@ -55,11 +59,15 @@ export function buildOwnerReportFacts(
         outcomes: buildOutcomes(calls),
         byTypeGroup: buildTypeGroups(calls),
         weeks,
+        funnel: buildFunnel(calls),
+        presentations: buildPresentations(calls),
+        qualityLink: buildOwnerReportQualityLink(options.qualityLink),
+        reactivation: buildReactivationFacts(calls),
         objections: buildObjections(calls),
         issues: buildIssues(calls),
         prices,
         leaks: buildLeaks(calls, prices),
-        management: buildManagement({ calls, prices, crm }),
+        management: buildManagement({ calls, crm }),
         controlMetrics: buildControlMetrics(calls, weeks),
         managers: buildManagerRows(calls, crm),
         unattributedCalls: normalized.noManager,

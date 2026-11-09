@@ -32,9 +32,9 @@ const TYPE_GROUP_BY_CALL_TYPE: Readonly<Record<string, OwnerReportTypeGroup>> =
         event_invite: 'event_invite',
     };
 
-/** Собеседник старого разбора, с которым разговор шёл с решающим. */
+/** Собеседник старого разбора, при котором разговор считается разговором с ЛПР. */
 const CONTACT_ROLES: ReadonlySet<string> = new Set(['lpr', 'user']);
-/** Собеседник, при котором до решающего не дошли. */
+/** Собеседник, при котором до ЛПР не дошли. */
 const NO_CONTACT_ROLES: ReadonlySet<string> = new Set(['secretary']);
 
 /** Оценка раздела «Закрытие» (1–10), с которой попытка закрытия засчитана. */
@@ -127,6 +127,10 @@ function toOwnerReportCall(
         weekKey: mondayOf(date),
         callType: row.callType,
         typeGroup: typeGroupOf(row),
+        reactivationSource:
+            row.reactivation === true
+                ? (row.reactivationSource ?? 'stage')
+                : null,
         marked,
         outcome,
         contactReached: contactOf(row, outcome),
@@ -155,7 +159,21 @@ function toOwnerReportCall(
             ? row.report.selfIntro.offerQuestion === 'evasive'
             : null,
         score: row.score,
+        sectionScores: sectionScoresOf(row),
     };
+}
+
+/** Оценки применимых разделов (актуальность > 0, оценка есть) по коду раздела. */
+function sectionScoresOf(
+    row: OwnerReportCallInput,
+): Readonly<Record<string, number>> {
+    const scores: Record<string, number> = {};
+    for (const section of row.sections) {
+        if (section.relevance > 0 && section.score !== null) {
+            scores[section.section] = section.score;
+        }
+    }
+    return scores;
 }
 
 export function typeGroupOf(
@@ -177,7 +195,7 @@ export function outcomeOf(
 }
 
 /**
- * Состоялся ли разговор с решающим: по исходу; без исхода — по собеседнику
+ * Состоялся ли разговор с ЛПР: по исходу; без исхода — по собеседнику
  * старого разбора (ЛПР или пользователь — да, секретарь — нет); иначе null.
  */
 function contactOf(

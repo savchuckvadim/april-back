@@ -22,7 +22,7 @@ import type {
  */
 
 const EXAMPLES_LIMIT = 3;
-const COLD_TOP_LIMIT = 4;
+export const OWNER_REPORT_COLD_TOP_LIMIT = 4;
 const MONTHS_IN_YEAR = 12;
 
 /** Коды сбоев, которые говорят о качестве базы CRM. */
@@ -89,7 +89,7 @@ function coldNotAdvancedTop(
     return [...counts.entries()]
         .map(([topic, count]) => ({ topic, calls: count }))
         .sort((a, b) => b.calls - a.calls || a.topic.localeCompare(b.topic))
-        .slice(0, COLD_TOP_LIMIT);
+        .slice(0, OWNER_REPORT_COLD_TOP_LIMIT);
 }
 
 export function buildIssues(
@@ -143,7 +143,15 @@ export function buildPrices(
     calls: readonly OwnerReportCall[],
     crm: OwnerReportCrmFacts | null,
 ): OwnerReportPrices {
-    const prices = calls.flatMap(call => call.prices);
+    // Нулевая сумма — не цена («бесплатно», пробный доступ, сбой разметки):
+    // иначе разброс цен превращается в деление на ноль.
+    const prices = calls
+        .flatMap(call => call.prices)
+        .filter(
+            price =>
+                price.amount > 0 &&
+                (price.perMonth === null || price.perMonth > 0),
+        );
     const list = prices.filter(price => price.kind !== 'promo');
     const promo = prices.filter(price => price.kind === 'promo');
     const perMonth = (items: typeof prices): number[] =>

@@ -1,10 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
 import { OwnerReportUseCase } from '../../domain/use-cases/owner-report.use-case';
 import type { AiOwnerReportDto } from '../../dto/ai-owner-report.dto';
+import { AI_OWNER_REPORT_KEY_VERSION } from '../owner-report.const';
 
 const NOW = new Date('2026-11-06T09:00:00Z');
-const KEY =
-    'sales-ai-analytics:v1:test.bitrix24.ru:owner-report:v2:month:2026-10';
+const KEY = `sales-ai-analytics:v1:test.bitrix24.ru:owner-report:${AI_OWNER_REPORT_KEY_VERSION}:month:2026-10`;
 
 const dto = (): AiOwnerReportDto =>
     ({ kind: 'month', periodKey: '2026-10' }) as AiOwnerReportDto;

@@ -112,6 +112,22 @@ export const CALL_REPORT_CALL_TYPE_ITEMS = [
     CODE: CallReportCallTypeCode;
 })[];
 
+/**
+ * Русское название типа звонка по коду — для текстов промптов и логов:
+ * код (presentation) модель переносила в русский текст разбора как есть,
+ * название («Презентация») — нет. Незнакомый код возвращается как есть,
+ * пустой — null.
+ */
+export function callReportCallTypeTitle(
+    code: string | null | undefined,
+): string | null {
+    if (!code) return null;
+    return (
+        CALL_REPORT_CALL_TYPE_ITEMS.find(item => item.CODE === code)?.VALUE ??
+        code
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Профили типов звонков: тип ↔ анализ
 // ---------------------------------------------------------------------------

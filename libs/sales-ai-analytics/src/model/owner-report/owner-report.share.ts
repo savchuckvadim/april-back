@@ -55,7 +55,7 @@ export function advancedShare(calls: readonly OwnerReportCall[]): OwnerShare {
     return shareWhere(calls, call => call.advanced);
 }
 
-/** Разговоры, где решающий точно или возможно был на линии (не секретарь). */
+/** Разговоры, где ЛПР точно или возможно был на линии (не секретарь). */
 export function talkedOf(calls: readonly OwnerReportCall[]): OwnerReportCall[] {
     return calls.filter(call => call.contactReached !== false);
 }

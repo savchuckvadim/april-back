@@ -30,7 +30,17 @@ import {
     buildTiles,
     unmarkedNoteOf,
 } from './owner-report.text.overview';
+import {
+    buildCrmFunnelText,
+    buildFunnelText,
+    buildPresentationsText,
+} from './owner-report.text.funnel';
 import { buildManagerTexts } from './owner-report.text.managers';
+import {
+    buildQualityLinkText,
+    composedOfNote,
+    reactivationSourcesNote,
+} from './owner-report.text.signals';
 import { buildSummaryParagraphs } from './owner-report.text.summary';
 import type {
     OwnerReportLeakText,
@@ -64,6 +74,10 @@ export function buildOwnerReportText(
         summary: buildSummaryParagraphs(facts),
         summarySource: 'template',
         overview: buildOverview(facts),
+        funnel: buildFunnelText(facts),
+        crmFunnel: buildCrmFunnelText(facts, previous),
+        presentations: buildPresentationsText(facts, options.names ?? {}),
+        qualityLink: buildQualityLinkText(facts.qualityLink),
         leaks: facts.leaks.map(leakText),
         management: buildManagementText(facts),
         objections: buildObjectionsText(facts),
@@ -114,9 +128,6 @@ function signDetail(sign: OwnerReportSign): string {
     }
     const words = label[sign.verdict];
     if (sign.value === null) return words;
-    if (sign.code === 'unified_pricing') {
-        return `${words}: разброс в ${sign.value.toFixed(1).replace('.', ',')} раза`;
-    }
     if (sign.code === 'plan_fact') {
         return `${words}: ${pctText(sign.value * 100)} плана`;
     }
@@ -154,8 +165,8 @@ function buildObjectionsText(facts: OwnerReportFacts) {
             : null;
     const intro =
         objections.callsWithObjections.n === 0
-            ? 'Разговоров с решающим, где звучали возражения, в периоде нет.'
-            : `Возражения прозвучали в ${shareOfText(objections.callsWithObjections, REPORT_FORMS.callsGenitive)} с решающим (${pctText(objections.callsWithObjections.pct)}); отработано ${pctText(objections.handled.pct)} возражений.` +
+            ? 'Разговоров с ЛПР, где звучали возражения, в периоде нет.'
+            : `Возражения прозвучали в ${shareOfText(objections.callsWithObjections, REPORT_FORMS.callsGenitive)} с ЛПР (${pctText(objections.callsWithObjections.pct)}); отработано ${pctText(objections.handled.pct)} возражений.` +
               (objections.topicUnmarked > 0
                   ? ` Тема не размечена у ${countText(objections.topicUnmarked, REPORT_FORMS.objectionsGenitive)} — это старые разборы, в таблицу тем они не входят.`
                   : '');
@@ -194,6 +205,8 @@ function buildMethodology(facts: OwnerReportFacts): string[] {
         `Период ${periodText(facts.period.from, facts.period.to)}. Звонков за период — ${coverage.calls}, из них с разбором — ${coverage.analyzed}; короче порога — ${coverage.short}, без разбора — ${coverage.noAnalysis}, без сотрудника — ${coverage.noManager}.`,
         'Каждый разговор размечен разбором по единой схеме: тип, исход, возражения, сбои, цены, признаки качества. Все доли посчитаны по разметке, без поиска по словам; конверсия входа считается только по холодным первым контактам.',
     ];
+    const composedLine = composedOfNote(facts);
+    if (composedLine) lines.splice(1, 0, composedLine);
     const unmarkedLine = unmarkedNoteOf(facts);
     if (unmarkedLine) {
         lines.push(
@@ -203,6 +216,8 @@ function buildMethodology(facts: OwnerReportFacts): string[] {
     lines.push(
         'Сотрудник определён по телефонии, а не по самопредставлению. Исход зафиксирован по договорённости в разговоре; сверка со сделками и оплатами в CRM — отдельный раздел.',
     );
+    const reactivationLine = reactivationSourcesNote(facts.reactivation);
+    if (reactivationLine) lines.push(reactivationLine);
     if (coverage.telephony?.outbound) {
         lines.push(
             `По телефонии: исходящих вызовов — ${coverage.telephony.outbound}, состоявшихся разговоров — ${coverage.telephony.connected ?? '—'}.`,

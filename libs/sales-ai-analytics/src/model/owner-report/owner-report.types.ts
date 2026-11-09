@@ -1,5 +1,6 @@
 import type { AnalyticsCallLiteRow } from '@lib/call-lib/call-report-analytics/types/analytics-lite.types';
 import type { CallReportOutcomeCode } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-report-facts.type';
+import type { QualityLinkSnapshot } from '../../contracts/snapshot.phase4.types';
 import type { MinDurationSecByType } from '../pulse-duration';
 import type { WorkCalendar } from '../workdays.util';
 
@@ -45,10 +46,31 @@ export interface OwnerReportPeriod {
     calendar: WorkCalendar;
 }
 
+/**
+ * Откуда известен отказ клиента: финал сделки «ОП Основная» (основной
+ * источник), запись «ОП История» типа «Отказ», поля сделки («Нет
+ * перспектив», «ОП Причина Отказа», «Не интересует») — вторичные.
+ */
+export const OWNER_REPORT_REFUSAL_SOURCES = [
+    'stage',
+    'history',
+    'fields',
+] as const;
+export type OwnerReportRefusalSource =
+    (typeof OWNER_REPORT_REFUSAL_SOURCES)[number];
+
+/** Возвраты периода и по какому источнику виден отказ у каждого. */
+export interface OwnerReportReactivationFacts {
+    calls: number;
+    bySource: Record<OwnerReportRefusalSource, number>;
+}
+
 /** Строка входа: lite-строка звонка + признаки, которые знает приложение. */
 export interface OwnerReportCallInput extends AnalyticsCallLiteRow {
     /** Звонок клиенту, который раньше отказывал или ушёл (по CRM). */
     reactivation?: boolean;
+    /** Источник отказа у возврата; нет — финал сделки. */
+    reactivationSource?: OwnerReportRefusalSource;
 }
 
 /** Итоги телефонии за период (voximplant), если приложение их отдало. */
@@ -88,6 +110,8 @@ export interface OwnerReportOptions {
     managerIds?: readonly string[];
     telephony?: OwnerReportTelephonyFacts | null;
     crm?: OwnerReportCrmFacts | null;
+    /** Последний снапшот связи «качество показа → счёт/КП»; null — его нет. */
+    qualityLink?: QualityLinkSnapshot | null;
 }
 
 /** Нормализованный звонок отчёта — единица всех счётчиков. */
@@ -132,6 +156,10 @@ export interface OwnerReportCall {
     /** Ушёл от ответа на «вы что-то предлагаете?»; null — не размечено. */
     evasive: boolean | null;
     score: number | null;
+    /** Оценки разделов разбора 1–10 по коду раздела; только применимые разделы. */
+    sectionScores: Readonly<Record<string, number>>;
+    /** Источник отказа у возврата; null — не возврат. */
+    reactivationSource: OwnerReportRefusalSource | null;
 }
 
 export interface OwnerReportObjection {

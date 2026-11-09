@@ -1,8 +1,10 @@
+import type { OwnerReportQualityLink } from './owner-report.quality-link';
 import type {
     OwnerReportCoverage,
     OwnerReportCrmManagerFacts,
     OwnerReportOutcomes,
     OwnerReportPeriod,
+    OwnerReportReactivationFacts,
     OwnerReportTypeGroupRow,
     OwnerReportWeek,
     OwnerShare,
@@ -114,6 +116,62 @@ export interface OwnerReportControlMetric {
     direction: 'higher_better' | 'lower_better';
 }
 
+/** Ступень воронки по разговорам: холодный вход → показ → после показа и КП. */
+export type OwnerReportFunnelStageCode = 'cold' | 'presentation' | 'followup';
+
+export interface OwnerReportFunnelStage {
+    code: OwnerReportFunnelStageCode;
+    /** Разговоров ступени всего и с размеченным исходом (база долей). */
+    calls: number;
+    marked: number;
+    advanced: OwnerShare;
+    /** Перезвон с датой и отложено без даты: решение не принято. */
+    undecided: OwnerShare;
+    refused: OwnerShare;
+    noContact: OwnerShare;
+    /** Согласие на счёт: шаг вперёд со следующим шагом «счёт». */
+    invoiceAgreed: OwnerShare;
+}
+
+export interface OwnerReportFunnel {
+    stages: OwnerReportFunnelStage[];
+    /** Согласие на счёт среди всех размеченных разговоров периода. */
+    invoiceAgreedTotal: number;
+}
+
+/** Средняя оценка раздела разбора (1–10) по показам, где раздел применим. */
+export interface OwnerReportSectionScore {
+    section: string;
+    avg: number;
+    n: number;
+}
+
+export interface OwnerReportPresentationManagerRow {
+    managerId: string;
+    calls: number;
+    advanced: OwnerShare;
+    byNeeds: OwnerShare;
+}
+
+/** Раздел «Презентации»: качество показов и что из него выходит. */
+export interface OwnerReportPresentations {
+    calls: number;
+    marked: number;
+    advanced: OwnerShare;
+    needsFound: OwnerShare;
+    /** Показ под задачи клиента (спирали методики или показ после потребностей). */
+    byNeeds: OwnerShare;
+    /** Шаг вперёд среди показов под задачи и среди шаблонных. */
+    advancedByNeeds: OwnerShare;
+    advancedTemplate: OwnerShare;
+    closingAttempted: OwnerShare;
+    nextStepDated: OwnerShare;
+    objectionsHandled: OwnerShare;
+    sectionScores: OwnerReportSectionScore[];
+    /** По сотрудникам, больше показов — выше. */
+    byManager: OwnerReportPresentationManagerRow[];
+}
+
 export interface OwnerReportManagerRow {
     managerId: string;
     calls: number;
@@ -139,10 +197,21 @@ export interface OwnerReportManagerRow {
 
 export interface OwnerReportFacts {
     period: OwnerReportPeriod;
+    /**
+     * Ключи месяцев (YYYY-MM), из месячных фактов которых сложен сводный
+     * отчёт длинного периода; нет — факты посчитаны напрямую по звонкам.
+     */
+    composedOf?: string[];
     coverage: OwnerReportCoverage;
     outcomes: OwnerReportOutcomes;
     byTypeGroup: OwnerReportTypeGroupRow[];
     weeks: OwnerReportWeek[];
+    funnel: OwnerReportFunnel;
+    presentations: OwnerReportPresentations;
+    /** Связь качества показа и продаж по снапшоту связи; null — снапшота нет. */
+    qualityLink: OwnerReportQualityLink | null;
+    /** Возвраты периода по источникам отказа. */
+    reactivation: OwnerReportReactivationFacts;
     objections: OwnerReportObjections;
     issues: OwnerReportIssues;
     prices: OwnerReportPrices;

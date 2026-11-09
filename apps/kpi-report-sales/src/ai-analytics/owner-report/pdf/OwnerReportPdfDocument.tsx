@@ -3,6 +3,7 @@ import { Document, Page, Text, View } from '@react-pdf/renderer';
 import type { AiOwnerReportDto } from '../../dto/ai-owner-report.dto';
 import { OWNER_PDF_TEXT } from './owner-report-pdf.texts';
 import { ownerPdfStyles as s } from './owner-report-pdf.styles';
+import { PdfFunnel, PdfPresentations } from './OwnerReportPdfFunnel';
 import { PdfManagers } from './OwnerReportPdfManagers';
 import { PdfAttention, PdfGlossary, PdfTiles } from './OwnerReportPdfReading';
 import {
@@ -76,11 +77,20 @@ export const OwnerReportPdfDocument: FC<OwnerReportPdfDocumentProps> = ({
                 <PdfSection title={OWNER_PDF_TEXT.sections.overview}>
                     <PdfOverview overview={text.overview} />
                 </PdfSection>
+                <PdfSection title={OWNER_PDF_TEXT.sections.funnel}>
+                    <PdfFunnel funnel={text.funnel} crm={text.crmFunnel} />
+                </PdfSection>
                 {text.leaks.length > 0 && (
                     <PdfSection title={OWNER_PDF_TEXT.sections.leaks}>
                         <PdfLeaks leaks={text.leaks} />
                     </PdfSection>
                 )}
+                <PdfSection title={OWNER_PDF_TEXT.sections.presentations}>
+                    <PdfPresentations
+                        presentations={text.presentations}
+                        qualityLink={text.qualityLink}
+                    />
+                </PdfSection>
                 <PdfSection title={OWNER_PDF_TEXT.sections.management}>
                     <PdfManagement management={text.management} />
                 </PdfSection>

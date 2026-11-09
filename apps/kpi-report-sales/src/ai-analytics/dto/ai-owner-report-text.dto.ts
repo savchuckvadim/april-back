@@ -7,6 +7,12 @@ import {
     AiOwnerReportAttentionDto,
     AiOwnerReportGlossaryItemDto,
 } from './ai-owner-report-reading.dto';
+import {
+    AiOwnerReportCrmFunnelDto,
+    AiOwnerReportFunnelDto,
+    AiOwnerReportPresentationsDto,
+    AiOwnerReportQualityLinkDto,
+} from './ai-owner-report-funnel.dto';
 import { AiOwnerReportOverviewDto } from './ai-owner-report-overview.dto';
 import {
     AiOwnerReportIssuesDto,
@@ -19,6 +25,7 @@ import {
 export * from './ai-owner-report-sections.dto';
 export * from './ai-owner-report-reading.dto';
 export * from './ai-owner-report-overview.dto';
+export * from './ai-owner-report-funnel.dto';
 
 /**
  * Текст отчёта собственнику в ответе ручки `ai-analytics/owner-report`:
@@ -150,6 +157,34 @@ export class AiOwnerReportTextDto {
         description: 'Общая картина.',
     })
     overview: AiOwnerReportOverviewDto;
+
+    @ApiProperty({
+        type: AiOwnerReportFunnelDto,
+        description:
+            'Воронка по разговорам: холодный вход → показ → после показа и КП, согласие на счёт.',
+    })
+    funnel: AiOwnerReportFunnelDto;
+
+    @ApiPropertyOptional({
+        type: AiOwnerReportCrmFunnelDto,
+        nullable: true,
+        description:
+            'Воронка по CRM: показы → счета → договоры; null — данных CRM за период нет.',
+    })
+    crmFunnel: AiOwnerReportCrmFunnelDto | null;
+
+    @ApiProperty({
+        type: AiOwnerReportPresentationsDto,
+        description: 'Презентации: качество показов и что из него выходит.',
+    })
+    presentations: AiOwnerReportPresentationsDto;
+
+    @ApiProperty({
+        type: AiOwnerReportQualityLinkDto,
+        description:
+            'Связь качества показа и продаж: предварительная оценка с диапазоном или сколько показов осталось до первой оценки.',
+    })
+    qualityLink: AiOwnerReportQualityLinkDto;
 
     @ApiProperty({
         type: [AiOwnerReportLeakDto],

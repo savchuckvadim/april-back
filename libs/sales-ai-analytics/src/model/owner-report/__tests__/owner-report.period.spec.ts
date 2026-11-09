@@ -1,6 +1,7 @@
 import {
     latestClosedOwnerReportPeriod,
     ownerReportPeriodBounds,
+    ownerReportMonthKeys,
     ownerReportPeriodKey,
     previousOwnerReportPeriod,
 } from '../owner-report.period';
@@ -57,5 +58,19 @@ describe('периоды отчёта собственнику', () => {
         ).toMatchObject({
             periodKey: '2025',
         });
+    });
+});
+
+describe('ownerReportMonthKeys — месяцы внутри периода', () => {
+    it('квартал, год через границу и один месяц', () => {
+        expect(
+            ownerReportMonthKeys({ from: '2026-07-01', to: '2026-09-30' }),
+        ).toEqual(['2026-07', '2026-08', '2026-09']);
+        expect(
+            ownerReportMonthKeys({ from: '2025-11-01', to: '2026-02-28' }),
+        ).toEqual(['2025-11', '2025-12', '2026-01', '2026-02']);
+        expect(
+            ownerReportMonthKeys({ from: '2026-10-01', to: '2026-10-31' }),
+        ).toEqual(['2026-10']);
     });
 });

@@ -1,4 +1,46 @@
-import { isReactivationCall } from '../owner-report.reactivation';
+import {
+    buildReactivationFacts,
+    isReactivationCall,
+    reactivationOf,
+} from '../owner-report.reactivation';
+
+describe('отчёт собственнику: источник отказа у реактивации', () => {
+    it('источник — у последнего отказа; в один день финал сделки важнее записей и полей', () => {
+        expect(
+            reactivationOf('2026-10-20', [
+                { date: '2026-06-01', kind: 'refusal' },
+                { date: '2026-08-01', kind: 'refusal', source: 'history' },
+            ]),
+        ).toBe('history');
+        expect(
+            reactivationOf('2026-10-20', [
+                { date: '2026-08-01', kind: 'refusal', source: 'fields' },
+                { date: '2026-08-01', kind: 'refusal', source: 'stage' },
+            ]),
+        ).toBe('stage');
+        // Свежий отказ по полям перекрывает давний финал — доработка, не возврат.
+        expect(
+            reactivationOf('2026-10-20', [
+                { date: '2026-06-01', kind: 'refusal' },
+                { date: '2026-10-10', kind: 'refusal', source: 'fields' },
+            ]),
+        ).toBeNull();
+    });
+
+    it('факты возвратов периода: только группа «возврат», источники считаются отдельно', () => {
+        expect(
+            buildReactivationFacts([
+                { typeGroup: 'reactivation', reactivationSource: 'stage' },
+                { typeGroup: 'reactivation', reactivationSource: null },
+                { typeGroup: 'reactivation', reactivationSource: 'history' },
+                { typeGroup: 'cold', reactivationSource: null },
+            ]),
+        ).toEqual({
+            calls: 3,
+            bySource: { stage: 2, history: 1, fields: 0 },
+        });
+    });
+});
 
 describe('отчёт собственнику: признак реактивации', () => {
     it('отказ больше 30 дней назад и без успеха после — реактивация', () => {

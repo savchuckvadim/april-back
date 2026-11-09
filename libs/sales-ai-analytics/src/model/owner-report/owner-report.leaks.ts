@@ -16,7 +16,7 @@ import type {
  */
 
 export const OWNER_REPORT_LEAKS_LIMIT = 3;
-const EXAMPLES_LIMIT = 3;
+export const OWNER_REPORT_EXAMPLES_LIMIT = 3;
 
 /** Какая доля задетых звонков положена в оценку денег: каждый десятый. */
 export const LEAK_RECOVERABLE_SHARE = 0.1;
@@ -105,7 +105,7 @@ export function buildLeaks(
                 nature: rule.nature,
                 examples: firstIds(
                     affected.map(call => call.transcriptionId),
-                    EXAMPLES_LIMIT,
+                    OWNER_REPORT_EXAMPLES_LIMIT,
                 ),
             },
         ];

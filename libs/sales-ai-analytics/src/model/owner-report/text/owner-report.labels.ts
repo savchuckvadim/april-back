@@ -3,7 +3,9 @@ import {
     CALL_REPORT_OBJECTION_TOPIC_ITEMS,
     CALL_REPORT_OUTCOME_ITEMS,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-report-facts.type';
+import { CALL_REPORT_SECTIONS } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-smart.type';
 import type {
+    OwnerReportFunnelStageCode,
     OwnerReportLeakCode,
     OwnerReportLeakNature,
     OwnerReportOutcome,
@@ -74,13 +76,13 @@ export const LEAK_LABELS: Readonly<Record<OwnerReportLeakCode, LeakLabel>> = {
     },
     postponed_no_date: {
         title: 'Отложено без даты возврата',
-        base: 'разговоров с решающим отложены без даты',
+        base: 'разговоров с ЛПР отложены без даты',
         action: 'Требовать дату следующего контакта в CRM по каждому отложенному разговору и проверять хвосты раз в неделю.',
     },
     cold_no_contact: {
         title: 'Холодный вход упирается в секретаря и базу',
-        base: 'холодных звонков без разговора с решающим',
-        action: 'Почистить базу от дублей и отказавших, переписать повод звонка для секретаря, вести разговор с решающим как отдельную цель.',
+        base: 'холодных звонков без разговора с ЛПР',
+        action: 'Почистить базу от дублей и отказавших, переписать повод звонка для секретаря, вести выход на ЛПР как отдельную цель.',
     },
     objections_unhandled: {
         title: 'Возражения остаются без ответа',
@@ -108,12 +110,6 @@ export const SIGN_LABELS: Readonly<Record<string, SignLabel>> = {
         yes: 'показ стабильно двигает клиента дальше',
         partial: 'показ двигает клиента дальше не всегда',
         no: 'результат показа случаен',
-    },
-    unified_pricing: {
-        title: 'Единые цены и условия',
-        yes: 'цены в разговорах совпадают',
-        partial: 'цены в разговорах расходятся',
-        no: 'в разных разговорах разные цены и условия',
     },
     people_dependency: {
         title: 'Зависимость от людей',
@@ -207,3 +203,18 @@ export const METRIC_LABELS: Readonly<Record<string, MetricLabel>> = {
         ifIgnored: 'Уход или выгорание одного менеджера обрушит результат',
     },
 };
+
+/** Ступени воронки по разговорам. */
+export const FUNNEL_STAGE_LABELS: Readonly<
+    Record<OwnerReportFunnelStageCode, string>
+> = {
+    cold: 'Холодный первый контакт',
+    presentation: 'Показ системы',
+    followup: 'После показа и КП: доработка, решение, оплата',
+};
+
+/** Разделы разбора разговора — названия из справочника смарта. */
+export const SECTION_LABELS: Readonly<Record<string, string>> =
+    Object.fromEntries(
+        CALL_REPORT_SECTIONS.map(section => [section.code, section.title]),
+    );

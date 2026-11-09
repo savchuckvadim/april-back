@@ -9,15 +9,18 @@ import {
     type OwnerReportPeriodBounds,
     type OwnerReportTelephonyFacts,
 } from '@lib/sales-ai-analytics';
+import type { QualityLinkSnapshot } from '@lib/sales-ai-analytics/contracts/snapshot.phase4.types';
 import { AiManagerScopeResolver } from '../domain/access/ai-manager-scope.resolver';
 import { AiAnalyticsCalendarLoader } from '../domain/loaders/calendar.loader';
 import { CallsLoader } from '../domain/loaders/calls.loader';
 import type { DatedLiteRow } from '../domain/loaders/lite-row.mapper';
+import { Phase4SnapshotsLoader } from '../domain/loaders/phase4-snapshots.loader';
 import { portalMinDurationByType } from '../domain/loaders/min-duration.util';
 import { portalRangeUtc } from '../domain/loaders/period.util';
 import { PulseTelephonyLoader } from '../domain/loaders/pulse-telephony.loader';
 import { SettingsLoader } from '../domain/loaders/settings.loader';
 import { UserNamesReader } from '../domain/loaders/user-names.reader';
+import { AiAnalyticsSnapshotStore } from '../store/ai-analytics-snapshot.store';
 import { OwnerReportCrmLoader } from './owner-report-crm.loader';
 import {
     OwnerReportReactivationLoader,
@@ -37,6 +40,8 @@ export interface OwnerReportSources {
     telephony: OwnerReportTelephonyFacts | null;
     /** CRM-факты периода (продажи, счета, показы, план); null — источники не ответили. */
     crm: OwnerReportCrmFacts | null;
+    /** Последний снапшот связи «качество показа → счёт/КП»; null — его нет или стор не ответил. */
+    qualityLink: QualityLinkSnapshot | null;
     names: Record<string, string>;
 }
 
@@ -62,6 +67,7 @@ export class OwnerReportSourcesLoader {
         private readonly crm: OwnerReportCrmLoader,
         private readonly pbx: PBXService,
         private readonly reactivation: OwnerReportReactivationLoader,
+        private readonly snapshots: AiAnalyticsSnapshotStore,
         /** Календарь портала с переносами РФ; нет (спеки) — из настроек. */
         @Optional() private readonly calendars?: AiAnalyticsCalendarLoader,
     ) {}
@@ -73,9 +79,98 @@ export class OwnerReportSourcesLoader {
         now: Date = new Date(),
     ): Promise<OwnerReportSources> {
         const settings = await this.settings.load(domain);
-        const calendar = this.calendars
+        const calendar = await this.calendarOf(domain, settings, now);
+        const scope = await this.scopes.resolveFor(
+            domain,
+            undefined,
+            settings.callReport,
+        );
+        const managerIds = scope.managerIds.map(String);
+        const minDurationByType = portalMinDurationByType(settings);
+        const [rows, previousRows, telephony, crm, names, qualityLink] =
+            await Promise.all([
+                this.loadRows(domain, bounds, calendar.timeZone),
+                this.loadRows(domain, previous, calendar.timeZone),
+                this.loadTelephony(
+                    domain,
+                    bounds,
+                    calendar.timeZone,
+                    minDurationByType,
+                    settings.callReport,
+                ),
+                this.crm.load(domain, bounds, managerIds, now),
+                this.names(domain, managerIds),
+                this.loadQualityLink(domain),
+            ]);
+        // Реактивация — по сделкам компании; оба периода, чтобы группы
+        // «холодные / возврат» сравнивались одинаково.
+        const [markedRows, markedPrevious] = await Promise.all([
+            this.reactivation.mark(domain, rows, calendar.timeZone),
+            this.reactivation.mark(domain, previousRows, calendar.timeZone),
+        ]);
+        return {
+            ...this.periodsWith(calendar, bounds, previous),
+            managerIds,
+            rows: markedRows,
+            previousRows: markedPrevious,
+            minDurationByType,
+            telephony,
+            crm,
+            qualityLink,
+            names,
+        };
+    }
+
+    /**
+     * Последний снапшот связи качества показа и продаж — для
+     * предварительной оценки в отчёте. Fail-open: стор не ответил — null.
+     */
+    private async loadQualityLink(
+        domain: string,
+    ): Promise<QualityLinkSnapshot | null> {
+        try {
+            const latest = await new Phase4SnapshotsLoader(
+                this.snapshots,
+            ).loadLatest(domain);
+            return latest.qualityLink ?? null;
+        } catch (error) {
+            this.logger.warn(
+                `Снапшот связи качества ${domain} не прочитан: ${(error as Error).message}`,
+            );
+            return null;
+        }
+    }
+
+    /**
+     * Границы периода и прошлого периода с календарём портала — для сводного
+     * отчёта из месячных снапшотов, которому строки звонков не нужны.
+     */
+    async periods(
+        domain: string,
+        bounds: OwnerReportPeriodBounds,
+        previous: OwnerReportPeriodBounds,
+        now: Date = new Date(),
+    ): Promise<Pick<OwnerReportSources, 'period' | 'previousPeriod'>> {
+        const settings = await this.settings.load(domain);
+        const calendar = await this.calendarOf(domain, settings, now);
+        return this.periodsWith(calendar, bounds, previous);
+    }
+
+    private async calendarOf(
+        domain: string,
+        settings: Awaited<ReturnType<SettingsLoader['load']>>,
+        now: Date,
+    ): Promise<OwnerReportPeriod['calendar']> {
+        return this.calendars
             ? (await this.calendars.load(domain, { now })).calendar
             : settings.calendar;
+    }
+
+    private periodsWith(
+        calendar: OwnerReportPeriod['calendar'],
+        bounds: OwnerReportPeriodBounds,
+        previous: OwnerReportPeriodBounds,
+    ): Pick<OwnerReportSources, 'period' | 'previousPeriod'> {
         const toPeriod = (
             range: OwnerReportPeriodBounds,
         ): OwnerReportPeriod => ({
@@ -85,43 +180,7 @@ export class OwnerReportSourcesLoader {
             timeZone: calendar.timeZone,
             calendar,
         });
-        const scope = await this.scopes.resolveFor(
-            domain,
-            undefined,
-            settings.callReport,
-        );
-        const managerIds = scope.managerIds.map(String);
-        const minDurationByType = portalMinDurationByType(settings);
-        const [rows, previousRows, telephony, crm, names] = await Promise.all([
-            this.loadRows(domain, bounds, calendar.timeZone),
-            this.loadRows(domain, previous, calendar.timeZone),
-            this.loadTelephony(
-                domain,
-                bounds,
-                calendar.timeZone,
-                minDurationByType,
-                settings.callReport,
-            ),
-            this.crm.load(domain, bounds, managerIds, now),
-            this.loadNames(domain, managerIds),
-        ]);
-        // Реактивация — по сделкам компании; оба периода, чтобы группы
-        // «холодные / возврат» сравнивались одинаково.
-        const [markedRows, markedPrevious] = await Promise.all([
-            this.reactivation.mark(domain, rows, calendar.timeZone),
-            this.reactivation.mark(domain, previousRows, calendar.timeZone),
-        ]);
-        return {
-            period: toPeriod(bounds),
-            previousPeriod: toPeriod(previous),
-            managerIds,
-            rows: markedRows,
-            previousRows: markedPrevious,
-            minDurationByType,
-            telephony,
-            crm,
-            names,
-        };
+        return { period: toPeriod(bounds), previousPeriod: toPeriod(previous) };
     }
 
     private loadRows(
@@ -155,7 +214,7 @@ export class OwnerReportSourcesLoader {
     }
 
     /** Имена по Bitrix ID; сбой Битрикса — пустая карта, карточки по id. */
-    private async loadNames(
+    async names(
         domain: string,
         managerIds: readonly string[],
     ): Promise<Record<string, string>> {

@@ -23,6 +23,7 @@ import {
     REFINE_CALL_BLOCK,
     renderCallTypeProfile,
     renderPresentationStrictnessBlock,
+    buildDeepAnalysisUserContent,
 } from '../contracts/call-deep-analysis.contract';
 import { sumCompletionUsage } from './call-analysis-usage.util';
 import { CallReportSettingsService } from './call-report-settings.service';
@@ -494,16 +495,17 @@ export class CallFocusAnalysisService {
         );
     }
 
+    /** User-часть — та же, что у цельного разбора: тип словами, паспорт, расшифровка. */
     private buildUserContent(
         transcript: string,
         callType: string | null,
         passportBlock?: string,
     ): string {
-        const typeLine = callType
-            ? `Тип звонка по классификатору: ${callType}.\n`
-            : '';
-        const passport = passportBlock ? `${passportBlock}\n\n` : '\n';
-        return `${typeLine}${passport}Разбери звонок по расшифровке:\n\n${transcript}`;
+        return buildDeepAnalysisUserContent(
+            transcript,
+            callType,
+            passportBlock,
+        );
     }
 
     /** Один фокус-проход (ответ + usage); ошибка → null (разбор продолжается без него). */

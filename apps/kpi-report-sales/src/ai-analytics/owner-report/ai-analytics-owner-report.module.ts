@@ -23,6 +23,7 @@ import { OwnerReportSourcesLoader } from './owner-report-sources.loader';
 import { OwnerReportExportProcessor } from './owner-report-export.processor';
 import { OwnerReportSourceService } from './owner-report-source.service';
 import { OwnerReportReactivationLoader } from './owner-report-reactivation.loader';
+import { OwnerReportMonthlyComposer } from './owner-report-monthly.composer';
 
 /**
  * Срез «Отчёт собственнику за период» (постановка
@@ -48,6 +49,8 @@ import { OwnerReportReactivationLoader } from './owner-report-reactivation.loade
         OwnerReportSourcesLoader,
         OwnerReportReactivationLoader,
         OwnerReportSnapshotReader,
+        // Сводный отчёт длинного периода из месячных снапшотов (A13).
+        OwnerReportMonthlyComposer,
         OwnerReportPdfService,
         LlmGatewayNarrativeAdapter,
         {

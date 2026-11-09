@@ -1,11 +1,15 @@
 import { Logger } from '@nestjs/common';
-import { DEFAULT_WORK_CALENDAR } from '@lib/sales-ai-analytics';
+import {
+    buildOwnerReportFacts,
+    DEFAULT_WORK_CALENDAR,
+} from '@lib/sales-ai-analytics';
 import {
     call,
     resetCounter,
 } from '@lib/sales-ai-analytics/model/owner-report/__tests__/owner-report.fixture';
 import { AI_ANALYTICS_WS_EVENTS } from '../../constants/ai-analytics.const';
 import { OwnerReportJobUseCase } from '../../domain/use-cases/owner-report-job.use-case';
+import { OwnerReportMonthlyComposer } from '../owner-report-monthly.composer';
 import type { DatedLiteRow } from '../../domain/loaders/lite-row.mapper';
 import type { OwnerReportSources } from '../owner-report-sources.loader';
 import { AI_OWNER_REPORT_SNAPSHOT_RECORD } from '../owner-report.const';
@@ -57,6 +61,7 @@ const sources = (): OwnerReportSources => ({
     minDurationByType: { default: 60 },
     telephony: { outbound: null, connected: 10, short: 3 },
     crm: null,
+    qualityLink: null,
     names: { '7': 'Надежда', '8': 'Виолетта' },
 });
 
@@ -64,10 +69,21 @@ const makeUseCase = (
     options: {
         narrative?: () => Promise<unknown>;
         sources?: () => Promise<OwnerReportSources>;
+        /** Месячный снапшот по ключу (domain, kind, periodKey); null — нет. */
+        monthly?: (
+            domain: string,
+            kind: string,
+            periodKey: string,
+        ) => Promise<unknown>;
     } = {},
 ) => {
     const loader = {
         load: jest.fn(options.sources ?? (() => Promise.resolve(sources()))),
+        periods: jest.fn().mockResolvedValue({
+            period: period('2026-07-01', '2026-09-30'),
+            previousPeriod: period('2026-04-01', '2026-06-30'),
+        }),
+        names: jest.fn().mockResolvedValue({ '7': 'Надежда' }),
     };
     const narrative = {
         complete: jest.fn(
@@ -103,16 +119,23 @@ const makeUseCase = (
     };
     const snapshots = {
         upsert: jest
-            .fn()
+            .fn<Promise<unknown>, [unknown, unknown]>()
             .mockResolvedValue({ id: '1', supersededIds: [], written: 1 }),
     };
     const reader = {
         availablePeriods: jest.fn().mockResolvedValue(['2026-10', '2026-09']),
+        // Месячные снапшоты для сводного отчёта: по умолчанию их нет.
+        payload: jest.fn(options.monthly ?? (() => Promise.resolve(null))),
     };
     const cache = { setJson: jest.fn().mockResolvedValue(undefined) };
     const ws = { sendToClient: jest.fn() };
+    const composer = new OwnerReportMonthlyComposer(
+        reader as never,
+        loader as never,
+    );
     const useCase = new OwnerReportJobUseCase(
         loader as never,
+        composer,
         narrative as never,
         smartLinks as never,
         params as never,
@@ -121,7 +144,7 @@ const makeUseCase = (
         cache as never,
         ws as never,
     );
-    return { useCase, loader, narrative, snapshots, cache, ws };
+    return { useCase, loader, narrative, snapshots, cache, ws, reader };
 };
 
 describe('OwnerReportJobUseCase', () => {
@@ -197,6 +220,83 @@ describe('OwnerReportJobUseCase', () => {
                 generatedAt: NOW.toISOString(),
             },
         });
+    });
+
+    it('квартал складывается из месячных снапшотов без похода за строками звонков', async () => {
+        const monthFacts = (monthKey: string) =>
+            buildOwnerReportFacts(
+                [dated(call({ day: `${monthKey}-07` }))],
+                period(`${monthKey}-01`, `${monthKey}-28`),
+            );
+        const { useCase, loader, reader, snapshots } = makeUseCase({
+            monthly: (_domain, _kind, key) =>
+                Promise.resolve(
+                    ['2026-07', '2026-08', '2026-09'].includes(key)
+                        ? { facts: monthFacts(key) }
+                        : null,
+                ),
+        });
+        const dto = await useCase.execute(
+            {
+                ...DATA,
+                kind: 'quarter',
+                periodKey: '2026-Q3',
+                from: '2026-07-01',
+                to: '2026-09-30',
+            },
+            NOW,
+        );
+        expect(loader.load).not.toHaveBeenCalled();
+        expect(reader.payload).toHaveBeenCalledWith(
+            DATA.domain,
+            'month',
+            '2026-08',
+        );
+        expect(dto.kind).toBe('quarter');
+        const stored = snapshots.upsert.mock.calls[0][0] as {
+            payload: {
+                facts: {
+                    composedOf?: string[];
+                    coverage: { analyzed: number };
+                };
+            };
+        };
+        expect(stored.payload.facts.composedOf).toEqual([
+            '2026-07',
+            '2026-08',
+            '2026-09',
+        ]);
+        expect(stored.payload.facts.coverage.analyzed).toBe(3);
+        expect(dto.text.methodology.join(' ')).toContain(
+            'собран из 3 месячных отчётов (июль, август, сентябрь 2026)',
+        );
+    });
+
+    it('нет снапшота хотя бы за один месяц — квартал считается напрямую по звонкам', async () => {
+        const { useCase, loader } = makeUseCase({
+            monthly: (_domain, _kind, key) =>
+                Promise.resolve(
+                    key === '2026-08'
+                        ? null
+                        : {
+                              facts: buildOwnerReportFacts(
+                                  [dated(call({ day: `${key}-07` }))],
+                                  period(`${key}-01`, `${key}-28`),
+                              ),
+                          },
+                ),
+        });
+        await useCase.execute(
+            {
+                ...DATA,
+                kind: 'quarter',
+                periodKey: '2026-Q3',
+                from: '2026-07-01',
+                to: '2026-09-30',
+            },
+            NOW,
+        );
+        expect(loader.load).toHaveBeenCalledTimes(1);
     });
 
     it('модель недоступна — шаблон с причиной, отчёт всё равно готов', async () => {
