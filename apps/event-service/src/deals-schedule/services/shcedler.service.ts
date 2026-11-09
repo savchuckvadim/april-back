@@ -6,18 +6,17 @@ import { TelegramService } from '@lib/telegram/telegram.service';
 import { DealsOrderQueueService } from '../../deals-order/services/queue/deals-order-queue.service';
 import { SmartActQueueService } from '../../smart-act/services';
 import { actualizeDealsFinReportPusher } from '../utils/actualizar-deals-finreport.pusher';
+import {
+    ACTUALIZE_FIN_SERVICES_DOMAIN,
+    CronJobName,
+} from '../deals-schedule.const';
 
 const MOSCOW_TZ = 'Europe/Moscow';
 
-enum CronJobName {
-    MOVE_DEALS = 'moveDeals',
-    CHECK_DEALS_EVERY_WEEK = 'checkDealsEveryWeek',
-    ACTUALIZE_FIN_SERVICES_WITH_TASKS = 'actualizeDealsFinServicesWithTasks',
-}
-
 /**
  * Список кронов при старте шлёт общий CronJobsReporter (@lib/core/schedule),
- * подключённый в корневом модуле приложения.
+ * подключённый в корневом модуле приложения; что делает каждый крон —
+ * в `deals-cron-roster.ts`.
  */
 @Injectable()
 export class SchedulerService {
@@ -85,7 +84,7 @@ export class SchedulerService {
         this.logger.log(
             `CRON fired: ${CronJobName.ACTUALIZE_FIN_SERVICES_WITH_TASKS}`,
         );
-        const domain = 'gsr.bitrix24.ru';
+        const domain = ACTUALIZE_FIN_SERVICES_DOMAIN;
         const withTasks = true;
         const message = 'Actualize Deals Fin Services With Tasks';
         const name = 'ActualizeDealsFinServicesWithTasks';

@@ -31,6 +31,7 @@ import { DuplicateReportModule } from './duplicate-report/duplicate-report.modul
 import { InnModule } from './inn/inn.module';
 import { ClientTypeModule } from './client-type/client-type.module';
 import { DealOwnerModule } from './deal-owner/deal-owner.module';
+import { EventSalesCronRosterModule } from './cron-roster/event-sales-cron-roster.module';
 
 @Module({
     imports: [
@@ -45,8 +46,9 @@ import { DealOwnerModule } from './deal-owner/deal-owner.module';
         EventEmitterModule.forRoot(),
         // Крон автоконвейера AI-отчётности (CallReportScheduler)
         ScheduleModule.forRoot(),
-        // При старте — список кронов с ближайшими запусками в Telegram
-        CronJobsReportModule,
+        // При старте — список кронов с ближайшими запусками и по каждому:
+        // что делает и на каких порталах включён (все подстраховки).
+        CronJobsReportModule.forRoot({ imports: [EventSalesCronRosterModule] }),
         HealthModule,
         EventModule,
 

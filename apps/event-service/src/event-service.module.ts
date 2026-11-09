@@ -8,6 +8,7 @@ import { EventServiceService } from './event-service.service';
 import { EventServiceAppModule } from './event-service-app.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CronJobsReportModule } from '@lib/core/schedule';
+import { DealsCronRosterModule } from './deals-schedule/deals-cron-roster.module';
 
 @Module({
     imports: [
@@ -18,8 +19,9 @@ import { CronJobsReportModule } from '@lib/core/schedule';
         LoggerModule.forRoot({ appName: 'event-service' }),
         MetricsModule.forRoot({ appName: 'event-service' }),
         ScheduleModule.forRoot(),
-        // При старте — список кронов с ближайшими запусками в Telegram
-        CronJobsReportModule,
+        // При старте — список кронов с ближайшими запусками и назначением
+        // каждого в Telegram
+        CronJobsReportModule.forRoot({ imports: [DealsCronRosterModule] }),
         HealthModule,
         EventServiceAppModule,
     ],

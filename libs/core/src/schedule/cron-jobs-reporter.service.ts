@@ -1,32 +1,84 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import {
+    Inject,
+    Injectable,
+    Logger,
+    OnApplicationBootstrap,
+    Optional,
+} from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
-import { formatCronJobsReport, summarizeCronJobs } from './cron-jobs-report';
+import {
+    formatCronJobsReport,
+    mergeCronJobsRoster,
+    summarizeCronJobs,
+} from './cron-jobs-report';
+import {
+    CRON_JOBS_ROSTER_SOURCE,
+    CronJobsRoster,
+    CronJobsRosterSource,
+} from './cron-jobs-roster';
 
 /**
  * При старте приложения пишет в лог и в Telegram список зарегистрированных
- * кронов с ближайшими запусками.
+ * кронов с ближайшими запусками, а если приложение отдало сведения
+ * (`CRON_JOBS_ROSTER_SOURCE`) — ещё и что каждый крон делает и на каких
+ * порталах включён.
  *
  * Зачем: крон, у которого нет работы, молчит, и снаружи не отличить
- * «крон жив, но ему нечего делать» от «крон не зарегистрирован вовсе».
- * Сообщение при старте снимает второй вариант сразу после деплоя.
+ * «крон жив, но ему нечего делать» от «крон не зарегистрирован вовсе» и
+ * от «крон есть, но на портале выключен». Сообщение при старте снимает
+ * оба вопроса сразу после деплоя.
  *
  * Кроны монтирует глобальный ScheduleModule в своём onApplicationBootstrap,
  * а хуки глобальных модулей Nest вызывает первыми — к нашему хуку реестр
- * уже полон.
+ * уже полон. Сведения читаются из БД без ожидания: старт приложения они
+ * не задерживают, сбой чтения — строка в том же сообщении.
  */
 @Injectable()
 export class CronJobsReporter implements OnApplicationBootstrap {
     private readonly logger = new Logger(CronJobsReporter.name);
 
-    constructor(private readonly registry: SchedulerRegistry) {}
+    constructor(
+        private readonly registry: SchedulerRegistry,
+        @Optional()
+        @Inject(CRON_JOBS_ROSTER_SOURCE)
+        private readonly rosterSource: CronJobsRosterSource | null = null,
+    ) {}
 
     onApplicationBootstrap(): void {
+        void this.report();
+    }
+
+    /** Собрать и отправить отчёт; вынесен из хука ради тестов и повторного вызова. */
+    async report(): Promise<void> {
         const jobs = summarizeCronJobs(this.registry.getCronJobs());
-        const message = formatCronJobsReport(jobs);
-        if (jobs.length) {
-            this.logger.log(message, { telegram: true });
+        if (!jobs.length) {
+            this.logger.error(formatCronJobsReport([]), { telegram: true });
             return;
         }
-        this.logger.error(message, { telegram: true });
+        const roster = await this.loadRoster();
+        const { lines, footer } = mergeCronJobsRoster(jobs, roster.value);
+        if (roster.error) {
+            footer.push(`⚠️ Сведения о порталах не собраны: ${roster.error}`);
+        }
+        this.logger.log(formatCronJobsReport(lines, footer), {
+            telegram: true,
+        });
+    }
+
+    private async loadRoster(): Promise<{
+        value: CronJobsRoster | null;
+        error: string | null;
+    }> {
+        if (!this.rosterSource) return { value: null, error: null };
+        try {
+            return { value: await this.rosterSource.resolve(), error: null };
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : String(error);
+            this.logger.error(
+                `Сведения о порталах для отчёта о кронах не собраны: ${message}`,
+            );
+            return { value: null, error: message };
+        }
     }
 }

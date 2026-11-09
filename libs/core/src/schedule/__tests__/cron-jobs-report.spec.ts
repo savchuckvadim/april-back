@@ -2,9 +2,15 @@ import { Logger } from '@nestjs/common';
 import {
     CronJobSchedule,
     formatCronJobsReport,
+    mergeCronJobsRoster,
     summarizeCronJobs,
 } from '../cron-jobs-report';
 import { CronJobsReporter } from '../cron-jobs-reporter.service';
+import {
+    CronJobInfo,
+    CronJobsRosterSource,
+    staticCronJobsRoster,
+} from '../cron-jobs-roster';
 
 /** Фейковая задача: запуски уже «в поясе», setZone запоминает пояс. */
 const job = (runs: string[], zones: string[] = []): CronJobSchedule => ({
@@ -16,6 +22,9 @@ const job = (runs: string[], zones: string[] = []): CronJobSchedule => ({
             },
         })),
 });
+
+const roster = (entries: [string, CronJobInfo][]) =>
+    new Map<string, CronJobInfo>(entries);
 
 describe('summarizeCronJobs', () => {
     it('сортирует задачи по имени и берёт два ближайших запуска в МСК', () => {
@@ -43,6 +52,45 @@ describe('summarizeCronJobs', () => {
     });
 });
 
+describe('mergeCronJobsRoster', () => {
+    const jobs = [
+        { name: 'deal-audit', nextRuns: ['01.10 12:30'] },
+        { name: 'xo-rescue', nextRuns: ['01.10 12:00'] },
+    ];
+
+    it('без источника сведений строки остаются голым реестром', () => {
+        expect(mergeCronJobsRoster(jobs, null)).toEqual({
+            lines: jobs,
+            footer: [],
+        });
+    });
+
+    it('подклеивает сведения по имени, неописанный крон помечает null', () => {
+        const info: CronJobInfo = { purpose: 'аудит сделок', portals: [] };
+
+        const { lines } = mergeCronJobsRoster(
+            jobs,
+            roster([['deal-audit', info]]),
+        );
+
+        expect(lines).toEqual([
+            { ...jobs[0], info },
+            { ...jobs[1], info: null },
+        ]);
+    });
+
+    it('кроны, описанные без регистрации в Nest, попадают в предупреждение', () => {
+        const { footer } = mergeCronJobsRoster(
+            jobs,
+            roster([['lead-sla', { purpose: 'SLA', portals: [] }]]),
+        );
+
+        expect(footer).toEqual([
+            '⚠️ Описаны, но не зарегистрированы: lead-sla',
+        ]);
+    });
+});
+
 describe('formatCronJobsReport', () => {
     it('перечисляет кроны с ближайшими запусками', () => {
         const text = formatCronJobsReport([
@@ -55,6 +103,59 @@ describe('formatCronJobsReport', () => {
         );
     });
 
+    it('со сведениями — вторая строка: назначение и порталы с пометками', () => {
+        const text = formatCronJobsReport([
+            {
+                name: 'xo-rescue',
+                nextRuns: ['01.10 12:00'],
+                info: {
+                    purpose: 'подстраховка ХО',
+                    portals: [
+                        { domain: 'garant.bitrix24.ru', note: 'только в лог' },
+                        { domain: 'gsr.bitrix24.ru' },
+                    ],
+                },
+            },
+        ]);
+
+        expect(text).toContain(
+            '• xo-rescue — 01.10 12:00\n' +
+                '  подстраховка ХО: garant.bitrix24.ru (только в лог), gsr.bitrix24.ru',
+        );
+    });
+
+    it('пустой список порталов — «нигде не включён», null — крон без привязки', () => {
+        const text = formatCronJobsReport([
+            {
+                name: 'lead-sla',
+                nextRuns: ['01.10 12:00'],
+                info: { purpose: 'SLA принятия заявок', portals: [] },
+            },
+            {
+                name: 'moveDeals',
+                nextRuns: ['01.10 15:00'],
+                info: { purpose: 'перенос сделок', portals: null },
+            },
+        ]);
+
+        expect(text).toContain('  SLA принятия заявок: нигде не включён');
+        expect(text).toContain('• moveDeals — 01.10 15:00\n  перенос сделок');
+    });
+
+    it('крон без сведений при наличии источника помечается, подвал дописывается', () => {
+        const text = formatCronJobsReport(
+            [{ name: 'new-cron', nextRuns: ['01.10 12:00'], info: null }],
+            ['⚠️ Описаны, но не зарегистрированы: old-cron'],
+        );
+
+        expect(text).toBe(
+            '🕒 Кроны запущены: 1 (ближайшие запуски, МСК)\n' +
+                '• new-cron — 01.10 12:00\n' +
+                '  привязка к порталам не описана\n' +
+                '⚠️ Описаны, но не зарегистрированы: old-cron',
+        );
+    });
+
     it('пустой реестр — подсказка про ScheduleModule', () => {
         expect(formatCronJobsReport([])).toContain('ScheduleModule.forRoot()');
     });
@@ -63,17 +164,16 @@ describe('formatCronJobsReport', () => {
 describe('CronJobsReporter', () => {
     const registry = (jobs: Map<string, CronJobSchedule>) =>
         ({ getCronJobs: () => jobs }) as never;
+    const jobs = new Map([['deal-audit', job(['01.10 12:30'])]]);
 
     afterEach(() => jest.restoreAllMocks());
 
-    it('при старте отправляет список кронов в Telegram', () => {
+    it('при старте отправляет список кронов в Telegram', async () => {
         const log = jest
             .spyOn(Logger.prototype, 'log')
             .mockImplementation(() => undefined);
 
-        new CronJobsReporter(
-            registry(new Map([['deal-audit', job(['01.10 12:30'])]])),
-        ).onApplicationBootstrap();
+        await new CronJobsReporter(registry(jobs)).report();
 
         expect(log).toHaveBeenCalledWith(
             expect.stringContaining('deal-audit'),
@@ -81,13 +181,73 @@ describe('CronJobsReporter', () => {
         );
     });
 
-    it('без кронов пишет ошибку, а не обычную строку', () => {
+    it('хук старта запускает отчёт, не дожидаясь его', () => {
+        const reporter = new CronJobsReporter(registry(jobs));
+        const report = jest
+            .spyOn(reporter, 'report')
+            .mockResolvedValue(undefined);
+
+        reporter.onApplicationBootstrap();
+
+        expect(report).toHaveBeenCalledTimes(1);
+    });
+
+    it('сведения источника попадают в сообщение', async () => {
+        const log = jest
+            .spyOn(Logger.prototype, 'log')
+            .mockImplementation(() => undefined);
+        const source = staticCronJobsRoster(
+            roster([
+                [
+                    'deal-audit',
+                    {
+                        purpose: 'аудит сделок',
+                        portals: [{ domain: 'garant.bitrix24.ru' }],
+                    },
+                ],
+            ]),
+        );
+
+        await new CronJobsReporter(registry(jobs), source).report();
+
+        expect(log).toHaveBeenCalledWith(
+            expect.stringContaining('  аудит сделок: garant.bitrix24.ru'),
+            { telegram: true },
+        );
+    });
+
+    it('сбой источника — список кронов всё равно уходит, причина в подвале', async () => {
+        const log = jest
+            .spyOn(Logger.prototype, 'log')
+            .mockImplementation(() => undefined);
+        const error = jest
+            .spyOn(Logger.prototype, 'error')
+            .mockImplementation(() => undefined);
+        const source: CronJobsRosterSource = {
+            resolve: () => Promise.reject(new Error('БД недоступна')),
+        };
+
+        await new CronJobsReporter(registry(jobs), source).report();
+
+        expect(log).toHaveBeenCalledWith(
+            expect.stringContaining(
+                '• deal-audit — 01.10 12:30\n' +
+                    '⚠️ Сведения о порталах не собраны: БД недоступна',
+            ),
+            { telegram: true },
+        );
+        expect(error).toHaveBeenCalledWith(
+            expect.stringContaining('БД недоступна'),
+        );
+    });
+
+    it('без кронов пишет ошибку, а не обычную строку', async () => {
         const error = jest
             .spyOn(Logger.prototype, 'error')
             .mockImplementation(() => undefined);
         const log = jest.spyOn(Logger.prototype, 'log');
 
-        new CronJobsReporter(registry(new Map())).onApplicationBootstrap();
+        await new CronJobsReporter(registry(new Map())).report();
 
         expect(error).toHaveBeenCalledWith(
             expect.stringContaining('не зарегистрированы'),
