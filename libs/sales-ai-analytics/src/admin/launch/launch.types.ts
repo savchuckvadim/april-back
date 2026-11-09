@@ -123,8 +123,10 @@ export interface LaunchReanalysisRun {
     to: string;
     dryRun: boolean;
     finished: boolean;
-    /** Не закончен и давно не обновлялся — цепочка остановилась. */
+    /** Не закончен и давно не обновлялся либо остановлен серией сбоев. */
     stale: boolean;
+    /** Последняя часть остановлена серией сбоев подряд (нужен повторный запуск). */
+    stopped: boolean;
     part: number;
     candidates: number;
     done: number;

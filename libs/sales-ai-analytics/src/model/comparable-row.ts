@@ -74,7 +74,11 @@ function versionBefore(
     return date === null ? callDayBefore(row, from, timeZone) : date < from;
 }
 
-/** Строка до границы сравнимости: в оценки не идёт, считается отдельно. */
+/**
+ * Строка до границы сравнимости. С 09.11.2026 матрица такие строки не
+ * исключает, а помечает (`nBeforeComparable`); ряды трендов по-прежнему
+ * режутся по границе.
+ */
 export function isBeforeComparable(
     row: ComparableRow,
     comparability: MatrixComparability,

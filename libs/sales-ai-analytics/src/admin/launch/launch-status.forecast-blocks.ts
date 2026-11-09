@@ -149,17 +149,22 @@ export function toLaunchRun(
     now: Date,
 ): LaunchReanalysisRun {
     const updatedAt = Date.parse(run.updatedAt);
+    const stopped = run.stopped === true;
+    // Остановка серией сбоев — тот же путь «остановился», что и давно не
+    // обновлявшийся статус: кнопка запуска снова доступна, пересборка — нет.
     const stale =
         !run.finished &&
-        Number.isFinite(updatedAt) &&
-        now.getTime() - updatedAt >
-            LAUNCH_DEFAULTS.reanalysisStaleMinutes * MINUTE_MS;
+        (stopped ||
+            (Number.isFinite(updatedAt) &&
+                now.getTime() - updatedAt >
+                    LAUNCH_DEFAULTS.reanalysisStaleMinutes * MINUTE_MS));
     return {
         from: run.from,
         to: run.to,
         dryRun: run.dryRun,
         finished: run.finished,
         stale,
+        stopped,
         part: run.part,
         candidates: run.candidates,
         done: run.done,
@@ -174,7 +179,11 @@ export function toLaunchRun(
         estimateMessage: run.estimate?.message ?? null,
         progressShare: reanalysisProgress(run),
         total: typeof run.total === 'number' ? run.total : null,
-        etaMinutes: typeof run.etaMinutes === 'number' ? run.etaMinutes : null,
+        // У остановившегося прогона «осталось ≈ X мин» — ложь: ничего не идёт.
+        etaMinutes:
+            !stale && typeof run.etaMinutes === 'number'
+                ? run.etaMinutes
+                : null,
     };
 }
 
@@ -210,7 +219,10 @@ function reanalysisText(run: LaunchReanalysisRun): string {
         return `Переразбор закончен (${period}): сделано ${run.done}, сбоев ${run.failed}, потрачено ${rub(run.price)}. Дальше — «Пересобрать витрину после переразбора».`;
     }
     if (run.stale) {
-        return `Переразбор остановился (${period}): сделано ${run.done}, статус давно не обновлялся${run.lastError ? `, последняя ошибка: ${run.lastError}` : ''}. Запустите ещё раз — повтор безопасен, сделанное пропускается.`;
+        const why = run.stopped
+            ? 'остановлен после серии сбоев подряд'
+            : 'статус давно не обновлялся';
+        return `Переразбор остановился (${period}): сделано ${run.done}, ${why}${run.lastError ? `, последняя ошибка: ${run.lastError}` : ''}. Запустите ещё раз — повтор безопасен, сделанное пропускается.`;
     }
     const ofTotal = run.total === null ? '' : ` из ${run.total}`;
     const eta =

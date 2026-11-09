@@ -35,8 +35,10 @@ export interface ReanalysisPoolState {
     failStreak: number;
     /** Текущая одновременность: после серии сбоев — один. */
     concurrency: number;
-    /** Часть остановлена серией сбоев. */
+    /** Часть остановлена серией сбоев (серия после этого заморожена). */
     stopped: boolean;
+    /** Учёт итога упал (например, запись статуса): воркеры выходят, пул отклоняется. */
+    aborted: boolean;
     timeBudgetHit: boolean;
 }
 
@@ -49,9 +51,12 @@ function account(
     state.processed += 1;
     if (outcome.ok) {
         state.doneInPart += 1;
-        state.failStreak = 0;
+        // После остановки серия заморожена: отставшие итоги её не меняют,
+        // и «остановлено после N сбоев подряд» остаётся верным.
+        if (!state.stopped) state.failStreak = 0;
         return;
     }
+    if (state.stopped) return;
     state.failStreak += 1;
     if (state.failStreak >= options.stopAfterFailures) {
         state.stopped = true;
@@ -84,27 +89,45 @@ export async function runReanalysisPool<T>(
         failStreak: 0,
         concurrency: Math.max(1, options.concurrency),
         stopped: false,
+        aborted: false,
         timeBudgetHit: false,
     };
     let next = 0;
     const worker = async (slot: number): Promise<void> => {
-        while (slot < state.concurrency && !state.stopped) {
-            if (options.now() - options.startedAt > options.timeBudgetMs) {
-                state.timeBudgetHit = true;
-                return;
+        try {
+            while (
+                slot < state.concurrency &&
+                !state.stopped &&
+                !state.aborted
+            ) {
+                if (options.now() - options.startedAt > options.timeBudgetMs) {
+                    state.timeBudgetHit = true;
+                    return;
+                }
+                const index = next;
+                next += 1;
+                if (index >= items.length) return;
+                const begin = options.now();
+                const outcome = await run(items[index]);
+                account(state, outcome, options);
+                await onOutcome(outcome, options.now() - begin, state);
             }
-            const index = next;
-            next += 1;
-            if (index >= items.length) return;
-            const begin = options.now();
-            const outcome = await run(items[index]);
-            account(state, outcome, options);
-            await onOutcome(outcome, options.now() - begin, state);
+        } catch (error) {
+            // Сбой учёта итога: остальные воркеры дорабатывают свой звонок и
+            // выходят — сирот, продолжающих звать модель после отказа джобы,
+            // не остаётся; отказ отдаётся после выхода всех.
+            state.aborted = true;
+            throw error;
         }
     };
-    await Promise.all(
+    const settled = await Promise.allSettled(
         Array.from({ length: state.concurrency }, (_, slot) => worker(slot)),
     );
+    const failure = settled.find(
+        (result): result is PromiseRejectedResult =>
+            result.status === 'rejected',
+    );
+    if (failure) throw failure.reason;
 
     return state;
 }

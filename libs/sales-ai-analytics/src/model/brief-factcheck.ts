@@ -197,12 +197,14 @@ export function packLinks(pack: AiEvidencePack): Set<string> {
     return links;
 }
 
-/** Всё, с чем сверяется буллет: коды, числа, ссылки и менеджеры фактов. */
+/** Всё, с чем сверяется буллет: коды, числа, ссылки, менеджеры и фразы фактов. */
 interface CheckContext {
     codes: ReadonlySet<string>;
     allowed: ReadonlySet<string>;
     links: ReadonlySet<string>;
     managerOf: ReadonlyMap<string, string | undefined>;
+    /** Готовые фразы фактов (нормализованные): их длина лимитом не режется. */
+    factTexts: ReadonlySet<string>;
 }
 
 function contextOf(pack: AiEvidencePack): CheckContext {
@@ -211,6 +213,9 @@ function contextOf(pack: AiEvidencePack): CheckContext {
         allowed: packNumberKeys(pack),
         links: packLinks(pack),
         managerOf: new Map(pack.facts.map(fact => [fact.code, fact.managerId])),
+        factTexts: new Set(
+            pack.facts.map(fact => normalizeBriefText(fact.text)),
+        ),
     };
 }
 
@@ -232,7 +237,10 @@ function checkBullet(
     if (bullet.text.trim() === '') {
         return drop(bullet, AI_BRIEF_DROP_REASONS.empty);
     }
-    if (wordCount(bullet.text) > AI_BRIEF_LIMITS.bulletWords) {
+    if (
+        wordCount(bullet.text) > AI_BRIEF_LIMITS.bulletWords &&
+        !ctx.factTexts.has(normalizeBriefText(bullet.text))
+    ) {
         return drop(bullet, AI_BRIEF_DROP_REASONS.tooManyWords);
     }
     if (!isBulletGroup(bullet.group)) {

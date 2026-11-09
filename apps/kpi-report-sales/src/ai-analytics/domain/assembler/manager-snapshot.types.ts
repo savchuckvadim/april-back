@@ -188,7 +188,7 @@ export interface ManagerApplicabilityTrace {
  * и стоп-фраз, версии расчёта.
  */
 export interface ManagerWeekPayload extends ManagerWeekSnapshot {
-    /** Разобранных звонков ДО `comparableFrom` — считаются отдельно. */
+    /** Из n — разобранных ДО `comparableFrom` (входят в оценки, пометка). */
     nBeforeComparable: number;
     /** Сработавшие правила потолков (`ai_analytics_scoring.caps`). */
     caps: ManagerScoringFlag[];
@@ -214,9 +214,9 @@ export interface ManagerWeekPayload extends ManagerWeekSnapshot {
  * оставляет пустой (`dossier-series.ts`).
  */
 export interface ManagerMonthPayload extends ManagerMonthSnapshot {
-    /** Разобранных сравнимых звонков месяца (как `n` недели). */
+    /** Разобранных звонков месяца (как `n` недели; с 09.11.2026 — включая помеченные). */
     n?: number;
-    /** Разобранных звонков ДО границы сравнимости — считаются отдельно. */
+    /** Из n — разобранных ДО границы сравнимости (входят в оценки, пометка). */
     nBeforeComparable?: number;
     /**
      * Средняя оценка по звонкам с баллом и корзиной, шкала 1–10; её объём

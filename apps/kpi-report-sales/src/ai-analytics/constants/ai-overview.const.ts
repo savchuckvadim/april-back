@@ -30,7 +30,7 @@ import {
 import { AI_ANALYTICS_PULSE_TTL_SECONDS } from './ai-analytics.const';
 
 /** Версия кода расчёта витрины (semver, план 4.11). */
-export const AI_ANALYTICS_CALC_VERSION = 'sam-1.0.0' as const;
+export const AI_ANALYTICS_CALC_VERSION = 'sam-1.1.0' as const;
 
 /** Период обзора не длиннее трёх месяцев (план 6.2). */
 export const AI_ANALYTICS_OVERVIEW_MAX_MONTHS = 3;

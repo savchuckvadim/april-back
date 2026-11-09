@@ -259,6 +259,37 @@ describe('initialRunStatus', () => {
         });
     });
 
+    it('dryRun ничего не продолжает: поверх незаконченного боевого прогона счётчики с нуля', () => {
+        const previous = initialRunStatus({
+            data,
+            versions,
+            roster: null,
+            selection,
+            previous: null,
+            now: new Date('2026-10-20T00:00:00Z'),
+        });
+        previous.done = 5;
+        previous.price = 7.5;
+        previous.part = 2;
+        const dry = initialRunStatus({
+            data: { ...data, dryRun: true },
+            versions,
+            roster: null,
+            selection,
+            previous,
+            now,
+        });
+        expect(dry).toMatchObject({
+            part: 1,
+            dryRun: true,
+            done: 0,
+            price: 0,
+            processingMs: 0,
+            stopped: false,
+            startedAt: now.toISOString(),
+        });
+    });
+
     it('etaMinutesOf: остаток × среднее время звонка ÷ одновременность; без обработанных — null', () => {
         expect(
             etaMinutesOf({
@@ -305,6 +336,7 @@ describe('initialRunStatus', () => {
             failStreak: 0,
             concurrency: 3,
             stopped: false,
+            aborted: false,
             timeBudgetHit: false,
         };
         accountOutcome(

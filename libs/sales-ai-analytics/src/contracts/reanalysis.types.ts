@@ -109,6 +109,11 @@ export interface ReanalysisRunStatus {
     etaMinutes?: number | null;
     /** Сколько звонков разбирается одновременно (после серии сбоев — один). */
     concurrency?: number;
+    /**
+     * Последняя часть остановлена серией сбоев подряд: прогон НЕ закончен,
+     * продолжение не ставилось — нужен повторный запуск (повтор безопасен).
+     */
+    stopped?: boolean;
 }
 
 export const REANALYSIS_DEFAULTS = {

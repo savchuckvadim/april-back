@@ -163,13 +163,14 @@ export class CallReportReanalyzeUseCase {
             },
         );
         status.timeBudgetHit = pool.timeBudgetHit;
+        status.stopped = pool.stopped;
         const { processed, doneInPart } = pool;
 
-        // Продолжение — только если часть что-то смогла: иначе упорный сбой
-        // крутил бы цепочку бесконечно.
+        // Продолжение — только если часть что-то смогла и не остановлена
+        // серией сбоев: иначе упорный сбой крутил бы цепочку бесконечно.
         const remaining = selection.candidates.length - processed;
         status.continuedWith =
-            remaining > 0 && doneInPart > 0
+            remaining > 0 && doneInPart > 0 && !pool.stopped
                 ? await this.dispatchContinuation(data, status.part + 1)
                 : null;
         const reportIds = await this.reports.writeAgreementReports(
@@ -178,7 +179,9 @@ export class CallReportReanalyzeUseCase {
             versions,
             now,
         );
-        status.finished = status.continuedWith === null;
+        // Остановленная серией сбоев часть — не конец прогона: панель покажет
+        // «остановился», а повторный запуск продолжит счётчики.
+        status.finished = status.continuedWith === null && !pool.stopped;
         status.updatedAt = new Date().toISOString();
         await this.reports.saveStatus(status, statusId);
         const result = toReanalyzeResult(

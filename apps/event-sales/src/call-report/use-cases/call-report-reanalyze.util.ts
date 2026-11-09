@@ -203,7 +203,8 @@ export function selectReanalysisCandidates(input: {
  * (done/failed/tokens/price/processingMs/startedAt) идут дальше, номер
  * части растёт от прошлой записи. Так ни запуск после перезапуска воркера,
  * ни повторное нажатие кнопки не выглядят как «часть 1 с нуля»
- * (09.11.2026). Законченный или dryRun-прогон не продолжается — новый статус.
+ * (09.11.2026). Законченный или dryRun-прогон не продолжается, и dryRun сам
+ * ничего не продолжает — у подсчёта без модели счётчики всегда с нуля.
  */
 export function initialRunStatus(input: {
     data: ReanalysisJobData;
@@ -215,6 +216,7 @@ export function initialRunStatus(input: {
 }): ReanalysisRunStatus {
     const { data, versions, selection, previous, now } = input;
     const carry =
+        data.dryRun !== true &&
         previous !== null &&
         !previous.finished &&
         !previous.dryRun &&
@@ -251,6 +253,7 @@ export function initialRunStatus(input: {
         processingMs: carry ? (previous.processingMs ?? 0) : 0,
         etaMinutes: null,
         concurrency: REANALYSIS_DEFAULTS.concurrency,
+        stopped: false,
     };
 }
 

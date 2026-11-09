@@ -17,6 +17,7 @@
  */
 import {
     AI_BRIEF_BULLET_GROUPS,
+    AI_BRIEF_DROP_REASONS,
     AI_BRIEF_PROMPT_VERSION,
     AI_BRIEF_LIMITS,
     AI_BRIEF_TEMPLATE_REASONS,
@@ -39,6 +40,7 @@ import { validateBriefPayload } from './brief-payload';
 import {
     actionBullets,
     changeBullets,
+    changeFacts,
     focusBullets,
     templateHeadline,
 } from './brief-template.groups';
@@ -151,10 +153,32 @@ function byGroupOrder(bullets: readonly AiBriefBullet[]): AiBriefBullet[] {
     );
 }
 
+/** Буллет модели целиком о фактах фокуса — карточка и так идёт в focus. */
+function isFocusOnly(bullet: AiBriefBullet): boolean {
+    return (
+        bullet.factRefs.length > 0 &&
+        bullet.factRefs.every(ref => FOCUS_CODES.has(ref))
+    );
+}
+
+/**
+ * Сколько буллетов модели нужно для резюме: `minBullets`, но не больше,
+ * чем фактов «что изменилось» в пакете (модель пишет только их; при одном
+ * таком факте требовать два пункта — отправлять резюме в шаблон зря).
+ */
+function requiredBullets(pack: AiEvidencePack): number {
+    return Math.max(
+        1,
+        Math.min(AI_BRIEF_LIMITS.minBullets, changeFacts(pack).length),
+    );
+}
+
 /**
  * Резюме из ответа модели: строгая схема → факт-чек → шаблон, если после
- * проверки осталось меньше `AI_BRIEF_LIMITS.minBullets` буллетов. К
- * прошедшим буллетам модели добавляются фокус и действия правил пакета.
+ * проверки осталось меньше нужного числа буллетов (`requiredBullets`). К
+ * прошедшим буллетам модели добавляются фокус и действия правил пакета;
+ * буллеты модели целиком о фактах фокуса отбрасываются — иначе карточка
+ * «Внимания» появлялась бы дважды.
  */
 export function buildBriefFromLlm(
     raw: unknown,
@@ -174,9 +198,20 @@ export function buildBriefFromLlm(
             errors: validation.errors,
         };
     }
-    const checked = factCheckBullets(validation.payload.bullets, pack);
-    const dropped = [...validation.dropped, ...checked.dropped];
-    if (checked.kept.length < AI_BRIEF_LIMITS.minBullets) {
+    const focusOnly = validation.payload.bullets.filter(isFocusOnly);
+    const checked = factCheckBullets(
+        validation.payload.bullets.filter(bullet => !isFocusOnly(bullet)),
+        pack,
+    );
+    const dropped: BriefDroppedBullet[] = [
+        ...validation.dropped,
+        ...focusOnly.map(bullet => ({
+            text: bullet.text,
+            reason: AI_BRIEF_DROP_REASONS.focusFactAsChange,
+        })),
+        ...checked.dropped,
+    ];
+    if (checked.kept.length < requiredBullets(pack)) {
         return {
             brief: buildTemplateBrief(
                 pack,

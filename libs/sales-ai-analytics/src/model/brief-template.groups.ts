@@ -99,12 +99,19 @@ export function changeBullets(pack: AiEvidencePack): AiBriefBullet[] {
     return bullets;
 }
 
-/** Фокус: факты карточек «Внимания» по рангу, фраза факта как есть. */
+/**
+ * Фокус: факты карточек «Внимания» по рангу, фраза факта как есть — без
+ * обрезки по словам: заголовок карточки написан нашим кодом, и срез на 30
+ * словах менял бы его смысл (факт-чек такие фразы по длине не режет).
+ */
 export function focusBullets(pack: AiEvidencePack): AiBriefBullet[] {
     return pack.facts
         .filter(fact => FOCUS_CODES.has(fact.code))
         .slice(0, AI_BRIEF_LIMITS.groups.focus)
-        .map(fact => bulletOf(fact, 'focus', fact.text));
+        .map(fact => ({
+            ...bulletOf(fact, 'focus', fact.text),
+            text: fact.text,
+        }));
 }
 
 /** Хвост заголовка, когда самого сильного изменения нет. */

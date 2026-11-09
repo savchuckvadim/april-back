@@ -123,8 +123,38 @@ describe('buildLaunchStatus: переразбор с total (09.11.2026)', () => 
         expect(legacy.reanalysis.run).toMatchObject({
             total: null,
             etaMinutes: null,
+            stopped: false,
         });
         expect(legacy.reanalysis.text).toContain('переразобрано 100, сбоев 2');
+    });
+
+    it('остановка серией сбоев — «остановился», кнопка запуска снова доступна, «осталось» не показывается', () => {
+        const stopped = buildLaunchStatus(
+            launchInput({
+                reanalysis: {
+                    ok: true,
+                    value: reanalysisRun({
+                        stopped: true,
+                        etaMinutes: 12,
+                        lastError:
+                            'модель упала — остановлено после 8 сбоев подряд',
+                    }),
+                },
+            }),
+        );
+        expect(stopped.reanalysis.state).toBe('todo');
+        expect(stopped.reanalysis.run).toMatchObject({
+            stale: true,
+            stopped: true,
+            etaMinutes: null,
+        });
+        expect(stopped.reanalysis.text).toContain(
+            'остановлен после серии сбоев подряд',
+        );
+        expect(stopped.reanalysis.text).toContain(
+            'остановлено после 8 сбоев подряд',
+        );
+        expect(stopped.reanalysis.text).toContain('Запустите ещё раз');
     });
 });
 

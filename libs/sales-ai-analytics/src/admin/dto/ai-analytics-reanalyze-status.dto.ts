@@ -230,6 +230,15 @@ export class AiAnalyticsReanalysisRunStatusDto implements ReanalysisRunStatus {
         example: 3,
     })
     concurrency?: number;
+
+    @ApiProperty({
+        description:
+            'Последняя часть остановлена серией сбоев подряд: прогон не закончен, нужен повторный запуск.',
+        type: Boolean,
+        required: false,
+        example: false,
+    })
+    stopped?: boolean;
 }
 
 /** Ответ ручки статуса переразбора. */

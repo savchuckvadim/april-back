@@ -164,17 +164,23 @@ export class CallsStep implements AiAnalyticsPipelineStep {
                 ? assembly.rows
                 : [{ managerId: null, payload: emptyWeekPayload(meta) }];
         for (const record of records) {
-            await this.snapshots.upsert({
-                domain: ctx.domain,
-                type: AI_ANALYTICS_SNAPSHOT_TYPE.managerWeek,
-                periodKey: ctx.weekKey,
-                managerId: record.managerId,
-                calcVersion: ctx.calcVersion,
-                paramsVersion: ctx.paramsVersion,
-                inputsHash: ctx.inputsHash,
-                generatedAt: ctx.now.toISOString(),
-                payload: record.payload,
-            });
+            await this.snapshots.upsert(
+                {
+                    domain: ctx.domain,
+                    type: AI_ANALYTICS_SNAPSHOT_TYPE.managerWeek,
+                    periodKey: ctx.weekKey,
+                    managerId: record.managerId,
+                    calcVersion: ctx.calcVersion,
+                    paramsVersion: ctx.paramsVersion,
+                    inputsHash: ctx.inputsHash,
+                    generatedAt: ctx.now.toISOString(),
+                    payload: record.payload,
+                },
+                // Принудительный пересчёт обязан перезаписать неделю даже при
+                // той же сигнатуре — иначе смена правил счёта (B7, 09.11.2026)
+                // до рядов досье не доедет (стор дедуплицирует по сигнатуре).
+                { force: ctx.forceRefresh },
+            );
         }
         return { managers: assembly.rows.length, written: records.length };
     }

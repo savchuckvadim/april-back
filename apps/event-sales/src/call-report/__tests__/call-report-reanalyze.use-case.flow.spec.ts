@@ -205,11 +205,14 @@ describe('CallReportReanalyzeUseCase: продолжения и сбои', () =>
         expect(rerunService.rerun).toHaveBeenCalledTimes(8);
         expect(result).toMatchObject({ processed: 8, done: 0, failed: 8 });
         expect(queueDispatcher.dispatch).not.toHaveBeenCalled();
+        // Остановка — не конец прогона: finished false, stopped true, панель
+        // покажет «остановился», повторный запуск продолжит счётчики.
         expect(
             ofType('call-report-reanalysis-run')[0].user_result,
         ).toMatchObject({
             concurrency: 1,
-            finished: true,
+            finished: false,
+            stopped: true,
             lastError: 'модель упала — остановлено после 8 сбоев подряд',
         });
     });

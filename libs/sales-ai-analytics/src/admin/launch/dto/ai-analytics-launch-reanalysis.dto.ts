@@ -41,11 +41,19 @@ export class AiAnalyticsLaunchReanalysisRunDto implements LaunchReanalysisRun {
 
     @ApiProperty({
         description:
-            'Не закончен и давно не обновлялся — цепочка остановилась.',
+            'Не закончен и давно не обновлялся либо остановлен серией сбоев — цепочка остановилась.',
         type: Boolean,
         example: false,
     })
     stale: boolean;
+
+    @ApiProperty({
+        description:
+            'Последняя часть остановлена серией сбоев подряд: нужен повторный запуск, повтор безопасен.',
+        type: Boolean,
+        example: false,
+    })
+    stopped: boolean;
 
     @ApiProperty({
         description: 'Номер текущей части цепочки, с 1.',

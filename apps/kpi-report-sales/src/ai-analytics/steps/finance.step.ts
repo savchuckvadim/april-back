@@ -224,17 +224,22 @@ export class FinanceStep implements AiAnalyticsPipelineStep {
                 finance: data.finance,
             });
             for (const row of assembly.rows) {
-                await this.snapshots.upsert({
-                    domain: ctx.domain,
-                    type: AI_ANALYTICS_SNAPSHOT_TYPE.managerMonth,
-                    periodKey: monthKey,
-                    managerId: row.managerId,
-                    calcVersion: ctx.calcVersion,
-                    paramsVersion: ctx.paramsVersion,
-                    inputsHash: ctx.inputsHash,
-                    generatedAt: ctx.now.toISOString(),
-                    payload: row.payload,
-                });
+                await this.snapshots.upsert(
+                    {
+                        domain: ctx.domain,
+                        type: AI_ANALYTICS_SNAPSHOT_TYPE.managerMonth,
+                        periodKey: monthKey,
+                        managerId: row.managerId,
+                        calcVersion: ctx.calcVersion,
+                        paramsVersion: ctx.paramsVersion,
+                        inputsHash: ctx.inputsHash,
+                        generatedAt: ctx.now.toISOString(),
+                        payload: row.payload,
+                    },
+                    // Принудительный пересчёт перезаписывает месяц и при той же
+                    // сигнатуре (B7, 09.11.2026) — как у соседних шагов.
+                    { force: ctx.forceRefresh },
+                );
                 written += 1;
             }
         }

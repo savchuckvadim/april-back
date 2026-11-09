@@ -273,6 +273,11 @@ export const AI_BRIEF_DROP_REASONS = {
      * число факт-чек сверить не может, а модель так обходила проверку.
      */
     numbersInWords: 'numbers-in-words',
+    /**
+     * Буллет изменений целиком о факте фокуса: карточку «Внимания» резюме
+     * и так несёт в группе focus — от модели пересказ не нужен (09.11.2026).
+     */
+    focusFactAsChange: 'focus-fact-as-change',
     /** Стоп-слово. */
     forbiddenWord: 'forbidden-word',
     /** Каузальная формулировка. */
