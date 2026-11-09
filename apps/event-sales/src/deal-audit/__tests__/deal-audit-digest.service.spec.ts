@@ -1,6 +1,8 @@
 import { DealAuditDigestService } from '../services/deal-audit-digest.service';
 import { DEAL_AUDIT_STATUS } from '../constants/deal-audit.const';
 import { DealAuditVerdict } from '../types/deal-audit.types';
+import { DEFAULT_DIGEST_CHANNELS } from '../lib/deal-audit-digest-channels';
+import { DEAL_AUDIT_TASK_MARK } from '../services/deal-audit-digest-task';
 
 const DOMAIN = 'garant.bitrix24.ru';
 
@@ -52,13 +54,37 @@ const NO_RECIPIENTS = {
     departmentUserIds: [],
     excludeUserIds: [],
     limit: 20,
+    channels: DEFAULT_DIGEST_CHANNELS,
 };
 
-const makeService = (structure: 'ok' | 'down' = 'ok') => {
+const makeService = (
+    structure: 'ok' | 'down' = 'ok',
+    /** Открытые задачи-сводки получателя на портале (для замены). */
+    previousTasks: Array<{ id: number; status: string }> = [],
+) => {
     const systemAdd = jest.fn().mockResolvedValue(true);
+    const messageAdd = jest.fn().mockResolvedValue({ result: 1 });
+    const taskAdd = jest.fn().mockResolvedValue({
+        result: { task: { id: 900 } },
+    });
+    const taskComplete = jest.fn().mockResolvedValue({ result: true });
+    const taskGetList = jest.fn().mockResolvedValue({
+        result: {
+            tasks: previousTasks.map(t => ({ id: t.id, status: t.status })),
+        },
+    });
     const pbx = {
         init: jest.fn().mockResolvedValue({
-            bitrix: { imNotify: { systemAdd } },
+            bitrix: {
+                imNotify: { systemAdd },
+                message: { add: messageAdd },
+                task: {
+                    add: taskAdd,
+                    complete: taskComplete,
+                    getList: taskGetList,
+                },
+            },
+            PortalModel: { getTimezone: () => 'Europe/Moscow' },
         }),
     };
     const departments = {
@@ -76,7 +102,15 @@ const makeService = (structure: 'ok' | 'down' = 'ok') => {
         (systemAdd.mock.calls as [{ USER_ID: number; MESSAGE: string }][]).find(
             ([payload]) => payload.USER_ID === userId,
         )?.[0].MESSAGE;
-    return { service, systemAdd, sentTo };
+    return {
+        service,
+        systemAdd,
+        messageAdd,
+        taskAdd,
+        taskComplete,
+        taskGetList,
+        sentTo,
+    };
 };
 
 describe('DealAuditDigestService', () => {
@@ -169,6 +203,106 @@ describe('DealAuditDigestService', () => {
                     'сводка по своему отделу не отправлена',
                 ),
             ]),
+        );
+    });
+});
+
+/*
+ * Владелец 09.11.2026: уведомление портала теряется в колокольчике —
+ * сводку ставим задачей и шлём личным сообщением, как легаси deals-order.
+ */
+describe('DealAuditDigestService — каналы доставки', () => {
+    const options = (channels: typeof DEFAULT_DIGEST_CHANNELS) => ({
+        ...NO_RECIPIENTS,
+        userIds: [1],
+        channels,
+    });
+
+    it('по умолчанию — только уведомление портала, как было', async () => {
+        const { service, systemAdd, messageAdd, taskAdd } = makeService();
+
+        const sent = await service.send(
+            DOMAIN,
+            VERDICTS,
+            options(DEFAULT_DIGEST_CHANNELS),
+            [],
+        );
+
+        expect(sent).toBe(1);
+        expect(systemAdd).toHaveBeenCalledTimes(1);
+        expect(messageAdd).not.toHaveBeenCalled();
+        expect(taskAdd).not.toHaveBeenCalled();
+    });
+
+    it('задача + сообщение: уведомления нет, задача со сводкой и числом, прошлая открытая закрыта', async () => {
+        const {
+            service,
+            systemAdd,
+            messageAdd,
+            taskAdd,
+            taskComplete,
+            taskGetList,
+        } = makeService('ok', [
+            { id: 700, status: '2' },
+            { id: 650, status: '5' },
+        ]);
+        const warnings: string[] = [];
+
+        const sent = await service.send(
+            DOMAIN,
+            VERDICTS,
+            options({ notify: false, message: true, task: true }),
+            warnings,
+        );
+
+        expect(sent).toBe(1);
+        expect(systemAdd).not.toHaveBeenCalled();
+        expect(messageAdd).toHaveBeenCalledWith(
+            expect.objectContaining({
+                DIALOG_ID: '1',
+                MESSAGE: expect.stringContaining('Забытые сделки') as string,
+            }),
+        );
+        expect(taskGetList).toHaveBeenCalledWith(
+            expect.objectContaining({
+                RESPONSIBLE_ID: 1,
+                '%TITLE': DEAL_AUDIT_TASK_MARK,
+            }),
+            expect.any(Array),
+        );
+        // Открытая прошлая сводка закрыта, уже завершённая — не трогается.
+        expect(taskComplete).toHaveBeenCalledTimes(1);
+        expect(taskComplete).toHaveBeenCalledWith(700);
+        expect(taskAdd).toHaveBeenCalledWith(
+            expect.objectContaining({
+                TITLE: `Забытые сделки: сводка по всем отделам — 3 · ${DEAL_AUDIT_TASK_MARK}`,
+                RESPONSIBLE_ID: 1,
+                DESCRIPTION_IN_BBCODE: 'Y',
+                DESCRIPTION: expect.stringContaining('#1069') as string,
+                DEADLINE: expect.any(String) as string,
+            }),
+        );
+        expect(warnings).toEqual([]);
+    });
+
+    it('сбой одного канала — предупреждение, второй канал доходит, получатель засчитан', async () => {
+        const { service, taskAdd, messageAdd } = makeService();
+        taskAdd.mockRejectedValueOnce(
+            new Error('Request failed with status code 500'),
+        );
+        const warnings: string[] = [];
+
+        const sent = await service.send(
+            DOMAIN,
+            VERDICTS,
+            options({ notify: false, message: true, task: true }),
+            warnings,
+        );
+
+        expect(sent).toBe(1);
+        expect(messageAdd).toHaveBeenCalledTimes(1);
+        expect(warnings.join(' ')).toContain(
+            'задача-сводка сотруднику 1 не создана',
         );
     });
 });

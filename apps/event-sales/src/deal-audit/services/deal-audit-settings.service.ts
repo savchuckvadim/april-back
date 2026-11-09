@@ -9,6 +9,7 @@ import {
     parseDealAuditFrequency,
 } from '../lib/deal-audit-schedule';
 import { DealAuditOptions } from './deal-audit.service';
+import { parseDigestChannels } from '../lib/deal-audit-digest-channels';
 
 /** Нижняя граница порогов: ноль сделал бы забытыми все сделки портала. */
 const MIN_DAYS = 1;
@@ -91,6 +92,7 @@ export class DealAuditSettingsService {
                     String(settings.dealAuditDigestExcludeUserIds ?? ''),
                 ),
                 limit: positive(settings.dealAuditDigestLimit, 20),
+                channels: parseDigestChannels(settings.dealAuditDigestChannels),
             },
             maxPerDepartment: Math.min(
                 MAX_PER_DEPARTMENT,

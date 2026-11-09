@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import { DEFAULT_DIGEST_CHANNELS } from '../lib/deal-audit-digest-channels';
 import { ETimeZone } from '@lib/shared/lib/date';
 import { DEAL_AUDIT_STATUS } from '../constants/deal-audit.const';
 import {
@@ -53,6 +54,7 @@ const options = (extra: Partial<DealAuditOptions> = {}): DealAuditOptions => ({
         departmentUserIds: [],
         excludeUserIds: [],
         limit: 20,
+        channels: DEFAULT_DIGEST_CHANNELS,
     },
     ...extra,
 });

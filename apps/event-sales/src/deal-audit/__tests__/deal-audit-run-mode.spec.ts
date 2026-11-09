@@ -3,6 +3,7 @@ import {
     hasDigestRecipients,
     resolveDealAuditRunMode,
 } from '../lib/deal-audit-run-mode';
+import { DEFAULT_DIGEST_CHANNELS } from '../lib/deal-audit-digest-channels';
 import { DealAuditService } from '../services/deal-audit.service';
 import { DealAuditSnapshot } from '../types/deal-audit.types';
 
@@ -112,6 +113,7 @@ describe('DealAuditService: сводки без установленных по�
             departmentUserIds: [],
             excludeUserIds: [],
             limit: 20,
+            channels: DEFAULT_DIGEST_CHANNELS,
         },
     });
 

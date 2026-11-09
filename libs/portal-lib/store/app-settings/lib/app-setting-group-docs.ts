@@ -279,7 +279,7 @@ export const APP_SETTING_GROUP_DOCS: Partial<
 
 **Поля.** \`op_audit_*\` на сделке пишет только крон (статус, признаки, дата, счётчики, расшифровка) — для фильтров и роботов. Без полей — self-gate: считает, пишет предупреждение «поля аудита не установлены», карточки не размечает; сводки при этом уходят.
 
-**Чтобы пошли сводки** — три условия: \`deal_audit_enabled\`, \`deal_audit_dry_run\` выключено, хотя бы один получатель (\`deal_audit_digest_to_manager\`, \`deal_audit_digest_to_head\`, \`deal_audit_digest_department_user_ids\`, \`deal_audit_digest_user_ids\`). Сводка уходит, только если забытые нашлись; новая заменяет прошлую; длина — \`deal_audit_digest_limit\`. \`deal_audit_digest_exclude_user_ids\` — чьих сделок нет ни в одной сводке (разметка карточек остаётся).
+**Чтобы пошли сводки** — три условия: \`deal_audit_enabled\`, \`deal_audit_dry_run\` выключено, хотя бы один получатель (\`deal_audit_digest_to_manager\`, \`deal_audit_digest_to_head\`, \`deal_audit_digest_department_user_ids\`, \`deal_audit_digest_user_ids\`). Канал доставки — \`deal_audit_digest_channels\` (notify — уведомление портала, message — личное сообщение, task — задача со сводкой; прошлая открытая задача-сводка закрывается). Сводка уходит, только если забытые нашлись; новая заменяет прошлую; длина — \`deal_audit_digest_limit\`. \`deal_audit_digest_exclude_user_ids\` — чьих сделок нет ни в одной сводке (разметка карточек остаётся).
 
 **Ручной запуск.** \`/deal-audit/run\` синхронный — на большой воронке ответ не доходит через прокси; используйте \`/run-now\` (фон, итог в Telegram) или точечные \`dealIds\`.`,
 
