@@ -2,6 +2,7 @@ import type { OwnerReportQualityLink } from '../../owner-report.quality-link';
 import { pctText } from '../owner-report.format';
 import {
     buildQualityLinkText,
+    composedOfNote,
     reactivationSourcesNote,
 } from '../owner-report.text.signals';
 
@@ -104,5 +105,27 @@ describe('reactivationSourcesNote — источники отказа у воз�
         );
         expect(note).toContain('у 1.');
         expect(note).toContain('вторичный источник');
+    });
+});
+
+describe('composedOfNote — отчёт сложен из месячных', () => {
+    it('месяцы словами одним годом или с годами; без composedOf — null', () => {
+        expect(
+            composedOfNote({
+                composedOf: ['2026-07', '2026-08', '2026-09'],
+                period: { kind: 'quarter' } as never,
+            }),
+        ).toContain(
+            'собран из 3 месячных отчётов (июль, август, сентябрь 2026): числа сложены по месяцам',
+        );
+        expect(
+            composedOfNote({
+                composedOf: ['2025-12', '2026-01'],
+                period: { kind: 'half_year' } as never,
+            }),
+        ).toContain('(декабрь 2025, январь 2026)');
+        expect(
+            composedOfNote({ period: { kind: 'month' } as never }),
+        ).toBeNull();
     });
 });

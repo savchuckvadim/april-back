@@ -79,18 +79,7 @@ export class OwnerReportSourcesLoader {
         now: Date = new Date(),
     ): Promise<OwnerReportSources> {
         const settings = await this.settings.load(domain);
-        const calendar = this.calendars
-            ? (await this.calendars.load(domain, { now })).calendar
-            : settings.calendar;
-        const toPeriod = (
-            range: OwnerReportPeriodBounds,
-        ): OwnerReportPeriod => ({
-            kind: range.kind,
-            from: range.from,
-            to: range.to,
-            timeZone: calendar.timeZone,
-            calendar,
-        });
+        const calendar = await this.calendarOf(domain, settings, now);
         const scope = await this.scopes.resolveFor(
             domain,
             undefined,
@@ -110,7 +99,7 @@ export class OwnerReportSourcesLoader {
                     settings.callReport,
                 ),
                 this.crm.load(domain, bounds, managerIds, now),
-                this.loadNames(domain, managerIds),
+                this.names(domain, managerIds),
                 this.loadQualityLink(domain),
             ]);
         // Реактивация — по сделкам компании; оба периода, чтобы группы
@@ -120,8 +109,7 @@ export class OwnerReportSourcesLoader {
             this.reactivation.mark(domain, previousRows, calendar.timeZone),
         ]);
         return {
-            period: toPeriod(bounds),
-            previousPeriod: toPeriod(previous),
+            ...this.periodsWith(calendar, bounds, previous),
             managerIds,
             rows: markedRows,
             previousRows: markedPrevious,
@@ -151,6 +139,48 @@ export class OwnerReportSourcesLoader {
             );
             return null;
         }
+    }
+
+    /**
+     * Границы периода и прошлого периода с календарём портала — для сводного
+     * отчёта из месячных снапшотов, которому строки звонков не нужны.
+     */
+    async periods(
+        domain: string,
+        bounds: OwnerReportPeriodBounds,
+        previous: OwnerReportPeriodBounds,
+        now: Date = new Date(),
+    ): Promise<Pick<OwnerReportSources, 'period' | 'previousPeriod'>> {
+        const settings = await this.settings.load(domain);
+        const calendar = await this.calendarOf(domain, settings, now);
+        return this.periodsWith(calendar, bounds, previous);
+    }
+
+    private async calendarOf(
+        domain: string,
+        settings: Awaited<ReturnType<SettingsLoader['load']>>,
+        now: Date,
+    ): Promise<OwnerReportPeriod['calendar']> {
+        return this.calendars
+            ? (await this.calendars.load(domain, { now })).calendar
+            : settings.calendar;
+    }
+
+    private periodsWith(
+        calendar: OwnerReportPeriod['calendar'],
+        bounds: OwnerReportPeriodBounds,
+        previous: OwnerReportPeriodBounds,
+    ): Pick<OwnerReportSources, 'period' | 'previousPeriod'> {
+        const toPeriod = (
+            range: OwnerReportPeriodBounds,
+        ): OwnerReportPeriod => ({
+            kind: range.kind,
+            from: range.from,
+            to: range.to,
+            timeZone: calendar.timeZone,
+            calendar,
+        });
+        return { period: toPeriod(bounds), previousPeriod: toPeriod(previous) };
     }
 
     private loadRows(
@@ -184,7 +214,7 @@ export class OwnerReportSourcesLoader {
     }
 
     /** Имена по Bitrix ID; сбой Битрикса — пустая карта, карточки по id. */
-    private async loadNames(
+    async names(
         domain: string,
         managerIds: readonly string[],
     ): Promise<Record<string, string>> {

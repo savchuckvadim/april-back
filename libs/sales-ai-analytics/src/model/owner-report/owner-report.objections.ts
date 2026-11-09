@@ -22,7 +22,7 @@ import type {
  */
 
 const EXAMPLES_LIMIT = 3;
-const COLD_TOP_LIMIT = 4;
+export const OWNER_REPORT_COLD_TOP_LIMIT = 4;
 const MONTHS_IN_YEAR = 12;
 
 /** Коды сбоев, которые говорят о качестве базы CRM. */
@@ -89,7 +89,7 @@ function coldNotAdvancedTop(
     return [...counts.entries()]
         .map(([topic, count]) => ({ topic, calls: count }))
         .sort((a, b) => b.calls - a.calls || a.topic.localeCompare(b.topic))
-        .slice(0, COLD_TOP_LIMIT);
+        .slice(0, OWNER_REPORT_COLD_TOP_LIMIT);
 }
 
 export function buildIssues(

@@ -155,7 +155,32 @@ export function buildManagement(input: ManagementInput): OwnerReportManagement {
             n: planFact.n,
         },
     ];
-    return { signs, verdict: verdictOf(signs) };
+    return { signs, verdict: managementVerdictOf(signs) };
+}
+
+/**
+ * Вердикт признака по коду и значению — те же пороги, что у месячного
+ * отчёта; нужен сводным фактам длинного периода (owner-report.merge).
+ */
+export function signVerdictOf(
+    code: string,
+    value: number | null,
+): OwnerReportSignVerdict {
+    switch (code) {
+        case 'people_dependency':
+            return lowerIsBetter(value, PEOPLE_DEPENDENCY);
+        case 'base_quality':
+            return lowerIsBetter(value, BASE_QUALITY);
+        case 'plan_fact':
+            return higherIsBetter(value, PLAN_FACT);
+        default: {
+            const thresholds =
+                code in SIGN_THRESHOLDS
+                    ? SIGN_THRESHOLDS[code as keyof typeof SIGN_THRESHOLDS]
+                    : null;
+            return thresholds ? higherIsBetter(value, thresholds) : 'unknown';
+        }
+    }
 }
 
 /** Факт/план по менеджерам с планом; без CRM или планов — null. */
@@ -182,7 +207,8 @@ function planFactOf(crm: OwnerReportCrmFacts | null): {
     return { value: plan > 0 ? fact / plan : null, n };
 }
 
-function verdictOf(
+/** Общий вердикт по признакам: без «нет» и максимум одно «частично» — управляется. */
+export function managementVerdictOf(
     signs: readonly OwnerReportSign[],
 ): OwnerReportManagement['verdict'] {
     const known = signs.filter(sign => sign.verdict !== 'unknown');

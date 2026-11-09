@@ -20,6 +20,11 @@ import {
     AI_OWNER_REPORT_NARRATIVE_PORT,
     type OwnerReportNarrativePort,
 } from '../../owner-report/owner-report-narrative.port';
+import {
+    OwnerReportMonthlyComposer,
+    ownerReportBoundsOf,
+    type OwnerReportInputs,
+} from '../../owner-report/owner-report-monthly.composer';
 import { OwnerReportSnapshotReader } from '../../owner-report/owner-report-snapshot.reader';
 import {
     OwnerReportSourcesLoader,
@@ -57,6 +62,7 @@ export class OwnerReportJobUseCase {
 
     constructor(
         private readonly sources: OwnerReportSourcesLoader,
+        private readonly composer: OwnerReportMonthlyComposer,
         @Inject(AI_OWNER_REPORT_NARRATIVE_PORT)
         private readonly narrative: OwnerReportNarrativePort,
         private readonly smartLinks: SmartLinkLoader,
@@ -102,22 +108,12 @@ export class OwnerReportJobUseCase {
         data: AiOwnerReportJobData,
         now: Date,
     ): Promise<OwnerReportSnapshotPayload> {
-        const sources = await this.sources.load(
-            data.domain,
-            {
-                kind: data.kind,
-                periodKey: data.periodKey,
-                from: data.from,
-                to: data.to,
-            },
-            previousBoundsOf(data),
-            now,
-        );
-        const facts = factsOf(sources, 'current');
-        const previousFacts = factsOf(sources, 'previous');
+        const { facts, previousFacts, names } =
+            (await this.composer.compose(data, now)) ??
+            (await this.direct(data, now));
         const template = buildOwnerReportText(facts, {
             previous: previousFacts,
-            names: sources.names,
+            names,
         });
         const { text, narrative } = await this.narrate(data.domain, template);
         return {
@@ -132,6 +128,24 @@ export class OwnerReportJobUseCase {
             text,
             narrative,
             links: await this.links(data.domain, facts),
+        };
+    }
+
+    /** Факты напрямую по строкам звонков периода и прошлого периода. */
+    private async direct(
+        data: AiOwnerReportJobData,
+        now: Date,
+    ): Promise<OwnerReportInputs> {
+        const sources = await this.sources.load(
+            data.domain,
+            ownerReportBoundsOf(data),
+            previousOwnerReportPeriod(ownerReportBoundsOf(data)),
+            now,
+        );
+        return {
+            facts: factsOf(sources, 'current'),
+            previousFacts: factsOf(sources, 'previous'),
+            names: sources.names,
         };
     }
 
@@ -291,15 +305,5 @@ function factsOf(
         telephony: which === 'current' ? sources.telephony : null,
         crm: which === 'current' ? sources.crm : null,
         qualityLink: which === 'current' ? sources.qualityLink : null,
-    });
-}
-
-/** Прошлый период той же длины — по текущим границам. */
-function previousBoundsOf(data: AiOwnerReportJobData) {
-    return previousOwnerReportPeriod({
-        kind: data.kind,
-        periodKey: data.periodKey,
-        from: data.from,
-        to: data.to,
     });
 }

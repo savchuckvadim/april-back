@@ -197,6 +197,11 @@ export interface OwnerReportManagerRow {
 
 export interface OwnerReportFacts {
     period: OwnerReportPeriod;
+    /**
+     * Ключи месяцев (YYYY-MM), из месячных фактов которых сложен сводный
+     * отчёт длинного периода; нет — факты посчитаны напрямую по звонкам.
+     */
+    composedOf?: string[];
     coverage: OwnerReportCoverage;
     outcomes: OwnerReportOutcomes;
     byTypeGroup: OwnerReportTypeGroupRow[];

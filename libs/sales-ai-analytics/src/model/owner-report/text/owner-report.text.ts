@@ -38,6 +38,7 @@ import {
 import { buildManagerTexts } from './owner-report.text.managers';
 import {
     buildQualityLinkText,
+    composedOfNote,
     reactivationSourcesNote,
 } from './owner-report.text.signals';
 import { buildSummaryParagraphs } from './owner-report.text.summary';
@@ -204,6 +205,8 @@ function buildMethodology(facts: OwnerReportFacts): string[] {
         `Период ${periodText(facts.period.from, facts.period.to)}. Звонков за период — ${coverage.calls}, из них с разбором — ${coverage.analyzed}; короче порога — ${coverage.short}, без разбора — ${coverage.noAnalysis}, без сотрудника — ${coverage.noManager}.`,
         'Каждый разговор размечен разбором по единой схеме: тип, исход, возражения, сбои, цены, признаки качества. Все доли посчитаны по разметке, без поиска по словам; конверсия входа считается только по холодным первым контактам.',
     ];
+    const composedLine = composedOfNote(facts);
+    if (composedLine) lines.splice(1, 0, composedLine);
     const unmarkedLine = unmarkedNoteOf(facts);
     if (unmarkedLine) {
         lines.push(
