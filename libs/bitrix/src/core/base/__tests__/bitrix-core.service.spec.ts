@@ -240,14 +240,51 @@ describe('BitrixCore.request', () => {
         expect(releaseSlot).toHaveBeenCalledTimes(2);
     });
 
+    /*
+     * garantservisvoronezh 09.11.2026 10:00:05: один 500 «INTERNAL_SERVER_ERROR»
+     * на crm.item.list уронил окно холодного обзвона на 85 сделок. Облако
+     * отдаёт 500 всплесками по 1–2 минуты, повтор через секунды проходит.
+     */
+    it('500 портала у менеджера — один повтор, вторая попытка проходит', async () => {
+        const { core, calls } = makeCore([httpError(500), { result: 1 }]);
+
+        const pending = runAsInteractive('route', () =>
+            core.request<{ result: number }>('crm.item.list', {}),
+        );
+        await jest.advanceTimersByTimeAsync(
+            BITRIX_REQUEST_PROFILES.interactive.busyPauseMs,
+        );
+        const response = await pending;
+
+        expect(response.data).toEqual({ result: 1 });
+        expect(calls).toHaveLength(2);
+    });
+
+    it('500 дважды у менеджера — ошибка наверх после одного повтора', async () => {
+        const { core, calls } = makeCore([httpError(500), httpError(500)]);
+
+        const pending = runAsInteractive('route', () =>
+            core.request('crm.item.list', {}),
+        );
+        const assertion = expect(pending).rejects.toMatchObject({
+            response: { status: 500 },
+        });
+        await jest.advanceTimersByTimeAsync(
+            BITRIX_REQUEST_PROFILES.interactive.busyPauseMs,
+        );
+        await assertion;
+
+        expect(calls).toHaveLength(2);
+    });
+
     it('алерт об ошибке не задерживает ответ вызывающему', async () => {
-        const { core, alert } = makeCore([httpError(500, 'boom')]);
+        const { core, alert } = makeCore([httpError(400, 'boom')]);
         // Телеграм «висит» — раньше ошибка ждала бы его ответа.
         alert.mockReturnValue(new Promise(() => undefined));
 
         await expect(
             runAsInteractive('route', () => core.request('crm.deal.get', {})),
-        ).rejects.toMatchObject({ response: { status: 500 } });
+        ).rejects.toMatchObject({ response: { status: 400 } });
         expect(alert).toHaveBeenCalledTimes(1);
     });
 

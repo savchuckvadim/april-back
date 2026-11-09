@@ -35,7 +35,17 @@ export class ColdHookBatchGroupBuffer {
     private bufferSize = 0;
     private readonly results: IBitrixBatchResponseResult[] = [];
 
-    constructor(private readonly bitrix: BitrixService) {}
+    constructor(
+        private readonly bitrix: BitrixService,
+        /**
+         * strict — упавший HTTP-чанк (500 портала, обрыв сети) бросает
+         * исключение вместо «warn + skip». Нужен там, где молчаливая
+         * потеря чанка маскирует сбой: окно холодного обзвона 09.11.2026
+         * на garant написало «finished», а 17 сделок так и не получили
+         * ни работы, ни метки «хук отправлен».
+         */
+        private readonly options: { strict?: boolean } = {},
+    ) {}
 
     /**
      * Регистрирует команду текущей группы. Сам enqueue (bitrix.batch.*) будет
@@ -44,6 +54,16 @@ export class ColdHookBatchGroupBuffer {
      */
     queue(enqueue: QueuedCommand): void {
         this.currentGroup.push(enqueue);
+    }
+
+    /**
+     * Выбрасывает незакоммиченную группу. Нужен, когда сборка группы упала
+     * на полпути: иначе её половина уехала бы в буфер со следующей группой.
+     */
+    discardGroup(): number {
+        const dropped = this.currentGroup.length;
+        this.currentGroup = [];
+        return dropped;
     }
 
     /**
@@ -102,9 +122,13 @@ export class ColdHookBatchGroupBuffer {
             `[DEADLINE][batch][FLUSH] отправка HTTP-batch, команд=${this.bufferSize} ` +
                 `(сюда входят task.add c DEADLINE в Москве и deal/entity update c CRM-датой)`,
         );
-        const res = await this.bitrix.api.callBatchWithConcurrency(1);
-        this.results.push(...res);
+        // Буфер чистится до отправки: при strict-исключении повторный flush
+        // не должен считать упавшие команды всё ещё лежащими в буфере.
         this.bufferSize = 0;
+        const res = await this.bitrix.api.callBatchWithConcurrency(1, {
+            strict: this.options.strict === true,
+        });
+        this.results.push(...res);
         this.logger.log(
             `[DEADLINE][batch][FLUSH] HTTP-batch отправлен, получено результатов=${res.length}`,
         );

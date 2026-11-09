@@ -1,4 +1,6 @@
 import { PBXService } from '@/modules/pbx/pbx.service';
+import { BitrixService } from '@/modules/bitrix';
+import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { PbxPresentationSmartService } from '@lib/portal-lib/pbx/pbx-presentation-smart';
 import { PbxZprSmartService } from '@lib/portal-lib/pbx/pbx-zpr-smart';
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
@@ -144,111 +146,35 @@ export class ColdHooksHandlerV2Service {
             const prepared: PreparedTarget[] = [];
             /** Цели, по которым не хватило данных — объясняем в таймлайне. */
             const incomplete: { target: ColdTarget; note: string }[] = [];
+            /**
+             * Сделки, на которых окно споткнулось. Раньше любая ошибка на
+             * одной сделке роняла ВСЁ окно: 09.11.2026 на garant один 500
+             * портала оставил 85 сделок без работы (у 8 старая уже была
+             * закрыта). Теперь сделка пропускается, метка «хук отправлен» на
+             * ней не ставится — её дошлёт подстраховка xo-dispatch-rescue.
+             */
+            const failed: { hookKey: string; message: string }[] = [];
             for (const target of targets) {
-                /*
-                 * Данные события: запрос ПЕРЕБИВАЕТ карточку. Робот мог не
-                 * передать их в query (кириллица и '#' ломали URL), тогда
-                 * берём из полей, которые он заполнил перед вызовом хука.
-                 */
-                /*
-                 * Поля читаем с ВХОДА ХУКА, а не с вычисленного корня.
-                 *
-                 * Различие принципиальное: у входа-сделки с компанией
-                 * `target.kind` становится 'company' (корнем работы будет
-                 * компания), но робот-то заполнял `xo_responsible`,
-                 * `xo_date` и метки НА СДЕЛКЕ. Читать по kind значило бы
-                 * искать их в карточке компании, ничего не найти и молча
-                 * отказать в постановке звонка.
-                 */
-                const hookEntityType =
-                    target.hook.entityType === EnumColdCallEntityType.COMPANY
-                        ? 'company'
-                        : 'deal';
-                const resolution = resolveColdCallData({
-                    hook: target.hook,
-                    entityRow: (hookEntityType === 'company'
-                        ? target.company
-                        : target.entryDeal) as Record<string, unknown> | null,
-                    entityType: hookEntityType,
-                    portal: PortalModel,
-                });
-                if (!resolution.data) {
-                    /*
-                     * Round-robin здесь нет (в отличие от lead-to-work), и
-                     * придумывать ответственного молча нельзя — звонок уехал
-                     * бы случайному человеку. Объясняем в карточке, чего не
-                     * хватило и что заполнить, чтобы повторить.
-                     */
-                    this.logger.warn(
-                        `[v2] hook=${target.hookKey}: не хватает данных — ` +
-                            resolution.missing
-                                .map(item => item.fieldCode)
-                                .join(', '),
-                    );
-                    incomplete.push({
-                        target,
-                        note: buildColdCallMissingNote(resolution.missing),
-                    });
-                    continue;
-                }
-                const resolved: ResolvedColdTarget = {
-                    ...target,
-                    hook: resolution.data,
-                };
-                const relations = await collector.collect(resolved, smarts);
-                const responsibleId = Number(resolved.hook.responsible);
-                const decision = decideColdStart({
-                    force: resolved.hook.force,
-                    responsibleId,
-                    entryDealId: resolved.entryDeal
-                        ? Number(resolved.entryDeal.ID)
-                        : null,
-                    openBaseDeals: relations.openBaseDeals,
-                });
-                this.logger.log(
-                    `[v2] hook=${resolved.hookKey} ${this.describe(resolved)}: ` +
-                        `${decision.reason} | ${resolution.signals.join('; ')}`,
-                );
-                const closed = await closer.close(
-                    resolved,
-                    relations,
-                    decision,
-                );
-                /*
-                 * Адресный ХО: лиды и контакты клиента — новому ответственному.
-                 * Уступили чужой работе — ничего не трогаем, читать незачем.
-                 * Чтение здесь, в фазе 1: внутри уходит batch контактов.
-                 */
-                const addressed =
-                    decision.mode === 'proceed'
-                        ? await addressedXo.load(
-                              resolved,
-                              relations,
-                              closed.preservedBaseDeal,
-                          )
-                        : EMPTY_ADDRESSED_XO_PLAN;
-                const names = await this.userNames.resolve(domain, bitrix, [
-                    responsibleId,
-                    ...ColdAddressedXoV2Service.responsibleIds(addressed),
-                    ...decision.foreign.map(item => item.responsibleId),
-                    ...(decision.takenEntry
-                        ? [decision.takenEntry.responsibleId]
-                        : []),
-                ]);
-                prepared.push({
-                    target: resolved,
-                    decision,
-                    closed,
-                    addressed,
-                    noteInput: {
+                try {
+                    await this.prepareTarget(target, {
                         domain,
-                        target: resolved,
-                        decision,
-                        closed,
-                        responsibleId,
-                        names,
-                    },
-                });
+                        PortalModel,
+                        bitrix,
+                        smarts,
+                        collector,
+                        closer,
+                        addressedXo,
+                        prepared,
+                        incomplete,
+                    });
+                } catch (error) {
+                    const { message } = getErrorDetails(error);
+                    failed.push({ hookKey: target.hookKey, message });
+                    this.logger.warn(
+                        `[v2] hook=${target.hookKey} ${this.describe(target)}: сбой чтения/закрытия — сделка пропущена, подберёт подстраховка (${message})`,
+                        { telegram: true, domain, hookKey: target.hookKey },
+                    );
+                }
             }
 
             /**
@@ -324,7 +250,11 @@ export class ColdHooksHandlerV2Service {
              * списка. Записи таймлайна — первыми в группу; в yield группа
              * состоит только из них.
              */
-            const buffer = new ColdHookBatchGroupBuffer(bitrix);
+            // strict: упавший чанк записи — исключение, а не «finished» с
+            // молча потерянными сделками (окно 10:43 09.11.2026).
+            const buffer = new ColdHookBatchGroupBuffer(bitrix, {
+                strict: true,
+            });
             let created = 0;
             let yielded = 0;
             // Объяснения по целям, которым не хватило данных — своей
@@ -376,31 +306,48 @@ export class ColdHooksHandlerV2Service {
                     await buffer.endGroup();
                     continue;
                 }
-                await useCase.flow(
-                    item.target,
-                    item.closed.preservedBaseDeal,
-                    null,
-                    buffer,
-                );
-                /*
-                 * Строго ПОСЛЕ работы: flow() закрывает свою группу, и
-                 * лиды, контакты и отметка уезжают своими группами, не
-                 * вклиниваясь в цепочку $result[...] создания сделок и задачи.
-                 *
-                 * endGroup() здесь обязателен: buffer.queue() регистрирует
-                 * ОТЛОЖЕННЫЙ enqueue, и группа без закрытия не уедет во
-                 * flush вовсе — отметка просто потерялась бы.
-                 */
-                await addressedXo.queue(
-                    item.target.hookKey,
-                    item.addressed,
-                    item.noteInput.responsibleId,
-                    item.noteInput.names,
-                    buffer,
-                );
-                queueSentMark(item.target);
-                await buffer.endGroup();
-                created += 1;
+                try {
+                    await useCase.flow(
+                        item.target,
+                        item.closed.preservedBaseDeal,
+                        null,
+                        buffer,
+                    );
+                    /*
+                     * Строго ПОСЛЕ работы: flow() закрывает свою группу, и
+                     * лиды, контакты и отметка уезжают своими группами, не
+                     * вклиниваясь в цепочку $result[...] создания сделок и
+                     * задачи.
+                     *
+                     * endGroup() здесь обязателен: buffer.queue() регистрирует
+                     * ОТЛОЖЕННЫЙ enqueue, и группа без закрытия не уедет во
+                     * flush вовсе — отметка просто потерялась бы.
+                     */
+                    await addressedXo.queue(
+                        item.target.hookKey,
+                        item.addressed,
+                        item.noteInput.responsibleId,
+                        item.noteInput.names,
+                        buffer,
+                    );
+                    queueSentMark(item.target);
+                    await buffer.endGroup();
+                    created += 1;
+                } catch (error) {
+                    // Полгруппы в буфер не пускаем: иначе её хвост уехал бы
+                    // со следующей сделкой. Метки нет — дошлёт подстраховка.
+                    buffer.discardGroup();
+                    const { message } = getErrorDetails(error);
+                    failed.push({ hookKey: item.target.hookKey, message });
+                    this.logger.warn(
+                        `[v2] hook=${item.target.hookKey}: сбой сборки записи — сделка пропущена, подберёт подстраховка (${message})`,
+                        {
+                            telegram: true,
+                            domain,
+                            hookKey: item.target.hookKey,
+                        },
+                    );
+                }
             }
             await buffer.flush();
             this.logger.log(
@@ -419,8 +366,16 @@ export class ColdHooksHandlerV2Service {
                 targetsCount: targets.length,
                 created,
                 yielded,
+                failed: failed.length,
                 durationMs: Date.now() - startedAt,
             });
+            if (failed.length) {
+                this.logger.error(
+                    `Cold hooks: ${failed.length} из ${targets.length} сделок окна не обработаны — ` +
+                        `${failed.map(f => f.hookKey).join(', ')}; метки «хук отправлен» нет, дошлёт подстраховка`,
+                    { telegram: true, domain },
+                );
+            }
         } catch (err) {
             const { message, stack } = getErrorDetails(err);
             this.logger.error(
@@ -430,6 +385,123 @@ export class ColdHooksHandlerV2Service {
             );
             this.logger.error(stack);
         }
+    }
+
+    /**
+     * Фаза 1 для одной сделки окна: данные события, связи клиента, решение по
+     * `force`, закрытие старой работы, план адресного ХО, имена для
+     * таймлайна. Любое исключение здесь — сбой ТОЛЬКО этой сделки.
+     */
+    private async prepareTarget(
+        target: ColdTarget,
+        ctx: {
+            domain: string;
+            PortalModel: PortalModel;
+            bitrix: BitrixService;
+            smarts: ColdSmartInfos;
+            collector: ColdRelationsCollectorV2Service;
+            closer: ColdRelationsCloserV2Service;
+            addressedXo: ColdAddressedXoV2Service;
+            prepared: PreparedTarget[];
+            incomplete: { target: ColdTarget; note: string }[];
+        },
+    ): Promise<void> {
+        /*
+         * Данные события: запрос ПЕРЕБИВАЕТ карточку. Робот мог не
+         * передать их в query (кириллица и '#' ломали URL), тогда
+         * берём из полей, которые он заполнил перед вызовом хука.
+         */
+        /*
+         * Поля читаем с ВХОДА ХУКА, а не с вычисленного корня.
+         *
+         * Различие принципиальное: у входа-сделки с компанией
+         * `target.kind` становится 'company' (корнем работы будет
+         * компания), но робот-то заполнял `xo_responsible`,
+         * `xo_date` и метки НА СДЕЛКЕ. Читать по kind значило бы
+         * искать их в карточке компании, ничего не найти и молча
+         * отказать в постановке звонка.
+         */
+        const hookEntityType =
+            target.hook.entityType === EnumColdCallEntityType.COMPANY
+                ? 'company'
+                : 'deal';
+        const resolution = resolveColdCallData({
+            hook: target.hook,
+            entityRow: (hookEntityType === 'company'
+                ? target.company
+                : target.entryDeal) as Record<string, unknown> | null,
+            entityType: hookEntityType,
+            portal: ctx.PortalModel,
+        });
+        if (!resolution.data) {
+            /*
+             * Round-robin здесь нет (в отличие от lead-to-work), и
+             * придумывать ответственного молча нельзя — звонок уехал
+             * бы случайному человеку. Объясняем в карточке, чего не
+             * хватило и что заполнить, чтобы повторить.
+             */
+            this.logger.warn(
+                `[v2] hook=${target.hookKey}: не хватает данных — ` +
+                    resolution.missing.map(item => item.fieldCode).join(', '),
+            );
+            ctx.incomplete.push({
+                target,
+                note: buildColdCallMissingNote(resolution.missing),
+            });
+            return;
+        }
+        const resolved: ResolvedColdTarget = {
+            ...target,
+            hook: resolution.data,
+        };
+        const relations = await ctx.collector.collect(resolved, ctx.smarts);
+        const responsibleId = Number(resolved.hook.responsible);
+        const decision = decideColdStart({
+            force: resolved.hook.force,
+            responsibleId,
+            entryDealId: resolved.entryDeal
+                ? Number(resolved.entryDeal.ID)
+                : null,
+            openBaseDeals: relations.openBaseDeals,
+        });
+        this.logger.log(
+            `[v2] hook=${resolved.hookKey} ${this.describe(resolved)}: ` +
+                `${decision.reason} | ${resolution.signals.join('; ')}`,
+        );
+        const closed = await ctx.closer.close(resolved, relations, decision);
+        /*
+         * Адресный ХО: лиды и контакты клиента — новому ответственному.
+         * Уступили чужой работе — ничего не трогаем, читать незачем.
+         * Чтение здесь, в фазе 1: внутри уходит batch контактов.
+         */
+        const addressed =
+            decision.mode === 'proceed'
+                ? await ctx.addressedXo.load(
+                      resolved,
+                      relations,
+                      closed.preservedBaseDeal,
+                  )
+                : EMPTY_ADDRESSED_XO_PLAN;
+        const names = await this.userNames.resolve(ctx.domain, ctx.bitrix, [
+            responsibleId,
+            ...ColdAddressedXoV2Service.responsibleIds(addressed),
+            ...decision.foreign.map(item => item.responsibleId),
+            ...(decision.takenEntry ? [decision.takenEntry.responsibleId] : []),
+        ]);
+        ctx.prepared.push({
+            target: resolved,
+            decision,
+            closed,
+            addressed,
+            noteInput: {
+                domain: ctx.domain,
+                target: resolved,
+                decision,
+                closed,
+                responsibleId,
+                names,
+            },
+        });
     }
 
     private describe(target: ColdTarget): string {

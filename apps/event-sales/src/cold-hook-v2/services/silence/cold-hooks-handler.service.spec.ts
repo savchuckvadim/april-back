@@ -1054,3 +1054,74 @@ describe('ColdHooksHandlerV2Service — поля читаются со вход�
         expect(payload.ENTITY_ID).toBe(600);
     });
 });
+
+/*
+ * garant 09.11.2026: один 500 портала на чтении смарта для очередной сделки
+ * ронял ВСЁ окно (85 сделок без работы, у 8 старая уже закрыта), а упавший
+ * чанк записи молча терялся с «finished». Теперь сбой — только у своей сделки.
+ */
+describe('ColdHooksHandlerV2Service — сбой одной сделки не роняет окно', () => {
+    const twoCompanies = (): World => ({
+        companies: [
+            { ID: '7', TITLE: 'ООО Ромашка' },
+            { ID: '8', TITLE: 'ООО Лютик' },
+        ],
+        deals: [
+            {
+                ID: '500',
+                CATEGORY_ID: '17',
+                STAGE_ID: 'C17:WARM',
+                COMPANY_ID: '7',
+                ASSIGNED_BY_ID: '447',
+            },
+            {
+                ID: '800',
+                CATEGORY_ID: '17',
+                STAGE_ID: 'C17:WARM',
+                COMPANY_ID: '8',
+                ASSIGNED_BY_ID: '447',
+            },
+        ],
+        tasks: [],
+        items: {},
+    });
+
+    it('портал упал на чтении связей первой сделки — вторая обработана, у первой нет метки', async () => {
+        const { handler, journal, bitrix } = makeHandler(twoCompanies());
+        // Первое чтение смарта — 500 портала (как 09.11 в 10:00:05), дальше норма.
+        (bitrix.item.listAll as jest.Mock).mockImplementationOnce(() =>
+            Promise.reject(new Error('Request failed with status code 500')),
+        );
+
+        await handler.handleHooks('d.b24.ru', {
+            h1: hook(EnumColdCallEntityType.COMPANY, '7', EnumColdCallForce.N),
+            h2: hook(EnumColdCallEntityType.COMPANY, '8', EnumColdCallForce.N),
+        });
+
+        expect(of(journal, 'deal.set').map(([, key]) => key)).toEqual([
+            'new_cold_deal_8',
+        ]);
+        expect(of(journal, 'task.add').map(([, key]) => key)).toEqual([
+            'bx_task_add_8',
+        ]);
+        // Метка «хук отправлен» только у обработанной: упавшую дошлёт подстраховка.
+        const marks = of(journal, 'company.update')
+            .map(([, key]) => String(key))
+            .filter(key => key.startsWith('xo2_sent_'));
+        expect(marks).toEqual(['xo2_sent_h2']);
+        expect(bitrix.api.callBatchWithConcurrency).toHaveBeenCalled();
+    });
+
+    it('записи уходят строгим батчем: упавший чанк — исключение, а не молчание', async () => {
+        const { handler, bitrix } = makeHandler(twoCompanies());
+
+        await handler.handleHooks('d.b24.ru', {
+            h1: hook(EnumColdCallEntityType.COMPANY, '7', EnumColdCallForce.N),
+        });
+
+        expect(bitrix.api.callBatchWithConcurrency).toHaveBeenCalledWith(
+            1,
+            expect.objectContaining({ strict: true }),
+        );
+    });
+});

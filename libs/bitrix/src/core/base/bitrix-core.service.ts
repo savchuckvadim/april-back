@@ -34,6 +34,17 @@ import {
     readBitrixTime,
 } from './bitrix-response.util';
 
+/**
+ * Ответы облака, после которых тот же запрос обычно проходит через секунды.
+ * 500 «INTERNAL_SERVER_ERROR» Битрикс отдаёт всплесками по 1–2 минуты на
+ * любые методы, включая `user.get` (garantservisvoronezh 06, 08 и 09.11.2026);
+ * без повтора один такой ответ ронял обработку окна холодного обзвона на
+ * 85 сделок целиком.
+ */
+export const TRANSIENT_BITRIX_STATUSES: ReadonlySet<number> = new Set([
+    500, 502, 503, 504,
+]);
+
 export class BitrixCore {
     public readonly logger = new Logger(BitrixCore.name);
     protected readonly axiosInstance: AxiosInstance;
@@ -226,9 +237,10 @@ export class BitrixCore {
             return profile.queryLimitPauseMs;
         }
 
-        if ((error as AxiosError).response?.status === 503) {
+        const status = (error as AxiosError).response?.status;
+        if (status && TRANSIENT_BITRIX_STATUSES.has(status)) {
             this.logger.warn(
-                `Bitrix 503 Service Unavailable on ${method}, retrying in ` +
+                `Bitrix ${status} on ${method}, retrying in ` +
                     `${profile.busyPauseMs / 1000}s...`,
             );
             return profile.busyPauseMs;

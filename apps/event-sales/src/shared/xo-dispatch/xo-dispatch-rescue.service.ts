@@ -21,7 +21,6 @@ import {
     XoRescueReason,
     XoRescueThresholds,
 } from './xo-rescue.decision';
-import { XoDispatchMarkerModel } from './xo-dispatch-marker.model';
 import { PortalWorkingHoursService } from '../working-hours/portal-working-hours.service';
 import { workingHoursAgo } from '../working-hours/working-hours.model';
 
@@ -92,6 +91,9 @@ const emptyResult = (): XoRescueRunResult => ({
  * @Injectable, но инстанс Битрикса в поля НЕ кладём — только PBXService
  * (CLAUDE.md: иначе race condition между порталами).
  */
+/** Столько досылок за один тик — уже не единичный сбой, а событие для владельца. */
+export const XO_RESCUE_MASS_ALERT = 10;
+
 @Injectable()
 export class XoDispatchRescueService {
     private readonly logger = new Logger(XoDispatchRescueService.name);
@@ -130,6 +132,13 @@ export class XoDispatchRescueService {
             );
         }
 
+        if (result.byMarker >= XO_RESCUE_MASS_ALERT) {
+            this.logger.warn(
+                `[xo-rescue] ${domain}: массовый сбой — ${result.byMarker} карточек ждали досылки холодного обзвона; ` +
+                    'проверьте журнал обработчика и ответы портала',
+                { telegram: true, domain },
+            );
+        }
         this.logger.log(
             `[xo-rescue] ${domain}: по метке ${result.byMarker}, ` +
                 `по дате ${result.byPlanDate}, холостой ход ` +
@@ -182,7 +191,6 @@ export class XoDispatchRescueService {
             );
         }
 
-        const markerModel = new XoDispatchMarkerModel(portal, entityType);
         let spent = 0;
         const seen = new Set<number>();
 
@@ -224,14 +232,15 @@ export class XoDispatchRescueService {
             );
             if (!sent) continue;
 
-            await this.markSent(
-                bitrix,
-                markerModel,
-                entityType,
-                item.entityId,
-                timezone,
-                result.warnings,
-            );
+            /*
+             * Отметку «хук отправлен» крон НЕ ставит: её пишет обработчик
+             * после фактической обработки, в одном батче с созданием работы.
+             * Раньше крон ставил её сразу при постановке в окно, и упавшее
+             * окно досылки навсегда прятало сделки от подстраховки
+             * (09.11.2026: окно 10:43 на garant потеряло 17 сделок — спасло
+             * лишь то, что метки не было). Не обработалось — следующий тик
+             * дошлёт снова.
+             */
             if (verdict.reason === 'marker-stuck') result.byMarker += 1;
             else result.byPlanDate += 1;
         }
@@ -277,38 +286,6 @@ export class XoDispatchRescueService {
 
         await this.coldHook.createColdCallHook(domain, resolution.data);
         return true;
-    }
-
-    /** Отметка «хук отправлен» — по ней следующий тик не тронет элемент. */
-    private async markSent(
-        bitrix: BitrixService,
-        markers: XoDispatchMarkerModel,
-        entityType: XoRescueEntityType,
-        entityId: number,
-        timezone: ETimeZone,
-        warnings: string[],
-    ): Promise<void> {
-        const sentName = markers.fieldName('sentAt');
-        if (!sentName) return;
-        const stamp = dayjs().tz(timezone).format('DD.MM.YYYY HH:mm:ss');
-        try {
-            const fields = { [sentName]: stamp };
-            if (entityType === 'company') {
-                await bitrix.company.update(entityId, fields as never);
-            } else {
-                await bitrix.deal.update(entityId, fields as never);
-            }
-        } catch (error) {
-            /*
-             * Хук уже ушёл, а отметку записать не вышло: следующий тик
-             * увидит элемент снова и дошлёт повторно. Дубль звонка хуже
-             * тишины, поэтому случай обязан быть заметным.
-             */
-            warnings.push(
-                `${entityType} ${entityId}: хук отправлен, но отметка не записана ` +
-                    `(${(error as Error).message}) — возможен повторный звонок`,
-            );
-        }
     }
 
     /**

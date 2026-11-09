@@ -141,8 +141,8 @@ const makeDeps = (opts?: {
 };
 
 describe('XoDispatchRescueService — досылка по метке робота', () => {
-    it('недоехавшую компанию досылает и отмечает отправку', async () => {
-        const { service, coldHook, companyUpdate } = makeDeps({
+    it('недоехавшую компанию досылает, отметку не ставит — её пишет обработчик', async () => {
+        const { service, coldHook, companyUpdate, dealUpdate } = makeDeps({
             companies: [stuckCompany()],
         });
 
@@ -150,13 +150,29 @@ describe('XoDispatchRescueService — досылка по метке робот�
 
         expect(run.byMarker).toBe(1);
         expect(coldHook.createColdCallHook).toHaveBeenCalledTimes(1);
-        // Отметка «хук отправлен» обязана лечь, иначе следующий тик
-        // дошлёт повторно и клиент получит второй звонок.
-        expect(companyUpdate).toHaveBeenCalledWith(
-            77,
-            expect.objectContaining({
-                [UF('op_xo_revive_sent_at')]: expect.any(String) as string,
-            }),
+        // 09.11.2026: ранняя отметка «отправлен» прятала от подстраховки
+        // сделки упавшего окна досылки. Отметку ставит только обработчик
+        // после фактической записи; не обработалось — следующий тик дошлёт.
+        expect(companyUpdate).not.toHaveBeenCalled();
+        expect(dealUpdate).not.toHaveBeenCalled();
+    });
+
+    it('десять и больше досылок за тик — сигнал о массовом сбое', async () => {
+        const warn = jest.fn();
+        const { service, coldHook } = makeDeps({
+            companies: Array.from({ length: 10 }, (_, i) =>
+                stuckCompany(String(100 + i)),
+            ),
+        });
+        (service as unknown as { logger: { warn: jest.Mock } }).logger.warn =
+            warn;
+
+        await service.runForDomain(DOMAIN, options({ maxPerRun: 50 }));
+
+        expect(coldHook.createColdCallHook).toHaveBeenCalledTimes(10);
+        expect(warn).toHaveBeenCalledWith(
+            expect.stringContaining('массовый сбой'),
+            expect.objectContaining({ telegram: true }),
         );
     });
 
