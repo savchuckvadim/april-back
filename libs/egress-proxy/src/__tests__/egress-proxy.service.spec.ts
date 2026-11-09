@@ -1,6 +1,9 @@
 import { Logger } from '@nestjs/common';
 import type { VendorSettingsReader } from '@lib/vendor-settings';
-import { EgressProxyService } from '../egress-proxy.service';
+import {
+    EGRESS_ROUTE_WAIT_MS,
+    EgressProxyService,
+} from '../egress-proxy.service';
 import { EGRESS_TOKEN_HEADER } from '../egress-proxy.types';
 
 const makeService = (
@@ -119,6 +122,50 @@ describe('EgressProxyService', () => {
             hosts: ['api.groq.com'],
         });
         expect(service.isProxied('https://api.openai.com/v1')).toBe(false);
+    });
+
+    it('resolveRoute ждёт первого чтения настроек: до него снимок пуст и route() шлёт напрямую', async () => {
+        const service = makeService(
+            {},
+            readerOf({
+                EGRESS_PROXY_URL: 'https://admin-proxy.example.com/p',
+                EGRESS_PROXY_TOKEN: 'admin-tok',
+                EGRESS_PROXY_HOSTS: 'api.telegram.org',
+            }),
+        );
+        const url = 'https://api.telegram.org/botT/sendMessage';
+        // Так терялись первые сообщения после старта.
+        expect(service.route(url).viaProxy).toBe(false);
+
+        const route = await service.resolveRoute(url);
+
+        expect(route.viaProxy).toBe(true);
+        expect(route.url).toBe(
+            'https://admin-proxy.example.com/p/api.telegram.org/botT/sendMessage',
+        );
+        expect(route.headers[EGRESS_TOKEN_HEADER]).toBe('admin-tok');
+    });
+
+    it('читатель молчит — resolveRoute не ждёт дольше лимита и отдаёт текущий снимок', async () => {
+        jest.useFakeTimers();
+        try {
+            const service = makeService(ENABLED, {
+                get: () => new Promise(() => undefined),
+                getMany: () => new Promise(() => undefined),
+            });
+            const pending = service.resolveRoute(
+                'https://api.openai.com/v1/models',
+            );
+            await jest.advanceTimersByTimeAsync(EGRESS_ROUTE_WAIT_MS);
+
+            const route = await pending;
+
+            expect(route.url).toBe(
+                'https://eu-proxy.example.com/p/api.openai.com/v1/models',
+            );
+        } finally {
+            jest.useRealTimers();
+        }
     });
 
     it('читатель настроек упал — прежний снимок из env, предупреждение, вызов не падает', async () => {

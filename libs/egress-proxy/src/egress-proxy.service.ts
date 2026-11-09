@@ -19,6 +19,12 @@ import {
 /** Как часто перечитывать настройки прокси: правка в админке действует в течение минуты. */
 export const EGRESS_PROXY_REFRESH_MS = 60_000;
 
+/**
+ * Сколько `resolveRoute` ждёт свежий снимок настроек. Дольше — отдаём
+ * текущий: тревога о недоступной БД не должна зависеть от чтения из БД.
+ */
+export const EGRESS_ROUTE_WAIT_MS = 3_000;
+
 const describeConfig = (config: EgressProxyConfig | null): string =>
     config ? `${config.baseUrl} [${config.hosts.join(', ')}]` : 'выключен';
 
@@ -81,6 +87,19 @@ export class EgressProxyService {
         return routeEgress(url, this.config);
     }
 
+    /**
+     * Маршрут с ожиданием свежего снимка — для отправок, которые могут
+     * подождать (axios с await). Синхронный `route()` при старте отдаёт
+     * снимок из env, а настройки вендора из админки ещё читаются: первые
+     * запросы после старта уходили напрямую и с российского сервера
+     * терялись по таймауту (так пропадал стартовый отчёт о кронах,
+     * 09.11.2026). Ждём не дольше EGRESS_ROUTE_WAIT_MS.
+     */
+    async resolveRoute(url: string): Promise<EgressRoute> {
+        await this.waitFresh(EGRESS_ROUTE_WAIT_MS);
+        return routeEgress(url, this.config);
+    }
+
     /** Пойдёт ли адрес через прокси — для подсказок «за рубежом, через прокси». */
     isProxied(url: string): boolean {
         return this.route(url).viaProxy;
@@ -101,6 +120,20 @@ export class EgressProxyService {
     private refreshInBackground(): void {
         if (Date.now() < this.expiresAt) return;
         void this.ensureFresh();
+    }
+
+    /** Дождаться свежего снимка, но не дольше maxMs. */
+    private async waitFresh(maxMs: number): Promise<void> {
+        let timer: NodeJS.Timeout | undefined;
+        const deadline = new Promise<void>(resolve => {
+            timer = setTimeout(resolve, maxMs);
+            timer.unref?.();
+        });
+        try {
+            await Promise.race([this.ensureFresh(), deadline]);
+        } finally {
+            if (timer) clearTimeout(timer);
+        }
     }
 
     /** Дождаться свежего снимка; параллельные вызовы делят одно чтение. */

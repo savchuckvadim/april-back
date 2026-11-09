@@ -118,7 +118,9 @@ export class TelegramService {
             );
             return;
         }
-        const route = this.egress.route(this.url);
+        // С ожиданием снимка настроек прокси: при старте синхронный route()
+        // отдавал «напрямую», и первые сообщения терялись по таймауту.
+        const route = await this.egress.resolveRoute(this.url);
         this.warnIfDirect(route.viaProxy);
         const payload = {
             chat_id: this.adminChatId,

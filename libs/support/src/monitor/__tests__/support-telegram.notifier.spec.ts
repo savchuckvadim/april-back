@@ -18,7 +18,10 @@ function setup(
     const notifier = new SupportTelegramNotifier(
         http as unknown as HttpService,
         config as unknown as ConfigService,
-        egress as never,
+        {
+            ...egress,
+            resolveRoute: (url: string) => Promise.resolve(egress.route(url)),
+        } as never,
     );
     return { notifier, http };
 }
@@ -26,6 +29,8 @@ function setup(
 /** Прокси выключен: адрес как есть, без заголовков (прокси — в отдельной спеке). */
 const directEgress = {
     route: (url: string) => ({ url, headers: {}, viaProxy: false }),
+    resolveRoute: (url: string) =>
+        Promise.resolve({ url, headers: {}, viaProxy: false }),
 };
 
 const CONFIGURED = {

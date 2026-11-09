@@ -57,7 +57,10 @@ const makeService = (
     const service = new TelegramService(
         { post } as never,
         configService as never,
-        egress as never,
+        {
+            ...egress,
+            resolveRoute: (url: string) => Promise.resolve(egress.route(url)),
+        } as never,
     );
     const warn = jest
         .spyOn(service['logger'], 'warn')

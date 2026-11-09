@@ -29,7 +29,10 @@ const setup = (egress: typeof proxiedEgress | typeof directEgress) => {
     const notifier = new SupportTelegramNotifier(
         http as never,
         { get: (key: string) => ENV[key] } as never,
-        egress as never,
+        {
+            ...egress,
+            resolveRoute: (url: string) => Promise.resolve(egress.route(url)),
+        } as never,
     );
     return { notifier, http };
 };

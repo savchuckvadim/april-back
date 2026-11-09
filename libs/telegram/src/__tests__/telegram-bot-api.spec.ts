@@ -21,6 +21,8 @@ function transportWith(post: jest.Mock): TelegramBotApiTransport {
         http: { post } as unknown as HttpService,
         egress: {
             route: (url: string) => ({ url, headers: {}, viaProxy: false }),
+            resolveRoute: (url: string) =>
+                Promise.resolve({ url, headers: {}, viaProxy: false }),
         } as unknown as EgressProxyService,
     };
 }

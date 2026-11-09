@@ -45,7 +45,7 @@ export async function callTelegramBotApi<T = unknown>(
     method: string,
     payload: Record<string, unknown>,
 ): Promise<T | undefined> {
-    const route = transport.egress.route(
+    const route = await transport.egress.resolveRoute(
         `https://${TELEGRAM_API_HOST}/bot${token}/${method}`,
     );
     let data: TelegramApiResponse<T> | undefined;

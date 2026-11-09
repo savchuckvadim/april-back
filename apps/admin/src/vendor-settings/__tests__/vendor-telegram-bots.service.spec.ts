@@ -65,6 +65,8 @@ function setup(admin: Record<string, string>, env: Record<string, string>) {
         { post } as unknown as HttpService,
         {
             route: (url: string) => ({ url, headers: {}, viaProxy: false }),
+            resolveRoute: (url: string) =>
+                Promise.resolve({ url, headers: {}, viaProxy: false }),
         } as unknown as EgressProxyService,
         setupCatalog(admin, env),
     );
