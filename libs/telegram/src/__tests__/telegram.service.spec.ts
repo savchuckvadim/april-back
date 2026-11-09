@@ -195,6 +195,16 @@ describe('TelegramSendWindow', () => {
             true,
         );
     });
+
+    it('пачка резервируется целиком или не резервируется вовсе', () => {
+        const window = new TelegramSendWindow(5);
+        const start = 1_000_000;
+
+        expect(window.tryConsume(start, 3)).toBe(true);
+        expect(window.tryConsume(start + 1, 3)).toBe(false);
+        expect(window.tryConsume(start + 2, 2)).toBe(true);
+        expect(window.tryConsume(start + 3)).toBe(false);
+    });
 });
 
 describe('toTelegramMarkdownText', () => {

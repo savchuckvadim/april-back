@@ -11,6 +11,7 @@ import { SupportMonitorBotModule } from './support-monitor/support-monitor-bot.m
 import { SupportApiModule } from './support-api/support-api.module';
 import { SupportTelegramAppModule } from './support-telegram/support-telegram-app.module';
 import { CabinetTelegramWebhookModule } from '@lib/cabinet';
+import { SiteLeadModule } from './site-lead/site-lead.module';
 
 /**
  * Корневой модуль приложения bot.
@@ -51,6 +52,8 @@ import { CabinetTelegramWebhookModule } from '@lib/cabinet';
         // Клиентский Telegram-бот April: привязка чатов сотрудников порталов
         // одноразовым кодом из кабинета (07.11.2026)
         CabinetTelegramWebhookModule,
+        // Заявки с сайта April → Telegram-чат «April Client» ботом поддержки (09.11.2026)
+        SiteLeadModule,
     ],
     providers: [GlobalExceptionFilter],
 })

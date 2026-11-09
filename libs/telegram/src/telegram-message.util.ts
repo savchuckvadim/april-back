@@ -36,15 +36,19 @@ export class TelegramSendWindow {
         private readonly maxPerMinute: number = TELEGRAM_MAX_MESSAGES_PER_MINUTE,
     ) {}
 
-    /** true — отправка разрешена и учтена; false — лимит окна исчерпан. */
-    tryConsume(now: number = Date.now()): boolean {
+    /**
+     * true — отправка разрешена и учтена; false — лимит окна исчерпан.
+     * `count` — сколько сообщений резервируется разом (длинный бриф частями):
+     * всё или ничего, чтобы не начать отправку, которую нельзя закончить.
+     */
+    tryConsume(now: number = Date.now(), count: number = 1): boolean {
         this.sentAt = this.sentAt.filter(
             ts => now - ts < TELEGRAM_THROTTLE_WINDOW_MS,
         );
-        if (this.sentAt.length >= this.maxPerMinute) {
+        if (this.sentAt.length + count > this.maxPerMinute) {
             return false;
         }
-        this.sentAt.push(now);
+        for (let i = 0; i < count; i += 1) this.sentAt.push(now);
         return true;
     }
 }
