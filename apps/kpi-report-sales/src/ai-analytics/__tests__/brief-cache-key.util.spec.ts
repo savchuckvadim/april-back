@@ -21,9 +21,9 @@ const TO = '2026-09-07';
 
 describe('ключи кэша резюме', () => {
     it('ключ результата несёт версию промпта, ключ квоты — по схеме секций кэша', () => {
-        expect(AI_BRIEF_PROMPT_VERSION).toBe('brief-2.0.0');
+        expect(AI_BRIEF_PROMPT_VERSION).toBe('brief-2.1.0');
         expect(buildBriefKey('a.bitrix24.ru', 'abc123')).toBe(
-            'sales-ai-analytics:v1:a.bitrix24.ru:brief:brief-2.0.0:abc123',
+            'sales-ai-analytics:v1:a.bitrix24.ru:brief:brief-2.1.0:abc123',
         );
         expect(buildBriefQuotaKey('a.bitrix24.ru', '2026-09-08')).toBe(
             'sales-ai-analytics:v1:a.bitrix24.ru:brief-quota:2026-09-08',

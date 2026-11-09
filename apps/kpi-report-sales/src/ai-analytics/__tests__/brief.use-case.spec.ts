@@ -96,7 +96,7 @@ describe('BriefUseCase: конверт ручки резюме', () => {
             comparable: false,
             previousPeriod: null,
             generatedAt: '2026-09-08T06:00:00.000Z',
-            promptVersion: 'brief-2.0.0',
+            promptVersion: 'brief-2.1.0',
         };
         const { useCase, dispatch } = makeUseCase({
             cached: { status: 'ready', data },
@@ -192,7 +192,7 @@ describe('BriefUseCase: конверт ручки резюме', () => {
                     comparable: false,
                     previousPeriod: null,
                     generatedAt: '2026-09-07T06:00:00.000Z',
-                    promptVersion: 'brief-2.0.0',
+                    promptVersion: 'brief-2.1.0',
                 },
             },
         });

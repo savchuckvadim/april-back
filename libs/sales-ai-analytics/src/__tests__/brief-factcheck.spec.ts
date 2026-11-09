@@ -154,7 +154,7 @@ describe('validateBriefPayload: строгая схема ответа', () => {
         );
     });
 
-    it('группа обязательна и известна: буллет без группы отбрасывается', () => {
+    it('группа обязательна и из групп нейросети: без группы, чужая и фокус отбрасываются', () => {
         const result = validateBriefPayload(
             {
                 headline: 'Итоги',
@@ -166,21 +166,26 @@ describe('validateBriefPayload: строгая схема ответа', () => {
                         group: 'summary',
                         factRefs: ['alert.promise'],
                     },
+                    // Фокус с 09.11.2026 модель не пишет — берётся из фактов.
                     bullet('Обещаний 3', ['alert.promise'], 'focus'),
+                    bullet('Обещаний 3', ['alert.promise'], 'change'),
                 ],
             },
             PACK,
         );
 
         expect(result.payload?.bullets).toHaveLength(1);
+        expect(result.payload?.bullets[0].group).toBe('change');
         expect(result.dropped.map(item => item.reason)).toEqual([
+            AI_BRIEF_DROP_REASONS.groupUnknown,
             AI_BRIEF_DROP_REASONS.groupUnknown,
             AI_BRIEF_DROP_REASONS.groupUnknown,
         ]);
         expect(result.dropped[1].detail).toBe('summary');
+        expect(result.dropped[2].detail).toBe('focus');
     });
 
-    it('пятый буллет группы change и четвёртый группы focus отклоняются лимитом группы', () => {
+    it('пятый буллет группы change отклоняется лимитом группы; буллеты focus модели не принимаются', () => {
         const five = Array.from({ length: 5 }, (_, index) =>
             bullet(`Невыполненных обещаний 3 (${index})`, ['alert.promise']),
         );
@@ -207,10 +212,57 @@ describe('validateBriefPayload: строгая схема ответа', () => {
         ];
         const total = validateBriefPayload(payload(nine), PACK);
 
+        expect(AI_BRIEF_MODEL_BULLETS).toBe(AI_BRIEF_LIMITS.groups.change);
         expect(total.payload?.bullets).toHaveLength(AI_BRIEF_MODEL_BULLETS);
+        expect(total.dropped.map(item => item.reason)).toEqual([
+            AI_BRIEF_DROP_REASONS.groupOverLimit,
+            AI_BRIEF_DROP_REASONS.groupUnknown,
+            AI_BRIEF_DROP_REASONS.groupUnknown,
+            AI_BRIEF_DROP_REASONS.groupUnknown,
+            AI_BRIEF_DROP_REASONS.groupUnknown,
+        ]);
         expect(total.dropped.map(item => item.detail)).toEqual([
             'change',
             'focus',
+            'focus',
+            'focus',
+            'focus',
+        ]);
+    });
+
+    it('число словами отбрасывается: его не сверить с пакетом (так модель обходила факт-чек)', () => {
+        const result = factCheckBullets(
+            [
+                bullet('Невыполненных обещаний три', ['alert.promise']),
+                bullet(
+                    'Доля звонков дольше 300 секунд — тридцать восемь целых процента',
+                    ['tel.long'],
+                ),
+                bullet('Один из пяти звонков получил низкую оценку', [
+                    'alert.promise',
+                ]),
+                bullet('Невыполненных обещаний 3 (было 7)', ['alert.promise']),
+                // Даты словами, кратность и «половина» числами не считаются.
+                bullet('За 1–7 сентября 2026 обещаний 3, вдвое меньше', [
+                    'alert.promise',
+                ]),
+            ],
+            PACK,
+        );
+
+        expect(result.kept.map(item => item.text)).toEqual([
+            'Невыполненных обещаний 3 (было 7)',
+            'За 1–7 сентября 2026 обещаний 3, вдвое меньше',
+        ]);
+        expect(result.dropped.map(item => item.reason)).toEqual([
+            AI_BRIEF_DROP_REASONS.numbersInWords,
+            AI_BRIEF_DROP_REASONS.numbersInWords,
+            AI_BRIEF_DROP_REASONS.numbersInWords,
+        ]);
+        expect(result.dropped.map(item => item.detail)).toEqual([
+            'три',
+            'тридцать',
+            'один',
         ]);
     });
 

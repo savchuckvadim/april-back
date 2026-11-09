@@ -187,7 +187,7 @@ export class AiBriefDto {
             'Версия промпта резюме (входит в ключ кэша; смена рвёт ' +
             'сравнимость резюме между периодами).',
         type: String,
-        example: 'brief-2.0.0',
+        example: 'brief-2.1.0',
     })
     promptVersion: string;
 

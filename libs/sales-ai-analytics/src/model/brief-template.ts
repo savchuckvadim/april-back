@@ -9,9 +9,11 @@
  * берутся из пакета фактов теми же функциями форматирования, поэтому
  * шаблонное резюме само проходит факт-чек.
  *
- * Резюме нейросети — её изменения и фокус после факт-чека плюс действия
- * тех же правил, что и в шаблоне: действия всегда стоят на фактах пакета.
- * Заголовок нейросети с числом не из пакета заменяется шаблонным.
+ * Резюме нейросети — её изменения после факт-чека плюс фокус и действия
+ * тех же правил, что и в шаблоне: фокус — заголовки карточек «Внимания»
+ * как есть (решение 09.11.2026: пересказ моделью искажал смысл), действия
+ * всегда стоят на фактах пакета. Заголовок нейросети с числом не из
+ * пакета или с числом словами заменяется шаблонным.
  */
 import {
     AI_BRIEF_BULLET_GROUPS,
@@ -28,6 +30,7 @@ import { isCompared } from './brief-delta';
 import {
     factCheckBullets,
     findAlienNumber,
+    findNumberWord,
     packNumberKeys,
     type BriefDroppedBullet,
 } from './brief-factcheck';
@@ -44,6 +47,9 @@ export { limitWords } from './brief-template.groups';
 
 /** Код нарушения: в заголовке нейросети число не из пакета фактов. */
 export const AI_BRIEF_HEADLINE_NUMBER_ERROR = 'headline-number-not-in-pack';
+
+/** Код нарушения: в заголовке нейросети число написано словами. */
+export const AI_BRIEF_HEADLINE_NUMBER_WORDS_ERROR = 'headline-numbers-in-words';
 
 /** Период и момент сборки резюме; время приходит параметром, не из часов. */
 export interface BriefContext {
@@ -148,7 +154,7 @@ function byGroupOrder(bullets: readonly AiBriefBullet[]): AiBriefBullet[] {
 /**
  * Резюме из ответа модели: строгая схема → факт-чек → шаблон, если после
  * проверки осталось меньше `AI_BRIEF_LIMITS.minBullets` буллетов. К
- * прошедшим буллетам модели добавляются действия правил пакета.
+ * прошедшим буллетам модели добавляются фокус и действия правил пакета.
  */
 export function buildBriefFromLlm(
     raw: unknown,
@@ -182,19 +188,19 @@ export function buildBriefFromLlm(
             errors: validation.errors,
         };
     }
-    const headlineOk =
-        findAlienNumber(validation.payload.headline, packNumberKeys(pack)) ===
-        null;
+    const headlineErrors = headlineIssues(validation.payload.headline, pack);
 
     return {
         brief: {
-            headline: headlineOk
-                ? validation.payload.headline
-                : templateHeadline(pack, ctx.from, ctx.to),
+            headline:
+                headlineErrors.length === 0
+                    ? validation.payload.headline
+                    : templateHeadline(pack, ctx.from, ctx.to),
             bullets: [
                 ...byGroupOrder(
                     checked.kept.map(bullet => withFactDelta(bullet, pack)),
                 ),
+                ...focusBullets(pack),
                 ...actionBullets(pack),
             ],
             tone: validation.payload.tone,
@@ -206,8 +212,19 @@ export function buildBriefFromLlm(
         },
         passRatePct: checked.passRatePct,
         dropped,
-        errors: headlineOk
-            ? validation.errors
-            : [...validation.errors, AI_BRIEF_HEADLINE_NUMBER_ERROR],
+        errors: [...validation.errors, ...headlineErrors],
     };
+}
+
+/** Заголовок модели: число не из пакета или словами — замена шаблонным. */
+function headlineIssues(headline: string, pack: AiEvidencePack): string[] {
+    const issues: string[] = [];
+    if (findAlienNumber(headline, packNumberKeys(pack)) !== null) {
+        issues.push(AI_BRIEF_HEADLINE_NUMBER_ERROR);
+    }
+    if (findNumberWord(headline) !== null) {
+        issues.push(AI_BRIEF_HEADLINE_NUMBER_WORDS_ERROR);
+    }
+
+    return issues;
 }

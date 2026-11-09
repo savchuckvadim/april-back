@@ -104,8 +104,8 @@ describe('VibeCodeBriefAdapter: порт модели резюме', () => {
 
         expect(content).toContain(AI_BRIEF_PROMPT_VERSION);
         expect(content).toContain(PACK.hash);
-        // Действия нейросеть не пишет — их выводят правила пакета.
-        expect(content).toContain('Группы буллетов: change, focus.');
+        // Фокус и действия нейросеть не пишет — их выводят правила пакета.
+        expect(content).toContain('Группы буллетов: change.');
         expect(content).toContain(packJson(PACK.facts, PACK.compare));
         for (const fact of PACK.facts) {
             expect(content).toContain(`[${fact.code}] ${fact.text}`);
@@ -115,7 +115,10 @@ describe('VibeCodeBriefAdapter: порт модели резюме', () => {
     });
 
     it('промпт: действия не просим, числа заголовка — из пакета, без причинности в правилах', () => {
-        expect(AI_BRIEF_SYSTEM_PROMPT).toContain('Действий и советов не пиши');
+        expect(AI_BRIEF_SYSTEM_PROMPT).toContain(
+            'Пункты «на кого смотреть», действия и советы не пиши',
+        );
+        expect(AI_BRIEF_SYSTEM_PROMPT).toContain('числа словами');
         expect(AI_BRIEF_SYSTEM_PROMPT).toContain(
             'каждое число в тексте и в заголовке',
         );
