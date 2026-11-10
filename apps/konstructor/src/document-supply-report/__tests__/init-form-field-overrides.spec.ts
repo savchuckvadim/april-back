@@ -25,13 +25,16 @@ const dto = (
     }) as unknown as DocumentSupplyInitFormDto;
 
 describe('InitFormService — состав формы отчёта', () => {
-    let isDbLookupEnabled: jest.Mock;
     let resolveTemplate: jest.Mock;
     let service: InitFormService;
 
     beforeEach(() => {
-        isDbLookupEnabled = jest.fn().mockReturnValue(false);
-        resolveTemplate = jest.fn();
+        // по умолчанию строки в БД нет: состав формы из кода
+        resolveTemplate = jest.fn().mockResolvedValue({
+            path: 'any.docx',
+            origin: SupplyReportTemplateOrigin.STORAGE_FALLBACK,
+            templateId: null,
+        });
 
         service = new InitFormService(
             // bitrix отдаёт пустой список реквизитов: ветка client нам не важна
@@ -50,7 +53,7 @@ describe('InitFormService — состав формы отчёта', () => {
                 }),
             } as never,
             { findByDomain: jest.fn().mockResolvedValue([]) } as never,
-            { isDbLookupEnabled, resolve: resolveTemplate } as never,
+            { resolve: resolveTemplate } as never,
             // общая форма и спецификация — отдельный сервис, здесь не проверяются
             {
                 legacyContractForm: jest.fn().mockReturnValue([]),
@@ -59,17 +62,15 @@ describe('InitFormService — состав формы отчёта', () => {
         );
     });
 
-    it('флаг выключен: резолвер не вызывается, форма из кода', async () => {
+    it('строки в БД нет: форма из кода', async () => {
         const result = await service.frontInit(dto());
 
-        expect(resolveTemplate).not.toHaveBeenCalled();
         expect(result.supply).toHaveLength(15);
         expect(result.supply?.[0].code).toBe('sale_date');
         expect(result.supply?.[0].isRequired).toBe(true);
     });
 
-    it('флаг включён: настройка из строки применяется к isRequired', async () => {
-        isDbLookupEnabled.mockReturnValue(true);
+    it('настройка из строки БД применяется к isRequired', async () => {
         resolveTemplate.mockResolvedValue({
             path: 'any.docx',
             origin: SupplyReportTemplateOrigin.DB,
@@ -91,7 +92,6 @@ describe('InitFormService — состав формы отчёта', () => {
     });
 
     it('признаки подбора уходят из DTO', async () => {
-        isDbLookupEnabled.mockReturnValue(true);
         resolveTemplate.mockResolvedValue({
             path: 'any.docx',
             origin: SupplyReportTemplateOrigin.STORAGE_FALLBACK,
@@ -117,7 +117,6 @@ describe('InitFormService — состав формы отчёта', () => {
     });
 
     it('падение подбора НЕ валит форму: менеджеру она нужна и без БД шаблонов', async () => {
-        isDbLookupEnabled.mockReturnValue(true);
         resolveTemplate.mockRejectedValue(new Error('БД недоступна'));
 
         const result = await service.frontInit(dto());
@@ -127,8 +126,6 @@ describe('InitFormService — состав формы отчёта', () => {
     });
 
     it('без isSupplyReport формы отчёта нет и подбор не нужен', async () => {
-        isDbLookupEnabled.mockReturnValue(true);
-
         const result = await service.frontInit(dto({ isSupplyReport: false }));
 
         expect(result.supply).toBeUndefined();

@@ -11,7 +11,7 @@ import {
     SUPPLY_REPORT_SUBPATH,
     planContractRows,
     planEtalonContractRows,
-    planGenericContractRows,
+    RETIRED_GENERIC_CONTRACT_CODES,
     planSupplyRows,
 } from '../lib/seed-plan.util';
 
@@ -36,29 +36,6 @@ const SERVER_ETALON = [
     etalon('service', 'proxima', 'state'),
 ];
 const GENERIC = `${CONTRACT_TEMPLATE_SUBPATH}/${CONTRACT_TEMPLATE_FILE}`;
-
-describe('planGenericContractRows', () => {
-    it('четыре общие строки — по типу договора, все на один файл', () => {
-        const plan = planGenericContractRows(refsFrom([GENERIC]));
-
-        expect(plan.missing).toEqual([]);
-        expect(plan.rows.map(r => r.contract_type).sort()).toEqual(
-            Object.values(CONTRACT_LTYPE).sort(),
-        );
-        for (const row of plan.rows) {
-            expect(row.file_path).toBe(GENERIC);
-            expect(row.client_types).toBeNull();
-            expect(row.supply_types).toBeNull();
-            expect(row.code).toBe(`common-contract-${row.contract_type}`);
-        }
-    });
-
-    it('нет файла — нет строк, путь в missing', () => {
-        const plan = planGenericContractRows(refsFrom([]));
-        expect(plan.rows).toEqual([]);
-        expect(plan.missing).toEqual([GENERIC]);
-    });
-});
 
 describe('planEtalonContractRows', () => {
     it('в план попадают ТОЛЬКО существующие файлы серверной матрицы', () => {
@@ -108,20 +85,23 @@ describe('planEtalonContractRows', () => {
 });
 
 describe('planContractRows', () => {
-    it('общие + точные; коды уникальны', () => {
+    it('только точные строки: template.docx в план не попадает', () => {
         const plan = planContractRows(refsFrom([GENERIC, ...SERVER_ETALON]));
-        expect(plan.rows).toHaveLength(10);
-        expect(new Set(plan.rows.map(r => r.code)).size).toBe(10);
+        expect(plan.rows).toHaveLength(6);
+        expect(new Set(plan.rows.map(r => r.code)).size).toBe(6);
+        expect(plan.rows.map(r => r.file_path)).not.toContain(GENERIC);
+        for (const row of plan.rows) {
+            expect(row.client_types).not.toBeNull();
+            expect(row.supply_types).not.toBeNull();
+        }
     });
 
-    it('точная и общая строки одного типа различаются критериями — не одна корзина диагностики', () => {
-        const plan = planContractRows(refsFrom([GENERIC, ...SERVER_ETALON]));
-        const generic = plan.rows.find(r => r.code === 'common-contract-lic');
-        const exact = plan.rows.find(
-            r => r.code === 'common-contract-lic-internet-state',
+    it('коды старых общих строк — по одному на тип договора, к архивации', () => {
+        expect([...RETIRED_GENERIC_CONTRACT_CODES].sort()).toEqual(
+            Object.values(CONTRACT_LTYPE)
+                .map(type => `common-contract-${type}`)
+                .sort(),
         );
-        expect(generic?.supply_types).toBeNull();
-        expect(exact?.supply_types).not.toBeNull();
     });
 });
 

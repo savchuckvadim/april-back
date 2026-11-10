@@ -1,5 +1,4 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { StorageService, StorageType } from '@lib/core/storage';
 import {
     DocumentTemplateService,
@@ -10,11 +9,9 @@ import { SupplyReportFieldOverrides } from '../../lib/supply-report-form';
 
 /** Откуда взялся файл шаблона отчёта — для логов и для тестов. */
 export enum SupplyReportTemplateOrigin {
-    /** Флаг выключен: нетронутый легаси-путь (домен → общий файл). */
-    LEGACY = 'legacy',
-    /** Флаг включён, строка нашлась в БД. */
+    /** Строка нашлась в БД (админка «Шаблоны отчёта о поставке»). */
     DB = 'db',
-    /** Флаг включён, строки нет — тот же легаси-зонд по storage. */
+    /** Строки нет — зонд по storage: домен → общий файл. */
     STORAGE_FALLBACK = 'storage-fallback',
 }
 
@@ -34,22 +31,16 @@ const BASE_PATH = 'konstructor/templates/supply';
 const NEW_TEMPLATE_FILE = 'sales_report.docx';
 /**
  * Старый файл. `isNewTemplate` был захардкожен в `true`, поэтому в живом
- * коде он недостижим; имя сохранено, чтобы зонд по storage остался
- * идентичным, если флаг включат, а строки в БД не окажется.
+ * коде он недостижим; зонд проверяет его последним.
  */
 const LEGACY_TEMPLATE_FILE = 'supply_report_gsr.docx';
 
 /**
  * Откуда брать шаблон отчёта о поставке.
  *
- * Одна ответственность — «выбрать файл», и одна точка ветвления по флагу
- * `USE_DB_SUPPLY_REPORT_TEMPLATES` (по умолчанию ВЫКЛЮЧЕН: деплой ничего
- * не меняет). Флаг свой, отдельный от договорного: отчёт и договор
- * переключаются независимо.
- *
- * Порядок при включённом флаге: БД → зонд по домену → общий файл. Зонд
- * остался ПОСЛЕДНИМ уровнем, а не исчез: порталы, у которых строки ещё
- * нет, продолжают собирать отчёт из файла.
+ * Порядок: БД (портальный или общий шаблон из админки) → зонд по домену →
+ * общий файл. Зонд — последний уровень: порталы без строки собирают отчёт
+ * из файла, как раньше.
  */
 @Injectable()
 export class SupplyReportTemplateSourceService {
@@ -59,41 +50,13 @@ export class SupplyReportTemplateSourceService {
 
     constructor(
         private readonly storageService: StorageService,
-        private readonly configService: ConfigService,
         private readonly documentTemplateService: DocumentTemplateService,
     ) {}
 
-    /**
-     * Читается на каждый вызов, а не в конструкторе: флаг переключают
-     * переменной окружения, и синглтон не должен держать её значение
-     * с момента старта процесса. «Истина» — только явные `true`/`1`,
-     * чтобы опечатка в env не включала новый путь молча.
-     */
-    isDbLookupEnabled(): boolean {
-        const raw = this.configService
-            .get<string>('USE_DB_SUPPLY_REPORT_TEMPLATES')
-            ?.trim()
-            .toLowerCase();
-        return raw === 'true' || raw === '1';
-    }
-
-    /**
-     * Путь к файлу шаблона плюс портальная настройка состава формы.
-     *
-     * Флаг выключен → `resolveStoragePath` без единого обращения к БД:
-     * тот же зонд `{domain}/sales_report.docx` → общий файл, что и раньше.
-     */
+    /** Путь к файлу шаблона плюс портальная настройка состава формы. */
     async resolve(
         input: ResolveTemplateInput,
     ): Promise<SupplyReportTemplateFile> {
-        if (!this.isDbLookupEnabled()) {
-            return {
-                path: await this.resolveStoragePath(input.domain),
-                origin: SupplyReportTemplateOrigin.LEGACY,
-                templateId: null,
-            };
-        }
-
         const resolved =
             await this.documentTemplateService.resolveSupplyReport(input);
 
@@ -102,7 +65,7 @@ export class SupplyReportTemplateSourceService {
             !resolved.match
         ) {
             this.logger.log(
-                `Шаблон отчёта в БД не найден (домен ${input.domain}) — зонд по storage, как до флага`,
+                `Шаблон отчёта в БД не найден (домен ${input.domain}) — зонд по storage`,
             );
             return {
                 path: await this.resolveStoragePath(input.domain),

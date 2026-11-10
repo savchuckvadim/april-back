@@ -20,12 +20,11 @@
  * `ContractController.php:303-309`). У нас тип клиента хранится списком
  * кодов, поэтому state → ['org_state'], commerc → всё остальное.
  *
- * Каталоги `etalon/lic/proxima/*` и `etalon/abon` на сервере пусты, `key`
- * нет вовсе — поэтому ПОМИМО точных строк засеваются четыре общие строки
- * (по одной на тип договора) на единственный `contract/template.docx`:
- * это ровно сегодняшнее поведение nest (один файл на всё), и резолвер
- * возьмёт его только когда точной строки нет — точная ранжируется выше по
- * разрядам supplyExact/clientExact.
+ * Засеваются ТОЛЬКО точные строки. Каталоги `etalon/lic/proxima/*` и
+ * `etalon/abon` на сервере пусты, `key` нет вовсе: под эти сочетания шаблон
+ * заводят в админке. Общих строк на `contract/template.docx` больше нет —
+ * это коммерческий договор услуг, и через них бюджетник получал договор с
+ * авансом. Нет шаблона — генерация отвечает, какой именно завести.
  */
 import { CONTRACT_LTYPE } from '@app/konstructor/document-generate/type/contract.type';
 import { ClientTypeEnum } from '@app/konstructor/document-generate/type/client.type';
@@ -59,7 +58,7 @@ export const CONTRACT_TYPE_TITLES: Record<CONTRACT_LTYPE, string> = {
     [CONTRACT_LTYPE.KEY]: 'Договор передачи ключа доступа',
 };
 
-const SUPPLY_TITLES: Record<SupplyTypeEnum, string> = {
+export const SUPPLY_TITLES: Record<SupplyTypeEnum, string> = {
     [SupplyTypeEnum.INTERNET]: 'интернет',
     [SupplyTypeEnum.PROXIMA]: 'проксима',
 };
@@ -105,33 +104,13 @@ export type SupplyPlan = {
 };
 
 /**
- * Общие строки договора: по одной на тип, все на один файл.
- * Признаки максимально широкие (NULL = любому).
+ * Коды общих строк на `contract/template.docx` из прошлого засева. Скрипт
+ * архивирует их: такая строка подходит любому клиенту и подменяет
+ * бюджетный договор коммерческим.
  */
-export function planGenericContractRows(
-    fileRef: FileRefResolver,
-): ContractPlan {
-    const ref = fileRef(CONTRACT_TEMPLATE_SUBPATH, CONTRACT_TEMPLATE_FILE);
-    if (!ref.exists) {
-        return { rows: [], missing: [ref.path] };
-    }
-    return {
-        rows: Object.values(CONTRACT_LTYPE).map(contractType => ({
-            code: `common-contract-${contractType}`,
-            name: `${CONTRACT_TYPE_TITLES[contractType]} (общий)`,
-            contract_type: contractType,
-            client_types: null,
-            supply_types: null,
-            file_path: ref.path,
-            description:
-                'Общий шаблон: portal_id IS NULL, поставщик и типы клиента/поставки ' +
-                'не ограничены. Единственный файл contract/template.docx — то, что ' +
-                'nest использовал для ВСЕХ договоров до резолвера. Берётся, только ' +
-                'если нет точной строки под тип поставки и тип клиента.',
-        })),
-        missing: [],
-    };
-}
+export const RETIRED_GENERIC_CONTRACT_CODES: string[] = Object.values(
+    CONTRACT_LTYPE,
+).map(contractType => `common-contract-${contractType}`);
 
 /**
  * Точные строки из матрицы etalon. Перебираются ВСЕ 4×2×2 комбинации;
@@ -165,8 +144,8 @@ export function planEtalonContractRows(fileRef: FileRefResolver): ContractPlan {
                     file_path: ref.path,
                     description:
                         `Точный шаблон из Laravel-матрицы etalon/${contractType}/${supplyType}/${bucket}. ` +
-                        'Общий уровень (portal_id IS NULL). Ранжируется выше общей строки ' +
-                        'того же типа договора за счёт явных типа поставки и типа клиента.',
+                        'Общий уровень (portal_id IS NULL): портальный шаблон того же ' +
+                        'типа договора ранжируется выше.',
                 });
             }
         }
@@ -176,12 +155,7 @@ export function planEtalonContractRows(fileRef: FileRefResolver): ContractPlan {
 }
 
 export function planContractRows(fileRef: FileRefResolver): ContractPlan {
-    const generic = planGenericContractRows(fileRef);
-    const etalon = planEtalonContractRows(fileRef);
-    return {
-        rows: [...generic.rows, ...etalon.rows],
-        missing: [...generic.missing, ...etalon.missing],
-    };
+    return planEtalonContractRows(fileRef);
 }
 
 /**

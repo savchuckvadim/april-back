@@ -18,8 +18,8 @@ import { ContractTemplateSourceService } from './services/contract-template-sour
 import { BitrixDocumentSaveFlowService } from '../../offer-word/services/bitrix/bitrix-document-save-flow.service';
 
 /**
- * `DocumentTemplateModule` добавлен ради подбора шаблона договора из БД
- * (флаг `USE_DB_CONTRACT_TEMPLATES`). Он же приносит `PortalStoreModule`,
+ * `DocumentTemplateModule` — подбор шаблона договора из БД (портальный или
+ * общий, админка «Шаблоны договоров»). Он же приносит `PortalStoreModule`,
  * через который domain превращается в portal_id: до этого в модуле не было
  * ни одного портального модуля, и такой переход был недоступен.
  * `ConfigModule` отдельно не импортируется — в app.module он

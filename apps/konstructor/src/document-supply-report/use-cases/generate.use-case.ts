@@ -45,11 +45,8 @@ export class GenerateUseCase {
 
         const portal = await this.portalService.getPortalByDomain(domain);
 
-        // Единственная точка выбора шаблона. Флаг
-        // USE_DB_SUPPLY_REPORT_TEMPLATES выключен → тот же зонд по storage,
-        // что и до резолвера; включён → сначала строка из БД.
-        // Прежний `isNewTemplate = true` был мёртвой веткой: вторым файлом
-        // (supply_report_gsr.docx) отчёт не собирался никогда.
+        // Единственная точка выбора шаблона: строка из БД, без неё — зонд
+        // по storage (домен → общий файл).
         const template = await this.templateSource.resolve({
             domain,
             providerId: dto.providerId,

@@ -110,29 +110,6 @@ export class DocumentTemplatePrismaRepository extends DocumentTemplateRepository
         return rows.map(row => this.toCandidate(kind, row));
     }
 
-    async hasAnyForPortal(
-        kind: DocumentTemplateKind,
-        portalId: bigint | null,
-    ): Promise<boolean> {
-        if (portalId === null) {
-            return false;
-        }
-        const where = {
-            portal_id: portalId,
-            is_active: true,
-            is_archived: false,
-        };
-
-        const count =
-            kind === DocumentTemplateKind.CONTRACT
-                ? await this.prisma.contractTemplate.count({ where })
-                : kind === DocumentTemplateKind.SUPPLY_REPORT
-                  ? await this.prisma.supplyReportTemplate.count({ where })
-                  : await this.prisma.invoiceTemplate.count({ where });
-
-        return count > 0;
-    }
-
     /**
      * Диагностика справочника — делегирование в
      * {@link DocumentTemplateDefaultRowsQuery}. Эти два запроса обходят

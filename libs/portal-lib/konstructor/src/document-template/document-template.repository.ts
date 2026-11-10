@@ -48,21 +48,6 @@ export abstract class DocumentTemplateRepository {
     ): Promise<TemplateCandidate[]>;
 
     /**
-     * Есть ли у портала ХОТЬ ОДИН активный шаблон этого вида.
-     *
-     * Нужно, чтобы различить две принципиально разные ситуации:
-     *  - у портала шаблонов нет вовсе → законный откат на файл из storage
-     *    (так работает сегодня, поведение сохраняем);
-     *  - шаблоны есть, но под нужный тип договора нет → это пробел в
-     *    настройке, который админ должен увидеть сразу, а не получить
-     *    молча подменённый универсальный файл.
-     */
-    abstract hasAnyForPortal(
-        kind: DocumentTemplateKind,
-        portalId: bigint | null,
-    ): Promise<boolean>;
-
-    /**
      * Все активные строки с `is_default = true` — сырьё для диагностики.
      *
      * Группировка по (portal_id, agent_id, contract_type, client_types,

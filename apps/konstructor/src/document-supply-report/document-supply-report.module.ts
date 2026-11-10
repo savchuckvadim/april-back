@@ -15,10 +15,9 @@ import { SupplyReportTemplateSourceService } from './services/template/supply-re
 import { ContractSpecificationFormModule } from '../contract/specification-form/contract-specification-form.module';
 
 /**
- * `DocumentTemplateModule` — подбор шаблона отчёта из БД под флагом
- * `USE_DB_SUPPLY_REPORT_TEMPLATES` (по умолчанию ВЫКЛЮЧЕН). Он же приносит
- * `PortalStoreModule` для перехода domain → portal_id. `ConfigModule`
- * отдельно не нужен: в app.module он `forRoot({ isGlobal: true })`.
+ * `DocumentTemplateModule` — подбор шаблона отчёта из БД, без строки — зонд
+ * по storage. Он же приносит `PortalStoreModule` для перехода domain →
+ * portal_id.
  */
 @Module({
     imports: [

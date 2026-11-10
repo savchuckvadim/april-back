@@ -167,8 +167,7 @@ export class InitFormService {
      *
      * Сбой подбора гасится в `undefined`: форма конструктора нужна
      * менеджеру независимо от того, доступна ли БД шаблонов, а без
-     * настройки она просто такая же, как до её появления. При выключенном
-     * флаге резолвер не вызывается вовсе.
+     * настройки она просто такая же, как до её появления.
      */
     private async getFieldOverrides(
         dto: Pick<
@@ -180,10 +179,6 @@ export class InitFormService {
             | 'supplyType'
         >,
     ): Promise<SupplyReportFieldOverrides | undefined> {
-        if (!this.templateSource.isDbLookupEnabled()) {
-            return undefined;
-        }
-
         try {
             const template = await this.templateSource.resolve({
                 domain: dto.domain,

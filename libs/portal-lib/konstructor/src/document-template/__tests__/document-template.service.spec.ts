@@ -30,17 +30,14 @@ const candidate = (
 
 describe('DocumentTemplateService', () => {
     let findCandidates: jest.Mock;
-    let hasAnyForPortal: jest.Mock;
     let repository: jest.Mocked<DocumentTemplateRepository>;
     let portalStore: { getPortalByDomain: jest.Mock };
     let service: DocumentTemplateService;
 
     beforeEach(() => {
         findCandidates = jest.fn();
-        hasAnyForPortal = jest.fn();
         repository = {
             findCandidates,
-            hasAnyForPortal,
         } as unknown as jest.Mocked<DocumentTemplateRepository>;
 
         portalStore = {
@@ -148,31 +145,24 @@ describe('DocumentTemplateService', () => {
             );
         });
 
-        it('у портала шаблонов нет вовсе — законный откат на файл storage', async () => {
+        it('шаблона нет — 404 с текстом, какой шаблон завести и где', async () => {
             findCandidates.mockResolvedValue([]);
-            hasAnyForPortal.mockResolvedValue(false);
 
-            const result = await service.resolveContract({
-                domain: DOMAIN,
-                contractType: CONTRACT_LTYPE.ABON,
-            });
-
-            expect(result.source).toBe(
-                TemplateResolutionSource.STORAGE_FALLBACK,
-            );
-            expect(result.match).toBeNull();
-        });
-
-        it('шаблоны есть, но не под этот тип — 404, а НЕ подмена универсальным', async () => {
-            findCandidates.mockResolvedValue([]);
-            hasAnyForPortal.mockResolvedValue(true);
-
-            await expect(
-                service.resolveContract({
+            const error = await service
+                .resolveContract({
                     domain: DOMAIN,
-                    contractType: CONTRACT_LTYPE.KEY,
-                }),
-            ).rejects.toThrow(NotFoundException);
+                    contractType: CONTRACT_LTYPE.LIC,
+                    supplyType: SupplyTypeEnum.PROXIMA,
+                    clientType: ClientTypeEnum.ORG_STATE,
+                })
+                .catch((caught: unknown) => caught);
+
+            expect(error).toBeInstanceOf(NotFoundException);
+            const message = (error as NotFoundException).message;
+            expect(message).toContain('Лицензионный договор');
+            expect(message).toContain('поставка «проксима»');
+            expect(message).toContain('клиент «бюджетная организация»');
+            expect(message).toContain('Шаблоны договоров');
         });
     });
 
@@ -187,7 +177,6 @@ describe('DocumentTemplateService', () => {
             expect(result.source).toBe(
                 TemplateResolutionSource.STORAGE_FALLBACK,
             );
-            expect(hasAnyForPortal).not.toHaveBeenCalled();
         });
     });
 

@@ -35,7 +35,6 @@ const candidate = (over: Partial<TemplateCandidate> = {}): TemplateCandidate =>
 describe('SupplyReportTemplateSourceService', () => {
     let getFilePath: jest.Mock;
     let fileExists: jest.Mock;
-    let configGet: jest.Mock;
     let resolveSupplyReport: jest.Mock;
     let service: SupplyReportTemplateSourceService;
 
@@ -52,17 +51,20 @@ describe('SupplyReportTemplateSourceService', () => {
             .mockImplementation((path: string) =>
                 Promise.resolve(path === COMMON_NEW),
             );
-        configGet = jest.fn().mockReturnValue(undefined);
-        resolveSupplyReport = jest.fn();
+        // по умолчанию строки в БД нет
+        resolveSupplyReport = jest.fn().mockResolvedValue({
+            source: TemplateResolutionSource.STORAGE_FALLBACK,
+            match: null,
+            criteria: {},
+        });
 
         service = new SupplyReportTemplateSourceService(
             { getFilePath, fileExists } as never,
-            { get: configGet } as never,
             { resolveSupplyReport } as never,
         );
     });
 
-    describe('флаг ВЫКЛЮЧЕН — зонд по storage как до резолвера', () => {
+    describe('строки в БД нет — зонд по storage', () => {
         it('переопределение под домен важнее общего файла', async () => {
             fileExists.mockImplementation((path: string) =>
                 Promise.resolve(path === DOMAIN_NEW || path === COMMON_NEW),
@@ -72,7 +74,7 @@ describe('SupplyReportTemplateSourceService', () => {
 
             expect(result).toEqual({
                 path: DOMAIN_NEW,
-                origin: SupplyReportTemplateOrigin.LEGACY,
+                origin: SupplyReportTemplateOrigin.STORAGE_FALLBACK,
                 templateId: null,
             });
         });
@@ -81,16 +83,12 @@ describe('SupplyReportTemplateSourceService', () => {
             const result = await service.resolve({ domain: DOMAIN });
 
             expect(result.path).toBe(COMMON_NEW);
-            expect(result.origin).toBe(SupplyReportTemplateOrigin.LEGACY);
+            expect(result.origin).toBe(
+                SupplyReportTemplateOrigin.STORAGE_FALLBACK,
+            );
         });
 
-        it('резолвер не вызывается вовсе', async () => {
-            await service.resolve({ domain: DOMAIN });
-
-            expect(resolveSupplyReport).not.toHaveBeenCalled();
-        });
-
-        it('настройки состава формы при выключенном флаге нет', async () => {
+        it('настройки состава формы без строки нет', async () => {
             const result = await service.resolve({ domain: DOMAIN });
 
             expect(result.fieldOverrides).toBeUndefined();
@@ -126,11 +124,7 @@ describe('SupplyReportTemplateSourceService', () => {
         });
     });
 
-    describe('флаг ВКЛЮЧЁН — БД первым уровнем', () => {
-        beforeEach(() => {
-            configGet.mockReturnValue('true');
-        });
-
+    describe('БД первым уровнем', () => {
         it('строка из БД: берётся её file_path, storage не трогается', async () => {
             resolveSupplyReport.mockResolvedValue({
                 source: TemplateResolutionSource.DB,

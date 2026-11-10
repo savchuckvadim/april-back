@@ -12,6 +12,7 @@ import {
     TemplateResolutionSource,
 } from './document-template.criteria';
 import { DocumentTemplateRepository } from './document-template.repository';
+import { describeMissingContractTemplate } from './lib/missing-template.util';
 import { rankTemplates } from './lib/resolve-template.util';
 import { ClientTypeEnum } from '@app/konstructor/document-generate/type/client.type';
 import { CONTRACT_LTYPE } from '@app/konstructor/document-generate/type/contract.type';
@@ -88,13 +89,11 @@ export class DocumentTemplateService {
     }
 
     /**
-     * Шаблон ДОГОВОРА. Тип договора обязателен и не ослабляется.
+     * Шаблон ДОГОВОРА: портальный или общий из БД. Тип договора обязателен.
      *
-     * Откат на файл из storage разрешён только если у портала нет НИ ОДНОГО
-     * активного шаблона договора — так сегодня работают все порталы, и это
-     * поведение сохраняется. Если шаблоны есть, но под нужный тип договора
-     * нет — это пробел в настройке: падаем с внятным сообщением, а не
-     * подменяем документ универсальным файлом.
+     * Отката на файл нет: единственный файл `contract/template.docx` — это
+     * коммерческий договор услуг, и бюджетник получал по нему договор с
+     * авансом. Нет шаблона — 404 с текстом, какой шаблон завести и где.
      */
     async resolveContract(
         input: ResolveTemplateInput,
@@ -115,28 +114,9 @@ export class DocumentTemplateService {
             return resolved;
         }
 
-        const hasAny = await this.repository.hasAnyForPortal(
-            DocumentTemplateKind.CONTRACT,
-            criteria.portalId,
-        );
-        if (hasAny) {
-            throw new NotFoundException(
-                `У портала нет шаблона договора под тип «${criteria.contractType}»` +
-                    (criteria.supplyType
-                        ? ` и поставку «${criteria.supplyType}»`
-                        : '') +
-                    '. Заведите шаблон в админке или снимите лишние ограничения.',
-            );
-        }
-
-        this.logger.warn(
-            `Шаблон договора не найден в БД (портал ${String(criteria.portalId)}, тип ${criteria.contractType}) — откат на файл из storage`,
-        );
-        return {
-            source: TemplateResolutionSource.STORAGE_FALLBACK,
-            match: null,
-            criteria,
-        };
+        const message = describeMissingContractTemplate(criteria);
+        this.logger.warn(`${input.domain}: ${message}`);
+        throw new NotFoundException(message);
     }
 
     /**
