@@ -166,12 +166,16 @@ export class TranscriptionRouterService {
                     `Yandex временно недоступен (${(error as Error).message}), fallback на Vibecode`,
                     { domain: input.domain, fileName: input.fileName },
                 );
-                return this.vibecodeThenWhisper(input, prefs.whisper);
+                return this.vibecodeThenWhisper(
+                    input,
+                    prefs.whisper,
+                    prefs.vibecodeModel,
+                );
             }
         }
 
         try {
-            return await this.transcribeVibecode(input);
+            return await this.transcribeVibecode(input, prefs.vibecodeModel);
         } catch (error) {
             this.logger.warn(
                 `Vibecode не справился (${(error as Error).message}), fallback на Yandex`,
@@ -217,9 +221,10 @@ export class TranscriptionRouterService {
     private async vibecodeThenWhisper(
         input: TranscribeCallInput,
         whisper: WhisperEndpoint | null,
+        vibecodeModel: string | null,
     ): Promise<TranscribeCallResult> {
         try {
-            return await this.transcribeVibecode(input);
+            return await this.transcribeVibecode(input, vibecodeModel);
         } catch (error) {
             if (!whisper) throw error;
             this.logger.warn(
@@ -252,15 +257,24 @@ export class TranscriptionRouterService {
     /** Vibecode-путь: буфер напрямую в Whisper с пер-портальным ключом. */
     private async transcribeVibecode(
         input: TranscribeCallInput,
+        model: string | null,
     ): Promise<TranscribeCallResult> {
-        // Ключ VibeCode — пер-портальный (vibeKey из БД, env — fallback).
+        // Ключ VibeCode — пер-портальный (vibeKey из БД, env — fallback);
+        // модель — из настроек AI портала, иначе константа клиента.
         const apiKey = await this.vibeKeyResolver.resolve(input.domain);
         const detailed = await this.vibecodeLimiter.run(() =>
-            this.vibecode.transcribeAudioDetailed(
-                input.buffer,
-                input.fileName,
-                apiKey,
-            ),
+            model === null
+                ? this.vibecode.transcribeAudioDetailed(
+                      input.buffer,
+                      input.fileName,
+                      apiKey,
+                  )
+                : this.vibecode.transcribeAudioDetailed(
+                      input.buffer,
+                      input.fileName,
+                      apiKey,
+                      model,
+                  ),
         );
         return {
             text: detailed.text,

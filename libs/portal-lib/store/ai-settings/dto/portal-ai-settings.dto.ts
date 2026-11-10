@@ -9,6 +9,7 @@ import {
     IsString,
     Matches,
     Max,
+    MaxLength,
     Min,
 } from 'class-validator';
 import {
@@ -68,6 +69,10 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         this.whisperModel = source.whisperModel ?? null;
         // Секрет наружу не отдаём: маска показывает, что ключ задан.
         this.whisperApiKey = source.whisperApiKey ? SECRET_MASK : null;
+        this.vibecodeTranscriptionModel =
+            source.vibecodeTranscriptionModel ?? null;
+        this.factsCatchupNightlyBudgetRub =
+            source.factsCatchupNightlyBudgetRub ?? null;
     }
 
     @ApiProperty({
@@ -426,6 +431,28 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         nullable: true,
     })
     whisperModel: string | null;
+
+    @ApiProperty({
+        description:
+            'Модель транскрибации VibeCode (поле model запроса к ИИ-роутеру). ' +
+            'С 16.11.2026 Whisper уходит с платформы: запросы без модели идут в ' +
+            'bitrix/bitrixgpt-5.6-transcribe; null — модель приложения.',
+        example: 'bitrix/bitrixgpt-5.6-transcribe',
+        type: String,
+        nullable: true,
+    })
+    vibecodeTranscriptionModel: string | null;
+
+    @ApiProperty({
+        description:
+            'Лимит в рублях на одну ночь для ночного догона признаков в старых ' +
+            'разборах (текущий и прошлый месяц); null или 0 — ночной догон ' +
+            'выключен.',
+        example: 100,
+        type: Number,
+        nullable: true,
+    })
+    factsCatchupNightlyBudgetRub: number | null;
 
     @ApiProperty({
         description:
@@ -830,6 +857,37 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
     @IsOptional()
     @IsString()
     whisperModel?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Модель транскрибации VibeCode (поле model запроса к ИИ-роутеру), ' +
+            'например bitrix/bitrixgpt-5.6-transcribe. Пусто или null — модель ' +
+            'приложения.',
+        example: 'bitrix/bitrixgpt-5.6-transcribe',
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    @MaxLength(120)
+    vibecodeTranscriptionModel?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Лимит в рублях на одну ночь для ночного догона признаков в старых ' +
+            'разборах (текущий и прошлый месяц). Пусто, null или 0 — ночной ' +
+            'догон выключен; полный переразбор — только кнопкой.',
+        example: 100,
+        type: Number,
+        minimum: 0,
+        maximum: 100000,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Max(100000)
+    factsCatchupNightlyBudgetRub?: number | null;
 
     @ApiPropertyOptional({
         description:

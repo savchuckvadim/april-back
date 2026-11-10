@@ -23,6 +23,7 @@ const record = (over: Record<string, unknown> = {}) => ({
     whisperBaseUrl: null,
     whisperModel: null,
     whisperApiKey: null,
+    vibecodeTranscriptionModel: null,
     ...over,
 });
 
@@ -33,6 +34,7 @@ describe('resolveTranscriptionPrefs', () => {
             modeSource: 'env',
             whisper: null,
             whisperSource: null,
+            vibecodeModel: null,
         });
         expect(
             resolveTranscriptionPrefs(null, env({ whisper: ENV_WHISPER })),
@@ -109,5 +111,26 @@ describe('resolveTranscriptionPrefs', () => {
                 env({ whisper: ENV_WHISPER }),
             ),
         ).toMatchObject({ whisper: ENV_WHISPER, whisperSource: 'env' });
+    });
+});
+
+describe('resolveTranscriptionPrefs: модель VibeCode', () => {
+    it('модель портала важнее константы клиента; пусто или пробелы — null', () => {
+        expect(
+            resolveTranscriptionPrefs(
+                record({
+                    vibecodeTranscriptionModel:
+                        ' bitrix/bitrixgpt-5.6-transcribe ',
+                }),
+                env(),
+            ).vibecodeModel,
+        ).toBe('bitrix/bitrixgpt-5.6-transcribe');
+        expect(
+            resolveTranscriptionPrefs(
+                record({ vibecodeTranscriptionModel: '  ' }),
+                env(),
+            ).vibecodeModel,
+        ).toBeNull();
+        expect(resolveTranscriptionPrefs(null, env()).vibecodeModel).toBeNull();
     });
 });

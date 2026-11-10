@@ -168,6 +168,10 @@ export const AI_GUIDE_PORTAL_AI_SETTING_TITLES: Readonly<
     whisperBaseUrl: 'Адрес своего Whisper портала',
     whisperModel: 'Модель своего Whisper портала',
     whisperApiKey: 'Ключ своего Whisper портала (хранится зашифрованным)',
+    vibecodeTranscriptionModel:
+        'Модель транскрибации VibeCode (с 16.11.2026 вместо Whisper — bitrix/bitrixgpt-5.6-transcribe)',
+    factsCatchupNightlyBudgetRub:
+        'Ночной догон признаков в старых разборах: лимит в рублях за ночь (0 — выключен)',
 };
 
 export interface AiGuideKpiSalesSetting {

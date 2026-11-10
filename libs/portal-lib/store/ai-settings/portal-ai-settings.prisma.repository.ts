@@ -164,7 +164,9 @@ export class PortalAiSettingsPrismaRepository
             update.transcriptionMode !== undefined ||
             update.whisperBaseUrl !== undefined ||
             update.whisperModel !== undefined ||
-            update.whisperApiKey !== undefined
+            update.whisperApiKey !== undefined ||
+            update.vibecodeTranscriptionModel !== undefined ||
+            update.factsCatchupNightlyBudgetRub !== undefined
         ) {
             const json = this.toJsonSettings(current?.settings);
             if (update.irrelevantConfidence !== undefined) {
@@ -231,6 +233,18 @@ export class PortalAiSettingsPrismaRepository
             if (update.whisperModel !== undefined) {
                 json.whisperModel = update.whisperModel?.trim() || undefined;
             }
+            if (update.vibecodeTranscriptionModel !== undefined) {
+                json.vibecodeTranscriptionModel =
+                    update.vibecodeTranscriptionModel?.trim() || undefined;
+            }
+            if (update.factsCatchupNightlyBudgetRub !== undefined) {
+                // null или 0 — ночной догон выключен: ключ убираем.
+                const budget = update.factsCatchupNightlyBudgetRub;
+                json.factsCatchupNightlyBudgetRub =
+                    typeof budget === 'number' && budget > 0
+                        ? budget
+                        : undefined;
+            }
             if (update.whisperApiKey !== undefined) {
                 // Пустая строка или null — убрать ключ; значение — зашифровать.
                 const key = update.whisperApiKey?.trim();
@@ -290,6 +304,8 @@ export class PortalAiSettingsPrismaRepository
         whisperBaseUrl?: string;
         whisperModel?: string;
         whisperApiKeyEncrypted?: string;
+        vibecodeTranscriptionModel?: string;
+        factsCatchupNightlyBudgetRub?: number;
     } {
         if (!value || typeof value !== 'object' || Array.isArray(value)) {
             return {};
@@ -336,6 +352,14 @@ export class PortalAiSettingsPrismaRepository
             whisperApiKeyEncrypted: this.nonEmptyString(
                 raw.whisperApiKeyEncrypted,
             ),
+            vibecodeTranscriptionModel: this.nonEmptyString(
+                raw.vibecodeTranscriptionModel,
+            ),
+            factsCatchupNightlyBudgetRub:
+                Number.isFinite(Number(raw.factsCatchupNightlyBudgetRub)) &&
+                Number(raw.factsCatchupNightlyBudgetRub) > 0
+                    ? Number(raw.factsCatchupNightlyBudgetRub)
+                    : undefined,
             methodologyCode: this.nonEmptyString(raw.methodologyCode),
             weeklyReportDelivery: (
                 WEEKLY_REPORT_DELIVERY_MODES as readonly string[]
@@ -418,6 +442,12 @@ export class PortalAiSettingsPrismaRepository
             whisperApiKey: this.decryptWhisperKey(
                 this.toJsonSettings(row.settings).whisperApiKeyEncrypted,
             ),
+            vibecodeTranscriptionModel:
+                this.toJsonSettings(row.settings).vibecodeTranscriptionModel ??
+                null,
+            factsCatchupNightlyBudgetRub:
+                this.toJsonSettings(row.settings)
+                    .factsCatchupNightlyBudgetRub ?? null,
         };
     }
 
