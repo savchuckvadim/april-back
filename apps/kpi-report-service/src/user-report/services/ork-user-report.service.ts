@@ -92,7 +92,11 @@ export class OrkUserReportService {
             if (result.length === 0) {
                 break;
             }
-            nextId = Number(result[result.length - 1]?.ID) ?? 0;
+            // Number никогда не отдаёт null, поэтому `?? 0` был мёртв: без
+            // ID получался NaN, фильтр '>ID' уходил битым и выборка шла по
+            // кругу (баг №9 плана «без any»).
+            const lastId = Number(result[result.length - 1]?.ID);
+            nextId = Number.isFinite(lastId) ? lastId : 0;
             if (nextId === 0) {
                 needMore = false;
             }

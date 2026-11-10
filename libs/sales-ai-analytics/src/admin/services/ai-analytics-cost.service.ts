@@ -15,7 +15,11 @@
  * же трактовка, что у `brief-job.util.ts` приложения.
  */
 import { Injectable } from '@nestjs/common';
-import { AGENT_ANALYSIS_RETEST_TYPE, AGENT_ANALYSIS_TYPE } from '@lib/call-lib';
+import {
+    AGENT_ANALYSIS_FACTS_TYPE,
+    AGENT_ANALYSIS_RETEST_TYPE,
+    AGENT_ANALYSIS_TYPE,
+} from '@lib/call-lib';
 import { AI_ANALYTICS_SNAPSHOT_TYPES } from '../../contracts/snapshot-kinds.const';
 import { registryDefault } from '../../params/registry.access';
 import { AiAnalyticsAdminSnapshotStore } from '../ai-analytics-admin-snapshot.store';
@@ -28,6 +32,7 @@ export const AI_ANALYTICS_COST_TYPES = [
     ...AI_ANALYTICS_SNAPSHOT_TYPES,
     AGENT_ANALYSIS_TYPE,
     AGENT_ANALYSIS_RETEST_TYPE,
+    AGENT_ANALYSIS_FACTS_TYPE,
 ] as const;
 export type AiAnalyticsCostType = (typeof AI_ANALYTICS_COST_TYPES)[number];
 
@@ -42,6 +47,22 @@ export interface CostByType {
     /**
      * Стоимость по цене реестра: токены / 1000 × llm_price_per_1k, ₽;
      * null — цена реестра не задана (0).
+     */
+    estimatedPrice: number | null;
+}
+
+/** Расход по поставщику шлюза LLM — из `usage.byProvider` разборов (B3). */
+export interface CostByProvider {
+    /** Код поставщика (vibecode, openai-compatible, ai-rag); unknown — записи без сведений. */
+    provider: string;
+    /** Записей, в которых поставщик отвечал. */
+    calls: number;
+    tokens: number;
+    /** Доля стоимости записей по колонке price пропорционально токенам, ₽. */
+    price: number;
+    /**
+     * Оценка по цене реестра поставщика (llm_price_per_1k_<provider>), а
+     * без неё — по общей; null — цена не задана.
      */
     estimatedPrice: number | null;
 }
@@ -65,9 +86,20 @@ export interface CostSummary {
     /** Стоимость по цене реестра, ₽; null — цена не задана. */
     estimatedPrice: number | null;
     byType: CostByType[];
+    /** Разбивка по поставщикам шлюза, крупные первыми. */
+    byProvider: CostByProvider[];
 }
 
 const TOKENS_PER_PRICE_UNIT = 1000;
+const PROVIDER_UNKNOWN = 'unknown';
+const PRICE_DECIMALS = 4;
+
+/** Код реестра цены поставщика; нет — общая цена. */
+const PRICE_CODE_BY_PROVIDER: Readonly<Record<string, string>> = {
+    vibecode: 'llm_price_per_1k_vibecode',
+    'openai-compatible': 'llm_price_per_1k_openai_compatible',
+    'ai-rag': 'llm_price_per_1k_ai_rag',
+};
 
 @Injectable()
 export class AiAnalyticsCostService {
@@ -103,8 +135,96 @@ export class AiAnalyticsCostService {
             price,
             estimatedPrice: estimate(tokens, pricePerThousand),
             byType,
+            byProvider: costByProvider(
+                records.filter(record => record.tokensCount > 0),
+                pricePerThousand,
+            ),
         };
     }
+}
+
+interface ProviderShare {
+    provider: string;
+    tokens: number;
+}
+
+const isProviderShare = (value: unknown): value is ProviderShare =>
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { provider?: unknown }).provider === 'string' &&
+    typeof (value as { tokens?: unknown }).tokens === 'number';
+
+/**
+ * Разбивка записи по поставщикам из `user_result.usage.byProvider`;
+ * токены сверх разбивки (или вся запись до B3) — поставщику unknown.
+ */
+function providerSharesOf(record: {
+    tokensCount: number;
+    userResult: unknown;
+}): ProviderShare[] {
+    const usage = (record.userResult as { usage?: unknown } | null)?.usage;
+    const list = (usage as { byProvider?: unknown } | undefined)?.byProvider;
+    const shares = (Array.isArray(list) ? list : [])
+        .filter(isProviderShare)
+        .map(share => ({ provider: share.provider, tokens: share.tokens }));
+    const rest = record.tokensCount - sum(shares, share => share.tokens);
+    return rest > 0
+        ? [...shares, { provider: PROVIDER_UNKNOWN, tokens: rest }]
+        : shares;
+}
+
+function providerPrice(provider: string, fallback: number): number {
+    const code = PRICE_CODE_BY_PROVIDER[provider];
+    const own = code === undefined ? 0 : registryDefault(code, 0);
+    return own > 0 ? own : fallback;
+}
+
+/** Суммы по поставщикам: стоимость записи делится по токенам поставщиков. */
+export function costByProvider(
+    records: readonly {
+        tokensCount: number;
+        price: number;
+        userResult: unknown;
+    }[],
+    pricePerThousand: number,
+): CostByProvider[] {
+    const acc = new Map<
+        string,
+        { calls: number; tokens: number; price: number }
+    >();
+    for (const record of records) {
+        const shares = providerSharesOf(record);
+        const total = sum(shares, share => share.tokens);
+        for (const share of shares) {
+            const entry = acc.get(share.provider) ?? {
+                calls: 0,
+                tokens: 0,
+                price: 0,
+            };
+            entry.calls += 1;
+            entry.tokens += share.tokens;
+            entry.price +=
+                total > 0 ? record.price * (share.tokens / total) : 0;
+            acc.set(share.provider, entry);
+        }
+    }
+    return [...acc]
+        .map(([provider, entry]) => ({
+            provider,
+            calls: entry.calls,
+            tokens: entry.tokens,
+            price: round(entry.price, PRICE_DECIMALS),
+            estimatedPrice: estimate(
+                entry.tokens,
+                providerPrice(provider, pricePerThousand),
+            ),
+        }))
+        .sort((a, b) => b.tokens - a.tokens);
+}
+
+function round(value: number, decimals: number): number {
+    const factor = 10 ** decimals;
+    return Math.round(value * factor) / factor;
 }
 
 function costOfType(

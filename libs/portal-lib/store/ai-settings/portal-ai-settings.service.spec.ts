@@ -196,3 +196,22 @@ describe('PortalAiSettingsService', () => {
         });
     });
 });
+
+describe('PortalAiSettingsService.save: модель VibeCode и ночной догон', () => {
+    it('новые ключи уходят в репозиторий как есть', async () => {
+        const { service, repository } = makeDeps();
+        await service.save(5, {
+            vibecodeTranscriptionModel: 'bitrix/bitrixgpt-5.6-transcribe',
+            factsCatchupNightlyBudgetRub: 100,
+        });
+        const [, , update] = repository.upsert.mock.calls[0] as [
+            number,
+            string,
+            Record<string, unknown>,
+        ];
+        expect(update).toMatchObject({
+            vibecodeTranscriptionModel: 'bitrix/bitrixgpt-5.6-transcribe',
+            factsCatchupNightlyBudgetRub: 100,
+        });
+    });
+});

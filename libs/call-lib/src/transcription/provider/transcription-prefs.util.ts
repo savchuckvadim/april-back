@@ -16,6 +16,8 @@ export interface TranscriptionPrefs {
     whisper: WhisperEndpoint | null;
     /** null — endpoint'а нет ни у портала, ни в env. */
     whisperSource: TranscriptionPrefSource | null;
+    /** Модель транскрибации VibeCode портала; null — модель клиента. */
+    vibecodeModel: string | null;
 }
 
 /** Общие значения приложения, поверх которых ложатся настройки портала. */
@@ -29,7 +31,11 @@ export interface TranscriptionEnvPrefs {
 /** Поля настроек AI портала, которые читает маршрутизация. */
 export type PortalTranscriptionRecord = Pick<
     PortalAiSettingsRecord,
-    'transcriptionMode' | 'whisperBaseUrl' | 'whisperModel' | 'whisperApiKey'
+    | 'transcriptionMode'
+    | 'whisperBaseUrl'
+    | 'whisperModel'
+    | 'whisperApiKey'
+    | 'vibecodeTranscriptionModel'
 >;
 
 /**
@@ -62,5 +68,6 @@ export function resolveTranscriptionPrefs(
         modeSource: portalMode ? 'portal' : 'env',
         whisper,
         whisperSource: portalWhisper ? 'portal' : whisper ? 'env' : null,
+        vibecodeModel: record?.vibecodeTranscriptionModel?.trim() || null,
     };
 }

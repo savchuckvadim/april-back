@@ -25,6 +25,11 @@ export interface ReanalysisPoolOptions {
     timeBudgetMs: number;
     startedAt: number;
     now: () => number;
+    /**
+     * Бюджет части исчерпан (лимит в рублях ночного догона, B6): новые
+     * звонки не берутся, начатые дорабатываются. Нет — без лимита.
+     */
+    budgetHit?: () => boolean;
 }
 
 export interface ReanalysisPoolState {
@@ -40,6 +45,8 @@ export interface ReanalysisPoolState {
     /** Учёт итога упал (например, запись статуса): воркеры выходят, пул отклоняется. */
     aborted: boolean;
     timeBudgetHit: boolean;
+    /** Часть остановлена по бюджету в рублях (см. options.budgetHit). */
+    budgetHit: boolean;
 }
 
 /** Счётчики пула после итога звонка; серия сбоев снижает одновременность. */
@@ -91,6 +98,7 @@ export async function runReanalysisPool<T>(
         stopped: false,
         aborted: false,
         timeBudgetHit: false,
+        budgetHit: false,
     };
     let next = 0;
     const worker = async (slot: number): Promise<void> => {
@@ -102,6 +110,10 @@ export async function runReanalysisPool<T>(
             ) {
                 if (options.now() - options.startedAt > options.timeBudgetMs) {
                     state.timeBudgetHit = true;
+                    return;
+                }
+                if (options.budgetHit?.() === true) {
+                    state.budgetHit = true;
                     return;
                 }
                 const index = next;

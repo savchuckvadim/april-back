@@ -190,3 +190,40 @@ describe('runReanalysisPool', () => {
         expect(state.timeBudgetHit).toBe(true);
     });
 });
+
+describe('runReanalysisPool: лимит в рублях (budgetHit)', () => {
+    it('после исчерпания лимита новые звонки не берутся, флаг budgetHit', async () => {
+        let spent = 0;
+        const run = jest.fn(() => {
+            spent += 0.35;
+            return Promise.resolve(OK);
+        });
+
+        const state = await runReanalysisPool(
+            ['a', 'b', 'c'],
+            run,
+            () => Promise.resolve(),
+            options({ concurrency: 1, budgetHit: () => spent >= 0.5 }),
+        );
+
+        expect(run).toHaveBeenCalledTimes(2);
+        expect(state).toMatchObject({
+            processed: 2,
+            doneInPart: 2,
+            budgetHit: true,
+            stopped: false,
+            timeBudgetHit: false,
+        });
+    });
+
+    it('без budgetHit в опциях лимит не действует', async () => {
+        const state = await runReanalysisPool(
+            ['a', 'b'],
+            () => Promise.resolve(OK),
+            () => Promise.resolve(),
+            options({ concurrency: 1 }),
+        );
+
+        expect(state).toMatchObject({ processed: 2, budgetHit: false });
+    });
+});

@@ -143,6 +143,8 @@ describe('StructuredLlmGateway — провайдеры по порядку с �
         expect(breaker.recordFailure).toHaveBeenCalledWith(
             'vibecode',
             expect.stringContaining('HTTP 502'),
+            expect.any(Number),
+            true,
         );
     });
 
@@ -182,6 +184,31 @@ describe('StructuredLlmGateway — провайдеры по порядку с �
             'openai-compatible — не настроен',
         );
         expect(openai.complete).not.toHaveBeenCalled();
+    });
+
+    /** Решение владельца 08.11.2026: тревога — когда отказали все. */
+    it('отказали все поставщики — тревога «ПОПЫТКИ ИСЧЕРПАНЫ» в телеграм', async () => {
+        const error = jest
+            .spyOn(Logger.prototype, 'error')
+            .mockImplementation(() => undefined);
+        const vibecode = fakeAdapter('vibecode', {
+            complete: jest
+                .fn()
+                .mockRejectedValue(new Error('Vibecode x failed [503]: down')),
+        });
+        const openai = fakeAdapter('openai-compatible', {
+            issue: 'не настроен',
+        });
+        const { gateway } = makeGateway({}, { vibecode, openai });
+
+        await expect(gateway.complete(REQUEST)).rejects.toThrow(
+            'LLM недоступна',
+        );
+        expect(error).toHaveBeenCalledWith(
+            expect.stringContaining('ПОПЫТКИ ИСЧЕРПАНЫ'),
+            { telegram: true },
+        );
+        error.mockRestore();
     });
 
     it('основной на паузе — сначала запасной; упал и он — пробуем основного как полуоткрытого', async () => {

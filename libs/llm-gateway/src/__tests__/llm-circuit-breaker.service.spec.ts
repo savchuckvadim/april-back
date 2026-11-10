@@ -153,3 +153,47 @@ describe('LlmCircuitBreakerService — предохранитель провай
         );
     });
 });
+
+/**
+ * Разметка тревог (политика владельца 10.11.2026): пауза при живом
+ * запасном — «повтор, работа идёт», пауза последнего — «попытки
+ * исчерпаны».
+ */
+describe('LlmCircuitBreakerService — пометки тревоги', () => {
+    let error: jest.SpyInstance;
+
+    beforeEach(() => {
+        error = jest
+            .spyOn(Logger.prototype, 'error')
+            .mockImplementation(() => undefined);
+        jest.spyOn(Logger.prototype, 'warn').mockImplementation(
+            () => undefined,
+        );
+    });
+    afterEach(() => jest.restoreAllMocks());
+
+    const makeBreaker = () =>
+        new LlmCircuitBreakerService(config as never, noRedis as never);
+
+    it('запасной есть — «Повтор», работа идёт через запасного', async () => {
+        const breaker = makeBreaker();
+        await breaker.recordFailure('vibecode', 'x', T0, true);
+        await breaker.recordFailure('vibecode', 'x', T0, true);
+        await breaker.recordFailure('vibecode', 'HTTP 502', T0, true);
+        expect(error).toHaveBeenCalledTimes(1);
+        const [message] = error.mock.calls[0] as [string];
+        expect(message).toContain('Повтор: провайдер LLM vibecode отключён');
+        expect(message).toContain('работа идёт через запасного');
+    });
+
+    it('запасных нет — «ПОПЫТКИ ИСЧЕРПАНЫ» и предупреждение про остановку', async () => {
+        const breaker = makeBreaker();
+        await breaker.recordFailure('ai-rag', 'x', T0, false);
+        await breaker.recordFailure('ai-rag', 'x', T0, false);
+        await breaker.recordFailure('ai-rag', 'HTTP 500', T0, false);
+        const [message] = error.mock.calls[0] as [string];
+        expect(message).toContain('ПОПЫТКИ ИСЧЕРПАНЫ');
+        expect(message).toContain('запасных нет');
+        expect(message).toContain('разборы и отчёты встанут');
+    });
+});

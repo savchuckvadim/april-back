@@ -161,7 +161,7 @@ export class AgentAnalysisIntakeService {
         if (!dto.usage) return {};
         return analysisUsageColumns(
             dto.usage,
-            await this.llmPrice.resolvePerThousand(domain),
+            await this.llmPrice.resolvePricing(domain),
         );
     }
 

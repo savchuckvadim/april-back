@@ -112,6 +112,8 @@ export enum JobNames {
     CALL_REPORT_REANALYZE = 'call-report-reanalyze',
     /** Дописать поля карточек разборов из записей ais без вызова модели (кнопка в админке и ночной крон) */
     CALL_REPORT_SMART_BACKFILL = 'call-report-smart-backfill',
+    /** Догнать факты v3.1 в старых разборах одним коротким вызовом модели по расшифровке (этап B4): части с продолжением */
+    CALL_REPORT_FACTS_CATCHUP = 'call-report-facts-catchup',
 
     /** Импорт СКАП: один run-джоб на домен (скан Диска + обработка файлов с тайм-бюджетом) */
     SKAP_IMPORT_RUN = 'skap-import-run',

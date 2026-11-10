@@ -1,5 +1,46 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import {
+    IsArray,
+    IsInt,
+    IsOptional,
+    IsString,
+    Min,
+    ValidateNested,
+} from 'class-validator';
+
+/** Расход одного поставщика в разборе — для цены по поставщику (B3). */
+export class AgentUsageByProviderDto {
+    @ApiProperty({
+        description:
+            'Код поставщика шлюза LLM, который ответил: vibecode, ' +
+            'openai-compatible или ai-rag.',
+        example: 'vibecode',
+        type: String,
+    })
+    @IsString()
+    provider: string;
+
+    @ApiProperty({
+        description: 'Токенов по вызовам этого поставщика, вернувшим учёт.',
+        example: 12400,
+        type: Number,
+        minimum: 0,
+    })
+    @IsInt()
+    @Min(0)
+    tokens: number;
+
+    @ApiProperty({
+        description: 'Удавшихся вызовов этого поставщика в разборе.',
+        example: 3,
+        type: Number,
+        minimum: 0,
+    })
+    @IsInt()
+    @Min(0)
+    calls: number;
+}
 
 /**
  * Расход языковой модели на разбор (три фокус-вызова + синтез либо один
@@ -80,4 +121,29 @@ export class AgentAnalysisUsageDto {
     @IsOptional()
     @IsString()
     model: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Поставщик шлюза, ответивший первым удавшимся вызовом; нет у ' +
+            'разборов до B3 (10.11.2026).',
+        example: 'vibecode',
+        type: String,
+        nullable: true,
+    })
+    @IsOptional()
+    @IsString()
+    provider?: string | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Расход по поставщикам: при откате на запасного внутри одного ' +
+            'разбора вызовы считаются каждый по своей цене. Нет у разборов ' +
+            'до B3 и у вызовов без сведений о поставщике.',
+        type: [AgentUsageByProviderDto],
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => AgentUsageByProviderDto)
+    byProvider?: AgentUsageByProviderDto[];
 }

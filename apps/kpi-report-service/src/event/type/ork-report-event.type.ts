@@ -287,7 +287,7 @@ export enum EnumOrkFilterCode {
     presentati_plan = `${EnumOrkEventType.et_ork_presentation_uniq}_${EnumOrkEventAction.ea_ork_plan}`, // Презентация(уникальная)
     presentati_expired = `${EnumOrkEventType.et_ork_presentation_uniq}_${EnumOrkEventAction.ea_ork_expired}`, // Презентация // Презентация(уникальная)
     presentati_done = `${EnumOrkEventType.et_ork_presentation_uniq}_${EnumOrkEventAction.ea_ork_done}`, // Презентация // Презентация(уникальная)
-    presentati_pound = `${EnumOrkEventType.et_ork_presentation_uniq}_${EnumOrkEventAction.ea_ork_expired}`, // Презентация(уникальная)
+    presentati_pound = `${EnumOrkEventType.et_ork_presentation_uniq}_${EnumOrkEventAction.ea_ork_pound}`, // Презентация(уникальная)
     presentati_act_noresult_fail = `${EnumOrkEventType.et_ork_presentation_uniq}_${EnumOrkEventAction.ea_ork_act_noresult_fail}`, // Презентация, // Презентация(уникальная)
 
     edu_first_plan = `${EnumOrkEventType.et_ork_edu_first}_${EnumOrkEventAction.ea_ork_plan}`, // Обучение первичное

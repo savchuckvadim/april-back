@@ -117,7 +117,11 @@ const makeDeps = (options?: Options) => {
     };
 
     // Цена 1 000 токенов портала (llm_price_per_1k) — 2 ₽.
-    const llmPrice = { resolvePerThousand: jest.fn().mockResolvedValue(2) };
+    const llmPrice = {
+        resolvePricing: jest
+            .fn()
+            .mockResolvedValue({ perThousand: 2, byProvider: {} }),
+    };
 
     const service = new AgentAnalysisIntakeService(
         store as never,
@@ -553,7 +557,7 @@ describe('AgentAnalysisIntakeService', () => {
             },
         } as never);
 
-        expect(llmPrice.resolvePerThousand).toHaveBeenCalledWith(
+        expect(llmPrice.resolvePricing).toHaveBeenCalledWith(
             'test.bitrix24.ru',
         );
         expect(aiService.create).toHaveBeenCalledWith(
@@ -569,7 +573,7 @@ describe('AgentAnalysisIntakeService', () => {
         const { service, aiService, llmPrice } = makeDeps();
         await service.intake('42', 'claw-main', DTO);
 
-        expect(llmPrice.resolvePerThousand).not.toHaveBeenCalled();
+        expect(llmPrice.resolvePricing).not.toHaveBeenCalled();
         const created = (
             aiService.create.mock.calls[0] as [Record<string, unknown>]
         )[0];

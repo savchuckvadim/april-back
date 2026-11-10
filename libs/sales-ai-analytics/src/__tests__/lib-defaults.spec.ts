@@ -237,6 +237,7 @@ const LOCAL_FIELDS: Readonly<Record<string, readonly string[]>> = {
         'historyWorkdays',
         'xmrDayMinN',
         'examplesPerManager',
+        'exemplarMinScore',
     ],
 };
 

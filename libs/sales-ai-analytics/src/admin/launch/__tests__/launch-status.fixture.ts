@@ -131,6 +131,7 @@ export const cost = (over: Partial<CostSummary> = {}): CostSummary => ({
     price: 310.4,
     estimatedPrice: 308,
     byType: [],
+    byProvider: [],
     ...over,
 });
 

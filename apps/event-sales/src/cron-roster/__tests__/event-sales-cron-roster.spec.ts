@@ -51,6 +51,7 @@ const EVENT_SALES_CRONS = [
     'app-cache-purge',
     'call-report-analytics-snapshot',
     'call-report-catch-up',
+    'call-report-facts-catchup-nightly',
     'call-report-scan',
     'call-report-smart-backfill',
     'call-report-weekly',

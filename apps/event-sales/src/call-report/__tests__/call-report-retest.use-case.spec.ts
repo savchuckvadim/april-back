@@ -102,7 +102,11 @@ function makeUseCase(options: Options = {}) {
             ),
     };
     // Цена 1 000 токенов портала — 1.5 ₽.
-    const llmPrice = { resolvePerThousand: jest.fn().mockResolvedValue(1.5) };
+    const llmPrice = {
+        resolvePricing: jest
+            .fn()
+            .mockResolvedValue({ perThousand: 1.5, byProvider: {} }),
+    };
     const contextBuilder = {
         build: jest.fn().mockResolvedValue({ certainty: 'high' }),
         renderForPrompt: jest.fn().mockReturnValue('ПАСПОРТ'),

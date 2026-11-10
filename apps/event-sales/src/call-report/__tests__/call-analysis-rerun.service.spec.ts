@@ -47,7 +47,11 @@ function makeService(
         build: jest.fn().mockResolvedValue({ certainty: 'high' }),
         renderForPrompt: jest.fn().mockReturnValue('ПАСПОРТ'),
     };
-    const llmPrice = { resolvePerThousand: jest.fn().mockResolvedValue(1.5) };
+    const llmPrice = {
+        resolvePricing: jest
+            .fn()
+            .mockResolvedValue({ perThousand: 1.5, byProvider: {} }),
+    };
     const service = new CallAnalysisRerunService(
         transcriptionStore as never,
         focusAnalysis as never,
@@ -104,7 +108,7 @@ describe('CallAnalysisRerunService', () => {
             undefined,
         );
         expect(outcome?.usage).toEqual({});
-        expect(llmPrice.resolvePerThousand).not.toHaveBeenCalled();
+        expect(llmPrice.resolvePricing).not.toHaveBeenCalled();
     });
 
     it('пустая расшифровка — null без вызова модели; модель не ответила — null', async () => {

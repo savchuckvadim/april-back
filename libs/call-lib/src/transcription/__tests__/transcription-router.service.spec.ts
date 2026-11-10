@@ -528,3 +528,32 @@ describe('TranscriptionRouterService', () => {
         });
     });
 });
+
+describe('TranscriptionRouterService: модель VibeCode из настроек портала', () => {
+    it('модель портала уходит четвёртым аргументом; без неё — константа клиента', async () => {
+        const withModel = makeRouter(
+            {},
+            {
+                portalSettings: makePortalSettings({
+                    vibecodeTranscriptionModel:
+                        'bitrix/bitrixgpt-5.6-transcribe',
+                }),
+            },
+        );
+        await withModel.router.transcribe(input);
+        expect(withModel.vibecode.transcribeAudioDetailed).toHaveBeenCalledWith(
+            input.buffer,
+            input.fileName,
+            'portal-vibe-key',
+            'bitrix/bitrixgpt-5.6-transcribe',
+        );
+
+        const plain = makeRouter({});
+        await plain.router.transcribe(input);
+        expect(plain.vibecode.transcribeAudioDetailed).toHaveBeenCalledWith(
+            input.buffer,
+            input.fileName,
+            'portal-vibe-key',
+        );
+    });
+});

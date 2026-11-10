@@ -338,6 +338,7 @@ describe('initialRunStatus', () => {
             stopped: false,
             aborted: false,
             timeBudgetHit: false,
+    budgetHit: false,
         };
         accountOutcome(
             status,

@@ -21,11 +21,16 @@ export class LoggerMiddleware implements NestMiddleware {
 
         await this.telegram.sendMessage(message);
 
-        res.on('finish', async () => {
+        // Обработчик события — синхронный: express не ждёт промис, и
+        // упавшая отправка в Telegram раньше валила процесс необработанным
+        // отказом (баг №8 плана «без any»).
+        res.on('finish', () => {
             const duration = dayjs().diff(timeStart, 'ms');
-            await this.telegram.sendMessage(
-                `✅ Ответ: ${res.statusCode} за ${duration}мс\n🧭 ${req.method} ${req.originalUrl}`,
-            );
+            void this.telegram
+                .sendMessage(
+                    `✅ Ответ: ${res.statusCode} за ${duration}мс\n🧭 ${req.method} ${req.originalUrl}`,
+                )
+                .catch(() => undefined);
         });
 
         next();

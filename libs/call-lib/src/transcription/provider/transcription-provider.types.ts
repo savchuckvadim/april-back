@@ -10,9 +10,15 @@ export const TRANSCRIPTION_PROVIDERS = [
 ] as const;
 export type TranscriptionProvider = (typeof TRANSCRIPTION_PROVIDERS)[number];
 
-/** Режим выбора провайдера: auto — по длительности, иначе принудительно. */
+/**
+ * Режим выбора провайдера: auto — по длительности (длинные Яндекс,
+ * короткие VibeCode), auto-whisper — та же развилка, но короткие идут в
+ * свой Whisper-совместимый endpoint (Groq через прокси), остальные режимы
+ * отдают все звонки одному транскрибатору.
+ */
 export const TRANSCRIPTION_ROUTER_MODES = [
     'auto',
+    'auto-whisper',
     'yandex',
     'vibecode',
     'whisper',
@@ -33,6 +39,11 @@ export const parseTranscriptionRouterMode = (
     const value = raw?.trim();
     return isTranscriptionRouterMode(value) ? value : 'auto';
 };
+
+/** Режимы с развилкой по длительности — у них нет одного провайдера. */
+export const isAutoTranscriptionMode = (
+    mode: TranscriptionRouterMode,
+): boolean => mode === 'auto' || mode === 'auto-whisper';
 
 /** Провайдер, которому принудительный режим отдаёт все звонки; auto — null. */
 export const forcedProviderOf = (

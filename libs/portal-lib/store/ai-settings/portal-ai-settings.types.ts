@@ -168,6 +168,19 @@ export interface PortalAiSettingsRecord {
      * отдаётся маской SECRET_MASK; маска в обновлении означает «не трогать».
      */
     whisperApiKey: string | null;
+    /**
+     * МОДЕЛЬ ТРАНСКРИБАЦИИ VIBECODE (поле `model` в /audio/transcriptions
+     * ИИ-роутера): с 16.11.2026 Whisper уходит с платформы, запросы без
+     * модели идут в bitrix/bitrixgpt-5.6-transcribe. NULL — модель
+     * приложения (константа клиента VibeCode).
+     */
+    vibecodeTranscriptionModel: string | null;
+    /**
+     * НОЧНОЙ ДОГОН ФАКТОВ v3.1 (этап B6): лимит в рублях на одну ночь для
+     * догона признаков в старых разборах текущего и прошлого месяца.
+     * NULL или 0 — ночной догон выключен; полный переразбор — только кнопкой.
+     */
+    factsCatchupNightlyBudgetRub: number | null;
 }
 
 /**
@@ -188,6 +201,7 @@ export type AiLlmProviderCode = (typeof AI_LLM_PROVIDER_CODES)[number];
  */
 export const AI_TRANSCRIPTION_MODES = [
     'auto',
+    'auto-whisper',
     'yandex',
     'vibecode',
     'whisper',
@@ -258,6 +272,8 @@ export const EMPTY_PORTAL_AI_SETTINGS: PortalAiSettingsRecord = {
     whisperBaseUrl: null,
     whisperModel: null,
     whisperApiKey: null,
+    vibecodeTranscriptionModel: null,
+    factsCatchupNightlyBudgetRub: null,
 };
 
 /** Настройки портала вместе с его идентификацией — для обхода в кроне. */

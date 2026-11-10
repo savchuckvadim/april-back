@@ -116,6 +116,7 @@ export class VibeCodeClient {
         buffer: Buffer,
         fileName: string,
         apiKey: string,
+        model: string = TRANSCRIPTION_MODEL,
     ): Promise<VibecodeTranscriptionDetailed> {
         try {
             return await this.postTranscription(
@@ -123,6 +124,7 @@ export class VibeCodeClient {
                 fileName,
                 apiKey,
                 'verbose_json',
+                model,
             );
         } catch (error) {
             if (!isClientError(error)) throw error;
@@ -130,22 +132,34 @@ export class VibeCodeClient {
                 `verbose_json не принят (${(error as Error).message}) — повтор без сегментов`,
             );
 
-            return this.postTranscription(buffer, fileName, apiKey, null);
+            return this.postTranscription(
+                buffer,
+                fileName,
+                apiKey,
+                null,
+                model,
+            );
         }
     }
 
+    /**
+     * `model` — из настроек AI портала (vibecodeTranscriptionModel), иначе
+     * константа клиента: с 16.11.2026 Whisper уходит с ИИ-роутера, портал
+     * может заранее перейти на bitrix/bitrixgpt-5.6-transcribe.
+     */
     private async postTranscription(
         buffer: Buffer,
         fileName: string,
         apiKey: string,
         responseFormat: 'verbose_json' | null,
+        model: string,
     ): Promise<VibecodeTranscriptionDetailed> {
         this.logger.log(
-            `Transcribing audio: ${fileName} (${buffer.length} bytes)`,
+            `Transcribing audio: ${fileName} (${buffer.length} bytes, ${model})`,
         );
 
         const formData = new FormData();
-        formData.append('model', TRANSCRIPTION_MODEL);
+        formData.append('model', model);
         if (responseFormat !== null) {
             formData.append('response_format', responseFormat);
         }

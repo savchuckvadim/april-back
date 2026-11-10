@@ -16,6 +16,47 @@ export interface AnalysisUsageColumns {
     price?: number;
 }
 
+/**
+ * Цены портала за 1 000 токенов: общая (`llm_price_per_1k`) и по
+ * поставщикам шлюза (`llm_price_per_1k_<provider>`, B3); у поставщика без
+ * своей цены (0 или нет) действует общая.
+ */
+export interface LlmPricing {
+    perThousand: number;
+    byProvider: Readonly<Record<string, number>>;
+}
+
+const priceFor = (pricing: LlmPricing, provider: string): number => {
+    const own = pricing.byProvider[provider];
+    return own !== undefined && own > 0
+        ? own
+        : Math.max(pricing.perThousand, 0);
+};
+
+/** Стоимость по разбивке на поставщиков; токены без поставщика — по общей цене. */
+function priceByProvider(
+    usage: AgentAnalysisUsageDto,
+    pricing: LlmPricing,
+): number {
+    const byProvider = usage.byProvider ?? [];
+    const attributed = byProvider.reduce(
+        (sum, entry) =>
+            sum +
+            (entry.tokens / TOKENS_PER_PRICE_UNIT) *
+                priceFor(pricing, entry.provider),
+        0,
+    );
+    const attributedTokens = byProvider.reduce(
+        (sum, entry) => sum + entry.tokens,
+        0,
+    );
+    const rest = Math.max(usage.tokens - attributedTokens, 0);
+    return (
+        attributed +
+        (rest / TOKENS_PER_PRICE_UNIT) * Math.max(pricing.perThousand, 0)
+    );
+}
+
 /** Округление до знаков после запятой без плавающего хвоста. */
 function round(value: number, decimals: number): number {
     const factor = 10 ** decimals;
@@ -29,15 +70,15 @@ function round(value: number, decimals: number): number {
  */
 export function analysisUsageColumns(
     usage: AgentAnalysisUsageDto | undefined,
-    pricePerThousand: number,
+    pricing: number | LlmPricing,
 ): AnalysisUsageColumns {
     if (!usage || usage.tokens <= 0) return {};
+    const price =
+        typeof pricing === 'number'
+            ? (usage.tokens / TOKENS_PER_PRICE_UNIT) * Math.max(pricing, 0)
+            : priceByProvider(usage, pricing);
     return {
         tokens_count: usage.tokens,
-        price: round(
-            (usage.tokens / TOKENS_PER_PRICE_UNIT) *
-                Math.max(pricePerThousand, 0),
-            ANALYSIS_PRICE_DECIMALS,
-        ),
+        price: round(price, ANALYSIS_PRICE_DECIMALS),
     };
 }

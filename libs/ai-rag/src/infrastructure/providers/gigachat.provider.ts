@@ -33,6 +33,16 @@ const DEFAULT_GIGACHAT_CONCURRENCY = 2;
  */
 const DEFAULT_COMBINED_MAX_CHARS = 12_000;
 
+/**
+ * Где искать PEM Russian Trusted Root CA, если GIGACHAT_CA_PATH указывает
+ * в пустоту: первый путь — том контейнера из .env.example, второй —
+ * системный каталог сертификатов образа.
+ */
+const GIGACHAT_CA_FALLBACK_PATHS = [
+    '/app/certs/russian_trusted_root_ca.pem',
+    '/etc/ssl/certs/russian_trusted_root_ca.pem',
+] as const;
+
 @Injectable()
 export class GigaChatProvider implements LlmProvider {
     private readonly logger = new Logger(GigaChatProvider.name);
@@ -220,15 +230,28 @@ export class GigaChatProvider implements LlmProvider {
 
     /** TLS-агент для сбер-шлюза; undefined — стандартное поведение Node. */
     private buildHttpsAgent(configService: ConfigService): Agent | undefined {
-        const caPath = configService.get<string>('GIGACHAT_CA_PATH');
-        if (caPath) {
+        const configured = configService.get<string>('GIGACHAT_CA_PATH');
+        const candidates = [
+            ...(configured ? [configured] : []),
+            ...GIGACHAT_CA_FALLBACK_PATHS,
+        ];
+        const failures: string[] = [];
+        for (const path of candidates) {
             try {
-                return new Agent({ ca: readFileSync(caPath) });
+                return new Agent({ ca: readFileSync(path) });
             } catch (error) {
-                this.logger.error(
-                    `GIGACHAT_CA_PATH не прочитан (${caPath}): ${(error as Error).message}`,
-                );
+                failures.push(`${path}: ${(error as Error).message}`);
             }
+        }
+        if (configured) {
+            // Один внятный разбор вместо пяти одинаковых строк в сутки
+            // (лог прода 08.11.2026): сертификат не попал в контейнер.
+            this.logger.error(
+                `Сертификат сбер-шлюза не прочитан ни по одному пути (${failures.join('; ')}). ` +
+                    'Положите PEM Russian Trusted Root CA в контейнер (том на ' +
+                    `${GIGACHAT_CA_FALLBACK_PATHS[0]}) или укажите существующий путь в GIGACHAT_CA_PATH — ` +
+                    'иначе авторизация GigaChat падает с SELF_SIGNED_CERT_IN_CHAIN',
+            );
         }
         if (configService.get<string>('GIGACHAT_INSECURE_TLS') === '1') {
             this.logger.warn(
