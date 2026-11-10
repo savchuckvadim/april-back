@@ -14,7 +14,10 @@ import {
 } from '@lib/portal-lib/store/app-settings';
 import type { VibecodeStructuredCompletionWithUsage } from '@lib/vibecode';
 import { StructuredLlmGateway } from '@lib/llm-gateway';
-import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
+import {
+    AgentCallAnalysisDto,
+    type CallAnalysisPart,
+} from '../../agent-gate/dto/agent-analysis-request.dto';
 import { dedupeSectionsWithLog } from '../../agent-gate/services/agent-analysis-sections.util';
 import {
     AFTER_PRESENTATION_STRICT_BLOCK,
@@ -291,6 +294,17 @@ export class CallFocusAnalysisService {
                 options?.model,
             );
             const synthesis = resultOf(synthesisResponse);
+            // Что не собралось — по этому списку догон найдёт неполный
+            // разбор и переделает его, когда поставщик снова ответит.
+            const incompleteParts: CallAnalysisPart[] = [
+                ...FOCUS_PASSES.filter(pass => !byKey[pass.key]).map(
+                    pass => pass.key,
+                ),
+                ...(synthesis ? [] : (['synthesis'] as const)),
+                ...(methodologyPass && !resultOf(methodologyResponse)
+                    ? (['methodology'] as const)
+                    : []),
+            ];
 
             const merged: Record<string, unknown> = {
                 ...(byKey.form ?? {}),
@@ -303,6 +317,7 @@ export class CallFocusAnalysisService {
                     this.sectionsOf(byKey[pass.key], pass, domain),
                 ),
                 callType: callType ?? FALLBACK_CALL_TYPE,
+                incompleteParts,
                 // Расход всех удавшихся вызовов (фокусы + синтез).
                 usage: sumCompletionUsage(
                     [

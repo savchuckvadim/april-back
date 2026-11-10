@@ -130,6 +130,10 @@ const AI_SETTINGS_CRONS: readonly AiSettingsCron[] = [
     { name: 'call-report-scan', purpose: 'разбор звонков: скан телефонии' },
     { name: 'call-report-catch-up', purpose: 'разбор звонков: вечерний догон' },
     {
+        name: 'call-analysis-repair',
+        purpose: 'разбор звонков: догон неполных и упавших разборов',
+    },
+    {
         name: 'call-report-smart-backfill',
         purpose: 'разбор звонков: дописывание карточек смарта',
     },

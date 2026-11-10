@@ -53,6 +53,9 @@ import { CallReportProcessor } from './queue/call-report.processor';
 import { CallReportDomainRosterService } from './cron/call-report-domain-roster.service';
 import { CallReportScheduler } from './cron/call-report.scheduler';
 import { CallReportCatchUpScheduler } from './cron/call-report-catch-up.scheduler';
+import { CallAnalysisRepairScheduler } from './cron/call-analysis-repair.scheduler';
+import { CallAnalysisRepairStore } from './services/call-analysis-repair.store';
+import { CallAnalysisRepairUseCase } from './use-cases/call-analysis-repair.use-case';
 import { CallReportWeeklyScheduler } from './cron/call-report-weekly.scheduler';
 import { CallRevisionScheduler } from './cron/call-revision.scheduler';
 import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler';
@@ -146,6 +149,11 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         CallReportDomainRosterService,
         CallReportScheduler,
         CallReportCatchUpScheduler,
+        // Догон разборов: что не собралось из-за сбоя поставщика модели,
+        // переделывается, когда он снова отвечает (ежечасно, :41)
+        CallAnalysisRepairStore,
+        CallAnalysisRepairUseCase,
+        CallAnalysisRepairScheduler,
         // Недельный Excel-отчёт получателям (пятница 19:00 МСК)
         CallReportWeeklyScheduler,
         // Ночной ревизор (Фаза 3): свод по сущностям в 23:30 МСК

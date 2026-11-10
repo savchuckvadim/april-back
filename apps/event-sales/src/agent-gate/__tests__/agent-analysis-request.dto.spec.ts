@@ -75,6 +75,7 @@ const EXPECTED_FIELDS = [
     'dealProgress',
     'capsTriggered',
     'methodology',
+    'incompleteParts',
     'extra',
 ];
 
@@ -86,7 +87,7 @@ const REQUIRED = {
 };
 
 describe('AgentCallAnalysisDto (слои наследования)', () => {
-    it('Swagger видит все 57 полей в порядке объявления', () => {
+    it('Swagger видит все 58 полей в порядке объявления', () => {
         const keys = (
             Reflect.getMetadata(
                 DECORATORS.API_MODEL_PROPERTIES_ARRAY,
