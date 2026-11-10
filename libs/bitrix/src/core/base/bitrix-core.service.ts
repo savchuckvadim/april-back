@@ -28,23 +28,15 @@ import {
     SLOW_BITRIX_REQUEST_MS,
     backgroundCooldownMs,
 } from './bitrix-request-profile';
+import { isBitrixTimeout, readBitrixTime } from './bitrix-response.util';
 import {
-    isBitrixConnectionReset,
-    isBitrixQueryLimitExceeded,
-    isBitrixTimeout,
-    readBitrixTime,
-} from './bitrix-response.util';
+    attemptAlertNote,
+    BITRIX_RETRY_KIND,
+    BitrixAttempt,
+    bitrixRetryKind,
+} from './bitrix-retry.util';
 
-/**
- * Ответы облака, после которых тот же запрос обычно проходит через секунды.
- * 500 «INTERNAL_SERVER_ERROR» Битрикс отдаёт всплесками по 1–2 минуты на
- * любые методы, включая `user.get` (garantservisvoronezh 06, 08 и 09.11.2026);
- * без повтора один такой ответ ронял обработку окна холодного обзвона на
- * 85 сделок целиком.
- */
-export const TRANSIENT_BITRIX_STATUSES: ReadonlySet<number> = new Set([
-    500, 502, 503, 504,
-]);
+export { TRANSIENT_BITRIX_STATUSES } from './bitrix-retry.util';
 
 export class BitrixCore {
     public readonly logger = new Logger(BitrixCore.name);
@@ -143,8 +135,11 @@ export class BitrixCore {
         const context = getBitrixCallContext();
         const profile = BITRIX_REQUEST_PROFILES[context.callClass];
         let retriesLeft = retries ?? profile.retries;
+        const totalAttempts = retriesLeft + 1;
+        let attempt = 0;
 
         for (;;) {
+            attempt += 1;
             await this.rateLimiter.acquire(
                 this.domain,
                 context,
@@ -192,14 +187,20 @@ export class BitrixCore {
                     : BITRIX_REQUEST_RESULT.error,
                 startedAt,
             );
-            this.reportError(failure, method, data);
-
             const pauseMs = this.resolveRetryPause(
                 failure,
                 method,
                 retriesLeft,
                 profile,
             );
+            // Тревога — на каждую попытку, с пометкой «будет повтор» или
+            // «попытки исчерпаны» (решение владельца 10.11.2026).
+            this.reportError(failure, method, data, {
+                attempt,
+                total: totalAttempts,
+                retryInMs: pauseMs,
+                retryable: bitrixRetryKind(failure) !== null,
+            });
             if (pauseMs === null) throw failure;
 
             retriesLeft -= 1;
@@ -222,40 +223,34 @@ export class BitrixCore {
     ): number | null {
         if (retriesLeft <= 0) return null;
 
-        if (isBitrixTimeout(error)) {
-            this.logger.warn(
-                `Timeout on ${method}, retrying in ` +
-                    `${profile.timeoutPauseMs / 1000}s...`,
-            );
-            return profile.timeoutPauseMs;
+        switch (bitrixRetryKind(error)) {
+            case BITRIX_RETRY_KIND.timeout:
+                this.logger.warn(
+                    `Timeout on ${method}, retrying in ` +
+                        `${profile.timeoutPauseMs / 1000}s...`,
+                );
+                return profile.timeoutPauseMs;
+            case BITRIX_RETRY_KIND.connectionReset:
+                this.logger.warn(
+                    `Connection reset on ${method} (socket hang up), retrying in ` +
+                        `${profile.connectionResetPauseMs / 1000}s...`,
+                );
+                return profile.connectionResetPauseMs;
+            case BITRIX_RETRY_KIND.queryLimit:
+                this.logger.warn(
+                    `Bitrix query limit exceeded for ${method}, waiting ` +
+                        `${profile.queryLimitPauseMs / 1000}s...`,
+                );
+                return profile.queryLimitPauseMs;
+            case BITRIX_RETRY_KIND.transient:
+                this.logger.warn(
+                    `Bitrix ${String((error as AxiosError).response?.status)} ` +
+                        `on ${method}, retrying in ${profile.busyPauseMs / 1000}s...`,
+                );
+                return profile.busyPauseMs;
+            default:
+                return null;
         }
-
-        if (isBitrixConnectionReset(error)) {
-            this.logger.warn(
-                `Connection reset on ${method} (socket hang up), retrying in ` +
-                    `${profile.connectionResetPauseMs / 1000}s...`,
-            );
-            return profile.connectionResetPauseMs;
-        }
-
-        if (isBitrixQueryLimitExceeded(error)) {
-            this.logger.warn(
-                `Bitrix query limit exceeded for ${method}, waiting ` +
-                    `${profile.queryLimitPauseMs / 1000}s...`,
-            );
-            return profile.queryLimitPauseMs;
-        }
-
-        const status = (error as AxiosError).response?.status;
-        if (status && TRANSIENT_BITRIX_STATUSES.has(status)) {
-            this.logger.warn(
-                `Bitrix ${status} on ${method}, retrying in ` +
-                    `${profile.busyPauseMs / 1000}s...`,
-            );
-            return profile.busyPauseMs;
-        }
-
-        return null;
     }
 
     /**
@@ -264,8 +259,16 @@ export class BitrixCore {
      * Алерт в Telegram НЕ ожидается: раньше `await` стоял прямо на пути
      * ошибки, и каждый сбой дополнительно ждал ответа телеграма (у его
      * клиента нет таймаута) — на каждую попытку и каждый упавший чанк.
+     *
+     * `attempt` — какая это попытка и будет ли повтор: текст тревоги
+     * начинается с пометки (см. attemptAlertNote).
      */
-    protected reportError(error: unknown, method: string, data: unknown): void {
+    protected reportError(
+        error: unknown,
+        method: string,
+        data: unknown,
+        attempt?: BitrixAttempt,
+    ): void {
         const e = error as {
             message?: string;
             response?: { data?: unknown };
@@ -299,15 +302,16 @@ export class BitrixCore {
         const entityId = requestedEntityId(data);
         const where =
             `на ${this.domain}` + (entityId === '—' ? '' : `, id ${entityId}`);
+        const note = attempt ? attemptAlertNote(attempt) : '';
         this.logger.error(
-            `Error calling Bitrix [${method}] ${where}` +
+            `${note}Error calling Bitrix [${method}] ${where}` +
                 (status ? ` (HTTP ${status})` : '') +
                 `: ${message}` +
                 payload,
         );
         void Promise.resolve(
             this.telegramBot.sendMessageAdminError(
-                `Bitrix API error (${method}) ${where}: ${JSON.stringify(responseText)}`,
+                `${note}Bitrix API error (${method}) ${where}: ${JSON.stringify(responseText)}`,
             ),
         ).catch(() => undefined);
     }

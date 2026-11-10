@@ -296,6 +296,66 @@ describe('BitrixCore.request', () => {
         expect(calls).toHaveLength(2);
     });
 
+    // Решение владельца 10.11.2026: тревога на каждую попытку, но с пометкой.
+    it('500 с успешным повтором — тревога с пометкой «попытка 1 из 2, повтор»', async () => {
+        const { core, alert } = makeCore([httpError(500), { result: 1 }]);
+
+        const pending = runAsInteractive('route', () =>
+            core.request('crm.item.list', {}),
+        );
+        await jest.advanceTimersByTimeAsync(
+            BITRIX_REQUEST_PROFILES.interactive.busyPauseMs,
+        );
+        await pending;
+
+        expect(alert).toHaveBeenCalledTimes(1);
+        expect(alert).toHaveBeenNthCalledWith(
+            1,
+            expect.stringMatching(
+                /^Попытка 1 из 2, повтор через \d+(\.\d+)? с\. Bitrix API error \(crm\.item\.list\)/,
+            ),
+        );
+    });
+
+    it('500 на всех попытках — последняя тревога «попытки исчерпаны»', async () => {
+        const { core, alert } = makeCore([httpError(500), httpError(500)]);
+
+        const pending = runAsInteractive('route', () =>
+            core.request('crm.item.list', {}),
+        );
+        const assertion = expect(pending).rejects.toMatchObject({
+            response: { status: 500 },
+        });
+        await jest.advanceTimersByTimeAsync(
+            BITRIX_REQUEST_PROFILES.interactive.busyPauseMs,
+        );
+        await assertion;
+
+        expect(alert).toHaveBeenCalledTimes(2);
+        expect(alert).toHaveBeenNthCalledWith(
+            1,
+            expect.stringMatching(/^Попытка 1 из 2/),
+        );
+        expect(alert).toHaveBeenNthCalledWith(
+            2,
+            expect.stringMatching(
+                /^⚠️ ПОПЫТКИ ИСЧЕРПАНЫ \(2 из 2\) — запрос не выполнен\. Bitrix API error/,
+            ),
+        );
+    });
+
+    it('400 не повторяется — тревога без пометки', async () => {
+        const { core, alert } = makeCore([httpError(400, 'boom')]);
+
+        await expect(
+            runAsInteractive('route', () => core.request('crm.deal.get', {})),
+        ).rejects.toMatchObject({ response: { status: 400 } });
+        expect(alert).toHaveBeenNthCalledWith(
+            1,
+            expect.stringMatching(/^Bitrix API error \(crm\.deal\.get\)/),
+        );
+    });
+
     it('алерт об ошибке не задерживает ответ вызывающему', async () => {
         const { core, alert } = makeCore([httpError(400, 'boom')]);
         // Телеграм «висит» — раньше ошибка ждала бы его ответа.
