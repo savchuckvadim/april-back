@@ -90,7 +90,7 @@ export class CallAnalysisRerunService {
         const usage = dto.usage
             ? analysisUsageColumns(
                   dto.usage,
-                  await this.llmPrice.resolvePerThousand(domain),
+                  await this.llmPrice.resolvePricing(domain),
               )
             : {};
 

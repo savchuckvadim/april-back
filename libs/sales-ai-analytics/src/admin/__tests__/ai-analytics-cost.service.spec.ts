@@ -19,6 +19,7 @@ function aisRecord(partial: {
     type: string;
     tokens: number;
     price: number;
+    userResult?: unknown;
 }): AiEntityDto {
     return {
         id: partial.id,
@@ -31,7 +32,7 @@ function aisRecord(partial: {
         tokens_count: partial.tokens,
         price: partial.price,
         createdAt: new Date('2026-09-10T00:00:00.000Z'),
-        user_result: null,
+        user_result: partial.userResult ?? null,
     } as unknown as AiEntityDto;
 }
 
@@ -182,6 +183,60 @@ describe('AiAnalyticsCostService', () => {
         expect(result.tokens).toBe(2500);
     });
 
+    /**
+     * B3: разбор может отвечать разными поставщиками шлюза (откат на
+     * запасного) — разрез по ним из usage.byProvider записи; стоимость
+     * записи делится пропорционально токенам, старые записи — unknown.
+     */
+    it('разрез по поставщикам из usage.byProvider; остаток токенов — unknown', async () => {
+        const { service } = makeService([
+            aisRecord({
+                id: '1',
+                type: AGENT_ANALYSIS_TYPE,
+                tokens: 3000,
+                price: 6,
+                userResult: {
+                    usage: {
+                        byProvider: [
+                            { provider: 'vibecode', tokens: 2000, calls: 3 },
+                            { provider: 'ai-rag', tokens: 1000, calls: 1 },
+                        ],
+                    },
+                },
+            }),
+            aisRecord({
+                id: '2',
+                type: AI_ANALYTICS_SNAPSHOT_TYPE.brief,
+                tokens: 1000,
+                price: 2,
+            }),
+        ]);
+        const result = await service.summary(DOMAIN, '2026-09');
+        expect(result.byProvider).toEqual([
+            {
+                provider: 'vibecode',
+                calls: 1,
+                tokens: 2000,
+                price: 4,
+                estimatedPrice: null,
+            },
+            {
+                provider: 'ai-rag',
+                calls: 1,
+                tokens: 1000,
+                price: 2,
+                estimatedPrice: null,
+            },
+            {
+                provider: 'unknown',
+                calls: 1,
+                tokens: 1000,
+                price: 2,
+                estimatedPrice: null,
+            },
+        ]);
+    });
+
     it('вызовов не было — нули и пустой разрез по типам', async () => {
         const { service } = makeService([]);
         const result = await service.summary(DOMAIN, '2026-09');
@@ -192,6 +247,7 @@ describe('AiAnalyticsCostService', () => {
             tokens: 0,
             price: 0,
             byType: [],
+            byProvider: [],
         });
         // Цены нет и расхода нет — числа всё равно оценка.
         expect(result.estimated).toBe(true);

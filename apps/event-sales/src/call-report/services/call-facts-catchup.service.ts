@@ -87,7 +87,7 @@ export class CallFactsCatchupService {
         if (facts === null) return null;
         const usage = analysisUsageColumns(
             sumCompletionUsage([response]),
-            await this.llmPrice.resolvePerThousand(domain),
+            await this.llmPrice.resolvePricing(domain),
         );
         return {
             row,

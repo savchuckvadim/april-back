@@ -9,6 +9,7 @@ import { IsNotEmpty, IsString, Matches } from 'class-validator';
 import {
     AI_ANALYTICS_COST_TYPES,
     type AiAnalyticsCostType,
+    type CostByProvider,
     type CostByType,
     type CostSummary,
 } from '../services/ai-analytics-cost.service';
@@ -86,6 +87,51 @@ export class AiAnalyticsCostTypeDto implements CostByType {
     estimatedPrice: number | null;
 }
 
+/** Расход по одному поставщику шлюза LLM (B3). */
+export class AiAnalyticsCostProviderDto implements CostByProvider {
+    @ApiProperty({
+        description:
+            'Код поставщика шлюза: vibecode, openai-compatible, ai-rag; ' +
+            'unknown — записи без сведений о поставщике (до B3).',
+        example: 'vibecode',
+        type: String,
+    })
+    provider: string;
+
+    @ApiProperty({
+        description: 'Записей, в которых отвечал этот поставщик.',
+        example: 38,
+        type: Number,
+    })
+    calls: number;
+
+    @ApiProperty({
+        description: 'Токенов, пришедшихся на поставщика.',
+        example: 410250,
+        type: Number,
+    })
+    tokens: number;
+
+    @ApiProperty({
+        description:
+            'Доля стоимости записей (колонка price) пропорционально ' +
+            'токенам поставщика, ₽.',
+        example: 120.4,
+        type: Number,
+    })
+    price: number;
+
+    @ApiProperty({
+        description:
+            'Оценка по цене реестра поставщика (llm_price_per_1k_<provider>), ' +
+            'без неё — по общей; null — цена не задана.',
+        example: 123.1,
+        type: Number,
+        nullable: true,
+    })
+    estimatedPrice: number | null;
+}
+
 /** Ответ ручки расхода модели. */
 export class AiAnalyticsCostResultDto implements CostSummary {
     @ApiProperty({
@@ -156,4 +202,12 @@ export class AiAnalyticsCostResultDto implements CostSummary {
         type: [AiAnalyticsCostTypeDto],
     })
     byType: AiAnalyticsCostTypeDto[];
+
+    @ApiProperty({
+        description:
+            'Разрез по поставщикам шлюза LLM (кто реально отвечал), крупные ' +
+            'первыми; записи без сведений — под кодом unknown.',
+        type: [AiAnalyticsCostProviderDto],
+    })
+    byProvider: AiAnalyticsCostProviderDto[];
 }

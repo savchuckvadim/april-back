@@ -241,6 +241,60 @@ export const AI_ANALYTICS_DEFINITION_PARAMS = [
             'По ней считаем стоимость резюме; ноль — цена не задана, показываем только расход.',
     },
     {
+        code: 'llm_price_per_1k_vibecode',
+        title: 'Цена 1 000 токенов: VibeCode',
+        scope: 'portal',
+        source: 'configured',
+        unit: '₽ за 1 000 токенов',
+        defaultValue: 0,
+        range: [0, 1000],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Цена тысячи токенов для вызовов через ИИ-роутер VibeCode (B3): ' +
+            'расход разбора считается по фактическому поставщику каждого ' +
+            'вызова; ноль — действует общая цена llm_price_per_1k.',
+        userTitle: 'Цена тысячи единиц текста: VibeCode',
+        userDescription:
+            'Когда разбор делал VibeCode Битрикса; ноль — считаем по общей цене.',
+    },
+    {
+        code: 'llm_price_per_1k_openai_compatible',
+        title: 'Цена 1 000 токенов: запасной OpenAI-совместимый',
+        scope: 'portal',
+        source: 'configured',
+        unit: '₽ за 1 000 токенов',
+        defaultValue: 0,
+        range: [0, 1000],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Цена тысячи токенов для запасного OpenAI-совместимого поставщика ' +
+            '(Groq и подобные): расход разбора считается по фактическому ' +
+            'поставщику каждого вызова; ноль — общая цена llm_price_per_1k.',
+        userTitle: 'Цена тысячи единиц текста: запасной поставщик',
+        userDescription:
+            'Когда разбор делал запасной поставщик (Groq); ноль — считаем по общей цене.',
+    },
+    {
+        code: 'llm_price_per_1k_ai_rag',
+        title: 'Цена 1 000 токенов: свой LLM (ai-rag)',
+        scope: 'portal',
+        source: 'configured',
+        unit: '₽ за 1 000 токенов',
+        defaultValue: 0,
+        range: [0, 1000],
+        phase: 2,
+        breaksSeries: false,
+        description:
+            'Цена тысячи токенов для собственного поставщика ai-rag (свой ' +
+            'сервер или ключ клиента): расход разбора считается по ' +
+            'фактическому поставщику; ноль — общая цена llm_price_per_1k.',
+        userTitle: 'Цена тысячи единиц текста: свой сервер',
+        userDescription:
+            'Когда разбор делал собственный сервер или ключ клиента; ноль — по общей цене.',
+    },
+    {
         code: 'retest_budget_calls',
         title: 'Квота LLM test-retest на смену версии',
         scope: 'global',

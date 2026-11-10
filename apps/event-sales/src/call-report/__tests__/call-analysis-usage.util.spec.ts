@@ -90,3 +90,28 @@ describe('sumCompletionUsage', () => {
         });
     });
 });
+
+/** B3: ответы шлюза несут код поставщика — разбивка расхода по нему. */
+describe('sumCompletionUsage по поставщикам (B3)', () => {
+    it('поставщик первого вызова и разбивка; ответы без кода в разбивку не входят', () => {
+        const usage = sumCompletionUsage([
+            { ...response(100, 20, 120), provider: 'vibecode' },
+            { ...response(200, 30, 230), provider: 'ai-rag' },
+            { ...response(null, null, null), provider: 'vibecode' },
+            response(50, 10, 60),
+        ]);
+
+        expect(usage.tokens).toBe(120 + 230 + 60);
+        expect(usage.provider).toBe('vibecode');
+        expect(usage.byProvider).toEqual([
+            { provider: 'vibecode', tokens: 120, calls: 2 },
+            { provider: 'ai-rag', tokens: 230, calls: 1 },
+        ]);
+    });
+
+    it('ни один ответ не назвал поставщика — полей provider/byProvider нет', () => {
+        const usage = sumCompletionUsage([response(100, 20, 120)]);
+        expect(usage).not.toHaveProperty('provider');
+        expect(usage).not.toHaveProperty('byProvider');
+    });
+});

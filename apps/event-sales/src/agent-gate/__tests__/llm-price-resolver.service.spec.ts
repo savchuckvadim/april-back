@@ -58,3 +58,29 @@ describe('LlmPriceResolverService', () => {
         );
     });
 });
+
+/** B3: цены по поставщикам шлюза рядом с общей — из тех же настроек. */
+describe('LlmPriceResolverService.resolvePricing', () => {
+    it('общая цена и цены поставщиков; нулевые и незаданные в разбивку не входят', async () => {
+        const { service } = makeService(
+            JSON.stringify({
+                llm_price_per_1k: 2,
+                llm_price_per_1k_vibecode: 1.5,
+                llm_price_per_1k_ai_rag: 0,
+            }),
+        );
+        await expect(service.resolvePricing('a.bitrix24.ru')).resolves.toEqual({
+            perThousand: 2,
+            byProvider: { vibecode: 1.5 },
+        });
+    });
+
+    it('настройки недоступны — всё по нулям без исключения', async () => {
+        const { service, appSettings } = makeService(null);
+        appSettings.resolve.mockRejectedValue(new Error('redis down'));
+        await expect(service.resolvePricing('a.bitrix24.ru')).resolves.toEqual({
+            perThousand: 0,
+            byProvider: {},
+        });
+    });
+});
