@@ -18,6 +18,10 @@ import {
     AI_ANALYTICS_PHASE4_ADMIN_ROUTES,
     AiAnalyticsPhase4AdminController,
 } from '../controllers/phase4.admin.controller';
+import {
+    AI_ANALYTICS_FACTS_CATCHUP_ROUTES,
+    AiAnalyticsFactsCatchupAdminController,
+} from '../controllers/facts-catchup.admin.controller';
 import { AiAnalyticsPipelineAdminController } from '../controllers/pipeline.admin.controller';
 import {
     AI_ANALYTICS_REANALYZE_ROUTES,
@@ -52,6 +56,7 @@ const ADMIN_CONTROLLERS = [
     AiAnalyticsGoldenSetAdminController,
     AiAnalyticsPhase4AdminController,
     AiAnalyticsReanalyzeAdminController,
+    AiAnalyticsFactsCatchupAdminController,
     AiAnalyticsSmartBackfillAdminController,
     AiAnalyticsGuideAdminController,
     AiAnalyticsLaunchAdminController,
@@ -144,6 +149,28 @@ describe('админ-контроллеры AI-аналитики', () => {
         expect(Reflect.getMetadata(PATH_METADATA, run)).toBe('golden-set/run');
         expect(Reflect.getMetadata(METHOD_METADATA, run)).toBe(
             RequestMethod.POST,
+        );
+    });
+});
+
+describe('роуты догона признаков (этап B4): facts-catchup, facts-catchup-status', () => {
+    it('POST facts-catchup ставит джобу, GET facts-catchup-status читает статус', () => {
+        const run = handlerOf(AiAnalyticsFactsCatchupAdminController, 'run');
+        expect(Reflect.getMetadata(PATH_METADATA, run)).toBe(
+            AI_ANALYTICS_FACTS_CATCHUP_ROUTES.run,
+        );
+        expect(Reflect.getMetadata(METHOD_METADATA, run)).toBe(
+            RequestMethod.POST,
+        );
+        const status = handlerOf(
+            AiAnalyticsFactsCatchupAdminController,
+            'status',
+        );
+        expect(Reflect.getMetadata(PATH_METADATA, status)).toBe(
+            AI_ANALYTICS_FACTS_CATCHUP_ROUTES.status,
+        );
+        expect(Reflect.getMetadata(METHOD_METADATA, status)).toBe(
+            RequestMethod.GET,
         );
     });
 });

@@ -51,6 +51,12 @@ const EXPECTED_FIELDS = [
     'sections',
     'speechAnalysis',
     'recommendations',
+    // Признаки для отчётов (focus-v3.1, 06.11.2026): перед оценками.
+    'outcome',
+    'issues',
+    'prices',
+    'upsell',
+    'selfIntro',
     'score',
     'weightedScore',
     'scriptCompliance',
@@ -80,7 +86,7 @@ const REQUIRED = {
 };
 
 describe('AgentCallAnalysisDto (слои наследования)', () => {
-    it('Swagger видит все 52 поля в порядке объявления', () => {
+    it('Swagger видит все 57 полей в порядке объявления', () => {
         const keys = (
             Reflect.getMetadata(
                 DECORATORS.API_MODEL_PROPERTIES_ARRAY,
