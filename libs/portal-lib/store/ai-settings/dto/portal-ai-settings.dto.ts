@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
     IsArray,
     IsBoolean,
@@ -11,6 +12,7 @@ import {
     Max,
     MaxLength,
     Min,
+    ValidateNested,
 } from 'class-validator';
 import {
     AI_LLM_PROVIDER_CODES,
@@ -26,6 +28,7 @@ import {
     WEEKLY_REPORT_DELIVERY_MODES,
     WeeklyReportDeliveryMode,
 } from '../portal-ai-settings.types';
+import { PortalTranscriptionRouteDto } from './portal-transcription-route.dto';
 
 /**
  * Общее для всех полей: `null` = «на портале не задано», значение берётся
@@ -73,6 +76,7 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
             source.vibecodeTranscriptionModel ?? null;
         this.factsCatchupNightlyBudgetRub =
             source.factsCatchupNightlyBudgetRub ?? null;
+        this.transcriptionRoute = source.transcriptionRoute ?? null;
     }
 
     @ApiProperty({
@@ -455,6 +459,17 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
         nullable: true,
     })
     factsCatchupNightlyBudgetRub: number | null;
+
+    @ApiProperty({
+        description:
+            'Маршрут распознавания портала: кто распознаёт длинные и ' +
+            'короткие звонки, кто запасной, кто «для скорости» и «для ' +
+            'точности», и что сейчас важнее. Заданная роль важнее режима ' +
+            'transcriptionMode; null — действует режим.',
+        type: PortalTranscriptionRouteDto,
+        nullable: true,
+    })
+    transcriptionRoute: PortalTranscriptionRouteDto | null;
 
     @ApiProperty({
         description:
@@ -890,6 +905,20 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
     @Min(0)
     @Max(100000)
     factsCatchupNightlyBudgetRub?: number | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Маршрут распознавания портала: кто распознаёт длинные и ' +
+            'короткие звонки, кто запасной, кто «для скорости» и «для ' +
+            'точности», и что сейчас важнее. Заданная роль важнее режима ' +
+            'transcriptionMode. null или маршрут без ролей — сбросить на режим.',
+        type: PortalTranscriptionRouteDto,
+        nullable: true,
+    })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => PortalTranscriptionRouteDto)
+    transcriptionRoute?: PortalTranscriptionRouteDto | null;
 
     @ApiPropertyOptional({
         description:

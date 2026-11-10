@@ -17,7 +17,6 @@ import { YandexCallRecognizer } from './yandex-call-recognizer';
 import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 import {
-    isAutoTranscriptionMode,
     parseTranscriptionRouterMode,
     type TranscriptionProvider,
     type TranscriptionRouterMode,
@@ -27,6 +26,11 @@ import {
     type TranscriptionEnvPrefs,
     type TranscriptionPrefs,
 } from './transcription-prefs.util';
+import {
+    planTranscription,
+    transcriptionStepName as stepName,
+    type TranscriptionStep,
+} from './transcription-route.util';
 
 // Коды провайдеров и режимов живут отдельно (их читает и чек-лист админки);
 // ре-экспорт — чтобы потребители роутера не меняли импорты.
@@ -46,6 +50,19 @@ export interface TranscribeCallResult {
     /** Сегменты с таймкодами (П6); null — провайдер их не дал. */
     segments: TranscriptSegment[] | null;
 }
+
+/**
+ * Передавать ли звонок следующему после сбоя. Яндекс, стоящий ОСНОВНЫМ,
+ * отдаёт звонок запасному только при временной ошибке (5xx, 429, сеть):
+ * постоянная (403, битая запись) у запасного не исчезнет, а платить за
+ * вторую попытку незачем. Во всех остальных случаях запасной подхватывает.
+ */
+const canFallBack = (
+    step: TranscriptionStep,
+    index: number,
+    error: unknown,
+): boolean =>
+    step.provider !== 'yandex' || index > 0 || isTransientYandexError(error);
 
 /** Пустой список сегментов в БД не пишем — null, как у старых строк. */
 const nonEmpty = (
@@ -76,6 +93,11 @@ const nonEmpty = (
  * (`whisperBaseUrl / whisperModel / whisperApiKey`) из настроек AI портала
  * (админка) — так клиент может считать на своём сервере и платить сам;
  * ошибка чтения настроек — общие значения приложения (29.10.2026).
+ *
+ * Поверх режима — МАРШРУТ портала (10.11.2026): роли «длинные», «короткие»,
+ * «запасные», «для скорости», «для точности» с моделью у каждой. Кого и в
+ * каком порядке пробовать, считает чистая функция `planTranscription`
+ * (она же в чек-листе админки); здесь план только исполняется.
  */
 @Injectable()
 export class TranscriptionRouterService {
@@ -146,63 +168,53 @@ export class TranscriptionRouterService {
         input: TranscribeCallInput,
     ): Promise<TranscribeCallResult> {
         const prefs = await this.portalPrefs(input.domain);
-        const provider = this.resolveProvider(input.durationSec, prefs.mode);
+        const { steps } = planTranscription({
+            durationSec: input.durationSec,
+            mode: prefs.mode,
+            route: prefs.route,
+            defaultLongMinSec: this.yandexMinSec,
+            whisperConfigured: prefs.whisper !== null,
+        });
         this.logger.log(
-            `Транскрибация ${input.fileName} (${input.durationSec ?? '?'}с) через ${provider}`,
+            `Транскрибация ${input.fileName} (${input.durationSec ?? '?'}с) через ${steps.map(stepName).join(' → ')}`,
         );
 
-        // Свой Whisper: принудительный режим — без запасных путей (как у
-        // yandex), короткий звонок в режиме «Яндекс + свой Whisper» — с
-        // откатом на Яндекс, чтобы звонок не потерялся.
-        if (provider === 'local-whisper') {
-            return prefs.mode === 'auto-whisper'
-                ? this.whisperThenYandex(input, prefs.whisper)
-                : this.transcribeWhisper(input, prefs.whisper);
-        }
-
-        if (provider === 'yandex') {
+        for (const [index, step] of steps.entries()) {
             try {
-                return this.yandexResult(await this.transcribeYandex(input));
+                return await this.runStep(step, input, prefs);
             } catch (error) {
-                if (
-                    !isAutoTranscriptionMode(prefs.mode) ||
-                    !isTransientYandexError(error)
-                ) {
-                    throw error;
-                }
-                const to =
-                    prefs.mode === 'auto-whisper' ? 'свой Whisper' : 'Vibecode';
+                const next = steps[index + 1];
+                if (!next || !canFallBack(step, index, error)) throw error;
                 this.logger.warn(
-                    `Yandex временно недоступен (${(error as Error).message}), fallback на ${to}`,
+                    `${stepName(step)} не справился (${(error as Error).message}), fallback на ${stepName(next)}`,
                     { domain: input.domain, fileName: input.fileName },
                 );
-                return prefs.mode === 'auto-whisper' && prefs.whisper
-                    ? this.transcribeWhisper(input, prefs.whisper)
-                    : this.vibecodeThenWhisper(
-                          input,
-                          prefs.whisper,
-                          prefs.vibecodeModel,
-                      );
             }
         }
+        // План не бывает пустым: у него всегда есть основной транскрибатор.
+        throw new Error(`Нет транскрибатора для ${input.fileName}`);
+    }
 
-        try {
-            return await this.transcribeVibecode(input, prefs.vibecodeModel);
-        } catch (error) {
-            this.logger.warn(
-                `Vibecode не справился (${(error as Error).message}), fallback на Yandex`,
-            );
-            try {
-                return this.yandexResult(await this.transcribeYandex(input));
-            } catch (yandexError) {
-                if (!prefs.whisper) throw yandexError;
-                this.logger.warn(
-                    `Yandex тоже не справился (${(yandexError as Error).message}), fallback на свой Whisper`,
-                    { domain: input.domain, fileName: input.fileName },
-                );
-                return this.transcribeWhisper(input, prefs.whisper);
-            }
+    /** Один шаг плана: транскрибатор с моделью роли или своей по умолчанию. */
+    private async runStep(
+        step: TranscriptionStep,
+        input: TranscribeCallInput,
+        prefs: TranscriptionPrefs,
+    ): Promise<TranscribeCallResult> {
+        if (step.provider === 'yandex') {
+            return this.yandexResult(await this.transcribeYandex(input));
         }
+        if (step.provider === 'bitrix-vibecode') {
+            return this.transcribeVibecode(
+                input,
+                step.model ?? prefs.vibecodeModel,
+            );
+        }
+        const endpoint =
+            prefs.whisper && step.model
+                ? { ...prefs.whisper, model: step.model }
+                : prefs.whisper;
+        return this.transcribeWhisper(input, endpoint);
     }
 
     /**
@@ -226,44 +238,6 @@ export class TranscriptionRouterService {
                 `Настройки транскрибации портала ${domain} не прочитаны (${(error as Error).message}) — общие`,
             );
             return resolveTranscriptionPrefs(null, env);
-        }
-    }
-
-    /**
-     * Свой Whisper, а если он отказал — Яндекс: режим «Яндекс + свой
-     * Whisper» отдаёт ему короткие звонки, и терять их из-за своего GPU
-     * или облака (Groq) не хочется.
-     */
-    private async whisperThenYandex(
-        input: TranscribeCallInput,
-        whisper: WhisperEndpoint | null,
-    ): Promise<TranscribeCallResult> {
-        try {
-            return await this.transcribeWhisper(input, whisper);
-        } catch (error) {
-            this.logger.warn(
-                `Свой Whisper не справился (${(error as Error).message}), fallback на Yandex`,
-                { domain: input.domain, fileName: input.fileName },
-            );
-            return this.yandexResult(await this.transcribeYandex(input));
-        }
-    }
-
-    /** Vibecode, а если и он отказал — свой Whisper (когда есть endpoint). */
-    private async vibecodeThenWhisper(
-        input: TranscribeCallInput,
-        whisper: WhisperEndpoint | null,
-        vibecodeModel: string | null,
-    ): Promise<TranscribeCallResult> {
-        try {
-            return await this.transcribeVibecode(input, vibecodeModel);
-        } catch (error) {
-            if (!whisper) throw error;
-            this.logger.warn(
-                `Vibecode тоже не справился (${(error as Error).message}), fallback на свой Whisper`,
-                { domain: input.domain, fileName: input.fileName },
-            );
-            return this.transcribeWhisper(input, whisper);
         }
     }
 
@@ -323,20 +297,6 @@ export class TranscriptionRouterService {
             provider: 'yandex',
             segments: nonEmpty(detailed.segments),
         };
-    }
-
-    private resolveProvider(
-        durationSec: number | undefined,
-        mode: TranscriptionRouterMode,
-    ): TranscriptionProvider {
-        if (mode === 'yandex') return 'yandex';
-        if (mode === 'vibecode') return 'bitrix-vibecode';
-        if (mode === 'whisper') return 'local-whisper';
-        if (durationSec !== undefined && durationSec >= this.yandexMinSec) {
-            return 'yandex';
-        }
-        // Короткие: VibeCode или свой Whisper — смотря какой auto выбран.
-        return mode === 'auto-whisper' ? 'local-whisper' : 'bitrix-vibecode';
     }
 
     /** Yandex-путь под лимитером: S3 → распознавание с числом каналов по MP3 (YandexCallRecognizer). */
