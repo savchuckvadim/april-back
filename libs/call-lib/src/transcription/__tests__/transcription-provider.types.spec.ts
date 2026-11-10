@@ -2,6 +2,7 @@ import {
     TRANSCRIPTION_PROVIDERS,
     TRANSCRIPTION_ROUTER_MODES,
     forcedProviderOf,
+    isAutoTranscriptionMode,
     isTranscriptionRouterMode,
     parseTranscriptionRouterMode,
 } from '../provider/transcription-provider.types';
@@ -28,9 +29,10 @@ describe('режимы и провайдеры транскрибации', () =
         expect(forcedProviderOf('vibecode')).toBe('bitrix-vibecode');
         expect(forcedProviderOf('whisper')).toBe('local-whisper');
         expect(forcedProviderOf('auto')).toBeNull();
+        expect(forcedProviderOf('auto-whisper')).toBeNull();
         // каждый принудительный режим указывает на существующий провайдер
         for (const mode of TRANSCRIPTION_ROUTER_MODES.filter(
-            m => m !== 'auto',
+            m => !isAutoTranscriptionMode(m),
         )) {
             expect(TRANSCRIPTION_PROVIDERS).toContain(forcedProviderOf(mode));
         }

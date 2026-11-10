@@ -201,6 +201,7 @@ export type AiLlmProviderCode = (typeof AI_LLM_PROVIDER_CODES)[number];
  */
 export const AI_TRANSCRIPTION_MODES = [
     'auto',
+    'auto-whisper',
     'yandex',
     'vibecode',
     'whisper',

@@ -17,6 +17,7 @@ import { YandexCallRecognizer } from './yandex-call-recognizer';
 import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
 import { VibeCodeClient, VibeKeyResolverService } from '@lib/vibecode';
 import {
+    isAutoTranscriptionMode,
     parseTranscriptionRouterMode,
     type TranscriptionProvider,
     type TranscriptionRouterMode,
@@ -150,27 +151,38 @@ export class TranscriptionRouterService {
             `Транскрибация ${input.fileName} (${input.durationSec ?? '?'}с) через ${provider}`,
         );
 
-        // Принудительный свой Whisper — без запасных путей (как у yandex).
+        // Свой Whisper: принудительный режим — без запасных путей (как у
+        // yandex), короткий звонок в режиме «Яндекс + свой Whisper» — с
+        // откатом на Яндекс, чтобы звонок не потерялся.
         if (provider === 'local-whisper') {
-            return this.transcribeWhisper(input, prefs.whisper);
+            return prefs.mode === 'auto-whisper'
+                ? this.whisperThenYandex(input, prefs.whisper)
+                : this.transcribeWhisper(input, prefs.whisper);
         }
 
         if (provider === 'yandex') {
             try {
                 return this.yandexResult(await this.transcribeYandex(input));
             } catch (error) {
-                if (prefs.mode !== 'auto' || !isTransientYandexError(error)) {
+                if (
+                    !isAutoTranscriptionMode(prefs.mode) ||
+                    !isTransientYandexError(error)
+                ) {
                     throw error;
                 }
+                const to =
+                    prefs.mode === 'auto-whisper' ? 'свой Whisper' : 'Vibecode';
                 this.logger.warn(
-                    `Yandex временно недоступен (${(error as Error).message}), fallback на Vibecode`,
+                    `Yandex временно недоступен (${(error as Error).message}), fallback на ${to}`,
                     { domain: input.domain, fileName: input.fileName },
                 );
-                return this.vibecodeThenWhisper(
-                    input,
-                    prefs.whisper,
-                    prefs.vibecodeModel,
-                );
+                return prefs.mode === 'auto-whisper' && prefs.whisper
+                    ? this.transcribeWhisper(input, prefs.whisper)
+                    : this.vibecodeThenWhisper(
+                          input,
+                          prefs.whisper,
+                          prefs.vibecodeModel,
+                      );
             }
         }
 
@@ -214,6 +226,26 @@ export class TranscriptionRouterService {
                 `Настройки транскрибации портала ${domain} не прочитаны (${(error as Error).message}) — общие`,
             );
             return resolveTranscriptionPrefs(null, env);
+        }
+    }
+
+    /**
+     * Свой Whisper, а если он отказал — Яндекс: режим «Яндекс + свой
+     * Whisper» отдаёт ему короткие звонки, и терять их из-за своего GPU
+     * или облака (Groq) не хочется.
+     */
+    private async whisperThenYandex(
+        input: TranscribeCallInput,
+        whisper: WhisperEndpoint | null,
+    ): Promise<TranscribeCallResult> {
+        try {
+            return await this.transcribeWhisper(input, whisper);
+        } catch (error) {
+            this.logger.warn(
+                `Свой Whisper не справился (${(error as Error).message}), fallback на Yandex`,
+                { domain: input.domain, fileName: input.fileName },
+            );
+            return this.yandexResult(await this.transcribeYandex(input));
         }
     }
 
@@ -303,7 +335,8 @@ export class TranscriptionRouterService {
         if (durationSec !== undefined && durationSec >= this.yandexMinSec) {
             return 'yandex';
         }
-        return 'bitrix-vibecode';
+        // Короткие: VibeCode или свой Whisper — смотря какой auto выбран.
+        return mode === 'auto-whisper' ? 'local-whisper' : 'bitrix-vibecode';
     }
 
     /** Yandex-путь под лимитером: S3 → распознавание с числом каналов по MP3 (YandexCallRecognizer). */

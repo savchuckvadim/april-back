@@ -402,8 +402,10 @@ export class PortalAiSettingsResponseDto implements PortalAiSettingsRecord {
     @ApiProperty({
         description:
             'Транскрибатор портала: auto — по длительности (Яндекс для ' +
-            'длинных, VibeCode для коротких), yandex / vibecode / whisper — ' +
-            'принудительно. null — режим приложения.',
+            'длинных, VibeCode для коротких), auto-whisper — та же развилка, ' +
+            'но короткие идут в свой Whisper-совместимый сервис, ' +
+            'yandex / vibecode / whisper — принудительно. null — режим ' +
+            'приложения.',
         example: 'auto',
         enum: AI_TRANSCRIPTION_MODES,
         nullable: true,
@@ -822,8 +824,8 @@ export class UpdatePortalAiSettingsDto implements PortalAiSettingsUpdate {
 
     @ApiPropertyOptional({
         description:
-            'Транскрибатор портала: auto, yandex, vibecode или whisper. ' +
-            'null — режим приложения.',
+            'Транскрибатор портала: auto, auto-whisper, yandex, vibecode или ' +
+            'whisper. null — режим приложения.',
         example: 'whisper',
         enum: AI_TRANSCRIPTION_MODES,
         nullable: true,
