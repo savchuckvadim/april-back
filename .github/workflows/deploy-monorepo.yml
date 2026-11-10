@@ -98,6 +98,11 @@ jobs:
               id: set
               env:
                   MANUAL_APPS: ${{ github.event.inputs.apps }}
+                  # JSON-массив сработавших фильтров — только через env: при подстановке
+                  # expression прямо в строку кавычки массива съедает shell, и выходит
+                  # [event-sales] вместо ["event-sales"] — сборка падает на fromJSON
+                  # (10.11.2026, первый деплой, где собиралось не всё сразу).
+                  CHANGED_APPS: ${{ steps.filter.outputs.changes }}
               run: |
                   ALL='["back","kpi-report-sales","pbx-install","kpi-report-service","admin","event-sales","event-service","konstructor","rq","pbx","bot","bitrix-app-client"]'
                   if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -115,13 +120,16 @@ jobs:
                     echo "apps=$ALL" >> "$GITHUB_OUTPUT"
                   else
                     # changes — JSON-массив сработавших фильтров (только app-имена, shared=false)
-                    echo "apps=${{ steps.filter.outputs.changes }}" >> "$GITHUB_OUTPUT"
+                    echo "apps=$CHANGED_APPS" >> "$GITHUB_OUTPUT"
                   fi
 
             - name: Показать решение detect
+              env:
+                  BASE: ${{ steps.base.outputs.base }}
+                  APPS: ${{ steps.set.outputs.apps }}
               run: |
-                  echo "base=${{ steps.base.outputs.base }}"
-                  echo "apps=${{ steps.set.outputs.apps }}"
+                  echo "base=$BASE"
+                  echo "apps=$APPS"
 
     # ---------------------------------------------------------------
     build:
