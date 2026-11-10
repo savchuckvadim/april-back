@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
+import { STAGGERED_HALF_HOUR_CRON } from '../cron/staggered-crons.const';
 import { RedisService } from '@lib/core/redis/redis.service';
 import {
     EnumPortalAppCode,
@@ -19,7 +20,7 @@ const LOCK_TTL_SEC = 25 * 60;
  * реагировать на упавший хук в пределах получаса достаточно — а чаще
  * дёргать выборки компаний и сделок портала незачем.
  */
-const RESCUE_CRON = CronExpression.EVERY_30_MINUTES;
+const RESCUE_CRON = STAGGERED_HALF_HOUR_CRON.xoDispatchRescue;
 
 /**
  * Планировщик подстраховки ХО по компаниям и сделкам.

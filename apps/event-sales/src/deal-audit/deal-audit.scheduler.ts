@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
+import { STAGGERED_HALF_HOUR_CRON } from '../shared/cron/staggered-crons.const';
 import { RedisService } from '@lib/core/redis/redis.service';
 import {
     EnumPortalAppCode,
@@ -35,7 +36,7 @@ import {
  * фильтруется по метке отработанного периода — частота меняется из
  * админки без деплоя.
  */
-const AUDIT_CRON = CronExpression.EVERY_30_MINUTES;
+const AUDIT_CRON = STAGGERED_HALF_HOUR_CRON.dealAudit;
 
 /** Метка отработанного периода живёт дольше самого длинного — месяца. */
 const LAST_PERIOD_TTL_SEC = 45 * 24 * 60 * 60;

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
+import { STAGGERED_HALF_HOUR_CRON } from '../../shared/cron/staggered-crons.const';
 import { RedisService } from '@lib/core/redis/redis.service';
 import {
     EnumPortalAppCode,
@@ -18,7 +19,7 @@ const LOCK_TTL_SEC = 25 * 60;
  * Раз в полчаса: пауза роботу измеряется десятками минут, а чаще читать
  * РПА портала незачем — утверждений за день единицы.
  */
-const RESCUE_CRON = CronExpression.EVERY_30_MINUTES;
+const RESCUE_CRON = STAGGERED_HALF_HOUR_CRON.tmcApprovalRescue;
 
 const SCHEMA = PORTAL_APP_SETTINGS_SCHEMA[EnumPortalAppCode.eventSales];
 
