@@ -1,5 +1,5 @@
 import { BadRequestException, Logger } from '@nestjs/common';
-import { VENDOR_SECRET_MASK } from '@lib/vendor-settings';
+import { VENDOR_SECRET_MASK, VENDOR_SETTINGS } from '@lib/vendor-settings';
 import {
     VendorSettingRow,
     VendorSettingsRepository,
@@ -147,14 +147,13 @@ describe('VendorSettingsService', () => {
         });
         const list = await service.list();
 
-        expect(list.map(item => item.key)).toEqual([
-            'EGRESS_PROXY_URL',
-            'EGRESS_PROXY_TOKEN',
-            'EGRESS_PROXY_HOSTS',
-            'GROQ_API_KEY',
-            'CLOUDRU_API_KEY',
-            'ANTHROPIC_API_KEY',
-        ]);
+        // Список — ровно реестр и в его порядке: сверяемся с самим реестром,
+        // иначе тест отстаёт при каждой новой настройке (так он и покраснел,
+        // когда добавили Telegram поддержки, кабинета и адреса виджетов).
+        expect(list.map(item => item.key)).toEqual(
+            VENDOR_SETTINGS.map(definition => definition.key),
+        );
+        expect(list.length).toBeGreaterThanOrEqual(6);
         expect(list.find(item => item.key === 'GROQ_API_KEY')).toMatchObject({
             source: 'env',
             envSet: true,
