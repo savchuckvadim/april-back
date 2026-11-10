@@ -136,12 +136,18 @@ export class InitComplectService {
                 ers: this.getErs(complect.infoblocks).codes,
                 packetsEr: this.getPacketsErs(complect.infoblocks).codes,
                 ersInPacket: this.getErsInPacket(complect.infoblocks).codes,
-                lt: this.codesOfGroupType(complect.infoblocks, InfogroupType.LT),
+                lt: this.codesOfGroupType(
+                    complect.infoblocks,
+                    InfogroupType.LT,
+                ),
                 freeBlocks: this.codesOfGroupType(
                     complect.infoblocks,
                     InfogroupType.FREE,
                 ),
-                star: this.codesOfGroupType(complect.infoblocks, STAR_GROUP_TYPE),
+                star: this.codesOfGroupType(
+                    complect.infoblocks,
+                    STAR_GROUP_TYPE,
+                ),
             },
         };
     }

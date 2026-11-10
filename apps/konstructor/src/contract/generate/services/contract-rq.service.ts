@@ -27,6 +27,8 @@ export class ContractRqService {
         client_role_case: string;
         client_direct_position: string;
         client_direct_fio: string;
+        /** Фактический адрес клиента — место оказания услуг */
+        client_adress: string;
     } {
         const providerRq = this.getProviderData(provider);
         const clientRqData = this.clientRqService.getClientRq(
@@ -65,6 +67,7 @@ export class ContractRqService {
             client_direct_fio: blank(
                 clientRq?.fields.find(field => field.code === 'director')?.value,
             ),
+            client_adress: this.clientRqService.getServiceAddress(clientRq),
         };
     }
 

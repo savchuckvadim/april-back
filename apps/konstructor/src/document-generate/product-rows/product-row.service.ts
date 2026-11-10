@@ -42,7 +42,8 @@ export class DocumentProductRowService {
         contractName: string,
         isProduct: boolean,
         contractCoefficient: number,
-        clientType: ClientTypeEnum,
+        /** Договор: тип клиента (бюджетник — одна единица). КП и счёт: null — количество как есть. */
+        clientType: ClientTypeEnum | null,
     ): Product[] {
         const contractFullName = isProduct
             ? `${contractName} длительность ${contractCoefficient} мес.`
@@ -51,12 +52,15 @@ export class DocumentProductRowService {
 
         for (let i = 0; i < arows.length; i++) {
             const row = arows[i];
+            // договор бюджетника (Laravel getProducts): одна единица без аванса
             const productQuantity =
                 clientType === ClientTypeEnum.ORG_STATE
                     ? 1
                     : row.price.quantity;
             const monthQuantity = productQuantity * contractCoefficient;
             const monthQuantityString = getCaseMonthes(monthQuantity);
+            // сумма строки — за всё количество: в месяц делим на него, не на 1
+            const paidMonths = row.price.quantity * contractCoefficient;
 
             const productSumDefaultNum = Number(
                 (row.price.default * row.price.quantity).toFixed(2),
@@ -66,7 +70,11 @@ export class DocumentProductRowService {
             const productSumNum = Number(row.price.sum.toFixed(2));
             const productSum = formatMoney(productSumNum);
             const productSumString = formatRuble(productSumNum);
-            const productMonthSumNum = Number(row.price.month.toFixed(2));
+            // со скидкой: сумма / количество / месяцев договора
+            const productMonthSumNum =
+                paidMonths > 0
+                    ? Number((row.price.sum / paidMonths).toFixed(2))
+                    : 0;
             const productMonthSum = formatMoney(productMonthSumNum);
             const productMonthSumString = formatRuble(productMonthSumNum);
 
@@ -80,18 +88,19 @@ export class DocumentProductRowService {
             const discountPercent = Number(
                 (100 - 100 * row.price.discount.precent).toFixed(2),
             );
-            const discountSumMonthNum =
-                discountPercent > 0 && discountPercent < 1
-                    ? Number(
-                          (
-                              productMonthSumNum *
-                              (1 / discountPercent - 1)
-                          ).toFixed(2),
-                      )
-                    : 0;
-            const discountSumNum = Number(
-                (discountSumMonthNum * monthQuantity).toFixed(2),
+            // скидка — разница цены до и после скидки за всё количество
+            // (было: сравнение процента с долей, скидка всегда 0)
+            const discountPerUnit = Math.max(
+                0,
+                row.price.default - row.price.current,
             );
+            const discountSumNum = Number(
+                (discountPerUnit * row.price.quantity).toFixed(2),
+            );
+            const discountSumMonthNum =
+                paidMonths > 0
+                    ? Number((discountSumNum / paidMonths).toFixed(2))
+                    : 0;
             const discountSum = formatMoney(discountSumNum);
             const discountSumString = formatRuble(discountSumNum);
             const discountSumMonth = formatMoney(discountSumMonthNum);

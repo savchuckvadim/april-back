@@ -24,6 +24,7 @@ import {
     LibraryActor,
     LibraryKind,
 } from '../lib/library-visibility.util';
+import { legacyText } from '../lib/legacy-text.util';
 
 /**
  * Библиотека заготовок (избранное + акции). Роль пользователя — из структуры
@@ -200,8 +201,9 @@ export class InnerDealLibraryService {
             id: Number(row.id),
             kind: effectiveKind(row) ?? 'favorite',
             visibility: effectiveVisibility(row),
-            title: row.title ?? null,
-            dealName: row.dealName ?? null,
+            title: legacyText(row.title),
+            // легаси писал имя сделки объектом поля ввода: {"value":""}
+            dealName: legacyText(row.dealName),
             authorId: authorOf(row),
             departmentId: row.department ?? null,
             canEdit: canEdit(row, actor),

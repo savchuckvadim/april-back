@@ -68,14 +68,12 @@ export class OfferRenderDataService {
         const productPrices = this.offerRenderPriceService.renderProductPrices(
             dto.rows,
             dto.contract,
-            dto.clientType,
         );
         const generalProduct =
             this.offerRenderGeneralProductService.renderTotalPrice(
                 dto.total,
                 dto.contract.aprilName || dto.contract.bitrixName,
                 dto.contract.prepayment,
-                dto.clientType,
                 withTax,
             );
         const recipient = this.offerRenderRecipientService.getData(
@@ -84,9 +82,9 @@ export class OfferRenderDataService {
         const manager = this.offerRenderManagerService.getData(dto.manager);
         let totalPrice: ITotalRowRenderData | null = null;
         if (withTotal) {
+            // КП: итоги без договорной логики бюджетников + цена за месяц
             totalPrice = this.offerRenderPriceService.renderTotalPrice(
                 dto.total,
-                dto.clientType,
                 withTax,
             );
         }

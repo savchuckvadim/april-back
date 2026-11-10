@@ -39,12 +39,14 @@ export type ContractGenerateTemplateProps = {
     contract_end: string;
     we_role: string;
     we_role_case: string;
-    we_rq: string[];
+    /** Реквизиты поставщика, по строке на реквизит */
+    we_rq: string;
     we_direct_position: string;
     we_direct_fio: string;
     client_role: string;
     client_role_case: string;
-    client_rq: string[];
+    /** Реквизиты клиента, по строке на реквизит */
+    client_rq: string;
     client_direct_position: string;
     client_direct_fio: string;
     complect_name: string;
@@ -61,6 +63,24 @@ export type ContractGenerateTemplateProps = {
     supply_contract: string;
     supply_comment_1: string;
     logins_quantity: string;
+    /** Поля эталонов (etalon/{тип}/{поставка}/{state|commerc}): текстом, без циклов */
+    infoblocks: string;
+    legal_techs: string;
+    specification_services: string;
+    specification_pk_comment1: string;
+    specification_distributive: string;
+    specification_distributive_comment: string;
+    /** Срок действия лицензии, количество лицензий */
+    lic_long: string;
+    contract_internet_email: string;
+    /** «г. Москва» из юридического адреса поставщика */
+    contract_city: string;
+    /** Фактический адрес клиента — место оказания услуг */
+    client_adress: string;
+    contract_total_sum: string;
+    contract_total_sum_string: string;
+    /** Срок договора прописью: «12 месяцев» */
+    total_quantity_string: string;
     contract_pay_date: string;
     /** Ответственный за получение справочника (поле сделки) */
     client_assigned_fio: string;

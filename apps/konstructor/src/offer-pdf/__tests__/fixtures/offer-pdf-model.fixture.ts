@@ -199,6 +199,8 @@ export const createOfferRenderDataFixture = (
             TotalProductName: 'ГАРАНТ-Профессионал. Бухгалтерия',
             TotalMonthSum: '12 125,00',
             TotalMonthSumString: 'двенадцать тысяч сто двадцать пять рублей',
+            TotalPerMonthSum: '12 125,00',
+            TotalPerMonthSumString: 'двенадцать тысяч сто двадцать пять рублей',
             TotalMeasure: 'мес.',
             TotalPrepaymentQuantity: 12,
             TotalPrepaymentQuantityString: 'двенадцать',

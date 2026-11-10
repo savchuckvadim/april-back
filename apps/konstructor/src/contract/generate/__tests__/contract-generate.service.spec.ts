@@ -2,7 +2,6 @@ import { CONTRACT_LTYPE } from '@app/konstructor/document-generate/type/contract
 import { ClientTypeEnum } from '@app/konstructor/document-generate/type/client.type';
 import { ContractGenerateDto } from '../dto/contract-generate.dto';
 import { ContractGenerateService } from '../services/contract-generate.service';
-import { ContractTemplateOrigin } from '../services/contract-template-source.service';
 
 // docxtemplater читает реальный .docx, поэтому и zip, и шаблонизатор
 // подменяются целиком: проверяем выбор файла и форму ответа, а не рендер.
@@ -37,6 +36,10 @@ const totals = {
     total_prepayment_sum: '8 187,00',
     total_prepayment_sum_string: '(восемь тысяч сто восемьдесят семь рублей)',
     total_prepayment_quantity_string: '12 месяцев',
+    total_month_quantity_string: '12 месяцев',
+    contract_total_sum: '98 244,00',
+    contract_total_sum_string:
+        '(девяносто восемь тысяч двести сорок четыре рубля)',
 };
 
 const dto = (): ContractGenerateDto =>
@@ -78,8 +81,7 @@ describe('ContractGenerateService', () => {
         getProducts = jest.fn().mockReturnValue([]);
         resolveTemplate = jest.fn().mockResolvedValue({
             path: TEMPLATE_PATH,
-            origin: ContractTemplateOrigin.LEGACY,
-            templateId: null,
+            templateId: '42',
         });
 
         service = new ContractGenerateService(
@@ -95,7 +97,12 @@ describe('ContractGenerateService', () => {
                 enrichRow: jest.fn(async (row: unknown) => row),
             } as never,
             { getContractHeaderText: jest.fn().mockReturnValue('') } as never,
-            { getRqs: jest.fn().mockReturnValue({}) } as never,
+            {
+                getRqs: jest.fn().mockReturnValue({
+                    we_rq: ['ООО «Гарант»', 'ИНН: 2600000000'],
+                    client_rq: ['МБОУ СОШ №1', 'ИНН: 2611111111'],
+                }),
+            } as never,
             { getSpecification: jest.fn().mockReturnValue({}) } as never,
             { resolve: resolveTemplate } as never,
             { getContractData: jest.fn().mockReturnValue(totals) } as never,
@@ -172,6 +179,27 @@ describe('ContractGenerateService', () => {
         expect(result.data.productQuantity).toBe('1');
         // totals.total_month_quantity = 12, но в «Итого» — количество товара
         expect(result.data.total_quantity).toBe('1');
+    });
+
+    it('поля эталонов: сумма договора прописью, срок, город поставщика', async () => {
+        findById.mockResolvedValue({
+            id: 12,
+            name: 'ООО Гарант',
+            registredAdress:
+                '355000, Ставропольский край, г. Ставрополь, ул. Ленина, 1',
+        });
+        const result = await service.generateContract(dto());
+
+        // бюджетный эталон: «4.5. Стоимость … {contract_total_sum} {contract_total_sum_string}»
+        expect(result.data.contract_total_sum).toBe('98 244,00');
+        expect(result.data.contract_total_sum_string).toContain('девяносто');
+        expect(result.data.total_quantity_string).toBe('12 месяцев');
+        expect(result.data.contract_city).toBe('г. Ставрополь');
+        // email интернет-версии не заполнен в сделке — прочерк
+        expect(result.data.contract_internet_email).toMatch(/^_+$/);
+        // реквизиты столбиком: массив docxtemplater склеил бы через запятую
+        expect(result.data.we_rq).toBe('ООО «Гарант»\nИНН: 2600000000');
+        expect(result.data.client_rq).toBe('МБОУ СОШ №1\nИНН: 2611111111');
     });
 
     it('без поставщика документ не собирается', async () => {

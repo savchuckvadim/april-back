@@ -31,7 +31,13 @@ describe('init: умолчания комплекта', () => {
         const service = new InitComplectService(
             {
                 findAll: async () => [
-                    { id: '1', code: 'buh', name: 'Бухгалтер', type: 'prof', infoblocks },
+                    {
+                        id: '1',
+                        code: 'buh',
+                        name: 'Бухгалтер',
+                        type: 'prof',
+                        infoblocks,
+                    },
                 ],
             } as never,
             {} as never,
@@ -53,7 +59,10 @@ describe('init: умолчания комплекта', () => {
     });
 
     it('порядок сервисов — по каталогу, а не по порядку связей', async () => {
-        const codes = await codesOf([block('ltconstructor', 51, LT), block('ltsemi', 50, LT)]);
+        const codes = await codesOf([
+            block('ltconstructor', 51, LT),
+            block('ltsemi', 50, LT),
+        ]);
         expect(codes.lt).toEqual(['ltsemi', 'ltconstructor']);
     });
 
@@ -76,7 +85,13 @@ describe('init: сервисы LT', () => {
 
     it('берутся из группы `lt` с весом числом', async () => {
         const lt = await servicesOf([
-            { type: 'lt', infoblocks: [block('iscra', 1000, LT, '2'), block('ltsemi', 50, LT)] },
+            {
+                type: 'lt',
+                infoblocks: [
+                    block('iscra', 1000, LT, '2'),
+                    block('ltsemi', 50, LT),
+                ],
+            },
             { type: 'free', infoblocks: [block('praim', 40, FREE)] },
         ]);
         expect(lt.map(item => [item.code, item.weight])).toEqual([

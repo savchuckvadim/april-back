@@ -57,7 +57,7 @@ export class DealSendUseCase {
 
         if (skipped.length) {
             const details = skipped
-                .map(item => `${item.code} (${item.reason})`)
+                .map(item => `«${item.title}» ${item.code} (${item.reason})`)
                 .join(', ');
             this.logger.warn(`${dto.domain}: не записаны поля — ${details}`);
         }
@@ -167,7 +167,7 @@ export class DealSendUseCase {
         );
         if (skipped.length) {
             this.logger.warn(
-                `${dto.domain}: не записаны поля смарта — ${skipped.map(item => `${item.code} (${item.reason})`).join(', ')}`,
+                `${dto.domain}: не записаны поля смарта — ${skipped.map(item => `«${item.title}» ${item.code} (${item.reason})`).join(', ')}`,
             );
         }
         const job: DealSendJobDto = {

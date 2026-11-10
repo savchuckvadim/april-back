@@ -1,5 +1,8 @@
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
-import { DealFieldResolverService } from '../services/deal-field-resolver.service';
+import {
+    DealFieldResolverService,
+    hasKnownListItem,
+} from '../services/deal-field-resolver.service';
 import { DealSendFieldDto, DealSendProductRowDto } from '../dto/deal-send.dto';
 
 /**
@@ -61,7 +64,11 @@ describe('DealFieldResolverService', () => {
 
         expect(result.fields).toEqual({ UF_CRM_NOTE: 'есть' });
         expect(result.skipped).toEqual([
-            { code: 'hdd', reason: 'not_on_portal' },
+            {
+                code: 'hdd',
+                reason: 'not_on_portal',
+                title: 'Носители, используемые при предоставлении услуг',
+            },
         ]);
     });
 
@@ -85,7 +92,11 @@ describe('DealFieldResolverService', () => {
 
             expect(result.fields).toEqual({});
             expect(result.skipped).toEqual([
-                { code: 'consalting', reason: 'ambiguous_code' },
+                {
+                    code: 'consalting',
+                    reason: 'ambiguous_code',
+                    title: 'Consalting',
+                },
             ]);
         });
 
@@ -107,6 +118,67 @@ describe('DealFieldResolverService', () => {
             ] as DealSendFieldDto[]);
 
             expect(result.fields).toEqual({ UF_CRM_1687965767: 'название' });
+        });
+    });
+
+    describe('списочное поле: пункт должен быть на портале', () => {
+        const contractType = {
+            bitrixId: 'UF_CRM_1684144993',
+            title: 'Тип договора',
+            type: 'enumeration',
+            items: [{ bitrixId: 5440 }, { bitrixId: 5444 }],
+        };
+        const portal = {
+            getDealFieldBitrixIdByCode: (code: string) =>
+                code === 'contract_type' ? contractType.bitrixId : '',
+            getDealFields: () => [contractType],
+            getFieldBitrixId: (item: { bitrixId: string }) => item.bitrixId,
+        } as unknown as PortalModel;
+
+        it('пункт есть — пишется', () => {
+            const result = new DealFieldResolverService(portal).resolve([
+                field('contract_type', 5444),
+            ]);
+            expect(result.fields).toEqual({ UF_CRM_1684144993: 5444 });
+        });
+
+        it('ID строки БД вместо пункта Bitrix — не пишем и называем поле', () => {
+            const result = new DealFieldResolverService(portal).resolve([
+                field('contract_type', 2531),
+            ]);
+            expect(result.fields).toEqual({});
+            expect(result.skipped).toEqual([
+                {
+                    code: 'contract_type',
+                    reason: 'unknown_item',
+                    title: 'Тип договора',
+                },
+            ]);
+        });
+    });
+
+    describe('hasKnownListItem', () => {
+        const list = { type: 'enumeration', items: [{ bitrixId: 7 }] } as never;
+
+        it('не список — без проверки', () => {
+            expect(hasKnownListItem({ type: 'string' } as never, 99)).toBe(
+                true,
+            );
+        });
+
+        it('названия вместо ID — без проверки', () => {
+            expect(hasKnownListItem(list, ['Гарант-Юрист'])).toBe(true);
+        });
+
+        it('ID строкой и числом; пустой список пунктов — расхождение', () => {
+            expect(hasKnownListItem(list, '7')).toBe(true);
+            expect(hasKnownListItem(list, 8)).toBe(false);
+            expect(
+                hasKnownListItem(
+                    { type: 'enumeration', items: [] } as never,
+                    7,
+                ),
+            ).toBe(false);
         });
     });
 

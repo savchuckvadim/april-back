@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DocumentTotalRowService } from '../../../document-generate/product-rows/total-row.service';
 import { ProductRowDto } from '../../../document-generate/dto/product-row/product-row.dto';
-import { ClientTypeEnum } from '../../../document-generate/type/client.type';
 import { DocumentProductRowService } from '../../../document-generate/product-rows/product-row.service';
 
 export interface IGeneralProductRenderItemData {
@@ -30,12 +29,11 @@ export class OfferRenderGeneralProductService {
         total: ProductRowDto,
         contractName: string,
         contractCoefficient: number,
-        clientType: ClientTypeEnum,
         withTax: boolean,
     ): IGeneralProductRenderItemData {
-        const totalData = this.documentTotalRowService.getContractData(
+        // КП: цена за месяц — сумма / количество / месяцев договора
+        const totalData = this.documentTotalRowService.getOfferData(
             total,
-            clientType,
             withTax,
         );
         const totalRowData = this.documentProductRowService.getProducts(
@@ -43,7 +41,7 @@ export class OfferRenderGeneralProductService {
             contractName,
             true,
             contractCoefficient,
-            clientType,
+            null,
         );
         const result: IGeneralProductRenderItemData = {
             GeneralProductName: totalData.total_product_name,
@@ -57,9 +55,9 @@ export class OfferRenderGeneralProductService {
             GeneralProductQuantity: totalData.total_product_quantity,
             GeneralProductMonthQuantity: totalData.total_month_quantity,
             GeneralProductSum: totalData.total_prepayment_sum,
-            GeneralProductMonthSum: totalData.total_month_sum,
+            GeneralProductMonthSum: totalData.total_per_month_sum,
             GeneralProductYearSum: (
-                Number(totalData.total_month_sum) * 12
+                Number(totalData.total_per_month_sum) * 12
             ).toFixed(2),
         };
 

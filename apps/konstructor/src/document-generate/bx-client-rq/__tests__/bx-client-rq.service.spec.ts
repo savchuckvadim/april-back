@@ -1,7 +1,12 @@
 import { BxRqDto } from '../../dto/bx-rq/bx-rq.dto';
 import { ClientTypeEnum } from '../../type/client.type';
 import { BX_ADDRESS_TYPE } from '../../type/bx-rq.type';
-import { BLANK, BLANK_WIDE, blank, DocumentClientBxRqService } from '../bx-client-rq.service';
+import {
+    BLANK,
+    BLANK_WIDE,
+    blank,
+    DocumentClientBxRqService,
+} from '../bx-client-rq.service';
 
 const field = (code: string, value: unknown) => ({ code, value });
 
@@ -144,5 +149,44 @@ describe('DocumentClientBxRqService.getClientRq', () => {
         expect(blank({ id: 1 })).toBe(BLANK);
         expect(blank(42)).toBe('42');
         expect(blank(' ООО ', BLANK_WIDE)).toBe('ООО');
+    });
+});
+
+describe('DocumentClientBxRqService.getServiceAddress', () => {
+    const service = new DocumentClientBxRqService();
+    const address = (typeId: number, city: string) => ({
+        anchor_id: 353,
+        type_id: typeId,
+        fields: [
+            field('address_city', city),
+            field('address_1', 'ул. Мира, 2'),
+        ],
+    });
+
+    it('фактический адрес — место оказания услуг (договор Проксимы)', () => {
+        const value = service.getServiceAddress(
+            rq({
+                address: {
+                    items: [
+                        address(BX_ADDRESS_TYPE.REGISTERED, 'Москва'),
+                        address(BX_ADDRESS_TYPE.PRIMARY, 'Тула'),
+                    ],
+                },
+            } as unknown as Partial<BxRqDto>),
+        );
+        expect(value).toBe('Тула, ул. Мира, 2');
+    });
+
+    it('только юридический или реквизита нет — прочерк', () => {
+        expect(
+            service.getServiceAddress(
+                rq({
+                    address: {
+                        items: [address(BX_ADDRESS_TYPE.REGISTERED, 'Москва')],
+                    },
+                } as unknown as Partial<BxRqDto>),
+            ),
+        ).toBe(BLANK_WIDE);
+        expect(service.getServiceAddress(undefined)).toBe(BLANK_WIDE);
     });
 });

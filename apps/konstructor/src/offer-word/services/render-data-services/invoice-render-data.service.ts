@@ -21,7 +21,6 @@ import {
     ProductRowSetItemDto,
 } from '@app/konstructor/document-generate';
 import { ContractDto } from '@app/konstructor/dto/contract.dto';
-import { ClientTypeEnum } from '@app/konstructor/document-generate/type/client.type';
 import { formatRu } from '@lib/shared/lib/date/format-ru';
 import dayjs from 'dayjs';
 import { getWithTax } from '@app/konstructor/document-generate/lib/get-with-tax.util';
@@ -141,7 +140,6 @@ export class InvoiceRenderDataService {
             const generals = this.getSetGroupRows(
                 dto.sets.general,
                 dto.contract,
-                dto.clientType,
                 withTax,
             );
             prices.push(...generals);
@@ -150,7 +148,6 @@ export class InvoiceRenderDataService {
             const alternatives = this.getSetGroupRows(
                 dto.sets.alternative,
                 dto.contract,
-                dto.clientType,
                 withTax,
             );
             prices.push(...alternatives);
@@ -162,7 +159,6 @@ export class InvoiceRenderDataService {
     private getSetGroupRows(
         rowGroup: ProductRowSetDto[], // general or alternative
         contract: ContractDto,
-        clientType: ClientTypeEnum,
         withTax: boolean = false,
     ): IInvoicePriceData[] {
         const prices: IInvoicePriceData[] = [];
@@ -172,11 +168,10 @@ export class InvoiceRenderDataService {
                 rows: this.offerRenderPriceService.renderProductPrices(
                     rows,
                     contract,
-                    clientType,
                 ),
+                // счёт как КП: бюджетнику на 4 месяца — на 4 месяца
                 total: this.offerRenderPriceService.renderTotalPrice(
                     general.total[0],
-                    clientType,
                     withTax || false,
                 ),
             });

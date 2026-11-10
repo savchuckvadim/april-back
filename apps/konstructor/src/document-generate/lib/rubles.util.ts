@@ -18,15 +18,13 @@ export const formatRuble = (value: number): string => {
     });
 };
 
+/** 1 месяц, 2–4 месяца, 5–20 месяцев (11–14 — «месяцев»). */
 export const getCaseMonthes = (monthQuantity: number): string => {
-    if (monthQuantity % 10 === 1 && monthQuantity % 100 !== 11) {
-        return 'месяц';
-    } else if (monthQuantity % 10 === 2 && monthQuantity % 100 !== 12) {
+    const lastTwo = monthQuantity % 100;
+    const last = monthQuantity % 10;
+    if (last === 1 && lastTwo !== 11) return 'месяц';
+    if (last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14)) {
         return 'месяца';
-    } else if (monthQuantity % 10 === 3 && monthQuantity % 100 !== 13) {
-        return 'месяцев';
-    } else {
-        return 'месяцев';
     }
     return 'месяцев';
 };

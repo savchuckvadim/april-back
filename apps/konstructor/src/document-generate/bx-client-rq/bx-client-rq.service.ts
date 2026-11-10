@@ -30,6 +30,9 @@ export const fieldText = (value: unknown): string => {
 export const blank = (value: unknown, width: string = BLANK): string =>
     fieldText(value) || width;
 
+/** type_id юридического адреса числом: в реквизите он приходит строкой или числом. */
+const REGISTERED_ADDRESS_TYPE: number = BX_ADDRESS_TYPE.REGISTERED;
+
 /** Порядок частей адреса в строке. */
 const ADDRESS_ORDER: ADDRESS_RQ_ITEM_CODE[] = [
     ADDRESS_RQ_ITEM_CODE.ADDRESS_POSTAL_CODE,
@@ -85,6 +88,23 @@ export class DocumentClientBxRqService {
               ];
     }
 
+    /**
+     * Фактический адрес клиента — место оказания услуг (договор Проксимы,
+     * `{client_adress}`). Как в легаси: любой адрес, кроме юридического;
+     * нет — прочерк.
+     */
+    public getServiceAddress(clientRq: BxRqDto | undefined): string {
+        const item = (clientRq?.address?.items ?? []).find(
+            address => Number(address.type_id) !== REGISTERED_ADDRESS_TYPE,
+        );
+        const text = item
+            ? ADDRESS_ORDER.map(code => valueOf(item.fields as Fields, code))
+                  .filter(Boolean)
+                  .join(', ')
+            : '';
+        return blank(text, BLANK_WIDE);
+    }
+
     /** Документ физлица: вид, серия, номер, выдан (дата, кем), код подразделения. */
     private documentLines(fields: Fields): string[] {
         const issuedBy = valueOf(fields, RQ_ITEM_CODE.ISSUED_BY);
@@ -119,7 +139,7 @@ export class DocumentClientBxRqService {
      */
     private addressOf(clientRq: BxRqDto | undefined): string {
         const item = (clientRq?.address?.items ?? []).find(
-            address => Number(address.type_id) === BX_ADDRESS_TYPE.REGISTERED,
+            address => Number(address.type_id) === REGISTERED_ADDRESS_TYPE,
         );
         if (!item) return '';
         return ADDRESS_ORDER.map(code => valueOf(item.fields as Fields, code))

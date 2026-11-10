@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { DocumentTotalRowService } from '../../../document-generate/product-rows/total-row.service';
+import {
+    DocumentTotalRowService,
+    IOfferTotalRowData,
+} from '../../../document-generate/product-rows/total-row.service';
 import { ProductRowDto } from '../../../document-generate/dto/product-row/product-row.dto';
-import { ClientTypeEnum } from '../../../document-generate/type/client.type';
 import { DocumentProductRowService } from '../../../document-generate/product-rows/product-row.service';
 import { ContractDto } from '../../../dto/contract.dto';
 
@@ -37,8 +39,12 @@ export interface IProductRenderItemData {
 
 export interface ITotalRowItemRenderData {
     TotalProductName: string;
+    /** Цена единицы товара (строка «Итого»: цена × количество = сумма) */
     TotalMonthSum: string;
     TotalMonthSumString: string;
+    /** Цена за месяц: сумма / количество / месяцев договора (КП, «Сумма в месяц») */
+    TotalPerMonthSum: string;
+    TotalPerMonthSumString: string;
     TotalMeasure: string;
     TotalPrepaymentQuantity: number;
     TotalPrepaymentQuantityString: string;
@@ -68,10 +74,14 @@ export interface ITotalRowItemRenderData {
 // {TotalFullString}
 // Общее название всех продуктов TotalProductName
 // {TotalProductName}
-// Общее для всех продуктов количество месяцев TotalMonthSum
+// Цена единицы товара (для услуг на месяц — цена месяца) TotalMonthSum
 // {TotalMonthSum}
-// Общее для всех продуктов количество месяцев прописью TotalMonthSumString
+// То же прописью TotalMonthSumString
 // {TotalMonthSumString}
+// Цена за месяц: сумма / количество / месяцев договора TotalPerMonthSum
+// {TotalPerMonthSum}
+// То же прописью TotalPerMonthSumString
+// {TotalPerMonthSumString}
 // Единица измерения для всех продуктов TotalMeasure
 // {TotalMeasure}
 // Общее для всех продуктов количество месяцев предоплаты или заключения договора TotalPrepaymentQuantity
@@ -114,77 +124,79 @@ export class OfferRenderPriceService {
         private readonly documentProductRowService: DocumentProductRowService,
     ) {}
 
+    /**
+     * Итоги КП и счёта: договорной логики бюджетников нет — сколько месяцев
+     * в наборе, на столько и предоплата (счёт на 4 месяца — на 4 месяца),
+     * плюс цена за месяц для наглядности.
+     */
     public renderTotalPrice(
         total: ProductRowDto,
-        clientType: ClientTypeEnum,
         withTax: boolean,
     ): ITotalRowRenderData {
-        const totalData = this.documentTotalRowService.getContractData(
+        const totalData = this.documentTotalRowService.getOfferData(
             total,
-            clientType,
             withTax,
         );
+        return { TotalRow: [this.toTotalRow(totalData, withTax)] };
+    }
+
+    private toTotalRow(
+        totalData: IOfferTotalRowData,
+        withTax: boolean,
+    ): ITotalRowItemRenderData {
         return {
-            TotalRow: [
-                {
-                    TotalProductName: totalData.total_product_name,
-                    TotalMonthSum: totalData.total_month_sum,
-                    TotalMonthSumString: totalData.total_month_sum_string,
-                    TotalMeasure: totalData.total_measure,
-                    TotalPrepaymentQuantity:
-                        totalData.total_prepayment_quantity,
-                    TotalPrepaymentQuantityString:
-                        totalData.total_prepayment_quantity_string,
-                    TotalPrepaymentSum: totalData.total_prepayment_sum,
-                    TotalPrepaymentSumString:
-                        totalData.total_prepayment_sum_string,
-                    TotalSum: totalData.contract_total_sum,
-                    TotalSumString: totalData.contract_total_sum_string,
-                    TotalSumWithoutTax:
-                        totalData.contract_total_sum_without_tax,
-                    TotalSumWithoutTaxString:
-                        totalData.contract_total_sum_without_tax_string,
-                    TotalQuantity: totalData.total_product_quantity, // тоже самое что TotalProductQuantity общее количество только продукта - актуально когда с ним указыывается специфичная единица например (абон.6мес)
-                    TotalQuantityString:
-                        totalData.total_product_quantity_string, // тоже самое что TotalProductQuantityString общее количество продукта
-                    TotalProductQuantity: totalData.total_product_quantity, // тоже самое что TotalQuantity общее количество только продукта - актуально когда с ним указыывается специфичная единица например (абон.6мес)
-                    TotalProductQuantityString:
-                        totalData.total_product_quantity_string, // тоже самое что TotalQuantityString общее количество продукта
+            TotalProductName: totalData.total_product_name,
+            TotalMonthSum: totalData.total_month_sum,
+            TotalMonthSumString: totalData.total_month_sum_string,
+            TotalPerMonthSum: totalData.total_per_month_sum,
+            TotalPerMonthSumString: totalData.total_per_month_sum_string,
+            TotalMeasure: totalData.total_measure,
+            TotalPrepaymentQuantity: totalData.total_prepayment_quantity,
+            TotalPrepaymentQuantityString:
+                totalData.total_prepayment_quantity_string,
+            TotalPrepaymentSum: totalData.total_prepayment_sum,
+            TotalPrepaymentSumString: totalData.total_prepayment_sum_string,
+            TotalSum: totalData.contract_total_sum,
+            TotalSumString: totalData.contract_total_sum_string,
+            TotalSumWithoutTax: totalData.contract_total_sum_without_tax,
+            TotalSumWithoutTaxString:
+                totalData.contract_total_sum_without_tax_string,
+            TotalQuantity: totalData.total_product_quantity, // тоже самое что TotalProductQuantity общее количество только продукта - актуально когда с ним указыывается специфичная единица например (абон.6мес)
+            TotalQuantityString: totalData.total_product_quantity_string, // тоже самое что TotalProductQuantityString общее количество продукта
+            TotalProductQuantity: totalData.total_product_quantity, // тоже самое что TotalQuantity общее количество только продукта - актуально когда с ним указыывается специфичная единица например (абон.6мес)
+            TotalProductQuantityString: totalData.total_product_quantity_string, // тоже самое что TotalQuantityString общее количество продукта
 
-                    TotalMonthQuantity: totalData.total_month_quantity, // общее количество месяцев пользования (количество продукта * коэффициент контракта)
-                    TotalMonthQuantityString:
-                        totalData.total_month_quantity_string, // общее количество месяцев пользования (количество продукта * коэффициент контракта)
+            TotalMonthQuantity: totalData.total_month_quantity, // общее количество месяцев пользования (количество продукта * коэффициент контракта)
+            TotalMonthQuantityString: totalData.total_month_quantity_string, // общее количество месяцев пользования (количество продукта * коэффициент контракта)
 
-                    TaxSum: totalData.tax_sum,
-                    TaxSumString: totalData.tax_sum_string,
-                    TotalFullString: totalData.total_full_string,
-                    TotalDiscountSum: totalData.total_discount_sum,
-                    TotalDiscountSumString: totalData.total_discount_sum_string,
-                    TotalDiscountSumMonth: totalData.total_discount_sum_month,
-                    TotalDiscountSumMonthString:
-                        totalData.total_discount_sum_month_string,
-                    TotalTaxInvoiceInfo: withTax
-                        ? 'Налог (НДС 5%)'
-                        : 'Без налога (НДС)',
-                },
-            ] as ITotalRowItemRenderData[],
+            TaxSum: totalData.tax_sum,
+            TaxSumString: totalData.tax_sum_string,
+            TotalFullString: totalData.total_full_string,
+            TotalDiscountSum: totalData.total_discount_sum,
+            TotalDiscountSumString: totalData.total_discount_sum_string,
+            TotalDiscountSumMonth: totalData.total_discount_sum_month,
+            TotalDiscountSumMonthString:
+                totalData.total_discount_sum_month_string,
+            TotalTaxInvoiceInfo: withTax
+                ? 'Налог (НДС 5%)'
+                : 'Без налога (НДС)',
         };
     }
 
     public renderProductPrices(
         rows: ProductRowDto[],
         contract: ContractDto,
-        clientType: ClientTypeEnum,
     ): IProductRenderData {
         const isProduct = true;
         const contractName = contract.aprilName || contract.bitrixName;
         const contractCoefficient = contract.prepayment;
+        // КП и счёт: количество как в наборе, у бюджетника тоже
         const productRowsData = this.documentProductRowService.getProducts(
             rows,
             contractName,
             isProduct,
             contractCoefficient,
-            clientType,
+            null,
         );
         const renderData: IProductRenderItemData[] = [];
         for (const row of productRowsData) {

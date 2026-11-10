@@ -18,6 +18,8 @@ import {
 export interface SkippedDealField {
     code: string;
     reason: DealFieldSkipReason;
+    /** Название поля для человека: схема портала, иначе канон, иначе код */
+    title: string;
 }
 
 /**
@@ -78,12 +80,25 @@ export class DealFieldResolverService {
                     skipped.push({
                         code: field.code,
                         reason: 'ambiguous_code',
+                        title: canonTitle(field),
                     });
                     continue;
                 }
             }
             if (!portalField?.bitrixCamelId) {
-                skipped.push({ code: field.code, reason: 'not_on_portal' });
+                skipped.push({
+                    code: field.code,
+                    reason: 'not_on_portal',
+                    title: canonTitle(field),
+                });
+                continue;
+            }
+            if (!hasKnownListItem(portalField, field.value)) {
+                skipped.push({
+                    code: field.code,
+                    reason: 'unknown_item',
+                    title: portalField.title || canonTitle(field),
+                });
                 continue;
             }
             resolved[portalField.bitrixCamelId] = field.value;
@@ -102,12 +117,30 @@ export class DealFieldResolverService {
              * ИНН, который собирался из лида, компании и реквизитов.
              */
             if (INN_PROTECTED_CODES.includes(field.code)) {
-                skipped.push({ code: field.code, reason: 'inn_protected' });
+                skipped.push({
+                    code: field.code,
+                    reason: 'inn_protected',
+                    title: canonTitle(field),
+                });
                 continue;
             }
             const lookup = this.resolveFieldId(field);
             if ('reason' in lookup) {
-                skipped.push({ code: field.code, reason: lookup.reason });
+                skipped.push({
+                    code: field.code,
+                    reason: lookup.reason,
+                    title: canonTitle(field),
+                });
+                continue;
+            }
+            // пункт списка, которого нет на портале, Bitrix молча запишет как «не выбрано»
+            const portalField = this.findDealField(lookup.bitrixId);
+            if (portalField && !hasKnownListItem(portalField, field.value)) {
+                skipped.push({
+                    code: field.code,
+                    reason: 'unknown_item',
+                    title: portalField.title || canonTitle(field),
+                });
                 continue;
             }
             resolved[lookup.bitrixId] = field.value;
@@ -146,6 +179,13 @@ export class DealFieldResolverService {
             field.code,
         );
         return bitrixId ? { bitrixId } : { reason: 'not_on_portal' };
+    }
+
+    /** Поле сделки портала по уже найденному идентификатору UF_CRM_*. */
+    private findDealField(bitrixId: string): IField | undefined {
+        return this.portalModel
+            .getDealFields()
+            .find(item => this.portalModel.getFieldBitrixId(item) === bitrixId);
     }
 
     /** Поле портала, чей bitrixId совпал с каноническим id сделки. */
@@ -207,6 +247,42 @@ export class DealFieldResolverService {
         return portalMeasure?.bitrixId;
     }
 }
+
+/** Название поля из канона: при неоднозначном коде — по appType. */
+const canonTitle = (field: DealSendFieldDto): string => {
+    const entries = PBX_SALES_KONSTRUCTOR_FIELDS.filter(
+        entry => entry.code === field.code,
+    );
+    const entry =
+        entries.find(item => item.appType === field.appType) ?? entries[0];
+    return entry?.name ?? field.code;
+};
+
+const isItemId = (value: unknown): boolean =>
+    (typeof value === 'number' && Number.isFinite(value)) ||
+    (typeof value === 'string' && /^\d+$/.test(value));
+
+/**
+ * Значение списочного поля — ID пункта, который есть у поля на портале.
+ * Названия (строки не из цифр) и не списочные поля не проверяются. Пустой
+ * список пунктов у списочного поля — тоже расхождение: портал не знает
+ * ни одного пункта, Bitrix покажет «не выбрано».
+ */
+export const hasKnownListItem = (
+    field: Pick<IField, 'type' | 'items' | 'bitrixfielditems'>,
+    value: DealSendFieldDto['value'],
+): boolean => {
+    const items = field.items?.length
+        ? field.items
+        : (field.bitrixfielditems ?? []);
+    const isList = field.type === 'enumeration' || items.length > 0;
+    if (!isList) return true;
+    const values: unknown[] = Array.isArray(value) ? value : [value];
+    if (!values.every(isItemId)) return true;
+    return values.every(id =>
+        items.some(item => Number(item.bitrixId) === Number(id)),
+    );
+};
 
 /** Коды канона, которым соответствует больше одного поля сделки. */
 export const AMBIGUOUS_DEAL_FIELD_CODES: PbxSalesKonstructorFieldCode[] =

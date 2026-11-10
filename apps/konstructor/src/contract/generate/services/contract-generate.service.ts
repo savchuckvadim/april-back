@@ -36,6 +36,7 @@ import {
     stripPhpTagDollars,
     TEMPLATE_TEXT_PARTS,
 } from '../lib/template-dollar.util';
+import { contractCityOf } from '../lib/contract-city.util';
 
 /**
  * Тег шаблона без значения: простой плейсхолдер — прочерк под ручку («рыба»),
@@ -283,6 +284,9 @@ export class ContractGenerateService {
 
         return {
             ...rqs,
+            // реквизиты столбиком, как в Laravel: массив docxtemplater печатает через запятую
+            we_rq: rqs.we_rq.join('\n'),
+            client_rq: rqs.client_rq.join('\n'),
             contract_number: contractNumber,
             contract_date: contractCreateDate,
             header: headerText,
@@ -316,6 +320,27 @@ export class ContractGenerateService {
             supply_contract: specificationData.supply_contract,
             supply_comment_1: specificationData.supply_comment_1,
             logins_quantity: specificationData.logins_quantity,
+            // поля эталонов договора (Laravel getSpecificationCDatareate)
+            infoblocks: specificationData.infoblocks,
+            legal_techs: specificationData.legal_techs,
+            specification_services: specificationData.specification_services,
+            specification_pk_comment1:
+                specificationData.specification_pk_comment1,
+            specification_distributive:
+                specificationData.specification_distributive,
+            specification_distributive_comment:
+                specificationData.specification_distributive_comment,
+            lic_long: specificationData.lic_long,
+            // email интернет-версии: поле сделки, нет — прочерк под ручку
+            contract_internet_email: blank(
+                dto.garantClientEmail,
+                specificationData.contract_internet_email,
+            ),
+            contract_city: blank(contractCityOf(provider.registredAdress)),
+            contract_total_sum: totals.contract_total_sum,
+            contract_total_sum_string: totals.contract_total_sum_string,
+            // срок договора прописью: количество × месяцев в договоре
+            total_quantity_string: totals.total_month_quantity_string,
             contract_pay_date:
                 (dto.firstPayDate &&
                     this.formatDocumentDate(dto.firstPayDate)) ||

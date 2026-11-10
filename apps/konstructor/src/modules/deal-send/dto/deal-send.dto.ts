@@ -368,12 +368,15 @@ export class DealSendDto {
  * - `ambiguous_code` — коду соответствует несколько полей сделки, а `appType`
  *   не передан (так устроен `consalting`);
  * - `inn_protected` — поле ИНН, менять его этой ручкой нельзя
- *   (см. {@link INN_PROTECTED_CODES}).
+ *   (см. {@link INN_PROTECTED_CODES});
+ * - `unknown_item` — у списочного поля на портале нет такого пункта (ID
+ *   пункта разъехался с Bitrix или пункты не заведены).
  */
 export const DEAL_FIELD_SKIP_REASONS = [
     'not_on_portal',
     'ambiguous_code',
     'inn_protected',
+    'unknown_item',
 ] as const;
 
 export type DealFieldSkipReason = (typeof DEAL_FIELD_SKIP_REASONS)[number];
@@ -388,6 +391,12 @@ export class SkippedDealFieldDto {
         enum: DEAL_FIELD_SKIP_REASONS,
     })
     reason: DealFieldSkipReason;
+
+    @ApiProperty({
+        description:
+            'Название поля: из схемы портала, иначе из канона, иначе код',
+    })
+    title: string;
 }
 
 /**
@@ -403,7 +412,7 @@ export class DealSendResponseDto {
 
     @ApiProperty({
         description:
-            'Поля, значения которых записаны не были: not_on_portal — поля нет в схеме портала, ambiguous_code — коду соответствует несколько полей и не передан appType',
+            'Поля, значения которых записаны не были: not_on_portal — поля нет в схеме портала, ambiguous_code — коду соответствует несколько полей и не передан appType, inn_protected — поле ИНН, unknown_item — у списочного поля на портале нет такого пункта',
         type: [SkippedDealFieldDto],
     })
     skipped: SkippedDealFieldDto[];
