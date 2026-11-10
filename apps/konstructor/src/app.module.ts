@@ -14,6 +14,8 @@ import { DocumentSupplyReportModule } from './document-supply-report/document-su
 import { ZakupkiSettingsModule } from './modules/zakupki-settings/zakupki-settings.module';
 import { KonstructorAppSettingsModule } from './modules/app-settings/app-settings.module';
 import { PublicLinkModule } from './modules/public-link/public-link.module';
+// Сессия портала для фрейма: обмен AUTH_ID на JWT (POST auth/portal-session)
+import { PortalSessionApiModule } from '@lib/auth';
 // Справочник шаблонов отчёта о поставке (CRUD для админки). Подбор шаблона
 // при генерации живёт в общем резолвере document-template, здесь — только
 // ведение справочника; строка шаблона в этом домене опциональна.
@@ -95,6 +97,8 @@ import { DocumentTemplatePublicModule } from '@lib/portal-lib/konstructor/docume
         KonstructorAppSettingsModule,
         // публичный конструктор по отзываемой ссылке (выдача из админки)
         PublicLinkModule,
+        // фрейм обменивает AUTH_ID Битрикса на токен портала; init требует его
+        PortalSessionApiModule,
         SupplyReportTemplateModule,
         ProviderPublicModule,
         TemplateBasePublicModule,
