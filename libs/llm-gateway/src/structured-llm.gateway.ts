@@ -138,7 +138,8 @@ export class StructuredLlmGateway {
         const order = request.providers?.length
             ? [...request.providers]
             : await this.orderResolver.orderFor(request.domain);
-        for (const adapter of order.map(code => this.byCode[code])) {
+        const adapters = order.map(code => this.byCode[code]);
+        for (const [index, adapter] of adapters.entries()) {
             const issue = await adapter.configurationIssue(request.domain);
             if (issue !== null) {
                 notes.push(`${adapter.code} — ${issue}`);
@@ -149,16 +150,33 @@ export class StructuredLlmGateway {
                 notes.push(`${adapter.code} — на паузе после серии сбоев`);
                 continue;
             }
-            const response = await this.attempt(adapter, request, notes);
+            const response = await this.attempt(
+                adapter,
+                request,
+                notes,
+                index < adapters.length - 1,
+            );
             if (response) return this.answered(response, request, notes);
         }
         // Живых и настроенных не осталось — пробуем отключённых (полуоткрытое
         // состояние): попытка лучше гарантированного отказа, а удача снова
         // включит провайдера.
-        for (const adapter of paused) {
-            const response = await this.attempt(adapter, request, notes);
+        for (const [index, adapter] of paused.entries()) {
+            const response = await this.attempt(
+                adapter,
+                request,
+                notes,
+                index < paused.length - 1,
+            );
             if (response) return this.answered(response, request, notes);
         }
+        // Настоящая тревога (решение владельца 08.11.2026 «писать, когда
+        // отказали все»): ни один поставщик не ответил, работа встала.
+        this.logger.error(
+            `ПОПЫТКИ ИСЧЕРПАНЫ: LLM не ответила на ${request.schemaName} (${request.domain}) — ` +
+                `отказали все поставщики: ${notes.join('; ')}`,
+            { telegram: true },
+        );
         throw new Error(
             `LLM недоступна для ${request.schemaName} (${request.domain}): ${notes.join('; ')}`,
         );
@@ -184,10 +202,15 @@ export class StructuredLlmGateway {
         return response;
     }
 
+    /**
+     * `fallbackAvailable` — в порядке остался кто-то ещё: пауза
+     * предохранителя тогда помечается «повтор», а не тревогой.
+     */
     private async attempt(
         adapter: StructuredLlmAdapter,
         request: StructuredLlmRequest,
         notes: string[],
+        fallbackAvailable: boolean,
     ): Promise<StructuredLlmResponse | null> {
         try {
             const response = await adapter.complete(request);
@@ -197,7 +220,12 @@ export class StructuredLlmGateway {
             const text = describeLlmError(error);
             notes.push(`${adapter.code} — ${text}`);
             if (isTransientLlmError(error)) {
-                await this.breaker.recordFailure(adapter.code, text);
+                await this.breaker.recordFailure(
+                    adapter.code,
+                    text,
+                    Date.now(),
+                    fallbackAvailable,
+                );
             }
             this.logger.warn(
                 `Провайдер LLM ${adapter.code} не ответил на ${request.schemaName} (${request.domain}): ${text}`,

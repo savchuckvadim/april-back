@@ -21,6 +21,7 @@ on:
 permissions:
     contents: read
     packages: write # GITHUB_TOKEN сможет пушить образы в ghcr.io этого репо
+    actions: read # detect читает последний удачный прогон этого workflow
 
 # Деплои прода — строго по очереди. 09.11.2026 два пуша подряд (#253 и #254)
 # одновременно пересоздавали контейнеры: `compose up` у обоих висел по
@@ -41,9 +42,35 @@ jobs:
               with:
                   fetch-depth: 0
 
+            # База сравнения. Без неё paths-filter на push сравнивает с
+            # default-веткой (main), поэтому в monorepo «менялось всё» и каждый
+            # деплой полчаса перекатывал 12 контейнеров (ревью 09.11.2026).
+            # Берём коммит последнего УДАЧНОГО прогона этого workflow на ветке:
+            # push, чей прогон отменила очередь concurrency (третий пуш подряд
+            # вытесняет второй pending), тогда не теряется — его правки войдут
+            # в следующий деплой. Коммита нет в истории (force-push, первый
+            # прогон) или API недоступен — база пустая, собираем всё.
+            - name: База сравнения — последний удачный деплой ветки
+              id: base
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  sha=$(gh api -X GET \
+                        "repos/${{ github.repository }}/actions/workflows/deploy-monorepo.yml/runs" \
+                        -f branch="${{ github.ref_name }}" -f status=success -f per_page=1 \
+                        --jq '.workflow_runs[0].head_sha' 2>/dev/null || true)
+                  if [ -n "$sha" ] && [ "$sha" != "null" ] && git cat-file -e "$sha^{commit}" 2>/dev/null; then
+                    echo "База сравнения: $sha (последний удачный деплой)"
+                    echo "base=$sha" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "Удачного прогона не нашлось -> сравнение с default-веткой (соберём всё)"
+                    echo "base=" >> "$GITHUB_OUTPUT"
+                  fi
+
             - uses: dorny/paths-filter@v3
               id: filter
               with:
+                  base: ${{ steps.base.outputs.base }}
                   filters: |
                       shared:
                         - 'libs/**'
@@ -92,7 +119,9 @@ jobs:
                   fi
 
             - name: Показать решение detect
-              run: echo "apps=${{ steps.set.outputs.apps }}"
+              run: |
+                  echo "base=${{ steps.base.outputs.base }}"
+                  echo "apps=${{ steps.set.outputs.apps }}"
 
     # ---------------------------------------------------------------
     build:

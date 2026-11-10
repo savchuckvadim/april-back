@@ -105,19 +105,33 @@ export class LlmCircuitBreakerService {
         }
     }
 
-    /** Временный сбой: в окне набралось `failures` — пауза на `cooldownSec` с телеграмом. */
+    /**
+     * Временный сбой: в окне набралось `failures` — пауза на `cooldownSec`
+     * с телеграмом. Тревога помечается тем, осталось ли кому отвечать
+     * (политика владельца 10.11.2026: не глушить сообщения, а размечать —
+     * «повтор» против «попытки исчерпаны»): пауза при живом запасном — это
+     * «работа идёт», а пауза последнего поставщика — настоящая тревога.
+     */
     async recordFailure(
         provider: LlmProviderCode,
         reason: string,
         now: number = Date.now(),
+        fallbackAvailable = true,
     ): Promise<void> {
         const count = await this.incrementFailures(provider, now);
         if (count < this.options.failures) return;
         const openedByUs = await this.open(provider, now);
         if (!openedByUs) return;
+        const head = fallbackAvailable
+            ? `Повтор: провайдер LLM ${provider} отключён`
+            : `ПОПЫТКИ ИСЧЕРПАНЫ: провайдер LLM ${provider} отключён, запасных нет`;
+        const tail = fallbackAvailable
+            ? ' — работа идёт через запасного'
+            : ' — разборы и отчёты встанут до конца паузы';
         this.logger.error(
-            `Провайдер LLM ${provider} отключён на ${Math.round(this.options.cooldownSec / 60)} мин: ` +
-                `${count} временных сбоев за ${Math.round(this.options.windowSec / 60)} мин (последний: ${reason})`,
+            `${head} на ${Math.round(this.options.cooldownSec / 60)} мин: ` +
+                `${count} временных сбоев за ${Math.round(this.options.windowSec / 60)} мин ` +
+                `(последний: ${reason})${tail}`,
             { telegram: true },
         );
     }
