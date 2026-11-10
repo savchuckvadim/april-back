@@ -1,4 +1,6 @@
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import {
     XoDispatchRescueService,
     XoRescueOptions,
@@ -9,6 +11,19 @@ import {
  * (xo-rescue.decision.spec) — здесь важно другое: что крон не досылает
  * лишнего, отмечает отправку и держится в пределах лимита.
  */
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+/**
+ * Часы портала. Метки и даты в полях Битрикса записаны по ним, и сервис
+ * читает их в поясе портала. Часы машины, на которой идёт тест, брать
+ * нельзя: при разнице с Москвой в два часа «пять минут назад»
+ * превращалось в «два часа пять минут назад» и свежая метка выглядела
+ * застрявшей (машина в поясе +01:00 после перевода часов 25.10.2026).
+ */
+const PORTAL_TZ = 'Europe/Moscow';
+const portalNow = () => dayjs().tz(PORTAL_TZ);
+
 const DOMAIN = 'x.bitrix24.ru';
 const FMT = 'DD.MM.YYYY HH:mm:ss';
 
@@ -40,9 +55,9 @@ const options = (over: Partial<XoRescueOptions> = {}): XoRescueOptions => ({
 const stuckCompany = (id = '77') => ({
     ID: id,
     TITLE: 'ООО Ромашка',
-    [UF('op_xo_revive_queued_at')]: dayjs().subtract(5, 'hour').format(FMT),
+    [UF('op_xo_revive_queued_at')]: portalNow().subtract(5, 'hour').format(FMT),
     [UF('xo_responsible')]: '15',
-    [UF('xo_date')]: dayjs().subtract(4, 'hour').format(FMT),
+    [UF('xo_date')]: portalNow().subtract(4, 'hour').format(FMT),
     [UF('xo_name')]: 'ООО Ромашка',
 });
 
@@ -128,7 +143,7 @@ const makeDeps = (opts?: {
                 yearHolidays: new Set<string>(),
                 source: 'portal',
             },
-            timezone: 'Europe/Moscow',
+            timezone: PORTAL_TZ,
         }),
     };
 
@@ -248,7 +263,7 @@ describe('XoDispatchRescueService — досылка по метке робот�
         const run = await service.runForDomain(
             DOMAIN,
             options({
-                markerSince: dayjs()
+                markerSince: portalNow()
                     .subtract(1, 'hour')
                     .format('DD.MM.YYYY HH:mm'),
             }),
@@ -265,7 +280,7 @@ describe('XoDispatchRescueService — досылка по метке робот�
         const run = await service.runForDomain(
             DOMAIN,
             options({
-                markerSince: dayjs()
+                markerSince: portalNow()
                     .subtract(10, 'hour')
                     .format('DD.MM.YYYY HH:mm'),
             }),
@@ -292,7 +307,7 @@ describe('XoDispatchRescueService — досылка по метке робот�
             companies: [
                 {
                     ...stuckCompany(),
-                    [UF('op_xo_revive_queued_at')]: dayjs()
+                    [UF('op_xo_revive_queued_at')]: portalNow()
                         .subtract(5, 'minute')
                         .format(FMT),
                 },
@@ -311,7 +326,7 @@ describe('XoDispatchRescueService — досылка по метке робот�
             companies: [
                 {
                     ...stuckCompany(),
-                    [UF('op_xo_revive_sent_at')]: dayjs()
+                    [UF('op_xo_revive_sent_at')]: portalNow()
                         .subtract(4, 'hour')
                         .format(FMT),
                 },
@@ -359,7 +374,7 @@ describe('XoDispatchRescueService — поиск по дате звонка', ()
     const orphanCompany = () => ({
         ID: '88',
         TITLE: 'ООО Сирота',
-        [UF('xo_date')]: dayjs().subtract(4, 'hour').format(FMT),
+        [UF('xo_date')]: portalNow().subtract(4, 'hour').format(FMT),
         [UF('xo_responsible')]: '15',
         [UF('xo_name')]: 'ООО Сирота',
     });
@@ -418,7 +433,7 @@ describe('XoDispatchRescueService — поиск по дате звонка', ()
                 {
                     ID: '500',
                     COMPANY_ID: '88',
-                    DATE_CREATE: dayjs().subtract(3, 'hour').format(FMT),
+                    DATE_CREATE: portalNow().subtract(3, 'hour').format(FMT),
                 },
             ],
         });
@@ -439,7 +454,7 @@ describe('XoDispatchRescueService — поиск по дате звонка', ()
                 {
                     ID: '400',
                     COMPANY_ID: '88',
-                    DATE_CREATE: dayjs().subtract(200, 'day').format(FMT),
+                    DATE_CREATE: portalNow().subtract(200, 'day').format(FMT),
                 },
             ],
         });
