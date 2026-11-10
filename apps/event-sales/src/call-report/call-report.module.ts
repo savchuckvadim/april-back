@@ -3,6 +3,7 @@ import { CallReportReanalyzeUseCase } from './use-cases/call-report-reanalyze.us
 import { CallFactsCatchupService } from './services/call-facts-catchup.service';
 import { CallReportFactsCatchupStatusService } from './services/call-report-facts-catchup-status.service';
 import { CallReportFactsCatchupUseCase } from './use-cases/call-report-facts-catchup.use-case';
+import { CallReportFactsCatchupScheduler } from './cron/call-report-facts-catchup.scheduler';
 import { CallAnalysisRerunService } from './services/call-analysis-rerun.service';
 import { CallReportReanalysisReportService } from './services/call-report-reanalysis-report.service';
 import { CallReportSmartBackfillStatusService } from './services/call-report-smart-backfill-status.service';
@@ -133,6 +134,7 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         CallFactsCatchupService,
         CallReportFactsCatchupStatusService,
         CallReportFactsCatchupUseCase,
+        CallReportFactsCatchupScheduler,
         // Дописывание полей карточек из ais без модели: джоба
         // CALL_REPORT_SMART_BACKFILL (кнопка в админке) и ночной крон
         // режима pending (in_report = false)

@@ -154,6 +154,13 @@ const AI_SETTINGS_CRONS: readonly AiSettingsCron[] = [
         name: 'call-report-analytics-snapshot',
         purpose: 'недельные снимки отчётов по звонкам для трендов',
     },
+    // Ночной догон фактов (B6): порталы с лимитом в рублях в настройках AI.
+    {
+        name: 'call-report-facts-catchup-nightly',
+        purpose: 'ночной догон признаков в старых разборах',
+        include: portal => (portal.factsCatchupNightlyBudgetRub ?? 0) > 0,
+        note: portal => `${portal.factsCatchupNightlyBudgetRub ?? 0} ₽ за ночь`,
+    },
 ];
 
 /** Кроны без привязки к порталам — приезжают из библиотек вместе с модулями. */

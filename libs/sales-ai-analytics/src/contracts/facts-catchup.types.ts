@@ -12,6 +12,7 @@
  * Чистые типы и функции без DI.
  */
 import { JobNames } from '@lib/queue/constants/job-names.enum';
+import { toPortalDate } from '../model/workdays.util';
 import type { ReanalysisCostEstimate } from './reanalysis.types';
 
 /** Тип ais-записи статуса прогона догона; ключ — `${from}..${to}`. */
@@ -59,11 +60,18 @@ export interface FactsCatchupJobData {
     quota?: number;
     /** Без вызовов модели: кандидаты и оценка стоимости. */
     dryRun?: boolean;
+    /** Кто поставил: ночной крон — FACTS_CATCHUP_NIGHTLY_REQUESTER. */
     requestedBy?: string;
     /** Номер части цепочки продолжений, с 1. */
     part?: number;
     /** IANA-пояс дат портала; нет — Europe/Moscow. */
     timeZone?: string;
+    /**
+     * Лимит в рублях на прогон (B6, ночной догон): расход считается по
+     * записям расхода; достигли — новые звонки не берутся, продолжение
+     * не ставится. Нет — без лимита (кнопка).
+     */
+    budgetRub?: number;
 }
 
 /** Нагрузка записи-статуса прогона (обновляется после каждого звонка). */
@@ -100,6 +108,32 @@ export interface FactsCatchupRunStatus {
     concurrency: number;
     /** Часть остановлена серией сбоев: прогон не закончен, нужен повтор. */
     stopped: boolean;
+    /** Лимит в рублях прогона; null — без лимита. */
+    budgetRub?: number | null;
+    /** Прогон остановлен по лимиту в рублях: остаток — следующей ночью. */
+    budgetHit?: boolean;
+}
+
+/** Метка ночного крона в `requestedBy` джобы и статуса. */
+export const FACTS_CATCHUP_NIGHTLY_REQUESTER = 'nightly';
+
+/**
+ * Окно ночного догона (B6): с первого числа прошлого месяца по сегодня в
+ * поясе портала — текущий и прошлый месяц одной джобой; ключ статуса
+ * меняется каждую ночь, поэтому лимит в рублях считается с нуля.
+ */
+export function factsCatchupNightlyWindow(
+    now: Date,
+    timeZone: string,
+): { from: string; to: string } {
+    const today = toPortalDate(now, timeZone);
+    const year = Number(today.slice(0, 4));
+    const month = Number(today.slice(5, 7));
+    const previous =
+        month === 1
+            ? `${year - 1}-12`
+            : `${year}-${String(month - 1).padStart(2, '0')}`;
+    return { from: `${previous}-01`, to: today };
 }
 
 export const FACTS_CATCHUP_DEFAULTS = {

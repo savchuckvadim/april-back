@@ -1,5 +1,6 @@
 import {
     factsCatchupJobId,
+    factsCatchupNightlyWindow,
     factsCatchupRunKey,
     isFactsCatchupRunStatusLike,
 } from '../facts-catchup.types';
@@ -49,5 +50,22 @@ describe('facts-catchup.types', () => {
         ).toBe(false);
         expect(isFactsCatchupRunStatusLike(null)).toBe(false);
         expect(isFactsCatchupRunStatusLike([status])).toBe(false);
+    });
+});
+
+describe('factsCatchupNightlyWindow', () => {
+    it('с первого числа прошлого месяца по сегодня в поясе портала', () => {
+        expect(
+            factsCatchupNightlyWindow(
+                new Date('2026-11-10T22:30:00Z'),
+                'Europe/Moscow',
+            ),
+        ).toEqual({ from: '2026-10-01', to: '2026-11-11' });
+        expect(
+            factsCatchupNightlyWindow(
+                new Date('2027-01-05T10:00:00Z'),
+                'Europe/Moscow',
+            ),
+        ).toEqual({ from: '2026-12-01', to: '2027-01-05' });
     });
 });

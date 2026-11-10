@@ -15,6 +15,9 @@
  *   нагрузкой; повтор запуска безопасен — догнанные пропускаются;
  * - три звонка одновременно, после серии сбоев — по одному, после восьми
  *   подряд — остановка части (пул переразбора);
+ * - лимит в рублях (B6, ночной крон): достигли — новые звонки не берутся,
+ *   продолжение не ставится, остаток — следующей ночью; итог ночи — в
+ *   Telegram;
  * - статус прогона — запись `call-report-facts-catchup-run`, после каждого
  *   звонка; dryRun — кандидаты и оценка стоимости без модели.
  *
@@ -27,9 +30,11 @@ import { JobNames, QueueDispatcherService, QueueNames } from '@lib/queue';
 import {
     FACTS_CATCHUP_DEFAULTS,
     FACTS_CATCHUP_JOB_OPTIONS,
+    FACTS_CATCHUP_NIGHTLY_REQUESTER,
     factsCatchupJobId,
     resolveTimeZone,
     type FactsCatchupJobData,
+    type FactsCatchupRunStatus,
 } from '@lib/sales-ai-analytics';
 import { mergeCatchupFacts } from '../contracts/call-report-facts-catchup.contract';
 import { CallFactsCatchupService } from '../services/call-facts-catchup.service';
@@ -59,6 +64,24 @@ export type { CallReportFactsCatchupResult } from './call-report-facts-catchup.u
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/** Итог ночного догона для Telegram — только когда что-то делалось. */
+export const formatNightlyCatchupSummary = (
+    status: FactsCatchupRunStatus,
+): string => {
+    const limit =
+        status.budgetRub != null ? ` из лимита ${status.budgetRub} ₽` : '';
+    const tail = status.budgetHit
+        ? ' — лимит исчерпан, остаток следующей ночью'
+        : status.stopped
+          ? ' — остановлено после серии сбоев'
+          : '';
+    return (
+        `🌙 Ночной догон фактов ${status.domain} (${status.from}..${status.to}): ` +
+        `догнано ${status.done} из ${status.total}, сбоев ${status.failed}, ` +
+        `потрачено ${status.price.toFixed(2)} ₽${limit}${tail}`
+    );
+};
 
 @Injectable()
 export class CallReportFactsCatchupUseCase {
@@ -99,6 +122,7 @@ export class CallReportFactsCatchupUseCase {
             previous: previous?.status ?? null,
             now,
         });
+        status.budgetRub = data.budgetRub ?? null;
         let statusId = previous?.id ?? null;
         if (data.dryRun === true) {
             status.estimate = estimateFactsCatchupCost(
@@ -119,6 +143,7 @@ export class CallReportFactsCatchupUseCase {
         statusId = await this.status.saveStatus(status, statusId);
         const recordId = statusId;
         const quota = data.quota ?? FACTS_CATCHUP_DEFAULTS.quota;
+        const budget = data.budgetRub;
         const pool = await runReanalysisPool(
             selection.candidates.slice(0, quota),
             candidate =>
@@ -133,19 +158,32 @@ export class CallReportFactsCatchupUseCase {
                 await this.status.saveStatus(status, recordId);
             },
             {
-                concurrency: FACTS_CATCHUP_DEFAULTS.concurrency,
+                // С лимитом в рублях — по одному звонку: при трёх воркерах
+                // лимит проверяется перед взятием звонка, и перерасход
+                // составил бы до двух лишних вызовов.
+                concurrency:
+                    budget === undefined
+                        ? FACTS_CATCHUP_DEFAULTS.concurrency
+                        : 1,
                 serialAfterFailures: FACTS_CATCHUP_DEFAULTS.serialAfterFailures,
                 stopAfterFailures: FACTS_CATCHUP_DEFAULTS.stopAfterFailures,
                 timeBudgetMs: FACTS_CATCHUP_DEFAULTS.timeBudgetMs,
                 startedAt,
                 now: () => Date.now(),
+                ...(budget === undefined
+                    ? {}
+                    : { budgetHit: () => status.price >= budget }),
             },
         );
         status.timeBudgetHit = pool.timeBudgetHit;
         status.stopped = pool.stopped;
+        status.budgetHit = pool.budgetHit;
         const remaining = selection.candidates.length - pool.processed;
         status.continuedWith =
-            remaining > 0 && pool.doneInPart > 0 && !pool.stopped
+            remaining > 0 &&
+            pool.doneInPart > 0 &&
+            !pool.stopped &&
+            !pool.budgetHit
                 ? await this.dispatchContinuation(data, status.part + 1)
                 : null;
         status.finished = status.continuedWith === null && !pool.stopped;
@@ -164,6 +202,15 @@ export class CallReportFactsCatchupUseCase {
                 `сбоев ${status.failed}, одновременно ${pool.concurrency}, ` +
                 `продолжение ${result.continuedWith ?? '—'}`,
         );
+        if (
+            data.requestedBy === FACTS_CATCHUP_NIGHTLY_REQUESTER &&
+            pool.processed > 0 &&
+            status.continuedWith === null
+        ) {
+            this.logger.log(formatNightlyCatchupSummary(status), {
+                telegram: true,
+            });
+        }
         return result;
     }
 
@@ -217,11 +264,7 @@ export class CallReportFactsCatchupUseCase {
                 source,
                 outcome.facts,
                 candidate.gaps,
-                {
-                    at,
-                    model: outcome.model,
-                    provider: outcome.provider,
-                },
+                { at, model: outcome.model, provider: outcome.provider },
             );
             await this.aiService.update(candidate.old.id, {
                 user_result: JSON.parse(

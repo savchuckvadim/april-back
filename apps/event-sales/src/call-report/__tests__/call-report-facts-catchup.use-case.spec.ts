@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { CallReportFactsCatchupStatusService } from '../services/call-report-facts-catchup-status.service';
 import { CallReportReanalysisReportService } from '../services/call-report-reanalysis-report.service';
 import { CallReportFactsCatchupUseCase } from '../use-cases/call-report-facts-catchup.use-case';
@@ -299,5 +300,67 @@ describe('CallReportFactsCatchupUseCase', () => {
             finished: false,
             continuedWith: jobId,
         });
+    });
+});
+
+describe('CallReportFactsCatchupUseCase: лимит в рублях и ночной итог', () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    it('лимит достигнут после первого звонка: второй не берётся, продолжения нет, итог ночи в Telegram', async () => {
+        const log = jest
+            .spyOn(Logger.prototype, 'log')
+            .mockImplementation(() => undefined);
+        const { useCase, facts, queueDispatcher, ofType } = makeUseCase({
+            rows: [liteRow('t-1'), liteRow('t-2')],
+            records: [
+                oldRecord('1', 't-1', { weightedScore: 70 }),
+                oldRecord('2', 't-2', { weightedScore: 60 }),
+            ],
+        });
+
+        const result = await useCase.execute(
+            { ...PERIOD, budgetRub: 0.3, requestedBy: 'nightly' },
+            NOW,
+        );
+
+        expect(facts.run).toHaveBeenCalledTimes(1);
+        expect(result).toMatchObject({
+            done: 1,
+            processed: 1,
+            continuedWith: null,
+        });
+        expect(
+            ofType('call-report-facts-catchup-run')[0].user_result,
+        ).toMatchObject({
+            budgetRub: 0.3,
+            budgetHit: true,
+            finished: true,
+        });
+        expect(queueDispatcher.dispatch).not.toHaveBeenCalled();
+        expect(log).toHaveBeenCalledWith(
+            expect.stringContaining('🌙 Ночной догон фактов gsr.bitrix24.ru'),
+            { telegram: true },
+        );
+        expect(log).toHaveBeenCalledWith(
+            expect.stringContaining('лимит исчерпан'),
+            { telegram: true },
+        );
+    });
+
+    it('кнопка без лимита: итог ночи в Telegram не шлётся', async () => {
+        const log = jest
+            .spyOn(Logger.prototype, 'log')
+            .mockImplementation(() => undefined);
+        const { useCase } = makeUseCase({
+            rows: [liteRow('t-1')],
+            records: [oldRecord('1', 't-1', { weightedScore: 70 })],
+        });
+
+        await useCase.execute(PERIOD, NOW);
+
+        expect(log).not.toHaveBeenCalledWith(
+            expect.stringContaining('🌙'),
+            expect.anything(),
+        );
     });
 });
