@@ -1,5 +1,9 @@
 import { cloudWhisperModelOf } from '@lib/ai-presets';
 import type { PortalAiSettingsRecord } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.types';
+import {
+    normalizeTranscriptionRoute,
+    type PortalTranscriptionRoute,
+} from '@lib/portal-lib/store/ai-settings/portal-transcription-route.types';
 import type { WhisperEndpoint } from '../services/whisper-compatible-transcription.service';
 import {
     isTranscriptionRouterMode,
@@ -18,6 +22,8 @@ export interface TranscriptionPrefs {
     whisperSource: TranscriptionPrefSource | null;
     /** Модель транскрибации VibeCode портала; null — модель клиента. */
     vibecodeModel: string | null;
+    /** Маршрут портала (роли поверх режима); null — действует режим. */
+    route: PortalTranscriptionRoute | null;
 }
 
 /** Общие значения приложения, поверх которых ложатся настройки портала. */
@@ -36,6 +42,7 @@ export type PortalTranscriptionRecord = Pick<
     | 'whisperModel'
     | 'whisperApiKey'
     | 'vibecodeTranscriptionModel'
+    | 'transcriptionRoute'
 >;
 
 /**
@@ -69,5 +76,7 @@ export function resolveTranscriptionPrefs(
         whisper,
         whisperSource: portalWhisper ? 'portal' : whisper ? 'env' : null,
         vibecodeModel: record?.vibecodeTranscriptionModel?.trim() || null,
+        // Маршрут проверяется и здесь: роутер не должен доверять источнику.
+        route: normalizeTranscriptionRoute(record?.transcriptionRoute),
     };
 }

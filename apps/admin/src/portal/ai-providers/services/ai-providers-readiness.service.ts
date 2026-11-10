@@ -6,10 +6,10 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
-    forcedProviderOf,
     parseTranscriptionRouterMode,
     type TranscriptionProvider,
 } from '@lib/call-lib/transcription/provider/transcription-provider.types';
+import { planTranscription } from '@lib/call-lib/transcription/provider/transcription-route.util';
 import {
     resolveTranscriptionPrefs,
     type TranscriptionEnvPrefs,
@@ -48,6 +48,9 @@ import { AiEndpointProbeService } from './ai-endpoint-probe.service';
 
 /** Строка чек-листа с типизированным кодом провайдера. */
 type Readiness<C extends string> = AiProviderReadiness & { code: C };
+
+/** Порог для плана в чек-листе: звонки берутся заведомо короткий и длинный. */
+const PLAN_LONG_MIN_SEC = 600;
 
 /**
  * Чек-лист готовности провайдеров AI портала: кто считает разборы и кто
@@ -165,17 +168,29 @@ export class PortalAiProvidersReadinessService {
         return { ...base, source: 'env' };
     }
 
-    /** Три транскрибатора всегда; `inUse` — по режиму портала. */
+    /**
+     * Три транскрибатора всегда; `inUse` — участвует ли в плане распознавания
+     * короткого или длинного звонка (тот же planTranscription, что у роутера:
+     * режим портала плюс его маршрут ролей).
+     */
     private async transcriptionReadiness(
         domain: string,
         prefs: TranscriptionPrefs,
         withProbe: boolean,
     ): Promise<AiProviderReadiness[]> {
-        const forced = forcedProviderOf(prefs.mode);
+        const planned = new Set<TranscriptionProvider>(
+            [0, Number.MAX_SAFE_INTEGER].flatMap(durationSec =>
+                planTranscription({
+                    durationSec,
+                    mode: prefs.mode,
+                    route: prefs.route,
+                    defaultLongMinSec: PLAN_LONG_MIN_SEC,
+                    whisperConfigured: prefs.whisper !== null,
+                }).steps.map(step => step.provider),
+            ),
+        );
         const inUse = (code: TranscriptionProvider): boolean =>
-            forced
-                ? code === forced
-                : code !== 'local-whisper' || prefs.whisper !== null;
+            planned.has(code);
         const entries = await Promise.all([
             Promise.resolve(this.yandexEntry()),
             this.vibecodeEntry(domain),

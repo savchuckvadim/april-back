@@ -5,23 +5,17 @@ import { Prisma, PortalAiSettings } from 'generated/prisma';
 import { PortalKeyCryptoService } from '../keys/portal-key-crypto.service';
 import { PortalAiSettingsRepository } from './portal-ai-settings.repository';
 import {
-    AI_LLM_PROVIDER_CODES,
-    AI_TRANSCRIPTION_MODES,
-    AiLlmProviderCode,
-    AiTranscriptionMode,
-    PRESENTATION_STRICTNESS_LEVELS,
     PortalAiSettingsRecord,
     PortalAiSettingsUpdate,
     PortalAiSettingsWithDomain,
-    PresentationStrictnessLevel,
-    WEEKLY_REPORT_DELIVERY_MODES,
-    WeeklyReportDeliveryMode,
 } from './portal-ai-settings.types';
-
-/** Минимальная длина названия организации: «А» отфильтровало бы полразговора. */
-const MIN_ORG_NAME_LENGTH = 2;
-/** Потолок списка названий — защита промпта от свалки. */
-const MAX_ORG_NAMES = 20;
+import {
+    parseAiSettingsJson,
+    toOrgNames,
+    toProviderOrder,
+    toUserIds,
+} from './portal-ai-settings.json.util';
+import { normalizeTranscriptionRoute } from './portal-transcription-route.types';
 
 /** Поля, которые редактируются снаружи (lastScanAt пишет только планировщик). */
 const EDITABLE_FIELDS = [
@@ -166,9 +160,10 @@ export class PortalAiSettingsPrismaRepository
             update.whisperModel !== undefined ||
             update.whisperApiKey !== undefined ||
             update.vibecodeTranscriptionModel !== undefined ||
+            update.transcriptionRoute !== undefined ||
             update.factsCatchupNightlyBudgetRub !== undefined
         ) {
-            const json = this.toJsonSettings(current?.settings);
+            const json = parseAiSettingsJson(current?.settings);
             if (update.irrelevantConfidence !== undefined) {
                 json.irrelevantConfidence =
                     update.irrelevantConfidence ?? undefined;
@@ -212,13 +207,13 @@ export class PortalAiSettingsPrismaRepository
                 // Пустой список из админки — это «сбросить», а не «сохранить
                 // пустоту»: undefined убирает ключ из JSON целиком.
                 json.ownOrgNames =
-                    this.toOrgNames(update.ownOrgNames as Prisma.JsonValue) ??
+                    toOrgNames(update.ownOrgNames as Prisma.JsonValue) ??
                     undefined;
             }
             if (update.llmProviderOrder !== undefined) {
                 // Пустой список — «сбросить на общий порядок», как у названий.
                 json.llmProviderOrder =
-                    this.toProviderOrder(
+                    toProviderOrder(
                         update.llmProviderOrder as Prisma.JsonValue,
                     ) ?? undefined;
             }
@@ -236,6 +231,12 @@ export class PortalAiSettingsPrismaRepository
             if (update.vibecodeTranscriptionModel !== undefined) {
                 json.vibecodeTranscriptionModel =
                     update.vibecodeTranscriptionModel?.trim() || undefined;
+            }
+            if (update.transcriptionRoute !== undefined) {
+                // Маршрут без единой роли — «сбросить на режим»: ключ убираем.
+                json.transcriptionRoute =
+                    normalizeTranscriptionRoute(update.transcriptionRoute) ??
+                    undefined;
             }
             if (update.factsCatchupNightlyBudgetRub !== undefined) {
                 // null или 0 — ночной догон выключен: ключ убираем.
@@ -259,20 +260,6 @@ export class PortalAiSettingsPrismaRepository
         return data;
     }
 
-    /** Порядок провайдеров LLM: только известные коды, без дублей; пусто — null. */
-    private toProviderOrder(
-        value: Prisma.JsonValue,
-    ): AiLlmProviderCode[] | null {
-        if (!Array.isArray(value)) return null;
-        const codes = value.filter(
-            (item): item is AiLlmProviderCode =>
-                typeof item === 'string' &&
-                (AI_LLM_PROVIDER_CODES as readonly string[]).includes(item),
-        );
-        const unique = [...new Set(codes)];
-        return unique.length ? unique : null;
-    }
-
     /** Ключ Whisper из шифртекста; битый шифртекст — null с предупреждением, чтение не падает. */
     private decryptWhisperKey(encrypted: string | undefined): string | null {
         if (!encrypted) return null;
@@ -284,106 +271,6 @@ export class PortalAiSettingsPrismaRepository
             );
             return null;
         }
-    }
-
-    /** JSON-колонка `settings` → объект (мусор из БД не роняет чтение). */
-    private toJsonSettings(value: Prisma.JsonValue | undefined): {
-        irrelevantConfidence?: number;
-        revisorEnabled?: boolean;
-        presentationAuditEnabled?: boolean;
-        presentationStrictness?: PresentationStrictnessLevel;
-        methodologyCode?: string;
-        weeklyReportEnabled?: boolean;
-        weeklyReportRecipients?: number[];
-        weeklyReportFolderId?: number;
-        weeklyReportDelivery?: WeeklyReportDeliveryMode;
-        complianceReviewEnabled?: boolean;
-        ownOrgNames?: string[];
-        llmProviderOrder?: AiLlmProviderCode[];
-        transcriptionMode?: AiTranscriptionMode;
-        whisperBaseUrl?: string;
-        whisperModel?: string;
-        whisperApiKeyEncrypted?: string;
-        vibecodeTranscriptionModel?: string;
-        factsCatchupNightlyBudgetRub?: number;
-    } {
-        if (!value || typeof value !== 'object' || Array.isArray(value)) {
-            return {};
-        }
-        const raw = value as Record<string, unknown>;
-        const confidence = Number(raw.irrelevantConfidence);
-        const folderId = Number(raw.weeklyReportFolderId);
-        return {
-            weeklyReportEnabled:
-                typeof raw.weeklyReportEnabled === 'boolean'
-                    ? raw.weeklyReportEnabled
-                    : undefined,
-            // Получатели вводятся строкой «12, 25, 7» — принимаем и массив,
-            // и строку (в БД могло лечь и то, и другое).
-            weeklyReportRecipients:
-                this.toUserIds(
-                    raw.weeklyReportRecipients as Prisma.JsonValue,
-                ) ?? undefined,
-            weeklyReportFolderId:
-                Number.isFinite(folderId) && folderId > 0
-                    ? folderId
-                    : undefined,
-            complianceReviewEnabled:
-                typeof raw.complianceReviewEnabled === 'boolean'
-                    ? raw.complianceReviewEnabled
-                    : undefined,
-            // Названия своих организаций вводятся строкой «Альфа-центр,
-            // Апрель» либо массивом — принимаем оба вида (в БД лежит и то,
-            // и другое, как у получателей отчёта).
-            ownOrgNames:
-                this.toOrgNames(raw.ownOrgNames as Prisma.JsonValue) ??
-                undefined,
-            llmProviderOrder:
-                this.toProviderOrder(
-                    raw.llmProviderOrder as Prisma.JsonValue,
-                ) ?? undefined,
-            transcriptionMode: (
-                AI_TRANSCRIPTION_MODES as readonly string[]
-            ).includes(String(raw.transcriptionMode))
-                ? (raw.transcriptionMode as AiTranscriptionMode)
-                : undefined,
-            whisperBaseUrl: this.nonEmptyString(raw.whisperBaseUrl),
-            whisperModel: this.nonEmptyString(raw.whisperModel),
-            whisperApiKeyEncrypted: this.nonEmptyString(
-                raw.whisperApiKeyEncrypted,
-            ),
-            vibecodeTranscriptionModel: this.nonEmptyString(
-                raw.vibecodeTranscriptionModel,
-            ),
-            factsCatchupNightlyBudgetRub:
-                Number.isFinite(Number(raw.factsCatchupNightlyBudgetRub)) &&
-                Number(raw.factsCatchupNightlyBudgetRub) > 0
-                    ? Number(raw.factsCatchupNightlyBudgetRub)
-                    : undefined,
-            methodologyCode: this.nonEmptyString(raw.methodologyCode),
-            weeklyReportDelivery: (
-                WEEKLY_REPORT_DELIVERY_MODES as readonly string[]
-            ).includes(String(raw.weeklyReportDelivery))
-                ? (raw.weeklyReportDelivery as WeeklyReportDeliveryMode)
-                : undefined,
-            irrelevantConfidence:
-                Number.isFinite(confidence) && confidence > 0 && confidence <= 1
-                    ? confidence
-                    : undefined,
-            revisorEnabled:
-                typeof raw.revisorEnabled === 'boolean'
-                    ? raw.revisorEnabled
-                    : undefined,
-            presentationAuditEnabled:
-                typeof raw.presentationAuditEnabled === 'boolean'
-                    ? raw.presentationAuditEnabled
-                    : undefined,
-            presentationStrictness: (
-                PRESENTATION_STRICTNESS_LEVELS as readonly string[]
-            ).includes(String(raw.presentationStrictness))
-                ? (raw.presentationStrictness as PresentationStrictnessLevel)
-                : undefined,
-        };
     }
 
     /** Строка Prisma → доменный тип; Json-колонка приводится к number[]. */
@@ -405,99 +292,51 @@ export class PortalAiSettingsPrismaRepository
             nightStartHour: row.nightStartHour,
             nightEndHour: row.nightEndHour,
             lastScanAt: row.lastScanAt,
-            allowedUserIds: this.toUserIds(row.allowedUserIds),
+            allowedUserIds: toUserIds(row.allowedUserIds),
             irrelevantConfidence:
-                this.toJsonSettings(row.settings).irrelevantConfidence ?? null,
+                parseAiSettingsJson(row.settings).irrelevantConfidence ?? null,
             revisorEnabled:
-                this.toJsonSettings(row.settings).revisorEnabled ?? null,
+                parseAiSettingsJson(row.settings).revisorEnabled ?? null,
             presentationAuditEnabled:
-                this.toJsonSettings(row.settings).presentationAuditEnabled ??
+                parseAiSettingsJson(row.settings).presentationAuditEnabled ??
                 null,
             presentationStrictness:
-                this.toJsonSettings(row.settings).presentationStrictness ??
+                parseAiSettingsJson(row.settings).presentationStrictness ??
                 null,
             methodologyCode:
-                this.toJsonSettings(row.settings).methodologyCode ?? null,
+                parseAiSettingsJson(row.settings).methodologyCode ?? null,
             weeklyReportEnabled:
-                this.toJsonSettings(row.settings).weeklyReportEnabled ?? null,
+                parseAiSettingsJson(row.settings).weeklyReportEnabled ?? null,
             weeklyReportRecipients:
-                this.toJsonSettings(row.settings).weeklyReportRecipients ??
+                parseAiSettingsJson(row.settings).weeklyReportRecipients ??
                 null,
             weeklyReportFolderId:
-                this.toJsonSettings(row.settings).weeklyReportFolderId ?? null,
+                parseAiSettingsJson(row.settings).weeklyReportFolderId ?? null,
             weeklyReportDelivery:
-                this.toJsonSettings(row.settings).weeklyReportDelivery ?? null,
+                parseAiSettingsJson(row.settings).weeklyReportDelivery ?? null,
             complianceReviewEnabled:
-                this.toJsonSettings(row.settings).complianceReviewEnabled ??
+                parseAiSettingsJson(row.settings).complianceReviewEnabled ??
                 null,
-            ownOrgNames: this.toJsonSettings(row.settings).ownOrgNames ?? null,
+            ownOrgNames: parseAiSettingsJson(row.settings).ownOrgNames ?? null,
             llmProviderOrder:
-                this.toJsonSettings(row.settings).llmProviderOrder ?? null,
+                parseAiSettingsJson(row.settings).llmProviderOrder ?? null,
             transcriptionMode:
-                this.toJsonSettings(row.settings).transcriptionMode ?? null,
+                parseAiSettingsJson(row.settings).transcriptionMode ?? null,
             whisperBaseUrl:
-                this.toJsonSettings(row.settings).whisperBaseUrl ?? null,
+                parseAiSettingsJson(row.settings).whisperBaseUrl ?? null,
             whisperModel:
-                this.toJsonSettings(row.settings).whisperModel ?? null,
+                parseAiSettingsJson(row.settings).whisperModel ?? null,
             whisperApiKey: this.decryptWhisperKey(
-                this.toJsonSettings(row.settings).whisperApiKeyEncrypted,
+                parseAiSettingsJson(row.settings).whisperApiKeyEncrypted,
             ),
             vibecodeTranscriptionModel:
-                this.toJsonSettings(row.settings).vibecodeTranscriptionModel ??
+                parseAiSettingsJson(row.settings).vibecodeTranscriptionModel ??
                 null,
             factsCatchupNightlyBudgetRub:
-                this.toJsonSettings(row.settings)
+                parseAiSettingsJson(row.settings)
                     .factsCatchupNightlyBudgetRub ?? null,
+            transcriptionRoute:
+                parseAiSettingsJson(row.settings).transcriptionRoute ?? null,
         };
-    }
-
-    /** Непустая строка из JSON; иначе undefined. */
-    private nonEmptyString(value: unknown): string | undefined {
-        return typeof value === 'string' && value.trim()
-            ? value.trim()
-            : undefined;
-    }
-
-    /**
-     * Названия своих организаций: массив либо строка через запятую/перенос
-     * строки. Пустые и слишком короткие имена отбрасываются — одна буква в
-     * списке превратила бы в «наше название» половину разговора.
-     */
-    private toOrgNames(value: Prisma.JsonValue): string[] | null {
-        const source: unknown[] = Array.isArray(value)
-            ? value
-            : typeof value === 'string'
-              ? value.split(/[,;\n]+/)
-              : [];
-        const names = source
-            .map(item => (typeof item === 'string' ? item.trim() : ''))
-            .filter(name => name.length >= MIN_ORG_NAME_LENGTH);
-        // Дубликаты без учёта регистра: «Апрель» и «апрель» — одно имя.
-        const seen = new Set<string>();
-        const unique = names.filter(name => {
-            const key = name.toLowerCase();
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-        });
-        return unique.length ? unique.slice(0, MAX_ORG_NAMES) : null;
-    }
-
-    /**
-     * Json из БД мог быть записан чем угодно (в том числе Laravel-ом),
-     * поэтому массив фильтруется до конечных положительных чисел.
-     */
-    private toUserIds(value: Prisma.JsonValue): number[] | null {
-        // Получатели отчёта в админке вводятся строкой через запятую —
-        // принимаем и «12, 25, 7», и массив (в БД лежит и то, и другое).
-        const source: unknown[] = Array.isArray(value)
-            ? value
-            : typeof value === 'string'
-              ? value.split(/[,;\s]+/)
-              : [];
-        const ids = source
-            .map(item => Number(item))
-            .filter(id => Number.isFinite(id) && id > 0);
-        return ids.length ? ids : null;
     }
 }

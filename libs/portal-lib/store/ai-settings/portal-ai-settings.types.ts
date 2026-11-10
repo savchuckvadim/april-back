@@ -9,6 +9,8 @@
  * Имена полей совпадают с полями Prisma-модели `PortalAiSettings`
  * (в БД — snake_case через @map).
  */
+import type { PortalTranscriptionRoute } from './portal-transcription-route.types';
+
 /**
  * Значение `llmModel`, выключающее первичный анализ контура резюме (резюме и
  * рекомендации по звонку — поля RESUME_GIGACHAT / RECOMENDATION_GIGACHAT
@@ -176,6 +178,13 @@ export interface PortalAiSettingsRecord {
      */
     vibecodeTranscriptionModel: string | null;
     /**
+     * МАРШРУТ РАСПОЗНАВАНИЯ: кто распознаёт длинные и короткие звонки, кто
+     * запасной, кто «для скорости» и «для точности» — см.
+     * portal-transcription-route.types. Заданная роль важнее режима
+     * `transcriptionMode`. NULL — действует режим.
+     */
+    transcriptionRoute: PortalTranscriptionRoute | null;
+    /**
      * НОЧНОЙ ДОГОН ФАКТОВ v3.1 (этап B6): лимит в рублях на одну ночь для
      * догона признаков в старых разборах текущего и прошлого месяца.
      * NULL или 0 — ночной догон выключен; полный переразбор — только кнопкой.
@@ -273,6 +282,7 @@ export const EMPTY_PORTAL_AI_SETTINGS: PortalAiSettingsRecord = {
     whisperModel: null,
     whisperApiKey: null,
     vibecodeTranscriptionModel: null,
+    transcriptionRoute: null,
     factsCatchupNightlyBudgetRub: null,
 };
 

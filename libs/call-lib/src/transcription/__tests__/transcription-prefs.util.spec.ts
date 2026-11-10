@@ -24,6 +24,7 @@ const record = (over: Record<string, unknown> = {}) => ({
     whisperModel: null,
     whisperApiKey: null,
     vibecodeTranscriptionModel: null,
+    transcriptionRoute: null,
     ...over,
 });
 
@@ -35,6 +36,7 @@ describe('resolveTranscriptionPrefs', () => {
             whisper: null,
             whisperSource: null,
             vibecodeModel: null,
+            route: null,
         });
         expect(
             resolveTranscriptionPrefs(null, env({ whisper: ENV_WHISPER })),
