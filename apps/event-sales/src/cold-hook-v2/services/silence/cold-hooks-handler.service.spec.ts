@@ -3,6 +3,10 @@ import { PbxPresentationSmartService } from '@lib/portal-lib/pbx/pbx-presentatio
 import { PbxZprSmartService } from '@lib/portal-lib/pbx/pbx-zpr-smart';
 import { UserNameResolver } from '../../../shared/lead-request/user-name.resolver';
 import {
+    PortalAppSettingsService,
+    XO_START_BASE_DEAL_TITLE_MODE,
+} from '@lib/portal-lib/store/app-settings';
+import {
     EnumColdCallEntityType,
     EnumColdCallForce,
     EnumColdCallIsTmc,
@@ -276,7 +280,13 @@ const makeBitrix = (world: World) => {
     return { bitrix, journal };
 };
 
-const makeHandler = (world: World) => {
+/** `settings` — что отдаёт чтение настроек портала; `null` — чтение упало. */
+const makeHandler = (
+    world: World,
+    settings: { xoStartBaseDealTitle: string } | null = {
+        xoStartBaseDealTitle: XO_START_BASE_DEAL_TITLE_MODE.default,
+    },
+) => {
     const { bitrix, journal } = makeBitrix(world);
     const pbx = {
         init: jest.fn(() =>
@@ -301,11 +311,19 @@ const makeHandler = (world: World) => {
             }),
         ),
     } as unknown as UserNameResolver;
+    const appSettings = {
+        resolve: jest.fn(() =>
+            settings
+                ? Promise.resolve(settings)
+                : Promise.reject(new Error('redis down')),
+        ),
+    } as unknown as PortalAppSettingsService;
     const handler = new ColdHooksHandlerV2Service(
         pbx,
         presSmart,
         zprSmart,
         names,
+        appSettings,
     );
     return { handler, journal, bitrix };
 };
@@ -1163,5 +1181,93 @@ describe('ColdHooksHandlerV2Service — смарты читаются один �
         // давали 170 полных перечитываний открытых элементов.
         expect(bitrix.item.listAll).toHaveBeenCalledTimes(2);
         expect(of(journal, 'deal.set')).toHaveLength(2);
+    });
+});
+
+describe('ColdHooksHandlerV2Service — клиент новых сделок: контакты и название', () => {
+    /** Компания без открытой основной: запуск создаёт и основную, и ХО. */
+    const world = (): World => ({
+        companies: [{ ID: '7', TITLE: 'ООО Ромашка' }],
+        deals: [],
+        tasks: [],
+        items: {},
+        contacts: { company_7: [91, 92] },
+    });
+    const run = async (
+        settings?: { xoStartBaseDealTitle: string } | null,
+        data: World = world(),
+    ) => {
+        const { handler, journal } = makeHandler(data, settings);
+        await handler.handleHooks('d.b24.ru', {
+            h1: hook(EnumColdCallEntityType.COMPANY, '7', EnumColdCallForce.N),
+        });
+        const set = (key: string): Row =>
+            (of(journal, 'deal.set').find(([, k]) => k === key)?.[2] ??
+                {}) as Row;
+        return {
+            journal,
+            base: set('new_base_deal_7'),
+            xo: set('new_cold_deal_7'),
+        };
+    };
+
+    it('обе новые сделки получают контакты компании (garant 7719: в сделке ХО не было ни одного)', async () => {
+        const { base, xo } = await run();
+        for (const deal of [base, xo]) {
+            expect(deal).toMatchObject({
+                COMPANY_ID: '7',
+                CONTACT_ID: '91',
+                CONTACT_IDS: [91, 92],
+            });
+        }
+    });
+
+    it('по умолчанию название основной не задаётся — как раньше, называет Битрикс', async () => {
+        const { base, xo } = await run();
+        expect(base).not.toHaveProperty('TITLE');
+        expect(xo.TITLE).toBe('Холодный обзвон ООО Ромашка');
+    });
+
+    it('настройка «по названию клиента» — основная называется как компания, ХО не меняется', async () => {
+        const { base, xo } = await run({
+            xoStartBaseDealTitle: XO_START_BASE_DEAL_TITLE_MODE.client,
+        });
+        expect(base.TITLE).toBe('ООО Ромашка');
+        expect(xo.TITLE).toBe('Холодный обзвон ООО Ромашка');
+    });
+
+    it('настройки не прочитались — работа создаётся, название ставит Битрикс', async () => {
+        const { base, xo } = await run(null);
+        expect(base).not.toHaveProperty('TITLE');
+        expect(base).toMatchObject({ CONTACT_IDS: [91, 92] });
+        expect(xo).toMatchObject({ CONTACT_IDS: [91, 92] });
+    });
+
+    it('существующая основная не переименовывается и её контакты не трогаются', async () => {
+        const { journal, xo } = await run(
+            { xoStartBaseDealTitle: XO_START_BASE_DEAL_TITLE_MODE.client },
+            {
+                ...world(),
+                deals: [
+                    {
+                        ID: '500',
+                        CATEGORY_ID: '17',
+                        STAGE_ID: 'C17:WARM',
+                        COMPANY_ID: '7',
+                        ASSIGNED_BY_ID: '447',
+                    },
+                ],
+                contacts: { deal_500: [91], company_7: [91, 92] },
+            },
+        );
+        const update = of(journal, 'deal.update').find(
+            ([, key]) => key === 'update_base_deal_500',
+        )?.[3] as Row;
+        expect(update).toBeDefined();
+        expect(update).not.toHaveProperty('TITLE');
+        expect(update).not.toHaveProperty('CONTACT_IDS');
+        expect(update).not.toHaveProperty('CONTACT_ID');
+        // Новая ХО-сделка контакты клиента получает и при живой основной.
+        expect(xo).toMatchObject({ CONTACT_IDS: [91, 92] });
     });
 });

@@ -238,6 +238,13 @@ export const PORTAL_APP_SETTING_GROUPS = {
             'отказникам.',
         links: [LINK.dealFields],
     },
+    xo_start: {
+        title: 'Запуск холодного обзвона',
+        description:
+            'Какими создаются сделки при запуске холодного обзвона: как ' +
+            'назвать новую основную сделку.',
+        links: [LINK.dealFields],
+    },
     xo_rescue: {
         title: 'Подстраховка ХО',
         description:
@@ -346,6 +353,7 @@ const GROUP_RULES: Record<EnumPortalAppCode, readonly GroupRule[]> = {
             codes: ['reject_revive_resend_after_minutes'],
             prefixes: ['xo_rescue_'],
         },
+        { group: 'xo_start', prefixes: ['xo_start_'] },
         { group: 'tmc_approval_rescue', prefixes: ['tmc_approval_rescue_'] },
         { group: 'lead_sla', prefixes: ['lead_intake_sla_'] },
         { group: 'lead_rescue', prefixes: ['lead_intake_rescue_'] },

@@ -34,6 +34,14 @@ export const PORTAL_APP_CODES = Object.values(EnumPortalAppCode);
 /** Тип значения настройки. */
 export type PortalAppSettingType = 'boolean' | 'number' | 'string';
 
+/** Значения `xo_start_base_deal_title`: как назвать новую основную сделку ХО. */
+export const XO_START_BASE_DEAL_TITLE_MODE = {
+    /** Название не задаём — Битрикс ставит «Сделка #N». */
+    default: 'default',
+    /** Название клиента: компания либо основная сделка запуска. */
+    client: 'client',
+} as const;
+
 /**
  * Чем заполняется значение в админке вместо свободного ввода:
  * `bitrix-users` — Bitrix-id сотрудников портала через запятую (тип string),
@@ -1513,6 +1521,32 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
                 'подстраховки по лидам, компаниям и сделкам.',
             type: 'number',
             default: 120,
+        }),
+        // --- Запуск холодного обзвона: новые сделки ----------------------
+        xoStartBaseDealTitle: setting({
+            code: 'xo_start_base_deal_title',
+            name: 'Запуск ХО: название новой основной сделки',
+            description:
+                'Как назвать основную сделку, которую создаёт запуск ' +
+                'холодного обзвона, когда открытой основной у клиента нет. ' +
+                '«По названию клиента» — название компании (у клиента без ' +
+                'компании — название основной сделки, из которой запустили). ' +
+                '«Название ставит Битрикс» — как раньше, «Сделка #N». ' +
+                'Существующая основная сделка не переименовывается; сделка ' +
+                'ХО всегда называется «Холодный обзвон …». Контакты клиента ' +
+                'привязываются к новым сделкам при любом значении.',
+            type: 'string',
+            options: [
+                {
+                    code: XO_START_BASE_DEAL_TITLE_MODE.default,
+                    name: 'Название ставит Битрикс («Сделка #N»)',
+                },
+                {
+                    code: XO_START_BASE_DEAL_TITLE_MODE.client,
+                    name: 'По названию клиента',
+                },
+            ],
+            default: XO_START_BASE_DEAL_TITLE_MODE.default,
         }),
         // --- Подстраховка ХО по компаниям и сделкам (крон досыла) --------
         xoRescueEnabled: setting({

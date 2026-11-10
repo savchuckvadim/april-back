@@ -8,6 +8,11 @@ import { IColdCallEventData } from '../entity/cold-call-bx-entity.flow.service';
 import { EventEntityModel } from '../entity/event-entity.model';
 import { EnumColdCallEntityType } from '../../../dto/cold.dto';
 import { dealLinkKey } from '../../../lib/deal-link-fields';
+import {
+    ColdNewDealClient,
+    coldNewDealContactFields,
+    EMPTY_COLD_NEW_DEAL_CLIENT,
+} from '../../../lib/cold-new-deal-client';
 import { ColdOwner, ownerKey } from '../cold-owner.type';
 import {
     clearDealAssignedAt,
@@ -28,8 +33,10 @@ export interface IColdDealFlowResult {
  * Основная и ХО-сделки холодного старта.
  *
  * Владелец — компания (как v1) либо клиент без компании (v2, шаг 6): тогда
- * `COMPANY_ID` не пишется, а НОВЫЕ сделки получают контакт и лид входной
- * сделки. ХО-сделка в обоих случаях ссылается на основную через
+ * `COMPANY_ID` не пишется, а НОВЫЕ сделки получают лид входной сделки.
+ * Контакты клиента ({@link ColdNewDealClient}) получают НОВЫЕ сделки любого
+ * владельца, новая основная — ещё и название по настройке портала.
+ * ХО-сделка в обоих случаях ссылается на основную через
  * `to_base_sales` — по этой ссылке сборщик связей находит её у клиента без
  * компании (у v1 ссылки нет, связь только через компанию).
  */
@@ -49,9 +56,22 @@ export class ColdDealFlowService {
         owner: ColdOwner,
         baseDeal: IBXDeal | null,
         buffer: ColdHookBatchGroupBuffer,
+        client: ColdNewDealClient = EMPTY_COLD_NEW_DEAL_CLIENT,
     ): IColdDealFlowResult {
-        const baseDealId = this.prepareBaseDeal(data, owner, baseDeal, buffer);
-        const xoDealId = this.createXoDeal(data, owner, baseDealId, buffer);
+        const baseDealId = this.prepareBaseDeal(
+            data,
+            owner,
+            baseDeal,
+            buffer,
+            client,
+        );
+        const xoDealId = this.createXoDeal(
+            data,
+            owner,
+            baseDealId,
+            buffer,
+            client,
+        );
 
         return { baseDealId, xoDealId };
     }
@@ -71,6 +91,7 @@ export class ColdDealFlowService {
         owner: ColdOwner,
         baseDeal: IBXDeal | null,
         buffer: ColdHookBatchGroupBuffer,
+        client: ColdNewDealClient,
     ): string | null {
         const key = ownerKey(owner);
         const { name, deadline, responsibleId, xoCreated } = data;
@@ -104,7 +125,11 @@ export class ColdDealFlowService {
                   }
                 : {}),
             ASSIGNED_BY_ID: responsibleId.toString(),
-            ...this.ownerFields(owner, baseDeal === null),
+            // Название — только новой: существующую не переименовываем.
+            ...(baseDeal === null && client.baseDealTitle
+                ? { TITLE: client.baseDealTitle }
+                : {}),
+            ...this.ownerFields(owner, baseDeal === null, client),
             ...baseDealEntity.getNextValues(),
         };
         this.acceptWork(responsibleId, fields as Record<string, unknown>);
@@ -146,6 +171,7 @@ export class ColdDealFlowService {
         owner: ColdOwner,
         baseDealId: string | null,
         buffer: ColdHookBatchGroupBuffer,
+        client: ColdNewDealClient,
     ) {
         const key = ownerKey(owner);
         const createColdKey = `new_cold_deal_${key}`;
@@ -171,7 +197,7 @@ export class ColdDealFlowService {
                 CATEGORY_ID: targetCold.categoryId,
                 STAGE_ID: targetCold.stageId,
                 ASSIGNED_BY_ID: responsibleId.toString(),
-                ...this.ownerFields(owner, true),
+                ...this.ownerFields(owner, true, client),
                 // Ссылка на основную: реальный id либо $result[new_base_deal_…]
                 // того же батча — Bitrix подставляет токен и в UF-поле.
                 ...(baseDealId
@@ -220,18 +246,26 @@ export class ColdDealFlowService {
 
     /**
      * Привязка сделки к клиенту. Компания пишется всегда (v1 ставит её и на
-     * update основной); контакт и лид входной сделки — только на НОВЫЕ
-     * сделки клиента без компании: у существующей основной свои связи.
+     * update основной). Контакты клиента — только на НОВЫЕ сделки: у
+     * существующей основной свои связи, а CONTACT_IDS в обновлении отвязал
+     * бы их. Лид входной сделки — только новым сделкам клиента без компании.
      */
-    private ownerFields(owner: ColdOwner, isNew: boolean): Partial<IBXDeal> {
+    private ownerFields(
+        owner: ColdOwner,
+        isNew: boolean,
+        client: ColdNewDealClient,
+    ): Partial<IBXDeal> {
+        const contacts = isNew
+            ? coldNewDealContactFields(owner, client.contactIds)
+            : {};
         if (owner.kind === 'company') {
-            return { COMPANY_ID: owner.companyId.toString() };
+            return { COMPANY_ID: owner.companyId.toString(), ...contacts };
         }
         if (!isNew) return {};
-        const fields: Record<string, string> = {};
-        if (owner.contactId) fields['CONTACT_ID'] = String(owner.contactId);
-        if (owner.leadId) fields['LEAD_ID'] = String(owner.leadId);
-        return fields as Partial<IBXDeal>;
+        return {
+            ...contacts,
+            ...(owner.leadId ? { LEAD_ID: String(owner.leadId) } : {}),
+        };
     }
 
     /**

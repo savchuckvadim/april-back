@@ -40,6 +40,12 @@ import { UserNameResolver } from '../../../shared/lead-request/user-name.resolve
 import { SalesBatchGroupBuffer as ColdHookBatchGroupBuffer } from '../../../shared/batch';
 import { LeadRequestAcceptService } from '../../../lead-request/services/lead-request-accept.service';
 import {
+    EnumPortalAppCode,
+    PortalAppSettingsService,
+    XO_START_BASE_DEAL_TITLE_MODE,
+} from '@lib/portal-lib/store/app-settings';
+import { buildColdNewDealClient } from '../../lib/cold-new-deal-client';
+import {
     ColdAddressedXoPlan,
     ColdAddressedXoV2Service,
     EMPTY_ADDRESSED_XO_PLAN,
@@ -86,6 +92,7 @@ export class ColdHooksHandlerV2Service {
         private readonly presSmart: PbxPresentationSmartService,
         private readonly zprSmart: PbxZprSmartService,
         private readonly userNames: UserNameResolver,
+        private readonly appSettings: PortalAppSettingsService,
     ) {
         this.logger.log('Cold Hooks Silence Handler initialized');
     }
@@ -140,6 +147,8 @@ export class ColdHooksHandlerV2Service {
                 pres: await this.presSmart.resolveInfo(domain),
                 zpr: await this.zprSmart.resolveInfo(domain),
             };
+
+            const baseDealTitleMode = await this.baseDealTitleMode(domain);
 
             // ===== Фаза 1: чтение, решение, закрытие — по всем хукам =====
             const targets = await targetResolver.resolve(hooks);
@@ -312,6 +321,12 @@ export class ColdHooksHandlerV2Service {
                         item.closed.preservedBaseDeal,
                         null,
                         buffer,
+                        // Контакты клиента уже прочитаны адресным ХО.
+                        buildColdNewDealClient(
+                            item.target,
+                            item.addressed.contactIds,
+                            baseDealTitleMode,
+                        ),
                     );
                     /*
                      * Строго ПОСЛЕ работы: flow() закрывает свою группу, и
@@ -502,6 +517,27 @@ export class ColdHooksHandlerV2Service {
                 names,
             },
         });
+    }
+
+    /**
+     * Как назвать новую основную сделку (`xo_start_base_deal_title`).
+     * Настройки не прочитались — работа важнее названия: как раньше,
+     * сделку назовёт Битрикс.
+     */
+    private async baseDealTitleMode(domain: string): Promise<string> {
+        try {
+            const settings = await this.appSettings.resolve(
+                domain,
+                EnumPortalAppCode.eventSales,
+            );
+            return settings.xoStartBaseDealTitle;
+        } catch (error) {
+            this.logger.warn(
+                `[v2] настройки запуска ХО не прочитаны — название новой основной ставит Битрикс (${getErrorDetails(error).message})`,
+                { domain },
+            );
+            return XO_START_BASE_DEAL_TITLE_MODE.default;
+        }
     }
 
     private describe(target: ColdTarget): string {

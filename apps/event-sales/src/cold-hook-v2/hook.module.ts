@@ -11,6 +11,7 @@ import { PbxZprSmartModule } from '@lib/portal-lib/pbx/pbx-zpr-smart';
 import { UserNameResolver } from '../shared/lead-request/user-name.resolver';
 import { QueueModule } from '@/modules/queue/queue.module';
 import { ColdHooksV2Processor } from './queue/cold-hooks-v2.processor';
+import { PortalAppSettingsModule } from '@lib/portal-lib/store/app-settings';
 
 @Module({
     imports: [
@@ -23,6 +24,8 @@ import { ColdHooksV2Processor } from './queue/cold-hooks-v2.processor';
         // Резолв смартов для связей клиента (v2, шаг 3).
         PbxPresentationSmartModule,
         PbxZprSmartModule,
+        // Настройка названия новой основной сделки (xo_start_*).
+        PortalAppSettingsModule,
     ],
     controllers: [EventSalesHookV2Controller],
     providers: [

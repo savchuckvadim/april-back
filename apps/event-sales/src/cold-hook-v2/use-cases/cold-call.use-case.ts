@@ -18,6 +18,10 @@ import { ColdListFlowService } from '../services/enities/kpi-list/cold-list.flow
 import { BitrixDateTime } from '@lib/shared/lib/date';
 import { EnumColdCallEntityType } from '../dto/cold.dto';
 import { IColdCallEventData } from '../services/enities/entity/cold-call-bx-entity.flow.service';
+import {
+    ColdNewDealClient,
+    EMPTY_COLD_NEW_DEAL_CLIENT,
+} from '../lib/cold-new-deal-client';
 
 export class ColdCallV2UseCase {
     // private readonly logger = new Logger(ColdCallV2UseCase.name);
@@ -36,12 +40,14 @@ export class ColdCallV2UseCase {
      * update владельца нет (основную и так пишет deal-flow), сделки без
      * COMPANY_ID, привязки через сделки/лид/контакт входной.
      * `lead` пока не используется — параметр оставлен под работу с лидом.
+     * `client` — контакты клиента и название для НОВЫХ сделок.
      */
     async flow(
         target: ResolvedColdTarget,
         baseDeal: IBXDeal | null,
         lead: IBXLead | null,
         buffer: ColdHookBatchGroupBuffer,
+        client: ColdNewDealClient = EMPTY_COLD_NEW_DEAL_CLIENT,
     ) {
         const data = target.hook;
         const owner = ownerFromTarget(target);
@@ -97,6 +103,7 @@ export class ColdCallV2UseCase {
             owner,
             baseDeal,
             buffer,
+            client,
         );
 
         const taskFlowData: IColdTaskFlow = {
