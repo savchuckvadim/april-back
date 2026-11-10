@@ -85,6 +85,8 @@ const makeDeps = () => {
             delivered: [],
         }),
     };
+    // Отметки догона разборов (звонок без разбора).
+    const repairStore = { markFailed: jest.fn().mockResolvedValue(undefined) };
     const processor = new CallReportProcessor(
         pipeline as never,
         dispatcher as never,
@@ -99,6 +101,11 @@ const makeDeps = () => {
         listLinker as never,
         callTypeRegistry as never,
         alerts as never,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        repairStore as never,
     );
     return {
         processor,
@@ -114,6 +121,7 @@ const makeDeps = () => {
         analysisIntake,
         transcriptionStore,
         settingsService,
+        repairStore,
     };
 };
 
@@ -215,6 +223,41 @@ describe('CallReportProcessor (стадии)', () => {
         );
         expect(deepAnalysis.run).toHaveBeenCalled();
         expect(analysisIntake.intake).toHaveBeenCalled();
+    });
+
+    it('страховочный разбор помечается неполным: догон переделает его многослойным', async () => {
+        const { processor, focusAnalysis, analysisIntake } = makeDeps();
+        focusAnalysis.run.mockResolvedValue(null);
+        await processor.handleAnalyze(
+            makeJob({ ...PAYLOAD, transcriptionId: '42' }),
+        );
+        expect(analysisIntake.intake).toHaveBeenCalledWith(
+            '42',
+            expect.any(String),
+            expect.objectContaining({
+                incompleteParts: ['form', 'content', 'movement'],
+            }),
+        );
+    });
+
+    it('модель не ответила ни на фокус, ни на страховку — звонок отмечен для догона', async () => {
+        const {
+            processor,
+            focusAnalysis,
+            deepAnalysis,
+            analysisIntake,
+            repairStore,
+        } = makeDeps();
+        focusAnalysis.run.mockResolvedValue(null);
+        deepAnalysis.run.mockResolvedValue(null);
+        await processor.handleAnalyze(
+            makeJob({ ...PAYLOAD, transcriptionId: '42' }),
+        );
+        expect(analysisIntake.intake).not.toHaveBeenCalled();
+        expect(repairStore.markFailed).toHaveBeenCalledWith({
+            ...PAYLOAD,
+            transcriptionId: '42',
+        });
     });
 
     it('нерелевантный звонок (гейт) — без смарт-элемента и глубокого разбора', async () => {

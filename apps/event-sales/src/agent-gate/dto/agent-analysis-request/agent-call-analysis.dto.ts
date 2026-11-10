@@ -15,6 +15,10 @@ import {
     CALL_REPORT_COACHING_CODES,
     CallReportCoachingCode,
 } from '@lib/call-lib';
+import {
+    CALL_ANALYSIS_PARTS,
+    type CallAnalysisPart,
+} from './agent-analysis-parts.const';
 import { AgentAnalysisUsageDto } from './agent-analysis-usage.dto';
 import { AgentAnalysisVersionsDto } from './agent-analysis-versions.dto';
 import { AgentCallAnalysisContentDto } from './agent-call-analysis-content.dto';
@@ -249,6 +253,22 @@ export class AgentCallAnalysisDto extends AgentCallAnalysisContentDto {
     @ValidateNested()
     @Type(() => AgentMethodologyOutcomeDto)
     methodology?: AgentMethodologyOutcomeDto | null;
+
+    @ApiPropertyOptional({
+        description:
+            'Части многослойного разбора, которые не собрались (модель не ' +
+            'ответила): form, content, movement — фокус-проходы, synthesis — ' +
+            'итоговая оценка, methodology — проход методики. Пустой список — ' +
+            'разбор полный; поле есть — догон переделает разбор, когда ' +
+            'поставщик снова ответит.',
+        example: ['movement', 'synthesis'],
+        enum: CALL_ANALYSIS_PARTS,
+        isArray: true,
+    })
+    @IsOptional()
+    @IsArray()
+    @IsIn(CALL_ANALYSIS_PARTS as unknown as string[], { each: true })
+    incompleteParts?: CallAnalysisPart[];
 
     @ApiPropertyOptional({
         description:

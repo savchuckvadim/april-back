@@ -13,6 +13,8 @@ import {
     TranscriptionPipelineView,
 } from '@lib/call-lib';
 import { AgentAnalysisIntakeService } from '../../agent-gate/services/agent-analysis-intake.service';
+import { CALL_ANALYSIS_FOCUS_PARTS } from '../../agent-gate/dto/agent-analysis-request.dto';
+import { CallAnalysisRepairStore } from '../services/call-analysis-repair.store';
 import type {
     FactsCatchupJobData,
     ReanalysisJobData,
@@ -119,6 +121,7 @@ export class CallReportProcessor {
         private readonly smartBackfill?: CallReportSmartBackfillUseCase,
         @Optional()
         private readonly factsCatchup?: CallReportFactsCatchupUseCase,
+        @Optional() private readonly repairStore?: CallAnalysisRepairStore,
     ) {}
 
     /**
@@ -359,14 +362,15 @@ export class CallReportProcessor {
             // глубже и точнее). Цельный CallDeepAnalysisService — страховка:
             // если фокус-разбор не собрался (выжило <2 проходов), звонок
             // всё равно получает разбор одним вызовом.
+            const focus = await this.focusAnalysis.run(
+                payload.domain,
+                transcript,
+                callType,
+                passportBlock,
+                { model },
+            );
             const analysis =
-                (await this.focusAnalysis.run(
-                    payload.domain,
-                    transcript,
-                    callType,
-                    passportBlock,
-                    { model },
-                )) ??
+                focus ??
                 (await this.deepAnalysis.run(
                     payload.domain,
                     transcript,
@@ -374,7 +378,20 @@ export class CallReportProcessor {
                     passportBlock,
                     { model },
                 ));
-            if (!analysis) return callType;
+            if (!analysis) {
+                // Модель не ответила ни на фокус, ни на страховку: звонок
+                // без разбора — отметка, догон поставит анализ заново,
+                // когда поставщик ответит (требование владельца 10.11.2026).
+                await this.repairStore?.markFailed({
+                    ...payload,
+                    transcriptionId,
+                });
+                return callType;
+            }
+            // Фокус не собрался — записан цельный разбор-страховка; догон
+            // переделает его многослойным, когда поставщик снова ответит.
+            if (!focus)
+                analysis.incompleteParts = [...CALL_ANALYSIS_FOCUS_PARTS];
 
             // Версия аналитика в поле смарта «Версия скилла агента»: раньше
             // заполнялась только внешним агентом и у внутреннего пути была

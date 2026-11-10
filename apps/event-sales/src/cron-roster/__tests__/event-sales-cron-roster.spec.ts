@@ -49,6 +49,7 @@ const GSR = 'gsr.bitrix24.ru';
 /** Все кроны, которые Nest регистрирует в event-sales, включая библиотечные. */
 const EVENT_SALES_CRONS = [
     'app-cache-purge',
+    'call-analysis-repair',
     'call-report-analytics-snapshot',
     'call-report-catch-up',
     'call-report-facts-catchup-nightly',

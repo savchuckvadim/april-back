@@ -223,6 +223,8 @@ describe('CallFocusAnalysisService', () => {
             ),
         ).toBe(false);
         expect(dto?.usage).toMatchObject({ tokens: 360, calls: 3 });
+        // Пометка для догона: какой проход не собрался.
+        expect(dto?.incompleteParts).toEqual(['content']);
     });
 
     it('промпт «движения сделки» несёт блок сигналов руководителю с критериями флагов и доказательствами', async () => {
@@ -298,6 +300,7 @@ describe('CallFocusAnalysisService', () => {
         const dto = await service.run('test.bitrix24.ru', 'текст', 'call');
         expect(dto).not.toBeNull();
         expect(dto?.summary).toBeUndefined();
+        expect(dto?.incompleteParts).toEqual(['synthesis']);
     });
 
     it('материалы по ролям: скрипт во всех проходах, возражения — в «содержании», регламент — в «движении», эталоны — в синтезе', async () => {
