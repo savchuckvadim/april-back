@@ -14,9 +14,14 @@ import {
 } from '@lib/call-lib';
 import { AgentAnalysisIntakeService } from '../../agent-gate/services/agent-analysis-intake.service';
 import type {
+    FactsCatchupJobData,
     ReanalysisJobData,
     SmartBackfillJobData,
 } from '@lib/sales-ai-analytics';
+import {
+    CallReportFactsCatchupUseCase,
+    type CallReportFactsCatchupResult,
+} from '../use-cases/call-report-facts-catchup.use-case';
 import {
     CallReportReanalyzeUseCase,
     type CallReportReanalyzeResult,
@@ -112,7 +117,33 @@ export class CallReportProcessor {
         @Optional() private readonly reanalyze?: CallReportReanalyzeUseCase,
         @Optional()
         private readonly smartBackfill?: CallReportSmartBackfillUseCase,
+        @Optional()
+        private readonly factsCatchup?: CallReportFactsCatchupUseCase,
     ) {}
+
+    /**
+     * Догон фактов v3.1 в старых разборах (этап B4): один короткий вызов
+     * модели по расшифровке, факты дописываются в активную запись разбора,
+     * оценки не трогаются, Битрикс не вызывается; при остатке кандидатов
+     * use-case сам ставит продолжение. Ставит админ-ручка
+     * admin/ai-analytics/facts-catchup (dryRun — тоже через джобу).
+     */
+    @Process(JobNames.CALL_REPORT_FACTS_CATCHUP)
+    async handleFactsCatchup(
+        job: Job<FactsCatchupJobData>,
+    ): Promise<CallReportFactsCatchupResult> {
+        if (!this.factsCatchup) {
+            throw new Error(
+                'Догон фактов не подключён: нет провайдера CallReportFactsCatchupUseCase',
+            );
+        }
+        const { domain, from, to, part, dryRun } = job.data;
+        this.logger.log(
+            `CALL_REPORT_FACTS_CATCHUP: ${domain} ${from}..${to} часть ${part ?? 1}` +
+                (dryRun ? ' (dry-run)' : ''),
+        );
+        return this.factsCatchup.execute(job.data);
+    }
 
     /**
      * Дописывание полей карточек разборов из ais без вызова модели:

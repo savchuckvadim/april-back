@@ -1,5 +1,8 @@
 import { CallReportRetestUseCase } from './use-cases/call-report-retest.use-case';
 import { CallReportReanalyzeUseCase } from './use-cases/call-report-reanalyze.use-case';
+import { CallFactsCatchupService } from './services/call-facts-catchup.service';
+import { CallReportFactsCatchupStatusService } from './services/call-report-facts-catchup-status.service';
+import { CallReportFactsCatchupUseCase } from './use-cases/call-report-facts-catchup.use-case';
 import { CallAnalysisRerunService } from './services/call-analysis-rerun.service';
 import { CallReportReanalysisReportService } from './services/call-report-reanalysis-report.service';
 import { CallReportSmartBackfillStatusService } from './services/call-report-smart-backfill-status.service';
@@ -125,6 +128,11 @@ import { PresentationAuditScheduler } from './cron/presentation-audit.scheduler'
         // CALL_REPORT_REANALYZE, статус и отчёт согласия версий в ais
         CallReportReanalysisReportService,
         CallReportReanalyzeUseCase,
+        // Догон фактов v3.1 в старых разборах одним коротким вызовом
+        // модели (этап B4): джоба CALL_REPORT_FACTS_CATCHUP, статус в ais
+        CallFactsCatchupService,
+        CallReportFactsCatchupStatusService,
+        CallReportFactsCatchupUseCase,
         // Дописывание полей карточек из ais без модели: джоба
         // CALL_REPORT_SMART_BACKFILL (кнопка в админке) и ночной крон
         // режима pending (in_report = false)

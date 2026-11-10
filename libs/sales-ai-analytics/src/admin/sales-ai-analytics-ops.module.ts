@@ -33,6 +33,7 @@ import { AiAnalyticsGoldenSetService } from './services/ai-analytics-golden-set.
 import { AiAnalyticsPhase4StatusService } from './services/ai-analytics-phase4-status.service';
 import { AiAnalyticsPipelineAdminService } from './services/ai-analytics-pipeline-admin.service';
 import { AiAnalyticsReanalyzeService } from './services/ai-analytics-reanalyze.service';
+import { AiAnalyticsFactsCatchupService } from './services/ai-analytics-facts-catchup.service';
 import { AiAnalyticsRetentionService } from './services/ai-analytics-retention.service';
 import { AiAnalyticsSmartBackfillService } from './services/ai-analytics-smart-backfill.service';
 import { AiOwnerReportExportService } from './services/ai-owner-report-export.service';
@@ -56,6 +57,7 @@ import { AiOwnerReportExportService } from './services/ai-owner-report-export.se
         AiAnalyticsPhase4StatusService,
         // Переразбор истории (этап 1B): джоба CALL_REPORT_REANALYZE + статус
         AiAnalyticsReanalyzeService,
+        AiAnalyticsFactsCatchupService,
         // Дописывание полей карточек из ais без модели: джоба
         // CALL_REPORT_SMART_BACKFILL + статус и число ожидающих
         AiAnalyticsSmartBackfillService,
@@ -73,6 +75,7 @@ import { AiOwnerReportExportService } from './services/ai-owner-report-export.se
         AiAnalyticsGoldenSetService,
         AiAnalyticsPhase4StatusService,
         AiAnalyticsReanalyzeService,
+        AiAnalyticsFactsCatchupService,
         AiAnalyticsSmartBackfillService,
     ],
 })

@@ -5,6 +5,7 @@ import { AiAnalyticsGoldenSetAdminController } from './controllers/golden-set.ad
 import { AiAnalyticsPhase4AdminController } from './controllers/phase4.admin.controller';
 import { AiAnalyticsPipelineAdminController } from './controllers/pipeline.admin.controller';
 import { AiAnalyticsReanalyzeAdminController } from './controllers/reanalyze.admin.controller';
+import { AiAnalyticsFactsCatchupAdminController } from './controllers/facts-catchup.admin.controller';
 import { AiAnalyticsOwnerReportExportAdminController } from './controllers/owner-report-export.admin.controller';
 import { AiAnalyticsRefreshAdminController } from './controllers/refresh.admin.controller';
 import { SalesAiAnalyticsRefreshModule } from './refresh/sales-ai-analytics-refresh.module';
@@ -59,6 +60,7 @@ import { SalesAiAnalyticsProbeModule } from './sales-ai-analytics-probe.module';
         AiAnalyticsPhase4AdminController,
         // Переразбор истории текущей версией промпта (этап 1B)
         AiAnalyticsReanalyzeAdminController,
+        AiAnalyticsFactsCatchupAdminController,
         // Дописывание полей карточек разборов из ais без модели
         AiAnalyticsSmartBackfillAdminController,
         // Путеводитель: теория и связи настроек, параметров, kind'ов, ручек

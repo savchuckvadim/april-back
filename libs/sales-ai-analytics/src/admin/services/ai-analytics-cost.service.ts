@@ -15,7 +15,11 @@
  * же трактовка, что у `brief-job.util.ts` приложения.
  */
 import { Injectable } from '@nestjs/common';
-import { AGENT_ANALYSIS_RETEST_TYPE, AGENT_ANALYSIS_TYPE } from '@lib/call-lib';
+import {
+    AGENT_ANALYSIS_FACTS_TYPE,
+    AGENT_ANALYSIS_RETEST_TYPE,
+    AGENT_ANALYSIS_TYPE,
+} from '@lib/call-lib';
 import { AI_ANALYTICS_SNAPSHOT_TYPES } from '../../contracts/snapshot-kinds.const';
 import { registryDefault } from '../../params/registry.access';
 import { AiAnalyticsAdminSnapshotStore } from '../ai-analytics-admin-snapshot.store';
@@ -28,6 +32,7 @@ export const AI_ANALYTICS_COST_TYPES = [
     ...AI_ANALYTICS_SNAPSHOT_TYPES,
     AGENT_ANALYSIS_TYPE,
     AGENT_ANALYSIS_RETEST_TYPE,
+    AGENT_ANALYSIS_FACTS_TYPE,
 ] as const;
 export type AiAnalyticsCostType = (typeof AI_ANALYTICS_COST_TYPES)[number];
 

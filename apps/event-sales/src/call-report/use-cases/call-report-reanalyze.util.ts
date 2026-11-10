@@ -282,8 +282,21 @@ export function etaMinutesOf(
  * время, одновременность пула и оценка «осталось». Остановка части после
  * серии сбоев попадает в lastError — её видно в панели запуска.
  */
+/** Счётчики части прогона — общие у переразбора и догона фактов (B4). */
+export type RunProgressStatus = Pick<
+    ReanalysisRunStatus,
+    | 'done'
+    | 'failed'
+    | 'tokens'
+    | 'price'
+    | 'lastError'
+    | 'processingMs'
+    | 'concurrency'
+    | 'etaMinutes'
+    | 'total'
+>;
 export function accountOutcome(
-    status: ReanalysisRunStatus,
+    status: RunProgressStatus,
     outcome: ReanalysisOneOutcome,
     elapsedMs: number,
     pool: ReanalysisPoolState,
