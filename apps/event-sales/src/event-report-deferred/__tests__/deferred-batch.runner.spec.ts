@@ -84,6 +84,9 @@ jest.mock(
                     batch: { listItem: { add(cmd: string): void } };
                 },
             ) {}
+            flushDeferredUnique(): Promise<void> {
+                return Promise.resolve();
+            }
             queue(
                 _ctx: unknown,
                 _deals: unknown,

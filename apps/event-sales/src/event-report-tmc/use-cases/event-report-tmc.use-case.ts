@@ -124,6 +124,8 @@ export class EventReportTmcUseCase {
         await buffer.flush();
         const results = await bitrix.api.callBatchWithConcurrency(1);
         const batchResults = [...buffer.getResults(), ...results];
+        // Уникальные KPI с кодом от сделки этой пачки — второй волной.
+        await kpiFlow.flushDeferredUnique(batchResults);
 
         // im.notify не батчится — после основного батча, ошибки гасятся внутри.
         await taskFlow.notifyTransfer(ctx);

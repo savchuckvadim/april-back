@@ -92,8 +92,11 @@ export class DeferredBatchRunner {
 
         const deals = this.queueDeals(ctx, wantsPres, wantsXo, failures);
         const buffer = new ColdHookBatchGroupBuffer(this.bitrix);
-        const kpiRows = wantsKpi
-            ? await this.queueKpi(ctx, deals, buffer, failures)
+        const kpiFlow = wantsKpi
+            ? new EventReportKpiFlowService(this.bitrix, this.portal)
+            : null;
+        const kpiRows = kpiFlow
+            ? await this.queueKpi(kpiFlow, ctx, deals, buffer, failures)
             : [];
 
         let batchResults: IBitrixBatchResponseResult[] = [];
@@ -104,6 +107,8 @@ export class DeferredBatchRunner {
             // Ответ = флаши буфера + хвостовой вызов: KPI-команд может не
             // быть вовсе, и тогда весь cmdBatch уходит именно хвостом.
             batchResults = [...buffer.getResults(), ...tail];
+            // Уникальные KPI с кодом от сделки этой пачки — второй волной.
+            await kpiFlow?.flushDeferredUnique(batchResults);
         } catch (error) {
             const reason = `батч досылки не отправлен: ${(error as Error).message}`;
             for (const kind of [
@@ -205,16 +210,14 @@ export class DeferredBatchRunner {
      * дублей — отметка Redis лишь экономит поход в Битрикс.
      */
     private async queueKpi(
+        kpiFlow: EventReportKpiFlowService,
         ctx: EventReportContext,
         deals: DealFlowResult,
         buffer: ColdHookBatchGroupBuffer,
         failures: Map<DeferredFlowStepKind, string>,
     ): Promise<KpiRowCmd[]> {
         try {
-            return await new EventReportKpiFlowService(
-                this.bitrix,
-                this.portal,
-            ).queue(ctx, deals, buffer);
+            return await kpiFlow.queue(ctx, deals, buffer);
         } catch (error) {
             const reason = `записи KPI не собраны: ${(error as Error).message}`;
             this.logger.warn(`[deferred] ${ctx.domain}: ${reason}`);

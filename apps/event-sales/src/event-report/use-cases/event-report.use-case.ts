@@ -168,6 +168,9 @@ export class EventReportUseCase {
         // сайд-очередей читает отсюда id созданной план-задачи, и взять
         // только `results` значило бы не найти её никогда.
         const batchResults = [...buffer.getResults(), ...results];
+        // Уникальные KPI с кодом от сделки, созданной этой пачкой, — второй
+        // волной, с её реальным номером (см. flushDeferredUnique).
+        await kpiFlow.flushDeferredUnique(batchResults);
 
         // Стадии сделок клиента только что могли сдвинуться: следующий
         // предикт (следующее дело того же клиента) обязан увидеть новые,

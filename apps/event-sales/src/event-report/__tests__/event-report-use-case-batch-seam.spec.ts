@@ -152,6 +152,9 @@ jest.mock('../services/kpi-list/event-report-kpi-flow.service', () => ({
     // конкретном кейсе, решает mockKpiQueuesIntoBuffer: на боевом портале без
     // установленного KPI-списка настоящий сервис не кладёт ничего.
     EventReportKpiFlowService: class {
+        flushDeferredUnique(): Promise<void> {
+            return Promise.resolve();
+        }
         queue(
             _ctx: unknown,
             _deals: unknown,
