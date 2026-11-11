@@ -22,7 +22,15 @@ const analysis = (overrides: Record<string, unknown> = {}) =>
     ({
         callType: 'presentation',
         riskFlags: ['conflict'],
+        riskEvidence: [
+            {
+                flag: 'conflict',
+                quote: 'Да вы меня вообще не слушаете',
+                speaker: 'manager',
+            },
+        ],
         coachingPriority: 'planned',
+        // Возражение клиента само по себе — норма, не сигнал (11.11.2026).
         objections: [
             { objection: 'Дорого', quote: 'Да у нас Консультант стоит' },
         ],
@@ -199,7 +207,7 @@ describe('CallReportAlertService — алерт РОПу в день звонк�
         expect(aiService.create).not.toHaveBeenCalled();
     });
 
-    it('без риск-флагов и срочного приоритета — нет (настройки не читаются)', async () => {
+    it('без риск-флагов и ошибок менеджера — нет (настройки не читаются)', async () => {
         const { service, systemAdd, appSettings } = makeService();
         const outcome = await service.notifyIfNeeded(
             DOMAIN,
@@ -244,18 +252,78 @@ describe('CallReportAlertService — алерт РОПу в день звонк�
         expect(systemAdd).not.toHaveBeenCalled();
     });
 
-    it('coachingPriority=urgent без флагов — алерт вида urgent', async () => {
+    /**
+     * Решение владельца 11.11.2026: срочный приоритет коучинга и возражение
+     * клиента сами по себе не сигнал — в агрессивном b2b клиент возражает
+     * почти в каждом звонке.
+     */
+    it('срочный приоритет при отработанном возражении — нет', async () => {
         const { service, systemAdd } = makeService();
         const outcome = await service.notifyIfNeeded(
             DOMAIN,
-            analysis({ riskFlags: [], coachingPriority: 'urgent' }),
+            analysis({
+                riskFlags: [],
+                coachingPriority: 'urgent',
+                objections: [
+                    {
+                        objection: 'Дорого',
+                        quote: 'Дорого у вас',
+                        handled: true,
+                        outcome: 'continued',
+                    },
+                ],
+            }),
+            row(),
+            777,
+        );
+
+        expect(outcome.status).toBe('skipped');
+        expect(outcome.reason).toBe('no-risk');
+        expect(systemAdd).not.toHaveBeenCalled();
+    });
+
+    it('флаг без цитаты-доказательства — не сигнал', async () => {
+        const { service, systemAdd } = makeService();
+        const outcome = await service.notifyIfNeeded(
+            DOMAIN,
+            analysis({ riskEvidence: [] }),
+            row(),
+            777,
+        );
+
+        expect(outcome.reason).toBe('no-risk');
+        expect(systemAdd).not.toHaveBeenCalled();
+    });
+
+    it('возражение не отработано — алерт с цитатой клиента и что не так', async () => {
+        const { service, systemAdd } = makeService();
+        const outcome = await service.notifyIfNeeded(
+            DOMAIN,
+            analysis({
+                riskFlags: [],
+                objections: [
+                    {
+                        objection: 'Дорого',
+                        quote: 'Нам больше нравится конкурент',
+                        handled: false,
+                        reaction: 'other',
+                        outcome: 'disengaged',
+                    },
+                ],
+            }),
             row(),
             777,
         );
 
         expect(outcome.status).toBe('sent');
-        expect(outcome.kind).toBe('urgent');
-        expect(sentMessage(systemAdd)).toContain('Срочно на разбор');
+        expect(outcome.kind).toBe('objection_mishandled');
+        const message = sentMessage(systemAdd);
+        expect(message).toContain(
+            'Сигнал: Возражение не отработано — менеджер не ответил по существу, клиент после этого ушёл из разговора',
+        );
+        expect(message).toContain(
+            'Возражение клиента: «Нам больше нравится конкурент»',
+        );
     });
 
     it('РОПы не заданы — алерт не отправляется', async () => {
@@ -283,7 +351,8 @@ describe('CallReportAlertService — алерт РОПу в день звонк�
         expect(message).toContain('Менеджер: Иванов Иван');
         expect(message).toContain('Тип звонка: Презентация');
         expect(message).toContain('Сигнал: Конфликт / грубость');
-        expect(message).toContain('Цитата: «Да у нас Консультант стоит»');
+        expect(message).toContain('Цитата: «Да вы меня вообще не слушаете»');
+        expect(message).not.toContain('Консультант');
         expect(message).toContain(
             'Разбор: https://test.bitrix24.ru/crm/type/1056/details/777/',
         );

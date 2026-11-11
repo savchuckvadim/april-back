@@ -1,4 +1,8 @@
-import { AnalyticsCallLiteRow, AnalyticsLiteDataset } from '@lib/call-lib';
+import {
+    AnalyticsCallLiteRow,
+    AnalyticsLiteDataset,
+    AnalyticsLiteStyle,
+} from '@lib/call-lib';
 import { CallsLoader } from '../../domain/loaders/calls.loader';
 import {
     AiAnalyticsPortalSettings,
@@ -21,6 +25,48 @@ export function provenRisk(
     return {
         riskFlags: [flag],
         riskEvidence: [{ flag, quote, speaker: 'manager', at: null }],
+    };
+}
+
+/**
+ * Неотработанное возражение для фикстур (решение владельца 11.11.2026):
+ * сигнал — ошибка менеджера; само возражение клиента сигналом не считается.
+ */
+export function mishandledObjection(
+    quote = 'Нам больше нравится конкурент',
+): Pick<AnalyticsCallLiteRow, 'objections'> {
+    return {
+        objections: [
+            {
+                category: 'competitor',
+                quote,
+                handled: false,
+                outcome: 'disengaged',
+                reaction: 'other',
+            },
+        ],
+    };
+}
+
+/** Маркеры стиля звонка: всё неизвестно (null), переопредели нужные. */
+export function liteStyle(
+    overrides: Partial<AnalyticsLiteStyle> = {},
+): AnalyticsLiteStyle {
+    return {
+        talkRatioPct: null,
+        questionsCount: null,
+        needsFound: null,
+        needsCount: null,
+        presentationDone: null,
+        productsOfferedCount: null,
+        priceDiscussed: null,
+        competitorsCount: null,
+        refusalCategory: null,
+        interlocutorRole: null,
+        productive: null,
+        scriptCompliance: null,
+        callDirection: null,
+        ...overrides,
     };
 }
 

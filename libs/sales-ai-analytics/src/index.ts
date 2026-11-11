@@ -14,6 +14,8 @@ export * from './model/sections.util';
 // Этап 2 плана 2026-10-19-ai-focus-plan: действующие и отменённые
 // риск-флаги, флаг с цитатой — единственный сигнал риска.
 export * from './model/risk-flags.util';
+// 11.11.2026: сигнал руководителю — ошибка менеджера, а не возражение клиента.
+export * from './model/manager-signal.rules';
 export * from './model/pulse';
 export * from './model/agenda';
 export * from './model/score-scale';

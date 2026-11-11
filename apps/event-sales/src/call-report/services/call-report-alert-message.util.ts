@@ -1,84 +1,94 @@
 import {
     CALL_REPORT_CALL_TYPE_ITEMS,
-    CALL_REPORT_COACHING_ITEMS,
     CALL_REPORT_RISK_FLAG_ITEMS,
-    CallReportCoachingCode,
-    CallReportRiskFlagCode,
 } from '@lib/call-lib';
+import type { CallReportActiveRiskFlagCode } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-smart.type';
+import {
+    CALL_MISTAKE_SIGNAL_TITLES,
+    isCallMistakeSignalKind,
+    ManagerSignal,
+    ManagerSignalCallView,
+    ManagerSignalKind,
+    ManagerSignalQuoteSource,
+    resolveManagerSignal,
+} from '@lib/sales-ai-analytics';
 import { AgentCallAnalysisDto } from '../../agent-gate/dto/agent-analysis-request.dto';
 
 /**
  * Риск-флаги, по которым РОП получает уведомление В ДЕНЬ ЗВОНКА (решение
- * владельца 19.10.2026 — флаги понижены в приоритете): только конфликт /
- * грубость менеджера и нарушение регламента. «Не оставил дверь открытой»
- * в тот же день не шлётся — идёт в повестку недели; обещание и негатив
- * клиента отменены совсем (этап 2 плана ai/tasks/2026-10-19-ai-focus-plan.md)
- * и в разбор не попадают.
+ * владельца 19.10.2026): только конфликт / грубость менеджера и нарушение
+ * регламента, и только с дословной цитатой. «Не оставил дверь открытой»
+ * в тот же день не шлётся — идёт в повестку недели.
  */
 export const CALL_REPORT_SAME_DAY_ALERT_FLAGS = [
     'conflict',
     'compliance',
-] as const satisfies readonly CallReportRiskFlagCode[];
+] as const satisfies readonly CallReportActiveRiskFlagCode[];
 export type CallReportSameDayAlertFlag =
     (typeof CALL_REPORT_SAME_DAY_ALERT_FLAGS)[number];
 
-/** Вид алерта: риск-флаг дня либо срочный приоритет коучинга. */
-export type CallReportAlertKind = CallReportSameDayAlertFlag | 'urgent';
-
-/** Срочный приоритет разбора — сам по себе повод для алерта. */
-const URGENT_COACHING: CallReportCoachingCode = 'urgent';
+/** Вид алерта: флаг дня или ошибка менеджера (manager-signal.rules). */
+export type CallReportAlertKind = ManagerSignalKind;
 
 /** Цитата в уведомлении обрезается, чтобы колокольчик остался читаемым. */
 export const ALERT_QUOTE_MAX_LENGTH = 300;
 
-/** Что нужно от разбора, чтобы решить об алерте и подобрать цитату. */
-type AlertAnalysisView = Pick<
-    AgentCallAnalysisDto,
-    'riskFlags' | 'coachingPriority' | 'objections' | 'sections'
->;
+/** Подпись цитаты: чьи это слова. */
+const QUOTE_LABELS: Record<ManagerSignalQuoteSource, string> = {
+    evidence: 'Цитата',
+    client: 'Возражение клиента',
+    manager: 'Как было',
+};
 
 /** Данные для текста уведомления. */
 export interface CallReportAlertMessageInput {
     managerName: string;
     callType: string | null;
-    kind: CallReportAlertKind;
-    quote: string | null;
+    signal: ManagerSignal;
     link: string | null;
 }
 
-const isSameDayFlag = (code: string): code is CallReportSameDayAlertFlag =>
-    (CALL_REPORT_SAME_DAY_ALERT_FLAGS as readonly string[]).includes(code);
-
 /**
- * Вид алерта по разбору: первый риск-флаг ДНЯ (conflict / compliance) в
- * порядке, как их поставил разбор; иначе срочный приоритет коучинга;
- * иначе null — алерт не нужен. Прочие коды (door_closed и отменённые в
- * старых данных) уведомление в день звонка не дают.
+ * Сигнал по разбору (решение владельца 11.11.2026): повод — ошибка
+ * менеджера, а не возражение клиента. Флаги дня с цитатой, возражение не
+ * отработано, показ без потребностей или без «свойство — связка — выгода»;
+ * срочный приоритет коучинга сам по себе алерта не даёт. null — алерт не нужен.
  */
-export function resolveAlertKind(
-    analysis: AlertAnalysisView,
-): CallReportAlertKind | null {
-    const flag = (analysis.riskFlags ?? []).find(isSameDayFlag);
-    if (flag) return flag;
-    return analysis.coachingPriority === URGENT_COACHING ? 'urgent' : null;
+export function resolveAlertSignal(
+    analysis: AgentCallAnalysisDto,
+): ManagerSignal | null {
+    return resolveManagerSignal(
+        toSignalView(analysis),
+        CALL_REPORT_SAME_DAY_ALERT_FLAGS,
+    );
 }
 
-/**
- * Цитата-доказательство: первое возражение с дословной цитатой, иначе
- * «как было» худшего актуального раздела (relevance > 0, минимальный
- * score). До ALERT_QUOTE_MAX_LENGTH символов.
- */
-export function pickAlertQuote(analysis: AlertAnalysisView): string | null {
-    const objectionQuote = (analysis.objections ?? [])
-        .map(objection => objection.quote?.trim() ?? '')
-        .find(quote => quote.length > 0);
-    if (objectionQuote) return truncateQuote(objectionQuote);
-
-    const worstSection = (analysis.sections ?? [])
-        .filter(section => section.relevance > 0 && section.asWas?.trim())
-        .sort((a, b) => (a.score ?? Infinity) - (b.score ?? Infinity))[0];
-    const asWas = worstSection?.asWas?.trim();
-    return asWas ? truncateQuote(asWas) : null;
+/** Проекция разбора для правила сигнала: необязательные поля — null. */
+export function toSignalView(
+    analysis: AgentCallAnalysisDto,
+): ManagerSignalCallView {
+    return {
+        riskFlags: analysis.riskFlags ?? [],
+        riskEvidence: (analysis.riskEvidence ?? []).map(item => ({
+            flag: item.flag,
+            quote: item.quote,
+        })),
+        objections: (analysis.objections ?? []).map(objection => ({
+            quote: objection.quote ?? null,
+            handled: objection.handled ?? null,
+            outcome: objection.outcome ?? null,
+            reaction: objection.reaction ?? null,
+        })),
+        sections: (analysis.sections ?? []).map(section => ({
+            section: section.section,
+            relevance: section.relevance,
+            score: section.score ?? null,
+            asWas: section.asWas ?? null,
+        })),
+        presentationDone: analysis.presentationDone ?? null,
+        needsFound: analysis.needsFound ?? null,
+        spiralsFull: analysis.methodology?.spiralsFull ?? null,
+    };
 }
 
 /**
@@ -106,26 +116,23 @@ export function buildAlertLink(input: {
 
 /** Текст уведомления РОПу (BB-код im.notify.system.add). */
 export function buildAlertMessage(input: CallReportAlertMessageInput): string {
+    const { signal } = input;
     const lines = [
         '[B]AI-разбор звонка: сигнал руководителю[/B]',
         `Менеджер: ${input.managerName}`,
         `Тип звонка: ${callTypeTitle(input.callType)}`,
-        `Сигнал: ${alertKindTitle(input.kind)}`,
-        input.quote ? `Цитата: «${input.quote}»` : null,
+        `Сигнал: ${alertKindTitle(signal.kind)}${signal.detail ? ` — ${signal.detail}` : ''}`,
+        signal.quote
+            ? `${QUOTE_LABELS[signal.quoteSource]}: «${truncateQuote(signal.quote.trim())}»`
+            : null,
         input.link ? `Разбор: ${input.link}` : null,
     ];
     return lines.filter((line): line is string => line !== null).join('\n');
 }
 
-/** Подпись вида алерта из справочников смарта. */
+/** Подпись вида алерта: ошибки менеджера — свои, флаги — из справочника смарта. */
 export function alertKindTitle(kind: CallReportAlertKind): string {
-    if (kind === 'urgent') {
-        return (
-            CALL_REPORT_COACHING_ITEMS.find(
-                item => item.CODE === URGENT_COACHING,
-            )?.VALUE ?? kind
-        );
-    }
+    if (isCallMistakeSignalKind(kind)) return CALL_MISTAKE_SIGNAL_TITLES[kind];
     return (
         CALL_REPORT_RISK_FLAG_ITEMS.find(item => item.CODE === kind)?.VALUE ??
         kind

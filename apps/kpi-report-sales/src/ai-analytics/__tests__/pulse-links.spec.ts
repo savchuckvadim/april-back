@@ -9,6 +9,7 @@ import {
 import {
     callsLoaderWith,
     liteRow,
+    mishandledObjection,
     provenRisk,
     settingsLoaderWith,
 } from './fixtures/lite-row.fixture';
@@ -32,7 +33,7 @@ const smartLink = (itemId: number): string =>
 const emptyFeedback = (): AiAnalyticsFeedbackStore =>
     ({ listInPeriod: jest.fn().mockResolvedValue([]) }) as never;
 
-/** Три сигнала окна (риск, urgent, риск) и спокойный звонок без сигнала. */
+/** Три сигнала окна (риск, ошибка менеджера, риск) и спокойный звонок без сигнала. */
 const rowsWithAlerts = () => [
     liteRow({
         transcriptionId: 'risk',
@@ -42,7 +43,7 @@ const rowsWithAlerts = () => [
     liteRow({
         transcriptionId: 'urgent',
         managerId: '20',
-        coachingPriority: 'urgent',
+        ...mishandledObjection(),
         callStartedAt: new Date('2026-09-02T07:00:00Z'),
     }),
     liteRow({
@@ -134,7 +135,7 @@ describe('PulseUseCase: ссылки сигналов на карточки ра
 
         expect(dto.alerts.map(alert => alert.kind)).toEqual([
             'conflict',
-            'urgent',
+            'objection_mishandled',
             'conflict',
         ]);
         expect(dto.alerts.every(alert => alert.link === null)).toBe(true);

@@ -166,7 +166,7 @@ describe('AiAnalyticsController', () => {
         const response = await controller.getPulse(base);
         expect(response.status).toBe('ready');
         expect(response.requestKey).toBe(
-            'sales-ai-analytics:v1:april.bitrix24.ru:pulse:v3:2026-09-05',
+            'sales-ai-analytics:v1:april.bitrix24.ru:pulse:v4:2026-09-05',
         );
         expect(response.data?.byManager).toHaveLength(2);
         expect(response.data?.alerts).toHaveLength(2);
