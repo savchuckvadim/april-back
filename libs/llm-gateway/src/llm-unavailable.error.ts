@@ -8,6 +8,12 @@ export interface LlmProviderFailure {
      * Поставщик на паузе, к которому вызов не пустили, — тоже временный.
      */
     transient: boolean;
+    /**
+     * Запрос не уходил: поставщик на паузе предохранителя (встал на паузу,
+     * пока вызов ждал очереди, или пробный вызов уже шёл). Сам поставщик в
+     * этом вызове не сорвался.
+     */
+    paused?: boolean;
 }
 
 /**
@@ -34,14 +40,27 @@ export class LlmUnavailableError extends Error {
 }
 
 /**
- * Поставщик встал на паузу предохранителя, пока вызов ждал своей очереди у
- * адаптера (11.11.2026): запрос не отправлен, шлюз идёт к следующему
- * поставщику. Сбоем поставщика для предохранителя не считается — к нему не
- * обращались.
+ * Почему запрос к поставщику на паузе не ушёл: `paused` — встал на паузу,
+ * пока вызов ждал очереди; `probe-busy` — пробный вызов к нему уже идёт
+ * (одна проба за раз на все реплики).
+ */
+export type LlmProviderPausedReason = 'paused' | 'probe-busy';
+
+/**
+ * Запрос к поставщику не отправлен — тот на паузе предохранителя
+ * (11.11.2026); шлюз идёт к следующему поставщику. Сбоем поставщика для
+ * предохранителя не считается — к нему не обращались.
  */
 export class LlmProviderPausedError extends Error {
-    constructor(readonly provider: LlmProviderCode) {
-        super(`Поставщик ${provider} встал на паузу, пока вызов ждал очереди`);
+    constructor(
+        readonly provider: LlmProviderCode,
+        readonly reason: LlmProviderPausedReason = 'paused',
+    ) {
+        super(
+            reason === 'probe-busy'
+                ? `Поставщик ${provider} на паузе, пробный вызов уже идёт`
+                : `Поставщик ${provider} встал на паузу, пока вызов ждал очереди`,
+        );
         this.name = 'LlmProviderPausedError';
     }
 }

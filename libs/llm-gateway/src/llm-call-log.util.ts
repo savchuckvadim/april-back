@@ -55,15 +55,23 @@ export function describeLlmCallSuccess(
     );
 }
 
-/** Сбой вызова: прежнее предупреждение шлюза плюс «через N мс» от начала вызова. */
+/**
+ * Сбой вызова: прежнее предупреждение шлюза плюс «через N мс» — сколько
+ * поставщик молчал после отправки запроса. `elapsedMs` — замер шлюза от
+ * начала вызова; ожидание слота до отправки (`queueMs`) из него вычитается
+ * и печатается отдельно, иначе «через» врёт про скорость поставщика.
+ */
 export function describeLlmCallFailure(
     request: Pick<StructuredLlmRequest, 'schemaName' | 'domain'>,
     provider: LlmProviderCode,
     errorText: string,
     elapsedMs: number,
+    queueMs?: number,
 ): string {
+    const queue = wholeMs(queueMs);
+    const waited = queue > 0 ? ` (ждал слота ${queue} мс)` : '';
     return (
         `Провайдер LLM ${provider} не ответил на ${request.schemaName} ` +
-        `(${request.domain}) через ${wholeMs(elapsedMs)} мс: ${errorText}`
+        `(${request.domain}) через ${wholeMs(elapsedMs - queue)} мс${waited}: ${errorText}`
     );
 }

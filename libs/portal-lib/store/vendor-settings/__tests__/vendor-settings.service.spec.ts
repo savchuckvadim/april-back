@@ -7,6 +7,7 @@ import {
 } from '../vendor-settings.repository';
 import {
     VENDOR_SETTINGS_CACHE_TTL_MS,
+    VENDOR_SETTINGS_RETRY_MS,
     VendorSettingsService,
 } from '../vendor-settings.service';
 
@@ -194,5 +195,50 @@ describe('VendorSettingsService', () => {
         });
         expect(repository.reads).toBe(1);
         expect(warn).toHaveBeenCalledTimes(1);
+    });
+
+    /**
+     * Ревью 11.11.2026: один сбой чтения на минуту сбрасывал все значения
+     * из админки — ключи, сроки и пределы шлюза — на env и умолчания.
+     */
+    it('сбой чтения после удачного — действуют последние прочитанные значения, повтор через 10 с', async () => {
+        const { service, repository } = setup();
+        let now = 1_700_000_000_000;
+        jest.spyOn(Date, 'now').mockImplementation(() => now);
+        await service.save('LLM_VIBECODE_KEY_CONCURRENCY', '4', 'vadim');
+        expect(await service.get('LLM_VIBECODE_KEY_CONCURRENCY')).toBe('4');
+
+        repository.failing = true;
+        now += VENDOR_SETTINGS_CACHE_TTL_MS + 1;
+        expect(await service.get('LLM_VIBECODE_KEY_CONCURRENCY')).toBe('4');
+        const readsAfterFailure = repository.reads;
+
+        // Повтор не раньше чем через 10 с, а не через минуту.
+        now += VENDOR_SETTINGS_RETRY_MS - 1;
+        await service.get('LLM_VIBECODE_KEY_CONCURRENCY');
+        expect(repository.reads).toBe(readsAfterFailure);
+        repository.failing = false;
+        now += 2;
+        expect(await service.get('LLM_VIBECODE_KEY_CONCURRENCY')).toBe('4');
+        expect(repository.reads).toBe(readsAfterFailure + 1);
+    });
+
+    it('у настроек шлюза есть значение по умолчанию — источник «default», а не «не задано»', async () => {
+        const { service } = setup();
+        const list = await service.list();
+        const timeout = list.find(
+            item => item.key === 'VIBECODE_ANALYSIS_TIMEOUT_MS',
+        );
+        expect(timeout).toMatchObject({
+            source: 'default',
+            defaultValue: '180000',
+            isSet: false,
+            envSet: false,
+        });
+        // Без умолчания (ключ Groq) — по-прежнему «не задано нигде».
+        expect(list.find(item => item.key === 'GROQ_API_KEY')).toMatchObject({
+            source: 'none',
+            defaultValue: null,
+        });
     });
 });

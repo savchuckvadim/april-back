@@ -100,7 +100,18 @@ describe('реестр: шлюз модели разборов', () => {
             expect(vendorSettingOf(key as LlmIntegerSettingKey).example).toBe(
                 String(rule.defaultValue),
             );
+            // Умолчание видно в админке («по умолчанию N»), а не «не задано».
+            expect(
+                vendorSettingOf(key as LlmIntegerSettingKey).defaultValue,
+            ).toBe(String(rule.defaultValue));
         }
+        expect(vendorSettingOf('LLM_FALLBACK_JSON_MODE').defaultValue).toBe(
+            'json_schema',
+        );
+        // У ключей и адресов умолчания нет.
+        expect(vendorSettingOf('LLM_FALLBACK_BASE_URL').defaultValue).toBe(
+            undefined,
+        );
     });
 
     it('проверка чисел в админке: целое в диапазоне, понятная ошибка по-русски', () => {

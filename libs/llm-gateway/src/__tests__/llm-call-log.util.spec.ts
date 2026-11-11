@@ -75,4 +75,19 @@ describe('llm-call-log.util — строки журнала вызова мод�
                 'через 180012 мс: Vibecode call_focus_form timeout after 180000 ms',
         );
     });
+
+    it('сбой после ожидания слота: «через» — только молчание поставщика, ожидание в скобках', () => {
+        const line = describeLlmCallFailure(
+            REQUEST,
+            'vibecode',
+            'Vibecode call_focus_form timeout after 180000 ms',
+            210_012,
+            30_000,
+        );
+
+        expect(line).toBe(
+            'Провайдер LLM vibecode не ответил на call_focus_form (test.bitrix24.ru) ' +
+                'через 180012 мс (ждал слота 30000 мс): Vibecode call_focus_form timeout after 180000 ms',
+        );
+    });
 });

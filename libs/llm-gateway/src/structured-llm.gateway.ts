@@ -181,18 +181,43 @@ export class StructuredLlmGateway {
             );
             if (response) return this.answered(response, request, trail);
         }
-        // Настоящая тревога (решение владельца 08.11.2026 «писать, когда
-        // отказали все»): ни один поставщик не ответил, работа встала.
         const reasons = trail.notes.join('; ');
-        this.logger.error(
-            `ПОПЫТКИ ИСЧЕРПАНЫ: LLM не ответила на ${request.schemaName} (${request.domain}) — ` +
-                `отказали все поставщики: ${reasons}`,
-            { telegram: true },
-        );
+        await this.alertExhausted(request, reasons, primary, trail);
         throw new LlmUnavailableError(
             `LLM недоступна для ${request.schemaName} (${request.domain}): ${reasons}`,
             trail.failures,
             primary,
+        );
+    }
+
+    /**
+     * Настоящая тревога (решение владельца 08.11.2026 «писать, когда
+     * отказали все»): ни один поставщик не ответил, работа встала. Если
+     * основного в этом вызове не звали — он на паузе (о ней предохранитель
+     * уже сообщил) — тревога одна за паузу, остальные такие отказы — в
+     * журнал (ревью 11.11.2026: иначе каждый отложенный вызов слал своё
+     * «ПОПЫТКИ ИСЧЕРПАНЫ», и Telegram глушил сообщение «снова отвечает»).
+     */
+    private async alertExhausted(
+        request: StructuredLlmRequest,
+        reasons: string,
+        primary: LlmProviderCode | null,
+        trail: LlmCallTrail,
+    ): Promise<void> {
+        const text =
+            `ПОПЫТКИ ИСЧЕРПАНЫ: LLM не ответила на ${request.schemaName} (${request.domain}) — ` +
+            `отказали все поставщики: ${reasons}`;
+        const primaryTried =
+            primary === null ||
+            trail.failures.some(
+                failure => failure.provider === primary && !failure.paused,
+            );
+        if (primaryTried || (await this.breaker.claimPausedAlert(primary))) {
+            this.logger.error(text, { telegram: true });
+            return;
+        }
+        this.logger.warn(
+            `${text} (основной ${primary} на паузе, тревога о ней уже отправлена)`,
         );
     }
 

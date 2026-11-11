@@ -90,3 +90,24 @@ export function fallbackCallOf(
         timeoutMs: integerOf(values, 'LLM_FALLBACK_TIMEOUT_MS'),
     };
 }
+
+export const LLM_PROBE_LOCK_SETTING_KEYS = [
+    'VIBECODE_ANALYSIS_TIMEOUT_MS',
+    'LLM_FALLBACK_TIMEOUT_MS',
+] as const satisfies readonly LlmIntegerSettingKey[];
+
+/** Запас замка пробы сверх срока ответа, с: запись в журнал, предохранитель. */
+const PROBE_LOCK_MARGIN_SEC = 60;
+
+/**
+ * Срок замка пробного вызова, с: самый долгий срок ответа поставщиков плюс
+ * минута. Замок берётся у самой отправки, так что проба держит его не
+ * дольше ответа; срок нужен, только если процесс упал посреди пробы.
+ */
+export function probeLockTtlSecOf(values: LlmSettingValues): number {
+    const longestMs = Math.max(
+        integerOf(values, 'VIBECODE_ANALYSIS_TIMEOUT_MS'),
+        integerOf(values, 'LLM_FALLBACK_TIMEOUT_MS'),
+    );
+    return Math.ceil(longestMs / 1000) + PROBE_LOCK_MARGIN_SEC;
+}

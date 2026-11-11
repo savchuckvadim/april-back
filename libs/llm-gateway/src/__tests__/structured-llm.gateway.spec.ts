@@ -8,6 +8,7 @@ import {
 } from '../structured-llm.gateway';
 import type {
     LlmProviderCode,
+    LlmSendGuard,
     StructuredLlmAdapter,
     StructuredLlmResponse,
 } from '../structured-llm.types';
@@ -24,16 +25,32 @@ const responseOf = (provider: LlmProviderCode): StructuredLlmResponse => ({
 type FakeAdapter = StructuredLlmAdapter & {
     configurationIssue: jest.Mock;
     complete: jest.Mock;
+    /** Запрос «ушёл» к модели — после проверки шлюза у отправки. */
+    sent: jest.Mock;
 };
 
+/**
+ * Адаптер как настоящий: у самой отправки зовёт проверку шлюза (пауза,
+ * замок пробы) и только потом «отправляет» запрос — `sent`.
+ */
 const fakeAdapter = (
     code: LlmProviderCode,
     over: { issue?: string | null; complete?: jest.Mock } = {},
-): FakeAdapter => ({
-    code,
-    configurationIssue: jest.fn().mockResolvedValue(over.issue ?? null),
-    complete: over.complete ?? jest.fn().mockResolvedValue(responseOf(code)),
-});
+): FakeAdapter => {
+    const sent = jest.fn();
+    return {
+        code,
+        configurationIssue: jest.fn().mockResolvedValue(over.issue ?? null),
+        complete:
+            over.complete ??
+            jest.fn(async (_request: unknown, guard?: LlmSendGuard) => {
+                await guard?.beforeSend();
+                sent();
+                return responseOf(code);
+            }),
+        sent,
+    };
+};
 
 /** Пауза — по `open` (можно менять по ходу теста); проба свободна, если не сказано иное. */
 const fakeBreaker = (
@@ -47,6 +64,7 @@ const fakeBreaker = (
     recordFailure: jest.fn().mockResolvedValue(undefined),
     tryStartProbe: jest.fn().mockResolvedValue(probeFree),
     endProbe: jest.fn().mockResolvedValue(undefined),
+    claimPausedAlert: jest.fn().mockResolvedValue(true),
 });
 
 /** Порядок: общий из env, у портала — свой (как отдаёт LlmProviderOrderResolver). */
@@ -343,11 +361,43 @@ describe('StructuredLlmGateway — провайдеры по порядку с �
 
         expect(response.provider).toBe('vibecode');
         expect(openai.complete).toHaveBeenCalledTimes(1);
-        expect(vibecode.complete).toHaveBeenCalledTimes(1);
-        // Проба идёт без проверки паузы перед отправкой, замок снят.
-        expect(vibecode.complete).toHaveBeenCalledWith(REQUEST, undefined);
-        expect(breaker.tryStartProbe).toHaveBeenCalledWith('vibecode');
-        expect(breaker.endProbe).toHaveBeenCalledWith('vibecode');
+        expect(vibecode.sent).toHaveBeenCalledTimes(1);
+        // Замок пробы берётся у самой отправки и снимается своим маркером.
+        expect(breaker.tryStartProbe).toHaveBeenCalledWith(
+            'vibecode',
+            expect.any(String),
+        );
+        const [, token] = breaker.tryStartProbe.mock.calls[0] as [
+            string,
+            string,
+        ];
+        expect(breaker.endProbe).toHaveBeenCalledWith('vibecode', token);
+    });
+
+    /**
+     * Ревью 11.11.2026: список «на паузе» собирался в начале вызова — если
+     * пауза кончилась, пока ждали запасного, вызов всё равно бился за замок
+     * пробы и мог получить «проба уже идёт».
+     */
+    it('пауза кончилась, пока ждали запасного, — к основному обычный запрос, без замка пробы', async () => {
+        const open: Partial<Record<LlmProviderCode, boolean>> = {
+            vibecode: true,
+        };
+        const breaker = fakeBreaker(open);
+        const openai = fakeAdapter('openai-compatible', {
+            complete: jest.fn(() => {
+                open.vibecode = false;
+                return Promise.reject(new Error('fetch failed'));
+            }),
+        });
+        const { gateway, vibecode } = makeGateway({}, { openai, breaker });
+
+        const response = await gateway.complete(REQUEST);
+
+        expect(response.provider).toBe('vibecode');
+        expect(vibecode.sent).toHaveBeenCalledTimes(1);
+        expect(breaker.tryStartProbe).not.toHaveBeenCalled();
+        expect(breaker.endProbe).not.toHaveBeenCalled();
     });
 
     /**
@@ -373,7 +423,8 @@ describe('StructuredLlmGateway — провайдеры по порядку с �
             .complete(REQUEST)
             .catch((reason: unknown) => reason);
 
-        expect(vibecode.complete).not.toHaveBeenCalled();
+        // Адаптер дошёл до отправки, но шлюз запрос не пустил.
+        expect(vibecode.sent).not.toHaveBeenCalled();
         expect(breaker.endProbe).not.toHaveBeenCalled();
         expect((error as Error).message).toContain(
             'vibecode — на паузе, пробный вызов уже идёт',
@@ -381,14 +432,24 @@ describe('StructuredLlmGateway — провайдеры по порядку с �
         // Основной не ответил, потому что на паузе, — это временно, даже
         // при постоянном 413 запасного: звонок дозаполнит догон.
         expect(isTransientLlmError(error)).toBe(true);
+        expect(error).toMatchObject({
+            failures: expect.arrayContaining([
+                { provider: 'vibecode', transient: true, paused: true },
+            ]) as unknown,
+        });
     });
 
-    it('проба упала — замок всё равно снят', async () => {
+    it('проба упала — замок всё равно снят своим маркером', async () => {
         jest.spyOn(Logger.prototype, 'error').mockImplementation(
             () => undefined,
         );
         const vibecode = fakeAdapter('vibecode', {
-            complete: jest.fn().mockRejectedValue(new Error('HTTP 503')),
+            complete: jest.fn(
+                async (_request: unknown, guard?: LlmSendGuard) => {
+                    await guard?.beforeSend();
+                    throw new Error('HTTP 503');
+                },
+            ),
         });
         const openai = fakeAdapter('openai-compatible', {
             complete: jest.fn().mockRejectedValue(new Error('fetch failed')),
@@ -399,7 +460,73 @@ describe('StructuredLlmGateway — провайдеры по порядку с �
         await expect(gateway.complete(REQUEST)).rejects.toBeInstanceOf(
             LlmUnavailableError,
         );
-        expect(breaker.endProbe).toHaveBeenCalledWith('vibecode');
+        const [, token] = breaker.tryStartProbe.mock.calls[0] as [
+            string,
+            string,
+        ];
+        expect(breaker.endProbe).toHaveBeenCalledWith('vibecode', token);
+    });
+
+    /**
+     * Ревью 11.11.2026: каждый отложенный вызов слал своё «ПОПЫТКИ
+     * ИСЧЕРПАНЫ», и Telegram глушил сообщение «снова отвечает».
+     */
+    it('основного не звали (на паузе, проба идёт) — тревога в телеграм одна за паузу, дальше — журнал', async () => {
+        const error = jest
+            .spyOn(Logger.prototype, 'error')
+            .mockImplementation(() => undefined);
+        const warn = jest.spyOn(Logger.prototype, 'warn');
+        const openai = fakeAdapter('openai-compatible', {
+            complete: jest
+                .fn()
+                .mockRejectedValue(
+                    new Error('LLM (groq) x failed [413]: Request too large'),
+                ),
+        });
+        const breaker = fakeBreaker({ vibecode: true }, false);
+        breaker.claimPausedAlert
+            .mockResolvedValueOnce(true)
+            .mockResolvedValueOnce(false);
+        const { gateway } = makeGateway({}, { openai, breaker });
+
+        await gateway.complete(REQUEST).catch(() => undefined);
+        await gateway.complete(REQUEST).catch(() => undefined);
+
+        expect(breaker.claimPausedAlert).toHaveBeenCalledWith('vibecode');
+        const alerts = error.mock.calls.filter(
+            ([message]) =>
+                typeof message === 'string' &&
+                message.startsWith('ПОПЫТКИ ИСЧЕРПАНЫ'),
+        );
+        expect(alerts).toHaveLength(1);
+        expect(alerts[0][1]).toEqual({ telegram: true });
+        expect(warn).toHaveBeenCalledWith(
+            expect.stringContaining(
+                'основной vibecode на паузе, тревога о ней уже отправлена',
+            ),
+        );
+    });
+
+    it('основной сорвался сам — тревога на каждый такой отказ, без проверки паузы', async () => {
+        const error = jest
+            .spyOn(Logger.prototype, 'error')
+            .mockImplementation(() => undefined);
+        const vibecode = fakeAdapter('vibecode', {
+            complete: jest.fn().mockRejectedValue(new Error('HTTP 503')),
+        });
+        const openai = fakeAdapter('openai-compatible', {
+            complete: jest.fn().mockRejectedValue(new Error('fetch failed')),
+        });
+        const breaker = fakeBreaker();
+        const { gateway } = makeGateway({}, { vibecode, openai, breaker });
+
+        await gateway.complete(REQUEST).catch(() => undefined);
+
+        expect(breaker.claimPausedAlert).not.toHaveBeenCalled();
+        expect(error).toHaveBeenCalledWith(
+            expect.stringContaining('ПОПЫТКИ ИСЧЕРПАНЫ'),
+            { telegram: true },
+        );
     });
 
     /**
@@ -451,7 +578,12 @@ describe('StructuredLlmGateway — провайдеры по порядку с �
                         return responseOf('vibecode');
                     },
                 )
-                .mockResolvedValueOnce(responseOf('vibecode')),
+                .mockImplementationOnce(
+                    async (_request: unknown, guard?: LlmSendGuard) => {
+                        await guard?.beforeSend();
+                        return responseOf('vibecode');
+                    },
+                ),
         });
         const openai = fakeAdapter('openai-compatible', {
             complete: jest.fn().mockRejectedValue(new Error('fetch failed')),
@@ -462,7 +594,10 @@ describe('StructuredLlmGateway — провайдеры по порядку с �
 
         expect(response.provider).toBe('vibecode');
         expect(vibecode.complete).toHaveBeenCalledTimes(2);
-        expect(breaker.tryStartProbe).toHaveBeenCalledWith('vibecode');
+        expect(breaker.tryStartProbe).toHaveBeenCalledWith(
+            'vibecode',
+            expect.any(String),
+        );
     });
 
     it('ai-rag — третий эшелон только по явному порядку: по умолчанию его не зовут', async () => {
@@ -706,6 +841,34 @@ describe('StructuredLlmGateway — журнал каждого вызова мо
         expect(log).toHaveBeenCalledWith(
             expect.stringContaining(
                 'LLM openai-compatible call_focus_form (test.bitrix24.ru): ответ за 2500 мс',
+            ),
+        );
+    });
+
+    /**
+     * Ревью 11.11.2026: «через N мс» включало ожидание очереди — по журналу
+     * казалось, что VibeCode молчал дольше своего срока.
+     */
+    it('сбой после очереди — «через» считает только молчание поставщика, ожидание слота отдельно', async () => {
+        const vibecode = fakeAdapter('vibecode', {
+            complete: jest.fn(
+                async (_request: unknown, guard?: LlmSendGuard) => {
+                    clock += 30_000; // ждал слота
+                    await guard?.beforeSend();
+                    clock += 180_000; // поставщик молчал
+                    throw new Error(
+                        'Vibecode call_focus_form timeout after 180000 ms',
+                    );
+                },
+            ),
+        });
+        const { gateway } = makeGateway({}, { vibecode });
+
+        await gateway.complete(REQUEST);
+
+        expect(warn).toHaveBeenCalledWith(
+            expect.stringContaining(
+                'не ответил на call_focus_form (test.bitrix24.ru) через 180000 мс (ждал слота 30000 мс)',
             ),
         );
     });

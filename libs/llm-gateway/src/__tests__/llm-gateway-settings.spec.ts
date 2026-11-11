@@ -4,8 +4,24 @@ import { LlmGatewaySettingsService } from '../llm-gateway-settings.service';
 import {
     circuitOptionsOf,
     fallbackCallOf,
+    probeLockTtlSecOf,
     vibecodeConcurrencyOf,
 } from '../llm-gateway-settings.util';
+
+describe('probeLockTtlSecOf — срок замка пробного вызова', () => {
+    it('самый долгий срок ответа поставщиков плюс минута', () => {
+        expect(probeLockTtlSecOf({})).toBe(240);
+        expect(
+            probeLockTtlSecOf({ VIBECODE_ANALYSIS_TIMEOUT_MS: '300000' }),
+        ).toBe(360);
+        expect(
+            probeLockTtlSecOf({
+                VIBECODE_ANALYSIS_TIMEOUT_MS: '60000',
+                LLM_FALLBACK_TIMEOUT_MS: '120500',
+            }),
+        ).toBe(181);
+    });
+});
 
 /**
  * Настройки шлюза переехали из env в админку (11.11.2026, решение

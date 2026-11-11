@@ -9,12 +9,14 @@ import type { LlmConcurrencyLimits } from './llm-concurrency.util';
 import {
     LLM_CIRCUIT_SETTING_KEYS,
     LLM_FALLBACK_CALL_SETTING_KEYS,
+    LLM_PROBE_LOCK_SETTING_KEYS,
     LLM_VIBECODE_CONCURRENCY_SETTING_KEYS,
     type LlmCircuitOptions,
     type LlmFallbackCallSettings,
     type LlmSettingValues,
     circuitOptionsOf,
     fallbackCallOf,
+    probeLockTtlSecOf,
     vibecodeConcurrencyOf,
 } from './llm-gateway-settings.util';
 
@@ -58,6 +60,13 @@ export class LlmGatewaySettingsService {
     async fallbackCall(): Promise<LlmFallbackCallSettings> {
         return fallbackCallOf(
             await this.values(LLM_FALLBACK_CALL_SETTING_KEYS),
+        );
+    }
+
+    /** Срок замка пробного вызова, с: самый долгий срок ответа плюс минута. */
+    async probeLockTtlSec(): Promise<number> {
+        return probeLockTtlSecOf(
+            await this.values(LLM_PROBE_LOCK_SETTING_KEYS),
         );
     }
 

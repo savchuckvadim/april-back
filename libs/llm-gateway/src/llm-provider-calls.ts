@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { Logger } from '@nestjs/common';
 import {
     describeLlmCallFailure,
@@ -26,16 +27,28 @@ export interface LlmCallTrail {
 }
 
 /**
- * Итог попытки: ответ; `paused` — поставщик встал на паузу, пока вызов ждал
- * очереди адаптера (запрос не ушёл); null — сбой поставщика.
+ * Итог попытки: ответ; `paused` — запрос не ушёл, поставщик на паузе (встал
+ * на паузу, пока вызов ждал очереди, или проба уже идёт); null — сбой
+ * поставщика.
  */
 export type LlmAttemptOutcome = StructuredLlmResponse | 'paused' | null;
 
+/** Проверка перед отправкой: бросает LlmProviderPausedError — не отправлять. */
+type SendCheck = () => Promise<void>;
+
+const PAUSED_NOTES: Record<LlmProviderPausedError['reason'], string> = {
+    paused: 'встал на паузу, пока вызов ждал очереди',
+    'probe-busy': 'на паузе, пробный вызов уже идёт',
+};
+
 /**
  * Вызовы поставщиков внутри шлюза: журнал с замером, учёт в предохранителе,
- * проверка паузы перед отправкой и проба поставщика на паузе — одна за раз.
- * Вынесено из StructuredLlmGateway по лимиту файла (11.11.2026); не
- * @Injectable — шлюз создаёт его сам и отдаёт свой логгер, чтобы журнал
+ * проверка паузы у самой отправки и проба поставщика на паузе — одна за
+ * раз. Проверки идут через LlmSendGuard: адаптер зовёт её прямо перед
+ * отправкой запроса (адаптер с очередью — когда дождался слота), поэтому
+ * и пауза, и замок пробы видны на момент отправки, а не постановки в
+ * очередь. Вынесено из StructuredLlmGateway по лимиту файла (11.11.2026);
+ * не @Injectable — шлюз создаёт его сам и отдаёт свой логгер, чтобы журнал
  * остался под именем шлюза.
  */
 export class LlmProviderCalls {
@@ -45,8 +58,7 @@ export class LlmProviderCalls {
     ) {}
 
     /**
-     * Обычная попытка. Адаптер с очередью (VibeCode) перед отправкой
-     * перепроверяет паузу: пока вызов ждал слота, поставщик мог встать на
+     * Обычная попытка. Пока вызов ждал слота, поставщик мог встать на
      * паузу — тогда запрос не уходит, итог `paused`, и шлюз идёт дальше, а
      * не ждёт таймаут у зависшего поставщика. `fallbackAvailable` — в
      * порядке остался кто-то ещё: пауза предохранителя тогда помечается
@@ -58,16 +70,18 @@ export class LlmProviderCalls {
         trail: LlmCallTrail,
         fallbackAvailable: boolean,
     ): Promise<LlmAttemptOutcome> {
-        return this.call(adapter, request, trail, fallbackAvailable, {
-            beforeSend: () => this.assertNotPaused(adapter.code),
-        });
+        return this.call(adapter, request, trail, fallbackAvailable, () =>
+            this.assertNotPaused(adapter.code),
+        );
     }
 
     /**
      * Проба поставщика на паузе — когда больше никто не ответил: попытка
-     * лучше гарантированного отказа, а удача снимет паузу. Проба одна за раз
-     * на все реплики; занята — вызова нет, в trail «проба уже идёт», и вызов
-     * дозаполнит догон, когда поставщик снова ответит.
+     * лучше гарантированного отказа, а удача снимет паузу. У отправки:
+     * пауза уже кончилась — обычный запрос без замка; иначе замок пробы с
+     * маркером — одна проба за раз на все реплики, занят — запрос не уходит
+     * («проба уже идёт»), и звонок дозаполнит догон. Замок держится только
+     * на время ответа и снимается своим маркером.
      */
     async probe(
         adapter: StructuredLlmAdapter,
@@ -75,39 +89,57 @@ export class LlmProviderCalls {
         trail: LlmCallTrail,
         fallbackAvailable: boolean,
     ): Promise<StructuredLlmResponse | null> {
-        if (!(await this.breaker.tryStartProbe(adapter.code))) {
-            trail.notes.push(
-                `${adapter.code} — на паузе, пробный вызов уже идёт`,
-            );
-            trail.failures.push({ provider: adapter.code, transient: true });
-            return null;
-        }
+        const lock = { token: randomUUID(), held: false };
         try {
             const outcome = await this.call(
                 adapter,
                 request,
                 trail,
                 fallbackAvailable,
+                async () => {
+                    if (!(await this.breaker.isOpen(adapter.code))) return;
+                    lock.held = await this.breaker.tryStartProbe(
+                        adapter.code,
+                        lock.token,
+                    );
+                    if (!lock.held) {
+                        throw new LlmProviderPausedError(
+                            adapter.code,
+                            'probe-busy',
+                        );
+                    }
+                },
             );
             return outcome === 'paused' ? null : outcome;
         } finally {
-            await this.breaker.endProbe(adapter.code);
+            if (lock.held)
+                await this.breaker.endProbe(adapter.code, lock.token);
         }
     }
 
     /**
      * Каждый вызов оставляет строку журнала с замером (11.11.2026): удача —
-     * время ответа, ожидание слота, вход и токены; сбой — через сколько мс.
-     * Сбой дописывается в trail; временный считается в предохранителе.
+     * время ответа, ожидание слота, вход и токены; сбой — сколько поставщик
+     * молчал после отправки и сколько вызов ждал слота. Сбой дописывается в
+     * trail; временный считается в предохранителе.
      */
     private async call(
         adapter: StructuredLlmAdapter,
         request: StructuredLlmRequest,
         trail: LlmCallTrail,
         fallbackAvailable: boolean,
-        guard?: LlmSendGuard,
+        check: SendCheck,
     ): Promise<LlmAttemptOutcome> {
         const startedAt = Date.now();
+        // Объект, а не let: отметку ставит замыкание проверки, а сужение
+        // типа let TypeScript через замыкания не видит.
+        const timing: { sentAt: number | null } = { sentAt: null };
+        const guard: LlmSendGuard = {
+            beforeSend: async () => {
+                await check();
+                timing.sentAt = Date.now();
+            },
+        };
         try {
             const response = await adapter.complete(request, guard);
             const elapsedMs = Date.now() - startedAt;
@@ -124,12 +156,16 @@ export class LlmProviderCalls {
         } catch (error) {
             const failedAt = Date.now();
             if (error instanceof LlmProviderPausedError) {
-                trail.notes.push(
-                    `${adapter.code} — встал на паузу, пока вызов ждал очереди`,
-                );
+                const note = PAUSED_NOTES[error.reason];
+                trail.notes.push(`${adapter.code} — ${note}`);
+                trail.failures.push({
+                    provider: adapter.code,
+                    transient: true,
+                    paused: true,
+                });
                 this.logger.warn(
                     `LLM ${adapter.code} ${request.schemaName} (${request.domain}): запрос не отправлен — ` +
-                        `поставщик встал на паузу, пока вызов ждал очереди ${failedAt - startedAt} мс`,
+                        `поставщик ${note} (ждал ${failedAt - startedAt} мс)`,
                 );
                 return 'paused';
             }
@@ -145,12 +181,15 @@ export class LlmProviderCalls {
                     fallbackAvailable,
                 );
             }
+            const queueMs =
+                timing.sentAt === null ? 0 : timing.sentAt - startedAt;
             this.logger.warn(
                 describeLlmCallFailure(
                     request,
                     adapter.code,
                     text,
                     failedAt - startedAt,
+                    queueMs,
                 ),
             );
             return null;
@@ -159,7 +198,7 @@ export class LlmProviderCalls {
 
     private async assertNotPaused(provider: LlmProviderCode): Promise<void> {
         if (await this.breaker.isOpen(provider)) {
-            throw new LlmProviderPausedError(provider);
+            throw new LlmProviderPausedError(provider, 'paused');
         }
     }
 }

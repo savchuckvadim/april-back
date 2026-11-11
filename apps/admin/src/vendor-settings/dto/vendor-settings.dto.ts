@@ -72,6 +72,15 @@ export class VendorSettingDto implements Omit<VendorSettingView, 'updatedAt'> {
 
     @ApiProperty({
         description:
+            'Значение по умолчанию — действует, когда не задано ни в админке, ни в окружении; null — у настройки его нет.',
+        type: String,
+        nullable: true,
+        example: '180000',
+    })
+    defaultValue: string | null;
+
+    @ApiProperty({
+        description:
             'Значение, заданное в админке, для несекретных настроек; у секретов всегда null.',
         type: String,
         nullable: true,
@@ -96,7 +105,7 @@ export class VendorSettingDto implements Omit<VendorSettingView, 'updatedAt'> {
 
     @ApiProperty({
         description:
-            'Что действует сейчас: admin — значение из админки, env — из окружения, none — не задано нигде.',
+            'Что действует сейчас: admin — значение из админки, env — из окружения, default — значение по умолчанию (defaultValue), none — не задано нигде.',
         enum: VENDOR_SETTING_SOURCES,
         example: 'admin',
     })
@@ -127,6 +136,7 @@ export class VendorSettingDto implements Omit<VendorSettingView, 'updatedAt'> {
         this.howTo = view.howTo;
         this.secret = view.secret;
         this.example = view.example;
+        this.defaultValue = view.defaultValue;
         this.value = view.value;
         this.isSet = view.isSet;
         this.envSet = view.envSet;

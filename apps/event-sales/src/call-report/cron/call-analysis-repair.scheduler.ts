@@ -30,6 +30,11 @@ export function repairSummaryLine(result: CallAnalysisRepairResult): string {
             `брошено после трёх попыток ${result.gaveUp} — смотреть руками`,
         );
     }
+    if (result.expired) {
+        parts.push(
+            `не разобрано за 72 часа и брошено ${result.expired} — смотреть руками`,
+        );
+    }
     return parts.length ? `${result.domain}: ${parts.join(', ')}` : '';
 }
 

@@ -13,11 +13,41 @@ import {
  * здоровье провайдера. Запасной провайдер пробуется в обоих случаях.
  */
 const STATUS_RE = /\[(\d{3})\]|HTTP (\d{3})|status code (\d{3})/;
+/**
+ * Признаки сетевого обрыва. «terminated» и «other side closed» — fetch Node
+ * (undici), когда соединение рвётся уже при чтении тела ответа: код сокета
+ * (UND_ERR_SOCKET) лежит тогда не в тексте, а в `cause`.
+ */
 const NETWORK_RE =
-    /fetch failed|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|socket hang up|UND_ERR|timed out|timeout|aborted/i;
+    /fetch failed|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|socket hang up|UND_ERR|timed out|timeout|aborted|terminated|other side closed/i;
+
+/** Сколько звеньев `cause` смотреть: обрыв undici лежит на втором-третьем. */
+const MAX_CAUSE_DEPTH = 3;
 
 const messageOf = (error: unknown): string =>
     error instanceof Error ? error.message : String(error);
+
+/** Поле ошибки (name, code, cause); нет — undefined. */
+const fieldOf = (error: unknown, field: 'name' | 'code' | 'cause'): unknown =>
+    typeof error === 'object' && error !== null && field in error
+        ? (error as Record<typeof field, unknown>)[field]
+        : undefined;
+
+/**
+ * Сетевой обрыв или таймаут — по имени, коду и тексту самой ошибки и её
+ * причин (`cause`): обёртки клиентов кладут исходную ошибку сокета туда.
+ */
+function isNetworkFailure(error: unknown, depth = 0): boolean {
+    if (error === undefined || error === null || depth > MAX_CAUSE_DEPTH) {
+        return false;
+    }
+    const name = fieldOf(error, 'name');
+    if (name === 'TimeoutError' || name === 'AbortError') return true;
+    const code = fieldOf(error, 'code');
+    if (typeof code === 'string' && NETWORK_RE.test(code)) return true;
+    if (NETWORK_RE.test(messageOf(error))) return true;
+    return isNetworkFailure(fieldOf(error, 'cause'), depth + 1);
+}
 
 /** Код HTTP из текста ошибки клиента; нет кода — null. */
 export function llmErrorStatus(error: unknown): number | null {
@@ -40,12 +70,7 @@ export function isTransientLlmError(error: unknown): boolean {
     if (status !== null) {
         return status >= 500 || status === 429 || status === 408;
     }
-    const name =
-        typeof error === 'object' && error !== null && 'name' in error
-            ? String((error as { name: unknown }).name)
-            : '';
-    if (name === 'TimeoutError' || name === 'AbortError') return true;
-    return NETWORK_RE.test(messageOf(error));
+    return isNetworkFailure(error);
 }
 
 /**

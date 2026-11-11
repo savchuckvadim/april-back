@@ -134,6 +134,35 @@ describe('OpenAiCompatibleStructuredAdapter', () => {
         expect(body.response_format.type).toBe('json_schema');
     });
 
+    /**
+     * Проверка шлюза у самой отправки (11.11.2026): пауза предохранителя и
+     * замок пробы касаются и запасного поставщика.
+     */
+    it('проверка шлюза — перед запросом; не пустила — запрос не уходит', async () => {
+        const { adapter } = makeAdapter();
+        const order: string[] = [];
+        fetchMock.mockImplementationOnce(() => {
+            order.push('fetch');
+            return Promise.resolve(okResponse('{}'));
+        });
+
+        await adapter.complete(REQUEST, {
+            beforeSend: () => {
+                order.push('check');
+                return Promise.resolve();
+            },
+        });
+        expect(order).toEqual(['check', 'fetch']);
+
+        fetchMock.mockClear();
+        await expect(
+            adapter.complete(REQUEST, {
+                beforeSend: () => Promise.reject(new Error('на паузе')),
+            }),
+        ).rejects.toThrow('на паузе');
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
     it('LLM_FALLBACK_JSON_MODE=json_object — без strict-схемы, ответ в ```json разбирается', async () => {
         fetchMock.mockResolvedValueOnce(
             okResponse('```json\n{"score": 5}\n```'),

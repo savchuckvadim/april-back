@@ -8,6 +8,7 @@ import { withJsonInstruction } from '../json-instruction.util';
 import { LlmEndpointResolverService } from '../llm-endpoint-resolver.service';
 import { LlmGatewaySettingsService } from '../llm-gateway-settings.service';
 import type {
+    LlmSendGuard,
     StructuredLlmAdapter,
     StructuredLlmRequest,
     StructuredLlmResponse,
@@ -111,6 +112,7 @@ export class OpenAiCompatibleStructuredAdapter implements StructuredLlmAdapter {
 
     async complete(
         request: StructuredLlmRequest,
+        guard?: LlmSendGuard,
     ): Promise<StructuredLlmResponse> {
         const endpoint = await this.endpoints.resolve(request.domain);
         if (!endpoint) {
@@ -120,6 +122,8 @@ export class OpenAiCompatibleStructuredAdapter implements StructuredLlmAdapter {
         }
         const { jsonMode, timeoutMs } = await this.settings.fallbackCall();
         const where = `LLM (${endpoint.source}, ${endpoint.model}) ${request.schemaName}`;
+        // Проверка шлюза у самой отправки: пауза предохранителя, замок пробы.
+        await guard?.beforeSend();
         let response: Response;
         try {
             // Зарубежный endpoint (OpenAI, Groq…) — через исходящий прокси,

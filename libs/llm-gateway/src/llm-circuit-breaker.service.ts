@@ -1,15 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RedisService } from '@lib/core/redis/redis.service';
 import { LlmGatewaySettingsService } from './llm-gateway-settings.service';
+import { LLM_CIRCUIT_KEY_PREFIX, LlmPauseLocks } from './llm-pause-locks';
 import type { LlmProviderCode } from './structured-llm.types';
 
-const KEY_PREFIX = 'llm-gateway:circuit';
-
-/**
- * Сколько живёт замок пробного вызова, если процесс упал, не сняв его:
- * проба — это ожидание своей очереди и до пяти минут ответа модели.
- */
-const PROBE_LOCK_TTL_SEC = 600;
+const KEY_PREFIX = LLM_CIRCUIT_KEY_PREFIX;
 
 interface MemoryState {
     failedAt: number[];
@@ -30,14 +25,17 @@ interface MemoryState {
  * один за раз на все реплики — tryStartProbe / endProbe (11.11.2026). Без
  * замка каждый разбор, у которого не ответил и запасной, сам становился
  * пробой: волна запросов к зависшему поставщику, каждый до таймаута, и пул
- * очереди разборов стоял.
+ * очереди разборов стоял. Замки паузы — LlmPauseLocks.
  */
 @Injectable()
 export class LlmCircuitBreakerService {
     private readonly logger = new Logger(LlmCircuitBreakerService.name);
     private readonly memory = new Map<LlmProviderCode, MemoryState>();
-    /** Пробы без Redis — в памяти процесса. */
-    private readonly probing = new Set<LlmProviderCode>();
+    /** Проба и тревога на время паузы; клиент Redis берётся при каждом вызове. */
+    private readonly locks = new LlmPauseLocks(
+        () => this.safeClient(),
+        error => this.warnRedis(error),
+    );
 
     constructor(
         private readonly settings: LlmGatewaySettingsService,
@@ -126,40 +124,33 @@ export class LlmCircuitBreakerService {
 
     /**
      * Занять пробный вызов поставщика на паузе: true — проба наша, после
-     * вызова обязательно endProbe; false — пробу уже ведёт другой вызов
-     * (любой реплики). Ошибка Redis — замок в памяти процесса.
+     * вызова обязательно endProbe с тем же маркером; false — пробу уже ведёт
+     * другой вызов (любой реплики). Срок замка — самый долгий срок ответа
+     * поставщиков плюс минута: замок берётся у самой отправки, после очереди.
      */
-    async tryStartProbe(provider: LlmProviderCode): Promise<boolean> {
-        const redis = this.safeClient();
-        if (redis) {
-            try {
-                const set = await redis.set(
-                    this.probeKey(provider),
-                    '1',
-                    'EX',
-                    PROBE_LOCK_TTL_SEC,
-                    'NX',
-                );
-                return set !== null;
-            } catch (error) {
-                this.warnRedis(error);
-            }
-        }
-        if (this.probing.has(provider)) return false;
-        this.probing.add(provider);
-        return true;
+    async tryStartProbe(
+        provider: LlmProviderCode,
+        token: string,
+    ): Promise<boolean> {
+        return this.locks.tryStartProbe(
+            provider,
+            token,
+            await this.settings.probeLockTtlSec(),
+        );
     }
 
-    /** Снять замок пробы — и после ответа, и после сбоя. */
-    async endProbe(provider: LlmProviderCode): Promise<void> {
-        this.probing.delete(provider);
-        const redis = this.safeClient();
-        if (!redis) return;
-        try {
-            await redis.del(this.probeKey(provider));
-        } catch (error) {
-            this.warnRedis(error);
-        }
+    /** Снять замок пробы, только если он наш — и после ответа, и после сбоя. */
+    endProbe(provider: LlmProviderCode, token: string): Promise<void> {
+        return this.locks.endProbe(provider, token);
+    }
+
+    /**
+     * Право на тревогу «отказали все», пока основной поставщик на паузе: одна
+     * за паузу на все реплики, остальные такие отказы — в журнал.
+     */
+    async claimPausedAlert(provider: LlmProviderCode): Promise<boolean> {
+        const { cooldownSec } = await this.settings.circuit();
+        return this.locks.claimPausedAlert(provider, cooldownSec);
     }
 
     private async incrementFailures(
@@ -231,10 +222,6 @@ export class LlmCircuitBreakerService {
 
     private openKey(provider: LlmProviderCode): string {
         return `${KEY_PREFIX}:${provider}:open`;
-    }
-
-    private probeKey(provider: LlmProviderCode): string {
-        return `${KEY_PREFIX}:${provider}:probe`;
     }
 
     /** Redis может быть не поднят (тесты, локальный запуск) — это не ошибка. */

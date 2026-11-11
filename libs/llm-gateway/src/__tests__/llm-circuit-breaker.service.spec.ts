@@ -199,50 +199,143 @@ describe('LlmCircuitBreakerService — замок пробного вызова'
             settings,
             noRedis as never,
         );
-        expect(await breaker.tryStartProbe('vibecode')).toBe(true);
-        expect(await breaker.tryStartProbe('vibecode')).toBe(false);
+        expect(await breaker.tryStartProbe('vibecode', 'p1')).toBe(true);
+        expect(await breaker.tryStartProbe('vibecode', 'p2')).toBe(false);
         // У другого поставщика свой замок.
-        expect(await breaker.tryStartProbe('openai-compatible')).toBe(true);
+        expect(await breaker.tryStartProbe('openai-compatible', 'p3')).toBe(
+            true,
+        );
 
-        await breaker.endProbe('vibecode');
-        expect(await breaker.tryStartProbe('vibecode')).toBe(true);
+        await breaker.endProbe('vibecode', 'p1');
+        expect(await breaker.tryStartProbe('vibecode', 'p4')).toBe(true);
     });
 
-    it('с Redis: замок — SET NX с TTL на все реплики, снятие — DEL', async () => {
-        const redis = makeRedis();
+    /**
+     * Ревью 11.11.2026: снятие без маркера сбрасывало чужой замок — проба,
+     * чей замок истёк, по окончании снимала замок следующей пробы.
+     */
+    it('чужой маркер замок не снимает', async () => {
+        const breaker = new LlmCircuitBreakerService(
+            settings,
+            noRedis as never,
+        );
+        expect(await breaker.tryStartProbe('vibecode', 'mine')).toBe(true);
+        await breaker.endProbe('vibecode', 'stale');
+        expect(await breaker.tryStartProbe('vibecode', 'other')).toBe(false);
+        await breaker.endProbe('vibecode', 'mine');
+        expect(await breaker.tryStartProbe('vibecode', 'other')).toBe(true);
+    });
+
+    it('с Redis: замок — SET NX с маркером и сроком «самый долгий ответ + минута», снятие — только своего', async () => {
+        const redis = { ...makeRedis(), eval: jest.fn().mockResolvedValue(1) };
         const breaker = new LlmCircuitBreakerService(settings, {
             getClient: () => redis,
         } as never);
-        expect(await breaker.tryStartProbe('vibecode')).toBe(true);
+        expect(await breaker.tryStartProbe('vibecode', 'token-1')).toBe(true);
+        // По умолчанию срок ответа 180 000 мс → 180 + 60 с.
         expect(redis.set).toHaveBeenCalledWith(
             'llm-gateway:circuit:vibecode:probe',
-            '1',
+            'token-1',
             'EX',
-            600,
+            240,
             'NX',
         );
 
         // Пробу уже ведёт другая реплика — SET NX вернул null.
         redis.set.mockResolvedValueOnce(null);
-        expect(await breaker.tryStartProbe('vibecode')).toBe(false);
+        expect(await breaker.tryStartProbe('vibecode', 'token-2')).toBe(false);
 
-        await breaker.endProbe('vibecode');
-        expect(redis.del).toHaveBeenCalledWith(
+        await breaker.endProbe('vibecode', 'token-1');
+        expect(redis.eval).toHaveBeenCalledWith(
+            expect.stringContaining("redis.call('get', KEYS[1]) == ARGV[1]"),
+            1,
             'llm-gateway:circuit:vibecode:probe',
+            'token-1',
+        );
+        expect(redis.del).not.toHaveBeenCalled();
+    });
+
+    it('срок ответа подняли до 300 000 — замок живёт 360 с', async () => {
+        const redis = { ...makeRedis(), eval: jest.fn().mockResolvedValue(1) };
+        const breaker = new LlmCircuitBreakerService(
+            new LlmGatewaySettingsService({
+                get: (key: string) =>
+                    key === 'VIBECODE_ANALYSIS_TIMEOUT_MS'
+                        ? '300000'
+                        : undefined,
+            } as never),
+            { getClient: () => redis } as never,
+        );
+        await breaker.tryStartProbe('vibecode', 't');
+        expect(redis.set).toHaveBeenCalledWith(
+            expect.any(String),
+            't',
+            'EX',
+            360,
+            'NX',
         );
     });
 
     it('ошибка Redis — замок в памяти процесса, вызов не падает', async () => {
-        const redis = makeRedis();
+        const redis = {
+            ...makeRedis(),
+            eval: jest.fn().mockRejectedValue(new Error('READONLY')),
+        };
         redis.set.mockRejectedValue(new Error('READONLY'));
-        redis.del.mockRejectedValue(new Error('READONLY'));
         const breaker = new LlmCircuitBreakerService(settings, {
             getClient: () => redis,
         } as never);
-        expect(await breaker.tryStartProbe('vibecode')).toBe(true);
-        expect(await breaker.tryStartProbe('vibecode')).toBe(false);
-        await expect(breaker.endProbe('vibecode')).resolves.toBeUndefined();
-        expect(await breaker.tryStartProbe('vibecode')).toBe(true);
+        expect(await breaker.tryStartProbe('vibecode', 'a')).toBe(true);
+        expect(await breaker.tryStartProbe('vibecode', 'b')).toBe(false);
+        await expect(
+            breaker.endProbe('vibecode', 'a'),
+        ).resolves.toBeUndefined();
+        expect(await breaker.tryStartProbe('vibecode', 'c')).toBe(true);
+    });
+});
+
+/**
+ * Тревога «отказали все», пока основной на паузе, — одна за паузу (ревью
+ * 11.11.2026): иначе каждый отложенный вызов слал «ПОПЫТКИ ИСЧЕРПАНЫ», и
+ * Telegram глушил сообщение «снова отвечает».
+ */
+describe('LlmCircuitBreakerService — одна тревога за паузу', () => {
+    beforeEach(() => {
+        jest.spyOn(Logger.prototype, 'warn').mockImplementation(
+            () => undefined,
+        );
+    });
+    afterEach(() => jest.restoreAllMocks());
+
+    it('без Redis: первая заявка получает право, остальные — нет до конца паузы', async () => {
+        const now = jest.spyOn(Date, 'now').mockReturnValue(T0);
+        const breaker = new LlmCircuitBreakerService(
+            settings,
+            noRedis as never,
+        );
+        expect(await breaker.claimPausedAlert('vibecode')).toBe(true);
+        expect(await breaker.claimPausedAlert('vibecode')).toBe(false);
+        expect(await breaker.claimPausedAlert('openai-compatible')).toBe(true);
+        // Пауза в конфиге — 120 с; после неё право снова есть.
+        now.mockReturnValue(T0 + 121_000);
+        expect(await breaker.claimPausedAlert('vibecode')).toBe(true);
+    });
+
+    it('с Redis: SET NX на срок паузы — право у одной реплики', async () => {
+        const redis = makeRedis();
+        const breaker = new LlmCircuitBreakerService(settings, {
+            getClient: () => redis,
+        } as never);
+        expect(await breaker.claimPausedAlert('vibecode')).toBe(true);
+        expect(redis.set).toHaveBeenCalledWith(
+            'llm-gateway:circuit:vibecode:paused-alert',
+            expect.any(String),
+            'EX',
+            120,
+            'NX',
+        );
+        redis.set.mockResolvedValueOnce(null);
+        expect(await breaker.claimPausedAlert('vibecode')).toBe(false);
     });
 });
 
