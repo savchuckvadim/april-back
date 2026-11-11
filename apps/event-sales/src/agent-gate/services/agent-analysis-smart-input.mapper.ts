@@ -11,6 +11,11 @@ import {
     AgentGigachatResults,
 } from './agent-analysis-intake.types';
 import { renderDialogText } from './agent-analysis-text-render.util';
+import {
+    agentNameTitle,
+    agentVersionTitle,
+    objectionHandlingText,
+} from './agent-analysis-smart-labels.util';
 import { AnalysisUsageColumns } from './agent-analysis-usage.util';
 
 /**
@@ -164,7 +169,10 @@ export function buildAgentSmartItemInput(
             .join('\n'),
         objectionsHandling: dto.objections
             ?.filter(objection => objection.handling)
-            .map(objection => `${objection.objection} → ${objection.handling}`)
+            .map(
+                objection =>
+                    `${objection.objection} → ${objectionHandlingText(objection.handling ?? '')}`,
+            )
             .join('\n'),
         recommendations: dto.recommendations?.join('\n'),
         score: dto.score,
@@ -181,8 +189,9 @@ export function buildAgentSmartItemInput(
         kpiItem: dto.kpiItem,
         historyItem: dto.historyItem,
         relatedReports: dto.relatedReportIds?.join(', '),
-        agentName,
-        agentVersion: dto.agentVersion,
+        // В карточку — русские подписи; коды остаются в записи разбора.
+        agentName: agentNameTitle(agentName),
+        agentVersion: agentVersionTitle(dto.agentVersion),
     };
 }
 

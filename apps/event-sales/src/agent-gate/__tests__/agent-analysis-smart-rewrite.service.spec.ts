@@ -200,7 +200,8 @@ describe('AgentAnalysisSmartRewriteService', () => {
         const input = (
             updateExisting.mock.calls[0] as [Record<string, unknown>]
         )[0];
-        expect(input.agentName).toBe('call-report-analyzer');
+        // В карточку — русская подпись внутреннего агента (call-report-analyzer).
+        expect(input.agentName).toBe('April: разбор звонка');
     });
 
     it('analysisOfRecord: объект — разбор, массив и скаляр — null', () => {
