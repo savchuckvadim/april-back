@@ -6,6 +6,7 @@
  * (ai/rules/pbx-typing.md).
  */
 import { CALL_REPORT_ACTIVE_RISK_FLAG_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart';
+import { CALL_MISTAKE_SIGNAL_KINDS } from '@lib/sales-ai-analytics';
 import {
     AI_ANALYTICS_CACHE_PREFIX,
     AI_ANALYTICS_CACHE_SCOPES,
@@ -130,17 +131,22 @@ export const AI_ANALYTICS_SELF_VIEW_FORBIDDEN_MESSAGE =
     'видит свою аналитику»';
 
 /**
- * Виды алерта пульса: ДЕЙСТВУЮЩИЙ риск-флаг разбора (с цитатой) либо
- * срочный приоритет коучинга. Отменённые флаги (promise, client_negative —
- * решение владельца 19–20.10.2026) сигналом не считаются даже в старых
- * данных; старый кэш с такими видами фронт показывает как «прочий сигнал».
+ * Виды сигнала руководителю (решение владельца 11.11.2026, правило
+ * resolveManagerSignal): ДЕЙСТВУЮЩИЙ риск-флаг разбора с цитатой либо
+ * ошибка менеджера — возражение не отработано, показ без потребностей,
+ * показ без «свойство — связка — выгода». urgent — только у алертов,
+ * отправленных до 11.11 (срочный коучинг сам по себе больше не сигнал).
+ * Отменённые флаги (promise, client_negative — решение владельца
+ * 19–20.10.2026) сигналом не считаются даже в старых данных; старый кэш с
+ * такими видами фронт показывает как «прочий сигнал».
  */
 export const AI_ANALYTICS_ALERT_KINDS = [
     ...CALL_REPORT_ACTIVE_RISK_FLAG_CODES,
+    ...CALL_MISTAKE_SIGNAL_KINDS,
     'urgent',
 ] as const;
 export type AiAnalyticsAlertKind = (typeof AI_ANALYTICS_ALERT_KINDS)[number];
-/** Приоритет коучинга, который сам по себе даёт алерт. */
+/** Вид алерта, отправленного до 11.11.2026, когда срочный коучинг сам давал сигнал. */
 export const AI_ANALYTICS_URGENT_COACHING = 'urgent' as const;
 
 /** Режимы готовности витрины (план, 4.11). */

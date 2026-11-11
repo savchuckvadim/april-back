@@ -27,6 +27,8 @@ import { AiAnalyticsFeedbackStore } from '../store/ai-analytics-feedback.store';
 import {
     callsLoaderWith,
     liteRow,
+    liteStyle,
+    mishandledObjection,
     provenRisk,
     portalSettings,
     settingsLoaderWith,
@@ -178,7 +180,7 @@ describe('PulseUseCase', () => {
         expect(examples?.noDate[0].score).toBe(7);
     });
 
-    it('alerts: риск-флаг, urgent и alert_sent из ais; handled — по alert_handled', async () => {
+    it('alerts: риск-флаг, ошибка менеджера и alert_sent из ais; handled — по alert_handled', async () => {
         const rows = [
             liteRow({
                 transcriptionId: 'risk',
@@ -210,10 +212,16 @@ describe('PulseUseCase', () => {
                 callStartedAt: new Date('2026-09-01T07:00:00Z'),
             }),
             liteRow({
-                transcriptionId: 'urgent',
-                coachingPriority: 'urgent',
+                transcriptionId: 'mistake',
+                ...mishandledObjection(),
                 managerId: '20',
                 callStartedAt: new Date('2026-09-02T07:00:00Z'),
+            }),
+            // Срочный коучинг сам по себе — не сигнал (11.11.2026).
+            liteRow({
+                transcriptionId: 'urgent-only',
+                coachingPriority: 'urgent',
+                callStartedAt: new Date('2026-09-02T09:00:00Z'),
             }),
             liteRow({
                 transcriptionId: 'sent',
@@ -248,12 +256,14 @@ describe('PulseUseCase', () => {
             ]),
         ).toEqual([
             ['risk', 'conflict', true],
-            ['urgent', 'urgent', false],
+            ['mistake', 'objection_mishandled', false],
             ['sent', 'urgent', false],
         ]);
         expect(dto.alerts[0].quote).toBe('Вы меня не слушаете');
-        // У urgent без флагов цитата — возражение или худший раздел.
-        expect(dto.alerts[1].quote).toBe('');
+        // Неотработанное возражение — цитата клиента как доказательство.
+        expect(dto.alerts[1].quote).toBe('Нам больше нравится конкурент');
+        // Старый отправленный алерт без повода по новому правилу: худший раздел.
+        expect(dto.alerts[2].quote).toBe('');
     });
 
     it('applyPulsePerimeter: менеджер видит только свои строки byManager и alerts', async () => {
@@ -292,25 +302,30 @@ describe('PulseUseCase', () => {
 });
 
 describe('pulse-alerts.util', () => {
-    it('вид сигнала — действующий флаг с цитатой по порядку справочника, иначе urgent, иначе null', () => {
+    const evidence = (flag: string, quote: string) => ({
+        flag,
+        quote,
+        speaker: 'manager',
+        at: null,
+    });
+    const section = (code: string, score: number, asWas: string) => ({
+        section: code,
+        relevance: 1,
+        score,
+        asWas,
+        alternatives: [],
+    });
+
+    it('вид сигнала — действующий флаг с цитатой по порядку справочника', () => {
         expect(
             resolveAlertKind({
                 riskFlags: ['door_closed', 'compliance'],
                 riskEvidence: [
-                    {
-                        flag: 'door_closed',
-                        quote: 'Ладно',
-                        speaker: 'manager',
-                        at: null,
-                    },
-                    {
-                        flag: 'compliance',
-                        quote: 'Не представился',
-                        speaker: 'manager',
-                        at: null,
-                    },
+                    evidence('door_closed', 'Ладно'),
+                    evidence('compliance', 'Не представился'),
                 ],
-                coachingPriority: null,
+                objections: [],
+                sections: [],
             }),
         ).toBe('compliance');
         // Отменённые флаги и флаг без цитаты — не сигнал.
@@ -318,59 +333,91 @@ describe('pulse-alerts.util', () => {
             resolveAlertKind({
                 riskFlags: ['promise', 'client_negative', 'conflict'],
                 riskEvidence: [
+                    evidence('promise', 'Завтра'),
+                    evidence('client_negative', 'Не звоните'),
+                ],
+                objections: [],
+                sections: [],
+            }),
+        ).toBeNull();
+    });
+
+    /**
+     * Решение владельца 11.11.2026: возражение клиента — норма, сигнал —
+     * ошибка менеджера; срочный коучинг сам по себе не сигнал.
+     */
+    it('ошибки менеджера: возражение не отработано, показ без потребностей, без С-С-В', () => {
+        expect(
+            resolveAlertKind({
+                riskFlags: [],
+                objections: [
                     {
-                        flag: 'promise',
-                        quote: 'Завтра',
-                        speaker: 'manager',
-                        at: null,
-                    },
-                    {
-                        flag: 'client_negative',
-                        quote: 'Не звоните',
-                        speaker: 'client',
-                        at: null,
+                        category: 'price',
+                        quote: 'Дорого',
+                        handled: true,
+                        outcome: 'continued',
                     },
                 ],
-                coachingPriority: null,
+                sections: [],
             }),
         ).toBeNull();
         expect(
             resolveAlertKind({
-                riskFlags: ['unknown'],
-                coachingPriority: 'urgent',
+                riskFlags: [],
+                ...mishandledObjection(),
+                sections: [],
             }),
-        ).toBe('urgent');
+        ).toBe('objection_mishandled');
+        const presentation = {
+            riskFlags: [],
+            objections: [],
+            sections: [section('PRESENTATION', 3, 'Вот поиск, вот кодексы')],
+        };
         expect(
-            resolveAlertKind({ riskFlags: [], coachingPriority: 'planned' }),
-        ).toBeNull();
+            resolveAlertKind({
+                ...presentation,
+                style: liteStyle({ presentationDone: true, needsFound: false }),
+            }),
+        ).toBe('presentation_no_needs');
+        expect(
+            resolveAlertKind({
+                ...presentation,
+                style: liteStyle({ presentationDone: true, needsFound: true }),
+            }),
+        ).toBe('presentation_no_ssv');
+        // Старая строка без style — правила показа не применяются.
+        expect(resolveAlertKind(presentation)).toBeNull();
     });
 
-    it('цитата: возражение, иначе asWas худшего раздела, длинная обрезается', () => {
+    it('цитата: доказательство правила, иначе asWas худшего раздела, длинная обрезается', () => {
         const long = 'а'.repeat(400);
         expect(
             pickAlertQuote({
+                riskFlags: [],
                 objections: [
-                    { category: null, quote: '', handled: null, outcome: null },
+                    {
+                        category: null,
+                        quote: 'Дорого',
+                        handled: null,
+                        outcome: null,
+                    },
                 ],
                 sections: [
-                    {
-                        section: 'NEEDS',
-                        relevance: 1,
-                        score: 3,
-                        asWas: long,
-                        alternatives: [],
-                    },
-                    {
-                        section: 'CLOSE',
-                        relevance: 1,
-                        score: 8,
-                        asWas: 'ок',
-                        alternatives: [],
-                    },
+                    section('NEEDS', 3, long),
+                    section('CLOSE', 8, 'ок'),
                 ],
             }),
         ).toHaveLength(300);
-        expect(pickAlertQuote({ objections: [], sections: [] })).toBe('');
+        expect(
+            pickAlertQuote({
+                riskFlags: [],
+                ...mishandledObjection('  Нам и так нормально  '),
+                sections: [section('NEEDS', 3, 'худший раздел')],
+            }),
+        ).toBe('Нам и так нормально');
+        expect(
+            pickAlertQuote({ riskFlags: [], objections: [], sections: [] }),
+        ).toBe('');
     });
 
     it('collectPulseAlerts фильтрует по дням окна в TZ портала', () => {

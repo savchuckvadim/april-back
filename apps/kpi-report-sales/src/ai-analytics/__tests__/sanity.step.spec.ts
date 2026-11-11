@@ -459,18 +459,37 @@ describe('Разбор шины, стора и настроек', () => {
         ]);
     });
 
-    it('приоритет коучинга urgent — тоже алерт', () => {
+    /**
+     * Решение владельца 11.11.2026: алерт — ошибка менеджера по правилу
+     * пульса; срочный коучинг и возражение клиента сами по себе — нет.
+     */
+    it('срочный коучинг — не алерт, неотработанное возражение — алерт', () => {
+        const base = {
+            managerId: '10',
+            callType: 'cold',
+            durationSec: 120,
+            riskFlags: [],
+        };
         const rows = callFacts([
+            { ...base, coachingPriority: 'urgent' },
             {
-                managerId: '10',
-                callType: 'cold',
-                durationSec: 120,
-                riskFlags: [],
-                coachingPriority: 'urgent',
+                ...base,
+                objections: [{ quote: 'Дорого', handled: true }],
+            },
+            {
+                ...base,
+                objections: [
+                    'мусор',
+                    { quote: 'Дорого', handled: false, reaction: 'other' },
+                ],
+            },
+            {
+                ...base,
+                style: { presentationDone: true, needsFound: false },
             },
         ]);
 
-        expect(rows[0].alert).toBe(true);
+        expect(rows.map(row => row.alert)).toEqual([false, false, true, true]);
     });
 
     it('факты сроков читаются из шины, чужая форма даёт пусто', () => {

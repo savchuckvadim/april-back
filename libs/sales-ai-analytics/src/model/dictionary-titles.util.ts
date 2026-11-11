@@ -13,6 +13,7 @@ import {
     CALL_REPORT_RISK_FLAG_ITEMS,
     CALL_REPORT_SECTIONS,
 } from '@lib/portal-lib/pbx/pbx-aicall-smart/type/pbx-aicall-smart.type';
+import { CALL_MISTAKE_SIGNAL_TITLES } from './manager-signal.rules';
 
 const SECTION_TITLES: ReadonlyMap<string, string> = new Map(
     CALL_REPORT_SECTIONS.map(section => [section.code, section.title]),
@@ -23,14 +24,16 @@ const OBJECTION_TITLES: ReadonlyMap<string, string> = new Map(
 );
 
 /**
- * Виды сигналов риска: риск-флаги разбора плюс приоритет коучинга
- * «Срочно на разбор» — алерт пульса ставится и по нему.
+ * Виды сигналов руководителю: риск-флаги разбора, ошибки менеджера
+ * (manager-signal.rules) и приоритет коучинга «Срочно на разбор» — так
+ * подписаны алерты, отправленные до 11.11.2026.
  */
 const RISK_TITLES: ReadonlyMap<string, string> = new Map([
     ...CALL_REPORT_RISK_FLAG_ITEMS.map(
         item => [item.CODE, item.VALUE] as const,
     ),
     ...CALL_REPORT_COACHING_ITEMS.map(item => [item.CODE, item.VALUE] as const),
+    ...Object.entries(CALL_MISTAKE_SIGNAL_TITLES),
 ]);
 
 const CALL_TYPE_TITLES: ReadonlyMap<string, string> = new Map(

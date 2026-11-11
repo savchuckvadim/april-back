@@ -8,23 +8,13 @@
  * `sanity.sources.ts` (записи стора менеджер-месяцев и плацебо-тест):
  * каждый файл — одна ответственность и лимит 300 строк.
  */
-import {
-    provenRiskFlagCodes,
-    type AiModelParams,
-    type RiskEvidenceLike,
-    type StageSlaFact,
-} from '@lib/sales-ai-analytics';
-import { AI_ANALYTICS_URGENT_COACHING } from '../constants/ai-analytics.const';
+import { type AiModelParams, type StageSlaFact } from '@lib/sales-ai-analytics';
 import {
     AI_SANITY_SLA_STAGES,
     SanityCallFact,
     SanityLevelFact,
 } from './sanity.types';
-
-const asRecord = (value: unknown): Record<string, unknown> | null =>
-    value !== null && typeof value === 'object'
-        ? (value as Record<string, unknown>)
-        : null;
+import { asRecord, hasManagerSignal } from './sanity.signal';
 
 const num = (value: unknown): number =>
     typeof value === 'number' && Number.isFinite(value) ? value : 0;
@@ -47,33 +37,9 @@ export function agreedSla(params: AiModelParams): Record<string, number> {
     return agreed;
 }
 
-const stringsOf = (value: unknown): string[] =>
-    Array.isArray(value)
-        ? value.filter((item): item is string => typeof item === 'string')
-        : [];
-
-/** Доказательства флагов из строки шины (чужая форма отбрасывается). */
-const riskEvidenceOf = (value: unknown): RiskEvidenceLike[] =>
-    Array.isArray(value)
-        ? value.flatMap((item: unknown) => {
-              const record = asRecord(item);
-              return record && typeof record.flag === 'string'
-                  ? [
-                        {
-                            flag: record.flag,
-                            quote:
-                                typeof record.quote === 'string'
-                                    ? record.quote
-                                    : null,
-                        },
-                    ]
-                  : [];
-          })
-        : [];
-
 /**
  * Строки звонков из шины в объёме панели (чужая форма отбрасывается).
- * Сигнал — действующий риск-флаг с цитатой либо срочный коучинг.
+ * Сигнал — ошибка менеджера по правилу пульса (sanity.signal).
  */
 export function callFacts(value: unknown): SanityCallFact[] {
     if (!Array.isArray(value)) return [];
@@ -88,12 +54,7 @@ export function callFacts(value: unknown): SanityCallFact[] {
                     typeof row.durationSec === 'number'
                         ? row.durationSec
                         : null,
-                alert:
-                    provenRiskFlagCodes(
-                        stringsOf(row.riskFlags),
-                        riskEvidenceOf(row.riskEvidence),
-                    ).length > 0 ||
-                    row.coachingPriority === AI_ANALYTICS_URGENT_COACHING,
+                alert: hasManagerSignal(row),
             },
         ];
     });

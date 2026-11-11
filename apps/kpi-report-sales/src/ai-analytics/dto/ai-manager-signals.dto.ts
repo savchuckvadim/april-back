@@ -26,8 +26,11 @@ export class AiRiskCallDto {
 
     @ApiProperty({
         description:
-            'Вид сигнала: действующий риск-флаг с цитатой (conflict / ' +
-            'compliance / door_closed) либо urgent — срочный коучинг.',
+            'Вид сигнала — ошибка менеджера: риск-флаг с цитатой (conflict / ' +
+            'compliance / door_closed), objection_mishandled — возражение не ' +
+            'отработано, presentation_no_needs — презентация без потребностей, ' +
+            'presentation_no_ssv — без «свойство — связка — выгода»; urgent — ' +
+            'алерт, отправленный до 11.11.2026 по срочному коучингу.',
         enum: AI_ANALYTICS_ALERT_KINDS,
         example: 'conflict',
     })

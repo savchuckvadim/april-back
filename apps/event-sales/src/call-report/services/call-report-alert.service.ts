@@ -24,8 +24,7 @@ import {
     buildAlertLink,
     buildAlertMessage,
     CallReportAlertKind,
-    pickAlertQuote,
-    resolveAlertKind,
+    resolveAlertSignal,
 } from './call-report-alert-message.util';
 
 /** Итог попытки алерта — для логов и тестов. */
@@ -47,12 +46,13 @@ const NOTIFY_TAG_PREFIX = 'call-report-alert';
 
 /**
  * Алерт РОПу в день звонка (Фаза 1a плана ai/tasks/ai-sales-analytics-plan.md,
- * день 6–7): после записи разбора с риск-флагом ДНЯ (конфликт / грубость
- * менеджера, нарушение регламента — CALL_REPORT_SAME_DAY_ALERT_FLAGS) или
- * срочным приоритетом коучинга — уведомление каждому РОПу из настроек
- * kpiSales с менеджером, типом звонка, видом сигнала, цитатой и ссылкой
- * на разбор. Обещание, негатив клиента и «не оставил дверь открытой» в
- * день звонка не шлются (решение владельца 19.10.2026).
+ * день 6–7): после записи разбора с ОШИБКОЙ МЕНЕДЖЕРА — уведомление
+ * каждому РОПу из настроек kpiSales с менеджером, типом звонка, видом
+ * сигнала, цитатой и ссылкой на разбор. Ошибка (решение владельца
+ * 11.11.2026, resolveAlertSignal): риск-флаг дня с цитатой (конфликт /
+ * грубость, нарушение регламента), возражение не отработано, показ без
+ * потребностей или без «свойство — связка — выгода». Возражение клиента
+ * само по себе и срочный приоритет коучинга алерта не дают.
  *
  * Один звонок — один алерт: перед отправкой ищется ais-запись
  * ai-analytics-feedback kind='alert_sent' по transcription_id, после
@@ -78,14 +78,15 @@ export class CallReportAlertService {
         row: TranscriptionPipelineView,
         smartItemId: number | null,
     ): Promise<CallReportAlertOutcome> {
-        const kind = resolveAlertKind(analysis);
-        if (!kind)
+        const signal = resolveAlertSignal(analysis);
+        if (!signal)
             return {
                 status: 'skipped',
                 kind: null,
                 delivered: [],
                 reason: 'no-risk',
             };
+        const { kind } = signal;
         try {
             const settings = await this.appSettings.resolve(
                 domain,
@@ -109,8 +110,7 @@ export class CallReportAlertService {
             const message = buildAlertMessage({
                 managerName: await this.resolveManagerName(bitrix, row.userId),
                 callType: analysis.callType ?? null,
-                kind,
-                quote: pickAlertQuote(analysis),
+                signal,
                 link: buildAlertLink({
                     domain,
                     smartEntityTypeId:

@@ -11,6 +11,7 @@ import type { AiOverviewDto } from '../dto/ai-overview.dto';
 import {
     callsLoaderWith,
     liteRow,
+    mishandledObjection,
     provenRisk,
     settingsLoaderWith,
 } from './fixtures/lite-row.fixture';
@@ -62,7 +63,7 @@ function riskRow(
 
 /**
  * Менеджер 10: 10 презентаций (n ≥ 8) и два риск-звонка (риск-флаг,
- * срочный коучинг); менеджер 20: риск-звонок, короткий риск-звонок (вне
+ * неотработанное возражение); менеджер 20: риск-звонок, короткий риск-звонок (вне
  * слоя качества — в строку не попадает) и спокойный звонок.
  */
 function rowsWithRiskCalls(): AnalyticsCallLiteRow[] {
@@ -71,7 +72,7 @@ function rowsWithRiskCalls(): AnalyticsCallLiteRow[] {
         riskRow('r1', '10', '2026-08-12'),
         riskRow('r2', '10', '2026-08-13', {
             riskFlags: [],
-            coachingPriority: 'urgent',
+            ...mishandledObjection(),
         }),
         riskRow('r3', '20', '2026-08-14', provenRisk('conflict')),
         riskRow('short', '20', '2026-08-15', {
@@ -139,7 +140,7 @@ describe('OverviewUseCase: ссылки риск-звонков на карто�
             ]),
         ).toEqual([
             ['r1', 'conflict', smartLink(77)],
-            ['r2', 'urgent', null],
+            ['r2', 'objection_mishandled', null],
         ]);
         expect(riskCallsOf(dto, '20')).toEqual([
             {

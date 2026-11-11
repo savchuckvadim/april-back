@@ -6,6 +6,7 @@ import {
     AttentionRules,
 } from './attention.types';
 import { riskTitleOf } from './dictionary-titles.util';
+import { isCallMistakeSignalKind } from './manager-signal.rules';
 import { isActiveRiskFlag } from './risk-flags.util';
 import {
     RU_FORMS,
@@ -51,12 +52,17 @@ export function isCloser(manager: AttentionManagerInput): boolean {
     );
 }
 
-/** Срочный приоритет коучинга — вид риск-звонка наравне с флагами. */
+/**
+ * Срочный приоритет коучинга: сам по себе сигнала больше не даёт (решение
+ * владельца 11.11.2026), но алерты, отправленные до этого, несут этот вид.
+ */
 export const ATTENTION_URGENT_RISK_KIND = 'urgent';
 
-/** Риск-звонок считается: действующий флаг либо срочный коучинг. */
+/** Риск-звонок считается: действующий флаг, ошибка менеджера или старый срочный алерт. */
 export const isActiveRiskKind = (kind: string): boolean =>
-    kind === ATTENTION_URGENT_RISK_KIND || isActiveRiskFlag(kind);
+    kind === ATTENTION_URGENT_RISK_KIND ||
+    isActiveRiskFlag(kind) ||
+    isCallMistakeSignalKind(kind);
 
 /**
  * risk — риск-звонки окна (алерты); тяжесть — их число. Идёт ПОСЛЕДНИМ

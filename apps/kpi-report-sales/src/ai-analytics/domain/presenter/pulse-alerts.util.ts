@@ -1,17 +1,22 @@
 /**
- * Сигналы руководителю для пульса: звонки окна с ДЕЙСТВУЮЩИМ риск-флагом
- * разбора, подтверждённым цитатой (conflict / compliance / door_closed),
- * или срочным приоритетом коучинга, плюс звонки, по которым event-sales
- * уже отправил алерт (ais kind = alert_sent). handled — есть alert_handled.
- * Отменённые флаги (promise, client_negative) и флаги без цитаты сигналом
- * не считаются даже в старых данных (решение владельца 19–20.10.2026).
- * Чистые функции над lite-строками.
+ * Сигналы руководителю для пульса и «Внимания»: звонки окна, где разбор
+ * нашёл ОШИБКУ МЕНЕДЖЕРА (решение владельца 11.11.2026, правило
+ * resolveManagerSignal из @lib/sales-ai-analytics — одно с уведомлением
+ * РОПу в CRM): действующий риск-флаг с цитатой (conflict / compliance /
+ * door_closed), возражение не отработано, показ без потребностей или без
+ * «свойство — связка — выгода». Возражение клиента само по себе и срочный
+ * приоритет коучинга сигналом не считаются. Плюс звонки, по которым
+ * event-sales уже отправил алерт (ais kind = alert_sent) — у отправленных
+ * до 11.11 вида по новому правилу может не быть, они идут как urgent.
+ * handled — есть alert_handled. Чистые функции над lite-строками.
  */
+import { CALL_REPORT_ACTIVE_RISK_FLAG_CODES } from '@lib/portal-lib/pbx/pbx-aicall-smart';
 import {
     isActiveRiskKind,
-    nonEmptyText,
+    ManagerSignal,
+    ManagerSignalCallView,
     pickWorstSection,
-    provenRiskFlags,
+    resolveManagerSignal,
     toPortalDate,
 } from '@lib/sales-ai-analytics';
 import {
@@ -23,23 +28,38 @@ import { DatedLiteRow } from '../loaders/lite-row.mapper';
 
 export const ALERT_QUOTE_MAX_LENGTH = 300;
 
-/** Вид сигнала считается: действующий флаг либо urgent (старый кэш может нести отменённые). */
+/** Вид сигнала считается: действующий флаг, ошибка менеджера или старый urgent. */
 export const isActiveAlertKind = (kind: string): kind is AiAnalyticsAlertKind =>
     isActiveRiskKind(kind);
 
-/**
- * Вид сигнала: первый действующий риск-флаг с цитатой по порядку
- * справочника, иначе urgent, иначе null.
- */
-export function resolveAlertKind(
-    row: Pick<DatedLiteRow, 'riskFlags' | 'riskEvidence' | 'coachingPriority'>,
-): AiAnalyticsAlertKind | null {
-    const [proven] = provenRiskFlags(row.riskFlags, row.riskEvidence);
-    if (proven) return proven.flag;
-    return row.coachingPriority === AI_ANALYTICS_URGENT_COACHING
-        ? AI_ANALYTICS_URGENT_COACHING
-        : null;
+/** Поля lite-строки, по которым решается сигнал. */
+export type AlertSourceRow = Pick<
+    DatedLiteRow,
+    'riskFlags' | 'riskEvidence' | 'objections' | 'sections'
+> &
+    Partial<Pick<DatedLiteRow, 'style' | 'methodology'>>;
+
+/** Проекция lite-строки для правила сигнала; старые строки без style/methodology — null. */
+export function toSignalView(row: AlertSourceRow): ManagerSignalCallView {
+    return {
+        riskFlags: row.riskFlags,
+        riskEvidence: row.riskEvidence ?? [],
+        objections: row.objections,
+        sections: row.sections,
+        presentationDone: row.style?.presentationDone ?? null,
+        needsFound: row.style?.needsFound ?? null,
+        spiralsFull: row.methodology?.spiralsFull ?? null,
+    };
 }
+
+/** Сигнал по звонку: витрина учитывает все действующие флаги, включая «дверь закрыта». */
+export const resolveAlertSignal = (row: AlertSourceRow): ManagerSignal | null =>
+    resolveManagerSignal(toSignalView(row), CALL_REPORT_ACTIVE_RISK_FLAG_CODES);
+
+/** Вид сигнала по разбору или null — повода для руководителя нет. */
+export const resolveAlertKind = (
+    row: AlertSourceRow,
+): AiAnalyticsAlertKind | null => resolveAlertSignal(row)?.kind ?? null;
 
 const truncate = (quote: string): string =>
     quote.length > ALERT_QUOTE_MAX_LENGTH
@@ -47,21 +67,22 @@ const truncate = (quote: string): string =>
         : quote;
 
 /**
- * Цитата сигнала: доказательство флага (если сигнал по флагу), иначе первое
- * возражение с текстом, иначе «как было» худшего раздела.
+ * Цитата сигнала: доказательство правила (цитата флага, слова клиента в
+ * неотработанном возражении, «как было» менеджера в показе), иначе — у
+ * старого отправленного алерта — «как было» худшего раздела.
  */
-export function pickAlertQuote(
-    row: Pick<DatedLiteRow, 'objections' | 'sections'> &
-        Partial<Pick<DatedLiteRow, 'riskFlags' | 'riskEvidence'>>,
+function alertQuote(
+    signal: ManagerSignal | null,
+    row: Pick<DatedLiteRow, 'sections'>,
 ): string {
-    const [proven] = provenRiskFlags(row.riskFlags, row.riskEvidence);
-    if (proven) return truncate(proven.quote);
-    const objection = row.objections
-        .map(item => nonEmptyText(item.quote))
-        .find((quote): quote is string => quote !== null);
-    const quote = objection ?? pickWorstSection(row.sections)?.asWas ?? '';
+    const quote =
+        signal?.quote?.trim() || pickWorstSection(row.sections)?.asWas || '';
     return truncate(quote);
 }
+
+/** Цитата сигнала строки (см. alertQuote). */
+export const pickAlertQuote = (row: AlertSourceRow): string =>
+    alertQuote(resolveAlertSignal(row), row);
 
 /**
  * Сигнал без ссылки на карточку разбора: ссылки проставляет use-case после
@@ -77,8 +98,8 @@ export interface AlertMarks {
 }
 
 /**
- * Алерты окна [from; to] (дни портала): риск/urgent по разбору либо уже
- * отправленный алерт. Сортировка — по времени звонка, затем по id.
+ * Алерты окна [from; to] (дни портала): ошибка менеджера по разбору либо
+ * уже отправленный алерт. Сортировка — по времени звонка, затем по id.
  */
 export function collectPulseAlerts(
     rows: readonly DatedLiteRow[],
@@ -92,8 +113,9 @@ export function collectPulseAlerts(
             return day >= window.from && day <= window.to;
         })
         .flatMap(row => {
-            const kind =
-                resolveAlertKind(row) ??
+            const signal = resolveAlertSignal(row);
+            const kind: AiAnalyticsAlertKind | null =
+                signal?.kind ??
                 (marks.sent.has(row.transcriptionId)
                     ? AI_ANALYTICS_URGENT_COACHING
                     : null);
@@ -103,7 +125,7 @@ export function collectPulseAlerts(
                     managerId: row.managerId,
                     transcriptionId: row.transcriptionId,
                     kind,
-                    quote: pickAlertQuote(row),
+                    quote: alertQuote(signal, row),
                     callStartedAt: row.callStartedAt.toISOString(),
                     handled: marks.handled.has(row.transcriptionId),
                 },
