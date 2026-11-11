@@ -4,6 +4,7 @@ import { Job } from 'bull';
 import type { Redis } from 'ioredis';
 import { QueueNames } from '@lib/queue/constants/queue-names.enum';
 import { JobNames } from '@lib/queue/constants/job-names.enum';
+import { resolveQueueConcurrency } from '@lib/queue/concurrency/resolve-queue-concurrency';
 import { RedisService } from '@lib/core/redis/redis.service';
 import { LibreOfficeBusyError } from '@app/konstructor/modules/libre-office';
 import { OfferWordEphemeralPdfDocumentService } from '../services/preview-generate/offer-word-ephemeral-pdf-document.service';
@@ -20,6 +21,15 @@ export type OfferWordEphemeralPdfJobPayload = {
     dto: OfferWordByTemplateGenerateDto;
     operationId: string;
 };
+
+/**
+ * Превью одновременно. Раньше очередь слушали konstructor и admin по одному
+ * воркеру; теперь только konstructor — два воркера держат прежний поток.
+ */
+const OFFER_WORD_EPHEMERAL_PDF_CONCURRENCY = resolveQueueConcurrency(
+    'KONSTRUCTOR_OFFER_PREVIEW_CONCURRENCY',
+    2,
+);
 
 @Processor(QueueNames.OFFER_WORD_EPHEMERAL_PDF)
 export class OfferWordEphemeralPdfProcessor {
@@ -42,7 +52,10 @@ export class OfferWordEphemeralPdfProcessor {
         }
     }
 
-    @Process(JobNames.OFFER_WORD_EPHEMERAL_PDF_GENERATE)
+    @Process({
+        name: JobNames.OFFER_WORD_EPHEMERAL_PDF_GENERATE,
+        concurrency: OFFER_WORD_EPHEMERAL_PDF_CONCURRENCY,
+    })
     async handle(job: Job<OfferWordEphemeralPdfJobPayload>): Promise<void> {
         const { dto, operationId } = job.data;
         const redis = this.redisService.getClient();

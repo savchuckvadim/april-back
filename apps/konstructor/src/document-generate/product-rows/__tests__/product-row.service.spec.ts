@@ -67,6 +67,59 @@ describe('DocumentProductRowService.getProducts', () => {
         expect(lic.productMonthSum).toBe('8000.00');
     });
 
+    describe('название строки для счёта (ProductByContractName)', () => {
+        const EPS_SERVICES =
+            'Услуги по сопровождению Электронного периодического справочника «Система ГАРАНТ»';
+        const named = (
+            name: string,
+            type: 'garant' | 'academy',
+            forkp: string,
+        ): ProductRowDto =>
+            ({
+                ...row(1500, 1500, 12),
+                name,
+                productType: type,
+                product: {
+                    name,
+                    type,
+                    contract: { contract: { productName: EPS_SERVICES } },
+                },
+                supply: { name: '', forkp },
+            }) as unknown as ProductRowDto;
+
+        it('Гарант — с формулировкой договора и поставкой', () => {
+            const [product] = service.getProducts(
+                [
+                    named(
+                        'Гарант-Бухгалтер',
+                        'garant',
+                        'Интернет версия на 1 одновременный доступ к системе',
+                    ),
+                ],
+                'Интернет',
+                true,
+                1,
+                null,
+            );
+            expect(product.productContractName).toBe(EPS_SERVICES);
+            expect(product.productWithContractName).toBe(
+                `${EPS_SERVICES} Гарант-Бухгалтер Интернет версия на 1 одновременный доступ к системе`,
+            );
+        });
+
+        it('Академия — без «Услуги по сопровождению…»', () => {
+            const [product] = service.getProducts(
+                [named('Академия PRO', 'academy', '')],
+                'Интернет',
+                true,
+                1,
+                null,
+            );
+            expect(product.productContractName).toBe('');
+            expect(product.productWithContractName).toBe('Академия PRO');
+        });
+    });
+
     it('скидка — за всё количество и в месяц', () => {
         const [product] = service.getProducts(
             [services4],

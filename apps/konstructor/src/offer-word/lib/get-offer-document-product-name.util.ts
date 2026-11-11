@@ -5,7 +5,12 @@ export const getOfferDocumentProductName = (
     dto: Pick<OfferWordByTemplateGenerateDto, 'sets'>,
 ) => {
     try {
-        const firstGeneralRow = dto.sets.general[0]?.rows.garant[0];
+        // любой тип строк в сете может отсутствовать (ProductRowSetItemDto)
+        const firstGeneralRow = dto.sets.general[0]?.rows?.garant?.[0];
+        // без строки Гаранта имя выходило «КП undefined - »
+        if (!firstGeneralRow) {
+            return 'КП';
+        }
 
         const productName =
             firstGeneralRow?.alternativeName || firstGeneralRow?.name;

@@ -4,7 +4,7 @@ import { BitrixCore } from './bitrix-core.service';
 import axios from 'axios';
 import { TelegramService } from '@lib/telegram/telegram.service';
 import { BxAuthType } from './bx-auth-type.enum';
-import { CallApiService } from './call-api.service';
+import { BitrixCallOptions, CallApiService } from './call-api.service';
 import { BatchApiService } from './batch-api.service';
 import { BXApiSchema, TBXRequest, TBXResponse } from '../domain';
 import {
@@ -62,8 +62,17 @@ export class BitrixBaseApi {
         entity: ENTITY,
         method: METHOD,
         data: TBXRequest<NAMESPACE, ENTITY, METHOD>,
+        options?: BitrixCallOptions,
     ): Promise<IBitrixResponse<TBXResponse<NAMESPACE, ENTITY, METHOD>>> {
-        return await this.callApi.callType(namespace, entity, method, data);
+        return options
+            ? await this.callApi.callType(
+                  namespace,
+                  entity,
+                  method,
+                  data,
+                  options,
+              )
+            : await this.callApi.callType(namespace, entity, method, data);
     }
 
     async callBatch() {

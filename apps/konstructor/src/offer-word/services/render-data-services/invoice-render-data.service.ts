@@ -24,6 +24,7 @@ import { ContractDto } from '@app/konstructor/dto/contract.dto';
 import { formatRu } from '@lib/shared/lib/date/format-ru';
 import dayjs from 'dayjs';
 import { getWithTax } from '@app/konstructor/document-generate/lib/get-with-tax.util';
+import { collectSetRows } from '../../lib/collect-set-rows.util';
 
 type IInvoicePriceData = {
     rows: IProductRenderData;
@@ -181,13 +182,7 @@ export class InvoiceRenderDataService {
     private getRowsFromSetItemRow(
         setItemRow: ProductRowSetItemDto,
     ): ProductRowDto[] {
-        const rows: ProductRowDto[] = [];
-        Object.values(setItemRow).forEach((row: ProductRowDto[]) => {
-            row.forEach(r => {
-                rows.push(r);
-            });
-        });
-        return rows;
+        return collectSetRows(setItemRow);
     }
 
     private getIsMultipleInvoice(dto: OfferWordByTemplateGenerateDto): boolean {

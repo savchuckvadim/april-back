@@ -46,3 +46,22 @@ describe('DealSendDto: значения полей сделки', () => {
         expect(isDealFieldValue(Number.NaN)).toBe(false);
     });
 });
+
+describe('DealSendDto: ключ повтора и метка сборки', () => {
+    it('requestKey и clientBuild доходят до use-case (whitelist не режет)', async () => {
+        const dto = await transform({
+            ...body('Гарант-Юрист'),
+            requestKey: 'a1b2c3d4-0000-4000-8000-000000000001',
+            clientBuild: '2026-11-11T13:03 caece3a2',
+        });
+
+        expect(dto.requestKey).toBe('a1b2c3d4-0000-4000-8000-000000000001');
+        expect(dto.clientBuild).toBe('2026-11-11T13:03 caece3a2');
+    });
+
+    it('слишком длинный requestKey — 400', async () => {
+        await expect(
+            transform({ ...body('Гарант-Юрист'), requestKey: 'x'.repeat(101) }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+    });
+});

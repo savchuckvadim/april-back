@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { JobNames } from '@lib/queue/constants/job-names.enum';
 import { QueueNames } from '@lib/queue/constants/queue-names.enum';
+import { resolveQueueConcurrency } from '@lib/queue/concurrency/resolve-queue-concurrency';
 import { OfferWordMultiGenerateDto } from '../dto/offer-word-multi-generate.dto';
 import { OfferWordMultiGenerateUseCase } from '../use-cases/offer-word-multi-generate.use-case';
 
@@ -11,13 +12,22 @@ export type OfferGenerateMultiJobPayload = {
     operationId: string;
 };
 
-@Processor(QueueNames.KONSTRUCTOR)
+/** КП v2 одновременно (см. OFFER_GENERATE_CONCURRENCY в offer-generate.processor). */
+const OFFER_GENERATE_MULTI_CONCURRENCY = resolveQueueConcurrency(
+    'KONSTRUCTOR_OFFER_GENERATE_MULTI_CONCURRENCY',
+    2,
+);
+
+@Processor(QueueNames.KONSTRUCTOR_OFFER_GENERATE_MULTI)
 export class OfferGenerateMultiProcessor {
     private readonly logger = new Logger(OfferGenerateMultiProcessor.name);
 
     constructor(private readonly useCase: OfferWordMultiGenerateUseCase) {}
 
-    @Process(JobNames.OFFER_GENERATE_MULTI)
+    @Process({
+        name: JobNames.OFFER_GENERATE_MULTI,
+        concurrency: OFFER_GENERATE_MULTI_CONCURRENCY,
+    })
     async handle(job: Job<OfferGenerateMultiJobPayload>): Promise<void> {
         const { dto } = job.data;
         const startedAt = Date.now();

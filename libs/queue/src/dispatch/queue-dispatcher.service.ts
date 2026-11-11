@@ -30,8 +30,12 @@ export class QueueDispatcherService {
         private readonly offerWordEphemeralPdfQueue: Queue,
         @InjectQueue(QueueNames.ZAKUPKI_OFFER)
         private readonly zakupkiOfferQueue: Queue,
-        @InjectQueue(QueueNames.KONSTRUCTOR)
-        private readonly konstructorQueue: Queue,
+        @InjectQueue(QueueNames.KONSTRUCTOR_DEAL_SEND)
+        private readonly konstructorDealSendQueue: Queue,
+        @InjectQueue(QueueNames.KONSTRUCTOR_OFFER_GENERATE)
+        private readonly konstructorOfferGenerateQueue: Queue,
+        @InjectQueue(QueueNames.KONSTRUCTOR_OFFER_GENERATE_MULTI)
+        private readonly konstructorOfferGenerateMultiQueue: Queue,
         @InjectQueue(QueueNames.SERVICE_GENERATE_ACTS)
         private readonly serviceGenerateActsQueue: Queue,
         @InjectQueue(QueueNames.SERVICE_CALL_EVENT)
@@ -132,8 +136,12 @@ export class QueueDispatcherService {
                 return this.offerWordEphemeralPdfQueue;
             case QueueNames.ZAKUPKI_OFFER:
                 return this.zakupkiOfferQueue;
-            case QueueNames.KONSTRUCTOR:
-                return this.konstructorQueue;
+            case QueueNames.KONSTRUCTOR_DEAL_SEND:
+                return this.konstructorDealSendQueue;
+            case QueueNames.KONSTRUCTOR_OFFER_GENERATE:
+                return this.konstructorOfferGenerateQueue;
+            case QueueNames.KONSTRUCTOR_OFFER_GENERATE_MULTI:
+                return this.konstructorOfferGenerateMultiQueue;
 
             case QueueNames.EVENT_SALES_COLD_CALL:
                 return this.eventSalesColdCallQueue;

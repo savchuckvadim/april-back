@@ -2,6 +2,8 @@ import { BitrixOwnerTypeId } from 'src/modules/bitrix';
 
 export type CrmAddRequestType<T> = {
     fields: Partial<T>;
+    /** Параметры добавления, например REGISTER_SONET_EVENT: 'Y' — событие в живой ленте */
+    params?: Record<string, string>;
     // ownerId?: number | string;
     // ownerType?: string;
 };
