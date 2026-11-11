@@ -5,21 +5,23 @@ export const getInvoiceDocumentProductName = (
     isAlternative: boolean,
     invoiceCount: number,
 ) => {
+    const fallbackName = !isAlternative ? 'Cчет' : `Cчет - ${invoiceCount}`;
     try {
-        let firstGeneralRow = dto.sets.general[0]?.rows.garant[0];
-
-        if (isAlternative) {
-            firstGeneralRow =
-                dto.sets?.alternative[invoiceCount - 1]?.rows?.garant[0] ||
-                `Cчет - ${invoiceCount}`;
+        // любой тип строк в сете может отсутствовать (ProductRowSetItemDto)
+        const firstRow = isAlternative
+            ? dto.sets?.alternative[invoiceCount - 1]?.rows?.garant?.[0]
+            : dto.sets.general[0]?.rows?.garant?.[0];
+        // Раньше для альтернативы без строки Гаранта сюда подставлялась
+        // строка `Cчет - N`, и имя выходило «Cчет undefined - »
+        if (!firstRow) {
+            return fallbackName;
         }
-        const productName =
-            firstGeneralRow.alternativeName || firstGeneralRow.name;
-        const supplyName = firstGeneralRow.supply?.name || '';
+        const productName = firstRow.alternativeName || firstRow.name;
+        const supplyName = firstRow.supply?.name || '';
 
         return `Cчет ${productName} - ${supplyName}`;
     } catch (error) {
         console.error('Error in getInvoiceDocumentProductName:', error);
-        return !isAlternative ? 'Cчет' : `Cчет - ${invoiceCount}`;
+        return fallbackName;
     }
 };

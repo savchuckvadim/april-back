@@ -9,6 +9,8 @@ import { TelegramModule } from '@lib/telegram/telegram.module';
 
 import { KonstructorModule } from './konstructor.module';
 import { OfferWordModule } from './offer-word/offer-word.module';
+import { OfferWordWorkerModule } from './offer-word/offer-word-worker.module';
+import { LegacyQueueDrainModule } from './modules/legacy-queue-drain/legacy-queue-drain.module';
 import { OfferPdfModule } from './offer-pdf/offer-pdf.module';
 import { DocumentSupplyReportModule } from './document-supply-report/document-supply-report.module';
 import { ZakupkiSettingsModule } from './modules/zakupki-settings/zakupki-settings.module';
@@ -88,6 +90,12 @@ import { DocumentTemplatePublicModule } from '@lib/portal-lib/konstructor/docume
         HealthModule,
         KonstructorModule,
         OfferWordModule,
+        // Воркеры очередей КП и превью — только здесь, не в admin
+        // (admin импортирует OfferWordModule ради ручек, но не слушает очереди)
+        OfferWordWorkerModule,
+        // Временно: дочитывает старую общую очередь 'konstructor' после
+        // выкатки разделения очередей (удалить через неделю)
+        LegacyQueueDrainModule,
         // КП в PDF из JSX-шаблонов: без Word и Gotenberg, данные те же
         OfferPdfModule,
         DocumentSupplyReportModule,

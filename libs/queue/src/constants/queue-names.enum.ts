@@ -63,7 +63,29 @@ export enum QueueNames {
     /** Offer Word: PDF в Redis, файлы на диске не храним */
     OFFER_WORD_EPHEMERAL_PDF = 'offer-word-ephemeral-pdf',
     ZAKUPKI_OFFER = 'zakupki-offer',
-    KONSTRUCTOR = 'konstructor',
+    /**
+     * Конструктор: у каждого процесса своя очередь.
+     *
+     * Раньше три вида задач (запись сделки, КП, КП v2) жили в одной очереди
+     * 'konstructor'. Её слушали два контейнера: app-konstructor и app-admin
+     * (admin поднимает обработчики КП через OfferWordModule, а обработчика
+     * записи сделки у него нет). Bull берёт следующее задание без оглядки на
+     * имя, поэтому задание konstructor-deal-send, доставшееся admin, падало с
+     * «Missing process handler» и терялось без повторов (gsr 11.11.2026: из
+     * трёх сохранений сделки 217301 записалось одно; CLIENT LIST в Redis
+     * показал на bull:konstructor воркеры обоих контейнеров).
+     */
+    KONSTRUCTOR_DEAL_SEND = 'konstructor-deal-send',
+    KONSTRUCTOR_OFFER_GENERATE = 'konstructor-offer-generate',
+    KONSTRUCTOR_OFFER_GENERATE_MULTI = 'konstructor-offer-generate-multi',
+    /**
+     * @deprecated Старая общая очередь. Ставить в неё нельзя (диспетчер её не
+     * знает) — её только дочитывает LegacyKonstructorQueueProcessor:
+     * задания, оставшиеся на момент выкатки разделения, перекладываются в
+     * новые очереди. Удалить вместе с дренажом, когда в bull:konstructor
+     * пусто (wait/active/delayed).
+     */
+    KONSTRUCTOR_LEGACY = 'konstructor',
     CALL_ANALYSIS = 'call-analysis',
 
     /** AI-отчётность по звонкам: cron-сканер → транскрибация → анализ → смарт/БД (воркер в event-sales) */

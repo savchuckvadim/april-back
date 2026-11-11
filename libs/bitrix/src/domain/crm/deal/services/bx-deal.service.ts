@@ -1,5 +1,6 @@
 import { BxDealRepository } from '../repository/bx-deal.repository';
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
+import type { BitrixCallOptions } from 'src/modules/bitrix/core/base/call-api.service';
 import { IBXDeal, IBXDealContactBinding } from '../interface/bx-deal.interface';
 import { IBXField } from '../../fields/bx-field.interface';
 
@@ -60,8 +61,17 @@ export class BxDealService {
         return deals;
     }
 
-    async set(data: Partial<IBXDeal>) {
-        return await this.repo.set(data);
+    /**
+     * crm.deal.add; params — например { REGISTER_SONET_EVENT: 'Y' };
+     * options.retries = 0 — без автоповтора (повтор после таймаута мог бы
+     * создать вторую сделку).
+     */
+    async set(
+        data: Partial<IBXDeal>,
+        params?: Record<string, string>,
+        options?: BitrixCallOptions,
+    ) {
+        return await this.repo.set(data, params, options);
     }
 
     async update(dealId: number | string, data: Partial<IBXDeal>) {

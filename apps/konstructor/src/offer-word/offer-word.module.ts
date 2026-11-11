@@ -24,14 +24,12 @@ import { InnerDealModule } from '@app/konstructor/modules/inner-deal/inner-deal.
 import { OfferRenderProviderRqService } from './services/render-data-services/offer-render-provider-rq.service';
 import { OfferRenderRecipientService } from './services/render-data-services/offer-render-recipient.service';
 import { OfferRenderManagerService } from './services/render-data-services/offer-render-manager.service';
-import { OfferWordEphemeralPdfProcessor } from './queue/offer-word-ephemeral-pdf.processor';
 import { OfferWordEphemeralPdfQueueService } from './services/queue/offer-word-ephemeral-pdf-queue.service';
 import { OfferWordCancelWatcher } from './services/queue/offer-word-cancel-watcher.service';
 import { OfferGenerateQueueService } from './services/queue/offer-generate-queue.service';
 import { InvoiceWordCoreGenerateService } from './services/invoice-word-core/invoice-word-core-generate.service';
 import { InvoiceRenderDataService } from './services/render-data-services/invoice-render-data.service';
 import { InvoiceTemplateModule } from '@app/konstructor/modules/invoice-template';
-import { OfferGenerateProcessor } from './queue/offer-generate.processor';
 import { OfferBxTimelineService } from './services/bitrix/offer-bx-timeline.service';
 import { PBXModule } from '@lib/pbx';
 import { BitrixDocumentSaveFlowService } from './services/bitrix/bitrix-document-save-flow.service';
@@ -42,8 +40,15 @@ import { OfferWordMultiGenerateController } from './multi/controllers/offer-word
 import { OfferWordMultiBuildService } from './multi/services/offer-word-multi-build.service';
 import { OfferWordMultiGenerateUseCase } from './multi/use-cases/offer-word-multi-generate.use-case';
 import { OfferGenerateMultiQueueService } from './multi/services/queue/offer-generate-multi-queue.service';
-import { OfferGenerateMultiProcessor } from './multi/queue/offer-generate-multi.processor';
 
+/**
+ * Генерация КП: ручки, сервисы и постановка заданий в очередь.
+ *
+ * Процессоров очередей здесь НЕТ — они в OfferWordWorkerModule, который
+ * подключает только приложение konstructor. Этот модуль импортирует ещё и
+ * admin, а любой @Processor отсюда сделал бы его вторым потребителем очередей
+ * КП (см. offer-word-worker.module.ts).
+ */
 @Module({
     imports: [
         QueueModule,
@@ -80,8 +85,6 @@ import { OfferGenerateMultiProcessor } from './multi/queue/offer-generate-multi.
         OfferRenderProviderRqService,
         OfferRenderRecipientService,
         OfferRenderManagerService,
-        OfferWordEphemeralPdfProcessor,
-        OfferGenerateProcessor,
         OfferWordEphemeralPdfQueueService,
         OfferWordCancelWatcher,
         OfferGenerateQueueService,
@@ -94,13 +97,17 @@ import { OfferGenerateMultiProcessor } from './multi/queue/offer-generate-multi.
         OfferWordMultiBuildService,
         OfferWordMultiGenerateUseCase,
         OfferGenerateMultiQueueService,
-        OfferGenerateMultiProcessor,
     ],
-    // Данные КП нужны и PDF-генерации (offer-pdf): один расчёт на оба формата
     exports: [
+        // Данные КП нужны и PDF-генерации (offer-pdf): один расчёт на оба формата
         OfferRenderDataService,
         BitrixDocumentSaveFlowService,
         OfferBxTimelineService,
+        // Зависимости процессоров из OfferWordWorkerModule
+        OfferWordByTemplateGenerateUseCase,
+        OfferWordMultiGenerateUseCase,
+        OfferWordEphemeralPdfDocumentService,
+        OfferWordCancelWatcher,
     ],
 })
 export class OfferWordModule {}

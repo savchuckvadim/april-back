@@ -85,7 +85,9 @@ jobs:
                       kpi-report-sales: ['apps/kpi-report-sales/**']
                       pbx-install: ['apps/pbx-install/**']
                       kpi-report-service: ['apps/kpi-report-service/**']
-                      admin: ['apps/admin/**']
+                      # admin компилирует OfferWordModule из apps/konstructor: без
+                      # пересборки он работал бы на старом коде конструктора
+                      admin: ['apps/admin/**', 'apps/konstructor/**']
                       event-sales: ['apps/event-sales/**']
                       event-service: ['apps/event-service/**']
                       konstructor: ['apps/konstructor/**']

@@ -1,5 +1,6 @@
 // import { BitrixBaseApi } from "src/modules/bitrix/core/base/bitrix-base-api";
 import { BitrixBaseApi } from 'src/modules/bitrix/core/base/bitrix-base-api';
+import type { BitrixCallOptions } from 'src/modules/bitrix/core/base/call-api.service';
 import {
     EBxMethod,
     EBxNamespace,
@@ -99,13 +100,26 @@ export class BxDealRepository {
 
     // Список до
 
-    async set(data: Partial<IBXDeal>) {
-        return await this.bxApi.callType(
-            EBxNamespace.CRM,
-            EBXEntity.DEAL,
-            EBxMethod.ADD,
-            { fields: data },
-        );
+    async set(
+        data: Partial<IBXDeal>,
+        params?: Record<string, string>,
+        options?: BitrixCallOptions,
+    ) {
+        const payload = params ? { fields: data, params } : { fields: data };
+        return options
+            ? await this.bxApi.callType(
+                  EBxNamespace.CRM,
+                  EBXEntity.DEAL,
+                  EBxMethod.ADD,
+                  payload,
+                  options,
+              )
+            : await this.bxApi.callType(
+                  EBxNamespace.CRM,
+                  EBXEntity.DEAL,
+                  EBxMethod.ADD,
+                  payload,
+              );
     }
     setBtch(cmdCode: string, data: Partial<IBXDeal>) {
         return this.bxApi.addCmdBatchType(

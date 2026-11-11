@@ -9,6 +9,7 @@ import {
     IsNumber,
     IsOptional,
     IsString,
+    MaxLength,
     ValidateNested,
 } from 'class-validator';
 import {
@@ -342,7 +343,8 @@ export class DealSendDto {
 
     @ApiProperty({
         type: [DealSendProductRowDto],
-        description: 'Товарные строки; не переданы — строки не трогаем',
+        description:
+            'Товарные строки. Не переданы или пустой список — строки сделки не трогаем (как легаси: Laravel пустой список не писал, а случайный [] стёр бы товары и сумму)',
         required: false,
     })
     @IsOptional()
@@ -360,6 +362,28 @@ export class DealSendDto {
     @ValidateNested()
     @Type(() => DealSendTargetDto)
     target?: DealSendTargetDto;
+
+    @ApiProperty({
+        description:
+            'Ключ нажатия «Сохранить» (UUID, генерирует фронт). Повтор запроса с тем же ключом не создаёт вторую сделку, а возвращает созданную',
+        required: false,
+        maxLength: 100,
+    })
+    @IsOptional()
+    @IsString()
+    @MaxLength(100)
+    requestKey?: string;
+
+    @ApiProperty({
+        description:
+            'Метка сборки фронта (время/хэш). Только для лога: две версии фронта живут одновременно, пока у менеджера открыт старый iframe',
+        required: false,
+        maxLength: 200,
+    })
+    @IsOptional()
+    @IsString()
+    @MaxLength(200)
+    clientBuild?: string;
 }
 
 /**
@@ -400,8 +424,25 @@ export class SkippedDealFieldDto {
 }
 
 /**
+ * Предупреждения ответа:
+ * - `stage_not_found` — у воронки нет стадии «Документы», сделка создана на
+ *   первой стадии;
+ * - `replayed` — повтор запроса с тем же requestKey: вернули уже созданную
+ *   сделку, вторую не создавали;
+ * - `write_not_queued` — запись полей и строк поставить в очередь не
+ *   удалось (operationId null): фронт пишет через легаси в эту сделку.
+ */
+export const DEAL_SEND_WARNINGS = [
+    'stage_not_found',
+    'replayed',
+    'write_not_queued',
+] as const;
+export type DealSendWarning = (typeof DEAL_SEND_WARNINGS)[number];
+
+/**
  * Сделка создана/найдена синхронно (фронту нужен её id), запись полей и
- * товарных строк уходит в очередь — как в легаси.
+ * товарных строк уходит в очередь — как в легаси. Результат записи фронт
+ * узнаёт опросом GET konstructor/deal-send/status/{operationId}.
  */
 export class DealSendResponseDto {
     @ApiProperty({ description: 'Сделка, в которую пишем' })
@@ -425,4 +466,143 @@ export class DealSendResponseDto {
         required: false,
     })
     smartId?: number | null;
+
+    @ApiProperty({
+        description:
+            'Задание записи полей и строк; результат — GET konstructor/deal-send/status/{operationId}. null — писать было нечего или (warnings: write_not_queued) поставить не удалось',
+        type: String,
+        nullable: true,
+        required: false,
+    })
+    operationId?: string | null;
+
+    @ApiProperty({
+        description:
+            'Предупреждения: stage_not_found — нет стадии «Документы», сделка на первой стадии; replayed — повтор по requestKey, вернули уже созданную сделку; write_not_queued — запись не поставлена в очередь, писать через легаси',
+        enum: DEAL_SEND_WARNINGS,
+        isArray: true,
+        required: false,
+    })
+    warnings?: DealSendWarning[];
+}
+
+/** Что записало задание: число полей и строк (null — строки не трогали). */
+export class DealSendWriteResultDto {
+    @ApiProperty({ description: 'Сколько полей записано' })
+    fields: number;
+
+    @ApiProperty({
+        description:
+            'Сколько товарных строк записано; null — строки не трогали',
+        type: Number,
+        nullable: true,
+    })
+    rows: number | null;
+
+    @ApiProperty({
+        description:
+            'Не писали: у сделки есть более позднее сохранение — оно и запишет',
+        required: false,
+    })
+    superseded?: boolean;
+}
+
+export const DEAL_SEND_JOB_STATES = [
+    'waiting',
+    'active',
+    'retrying',
+    'completed',
+    'failed',
+    'not_found',
+] as const;
+export type DealSendJobState = (typeof DEAL_SEND_JOB_STATES)[number];
+
+/**
+ * Статус задания записи сделки. Фронт опрашивает его ограниченное время:
+ * `done && ok` — записано; `done && !ok` или таймаут — отправить запись в
+ * легаси (решение владельца 11.11.2026, на переходный период).
+ */
+export class DealSendStatusResponseDto {
+    @ApiProperty()
+    operationId: string;
+
+    @ApiProperty({
+        enum: DEAL_SEND_JOB_STATES,
+        description:
+            'retrying — попытка упала, ждёт повтора; not_found — задания нет (устарело или не создавалось)',
+    })
+    state: DealSendJobState;
+
+    @ApiProperty({ description: 'Ждать больше нечего: записано или упало' })
+    done: boolean;
+
+    @ApiProperty({ description: 'Записано' })
+    ok: boolean;
+
+    @ApiProperty({ description: 'Сколько попыток уже сделано' })
+    attemptsMade: number;
+
+    @ApiProperty({
+        description: 'Почему не записано (последняя ошибка)',
+        type: String,
+        nullable: true,
+    })
+    error: string | null;
+
+    @ApiProperty({ type: DealSendWriteResultDto, nullable: true })
+    result: DealSendWriteResultDto | null;
+}
+
+export class DealSendPreflightQueryDto {
+    @ApiProperty({ type: String, example: 'gsr.bitrix24.ru' })
+    @IsNotEmpty()
+    @IsString()
+    domain: string;
+}
+
+export class DealSendPreflightFieldDto {
+    @ApiProperty({ description: 'Код поля из канона' })
+    code: string;
+
+    @ApiProperty({
+        description: 'Поле сделки на портале; null — нет в pbx-схеме',
+        type: String,
+        nullable: true,
+    })
+    bitrixId: string | null;
+}
+
+/**
+ * Готов ли портал к созданию сделки через Nest: воронка sales_base, стадия
+ * «Документы», ключевые поля. Только чтение — ничего не создаёт и не пишет.
+ */
+export class DealSendPreflightResponseDto {
+    @ApiProperty()
+    domain: string;
+
+    @ApiProperty({
+        description:
+            'Сделку можно создать (есть схема сделок и воронка sales_base). Иначе deal-send без dealId ответит ошибкой, и фронт создаст сделку по-старому',
+    })
+    ready: boolean;
+
+    @ApiProperty({
+        description: 'Воронка sales_base: bitrixId категории',
+        type: String,
+        nullable: true,
+    })
+    categoryId: string | null;
+
+    @ApiProperty({
+        description: 'STAGE_ID стадии «Документы»; null — стадии нет',
+        type: String,
+        nullable: true,
+    })
+    createStageId: string | null;
+
+    @ApiProperty({ type: [DealSendPreflightFieldDto] })
+    fields: DealSendPreflightFieldDto[];
+
+    @ApiProperty({ type: [String], description: 'Что не так, по-человечески' })
+    problems: string[];
 }

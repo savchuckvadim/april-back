@@ -262,5 +262,46 @@ describe('DealFieldResolverService', () => {
             expect(resolved[0].sort).toBe(0);
             expect(resolved[1].sort).toBe(100);
         });
+
+        // id в crm.item.productrow.set — ID существующей позиции сделки,
+        // а не товара: туда уходил номер продукта или ID «Типа договора»
+        it('id позиции не передаём', () => {
+            const service = new DealFieldResolverService(portalModelWith({}));
+
+            const [resolved] = service.resolveProductRows([row()]);
+
+            expect(resolved).not.toHaveProperty('id');
+        });
+    });
+
+    describe('quantity_for_kp → offer_supply_q', () => {
+        const quantity = field(
+            'quantity_for_kp',
+            'Интернет версия на 1 одновременный доступ к системе',
+        );
+
+        it('пишем в существующее поле шаблонов UF_CRM_1689656448', () => {
+            const service = new DealFieldResolverService(
+                portalModelWith({ offer_supply_q: 'UF_CRM_1689656448' }),
+            );
+
+            const result = service.resolve([quantity]);
+
+            expect(result.fields).toEqual({
+                UF_CRM_1689656448:
+                    'Интернет версия на 1 одновременный доступ к системе',
+            });
+            expect(result.skipped).toEqual([]);
+        });
+
+        it('поля нет на портале — skipped с исходным кодом', () => {
+            const service = new DealFieldResolverService(portalModelWith({}));
+
+            const result = service.resolve([quantity]);
+
+            expect(result.skipped.map(item => item.code)).toEqual([
+                'quantity_for_kp',
+            ]);
+        });
     });
 });

@@ -26,7 +26,7 @@ export class OfferGenerateMultiQueueService {
         }
         const operationId = randomUUID();
         await this.queueDispatcher.dispatch(
-            QueueNames.KONSTRUCTOR,
+            QueueNames.KONSTRUCTOR_OFFER_GENERATE_MULTI,
             JobNames.OFFER_GENERATE_MULTI,
             { dto, operationId },
             operationId,

@@ -14,6 +14,7 @@ import {
     DealSendFieldDto,
     DealSendProductRowDto,
 } from '../dto/deal-send.dto';
+import { applyDealFieldAliases } from '../lib/deal-field-aliases.util';
 
 export interface SkippedDealField {
     code: string;
@@ -109,8 +110,12 @@ export class DealFieldResolverService {
     resolve(fields: DealSendFieldDto[]): ResolvedDealFields {
         const resolved: Partial<IBXDeal> = {};
         const skipped: SkippedDealField[] = [];
+        // quantity_for_kp → offer_supply_q: значение в то поле, что читают шаблоны
+        const prepared = applyDealFieldAliases(fields, code =>
+            Boolean(this.portalModel.getDealFieldBitrixIdByCode(code)),
+        );
 
-        for (const field of fields) {
+        for (const field of prepared) {
             /*
              * Вторая линия обороны. Валидация DTO такие коды уже не пропускает,
              * но резолвер зовут и из других мест, а цена ошибки — стёртый пул
@@ -216,8 +221,11 @@ export class DealFieldResolverService {
         return rows.map((row, index) => {
             const measureCode = this.resolveMeasureCode(row);
 
+            // Без `id`: в crm.item.productrow.set это ID существующей позиции
+            // сделки, а не товара. Легаси слал туда номер продукта, новый
+            // фронт — ID пункта «Тип договора»; set всё равно заменяет все
+            // строки, поэтому позиции создаём заново.
             return {
-                id: row.productId,
                 productName: row.productName,
                 price: row.price,
                 quantity: row.quantity,

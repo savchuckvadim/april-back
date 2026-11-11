@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ProductRowDto } from '../dto/product-row/product-row.dto';
+import { ProductTypeEnum } from '../dto/product/product.dto';
 import { ClientTypeEnum } from '../type/client.type';
 import { formatRuble, formatMoney, getCaseMonthes } from '../lib/rubles.util';
 
@@ -112,14 +113,23 @@ export class DocumentProductRowService {
             const taxSum = formatMoney(taxSumNum);
             const taxSumString = formatRuble(taxSumNum);
 
-            const productContractName =
-                row.product.contract.contract?.productName || '';
+            // Академия — обучение, а не сопровождение ЭПС: формулировку
+            // договора («Услуги по сопровождению…») к ней не подставляем
+            const productContractName = this.isAcademyRow(row)
+                ? ''
+                : row.product.contract.contract?.productName || '';
             const supplyNameMarketing = row.supply?.forkp || '';
             const supplyNameString = row.supply?.name || '';
             const digits = supplyNameString.replace(/\D/g, ''); // "3" или "10"
             const num = digits ? parseInt(digits, 10) : 1;
             const supplyUsersCount = num.toString();
-            const productWithContractName = `${productContractName} ${row.product.name} ${supplyNameMarketing}`;
+            const productWithContractName = [
+                productContractName,
+                row.product.name,
+                supplyNameMarketing,
+            ]
+                .filter(Boolean)
+                .join(' ');
             const quantityString = row.product.quantityForKp || '';
 
             products.push({
@@ -153,6 +163,13 @@ export class DocumentProductRowService {
         }
 
         return products;
+    }
+
+    private isAcademyRow(row: ProductRowDto): boolean {
+        return (
+            row.productType === ProductTypeEnum.academy ||
+            row.product?.type === ProductTypeEnum.academy
+        );
     }
 
     // private getSupplyProducts(
