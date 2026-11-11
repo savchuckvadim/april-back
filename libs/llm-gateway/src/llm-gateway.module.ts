@@ -10,6 +10,7 @@ import { OpenAiCompatibleStructuredAdapter } from './adapters/openai-compatible-
 import { VibecodeStructuredAdapter } from './adapters/vibecode-structured.adapter';
 import { LlmCircuitBreakerService } from './llm-circuit-breaker.service';
 import { LlmEndpointResolverService } from './llm-endpoint-resolver.service';
+import { LlmGatewaySettingsService } from './llm-gateway-settings.service';
 import { LlmProviderOrderResolver } from './llm-provider-order.resolver';
 import { StructuredLlmGateway } from './structured-llm.gateway';
 
@@ -17,10 +18,13 @@ import { StructuredLlmGateway } from './structured-llm.gateway';
  * Шлюз структурных LLM-вызовов (@lib/llm-gateway): потребитель импортирует
  * модуль и инжектит `StructuredLlmGateway` вместо `VibeCodeClient` +
  * `VibeKeyResolverService`. Провайдеры: VibeCode (ключ портала из БД),
- * любой OpenAI-совместимый endpoint (креды портала или env
- * LLM_FALLBACK_*) и модели оркестратора контура 1 (`ai-rag`, по явному
- * порядку); порядок — env LLM_PROVIDER_ORDER; предохранитель — в Redis
- * (env LLM_CIRCUIT_*). Подробности — README.md библиотеки.
+ * любой OpenAI-совместимый endpoint (креды портала или свой запасной
+ * поставщик из «Настроек приложения») и модели оркестратора контура 1
+ * (`ai-rag`, по явному порядку); порядок — env LLM_PROVIDER_ORDER;
+ * предохранитель — в Redis. Пределы очереди к VibeCode, сроки ответа и
+ * пороги предохранителя — «Настройки приложения» в админке
+ * (LlmGatewaySettingsService; env с тем же именем — запасной путь).
+ * Подробности — README.md библиотеки.
  */
 @Module({
     imports: [
@@ -33,6 +37,7 @@ import { StructuredLlmGateway } from './structured-llm.gateway';
         EgressProxyModule,
     ],
     providers: [
+        LlmGatewaySettingsService,
         LlmCircuitBreakerService,
         LlmEndpointResolverService,
         LlmProviderOrderResolver,
@@ -43,6 +48,7 @@ import { StructuredLlmGateway } from './structured-llm.gateway';
     ],
     exports: [
         StructuredLlmGateway,
+        LlmGatewaySettingsService,
         LlmCircuitBreakerService,
         LlmEndpointResolverService,
         LlmProviderOrderResolver,

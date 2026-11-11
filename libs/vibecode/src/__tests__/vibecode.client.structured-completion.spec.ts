@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { isTransientLlmError } from '@lib/llm-gateway/llm-error.util';
 import { VibeCodeClient } from '../vibecode.client';
 
 const API_KEY = 'vibe-key';
@@ -25,6 +26,22 @@ function makeClient(): VibeCodeClient {
     return new VibeCodeClient(configService);
 }
 
+/** Клиент с настройками «из админки» (читатель над словарём, env пуст). */
+function makeClientWithSettings(
+    values: Record<string, string>,
+): VibeCodeClient {
+    const configService = {
+        get: jest.fn().mockReturnValue(undefined),
+    } as unknown as ConfigService;
+    return new VibeCodeClient(configService, {
+        get: key => Promise.resolve(values[key] ?? null),
+        getMany: keys =>
+            Promise.resolve(
+                Object.fromEntries(keys.map(key => [key, values[key] ?? null])),
+            ),
+    });
+}
+
 /** Подмена глобального fetch: клиент ходит в VibeCode напрямую, без HTTP-сервиса. */
 function mockFetch(body: unknown, options?: { ok?: boolean; status?: number }) {
     const fetchMock = jest.fn().mockResolvedValue({
@@ -47,6 +64,41 @@ function completionResponse(
     extra: Record<string, unknown> = {},
 ) {
     return { choices: [{ message: { content } }], ...extra };
+}
+
+/** fetch отклоняется: сеть оборвалась или сработал таймаут сигнала. */
+function mockFetchRejection(reason: unknown): void {
+    const fetchMock = jest.fn().mockRejectedValue(reason);
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+}
+
+/** Так AbortSignal.timeout отклоняет и fetch, и чтение тела ответа. */
+function abortTimeout(): DOMException {
+    return new DOMException(
+        'The operation was aborted due to timeout',
+        'TimeoutError',
+    );
+}
+
+/** Вызов клиента с тестовой схемой и ключом. */
+function completeBrief() {
+    return makeClient().structuredCompletionWithUsage(
+        'system',
+        'user',
+        'ai_brief',
+        SCHEMA,
+        API_KEY,
+    );
+}
+
+/** С чем отклонился вызов — чтобы проверить саму ошибку, а не только текст. */
+async function rejectionOf(call: Promise<unknown>): Promise<unknown> {
+    try {
+        await call;
+    } catch (error: unknown) {
+        return error;
+    }
+    throw new Error('Вызов не отклонился');
 }
 
 describe('VibeCodeClient.structuredCompletionWithUsage', () => {
@@ -209,5 +261,80 @@ describe('VibeCodeClient.structuredCompletionWithUsage', () => {
                 API_KEY,
             ),
         ).rejects.toThrow('Vibecode ai_brief failed [429]');
+    });
+
+    /**
+     * Таймаут VIBECODE_ANALYSIS_TIMEOUT_MS (по умолчанию 180 с): в журнале
+     * шлюза видно, чей вызов и какой порог, а для шлюза ошибка по-прежнему
+     * временная — предохранитель и переход к запасному поставщику.
+     */
+    it('таймаут fetch — ошибка с именем схемы и порогом, для шлюза временная', async () => {
+        const timeout = abortTimeout();
+        mockFetchRejection(timeout);
+
+        const error = await rejectionOf(completeBrief());
+
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toBe(
+            'Vibecode ai_brief timeout after 180000 ms',
+        );
+        expect((error as Error).cause).toBe(timeout);
+        expect(isTransientLlmError(error)).toBe(true);
+    });
+
+    it('таймаут при чтении тела ответа — та же ошибка: сигнал действует и на тело', async () => {
+        const fetchMock = jest.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: () => Promise.reject(abortTimeout()),
+            text: () => Promise.resolve(''),
+        });
+        globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+        await expect(completeBrief()).rejects.toThrow(
+            'Vibecode ai_brief timeout after 180000 ms',
+        );
+    });
+
+    /**
+     * Срок ответа — «Настройки приложения» в админке (11.11.2026): читается
+     * на каждом запросе, правка действует без перезапуска; выше 5 минут не
+     * бывает — fetch Node сам рвёт ожидание заголовков.
+     */
+    it('срок ответа из настроек админки читается на каждом запросе; выше 300 000 — потолок', async () => {
+        const values: Record<string, string> = {
+            VIBECODE_ANALYSIS_TIMEOUT_MS: '300000',
+        };
+        const client = makeClientWithSettings(values);
+        const timeoutSpy = jest.spyOn(AbortSignal, 'timeout');
+        mockFetchRejection(abortTimeout());
+        const call = () =>
+            client.structuredCompletionWithUsage(
+                'system',
+                'user',
+                'ai_brief',
+                SCHEMA,
+                API_KEY,
+            );
+
+        await expect(call()).rejects.toThrow(
+            'Vibecode ai_brief timeout after 300000 ms',
+        );
+        expect(timeoutSpy).toHaveBeenLastCalledWith(300_000);
+
+        values.VIBECODE_ANALYSIS_TIMEOUT_MS = '900000';
+        await expect(call()).rejects.toThrow('timeout after 300000 ms');
+
+        values.VIBECODE_ANALYSIS_TIMEOUT_MS = '240000';
+        await expect(call()).rejects.toThrow('timeout after 240000 ms');
+        expect(timeoutSpy).toHaveBeenLastCalledWith(240_000);
+        timeoutSpy.mockRestore();
+    });
+
+    it('прочие сбои fetch пробрасываются как есть', async () => {
+        const failure = new TypeError('fetch failed');
+        mockFetchRejection(failure);
+
+        await expect(completeBrief()).rejects.toBe(failure);
     });
 });

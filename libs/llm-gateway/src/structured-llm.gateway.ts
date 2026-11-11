@@ -3,8 +3,9 @@ import { AiRagStructuredAdapter } from './adapters/ai-rag-structured.adapter';
 import { OpenAiCompatibleStructuredAdapter } from './adapters/openai-compatible-structured.adapter';
 import { VibecodeStructuredAdapter } from './adapters/vibecode-structured.adapter';
 import { LlmCircuitBreakerService } from './llm-circuit-breaker.service';
-import { describeLlmError, isTransientLlmError } from './llm-error.util';
+import { LlmProviderCalls, type LlmCallTrail } from './llm-provider-calls';
 import { LlmProviderOrderResolver } from './llm-provider-order.resolver';
+import { LlmUnavailableError } from './llm-unavailable.error';
 import {
     type LlmProviderCode,
     type StructuredLlmAdapter,
@@ -33,6 +34,8 @@ export {
 export class StructuredLlmGateway {
     private readonly logger = new Logger(StructuredLlmGateway.name);
     private readonly byCode: Record<LlmProviderCode, StructuredLlmAdapter>;
+    /** Вызовы поставщиков: журнал, предохранитель, проверка паузы, проба. */
+    private readonly calls: LlmProviderCalls;
 
     constructor(
         private readonly orderResolver: LlmProviderOrderResolver,
@@ -46,6 +49,7 @@ export class StructuredLlmGateway {
             'openai-compatible': openAiCompatible,
             'ai-rag': aiRag,
         };
+        this.calls = new LlmProviderCalls(breaker, this.logger);
     }
 
     /** Общий порядок приложения (без учёта портала) — для логов и панели состояния. */
@@ -128,13 +132,16 @@ export class StructuredLlmGateway {
 
     /**
      * Провайдеры по порядку (явный `providers` запроса важнее настройки
-     * портала); отказали все — ошибка со всеми причинами.
+     * портала); отказали все — LlmUnavailableError: текст со всеми
+     * причинами и сорвавшиеся вызовы с признаком временного сбоя.
      */
     async complete(
         request: StructuredLlmRequest,
     ): Promise<StructuredLlmResponse> {
-        const notes: string[] = [];
+        const trail: LlmCallTrail = { notes: [], failures: [] };
         const paused: StructuredLlmAdapter[] = [];
+        /** Первый настроенный поставщик — по нему решается «временный ли отказ». */
+        let primary: LlmProviderCode | null = null;
         const order = request.providers?.length
             ? [...request.providers]
             : await this.orderResolver.orderFor(request.domain);
@@ -142,43 +149,75 @@ export class StructuredLlmGateway {
         for (const [index, adapter] of adapters.entries()) {
             const issue = await adapter.configurationIssue(request.domain);
             if (issue !== null) {
-                notes.push(`${adapter.code} — ${issue}`);
+                trail.notes.push(`${adapter.code} — ${issue}`);
                 continue;
             }
+            primary ??= adapter.code;
             if (await this.breaker.isOpen(adapter.code)) {
                 paused.push(adapter);
-                notes.push(`${adapter.code} — на паузе после серии сбоев`);
+                trail.notes.push(
+                    `${adapter.code} — на паузе после серии сбоев`,
+                );
                 continue;
             }
-            const response = await this.attempt(
+            const outcome = await this.calls.attempt(
                 adapter,
                 request,
-                notes,
+                trail,
                 index < adapters.length - 1,
             );
-            if (response) return this.answered(response, request, notes);
+            if (outcome === 'paused') paused.push(adapter);
+            else if (outcome) return this.answered(outcome, request, trail);
         }
         // Живых и настроенных не осталось — пробуем отключённых (полуоткрытое
         // состояние): попытка лучше гарантированного отказа, а удача снова
-        // включит провайдера.
+        // включит провайдера. Проба — одна за раз (LlmProviderCalls.probe).
         for (const [index, adapter] of paused.entries()) {
-            const response = await this.attempt(
+            const response = await this.calls.probe(
                 adapter,
                 request,
-                notes,
+                trail,
                 index < paused.length - 1,
             );
-            if (response) return this.answered(response, request, notes);
+            if (response) return this.answered(response, request, trail);
         }
-        // Настоящая тревога (решение владельца 08.11.2026 «писать, когда
-        // отказали все»): ни один поставщик не ответил, работа встала.
-        this.logger.error(
-            `ПОПЫТКИ ИСЧЕРПАНЫ: LLM не ответила на ${request.schemaName} (${request.domain}) — ` +
-                `отказали все поставщики: ${notes.join('; ')}`,
-            { telegram: true },
+        const reasons = trail.notes.join('; ');
+        await this.alertExhausted(request, reasons, primary, trail);
+        throw new LlmUnavailableError(
+            `LLM недоступна для ${request.schemaName} (${request.domain}): ${reasons}`,
+            trail.failures,
+            primary,
         );
-        throw new Error(
-            `LLM недоступна для ${request.schemaName} (${request.domain}): ${notes.join('; ')}`,
+    }
+
+    /**
+     * Настоящая тревога (решение владельца 08.11.2026 «писать, когда
+     * отказали все»): ни один поставщик не ответил, работа встала. Если
+     * основного в этом вызове не звали — он на паузе (о ней предохранитель
+     * уже сообщил) — тревога одна за паузу, остальные такие отказы — в
+     * журнал (ревью 11.11.2026: иначе каждый отложенный вызов слал своё
+     * «ПОПЫТКИ ИСЧЕРПАНЫ», и Telegram глушил сообщение «снова отвечает»).
+     */
+    private async alertExhausted(
+        request: StructuredLlmRequest,
+        reasons: string,
+        primary: LlmProviderCode | null,
+        trail: LlmCallTrail,
+    ): Promise<void> {
+        const text =
+            `ПОПЫТКИ ИСЧЕРПАНЫ: LLM не ответила на ${request.schemaName} (${request.domain}) — ` +
+            `отказали все поставщики: ${reasons}`;
+        const primaryTried =
+            primary === null ||
+            trail.failures.some(
+                failure => failure.provider === primary && !failure.paused,
+            );
+        if (primaryTried || (await this.breaker.claimPausedAlert(primary))) {
+            this.logger.error(text, { telegram: true });
+            return;
+        }
+        this.logger.warn(
+            `${text} (основной ${primary} на паузе, тревога о ней уже отправлена)`,
         );
     }
 
@@ -191,46 +230,14 @@ export class StructuredLlmGateway {
     private answered(
         response: StructuredLlmResponse,
         request: StructuredLlmRequest,
-        notes: readonly string[],
+        trail: LlmCallTrail,
     ): StructuredLlmResponse {
-        if (notes.length > 0) {
+        if (trail.notes.length > 0) {
             this.logger.warn(
                 `LLM ${request.schemaName} (${request.domain}): ответил ${response.provider}, ` +
-                    `пропущены: ${notes.join('; ')}`,
+                    `пропущены: ${trail.notes.join('; ')}`,
             );
         }
         return response;
-    }
-
-    /**
-     * `fallbackAvailable` — в порядке остался кто-то ещё: пауза
-     * предохранителя тогда помечается «повтор», а не тревогой.
-     */
-    private async attempt(
-        adapter: StructuredLlmAdapter,
-        request: StructuredLlmRequest,
-        notes: string[],
-        fallbackAvailable: boolean,
-    ): Promise<StructuredLlmResponse | null> {
-        try {
-            const response = await adapter.complete(request);
-            await this.breaker.recordSuccess(adapter.code);
-            return response;
-        } catch (error) {
-            const text = describeLlmError(error);
-            notes.push(`${adapter.code} — ${text}`);
-            if (isTransientLlmError(error)) {
-                await this.breaker.recordFailure(
-                    adapter.code,
-                    text,
-                    Date.now(),
-                    fallbackAvailable,
-                );
-            }
-            this.logger.warn(
-                `Провайдер LLM ${adapter.code} не ответил на ${request.schemaName} (${request.domain}): ${text}`,
-            );
-            return null;
-        }
     }
 }

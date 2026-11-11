@@ -15,8 +15,17 @@ export const VENDOR_SETTINGS_READER = 'VENDOR_SETTINGS_READER';
 /** Маска заданного секрета в ответах админки; прислать её при сохранении = «оставить прежнее». */
 export const VENDOR_SECRET_MASK = '••••••';
 
-/** Что действует для настройки: значение из админки, из окружения или ничего. */
-export const VENDOR_SETTING_SOURCES = ['admin', 'env', 'none'] as const;
+/**
+ * Что действует для настройки: значение из админки, из окружения, значение
+ * по умолчанию (у настроек, где оно есть, — например, сроки и пределы
+ * шлюза модели) или ничего.
+ */
+export const VENDOR_SETTING_SOURCES = [
+    'admin',
+    'env',
+    'default',
+    'none',
+] as const;
 export type VendorSettingSource = (typeof VENDOR_SETTING_SOURCES)[number];
 
 export interface VendorSettingsReader {

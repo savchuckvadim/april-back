@@ -190,6 +190,55 @@ describe('CallAnalysisRepairUseCase', () => {
         expect(store.dropFailed).toHaveBeenCalledWith(DOMAIN, 't-9');
     });
 
+    /**
+     * Ревью 11.11.2026: пока VibeCode на паузе, разборы сразу получают
+     * отметку провала — после вечернего наплыва их десятки. При общей
+     * квоте 5 они ждали бы сутками и вытесняли переделку неполных.
+     */
+    it('квоты раздельные: десяток звонков без разбора ставится разом, неполный всё равно переделывается', async () => {
+        const { useCase, store, queueDispatcher, rerunService } = makeDeps();
+        store.listFailed.mockResolvedValue(
+            Array.from({ length: 12 }, (_, index) => ({
+                payload: {
+                    domain: DOMAIN,
+                    activityId: 200 + index,
+                    transcriptionId: `t-f${index}`,
+                },
+                failedAt: new Date(NOW.getTime() - 60_000).toISOString(),
+            })),
+        );
+
+        const result = await useCase.repairDomain(DOMAIN, NOW);
+
+        expect(result.requeued).toBe(12);
+        expect(queueDispatcher.dispatch).toHaveBeenCalledTimes(12);
+        expect(result.repaired).toBe(1);
+        expect(rerunService.rerun).toHaveBeenCalledTimes(1);
+    });
+
+    it('отметка старше 72 часов — снимается и попадает в итог как брошенная по сроку', async () => {
+        const { useCase, store, queueDispatcher, aiService } = makeDeps();
+        aiService.findByDomainTypesInPeriod.mockResolvedValue([]);
+        store.listFailed.mockResolvedValue([
+            {
+                payload: {
+                    domain: DOMAIN,
+                    activityId: 7,
+                    transcriptionId: 't-old',
+                },
+                failedAt: new Date(
+                    NOW.getTime() - 73 * 60 * 60 * 1000,
+                ).toISOString(),
+            },
+        ]);
+
+        const result = await useCase.repairDomain(DOMAIN, NOW);
+
+        expect(result).toMatchObject({ requeued: 0, expired: 1 });
+        expect(queueDispatcher.dispatch).not.toHaveBeenCalled();
+        expect(store.dropFailed).toHaveBeenCalledWith(DOMAIN, 't-old');
+    });
+
     it('звонок без разбора, но разбор уже появился — просто снимаем отметку', async () => {
         const { useCase, store, queueDispatcher, aiService } = makeDeps();
         aiService.findByDomainTypesInPeriod.mockResolvedValue([]);
@@ -223,6 +272,7 @@ describe('repairSummaryLine', () => {
                 stillPartial: 0,
                 requeued: 1,
                 gaveUp: 0,
+                expired: 0,
             }),
         ).toBe(`${DOMAIN}: дособрано разборов 2, звонков поставлено заново 1`);
         expect(
@@ -233,7 +283,24 @@ describe('repairSummaryLine', () => {
                 stillPartial: 0,
                 requeued: 0,
                 gaveUp: 0,
+                expired: 0,
             }),
         ).toBe('');
+    });
+
+    it('брошенные по сроку — отдельной частью с просьбой посмотреть руками', () => {
+        expect(
+            repairSummaryLine({
+                domain: DOMAIN,
+                skipped: null,
+                repaired: 0,
+                stillPartial: 0,
+                requeued: 0,
+                gaveUp: 0,
+                expired: 3,
+            }),
+        ).toBe(
+            `${DOMAIN}: не разобрано за 72 часа и брошено 3 — смотреть руками`,
+        );
     });
 });

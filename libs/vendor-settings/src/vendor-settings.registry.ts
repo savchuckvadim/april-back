@@ -6,13 +6,21 @@
  */
 
 import {
+    LLM_FALLBACK_SETTINGS,
+    LLM_FALLBACK_SETTING_KEYS,
+    LLM_GATEWAY_SETTINGS,
+    LLM_GATEWAY_SETTING_KEYS,
+} from './vendor-settings.llm';
+import {
     TELEGRAM_BOT_SETTING_KEYS,
     TELEGRAM_BOT_SETTINGS,
 } from './vendor-settings.telegram';
+import { validateHosts, validateUrl } from './vendor-settings.validators';
 
 export const VENDOR_SETTING_GROUPS = [
     'egress-proxy',
     'ai-keys',
+    'llm-gateway',
     'support',
     'telegram-bots',
     'widgets',
@@ -47,6 +55,8 @@ export const VENDOR_SETTING_KEYS = [
     'GROQ_API_KEY',
     'CLOUDRU_API_KEY',
     'ANTHROPIC_API_KEY',
+    ...LLM_FALLBACK_SETTING_KEYS,
+    ...LLM_GATEWAY_SETTING_KEYS,
     ...TELEGRAM_BOT_SETTING_KEYS,
     ...WIDGET_URL_SETTING_KEYS,
 ] as const;
@@ -70,6 +80,13 @@ export interface VendorSettingDefinition {
     secret: boolean;
     /** Пример значения для подсказки в поле. */
     example: string;
+    /**
+     * Значение по умолчанию — действует, когда не задано ни в админке, ни в
+     * окружении. Его применяет потребитель (у чисел шлюза — правило
+     * LLM_INTEGER_SETTING_RULES), здесь — чтобы админка показала «по
+     * умолчанию N», а не «не задано нигде».
+     */
+    defaultValue?: string;
     /** Проверка значения перед сохранением: текст ошибки по-русски или null. */
     validate?: (value: string) => string | null;
 }
@@ -85,7 +102,12 @@ export const VENDOR_SETTING_GROUP_INFO: Readonly<
     'ai-keys': {
         title: 'Ключи AI-сервисов приложения',
         description:
-            'Запасные поставщики разборов и транскрибации на случай отказа или подорожания VibeCode. Ключ портала в карточке портала важнее этих ключей. Какой поставщик действует сейчас, показывает чек-лист «Поставщики AI» в настройках AI портала.',
+            'Запасной поставщик разборов на случай отказа или подорожания VibeCode и резерв транскрибации. Запасной поставщик разборов у портала один: креды LLM в карточке портала, иначе свой (адрес и модель ниже), иначе ключ Cloud.ru, иначе ключ Groq. Если не ответил и он, дальше никого — звонок дозаполнит догон. Какой поставщик действует у портала сейчас, показывает чек-лист «Поставщики AI» в настройках AI портала.',
+    },
+    'llm-gateway': {
+        title: 'Разборы звонков: очередь к модели, ожидание и предохранитель',
+        description:
+            'Как приложения April ходят к модели. Запросы к VibeCode идут через очередь с пределом одновременных запросов, у каждого запроса есть срок ожидания ответа. Серия сбоев ставит поставщика на паузу, и запросы идут к запасному. Сорвавшиеся разборы звонков дозаполняет ежечасный догон. Значения действуют в течение минуты, без перезапуска. Пустое поле — действует значение по умолчанию (оно показано у поля); значение, заданное здесь, важнее переменной окружения с тем же именем в любом приложении.',
     },
     support: {
         title: 'Модуль технической поддержки',
@@ -102,36 +124,6 @@ export const VENDOR_SETTING_GROUP_INFO: Readonly<
         description:
             'Куда открывается каждый виджет (вкладка в карточке, пункт меню). В Битриксе привязан постоянный адрес нашего сервера, а он уже перенаправляет на фронт отсюда — смена адреса действует на всех порталах в течение минуты, переустанавливать виджеты не нужно. Пусто — адрес по умолчанию.',
     },
-};
-
-const HOST_RE = /^\.?[a-z0-9-]+(\.[a-z0-9-]+)+$/i;
-
-/** Пусто — нормально (настройка снимается); непустое значение проверяем. */
-const validateUrl = (value: string): string | null => {
-    let parsed: URL;
-    try {
-        parsed = new URL(value);
-    } catch {
-        return 'Адрес должен начинаться с https:// и быть полным, например https://eu-proxy.april-app.ru/p';
-    }
-    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
-        return 'Адрес должен начинаться с https://';
-    }
-    return null;
-};
-
-const validateHosts = (value: string): string | null => {
-    const hosts = value
-        .split(',')
-        .map(host => host.trim())
-        .filter(Boolean);
-    if (!hosts.length) {
-        return 'Укажите хотя бы один хост, например api.groq.com';
-    }
-    const bad = hosts.find(host => !HOST_RE.test(host));
-    return bad
-        ? `«${bad}» не похоже на имя хоста: нужно вроде api.groq.com или .googleapis.com, без https:// и путей`
-        : null;
 };
 
 export const VENDOR_SETTINGS: readonly VendorSettingDefinition[] = [
@@ -187,6 +179,8 @@ export const VENDOR_SETTINGS: readonly VendorSettingDefinition[] = [
         secret: true,
         example: 'ключ из консоли Cloud.ru',
     },
+    ...LLM_FALLBACK_SETTINGS,
+    ...LLM_GATEWAY_SETTINGS,
     {
         key: 'ANTHROPIC_API_KEY',
         group: 'support',

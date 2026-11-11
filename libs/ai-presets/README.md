@@ -16,8 +16,8 @@
 
 Куда подключён:
 
-- `envEndpointOf` в `@lib/llm-gateway` — запасной LLM, когда нет явных
-  `LLM_FALLBACK_*` и `CLOUDRU_API_KEY` (Cloud.ru в РФ важнее);
+- `envEndpointOf` в `@lib/llm-gateway` — запасной LLM, когда нет
+  своего запасного поставщика `LLM_FALLBACK_*` («Настройки приложения») и `CLOUDRU_API_KEY` (Cloud.ru в РФ важнее);
 - `whisperEnvSettingsOf` в `call-lib` — общий Whisper-совместимый резерв,
   когда нет явного `TRANSCRIPTION_WHISPER_BASE_URL`;
 - чек-лист готовности в `apps/admin` — через те же две функции.

@@ -19,9 +19,28 @@ import {
 /** TTL кэша таблицы, мс: правка в админке действует в течение минуты без выкладки. */
 export const VENDOR_SETTINGS_CACHE_TTL_MS = 60_000;
 
+/** Через сколько повторить чтение, если оно сорвалось после удачных, мс. */
+export const VENDOR_SETTINGS_RETRY_MS = 10_000;
+
+/**
+ * Что действует: значение из админки, иначе из окружения, иначе значение по
+ * умолчанию из реестра (если оно есть), иначе ничего.
+ */
+function sourceOf(
+    admin: string | null,
+    env: string | null,
+    defaultValue: string | null,
+): VendorSettingSource {
+    if (admin !== null) return 'admin';
+    if (env !== null) return 'env';
+    return defaultValue !== null ? 'default' : 'none';
+}
+
 /** Настройка глазами админки: описание из реестра плюс состояние. */
 export interface VendorSettingView
-    extends Omit<VendorSettingDefinition, 'validate'> {
+    extends Omit<VendorSettingDefinition, 'validate' | 'defaultValue'> {
+    /** Значение по умолчанию из реестра; null — у настройки его нет. */
+    defaultValue: string | null;
     /** Значение из админки для несекретов; у секретов всегда null (см. isSet). */
     value: string | null;
     /** Задано ли значение в админке. */
@@ -40,13 +59,16 @@ type RowMap = Map<string, VendorSettingRow>;
  * Один общий читатель для всех потребителей (прокси, шлюз LLM, Whisper,
  * чек-лист админки): значение из админки важнее env, секреты расшифровываются
  * на лету, вся таблица читается разом и кэшируется на минуту. Таблицы ещё
- * нет или БД недоступна — работаем по env и предупреждаем не чаще раза в
- * минуту: настройки не должны ронять приложение.
+ * нет или БД недоступна — работаем по env (а если таблицу уже читали — по
+ * последним прочитанным значениям) и предупреждаем не чаще раза в минуту:
+ * настройки не должны ронять приложение.
  */
 @Injectable()
 export class VendorSettingsService implements VendorSettingsReader {
     private readonly logger = new Logger(VendorSettingsService.name);
     private cache: { rows: RowMap; expiresAt: number } | null = null;
+    /** Последняя удачно прочитанная таблица — на случай сбоя следующего чтения. */
+    private lastGood: RowMap | null = null;
     private loading: Promise<RowMap> | null = null;
     private lastWarnAt = 0;
 
@@ -124,6 +146,7 @@ export class VendorSettingsService implements VendorSettingsReader {
     ): VendorSettingView {
         const admin = this.plainValue(row);
         const env = this.envValue(definition.key);
+        const defaultValue = definition.defaultValue ?? null;
         return {
             key: definition.key,
             group: definition.group,
@@ -132,10 +155,11 @@ export class VendorSettingsService implements VendorSettingsReader {
             howTo: definition.howTo,
             secret: definition.secret,
             example: definition.example,
+            defaultValue,
             value: definition.secret ? null : admin,
             isSet: admin !== null,
             envSet: env !== null,
-            source: admin !== null ? 'admin' : env !== null ? 'env' : 'none',
+            source: sourceOf(admin, env, defaultValue),
             updatedAt: row?.updatedAt ?? null,
             updatedBy: row?.updatedBy ?? null,
         };
@@ -154,26 +178,48 @@ export class VendorSettingsService implements VendorSettingsReader {
     }
 
     private async load(): Promise<RowMap> {
-        let rows: RowMap;
         try {
-            rows = new Map(
+            const rows: RowMap = new Map(
                 (await this.repository.findAll()).map(row => [row.key, row]),
             );
+            this.lastGood = rows;
+            this.cache = {
+                rows,
+                expiresAt: Date.now() + VENDOR_SETTINGS_CACHE_TTL_MS,
+            };
+            return rows;
         } catch (error) {
-            // Таблицы ещё нет (миграция не применена) или БД недоступна —
-            // действуют env; пустой результат тоже кэшируем, чтобы не
-            // долбить базу каждым вызовом.
-            if (Date.now() - this.lastWarnAt > VENDOR_SETTINGS_CACHE_TTL_MS) {
-                this.lastWarnAt = Date.now();
-                this.logger.warn(
-                    `Настройки вендора не прочитаны (${(error as Error).message}) — действуют переменные окружения`,
-                );
-            }
-            rows = new Map();
+            return this.loadFailed(error);
         }
+    }
+
+    /**
+     * Чтение не удалось. Уже читали — работаем по последним прочитанным
+     * значениям и пробуем снова через VENDOR_SETTINGS_RETRY_MS (ревью
+     * 11.11.2026: раньше один сбой БД на минуту сбрасывал все значения из
+     * админки — ключи, сроки и пределы шлюза — на env и умолчания). Не
+     * читали ни разу (таблицы ещё нет, БД недоступна со старта) — действуют
+     * env, пустой результат кэшируем на минуту, чтобы не долбить базу.
+     */
+    private loadFailed(error: unknown): RowMap {
+        const stale = this.lastGood;
+        if (Date.now() - this.lastWarnAt > VENDOR_SETTINGS_CACHE_TTL_MS) {
+            this.lastWarnAt = Date.now();
+            this.logger.warn(
+                `Настройки вендора не прочитаны (${(error as Error).message}) — ` +
+                    (stale
+                        ? 'действуют последние прочитанные значения'
+                        : 'действуют переменные окружения'),
+            );
+        }
+        const rows = stale ?? new Map<string, VendorSettingRow>();
         this.cache = {
             rows,
-            expiresAt: Date.now() + VENDOR_SETTINGS_CACHE_TTL_MS,
+            expiresAt:
+                Date.now() +
+                (stale
+                    ? VENDOR_SETTINGS_RETRY_MS
+                    : VENDOR_SETTINGS_CACHE_TTL_MS),
         };
         return rows;
     }

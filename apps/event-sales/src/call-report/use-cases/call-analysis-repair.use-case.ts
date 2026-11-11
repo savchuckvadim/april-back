@@ -31,6 +31,7 @@ import {
     REPAIR_LOOKBACK_HOURS,
     REPAIR_MAX_ATTEMPTS,
     REPAIR_QUOTA_PER_DOMAIN,
+    REPAIR_REQUEUE_QUOTA_PER_DOMAIN,
     selectRepairCandidates,
     type RepairCandidate,
 } from './call-analysis-repair.util';
@@ -58,6 +59,11 @@ export interface CallAnalysisRepairResult {
     requeued: number;
     /** Брошено после REPAIR_MAX_ATTEMPTS попыток. */
     gaveUp: number;
+    /**
+     * Звонков без разбора брошено по сроку: отметка старше
+     * REPAIR_LOOKBACK_HOURS. Раньше снималась молча (ревью 11.11.2026).
+     */
+    expired: number;
 }
 
 /**
@@ -65,13 +71,18 @@ export interface CallAnalysisRepairResult {
  * из-за сбоя поставщика модели, переделывается, когда поставщик снова
  * отвечает.
  *  - Звонок остался без разбора (модель не ответила ни на фокус, ни на
- *    страховку) — процессор отметил его в Redis; здесь стадия анализа
+ *    страховку, или фокус оборвался на поставщике — тогда страховку не
+ *    зовут) — процессор отметил его в Redis; здесь стадия анализа
  *    ставится заново тем же путём, что у обычного звонка.
  *  - Разбор неполный (не собрался проход, синтез или методика) — разбор
  *    переделывается как при переразборе истории: новая запись, старая —
  *    superseded, поля карточки в смарте переписываются из новой.
  * Портал пропускается, пока его первый поставщик на паузе предохранителя.
- * У каждого звонка не больше REPAIR_MAX_ATTEMPTS попыток.
+ * У каждого звонка не больше REPAIR_MAX_ATTEMPTS попыток. Квоты раздельные:
+ * звонки без разбора ставятся заново пачкой до
+ * REPAIR_REQUEUE_QUOTA_PER_DOMAIN, неполные переделываются по
+ * REPAIR_QUOTA_PER_DOMAIN — наплыв провалов за время паузы не задерживает
+ * переделку неполных и не ждёт сутками сам.
  */
 @Injectable()
 export class CallAnalysisRepairUseCase {
@@ -100,6 +111,7 @@ export class CallAnalysisRepairUseCase {
             stillPartial: 0,
             requeued: 0,
             gaveUp: 0,
+            expired: 0,
         };
         const settings = await this.settingsService.resolve(domain);
         if (!settings.enabled) {
@@ -109,25 +121,29 @@ export class CallAnalysisRepairUseCase {
         if (primary && (await this.circuitBreaker.isOpen(primary))) {
             return { ...result, skipped: `поставщик ${primary} на паузе` };
         }
-        let quota = REPAIR_QUOTA_PER_DOMAIN;
-        quota -= await this.requeueFailed(domain, now, quota, result);
+        await this.requeueFailed(
+            domain,
+            now,
+            REPAIR_REQUEUE_QUOTA_PER_DOMAIN,
+            result,
+        );
         await this.repairPartial(
             domain,
             now,
-            quota,
+            REPAIR_QUOTA_PER_DOMAIN,
             settings.deepAnalysisModel ?? null,
             result,
         );
         return result;
     }
 
-    /** Звонки без разбора — стадия анализа заново; возвращает, сколько поставлено. */
+    /** Звонки без разбора — стадия анализа заново, не больше `quota` за проход. */
     private async requeueFailed(
         domain: string,
         now: Date,
         quota: number,
         result: CallAnalysisRepairResult,
-    ): Promise<number> {
+    ): Promise<void> {
         let used = 0;
         const edge = now.getTime() - REPAIR_LOOKBACK_HOURS * HOUR_MS;
         for (const entry of await this.store.listFailed(domain)) {
@@ -136,6 +152,7 @@ export class CallAnalysisRepairUseCase {
             const id = payload.transcriptionId;
             if (Date.parse(entry.failedAt) < edge) {
                 await this.store.dropFailed(domain, id);
+                result.expired += 1;
                 continue;
             }
             const records = await this.aiService.findByTranscriptionIds([id]);
@@ -159,7 +176,6 @@ export class CallAnalysisRepairUseCase {
             result.requeued += 1;
             used += 1;
         }
-        return used;
     }
 
     /** Неполные разборы окна — переделать, пока не кончится квота. */

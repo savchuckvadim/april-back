@@ -2,7 +2,13 @@ export * from './llm-gateway.module';
 export * from './structured-llm.gateway';
 export * from './structured-llm.types';
 export * from './llm-error.util';
+export * from './llm-unavailable.error';
 export * from './llm-circuit-breaker.service';
+export * from './llm-gateway-settings.service';
+export {
+    type LlmCircuitOptions,
+    type LlmFallbackCallSettings,
+} from './llm-gateway-settings.util';
 export * from './llm-endpoint-resolver.service';
 export * from './llm-provider-order.resolver';
 export { normalizeProviderOrder } from './llm-provider-order.util';

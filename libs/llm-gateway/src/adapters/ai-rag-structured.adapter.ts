@@ -4,6 +4,7 @@ import { LLM_MODELS, LlmOrchestratorService, type LlmModel } from '@lib/ai-rag';
 import { PortalAiSettingsService } from '@lib/portal-lib/store/ai-settings/portal-ai-settings.service';
 import { withJsonInstruction } from '../json-instruction.util';
 import type {
+    LlmSendGuard,
     StructuredLlmAdapter,
     StructuredLlmRequest,
     StructuredLlmResponse,
@@ -53,8 +54,11 @@ export class AiRagStructuredAdapter implements StructuredLlmAdapter {
 
     async complete(
         request: StructuredLlmRequest,
+        guard?: LlmSendGuard,
     ): Promise<StructuredLlmResponse> {
         const model = await this.modelFor(request.domain);
+        // Проверка шлюза у самой отправки: пауза предохранителя, замок пробы.
+        await guard?.beforeSend();
         const text = await this.orchestrator.complete(
             model,
             withJsonInstruction(request.systemPrompt, request.schema),

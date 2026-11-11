@@ -1,4 +1,6 @@
+import { LlmUnavailableError } from '@lib/llm-gateway';
 import { CallReportProcessor } from '../queue/call-report.processor';
+import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
 
 const PAYLOAD = {
     domain: 'test.bitrix24.ru',
@@ -15,7 +17,42 @@ const makeJob = (data: Record<string, unknown>) =>
         attemptsMade: 0,
     }) as never;
 
-const makeDeps = () => {
+/** Ответ runWithOutcome: фокус-разбор собран. */
+const focusBuilt = (analysis: Record<string, unknown>) => ({
+    analysis,
+    providerFailure: false,
+});
+
+/** Фокус-разбор не собрался не по вине поставщика — страховка уместна. */
+const FOCUS_NOT_BUILT = { analysis: null, providerFailure: false };
+
+/**
+ * Настоящий фокус-разбор поверх шлюза, который на каждый вызов модели
+ * бросает `error`: цепочка «ошибка прохода → причина провала → решение
+ * процессора» проверяется целиком.
+ */
+const focusFailingWith = (error: Error): CallFocusAnalysisService =>
+    new CallFocusAnalysisService(
+        {
+            structuredCompletionWithUsage: jest.fn().mockRejectedValue(error),
+        } as never,
+        { collect: jest.fn().mockResolvedValue([]) } as never,
+        { resolve: jest.fn().mockResolvedValue({ types: {} }) } as never,
+        {
+            resolve: jest
+                .fn()
+                .mockResolvedValue({ withCheckPresentation: false }),
+        } as never,
+        {
+            resolve: jest
+                .fn()
+                .mockResolvedValue({ presentationStrictness: 'strict' }),
+        } as never,
+        { resolve: jest.fn().mockResolvedValue(null) } as never,
+    );
+
+/** Фокус-разбор подменяется настоящим (focusFailingWith); иначе — мок. */
+const makeDeps = (focusOverride?: CallFocusAnalysisService) => {
     const pipeline = {
         executeTranscribe: jest
             .fn()
@@ -57,7 +94,9 @@ const makeDeps = () => {
         renderForPrompt: jest.fn().mockReturnValue('КОНТЕКСТ ИЗ CRM: тест'),
     };
     const focusAnalysis = {
-        run: jest.fn().mockResolvedValue({ callType: 'cold', score: 8 }),
+        runWithOutcome: jest
+            .fn()
+            .mockResolvedValue(focusBuilt({ callType: 'cold', score: 8 })),
     };
     // Проверка по документам компании: по умолчанию выключена настройкой.
     const complianceReview = { run: jest.fn().mockResolvedValue(null) };
@@ -92,7 +131,7 @@ const makeDeps = () => {
         dispatcher as never,
         baseItem as never,
         deepAnalysis as never,
-        focusAnalysis as never,
+        (focusOverride ?? focusAnalysis) as never,
         contextBuilder as never,
         analysisIntake as never,
         complianceReview as never,
@@ -199,7 +238,7 @@ describe('CallReportProcessor (стадии)', () => {
         );
         // Четвёртый аргумент — «паспорт звонка» слоя 0 (контекст CRM),
         // пятый — модель из настроек портала (не переопределена).
-        expect(focusAnalysis.run).toHaveBeenCalledWith(
+        expect(focusAnalysis.runWithOutcome).toHaveBeenCalledWith(
             'test.bitrix24.ru',
             'алло, здравствуйте',
             'cold',
@@ -217,7 +256,7 @@ describe('CallReportProcessor (стадии)', () => {
     it('фокус-разбор не собрался (null) — страховочный цельный разбор', async () => {
         const { processor, focusAnalysis, deepAnalysis, analysisIntake } =
             makeDeps();
-        focusAnalysis.run.mockResolvedValue(null);
+        focusAnalysis.runWithOutcome.mockResolvedValue(FOCUS_NOT_BUILT);
         await processor.handleAnalyze(
             makeJob({ ...PAYLOAD, transcriptionId: '42' }),
         );
@@ -227,7 +266,7 @@ describe('CallReportProcessor (стадии)', () => {
 
     it('страховочный разбор помечается неполным: догон переделает его многослойным', async () => {
         const { processor, focusAnalysis, analysisIntake } = makeDeps();
-        focusAnalysis.run.mockResolvedValue(null);
+        focusAnalysis.runWithOutcome.mockResolvedValue(FOCUS_NOT_BUILT);
         await processor.handleAnalyze(
             makeJob({ ...PAYLOAD, transcriptionId: '42' }),
         );
@@ -248,7 +287,7 @@ describe('CallReportProcessor (стадии)', () => {
             analysisIntake,
             repairStore,
         } = makeDeps();
-        focusAnalysis.run.mockResolvedValue(null);
+        focusAnalysis.runWithOutcome.mockResolvedValue(FOCUS_NOT_BUILT);
         deepAnalysis.run.mockResolvedValue(null);
         await processor.handleAnalyze(
             makeJob({ ...PAYLOAD, transcriptionId: '42' }),
@@ -258,6 +297,59 @@ describe('CallReportProcessor (стадии)', () => {
             ...PAYLOAD,
             transcriptionId: '42',
         });
+    });
+
+    it('фокус оборвался по таймауту поставщика — страховка не зовётся, звонок сразу отмечен для догона', async () => {
+        // Как приходит из шлюза: VibeCode не дождался ответа, запасной
+        // отказал 413 (Groq на длинном запросе).
+        const timeout = new LlmUnavailableError(
+            'LLM недоступна для call_focus_form (test.bitrix24.ru): ' +
+                'vibecode — Vibecode call_focus_form timeout after 180000 ms; ' +
+                'openai-compatible — HTTP 413: Request too large',
+            [
+                { provider: 'vibecode', transient: true },
+                { provider: 'openai-compatible', transient: false },
+            ],
+        );
+        const { processor, deepAnalysis, analysisIntake, repairStore } =
+            makeDeps(focusFailingWith(timeout));
+        await expect(
+            processor.handleAnalyze(
+                makeJob({ ...PAYLOAD, transcriptionId: '42' }),
+            ),
+        ).resolves.toBeUndefined();
+        expect(deepAnalysis.run).not.toHaveBeenCalled();
+        expect(analysisIntake.intake).not.toHaveBeenCalled();
+        expect(repairStore.markFailed).toHaveBeenCalledWith({
+            ...PAYLOAD,
+            transcriptionId: '42',
+        });
+    });
+
+    it('фокус не собрался по другой причине (негодный JSON) — страховка зовётся, как раньше', async () => {
+        const badAnswer = new LlmUnavailableError(
+            'LLM недоступна для call_focus_form (test.bitrix24.ru): ' +
+                'vibecode — Unexpected end of JSON input; ' +
+                'openai-compatible — HTTP 400: invalid schema',
+            [
+                { provider: 'vibecode', transient: false },
+                { provider: 'openai-compatible', transient: false },
+            ],
+        );
+        const { processor, deepAnalysis, analysisIntake, repairStore } =
+            makeDeps(focusFailingWith(badAnswer));
+        await processor.handleAnalyze(
+            makeJob({ ...PAYLOAD, transcriptionId: '42' }),
+        );
+        expect(deepAnalysis.run).toHaveBeenCalledTimes(1);
+        expect(analysisIntake.intake).toHaveBeenCalledWith(
+            '42',
+            'call-report-analyzer',
+            expect.objectContaining({
+                incompleteParts: ['form', 'content', 'movement'],
+            }),
+        );
+        expect(repairStore.markFailed).not.toHaveBeenCalled();
     });
 
     it('нерелевантный звонок (гейт) — без смарт-элемента и глубокого разбора', async () => {
@@ -303,7 +395,7 @@ describe('CallReportProcessor (стадии)', () => {
             }),
         );
         expect(baseItem.createBaseItem).not.toHaveBeenCalled();
-        expect(focusAnalysis.run).not.toHaveBeenCalled();
+        expect(focusAnalysis.runWithOutcome).not.toHaveBeenCalled();
         expect(deepAnalysis.run).not.toHaveBeenCalled();
     });
 
@@ -336,7 +428,7 @@ describe('CallReportProcessor (стадии)', () => {
             expect.objectContaining({ ignoreDurationGate: true }),
         );
         // Конвейер не поставил shortCall — глубокий разбор идёт как обычно.
-        expect(focusAnalysis.run).toHaveBeenCalledTimes(1);
+        expect(focusAnalysis.runWithOutcome).toHaveBeenCalledTimes(1);
     });
 
     it('deepAnalysisEnabled=false в настройках портала пропускает разбор', async () => {
@@ -354,7 +446,7 @@ describe('CallReportProcessor (стадии)', () => {
         await processor.handleAnalyze(
             makeJob({ ...PAYLOAD, transcriptionId: '42' }),
         );
-        expect(focusAnalysis.run).not.toHaveBeenCalled();
+        expect(focusAnalysis.runWithOutcome).not.toHaveBeenCalled();
         expect(deepAnalysis.run).not.toHaveBeenCalled();
         expect(analysisIntake.intake).not.toHaveBeenCalled();
     });
@@ -368,7 +460,7 @@ describe('CallReportProcessor (стадии)', () => {
         await processor.handleAnalyze(
             makeJob({ ...PAYLOAD, transcriptionId: '42' }),
         );
-        expect(focusAnalysis.run).toHaveBeenCalledWith(
+        expect(focusAnalysis.runWithOutcome).toHaveBeenCalledWith(
             expect.anything(),
             expect.anything(),
             expect.anything(),
@@ -394,7 +486,7 @@ describe('CallReportProcessor (стадии)', () => {
     it('оба разбора не удались (null) — intake не вызывается, джоб успешен', async () => {
         const { processor, focusAnalysis, deepAnalysis, analysisIntake } =
             makeDeps();
-        focusAnalysis.run.mockResolvedValue(null);
+        focusAnalysis.runWithOutcome.mockResolvedValue(FOCUS_NOT_BUILT);
         deepAnalysis.run.mockResolvedValue(null);
         await expect(
             processor.handleAnalyze(
@@ -483,12 +575,14 @@ describe('CallReportProcessor (стадии)', () => {
             pipeline.executeAnalyze.mockResolvedValue(
                 analyzeResult('other', 0.8),
             );
-            focusAnalysis.run.mockResolvedValue({
-                callType: 'other',
-                callTypeRefined: 'presentation',
-                callTypeReason: 'показали систему и назначили дату',
-                score: 7,
-            });
+            focusAnalysis.runWithOutcome.mockResolvedValue(
+                focusBuilt({
+                    callType: 'other',
+                    callTypeRefined: 'presentation',
+                    callTypeReason: 'показали систему и назначили дату',
+                    score: 7,
+                }),
+            );
             await processor.handleAnalyze(
                 makeJob({ ...PAYLOAD, transcriptionId: '42' }),
             );
@@ -505,11 +599,13 @@ describe('CallReportProcessor (стадии)', () => {
             pipeline.executeAnalyze.mockResolvedValue(
                 analyzeResult('call', 0.4),
             );
-            focusAnalysis.run.mockResolvedValue({
-                callType: 'call',
-                callTypeRefined: 'refine',
-                score: 6,
-            });
+            focusAnalysis.runWithOutcome.mockResolvedValue(
+                focusBuilt({
+                    callType: 'call',
+                    callTypeRefined: 'refine',
+                    score: 6,
+                }),
+            );
             await processor.handleAnalyze(
                 makeJob({ ...PAYLOAD, transcriptionId: '42' }),
             );
@@ -526,11 +622,13 @@ describe('CallReportProcessor (стадии)', () => {
             pipeline.executeAnalyze.mockResolvedValue(
                 analyzeResult('cold', 0.9),
             );
-            focusAnalysis.run.mockResolvedValue({
-                callType: 'cold',
-                callTypeRefined: 'call',
-                score: 6,
-            });
+            focusAnalysis.runWithOutcome.mockResolvedValue(
+                focusBuilt({
+                    callType: 'cold',
+                    callTypeRefined: 'call',
+                    score: 6,
+                }),
+            );
             await processor.handleAnalyze(
                 makeJob({ ...PAYLOAD, transcriptionId: '42' }),
             );
