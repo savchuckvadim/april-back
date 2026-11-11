@@ -71,6 +71,25 @@ export interface StructuredLlmResponse {
     usage: StructuredLlmUsage;
     model: string | null;
     provider: LlmProviderCode;
+    /**
+     * Сколько вызов ждал свободного слота у адаптера перед отправкой запроса
+     * (ограничитель одновременных запросов: на ключ портала и общий на
+     * процесс — у VibeCode), мс. Входит в замер шлюза вокруг
+     * `adapter.complete`, поэтому журнал вызова пишет его отдельно и
+     * вычитает из времени ответа. Не задано — адаптер очереди не держит.
+     */
+    queueMs?: number;
+}
+
+/**
+ * Проверка шлюза прямо перед отправкой запроса (11.11.2026). Адаптер с
+ * очередью (VibeCode) зовёт её, когда дождался слота: за время ожидания
+ * поставщик мог встать на паузу предохранителя — тогда `beforeSend` бросает
+ * LlmProviderPausedError, запрос не уходит, слот освобождается. Адаптеры
+ * без очереди её не зовут: шлюз проверил паузу перед вызовом.
+ */
+export interface LlmSendGuard {
+    beforeSend(): Promise<void>;
 }
 
 /** Адаптер провайдера: настроен ли он для домена и сам вызов. */
@@ -78,5 +97,8 @@ export interface StructuredLlmAdapter {
     readonly code: LlmProviderCode;
     /** Почему провайдер нельзя использовать для домена (нет ключа, нет endpoint'а); null — настроен. */
     configurationIssue(domain: string): Promise<string | null>;
-    complete(request: StructuredLlmRequest): Promise<StructuredLlmResponse>;
+    complete(
+        request: StructuredLlmRequest,
+        guard?: LlmSendGuard,
+    ): Promise<StructuredLlmResponse>;
 }

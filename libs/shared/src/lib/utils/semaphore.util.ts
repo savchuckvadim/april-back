@@ -9,16 +9,32 @@
 export class Semaphore {
     private active = 0;
     private readonly queue: (() => void)[] = [];
+    private limit: number;
 
-    constructor(private readonly limit: number) {
-        if (!Number.isFinite(limit) || limit < 1) {
-            throw new Error(`Semaphore limit must be >= 1, got ${limit}`);
-        }
+    constructor(limit: number) {
+        assertLimit(limit);
+        this.limit = limit;
     }
 
     /** Сколько задач выполняется прямо сейчас. */
     get activeCount(): number {
         return this.active;
+    }
+
+    /** Текущий предел одновременных задач. */
+    get maxConcurrent(): number {
+        return this.limit;
+    }
+
+    /**
+     * Сменить предел на ходу (настройка из админки без перезапуска): больше —
+     * ждущие сразу получают слоты; меньше — идущие задачи доделываются, новые
+     * ждут, пока занятых не станет меньше предела.
+     */
+    setLimit(limit: number): void {
+        assertLimit(limit);
+        this.limit = limit;
+        this.drain();
     }
 
     /** Сколько задач ждёт слота. */
@@ -54,8 +70,22 @@ export class Semaphore {
 
     private release(): void {
         this.active--;
-        const next = this.queue.shift();
-        if (next) next();
+        this.drain();
+    }
+
+    /** Отдать свободные слоты ждущим по очереди. */
+    private drain(): void {
+        while (this.active < this.limit) {
+            const next = this.queue.shift();
+            if (!next) return;
+            next();
+        }
+    }
+}
+
+function assertLimit(limit: number): void {
+    if (!Number.isFinite(limit) || limit < 1) {
+        throw new Error(`Semaphore limit must be >= 1, got ${limit}`);
     }
 }
 

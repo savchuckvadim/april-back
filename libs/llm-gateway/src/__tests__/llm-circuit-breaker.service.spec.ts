@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { LlmCircuitBreakerService } from '../llm-circuit-breaker.service';
+import { LlmGatewaySettingsService } from '../llm-gateway-settings.service';
 
 const T0 = 1_700_000_000_000;
 const VALUES: Record<string, string> = {
@@ -8,6 +9,8 @@ const VALUES: Record<string, string> = {
     LLM_CIRCUIT_COOLDOWN_SEC: '120',
 };
 const config = { get: (key: string) => VALUES[key] };
+/** Пороги без админки — как из env (настоящий читатель настроек шлюза). */
+const settings = new LlmGatewaySettingsService(config as never);
 
 /** Redis не поднят — состояние в памяти процесса. */
 const noRedis = {
@@ -40,7 +43,7 @@ describe('LlmCircuitBreakerService — предохранитель провай
 
     it('без Redis: три временных сбоя в окне — пауза с телеграмом, после паузы — снова включён', async () => {
         const breaker = new LlmCircuitBreakerService(
-            config as never,
+            settings,
             noRedis as never,
         );
 
@@ -66,7 +69,7 @@ describe('LlmCircuitBreakerService — предохранитель провай
 
     it('без Redis: сбои за пределами окна не считаются', async () => {
         const breaker = new LlmCircuitBreakerService(
-            config as never,
+            settings,
             noRedis as never,
         );
         await breaker.recordFailure('vibecode', 'x', T0);
@@ -78,7 +81,7 @@ describe('LlmCircuitBreakerService — предохранитель провай
 
     it('удачный ответ обнуляет серию; снятие паузы — предупреждение в телеграм', async () => {
         const breaker = new LlmCircuitBreakerService(
-            config as never,
+            settings,
             noRedis as never,
         );
         await breaker.recordFailure('vibecode', 'x', T0);
@@ -105,10 +108,9 @@ describe('LlmCircuitBreakerService — предохранитель провай
             .mockResolvedValueOnce(1)
             .mockResolvedValueOnce(2)
             .mockResolvedValueOnce(3);
-        const breaker = new LlmCircuitBreakerService(
-            config as never,
-            { getClient: () => redis } as never,
-        );
+        const breaker = new LlmCircuitBreakerService(settings, {
+            getClient: () => redis,
+        } as never);
 
         await breaker.recordFailure('vibecode', 'x', T0);
         expect(redis.expire).toHaveBeenCalledWith(
@@ -140,10 +142,9 @@ describe('LlmCircuitBreakerService — предохранитель провай
         const redis = makeRedis();
         redis.exists.mockRejectedValue(new Error('READONLY'));
         redis.incr.mockRejectedValue(new Error('READONLY'));
-        const breaker = new LlmCircuitBreakerService(
-            config as never,
-            { getClient: () => redis } as never,
-        );
+        const breaker = new LlmCircuitBreakerService(settings, {
+            getClient: () => redis,
+        } as never);
         expect(await breaker.isOpen('vibecode', T0)).toBe(false);
         await breaker.recordFailure('vibecode', 'x', T0);
         await breaker.recordFailure('vibecode', 'x', T0);
@@ -151,6 +152,97 @@ describe('LlmCircuitBreakerService — предохранитель провай
         expect(warn).toHaveBeenCalledWith(
             expect.stringContaining('не прочитано из Redis'),
         );
+    });
+
+    /**
+     * Пороги — из админки (11.11.2026): читаются на каждом сбое, правка
+     * действует без перезапуска.
+     */
+    it('пороги перечитываются на каждом сбое: правка в админке действует сразу', async () => {
+        const values: Record<string, string> = { LLM_CIRCUIT_FAILURES: '3' };
+        const reader = {
+            get: (key: string) => Promise.resolve(values[key] ?? null),
+            getMany: (keys: readonly string[]) =>
+                Promise.resolve(
+                    Object.fromEntries(
+                        keys.map(key => [key, values[key] ?? null]),
+                    ),
+                ),
+        };
+        const breaker = new LlmCircuitBreakerService(
+            new LlmGatewaySettingsService(config as never, reader),
+            noRedis as never,
+        );
+        await breaker.recordFailure('vibecode', 'x', T0);
+        // Админ опустил порог до двух — второй сбой уже ставит паузу.
+        values.LLM_CIRCUIT_FAILURES = '2';
+        await breaker.recordFailure('vibecode', 'x', T0 + 1);
+        expect(await breaker.isOpen('vibecode', T0 + 2)).toBe(true);
+    });
+});
+
+/**
+ * Проба поставщика на паузе — одна за раз на все реплики (11.11.2026): без
+ * замка каждый разбор, у которого не ответил и запасной, сам шёл пробой к
+ * зависшему поставщику и ждал таймаут.
+ */
+describe('LlmCircuitBreakerService — замок пробного вызова', () => {
+    beforeEach(() => {
+        jest.spyOn(Logger.prototype, 'warn').mockImplementation(
+            () => undefined,
+        );
+    });
+    afterEach(() => jest.restoreAllMocks());
+
+    it('без Redis: проба одна — вторая не пускается, после endProbe снова можно', async () => {
+        const breaker = new LlmCircuitBreakerService(
+            settings,
+            noRedis as never,
+        );
+        expect(await breaker.tryStartProbe('vibecode')).toBe(true);
+        expect(await breaker.tryStartProbe('vibecode')).toBe(false);
+        // У другого поставщика свой замок.
+        expect(await breaker.tryStartProbe('openai-compatible')).toBe(true);
+
+        await breaker.endProbe('vibecode');
+        expect(await breaker.tryStartProbe('vibecode')).toBe(true);
+    });
+
+    it('с Redis: замок — SET NX с TTL на все реплики, снятие — DEL', async () => {
+        const redis = makeRedis();
+        const breaker = new LlmCircuitBreakerService(settings, {
+            getClient: () => redis,
+        } as never);
+        expect(await breaker.tryStartProbe('vibecode')).toBe(true);
+        expect(redis.set).toHaveBeenCalledWith(
+            'llm-gateway:circuit:vibecode:probe',
+            '1',
+            'EX',
+            600,
+            'NX',
+        );
+
+        // Пробу уже ведёт другая реплика — SET NX вернул null.
+        redis.set.mockResolvedValueOnce(null);
+        expect(await breaker.tryStartProbe('vibecode')).toBe(false);
+
+        await breaker.endProbe('vibecode');
+        expect(redis.del).toHaveBeenCalledWith(
+            'llm-gateway:circuit:vibecode:probe',
+        );
+    });
+
+    it('ошибка Redis — замок в памяти процесса, вызов не падает', async () => {
+        const redis = makeRedis();
+        redis.set.mockRejectedValue(new Error('READONLY'));
+        redis.del.mockRejectedValue(new Error('READONLY'));
+        const breaker = new LlmCircuitBreakerService(settings, {
+            getClient: () => redis,
+        } as never);
+        expect(await breaker.tryStartProbe('vibecode')).toBe(true);
+        expect(await breaker.tryStartProbe('vibecode')).toBe(false);
+        await expect(breaker.endProbe('vibecode')).resolves.toBeUndefined();
+        expect(await breaker.tryStartProbe('vibecode')).toBe(true);
     });
 });
 
@@ -173,7 +265,7 @@ describe('LlmCircuitBreakerService — пометки тревоги', () => {
     afterEach(() => jest.restoreAllMocks());
 
     const makeBreaker = () =>
-        new LlmCircuitBreakerService(config as never, noRedis as never);
+        new LlmCircuitBreakerService(settings, noRedis as never);
 
     it('запасной есть — «Повтор», работа идёт через запасного', async () => {
         const breaker = makeBreaker();

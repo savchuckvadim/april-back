@@ -54,7 +54,7 @@ const text = await this.vibecode.transcribeAudio(buffer, fileName, apiKey);
 | Переменная | Default | Что |
 |---|---|---|
 | `VIBECODE_TRANSCRIBE_TIMEOUT_MS` | 600000 | таймаут транскрибации (длинные файлы Whisper обрабатывает минутами) |
-| `VIBECODE_ANALYSIS_TIMEOUT_MS` | 180000 | таймаут chat/completions |
+| `VIBECODE_ANALYSIS_TIMEOUT_MS` | 180000 | срок ответа chat/completions, 30 000–300 000; с 11.11.2026 задаётся в админке («Настройки приложения» → «Разборы звонков»), env — запасной путь |
 
 ## Модели
 

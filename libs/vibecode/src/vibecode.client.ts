@@ -1,6 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { plainToInstance } from 'class-transformer';
+import {
+    LLM_INTEGER_SETTING_RULES,
+    VENDOR_SETTINGS_READER,
+    envOnlyReader,
+    integerSettingValue,
+    type VendorSettingsReader,
+} from '@lib/vendor-settings';
 import { CallSalesAnalysisResultDto } from './dto/call-sales-analysis.dto';
 import { CallClassificationResultDto } from './dto/call-classification.dto';
 import {
@@ -78,24 +85,48 @@ const ANALYSIS_MODEL = 'bitrix/bitrixgpt-5.5';
  * вызывающие резолвят его через VibeKeyResolverService по domain и
  * передают параметром apiKey в каждый метод. Env-переменной ключа
  * больше нет (BITRIX_VIBE_TEST выпилен 2026-07-23).
+ *
+ * Срок ответа на разбор — «Настройки приложения» в админке
+ * (VIBECODE_ANALYSIS_TIMEOUT_MS, с 11.11.2026), читается на каждом запросе:
+ * правка действует в течение минуты без перезапуска; без
+ * VendorSettingsModule в приложении — env с тем же именем.
  */
 @Injectable()
 export class VibeCodeClient {
     private readonly logger = new Logger(VibeCodeClient.name);
     /** Таймаут запроса транскрибации: длинные файлы Whisper обрабатывает минутами. */
     private readonly transcriptionTimeoutMs: number;
-    /** Таймаут запроса анализа (chat/completions). */
-    private readonly analysisTimeoutMs: number;
+    private readonly settings: VendorSettingsReader;
 
-    constructor(private readonly configService: ConfigService) {
+    constructor(
+        private readonly configService: ConfigService,
+        @Optional()
+        @Inject(VENDOR_SETTINGS_READER)
+        settings?: VendorSettingsReader,
+    ) {
         this.transcriptionTimeoutMs = Number(
             this.configService.get<string>('VIBECODE_TRANSCRIBE_TIMEOUT_MS') ??
                 600_000,
         );
-        this.analysisTimeoutMs = Number(
-            this.configService.get<string>('VIBECODE_ANALYSIS_TIMEOUT_MS') ??
-                180_000,
-        );
+        this.settings =
+            settings ?? envOnlyReader(key => configService.get<string>(key));
+    }
+
+    /**
+     * Срок ответа на запрос разбора (chat/completions), мс: настройка из
+     * админки, иначе env, иначе 3 минуты; вне 30 с – 5 мин — ближайшая
+     * граница. Сбой чтения не роняет запрос — действует значение по умолчанию.
+     */
+    private async analysisTimeoutMs(): Promise<number> {
+        const rule = LLM_INTEGER_SETTING_RULES.VIBECODE_ANALYSIS_TIMEOUT_MS;
+        try {
+            return integerSettingValue(
+                await this.settings.get('VIBECODE_ANALYSIS_TIMEOUT_MS'),
+                rule,
+            );
+        } catch {
+            return rule.defaultValue;
+        }
     }
 
     async transcribeAudio(
@@ -349,24 +380,43 @@ export class VibeCodeClient {
             },
         };
 
-        const response = await fetch(`${VIBECODE_BASE_URL}/chat/completions`, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-            signal: AbortSignal.timeout(this.analysisTimeoutMs),
-        });
+        // AbortSignal.timeout действует и на чтение тела ответа — в try весь
+        // обмен. Таймаут — ошибкой с именем схемы и порогом (в журнале шлюза
+        // видно, чей вызов не дождался); слово «timeout» оставляет её
+        // временной для isTransientLlmError (предохранитель, запасной
+        // поставщик). Остальные ошибки — как есть.
+        const timeoutMs = await this.analysisTimeoutMs();
+        let data: VibecodeChatCompletionsResponse;
+        try {
+            const response = await fetch(
+                `${VIBECODE_BASE_URL}/chat/completions`,
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(body),
+                    signal: AbortSignal.timeout(timeoutMs),
+                },
+            );
 
-        if (!response.ok) {
-            const error = await response.text();
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(
+                    `Vibecode ${schemaName} failed [${response.status}]: ${error}`,
+                );
+            }
+
+            data = (await response.json()) as VibecodeChatCompletionsResponse;
+        } catch (error: unknown) {
+            if (!isAbortTimeout(error)) throw error;
             throw new Error(
-                `Vibecode ${schemaName} failed [${response.status}]: ${error}`,
+                `Vibecode ${schemaName} timeout after ${timeoutMs} ms`,
+                { cause: error },
             );
         }
 
-        const data = (await response.json()) as VibecodeChatCompletionsResponse;
         const content = data.choices?.[0]?.message?.content;
         if (!content) {
             throw new Error(`Empty ${schemaName} result from Vibecode`);
@@ -377,6 +427,20 @@ export class VibeCodeClient {
             model: typeof data.model === 'string' ? data.model : null,
         };
     }
+}
+
+/**
+ * Сработал AbortSignal.timeout: fetch и чтение тела отклоняются с
+ * DOMException «TimeoutError». Проверка по имени, а не instanceof:
+ * DOMException приходит из undici, в jest — из другого realm.
+ */
+function isAbortTimeout(error: unknown): boolean {
+    return (
+        typeof error === 'object' &&
+        error !== null &&
+        'name' in error &&
+        error.name === 'TimeoutError'
+    );
 }
 
 /** Число токенов из ответа: только конечное число, иначе null. */

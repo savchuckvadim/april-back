@@ -64,10 +64,22 @@ import {
 /**
  * Concurrency стадий читается на этапе декорации класса, поэтому только
  * из process.env:
- * - CALL_REPORT_CONCURRENCY — стадия TRANSCRIBE (default 3);
- * - CALL_REPORT_ANALYZE_CONCURRENCY — стадия ANALYZE (default 2).
- * Пер-провайдерные лимитеры (Yandex/VibeCode/GigaChat) держат внешние
- * сервисы в рамках независимо от этих значений.
+ * - CALL_REPORT_CONCURRENCY — @Process стадии TRANSCRIBE (default 3);
+ * - CALL_REPORT_ANALYZE_CONCURRENCY — @Process стадии ANALYZE (default 2).
+ *
+ * Это не потолок стадии. Bull (пакет bull, не BullMQ) складывает
+ * concurrency всех @Process одной очереди в общий пул, и любой воркер пула
+ * берёт задание любого имени: при значениях по умолчанию здесь шесть
+ * @Process (1+1+1+1+3+2) — до 9 заданий CALL_REPORT одновременно, в том
+ * числе до 9 ANALYZE разом. Разбор — 3–4 фокус-прохода и синтез, без
+ * ограничителя это до 27–36 запросов к модели на ключ одного портала.
+ *
+ * Внешние сервисы держат свои ограничители, а не эти числа: транскрибацию —
+ * TranscriptionRouterService (TRANSCRIPTION_*_CONCURRENCY), GigaChat и
+ * Cloud.ru — семафоры провайдеров (GIGACHAT_CONCURRENCY,
+ * CLOUDRU_CONCURRENCY), запросы к модели VibeCode — ограничитель адаптера
+ * шлюза VibecodeStructuredAdapter (пределы на ключ портала и на процесс —
+ * «Настройки приложения» в админке, группа «Разборы звонков»; 11.11.2026).
  */
 function resolveConcurrency(envName: string, fallback: number): number {
     const parsed = Number.parseInt(process.env[envName] ?? '', 10);
@@ -361,8 +373,12 @@ export class CallReportProcessor {
             // Штатный режим — многослойный фокус-разбор (Фаза 2 плана v2:
             // глубже и точнее). Цельный CallDeepAnalysisService — страховка:
             // если фокус-разбор не собрался (выжило <2 проходов), звонок
-            // всё равно получает разбор одним вызовом.
-            const focus = await this.focusAnalysis.run(
+            // всё равно получает разбор одним вызовом. Но если проходы
+            // оборвались на поставщике модели (таймаут, 429, 5xx, отказали
+            // все поставщики), страховку не зовём: самый тяжёлый запрос
+            // почти наверняка оборвётся так же и добавит сбой в
+            // предохранитель — звонок сразу уходит в догон (11.11.2026).
+            const focus = await this.focusAnalysis.runWithOutcome(
                 payload.domain,
                 transcript,
                 callType,
@@ -370,18 +386,21 @@ export class CallReportProcessor {
                 { model },
             );
             const analysis =
-                focus ??
-                (await this.deepAnalysis.run(
-                    payload.domain,
-                    transcript,
-                    callType,
-                    passportBlock,
-                    { model },
-                ));
+                focus.analysis ??
+                (focus.providerFailure
+                    ? null
+                    : await this.deepAnalysis.run(
+                          payload.domain,
+                          transcript,
+                          callType,
+                          passportBlock,
+                          { model },
+                      ));
             if (!analysis) {
-                // Модель не ответила ни на фокус, ни на страховку: звонок
-                // без разбора — отметка, догон поставит анализ заново,
-                // когда поставщик ответит (требование владельца 10.11.2026).
+                // Звонок без разбора: фокус оборвался на поставщике или
+                // модель не ответила и на страховку — отметка, догон поставит
+                // анализ заново, когда поставщик ответит (требование
+                // владельца 10.11.2026).
                 await this.repairStore?.markFailed({
                     ...payload,
                     transcriptionId,
@@ -390,7 +409,7 @@ export class CallReportProcessor {
             }
             // Фокус не собрался — записан цельный разбор-страховка; догон
             // переделает его многослойным, когда поставщик снова ответит.
-            if (!focus)
+            if (!focus.analysis)
                 analysis.incompleteParts = [...CALL_ANALYSIS_FOCUS_PARTS];
 
             // Версия аналитика в поле смарта «Версия скилла агента»: раньше

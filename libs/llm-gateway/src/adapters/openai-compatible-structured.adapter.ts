@@ -1,8 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { EgressProxyService } from '@lib/egress-proxy';
+import {
+    LLM_FALLBACK_JSON_MODES,
+    type LlmFallbackJsonMode,
+} from '@lib/vendor-settings';
 import { withJsonInstruction } from '../json-instruction.util';
 import { LlmEndpointResolverService } from '../llm-endpoint-resolver.service';
+import { LlmGatewaySettingsService } from '../llm-gateway-settings.service';
 import type {
     StructuredLlmAdapter,
     StructuredLlmRequest,
@@ -14,12 +18,11 @@ import type {
  * Как просить JSON у endpoint'а: `json_schema` — строгая схема в
  * response_format (OpenAI, vLLM, Yandex AI Studio, часть Cloud.ru);
  * `json_object` — только «верни JSON», схема дописывается в системный промпт
- * (модели без structured output).
+ * (модели без structured output). Список живёт в реестре настроек — по нему
+ * же админка проверяет значение.
  */
-export const LLM_JSON_MODES = ['json_schema', 'json_object'] as const;
-export type LlmJsonMode = (typeof LLM_JSON_MODES)[number];
-
-const DEFAULT_TIMEOUT_MS = 180_000;
+export const LLM_JSON_MODES = LLM_FALLBACK_JSON_MODES;
+export type LlmJsonMode = LlmFallbackJsonMode;
 
 interface ChatCompletionsResponse {
     choices?: { message?: { content?: string } }[];
@@ -82,8 +85,10 @@ const usageOf = (
 /**
  * Любой OpenAI-совместимый endpoint как запасной (или свой) провайдер:
  * Cloud.ru Evolution, Groq, Yandex AI Studio, vLLM/Ollama на своём GPU. Адрес,
- * ключ и модель — из кредов портала или env (LlmEndpointResolverService);
- * режим JSON — env LLM_FALLBACK_JSON_MODE, таймаут — LLM_FALLBACK_TIMEOUT_MS.
+ * ключ и модель — из кредов портала или общих настроек
+ * (LlmEndpointResolverService); режим JSON и срок ответа — «Настройки
+ * приложения» в админке (LlmGatewaySettingsService), читаются на каждом
+ * вызове.
  */
 @Injectable()
 export class OpenAiCompatibleStructuredAdapter implements StructuredLlmAdapter {
@@ -91,33 +96,17 @@ export class OpenAiCompatibleStructuredAdapter implements StructuredLlmAdapter {
     private readonly logger = new Logger(
         OpenAiCompatibleStructuredAdapter.name,
     );
-    private readonly jsonMode: LlmJsonMode;
-    private readonly timeoutMs: number;
 
     constructor(
-        configService: ConfigService,
+        private readonly settings: LlmGatewaySettingsService,
         private readonly endpoints: LlmEndpointResolverService,
         private readonly egress: EgressProxyService,
-    ) {
-        const mode = configService.get<string>('LLM_FALLBACK_JSON_MODE');
-        this.jsonMode = (LLM_JSON_MODES as readonly string[]).includes(
-            mode ?? '',
-        )
-            ? (mode as LlmJsonMode)
-            : 'json_schema';
-        const timeout = Number(
-            configService.get<string>('LLM_FALLBACK_TIMEOUT_MS') ?? NaN,
-        );
-        this.timeoutMs =
-            Number.isFinite(timeout) && timeout > 0
-                ? timeout
-                : DEFAULT_TIMEOUT_MS;
-    }
+    ) {}
 
     async configurationIssue(domain: string): Promise<string | null> {
         return (await this.endpoints.resolve(domain))
             ? null
-            : 'не настроен (LLM_FALLBACK_BASE_URL / LLM_FALLBACK_MODEL, CLOUDRU_API_KEY или GROQ_API_KEY в env, либо креды LLM портала)';
+            : 'не настроен: нет кредов LLM портала, своего запасного поставщика, ключа Cloud.ru или Groq в «Настройках приложения»';
     }
 
     async complete(
@@ -129,6 +118,7 @@ export class OpenAiCompatibleStructuredAdapter implements StructuredLlmAdapter {
                 `Запасной провайдер LLM не настроен для ${request.domain}`,
             );
         }
+        const { jsonMode, timeoutMs } = await this.settings.fallbackCall();
         const where = `LLM (${endpoint.source}, ${endpoint.model}) ${request.schemaName}`;
         let response: Response;
         try {
@@ -148,10 +138,10 @@ export class OpenAiCompatibleStructuredAdapter implements StructuredLlmAdapter {
                         buildChatCompletionBody(
                             endpoint.model,
                             request,
-                            this.jsonMode,
+                            jsonMode,
                         ),
                     ),
-                    signal: AbortSignal.timeout(this.timeoutMs),
+                    signal: AbortSignal.timeout(timeoutMs),
                 },
             );
         } catch (error) {
@@ -169,7 +159,7 @@ export class OpenAiCompatibleStructuredAdapter implements StructuredLlmAdapter {
         const content = data.choices?.[0]?.message?.content;
         if (!content) throw new Error(`${where}: пустой ответ модели`);
         this.logger.log(
-            `${where}: ответ получен (${content.length} знаков, режим ${this.jsonMode})`,
+            `${where}: ответ получен (${content.length} знаков, режим ${jsonMode})`,
         );
         return {
             result: parseJsonContent(content),

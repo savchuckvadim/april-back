@@ -49,7 +49,11 @@ const makeDeps = (analysis: Record<string, unknown> = { callType: 'cold' }) => {
             callType: 'cold',
         }),
     };
-    const focusAnalysis = { run: jest.fn().mockResolvedValue(analysis) };
+    const focusAnalysis = {
+        runWithOutcome: jest
+            .fn()
+            .mockResolvedValue({ analysis, providerFailure: false }),
+    };
     const deepAnalysis = { run: jest.fn().mockResolvedValue(null) };
     const analysisIntake = {
         intake: jest.fn().mockResolvedValue({ aiId: '9', smartItemId: 777 }),

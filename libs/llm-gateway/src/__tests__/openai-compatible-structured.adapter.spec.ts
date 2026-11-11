@@ -5,6 +5,7 @@ import {
     parseJsonContent,
 } from '../adapters/openai-compatible-structured.adapter';
 import type { LlmEndpoint } from '../llm-endpoint-resolver.service';
+import { LlmGatewaySettingsService } from '../llm-gateway-settings.service';
 
 const ENDPOINT: LlmEndpoint = {
     baseUrl: 'https://llm.example/v1',
@@ -47,10 +48,13 @@ const makeAdapter = (
     egress: { fetch: typeof directEgress.fetch } = directEgress,
 ) => {
     const endpoints = { resolve: jest.fn().mockResolvedValue(endpoint) };
-    const config = { get: (key: string) => values[key] };
+    // Настоящий читатель настроек без админки — значения как из env.
+    const settings = new LlmGatewaySettingsService({
+        get: (key: string) => values[key],
+    } as never);
     return {
         adapter: new OpenAiCompatibleStructuredAdapter(
-            config as never,
+            settings,
             endpoints as never,
             egress as never,
         ),
@@ -185,7 +189,7 @@ describe('OpenAiCompatibleStructuredAdapter', () => {
     it('endpoint не настроен — configurationIssue с подсказкой, complete падает без запроса', async () => {
         const { adapter } = makeAdapter({}, null);
         expect(await adapter.configurationIssue('x')).toContain(
-            'LLM_FALLBACK_BASE_URL',
+            'своего запасного поставщика',
         );
         await expect(adapter.complete(REQUEST)).rejects.toThrow('не настроен');
         expect(fetchMock).not.toHaveBeenCalled();

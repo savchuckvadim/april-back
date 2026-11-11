@@ -29,6 +29,10 @@ import {
     buildDeepAnalysisUserContent,
 } from '../contracts/call-deep-analysis.contract';
 import { sumCompletionUsage } from './call-analysis-usage.util';
+import {
+    isFocusProviderFailure,
+    type CallFocusOutcome,
+} from './call-focus-failure.util';
 import { CallReportSettingsService } from './call-report-settings.service';
 import {
     CallFocusKey,
@@ -121,7 +125,9 @@ const FOCUS_PASSES: FocusPass[] = [
  *
  * Устойчивость: упавший фокус не роняет разбор (его разделы просто
  * отсутствуют); минимум два фокуса обязаны выжить, иначе null. Ошибка
- * синтеза тоже не фатальна — итоговые поля остаются пустыми.
+ * синтеза тоже не фатальна — итоговые поля остаются пустыми. runWithOutcome
+ * отдаёт и причину провала: проходы оборвались на поставщике модели —
+ * процессор тогда не зовёт цельную страховку (11.11.2026).
  *
  * Учёт токенов: каждый удавшийся вызов (фокусы и синтез) возвращает usage
  * провайдера; сумма едет в dto.usage — приём разбора кладёт её в колонки
@@ -211,19 +217,29 @@ export class CallFocusAnalysisService {
         }
     }
 
-    /** options.model — модель VibeCode из настроек портала (deepAnalysisModel). */
+    /** Только разбор (переразбор, test-retest, догон): null — не собрался. */
     async run(
+        ...args: Parameters<CallFocusAnalysisService['runWithOutcome']>
+    ): Promise<AgentCallAnalysisDto | null> {
+        return (await this.runWithOutcome(...args)).analysis;
+    }
+
+    /**
+     * Разбор и причина провала — для процессора. options.model — модель
+     * VibeCode из настроек портала (deepAnalysisModel).
+     */
+    async runWithOutcome(
         domain: string,
         transcript: string,
         callType: string | null,
         passportBlock?: string,
         options?: { model?: string },
-    ): Promise<AgentCallAnalysisDto | null> {
+    ): Promise<CallFocusOutcome> {
         if (!transcript.trim()) {
             this.logger.warn(
                 `Пустой транскрипт (${domain}) — фокус-разбор пропущен`,
             );
-            return null;
+            return { analysis: null, providerFailure: false };
         }
         try {
             const materials = await this.buildMaterials(domain, callType);
@@ -244,6 +260,9 @@ export class CallFocusAnalysisService {
                 passportBlock,
             );
 
+            // Ошибки сорвавшихся фокус-проходов — по ним причина провала.
+            // Массив свой у каждого вызова: разборы идут параллельно.
+            const passErrors: unknown[] = [];
             const [responses, methodologyResponse] = await Promise.all([
                 Promise.all(
                     FOCUS_PASSES.map(pass =>
@@ -253,6 +272,7 @@ export class CallFocusAnalysisService {
                             userContent,
                             domain,
                             options?.model,
+                            passErrors,
                         ),
                     ),
                 ),
@@ -275,10 +295,14 @@ export class CallFocusAnalysisService {
 
             const survived = Object.values(byKey).filter(Boolean).length;
             if (survived < 2) {
+                const providerFailure = isFocusProviderFailure(passErrors);
                 this.logger.warn(
-                    `Фокус-разбор (${domain}): выжило ${survived}/3 проходов — результат отброшен`,
+                    `Фокус-разбор (${domain}): выжило ${survived}/3 проходов — результат отброшен` +
+                        (providerFailure
+                            ? ' (проходы оборвались на поставщике модели)'
+                            : ''),
                 );
-                return null;
+                return { analysis: null, providerFailure };
             }
 
             // Синтез выставляет итоговую оценку — ему дополнительно идут
@@ -361,12 +385,12 @@ export class CallFocusAnalysisService {
                 `Фокус-разбор (${domain}): проходов ${survived}/3, ` +
                     `разделов ${dto.sections?.length ?? 0}, оценка ${dto.score ?? '—'}`,
             );
-            return dto;
+            return { analysis: dto, providerFailure: false };
         } catch (error) {
             this.logger.warn(
                 `Фокус-разбор не выполнен (${domain}): ${(error as Error).message}`,
             );
-            return null;
+            return { analysis: null, providerFailure: false };
         }
     }
 
@@ -523,13 +547,17 @@ export class CallFocusAnalysisService {
         );
     }
 
-    /** Один фокус-проход (ответ + usage); ошибка → null (разбор продолжается без него). */
+    /**
+     * Один фокус-проход (ответ + usage); ошибка → null (разбор продолжается
+     * без него), сама ошибка — в `failures`, если он передан.
+     */
     private async runFocus(
         pass: Pick<FocusPass, 'label' | 'prompt' | 'schema'> & { key: string },
         sharedContext: string,
         userContent: string,
         domain: string,
         model?: string,
+        failures?: unknown[],
     ): Promise<VibecodeStructuredCompletionWithUsage | null> {
         try {
             return await this.llm.structuredCompletionWithUsage(
@@ -541,6 +569,7 @@ export class CallFocusAnalysisService {
                 { model },
             );
         } catch (error) {
+            failures?.push(error);
             this.logger.warn(
                 `Фокус «${pass.label}» не выполнен (${domain}): ${(error as Error).message}`,
             );

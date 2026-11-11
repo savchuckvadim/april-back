@@ -1,25 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { RedisService } from '@lib/core/redis/redis.service';
+import { LlmGatewaySettingsService } from './llm-gateway-settings.service';
 import type { LlmProviderCode } from './structured-llm.types';
 
-/** Пороги предохранителя (env LLM_CIRCUIT_FAILURES / _WINDOW_SEC / _COOLDOWN_SEC). */
-export interface LlmCircuitOptions {
-    /** Сколько временных сбоев в окне отключают провайдера. */
-    failures: number;
-    /** Окно счёта сбоев, секунд. */
-    windowSec: number;
-    /** На сколько отключаем, секунд; потом одна пробная попытка. */
-    cooldownSec: number;
-}
-
-export const LLM_CIRCUIT_DEFAULTS: LlmCircuitOptions = {
-    failures: 5,
-    windowSec: 600,
-    cooldownSec: 300,
-};
-
 const KEY_PREFIX = 'llm-gateway:circuit';
+
+/**
+ * Сколько живёт замок пробного вызова, если процесс упал, не сняв его:
+ * проба — это ожидание своей очереди и до пяти минут ответа модели.
+ */
+const PROBE_LOCK_TTL_SEC = 600;
 
 interface MemoryState {
     failedAt: number[];
@@ -33,33 +23,26 @@ interface MemoryState {
  * Redis — в памяти процесса; любая ошибка Redis — провайдер считается
  * включённым (деградация в сторону «попробовать», а не «заклинить»).
  * Переходы «отключён» / «снова отвечает» уходят в телеграм один раз на
- * все реплики (SET NX).
+ * все реплики (SET NX). Пороги — из админки (LlmGatewaySettingsService),
+ * читаются на каждом сбое: новое значение действует без перезапуска.
+ *
+ * Пробный вызов поставщика на паузе (когда больше никто не ответил) идёт
+ * один за раз на все реплики — tryStartProbe / endProbe (11.11.2026). Без
+ * замка каждый разбор, у которого не ответил и запасной, сам становился
+ * пробой: волна запросов к зависшему поставщику, каждый до таймаута, и пул
+ * очереди разборов стоял.
  */
 @Injectable()
 export class LlmCircuitBreakerService {
     private readonly logger = new Logger(LlmCircuitBreakerService.name);
-    readonly options: LlmCircuitOptions;
     private readonly memory = new Map<LlmProviderCode, MemoryState>();
+    /** Пробы без Redis — в памяти процесса. */
+    private readonly probing = new Set<LlmProviderCode>();
 
     constructor(
-        private readonly configService: ConfigService,
+        private readonly settings: LlmGatewaySettingsService,
         private readonly redisService: RedisService,
-    ) {
-        this.options = {
-            failures: this.numberSetting(
-                'LLM_CIRCUIT_FAILURES',
-                LLM_CIRCUIT_DEFAULTS.failures,
-            ),
-            windowSec: this.numberSetting(
-                'LLM_CIRCUIT_WINDOW_SEC',
-                LLM_CIRCUIT_DEFAULTS.windowSec,
-            ),
-            cooldownSec: this.numberSetting(
-                'LLM_CIRCUIT_COOLDOWN_SEC',
-                LLM_CIRCUIT_DEFAULTS.cooldownSec,
-            ),
-        };
-    }
+    ) {}
 
     /** Провайдер на паузе после серии сбоев. */
     async isOpen(
@@ -118,9 +101,14 @@ export class LlmCircuitBreakerService {
         now: number = Date.now(),
         fallbackAvailable = true,
     ): Promise<void> {
-        const count = await this.incrementFailures(provider, now);
-        if (count < this.options.failures) return;
-        const openedByUs = await this.open(provider, now);
+        const options = await this.settings.circuit();
+        const count = await this.incrementFailures(
+            provider,
+            now,
+            options.windowSec,
+        );
+        if (count < options.failures) return;
+        const openedByUs = await this.open(provider, now, options.cooldownSec);
         if (!openedByUs) return;
         const head = fallbackAvailable
             ? `Повтор: провайдер LLM ${provider} отключён`
@@ -129,31 +117,69 @@ export class LlmCircuitBreakerService {
             ? ' — работа идёт через запасного'
             : ' — разборы и отчёты встанут до конца паузы';
         this.logger.error(
-            `${head} на ${Math.round(this.options.cooldownSec / 60)} мин: ` +
-                `${count} временных сбоев за ${Math.round(this.options.windowSec / 60)} мин ` +
+            `${head} на ${Math.round(options.cooldownSec / 60)} мин: ` +
+                `${count} временных сбоев за ${Math.round(options.windowSec / 60)} мин ` +
                 `(последний: ${reason})${tail}`,
             { telegram: true },
         );
     }
 
+    /**
+     * Занять пробный вызов поставщика на паузе: true — проба наша, после
+     * вызова обязательно endProbe; false — пробу уже ведёт другой вызов
+     * (любой реплики). Ошибка Redis — замок в памяти процесса.
+     */
+    async tryStartProbe(provider: LlmProviderCode): Promise<boolean> {
+        const redis = this.safeClient();
+        if (redis) {
+            try {
+                const set = await redis.set(
+                    this.probeKey(provider),
+                    '1',
+                    'EX',
+                    PROBE_LOCK_TTL_SEC,
+                    'NX',
+                );
+                return set !== null;
+            } catch (error) {
+                this.warnRedis(error);
+            }
+        }
+        if (this.probing.has(provider)) return false;
+        this.probing.add(provider);
+        return true;
+    }
+
+    /** Снять замок пробы — и после ответа, и после сбоя. */
+    async endProbe(provider: LlmProviderCode): Promise<void> {
+        this.probing.delete(provider);
+        const redis = this.safeClient();
+        if (!redis) return;
+        try {
+            await redis.del(this.probeKey(provider));
+        } catch (error) {
+            this.warnRedis(error);
+        }
+    }
+
     private async incrementFailures(
         provider: LlmProviderCode,
         now: number,
+        windowSec: number,
     ): Promise<number> {
         const redis = this.safeClient();
         if (redis) {
             try {
                 const key = this.failuresKey(provider);
                 const count = await redis.incr(key);
-                if (count === 1)
-                    await redis.expire(key, this.options.windowSec);
+                if (count === 1) await redis.expire(key, windowSec);
                 return count;
             } catch (error) {
                 this.warnRedis(error);
             }
         }
         const state = this.state(provider);
-        const windowMs = this.options.windowSec * 1000;
+        const windowMs = windowSec * 1000;
         state.failedAt = state.failedAt.filter(at => now - at < windowMs);
         state.failedAt.push(now);
         return state.failedAt.length;
@@ -163,6 +189,7 @@ export class LlmCircuitBreakerService {
     private async open(
         provider: LlmProviderCode,
         now: number,
+        cooldownSec: number,
     ): Promise<boolean> {
         const redis = this.safeClient();
         if (redis) {
@@ -171,7 +198,7 @@ export class LlmCircuitBreakerService {
                     this.openKey(provider),
                     String(now),
                     'EX',
-                    this.options.cooldownSec,
+                    cooldownSec,
                     'NX',
                 );
                 await redis
@@ -184,7 +211,7 @@ export class LlmCircuitBreakerService {
         }
         const state = this.state(provider);
         const wasOpen = state.openUntil > now;
-        state.openUntil = now + this.options.cooldownSec * 1000;
+        state.openUntil = now + cooldownSec * 1000;
         state.failedAt = [];
         return !wasOpen;
     }
@@ -206,6 +233,10 @@ export class LlmCircuitBreakerService {
         return `${KEY_PREFIX}:${provider}:open`;
     }
 
+    private probeKey(provider: LlmProviderCode): string {
+        return `${KEY_PREFIX}:${provider}:probe`;
+    }
+
     /** Redis может быть не поднят (тесты, локальный запуск) — это не ошибка. */
     private safeClient(): ReturnType<RedisService['getClient']> | null {
         try {
@@ -219,11 +250,5 @@ export class LlmCircuitBreakerService {
         this.logger.warn(
             `Состояние предохранителя LLM не прочитано из Redis (${(error as Error).message}) — считаем провайдера включённым`,
         );
-    }
-
-    private numberSetting(key: string, fallback: number): number {
-        const raw = this.configService.get<string>(key);
-        const value = raw === undefined || raw === '' ? NaN : Number(raw);
-        return Number.isFinite(value) && value > 0 ? value : fallback;
     }
 }

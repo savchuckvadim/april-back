@@ -4,6 +4,7 @@ import {
     POLYANSKY_METHODOLOGY,
     type ResolvedMethodology,
 } from '@lib/call-lib';
+import { LlmUnavailableError } from '@lib/llm-gateway';
 import { FOCUS_SECTION_CODES } from '../contracts/call-focus-analysis.contract';
 import { CallFocusAnalysisService } from '../services/call-focus-analysis.service';
 
@@ -14,6 +15,28 @@ const focusResult = (overrides?: Record<string, unknown>) => ({
 
 /** usage провайдера одного вызова: 100 токенов промпта, 20 — ответа. */
 const USAGE = { promptTokens: 100, completionTokens: 20, totalTokens: 120 };
+
+/** Сводная ошибка шлюза: VibeCode не дождался ответа, запасной отказал 413. */
+const providerTimeout = () =>
+    new LlmUnavailableError(
+        'LLM недоступна: vibecode — Vibecode timeout after 180000 ms; ' +
+            'openai-compatible — HTTP 413: Request too large',
+        [
+            { provider: 'vibecode', transient: true },
+            { provider: 'openai-compatible', transient: false },
+        ],
+    );
+
+/** Сводная ошибка шлюза: модель ответила негодным JSON, запасной — 400. */
+const badAnswer = () =>
+    new LlmUnavailableError(
+        'LLM недоступна: vibecode — Unexpected end of JSON input; ' +
+            'openai-compatible — HTTP 400: invalid schema',
+        [
+            { provider: 'vibecode', transient: false },
+            { provider: 'openai-compatible', transient: false },
+        ],
+    );
 
 const makeDeps = (options?: {
     /** schemaName → ответ (или Error для падения прохода). */
@@ -548,5 +571,83 @@ describe('CallFocusAnalysisService: методика и ограничители
         );
         expect(llm.structuredCompletionWithUsage).toHaveBeenCalledTimes(4);
         expect(dto?.methodology).toBeNull();
+    });
+
+    it('таймаут прохода «методика» причину провала не меняет: решают три фокуса', async () => {
+        const { service, llm } = makeDeps({
+            methodology: resolved,
+            responses: {
+                call_focus_form: badAnswer(),
+                call_focus_content: badAnswer(),
+                call_focus_methodology: providerTimeout(),
+            },
+        });
+        const outcome = await service.runWithOutcome(
+            'gsr.bitrix24.ru',
+            'текст разговора',
+            'presentation',
+        );
+        const schemaNames = llm.structuredCompletionWithUsage.mock.calls.map(
+            call => String(call[2]),
+        );
+        expect(schemaNames).toContain('call_focus_methodology');
+        expect(outcome).toEqual({ analysis: null, providerFailure: false });
+    });
+});
+
+/**
+ * Причина провала для процессора (11.11.2026): проходы оборвались на
+ * поставщике модели — цельную страховку не зовут; негодный ответ модели —
+ * зовут, как раньше.
+ */
+describe('CallFocusAnalysisService: причина провала (runWithOutcome)', () => {
+    it('собранный разбор — analysis есть, сбоя поставщика нет', async () => {
+        const { service } = makeDeps();
+        const outcome = await service.runWithOutcome(
+            'test.bitrix24.ru',
+            'текст',
+            'call',
+        );
+        expect(outcome.analysis).not.toBeNull();
+        expect(outcome.providerFailure).toBe(false);
+    });
+
+    it('два прохода оборвались по таймауту поставщика — providerFailure, синтез не зовётся', async () => {
+        const { service, llm } = makeDeps({
+            responses: {
+                call_focus_form: providerTimeout(),
+                call_focus_content: providerTimeout(),
+            },
+        });
+        const outcome = await service.runWithOutcome(
+            'test.bitrix24.ru',
+            'текст',
+            'call',
+        );
+        expect(outcome).toEqual({ analysis: null, providerFailure: true });
+        expect(llm.structuredCompletionWithUsage).toHaveBeenCalledTimes(3);
+    });
+
+    it('модель ответила негодным JSON — причина другая; run отдаёт null, как раньше', async () => {
+        const { service } = makeDeps({
+            responses: {
+                call_focus_form: badAnswer(),
+                call_focus_content: badAnswer(),
+            },
+        });
+        await expect(
+            service.runWithOutcome('test.bitrix24.ru', 'текст', 'call'),
+        ).resolves.toEqual({ analysis: null, providerFailure: false });
+        await expect(
+            service.run('test.bitrix24.ru', 'текст', 'call'),
+        ).resolves.toBeNull();
+    });
+
+    it('пустой транскрипт — без вызовов модели и без сбоя поставщика', async () => {
+        const { service, llm } = makeDeps();
+        await expect(
+            service.runWithOutcome('test.bitrix24.ru', '   ', 'call'),
+        ).resolves.toEqual({ analysis: null, providerFailure: false });
+        expect(llm.structuredCompletionWithUsage).not.toHaveBeenCalled();
     });
 });

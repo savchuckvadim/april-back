@@ -50,6 +50,78 @@ describe('Semaphore', () => {
     });
 });
 
+/** Смена предела на ходу — настройка из админки без перезапуска (11.11.2026). */
+describe('Semaphore.setLimit', () => {
+    const flush = () => new Promise<void>(done => setImmediate(done));
+
+    /** Задача, которая держит слот, пока тест её не отпустит. */
+    const holdSlot = (semaphore: Semaphore) => {
+        let release: () => void = () => undefined;
+        const done = semaphore.run(
+            () =>
+                new Promise<void>(resolve => {
+                    release = resolve;
+                }),
+        );
+        return { done, release: () => release() };
+    };
+
+    it('предел подняли — ждущие сразу получают слоты', async () => {
+        const semaphore = new Semaphore(1);
+        const first = holdSlot(semaphore);
+        const second = holdSlot(semaphore);
+        await flush();
+        expect(semaphore.activeCount).toBe(1);
+        expect(semaphore.pendingCount).toBe(1);
+
+        semaphore.setLimit(2);
+        expect(semaphore.maxConcurrent).toBe(2);
+        expect(semaphore.activeCount).toBe(2);
+        expect(semaphore.pendingCount).toBe(0);
+
+        // Задача второго стартует микрозадачей после выдачи слота.
+        await flush();
+        first.release();
+        second.release();
+        await Promise.all([first.done, second.done]);
+    });
+
+    it('предел опустили — идущие доделываются, новые ждут, пока занятых не станет меньше предела', async () => {
+        const semaphore = new Semaphore(2);
+        const first = holdSlot(semaphore);
+        const second = holdSlot(semaphore);
+        await flush();
+
+        semaphore.setLimit(1);
+        const third = holdSlot(semaphore);
+        await flush();
+        expect(semaphore.activeCount).toBe(2);
+        expect(semaphore.pendingCount).toBe(1);
+
+        // Освободился один — занят ещё один, при пределе 1 третий ждёт.
+        first.release();
+        await first.done;
+        expect(semaphore.activeCount).toBe(1);
+        expect(semaphore.pendingCount).toBe(1);
+
+        second.release();
+        await second.done;
+        expect(semaphore.activeCount).toBe(1);
+        expect(semaphore.pendingCount).toBe(0);
+
+        await flush();
+        third.release();
+        await third.done;
+        expect(semaphore.activeCount).toBe(0);
+    });
+
+    it('предел < 1 — ошибка, прежний предел остаётся', () => {
+        const semaphore = new Semaphore(3);
+        expect(() => semaphore.setLimit(0)).toThrow();
+        expect(semaphore.maxConcurrent).toBe(3);
+    });
+});
+
 describe('parseConcurrency', () => {
     it.each([
         ['3', 3],
