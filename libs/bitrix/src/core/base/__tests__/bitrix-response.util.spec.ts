@@ -1,4 +1,5 @@
 import {
+    bitrixErrorText,
     isBitrixConnectionReset,
     isBitrixAccessDenied,
     isBitrixNotFound,
@@ -183,6 +184,45 @@ describe('разбор ответов Битрикса', () => {
             ).toBeNull();
             expect(readBitrixTime('ok', 'processing')).toBeNull();
             expect(readBitrixTime(null, 'operating')).toBeNull();
+        });
+    });
+
+    /* Установщик стадий показывал «Request failed with status code 400» (gsr 12.11.2026). */
+    describe('bitrixErrorText', () => {
+        const axiosError = (data: unknown) => ({
+            message: 'Request failed with status code 400',
+            response: { data },
+        });
+
+        it('код и описание из тела ответа', () => {
+            expect(
+                bitrixErrorText(
+                    axiosError({
+                        error: 'ERROR_CORE',
+                        error_description:
+                            'Указанный идентификатор статуса, уже существует.',
+                    }),
+                ),
+            ).toBe(
+                'ERROR_CORE: Указанный идентификатор статуса, уже существует.',
+            );
+        });
+
+        it('пустой код — только описание', () => {
+            expect(
+                bitrixErrorText(
+                    axiosError({
+                        error: '',
+                        error_description: 'Error on creating status.',
+                    }),
+                ),
+            ).toBe('Error on creating status.');
+        });
+
+        it('тела нет — сообщение ошибки', () => {
+            expect(bitrixErrorText(new Error('socket hang up'))).toBe(
+                'socket hang up',
+            );
         });
     });
 });

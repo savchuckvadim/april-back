@@ -9,6 +9,7 @@ import {
 import type { SyncStagesForCategoryArgs } from './sync-stages-for-category.args';
 import { Stage } from '../shared';
 import { BitrixCategoryStageStrategy } from '../category';
+import { planSingleStageSort } from './stage-sort-placement';
 
 /** Параметры нижнего уровня: то же, что у use case, плюс режим wipe перед заливкой. */
 export type SyncStagesForCategoryParams = SyncStagesForCategoryArgs & {
@@ -51,6 +52,8 @@ export interface SyncSingleStageResult {
     portalAction: StageSyncAction;
     /** STATUS_ID стадий, которым пересчитан SORT (пусто при `reorder: false`). */
     reorderedStatusIds: string[];
+    /** Почему SORT соседей не пересчитан (у портала свои стадии); иначе null. */
+    reorderSkipped: string | null;
 }
 
 /** Результат применения одной стадии к Bitrix. */
@@ -291,6 +294,15 @@ export class InstallStageSyncService {
         const entityId = strategy.statusEntityId(entityTypeId, bxCategoryId);
         const listBefore = await bitrix.status.getList({ ENTITY_ID: entityId });
         const currentRows = normalizeStatusListResult(listBefore.result);
+        // SORT — по соседям портала, а не по order шаблона (stage-sort-placement).
+        const sortPlan = planSingleStageSort({
+            stage,
+            templateStages,
+            rows: currentRows,
+            statusIdOf: bitrixId =>
+                strategy.statusId(entityTypeId, bxCategoryId, bitrixId),
+            reorder,
+        });
 
         const applied = await this.applyStageToBitrix({
             bitrix,
@@ -300,6 +312,7 @@ export class InstallStageSyncService {
             stage,
             strategy,
             currentRows,
+            sort: sortPlan.sort,
         });
 
         /*
@@ -334,7 +347,7 @@ export class InstallStageSyncService {
             confirmed,
         );
 
-        const reorderedStatusIds = reorder
+        const reorderedStatusIds = sortPlan.reorderNeighbours
             ? await this.reorderCategoryStages({
                   bitrix,
                   entityTypeId,
@@ -359,6 +372,7 @@ export class InstallStageSyncService {
             portalStageId: portal.stageId,
             portalAction: portal.action,
             reorderedStatusIds,
+            reorderSkipped: sortPlan.reorderSkipped,
         };
     }
 
@@ -426,6 +440,8 @@ export class InstallStageSyncService {
         stage: Stage;
         strategy: BitrixCategoryStageStrategy;
         currentRows: IBXStatus[];
+        /** SORT стадии; не задан — order шаблона (полный синк). */
+        sort?: number;
     }): Promise<ApplyStageResult> {
         const {
             bitrix,
@@ -442,7 +458,7 @@ export class InstallStageSyncService {
             bxCategoryId,
             String(stage.bitrixId),
         );
-        const sort = toSort(stage.order);
+        const sort = params.sort ?? toSort(stage.order);
         const color = normalizeBitrixStageColor(stage.color, this.logger);
         const name = String(stage.title || stage.name);
         const semantics = strategy.resolveStageSemantics(stage);

@@ -80,6 +80,29 @@ const errorTexts = (error: unknown): string[] => {
     return [bodyText, message];
 };
 
+/**
+ * Текст ошибки Битрикса для человека: код и описание из ТЕЛА ответа
+ * (`ERROR_CORE: Указанный идентификатор статуса, уже существует`), а не
+ * «Request failed with status code 400» из axios. Тела нет — сообщение.
+ */
+export const bitrixErrorText = (error: unknown): string => {
+    const e = error as { message?: unknown; response?: { data?: unknown } };
+    const body = e?.response?.data;
+    if (body && typeof body === 'object') {
+        const { error: code, error_description: description } = body as {
+            error?: unknown;
+            error_description?: unknown;
+        };
+        const parts = [code, description]
+            .map(part => (typeof part === 'string' ? part.trim() : ''))
+            .filter(Boolean);
+        if (parts.length) return parts.join(': ');
+    }
+    if (typeof body === 'string' && body.trim())
+        return body.trim().slice(0, 300);
+    return typeof e?.message === 'string' ? e.message : String(error);
+};
+
 /** Битрикс отказал в правах. */
 export const isBitrixAccessDenied = (error: unknown): boolean =>
     errorTexts(error).some(text => BITRIX_ACCESS_DENIED_TEXT.test(text));

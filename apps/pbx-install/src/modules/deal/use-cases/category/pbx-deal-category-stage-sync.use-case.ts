@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { BitrixOwnerTypeId } from '@/modules/bitrix';
+import { bitrixErrorText } from '@lib/bitrix';
 import { Stage } from '@app/pbx-install/shared';
 import {
     InstallStageSyncService,
@@ -145,7 +146,8 @@ export class PbxDealCategoryStageSyncUseCase {
             });
             return { domain, portalId, ok: true, result };
         } catch (e) {
-            const error = e instanceof Error ? e.message : String(e);
+            // Описание Битрикса из тела ответа, а не «status code 400».
+            const error = bitrixErrorText(e);
             this.logger.warn(
                 `sync stage ${dto.stageCode} на ${domain} не удалась: ${error}`,
             );

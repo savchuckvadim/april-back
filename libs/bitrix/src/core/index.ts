@@ -4,6 +4,7 @@ export * from './queue/bitrix-api.factory.service';
 // export * from './queue/bitrix-queue-api.service';
 export * from './base/bitrix-base-api';
 export {
+    bitrixErrorText,
     isBitrixAccessDenied,
     isBitrixNotFound,
 } from './base/bitrix-response.util';
