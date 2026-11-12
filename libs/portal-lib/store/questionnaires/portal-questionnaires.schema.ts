@@ -548,6 +548,7 @@ const SALES_BASE_STAGE_NAMES: Record<string, string> = {
     sales_fail: 'Отказ',
     sales_double: 'Не состоялась',
     sales_not_ca: 'Не ЦА',
+    sales_duplicate: 'Дубль',
 };
 
 /** Целевые стадии отправки (условие `targetStage`), по порядку лестницы. */

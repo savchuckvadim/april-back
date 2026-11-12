@@ -127,6 +127,14 @@ const BASE_STAGE_PRIORS: Record<PbxDealSalesBaseStageCode, StagePrior> = {
         callType: 'call',
         strength: 'weak',
     },
+    /**
+     * «Дубль» — лишняя сделка закрыта, работа идёт в другой. О разговоре
+     * стадия ничего не говорит — приор слабый, как у прочих финалов.
+     */
+    [PBX_DEAL_SALES_BASE_STAGE_CODE.duplicate]: {
+        callType: 'call',
+        strength: 'weak',
+    },
 };
 
 /** Стадия воронки презентаций → этап разговора. */

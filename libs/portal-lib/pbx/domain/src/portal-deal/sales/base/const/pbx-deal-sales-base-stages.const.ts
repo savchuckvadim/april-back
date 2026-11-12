@@ -40,6 +40,15 @@ export const PBX_DEAL_SALES_BASE_STAGES = [
      * потерянной сделкой. Понадобится обратное — правится там явно.
      */
     { code: 'sales_not_call', order: 15 },
+    /*
+     * «Дубль» (DUPLICATE) — добавлена 12.11.2026. Финал для ЛИШНЕЙ сделки
+     * клиента: работа идёт в другой сделке (перехват у ботов обзвона
+     * закрывает сюда прочие сделки ботов). Не отказ и не «Не состоялась»:
+     * в реанимацию отказников и проигрыши AI-аналитики не входит, холодный
+     * старт её в работу не возвращает. Стадии нет на портале — перехват
+     * закрывает в «Не состоялась» (`sales_double`).
+     */
+    { code: 'sales_duplicate', order: 16 },
 ] as const satisfies readonly { code: string; order: number }[];
 
 export type PbxDealSalesBaseStageCode =
@@ -82,6 +91,8 @@ export const PBX_DEAL_SALES_BASE_STAGE_CODE = {
     notCa: 'sales_not_ca',
     /** «Не Беспокоить» (NOT_CALL) — клиент просил больше не звонить. */
     notCall: 'sales_not_call',
+    /** «Дубль» (DUPLICATE) — лишняя сделка клиента, работа идёт в другой. */
+    duplicate: 'sales_duplicate',
 } as const satisfies Record<string, PbxDealSalesBaseStageCode>;
 
 /**

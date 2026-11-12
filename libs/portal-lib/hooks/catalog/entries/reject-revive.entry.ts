@@ -170,6 +170,12 @@ Silence-буфер хука повторы **не дедупит** — вся и
         },
         {
             entity: 'deal',
+            code: 'sales_duplicate',
+            required: false,
+            note: '«Дубль» — не реанимируется: работа по клиенту идёт в другой сделке.',
+        },
+        {
+            entity: 'deal',
             code: 'sales_cold',
             required: false,
             note: 'Сюда холодный старт ставит основную (открытую или новую) при возврате.',

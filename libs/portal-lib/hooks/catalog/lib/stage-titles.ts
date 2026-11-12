@@ -19,9 +19,10 @@ export const DEAL_SALES_BASE_STAGE_TITLES: Readonly<Record<string, string>> = {
     sales_supply: 'Поставка',
     sales_success: 'Успех',
     sales_fail: 'Отказ',
-    sales_double: 'Не состоялась (дубль)',
+    sales_double: 'Не состоялась',
     sales_not_ca: 'Не ЦА',
     sales_not_call: 'Не Беспокоить',
+    sales_duplicate: 'Дубль',
 };
 
 /** Название стадии для админки: лид — из шаблона стадий, сделка — из воронки ОП; нет — код. */

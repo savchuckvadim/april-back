@@ -529,6 +529,12 @@ export const COLD_CALL_V2_ENTRY: HookCatalogEntry = {
         },
         {
             entity: 'deal',
+            code: 'sales_duplicate',
+            required: false,
+            note: '«Дубль» — финал лишней сделки (работа в другой): открытой работой не считается и в работу не возвращается.',
+        },
+        {
+            entity: 'deal',
             code: 'sales_success',
             required: false,
             note: 'Закрытая продажей сделка открытой не считается.',

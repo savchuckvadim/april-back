@@ -284,5 +284,23 @@ export type PbxDealSalesBaseCategoryType = {
             order: 15;
             isDefault: 'N';
         },
+        {
+            id: 15;
+            categoryId: 0;
+            entityType: 'deal';
+            parentType: 'sales';
+            type: 'deal';
+            group: 'sales';
+            name: 'Дубль';
+            title: 'Дубль';
+            bitrixId: 'DUPLICATE';
+            isActive: true;
+            smartBitrixId: 'DEAL_STAGE';
+            color: '#2d0b0d';
+            code: 'sales_duplicate';
+            isNeedUpdate: true;
+            order: 16;
+            isDefault: 'N';
+        },
     ];
 };
