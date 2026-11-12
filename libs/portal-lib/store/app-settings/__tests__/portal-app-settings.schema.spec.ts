@@ -25,7 +25,7 @@ import {
  */
 
 /** Общий дефолт фронта (DEFAULT_CONFIG из domain-config.ts). */
-const FRONT_DEFAULTS: Record<string, boolean | number> = {
+const FRONT_DEFAULTS: Record<string, boolean | number | string> = {
     withNoPlan: false,
     withNoReschedle: false,
     withPostFail: false,
@@ -46,6 +46,10 @@ const FRONT_DEFAULTS: Record<string, boolean | number> = {
     withKonstructorSlider: false,
     withActionPrompts: false,
     withRelationStrips: false,
+    // Перехват клиента (12.11.2026): фрейм задаёт вопрос и меняет подсказку.
+    reportTakeoverForce: false,
+    reportTakeoverConfirm: true,
+    xoStartBotUserIds: '',
     taskGroupId: 1,
     bossId: 1,
 };
@@ -185,5 +189,26 @@ describe('PORTAL_APP_SETTINGS_SCHEMA: сотрудники выбираются,
             expect(item.type).toBe('number');
             expect(item.default).toBe(0);
         }
+    });
+});
+
+/* Выбор в админке (Radix Select) не принимает пустое значение варианта —
+ * страница настроек портала падала целиком (report_takeover_protect_from_stage,
+ * 12.11.2026). «Ничего не выбрано» кодируется непустым кодом. */
+describe('PORTAL_APP_SETTINGS_SCHEMA: варианты выбора', () => {
+    it('у каждого варианта непустой код', () => {
+        const empty: string[] = [];
+        for (const app of PORTAL_APP_CODES) {
+            const keys = PORTAL_APP_SETTINGS_SCHEMA[app] as Record<
+                string,
+                PortalAppSettingDescriptor
+            >;
+            for (const item of Object.values(keys)) {
+                for (const option of item.options ?? []) {
+                    if (!String(option.code).trim()) empty.push(item.code);
+                }
+            }
+        }
+        expect(empty).toEqual([]);
     });
 });

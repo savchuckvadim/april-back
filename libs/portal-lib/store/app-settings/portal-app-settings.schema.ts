@@ -8,7 +8,10 @@ import { APP_PARTS, APP_WIDGETS } from './lib/app-widgets.registry';
  * (почти закрытая продажа). Пусто — защиты нет. Варианты — рабочие стадии
  * лестницы от «Переговоров» до «Поставки».
  */
-export const REPORT_TAKEOVER_PROTECT_NONE = '' as const;
+// Не пустая строка: выбор в админке (Radix Select) пустое значение варианта
+// не принимает — страница настроек падала (12.11.2026). Бэк читает любой
+// код вне лестницы стадий как «защиты нет» (parseProtectFromStage).
+export const REPORT_TAKEOVER_PROTECT_NONE = 'none' as const;
 const REPORT_TAKEOVER_PROTECT_OPTIONS = [
     {
         code: REPORT_TAKEOVER_PROTECT_NONE,

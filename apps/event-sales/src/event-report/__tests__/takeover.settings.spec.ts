@@ -62,6 +62,8 @@ describe('parseProtectFromStage', () => {
 
     it('пусто и мусор — защиты нет', () => {
         expect(parseProtectFromStage('')).toBeNull();
+        // «Без защиты» в админке — непустой код (Radix Select).
+        expect(parseProtectFromStage('none')).toBeNull();
         expect(parseProtectFromStage('sales_unknown')).toBeNull();
         expect(parseProtectFromStage(undefined)).toBeNull();
     });
