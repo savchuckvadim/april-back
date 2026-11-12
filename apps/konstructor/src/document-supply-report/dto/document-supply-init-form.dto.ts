@@ -10,6 +10,7 @@ import {
     IsString,
     ValidateNested,
 } from 'class-validator';
+import { IsObjectArray } from '@lib/core/decorators/dto/object-array.decorator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ClientTypeEnum } from '../../document-generate/type/client.type';
 import { SupplyTypeEnum } from '../../document-generate/type/supply.type';
@@ -152,8 +153,7 @@ class LegalTechDto {
     groupsName: string;
 
     @ApiProperty({ description: 'Value items', type: [Object] })
-    @IsArray()
-    @IsObject({ each: true })
+    @IsObjectArray({ allowNullItems: true })
     value: LegalTechValueItemDto[];
 }
 
@@ -280,8 +280,7 @@ class ConsaltingDto {
     packages: Record<string, ConsaltingPackageDto>;
 
     @ApiProperty({ description: 'Value items', type: [Object] })
-    @IsArray()
-    @IsObject({ each: true })
+    @IsObjectArray({ allowNullItems: true })
     value: ConsaltingValueItemDto[];
 }
 
@@ -423,13 +422,11 @@ class StarDto {
     groupsName: string;
 
     @ApiProperty({ description: 'Value items', type: [Object] })
-    @IsArray()
-    @IsObject({ each: true })
+    @IsObjectArray({ allowNullItems: true })
     value: StarValueItemDto[];
 
     @ApiProperty({ description: 'Items', type: [Object] })
-    @IsArray()
-    @IsObject({ each: true })
+    @IsObjectArray({ allowNullItems: true })
     items: StarItemDto[];
 
     @ApiProperty({ description: 'Package', type: Object, required: false })
@@ -497,8 +494,7 @@ class DocumentInfoblockDto {
     groupsName: string;
 
     @ApiProperty({ description: 'Value items', type: [Object] })
-    @IsArray()
-    @IsObject({ each: true })
+    @IsObjectArray({ allowNullItems: true })
     value: DocumentInfoblockValueItemDto[];
 
     @ApiProperty({ description: 'Fields', type: [String], required: false })

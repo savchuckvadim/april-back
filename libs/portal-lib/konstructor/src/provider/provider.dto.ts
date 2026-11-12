@@ -74,7 +74,10 @@ class RqDto {
     @ValidateNested({ each: true })
     @Type(() => LogoDto)
     signatures: LogoDto[];
-    @IsArray() qrs: any[];
+    // @Type: иначе enableImplicitConversion превращает каждую запись-объект в Array (см. IsObjectArray в libs/core)
+    @IsArray()
+    @Type(() => Object)
+    qrs: any[];
     @IsString() domain: string;
 }
 

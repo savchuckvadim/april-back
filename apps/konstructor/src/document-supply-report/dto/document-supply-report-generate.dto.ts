@@ -10,6 +10,7 @@ import {
     IsString,
     ValidateNested,
 } from 'class-validator';
+import { IsObjectArray } from '@lib/core/decorators/dto/object-array.decorator';
 import {
     ProductRowDto,
     ProductRowSetDto,
@@ -268,8 +269,7 @@ export class DocumentSupplyReportGenerateDto {
         description: 'Bitrix contacts',
         type: [Object],
     })
-    @IsArray()
-    @IsObject({ each: true })
+    @IsObjectArray()
     bxContacts: SupplyReportContactPayload[];
 
     @ApiProperty({
@@ -285,8 +285,7 @@ export class DocumentSupplyReportGenerateDto {
             'Заполненная менеджером форма отчёта о поставке — те же 15 полей, что отдал init-form, со значениями.',
         type: [Object],
     })
-    @IsArray()
-    @IsObject({ each: true })
+    @IsObjectArray()
     supplyReport: SupplyReportFormPayloadItem[];
 
     @ApiProperty({
@@ -410,6 +409,8 @@ export class DocumentSupplyReportGenerateDto {
     })
     @IsOptional()
     @IsArray()
+    // без @Type элементы-объекты стали бы Array (enableImplicitConversion), см. IsObjectArray
+    @Type(() => Object)
     products?: Record<string, unknown>[];
 
     @ApiPropertyOptional({

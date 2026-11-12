@@ -1,4 +1,4 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import {
     DocumentBuilder,
@@ -14,6 +14,7 @@ import { swaggerBasicAuth } from './swagger-basic-auth.middleware';
 import { interactiveCallContextMiddleware } from '../call-context/call-context.middleware';
 import { APP_ROLE_ENV, AppRole, resolveAppRole } from './app-role';
 import { applyStandbyMode } from './standby-mode';
+import { createGlobalValidationPipe } from './global-validation-pipe';
 
 export interface BootstrapOptions {
     /** Имя приложения — для Swagger-заголовка/тега и логов. */
@@ -85,15 +86,7 @@ export async function bootstrapApp(
     const swaggerPath =
         options.swaggerPath ?? process.env.SWAGGER_PATH ?? 'docs/api';
 
-    app.useGlobalPipes(
-        new ValidationPipe({
-            whitelist: true,
-            forbidNonWhitelisted: false,
-            forbidUnknownValues: false,
-            transform: true,
-            transformOptions: { enableImplicitConversion: true },
-        }),
-    );
+    app.useGlobalPipes(createGlobalValidationPipe());
 
     app.setGlobalPrefix(globalPrefix);
     app.useGlobalInterceptors(new ResponseInterceptor());
