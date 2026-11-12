@@ -5,6 +5,11 @@ import {
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
 import {
+    NO_REPORT_TAKEOVER,
+    parseProtectFromStage,
+    ReportTakeoverSettings,
+} from '../takeover/takeover.settings';
+import {
     DEFAULT_FIELD_POLICY_SETTINGS,
     DEFAULT_STAGE_RULE_SETTINGS,
     EventFieldPolicySettings,
@@ -89,14 +94,23 @@ export class EventReportSettingsResolver {
     }
 
     /**
-     * Сотрудники-боты обзвона (`xo_start_bot_user_ids`): их открытую
-     * основную сделку забирает отчитавшийся менеджер. Настройки недоступны —
-     * пусто: перехвата нет, отчёт работает по правилу «чужое не трогаем».
+     * Перехват клиента отчётом: боты обзвона (`xo_start_bot_user_ids`) и
+     * группа `report_takeover_*`. Настройки недоступны — перехвата нет,
+     * отчёт работает по правилу «чужое не трогаем» (25.08).
      */
-    async botOwnerIds(domain: string): Promise<number[]> {
-        const settings = await this.read(domain, 'перехвата у ботов нет');
-        const raw = settings?.xoStartBotUserIds;
-        return parseUserIds(typeof raw === 'string' ? raw : '');
+    async takeoverSettings(domain: string): Promise<ReportTakeoverSettings> {
+        const settings = await this.read(domain, 'перехвата клиента нет');
+        if (!settings) return NO_REPORT_TAKEOVER;
+        const bots = settings.xoStartBotUserIds;
+        return {
+            botOwnerIds: parseUserIds(typeof bots === 'string' ? bots : ''),
+            force: settings.reportTakeoverForce === true,
+            confirm: settings.reportTakeoverConfirm !== false,
+            notifyPrevious: settings.reportTakeoverNotifyPrevious !== false,
+            protectFromStage: parseProtectFromStage(
+                settings.reportTakeoverProtectFromStage,
+            ),
+        };
     }
 
     /**

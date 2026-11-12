@@ -24,6 +24,8 @@ import { QueueNames } from '@/modules/queue/constants/queue-names.enum';
 import { JobNames } from '@/modules/queue/constants/job-names.enum';
 import { EventSalesFlowDto } from '../dto/event-sale-flow/event-sales-flow.dto';
 import { EventFlowOperationDto } from '../dto/response/event-flow-operation.dto';
+import { TakeoverPreviewDto } from '../dto/response/takeover-preview.dto';
+import { EventReportTakeoverPreviewService } from '../services/takeover/takeover-preview.service';
 import { EventFlowJobData } from '../dto/event-flow-job.dto';
 import { EventFlowStatusService } from '../services/status/event-flow-status.service';
 import { StagePredictService } from '../services/stage-predict/stage-predict.service';
@@ -48,6 +50,8 @@ export class EventSalesController {
         private readonly stagePredict: StagePredictService,
         private readonly flowGuard: EventFlowGuardService,
         private readonly duplicates: EventFlowDuplicateGuardService,
+        // Перехват клиента: предпросмотр для вопроса «Забрать себе?».
+        private readonly takeoverPreview: EventReportTakeoverPreviewService,
     ) {}
 
     /**
@@ -199,5 +203,30 @@ export class EventSalesController {
             );
         }
         return operation;
+    }
+
+    /**
+     * Перехват клиента: что заберёт и закроет отправка этого отчёта. Фронт
+     * зовёт ПЕРЕД отправкой, когда на портале включены перехват всей работы
+     * и подтверждение, — и спрашивает менеджера «Забрать себе?».
+     */
+    @ApiOperation({
+        summary: 'Перехват клиента: предпросмотр перед отправкой отчёта',
+        description:
+            'Тот же расчёт, что при отправке с ответом «Забрать себе», но ' +
+            'без единой записи в Битрикс: какая сделка коллеги перейдёт к ' +
+            'менеджеру, какие сделки, задачи, презентации и ЗПР закроются, ' +
+            'какие сделки защищены поздней стадией. `ask: false` — ' +
+            'спрашивать не нужно (перехват или подтверждение выключены, ' +
+            'чужой работы нет).',
+    })
+    @ApiBody({ type: EventSalesFlowDto })
+    @ApiOkResponse({ type: TakeoverPreviewDto })
+    @Post('flow/takeover-preview')
+    @HttpCode(200)
+    async getTakeoverPreview(
+        @Body() dto: EventSalesFlowDto,
+    ): Promise<TakeoverPreviewDto> {
+        return this.takeoverPreview.preview(dto);
     }
 }

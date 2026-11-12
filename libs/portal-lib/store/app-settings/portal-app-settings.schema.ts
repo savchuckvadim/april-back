@@ -1,5 +1,26 @@
 import { EVENT_TYPE_REGISTRY } from '@lib/portal-lib/pbx/event-type-registry';
+import { PBX_DEAL_SALES_BASE_STAGES } from '@lib/portal-lib/pbx-domain/portal-deal/sales/base/const/pbx-deal-sales-base-stages.const';
+import { DEAL_SALES_BASE_STAGE_TITLES } from '@lib/portal-lib/hooks/catalog/lib/stage-titles';
 import { APP_PARTS, APP_WIDGETS } from './lib/app-widgets.registry';
+
+/**
+ * Перехват клиента: с какой стадии «ОП Основная» сделку коллеги НЕ забирать
+ * (почти закрытая продажа). Пусто — защиты нет. Варианты — рабочие стадии
+ * лестницы от «Переговоров» до «Поставки».
+ */
+export const REPORT_TAKEOVER_PROTECT_NONE = '' as const;
+const REPORT_TAKEOVER_PROTECT_OPTIONS = [
+    {
+        code: REPORT_TAKEOVER_PROTECT_NONE,
+        name: 'Без защиты — забирать на любой стадии',
+    },
+    ...PBX_DEAL_SALES_BASE_STAGES.filter(
+        stage => stage.order >= 3 && stage.order <= 10,
+    ).map(stage => ({
+        code: stage.code,
+        name: `С «${DEAL_SALES_BASE_STAGE_TITLES[stage.code] ?? stage.code}» и дальше`,
+    })),
+];
 
 /**
  * РЕЕСТР настроек placement-приложений — единственный источник правды:
@@ -1543,6 +1564,55 @@ export const PORTAL_APP_SETTINGS_SCHEMA = {
             type: 'string',
             default: '',
             pick: 'bitrix-users',
+        }),
+        // --- Перехват клиента отчётом «Звонков» (владелец 12.11.2026) -----
+        reportTakeoverForce: setting({
+            code: 'report_takeover_force',
+            name: 'Перехват клиента: отчёт забирает всю работу по клиенту',
+            description:
+                'Когда менеджер отчитывается по клиенту, у которого открыта ' +
+                'работа других сотрудников, вся она переходит к нему или ' +
+                'закрывается — как при холодном обзвоне «с очищением». Самая ' +
+                'свежая открытая основная сделка переходит к отчитавшемуся ' +
+                'вместе с её открытыми задачами, остальные основные — в ' +
+                '«Дубль», чужие сделки ХО и презентаций, задачи, презентации и ' +
+                'ЗПР по клиенту закрываются. Затрагиваются только воронки ОП; ' +
+                'ТМЦ, ОС и прочие воронки не трогаются. Выключено — чужая ' +
+                'работа не трогается, отчёт заводит свою сделку.',
+            type: 'boolean',
+            default: false,
+        }),
+        reportTakeoverConfirm: setting({
+            code: 'report_takeover_confirm',
+            name: 'Перехват клиента: спрашивать подтверждение',
+            description:
+                'Перед отправкой отчёта менеджер видит, чья работа перейдёт ' +
+                'к нему или закроется, и сам решает: забрать или нет. ' +
+                'Выключено — перехват без вопроса.',
+            type: 'boolean',
+            default: true,
+        }),
+        reportTakeoverNotifyPrevious: setting({
+            code: 'report_takeover_notify_previous',
+            name: 'Перехват клиента: оповещать прежнего ответственного',
+            description:
+                'Прежнему ответственному приходит уведомление в Битриксе: ' +
+                'кто забрал клиента и что стало с его сделками и задачами.',
+            type: 'boolean',
+            default: true,
+        }),
+        reportTakeoverProtectFromStage: setting({
+            code: 'report_takeover_protect_from_stage',
+            name: 'Перехват клиента: не забирать сделки начиная со стадии',
+            description:
+                'Сделку коллеги на этой стадии «ОП Основная» и дальше ' +
+                'перехват не забирает и не закрывает — почти закрытую ' +
+                'продажу по ошибке не потерять; менеджер видит её в ' +
+                'предупреждении. «Без защиты» — забирать на любой стадии ' +
+                '(например, если на портале висят сделки уволенных).',
+            type: 'string',
+            default: REPORT_TAKEOVER_PROTECT_NONE,
+            options: REPORT_TAKEOVER_PROTECT_OPTIONS,
         }),
         xoStartBaseDealTitle: setting({
             code: 'xo_start_base_deal_title',

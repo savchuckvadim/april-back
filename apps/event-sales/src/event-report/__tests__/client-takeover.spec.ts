@@ -1,9 +1,9 @@
 import { IBXDeal } from '@/modules/bitrix';
 import { IPCategory } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import {
-    BotTakeoverInput,
-    decideBotTakeover,
-} from '../services/init/bot-takeover';
+    ClientTakeoverInput,
+    decideClientTakeover,
+} from '../services/takeover/client-takeover';
 import {
     getDuplicateCloseStageCode,
     getSalesBaseTargetStageCode,
@@ -42,24 +42,28 @@ const xoDeal = (id: number, baseId: number): IBXDeal =>
         [LINK]: String(baseId),
     });
 
-const input = (overrides: Partial<BotTakeoverInput>): BotTakeoverInput => ({
+const input = (
+    overrides: Partial<ClientTakeoverInput>,
+): ClientTakeoverInput => ({
     currentBaseDeal: null,
     baseDeals: [],
     activeDeals: [],
     xoCategoryId: XO_CATEGORY,
     linkKey: LINK,
     botOwnerIds: [BOT],
+    force: false,
+    protectedStageIds: new Set<string>(),
     reporterId: MANAGER,
     ...overrides,
 });
 
-describe('decideBotTakeover', () => {
+describe('decideClientTakeover', () => {
     const older = deal(215223, BOT, '2026-11-12T14:54:29+03:00');
     const fresher = deal(217605, BOT, '2026-11-12T15:20:00+03:00');
     const xoOfOlder = xoDeal(215225, 215223);
 
     it('своей основной нет — забирается САМАЯ СВЕЖАЯ сделка бота, остальные — дубли с их ХО', () => {
-        const result = decideBotTakeover(
+        const result = decideClientTakeover(
             input({
                 baseDeals: [older, fresher],
                 activeDeals: [older, fresher, xoOfOlder],
@@ -73,7 +77,7 @@ describe('decideBotTakeover', () => {
     });
 
     it('ХО-сделка забранной сделки в дубли не попадает', () => {
-        const result = decideBotTakeover(
+        const result = decideClientTakeover(
             input({
                 baseDeals: [older],
                 activeDeals: [older, xoOfOlder],
@@ -88,7 +92,7 @@ describe('decideBotTakeover', () => {
         const a = deal(100, BOT, '2026-11-12T15:00:00+03:00');
         const b = deal(200, BOT, '2026-11-12T15:00:00+03:00');
 
-        const result = decideBotTakeover(input({ baseDeals: [b, a] }));
+        const result = decideClientTakeover(input({ baseDeals: [b, a] }));
 
         expect(result?.takenDeal?.ID).toBe('200');
     });
@@ -96,7 +100,7 @@ describe('decideBotTakeover', () => {
     it('у менеджера своя открытая основная — она остаётся, сделки бота закрываются дублями', () => {
         const own = deal(218027, MANAGER, '2026-11-12T15:25:04+03:00');
 
-        const result = decideBotTakeover(
+        const result = decideClientTakeover(
             input({ currentBaseDeal: own, baseDeals: [own, older] }),
         );
 
@@ -105,7 +109,7 @@ describe('decideBotTakeover', () => {
     });
 
     it('основная уже выбрана и это сделка бота (открыли из неё) — забирается она, а не свежая', () => {
-        const result = decideBotTakeover(
+        const result = decideClientTakeover(
             input({ currentBaseDeal: older, baseDeals: [older, fresher] }),
         );
 
@@ -116,13 +120,15 @@ describe('decideBotTakeover', () => {
     it('сделку живого коллеги не трогаем: ботов среди владельцев нет — решения нет', () => {
         const colleague = deal(217817, COLLEAGUE, '2026-11-12T15:24:52+03:00');
 
-        expect(decideBotTakeover(input({ baseDeals: [colleague] }))).toBeNull();
+        expect(
+            decideClientTakeover(input({ baseDeals: [colleague] })),
+        ).toBeNull();
     });
 
     it('сделка коллеги рядом со сделкой бота — забирается только сделка бота', () => {
         const colleague = deal(217817, COLLEAGUE, '2026-11-12T15:30:00+03:00');
 
-        const result = decideBotTakeover(
+        const result = decideClientTakeover(
             input({ baseDeals: [older, colleague] }),
         );
 
@@ -132,19 +138,25 @@ describe('decideBotTakeover', () => {
 
     it('ботов в настройке нет — перехвата нет', () => {
         expect(
-            decideBotTakeover(input({ botOwnerIds: [], baseDeals: [older] })),
+            decideClientTakeover(
+                input({ botOwnerIds: [], baseDeals: [older] }),
+            ),
         ).toBeNull();
     });
 
     it('отчитывается сам бот — перехвата нет', () => {
         expect(
-            decideBotTakeover(input({ reporterId: BOT, baseDeals: [older] })),
+            decideClientTakeover(
+                input({ reporterId: BOT, baseDeals: [older] }),
+            ),
         ).toBeNull();
     });
 
     it('ответственный отчёта не известен — перехвата нет', () => {
         expect(
-            decideBotTakeover(input({ reporterId: null, baseDeals: [older] })),
+            decideClientTakeover(
+                input({ reporterId: null, baseDeals: [older] }),
+            ),
         ).toBeNull();
     });
 });
@@ -249,6 +261,97 @@ describe('сделка в стадии, которой нет в сопоста�
     it('ни плана, ни события отчёта — сделку не двигаем', () => {
         expect(
             getSalesBaseTargetStageCode({ ...baseInput, planEventType: null }),
+        ).toBeNull();
+    });
+});
+
+/**
+ * Режим «вся работа — отчитавшемуся» (report_takeover_force, gsr 12.11.2026):
+ * забирается работа любого сотрудника и сделки без ответственного, кроме
+ * защищённых стадий.
+ */
+describe('decideClientTakeover — вся работа отчитавшемуся (force)', () => {
+    const colleague = deal(217817, COLLEAGUE, '2026-11-12T15:24:52+03:00');
+    const orphan = deal(217823, 0, '2026-11-12T14:40:02+03:00');
+    const bot = deal(215239, BOT, '2026-11-12T14:54:09+03:00');
+    const force = (overrides: Partial<ClientTakeoverInput>) =>
+        input({ force: true, botOwnerIds: [], ...overrides });
+
+    it('забирается самая свежая сделка коллеги, сделка без ответственного — дубль', () => {
+        const result = decideClientTakeover(
+            force({ baseDeals: [orphan, colleague] }),
+        );
+
+        expect(result?.mode).toBe('force');
+        expect(result?.takenDeal?.ID).toBe('217817');
+        expect(result?.duplicateDeals.map(d => d.ID)).toEqual(['217823']);
+    });
+
+    it('боты в force-режиме тоже перехватываются', () => {
+        const result = decideClientTakeover(
+            force({ botOwnerIds: [BOT], baseDeals: [bot, colleague] }),
+        );
+
+        expect(result?.takenDeal?.ID).toBe('217817');
+        expect(result?.duplicateDeals.map(d => d.ID)).toEqual(['215239']);
+    });
+
+    it('своя основная у менеджера — остаётся, чужие закрываются дублями', () => {
+        const own = deal(218139, MANAGER, '2026-11-12T16:29:45+03:00');
+
+        const result = decideClientTakeover(
+            force({
+                currentBaseDeal: own,
+                baseDeals: [own, colleague, orphan],
+            }),
+        );
+
+        expect(result?.takenDeal).toBeNull();
+        expect(result?.duplicateDeals.map(d => d.ID).sort()).toEqual([
+            '217817',
+            '217823',
+        ]);
+    });
+
+    it('сделка коллеги на защищённой стадии не забирается и не закрывается — только предупреждение', () => {
+        const late = deal(300, COLLEAGUE, '2026-11-12T17:00:00+03:00', {
+            STAGE_ID: 'C97:MONEY_AWAIT',
+        });
+
+        const result = decideClientTakeover(
+            force({
+                baseDeals: [late, orphan],
+                protectedStageIds: new Set(['C97:MONEY_AWAIT']),
+            }),
+        );
+
+        expect(result?.takenDeal?.ID).toBe('217823');
+        expect(result?.duplicateDeals).toEqual([]);
+        expect(result?.protectedDeals.map(d => d.ID)).toEqual(['300']);
+    });
+
+    it('у клиента только защищённая сделка коллеги — решение есть, но забирать нечего', () => {
+        const late = deal(300, COLLEAGUE, '2026-11-12T17:00:00+03:00', {
+            STAGE_ID: 'C97:MONEY_AWAIT',
+        });
+
+        const result = decideClientTakeover(
+            force({
+                baseDeals: [late],
+                protectedStageIds: new Set(['C97:MONEY_AWAIT']),
+            }),
+        );
+
+        expect(result?.takenDeal).toBeNull();
+        expect(result?.duplicateDeals).toEqual([]);
+        expect(result?.protectedDeals.map(d => d.ID)).toEqual(['300']);
+    });
+
+    it('без force и без ботов — правило 25.08: чужое не трогаем', () => {
+        expect(
+            decideClientTakeover(
+                input({ botOwnerIds: [], baseDeals: [colleague] }),
+            ),
         ).toBeNull();
     });
 });

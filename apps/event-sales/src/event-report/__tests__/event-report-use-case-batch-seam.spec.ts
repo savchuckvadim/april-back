@@ -1,3 +1,4 @@
+import { NO_REPORT_TAKEOVER } from '../services/takeover/takeover.settings';
 import { EventReportUseCase } from '../use-cases/event-report.use-case';
 import { EventReportPostFlowService } from '../services/post-flow/event-report-post-flow.service';
 import {
@@ -280,8 +281,8 @@ describe('EventReportUseCase — ответ основного батча дое
                         companyDateTextField: '',
                     }),
                 taskChecklistEnabled: () => Promise.resolve(false),
-                // Ботов обзвона нет — перехвата нет.
-                botOwnerIds: () => Promise.resolve([]),
+                // Перехват клиента выключен: ботов нет, force выключен.
+                takeoverSettings: () => Promise.resolve(NO_REPORT_TAKEOVER),
             } as unknown as ConstructorParameters<typeof EventReportUseCase>[3],
             { dispatch } as unknown as EventReportPostFlowService,
             // Режим руководителя в этих сценариях выключен: обычный отчёт.
@@ -293,6 +294,10 @@ describe('EventReportUseCase — ответ основного батча дое
             {
                 invalidate: () => Promise.resolve(),
             } as unknown as ConstructorParameters<typeof EventReportUseCase>[6],
+            // Смарты перехвата: без перехвата не читаются.
+            {
+                resolve: () => Promise.resolve({ pres: null, zpr: null }),
+            } as unknown as ConstructorParameters<typeof EventReportUseCase>[7],
         );
 
         return { useCase, dispatch, batchCalls };

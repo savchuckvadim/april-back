@@ -25,7 +25,9 @@ import { EventReportReturnToTmcService } from '../services/return-to-tmc/event-r
 import { EventReportTimelineService } from '../services/timeline/event-report-timeline.service';
 import { BaseDealContinuityNotice } from '../services/deal/base-deal-continuity.notice';
 import { BaseDealTakeoverNotice } from '../services/deal/base-deal-takeover.notice';
-import { BotTakeoverFlowService } from '../services/deal/bot-takeover.flow';
+import { ClientTakeoverFlowService } from '../services/takeover/client-takeover.flow';
+import { TakeoverSmartsResolver } from '../services/takeover/takeover-smarts.resolver';
+import { takeoverOptionsFor } from '../services/takeover/takeover.settings';
 import { ColdHookBatchGroupBuffer } from '../../cold-hook/services/batch/cold-hook-batch-group-buffer';
 import { EventReportPostFlowService } from '../services/post-flow/event-report-post-flow.service';
 import { EventReportActingManagerService } from '../services/acting-manager/event-report-acting-manager.service';
@@ -64,6 +66,8 @@ export class EventReportUseCase {
         // Предикт стадии держит сделки клиента в коротком кэше — отчёт их
         // меняет, поэтому после батча кэш этого клиента сбрасывается.
         private readonly stagePredictDeals: StagePredictDealsCache,
+        // Перехват клиента: смарты «Презентации»/«ЗПР» — только когда он есть.
+        private readonly takeoverSmarts: TakeoverSmartsResolver,
     ) {}
 
     async execute(
@@ -80,11 +84,14 @@ export class EventReportUseCase {
     }> {
         const { bitrix, PortalModel: portal } = await this.pbx.init(dto.domain);
 
+        const takeoverSettings = await this.settings.takeoverSettings(
+            dto.domain,
+        );
         const init = await this.initService.loadContext(
             dto,
             bitrix,
             portal,
-            await this.settings.botOwnerIds(dto.domain),
+            takeoverOptionsFor(takeoverSettings, dto.takeoverConfirmed),
         );
         const ctx = new EventReportContext(dto, portal, init);
         // Классы поведения полей карточки — одним чтением настроек на отчёт:
@@ -114,8 +121,15 @@ export class EventReportUseCase {
         // Клиент с открытой сделкой коллеги: второму — своя сделка, обоим —
         // записи в ленту, владельцу — уведомление (22.10.2026).
         const takeover = new BaseDealTakeoverNotice(bitrix);
-        // Клиент на боте обзвона: работу забирает дозвонившийся (12.11.2026).
-        const botTakeover = new BotTakeoverFlowService(bitrix, portal);
+        // Перехват клиента: работа бота или коллеги — отчитавшемуся (12.11.2026).
+        const clientTakeover = new ClientTakeoverFlowService(
+            bitrix,
+            portal,
+            ctx.takeover
+                ? await this.takeoverSmarts.resolve(dto.domain)
+                : { pres: null, zpr: null },
+            takeoverSettings.notifyPrevious,
+        );
 
         // KPI использует тот же ColdHookBatchGroupBuffer (контракт KpiListFlowService).
         // По факту мы тут одна группа = весь endpoint; вся работа упадёт в один HTTP.
@@ -128,14 +142,15 @@ export class EventReportUseCase {
         // Удалённые лиды не должны попасть в привязки новой задачи: с ними
         // Битрикс не показывает её в карточке сделки. Тоже прямой вызов.
         await taskFlow.readMissingLeads(ctx);
-        await botTakeover.readBotTasks(ctx);
+        // Чужая работа читается общим batch-аккумулятором — до команд отчёта.
+        await clientTakeover.read(ctx);
 
         // dealFlow сам выключается для leadOnly (ctx.isDealFlow), возврат в
         // ТМЦ — тоже про движение сделок, поэтому гейтится стратегией явно.
         // Закрытие текущей задачи — до команд сделок: сделка, ушедшая в
         // финал, иначе закрывала задачу раньше нас (см. queueClose).
         taskFlow.queueClose(ctx);
-        botTakeover.queue(ctx);
+        clientTakeover.queue(ctx);
         entityFlow.queue(ctx);
         const deals = dealFlow.queue(ctx);
         taskFlow.queue(ctx, deals);
@@ -223,7 +238,7 @@ export class EventReportUseCase {
         await continuity.notifyContinuation(ctx, deals, batchResults);
         await continuity.notifyReopenHandover(ctx);
         await takeover.notify(ctx, deals, batchResults);
-        await botTakeover.notify(ctx);
+        await clientTakeover.notify(ctx, batchResults);
 
         // Считаем по СКЛЕЕННОМУ ответу — то есть по обоим источникам сразу.
         // Прежняя формула складывала число КОМАНД (reduce по `results`) с

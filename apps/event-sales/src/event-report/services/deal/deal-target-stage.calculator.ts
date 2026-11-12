@@ -400,17 +400,23 @@ export function getXoTakeoverStageCode(category: IPCategory): string | null {
 /**
  * Стадия, в которую закрывается ЛИШНЯЯ сделка бота (дубль): у основной —
  * «Дубль» (`sales_duplicate`), а если её на портале не установили —
- * «Не состоялась» (`sales_double`); у ХО — «без результата».
+ * «Не состоялась» (`sales_double`); у ХО и презентаций — «без результата».
  */
 export function getDuplicateCloseStageCode(
     category: IPCategory,
-    role: 'base' | 'xo',
+    role: 'base' | 'xo' | 'pres',
 ): string | null {
     if (!category?.stages?.length) return null;
     if (role === 'xo') {
         return resolveStageBitrixId(
             category,
             `${XO_STAGE_PREFIX}${XO_STAGE_SUFFIX.noresult}`,
+        );
+    }
+    if (role === 'pres') {
+        return resolveStageBitrixId(
+            category,
+            `${PRESENTATION_STAGE_PREFIX}${PRESENTATION_STAGE_SUFFIX.noresult}`,
         );
     }
     return (

@@ -424,4 +424,20 @@ export class EventSalesFlowDto {
     @ValidateNested()
     @Type(() => LeadRequestSyncDto)
     leadSync?: LeadRequestSyncDto;
+
+    @ApiPropertyOptional({
+        description:
+            'Ответ менеджера на вопрос «Забрать работу коллег себе?» перед ' +
+            'отправкой (настройки портала report_takeover_force + ' +
+            'report_takeover_confirm). true — открытая работа других ' +
+            'сотрудников по клиенту переходит к отчитавшемуся или ' +
+            'закрывается; false или поле не передано при включённом ' +
+            'подтверждении — перехвата нет, чужая работа не трогается. Без ' +
+            'подтверждения в настройках поле не нужно.',
+        type: Boolean,
+        example: true,
+    })
+    @IsOptional()
+    @IsBoolean()
+    takeoverConfirmed?: boolean;
 }

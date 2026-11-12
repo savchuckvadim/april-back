@@ -1,6 +1,6 @@
 import { IBXCompany, IBXContact, IBXDeal, IBXLead } from '@/modules/bitrix';
 import { IBXTask } from '@/modules/bitrix/domain/tasks/task/interface/task.interface';
-import type { BotTakeover } from './bot-takeover';
+import type { ClientTakeover } from '../takeover/client-takeover';
 
 /**
  * Тип сущности-«хозяина» события.
@@ -96,8 +96,8 @@ export interface IEventReportInitContext {
     foreignBaseDeal?: IBXDeal | null;
 
     /**
-     * Перехват у ботов обзвона (`xo_start_bot_user_ids`): забранная сделка
-     * бота (она же currentBaseDeal) и лишние сделки ботов — дубли к закрытию.
+     * Перехват клиента: забранная сделка (она же currentBaseDeal), дубли к
+     * закрытию и защищённые сделки коллег (event-report/services/takeover).
      */
-    botTakeover?: BotTakeover | null;
+    takeover?: ClientTakeover | null;
 }

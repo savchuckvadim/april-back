@@ -1,3 +1,7 @@
+import { EventReportTakeoverPreviewService } from './services/takeover/takeover-preview.service';
+import { PbxPresentationSmartModule } from '@lib/portal-lib/pbx/pbx-presentation-smart';
+import { PbxZprSmartModule } from '@lib/portal-lib/pbx/pbx-zpr-smart';
+import { TakeoverSmartsResolver } from './services/takeover/takeover-smarts.resolver';
 import { Module } from '@nestjs/common';
 import { PBXModule } from '@/modules/pbx/pbx.module';
 import { QueueModule } from '@/modules/queue/queue.module';
@@ -56,6 +60,9 @@ import { EventReportTmcModule } from '../event-report-tmc/event-report-tmc.modul
         // Поток ТМЦ (режим «Менеджер ТМЦ»): воркер выбирает его по
         // подразделению отчёта; свои сервисы и ручка согласования заявки.
         EventReportTmcModule,
+        // Перехват клиента: смарты «Презентации»/«ЗПР» закрываются, как у ХО «с очищением».
+        PbxPresentationSmartModule,
+        PbxZprSmartModule,
     ],
     controllers: [EventSalesController],
     providers: [
@@ -82,6 +89,9 @@ import { EventReportTmcModule } from '../event-report-tmc/event-report-tmc.modul
         // Режим руководителя: bitrix приходит параметром, в полях не живёт.
         EventReportActingManagerService,
         EventReportImpersonationService,
+        // Перехват клиента: резолв смартов только когда перехват есть.
+        TakeoverSmartsResolver,
+        EventReportTakeoverPreviewService,
     ],
 })
 export class EventReportModule {}

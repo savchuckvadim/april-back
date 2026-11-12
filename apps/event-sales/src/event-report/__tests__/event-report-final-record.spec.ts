@@ -357,7 +357,10 @@ describe('Финальная запись продажи/отказа (лега�
                 entityType: 'company',
                 entityId: 116543,
                 currentBaseDeal: botDeal,
-                botTakeover: {
+                takeover: {
+                    mode: 'bot',
+                    reporterId: 557,
+                    protectedDeals: [],
                     takenDeal: botDeal,
                     duplicateDeals: [],
                     duplicateXoDeals: [],

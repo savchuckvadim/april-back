@@ -9,6 +9,7 @@ import {
     EventReportEntityFieldsModel,
 } from '../entity/event-report-entity-fields.model';
 import { IPCategory } from '@lib/portal-lib/portal/interfaces/portal.interface';
+import { isTakeoverOwner } from '../takeover/client-takeover';
 import {
     composeStageId,
     getXoTakeoverStageCode,
@@ -47,7 +48,7 @@ export class SalesXoDealService {
                 isResult: ctx.isResult,
                 isSuccess: ctx.isSuccessSale,
                 isFail: ctx.isFail,
-            }) ?? this.botTakeoverStage(ctx, category);
+            }) ?? this.takeoverStage(ctx, category);
         if (!targetStage) return;
 
         const entityFields = new EventReportEntityFieldsModel(
@@ -77,17 +78,17 @@ export class SalesXoDealService {
     }
 
     /**
-     * Сделка ХО бота, чью работу забрал менеджер, — «успех» (дозвон
-     * состоялся), даже когда отчёт её не двигает (обычный звонок, а не
-     * задача ХО). Иначе она висела бы «Запланирован» на боте.
+     * Сделка ХО бота или коллеги, чью работу забрал менеджер, — «успех»
+     * (дозвон состоялся), даже когда отчёт её не двигает (обычный звонок, а
+     * не задача ХО). Иначе она висела бы «Запланирован» на прежнем.
      */
-    private botTakeoverStage(
+    private takeoverStage(
         ctx: EventReportContext,
         category: IPCategory,
     ): string | null {
-        const takeover = ctx.botTakeover;
-        const owner = Number(ctx.currentXoDeal?.ASSIGNED_BY_ID);
-        if (!takeover?.takenDeal || !takeover.botOwnerIds.includes(owner)) {
+        const takeover = ctx.takeover;
+        const owner = Number(ctx.currentXoDeal?.ASSIGNED_BY_ID) || 0;
+        if (!takeover?.takenDeal || !isTakeoverOwner(takeover, owner)) {
             return null;
         }
         return getXoTakeoverStageCode(category);

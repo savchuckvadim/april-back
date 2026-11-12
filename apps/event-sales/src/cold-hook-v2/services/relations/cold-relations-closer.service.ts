@@ -37,6 +37,21 @@ const DEAL_PLAN_DATE_CODES = [
     'xo_name',
 ] as const;
 
+/**
+ * Поля оси планов закрываемой сделки — пустой строкой. Общая с перехватом
+ * клиента отчётом (event-report/services/takeover): закрытие одинаковое.
+ */
+export const clearedDealPlanDates = (
+    portal: PortalModel,
+): Record<string, ''> => {
+    const cleared: Record<string, ''> = {};
+    for (const code of DEAL_PLAN_DATE_CODES) {
+        const field = portal.getEntityFieldByCode('deal', code);
+        if (field?.bitrixId) cleared[`UF_CRM_${field.bitrixId}`] = '';
+    }
+    return cleared;
+};
+
 export interface ColdCloseResult {
     closedDealIds: number[];
     completedTaskIds: number[];
@@ -343,12 +358,7 @@ export class ColdRelationsCloserV2Service {
 
     /** Обнуление оси планов у закрываемой сделки — пустой строкой (канон). */
     private clearedPlanDates(): Record<string, ''> {
-        const cleared: Record<string, ''> = {};
-        for (const code of DEAL_PLAN_DATE_CODES) {
-            const field = this.portal.getEntityFieldByCode('deal', code);
-            if (field?.bitrixId) cleared[`UF_CRM_${field.bitrixId}`] = '';
-        }
-        return cleared;
+        return clearedDealPlanDates(this.portal);
     }
 
     private taskId(task: IBXTask): number {

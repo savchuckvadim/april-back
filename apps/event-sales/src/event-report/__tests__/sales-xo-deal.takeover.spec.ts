@@ -2,7 +2,7 @@ import { BitrixService } from '@/modules/bitrix';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { EventReportContext } from '../services/context/event-report.context';
 import { SalesXoDealService } from '../services/deal/sales-xo-deal.service';
-import { BotTakeover } from '../services/init/bot-takeover';
+import { ClientTakeover } from '../services/takeover/client-takeover';
 import { EVENT_REPORT_EVENT_TYPE } from '../types/event-report.event-codes';
 
 // Поля карточки здесь не проверяются — только стадия и ответственный.
@@ -50,14 +50,17 @@ const setup = () => {
     return { service: new SalesXoDealService(bitrix, portal), updates };
 };
 
-const TAKEOVER: BotTakeover = {
+const TAKEOVER: ClientTakeover = {
+    mode: 'bot',
+    reporterId: MANAGER,
+    protectedDeals: [],
     takenDeal: { ID: '215223', ASSIGNED_BY_ID: String(BOT) } as never,
     duplicateDeals: [],
     duplicateXoDeals: [],
     botOwnerIds: [BOT],
 };
 
-const ctx = (botTakeover: BotTakeover | null, xoOwner = BOT) =>
+const ctx = (botTakeover: ClientTakeover | null, xoOwner = BOT) =>
     ({
         isNoCall: false,
         currentXoDeal: { ID: '215225', ASSIGNED_BY_ID: String(xoOwner) },
@@ -66,7 +69,7 @@ const ctx = (botTakeover: BotTakeover | null, xoOwner = BOT) =>
         isResult: true,
         isSuccessSale: false,
         isFail: false,
-        botTakeover,
+        takeover: botTakeover,
         ownerLinkFields: {},
         workResponsibleId: MANAGER,
     }) as unknown as EventReportContext;

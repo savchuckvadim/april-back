@@ -21,7 +21,12 @@ import { parseDealContactItems } from '../deal/new-base-deal-client';
 import { isFinalWorkStatus } from '../task/report-closes-task';
 import { decideClosedLaunchBaseDeal } from './closed-launch-base-deal';
 import { dealsLinkedToBase, selectLinkedXoDeal } from './linked-xo-deal';
-import { decideBotTakeover } from './bot-takeover';
+import { decideClientTakeover } from '../takeover/client-takeover';
+import {
+    NO_TAKEOVER_OPTIONS,
+    protectedStageIds,
+    TakeoverDecisionOptions,
+} from '../takeover/takeover.settings';
 import { dealLinkKey } from '../../../cold-hook-v2/lib/deal-link-fields';
 import {
     EEventReportEntityType,
@@ -162,8 +167,8 @@ export class EventReportInitService {
         dto: EventSalesFlowDto,
         bitrix: BitrixService,
         portal: PortalModel,
-        /** Сотрудники-боты обзвона (`xo_start_bot_user_ids`); пусто — перехвата нет. */
-        botOwnerIds: readonly number[] = [],
+        /** Перехват клиента в этом отчёте (боты, вся работа, защита стадий). */
+        takeoverOptions: TakeoverDecisionOptions = NO_TAKEOVER_OPTIONS,
     ): Promise<IEventReportInitContext> {
         const { entityId, entityType } = this.resolveEntity(dto);
         if (!entityId) {
@@ -341,17 +346,22 @@ export class EventReportInitService {
                       String(baseCategory.bitrixId),
               )
             : [];
-        // Работа бота обзвона уходит отчитавшемуся менеджеру (bot-takeover).
-        const botTakeover = decideBotTakeover({
+        // Перехват клиента: работа бота или коллеги уходит отчитавшемуся.
+        const takeover = decideClientTakeover({
             currentBaseDeal: selectedBaseDeal,
             baseDeals,
             activeDeals,
             xoCategoryId: xoCategory ? String(xoCategory.bitrixId) : null,
             linkKey: baseLinkKey,
-            botOwnerIds,
+            botOwnerIds: takeoverOptions.botOwnerIds,
+            force: takeoverOptions.force,
+            protectedStageIds: protectedStageIds(
+                baseCategory,
+                takeoverOptions.protectFromStage,
+            ),
             reporterId: this.toId(Number(dto.plan?.responsibility?.ID)),
         });
-        const currentBaseDeal = botTakeover?.takenDeal ?? selectedBaseDeal;
+        const currentBaseDeal = takeover?.takenDeal ?? selectedBaseDeal;
         const currentXoDeal = selectLinkedXoDeal({
             activeDeals,
             linkKey: baseLinkKey,
@@ -435,7 +445,7 @@ export class EventReportInitService {
             closedLaunchBaseDeal: launchDecision.closed,
             // Своей основной нет, чужие есть — перехват (22.10.2026).
             foreignBaseDeal: currentBaseDeal ? null : (baseDeals[0] ?? null),
-            botTakeover,
+            takeover,
         };
     }
 

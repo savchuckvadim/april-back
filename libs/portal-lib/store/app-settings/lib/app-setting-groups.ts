@@ -238,6 +238,14 @@ export const PORTAL_APP_SETTING_GROUPS = {
             'отказникам.',
         links: [LINK.dealFields],
     },
+    report_takeover: {
+        title: 'Перехват клиента отчётом',
+        description:
+            'Кто забирает клиента, когда по нему отчитывается другой ' +
+            'сотрудник: боты обзвона и режим «вся работа — отчитавшемуся», ' +
+            'подтверждение, оповещение, защита поздних стадий.',
+        links: [LINK.dealFields],
+    },
     xo_start: {
         title: 'Запуск холодного обзвона',
         description:
@@ -352,6 +360,11 @@ const GROUP_RULES: Record<EnumPortalAppCode, readonly GroupRule[]> = {
             group: 'xo_rescue',
             codes: ['reject_revive_resend_after_minutes'],
             prefixes: ['xo_rescue_'],
+        },
+        // Боты обзвона — тоже про перехват; код ключа остался прежним.
+        {
+            group: 'report_takeover',
+            prefixes: ['report_takeover_', 'xo_start_bot_'],
         },
         { group: 'xo_start', prefixes: ['xo_start_'] },
         { group: 'tmc_approval_rescue', prefixes: ['tmc_approval_rescue_'] },
