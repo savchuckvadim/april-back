@@ -6,6 +6,8 @@ import { SupplyReportTemplateData } from '../data/supply-report-data.service';
 import { randomUUID } from 'crypto';
 import dayjs from 'dayjs';
 import { getErrorString } from '@lib/shared';
+import { TEMPLATE_TEXT_PARTS } from '../../../contract/generate/lib/template-dollar.util';
+import { convertPhpWordTemplate } from '../../lib/php-word-template.util';
 
 /** Домены, у которых в документ добавляется блок реквизитов клиента. */
 const DOMAINS_WITH_CLIENT_RQ = [
@@ -39,10 +41,17 @@ export class SupplyReportTemplateService {
         templatePath: string,
     ): Promise<{ filePath: string; fileName: string; subPath: string }> {
         const templateBuffer = await this.storageService.readFile(templatePath);
+        const zip = new PizZip(templateBuffer);
+        // шаблоны из Laravel написаны под PhpWord — переводим на синтаксис docxtemplater
+        for (const part of zip.file(TEMPLATE_TEXT_PARTS)) {
+            zip.file(part.name, convertPhpWordTemplate(part.asText()));
+        }
 
-        const doc = new Docxtemplater(new PizZip(templateBuffer), {
+        const doc = new Docxtemplater(zip, {
             paragraphLoop: true,
             linebreaks: true,
+            // незаполненное поле — пустое место, а не «undefined»
+            nullGetter: () => '',
         });
 
         // ОДИН объект и ОДИН render: doc.setData() заменяет весь набор данных
