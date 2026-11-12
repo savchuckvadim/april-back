@@ -109,11 +109,13 @@ export class EventEntityModel {
         }
         return undefined;
     }
-    private hasField(bitrixId: string) {
-        if (!bitrixId || !this.entity) {
-            return false;
-        }
-        return Object.hasOwn(this.entity, bitrixId) !== undefined;
+    /**
+     * Поле пишем, если оно сопоставлено на портале (есть bitrixId).
+     * Ключ в сущности не проверяем: у новой сделки (entity = null) ключей
+     * нет, и она уходила без полей ХО — то же, что в v2 (alfacentr 12.11.2026).
+     */
+    private hasField(bitrixId: string): boolean {
+        return Boolean(bitrixId);
     }
     private getPortalFieldByCode(code: ColdEntityCodesEnum) {
         return this.portal.getEntityFieldByCode(this.entityType, code);

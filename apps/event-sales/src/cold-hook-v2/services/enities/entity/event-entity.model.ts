@@ -113,11 +113,17 @@ export class EventEntityModel {
         }
         return undefined;
     }
-    private hasField(bitrixId: string) {
-        if (!bitrixId || !this.entity) {
-            return false;
-        }
-        return Object.hasOwn(this.entity, bitrixId) !== undefined;
+    /**
+     * Поле пишем, если оно сопоставлено на портале (есть bitrixId).
+     *
+     * Наличие ключа в самой сущности НЕ проверяем: у новой сделки
+     * (entity = null) ключей нет вовсе — из-за прежней проверки новые
+     * основная сделка и ХО-сделка уходили без единого поля ХО (alfacentr
+     * 12.11.2026, сделки 203802/203804); у существующей сущность могла
+     * прийти без UF-полей в select, и проверка по факту не работала.
+     */
+    private hasField(bitrixId: string): boolean {
+        return Boolean(bitrixId);
     }
     private getPortalFieldByCode(code: ColdEntityCodesEnum) {
         return this.portal.getEntityFieldByCode(this.entityType, code);
