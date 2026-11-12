@@ -8,8 +8,10 @@ import {
     EDealRole,
     EventReportEntityFieldsModel,
 } from '../entity/event-report-entity-fields.model';
+import { IPCategory } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import {
     composeStageId,
+    getXoTakeoverStageCode,
     getXoTargetStageCode,
 } from './deal-target-stage.calculator';
 
@@ -37,14 +39,15 @@ export class SalesXoDealService {
             return;
         }
 
-        const targetStage = getXoTargetStageCode({
-            category,
-            reportEventType: ctx.reportEventType,
-            isExpired: ctx.isExpired,
-            isResult: ctx.isResult,
-            isSuccess: ctx.isSuccessSale,
-            isFail: ctx.isFail,
-        });
+        const targetStage =
+            getXoTargetStageCode({
+                category,
+                reportEventType: ctx.reportEventType,
+                isExpired: ctx.isExpired,
+                isResult: ctx.isResult,
+                isSuccess: ctx.isSuccessSale,
+                isFail: ctx.isFail,
+            }) ?? this.botTakeoverStage(ctx, category);
         if (!targetStage) return;
 
         const entityFields = new EventReportEntityFieldsModel(
@@ -71,5 +74,22 @@ export class SalesXoDealService {
             Number(ctx.currentXoDeal.ID),
             fields,
         );
+    }
+
+    /**
+     * Сделка ХО бота, чью работу забрал менеджер, — «успех» (дозвон
+     * состоялся), даже когда отчёт её не двигает (обычный звонок, а не
+     * задача ХО). Иначе она висела бы «Запланирован» на боте.
+     */
+    private botTakeoverStage(
+        ctx: EventReportContext,
+        category: IPCategory,
+    ): string | null {
+        const takeover = ctx.botTakeover;
+        const owner = Number(ctx.currentXoDeal?.ASSIGNED_BY_ID);
+        if (!takeover?.takenDeal || !takeover.botOwnerIds.includes(owner)) {
+            return null;
+        }
+        return getXoTakeoverStageCode(category);
     }
 }

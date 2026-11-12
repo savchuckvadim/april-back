@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
     EnumPortalAppCode,
+    parseUserIds,
     PortalAppSettingsService,
 } from '@lib/portal-lib/store/app-settings';
 import {
@@ -85,6 +86,17 @@ export class EventReportSettingsResolver {
             companyDateTextField:
                 typeof dateTextField === 'string' ? dateTextField.trim() : '',
         };
+    }
+
+    /**
+     * Сотрудники-боты обзвона (`xo_start_bot_user_ids`): их открытую
+     * основную сделку забирает отчитавшийся менеджер. Настройки недоступны —
+     * пусто: перехвата нет, отчёт работает по правилу «чужое не трогаем».
+     */
+    async botOwnerIds(domain: string): Promise<number[]> {
+        const settings = await this.read(domain, 'перехвата у ботов нет');
+        const raw = settings?.xoStartBotUserIds;
+        return parseUserIds(typeof raw === 'string' ? raw : '');
     }
 
     /**

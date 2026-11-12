@@ -21,6 +21,7 @@ import { parseDealContactItems } from '../deal/new-base-deal-client';
 import { isFinalWorkStatus } from '../task/report-closes-task';
 import { decideClosedLaunchBaseDeal } from './closed-launch-base-deal';
 import { dealsLinkedToBase, selectLinkedXoDeal } from './linked-xo-deal';
+import { decideBotTakeover } from './bot-takeover';
 import { dealLinkKey } from '../../../cold-hook-v2/lib/deal-link-fields';
 import {
     EEventReportEntityType,
@@ -39,6 +40,8 @@ const DEAL_LIST_SELECT = [
     'CONTACT_ID',
     'LEAD_ID',
     'ASSIGNED_BY_ID',
+    // Самая свежая сделка бота забирается при перехвате (bot-takeover).
+    'DATE_MODIFY',
     'UF_CRM_TO_BASE_SALES',
     'UF_CRM_TO_PRESENTATION_SALES',
     'UF_CRM_TO_BASE_TMC',
@@ -159,6 +162,8 @@ export class EventReportInitService {
         dto: EventSalesFlowDto,
         bitrix: BitrixService,
         portal: PortalModel,
+        /** Сотрудники-боты обзвона (`xo_start_bot_user_ids`); пусто — перехвата нет. */
+        botOwnerIds: readonly number[] = [],
     ): Promise<IEventReportInitContext> {
         const { entityId, entityType } = this.resolveEntity(dto);
         if (!entityId) {
@@ -320,12 +325,33 @@ export class EventReportInitService {
                 dto.report?.workStatus?.current?.code,
             ),
         });
-        const currentBaseDeal =
+        const selectedBaseDeal =
             dealsByCategory[PbxDealCategoryCodeEnum.sales_base] ??
             launchDecision.reopen;
         const xoCategory = portal.getDealCategoryByCode(
             PbxDealCategoryCodeEnum.sales_xo,
         );
+        const baseCategory = portal.getDealCategoryByCode(
+            PbxDealCategoryCodeEnum.sales_base,
+        );
+        const baseDeals = baseCategory
+            ? activeDeals.filter(
+                  deal =>
+                      String(deal.CATEGORY_ID) ===
+                      String(baseCategory.bitrixId),
+              )
+            : [];
+        // Работа бота обзвона уходит отчитавшемуся менеджеру (bot-takeover).
+        const botTakeover = decideBotTakeover({
+            currentBaseDeal: selectedBaseDeal,
+            baseDeals,
+            activeDeals,
+            xoCategoryId: xoCategory ? String(xoCategory.bitrixId) : null,
+            linkKey: baseLinkKey,
+            botOwnerIds,
+            reporterId: this.toId(Number(dto.plan?.responsibility?.ID)),
+        });
+        const currentBaseDeal = botTakeover?.takenDeal ?? selectedBaseDeal;
         const currentXoDeal = selectLinkedXoDeal({
             activeDeals,
             linkKey: baseLinkKey,
@@ -346,16 +372,6 @@ export class EventReportInitService {
                 `own=${[...ownResponsibleIds].join('/') || '-'} ` +
                 `base=${currentBaseDeal?.ID ?? 'null'}`,
         );
-        const baseCategory = portal.getDealCategoryByCode(
-            PbxDealCategoryCodeEnum.sales_base,
-        );
-        const baseDeals = baseCategory
-            ? activeDeals.filter(
-                  deal =>
-                      String(deal.CATEGORY_ID) ===
-                      String(baseCategory.bitrixId),
-              )
-            : [];
         if (baseDeals.length > 1) {
             this.logger.warn(
                 `init: у ${entityType}:${entityId} ${baseDeals.length} открытых ` +
@@ -419,6 +435,7 @@ export class EventReportInitService {
             closedLaunchBaseDeal: launchDecision.closed,
             // Своей основной нет, чужие есть — перехват (22.10.2026).
             foreignBaseDeal: currentBaseDeal ? null : (baseDeals[0] ?? null),
+            botTakeover,
         };
     }
 

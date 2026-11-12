@@ -338,6 +338,36 @@ describe('Финальная запись продажи/отказа (лега�
         expect(fail!.dedup!.key).toBe('final_fail_431_5512_387');
     });
 
+    /*
+     * Сделка, забранная у бота обзвона (xo_start_bot_user_ids, 12.11.2026):
+     * бот не продаёт — итог за тем, кто дозвонился и отчитался.
+     */
+    it('продажа по сделке, забранной у бота, — на отчитавшегося, не на бота', () => {
+        const botDeal = { ID: '217605', ASSIGNED_BY_ID: '643' };
+        const ctx = makeCtx({
+            dto: {
+                currentTask: { eventType: 'hot', name: 'ООО Ромашка' },
+                report: {
+                    resultStatus: 'result',
+                    workStatus: { current: { code: 'success' } },
+                },
+                plan: { responsibility: { ID: 557 } },
+            },
+            init: {
+                entityType: 'company',
+                entityId: 116543,
+                currentBaseDeal: botDeal,
+                botTakeover: {
+                    takenDeal: botDeal,
+                    duplicateDeals: [],
+                    duplicateXoDeals: [],
+                    botOwnerIds: [643],
+                },
+            },
+        });
+        expect(ctx.workResponsibleId).toBe(557);
+    });
+
     it('финал без основной сделки — работа на ответственном плана', () => {
         const ctx = makeCtx({
             dto: { plan: { responsibility: { ID: 11 } } },

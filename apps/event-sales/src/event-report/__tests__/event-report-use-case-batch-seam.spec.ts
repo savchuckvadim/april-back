@@ -280,6 +280,8 @@ describe('EventReportUseCase — ответ основного батча дое
                         companyDateTextField: '',
                     }),
                 taskChecklistEnabled: () => Promise.resolve(false),
+                // Ботов обзвона нет — перехвата нет.
+                botOwnerIds: () => Promise.resolve([]),
             } as unknown as ConstructorParameters<typeof EventReportUseCase>[3],
             { dispatch } as unknown as EventReportPostFlowService,
             // Режим руководителя в этих сценариях выключен: обычный отчёт.

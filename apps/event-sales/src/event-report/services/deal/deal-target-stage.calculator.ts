@@ -67,6 +67,8 @@ const SALES_BASE_STAGE_SUFFIX = {
     apology: 'double',
     /** «Не ЦА» (NOT_CA) — клиент нецелевой. */
     notCa: 'not_ca',
+    /** «Дубль» (DUPLICATE) — лишняя сделка, работа идёт в другой. */
+    duplicate: 'duplicate',
     /**
      * «Не Беспокоить» (NOT_CALL) — клиент просил не звонить.
      *
@@ -380,6 +382,47 @@ export function getXoTargetStageCode(input: XoStageInput): string | null {
     }
     if (!suffix) return null;
     return resolveStageBitrixId(category, `${XO_STAGE_PREFIX}${suffix}`);
+}
+
+/**
+ * Сделка ХО бота, работу которого забрал менеджер (xo_start_bot_user_ids):
+ * дозвон состоялся — «успех». Нужна, когда сам отчёт сделку ХО не двигает
+ * (обычный звонок, не задача ХО), иначе она висела бы «Запланирован».
+ */
+export function getXoTakeoverStageCode(category: IPCategory): string | null {
+    if (!category?.stages?.length) return null;
+    return resolveStageBitrixId(
+        category,
+        `${XO_STAGE_PREFIX}${XO_STAGE_SUFFIX.success}`,
+    );
+}
+
+/**
+ * Стадия, в которую закрывается ЛИШНЯЯ сделка бота (дубль): у основной —
+ * «Дубль» (`sales_duplicate`), а если её на портале не установили —
+ * «Не состоялась» (`sales_double`); у ХО — «без результата».
+ */
+export function getDuplicateCloseStageCode(
+    category: IPCategory,
+    role: 'base' | 'xo',
+): string | null {
+    if (!category?.stages?.length) return null;
+    if (role === 'xo') {
+        return resolveStageBitrixId(
+            category,
+            `${XO_STAGE_PREFIX}${XO_STAGE_SUFFIX.noresult}`,
+        );
+    }
+    return (
+        resolveStageBitrixId(
+            category,
+            `${PBX_DEAL_SALES_BASE_STAGE_PREFIX}${SALES_BASE_STAGE_SUFFIX.duplicate}`,
+        ) ??
+        resolveStageBitrixId(
+            category,
+            `${PBX_DEAL_SALES_BASE_STAGE_PREFIX}${SALES_BASE_STAGE_SUFFIX.apology}`,
+        )
+    );
 }
 
 /** Действия, по которым двигается сделка воронки презентаций. */

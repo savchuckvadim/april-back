@@ -1,5 +1,6 @@
 import { IBXCompany, IBXContact, IBXDeal, IBXLead } from '@/modules/bitrix';
 import { IBXTask } from '@/modules/bitrix/domain/tasks/task/interface/task.interface';
+import type { BotTakeover } from '../init/bot-takeover';
 import { PortalModel } from '@lib/portal-lib/portal/services/portal.model';
 import { BitrixDateTime } from '@/shared/lib/date';
 import { PBXDateTime } from '@lib/portal-lib/pbx-domain/date/pbx-datetime';
@@ -150,6 +151,10 @@ export class EventReportContext {
     /** Своей основной нет, открыта чужая — отчёт заведёт свою (перехват). */
     get foreignBaseDeal(): IBXDeal | null {
         return this.init.foreignBaseDeal ?? null;
+    }
+    /** Перехват у ботов обзвона: забранная сделка бота и дубли к закрытию. */
+    get botTakeover(): BotTakeover | null {
+        return this.init.botTakeover ?? null;
     }
     get currentXoDeal(): IBXDeal | null {
         return this.init.currentXoDeal;
@@ -478,9 +483,12 @@ export class EventReportContext {
      * 28.09.2026): сделка не переназначается, «Менеджер по продажам» и KPI
      * финала — ответственному сделки. Во всех остальных случаях — как
      * раньше, ответственный плана.
+     *
+     * Исключение — сделка, забранная у бота обзвона: бот не продаёт, итог
+     * (и сама сделка) за тем, кто дозвонился.
      */
     get workResponsibleId(): number {
-        if (this.isFinalOutcome) {
+        if (this.isFinalOutcome && !this.botTakeover?.takenDeal) {
             const owner = Number(
                 (this.currentBaseDeal as Record<string, unknown> | null)
                     ?.ASSIGNED_BY_ID,
