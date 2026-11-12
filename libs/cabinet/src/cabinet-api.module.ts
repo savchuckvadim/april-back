@@ -14,6 +14,7 @@ import { CabinetChecksAdminController } from './admin/cabinet-checks.admin.contr
 import { CabinetMailCheckService } from './admin/cabinet-mail-check.service';
 import { SmtpNetworkProbe } from './infrastructure/smtp-network.probe';
 import { CabinetGuideAdminController } from './admin/cabinet-guide.admin.controller';
+import { CabinetOrganizationAdminController } from './admin/cabinet-organization.admin.controller';
 import { CabinetGuideService } from './guide/cabinet-guide.service';
 import { CabinetCorsProbe } from './guide/cabinet-cors.probe';
 import { ClientTelegramWebhookController } from './telegram/webhook/client-telegram-webhook.controller';
@@ -50,6 +51,7 @@ export class CabinetApiModule {}
         CabinetBitrixAppAdminController,
         CabinetChecksAdminController,
         CabinetGuideAdminController,
+        CabinetOrganizationAdminController,
     ],
     providers: [
         CabinetGuideService,
