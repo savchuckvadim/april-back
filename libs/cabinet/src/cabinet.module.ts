@@ -32,6 +32,7 @@ import { ClientTelegramUpdateHandler } from './telegram/client-telegram-update.h
 import { CabinetTelegramDeliveryService } from './telegram/cabinet-telegram-delivery.service';
 import { CabinetAdminService } from './admin/cabinet-admin.service';
 import { CabinetChannelCheckService } from './admin/cabinet-channel-check.service';
+import { CabinetOrganizationService } from './admin/cabinet-organization.service';
 import { CabinetAppStatusService } from './admin/cabinet-app-status.service';
 
 /**
@@ -84,6 +85,7 @@ import { CabinetAppStatusService } from './admin/cabinet-app-status.service';
         CabinetAppStatusService,
         CabinetAdminService,
         CabinetChannelCheckService,
+        CabinetOrganizationService,
     ],
     exports: [
         CabinetConfig,
@@ -101,6 +103,7 @@ import { CabinetAppStatusService } from './admin/cabinet-app-status.service';
         CabinetTelegramDeliveryService,
         CabinetAdminService,
         CabinetChannelCheckService,
+        CabinetOrganizationService,
         // Проверка почты из админки (CabinetMailCheckService) шлёт тестовое
         // письмо тем же транспортом.
         CabinetMailer,

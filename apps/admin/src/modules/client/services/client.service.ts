@@ -2,6 +2,7 @@ import {
     Injectable,
     NotFoundException,
     BadRequestException,
+    ConflictException,
 } from '@nestjs/common';
 import { Client, Prisma } from 'generated/prisma';
 import { ClientRepository } from '../repositories/client.repository';
@@ -120,10 +121,22 @@ export class ClientService {
         }
     }
 
+    /**
+     * Удалить организацию можно только пустую: в БД у порталов и учёток
+     * `client_id … ON DELETE CASCADE` — удаление клиента снесло бы его
+     * порталы (настройки, ключи, историю) и пользователей кабинета.
+     */
     async delete(id: number): Promise<void> {
-        const client = await this.repository.findById(id);
+        const client = await this.repository.findByIdWithRelations(id);
         if (!client) {
             throw new NotFoundException(`Client with id ${id} not found`);
+        }
+        const portals = client.portal ? 1 : 0;
+        const users = client.users?.length ?? 0;
+        if (portals || users) {
+            throw new ConflictException(
+                'У организации есть порталы или учётки кабинета — удаление снесло бы их вместе с ней. Сначала отвяжите порталы и снимите доступы.',
+            );
         }
 
         await this.repository.delete(id);
