@@ -1,6 +1,7 @@
 import type { PrismaService } from '@lib/core/prisma';
 import { AI_ADMIN_PAGE } from '../dto/ai-admin-page.dto';
 import {
+    AI_LIST_TEXT_PREVIEW,
     AiAdminPageService,
     aiAdminPageBounds,
     aiAdminPageWhere,
@@ -12,6 +13,10 @@ const row = (id: number) => ({
     updated_at: new Date('2026-11-05T10:00:00Z'),
     domain: 'april-garant.bitrix24.ru',
     type: 'agent-analysis',
+    result: 'р'.repeat(1000),
+    user_result: { big: true },
+    in_comment: false,
+    in_report: false,
 });
 
 function prismaWith(rows: ReturnType<typeof row>[], total: number) {
@@ -61,5 +66,67 @@ describe('AiAdminPageService — страница AI-записей админк
         expect(page.page).toBe(3);
         expect(page.pageSize).toBe(20);
         expect(page.items.map(item => item.id)).toEqual(['30', '29']);
+    });
+
+    it('новые фильтры: поставщик, статус, сотрудник, тип сущности, поиск', () => {
+        expect(
+            aiAdminPageWhere({
+                provider: 'vibecode',
+                status: 'done',
+                userId: '447',
+                entityType: 'deal',
+                search: ' Ромашка ',
+            }),
+        ).toEqual({
+            provider: 'vibecode',
+            status: 'done',
+            user_id: 447,
+            entity_type: 'deal',
+            OR: [
+                { user_name: { contains: 'Ромашка' } },
+                { entity_name: { contains: 'Ромашка' } },
+                { activity_id: 'Ромашка' },
+            ],
+        });
+        // Числовой поиск ищет и по id сущности; кривой id сотрудника — ничего.
+        expect(aiAdminPageWhere({ search: '217301', userId: 'x' })).toEqual({
+            user_id: -1,
+            OR: [
+                { user_name: { contains: '217301' } },
+                { entity_name: { contains: '217301' } },
+                { entity_id: 217301 },
+                { activity_id: '217301' },
+            ],
+        });
+    });
+
+    it('строка списка лёгкая: результат укорочен, user_result не отдаётся', async () => {
+        const { prisma } = prismaWith([row(1)], 1);
+        const page = await new AiAdminPageService(prisma).findPage({});
+        expect(page.items[0].result).toHaveLength(AI_LIST_TEXT_PREVIEW + 1);
+        expect(page.items[0].result?.endsWith('…')).toBe(true);
+        expect(page.items[0].user_result).toBeNull();
+    });
+
+    it('значения фильтров: типы и поставщики, без пустых, частые первыми', async () => {
+        const groupBy = jest.fn((args: { by: string[] }) => {
+            const field = args.by[0];
+            return Promise.resolve([
+                { [field]: `${field}-1`, _count: { _all: 1 } },
+                { [field]: '', _count: { _all: 7 } },
+                { [field]: `${field}-2`, _count: { _all: 3 } },
+            ]);
+        });
+        const prisma = { ai: { groupBy } } as unknown as PrismaService;
+        const facets = await new AiAdminPageService(prisma).facets();
+        expect(groupBy).toHaveBeenCalledWith({
+            by: ['type'],
+            where: {},
+            _count: { _all: true },
+        });
+        expect(facets.types).toEqual([
+            { value: 'type-2', count: 3 },
+            { value: 'type-1', count: 1 },
+        ]);
     });
 });
