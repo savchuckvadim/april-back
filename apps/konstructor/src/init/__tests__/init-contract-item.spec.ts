@@ -1,3 +1,4 @@
+import { ContractEntity } from '@lib/garant/contract/contract.entity';
 import { PortalContractEntity } from '@lib/garant/contract/portal-contract.entity';
 import { KonstructorInitUseCase } from '../konstructor-init.use-case';
 
@@ -35,5 +36,30 @@ describe('init: itemId договора', () => {
 
     it('пункт не привязан — 0 (фронт не пишет тип договора)', () => {
         expect(useCase['getContract'](contract()).itemId).toBe(0);
+    });
+});
+
+describe('init: формулировка товара договора', () => {
+    const wording =
+        'Неисключительная лицензия на использование базы данных';
+    const withGeneral = (productName: string | null): PortalContractEntity => ({
+        ...contract(5444),
+        contracts: {
+            name: 'Лицензионный',
+            title: 'Лицензионный',
+            productName,
+        } as ContractEntity,
+    });
+
+    it('contracts.productName уходит во фронт — им подписана строка спецификации', () => {
+        expect(
+            useCase['getContract'](withGeneral(wording)).contract.productName,
+        ).toBe(wording);
+    });
+
+    it('без формулировки — пустая строка (генерация возьмёт имя договора)', () => {
+        expect(
+            useCase['getContract'](withGeneral(null)).contract.productName,
+        ).toBe('');
     });
 });

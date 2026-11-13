@@ -181,6 +181,8 @@ export class KonstructorInitUseCase {
             contract: {
                 id: Number(contract.contracts?.id),
                 name: contract.contracts?.name || '',
+                // формулировка товара спецификации договора и отчёта о поставке
+                productName: contract.contracts?.productName || '',
                 shortName: contract.portal_measure?.shortName || '',
                 fullName: contract.portal_measure?.fullName || '',
                 created_at: contract.contracts?.created_at

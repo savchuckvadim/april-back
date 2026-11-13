@@ -163,6 +163,19 @@ describe('ContractGenerateService', () => {
         ).toBe('');
     });
 
+    it('строка спецификации — формулировка товара договора (как Laravel productName)', async () => {
+        const wording = 'Передача в собственность Покупателя Абонемента';
+        const withWording = dto();
+        withWording.contract.contract.productName = wording;
+        await service.generateContract(withWording);
+        expect(getProducts.mock.calls[0][1]).toBe(wording);
+
+        getProducts.mockClear();
+        await service.generateContract(dto());
+        // формулировки нет — имя договора
+        expect(getProducts.mock.calls[0][1]).toBe('Абонентский');
+    });
+
     it('итоговое количество — как у товара: месяцы договора не подставляются', async () => {
         getProducts.mockReturnValue([
             {

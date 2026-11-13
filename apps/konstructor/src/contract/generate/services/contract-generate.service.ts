@@ -233,7 +233,7 @@ export class ContractGenerateService {
         );
         const [mainProduct] = this.documentProductRowService.getProducts(
             [dto.total],
-            contractData.contractName,
+            contractData.contractProductName,
             dto.contractType !== CONTRACT_LTYPE.SERVICE,
             dto.contract.prepayment,
             dto.clientType,
@@ -267,7 +267,7 @@ export class ContractGenerateService {
 
         const products = this.documentProductRowService.getProducts(
             dto.rows,
-            contractData.contractName,
+            contractData.contractProductName,
             dto.contractType !== CONTRACT_LTYPE.SERVICE,
             dto.contract.prepayment,
             dto.clientType,
@@ -352,7 +352,7 @@ export class ContractGenerateService {
             productNumber: mainProduct
                 ? String(mainProduct.productNumber)
                 : '1',
-            productName: mainProduct?.productName ?? contractData.contractName,
+            productName: mainProduct?.productName ?? contractData.contractProductName,
             productQuantity: mainProduct
                 ? String(mainProduct.productQuantity)
                 : BLANK,
@@ -405,7 +405,10 @@ export class ContractGenerateService {
             contractNumber: contract.number,
             contractPrepayment: contract.prepayment,
             contractDiscount: contract.discount,
-            contractProductName: generalContract.productName,
+            // формулировка товара спецификации (Laravel: $generalContractModel->productName),
+            // «Неисключительная лицензия на …»; без неё — имя договора
+            contractProductName:
+                generalContract.productName || generalContract.name,
         };
     }
 
