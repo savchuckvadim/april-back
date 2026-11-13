@@ -26,6 +26,7 @@ import {
 } from '@nestjs/swagger';
 import { WordTemplateService } from '../services/word-template.service';
 import { DownloadTemplateService } from '../services/download-template.service';
+import { WordTemplatePreviewService } from '../services/word-template-preview.service';
 import {
     CreateWordTemplateBodyDto,
     CreateWordTemplateMultipartDto,
@@ -62,6 +63,7 @@ export class WordTemplateController {
     constructor(
         private readonly wordTemplateService: WordTemplateService,
         private readonly downloadTemplateService: DownloadTemplateService,
+        private readonly previewService: WordTemplatePreviewService,
     ) {}
 
     @ApiOperation({
@@ -260,6 +262,68 @@ export class WordTemplateController {
         @Res({ passthrough: true }) res: Response,
     ): Promise<void> {
         await this.downloadTemplateService.downloadById(params.id, res);
+    }
+
+    @ApiOperation({
+        summary: 'Превью шаблона для магазина шаблонов',
+        description:
+            'Своя картинка (PNG/JPEG/WebP), если загружена; иначе PDF первой страницы, собранный по шаблону ' +
+            'на образце «Гарант-Офис». Кэш по содержимому файла шаблона: замена файла даёт новое превью.',
+    })
+    @ApiResponse({ status: 200, description: 'application/pdf или image/*' })
+    @ApiResponse({
+        status: 422,
+        description: 'Шаблон не собирается на образце данных',
+    })
+    @Get(':id/preview')
+    async preview(
+        @Param() params: WordTemplateIdParamsDto,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<void> {
+        const preview = await this.previewService.getPreview(BigInt(params.id));
+        res.setHeader('Content-Type', preview.contentType);
+        res.setHeader('Content-Length', preview.content.length.toString());
+        res.setHeader('Cache-Control', 'private, max-age=300');
+        res.end(preview.content);
+    }
+
+    @ApiOperation({
+        summary: 'Загрузить своё превью шаблона',
+        description:
+            'Картинка PNG, JPEG или WebP — заменяет сгенерированное превью.',
+    })
+    @ApiResponse({ status: 200, type: Boolean })
+    @Put(':id/preview')
+    @UseInterceptors(
+        FileInterceptor('file', { limits: { fileSize: 3 * 1024 * 1024 } }),
+    )
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: { file: { type: 'string', format: 'binary' } },
+            required: ['file'],
+        },
+    })
+    async uploadPreview(
+        @Param() params: WordTemplateIdParamsDto,
+        @UploadedFile() file: Express.Multer.File,
+    ): Promise<boolean> {
+        await this.previewService.saveManual(BigInt(params.id), file);
+        return true;
+    }
+
+    @ApiOperation({
+        summary: 'Убрать своё превью шаблона',
+        description: 'Возвращает сгенерированное превью.',
+    })
+    @ApiResponse({ status: 200, type: Boolean })
+    @Delete(':id/preview')
+    async removePreview(
+        @Param() params: WordTemplateIdParamsDto,
+    ): Promise<boolean> {
+        await this.previewService.removeManual(BigInt(params.id));
+        return true;
     }
 
     @ApiOperation({

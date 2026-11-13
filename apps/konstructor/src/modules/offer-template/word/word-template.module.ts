@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaService } from '@lib/core/prisma/prisma.service';
 import { StorageModule } from '@lib/core/storage/storage.module';
+import { LibreOfficeModule } from '@app/konstructor/modules/libre-office/libre-office.module';
 
 // Repositories from parent module
 import {
@@ -20,13 +21,14 @@ import {
 import { WordTemplateService } from './services/word-template.service';
 import { DownloadTemplateService } from './services/download-template.service';
 import { DocumentTagsFileService } from './services/document-tags-file.service';
+import { WordTemplatePreviewService } from './services/word-template-preview.service';
 
 // Controllers
 import { WordTemplateController } from './controllers/word-template.controller';
 import { WordTemplateTagsController } from './controllers/word-template-tags.controller';
 
 @Module({
-    imports: [StorageModule],
+    imports: [StorageModule, LibreOfficeModule],
     providers: [
         PrismaService,
 
@@ -48,6 +50,7 @@ import { WordTemplateTagsController } from './controllers/word-template-tags.con
         WordTemplateService,
         DownloadTemplateService,
         DocumentTagsFileService,
+        WordTemplatePreviewService,
     ],
     controllers: [WordTemplateController, WordTemplateTagsController],
     exports: [
