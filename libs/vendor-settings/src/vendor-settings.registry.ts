@@ -15,6 +15,10 @@ import {
     TELEGRAM_BOT_SETTING_KEYS,
     TELEGRAM_BOT_SETTINGS,
 } from './vendor-settings.telegram';
+import {
+    TRANSCRIPTION_SPEND_SETTING_KEYS,
+    TRANSCRIPTION_SPEND_SETTINGS,
+} from './vendor-settings.transcription';
 import { validateHosts, validateUrl } from './vendor-settings.validators';
 
 export const VENDOR_SETTING_GROUPS = [
@@ -57,6 +61,7 @@ export const VENDOR_SETTING_KEYS = [
     'ANTHROPIC_API_KEY',
     ...LLM_FALLBACK_SETTING_KEYS,
     ...LLM_GATEWAY_SETTING_KEYS,
+    ...TRANSCRIPTION_SPEND_SETTING_KEYS,
     ...TELEGRAM_BOT_SETTING_KEYS,
     ...WIDGET_URL_SETTING_KEYS,
 ] as const;
@@ -181,6 +186,7 @@ export const VENDOR_SETTINGS: readonly VendorSettingDefinition[] = [
     },
     ...LLM_FALLBACK_SETTINGS,
     ...LLM_GATEWAY_SETTINGS,
+    ...TRANSCRIPTION_SPEND_SETTINGS,
     {
         key: 'ANTHROPIC_API_KEY',
         group: 'support',

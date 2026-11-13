@@ -2,10 +2,15 @@ import { Controller, Get, Post, Body, Param, Put, Query } from '@nestjs/common';
 import {
     ApiOkResponse,
     ApiOperation,
+    ApiQuery,
     ApiResponse,
     ApiTags,
 } from '@nestjs/swagger';
-import { AiAdminPageDto, AiAdminPageQueryDto } from '../dto/ai-admin-page.dto';
+import {
+    AiAdminFacetsDto,
+    AiAdminPageDto,
+    AiAdminPageQueryDto,
+} from '../dto/ai-admin-page.dto';
 import { AiAdminPageService } from '../services/ai-admin-page.service';
 import { AiService } from '../services/ai.service';
 import { AiCreateDto } from '../dto/ai-create.dto';
@@ -47,14 +52,32 @@ export class AdminAiController {
     @ApiOperation({
         summary: 'Страница AI-записей',
         description:
-            'Свежие первыми, общее число под фильтром; фильтры — домен портала ' +
-            'и тип записи. Для списка админки вместо выгрузки всех записей.',
+            'Свежие первыми, общее число под фильтром; все фильтры — на сервере. ' +
+            'Длинные поля укорочены. Для списка админки вместо выгрузки всех записей.',
     })
     @ApiOkResponse({ type: AiAdminPageDto })
     async findPage(
         @Query() query: AiAdminPageQueryDto,
     ): Promise<AiAdminPageDto> {
         return this.pageService.findPage(query);
+    }
+
+    @Get('facets')
+    @ApiOperation({
+        summary: 'Значения фильтров списка AI-записей',
+        description:
+            'Порталы, типы, поставщики и статусы с числом записей — по всем порталам или по одному.',
+    })
+    @ApiQuery({
+        name: 'domain',
+        required: false,
+        type: String,
+        description: 'Домен портала — значения только по нему.',
+        example: 'april-garant.bitrix24.ru',
+    })
+    @ApiOkResponse({ type: AiAdminFacetsDto })
+    async facets(@Query('domain') domain?: string): Promise<AiAdminFacetsDto> {
+        return this.pageService.facets(domain || undefined);
     }
 
     @Get('domain/:domain/user/:userId')

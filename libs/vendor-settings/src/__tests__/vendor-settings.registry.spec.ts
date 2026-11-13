@@ -6,6 +6,7 @@ import {
     type LlmIntegerSettingKey,
 } from '../vendor-settings.llm';
 import { TELEGRAM_BOT_TOKEN_SETTING_KEYS } from '../vendor-settings.telegram';
+import { TRANSCRIPTION_SPEND_SETTING_RULES } from '../vendor-settings.transcription';
 import {
     VENDOR_SECRET_KEYS,
     VENDOR_SETTINGS,
@@ -165,5 +166,22 @@ describe('envOnlyReader', () => {
             B: null,
             C: null,
         });
+    });
+});
+
+/** Цена минуты Яндекса для расхода на распознавание (13.11.2026). */
+describe('реестр: цена распознавания', () => {
+    it('цена минуты Яндекса — в группе разборов, по умолчанию 60 копеек, проверка диапазона', () => {
+        const rule =
+            TRANSCRIPTION_SPEND_SETTING_RULES.YANDEX_STT_KOPECKS_PER_MINUTE;
+        const setting = vendorSettingOf('YANDEX_STT_KOPECKS_PER_MINUTE');
+        expect(setting.group).toBe('llm-gateway');
+        expect(setting.secret).toBe(false);
+        expect(setting.defaultValue).toBe(String(rule.defaultValue));
+        expect(rule.defaultValue).toBe(60);
+        expect(setting.validate?.('15')).toBeNull();
+        expect(setting.validate?.('0')).toContain('Нужно целое число');
+        expect(integerSettingValue('мусор', rule)).toBe(60);
+        expect(integerSettingValue('15', rule)).toBe(15);
     });
 });
