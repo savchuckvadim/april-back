@@ -1,5 +1,9 @@
 import { Logger } from '@nestjs/common';
 import { BitrixService } from '@lib/bitrix';
+import {
+    timelineLink,
+    toTimelineCommentDirect,
+} from '@lib/bitrix/consts/timeline.consts';
 import { IPortal } from '@lib/portal-lib/portal/interfaces/portal.interface';
 import { getErrorString } from '@lib/shared';
 
@@ -32,9 +36,12 @@ export class SupplyReportBitrixService {
             this.bitrixService.init(portal.domain);
 
             const pdfFileName = fileName.replace(/\.docx$/, '.pdf');
-            const message = pdfLink
-                ? `<a href="${link}" target="_blank">${fileName}</a><br><a href="${pdfLink}" target="_blank">${pdfFileName}</a>`
-                : `<a href="${link}" target="_blank">${fileName}</a>`;
+            // ссылки — HTML <a>, переносы — `\n`: `<br>` таймлайн показывает
+            // буквально (13.11.2026, сделка april-garant 37760)
+            const message = toTimelineCommentDirect([
+                timelineLink(link, fileName),
+                pdfLink ? timelineLink(pdfLink, pdfFileName) : '',
+            ]);
 
             await this.bitrixService.api.call('crm.timeline.comment.add', {
                 fields: {
