@@ -11,6 +11,7 @@ import {
 import {
     ApiOkResponse,
     ApiOperation,
+    ApiParam,
     ApiProduces,
     ApiResponse,
     ApiTags,
@@ -53,6 +54,12 @@ export class OfferPdfController {
         summary: 'Превью PDF-стиля КП',
         description:
             'Первая страница стиля (титульник или первый лист) на образце «Гарант-Офис» — миниатюра для выбора стиля. Данные вымышленные.',
+    })
+    // параметр с пайпом-экземпляром Swagger сам не описал — без него orval не генерирует клиент
+    @ApiParam({
+        name: 'code',
+        enum: OfferPdfTemplateCode,
+        description: 'Код стиля',
     })
     @ApiProduces('application/pdf')
     @ApiResponse({
