@@ -14,6 +14,8 @@ export interface OfferPdfTheme {
         readonly line: string;
         readonly shade: string;
         readonly tableBorder: string;
+        /** Цвет листа; не задан — белый */
+        readonly paper?: string;
     };
     readonly sizes: {
         readonly xs: number;
@@ -35,6 +37,8 @@ export interface OfferPdfTheme {
     readonly fonts: {
         readonly body: string;
         readonly heading: string;
+        /** Вес заголовков разделов; не задан — жирный */
+        readonly headingWeight?: number;
     };
     readonly lineHeight: number;
 }

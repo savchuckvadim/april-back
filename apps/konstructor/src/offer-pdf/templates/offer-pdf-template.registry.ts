@@ -2,6 +2,7 @@ import { OfferPdfDocumentModel } from '../model/offer-pdf-document.model';
 import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
 import { classicTemplate } from './classic/classic.template';
 import { modernTemplate } from './modern/modern.template';
+import { monochromeTemplate } from './monochrome/monochrome.template';
 import {
     OfferPdfTemplate,
     OfferPdfTemplateInfo,
@@ -11,6 +12,7 @@ import {
 export const OFFER_PDF_TEMPLATES: readonly OfferPdfTemplate[] = [
     classicTemplate,
     modernTemplate,
+    monochromeTemplate,
 ];
 
 export const findOfferPdfTemplate = (

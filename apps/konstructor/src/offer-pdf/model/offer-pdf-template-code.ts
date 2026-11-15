@@ -6,6 +6,7 @@
 export enum OfferPdfTemplateCode {
     CLASSIC = 'classic',
     MODERN = 'modern',
+    MONOCHROME = 'monochrome',
 }
 
 export const OFFER_PDF_DEFAULT_TEMPLATE_CODE = OfferPdfTemplateCode.CLASSIC;

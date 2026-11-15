@@ -12,6 +12,8 @@ export interface OfferCoverContent {
     date: string;
     /** Для кого: компания получателя */
     recipient: string | null;
+    /** ИНН получателя */
+    recipientInn: string | null;
     /** Кто подготовил; null — менеджер выключен настройкой */
     manager: OfferManager | null;
 }
@@ -29,6 +31,7 @@ export const offerCoverContent = (
         supply: filled(data.GeneralSupplyNameMarketing),
         date: meta.date,
         recipient: filled(data.RecipientCompanyName),
+        recipientInn: filled(data.RecipientInn),
         manager: managerOf(model),
     };
 };

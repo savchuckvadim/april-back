@@ -1,6 +1,11 @@
 import { Readable } from 'stream';
 
-const registerMock = jest.fn();
+interface FontRegistration {
+    family: string;
+    fonts: Array<{ src: string }>;
+}
+
+const registerMock = jest.fn<void, [FontRegistration]>();
 const hyphenationMock = jest.fn();
 const pdfMock = jest.fn();
 
@@ -35,7 +40,12 @@ const layoutWithHeader = (headerHeight: number): LayoutNode => ({
                 {
                     type: 'VIEW',
                     props: { fixed: true },
-                    box: { top: 26, left: 44, width: 507, height: headerHeight },
+                    box: {
+                        top: 26,
+                        left: 44,
+                        width: 507,
+                        height: headerHeight,
+                    },
                 },
                 {
                     type: 'VIEW',
@@ -56,7 +66,9 @@ const mockPdfInstance = (headerHeight: number) => {
             const onRender = document.props.onRender as
                 | ((params: { _INTERNAL__LAYOUT__DATA_: LayoutNode }) => void)
                 | undefined;
-            onRender?.({ _INTERNAL__LAYOUT__DATA_: layoutWithHeader(headerHeight) });
+            onRender?.({
+                _INTERNAL__LAYOUT__DATA_: layoutWithHeader(headerHeight),
+            });
             return Readable.from([Buffer.from('%PDF-1.7 mock')]);
         },
     }));
@@ -80,15 +92,20 @@ describe('рендер PDF-КП', () => {
         expect(second.buffer.length).toBeGreaterThan(0);
         // шапка помещается в поля шаблона — по одному проходу на документ
         expect(pdfMock).toHaveBeenCalledTimes(2);
-        expect(registerMock).toHaveBeenCalledTimes(1);
+        // по регистрации на семейство, на второй рендер — ни одной
+        const registrations = registerMock.mock.calls.map(
+            ([registration]) => registration,
+        );
+        expect(registrations.map(item => item.family)).toEqual([
+            'PT Sans',
+            'Manrope',
+            'Montserrat',
+        ]);
         expect(hyphenationMock).toHaveBeenCalledTimes(1);
 
-        const [registration] = registerMock.mock.calls[0] as [
-            { family: string; fonts: Array<{ src: string }> },
-        ];
-        expect(registration.family).toBe('PT Sans');
-        expect(registration.fonts).toHaveLength(4);
-        expect(registration.fonts[0].src).toMatch(/PT_Sans-Web-Regular\.ttf$/);
+        const [ptSans] = registrations;
+        expect(ptSans?.fonts).toHaveLength(4);
+        expect(ptSans?.fonts[0]?.src).toMatch(/PT_Sans-Web-Regular\.ttf$/);
     });
 
     it('длинная шапка: второй проход с полями под неё', async () => {
@@ -102,7 +119,10 @@ describe('рендер PDF-КП', () => {
         const secondElement = pdfMock.mock.calls[1][0] as {
             props: { frame?: { paddingTop: number } };
         };
-        expect(secondElement.props.frame).toEqual({ paddingTop: 114, paddingBottom: 86 });
+        expect(secondElement.props.frame).toEqual({
+            paddingTop: 114,
+            paddingBottom: 86,
+        });
     });
 
     it('неизвестный шаблон → NotFoundException, рендер не запускается', async () => {

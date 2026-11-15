@@ -2,15 +2,69 @@ import { Font } from '@react-pdf/renderer';
 import { existsSync } from 'fs';
 import { join } from 'path';
 
-/** PT Sans (OFL, см. files/OFL.txt) — статические TTF с полной кириллицей. */
-export const OFFER_PDF_FONT_FAMILY = 'PT Sans';
-
-const FONT_FILES = {
-    regular: 'PT_Sans-Web-Regular.ttf',
-    bold: 'PT_Sans-Web-Bold.ttf',
-    italic: 'PT_Sans-Web-Italic.ttf',
-    boldItalic: 'PT_Sans-Web-BoldItalic.ttf',
+/**
+ * Семейства шрифтов PDF-КП. Все — статические TTF с полной кириллицей под
+ * OFL (лицензии лежат рядом: files/OFL-*.txt). Variable-шрифты react-pdf
+ * не понимает: каждое начертание — свой файл.
+ */
+export const OFFER_PDF_FONTS = {
+    ptSans: 'PT Sans',
+    manrope: 'Manrope',
+    montserrat: 'Montserrat',
 } as const;
+
+/** Шрифт по умолчанию — классика */
+export const OFFER_PDF_FONT_FAMILY = OFFER_PDF_FONTS.ptSans;
+
+interface FontFace {
+    file: string;
+    fontWeight?: number;
+    fontStyle?: 'italic';
+}
+
+/**
+ * Курсива у Manrope и Montserrat нет — курсив регистрируется прямым
+ * начертанием: текст с fontStyle 'italic' (фраза об акции) печатается
+ * прямо, а не роняет рендер «шрифт не найден».
+ */
+const FAMILIES: Record<string, readonly FontFace[]> = {
+    [OFFER_PDF_FONTS.ptSans]: [
+        { file: 'PT_Sans-Web-Regular.ttf', fontWeight: 400 },
+        { file: 'PT_Sans-Web-Bold.ttf', fontWeight: 700 },
+        {
+            file: 'PT_Sans-Web-Italic.ttf',
+            fontWeight: 400,
+            fontStyle: 'italic',
+        },
+        {
+            file: 'PT_Sans-Web-BoldItalic.ttf',
+            fontWeight: 700,
+            fontStyle: 'italic',
+        },
+    ],
+    [OFFER_PDF_FONTS.manrope]: [
+        { file: 'Manrope-Light.ttf', fontWeight: 300 },
+        { file: 'Manrope-Regular.ttf', fontWeight: 400 },
+        { file: 'Manrope-SemiBold.ttf', fontWeight: 600 },
+        { file: 'Manrope-Bold.ttf', fontWeight: 700 },
+        { file: 'Manrope-Regular.ttf', fontWeight: 400, fontStyle: 'italic' },
+        { file: 'Manrope-Bold.ttf', fontWeight: 700, fontStyle: 'italic' },
+    ],
+    [OFFER_PDF_FONTS.montserrat]: [
+        { file: 'Montserrat-Regular.ttf', fontWeight: 400 },
+        { file: 'Montserrat-Bold.ttf', fontWeight: 700 },
+        { file: 'Montserrat-Black.ttf', fontWeight: 900 },
+        {
+            file: 'Montserrat-Regular.ttf',
+            fontWeight: 400,
+            fontStyle: 'italic',
+        },
+        { file: 'Montserrat-Bold.ttf', fontWeight: 700, fontStyle: 'italic' },
+    ],
+};
+
+/** Файл, по которому ищется каталог шрифтов */
+const PROBE_FILE = 'PT_Sans-Web-Regular.ttf';
 
 /**
  * Где лежат ttf. Из исходников (ts-node, jest) — рядом, в `files/`; после
@@ -24,9 +78,7 @@ export const resolveOfferPdfFontsDir = (
         join(baseDir, 'files'),
         join(baseDir, 'offer-pdf', 'fonts', 'files'),
     ];
-    const found = candidates.find(dir =>
-        existsSync(join(dir, FONT_FILES.regular)),
-    );
+    const found = candidates.find(dir => existsSync(join(dir, PROBE_FILE)));
     if (!found) {
         throw new Error(
             `Шрифты для PDF-КП не найдены, искали: ${candidates.join('; ')}`,
@@ -41,19 +93,16 @@ let registered = false;
 export const registerOfferPdfFonts = (): void => {
     if (registered) return;
     const dir = resolveOfferPdfFontsDir();
-    Font.register({
-        family: OFFER_PDF_FONT_FAMILY,
-        fonts: [
-            { src: join(dir, FONT_FILES.regular), fontWeight: 'normal' },
-            { src: join(dir, FONT_FILES.bold), fontWeight: 'bold' },
-            { src: join(dir, FONT_FILES.italic), fontStyle: 'italic' },
-            {
-                src: join(dir, FONT_FILES.boldItalic),
-                fontWeight: 'bold',
-                fontStyle: 'italic',
-            },
-        ],
-    });
+    for (const [family, faces] of Object.entries(FAMILIES)) {
+        Font.register({
+            family,
+            fonts: faces.map(face => ({
+                src: join(dir, face.file),
+                fontWeight: face.fontWeight,
+                fontStyle: face.fontStyle,
+            })),
+        });
+    }
     // Встроенные переносы react-pdf — по английским правилам, русские слова
     // рвутся где попало. Переносим только по пробелам.
     Font.registerHyphenationCallback(word => [word]);

@@ -18,6 +18,8 @@ export const createReactPdfMock = () => ({
     RadialGradient: 'RADIALGRADIENT',
     Stop: 'STOP',
     Rect: 'RECT',
+    Circle: 'CIRCLE',
+    Path: 'PATH',
     StyleSheet: { create: <T>(styles: T): T => styles },
     Font: {
         register: (): void => undefined,

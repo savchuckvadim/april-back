@@ -117,6 +117,56 @@ describe('поля страницы под шапку и подвал', () => {
         expect(fitPageFrame(withCover)).toEqual(fitPageFrame(page(80, 48)));
     });
 
+    it('fixed на титульнике (вкладка у края) — оформление, поля по нему не подбираются', () => {
+        const [content] = page(80, 48).children ?? [];
+        const withTab: LayoutNode = {
+            type: 'DOCUMENT',
+            children: [
+                {
+                    type: 'PAGE',
+                    box: { top: 0, left: 0, width: 595, height: 842 },
+                    style: {},
+                    children: [
+                        {
+                            type: 'VIEW',
+                            props: { fixed: true },
+                            box: { top: 96, left: 573, width: 22, height: 170 },
+                        },
+                    ],
+                },
+                ...(content ? [content] : []),
+            ],
+        };
+        expect(fitPageFrame(withTab)).toEqual(fitPageFrame(page(80, 48)));
+    });
+
+    it('fixed в боковом поле не шапка: вкладка справа поля не раздвигает', () => {
+        const [content] = page(55, 48).children ?? [];
+        const sideTab: LayoutNode = {
+            type: 'VIEW',
+            props: { fixed: true },
+            box: { top: 96, left: 573, width: 22, height: 170 },
+        };
+        const withSideTab: LayoutNode = {
+            type: 'DOCUMENT',
+            children: content
+                ? [
+                      {
+                          ...content,
+                          style: {
+                              ...content.style,
+                              paddingLeft: 44,
+                              paddingRight: 44,
+                          },
+                          children: [...(content.children ?? []), sideTab],
+                      },
+                  ]
+                : [],
+        };
+        expect(measurePageChrome(withSideTab)?.headerBottom).toBe(26 + 55);
+        expect(fitPageFrame(withSideTab)).toBeNull();
+    });
+
     it('без страниц — ничего не меряет', () => {
         expect(
             measurePageChrome({ type: 'DOCUMENT', children: [] }),
