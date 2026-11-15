@@ -19,7 +19,8 @@ export class BxItemBatchService {
     update(
         cmdCode: string,
         id: number | string,
-        entityTypeId: BitrixOwnerTypeId.DEAL,
+        /** Любой элемент CRM (сделка, компания, смарт…). */
+        entityTypeId: BitrixOwnerTypeId | number,
         data: Partial<IBXItem>,
     ) {
         return this.repo.updateBtch(cmdCode, id, entityTypeId, data);

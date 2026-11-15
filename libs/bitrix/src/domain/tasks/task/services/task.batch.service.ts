@@ -78,6 +78,23 @@ export class BxTaskBatchService {
     }
 
     /**
+     * Возобновляет завершённую задачу (batch, `tasks.task.renew`) — откат
+     * массового закрытия.
+     */
+    renew(cmdCode: string, taskId: number | string) {
+        return this.repo.renewBtch(cmdCode, taskId);
+    }
+
+    /**
+     * Принимает работу за постановщика (batch, `tasks.task.approve`): задача
+     * с контролем после complete встаёт в «Ждёт контроля», approve её
+     * завершает.
+     */
+    approve(cmdCode: string, taskId: number | string) {
+        return this.repo.approveBtch(cmdCode, taskId);
+    }
+
+    /**
      * Удаляет задачу (batch)
      */
     delete(cmdCode: string, taskId: number | string) {

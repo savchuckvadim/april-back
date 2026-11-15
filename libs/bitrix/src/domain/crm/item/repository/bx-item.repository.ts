@@ -13,7 +13,8 @@ export class BxItemRepository {
 
     async update(
         id: number | string,
-        entityTypeId: BitrixOwnerTypeId.DEAL,
+        /** Любой элемент CRM (сделка, компания, смарт…). */
+        entityTypeId: BitrixOwnerTypeId | number,
         data: Partial<IBXItem>,
     ) {
         return this.bxApi.callType(
@@ -27,7 +28,8 @@ export class BxItemRepository {
     updateBtch(
         cmdCode: string,
         id: number | string,
-        entityTypeId: BitrixOwnerTypeId.DEAL,
+        /** Любой элемент CRM (сделка, компания, смарт…). */
+        entityTypeId: BitrixOwnerTypeId | number,
         data: { [key: string]: any },
     ) {
         return this.bxApi.addCmdBatchType(
