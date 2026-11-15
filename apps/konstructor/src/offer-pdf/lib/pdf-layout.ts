@@ -20,7 +20,13 @@ export interface LayoutNode {
     /** Координаты относительно родителя */
     box?: LayoutBox;
     props?: { fixed?: boolean; wrap?: boolean; minPresenceAhead?: number };
-    style?: { paddingTop?: number; paddingBottom?: number; fontSize?: number };
+    style?: {
+        paddingTop?: number;
+        paddingBottom?: number;
+        paddingLeft?: number;
+        paddingRight?: number;
+        fontSize?: number;
+    };
     children?: LayoutNode[];
     lines?: Array<{ string: string }>;
 }
@@ -100,10 +106,38 @@ export interface PageChrome {
     footerTop: number | null;
 }
 
+const SIDE_EPSILON = 0.5;
+
+/**
+ * Fixed-блок целиком в боковом поле листа — украшение (вкладка у края,
+ * полосы подложки), а не шапка и не подвал: поля под него не растут.
+ */
+export const isSideDecoration = (box: LayoutBox, page: LayoutNode): boolean => {
+    const width = page.box?.width ?? 0;
+    const left = page.style?.paddingLeft ?? 0;
+    const right = page.style?.paddingRight ?? 0;
+    const inLeft = box.left + box.width <= left + SIDE_EPSILON;
+    const inRight = box.left >= width - right - SIDE_EPSILON;
+    return (left > 0 && inLeft) || (right > 0 && inRight);
+};
+
+/** Лист без полей — титульник: стиль раскладывает его сам, шапки и подвала нет */
+const isBareSheet = ({ style }: LayoutNode): boolean =>
+    !style?.paddingTop &&
+    !style?.paddingBottom &&
+    !style?.paddingLeft &&
+    !style?.paddingRight;
+
+/** Fixed-блок — оформление листа: в боковом поле или на титульнике */
+export const isDecoration = (box: LayoutBox, page: LayoutNode): boolean =>
+    isBareSheet(page) || isSideDecoration(box, page);
+
 const chromeOf = (page: LayoutNode): PageChrome | null => {
     if (!page.box) return null;
     const pageHeight = page.box.height;
-    const fixed = (page.children ?? []).flatMap(child => fixedExtent(child, 0));
+    const fixed = (page.children ?? [])
+        .flatMap(child => fixedExtent(child, 0))
+        .filter(box => !isDecoration(box, page));
     // подложка во всю высоту листа не шапка и не подвал: обе проверки её отсекают
     const headers = fixed.filter(box => box.top + box.height <= pageHeight / 2);
     const footers = fixed.filter(box => box.top >= pageHeight / 2);

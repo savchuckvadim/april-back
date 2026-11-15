@@ -58,5 +58,6 @@ describe('реестр PDF-шаблонов КП', () => {
         );
         expect(covers[OfferPdfTemplateCode.CLASSIC]).toBe(false);
         expect(covers[OfferPdfTemplateCode.MODERN]).toBe(true);
+        expect(covers[OfferPdfTemplateCode.MONOCHROME]).toBe(true);
     });
 });

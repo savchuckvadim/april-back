@@ -1,4 +1,8 @@
-import type { LayoutBox, LayoutNode } from '../lib/pdf-layout';
+import {
+    isDecoration,
+    type LayoutBox,
+    type LayoutNode,
+} from '../lib/pdf-layout';
 
 /**
  * Проверки дерева раскладки react-pdf (то, что движок посчитал перед
@@ -46,6 +50,8 @@ interface Leaf {
     node: LayoutNode;
     box: LayoutBox;
     fixed: boolean;
+    /** Внутри fixed-оформления (вкладка в поле, всё fixed титульника): в проверки не идёт */
+    decor: boolean;
 }
 
 const textOf = (node: LayoutNode): string => {
@@ -55,26 +61,37 @@ const textOf = (node: LayoutNode): string => {
             .join(' ')
             .trim();
     }
-    return (node.children ?? [])
-        .map(textOf)
-        .filter(Boolean)
-        .join(' ')
-        .trim();
+    return (node.children ?? []).map(textOf).filter(Boolean).join(' ').trim();
 };
 
 /** Листовые блоки в порядке документа; смещения родителей сложены */
-const leaves = (node: LayoutNode, offsetTop = 0, offsetLeft = 0, fixed = false): Leaf[] => {
+const leaves = (
+    node: LayoutNode,
+    page: LayoutNode,
+    offsetTop = 0,
+    offsetLeft = 0,
+    fixed = false,
+    decor = false,
+): Leaf[] => {
     if (!node.box) return [];
-    const isFixed = fixed || Boolean(node.props?.fixed);
     const box: LayoutBox = {
         top: offsetTop + node.box.top,
         left: offsetLeft + node.box.left,
         width: node.box.width,
         height: node.box.height,
     };
+    const fixedRoot = !fixed && Boolean(node.props?.fixed);
+    const isFixed = fixed || fixedRoot;
+    // повёрнутый текст вкладки в раскладке лежит неповёрнутым и вылезает из
+    // поля — поэтому украшение определяется по корню, а не по листьям
+    const isDecor = decor || (fixedRoot && isDecoration(box, page));
     const children = node.children ?? [];
-    if (!children.length || node.type === 'TEXT') return [{ node, box, fixed: isFixed }];
-    return children.flatMap(child => leaves(child, box.top, box.left, isFixed));
+    if (!children.length || node.type === 'TEXT') {
+        return [{ node, box, fixed: isFixed, decor: isDecor }];
+    }
+    return children.flatMap(child =>
+        leaves(child, page, box.top, box.left, isFixed, isDecor),
+    );
 };
 
 const bottomOf = (box: LayoutBox): number => box.top + box.height;
@@ -107,18 +124,26 @@ export const auditLayout = (root: LayoutNode): LayoutAudit => {
         const paddingTop = page.style?.paddingTop ?? 0;
         const paddingBottom = page.style?.paddingBottom ?? 0;
         // страница — сама начало координат
-        const all = (page.children ?? []).flatMap(child => leaves(child, 0, 0));
+        const all = (page.children ?? [])
+            .flatMap(child => leaves(child, page))
+            .filter(item => !item.decor);
         const fixed = all.filter(item => item.fixed);
         const content = all.filter(item => !item.fixed);
         // шапка — fixed-блоки в верхней половине листа, подвал — в нижней;
         // блок, растянутый через обе половины, уже сломан (fixed-out-of-page)
         const headerBottom = fixed
             .filter(item => bottomOf(item.box) <= height / 2)
-            .reduce<number | null>((max, item) => Math.max(max ?? 0, bottomOf(item.box)), null);
+            .reduce<
+                number | null
+            >((max, item) => Math.max(max ?? 0, bottomOf(item.box)), null);
         const footerTop = fixed
             .filter(item => item.box.top >= height / 2)
-            .reduce<number | null>((min, item) => Math.min(min ?? height, item.box.top), null);
-        const contentTop = content.length ? Math.min(...content.map(item => item.box.top)) : null;
+            .reduce<
+                number | null
+            >((min, item) => Math.min(min ?? height, item.box.top), null);
+        const contentTop = content.length
+            ? Math.min(...content.map(item => item.box.top))
+            : null;
         const contentBottom = content.length
             ? Math.max(...content.map(item => bottomOf(item.box)))
             : null;
@@ -138,7 +163,10 @@ export const auditLayout = (root: LayoutNode): LayoutAudit => {
         });
 
         for (const item of fixed) {
-            if (item.box.top < -EPSILON || bottomOf(item.box) > height + EPSILON) {
+            if (
+                item.box.top < -EPSILON ||
+                bottomOf(item.box) > height + EPSILON
+            ) {
                 issues.push({
                     page: number,
                     kind: 'fixed-out-of-page',
@@ -167,7 +195,10 @@ export const auditLayout = (root: LayoutNode): LayoutAudit => {
                     detail: `низ ${bottomOf(box).toFixed(1)} ниже верха подвала ${footerTop.toFixed(1)}`,
                 });
             }
-            if (bottomOf(box) > height - paddingBottom + EPSILON || box.top < paddingTop - EPSILON) {
+            if (
+                bottomOf(box) > height - paddingBottom + EPSILON ||
+                box.top < paddingTop - EPSILON
+            ) {
                 issues.push({
                     page: number,
                     kind: 'out-of-page',
@@ -178,9 +209,13 @@ export const auditLayout = (root: LayoutNode): LayoutAudit => {
         }
         // текст поверх текста: неразрывный блок выше страницы вылез за свою
         // строку, и следующая строка нарисована на нём (КП 15.11)
-        const texts = content.filter(item => item.node.type === 'TEXT' && item.box.height > 0);
+        const texts = content.filter(
+            item => item.node.type === 'TEXT' && item.box.height > 0,
+        );
         texts.forEach((item, at) => {
-            const hit = texts.slice(at + 1).find(other => intersects(item.box, other.box));
+            const hit = texts
+                .slice(at + 1)
+                .find(other => intersects(item.box, other.box));
             if (hit) {
                 issues.push({
                     page: number,
@@ -199,7 +234,11 @@ export const auditLayout = (root: LayoutNode): LayoutAudit => {
                 detail: 'итог оторван от таблицы',
             });
         }
-        if (lastContent && isHeading(lastContent.node) && index < pageNodes.length - 1) {
+        if (
+            lastContent &&
+            isHeading(lastContent.node) &&
+            index < pageNodes.length - 1
+        ) {
             issues.push({
                 page: number,
                 kind: 'orphan-heading',
@@ -225,7 +264,9 @@ export const formatAudit = (name: string, audit: LayoutAudit): string => {
         );
     }
     for (const issue of audit.issues) {
-        lines.push(`  !! стр. ${issue.page} ${issue.kind}: «${issue.text}» — ${issue.detail}`);
+        lines.push(
+            `  !! стр. ${issue.page} ${issue.kind}: «${issue.text}» — ${issue.detail}`,
+        );
     }
     return lines.join('\n');
 };
@@ -235,8 +276,8 @@ export const dumpTree = (node: LayoutNode, depth = 0): unknown => ({
     type: node.type,
     box:
         node.box &&
-        [node.box.top, node.box.left, node.box.width, node.box.height].map(value =>
-            Math.round(value),
+        [node.box.top, node.box.left, node.box.width, node.box.height].map(
+            value => Math.round(value),
         ),
     fixed: node.props?.fixed || undefined,
     text:
@@ -247,5 +288,9 @@ export const dumpTree = (node: LayoutNode, depth = 0): unknown => ({
                   .slice(0, 30)
             : undefined,
     children:
-        depth < 3 ? (node.children ?? []).slice(0, 8).map(child => dumpTree(child, depth + 1)) : undefined,
+        depth < 3
+            ? (node.children ?? [])
+                  .slice(0, 8)
+                  .map(child => dumpTree(child, depth + 1))
+            : undefined,
 });
