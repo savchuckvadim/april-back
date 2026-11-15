@@ -100,12 +100,11 @@ export interface PageChrome {
     footerTop: number | null;
 }
 
-/** Шапка и подвал первой страницы по fixed-блокам */
-export const measurePageChrome = (layout: LayoutNode): PageChrome | null => {
-    const page = pageNodesOf(layout)[0];
-    if (!page?.box) return null;
+const chromeOf = (page: LayoutNode): PageChrome | null => {
+    if (!page.box) return null;
     const pageHeight = page.box.height;
     const fixed = (page.children ?? []).flatMap(child => fixedExtent(child, 0));
+    // подложка во всю высоту листа не шапка и не подвал: обе проверки её отсекают
     const headers = fixed.filter(box => box.top + box.height <= pageHeight / 2);
     const footers = fixed.filter(box => box.top >= pageHeight / 2);
     return {
@@ -115,8 +114,27 @@ export const measurePageChrome = (layout: LayoutNode): PageChrome | null => {
         headerBottom: headers.length
             ? Math.max(...headers.map(box => box.top + box.height))
             : null,
-        footerTop: footers.length ? Math.min(...footers.map(box => box.top)) : null,
+        footerTop: footers.length
+            ? Math.min(...footers.map(box => box.top))
+            : null,
     };
+};
+
+/**
+ * Шапка и подвал по fixed-блокам первой страницы, где они есть: титульник
+ * идёт отдельной страницей без шапки и подвала, его поля не в счёт.
+ */
+export const measurePageChrome = (layout: LayoutNode): PageChrome | null => {
+    const chromes = pageNodesOf(layout)
+        .map(chromeOf)
+        .filter((chrome): chrome is PageChrome => chrome !== null);
+    return (
+        chromes.find(
+            chrome => chrome.headerBottom !== null || chrome.footerTop !== null,
+        ) ??
+        chromes[0] ??
+        null
+    );
 };
 
 /** Воздух между шапкой/подвалом и текстом */
@@ -133,15 +151,23 @@ export const fitPageFrame = (layout: LayoutNode): OfferPdfPageFrame | null => {
     const paddingTop =
         chrome.headerBottom === null
             ? chrome.paddingTop
-            : Math.max(chrome.paddingTop, Math.ceil(chrome.headerBottom + PAGE_FRAME_GAP));
+            : Math.max(
+                  chrome.paddingTop,
+                  Math.ceil(chrome.headerBottom + PAGE_FRAME_GAP),
+              );
     const paddingBottom =
         chrome.footerTop === null
             ? chrome.paddingBottom
             : Math.max(
                   chrome.paddingBottom,
-                  Math.ceil(chrome.pageHeight - chrome.footerTop + PAGE_FRAME_GAP),
+                  Math.ceil(
+                      chrome.pageHeight - chrome.footerTop + PAGE_FRAME_GAP,
+                  ),
               );
-    if (paddingTop === chrome.paddingTop && paddingBottom === chrome.paddingBottom) {
+    if (
+        paddingTop === chrome.paddingTop &&
+        paddingBottom === chrome.paddingBottom
+    ) {
         return null;
     }
     return { paddingTop, paddingBottom };

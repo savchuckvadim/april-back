@@ -1,72 +1,61 @@
 import type { FC } from 'react';
 import { StyleSheet, Text, View } from '@react-pdf/renderer';
-import { OfferPdfDocumentModel } from '../../../model/offer-pdf-document.model';
-import { CLASSIC_THEME } from '../classic.theme';
+import type { OfferPdfChromeProps } from '../../kit/document/offer-pdf-chrome';
+import { managerOf } from '../../kit/lib/manager.util';
+import { themedStyles } from '../../kit/theme/themed-styles';
 
-const { colors, sizes, page } = CLASSIC_THEME;
-
-const styles = StyleSheet.create({
-    footer: {
-        position: 'absolute',
-        bottom: page.edge,
-        left: page.paddingHorizontal,
-        right: page.paddingHorizontal,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-end',
-        borderTopWidth: 0.5,
-        borderTopColor: colors.line,
-        paddingTop: 6,
-    },
-    managerLine: { fontSize: sizes.xs, color: colors.muted },
-    managerName: {
-        fontSize: sizes.sm,
-        fontWeight: 'bold',
-        color: colors.text,
-    },
-    // У текста с render-пропом Yoga не знает содержимого и даёт ему
-    // высоту в тысячи пунктов: блок подвала уезжает за верх листа, а его
-    // верхняя линия не печатается. Высота строки задана явно.
-    pageNumber: { fontSize: sizes.xs, color: colors.muted, height: sizes.xs * 1.35 },
-});
+const footerStyles = themedStyles(({ colors, sizes, page, lineHeight }) =>
+    StyleSheet.create({
+        footer: {
+            fontSize: sizes.base,
+            lineHeight,
+            position: 'absolute',
+            bottom: page.edge,
+            left: page.paddingHorizontal,
+            right: page.paddingHorizontal,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'flex-end',
+            borderTopWidth: 0.5,
+            borderTopColor: colors.line,
+            paddingTop: 6,
+        },
+        managerLine: { fontSize: sizes.xs, color: colors.muted },
+        managerName: {
+            fontSize: sizes.sm,
+            fontWeight: 'bold',
+            color: colors.text,
+        },
+    }),
+);
 
 /** Подвал на каждой странице: контакты менеджера (по настройке) и номер страницы. */
-export const ClassicFooter: FC<{ model: OfferPdfDocumentModel }> = ({
-    model,
-}) => {
-    const { data, settings } = model;
-    const managerName = data.ManagerName?.trim() ?? '';
-    const showManager = settings.withManager && managerName.length > 0;
+export const ClassicFooter: FC<OfferPdfChromeProps> = ({ model, theme }) => {
+    const styles = footerStyles(theme);
+    const manager = managerOf(model);
 
     return (
         <View fixed style={styles.footer}>
             <View>
-                {showManager ? (
+                {manager ? (
                     <>
                         <Text style={styles.managerLine}>
-                            {data.ManagerPosition?.trim() ||
-                                'Ваш персональный менеджер'}
+                            {manager.position}
                         </Text>
-                        <Text style={styles.managerName}>{managerName}</Text>
-                        {data.ManagerEmail ? (
+                        <Text style={styles.managerName}>{manager.name}</Text>
+                        {manager.email ? (
                             <Text style={styles.managerLine}>
-                                e-mail: {data.ManagerEmail}
+                                e-mail: {manager.email}
                             </Text>
                         ) : null}
-                        {data.ManagerPhone ? (
+                        {manager.phone ? (
                             <Text style={styles.managerLine}>
-                                телефон: {data.ManagerPhone}
+                                телефон: {manager.phone}
                             </Text>
                         ) : null}
                     </>
                 ) : null}
             </View>
-            <Text
-                style={styles.pageNumber}
-                render={({ pageNumber, totalPages }) =>
-                    `${pageNumber} / ${totalPages}`
-                }
-            />
         </View>
     );
 };

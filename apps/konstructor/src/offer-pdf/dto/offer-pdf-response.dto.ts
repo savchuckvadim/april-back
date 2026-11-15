@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
+import { OfferPdfSettingsDto } from './offer-pdf-generate.dto';
 import { OfferPdfGenerateResult } from '../services/offer-pdf-generate.service';
 import { OfferPdfTemplateInfo } from '../templates/offer-pdf-template.interface';
 
@@ -24,6 +25,20 @@ export class OfferPdfTemplateItemDto implements OfferPdfTemplateInfo {
         example: 'Письмо, таблица цен, наполнение, подпись и печать.',
     })
     description: string;
+
+    @ApiProperty({
+        description:
+            'Есть ли у стиля титульный лист: только у таких стилей работает настройка withCover.',
+        example: false,
+    })
+    hasCover: boolean;
+
+    @ApiProperty({
+        description:
+            'Настройки, которые стиль задаёт сам: в конструкторе их переключатели неактивны, при генерации они ставятся поверх выбора менеджера.',
+        type: () => OfferPdfSettingsDto,
+    })
+    lockedSettings: OfferPdfSettingsDto;
 }
 
 export class OfferPdfGenerateResponseDto implements OfferPdfGenerateResult {

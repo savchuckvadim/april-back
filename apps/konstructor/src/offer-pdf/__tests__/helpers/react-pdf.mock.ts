@@ -12,6 +12,12 @@ export const createReactPdfMock = () => ({
     Text: 'TEXT',
     View: 'VIEW',
     Image: 'IMAGE',
+    Svg: 'SVG',
+    Defs: 'DEFS',
+    LinearGradient: 'LINEARGRADIENT',
+    RadialGradient: 'RADIALGRADIENT',
+    Stop: 'STOP',
+    Rect: 'RECT',
     StyleSheet: { create: <T>(styles: T): T => styles },
     Font: {
         register: (): void => undefined,

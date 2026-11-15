@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import type { DocumentProps } from '@react-pdf/renderer';
 import type { OfferPdfPageFrame } from '../lib/pdf-layout';
 import { OfferPdfDocumentModel } from '../model/offer-pdf-document.model';
+import { OfferPdfSettings } from '../model/offer-pdf-settings';
 import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
 
 /**
@@ -16,6 +17,14 @@ export interface OfferPdfTemplate {
     /** Название для выбора в конструкторе */
     readonly name: string;
     readonly description: string;
+    /** У стиля есть титульный лист (включается настройкой withCover) */
+    readonly hasCover: boolean;
+    /**
+     * Настройки, которые стиль задаёт сам: вёрстка стиля рассчитана на них
+     * (например, описания комплекта только таблицей). Рендер ставит их
+     * поверх выбора менеджера, фронт по списку стилей гасит переключатели.
+     */
+    readonly lockedSettings?: Partial<OfferPdfSettings>;
     render(
         model: OfferPdfDocumentModel,
         frame?: OfferPdfPageFrame,
@@ -27,4 +36,6 @@ export interface OfferPdfTemplateInfo {
     code: OfferPdfTemplateCode;
     name: string;
     description: string;
+    hasCover: boolean;
+    lockedSettings: Partial<OfferPdfSettings>;
 }

@@ -29,6 +29,16 @@ describe('настройки PDF-КП', () => {
         expect(settings.isPriceFirst).toBe(false);
     });
 
+    it('титульник по умолчанию включён, выключается явно', () => {
+        expect(resolveOfferPdfSettings().withCover).toBe(true);
+        expect(resolveOfferPdfSettings({ withCover: null }).withCover).toBe(
+            true,
+        );
+        expect(resolveOfferPdfSettings({ withCover: false }).withCover).toBe(
+            false,
+        );
+    });
+
     it('фраза об акции обрезается, пустая → null', () => {
         expect(
             resolveOfferPdfSettings({ salePhrase: '  акция  ' }).salePhrase,

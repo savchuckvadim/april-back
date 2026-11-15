@@ -37,16 +37,26 @@ describe('реестр PDF-шаблонов КП', () => {
         ).toBeUndefined();
     });
 
-    it('список для UI — только код, название и описание', () => {
+    it('список для UI — код, название, описание, титульник, зафиксированные настройки', () => {
         const list = listOfferPdfTemplates();
         expect(list.length).toBe(OFFER_PDF_TEMPLATES.length);
         for (const item of list) {
             expect(Object.keys(item).sort()).toEqual([
                 'code',
                 'description',
+                'hasCover',
+                'lockedSettings',
                 'name',
             ]);
             expect(item.name.length).toBeGreaterThan(0);
         }
+    });
+
+    it('титульник есть у «Современного», у классики нет', () => {
+        const covers = Object.fromEntries(
+            listOfferPdfTemplates().map(item => [item.code, item.hasCover]),
+        );
+        expect(covers[OfferPdfTemplateCode.CLASSIC]).toBe(false);
+        expect(covers[OfferPdfTemplateCode.MODERN]).toBe(true);
     });
 });

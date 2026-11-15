@@ -8,6 +8,7 @@ import { OfferPdfController } from './controllers/offer-pdf.controller';
 import { OfferPdfDocumentModelService } from './services/offer-pdf-document-model.service';
 import { OfferPdfGenerateService } from './services/offer-pdf-generate.service';
 import { OfferPdfRenderService } from './services/offer-pdf-render.service';
+import { OfferPdfStylePreviewService } from './services/offer-pdf-style-preview.service';
 
 /**
  * КП в PDF из JSX-шаблонов. Данные документа берёт у OfferWordModule
@@ -26,6 +27,7 @@ import { OfferPdfRenderService } from './services/offer-pdf-render.service';
         OfferPdfDocumentModelService,
         OfferPdfRenderService,
         OfferPdfGenerateService,
+        OfferPdfStylePreviewService,
     ],
 })
 export class OfferPdfModule {}

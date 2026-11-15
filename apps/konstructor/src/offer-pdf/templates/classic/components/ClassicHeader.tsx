@@ -1,40 +1,41 @@
 import type { FC } from 'react';
 import { Image, StyleSheet, Text, View } from '@react-pdf/renderer';
-import { OfferPdfDocumentModel } from '../../../model/offer-pdf-document.model';
-import { CLASSIC_THEME } from '../classic.theme';
-import { joinNonEmpty } from '../classic.util';
+import type { OfferPdfChromeProps } from '../../kit/document/offer-pdf-chrome';
+import { joinNonEmpty } from '../../kit/lib/text.util';
+import { themedStyles } from '../../kit/theme/themed-styles';
 
-const { colors, sizes, page } = CLASSIC_THEME;
-
-const styles = StyleSheet.create({
-    header: {
-        position: 'absolute',
-        top: page.edge,
-        left: page.paddingHorizontal,
-        right: page.paddingHorizontal,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        borderBottomWidth: 1,
-        borderBottomColor: colors.accent,
-        paddingBottom: 6,
-    },
-    rq: { maxWidth: '72%' },
-    company: {
-        fontSize: sizes.lg,
-        fontWeight: 'bold',
-        color: colors.accent,
-        marginBottom: 1,
-    },
-    line: { fontSize: sizes.xs, color: colors.muted },
-    logo: { height: 36, maxWidth: 140, objectFit: 'contain' },
-});
+const headerStyles = themedStyles(({ colors, sizes, page, lineHeight }) =>
+    StyleSheet.create({
+        header: {
+            fontSize: sizes.base,
+            lineHeight,
+            position: 'absolute',
+            top: page.edge,
+            left: page.paddingHorizontal,
+            right: page.paddingHorizontal,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            borderBottomWidth: 1,
+            borderBottomColor: colors.accent,
+            paddingBottom: 6,
+        },
+        rq: { maxWidth: '72%' },
+        company: {
+            fontSize: sizes.lg,
+            fontWeight: 'bold',
+            color: colors.accent,
+            marginBottom: 1,
+        },
+        line: { fontSize: sizes.xs, color: colors.muted },
+        logo: { height: 36, maxWidth: 140, objectFit: 'contain' },
+    }),
+);
 
 /** Шапка на каждой странице: реквизиты поставщика слева, логотип справа. */
-export const ClassicHeader: FC<{ model: OfferPdfDocumentModel }> = ({
-    model,
-}) => {
+export const ClassicHeader: FC<OfferPdfChromeProps> = ({ model, theme }) => {
     const { data, images } = model;
+    const styles = headerStyles(theme);
     const company = data.MyCompanyName || data.MyCompanyFullName;
     const codes = joinNonEmpty([
         data.MyCompanyINN ? `ИНН ${data.MyCompanyINN}` : '',

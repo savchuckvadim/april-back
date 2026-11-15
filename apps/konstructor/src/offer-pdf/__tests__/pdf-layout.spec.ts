@@ -33,9 +33,17 @@ const page = (
                 {
                     type: 'VIEW',
                     props: { fixed: true },
-                    box: { top: 26, left: 44, width: 507, height: headerHeight },
+                    box: {
+                        top: 26,
+                        left: 44,
+                        width: 507,
+                        height: headerHeight,
+                    },
                     children: [
-                        { type: 'TEXT', box: { top: 0, left: 0, width: 100, height: 12 } },
+                        {
+                            type: 'TEXT',
+                            box: { top: 0, left: 0, width: 100, height: 12 },
+                        },
                     ],
                 },
                 {
@@ -88,8 +96,31 @@ describe('поля страницы под шапку и подвал', () => {
         expect(fitPageFrame(page(20, 10))).toBeNull();
     });
 
+    it('титульник без шапки и подвала пропускается — поля по первой странице с ними', () => {
+        const withCover: LayoutNode = {
+            type: 'DOCUMENT',
+            children: [
+                {
+                    type: 'PAGE',
+                    box: { top: 0, left: 0, width: 595, height: 842 },
+                    style: { paddingTop: 0, paddingBottom: 0 },
+                    children: [
+                        {
+                            type: 'VIEW',
+                            box: { top: 120, left: 52, width: 300, height: 90 },
+                        },
+                    ],
+                },
+                ...(page(80, 48).children ?? []),
+            ],
+        };
+        expect(fitPageFrame(withCover)).toEqual(fitPageFrame(page(80, 48)));
+    });
+
     it('без страниц — ничего не меряет', () => {
-        expect(measurePageChrome({ type: 'DOCUMENT', children: [] })).toBeNull();
+        expect(
+            measurePageChrome({ type: 'DOCUMENT', children: [] }),
+        ).toBeNull();
         expect(fitPageFrame({ type: 'DOCUMENT', children: [] })).toBeNull();
     });
 });

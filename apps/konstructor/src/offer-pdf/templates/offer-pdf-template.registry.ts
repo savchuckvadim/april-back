@@ -1,5 +1,7 @@
+import { OfferPdfDocumentModel } from '../model/offer-pdf-document.model';
 import { OfferPdfTemplateCode } from '../model/offer-pdf-template-code';
 import { classicTemplate } from './classic/classic.template';
+import { modernTemplate } from './modern/modern.template';
 import {
     OfferPdfTemplate,
     OfferPdfTemplateInfo,
@@ -8,6 +10,7 @@ import {
 /** Реестр встроенных шаблонов: новый стиль — новый элемент массива. */
 export const OFFER_PDF_TEMPLATES: readonly OfferPdfTemplate[] = [
     classicTemplate,
+    modernTemplate,
 ];
 
 export const findOfferPdfTemplate = (
@@ -16,8 +19,24 @@ export const findOfferPdfTemplate = (
     OFFER_PDF_TEMPLATES.find(template => template.code === code);
 
 export const listOfferPdfTemplates = (): OfferPdfTemplateInfo[] =>
-    OFFER_PDF_TEMPLATES.map(({ code, name, description }) => ({
-        code,
-        name,
-        description,
-    }));
+    OFFER_PDF_TEMPLATES.map(
+        ({ code, name, description, hasCover, lockedSettings }) => ({
+            code,
+            name,
+            description,
+            hasCover,
+            lockedSettings: lockedSettings ?? {},
+        }),
+    );
+
+/** Модель с настройками, которые стиль задаёт сам, поверх выбора менеджера */
+export const withLockedSettings = (
+    model: OfferPdfDocumentModel,
+    template: OfferPdfTemplate,
+): OfferPdfDocumentModel =>
+    template.lockedSettings
+        ? {
+              ...model,
+              settings: { ...model.settings, ...template.lockedSettings },
+          }
+        : model;
